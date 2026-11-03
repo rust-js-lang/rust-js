@@ -639,8 +639,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a method held in a variable before an argument's statements, `handleEvent.call(listener, sum)`, is called alone, `handleEvent(sum)`, its `this` none (rd334)",
     file: "src/js/make.rs",
-    find: "        let (ExprKind::Member(of, _) | ExprKind::Index(of, _)) = &method.kind else {\n            return;\n        };\n        let given = |this: &Expr| matches!((&of.kind, &this.kind), (ExprKind::Var(a), ExprKind::Var(b)) if a == b);\n",
-    replace: "        let given = |_: &Expr| true;\n",
+    find: "        let (ExprKind::Member(of, _) | ExprKind::Index(of, _)) = &method.kind else {\n            return None;\n        };\n        match (&of.kind, args.first().map(|this| &this.kind)) {\n            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == \"call\" && value == this => Some(value),\n",
+    replace: "        match (&method.kind, args.first().map(|this| &this.kind)) {\n            (_, Some(ExprKind::Var(this))) if name == \"call\" => Some(this),\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "function::call of js::method whose this is its value"],
   },
   {
@@ -648,8 +648,26 @@ export const mutations: Mutation[] = [
     breaks:
       "a method read of a variable before it's set again, `element$.focus.call(element)`, is called of the one read, its `this` the old value (rd334)",
     file: "src/js/make.rs",
-    find: "        let given = |this: &Expr| matches!((&of.kind, &this.kind), (ExprKind::Var(a), ExprKind::Var(b)) if a == b);\n",
-    replace: "        let given = |_: &Expr| matches!(of.kind, ExprKind::Var(_));\n",
+    find: "            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == \"call\" && value == this => Some(value),\n",
+    replace: "            (ExprKind::Var(value), Some(ExprKind::Var(_))) if name == \"call\" => Some(value),\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "function::call of js::method whose this is its value"],
+  },
+  {
+    name: "own-keyed-method-of-a-binding",
+    breaks:
+      "a binding's method called through `function::call(js::method((element, HTMLElement::focus)), Some(&element), ..)` reads its `let` in place, `elements.first.focus(options)`, where its own call `element.focus(options)` keeps the program's `const` (rd226b)",
+    file: "src/js/make.rs",
+    find: "            .filter(|_| method.facts.has(Known::KeyedMethod))\n",
+    replace: "            .filter(|_| !method.facts.has(Known::OwnMethodCall))\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
+  },
+  {
+    name: "own-method-called-again",
+    breaks:
+      "a keyed method's call written in place, `props.fill.call(props)` of a member named `call`, is written as a method's call again, `props.fill()`, its `this` and argument lost (rd226b)",
+    file: "src/js/make.rs",
+    find: "        self.facts = self.facts.without(Known::OwnMethodCall);\n",
+    replace: "",
+    tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
   },
 ];

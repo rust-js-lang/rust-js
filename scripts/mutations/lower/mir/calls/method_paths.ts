@@ -21,4 +21,13 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "js::method of a key read other than as its value's method"],
   },
+  {
+    name: "keyed-method-unmarked",
+    breaks:
+      "a key's `js::method` isn't known as one, so react-art's `let fill = js::get(props, \"fill\");` before its `applyFill` call stays a `const`, not `props.fill.applyFill(instance)` (rd226b)",
+    file: "src/lower/mir/calls/method_paths.rs",
+    find: "                    .keyed_method()\n",
+    replace: "",
+    tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
+  },
 ];

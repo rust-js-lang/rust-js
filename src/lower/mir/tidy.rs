@@ -57,6 +57,8 @@ pub(super) struct LetNames {
     pub(super) patterns: HashSet<String>,
     /// What a name alone binds, `let x = p.x;`.
     pub(super) named: HashSet<String>,
+    /// Of those, `let mut`'s: what the program said it changes (rd226b).
+    pub(super) mutable: HashSet<String>,
     /// Of those, one of a `RefCell` field's value cloned, named as the field, `let child =
     /// current.child.borrow().clone();`: a `let` that ends a borrow, which
     /// reads as its value written in the statement right after it where

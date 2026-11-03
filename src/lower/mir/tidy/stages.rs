@@ -714,6 +714,12 @@ pub(super) const STAGES: &[Stage] = &[
             pass("fallback reads", |b, h| {
                 js::statement_lists(b, &mut |s| fallback_reads(s, &h.lets.named))
             }),
+            // A `let` the program wrote whose only reads are the receiver
+            // and the `this` of the keyed method's call after it: read there
+            // (rd226b, the user's decision).
+            pass("receiver reads", |b, h| {
+                js::statement_lists(b, &mut |s| receiver_reads(s, h.lets))
+            }),
             pass("while heads", |b, h| {
                 js::statement_lists(b, &mut |s| while_heads(s, &h.written.loops))
             }),

@@ -85,6 +85,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let [value, key] = <[Expr; 2]>::try_from(items).unwrap_or_else(|_| unreachable!("two items"));
                 Ok(crate::lower::binding_calls::keyed(value, key)
                     .answered_by_a_getter()
+                    .keyed_method()
                     .or_at(self.js_span(span)))
             }
             _ => Err(self.unsupported(span, "`js::method` of a key whose path isn't written in it")),

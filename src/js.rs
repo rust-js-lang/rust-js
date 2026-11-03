@@ -698,6 +698,11 @@ impl Facts {
         Facts(self.0 | Facts::of(known).0)
     }
 
+    /// These but `known`.
+    pub fn without(self, known: Known) -> Facts {
+        Facts(self.0 & !Facts::of(known).0)
+    }
+
     /// These and `other`'s.
     pub fn and(self, other: Facts) -> Facts {
         Facts(self.0 | other.0)
@@ -938,6 +943,11 @@ pub enum Known {
     /// its holder and called alone, `const { link } = system;` (ADR 0610,
     /// amended, #533).
     ThisUnread,
+    /// A member a key names of a value of any shape, `js::method((value,
+    /// key))`'s, which is read only as its value's method (rd334): the
+    /// form of no other call, which a `let` of its value only it reads
+    /// is read in place of (`Expr::own_keyed_method_receiver`, rd226b).
+    KeyedMethod,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

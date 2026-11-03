@@ -6,7 +6,8 @@ test read is read again where the body reads it first; and an `if let`'s
 binding of a thread-local's value only its test reads; and a `let` that
 ends a borrow that the statement after it stores; and a `let` the program
 wrote read first by the next statement's `||` or `??` (rd664, the user's
-decision). Extends [0842](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)'s
+decision); and one read only as the receiver and `this` of the next
+keyed method call (rd226b, the user's decision). Extends [0842](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)'s
 and [0780](0780-an-or-patterns-tests-are-as-written-of-a-field-read-in-place.md)'s
 places read in a test to a `let` the program names, of a `RefCell`'s value
 too, which [0863](0863-a-refcell-of-an-object-is-the-object.md) made the
@@ -435,3 +436,78 @@ fallback is its getter read there", whose getters count their reads and
 their order, mutations `fallback-reads-unread` (snapshots),
 `fallback-read-twice`, `fallback-read-of-another-name`,
 `fallback-read-after-a-call` and `fallback-read-of-any-read`.
+
+## Amendment: a `let` read only as the receiver and `this` of the next keyed method call is read there (rd226b, the user's decision)
+
+The user's decision (2026-11-03), a second exception to rd226's rule: **a
+`let` the program wrote, not `mut`, whose only two reads are the receiver
+and the `this` of the keyed method call that the statement right after
+it is, `function::call(js::method((x, key)), Some(&x), args);`, is that
+call of the value read in place.** react-art calls the functions it sets
+on art's nodes as their methods, `props.fill.applyFill(instance)` and
+`instance._subscriptions[type]()`. Their port names the value, as rd334's
+form must, the path's value and the `this` the same variable
+([1025](1025-a-method-read-as-a-value-is-js-methods.md), amended):
+
+```rust
+let fill = js::get(props, "fill");
+js::function::call(js::method((fill, "applyFill")), Some(&fill), (instance,));
+```
+
+which printed `const fill = props.fill; fill.applyFill(instance);`. The
+`let` is there only because the form names the value twice; JS's method
+call reads its receiver once and gives it as `this`, so it has no job left
+in the JS: `props.fill.applyFill(instance);`, as upstream writes it.
+
+ADR 0262's case N: what the program does is the same. Rust reads
+`props.fill` once, into the `let`; then `js::method` reads `applyFill` of
+that value, then its key's and its arguments' code runs, and the call gets
+the same value as `this`. JS's `props.fill.applyFill(instance)` reads
+`props.fill` once, then `applyFill` of it, then the key and the arguments,
+and calls it with that value as `this`. So the same getters run, the same
+number of times, in the same order, and a member that's no function
+throws JS's `TypeError` where it threw.
+
+`moves.rs`'s `receiver_reads` (pass "receiver reads", after "fallback
+reads"), a sibling of rd664's `fallback_reads`, takes only that: a
+`const` of `LetNames::named`, not of `LetNames::mutable` (THIR's `let
+mut`), mentioned twice in what follows, both by the next statement, an
+expression statement that is the call `Expr::own_keyed_method_receiver`
+names it the receiver of: rd334's call `x.key.call(x, ..args)`
+(`Known::OwnMethodCall`) whose method is read in place of the variable,
+as its `this` is that variable, of a key (`Known::KeyedMethod`, which
+`mir_keyed_method` marks). Read so, the receiver is the first thing the
+call evaluates, before the key and the arguments, as rd334 orders its
+keyed read before them: `leads` has nothing to ask. `Expr::own_method_called`,
+`own_method_call`'s rewrite (`js/make.rs`, the one owner of the method's
+call), writes it with the value in the variable's place and drops
+`OwnMethodCall`, which a member named `call`, `props.fill.call(props)`,
+would otherwise take for another `call` to write.
+
+It stays a `const` where it's read a third time, `fill.applyFill(instance);
+return fill;`, or by an argument, `fill.applyFill(fill)`; where it's `mut`;
+where it's no `let`, a `match` arm's binding, which the decision isn't of;
+past the next statement, `noted("between"); fill.applyFill(instance)`;
+where a `return` gives the call, beyond the statement the decision is of;
+and of a binding's method, `function::call(js::method((element,
+HTMLElement::focus)), Some(&element), ..)`, whose own call `element.focus(..)`
+keeps the program's `const` as rd226 has it. Another `this` of a key is
+refused (ADR 1025); of a binding's method it's `element.focus.call(other)`,
+as before.
+
+What changes: ADR 1025's consequence that a value that isn't a variable
+is held in one, `const subscriptions = instance._subscriptions;` before
+`subscriptions[type]()`, is now `instance._subscriptions[type]();`; the
+guide's types page and the rd334 test read so. No corpus snapshot or
+readability line moved.
+
+Held by `test/lowering-is-function.test.ts`'s "a let read only as the
+receiver and this of the next keyed method call is read there", run in
+JS, whose getters count the value's and the member's reads and their
+order against the key's and the argument's, and whose call records its
+`this`; mutations `receiver-reads-unread`, `receiver-read-again`,
+`receiver-read-by-an-argument`, `receiver-read-mutable`,
+`receiver-read-of-any-let`, `receiver-read-past-a-statement`,
+`receiver-read-of-any-statement` (`tidy/moves.ts`),
+`own-keyed-method-of-a-binding`, `own-method-called-again` (`js/make.ts`)
+and `keyed-method-unmarked` (`mir/calls/method_paths.ts`).

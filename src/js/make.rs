@@ -1107,6 +1107,53 @@ impl Expr {
         self
     }
 
+    /// This, a member a key names of a value of any shape, read only as
+    /// its value's method (`Known::KeyedMethod`), beside what else is
+    /// known of it.
+    pub fn keyed_method(mut self) -> Expr {
+        self.facts = self.facts.with(Known::KeyedMethod);
+        self
+    }
+
+    /// `value`, the variable, of `value.f.call(value, ..args)`, a call of
+    /// a method read in place of the variable it's given as its `this`
+    /// (`Known::OwnMethodCall`): what `own_method_call` writes as the
+    /// method's call. Of `f` held in a variable, or read of another value,
+    /// none.
+    fn own_method_receiver(&self) -> Option<&str> {
+        if !self.facts.has(Known::OwnMethodCall) {
+            return None;
+        }
+        let ExprKind::Call(callee, args) = &self.kind else {
+            return None;
+        };
+        let ExprKind::Member(method, name) = &callee.kind else {
+            return None;
+        };
+        let (ExprKind::Member(of, _) | ExprKind::Index(of, _)) = &method.kind else {
+            return None;
+        };
+        match (&of.kind, args.first().map(|this| &this.kind)) {
+            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == "call" && value == this => Some(value),
+            _ => None,
+        }
+    }
+
+    /// `value` of `value.f.call(value, ..args)` where `f` is a member a
+    /// key names (`Known::KeyedMethod`), `js::method((value, key))`'s: the
+    /// variable alone the receiver of a call that only rd334's form, which
+    /// names it twice, writes (rd226b).
+    pub fn own_keyed_method_receiver(&self) -> Option<&str> {
+        let ExprKind::Call(callee, _) = &self.kind else {
+            return None;
+        };
+        let ExprKind::Member(method, _) = &callee.kind else {
+            return None;
+        };
+        self.own_method_receiver()
+            .filter(|_| method.facts.has(Known::KeyedMethod))
+    }
+
     /// `value.f.call(value, ..args)` of a method read in place of the
     /// variable it's given as its `this` (`Known::OwnMethodCall`): the
     /// method's call, `value.f(..args)`, whose `this` JS gives as `call`
@@ -1115,26 +1162,33 @@ impl Expr {
     /// of another value, as it is. What preparation does of each
     /// expression.
     pub fn own_method_call(e: &mut Expr) {
-        if !e.facts.has(Known::OwnMethodCall) {
-            return;
+        e.own_method_called(None);
+    }
+
+    /// `own_method_call`, its receiver `receiver` where given, in place of
+    /// the variable: `props.fill.applyFill(instance)` of `fill.applyFill.call(
+    /// fill, instance)`, the value read once, first, as JS reads a method
+    /// call's receiver (rd226b). Whether it was such a call.
+    pub fn own_method_called(&mut self, receiver: Option<Expr>) -> bool {
+        if self.own_method_receiver().is_none() {
+            return false;
         }
-        let ExprKind::Call(callee, args) = &mut e.kind else {
-            return;
+        let ExprKind::Call(callee, args) = &mut self.kind else {
+            return false;
         };
-        let ExprKind::Member(method, name) = &mut callee.kind else {
-            return;
+        let ExprKind::Member(method, _) = &mut callee.kind else {
+            return false;
         };
-        let (ExprKind::Member(of, _) | ExprKind::Index(of, _)) = &method.kind else {
-            return;
-        };
-        let given = |this: &Expr| matches!((&of.kind, &this.kind), (ExprKind::Var(a), ExprKind::Var(b)) if a == b);
-        if name != "call" || !args.first().is_some_and(given) {
-            return;
+        let mut method = std::mem::replace(&mut **method, Expr::undefined());
+        if let (Some(receiver), ExprKind::Member(of, _) | ExprKind::Index(of, _)) = (receiver, &mut method.kind) {
+            **of = receiver;
         }
-        let method = std::mem::replace(&mut **method, Expr::undefined());
         let mut args = std::mem::take(args);
         args.remove(0);
-        e.kind = ExprKind::Call(Box::new(method), args);
+        self.kind = ExprKind::Call(Box::new(method), args);
+        // A method's call now, which is no `call`'s to write again.
+        self.facts = self.facts.without(Known::OwnMethodCall);
+        true
     }
 
     /// This, a binding's call that runs none of the program's code

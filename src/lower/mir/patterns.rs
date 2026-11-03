@@ -1107,6 +1107,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             held.is_some_and(|held| !held.has_escaping_bound_vars() && held.is_freeze(self.tcx, self.typing_env))
         };
         let mut named = Vec::new();
+        let mut mutable = Vec::new();
         let mut ends_borrow = Vec::new();
         let mut frozen = Vec::new();
         let mut guards = Vec::new();
@@ -1117,10 +1118,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && let thir::PatKind::Binding {
                     subpattern: None,
                     name: binding,
+                    mode,
                     ..
                 } = pattern.kind
             {
                 named.push(pattern.span);
+                if mode.1.is_mut() {
+                    mutable.push(pattern.span);
+                }
                 // Named as the field it reads, by their Rust names, whatever
                 // the JS ones: `r#return`'s `return$` of `.return`, and a
                 // field's `#[rust_js::name]`, `_debugHookTypes`.
@@ -1164,6 +1169,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|(l, _)| state.locals.names[l].clone())
                 .collect(),
             named: names(&named),
+            mutable: names(&mutable),
             ends_borrow: names(&ends_borrow),
             frozen: names(&frozen),
             guards,

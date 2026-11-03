@@ -606,6 +606,51 @@ fn fallback_read(stmts: &mut Vec<Stmt>, at: usize, named: &HashSet<String>) -> b
     true
 }
 
+/// `const fill = props.fill; fill.applyFill.call(fill, instance);`: a `let`
+/// the program wrote, `named`'s and no `let mut`, whose only reads are the
+/// receiver and the `this` of the keyed method's call the statement right
+/// after it is, `function::call(js::method((fill, "applyFill")), Some(&fill),
+/// (instance,));` (`Expr::own_keyed_method_receiver`): that call of the
+/// value read there, `props.fill.applyFill(instance);`, as react-art writes
+/// it. The `let` is there only because rd334's form names the value twice,
+/// as the path's and as `this`; JS's method call reads it once and gives
+/// it as its `this`. Its receiver is the first thing the call evaluates,
+/// the variable the method is read of, so the value is read once either
+/// way, a getter's too, and where it was, nothing run between, before the
+/// member, its key and the arguments, as Rust reads them (rd226b, the
+/// user's decision, 2026-11-03, an exception to rd226's "a `let` the
+/// program wrote stays"). Read again, `mut`, read past the next statement,
+/// given as another `this`, or the next statement another call's or more
+/// than the call, it stays.
+pub(super) fn receiver_reads(stmts: &mut Vec<Stmt>, lets: &LetNames) {
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        if !receiver_read(stmts, i, lets) {
+            i += 1;
+        }
+    }
+}
+
+/// `receiver_reads` of `stmts[at]`: whether it was read in place.
+fn receiver_read(stmts: &mut Vec<Stmt>, at: usize, lets: &LetNames) -> bool {
+    let (made, rest) = stmts.split_at_mut(at + 1);
+    let StmtKind::Const(name, value) = &made[at].kind else {
+        return false;
+    };
+    if !lets.named.contains(name) || lets.mutable.contains(name) || js::mentions_in(rest, name) != 2 {
+        return false;
+    }
+    // The statement right after it, that call alone.
+    let Some(StmtKind::Expr(call)) = rest.first_mut().map(|s| &mut s.kind) else {
+        return false;
+    };
+    if call.own_keyed_method_receiver() != Some(name) || !call.own_method_called(Some(value.clone())) {
+        return false;
+    }
+    stmts.remove(at);
+    true
+}
+
 /// Whether `stmt` stores `name` whole, `target = name`: where the program
 /// would write the place (ADR 0866, amended). Not an argument's, `push(..,
 /// handlerOnStack, ..)`, a test's, `if (alternate == null && ..)`, nor a

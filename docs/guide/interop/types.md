@@ -2850,7 +2850,11 @@ export function sameSource(prev, next) {
   variable as its `this` is JS's call of it, `listener.handleEvent(event)`,
   which reads the member once and throws JS's `TypeError`, a panic, where
   it's no function, as upstream's call does. A value that isn't a
-  variable is held in one first. The member may be no function, so a
+  variable is held in one first, a `let` that only the call right after
+  it reads, as its receiver and its `this`, read in place there, once,
+  first, as JS reads a method call's receiver
+  ([ADR 0866](../../decisions/0866-a-let-only-its-if-let-reads-is-read-there.md),
+  amended, rd226b, the user's decision). The member may be no function, so a
   key's `js::method` read anywhere else, or given another `this`, is
   refused: `js::get` reads it as a value, and `js::classify`'s
   `Kind::Function` holds one that's a function. A binding's method
@@ -2879,8 +2883,7 @@ export function applyProps(instance, props) {
 }
 
 export function unsubscribe(instance, type) {
-  const subscriptions = instance._subscriptions;
-  subscriptions[type]();
+  instance._subscriptions[type]();
 }
 ```
 - **`function::bind(f, this_arg, args)` is `f.bind(thisArg, ...args)`**,

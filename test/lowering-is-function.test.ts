@@ -641,7 +641,7 @@ pub fn summed(listener: &'static Unknown, n: u32) -> Option<&'static Unknown> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function apply(instance, props) {\n  instance._applyProps(instance, props);\n}");
-  expect(js).toContain("  const subscriptions = instance._subscriptions;\n  subscriptions[type]();\n");
+  expect(js).toContain("  instance._subscriptions[type]();\n");
   expect(js).toContain("listener.handleEvent(event)");
   expect(js).toContain("  return listener.handleEvent(globalThis.counted(), \"x\");\n");
   expect(js).toContain("export function focus(element, options) {\n  element.focus(options);\n}");
@@ -703,6 +703,155 @@ pub fn summed(listener: &'static Unknown, n: u32) -> Option<&'static Unknown> {
   expect(calls.at(-1)).toEqual(["focus", other, []]);
   lib.rekeyed(element, other);
   expect(calls.at(-1)).toEqual(["focus", other, []]);
+});
+
+// react-art's `props.fill.applyFill(instance)`: a `let` the program wrote
+// whose only reads are the receiver and the `this` of the keyed method's
+// call right after it is read there, once, before the key and the
+// arguments, as Rust reads it (rd226b, the user's decision, ADR 0866).
+test("a let read only as the receiver and this of the next keyed method call is read there", async () => {
+  const withWeb = ["--", "--edition", "2024", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("receiver-reads");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Unknown, function};
+use webapi::{FocusOptions, HTMLElement};
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.noted")]
+fn noted(what: &str) -> String {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "get first")]
+fn first(this: &Unknown) -> &'static Unknown {
+    unreachable!()
+}
+
+pub fn apply_fill(props: &'static Unknown, instance: &'static Unknown) {
+    let fill = js::get(props, "fill");
+    function::call(js::method((fill, "applyFill")), Some(&fill), (instance,));
+}
+
+pub fn unsubscribe(instance: &'static Unknown, r#type: Option<&'static Unknown>) {
+    let subscriptions = js::get(instance, "_subscriptions");
+    function::call(js::method((subscriptions, &r#type)), Some(&subscriptions), ());
+}
+
+/// Read before its key and its argument, which run code, as Rust reads it.
+pub fn ordered(props: &'static Unknown) {
+    let fill = js::get(props, "fill");
+    function::call(js::method((fill, &noted("key"))), Some(&fill), (noted("argument"),));
+}
+
+/// A member named \`call\`, called as the method it is.
+pub fn called(props: &'static Unknown) {
+    let fill = js::get(props, "fill");
+    function::call(js::method((fill, "call")), Some(&fill), (props,));
+}
+
+pub fn again(props: &'static Unknown, instance: &'static Unknown) -> Option<&'static Unknown> {
+    let fill = js::get(props, "fill");
+    function::call(js::method((fill, "applyFill")), Some(&fill), (instance,));
+    fill
+}
+
+pub fn mutable(props: &'static Unknown, instance: &'static Unknown) {
+    let mut fill = js::get(props, "fill");
+    function::call(js::method((fill, "applyFill")), Some(&fill), (instance,));
+}
+
+pub fn not_next(props: &'static Unknown, instance: &'static Unknown) {
+    let fill = js::get(props, "fill");
+    noted("between");
+    function::call(js::method((fill, "applyFill")), Some(&fill), (instance,));
+}
+
+pub fn argument(props: &'static Unknown) {
+    let fill = js::get(props, "fill");
+    function::call(js::method((fill, "applyFill")), Some(&fill), (fill,));
+}
+
+pub fn returned(props: &'static Unknown) -> Option<&'static Unknown> {
+    let fill = js::get(props, "fill");
+    function::call(js::method((fill, "applyFill")), Some(&fill), ())
+}
+
+/// A \`match\`'s binding, no \`let\` the program wrote: the decision's
+/// alone.
+pub fn matched(props: &'static Unknown, instance: &'static Unknown) {
+    match js::get(props, "fill") {
+        fill => function::call(js::method((fill, "applyFill")), Some(&fill), (instance,)),
+    };
+}
+
+/// A binding's method, which its own call reads as written.
+pub fn binding(elements: &'static Unknown, options: Option<&'static FocusOptions>) {
+    let element = first(elements);
+    function::call(js::method((element, HTMLElement::focus)), Some(&element), (options,));
+}
+
+pub fn other_this(elements: &'static Unknown, other: &'static HTMLElement, options: Option<&'static FocusOptions>) {
+    let element = first(elements);
+    function::call(js::method((element, HTMLElement::focus)), Some(other), (options,));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function applyFill(props, instance) {\n  props.fill.applyFill(instance);\n}");
+  expect(js).toContain("export function unsubscribe(instance, type) {\n  instance._subscriptions[type]();\n}");
+  expect(js).toContain('  props.fill[globalThis.noted("key")](globalThis.noted("argument"));\n');
+  expect(js).toContain("export function called(props) {\n  props.fill.call(props);\n}");
+  // Read again, `mut`, a `match`'s, past the next statement, by an
+  // argument, by a `return`, of a binding's method or given as another
+  // `this`: kept.
+  expect(js).toContain("  const fill = props.fill;\n  fill.applyFill(instance);\n  return fill;\n");
+  expect(js).toContain("export function mutable(props, instance) {\n  const fill = props.fill;\n  fill.applyFill(instance);\n}");
+  expect(js).toContain("export function matched(props, instance) {\n  const fill = props.fill;\n  fill.applyFill(instance);\n}");
+  expect(js).toContain('  const fill = props.fill;\n  globalThis.noted("between");\n  fill.applyFill(instance);\n');
+  expect(js).toContain("  const fill = props.fill;\n  fill.applyFill(fill);\n");
+  expect(js).toContain("  const fill = props.fill;\n  return fill.applyFill();\n");
+  expect(js).toContain("  const element = elements.first;\n  element.focus(options);\n");
+  expect(js).toContain("  const element = elements.first;\n  element.focus.call(other, options);\n");
+  const lib = await import(join(dir, "lib.js"));
+  const events: unknown[] = [];
+  const g = globalThis as Record<string, unknown>;
+  g.noted = (what: string) => (events.push(what), what === "key" ? "applyFill" : what);
+  const fill = {
+    get applyFill() {
+      events.push("member");
+      return function (this: unknown, ...args: unknown[]) {
+        events.push(["called", this === fill, args]);
+      };
+    },
+    call(this: unknown, ...args: unknown[]) {
+      events.push(["call", this === fill, args]);
+    },
+  };
+  const props = {
+    get fill() {
+      events.push("fill");
+      return fill;
+    },
+  };
+  const ran = (f: () => void) => {
+    events.length = 0;
+    f();
+    return [...events];
+  };
+  expect(ran(() => lib.applyFill(props, "i"))).toEqual(["fill", "member", ["called", true, ["i"]]]);
+  expect(ran(() => lib.ordered(props))).toEqual(["fill", "key", "member", "argument", ["called", true, ["argument"]]]);
+  expect(ran(() => lib.called(props))).toEqual(["fill", ["call", true, [props]]]);
+  expect(ran(() => lib.notNext(props, "i"))).toEqual(["fill", "between", "member", ["called", true, ["i"]]]);
+  const subscriptions = { click(this: unknown) { events.push(["click", this === subscriptions]); } };
+  let read = 0;
+  const instance = {
+    get _subscriptions() {
+      read++;
+      return subscriptions;
+    },
+  };
+  expect([ran(() => lib.unsubscribe(instance, "click")), read]).toEqual([[["click", true]], 1]);
+  // No function: JS's TypeError, after the one read, as Rust's call throws.
+  expect(() => lib.unsubscribe(instance, "missing")).toThrow(TypeError);
+  expect(read).toBe(2);
 });
 
 // A member by its key may be no function: read other than as its value's

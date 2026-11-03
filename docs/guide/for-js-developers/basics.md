@@ -3295,7 +3295,15 @@ export function isAdult(p) {
   &r#type };` is `const mimeType = blob.type || "none";`, read once either
   way. Read again, after something else, or named otherwise, it stays
   ([ADR 0866](../../decisions/0866-a-let-only-its-if-let-reads-is-read-there.md),
-  amended, rd664, the user's decision). A chain's binding of a field its test read, `if let Some(fiber) =
+  amended, rd664, the user's decision). One read only as the
+  receiver and `this` of the keyed method call the next statement is,
+  `let fill = js::get(props, "fill"); function::call(js::method((fill,
+  "applyFill")), Some(&fill), (instance,));`, is that call of the value
+  read there, `props.fill.applyFill(instance);`, read once either way,
+  before the member and the arguments. Read again, `mut`, or past the next
+  statement, it stays
+  ([ADR 0866](../../decisions/0866-a-let-only-its-if-let-reads-is-read-there.md),
+  amended, rd226b, the user's decision). A chain's binding of a field its test read, `if let Some(fiber) =
   &fiber && let Some(task) = fiber.debug_task.get() { return
   task.run(..); }`, where the body reads it first, before anything runs:
   `if (fiber != null && fiber._debugTask) { return

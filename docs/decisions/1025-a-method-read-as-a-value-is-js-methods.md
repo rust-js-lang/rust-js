@@ -186,9 +186,12 @@ mean.
 ### Consequences
 
 - A value that isn't a variable is held in one to call its member as its
-  method: `let subscriptions = js::get(instance, "_subscriptions");` is
-  `const subscriptions = instance._subscriptions;` before
-  `subscriptions[type]()`, where upstream reads it in the call.
+  method, `let subscriptions = js::get(instance, "_subscriptions");`. Where
+  only that call, the statement right after it, reads it, as its receiver
+  and its `this`, it's read in place there, `instance._subscriptions[type]();`,
+  as upstream reads it (rd226b, the user's decision, [0866](0866-a-let-only-its-if-let-reads-is-read-there.md),
+  amended); before, it was `const subscriptions = instance._subscriptions;
+  subscriptions[type]();`.
 - Held by `test/lowering-is-function.test.ts`'s "function::call of
   js::method whose this is its value is the method's call" (run: the
   member read once through a getter, its `this` and arguments, a
