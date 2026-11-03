@@ -77,10 +77,9 @@ pub fn through() -> f64 {
   run([compiler, join(dir, "app.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
     "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js]);
   const testing = readFileSync(join(dir, "app", "testing.js"), "utf8");
-  expect(testing).toContain(
-    'export {\n  own,\n  MAX,\n  plain,\n  version,\n  unstable_batchedUpdates,\n  unstable_createEventHandle,\n} from "./fb.js";\n',
-  );
-  expect(readFileSync(join(dir, "app", "nested.js"), "utf8")).toContain('} from "./testing.js";\n');
+  // Every name fb's file exports, as upstream writes it (#593).
+  expect(testing).toContain('export * from "./fb.js";\n');
+  expect(readFileSync(join(dir, "app", "nested.js"), "utf8")).toContain('export * from "./testing.js";\n');
   const names = ["MAX", "own", "plain", "unstable_batchedUpdates", "unstable_createEventHandle", "version"];
   for (const file of ["testing.js", "nested.js"]) {
     const module = await import(join(dir, "app", file));
@@ -90,6 +89,89 @@ pub fn through() -> f64 {
   }
   const lib = await import(join(dir, "app", "lib.js"));
   expect(lib.through()).toBe(15);
+});
+
+// #593: a glob whose names are every one its module's file exports but
+// `default` is `export * from`, as upstream's ReactDOMTestingFB writes it.
+// JS's `export *` re-exports each of them, so the names stay listed where
+// the glob's aren't all: a private item its module exports for its own
+// private module, which the glob doesn't see, and a name a private `use` of
+// the glob's module shadows, as Rust's glob is shadowed and JS's isn't.
+test("a glob of every name its module's file exports is export * from", async () => {
+  const dir = fixture("glob-every-export");
+  writeFileSync(join(dir, "lib.rs"), `pub mod all {
+    pub fn one() -> u32 {
+        1
+    }
+
+    pub const TWO: u32 = 2;
+}
+
+pub mod shared {
+    mod inner {
+        pub fn four() -> u32 {
+            super::helper()
+        }
+    }
+
+    pub fn three() -> u32 {
+        3
+    }
+
+    fn helper() -> u32 {
+        4
+    }
+
+    pub fn four() -> u32 {
+        inner::four()
+    }
+}
+
+pub mod other {
+    pub fn five() -> u32 {
+        5
+    }
+}
+
+pub mod shadowed {
+    pub fn five() -> u32 {
+        50
+    }
+
+    pub fn six() -> u32 {
+        6
+    }
+}
+
+pub mod every {
+    pub use crate::all::*;
+}
+
+pub mod some {
+    pub use crate::shared::*;
+}
+
+pub mod past {
+    use crate::other::five;
+    pub use crate::shadowed::*;
+
+    pub fn uses() -> u32 {
+        five()
+    }
+}
+
+pub fn total() -> u32 {
+    every::one() + every::TWO + some::three() + some::four() + past::six() + past::uses()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "out", "lib.js"), "--", ...js]);
+  const read = (file: string) => readFileSync(join(dir, "out", file), "utf8");
+  expect(read("every.js")).toContain('export * from "./all.js";\n');
+  expect(read("some.js")).toContain('export { three, four } from "./shared.js";\n');
+  expect(read("past.js")).toContain('export { six } from "./shadowed.js";\n');
+  const keys = async (file: string) => Object.keys(await import(join(dir, "out", file))).sort();
+  expect([await keys("every.js"), await keys("some.js"), await keys("past.js")]).toEqual([["TWO", "one"], ["four", "three"], ["six", "uses"]]);
+  expect((await import(join(dir, "out", "lib.js"))).total()).toBe(21);
 });
 
 // #592: of a library's module, a glob re-exports each name from the file

@@ -32,10 +32,15 @@ pub(super) type Written = (rustc_span::Span, Leaf);
 /// The leaf of a `use` that names what's re-exported, whose comments are
 /// its own, `act, // DEV-only` (rd338): where it writes the name its path
 /// gives and the name it re-exports it by, `act` and `act`, `a` and `b` of
-/// `a as b`; `NO_LEAF` of none, a glob's or a forwarder's.
-pub(super) type Leaf = (rustc_span::Span, rustc_span::Span);
+/// `a as b`; none of a forwarder's; a glob's, which writes no name (#593).
+#[derive(Clone, Copy)]
+pub(super) enum Leaf {
+    Written(rustc_span::Span, rustc_span::Span),
+    Unwritten,
+    Glob,
+}
 
-const NO_LEAF: Leaf = (rustc_span::DUMMY_SP, rustc_span::DUMMY_SP);
+const NO_LEAF: Leaf = Leaf::Unwritten;
 
 /// What `module` re-exports, each name of each `pub use` statement's
 /// `export { .. } from`, which `assembled` orders, by where it's from (ADR
@@ -124,7 +129,7 @@ pub(super) fn reexports(
         };
         // Its leaf, whose comments are its own (rd338).
         let name = path.segments.last().map_or(ident.span, |segment| segment.ident.span);
-        let written = (statement, (name, ident.span));
+        let written = (statement, Leaf::Written(name, ident.span));
         let alias = |name: &str| {
             let named = (ident.name, named_of(path));
             super::bindings::use_name(tcx, item.owner_id.to_def_id(), named, || name.to_string())
@@ -356,7 +361,11 @@ pub(super) fn assembled(mut found: Vec<Named>, sources: &super::sources::Capture
         true => js::Span::NONE,
         false => sources.span(span),
     };
-    let leaf = |(name, alias): Leaf| (at(name), at(alias));
+    let leaf = |leaf: Leaf| match leaf {
+        Leaf::Written(name, alias) => (at(name), at(alias)),
+        Leaf::Unwritten | Leaf::Glob => (js::Span::NONE, js::Span::NONE),
+    };
+    let glob = |leaf: Leaf| matches!(leaf, Leaf::Glob);
     let mut reexports: Vec<(rustc_span::Span, Reexport)> = Vec::new();
     for ((at, written), from, named) in found {
         match reexports
@@ -366,6 +375,7 @@ pub(super) fn assembled(mut found: Vec<Named>, sources: &super::sources::Capture
             Some((_, reexport)) => {
                 reexport.named.push(named);
                 reexport.written.push(leaf(written));
+                reexport.glob &= glob(written);
             }
             None => {
                 let span = match at.is_dummy() {
@@ -380,6 +390,7 @@ pub(super) fn assembled(mut found: Vec<Named>, sources: &super::sources::Capture
                         written: vec![leaf(written)],
                         span,
                         at: span,
+                        glob: glob(written),
                     },
                 ));
             }
@@ -405,6 +416,7 @@ pub(super) fn assembled(mut found: Vec<Named>, sources: &super::sources::Capture
                 last.written.extend(reexport.written);
                 last.span.hi = reexport.span.hi;
                 last.at.hi = reexport.span.hi;
+                last.glob &= reexport.glob;
             }
             _ => merged.push(reexport),
         }
@@ -462,7 +474,7 @@ fn globbed(
 ) {
     use rustc_middle::metadata::Reexport as Via;
     // A glob writes no name's leaf.
-    let written = (statement, NO_LEAF);
+    let written = (statement, Leaf::Glob);
     let refuse = |what: String, why: &str| {
         super::refusal::refuse(tcx, statement, super::refusal::Refused::Because(&what, why));
     };

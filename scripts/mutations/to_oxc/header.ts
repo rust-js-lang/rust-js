@@ -144,8 +144,8 @@ export const mutations: Mutation[] = [
     name: "namespace-reexport-as-a-name",
     breaks: "a `pub use` of a module's namespace is `export { * as ns } from`, which isn't JS, not `export * as ns from` (ADR 0240, amended)",
     file: "src/to_oxc/header.rs",
-    find: "            [(namespace, alias)] if namespace == \"*\" => Says::ReexportAll(alias),\n",
-    replace: "            [(namespace, alias)] if namespace == \"\" => Says::ReexportAll(alias),\n",
+    find: "            [(namespace, alias)] if namespace == \"*\" => Says::ReexportAll(Some(alias)),\n",
+    replace: "            [(namespace, alias)] if namespace == \"\" => Says::ReexportAll(Some(alias)),\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
   },
   {
@@ -180,5 +180,13 @@ export const mutations: Mutation[] = [
     replace: "            false if false => js::Span {\n",
     tests: ["test/snapshots.test.ts", "-t", "imports"],
     snapshots: true,
+  },
+  {
+    name: "every-export-listed",
+    breaks: "a re-export of every name is printed as its list, not `export * from` (#593)",
+    file: "src/to_oxc/header.rs",
+    find: "            _ if reexport.every => Says::ReexportAll(None),\n",
+    replace: "",
+    tests: ["test/glob-reexports.test.ts", "-t", "a glob of every name its module's file exports is export \\* from"],
   },
 ];

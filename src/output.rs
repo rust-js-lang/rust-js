@@ -1,6 +1,6 @@
 //! Resolve and validate all artifacts before touching output files.
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use crate::manifest::{self, Manifest, fingerprint};
@@ -92,6 +92,16 @@ impl OutputPlan {
         for test in &tests.fns {
             registered.entry(&test.home).or_default().push(test);
         }
+        // What each module's file exports, but `default`, which a glob's
+        // re-export of each is `export * from` of (#593).
+        let exported: HashMap<Vec<String>, BTreeSet<String>> = (modules.iter())
+            .map(|module| {
+                (
+                    module.path.clone(),
+                    exports(module).into_iter().filter(|n| n != "default").collect(),
+                )
+            })
+            .collect();
         for module in modules {
             let js_path = self.js_path(&module.path);
             let destination = self.in_source(&module)?;
@@ -125,6 +135,7 @@ impl OutputPlan {
                     from: from_here(&reexport.from),
                     span: reexport.span,
                     at: reexport.at,
+                    every: every_export(reexport, &exported),
                 })
                 .collect::<Vec<_>>();
             let packages = module
@@ -972,6 +983,25 @@ fn entry_is_root(package: &crate::packages::Package, module: &program::LoweredMo
         && module.packages.is_empty()
         && module.directives.is_empty()
         && crate::packages::reexports_each(package, &reexports)
+}
+
+/// Whether `reexport`, a glob's, `pub use m::*;`, re-exports each name
+/// `m`'s file exports but `default`, by its name, so it's `export * from`,
+/// as upstream writes it (#593). JS's `export *` re-exports every one,
+/// where the glob's names are what rustc resolves, past what the module's
+/// own items and `use`s shadow: a private item `m` exports for a module
+/// of its own, which the glob doesn't see, or a name a private `use` here
+/// shadows, is one of `m`'s that isn't the glob's, and the names stay
+/// listed.
+fn every_export(reexport: &program::Reexport, exported: &HashMap<Vec<String>, BTreeSet<String>>) -> bool {
+    let js::ImportFrom::Module(from) = &reexport.from else {
+        return false;
+    };
+    let names: BTreeSet<&str> = reexport.named.iter().map(|(_, alias)| alias.as_str()).collect();
+    reexport.glob
+        && exported
+            .get(from)
+            .is_some_and(|all| all.iter().map(String::as_str).eq(names.iter().copied()))
 }
 
 /// What `module` exports, by name, as it's printed: its exported functions,

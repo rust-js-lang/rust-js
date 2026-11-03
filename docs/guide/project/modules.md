@@ -420,7 +420,12 @@ from`, its types nothing: from the module the glob names, by what that
 module exports it as, a name its `pub use` gives it too,
 `unstable_createEventHandle`, and of a library's module from the file
 that has it; a module of globs alone is a file of its own
-([ADR 0874, amended](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md#amendment-a-globs-names-are-its-modules-592)). One that has JS but can't be re-exported yet,
+([ADR 0874, amended](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md#amendment-a-globs-names-are-its-modules-592)).
+A glob whose names are every one its module's file exports is `export *
+from "./m.js"`, as upstream writes it; one that leaves any out, a
+private item the module exports for a module of its own, or a name a
+private `use` shadows, keeps its list
+([ADR 0874, amended](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md#amendment-a-glob-of-every-export-is-export--from-593)). One that has JS but can't be re-exported yet,
 a glob's module or class, or std's function, is refused, never left out
 ([ADR 0874](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md)):
 

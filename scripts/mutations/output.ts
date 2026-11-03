@@ -422,4 +422,21 @@ export const mutations: Mutation[] = [
     replace: "            if test_files.is_empty() {\n",
     tests: ["test/test-files.test.ts", "-t", "several modules of tests"],
   },
+  {
+    name: "glob-every-never",
+    breaks: "a glob of every name its module's file exports lists them, `export { TWO, one } from`, where upstream writes `export * from` (#593)",
+    file: "src/output.rs",
+    find: "    reexport.glob\n        && exported\n",
+    replace: "    false\n        && exported\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "a glob of every name its module's file exports is export \\* from"],
+  },
+  {
+    name: "glob-every-unequal",
+    breaks:
+      "a glob of some of its module's file's names is `export * from`, which re-exports a private item that module exports for another, `helper`, and a name a private `use` shadows, `five` (#593, a wrong answer)",
+    file: "src/output.rs",
+    find: "            .is_some_and(|all| all.iter().map(String::as_str).eq(names.iter().copied()))\n",
+    replace: "            .is_some()\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "a glob of every name its module's file exports is export \\* from"],
+  },
 ];

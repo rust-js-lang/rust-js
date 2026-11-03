@@ -122,8 +122,9 @@ enum Says<'m> {
     /// `export { a, b as c } from`, each `(export, alias)`, and where its
     /// `use` writes it (`Reexport::written`).
     Reexport(Vec<(&'m str, &'m str, (js::Span, js::Span))>),
-    /// `export * as ns from` (ADR 0240, amended).
-    ReexportAll(&'m str),
+    /// `export * as ns from` (ADR 0240, amended); `export * from`, of
+    /// none, a glob's of every name (#593).
+    ReexportAll(Option<&'m str>),
 }
 
 /// One of a module's imports and re-exports, in their order (`entries`):
@@ -220,7 +221,8 @@ pub(super) fn entries(module: &Module) -> Vec<Entry<'_>> {
     for reexport in &module.reexports {
         let relative = crate::program::is_relative_specifier(&reexport.from);
         let says = match reexport.named.as_slice() {
-            [(namespace, alias)] if namespace == "*" => Says::ReexportAll(alias),
+            _ if reexport.every => Says::ReexportAll(None),
+            [(namespace, alias)] if namespace == "*" => Says::ReexportAll(Some(alias)),
             named => Says::Reexport(
                 (named.iter().enumerate())
                     .map(|(i, (export, alias))| {
@@ -329,7 +331,7 @@ impl<'a> Cx<'a> {
                 Statement::new_export_from_declaration(at, specifiers, from, ImportOrExportKind::Value, None, b)
             }
             Says::ReexportAll(alias) => {
-                Statement::new_export_all_declaration(at, Some(name(alias)), from, None, ImportOrExportKind::Value, b)
+                Statement::new_export_all_declaration(at, alias.map(name), from, None, ImportOrExportKind::Value, b)
             }
         }
     }

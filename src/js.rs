@@ -360,10 +360,10 @@ impl Import {
     }
 }
 
-/// One `pub use` statement's `export { a, b as c } from "./m.js";` (ADR
-/// 0240), where it's written, so its comments are before it: each `(export,
-/// alias)`, `*` the module's namespace, `export * as ns from`. Printed with
-/// the imports, in the order JS loads them (ADR 1063, amended).
+/// One `pub use`'s `export { a, b as c } from "./m.js";` (ADR 0240), its
+/// comments before it: each `(export, alias)`, `*` the namespace, `export *
+/// as ns from`; `export * from` where `every`, all `m`'s file exports but
+/// `default` (#593). With the imports, in JS's load order (ADR 1063).
 pub struct Reexport {
     pub named: Vec<(String, String)>,
     /// Where each of `named` is written (`program::Reexport::written`).
@@ -372,6 +372,7 @@ pub struct Reexport {
     pub span: Span,
     /// Where it's printed among the imports (`program::Reexport::at`).
     pub at: Span,
+    pub every: bool,
 }
 
 /// Where a dynamic `import()` loads from (ADR 0304): a specifier, or a

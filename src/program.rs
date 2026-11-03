@@ -119,6 +119,9 @@ pub struct Reexport {
     /// what it's from, a namespace's forwarding methods' `use
     /// crate::react_portal;`.
     pub at: js::Span,
+    /// Whether it's a glob's, `pub use m::*;`, each name it gives (rd153):
+    /// `export * from` where they're what `m`'s file exports (#593).
+    pub glob: bool,
 }
 
 pub struct LoweredImport {

@@ -1,6 +1,6 @@
 # 0874. A module's `pub use`s are re-exported as written, or refused
 
-Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below; a glob's names, each, rd153; through a module that re-exports it, whatever it is, rd338; a private `use` through one imports from it, rd650; a `pub use` list's comments are its names', rd338; a glob's names are its module's, #592; a library's item through its module that re-exports it, rd704). Amends [0240](0240-reexports.md), whose re-exports were
+Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below; a glob's names, each, rd153; through a module that re-exports it, whatever it is, rd338; a private `use` through one imports from it, rd650; a `pub use` list's comments are its names', rd338; a glob's names are its module's, #592; a library's item through its module that re-exports it, rd704; a glob of every export is `export * from`, #593). Amends [0240](0240-reexports.md), whose re-exports were
 one statement for each module, ordered by its path, of the crate's
 functions and bindings alone, and refused a JS module's namespace; and
 [0596](0596-a-pub-use-of-a-modules-own-item-exports-it.md), whose private
@@ -500,3 +500,46 @@ twice, run. Mutations `reexported-unsaid` (lower/library.ts),
 `through-path-unread`, `reexported-of-the-root` (lower/library.ts) and
 `reexported-imports-unnamed` (lower/analysis.ts).
 
+## Amendment: a glob of every export is `export * from` (#593)
+
+#592 lists a glob's names, `export { own, MAX, plain, version, .. } from
+"./fb.js"`, where upstream's ReactDOMTestingFB writes `export * from
+'./ReactDOMFB'`. JS's `export *` re-exports every name the module's file
+exports but `default`. Rust's glob re-exports only its `pub` items, and
+a private `use` of a name in the glob's module shadows the glob's. So
+`export *` is exact only where the two name sets are the same.
+
+**A glob's re-export is `export * from` where its names are exactly what
+its module's file exports, but `default`** (`output::every_export`,
+against `output::exports`, the authority on what a file exports as it's
+printed, which the manifest reads too). Otherwise the names stay listed,
+as #592 writes them:
+
+- a private item its module exports for a private module of its own,
+  `fn helper` that `inner` calls, is one of the file's exports and not
+  one of the glob's, which doesn't see it (a `pub(crate)` item is one of
+  the glob's too, re-exported to the crate, so it's no difference);
+- a name a private `use` of the glob's module shadows, `use
+  crate::other::five;` beside `pub use crate::shadowed::*;`, is one of
+  the file's and not the glob's, and JS's `export *` would re-export it,
+  since an import doesn't shadow it.
+
+Lowering marks a glob's re-export (`program::Reexport::glob`, from the
+glob's `Leaf::Glob`). Output planning makes the decision, since only it
+has every module's final exports, and the printer writes `export * from`
+of `js::Reexport::every`. A run of a glob and a single `pub use` from
+one module, merged into one statement, isn't a glob's, so it stays
+listed. The `.d.ts` keeps its list, as before.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Both forms export
+the same names from the same module, and `Object.keys` of the module is
+the same.
+
+Held by `test/glob-reexports.test.ts`: "a glob of every name its module's
+file exports is export * from" (one that is, and two kept listed, a
+private item exported for a module of its own and a name a private `use`
+shadows, each module's keys run), and "a glob re-exports each name as
+the module it names exports it", whose glob and glob of a glob are now
+`export * from`. Mutations `glob-every-never`, `glob-every-unequal`
+(`output.ts`), `glob-leaf-unmarked` (`lower/reexports.ts`) and
+`every-export-listed` (`to_oxc/header.ts`).

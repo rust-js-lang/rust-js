@@ -384,7 +384,7 @@ export const mutations: Mutation[] = [
     name: "reexport-leaf-unwritten",
     breaks: "a `pub use` list's names have no place of their own, so `act, // DEV-only` prints `export { act, captureOwnerStack, useId } from` without its comments (rd338)",
     file: "src/lower/reexports.rs",
-    find: "        let written = (statement, (name, ident.span));\n",
+    find: "        let written = (statement, Leaf::Written(name, ident.span));\n",
     replace: "        let written = (statement, NO_LEAF);\n        let _ = name;\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "a pub use list.s comments are its names."],
   },
@@ -432,5 +432,13 @@ export const mutations: Mutation[] = [
     find: "                    && child.ident.name == tcx.item_name(id)\n",
     replace: "",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of a library's module that renames an item is refused"],
+  },
+  {
+    name: "glob-leaf-unmarked",
+    breaks: "a glob's re-export isn't marked one, so a glob of every name its module's file exports is never `export * from` (#593)",
+    file: "src/lower/reexports.rs",
+    find: "    let written = (statement, Leaf::Glob);\n",
+    replace: "    let written = (statement, Leaf::Unwritten);\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "a glob of every name its module's file exports is export \\* from"],
   },
 ];
