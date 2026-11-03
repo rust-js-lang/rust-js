@@ -418,13 +418,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it alone, so a JS helper's extra arguments, an index, never reach
     /// it? One is given as it is, evaluated once: a closure a call makes,
     /// `fold(init, joined(f, g))`'s, never made again for each item (#259).
+    /// And a binding that says it reads only its parameters, and no `this`,
+    /// `measureClonedInstance` (rd648, ADR 0605, amended, the user's
+    /// decision).
     pub(super) fn is_called_as_written(&self, ty: Ty<'tcx>) -> bool {
         match *self.reveal(ty).kind() {
-            ty::FnDef(def_id, _) => {
-                def_id.is_local()
-                    && self.tcx.trait_of_assoc(def_id).is_none()
-                    && !bindings::is_binding(self.tcx, def_id)
+            ty::FnDef(def_id, _) if bindings::is_binding(self.tcx, def_id) => {
+                bindings::reads_only_its_parameters(self.tcx, def_id)
             }
+            ty::FnDef(def_id, _) => def_id.is_local() && self.tcx.trait_of_assoc(def_id).is_none(),
             ty::Closure(..) => true,
             _ => false,
         }

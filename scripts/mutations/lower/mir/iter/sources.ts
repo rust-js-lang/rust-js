@@ -432,4 +432,12 @@ export const mutations: Mutation[] = [
       "^step_by_of_a_call_holds_its_items.rs$",
     ],
   },
+  {
+    name: "parameters-read-callback-wrapped",
+    breaks: "an adapter's callback of a binding that says it reads only its parameters is wrapped in an arrow, `items.map((item) => measure(item))` (rd648)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "                bindings::reads_only_its_parameters(self.tcx, def_id)\n",
+    replace: "                false\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "reads only its parameters is its function"],
+  },
 ];

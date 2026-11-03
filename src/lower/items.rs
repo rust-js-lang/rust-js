@@ -406,10 +406,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => name.into(),
             })
             .collect();
-        Ok(Expr::arrow(
-            params,
-            vec![StmtKind::Return(Some(body)).at(self.js_span(span))],
-        ))
+        let arrow = Expr::arrow(params, vec![StmtKind::Return(Some(body)).at(self.js_span(span))]);
+        // One that reads only its parameters, and no `this`, is the
+        // function where its arrow only passes them on as a call gives
+        // them, `clones.map(measureClonedInstance)` (rd648, ADR 0605,
+        // amended, the user's decision).
+        if super::bindings::reads_only_its_parameters(self.tcx, def_id) {
+            return Ok(passed_on(&arrow, Taker::Made, &[]).unwrap_or(arrow));
+        }
+        Ok(arrow)
     }
 
     /// A binding as a `fn` (ADR 0602): the JS function itself, read where

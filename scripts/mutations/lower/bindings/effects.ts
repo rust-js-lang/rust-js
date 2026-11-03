@@ -31,4 +31,28 @@ export const mutations: Mutation[] = [
     replace: "    Some(held)",
     tests: refused,
   },
+  {
+    name: "parameters-mark-of-a-body",
+    breaks: "`#[rust_js::reads_only_its_parameters]` on a function that isn't a binding, whose body is the program's, is taken (rd648)",
+    file: "src/lower/bindings/effects.rs",
+    find: "        let binding = function && super::is_binding(tcx, def);\n",
+    replace: "        let binding = function;\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "reads only its parameters is refused"],
+  },
+  {
+    name: "parameters-mark-of-a-method",
+    breaks: "`#[rust_js::reads_only_its_parameters]` on a binding's method, which reads the value it's called on, is taken (rd648)",
+    file: "src/lower/bindings/effects.rs",
+    find: "            true if super::is_method(tcx, def) || !called() => Some(",
+    replace: "            true if !called() => Some(",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "reads only its parameters is refused"],
+  },
+  {
+    name: "parameters-mark-of-rest",
+    breaks: "`#[rust_js::reads_only_its_parameters]` on a binding of rest arguments, which reads all JS gives it, is taken (rd648)",
+    file: "src/lower/bindings/effects.rs",
+    find: "            true if super::is_variadic(tcx, def) => {",
+    replace: "            true if false => {",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "reads only its parameters is refused"],
+  },
 ];

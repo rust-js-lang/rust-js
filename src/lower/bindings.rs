@@ -31,7 +31,8 @@ mod whole;
 
 pub(super) use effects::{
     called_constructs, calls_with_resolvers, cannot_throw, gives_back, gives_plain_data, iterates_receiver,
-    keeps_in_collection, reject_unkept_collections, runs_nothing, runs_only_given,
+    keeps_in_collection, reads_only_its_parameters, reject_unkept_collections, reject_unread_parameters, runs_nothing,
+    runs_only_given,
 };
 pub(super) use flattened::{Flattened, Keyed, flattened, flattened_state, keyed_test};
 pub(super) use forms::{Asked, JsForm, js_form};

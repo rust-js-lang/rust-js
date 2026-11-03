@@ -12,7 +12,8 @@ a)`; and a closure of rest arguments that passes them all on to a
 function's rest is that function; and a closure that ignores what it's
 given, calling with nothing a function that reads no `this` and nothing
 more, is that function wherever it's given (rd196, rd212, the user's
-decision).
+decision); and a binding that says it reads only its parameters is its
+function as a value (rd648, the user's decision).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the output is
 unchanged.
@@ -654,3 +655,51 @@ function" (run: `preload`, `count`'s arrow of a function of a value, and
 `onSuccess`'s arrow); mutations `own-unit-statement-kept`,
 `own-statement-of-a-value`, `statement-bound` and `own-statement-passed-on`
 (`passed_on.ts`).
+
+## Amendment: a binding that reads only its parameters is its function (rd648, the user's decision, 2026-11-03)
+
+React's ReactFiberCommitViewTransitions measures each clone with the host
+config's function, `clones.map(measureClonedInstance)`. Its port binds the
+function, `#[rust_js::link_name =
+"./src/ReactFiberConfig.js#measureClonedInstance"] fn
+measure_cloned_instance(instance: &'static Unknown) -> &'static Unknown`, and
+writes `.map(measure_cloned_instance)`, which printed `clones.map((instance)
+=> measureClonedInstance(instance))`. A binding as a value is the arrow of
+its call (ADR 0039): an array method gives its callback the index and the
+array too, and a JS function may read them, `["1", "2"].map(parseInt)`'s
+radix. rust-js can't know a JS function's arity: this one is a host
+config's, a different module for each renderer.
+
+**`#[rust_js::reads_only_its_parameters]` on a binding says its function
+reads only the arguments its parameters declare, and no `this`**
+(`bindings::reads_only_its_parameters`): as a value it's the function
+itself where its arrow only passes its parameters on as its call gives
+them (`Taker::Made`), and an iterator adapter gives it its callback as it
+is, as it does a function of the crate's (`is_called_as_written`):
+`clones.map(measureClonedInstance)`, as upstream. A
+binding that converts what it's given, a nullable parameter's `None`, keeps
+its arrow. It's a promise made at the JS boundary, as `runs_nothing` is: the
+program says what the JS function reads, which only its JS shows.
+
+- **Refused where it can't be said** (`reject_unread_parameters`): on what
+  isn't a binding, whose body is the program's and whose value is its
+  function already; on a binding that isn't a function called as one, a
+  method, whose `this` is what it's called on, a constructor or a
+  property's read; and on one of rest arguments, which reads all JS gives
+  it. Each error names the supported use.
+- **Case** ([0262](0262-when-rust-and-js-disagree.md)): N. JS gives the
+  function more than Rust does, which, as the attribute says, it never
+  reads. Unsaid, the arrow stays, so `parseInt` keeps its.
+- **Not the closure's form**: `.map(|i| measure_cloned_instance(i))` is
+  clippy's `redundant_closure`, which idiomatic Rust doesn't write; its
+  `forwarded_to` fact is a host function's still (rd158).
+
+Held by `test/lowering-passed-on.test.ts`, "a binding that reads only its
+parameters is its function as a value", run: `items.map(measure)` beside
+an unmarked binding's arrow, whose JS function reads the index; and "a
+binding's mark that it reads only its parameters is refused where it can't
+be said", of a method, a function of the crate's and a variadic binding.
+Mutations `parameters-read-unmarked-value` (`items.ts`),
+`parameters-read-callback-wrapped` (`mir/iter/sources.ts`), and
+`parameters-mark-of-a-body`, `parameters-mark-of-a-method` and
+`parameters-mark-of-rest` (`bindings/effects.ts`).

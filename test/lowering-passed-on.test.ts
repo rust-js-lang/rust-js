@@ -985,3 +985,78 @@ pub fn made(target: &EventTarget) {
   made.dispatchEvent(new Event("end"));
   expect(lib.given()).toBe(0);
 });
+
+// rd648, the user's decision (2026-11-03): a binding that says it reads
+// only its parameters, `#[rust_js::reads_only_its_parameters]`, is its
+// function as a value, React's `clones.map(measureClonedInstance)`. One
+// that doesn't keeps its arrow, as `map` gives the index and the array too,
+// which a JS function may read, `parseInt`'s radix.
+test("a binding that reads only its parameters is its function as a value", async () => {
+  const dir = fixture("binding-reads-only-its-parameters");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "measure")]
+#[cfg_attr(rust_js, rust_js::reads_only_its_parameters)]
+fn measure(item: u32) -> u32 {
+    let _ = item;
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "parseItem")]
+fn parse_item(item: u32) -> u32 {
+    let _ = item;
+    unreachable!()
+}
+
+pub fn measured(items: &[u32]) -> Vec<u32> {
+    items.iter().copied().map(measure).collect()
+}
+
+pub fn parsed(items: &[u32]) -> Vec<u32> {
+    items.iter().copied().map(parse_item).collect()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return items.map(measure);");
+  expect(js).toContain("return items.map((item) => parseItem(item));");
+  Object.assign(globalThis, {
+    measure: (item: number) => item * 10,
+    parseItem: (item: number, index?: number) => item + (index === undefined ? 0 : 100),
+  });
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.measured([1, 2])).toEqual([10, 20]);
+  expect(lib.parsed([1, 2])).toEqual([1, 2]);
+});
+
+test("a binding's mark that it reads only its parameters is refused where it can't be said", () => {
+  const dir = fixture("binding-reads-only-its-parameters-refused");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Node(js::JsObject);
+
+impl Node {
+    #[cfg_attr(rust_js, rust_js::link_name = "measure")]
+    #[cfg_attr(rust_js, rust_js::reads_only_its_parameters)]
+    pub fn measure(&self, depth: u32) -> u32 {
+        let _ = depth;
+        unreachable!()
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::reads_only_its_parameters)]
+pub fn own(n: u32) -> u32 {
+    n
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "console.log")]
+#[cfg_attr(rust_js, rust_js::variadic)]
+#[cfg_attr(rust_js, rust_js::reads_only_its_parameters)]
+pub fn log(data: impl js::Rest<u32>) {
+    let _ = data;
+    unreachable!()
+}
+`);
+  const p = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs], { stderr: "pipe" });
+  expect(p.exitCode).not.toBe(0);
+  const stderr = p.stderr.toString();
+  expect(stderr).toContain("a method reads the value it's called on");
+  expect(stderr).toContain("this one's body is the program's");
+  expect(stderr).toContain("a binding of rest arguments reads all JS gives it");
+});

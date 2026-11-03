@@ -134,6 +134,58 @@ pub(in crate::lower) fn reject_unkept_collections(
     valid
 }
 
+/// `#[rust_js::reads_only_its_parameters]`: a binding's function that reads
+/// only the arguments its parameters declare, and no `this`, as React's
+/// host config's `measureClonedInstance(instance)` does: as a value it's
+/// the function itself, `clones.map(measureClonedInstance)`, which what JS
+/// gives it more, an array method's index and array, can't change (rd648,
+/// ADR 0605, amended, the user's decision). Unsaid, a binding as a value
+/// is the arrow of its call, as `[..].map(parseInt)` would give `parseInt`
+/// each index too.
+pub(in crate::lower) fn reads_only_its_parameters(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("reads_only_its_parameters")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
+/// Each `#[rust_js::reads_only_its_parameters]` that can't say so refused
+/// (rd648, ADR 0605, amended): one on what isn't a binding, whose body is
+/// the program's, as a value its function already; on a binding that isn't
+/// a function called as one, a method, whose `this` is the value it's
+/// called on, a constructor or a property's read; and on one of rest
+/// arguments, which reads all JS gives it.
+pub(in crate::lower) fn reject_unread_parameters(tcx: TyCtxt<'_>) -> bool {
+    let mut valid = true;
+    for def in tcx.hir_crate_items(()).definitions() {
+        let def = def.to_def_id();
+        if !reads_only_its_parameters(tcx, def) {
+            continue;
+        }
+        let function = matches!(tcx.def_kind(def), DefKind::Fn | DefKind::AssocFn);
+        let binding = function && super::is_binding(tcx, def);
+        let called = || matches!(super::js_form(tcx, def), super::JsForm::Call(_));
+        let refused = match binding {
+            false => Some(
+                "it's on a binding, a function JS's code is: this one's body is the program's, as a value its function already",
+            ),
+            true if super::is_method(tcx, def) || !called() => Some(
+                "it's on a binding called as a function of no `this`, `#[rust_js::link_name = \"measureClonedInstance\"]`: a method reads the value it's called on, and a constructor or a property is no function given as a value",
+            ),
+            true if super::is_variadic(tcx, def) => {
+                Some("a binding of rest arguments reads all JS gives it, an array method's index too")
+            }
+            true => None,
+        };
+        if let Some(why) = refused {
+            tcx.dcx().span_err(
+                tcx.def_span(def),
+                format!("rust-js: `#[rust_js::reads_only_its_parameters]` can't be said of this (ADR 0605): {why}"),
+            );
+            valid = false;
+        }
+    }
+    valid
+}
+
 /// The collection a `#[rust_js::keeps_in_collection]` binding keeps what
 /// it's given in (ADR 1050): the JS object its `&self` is, or, of none, the
 /// one it gives.

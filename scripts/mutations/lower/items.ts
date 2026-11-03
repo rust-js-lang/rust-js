@@ -389,4 +389,12 @@ export const mutations: Mutation[] = [
     replace: "        if false\n",
     tests: ["test/js-globals.test.ts", "-t", "bound as a value"],
   },
+  {
+    name: "parameters-read-unmarked-value",
+    breaks: "a binding that says it reads only its parameters is its arrow as a value, `items.map((item) => measure(item))`, not its function (rd648)",
+    file: "src/lower/items.rs",
+    find: "        if super::bindings::reads_only_its_parameters(self.tcx, def_id) {\n",
+    replace: "        if false {\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "reads only its parameters is its function"],
+  },
 ];
