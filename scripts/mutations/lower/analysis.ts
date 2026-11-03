@@ -629,4 +629,12 @@ export const mutations: Mutation[] = [
     replace: "        if false\n            && let Some(mir) = &body.mir\n",
     tests: ["test/crates.test.ts", "-t", "three crates: generic_impl_const_of_instance"],
   },
+  {
+    name: "type-constant-initializer-dropped",
+    breaks: "a pub type's constant no value tree says, semver's `VersionReq::STAR` of a `Vec`, keeps no initializer, so it's refused (#513)",
+    file: "src/lower/analysis.rs",
+    find: "                impl_const(tcx, def_id.to_def_id()) || exported_value_const(tcx, def_id.to_def_id())\n",
+    replace: "                impl_const(tcx, def_id.to_def_id())\n",
+    tests: ["test/impl-constants.test.ts", "-t", "no value tree"],
+  },
 ];

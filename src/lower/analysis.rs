@@ -436,7 +436,9 @@ pub fn collect_initializers(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
         .definitions()
         .filter(|&def_id| match tcx.def_kind(def_id) {
             DefKind::Const { .. } | DefKind::Static { .. } => true,
-            DefKind::AssocConst { .. } => impl_const(tcx, def_id.to_def_id()),
+            DefKind::AssocConst { .. } => {
+                impl_const(tcx, def_id.to_def_id()) || exported_value_const(tcx, def_id.to_def_id())
+            }
             _ => false,
         })
         .chain(inline_consts(tcx))

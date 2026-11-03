@@ -2,7 +2,8 @@
 
 Status: Accepted. Extends [0031](0031-consts.md),
 [0047](0047-methods.md) and [0176](0176-generic-impl-consts.md). Amended
-(#498): a `pub` type's value constants are its object's too, below.
+(#498): a `pub` type's value constants are its object's too, below; (#513):
+one of a value no value tree says, its initializer's.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): one JS function is
 every use of the constant, as Rust's one function pointer is; nothing can
@@ -116,3 +117,21 @@ declared in part.
   (`lower/analysis.ts`), `type-constant-read-by-name` (`lower/items.ts`),
   `type-constants-declared-in-part` and `type-constants-writable`
   (`lower/declarations/namespaces.ts`).
+
+### Amended (#513): one no value tree says is its initializer's
+
+A regression (P1, a crate that compiled was refused). semver writes
+`impl VersionReq { pub const STAR: Self = VersionReq { comparators:
+Vec::new() }; }`, and since #498 its object holds `STAR`. But rustc's
+value tree can't say a `Vec`, and only a constant of code (`impl_const`)
+kept its initializer, so semver was refused: "constants of type
+`VersionReq`". **An exported type's constant keeps its initializer too**
+(`collect_initializers`), so a value no tree says is lowered as code, as a
+module's `const EMPTY: Vec<i32> = Vec::new()` is (ADR 0031). Its object
+holds the value, `export const Req = { STAR: { items: [] } }`, and each
+use copies it where Rust copies.
+
+Held by `test/impl-constants.test.ts`'s "a type's pub constant of a value
+no value tree says is its initializer's", run, and `bun
+scripts/crate-corpus.ts --check semver`; mutation
+`type-constant-initializer-dropped` (`lower/analysis.ts`).

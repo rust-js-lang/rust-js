@@ -1769,6 +1769,10 @@ export function watched(flags: number): boolean;
   them, and each use is its value as before. One of a type with `pub`
   methods too is its object's in the JS, and its `.d.ts` declares neither
   yet (#507).
+- **A constant whose value rustc can't hold as a value tree**, semver's
+  `pub const STAR: Self = VersionReq { comparators: Vec::new() }`, has its
+  initializer lowered as code, `export const VersionReq = { STAR: {
+  comparators: [] } }`. Each use copies it where Rust copies (#513).
 
 ## Modules and `pub use`
 

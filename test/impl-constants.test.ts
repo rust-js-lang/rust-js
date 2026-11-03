@@ -10,13 +10,13 @@ import { buildReact, compiler, fixture, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
-function compile(name: string, source: string): { js: string; dts: string } {
+function compile(name: string, source: string): { js: string; dts: string; dir: string } {
   const dir = fixture(name);
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
   writeFileSync(join(dir, "lib.rs"), source);
   const js = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...js]);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), dts: readFileSync(join(dir, "lib.d.ts"), "utf8") };
+  return { js: readFileSync(join(dir, "lib.js"), "utf8"), dts: readFileSync(join(dir, "lib.d.ts"), "utf8"), dir };
 }
 
 const flags = `pub struct ReactiveFlags;
@@ -72,4 +72,32 @@ test("a class's constant is its prototype's, no object's", () => {
   );
   expect(js).toContain("Component.prototype.limit = 1;");
   expect(dts).not.toContain("export const Component");
+});
+
+// A constant whose value no value tree says, semver's `VersionReq::STAR` of
+// a `Vec`, is its initializer lowered as code, its type's object's, which
+// a JS caller reads, and each use's (#513).
+test("a type's pub constant of a value no value tree says is its initializer's", async () => {
+  const { js, dir } = compile(
+    "impl-constants-coded",
+    `pub struct Req {
+    pub items: Vec<u32>,
+}
+
+impl Req {
+    pub const STAR: Self = Req { items: Vec::new() };
+    pub const ANY: Option<String> = None;
+}
+
+pub fn star_len() -> usize {
+    let mut star = Req::STAR;
+    star.items.push(1);
+    star.items.len() + Req::STAR.items.len()
+}
+`,
+  );
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.Req.STAR.items).toEqual([]);
+  expect(lib.starLen()).toBe(1);
+  expect(js).toContain("STAR");
 });
