@@ -36,7 +36,9 @@ function splitFirst(iter, k, dropI, dropIItem) {
     try {
       result = $count(Iterator.from(iter), dropIItem);
     } finally {
-      dropI?.(iter);
+      if (!iter.ownFold && !iter.ownCount) {
+        dropI?.(iter);
+      }
     }
   } catch (error) {
     $dropItems(first, (item) => {

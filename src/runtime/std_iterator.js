@@ -25,7 +25,7 @@ function $stdIterator(struct, steps) {
     }
     return { done: true, value: undefined };
   };
-  // What std's own compiled methods take whole, `fold` and `count`, as
+  // What std's own compiled methods take whole, `fold`, `count` and `last`, as
   // Rust's move it, dropping what it held there: closing it after drops
   // nothing again (ADR 0912).
   const taking = (method, made) => {
@@ -70,7 +70,7 @@ function $stdIterator(struct, steps) {
   }
   // And its `last`, the compiled one, its source's (#182).
   if (steps.last !== undefined) {
-    it.last = () => step(steps.last(it));
+    it.last = () => step(taking("last", steps.last(it)));
     it.ownLast = true;
   }
   it.knowing = (back, len, rfold, nthBack, tryRfold) => {

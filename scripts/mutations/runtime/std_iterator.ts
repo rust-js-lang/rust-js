@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "std-iterator-last-not-own",
     breaks: "a fuse's compiled `last` isn't said to be its own, so generic code's `last` of it steps by `next`",
     file: "src/runtime/std_iterator.js",
-    find: "    it.last = () => step(steps.last(it));\n    it.ownLast = true;\n",
-    replace: "    it.last = () => step(steps.last(it));\n",
+    find: "    it.last = () => step(taking(\"last\", steps.last(it)));\n    it.ownLast = true;\n",
+    replace: "    it.last = () => step(taking(\"last\", steps.last(it)));\n",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_last_dropping.rs$"],
   },
   {
@@ -81,5 +81,13 @@ export const mutations: Mutation[] = [
     find: "    if (tryRfold !== undefined) it.tryRfold = (init, f, broke, unwind) => tryRfold(it, init, f, broke, unwind);\n",
     replace: "    if (tryRfold !== undefined) it.tryRfold = (init, f, broke) => tryRfold(it, init, f, broke);\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_folds_unwind with"],
+  },
+  {
+    name: "std-iterator-last-not-taking",
+    breaks: "std's compiled `Fuse::last` and `Peekable::last` leave their struct open, so its close drops what the crate's own `last` left a second time (#522)",
+    file: "src/runtime/std_iterator.js",
+    find: "    it.last = () => step(taking(\"last\", steps.last(it)));\n",
+    replace: "    it.last = () => step(steps.last(it));\n",
+    tests: ["test/corpus.test.ts", "-t", "^last_takes_its_source.rs$"],
   },
 ];

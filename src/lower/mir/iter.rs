@@ -326,24 +326,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => (self.recognition().double_ended_iterator(), "rfold"),
             false => (Some(std_item(self.tcx, StdItem::Iterator)), "fold"),
         };
-        let Some((by, dictionary)) = by
-            .and_then(|by| Some((by, self.iterator_evidence(receiver, by)?)))
-            .filter(|_| self.consumes_by_fold(method, output))
-        else {
+        // Of `count` and `last`, its own `count` or `last` too, the crate's,
+        // which took it and dropped it (#505, #522).
+        let own = match self.recognition().iterator_method(method) {
+            Some(IterMethod::Count) => Some("count"),
+            Some(IterMethod::Last) => Some("last"),
+            _ => None,
+        };
+        let taken = match self.consumes_by_fold(method, output) {
+            false => None,
+            true => match by.and_then(|by| Some((by, self.iterator_evidence(receiver, by)?))) {
+                Some((by, dictionary)) => {
+                    let unowned = |name: &str| {
+                        let name = crate::lower::bindings::trait_method_name(self.tcx, by, name);
+                        Expr::bin(Op::Eq, Expr::member(dictionary.clone(), name), Expr::undefined())
+                    };
+                    Some(match own {
+                        Some(own) => Expr::bin(Op::And, unowned(fold), unowned(own)),
+                        None => unowned(fold),
+                    })
+                }
+                // Of a type parameter given no dictionary, generic code's,
+                // what its JS iterator says the crate's own steps took,
+                // `$iterator`'s `ownFold`, `ownLast` and `ownCount` (#522).
+                None if matches!(receiver.kind(), ty::Param(_)) => {
+                    let unowned = |name: &str| {
+                        let flag = format!("own{}{}", name[..1].to_uppercase(), &name[1..]);
+                        Expr::unary(js::UnaryOp::Not, Expr::member(held.clone(), &flag))
+                    };
+                    Some(match own {
+                        Some(own) => Expr::bin(Op::And, unowned(fold), unowned(own)),
+                        None => unowned(fold),
+                    })
+                }
+                None => None,
+            },
+        };
+        let Some(unfolded) = taken else {
             return self.drop_value(held, receiver, span, made);
         };
         let mut dropped = Vec::new();
         self.drop_value(held, receiver, span, &mut dropped)?;
         if !dropped.is_empty() {
-            let fold = crate::lower::bindings::trait_method_name(self.tcx, by, fold);
-            let mut unfolded = Expr::bin(Op::Eq, Expr::member(dictionary.clone(), fold), Expr::undefined());
-            // Of `count`, its dictionary's `count` too, the crate's own,
-            // which took it and dropped it (#505).
-            if self.recognition().iterator_method(method) == Some(IterMethod::Count) {
-                let count = crate::lower::bindings::trait_method_name(self.tcx, by, "count");
-                let uncounted = Expr::bin(Op::Eq, Expr::member(dictionary, count), Expr::undefined());
-                unfolded = Expr::bin(Op::And, unfolded, uncounted);
-            }
             made.push(StmtKind::If(unfolded, dropped, None).at(self.js_span(span)));
         }
         Ok(())
@@ -449,7 +473,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // (ADR 0570).
             false => self.is_user_iterator(receiver) || compiled || holds_function,
         };
-        let holds = output.walk().any(|part| part.as_type() == Some(receiver));
+        // What it gives that holds it: not an item of it, `Option<I::Item>`,
+        // `last()`'s, whose projection names `I` (#522).
+        let holds = crate::lower::mut_refs::holds_outside_projections(output, receiver);
         if dropped && given && !holds {
             return Ok(true);
         }

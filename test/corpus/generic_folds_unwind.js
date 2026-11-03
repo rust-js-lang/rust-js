@@ -68,7 +68,9 @@ function backwards(items, dropI) {
       $dropEach(dDrop_drop),
     );
   } finally {
-    dropI?.(iter);
+    if (!iter.ownRfold) {
+      dropI?.(iter);
+    }
   }
 }
 

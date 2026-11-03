@@ -756,16 +756,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let (advance, _) = self.user_method(ty, iterator, "advance_by", &["n"], span)?;
             props.push(crate::js::Prop::Field("advance".into(), advance));
         }
-        // And its `last`, its source's.
+        // What of these std's compiled ones take whole, as Rust's move it.
+        let mut takes = Vec::new();
+        // And its `last`, its source's, which takes it whole and drops what
+        // it doesn't give, its source's own `last` or `fold` that (#522).
         if self.compiled_step(ty, iterator, "last") {
             let (last, _) = self.user_next(ty, iterator, "last", span)?;
             props.push(crate::js::Prop::Field("last".into(), last));
+            takes.push("last");
         }
         // Its fold, std's own compiled one where it has one, `mapIterator_fold`
         // of a map, whatever its source's own fold is among what it does
         // (#264, #297, ADR 0912).
-        // What of these std's compiled ones take whole, as Rust's move it.
-        let mut takes = Vec::new();
         let compiled_fold = self.compiled_fold(ty, (iterator, "fold"), span)?;
         if let Some(fold) = compiled_fold {
             props.push(crate::js::Prop::Field("fold".into(), fold));

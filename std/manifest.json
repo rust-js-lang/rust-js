@@ -445,8 +445,7 @@
           {
             "index": 0,
             "marks": [
-              "drop",
-              "no_drop"
+              "drop"
             ],
             "stepped": [
               "core::iter::traits::iterator::Iterator"
@@ -3575,8 +3574,7 @@
           {
             "index": 0,
             "marks": [
-              "drop",
-              "no_drop"
+              "drop"
             ],
             "stepped": [
               "core::iter::traits::iterator::Iterator"
@@ -5585,8 +5583,7 @@
           {
             "index": 0,
             "marks": [
-              "drop",
-              "no_drop"
+              "drop"
             ],
             "stepped": [
               "core::iter::traits::iterator::Iterator"
@@ -6776,8 +6773,7 @@
           {
             "index": 0,
             "marks": [
-              "drop",
-              "no_drop"
+              "drop"
             ],
             "stepped": [
               "core::iter::traits::iterator::Iterator"
@@ -12289,7 +12285,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "3b64cf43c8ca8b05"
+      "hash": "1479f54f6e6d40b6"
     },
     {
       "file": "iter.js.map",

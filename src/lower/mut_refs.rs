@@ -27,17 +27,7 @@ pub(super) fn may_move_out<'tcx>(tcx: ty::TyCtxt<'tcx>, fn_id: DefId, i: usize) 
     let Some(&ty::Ref(_, pointee, Mutability::Mut)) = sig.inputs().get(i).map(|input| input.kind()) else {
         return false;
     };
-    let holds = |ty: Ty<'tcx>| {
-        let mut walk = ty.walk();
-        while let Some(part) = walk.next() {
-            match part.as_type() {
-                Some(part) if part == pointee => return true,
-                Some(part) if matches!(part.kind(), ty::Alias(..)) => walk.skip_current_subtree(),
-                _ => {}
-            }
-        }
-        false
-    };
+    let holds = |ty: Ty<'tcx>| holds_outside_projections(ty, pointee);
     let others = sig
         .inputs()
         .iter()
@@ -45,6 +35,21 @@ pub(super) fn may_move_out<'tcx>(tcx: ty::TyCtxt<'tcx>, fn_id: DefId, i: usize) 
         .filter(|&(j, _)| j != i)
         .map(|(_, &input)| input);
     holds(sig.output()) || others.into_iter().any(holds)
+}
+
+/// Whether a value of `ty` may hold a `part`: `part` is in it, not only in
+/// a projection, `<I as Iterator>::Item`, which names `I` but holds an
+/// item, not an `I`.
+pub(in crate::lower) fn holds_outside_projections<'tcx>(ty: Ty<'tcx>, part: Ty<'tcx>) -> bool {
+    let mut walk = ty.walk();
+    while let Some(arg) = walk.next() {
+        match arg.as_type() {
+            Some(arg) if arg == part => return true,
+            Some(arg) if matches!(arg.kind(), ty::Alias(..)) => walk.skip_current_subtree(),
+            _ => {}
+        }
+    }
+    false
 }
 
 /// A box of `place`, `{ value: place }`: a `&mut` to a value JS can't change

@@ -212,7 +212,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an adapter of an iterator with a destructor, `scan(..)`, drops it as soon as it's made, though the adapter holds it",
     file: "src/lower/mir/iter.rs",
-    find: "        let holds = output.walk().any(|part| part.as_type() == Some(receiver));\n",
+    find: "        let holds = crate::lower::mut_refs::holds_outside_projections(output, receiver);\n",
     replace: "        let holds = false;\n",
     tests: [
       "test/diagnostics.test.ts",
@@ -598,8 +598,32 @@ export const mutations: Mutation[] = [
     name: "own-count-dropped-again",
     breaks: "std's compiled `Fuse::count` of the crate's iterator with its own `count` drops what it holds after the crate's `count` did, so @rust-js/std isn't what the compiler compiles (#505)",
     file: "src/lower/mir/iter.rs",
-    find: "                unfolded = Expr::bin(Op::And, unfolded, uncounted);\n",
-    replace: "                let _ = uncounted;\n",
+    find: "            Some(IterMethod::Count) => Some(\"count\"),\n",
+    replace: "",
     tests: ["test/std-package.test.ts"],
+  },
+  {
+    name: "own-last-dropped-again",
+    breaks: "std's compiled `Skip::last` of the crate's iterator with its own `last` drops its source after the crate's `last` did, twice (#522)",
+    file: "src/lower/mir/iter.rs",
+    find: "            Some(IterMethod::Last) => Some(\"last\"),\n",
+    replace: "",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
+    name: "last-output-holds-its-iterator",
+    breaks: "`last()`'s `Option<I::Item>` is taken to hold the `I` it consumed, so std's compiled `Skip::last` never drops its source and its caller's close drops it after the crate's own `last` did (#522)",
+    file: "src/lower/mir/iter.rs",
+    find: "        let holds = crate::lower::mut_refs::holds_outside_projections(output, receiver);\n",
+    replace: "        let holds = output.walk().any(|part| part.as_type() == Some(receiver));\n",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
+    name: "generic-own-steps-unasked",
+    breaks: "generic code's `last()`, `sum()` and `for_each` of a value given no dictionary drop it after, though the crate's own `fold` or `last` took it and dropped it (#522)",
+    file: "src/lower/mir/iter.rs",
+    find: "                None if matches!(receiver.kind(), ty::Param(_)) => {\n",
+    replace: "                None if false && matches!(receiver.kind(), ty::Param(_)) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^last_takes_its_source.rs$"],
   },
 ];

@@ -823,10 +823,16 @@ export function peekableIterator_last(peekable, IIterator = { next: $next }, dro
     tmp = true;
     peekOpt = undefined;
   }
-  let last;
+  const iter = peekable.iter;
+  let result$1;
   try {
-    last = $lastDropping($given(peekable.iter, IIterator, true), dropIItem, true);
-    tmp = false;
+    try {
+      result$1 = $lastDropping($given(iter, IIterator, true), dropIItem, true);
+    } finally {
+      if (IIterator.fold === undefined && IIterator.last === undefined) {
+        dropI?.(iter);
+      }
+    }
   } catch (error) {
     if (tmp) {
       if (peekOpt != null) {
@@ -844,9 +850,10 @@ export function peekableIterator_last(peekable, IIterator = { next: $next }, dro
     }
     throw error;
   }
-  const value = last ?? peekOpt;
+  tmp = false;
+  const value = result$1 ?? peekOpt;
   try {
-    if (last != null) {
+    if (result$1 != null) {
       if (peekOpt != null) {
         dropIItem?.($someValue(peekOpt));
       }
@@ -1751,7 +1758,13 @@ export function fuseIterator_nth(fuse, n, IIterator = { next: $next }, IFused, d
 export function fuseIterator_last(fuse, IIterator = { next: $next }, dropI, dropIItem) {
   if (fuse.iter != null) {
     const iter = $someValue(fuse.iter);
-    return $lastDropping($given(iter, IIterator, true), dropIItem, true);
+    try {
+      return $lastDropping($given(iter, IIterator, true), dropIItem, true);
+    } finally {
+      if (IIterator.fold === undefined && IIterator.last === undefined) {
+        dropI?.(iter);
+      }
+    }
   }
 }
 
@@ -3033,7 +3046,7 @@ export function copiedIterator_last(copied, IIterator = { next: $next }, TCopy, 
   try {
     result = $lastSome($given(iter, IIterator, true));
   } finally {
-    if (IIterator.fold === undefined) {
+    if (IIterator.fold === undefined && IIterator.last === undefined) {
       dropI?.(iter);
     }
   }
@@ -5404,7 +5417,14 @@ export function skipIterator_last(skip, IIterator = { next: $next }, dropI, drop
       throw error;
     }
   }
-  return $lastDropping($given(skip.iter, IIterator, true), dropIItem, true);
+  const iter = skip.iter;
+  try {
+    return $lastDropping($given(iter, IIterator, true), dropIItem, true);
+  } finally {
+    if (IIterator.fold === undefined && IIterator.last === undefined) {
+      dropI?.(iter);
+    }
+  }
 }
 
 export function skipIterator_fold(
@@ -6809,8 +6829,17 @@ export function chainIterator_last(
   const a = chain.a;
   let aLast;
   if (a != null) {
+    const iter = $someValue(a);
+    let result;
     try {
-      aLast = $lastDropping($given($someValue(a), AIterator, true), dropAItem, true);
+      try {
+        result = $lastDropping($given(iter, AIterator, true), dropAItem, true);
+      } finally {
+        if (AIterator.fold === undefined && AIterator.last === undefined) {
+          dropA?.(iter);
+        }
+      }
+      aLast = result;
     } catch (error) {
       if (chain.b != null) {
         dropB?.($someValue(chain.b));
@@ -6829,7 +6858,7 @@ export function chainIterator_last(
       try {
         result = $lastDropping($given(iter, BIterator, true), dropAItem, true);
       } finally {
-        if (BIterator.fold === undefined) {
+        if (BIterator.fold === undefined && BIterator.last === undefined) {
           dropB?.(iter);
         }
       }
@@ -7425,7 +7454,7 @@ export function iterator_peekable(self, SelfIterator = { next: $next }, dropSelf
       count(iterator) {
         return peekableIterator_count(iterator, SelfIterator, dropSelf, dropSelfItem);
       },
-      takes: ["fold", "count"],
+      takes: ["last", "fold", "count"],
       close(iterator) {
         dropSelf?.(iterator.iter);
         if (iterator.peeked != null) {
@@ -7493,7 +7522,7 @@ export function iterator_fuse(
       count(iterator) {
         return fuseIterator_count(iterator, SelfIterator, dropSelf, dropSelfItem);
       },
-      takes: ["fold", "count"],
+      takes: ["last", "fold", "count"],
       close(iterator) {
         if (iterator.iter != null) {
           dropSelf?.($someValue(iterator.iter));
@@ -7772,7 +7801,7 @@ export function iterator_copied(self, SelfIterator = { next: $next }, TCopy, dro
       count(iterator) {
         return copiedIterator_count(iterator, SelfIterator, TCopy, dropSelf);
       },
-      takes: ["fold", "count"],
+      takes: ["last", "fold", "count"],
       close(iterator) {
         dropSelf?.(iterator.it);
       },
@@ -8340,7 +8369,7 @@ export function iterator_flatMap(
                 dropU,
               );
             },
-            takes: ["fold", "count"],
+            takes: ["last", "fold", "count"],
             close(iterator) {
               if (iterator.iter != null) {
                 iterator.iter.return();
@@ -8484,7 +8513,7 @@ export function iterator_skip(self, n, SelfIterator = { next: $next }, dropSelf,
       count(iterator) {
         return skipIterator_count(iterator, SelfIterator, dropSelf, dropSelfItem);
       },
-      takes: ["fold", "count"],
+      takes: ["last", "fold", "count"],
       close(iterator) {
         dropSelf?.(iterator.iter);
       },
@@ -8711,7 +8740,7 @@ export function iterator_chain(
             dropSelfItem,
           );
         },
-        takes: ["fold", "count"],
+        takes: ["last", "fold", "count"],
         close(iterator) {
           if (iterator.a != null) {
             dropSelf?.($someValue(iterator.a));

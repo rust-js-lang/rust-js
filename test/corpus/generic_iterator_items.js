@@ -18,7 +18,9 @@ function deltaSum_sum(iter, dropI) {
   try {
     return Iterator.from(iter).reduce((acc, x) => deltaAdd_add(acc, x), [0n]);
   } finally {
-    dropI?.(iter);
+    if (!iter.ownFold) {
+      dropI?.(iter);
+    }
   }
 }
 

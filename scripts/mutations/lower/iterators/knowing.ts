@@ -725,4 +725,12 @@ export const mutations: Mutation[] = [
     replace: "                    Some(_) => some,\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_map_of_given_from_its_back.rs$"],
   },
+  {
+    name: "compiled-last-not-taken",
+    breaks: "std's compiled `last` doesn't take its struct whole, so closing it after drops its source again (#522)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            takes.push(\"last\");\n",
+    replace: "",
+    tests: ["test/std-package.test.ts"],
+  },
 ];

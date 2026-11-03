@@ -109,10 +109,17 @@ function $given(value, iterator, boxed = false, back, len) {
   // are std's for its kind, a chain's sides' (#276, #505). Its reader by
   // index, which steps nothing, aside (ADR 0975). Made a JS iterator again,
   // it would lose its own `tryFold`, a `skip`'s source's `nth(n - 1)` (#520).
-  const own = (dictionary, steps) =>
-    Object.entries(dictionary).every(([name, step]) => name === "getUnchecked" || steps[name] === step);
-  if (own(iterator, { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count }) && len === undefined
-    && (back === undefined || own(back, { next_back: $nextBack }))) {
+  // Given `boxed`, a step that boxes its `Some`, `$nextSome`'s, is the
+  // value's too, which the JS iterator would unbox: generic code's of items
+  // that may look like `None`, whose value may be JS's own, an array's, with
+  // no `nth` to ask (#522).
+  const own = (dictionary, steps, boxedSteps) =>
+    Object.entries(dictionary).every(
+      ([name, step]) => name === "getUnchecked" || steps[name] === step || (boxed && boxedSteps[name] === step),
+    );
+  if (own(iterator, { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count }, { next: $nextSome, nth: $nthSome, last: $lastSome })
+    && len === undefined
+    && (back === undefined || own(back, { next_back: $nextBack }, { next_back: $nextBackSome }))) {
     return value;
   }
   const it = $iterator(

@@ -48,6 +48,15 @@ const few = [
   "held_back_folds_by_try_rfold.rs",
   "skip_try_fold.rs",
   "generic_collect_own_fold.rs",
+  // The matrices of #492-#496 and #505, and what a skip, a fuse, a
+  // peekable and a chain take of the crate's own `last` (#522).
+  "generic_own_last.rs",
+  "skip_folded_by_consumers.rs",
+  "last_takes_its_source.rs",
+  "own_count_through_adapters.rs",
+  "drop_order_through_take_adapters.rs",
+  "skip_of_short_take_drops.rs",
+  "cow_texts_joined.rs",
   "scan_object_state.rs",
   "scan_lazy_drops.rs",
   "flat_map_drops.rs",

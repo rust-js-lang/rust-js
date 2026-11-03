@@ -82,3 +82,48 @@ corpus doesn't cover. A generic `Try` is the plan's next step: `Take`,
   `std-struct-fold-undictionaried`, `own-steps-not-the-value`,
   `mut-ref-dictionary-whole`, `mut-ref-dictionary-unpeeled`,
   `std-field-key-shared`.
+
+## Amendment: a compiled `last` takes its struct too (2026-11-03, #522)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+std's `last` of a `Skip`, a `Fuse`, a `Peekable`, a `Copied` and a `Chain`
+is `self.iter.last()`: it takes the struct whole and moves its source into
+its source's `last`. The compiled bodies never dropped that source, and
+`last` wasn't in `takes`. So the caller's close after `last` dropped it.
+That was right for a source whose `last` is std's, and a second drop where
+the crate's own `last` (or `fold`) had already dropped what it held.
+`Lasts(ds()).fuse().last()` printed `drop 1, drop 2` twice, in the plain
+build too. The bodies didn't drop the source because `dropped_after`
+(`lower/mir/iter.rs`) took `Option<I::Item>` to hold the `I` it consumed:
+walking the projection `<I as Iterator>::Item` yields `I`.
+
+Now:
+- What a method gives holds what it consumed only outside a projection,
+  `mut_refs::holds_outside_projections`, the rule `may_move_out` follows
+  too. So each compiled `last` drops its source after, as its `count`
+  does: `if (IIterator.fold === undefined && IIterator.last === undefined)
+  dropI?.(iter)`, the crate's own `last` or `fold` having taken it
+  otherwise.
+- `last` is in `takes` wherever it's compiled, and `$stdIterator`'s
+  `last` marks its struct closed, so no close after drops it again.
+- Generic code given no dictionary, the crate's own generic functions,
+  now drops what `last()`, `max()`, `sum()` and `for_each` consumed after
+  them only where its JS iterator says the crate's own steps didn't take
+  it: `if (!iter.ownFold && !iter.ownLast)`. Before, `last()` and `max()`
+  of one with a destructor were refused, and `sum()` and `for_each` of one
+  whose own `fold` dropped it dropped it twice.
+- `$given` also treats the boxed steps, `$nextSome`, `$nthSome`,
+  `$lastSome` and `$nextBackSome`, as the value's own where it's given
+  `boxed`: unboxed again, they are the value's steps. Generic
+  `it.skip(1).last()` of a JS array iterator, std's compiled `Skip`'s
+  `nth(0)`, threw `it.nth is not a function` in the build of std's structs.
+
+`last_takes_its_source.rs` holds the shapes against native Rust, in both
+builds. `generic_own_last`, `skip_folded_by_consumers` and the other
+matrices of #492-#496 and #505 now run in iterator-forms' `few`. Mutations:
+`own-last-dropped-again`, `last-output-holds-its-iterator`,
+`generic-own-steps-unasked` (`lower/mir/iter.ts`), `compiled-last-not-taken`
+(`knowing.ts`), `std-iterator-last-not-taking` (`std_iterator.ts`) and
+`given-boxed-steps-not-own` (`iterator.ts`).

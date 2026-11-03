@@ -72,7 +72,9 @@ function howMany(items, dropI, dropIItem) {
   try {
     return $count(Iterator.from(iter), dropIItem);
   } finally {
-    dropI?.(iter);
+    if (!iter.ownFold && !iter.ownCount) {
+      dropI?.(iter);
+    }
   }
 }
 
