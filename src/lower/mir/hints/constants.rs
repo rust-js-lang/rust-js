@@ -108,6 +108,63 @@ impl<'tcx> FnCx<'_, 'tcx> {
             _ => None,
         }
     }
+
+    /// Of a `match` of an `Option<bool>`, `arms`, none guarded (`guards`):
+    /// where its first two are `Some(false)` and `Some(true)`, in either
+    /// order, and its last, `None`, `_` or a name, takes only `None`, each
+    /// of the two a case of its value, which MIR tests the first of, the
+    /// other its `else` (`Constant::Variant`); and where the last arm is,
+    /// the `default` (`Switch::none`, #545). Of an `Option` of another
+    /// type, whose `Some`s name a few of its values, `None` is an `if`.
+    pub(super) fn bool_option_arms(
+        &self,
+        arms: &[&thir::Arm<'tcx>],
+        guards: &[Option<thir::ExprId>],
+    ) -> Option<(Vec<SwitchArm>, js::Span)> {
+        let [first, second, last] = arms else {
+            return None;
+        };
+        if guards.iter().any(Option::is_some) {
+            return None;
+        }
+        let some = |arm: &thir::Arm<'tcx>| {
+            let thir::PatKind::Variant {
+                adt_def, subpatterns, ..
+            } = &peeled(&arm.pattern).kind
+            else {
+                return None;
+            };
+            let [inner] = &subpatterns[..] else {
+                return None;
+            };
+            let inner = peeled(&inner.pattern);
+            match body_queries::pattern_value(self.tcx, inner)? {
+                PatternValue::Bits(ty, bits)
+                    if ty.is_bool() && self.tcx.is_lang_item(adt_def.did(), LangItem::Option) =>
+                {
+                    Some(SwitchArm {
+                        span: self.js_span(arm.span),
+                        pattern: self.js_span(arm.pattern.span),
+                        guard: None,
+                        constants: vec![Constant::Variant(js::Expr::bool(bits != 0))],
+                        falls: false,
+                    })
+                }
+                _ => None,
+            }
+        };
+        let (a, b) = (some(first)?, some(second)?);
+        let value = |arm: &SwitchArm| matches!(&arm.constants[..], [Constant::Variant(v)] if matches!(v.kind, js::ExprKind::Bool(true)));
+        if value(&a) == value(&b) {
+            return None;
+        }
+        let none = match &peeled(&last.pattern).kind {
+            thir::PatKind::Wild | thir::PatKind::Binding { subpattern: None, .. } => true,
+            thir::PatKind::Variant { subpatterns, .. } => subpatterns.is_empty(),
+            _ => false,
+        };
+        none.then(|| (vec![a, b], self.js_span(last.span)))
+    }
 }
 
 /// `pattern` past each `&` and `*` of it, `"preload"` of `&str`'s.

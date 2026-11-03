@@ -1089,3 +1089,43 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same JS. A
   `break;` that tidy leaves at a clause's end is the one the printer
   would write. The mutant is removed; the pass, which shapes the bodies
   that the passes after it read, stays.
+
+## Amendment: an `Option<bool>`'s `Some(false)` and `Some(true)` are a `switch`'s cases (#545, 2026-11-04, the user's decision)
+
+React's updateClassComponent writes `switch (shouldError(workInProgress))
+{ case false: .. case true: .. }`. The port's `match should_error(wip) {
+Some(false) => .., Some(true) => .., None => {} }` was a `const value`,
+a `value != null` test and an `if`/`else` of the two, as a `bool`'s
+constant names no case (two values are an `if`). The user chose the
+`switch`, as an `Option<u32>`'s literals already are (2026-11-03): **a
+`match` of an `Option<bool>` whose first two arms are `Some(false)` and
+`Some(true)`, in either order, with no guard, and whose last, `None`, `_`
+or a name, takes only `None`, is a `switch` of the value**, each `Some` a
+case of its value; MIR tests the first of them, and the other is its
+`else`, a variant's last case (`Constant::Variant`,
+`FnCx::bool_option_arms`, `Switch::none`). The last arm is no case where
+it does nothing, as `null` matches none (`breaks_past_switches` drops the
+`value != null` test, as of any `Option`'s `switch`), and the `default`
+where it does something, `if (x != null) { switch (x) { .. } } else {
+none }`'s `switch (x) { .. default: none }` (`nones_defaulted`): both
+values are cases, so only `null` reaches it. Not where `none` is a loop's
+`break;`, which would leave the `switch` there; MIR then tests `None`
+first, `if (value == null) { break; } switch (value) { .. }`. A `return`
+of the `default`'s is after the `switch` as before (ADR 0905, amended).
+
+An `Option` of a number, whose `Some`s name a few of its values, keeps an
+arm of `None` an `if` of `value == null` before the others (the
+coordinator's call on the user's behalf): a `default` there would take
+each value no case names too.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same tests.
+Held by corpus `switch_of_an_optional_bool.rs` against native Rust
+(`None => {}`, `None` with a body, the `Some`s in either order, `_` of
+returns, a guarded `Some`, whose `_` takes a value too, a loop's `break` and `continue` of `None`, and an `Option<u32>`'s
+`None` arm, an `if`), `option_bool_exact.js` re-blessed, the guide's
+basics.md, the unit test `a_none_is_a_default_but_of_a_break`
+(`src/lower/mir/tidy.rs`), and the mutations `bool-option-no-switch`,
+`bool-option-guarded-switch` (`hints/constants.ts`) and `none-undefaulted`
+(`switches.ts`). No program has a `None` of a `break;` in the `else`, as
+the branch that leaves is the `if` first (ADR 0237), so the unit test alone
+holds that guard.

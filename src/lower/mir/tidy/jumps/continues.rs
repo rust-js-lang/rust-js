@@ -208,7 +208,9 @@ pub(in crate::lower::mir::tidy) fn continues_written(
                 jump: &after[0],
                 guards,
                 arms: (arms.iter())
-                    .filter(|(matched, ..)| !matched.is_none() && past >= matched.hi)
+                    .filter(|&&(matched, _, written)| {
+                        !matched.is_none() && past >= matched.hi && written != after[0].span
+                    })
                     .map(|&(_, arm, written)| (arm, written))
                     .collect(),
             };

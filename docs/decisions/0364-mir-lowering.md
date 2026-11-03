@@ -232,6 +232,26 @@ of each condition is caught, by a match of symbols too, whose tree tidy
 can't chain (`test/lowering-switches.test.ts`, each against what native
 Rust gives of the same program of `Option<u32>`s).
 
+### An empty array is given first as a constant is (#556, 2026-11-04)
+
+The playground's `prepare`, `let entries = match (test, tests) { (true,
+Some((module, files))) => .., (false, _) if main => vec![root], _ =>
+Vec::new() };`, printed a labeled block, `bb17: { if (test) { if (tests
+!= null) { ..; break bb17; } } else if (main) { ..; break bb17; }
+entries = []; }`: the `_` arm, which two failures share, is the block's
+end, and only a constant was given first. **An empty array, `Vec::new()`'s
+`[]`, is given first as a constant is**: it runs no code, and nothing
+holds it but the variable, so a way that gives its own leaves it unseen,
+and it's new each time the block runs. So `let entries = []; if (test) {
+if (tests != null) { .. } } else if (main) { .. }`, as `let n = 0;` is
+of a number. The playground's `prepare` is its `match` again (446ad7253
+had rewritten it as an `if`/`else` chain around this).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Held by corpus
+`let_match_empty_default.rs` against native Rust (each array pushed to
+after, so a shared one would show) and the mutation
+`empty-array-not-given-first` (`decisions/defaults.ts`).
+
 ## Amendment: an `|` of two values' tests is a chain of its arms
 
 That case's `(1, _) | (_, 1)` kept the labeled blocks MIR made of it, `bb15:

@@ -791,11 +791,53 @@ mod tests {
                 falls: false,
             }],
             valued: false,
+            none: None,
         }];
         let then = [assign("x", Expr::num(1))];
         let otherwise = [assign("x", Expr::num(2))];
         assert!(one_assignment(&c, (&then, &otherwise), at, ("_0", &switches), &[]).is_none());
         assert!(one_assignment(&c, (&then, &otherwise), none, ("_0", &switches), &[]).is_some());
+    }
+
+    /// An `Option<bool>`'s `if (x != null) { switch (x) { case false: ..
+    /// case true: .. } } else { none }` is the `switch`, `none` its
+    /// `default`, of a `match` whose last arm takes `None` (#545); not
+    /// where `none` is a loop's `break;`, which would leave the `switch`,
+    /// nor of another `match`.
+    #[test]
+    fn a_none_is_a_default_but_of_a_break() {
+        use super::super::hints::Switch;
+        use super::switches::nones_defaulted;
+        let at = js::Span { lo: 10, hi: 20 };
+        let case = |value, f| js::Case {
+            values: vec![Expr::bool(value)],
+            body: vec![call(f)],
+            falls: false,
+        };
+        let switch = StmtKind::Switch {
+            discriminant: Expr::var("x"),
+            cases: vec![case(false, "a"), case(true, "b")],
+            default: None,
+        }
+        .at(at);
+        let hint = |none| Switch {
+            span: at,
+            arms: Vec::new(),
+            valued: false,
+            none,
+        };
+        let defaulted = |none: Vec<Stmt>, hint: Switch| {
+            let test = Expr::bin(Op::LooseNe, Expr::var("x"), Expr::null());
+            let mut stmt = StmtKind::If(test, vec![switch.clone()], Some(none)).at(js::Span::NONE);
+            nones_defaulted(&mut stmt, &[hint]);
+            matches!(&stmt.kind, StmtKind::Switch { default: Some(d), .. } if d.len() == 1)
+        };
+        assert!(defaulted(vec![call("c")], hint(Some(at))));
+        assert!(!defaulted(
+            vec![StmtKind::Break(None).at(js::Span::NONE)],
+            hint(Some(at))
+        ));
+        assert!(!defaulted(vec![call("c")], hint(None)));
     }
 
     /// `if (!c) { return 1; } a(); return 2;` of `if c { a(); return 2; }

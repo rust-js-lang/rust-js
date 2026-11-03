@@ -6,6 +6,8 @@ use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
 
 /// `bb7: { .. x = true; break bb7; .. x = false; }`, a block MIR made of a
 /// value, its last statement a constant it gives where nothing else does,
+/// or an empty array, `Vec::new()`'s `[]`, which runs no code and which
+/// nothing holds but `x` (#556),
 /// each other written just before a `break` of it: `x = false;` first, as
 /// a person gives a default, the block then left where it ends. Only
 /// where nothing tells it was given first (ADR 0364, amended): each other
@@ -21,7 +23,7 @@ pub(in crate::lower::mir::tidy) fn default_values(stmts: &mut Vec<Stmt>) {
             && let Some((last, rest)) = body.split_last()
             && let StmtKind::Assign(target, value) = &last.kind
             && let ExprKind::Var(x) = &target.kind
-            && value.is_constant()
+            && (value.is_constant() || matches!(&value.kind, ExprKind::Array(items) if items.is_empty()))
             && let Some(given) = (Given {
                 x,
                 label,

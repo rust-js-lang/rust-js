@@ -134,16 +134,17 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
     sources,
     modules.values().map((item) => [item[0], item[1]]),
   );
-  let entries;
-  if (!test) {
-    entries = main ? [rootFile] : [];
-  } else if (tests != null) {
-    const [module, files] = tests;
-    // The runner's `test`, as the test files import it: the frame's.
-    sources.push([module, "export const test = globalThis.test;\n"]);
-    entries = files.slice();
-  } else {
-    entries = [];
+  let entries = [];
+  if (test) {
+    if (tests != null) {
+      const module = tests[0];
+      const files = tests[1];
+      // The runner's `test`, as the test files import it: the frame's.
+      sources.push([module, "export const test = globalThis.test;\n"]);
+      entries = files.slice();
+    }
+  } else if (main) {
+    entries = [rootFile];
   }
   if (entries.length === 0) {
     return "Nothing";

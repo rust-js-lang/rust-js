@@ -660,4 +660,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^switch_default_comment_falls.rs$"],
     snapshots: true,
   },
+  {
+    name: "none-undefaulted",
+    breaks:
+      "an `Option<bool>`'s `None` arm that does something stays `if (value != null) { switch (value) { .. } } else { .. }`, not the `switch`'s `default` (#545)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "    if !defaulted || !switch_of(only, &x, switches) {\n",
+    replace: "    if true || !defaulted || !switch_of(only, &x, switches) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_of_an_optional_bool.rs$"],
+    snapshots: true,
+  },
 ];

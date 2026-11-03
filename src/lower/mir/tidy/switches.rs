@@ -1267,6 +1267,7 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>, switches: &[Switch]) {
     unlabeled(stmts);
     let mut i = 0;
     while i < stmts.len() {
+        nones_defaulted(&mut stmts[i], switches);
         if let StmtKind::If(test, then, None) = &stmts[i].kind
             && let [switch] = &then[..]
             && js::null_test(test, true).is_some_and(|x| switch_of(switch, x, switches))
@@ -1302,6 +1303,36 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>, switches: &[Switch]) {
         }
         i += 1;
     }
+}
+
+/// An `Option<bool>`'s `if (x != null) { switch (x) { case false: ..
+/// case true: .. } } else { none }`, or its `if (x == null) { none } else
+/// { .. }`, of a `match` whose `Some` arms name both values and whose last
+/// arm takes `None` (`Switch::none`): `switch (x) { .. default: none }`,
+/// as no case takes `null` and each value is a case's (#545). Not where
+/// `none` has a `break;` of no label, of a loop around, which in the
+/// `switch` would leave the `switch`.
+pub(super) fn nones_defaulted(stmt: &mut Stmt, switches: &[Switch]) {
+    let StmtKind::If(test, then, Some(otherwise)) = &mut stmt.kind else {
+        return;
+    };
+    let (x, switch, none) = match (js::null_test(test, true), js::null_test(test, false)) {
+        (Some(x), _) => (x.clone(), then, otherwise),
+        (_, Some(x)) => (x.clone(), otherwise, then),
+        _ => return,
+    };
+    let ([only], false) = (&mut switch[..], js::breaks(none, None)) else {
+        return;
+    };
+    let defaulted = (switches.iter()).any(|s| s.span == only.span && !only.span.is_none() && s.none.is_some());
+    if !defaulted || !switch_of(only, &x, switches) {
+        return;
+    }
+    let mut switch = only.clone();
+    if let StmtKind::Switch { default, .. } = &mut switch.kind {
+        *default = Some(std::mem::take(none));
+    }
+    *stmt = switch;
 }
 
 /// Of `stmts`, a case's that goes on past the `switch`, each `break;` MIR

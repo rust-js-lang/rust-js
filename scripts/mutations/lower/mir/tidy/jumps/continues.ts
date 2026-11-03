@@ -651,8 +651,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an arm's `continue` of a `match` that ends the loop's turn is kept, `case \"C\": continue;`, where the `switch` goes on there anyway (ADR 0629)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                    .filter(|(matched, ..)| !matched.is_none() && past >= matched.hi)\n",
-    replace: "                    .filter(|(matched, ..)| !matched.is_none())\n",
+    find: "                        !matched.is_none() && past >= matched.hi && written != after[0].span\n",
+    replace: "                        !matched.is_none() && written != after[0].span\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_arms_continue.rs$"],
     snapshots: true,
   },
@@ -684,6 +684,16 @@ export const mutations: Mutation[] = [
     find: "            let past = latest(body).max(rests.get(block.as_str()).copied().unwrap_or(0));\n",
     replace: "            let past = latest(body);\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_guarded_arm_continues_first.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "arm-block-before-its-continue-continued",
+    breaks:
+      "a block MIR nests in an arm before the `continue` the arm wrote has its `break`s made that `continue`, so ReactFlightClient's `if (c) { a } else { b } continue;` prints guard-first, `if (c) { a; continue; } b; continue;`, an `else if` chain's tests inverted (rd703)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                        !matched.is_none() && past >= matched.hi && written != after[0].span\n",
+    replace: "                        !matched.is_none() && past >= matched.hi\n",
+    tests: ["test/corpus.test.ts", "-t", "^arm_if_else_continues.rs$"],
     snapshots: true,
   },
 ];

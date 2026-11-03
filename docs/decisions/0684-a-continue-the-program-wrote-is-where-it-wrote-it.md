@@ -553,3 +553,26 @@ another counts what the outer turn does past the inner loop changes no
 JS of any shape found, because the `continue` goes where MIR's `break`
 did either way. So `turn_rests` doesn't stop at a loop, and that has no
 mutation.
+
+## Amendment: a block inside the arm before its `continue` is the arm's own (rd703, 2026-11-04)
+
+React's ReactFlightClient processBinaryChunk writes its ROW_ID, ROW_TAG
+and ROW_LENGTH cases as `if (c) { a } else { b } continue;`, an `if
+.. else if .. else` among them. Since #518 they printed guard-first,
+`if (c) { a; continue; } b; continue;`, the chain's tests inverted. MIR
+nests the arm's `if`/`else` in a block of its own, `bb15: { if (c) { a;
+break bb15; } b; break bb15; } break bb22;`, and `continues_written`
+first makes `break bb22` the arm's written `continue`, then, coming to
+the list it's in, read `bb15` as a block of the `match` that a written
+`continue` follows, and made both its `break`s that `continue` too.
+**An arm's written `continue` that a block is followed by is no arm's
+`break` of that block**: it's in the arm, before the `continue` the arm
+wrote, its `break`s the `if`'s join, which goes on to that `continue`
+(`Of::arms` leaves out the arm whose written `continue` is the jump).
+`branch ends` then makes the `else` of it as written.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same jumps.
+Held by corpus `arm_if_else_continues.rs` against native Rust (an
+`if`/`else` and an `if`/`else if`/`else` whose last branch ends with a
+comment, in three arms, upstream's line for line) and the mutation
+`arm-block-before-its-continue-continued` (`continues.ts`).

@@ -217,14 +217,14 @@ pub fn prepare(
         })
         .collect();
     sources.extend(modules.iter().cloned());
-    let entries: Vec<String> = if !test {
-        main.then(|| vec![root_file.to_string()]).unwrap_or_default()
-    } else if let Some((module, files)) = tests {
-        // The runner's `test`, as the test files import it: the frame's.
-        sources.push((module.to_string(), "export const test = globalThis.test;\n".to_string()));
-        files.to_vec()
-    } else {
-        Vec::new()
+    let entries: Vec<String> = match (test, tests) {
+        (true, Some((module, files))) => {
+            // The runner's `test`, as the test files import it: the frame's.
+            sources.push((module.to_string(), "export const test = globalThis.test;\n".to_string()));
+            files.to_vec()
+        }
+        (false, _) if main => vec![root_file.to_string()],
+        _ => Vec::new(),
     };
     if entries.is_empty() {
         return Prepared::Nothing;

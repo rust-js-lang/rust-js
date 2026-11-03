@@ -149,6 +149,10 @@ pub(super) struct Switch {
     /// `switch` of an `Option`'s value takes of no case, `null` among them
     /// (#221).
     pub valued: bool,
+    /// Of an `Option<bool>`'s, whose arms name `Some(false)` and
+    /// `Some(true)`, where the last arm is written, `None` or `_`, which
+    /// takes only `None`: the `default`, as no case takes `null` (#545).
+    pub none: Option<js::Span>,
 }
 
 /// An arm of a `match` of constants (`Written::switches`): where it, its
@@ -700,6 +704,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         })
                     })
                     .collect();
+                // An `Option<bool>`'s, of `Some(false)`, `Some(true)` and the
+                // rest, a `switch` of the two (#545).
+                if let Some((arms, none)) = self.bool_option_arms(&arms, &guards) {
+                    return Some(Switch {
+                        span: self.js_span(e.span),
+                        arms,
+                        valued: false,
+                        none: Some(none),
+                    });
+                }
                 // Whether each guarded arm's failed guard goes on to the next
                 // arm, which names each constant it does and more (ADR 0905):
                 // its case falls through to the next's, which is a case as
@@ -822,6 +836,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     span: self.js_span(e.span),
                     arms,
                     valued,
+                    none: None,
                 })
             })
             .collect()

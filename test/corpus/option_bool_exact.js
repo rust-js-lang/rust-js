@@ -17,11 +17,11 @@ function describe(flag) {
 }
 
 function kind(flag) {
-  if (flag != null) {
-    if (flag === true) {
+  switch (flag) {
+    case true:
       return "yes";
-    }
-    return "no";
+    case false:
+      return "no";
   }
   return "maybe";
 }

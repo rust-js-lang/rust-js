@@ -1980,6 +1980,41 @@ export function resolve(status, log) {
 }
 ```
 
+A `match` of an `Option<bool>` whose arms name `Some(false)` and
+`Some(true)` is a `switch` of both, `case false:` and `case true:`, as
+React's updateClassComponent writes its `switch (shouldError(..))`. Its
+last arm takes only `None`: one that does nothing is no case, and one that
+does something is the `default`, which nothing but `null` reaches. Of an
+`Option` of a number, whose `Some`s name a few of its values, an arm of
+`None` is an `if` of `value == null` before the others
+([ADR 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md), amended):
+
+```rust
+pub fn update(error: Option<bool>, log: &mut Vec<u32>) {
+    match error {
+        Some(false) => log.push(1),
+        Some(true) => log.push(2),
+        None => log.push(3),
+    }
+}
+```
+
+```js
+export function update(error, log) {
+  switch (error) {
+    case false:
+      log.push(1);
+      break;
+    case true:
+      log.push(2);
+      break;
+    default:
+      log.push(3);
+      break;
+  }
+}
+```
+
 A guarded arm, as clippy's `collapsible_match` asks an `if` in an arm to
 be written, is a case whose statements test the guard:
 
