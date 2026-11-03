@@ -234,6 +234,15 @@ export const mutations: Mutation[] = [
     tests: ["test/js-object.test.ts", "-t", "console is a value"],
   },
   {
+    name: "rest-given-whole-passed-on",
+    breaks:
+      "`move |value| counted(&this, value)` of rest arguments given on as one array, `(...value) => counted(this$, value)`, is `counted.bind(null, this$)`, which gives `counted` each argument where it reads one array (#502, ADR 0605, amended)",
+    file: "src/js/stmt_walk.rs",
+    find: "            _ => None,\n        })\n        .collect();\n    (!names?",
+    replace: "            (Pattern::Rest(name), ExprKind::Var(v)) if v == name => Some(name.as_str()),\n            _ => None,\n        })\n        .collect();\n    (!names?",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "of rest arguments, that passes on what it captured"],
+  },
+  {
     name: "diverging-call-goes-on",
     breaks: "a call that never returns is taken to go on, `let result; return result;` after it (ADR 0954)",
     file: "src/js/stmt_walk.rs",

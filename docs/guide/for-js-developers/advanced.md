@@ -121,9 +121,17 @@ it took, `bind`'s partial application, as React writes
 `startTransition.bind(null, fiber, queue, true, false)`
 ([ADR 0605](../../decisions/0605-an-arrow-that-passes-on-has-one-owner.md),
 amended). `bind` reads what it binds where it's made, as the closure takes
-it. One that borrows what it passes, reads a value when it's called, has
-no parameters of its own, `move || shown(&fiber)`, or calls a closure,
-stays an arrow:
+it. So is one of no parameters of its own, `move || dispatch(&queue,
+false, 0)`, returned, held or made an `Rc`'s, and one of rest arguments
+it spreads on to a function's rest: alien-signals' `computed` is
+`computedOper.bind(null, node)`, whose `name`, `"bound computedOper"`,
+its `isComputed` reads. One of no parameters handed on as a callback,
+given to a call, boxed or lent, `schedule_work(move ||
+perform_work(&request))`, stays the arrow JS writes in place,
+`scheduleWork(() => performWork(request))`, a hook's `useMemo(() =>
+filterTodos(todos, tab), ..)` too. So does one that borrows what it
+passes, reads a value when it's called, makes its call a statement,
+`move || { dispatch(&queue, false, 0); }`, or calls a closure:
 
 ```rust
 use std::rc::Rc;
@@ -155,7 +163,7 @@ export function dispatcher(queue) {
 }
 
 export function later(queue) {
-  return () => dispatch(queue, false, 0);
+  return dispatch.bind(null, queue, false, 0);
 }
 ```
 

@@ -13,7 +13,8 @@ function's rest is that function; and a closure that ignores what it's
 given, calling with nothing a function that reads no `this` and nothing
 more, is that function wherever it's given (rd196, rd212, the user's
 decision); and a binding that says it reads only its parameters is its
-function as a value (rd648, the user's decision).
+function as a value (rd648, the user's decision); and a closure bound so
+needs no parameter of its own, and may spread its rest on (#502).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the output is
 unchanged.
@@ -263,8 +264,9 @@ bound, `g.bind(null, a, ..)`**, under the conditions of the rule above:
   One at least is taken: a closure that captures nothing, `|x|
   noisy("take", x)`, stays the arrow a person writes. A value read when
   the closure's called, a module's variable, `PENDING.get()`, isn't one.
-- **The closure has a parameter of its own**: `move || shown(&fiber)` is a
-  thunk, which JS writes as an arrow.
+- ~~**The closure has a parameter of its own**: `move || shown(&fiber)` is a
+  thunk, which JS writes as an arrow.~~ Superseded by the #502 amendment
+  below: a thunk is bound too.
 - Only `.name` (`"bound startTransition"`) and `.length` tell them apart,
   as of the function passed on itself above; each `bind` makes a function
   of its own, as each arrow is, so `Rc::ptr_eq` compares two as before.
@@ -703,3 +705,79 @@ Mutations `parameters-read-unmarked-value` (`items.ts`),
 `parameters-read-callback-wrapped` (`mir/iter/sources.ts`), and
 `parameters-mark-of-a-body`, `parameters-mark-of-a-method` and
 `parameters-mark-of-rest` (`bindings/effects.ts`).
+
+## Amendment: a thunk, and a closure of rest arguments, bound too (#502, 2026-11-03)
+
+alien-signals' `computed(getter)` returns `computedOper.bind(node)`, and
+its `isComputed(fn)` is `fn.name === 'bound ' + computedOper.name`; so are
+`signal`, `effect` and `effectScope`. Its port's `move ||
+computed_oper(&this)` printed `() => computedOper(this$)`, whose `name` is
+`""`, so `isComputed` of a computed was `false`: the rule above bound a
+closure of a parameter of its own alone, and of named parameters alone,
+so `move |value: &dyn Rest<dyn IntoUnknown>| signal_oper(&this, value)` of
+a `#[rust_js::rest]` function stayed `(...value) => signalOper(this$,
+...value)`.
+
+**A `move` closure of no parameters of its own, or whose last is rest
+arguments it spreads on to the function's rest, that passes on what it
+took by value is that function bound**, by the rule above:
+`computedOper.bind(null, this$)`, `signalOper.bind(null, this$)`. What
+`bind` binds it reads once, where the closure's made, as the closure took
+it; what JS gives the bound function more, the function, which takes no
+rest unless the closure gathers it all (`gathers_rest`), reads no more of
+than the arrow would, and a rest function given the rest the arrow
+spreads is given the same. The shape is `js::passes_on`'s, which now
+gives the values before what the arrow passes on (`passes_on_after`), so
+the bound shape and the passed-on shape are one match. Case
+([0262](0262-when-rust-and-js-disagree.md)): as the rule above, N: only
+`.name` (`"bound computedOper"`) and `.length` tell them apart, which only
+a JS reader, or `js::function::name`, sees; each `bind` makes a function
+of its own, as each arrow is.
+
+**Not a thunk handed on as a callback** (`FnCx::handed_on`, asked of a
+thunk alone): a call's argument, boxed (`Box::new(move || ..)`, given or
+returned) or lent (`&move || ..`). JS writes each in place: Fizz's and
+Flight's `scheduleWork(() => performWork(request))` and `scheduleWork(()
+=> finishAbort(request, abortableTasks))`, their Node entries'
+`createDrainHandler`, `return () => startFlowing(request, destination)`
+of a returned `Box<dyn Fn()>`, createReactNoop's root's `getChildren() {
+return getChildren(container); }` of a boxed field, and a hook's,
+`useMemo(() => filterTodos(todos, tab), [todos, tab])`, which React's
+lint asks be an inline function. One an `Rc` or an `Arc` is made of is a
+function its holders share, bound: React's Flight clients'
+`startReadingFromStream(response, stream, close.bind(null, response))`,
+of their ports' `Rc::new(move || close(&closing))`; and so is one
+returned or held as it is, alien-signals' `computed`, the scheduler's
+`const nextTask = runTask.bind(null, ..)` of `let next_task = move ||
+run_task(..)`. **Nor a closure whose parameters JS leaves out**, `move
+|_| ping_task(&request, task)`, `() => pingTask(request, task)` as Fizz
+writes it: it ignores what it's given, and stays the arrow it was. What a
+closure of parameters of its own is stays as above.
+
+The rd660 boundary stays: a closure that borrows what it passes is its
+place, never what it took by value, and a statement of the call is never
+bound. Upstream writes thunks both ways, and no form of the Rust tells
+`createDrainHandler`'s returned thunk from alien-signals' but the box: the
+line is drawn where React's port and alien-signals agree with upstream
+everywhere a thunk changes, and is a choice of output, not of meaning
+(case N), which the user may move.
+
+React's port, regenerated: its Flight clients' twenty-one `close(response)`
+arrows are upstream's `close.bind(null, response)`, and SchedulerPostTask's
+`nextTask` upstream's `runTask.bind(..)`; nothing upstream writes as an
+arrow is bound.
+
+Held by `test/lowering-passed-on.test.ts`, "a move closure of no
+parameters, or of rest arguments, that passes on what it captured is the
+function bound", run (`computed.name` is `"bound computedOper"`,
+`isComputed` of it `true` through `js::function::name`; kept: one of rest
+arguments given on as one array, a statement, one that captures nothing,
+a borrow, thunks given to a call, boxed, returned boxed or lent, and one
+of `|_|`; bound: one an `Rc` is made of given to a call), the earlier
+test's `thunk`, now
+`shown.bind(null, fiber)`, the corpus's `bound_thunks` against native
+Rust, and the guide's `later`. Mutations `bound-of-parameters-alone`,
+`thunk-handed-on-bound`, `thunk-made-an-rc-handed-on`,
+`thunk-call-argument-bound`, `thunk-lent-bound`, `thunk-ignoring-bound`
+(`passed_on.ts`) and `rest-given-whole-passed-on` (`js/stmt_walk.ts`);
+`bound-thunk` goes, the condition it held gone.

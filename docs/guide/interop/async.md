@@ -571,7 +571,7 @@ function startReading(stream, onEnd) {
 }
 
 export function read(stream, debug, ended) {
-  const handleEnd = () => close(ended);
+  const handleEnd = close.bind(null, ended);
   startReading(debug, handleEnd);
   startReading(stream, handleEnd);
 }

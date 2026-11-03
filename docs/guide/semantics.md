@@ -675,7 +675,14 @@ What's refused is in [the limitations](limitations.md).
   function, which reads no `this`, no more than it's given; only `.name`
   and `.length` tell them apart, as of a function passed on
   ([0605](../decisions/0605-an-arrow-that-passes-on-has-one-owner.md),
-  amended).
+  amended). So is one of no parameters of its own, `move ||
+  computed_oper(&this)`, `computedOper.bind(null, this$)`, and one of rest
+  arguments spread on to a function's rest, `signalOper.bind(null,
+  this$)`: alien-signals tells its functions apart by their `name`,
+  `"bound computedOper"` (#502). One that borrows what it passes stays an
+  arrow, as do a statement of the call and a thunk handed on as a
+  callback, given to a call, boxed or lent, `scheduleWork(() =>
+  performWork(request))`.
 - **A closure that passes all it's given, in order, to a scope struct's
   method through its value is that method's function**, where the crate
   reads no closure's identity: alien-signals' `Rc::new(move |link|

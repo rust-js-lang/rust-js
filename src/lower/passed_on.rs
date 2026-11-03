@@ -416,14 +416,22 @@ fn left_out(tcx: TyCtxt<'_>, thir: &rustc_middle::thir::Thir<'_>, e: rustc_middl
 /// it's made, as a closure takes what it captures by value; and what JS
 /// gives it more than the closure's parameters, `g` reads no more of than
 /// the arrow would, a function of the crate's taking no rest. Only `.name`
-/// and `.length` tell them apart, as of the function passed on itself. Not
-/// of a closure of no parameters of its own, `() => g(a)`, a thunk as JS
-/// writes one, nor of one that captures nothing, `(x) => g("take", x)`.
-pub(in crate::lower) fn binds(f: &Expr, fact: &Forwarding, moved: &[String]) -> bool {
+/// and `.length` tell them apart, as of the function passed on itself. So
+/// of a closure of no parameters of its own too, alien-signals'
+/// `computedOper.bind(null, this$)` (#502), and of one of rest arguments
+/// it spreads on to a function's rest, `signalOper.bind(null, this$)`. Not
+/// of one that captures nothing, `(x) => g("take", x)`, nor of one that
+/// borrows what it passes, whose place a borrowed capture is (rd660); nor
+/// of a thunk its maker says is `kept` an arrow: one `handed_on` as a
+/// callback, which JS writes in place, Fizz's `scheduleWork(() =>
+/// performWork(request))`, or one of parameters JS leaves out, `move |_|
+/// ping_task(&request, task)`, which ignores what it's given.
+pub(in crate::lower) fn binds(f: &Expr, fact: &Forwarding, moved: &[String], kept: bool) -> bool {
     let taken = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if moved.contains(v));
     fact.item
         && fact.callee == Callee::Own
         && !fact.statement
+        && !kept
         && bound_parts(f)
             .is_some_and(|(_, bound)| bound.iter().any(taken) && bound.iter().all(|e| taken(e) || e.is_constant()))
 }
@@ -440,38 +448,18 @@ pub(in crate::lower) fn bound(f: &Expr, forwarding: &[Forwarding]) -> Option<Exp
     })
 }
 
-/// Of arrow `f`, `(x, ..) => g(a, .., x, ..)`, of one parameter at least
-/// and one call of a named function, given values before each of its
-/// parameters in order: `g` and those values, each a variable or a
-/// constant.
+/// Of arrow `f`, `(x, ..) => g(a, .., x, ..)`, of one call of a named
+/// function given values before each of its parameters in order, rest
+/// arguments spread on, `(...xs) => g(a, ...xs)`, or before none, `() =>
+/// g(a)` (`js::passes_on_after`): `g` and those values, each a variable or
+/// a constant (`binds` asks one at least to be what the closure took).
 fn bound_parts(f: &Expr) -> Option<(&Expr, &[Expr])> {
     let js::ExprKind::Arrow(params, body) = &f.kind else {
         return None;
     };
-    let call = match body.as_slice() {
-        [
-            Stmt {
-                kind: StmtKind::Return(Some(call)) | StmtKind::Expr(call),
-                ..
-            },
-        ] => call,
-        _ => return None,
-    };
-    let js::ExprKind::Call(callee, args) = &call.kind else {
-        return None;
-    };
-    let named = callee.is_named();
-    let leading = (args.len().checked_sub(params.len())).filter(|&k| k > 0 && named && !params.is_empty())?;
-    let (bound, given) = args.split_at(leading);
-    let mut names = Vec::new();
-    for (param, arg) in params.iter().zip(given) {
-        match (param, &arg.kind) {
-            (js::Pattern::Name(name), js::ExprKind::Var(v)) if v == name => names.push(name.as_str()),
-            _ => return None,
-        }
-    }
+    let (callee, bound) = js::passes_on_after(params, body, true)?;
     let value = |e: &Expr| matches!(e.kind, js::ExprKind::Var(_)) || e.is_constant();
-    (bound.iter().all(value) && !names.iter().any(|name| callee.mentions_var(name))).then_some((&**callee, bound))
+    (callee.is_named() && bound.iter().all(value)).then_some((callee, bound))
 }
 
 /// What arrow `f` passes on what it's given to (`js::passes_on`), and how
@@ -577,6 +565,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let made = &thir[super::body_queries::strip(thir, a)];
                     matches!(made.kind, ExprKind::Closure(..)) && made.span == span
                 })
+        })
+    }
+
+    /// Whether the closure written at `span` is handed on as a callback: a
+    /// call's argument, `schedule_work(move || perform_work(&request))`,
+    /// boxed, `Box::new(move || start_flowing(&request, ..))`, or lent,
+    /// `&move || ..`. JS writes each in place, `() => performWork(request)`,
+    /// where a thunk isn't bound (`binds`, #502). Not one an `Rc` or an
+    /// `Arc` is made of, a function its holders share, React's Flight
+    /// client's `close.bind(null, response)`, nor one returned or held as
+    /// it is, alien-signals' `computedOper.bind(node)`.
+    pub(in crate::lower) fn handed_on(&self, span: rustc_span::Span) -> bool {
+        let thir = self.frame.thir;
+        // What's given, a block's value too, `Box::new({ let container =
+        // Rc::clone(&container); move || get_children(Some(&container)) })`.
+        let closure = |mut a: rustc_middle::thir::ExprId| loop {
+            let made = &thir[super::body_queries::strip(thir, a)];
+            match made.kind {
+                ExprKind::Block { block } if let Some(value) = thir[block].expr => a = value,
+                _ => return matches!(made.kind, ExprKind::Closure(..)) && made.span == span,
+            }
+        };
+        thir.exprs.iter().any(|e| match e.kind {
+            ExprKind::Call { fun, ref args, .. } => {
+                args.iter().any(|&a| closure(a))
+                    && !fn_def(thir[fun].ty).is_some_and(|(id, _)| super::recognition::is_rc_new(self.tcx, id))
+            }
+            ExprKind::Borrow { arg, .. } => closure(arg),
+            _ => false,
         })
     }
 

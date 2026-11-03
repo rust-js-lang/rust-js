@@ -308,12 +308,12 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-passed-on.test.ts", "-t", "is the function bound"],
   },
   {
-    name: "bound-thunk",
+    name: "bound-of-parameters-alone",
     breaks:
-      "a closure of no parameters of its own, `() => shown(fiber)`, is `shown.bind(null, fiber)` (ADR 0605, amended)",
+      "alien-signals' `computed` is `() => computedOper(this$)`, whose `name` is `\"\"`, where upstream's `computedOper.bind(..)` is `bound computedOper`: a move closure of no parameters of its own that passes on what it took stays its arrow (#502, ADR 0605, amended)",
     file: "src/lower/passed_on.rs",
-    find: " && named && !params.is_empty())?;\n",
-    replace: " && named)?;\n",
+    find: "    (callee.is_named() && bound.iter().all(value))",
+    replace: "    (callee.is_named() && !params.is_empty() && bound.iter().all(value))",
     tests: ["test/lowering-passed-on.test.ts", "-t", "is the function bound"],
   },
   {
@@ -797,5 +797,59 @@ export const mutations: Mutation[] = [
     find: "        if !self.krate.counted.compared_uncounted {\n            return false;\n        }\n",
     replace: "        if true {\n            return false;\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^scope_method_closure_ptr_eq.rs$"],
+  },
+  {
+    name: "thunk-handed-on-bound",
+    breaks:
+      "Fizz's `scheduleWork(() => performWork(request))` is `scheduleWork(performWork.bind(null, request))`, and its `createDrainHandler`'s `return () => startFlowing(request, destination)` is bound: a thunk handed on as a callback, which JS writes in place, is bound (#502, ADR 0605, amended)",
+    file: "src/lower/passed_on.rs",
+    find: "        && !kept\n",
+    replace: "",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "of rest arguments, that passes on what it captured"],
+  },
+  {
+    name: "thunk-made-an-rc-handed-on",
+    breaks:
+      "React's Flight client's `startReadingFromStream(response, stream, close.bind(null, response))` keeps its arrow: a thunk an `Rc` is made of, a function its holders share, is taken for a callback handed on (#502, ADR 0605, amended)",
+    file: "src/lower/passed_on.rs",
+    find: "                    && !fn_def(thir[fun].ty).is_some_and(|(id, _)| super::recognition::is_rc_new(self.tcx, id))\n",
+    replace: "",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "of rest arguments, that passes on what it captured"],
+  },
+  {
+    name: "thunk-call-argument-bound",
+    breaks:
+      "`schedule(move || perform(&this))` and a returned `Box::new(move || perform(&this))` are `perform.bind(null, this$)`: a thunk given to a call is bound (#502, ADR 0605, amended)",
+    file: "src/lower/passed_on.rs",
+    find: "                args.iter().any(|&a| closure(a))\n",
+    replace: "                false && args.iter().any(|&a| closure(a))\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "of rest arguments, that passes on what it captured"],
+  },
+  {
+    name: "thunk-lent-bound",
+    breaks:
+      "`lend(&move || perform(&this))`, a thunk lent as a `&dyn Fn()`, is `lend(perform.bind(null, this$))` (#502, ADR 0605, amended)",
+    file: "src/lower/passed_on.rs",
+    find: "            ExprKind::Borrow { arg, .. } => closure(arg),\n",
+    replace: "",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "of rest arguments, that passes on what it captured"],
+  },
+  {
+    name: "thunk-ignoring-bound",
+    breaks:
+      "Fizz's `ping: () => pingTask(request, task)` of `move |_| ping_task(&request, task)` is `pingTask.bind(null, request, task)`: a closure whose parameters JS leaves out is bound as a thunk (#502, ADR 0605, amended)",
+    file: "src/lower/mir/closures.rs",
+    find: "                let kept = thunk && (ignores || self.handed_on(made_at));\n",
+    replace: "                let kept = thunk && (false && ignores || self.handed_on(made_at));\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "of rest arguments, that passes on what it captured"],
+  },
+  {
+    name: "thunk-of-a-block-bound",
+    breaks:
+      "createReactNoop's root's `getChildren() { return getChildren(container); }`, of `Box::new({ let container = ..; move || get_children(..) })`, is `getChildren: getChildren.bind(null, container)`: a thunk that's a block's value, boxed, isn't seen handed on (#502, ADR 0605, amended)",
+    file: "src/lower/passed_on.rs",
+    find: "                ExprKind::Block { block } if let Some(value) = thir[block].expr => a = value,\n",
+    replace: "",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "of rest arguments, that passes on what it captured"],
   },
 ];

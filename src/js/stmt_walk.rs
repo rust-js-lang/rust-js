@@ -132,6 +132,14 @@ pub fn is_handler_name(name: &str) -> bool {
 /// `lower/passed_on.rs`'s (ADR 0605, amended), and a declaration's,
 /// `prepare.rs`'s (ADR 0610).
 pub fn passes_on<'e>(params: &[Pattern], body: &'e [Stmt], statement: bool) -> Option<&'e Expr> {
+    passes_on_after(params, body, statement).and_then(|(callee, leading)| leading.is_empty().then_some(callee))
+}
+
+/// `passes_on`, of a call that may be given values before what the
+/// function's given, `(x, ...rest) => g(a, b, x, ...rest)`: its callee and
+/// those values, `a, b`, which `lower/passed_on.rs` binds where they're
+/// what the closure took (ADR 0605, amended).
+pub fn passes_on_after<'e>(params: &[Pattern], body: &'e [Stmt], statement: bool) -> Option<(&'e Expr, &'e [Expr])> {
     let call = match body {
         [
             Stmt {
@@ -150,8 +158,9 @@ pub fn passes_on<'e>(params: &[Pattern], body: &'e [Stmt], statement: bool) -> O
     let ExprKind::Call(callee, args) = &call.kind else {
         return None;
     };
+    let (leading, given) = args.split_at(args.len().checked_sub(params.len())?);
     let names: Option<Vec<&str>> = (params.iter())
-        .zip(args)
+        .zip(given)
         .map(|(param, arg)| match (param, &arg.kind) {
             (Pattern::Name(name), ExprKind::Var(v)) if v == name => Some(name.as_str()),
             (Pattern::Rest(name), ExprKind::Spread(spread)) if matches!(&spread.kind, ExprKind::Var(v) if v == name) => {
@@ -160,8 +169,7 @@ pub fn passes_on<'e>(params: &[Pattern], body: &'e [Stmt], statement: bool) -> O
             _ => None,
         })
         .collect();
-    let names = names.filter(|_| params.len() == args.len())?;
-    (!names.iter().any(|name| callee.mentions_var(name))).then_some(&**callee)
+    (!names?.iter().any(|name| callee.mentions_var(name))).then_some((&**callee, leading))
 }
 
 /// An arrow of one call, `() => { f(); }`, as `() => f()`, which gives

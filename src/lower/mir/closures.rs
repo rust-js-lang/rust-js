@@ -313,6 +313,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         self.place_written(written, &mut stmts);
         stmts.splice(0..0, directives);
+        let made_at = span;
         let span = self.js_span(span);
         let forwarded = self.forwarded_to(body, span);
         let concise = self.closure_calls_for_nothing(body);
@@ -324,7 +325,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Some(mut fact) = forwarded {
                 // Whether it's what it passes on its call to, bound to what
                 // it captured (ADR 0605, amended).
-                fact.binds = crate::lower::passed_on::binds(&arrow, &fact, &moved);
+                // A thunk handed on as a callback, or one of parameters JS
+                // leaves out, stays its arrow (#502).
+                let thunk = matches!(&arrow.kind, js::ExprKind::Arrow(params, _) if params.is_empty());
+                let ignores = match self.tcx.type_of(def_id).skip_binder().kind() {
+                    ty::Closure(_, args) => args.as_closure().sig().inputs().skip_binder()[0].tuple_fields().len() > 0,
+                    _ => true,
+                };
+                let kept = thunk && (ignores || self.handed_on(made_at));
+                fact.binds = crate::lower::passed_on::binds(&arrow, &fact, &moved, kept);
                 self.locals.mir.forwarding.push(fact);
             }
             if let Some(written) = concise {

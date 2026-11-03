@@ -499,8 +499,8 @@ pub fn owned_apart() -> bool {
 // crate's function: that function bound to what it captured, which a
 // `bind` reads once, where it's made, as a `move` closure does (ADR 0605,
 // amended). Not of a closure that borrows what it passes, one of a value
-// read when it's called, one with no parameters of its own, nor one that
-// calls a closure.
+// read when it's called, nor one that calls a closure. One of no parameters
+// of its own is bound too (#502).
 test("a move closure that passes on what it captured, then what it's given, is the function bound", async () => {
   const dir = fixture("bound-captures");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
@@ -571,7 +571,7 @@ pub fn tags(xs: Vec<u32>) -> Vec<String> {
   expect(js).toContain("return startTransition.bind(null, fiber, true);");
   expect(js).toContain("(callback, options) => startTransition(fiber, pending, callback, options)");
   expect(js).toContain("(callback, options) => startTransition(fiber, false, callback, options)");
-  expect(js).toContain("return () => shown(fiber);");
+  expect(js).toContain("return shown.bind(null, fiber);");
   expect(js).toContain('(x) => tagged("take", x)');
   expect(js).toContain("(callback, options) => start(fiber, true, callback, options)");
   const lib = await import(join(dir, "lib.js"));
@@ -597,6 +597,187 @@ pub fn tags(xs: Vec<u32>) -> Vec<String> {
     "root true opts", "called", "root true -", "again",
     "root false x", "lent",
   ]);
+});
+
+// alien-signals' `computed` returns `computedOper.bind(node)`, and its
+// `isComputed(fn)` reads `fn.name === 'bound ' + computedOper.name`. A move
+// closure of no parameters of its own, or of rest arguments it spreads on to
+// a function's rest, that passes on what it took by value is that function
+// bound, as one of parameters is (#502, ADR 0605, amended): `bound
+// computedOper`, read through `js::function::name`, and one an `Rc` is
+// made of, which a call keeps. Kept as arrows: a closure that borrows what
+// it passes (rd660), one that captures nothing, a statement of the call
+// (rd660), one of rest arguments that passes them on as one array, a thunk
+// handed on as a callback, given to a call, boxed or lent, Fizz's
+// `scheduleWork(() => performWork(request))` and `createDrainHandler`'s
+// `() => startFlowing(request, destination)`, and one whose parameter JS
+// leaves out, `move |_| ping_task(..)`, Fizz's `() => pingTask(request,
+// task)`.
+test("a move closure of no parameters, or of rest arguments, that passes on what it captured is the function bound", async () => {
+  const dir = fixture("bound-thunks");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::rc::Rc;
+
+use js::{IntoUnknown, Rest, Unknown};
+
+pub struct Node {
+    pub flags: Cell<i32>,
+}
+
+fn computed_oper(this: &Rc<Node>) -> i32 {
+    this.flags.set(this.flags.get() + 1);
+    this.flags.get()
+}
+
+pub fn computed(this: Rc<Node>) -> impl Fn() -> i32 {
+    move || computed_oper(&this)
+}
+
+fn signal_oper(this: &Rc<Node>, #[cfg_attr(rust_js, rust_js::rest)] value: &[Option<&Unknown>]) -> usize {
+    this.flags.get() as usize + value.len()
+}
+
+pub fn signal(this: Rc<Node>) -> impl Fn(&dyn Rest<dyn IntoUnknown>) -> usize {
+    move |value: &dyn Rest<dyn IntoUnknown>| signal_oper(&this, value)
+}
+
+fn counted(this: &Rc<Node>, value: &[Option<&Unknown>]) -> usize {
+    this.flags.get() as usize * 10 + value.len()
+}
+
+pub fn of_an_array(this: Rc<Node>) -> impl Fn(&dyn Rest<dyn IntoUnknown>) -> usize {
+    move |value: &dyn Rest<dyn IntoUnknown>| counted(&this, value)
+}
+
+fn effect_oper(this: &Rc<Node>) {
+    this.flags.set(-this.flags.get());
+}
+
+pub fn effect(this: Rc<Node>) -> impl Fn() {
+    move || {
+        effect_oper(&this);
+    }
+}
+
+fn fixed() -> i32 {
+    3
+}
+
+fn plus(a: i32) -> i32 {
+    a + 1
+}
+
+pub fn of_nothing() -> impl Fn() -> i32 {
+    || plus(fixed())
+}
+
+pub fn borrowed(this: Rc<Node>) -> i32 {
+    let peek = || computed_oper(&this);
+    peek() + peek()
+}
+
+pub fn is_computed(r#fn: &dyn Fn() -> i32) -> bool {
+    js::function::name(r#fn) == format!("bound {}", js::function::name(&computed_oper))
+}
+
+pub fn computed_is_computed(this: Rc<Node>) -> bool {
+    is_computed(&computed(this))
+}
+
+fn perform(this: &Rc<Node>) {
+    this.flags.set(this.flags.get() + 100);
+}
+
+fn schedule(task: impl FnOnce() + 'static) {
+    task();
+}
+
+fn schedule_boxed(task: Box<dyn FnOnce()>) {
+    task();
+}
+
+fn lend(task: &dyn Fn()) {
+    task();
+}
+
+pub fn scheduled(this: Rc<Node>) {
+    let again = Rc::clone(&this);
+    let lent = Rc::clone(&this);
+    schedule(move || perform(&this));
+    schedule_boxed(Box::new(move || perform(&again)));
+    lend(&move || perform(&lent));
+}
+
+pub fn drain(this: Rc<Node>) -> Box<dyn Fn()> {
+    Box::new(move || perform(&this))
+}
+
+pub struct Root {
+    pub get_children: Box<dyn Fn()>,
+}
+
+pub fn root(this: &Rc<Node>) -> Root {
+    Root {
+        get_children: Box::new({
+            let this = Rc::clone(this);
+            move || perform(&this)
+        }),
+    }
+}
+
+pub fn pinged(this: Rc<Node>) -> impl FnOnce(u32) {
+    move |_| perform(&this)
+}
+
+fn started(on_done: Rc<dyn Fn()>) -> Rc<dyn Fn()> {
+    on_done
+}
+
+pub fn shared(this: Rc<Node>) -> Rc<dyn Fn()> {
+    started(Rc::new(move || perform(&this)))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return computedOper.bind(null, this$);");
+  expect(js).toContain("return signalOper.bind(null, this$);");
+  expect(js).toContain("return (...value) => counted(this$, value);");
+  expect(js).toContain("effectOper(this$);\n  };");
+  expect(js).not.toContain("effectOper.bind(");
+  expect(js).not.toContain("plus.bind(");
+  expect(js).not.toContain("computedOper.bind(null, this$)()");
+  // Given straight to a call, a callback JS writes in place; an `Rc`'s, a
+  // function the callee keeps, is bound.
+  expect(js).toContain("schedule(() => perform(this$));");
+  expect(js).toContain("scheduleBoxed(() => perform(this$));");
+  expect(js).toContain("lend(() => perform(this$));");
+  expect(js).toContain("export function drain(this$) {\n  return () => perform(this$);\n}");
+  expect(js).toContain("export function pinged(this$) {\n  return () => perform(this$);\n}");
+  expect(js).not.toContain("getChildren: perform.bind(");
+  expect(js).toContain("return started(perform.bind(null, this$));");
+  const lib = await import(join(dir, "lib.js"));
+  const node = { flags: 1 };
+  const computed = lib.computed(node);
+  expect(computed.name).toBe("bound computedOper");
+  expect(lib.isComputed(computed)).toBe(true);
+  expect(lib.computedIsComputed(node)).toBe(true);
+  // What JS gives it more, the bound function's own parameter has read.
+  expect([computed(), computed(99)]).toEqual([2, 3]);
+  const signal = lib.signal(node);
+  expect(signal.name).toBe("bound signalOper");
+  expect([signal(), signal("a", "b")]).toEqual([3, 5]);
+  expect(lib.ofAnArray(node)("a")).toBe(31);
+  lib.effect(node)();
+  expect(node.flags).toBe(-3);
+  expect(lib.isComputed(lib.ofNothing())).toBe(false);
+  expect(lib.ofNothing()()).toBe(4);
+  expect(lib.borrowed(node)).toBe(-2 + -1);
+  lib.scheduled(node);
+  lib.shared(node)();
+  lib.drain(node)();
+  lib.pinged(node)(7);
+  lib.root(node).getChildren();
+  expect(node.flags).toBe(699);
 });
 
 // #427: a host function held as a \`fn\` in a field, called through it, is
