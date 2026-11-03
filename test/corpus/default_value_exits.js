@@ -213,10 +213,8 @@ function triple(rows) {
         return "digits";
       }
       const [x, y, z] = row;
-      if (x === y) {
-        if (y === z) {
-          return "same";
-        }
+      if (x === y && y === z) {
+        return "same";
       }
       return "other";
     }

@@ -44,37 +44,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "and-guard-parts-unjoined",
-    breaks:
-      "a guard of `&&` MIR tests in parts, `if (!a) { if (!b) { break bb22; } }`, isn't a case's guard, so React's finishConcurrentRender is an `if` chain and a label, not its `switch` (ADR 0905, amended)",
-    file: "src/lower/mir/tidy/switches/guards.rs",
-    find: "    while otherwise.is_none()\n        && let [part] = &then[..]\n",
-    replace:
-      "    while otherwise.is_some()\n        && let [part] = &then[..]\n",
-    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_chains.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "and-guard-first-part-dropped",
-    breaks:
-      "a guard of `&&` tested in parts is its last part alone, `if (!onlyRetries(lanes))`, a wrong answer where the first fails (ADR 0905, amended)",
-    file: "src/lower/mir/tidy/switches/guards.rs",
-    find: "        (test, then) = (Expr::bin(Op::And, test, t.clone()), inner);\n",
-    replace: "        (test, then) = (t.clone(), inner);\n",
-    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_chains.rs$"],
-  },
-  {
-    name: "guard-parts-unjoined",
-    breaks:
-      "a guard of `||` MIR tests in parts, `if (!legacy) { if (lanes === 0) { break; } }`, stays so, not the arm's `if (legacy || lanes !== 0) { .. }` (ADR 0905, amended)",
-    file: "src/lower/mir/tidy/switches/guards.rs",
-    find: "        tests.push(test.clone());\n        then = inner;\n",
-    replace:
-      "        tests.push(test.clone());\n        then = inner;\n        break;\n",
-    tests: ["test/corpus.test.ts", "-t", "^switch_guard_shares_next.rs$"],
-    snapshots: true,
-  },
-  {
     name: "guard-held-of-a-joined-arm",
     breaks:
       "`I if legacy_off => {}` before `I => { .. }`, React's completeWork's `case I: if (legacyOff) { break; } ..`, is turned, `if (!legacyOff) { .. } break;` (ADR 0905, amended)",
@@ -92,5 +61,15 @@ export const mutations: Mutation[] = [
     find: "        let test = Expr::bin(Op::And, pattern, failed.clone().negated_test());\n",
     replace: "        let test = Expr::bin(Op::And, pattern, failed.clone());\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_guarded_or_pattern.rs$"],
+  },
+  {
+    name: "guard-ands-apart",
+    breaks:
+      "a guard of `&&`s MIR tests in parts is an `if` of each inside the one before, `if (keep) { if (more) { return 2; } }`, not one `if` of the guard, `if (keep && more)` (#530)",
+    file: "src/lower/mir/tidy/switches/guards.rs",
+    find: "            if guard_of(inner) != Some(guard) {\n",
+    replace: "            if guard_of(inner) != Some(guard) || true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_guard_of_ands.rs$"],
+    snapshots: true,
   },
 ];

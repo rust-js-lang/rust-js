@@ -484,7 +484,7 @@ Held by `test/corpus/switch_guard_shares_next.rs`, against native Rust,
 and `option_constants_switch`'s `fallen`, whose `default: return "none";`
 is the `return` after its `switch` now; mutations
 `fallen-to-own-case-not-absorbed`, `default-past-match-kept`,
-`guard-break-kept`, `or-guard-untested` and `guard-parts-unjoined`
+`guard-break-kept`, `or-guard-untested` and `guard-parts-unjoined` (removed with its loop: ADR 0636, amended, #530)
 (`mir/tidy/switches.ts`).
 
 ## Amendment: a chain of guarded arms beside another is one `switch`
@@ -535,7 +535,7 @@ break; } // Fallthrough`, upstream's `switch`. Each part is still tested
 where Rust tests it, in order, short-circuit stopping where it does.
 
 Held by `guarded_arm_chains`' `finished`, against native Rust; mutations
-`and-guard-parts-unjoined` and `and-guard-first-part-dropped`
+`and-guard-parts-unjoined` and `and-guard-first-part-dropped` (removed with their loop: ADR 0636, amended, #530)
 (`mir/tidy/switches.ts`).
 
 Of comparisons, `4 if lanes != 1 && lanes != 2 => { // .. }`, MIR tests
@@ -661,7 +661,7 @@ same order: each guard runs once its constant matched, and the reads of
 
 Held by `test/corpus/switch_guards_fall_twice.rs` (a thread-local changed
 to a value an earlier arm names) against native Rust and the mutations
-`second-fall-unabsorbed`, `or-guard-parts-untried` (`mir/tidy/switches.ts`)
+`second-fall-unabsorbed`, `or-guard-parts-untried` (removed with its loop: ADR 0636, amended, #530) (`mir/tidy/switches.ts`)
 and `or-guard-of-reads-no-case` (`mir/hints.ts`).
 
 ## Amendment: an arm's block's comment, and a `default` left of nothing (rd119)

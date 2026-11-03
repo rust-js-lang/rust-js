@@ -109,9 +109,8 @@ export const mutations: Mutation[] = [
     breaks:
       'an arm MIR tests negated, `if (c !== ".")`, keeps the whole `match` an `if` chain',
     file: "src/lower/mir/tidy/switches.rs",
-    find: "            let values = match values_of(&test, &arm.constants[from..], true, &mut negated) {\n",
-    replace:
-      "            let values = match values_of(&test, &arm.constants[from..], true, &mut negated).filter(|_| false) {\n",
+    find: "        let negations = match values_of(test, &arm.constants[from..], true, &mut negated) {\n",
+    replace: "        let negations = match values_of(test, &arm.constants[from..], true, &mut negated).filter(|_| false) {\n",
     tests: switches,
   },
   {
@@ -575,16 +574,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "or-guard-parts-untried",
-    breaks:
-      "a guard of `||` MIR tests in parts, `if (A !== name) { if (B !== name) { .. } }`, isn't one negated test, so its `match` is `bb51: { .. }`, not `case A: case B:` (rd118, ADR 0905 amended)",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "        while otherwise.is_none()\n",
-    replace: "        while false && otherwise.is_none()\n",
-    tests: ["test/corpus.test.ts", "-t", "^switch_guards_fall_twice.rs$"],
-    snapshots: true,
-  },
-  {
     name: "case-read-of-an-import-unread",
     breaks:
       "a thread-local `use`d from another module, React DOM's DOMEventNames' `ANIMATION_END`, isn't a read, so `name if ANIMATION_END.with(|e| e == name)` leaves SimpleEventPlugin's `match` an `if` chain, `bb180:` (rd123, ADR 0629 amended)",
@@ -609,8 +598,8 @@ export const mutations: Mutation[] = [
     breaks:
       "arms that do nothing tested negated together, `name !== \"value\" && name !== \"checked\"`, make no `switch`, an `if` chain (rd136)",
     file: "src/lower/mir/tidy/switches.rs",
-    find: "                None => negated_arms(&test, &left, k, &mut negated)?,\n",
-    replace: "                None => negated_arms(&test, &left, k, &mut negated).filter(|_| false)?,\n",
+    find: "            None => negated_arms(test, &left, k, &mut negated).map(|values| (values, negated, then)),\n",
+    replace: "            None => negated_arms(test, &left, k, &mut negated).filter(|_| false).map(|values| (values, negated, then)),\n",
     tests: ORS,
     snapshots: true,
   },

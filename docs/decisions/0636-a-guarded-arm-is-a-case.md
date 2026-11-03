@@ -327,3 +327,38 @@ the guard as one `if` either way. Which pass joins it there wasn't found;
 Its mutation `switch-guard-inner-if-apart` was an equivalent
 mutant and is removed. The peel stays, as the end it gives says whether a
 falling arm's `if` takes the next case's `else`.
+
+## Amendment: a guard of `&&`s is one `if`, in a case or an `if` chain (#530, 2026-11-03)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. `if (a) { if (b) {
+s } }`, where neither `if` has an `else`, runs `s` exactly when `a && b`
+holds, and evaluates `b` only where `a` held.
+
+MIR tests a guard of `&&`s in parts, an `if` of each part inside the one
+before. In a `switch`'s case, `guarded`'s peel joined them. In the `if`
+chain of a `match` whose failed guard goes on to an arm that does
+something, which is no `switch` (ADR 0629), nothing joined them: `"B" if
+keep && more => 2` printed `if (name === "B") { if (keep) { if (more) {
+return 2; } } }`. **`switches::guard_ands` joins them for any `match`'s
+guard (`Written::guards`) before `switches` reads the chain**, when each
+test is the same guard's and neither `if` has an `else`: `if (keep &&
+more) { return 2; }`. `guarded` no longer joins anything. It still reads
+past a guard's `if`s for what the arm does once the guard holds. The
+corpus case `default_value_exits`'s `[x, y, z] if x == y && y == z` and
+the snapshot `structs`' `quadrant` are re-blessed to `if (x === y && y ===
+z)` and `if (x > 0 && y$1 > 0)`.
+
+Held by corpus `match_guard_of_ands.rs` against native Rust (a guard of
+two `bool`s and of three comparisons in an `if` chain, guard parts that
+call, run once each in order, and a `switch`'s case) and the mutation
+`guard-ands-apart` (`switches/guards.ts`).
+
+`guard_ands` is now the only place that joins a guard's parts. The loops
+that each joined them again for their own shape are removed: `guarded`'s
+peel of what it joins, `guard_alone`'s `&&` of finishConcurrentRender
+(ADR 0905), `guard_held`'s `if (!a) { if (!b) { break; } }` of `a || b`,
+and the chain's `||` parts of rd118 in `switches::chain`. With
+`guard_ands` first, their mutations `and-guard-parts-unjoined`,
+`and-guard-first-part-dropped`, `guard-parts-unjoined` and
+`or-guard-parts-untried` changed no JS, and they're removed with the
+loops. The corpus cases those mutations named are unchanged.

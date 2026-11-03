@@ -171,10 +171,8 @@ export function quadrant(x, y) {
   if (value.x !== 0 && value.y !== 0) {
     let x = value.x;
     let y$1 = value.y;
-    if (x > 0) {
-      if (y$1 > 0) {
-        return 1;
-      }
+    if (x > 0 && y$1 > 0) {
+      return 1;
     }
     x = value.x;
     if (x < 0) {

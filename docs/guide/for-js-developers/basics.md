@@ -1759,7 +1759,9 @@ that calls made where Rust makes it and no other time, `[n, ..] if
 below(*n)`'s `row.length >= 1 && below(row[0])`, `(1, x) | (x, 1) if
 odd(x)`'s `(a === 1 && odd(b)) || (b === 1 && odd(a))`, a guard each
 alternative tests alike tested once, `Some(1) | None if on(x)`'s `(value
-== null || value === 1) && on(x)`
+== null || value === 1) && on(x)`, a guard of `&&`s one `if`, `"B" if keep &&
+more`'s `if (name === "B") { if (keep && more) { .. } }`
+([ADR 0636](../../decisions/0636-a-guarded-arm-is-a-case.md), amended)
 ([ADR 0364](../../decisions/0364-mir-lowering.md), amended); and one
 whose value is read in place, `f(match n { .. })`, is a `?:`, as JS has
 no `switch` expression. An arm that names a `const` tests it by its name,

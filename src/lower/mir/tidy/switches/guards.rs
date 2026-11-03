@@ -3,7 +3,7 @@
 //! `|`, the arm's one test (rd136).
 
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind};
-use crate::lower::mir::hints::{Switch, SwitchArm};
+use crate::lower::mir::hints::{Guard, Switch, SwitchArm};
 
 use super::{Case, alike, test_at, within, written_at};
 
@@ -133,20 +133,13 @@ pub(super) fn fallen(cases: &mut [Case], arms: &[&SwitchArm]) -> Option<Vec<bool
 /// `if (guard) { .. } next`, its `if` leaving; `if (guard) { .. } else {
 /// next }`; `if (!guard) { next } ..`, what follows leaving, as MIR tests a
 /// guard whose arm does nothing; or `if (!guard) { next } else { .. }`.
-/// Of `&&`, tested in parts, `if (a) { if (b) { .. } }`, one test, `if (a
-/// && b)`, React's finishConcurrentRender's (ADR 0905, amended).
+/// Of `&&`, tested in parts, one test already, `if (a && b)`, React's
+/// finishConcurrentRender's (`guard_ands`, ADR 0905, amended).
 fn guard_alone(body: &[Stmt], next: &[Stmt]) -> Option<Stmt> {
     let (first, rest) = body.split_first()?;
     let StmtKind::If(test, then, otherwise) = &first.kind else {
         return None;
     };
-    let (mut test, mut then) = (test.clone(), then);
-    while otherwise.is_none()
-        && let [part] = &then[..]
-        && let StmtKind::If(t, inner, None) = &part.kind
-    {
-        (test, then) = (Expr::bin(Op::And, test, t.clone()), inner);
-    }
     // Each way it goes on to the next only tests.
     let mut assigns = false;
     test.clone()
@@ -184,32 +177,18 @@ fn guard_alone(body: &[Stmt], next: &[Stmt]) -> Option<Stmt> {
 /// A case's `if (!guard) { break; } ..`, MIR's test of a guard whose
 /// failing goes past the `match`, where what follows leaves: `if (guard) {
 /// .. }`, as the arm is written, its case going on past the `switch` where
-/// the guard fails (ADR 0905, amended); of `a || b`, tested in parts, `if
-/// (!a) { if (!b) { break; } }`, `if (a || b) { .. }`. Only of a guard
-/// written of the arm what follows is written in.
+/// the guard fails (ADR 0905, amended); of `a || b`, tested in parts, one
+/// test already, `if (!a && !b) { break; }` (`guard_ands`), `if (a || b) {
+/// .. }`. Only of a guard written of the arm what follows is written in.
 pub(super) fn guard_held(stmts: &mut Vec<Stmt>, switches: &[Switch]) {
     let [first, rest @ ..] = &stmts[..] else {
         return;
     };
-    // Of a guard MIR tests in parts, `if (!a) { if (!b) { break; } }`, of
-    // `a || b`: each part.
-    let mut tests = Vec::new();
-    let mut then = std::slice::from_ref(first);
-    while let [
-        Stmt {
-            kind: StmtKind::If(test, inner, None),
-            ..
-        },
-    ] = then
-    {
-        tests.push(test.clone());
-        then = inner;
-    }
-    let Some(test) = tests.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b)) else {
+    let StmtKind::If(test, then, None) = &first.kind else {
         return;
     };
     let broken = matches!(
-        then,
+        then.as_slice(),
         [Stmt {
             kind: StmtKind::Break(None),
             ..
@@ -222,10 +201,52 @@ pub(super) fn guard_held(stmts: &mut Vec<Stmt>, switches: &[Switch]) {
     // legacy_off => {}` before `I => { .. }`, whose `if (legacyOff) {
     // break; }` is as written (ADR 0905, amended).
     let arm = (switches.iter().flat_map(|s| &s.arms))
-        .find(|arm| (arm.guard).is_some_and(|guard| test_at(&test, first.span).is_some_and(|at| within(at, guard))));
+        .find(|arm| (arm.guard).is_some_and(|guard| test_at(test, first.span).is_some_and(|at| within(at, guard))));
     if !arm.is_some_and(|arm| (rest.iter()).all(|s| written_at(s).is_some_and(|at| within(at, arm.span)))) {
         return;
     }
-    let held = StmtKind::If(test.negated_test(), rest.to_vec(), None).at(first.span);
+    let held = StmtKind::If(test.clone().negated_test(), rest.to_vec(), None).at(first.span);
     *stmts = vec![held];
+}
+
+/// `if (a) { if (b) { .. } }`, `list`'s, of a guard MIR tests in parts,
+/// `"B" if keep && more`, each test the guard's and neither `if` with an
+/// `else`: one `if` of the guard, `if (keep && more) { .. }`, as written,
+/// in a `switch`'s case or the `if` chain of a `match` that's none, any
+/// `match`'s (`Written::guards`). Each
+/// way on is the same, nothing between the tests (#530, ADR 0636, amended).
+pub(super) fn guard_ands(list: &mut [Stmt], guards: &[Guard]) {
+    let guard_of = |t: &Expr| {
+        let at = test_at(t, js::Span::NONE)?;
+        guards.iter().map(|guard| guard.span).find(|&guard| within(at, guard))
+    };
+    for stmt in list.iter_mut() {
+        let StmtKind::If(test, then, None) = &mut stmt.kind else {
+            continue;
+        };
+        loop {
+            let last = match &test.kind {
+                ExprKind::Binary(Op::And, _, last) => &**last,
+                _ => &*test,
+            };
+            let Some(guard) = guard_of(last) else {
+                break;
+            };
+            let [
+                Stmt {
+                    kind: StmtKind::If(inner, held, None),
+                    ..
+                },
+            ] = then.as_slice()
+            else {
+                break;
+            };
+            if guard_of(inner) != Some(guard) {
+                break;
+            }
+            let (inner, held) = (inner.clone(), held.clone());
+            *test = Expr::bin(Op::And, test.clone(), inner);
+            *then = held;
+        }
+    }
 }

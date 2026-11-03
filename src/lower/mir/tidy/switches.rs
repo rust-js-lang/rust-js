@@ -16,7 +16,7 @@ use super::{first_written, is_temporary, relabeled, unlabeled, written_loop};
 mod guards;
 mod kinds;
 mod nullish;
-use guards::{fallen, guard_held, guards_once};
+use guards::{fallen, guard_ands, guard_held, guards_once};
 use kinds::{kinds_of, of_subject};
 use nullish::{some_switch_defaults, switch_of};
 
@@ -24,6 +24,7 @@ use nullish::{some_switch_defaults, switch_of};
 /// the order written, a `switch`; a `break` in it of a loop around it, of
 /// that loop's label, the program's of `loops` where it wrote one.
 pub(super) fn switches(body: &mut Vec<Stmt>, written: &Written) {
+    js::statement_lists(body, &mut |list| guard_ands(list, &written.guards));
     if written.switches.is_empty() {
         return;
     }
@@ -792,30 +793,13 @@ fn chain(
         let next = left.get(k + 1).map(|&(next, _)| next);
         // Its test negated, the branch of the arms after it: its own the
         // `else`, or what's after where that leaves. Of a guard of `||`
-        // MIR tests in parts, `if (A !== name) { if (B !== name) { .. } }`,
-        // each part's, one test (rd118).
-        let mut parts = vec![(test.clone(), then)];
-        while otherwise.is_none()
-            && let Some((
-                joined,
-                [
-                    Stmt {
-                        kind: StmtKind::If(part, inner, None),
-                        ..
-                    },
-                ],
-            )) = parts.last().map(|(t, then)| (t, &then[..]))
-        {
-            parts.push((Expr::bin(Op::And, joined.clone(), part.clone()), inner));
-        }
-        let negations = parts.into_iter().find_map(|(test, then)| {
-            let mut negated = discriminant.clone();
-            let values = match values_of(&test, &arm.constants[from..], true, &mut negated) {
-                Some(values) => vec![(k, values)],
-                None => negated_arms(&test, &left, k, &mut negated)?,
-            };
-            Some((values, negated, then))
-        });
+        // MIR tests in parts, one test already, `if (A !== name && B !==
+        // name) { .. }` (`guard_ands`, rd118).
+        let mut negated = discriminant.clone();
+        let negations = match values_of(test, &arm.constants[from..], true, &mut negated) {
+            Some(values) => Some((vec![(k, values)], negated, then)),
+            None => negated_arms(test, &left, k, &mut negated).map(|values| (values, negated, then)),
+        };
         if let Some((values, negated, then)) = negations {
             let alone = values.len() == 1;
             let spans: Vec<js::Span> = values.iter().map(|&(at, _)| left[at].0.span).collect();
@@ -997,43 +981,36 @@ fn a_jump(stmt: &Stmt) -> bool {
 /// An arm's `if`, its test and its statements, as its case has them: of a
 /// guarded arm whose guard the test joins, `n === C && on`, its pattern's
 /// test, and what it does in an `if` of the guard, `if (on) { .. }`; else
-/// as they are, the guard's `if` in its statements (ADR 0629). A guard MIR
-/// tests in part in an `if` alone inside, `if (n === C && a) { if (b) { ..
-/// } }`, is one `if` of it all, `if (a && b) { .. }`: neither has an
-/// `else`, so each way on is the same. And what the arm does once its
-/// guard holds, whose end says whether it leaves.
+/// as they are, the guard's `if` in its statements (ADR 0629), one `if` of
+/// a guard MIR tests in parts already (`guard_ands`). And what the arm does
+/// once its guard holds, whose end says whether it leaves.
 fn guarded(test: &Expr, then: &[Stmt], guard: Option<js::Span>) -> Option<(Expr, Vec<Stmt>, Vec<Stmt>)> {
     // A test of the guard's, wherever MIR tests it.
     let of_guard = |t: &Expr| guard.is_some_and(|guard| test_at(t, js::Span::NONE).is_some_and(|at| within(at, guard)));
-    // `then`'s `if`s alone of the guard: their tests, and what they hold.
-    let peeled = |mut then: Vec<Stmt>| {
-        let mut inner = Vec::new();
-        while let [
-            Stmt {
-                kind: StmtKind::If(test, held, None),
-                ..
-            },
-        ] = &then[..]
-            && of_guard(test)
-        {
-            inner.push(test.clone());
-            then = held.clone();
-        }
-        (inner, then)
-    };
+    // What the guard's `if` holds, past those of a guard's own test alone
+    // inside one of its test's (ADR 0636, amended).
+    let mut held = then;
+    while let [
+        Stmt {
+            kind: StmtKind::If(test, inner, None),
+            ..
+        },
+    ] = held
+        && of_guard(test)
+    {
+        held = inner;
+    }
+    let held = held.to_vec();
     let mut tests = Vec::new();
     alternatives(test, Op::And, &mut tests);
     let Some(at) = tests.iter().position(|t| of_guard(t)) else {
-        let (_, held) = peeled(then.to_vec());
         return Some((test.clone(), then.to_vec(), held));
     };
     let join = |tests: Vec<Expr>| tests.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b));
     let pattern = join(tests[..at].iter().map(|&t| t.clone()).collect())?;
     let own = join(tests[at..].iter().map(|&t| t.clone()).collect())?;
     let span = own.span;
-    let (inner, held) = peeled(then.to_vec());
-    let joined = join(std::iter::once(own).chain(inner).collect())?;
-    Some((pattern, vec![StmtKind::If(joined, held.clone(), None).at(span)], held))
+    Some((pattern, vec![StmtKind::If(own, then.to_vec(), None).at(span)], held))
 }
 
 /// How many of `stmts`, after the arms tested before `arm`, are its: all,
