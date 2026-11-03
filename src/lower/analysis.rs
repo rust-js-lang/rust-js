@@ -43,7 +43,7 @@ mod wholes;
 pub(super) use wholes::{Wholes, whole_locals};
 
 pub(super) use foreign_bodies::foreign_bodies;
-pub(super) use naming::{UsesWritten, renamed_in};
+pub(super) use naming::{UsesWritten, receiver_name, renamed_in};
 pub(super) use throwing::call_throws;
 mod caller_locations;
 mod foreign_bodies;

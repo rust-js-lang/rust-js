@@ -619,11 +619,37 @@ export function label(status) {
 }
 ```
 
+```ts
+export interface Counter {
+    count: number;
+    stepSize: number;
+}
+
+export const Counter: {
+    "new"(stepSize: number): Counter;
+    tick(counter: Counter): void;
+};
+
+export type Status = "Idle" | {
+    TAG: "Loading";
+    percent: number;
+} | {
+    TAG: "Failed";
+    _0: string;
+};
+
+export function label(status: Status): string;
+```
+
 - **A struct is a plain object.** JS makes one as a literal,
   `{ count: 0, stepSize: 2 }`, or by its constructor function.
 - **A type's methods are an object named after it**, exported where one
   is `pub`. The receiver comes first: Rust's `counter.tick()` is
   `Counter.tick(counter)` ([ADR 0047](../../decisions/0047-methods.md)).
+  Its `.d.ts` declares the object beside the type, each `pub` method of
+  its receiver first, a generic impl's type parameters on each method,
+  and `new` quoted, as unquoted it'd be the type's construct signature
+  ([ADR 0047](../../decisions/0047-methods.md#amended-2026-11-03-its-object-is-declared-507), amended).
 - **An enum is its variants' shapes:** a variant without fields its name,
   `"Idle"`; one with fields `{ TAG: "Loading", percent }`.
 
@@ -1867,8 +1893,8 @@ export function watched(flags: number): boolean;
 
 - **A private type's, or a generic impl's, are no object**: JS can't name
   them, and each use is its value as before. One of a type with `pub`
-  methods too is its object's in the JS, and its `.d.ts` declares neither
-  yet (#507).
+  methods too is its object's, declared with them, its constants first
+  (#507).
 - **A constant whose value rustc can't hold as a value tree**, semver's
   `pub const STAR: Self = VersionReq { comparators: Vec::new() }`, has its
   initializer lowered as code, `export const VersionReq = { STAR: {

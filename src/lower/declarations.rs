@@ -97,6 +97,7 @@ pub(super) fn module<'tcx>(
     // is its default alone too, declared below (ADR 0611, amended).
     let named_default = default_export.filter(|&d| !default_declared && super::bindings::held_path(tcx, d).is_none());
     let mut items = Vec::new();
+    let mut objects = HashSet::new();
     for item in tcx.hir_module_free_items(module) {
         let def_id = item.owner_id.to_def_id();
         // A class whose struct is another module's, declared where its
@@ -106,6 +107,14 @@ pub(super) fn module<'tcx>(
         {
             out.erased = out.erased(class);
             items.extend(exported_class(tcx, documented(out.class(class), tcx, class), class));
+            continue;
+        }
+        // An impl of another module's type, its object of methods here, as
+        // its JS has it (ADR 0047, #507).
+        if let Some(adt) = out.foreign_impl_type(def_id) {
+            if objects.insert(adt) {
+                items.extend(out.type_object(adt));
+            }
             continue;
         }
         let held = held_default == Some(def_id);
@@ -167,9 +176,10 @@ pub(super) fn module<'tcx>(
         if tcx.def_kind(def_id) == DefKind::Enum {
             items.extend(out.variant_constants(def_id));
         }
-        // Its object of constants (#498), a value beside its type.
+        // Its object of constants and methods (#498, #507), a value beside
+        // its type.
         if matches!(tcx.def_kind(def_id), DefKind::Struct | DefKind::Enum | DefKind::Union) {
-            items.extend(out.type_constants(def_id));
+            items.extend(out.type_object(def_id));
         }
     }
     // A binding it holds as a value, a global function's `typeof

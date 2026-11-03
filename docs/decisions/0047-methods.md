@@ -1,6 +1,6 @@
 # 0047. Methods are an object of functions named after their type
 
-Status: Accepted. Extends [0020](0020-structs-and-tuples.md). Amended (2026-11-01): a `self` a pointer holds is named after its type too. Extended by [1043](1043-a-functions-scope-struct-is-its-scope.md): a function's scope struct's methods are functions declared in it.
+Status: Accepted. Extends [0020](0020-structs-and-tuples.md). Amended (2026-11-01): a `self` a pointer holds is named after its type too. Amended (2026-11-03): its object is declared in the `.d.ts` (#507). Extended by [1043](1043-a-functions-scope-struct-is-its-scope.md): a function's scope struct's methods are functions declared in it.
 Trait-method rejection is superseded by [0049](0049-traits-and-generics.md)
 for its supported subset; inherent methods keep this representation.
 
@@ -110,8 +110,56 @@ share its fields (gap rd345), writes `fn resolve_to_json(self: &Rc<Self>,
 ..)`, so a closure its methods make can hold the state; its `self` was
 named after the `Rc`, `resolveToJson(rc, key, value)`, where `&self`'s is
 `reply`. **A `self` an `Rc`, an `Arc`, a `Box` or a `Pin` holds is named
-after the type it holds**, `reply` (`mir/locals.rs`). Held by
+after the type it holds**, `reply` (`receiver_name`, `analysis/naming.rs`, since #507). Held by
 `test/lowering-mir-lets.test.ts`'s "a method's self of an Rc is named
 after its type" and the mutations `self-of-rc-named-rc` and
-`self-of-box-named-box` (`lower/mir/locals.ts`).
+`self-of-box-named-box` (`lower/analysis/naming.ts`).
 
+
+## Amended (2026-11-03): its object is declared (#507)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, declarations only.
+
+The object was exported in the JS and declared nowhere in the `.d.ts`, so
+TypeScript couldn't call `Counter.new()`; #498 declared an object of
+constants alone, and left one with methods undeclared rather than
+declared in part. **The `.d.ts` declares the object beside its type, as
+its JS has it**: its constants first, read only, then each `pub` method,
+its receiver first and named as its body names it (`counter`), and a
+generic impl's type parameters on each method, those TypeScript has a
+type for (`C: ReactNode`) that type, as the struct's declaration has
+them:
+
+```ts
+export interface Counter {
+    count: number;
+}
+
+export const Counter: {
+    readonly START: number;
+    "new"(): Counter;
+    tick(counter: Counter): void;
+};
+
+export const Wrapped: {
+    "new"<T>(value: T): Wrapped<T>;
+    get<T>(wrapped: Wrapped<T>): T;
+};
+```
+
+- **What it holds is naming's answer**, `FnInfo`'s object and module:
+  no class's prototype (ADR 0761), no `#[rust_js::object]`'s own method
+  (ADR 0943), and an impl in another module than its type's is declared
+  where its object is, its type imported, `import type { Square } from
+  "../shapes.js"; export const Square: { area(square: Square): number };`.
+- **A method named `new` is quoted**, `"new"(): Counter`: in a type,
+  `new(): Counter` is a construct signature, which the object hasn't.
+  `typescript/index.js` quotes any member method so named.
+- **The receiver's name has one owner**, `receiver_name`, which the
+  body's locals and the declaration both ask.
+
+Held by `test/impl-constants.test.ts` (the object whole, checked by
+`tsc --strict` calling it; a generic impl's and a `ReactNode` one's; an
+impl in another module; a class's, none); mutations `type-object-*`
+(`lower/declarations/namespaces.ts`) and `receiver-declared-self`
+(`lower/declarations/functions.ts`).

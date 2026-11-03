@@ -95,9 +95,8 @@ export const ReactiveFlags: {
 };
 ```
 
-Its `.d.ts` declares the object where it's constants alone; one with `pub`
-methods too stays undeclared, as an object of methods is (#507), not
-declared in part.
+Its `.d.ts` declares the object, its constants and, since #507, its `pub`
+methods with them (ADR 0047, amended).
 
 ### Why
 
@@ -111,11 +110,11 @@ declared in part.
 - `test/impl-constants.test.ts`: the object, a `#[rust_js::name]`d
   constant, a private one left out, the uses' values, its declaration; a
   private type's and a generic impl's, no object; one of methods too,
-  undeclared; a class's, its prototype's.
+  declared whole (#507); a class's, its prototype's.
 - Mutations `type-constants-unexported`, `type-constants-of-a-private-type`,
   `type-constants-of-a-class`, `type-constants-of-a-generic-impl`
   (`lower/analysis.ts`), `type-constant-read-by-name` (`lower/items.ts`),
-  `type-constants-declared-in-part` and `type-constants-writable`
+  and `type-constants-writable`
   (`lower/declarations/namespaces.ts`).
 
 ### Amended (#513): one no value tree says is its initializer's

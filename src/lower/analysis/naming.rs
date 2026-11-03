@@ -1181,3 +1181,26 @@ fn items_in(tcx: TyCtxt<'_>, module: DefId) -> Vec<DefId> {
         })
         .collect()
 }
+
+/// A method's `self`'s JS name, after its type's, `counter` of a
+/// `Counter`'s, a pointer's too, `self: &Rc<Self>`, `Box<Self>` or
+/// `Pin<&mut Self>`, as `&self`'s (ADR 0047, rd345): the name its body
+/// gives it, and its declaration's (#507). `None` of a `self` of no
+/// struct, enum or union, which keeps its name.
+pub(crate) fn receiver_name<'tcx>(tcx: TyCtxt<'tcx>, receiver: ty::Ty<'tcx>) -> Option<String> {
+    use crate::lower::recognition::{StdItem, is_std_def};
+    let mut ty = receiver.peel_refs();
+    while let ty::Adt(adt, args) = ty.kind()
+        && (adt.is_box()
+            || adt.is_pin()
+            || is_std_def(tcx, adt.did(), StdItem::Rc)
+            || is_std_def(tcx, adt.did(), StdItem::Arc))
+        && let Some(held) = args.types().next()
+    {
+        ty = held.peel_refs();
+    }
+    match ty.kind() {
+        ty::Adt(adt, _) => Some(crate::lower::lower_first(tcx.item_name(adt.did()).as_str())),
+        _ => None,
+    }
+}

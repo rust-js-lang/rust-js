@@ -6,15 +6,15 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, run, target } from "./support";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
-function compile(name: string, source: string): { js: string; dts: string; dir: string } {
+function compile(name: string, source: string, crate = "js"): { js: string; dts: string; dir: string } {
   const dir = fixture(name);
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
   writeFileSync(join(dir, "lib.rs"), source);
-  const js = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const js = ["--", "--extern", `${crate}=${join(target, `lib${crate}.rmeta`)}`, "-L", target];
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...js]);
   return { js: readFileSync(join(dir, "lib.js"), "utf8"), dts: readFileSync(join(dir, "lib.d.ts"), "utf8"), dir };
 }
@@ -56,19 +56,101 @@ test("a private type's constants, and a generic impl's, are no object", () => {
   expect(dts).not.toContain("export const Wrapped");
 });
 
-test("a type's object of constants and methods isn't declared in part", () => {
-  const { js, dts } = compile(
+// Its object's `pub` methods are declared beside its constants, each of
+// its receiver first, as the object's JS takes it, and of a generic impl
+// its type parameters, `get<T>(wrapped: Wrapped<T>): T` (#507).
+test("a type's object of constants and methods is declared whole", () => {
+  const { js, dts, dir } = compile(
     "impl-constants-methods",
-    "pub struct Counter {\n    pub count: u32,\n}\n\nimpl Counter {\n    pub const START: u32 = 0;\n\n    pub fn new() -> Counter {\n        Counter { count: Counter::START }\n    }\n}\n",
+    `pub struct Counter {
+    pub count: u32,
+}
+
+impl Counter {
+    pub const START: u32 = 0;
+
+    pub fn new() -> Counter {
+        Counter { count: Counter::START }
+    }
+
+    pub fn tick(&mut self) {
+        self.bump();
+    }
+
+    fn bump(&mut self) {
+        self.count += 1;
+    }
+}
+
+pub struct Wrapped<T> {
+    pub value: T,
+}
+
+impl<T> Wrapped<T> {
+    pub fn new(value: T) -> Self {
+        Wrapped { value }
+    }
+
+    pub fn get(&self) -> &T {
+        &self.value
+    }
+
+    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Wrapped<U> {
+        Wrapped { value: f(self.value) }
+    }
+}
+`,
   );
-  expect(js).toContain("export const Counter = {\n  START: 0,\n\n  new() {\n    return { count: 0 };\n  },\n};");
-  expect(dts).not.toContain("export const Counter");
+  expect(js).toContain("export const Counter = {\n  START: 0,\n\n  new() {\n    return { count: 0 };\n  },");
+  expect(dts).toContain(
+    "export const Counter: {\n    readonly START: number;\n    \"new\"(): Counter;\n    tick(counter: Counter): void;\n};",
+  );
+  expect(dts).not.toContain("bump");
+  expect(dts).toContain(
+    "export const Wrapped: {\n    \"new\"<T>(value: T): Wrapped<T>;\n    get<T>(wrapped: Wrapped<T>): T;\n    map<T, U>(wrapped: Wrapped<T>, f: (t: T) => U): Wrapped<U>;\n};",
+  );
+  // TypeScript calls it so.
+  writeFileSync(
+    join(dir, "use.ts"),
+    'import { Counter, Wrapped } from "./lib.js";\n\nconst counter: Counter = Counter.new();\nCounter.tick(counter);\nconst n: number = Counter.START + counter.count;\nexport const text: string = Wrapped.get(Wrapped.map(Wrapped.new(n), (v) => `${v}`));\n',
+  );
+  const options = { module: "esnext", moduleResolution: "bundler", allowJs: true, strict: true, noEmit: true, skipLibCheck: false };
+  writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({ compilerOptions: options, files: ["use.ts"] }));
+  const tsc = join(root, "node_modules/typescript/bin/tsc");
+  const checked = Bun.spawnSync([process.execPath, tsc, "-p", join(dir, "tsconfig.json")], { cwd: dir });
+  expect(checked.stdout.toString()).toBe("");
+});
+
+// A generic impl's parameter TypeScript has a type for, `C: ReactNode`, is
+// that type in each method, as in its struct's declaration.
+test("a generic impl's parameter of a TypeScript type is that type in its methods", () => {
+  const { dts } = compile(
+    "impl-constants-erased",
+    "use react::ReactNode;\n\npub struct Card<C: ReactNode> {\n    pub children: C,\n}\n\nimpl<C: ReactNode> Card<C> {\n    pub fn children(&self) -> &C {\n        &self.children\n    }\n}\n",
+    "react",
+  );
+  expect(dts).toContain("export interface Card {\n    children: ReactNode;\n}");
+  expect(dts).toContain("export const Card: {\n    children(card: Card): ReactNode;\n};");
+});
+
+// An impl in another module than its type's makes its object there, and is
+// declared there, its type imported (ADR 0047).
+test("an impl of another module's type is declared where its object is", () => {
+  const { dir } = compile(
+    "impl-constants-elsewhere",
+    "pub mod shapes {\n    pub struct Square {\n        pub side: f64,\n    }\n\n    pub mod area {\n        impl super::Square {\n            pub fn area(&self) -> f64 {\n                self.side * self.side\n            }\n        }\n    }\n}\n\npub fn area(square: &shapes::Square) -> f64 {\n    square.area()\n}\n",
+  );
+  expect(readFileSync(join(dir, "shapes/area.js"), "utf8")).toContain("export const Square = {\n  area(square) {");
+  expect(readFileSync(join(dir, "shapes.d.ts"), "utf8")).not.toContain("export const Square");
+  expect(readFileSync(join(dir, "shapes/area.d.ts"), "utf8")).toContain(
+    'import type { Square } from "../shapes.js";\n\nexport const Square: {\n    area(square: Square): number;\n};',
+  );
 });
 
 test("a class's constant is its prototype's, no object's", () => {
   const { js, dts } = compile(
     "impl-constants-class",
-    "#[cfg_attr(rust_js, rust_js::class)]\npub struct Component {\n    pub props: f64,\n}\n\nunsafe impl js::Defined for Component {}\nimpl js::Classed for Component {\n    type Constructor = js::AnyConstructor;\n}\n\n#[cfg_attr(rust_js, rust_js::class)]\nimpl Component {\n    pub const LIMIT: f64 = 1.0;\n\n    fn new(props: f64) -> Self {\n        Component { props }\n    }\n}\n\npub fn made(props: f64) -> f64 {\n    Component::new(props).props + Component::LIMIT\n}\n",
+    "#[cfg_attr(rust_js, rust_js::class)]\npub struct Component {\n    pub props: f64,\n}\n\nunsafe impl js::Defined for Component {}\nimpl js::Classed for Component {\n    type Constructor = js::AnyConstructor;\n}\n\n#[cfg_attr(rust_js, rust_js::class)]\nimpl Component {\n    pub const LIMIT: f64 = 1.0;\n\n    fn new(props: f64) -> Self {\n        Component { props }\n    }\n\n    pub fn doubled(&self) -> f64 {\n        self.props * 2.0\n    }\n}\n\npub fn made(props: f64) -> f64 {\n    Component::new(props).props + Component::LIMIT\n}\n",
   );
   expect(js).toContain("Component.prototype.limit = 1;");
   expect(dts).not.toContain("export const Component");

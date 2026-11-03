@@ -150,24 +150,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && !continued.contains(&place.local)
             {
                 // A method's `self`, named after its type, `counter` for a
-                // `Counter`, of one a pointer holds too, `self: &Rc<Self>`,
-                // `Box<Self>` or `Pin<&mut Self>`, as `&self` is (rd345).
-                let mut ty = body.local_decls[place.local].ty.peel_refs();
-                while let ty::Adt(adt, args) = ty.kind()
-                    && (adt.is_box()
-                        || adt.is_pin()
-                        || self.is_std_type(ty, crate::lower::recognition::StdItem::Rc)
-                        || self.is_std_type(ty, crate::lower::recognition::StdItem::Arc))
-                    && let Some(held) = args.types().next()
-                {
-                    ty = held.peel_refs();
-                }
-                let name = match ty.kind() {
-                    ty::Adt(adt, _) if info.name.as_str() == "self" => {
-                        crate::lower::lower_first(self.tcx.item_name(adt.did()).as_str())
-                    }
-                    _ => info.name.to_string(),
-                };
+                // `Counter` (rd345).
+                let receiver = (info.name.as_str() == "self")
+                    .then(|| crate::lower::analysis::receiver_name(self.tcx, body.local_decls[place.local].ty))
+                    .flatten();
+                let name = receiver.unwrap_or_else(|| info.name.to_string());
                 // A parameter's without the `_` that marks it unused (ADR 0678).
                 let named = given.iter().find(|(span, _)| *span == info.source_info.span);
                 user[place.local] = Some(match body.local_kind(place.local) {

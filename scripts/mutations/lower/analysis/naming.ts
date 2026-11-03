@@ -864,4 +864,20 @@ export const mutations: Mutation[] = [
     replace: "                            Some(_) => named.push(id),\n",
     tests: ["test/reexports-through.test.ts", "-t", "a use through a module"],
   },
+  {
+    name: "self-of-rc-named-rc",
+    breaks: "a `self: &Rc<Self>` is named after the `Rc`, `next(rc)`, not its type, `next(reply)` (rd345)",
+    file: "src/lower/analysis/naming.rs",
+    find: "            || is_std_def(tcx, adt.did(), StdItem::Rc)\n",
+    replace: "",
+    tests: ["test/lowering-mir-lets.test.ts", "-t", "a method's self of an Rc is named after its type"],
+  },
+  {
+    name: "self-of-box-named-box",
+    breaks: "a `self: Box<Self>` is named after the `Box`, `boxed(box)`, not its type (rd345)",
+    file: "src/lower/analysis/naming.rs",
+    find: "        && (adt.is_box()\n",
+    replace: "        && (false\n",
+    tests: ["test/lowering-mir-lets.test.ts", "-t", "a method's self of an Rc is named after its type"],
+  },
 ];

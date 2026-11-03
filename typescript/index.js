@@ -731,7 +731,9 @@ function member(m) {
     case "method":
       return f.createMethodSignatureDeclaration(
         undefined,
-        propertyName(m.name),
+        // A method named `new` is quoted, `"new"(): Counter`: unquoted, a
+        // type's `new(): Counter` is its construct signature (#507).
+        m.name === "new" ? string(m.name) : propertyName(m.name),
         m.optional ? f.createToken(SyntaxKind.QuestionToken) : undefined,
         typeParameterNodes(m.typeParameters),
         m.params.map(param),

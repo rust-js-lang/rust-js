@@ -49,7 +49,13 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 let name = match idents.get(i).copied().flatten() {
                     // Its JS name's, without a `_` of one unused (ADR 0678).
                     Some(ident) => {
-                        let named = super::super::parameter_name(self.tcx, def_id, ident.name.as_str());
+                        // Its `self`, named after its type, as its body names
+                        // it, `tick(counter: Counter)` (#507).
+                        let receiver = (ident.name == rustc_span::kw::SelfLower)
+                            .then(|| super::super::analysis::receiver_name(self.tcx, ty))
+                            .flatten();
+                        let name = receiver.unwrap_or_else(|| ident.name.to_string());
+                        let named = super::super::parameter_name(self.tcx, def_id, &name);
                         crate::names::js_ident(&named)
                     }
                     // A pattern, `TagProps { variant, .. }`: its props'.

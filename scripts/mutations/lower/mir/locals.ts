@@ -68,8 +68,8 @@ export const mutations: Mutation[] = [
     name: "mir-self-named-self",
     breaks: "a method's `self` from MIR is named `self`, not after its type",
     file: "src/lower/mir/locals.rs",
-    find: 'ty::Adt(adt, _) if info.name.as_str() == "self" =>',
-    replace: "ty::Adt(adt, _) if false =>",
+    find: '                let receiver = (info.name.as_str() == "self")\n',
+    replace: "                let receiver = false\n",
     tests: [
       "test/lowering-mir-lets.test.ts",
       "-t",
@@ -153,22 +153,6 @@ export const mutations: Mutation[] = [
       "                decl.mutability == mir::Mutability::Not && false\n",
     tests: ["test/corpus.test.ts", "-t", "^range_values.rs$"],
     snapshots: true,
-  },
-  {
-    name: "self-of-rc-named-rc",
-    breaks: "a `self: &Rc<Self>` is named after the `Rc`, `next(rc)`, not its type, `next(reply)` (rd345)",
-    file: "src/lower/mir/locals.rs",
-    find: "                        || self.is_std_type(ty, crate::lower::recognition::StdItem::Rc)\n",
-    replace: "",
-    tests: ["test/lowering-mir-lets.test.ts", "-t", "a method's self of an Rc is named after its type"],
-  },
-  {
-    name: "self-of-box-named-box",
-    breaks: "a `self: Box<Self>` is named after the `Box`, `boxed(box)`, not its type (rd345)",
-    file: "src/lower/mir/locals.rs",
-    find: "                    && (adt.is_box()\n",
-    replace: "                    && (false\n",
-    tests: ["test/lowering-mir-lets.test.ts", "-t", "a method's self of an Rc is named after its type"],
   },
   {
     name: "scope-self-named-apart",

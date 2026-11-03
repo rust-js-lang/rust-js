@@ -3,13 +3,20 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "receiver-declared-self",
+    breaks: "a method's receiver is declared `self`, not its JS name, `counter` (#507)",
+    file: "src/lower/declarations/functions.rs",
+    find: "                        let name = receiver.unwrap_or_else(|| ident.name.to_string());\n",
+    replace: "                        let name = ident.name.to_string();\n",
+    tests: ["test/impl-constants.test.ts"],
+  },
+  {
     name: "parameter-declared-underscored",
     breaks:
       "a parameter's declaration keeps the `_` its JS name drops, `ref` declared `_ref`",
     file: "src/lower/declarations/functions.rs",
-    find: "                        let named = super::super::parameter_name(self.tcx, def_id, ident.name.as_str());\n",
-    replace:
-      "                        let named = super::super::camel_case(ident.name.as_str());\n",
+    find: "                        let named = super::super::parameter_name(self.tcx, def_id, &name);\n",
+    replace: "                        let named = super::super::camel_case(&name);\n",
     tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
   },
   {
