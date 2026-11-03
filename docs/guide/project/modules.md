@@ -858,7 +858,8 @@ leading comments, a license's, are its JS's first
 ([ADR 0383](../../decisions/0383-a-files-leading-comments-are-its-jss.md),
 [ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md)).
 A module's `//!` doc, an inline `mod`'s `/*!` too, is its JS file's
-description, a plain `//` comment right after them, above its imports,
+description, one JSDoc right after them, `/**\n * This is a renderer ..\n
+*/`, its runs a blank line apart its paragraphs, above its imports,
 whatever its first item is, a trait or a struct with no JS, with a blank
 line after it where the Rust has one
 ([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md), amended).

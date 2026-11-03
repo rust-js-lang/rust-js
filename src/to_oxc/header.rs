@@ -56,30 +56,60 @@ pub(super) fn header(module: &Module, imports: bool, docs: &Docs) -> String {
     code
 }
 
-/// A module's own inner doc comments, `//!` or `/*!`, as JS writes them,
-/// `//` (`comments::in_js`): above its JS, below rust-js's line and the
-/// file's leading comments, and above its directives and imports, as a
-/// file's description is (#486, ADR 0444, amended). A blank line between
-/// two where the Rust has one, and after them, `apart`, where it has one
-/// right after them.
+/// A module's own inner doc comments, `//!` or `/*!`: its file's
+/// description, one JSDoc, as upstream's files write theirs (rd644), above
+/// its JS, below rust-js's line and the file's leading comments, and above
+/// its directives and imports (#486, ADR 0444, amended). A blank line after
+/// them, `apart`, where the Rust has one right after them.
 #[derive(Default)]
 pub(super) struct Docs {
     lines: Vec<String>,
     apart: bool,
 }
 
-/// `own`'s `Docs`, each where it is in `text`.
+/// `own`'s `Docs`, each where it is in `text`: a run of `//!` lines one
+/// `/** */`, as a `///` run is its item's (`comments::jsdoc`), runs a blank
+/// line apart its paragraphs, ` *` between; a `/*!` block `/**`. Where a
+/// line holds the `*/` that would end it, each line as JS writes it, `//`
+/// (`comments::in_js`), a blank line between two where the Rust has one.
 pub(super) fn docs(own: &[crate::program::Comment], text: &str) -> Docs {
     let blank_after = |hi: u32| {
         let rest = &text[hi as usize..];
         rest[..rest.len() - rest.trim_start().len()].matches('\n').count() > 1
     };
+    let written = |c: &crate::program::Comment| &text[c.lo as usize..c.hi as usize];
     let mut lines = Vec::new();
-    for (i, c) in own.iter().enumerate() {
+    let mut i = 0;
+    while i < own.len() {
         if i > 0 && blank_after(own[i - 1].hi) {
             lines.push(String::new());
         }
-        lines.push(crate::comments::in_js(&text[c.lo as usize..c.hi as usize]));
+        let run = (own[i..].iter()).take_while(|c| written(c).starts_with("//!")).count();
+        let Some(block) = written(&own[i]).strip_prefix("/*!") else {
+            let run = &own[i..i + run];
+            let mut said = Vec::new();
+            for (j, c) in run.iter().enumerate() {
+                if j > 0 && blank_after(run[j - 1].hi) {
+                    said.push("");
+                }
+                said.push(&written(c)["//!".len()..]);
+            }
+            match crate::comments::jsdoc(&said) {
+                Some(jsdoc) => lines.push(jsdoc),
+                None => {
+                    for (j, c) in run.iter().enumerate() {
+                        if j > 0 && blank_after(run[j - 1].hi) {
+                            lines.push(String::new());
+                        }
+                        lines.push(crate::comments::in_js(written(c)));
+                    }
+                }
+            }
+            i += run.len();
+            continue;
+        };
+        lines.push(format!("/**{block}"));
+        i += 1;
     }
     Docs {
         apart: own.last().is_some_and(|last| blank_after(last.hi)),

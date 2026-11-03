@@ -136,7 +136,7 @@ mod sides {
     }
 }
 `);
-  expect(js).toContain('// The client\'s entry.\n// It re-exports what its module makes.\n\nexport { area } from "./shapes.js";\n');
+  expect(js).toContain('/**\n * The client\'s entry.\n * It re-exports what its module makes.\n */\n\nexport { area } from "./shapes.js";\n');
   expect(js).toContain('\n// Its side, a plain comment.\n\nexport { side } from "./sides.js";\n');
   expect((lib.area as (r: number) => number)(3)).toBe(9);
 });
@@ -456,12 +456,11 @@ pub fn named() -> u32 {
 });
 
 // The pilot's modules start with what each is for, `//! Where the app is:
-// ..`, above their `use`s: a plain comment above the imports (ADR 0444's
-// rule 3), but JS has no doc comment of what it's in, so it's JS's plain
-// one, `// Where the app is: ..`, and a `/*! .. */` a `/* .. */`, above
-// the imports or, with none, the code, a blank line after it where the
-// Rust has one.
-test("a module's inner doc comment is a plain JS comment", async () => {
+// ..`, above their `use`s: the file's description, a JSDoc, as upstream's
+// files write theirs, `/** Where the app is: .. */`, and a `/*! .. */` a
+// `/** .. */`, above the imports or, with none, the code, a blank line
+// after it where the Rust has one (rd644).
+test("a module's inner doc comment is a JSDoc, not Rust's", async () => {
   const dir = fixture("inner-doc-above-imports");
   writeFileSync(join(dir, "lib.rs"), `//! Where the app is: its URL's hash,
 //! followed as it changes.
@@ -482,14 +481,16 @@ pub fn named() -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain(`// Where the app is: its URL's hash,
-// followed as it changes.
+  expect(js).toContain(`/**
+ * Where the app is: its URL's hash,
+ * followed as it changes.
+ */
 
 import { lane } from "./lanes.js";
 `);
   expect(js).not.toContain("//!");
   const lanes = readFileSync(join(dir, "lanes.js"), "utf8");
-  expect(lanes).toContain("/* The lanes. */\n\nexport function lane() {");
+  expect(lanes).toContain("/** The lanes. */\n\nexport function lane() {");
   expect(lanes).not.toContain("/*!");
   expect((await import(join(dir, "lib.js"))).named()).toBe(2);
 });
@@ -534,13 +535,13 @@ pub fn show() -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("// A header comment, above a trait and its impl.\n\nexport const upperLetter = {");
+  expect(js).toContain("/** A header comment, above a trait and its impl. */\n\nexport const upperLetter = {");
   expect(js.split("A header comment").length).toBe(2);
   expect(js).not.toContain("The lanes.");
   expect(js).not.toContain("The struct's.");
   expect((await import(join(dir, "lib.js"))).show()).toBe("65");
   const lanes = readFileSync(join(dir, "lanes.js"), "utf8");
-  expect(lanes).toContain("/* The lanes. */\n\n// Above the function.\nexport function lane() {");
+  expect(lanes).toContain("/** The lanes. */\n\n// Above the function.\nexport function lane() {");
   expect(lanes).not.toContain("No JS.");
   // Above a type's `use`, which makes no import, and an enum's methods.
   const typed = fixture("inner-doc-past-a-type-use");
@@ -576,7 +577,7 @@ impl Shade {
 }
 `);
   run([compiler, join(typed, "lib.rs"), "-o", join(typed, "lib.js")]);
-  const doc = "// A type's `use` first.\n\n// Then the enum.\n\nimport { lane } from \"./lanes.js\";\n";
+  const doc = "/**\n * A type's `use` first.\n *\n * Then the enum.\n */\n\nimport { lane } from \"./lanes.js\";\n";
   expect(readFileSync(join(typed, "lib.js"), "utf8")).toContain(doc);
   // Once, the import's comments none of them.
   expect(readFileSync(join(typed, "lib.js"), "utf8").split("Then the enum.").length).toBe(2);
@@ -598,9 +599,61 @@ pub fn named() -> u32 {
 `);
   run([compiler, join(above, "lib.rs"), "-o", join(above, "lib.js")]);
   const right = readFileSync(join(above, "lib.js"), "utf8");
-  expect(right).toContain(`// Right above.\nimport { lane } from "./lanes.js";\n`);
+  expect(right).toContain(`/** Right above. */\nimport { lane } from "./lanes.js";\n`);
   expect(right.split("Right above.").length).toBe(2);
   expect(right).toContain("  // A function's own, in its body.\n  return");
+});
+
+// React's ReactNoopServer, ReactNoopFlightServer and
+// ReactDOMServerExternalRuntime describe their files in one JSDoc, `/**\n
+// * This is a renderer of React ..\n */`, which their ports write as `//!`
+// lines: a module's own inner doc is its file's description, one \`/** */\`
+// block, as a \`///\` run is its item's JSDoc; runs a blank line apart are
+// its paragraphs, an inline module's \`/*!\` its \`/**\` (rd644).
+test("a module's inner doc comment is one JSDoc, its file's description", async () => {
+  const dir = fixture("inner-doc-jsdoc");
+  writeFileSync(join(dir, "lib.rs"), `// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+//! This is a renderer of React that doesn't have a render target output.
+//! It is useful to demonstrate the internals of the reconciler in isolation.
+//!
+//! And a paragraph of its own.
+
+//! A run a blank line apart.
+
+use crate::lanes::lane;
+
+pub mod lanes {
+    /*! The lanes. */
+
+    pub fn lane() -> u32 {
+        1
+    }
+}
+
+pub fn named() -> u32 {
+    //! A function's own, plain.
+    lane() + 1
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * This is a renderer of React that doesn't have a render target output.
+ * It is useful to demonstrate the internals of the reconciler in isolation.
+ *
+ * And a paragraph of its own.
+ *
+ * A run a blank line apart.
+ */
+
+import { lane } from "./lanes.js";
+`);
+  expect(js).toContain("  // A function's own, plain.\n  return");
+  expect((await import(join(dir, "lib.js"))).named()).toBe(2);
+  expect(readFileSync(join(dir, "lanes.js"), "utf8")).toContain("/** The lanes. */\n\nexport function lane() {");
 });
 
 // React's EventRegistry.registerDirectEvent: a blank line, then

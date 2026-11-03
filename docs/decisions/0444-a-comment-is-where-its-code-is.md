@@ -868,3 +868,38 @@ they were lost.
   is held by a function body's own `//!`, and 1063's
   `header-comment-blank-dropped` by a plain comment and a blank line above
   a re-export's `pub use`.
+
+## Amendment: a module's `//!` is one JSDoc, its file's description (2026-11-03, rd644)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a comment's form.
+
+#486 printed a module's `//!` lines as JS's plain `//` lines, as rule 3
+had every inner doc comment, JS having no doc comment of what it's in.
+Upstream's files describe themselves in a JSDoc: React's ReactNoopServer,
+ReactNoopFlightServer and ReactDOMServerExternalRuntime start `/**\n *
+This is a renderer of React ..\n */`, which their ports write as `//!`
+lines, and every port file whose `//!` has an upstream counterpart (all
+three; the other 33 `//!`s in react-in-rust are crate roots of their own)
+writes it so. The JS printed `//` lines where upstream has the block.
+
+**A module's own inner doc comments are one JSDoc** (`header::docs`): a
+run of `//!` lines one `/** .. */`, as a `///` run is its item's
+(`comments::jsdoc`), runs a blank line apart its paragraphs, ` *` between;
+an inline module's `/*! .. */` its `/** .. */`. Where a line holds the
+`*/` that would end the block, each line as JS writes it, `//`, as an
+item's doc does. An inner doc comment in a function's block stays a plain
+comment, as rule 3 has it: it describes no file.
+
+ReactDOMServerExternalRuntime's JS also starts with a license, `//
+Copyright (c) Meta Platforms ..`, which upstream's file lacks: its port's
+Rust starts with that comment, and a file's leading comments are its JS's
+first, as written (ADR 0383). That's the port's to drop, not the
+compiler's.
+
+The snapshots async, builtins, imports, throws, todomvc and web_forms and
+the pilot's committed JS are re-blessed for their JSDoc.
+
+- Held by `test/lowering-comments-items.test.ts`, "a module's inner doc
+  comment is one JSDoc, its file's description", run, and the tests #486
+  names; mutations `module-doc-plain`, `module-block-doc-plain` and
+  `module-doc-runs-joined` (`to_oxc/header.ts`).
