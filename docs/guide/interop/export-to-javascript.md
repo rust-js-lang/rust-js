@@ -529,6 +529,11 @@ export function named(names: string[]): [
   binding's call is given them.
 - **Its `.d.ts` is a rest parameter** of what each reads as, `(...args:
   string[]) => string`.
+- **Read, they're their array**, as a rest slice is: an index a test
+  shows in bounds, `args[0]` after `args.is_empty()` fails, is
+  `args[0]`, no `$index`
+  ([ADR 0851](../../decisions/0851-a-closure-of-rest-arguments-is-jss-rest-parameter.md),
+  amended, #586).
 - **Rest arguments of a type parameter, or of any sized type, are each
   itself**, read and given, so a generic closure's are typed: a Rust
   caller gives each of its own type, `first()(&(1, 2))`, and its `.d.ts`

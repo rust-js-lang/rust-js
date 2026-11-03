@@ -769,6 +769,59 @@ pub fn used() -> (Option<Rc<String>>, f64, f64, Option<u8>, bool, usize) {
   expect(lib.firsts()(undefined, 1)).toBe(undefined);
 });
 
+// Rest arguments as a value are their array, as a rest slice is: an index a
+// test shows in bounds, `value[0]` after `value.is_empty()` fails, is read
+// as JS reads it, no `$index`; one none shows is checked still (#586).
+test("rest arguments as a value indexed in bounds are read as a rest slice is", async () => {
+  const dir = fixture("rest-value-indexed");
+  writeFileSync(join(dir, "lib.rs"), `use js::Rest;
+
+pub fn first_of_rest() -> impl Fn(&dyn Rest<f64>) -> f64 {
+    |value: &dyn Rest<f64>| if value.is_empty() { 0.0 } else { value[0] }
+}
+
+pub fn ends_of_rest() -> impl Fn(&dyn Rest<f64>) -> f64 {
+    |value: &dyn Rest<f64>| {
+        if value.len() > 2 {
+            value[value.len() - 1] + value[1]
+        } else {
+            -1.0
+        }
+    }
+}
+
+pub fn second_of_rest() -> impl Fn(&dyn Rest<f64>) -> f64 {
+    |value: &dyn Rest<f64>| if value.is_empty() { 0.0 } else { value[1] }
+}
+
+pub fn first_of_slice(#[cfg_attr(rust_js, rust_js::rest)] value: &[f64]) -> f64 {
+    if value.is_empty() { 0.0 } else { value[0] }
+}
+
+pub fn ends_of_slice(#[cfg_attr(rust_js, rust_js::rest)] value: &[f64]) -> f64 {
+    if value.len() > 2 {
+        value[value.len() - 1] + value[1]
+    } else {
+        -1.0
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
+  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(out).toContain("return (...value) => (value.length === 0 ? 0 : value[0]);");
+  expect(out).toContain("return (...value) => (value.length > 2 ? value[value.length - 1] + value[1] : -1);");
+  expect(out).toContain("return (...value) => (value.length === 0 ? 0 : $index(value, 1));");
+  expect(out).toContain("return value.length === 0 ? 0 : value[0];");
+  expect(out).toContain("return value.length > 2 ? value[value.length - 1] + value[1] : -1;");
+  const lib = await import(join(dir, "lib.js"));
+  // Native Rust's: 0 of none, the first; the last and the second; a panic
+  // past the end.
+  expect([lib.firstOfRest()(), lib.firstOfRest()(4, 5)]).toEqual([0, 4]);
+  expect([lib.endsOfRest()(1, 2), lib.endsOfRest()(1, 2, 3)]).toEqual([-1, 5]);
+  expect(() => lib.secondOfRest()(7)).toThrow("index out of bounds: the len is 1 but the index is 1");
+  expect([lib.firstOfSlice(9, 8), lib.endsOfSlice(1, 2, 3)]).toEqual([9, 5]);
+});
+
 // Where rest arguments as a value aren't JS's rest parameter, it's an error
 // that says what to write (ADRs 0667, 0851).
 for (const [name, source, message] of [

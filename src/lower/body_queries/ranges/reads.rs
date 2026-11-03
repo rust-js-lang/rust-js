@@ -62,6 +62,8 @@ pub(super) fn read_vars<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -
                     ) || reads_string_length(tcx, def_id)
                         // A `String`'s text, `&server_text` of a `&str`.
                         || is_string_deref(tcx, def_id, generic_args)
+                        // Rest arguments as a value's array (#586).
+                        || super::cells::rest_array(tcx, def_id, generic_args)
                         // A `RefCell`'s read of what it holds, `queue.borrow()`,
                         // its guard's `deref`, the value, and an `Rc`'s
                         // `deref` of it, the cell (ADR 0881).

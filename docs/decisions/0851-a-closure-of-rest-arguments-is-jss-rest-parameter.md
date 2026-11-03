@@ -244,3 +244,30 @@ parameter or any sized type are read as themselves" (a generic `signal`
 of `Rc<T>`s, a struct's, `firsts<T>` of a `T` and of an `Option<u8>`,
 each given and read, its JS, `.d.ts` and run). Mutation
 `rest-items-of-a-param-unsized` (`bindings/rest_values.ts`).
+
+## Amendment: an index of them a test shows in bounds is read as JS reads it (#586)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. An index the
+body's ranges show in bounds can't panic, so its check does nothing.
+
+alien-signals' `signal<T>` port reads a closure's rest arguments as a
+rest function's slice is read, `if value.is_empty() { .. } else {
+value[0] }`. The function's printed `value[0]`; the closure's printed
+`$index(value, 0)`: what the ranges know of a slice's length is keyed by
+its variable, and the closure's `value[0]` is of `*Deref::deref(value)`,
+a call, which they followed as no slice.
+
+**The js crate's `Deref` of rest arguments as a value is their array, in
+the body's ranges too** (`body_queries::ranges::cells::rest_array`, of
+`bindings::reads_rest_value`): a slice of `value` itself, as long, in
+`slice_through`, and a read of it that changes nothing, in a test's
+`reads`, so `value.is_empty()`, `value.len() > 2` and `value[i]` are of
+one slice. `value[0]` after `value.is_empty()` fails, and `value[1]`,
+`value[value.len() - 1]` after `value.len() > 2`, are read unchecked;
+`value[1]` after only `!value.is_empty()` is `$index(value, 1)` still.
+Held by test/rest-parameters.test.ts's "rest arguments as a value indexed
+in bounds are read as a rest slice is", run in JS, beside the slice's
+same function; mutations `rest-value-not-its-array`
+(`body_queries/ranges/cells.ts`) and `rest-value-read-unread`
+(`body_queries/ranges/reads.ts`).
+

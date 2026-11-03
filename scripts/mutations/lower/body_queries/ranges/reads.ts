@@ -63,4 +63,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^filtered_not_empty.rs$"],
     snapshots: true,
   },
+  {
+    name: "rest-value-read-unread",
+    breaks:
+      "rest arguments as a value's `Deref` isn't a read, so `value.len() > 2` tells nothing and `value[1]` is `$index(value, 1)` (#586)",
+    file: "src/lower/body_queries/ranges/reads.rs",
+    find: "                        || super::cells::rest_array(tcx, def_id, generic_args)\n",
+    replace: "",
+    tests: ["test/rest-parameters.test.ts", "-t", "indexed in bounds"],
+  },
 ];

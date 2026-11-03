@@ -63,4 +63,13 @@ export const mutations: Mutation[] = [
     replace: "            false\n",
     tests: corpus,
   },
+  {
+    name: "rest-value-not-its-array",
+    breaks:
+      "rest arguments as a value aren't the array their `Deref` gives, so `value[0]` after `value.is_empty()` fails is `$index(value, 0)` (#586)",
+    file: "src/lower/body_queries/ranges/cells.rs",
+    find: "                ExprKind::Call { fun, ref args, .. } if self.reads_rest(fun) => e = args[0],\n",
+    replace: "",
+    tests: ["test/rest-parameters.test.ts", "-t", "indexed in bounds"],
+  },
 ];

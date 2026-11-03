@@ -10,6 +10,7 @@
 use super::empty::drop_runs_code;
 use super::known::{Below, CELL, Known, Range};
 use super::{Slice, Walk, root_var, type_range, var_of};
+use crate::lower::bindings;
 use crate::lower::body_queries::strip;
 use crate::lower::fn_def;
 use crate::lower::recognition::{CellView, VecView, cell_view, is_cell_guard};
@@ -18,6 +19,7 @@ use rustc_middle::thir::LocalVarId;
 use rustc_middle::thir::visit::{Visitor, walk_expr, walk_pat, walk_stmt};
 use rustc_middle::thir::{Expr, ExprId, ExprKind, Pat, PatKind, Stmt, StmtKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt};
+use rustc_span::def_id::DefId;
 use std::collections::HashMap;
 
 /// Whether dropping a `ty` may run code that could change a cell's value:
@@ -183,6 +185,9 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 }
                 // A `Vec`'s slice, `deref` or `deref_mut`, is as long.
                 ExprKind::Call { fun, ref args, .. } if self.vec_view(fun) == Some(VecView::Slice) => e = args[0],
+                // Rest arguments as a value's, the array itself (ADR 0851), is
+                // the same array, `value[0]` after `!value.is_empty()` (#586).
+                ExprKind::Call { fun, ref args, .. } if self.reads_rest(fun) => e = args[0],
                 ExprKind::Field { lhs, name, .. } => {
                     path.push(name.as_usize());
                     e = lhs;
@@ -194,6 +199,12 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 _ => return None,
             }
         }
+    }
+
+    /// Whether `fun` is the js crate's `Deref` of rest arguments as a value
+    /// (`rest_array`).
+    fn reads_rest(&self, fun: ExprId) -> bool {
+        fn_def(self.thir[strip(self.thir, fun)].ty).is_some_and(|(def_id, args)| rest_array(self.tcx, def_id, args))
     }
 
     /// What a `RefCell`'s call `fun` makes of what it holds.
@@ -249,4 +260,14 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         range.lo = range.lo.max(0);
         range.below.set(slice, Below::LENGTH.offset(-1));
     }
+}
+
+/// Whether `def_id` of `args` is the js crate's `Deref` of rest arguments as
+/// a value, `dyn js::Rest<T>`, which is their array, read as it is
+/// (`bindings::reads_rest_value`, ADR 0851): of the same length, and
+/// changing nothing (#586).
+pub(super) fn rest_array<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    (tcx.trait_of_assoc(def_id)).is_some_and(|trait_id| {
+        (args.types().next()).is_some_and(|this| bindings::reads_rest_value(tcx, trait_id, this))
+    })
 }
