@@ -899,7 +899,8 @@ pub fn part() -> String {
 // a read of something else, is named for the variable, as React's
 // patchConsole's `const originalMethod = descriptor.value;`, apart from
 // another of its name; one of a part of a variable, `entry.value`, is
-// `captured`, as no variable is its name.
+// `captured`, as no variable is its name, and so is a copy of the variable
+// as it is now, `let mut n = n;`'s, which its name would only name apart.
 test("a closure's capture read first is named for its variable", async () => {
   const { js, lib } = await compiled(
     "capture-named-for-its-variable",
@@ -938,9 +939,20 @@ pub fn part() -> Box<dyn Fn() -> String> {
     let entry = descriptor_of();
     Box::new(move || shown(entry.value))
 }
+
+pub fn copies(n: u32) -> u32 {
+    let mut n = n;
+    let get = move || n;
+    n += 100;
+    get() * 1000 + n
+}
 `,
   );
   expect(js).toContain("  const captured = entry.value;\n");
+  // A copy of the variable as it is now, which the maker changes after,
+  // its own JS named apart where it's read, `n$1`.
+  expect(js).toContain("  const captured = n;\n  const get = () => captured;\n");
+  expect(lib.copies(2 as never)).toBe(2102);
   expect(js).toContain("    const id = action._0;\n    const id$1 = action._0;\n    return [(x) => x === id, (x) => x !== id$1];\n");
   const [is, isnt] = lib.matchers({ TAG: "Toggle", _0: 2 } as never) as unknown as [(x: number) => boolean, (x: number) => boolean];
   expect([is(2), is(3), isnt(2), isnt(3)]).toEqual([true, false, false, true]);

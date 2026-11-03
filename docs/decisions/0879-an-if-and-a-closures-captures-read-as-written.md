@@ -1071,12 +1071,17 @@ keep `captured`. A part of a variable, `entry.value`, which no variable
 names. And a copy of a variable as it is now, which the maker changes
 after, `const captured = factor;`: named for itself it could only be named
 apart, `factor$1`, which reads worse (readability's renamed share grew
-612 to 612.4 in 10,000 lines with it).
+612 to 612.4 in 10,000 lines with it). The variable is the one its debug
+info names, not its JS name where it's read, which may be named apart
+already: `let mut n = n; let get = move || n;` reads `n` as `n$1` until
+the two are merged, so a test of the JS name printed `const n$1 = n;`,
+examples/closures.rs's `moveCopies` (main red at 189d19692).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, a name.
 
 Held by `test/lowering-moves.test.ts`'s "a closure's capture read first is
-named for its variable" and corpus `let_chain_values` (blessed: `const n
+named for its variable" (its `copies`, `const captured = n;`), the
+`closures` snapshot, and corpus `let_chain_values` (blessed: `const n
 = parse._0;`), and the guide's tutorial (`const id = action._0;`);
 mutations `capture-named-captured`, `capture-copy-named-apart` and
 `capture-part-named-for-its-variable` (`lower/mir/closures.ts`).

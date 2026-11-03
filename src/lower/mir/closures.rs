@@ -206,8 +206,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // copy of the variable as it is now, `const captured
                         // = factor;`, which its name would only name apart
                         // (rd656).
-                        let base = (self.whole_capture_name(def_id, i))
-                            .filter(|name| !matches!(&e.kind, js::ExprKind::Var(v) if v == name));
+                        // The variable's own JS may be named apart where it's
+                        // read, `n$1` of `let mut n = n;`, which its debug
+                        // info names `n`.
+                        let base = (self.whole_capture_name(def_id, i)).filter(|name| {
+                            !matches!(&e.kind, js::ExprKind::Var(v) if (state.body.var_debug_info.iter()).any(|info|
+                                matches!(info.value, mir::VarDebugInfoContents::Place(p)
+                                    if p.projection.is_empty() && state.locals.names[p.local] == *v)
+                                    && crate::lower::camel_case(info.name.as_str()) == *name))
+                        });
                         self.spill(base.as_deref().unwrap_or("captured"), e, out)
                     };
                     if let js::ExprKind::Var(name) = &e.kind {

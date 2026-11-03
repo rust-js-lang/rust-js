@@ -153,9 +153,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure's `&mut` capture of its maker's variable isn't the variable, so `std::mem::take(&mut current)` in it empties the array in place, `current.splice(0)`, where the maker's own assigns it, `current = []`",
     file: "src/lower/mir/closures.rs",
-    find: "                        upvars.get(i).map(|t| t.kind()),\n",
+    find: "                        upvars.get(i).map(|t| t.kind()),\n                        Some(ty::Ref(_, _, ty::Mutability::Mut))\n",
     replace:
-      "                        upvars.get(i).map(|t| t.kind()).filter(|_| false),\n",
+      "                        upvars.get(i).map(|t| t.kind()).filter(|_| false),\n                        Some(ty::Ref(_, _, ty::Mutability::Mut))\n",
     tests: [
       "test/lowering-functions.test.ts",
       "-t",
@@ -283,18 +283,17 @@ export const mutations: Mutation[] = [
     name: "capture-named-captured",
     breaks: "a closure's by-value capture of a variable, read first, is `const captured = descriptor.value;`, not named for the variable, `originalMethod` (rd656)",
     file: "src/lower/mir/closures.rs",
-    find: "                        let base = (self.whole_capture_name(def_id, i))\n",
-    replace: "                        let base = (None::<String>)\n",
+    find: "                        let base = (self.whole_capture_name(def_id, i)).filter(|name| {\n",
+    replace: "                        let base = (None::<String>).filter(|name| {\n",
     tests: ["test/lowering-moves.test.ts", "-t", "a closure's capture read first is named for its variable"],
   },
   {
     name: "capture-copy-named-apart",
-    breaks: "a closure's copy of a variable as it is now, which it changes after, is named for the variable apart, `const factor$1 = factor;`, not `captured` (rd656)",
+    breaks: "a closure's copy of a variable as it is now, which it changes after, is named for the variable apart, `const n$1 = n;` of `let mut n = n;`, not `captured` (rd656)",
     file: "src/lower/mir/closures.rs",
-    find: "                            .filter(|name| !matches!(&e.kind, js::ExprKind::Var(v) if v == name));\n",
-    replace: ";\n",
-    tests: ["test/corpus.test.ts", "-t", "^mut_param_moved_out.rs$"],
-    snapshots: true,
+    find: "                                    && crate::lower::camel_case(info.name.as_str()) == *name))\n",
+    replace: "                                    && false))\n",
+    tests: ["test/lowering-moves.test.ts", "-t", "a closure's capture read first is named for its variable"],
   },
   {
     name: "capture-part-named-for-its-variable",

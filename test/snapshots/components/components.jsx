@@ -38,11 +38,11 @@ function reduce(todos, action) {
     });
     return next;
   }
-  const captured = action._0;
+  const id = action._0;
   return todos.map((t) => ({
     id: t.id,
     text: t.text,
-    done: t.id === captured ? !t.done : t.done,
+    done: t.id === id ? !t.done : t.done,
   }));
 }
 

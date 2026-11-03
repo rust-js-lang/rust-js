@@ -14,28 +14,28 @@ export function reduce(todos, action) {
     return next;
   }
   if (action.TAG === "Toggle") {
-    const captured = action._0;
+    const id = action._0;
     return todos.map((todo) => ({
-      completed: todo.completed !== (todo.id === captured),
+      completed: todo.completed !== (todo.id === id),
       id: todo.id,
       title: todo.title,
     }));
   }
   if (action.TAG === "ToggleAll") {
-    const captured = action._0;
+    const completed = action._0;
     return todos.map((todo) => ({
-      completed: captured,
+      completed,
       id: todo.id,
       title: todo.title,
     }));
   }
   if (action.TAG === "Edit") {
-    const captured = action._0;
-    const captured$1 = action._1;
+    const id = action._0;
+    const title = action._1;
     return todos.map((todo) =>
-      todo.id === captured
+      todo.id === id
         ? {
-            title: captured$1,
+            title,
             id: todo.id,
             completed: todo.completed,
           }
@@ -43,8 +43,8 @@ export function reduce(todos, action) {
     );
   }
   if (action.TAG === "Destroy") {
-    const captured = action._0;
-    return todos.filter((todo) => todo.id !== captured);
+    const id = action._0;
+    return todos.filter((todo) => todo.id !== id);
   }
   return todos.filter((todo) => !todo.completed);
 }
