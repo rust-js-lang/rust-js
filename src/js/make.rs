@@ -1100,6 +1100,43 @@ impl Expr {
         self
     }
 
+    /// This, a call of a method read of the `this` it's given
+    /// (`Known::OwnMethodCall`), beside what else is known of it.
+    pub fn own_method(mut self) -> Expr {
+        self.facts = self.facts.with(Known::OwnMethodCall);
+        self
+    }
+
+    /// `value.f.call(value, ..args)` of a method read in place of the
+    /// variable it's given as its `this` (`Known::OwnMethodCall`): the
+    /// method's call, `value.f(..args)`, whose `this` JS gives as `call`
+    /// gives it, the read first, before its arguments, either way (rd334).
+    /// Of `f` held in a variable, which a call of gives no `this`, or read
+    /// of another value, as it is. What preparation does of each
+    /// expression.
+    pub fn own_method_call(e: &mut Expr) {
+        if !e.facts.has(Known::OwnMethodCall) {
+            return;
+        }
+        let ExprKind::Call(callee, args) = &mut e.kind else {
+            return;
+        };
+        let ExprKind::Member(method, name) = &mut callee.kind else {
+            return;
+        };
+        let (ExprKind::Member(of, _) | ExprKind::Index(of, _)) = &method.kind else {
+            return;
+        };
+        let given = |this: &Expr| matches!((&of.kind, &this.kind), (ExprKind::Var(a), ExprKind::Var(b)) if a == b);
+        if name != "call" || !args.first().is_some_and(given) {
+            return;
+        }
+        let method = std::mem::replace(&mut **method, Expr::undefined());
+        let mut args = std::mem::take(args);
+        args.remove(0);
+        e.kind = ExprKind::Call(Box::new(method), args);
+    }
+
     /// This, a binding's call that runs none of the program's code
     /// (`Known::RunsNothing`), beside what else is known of it.
     pub fn runs_nothing(mut self) -> Expr {

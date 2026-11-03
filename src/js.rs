@@ -922,6 +922,13 @@ pub enum Known {
     /// it's what was thrown, `throw thrown`, as `$unwinding($unwound(e))`
     /// is `e` (ADR 0706, amended, rd550).
     AsGiven,
+    /// A call `f.call(value, ..args)` of a method `f` read of `value`, the
+    /// same value, which nothing changed between, `js::function::call(
+    /// js::method((value, key)), Some(value), args)`'s (`BodyFacts::method_calls`):
+    /// where the read is in place, the method's call, `value.key(..args)`,
+    /// which gives it that `this`, as preparation writes it
+    /// (`Expr::own_method_call`, rd334).
+    OwnMethodCall,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

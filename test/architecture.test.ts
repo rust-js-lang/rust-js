@@ -515,6 +515,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/jsx_props.rs": ["body"],
   "src/lower/mir/keyed_writes.rs": ["body"],
   "src/lower/mir/locals.rs": ["body", "locals"],
+  "src/lower/mir/calls/method_paths.rs": ["body"],
   "src/lower/mir/nested_options.rs": ["body"],
   "src/lower/mir/nulled.rs": ["at", "body", "locals", "writer"],
   "src/lower/mir/operands.rs": ["body", "locals", "pending", "taken"],

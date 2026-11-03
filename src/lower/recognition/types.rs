@@ -1318,8 +1318,19 @@ pub(in crate::lower) fn is_class_of(tcx: TyCtxt<'_>, did: DefId) -> bool {
 /// Whether `did` is `js::function::bind`, `f.bind(thisArg, ...args)` (ADR
 /// 0907, amended).
 pub(in crate::lower) fn is_function_bind(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    of_function_module(tcx, did, "bind")
+}
+
+/// Whether `did` is `js::function::call`, `f.call(thisArg, ...args)`,
+/// which is a method's call where `this` is its path's value (rd334).
+pub(in crate::lower) fn is_function_call(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    of_function_module(tcx, did, "call")
+}
+
+/// Whether `did` is `js::function`'s item `name`.
+fn of_function_module(tcx: TyCtxt<'_>, did: DefId, name: &str) -> bool {
     tcx.crate_name(did.krate).as_str() == "js"
-        && tcx.item_name(did).as_str() == "bind"
+        && tcx.item_name(did).as_str() == name
         && tcx.opt_parent(did).is_some_and(|parent| {
             tcx.opt_item_name(parent)
                 .is_some_and(|name| name.as_str() == "function")

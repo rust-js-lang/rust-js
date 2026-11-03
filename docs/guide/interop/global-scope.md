@@ -354,7 +354,10 @@ AsyncIterator::<T>::throw)`, `typeof iterator.throw === "function"`.
 `js::method` of such a path is the method read as a value, the JS
 function itself, called with `function::call`, which gives its `this`:
 `js::method((element, HTMLElement::focus))` is `element.focus`, a
-`&'static dyn Fn(Option<FocusOptions>)`. The path's value may be any
+`&'static dyn Fn(Option<FocusOptions>)`, and its call given `Some(element)`,
+the path's value, is `element.focus(options)`. Of a value of any shape,
+a path may name a member by its key, called as its method alone
+([JS types](types.md#js-values-jsobject-and-unknown)). The path's value may be any
 value, as TypeScript reads `any`'s: a class's prototype,
 `js::class::<HTMLElement>().prototype()`. `js::or(a, b)` is JS's `a ||
 b`; Rust gives it both, so a `b` that may run code runs first. React DOM's

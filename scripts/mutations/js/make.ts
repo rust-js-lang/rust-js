@@ -634,4 +634,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^condition_block_sequence.rs$"],
     snapshots: true,
   },
+  {
+    name: "own-method-call-of-variable",
+    breaks:
+      "a method held in a variable before an argument's statements, `handleEvent.call(listener, sum)`, is called alone, `handleEvent(sum)`, its `this` none (rd334)",
+    file: "src/js/make.rs",
+    find: "        let (ExprKind::Member(of, _) | ExprKind::Index(of, _)) = &method.kind else {\n            return;\n        };\n        let given = |this: &Expr| matches!((&of.kind, &this.kind), (ExprKind::Var(a), ExprKind::Var(b)) if a == b);\n",
+    replace: "        let given = |_: &Expr| true;\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "function::call of js::method whose this is its value"],
+  },
+  {
+    name: "own-method-call-other-this",
+    breaks:
+      "a method read of a variable before it's set again, `element$.focus.call(element)`, is called of the one read, its `this` the old value (rd334)",
+    file: "src/js/make.rs",
+    find: "        let given = |this: &Expr| matches!((&of.kind, &this.kind), (ExprKind::Var(a), ExprKind::Var(b)) if a == b);\n",
+    replace: "        let given = |_: &Expr| matches!(of.kind, ExprKind::Var(_));\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "function::call of js::method whose this is its value"],
+  },
 ];

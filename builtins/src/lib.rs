@@ -1103,18 +1103,32 @@ pub fn is_object<B: Copy>(binding: B) -> bool {
 /// Fn(Option<FocusOptions>)`. The path's value may be any value,
 /// `js::class::<HTMLElement>().prototype()`'s, `HTMLElement.prototype.focus`,
 /// as TypeScript reads `any`'s; else the method's own type (rd181).
-/// Called with [`function::call`], its `this` given, as JS calls it.
+/// Called with [`function::call`], its `this` given, as JS calls it: of
+/// the path's value, `function::call(js::method((element,
+/// HTMLElement::focus)), Some(element), (options,))`, its call,
+/// `element.focus(options)`.
+///
+/// Of a value of any shape and a key, a [`PropertyKey`], the member that
+/// key names, as TypeScript reads `any`'s, whatever it is: called as the
+/// value's method, `function::call(js::method((listener, "handleEvent")),
+/// Some(listener), (event,))`, it's JS's `listener.handleEvent(event)`,
+/// which reads the member once and throws JS's `TypeError`, a panic,
+/// where it isn't a function (rd334). Its type is a function of any
+/// shape's, [`Kind::Function`]'s, but read anywhere else it's refused,
+/// as it may be no function: [`get`] reads a member as a value, and
+/// [`classify`]'s `Kind::Function` holds one that's a function.
 #[cfg_attr(rust_js, rust_js::link_name = "method")]
 pub fn method<P: Method<M>, M>(path: P) -> P::Function {
     unreachable!()
 }
 
 /// What [`method`] reads: a path of a value and a method of it, of the
-/// signature `M`, the method's `fn` pointer's, its `this` first. Of each
-/// method of up to 16 parameters. No program names it.
+/// signature `M`, the method's `fn` pointer's, its `this` first, of each
+/// method of up to 16 parameters; or of a value of any shape and a key
+/// (rd334). No program names it.
 #[diagnostic::on_unimplemented(
     message = "`{Self}` isn't a path of a value and its method",
-    note = "a method is read of a value it's a method of: `js::method((element, HTMLElement::focus))`"
+    note = "a method is read of a value it's a method of, `js::method((element, HTMLElement::focus))`, or by its key, `js::method((listener, \"handleEvent\"))`"
 )]
 pub trait Method<M>: sealed::Path {
     /// The method, a JS function of its `this`.
@@ -1136,6 +1150,12 @@ macro_rules! methods {
 }
 
 arities! { methods }
+
+/// A member of a value of any shape, by its key: what JS calls as the
+/// value's method, a function of any shape's type (rd334).
+impl<T, K: PropertyKey + ?Sized> Method<sealed::Keyed> for (T, &K) {
+    type Function = &'static dyn Fn() -> Option<&'static Unknown>;
+}
 
 /// [`this || other`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/Logical_OR):
 /// `this` where it's [truthy](truthy), else `other`, as JS's `||` of any
@@ -1889,9 +1909,12 @@ mod sealed {
     /// its own (ADR 0972, amended).
     pub trait Tuple {}
     /// What [`Method`](crate::Method) is of: a path of a value and its
-    /// method, a pair.
+    /// method or its key, a pair.
     pub trait Path {}
-    impl<T: ?Sized, F> Path for (&T, F) {}
+    impl<T, F> Path for (T, F) {}
+    /// What a [`Method`](crate::Method) of a key is of, which no program
+    /// names: no method's `fn` pointer.
+    pub struct Keyed;
     impl Sealed for &str {}
     impl Sealed for &String {}
     impl Sealed for f64 {}

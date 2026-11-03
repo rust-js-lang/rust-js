@@ -940,4 +940,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-nested-options.test.ts", "-t", "what may be undefined"],
   },
+  {
+    name: "method-call-unmarked",
+    breaks:
+      "`function::call` of a method read of its `this` stays `f.call`, `instance._applyProps.call(instance, instance, props)`, where upstream calls the method, `instance._applyProps(instance, props)` (rd334)",
+    file: "src/lower/binding_calls.rs",
+    find: "                match self.frame.facts.method_calls.contains(&span) {\n",
+    replace: "                match false {\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "function::call of js::method whose this is its value"],
+  },
 ];

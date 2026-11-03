@@ -173,7 +173,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => method.answered_by_a_getter(),
                     false => method,
                 };
-                Expr::call(method.or_at(fun_span), args)
+                let call = Expr::call(method.or_at(fun_span), args);
+                // `function::call` of a method read of the `this` it's
+                // given, which nothing changed: the method's call, where
+                // the read is in place, `listener.handleEvent(event)`
+                // (rd334).
+                match self.frame.facts.method_calls.contains(&span) {
+                    true => call.own_method(),
+                    false => call,
+                }
             }
             // A method keyed by a global's value, a well-known symbol,
             // `iterable[Symbol.asyncIterator]()`, called of its receiver

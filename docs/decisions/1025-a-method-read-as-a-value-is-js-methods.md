@@ -113,3 +113,94 @@ from a value asks its member" (`hide_element`) and "js::method of a path
 reads its method as a value" (`guarded`, run: the guard dropped each
 time), and mutations `path-step-superclass-refused`,
 `path-value-held-refused` (`mir/calls.ts`).
+
+## Amendment: a member by its key, called as its value's method (rd334)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. JS's
+`value.name(..args)` reads the member once, gives it the value as its
+`this`, and throws a `TypeError` where it's no function, before any
+argument runs: what `function::call(js::method((value, name)),
+Some(value), args)` says, the member read, then called with that `this`.
+
+### Context
+
+react-art sets functions on art's nodes, expandos art doesn't declare,
+and calls them as methods: `instance._applyProps(instance, props)`,
+`instance._subscriptions[type]()`, `listener.handleEvent(event)` of an
+`any` listener, `props.fill.applyFill(instance)`. A value of any shape
+had no form for it. `js::method` read only a binding's method, and the
+port cast what `js::get` read, `unsafe { js::cast::<ApplyProps>(js::get(instance,
+"_applyProps"))(instance, props, None) }`, or wrote
+`function::call(cast, Some(&listener), (event,))`, which printed
+`listener.handleEvent.call(listener, event)`.
+
+### Decision
+
+**`js::method` of a value of any shape and a key, a `PropertyKey`, is the
+member that key names**, `js::method((listener, "handleEvent"))`,
+`listener.handleEvent`, as `js::get` reads it (a getter may answer it),
+typed as a function of any shape, `Kind::Function`'s `&'static dyn Fn() ->
+Option<&'static Unknown>` (the `js::Method` impl for `(T, &K)`, its marker
+`sealed::Keyed`, no method's `fn` pointer). The existing form takes the
+key, not a new function: a member's call is `function::call`'s, its
+`this` given, as a method read by `js::method` already was.
+
+**`function::call` of a `js::method` whose `this` is `Some` of the path's
+value, the same variable, is the method's call**: `listener.handleEvent(event)`,
+`subscriptions[type]()`, of a key; `element.focus(options)` of a binding's
+method, which printed `element.focus.call(element, options)`. The body
+query `method_calls` finds each, the `function::call` and its
+`js::method` by their spans (`BodyFacts::method_calls`,
+`called_methods`); the call's `f.call(value, ..)` is marked
+`Known::OwnMethodCall`, and preparation writes it `value.f(..)` where
+the method is read in place of the variable its `this` is
+(`Expr::own_method_call`), which a call's `this` is then, as `call`
+gives it, and read before its arguments either way. A read the lowering
+held before an argument whose statements run first, `const handleEvent =
+listener.handleEvent; .. handleEvent.call(listener, sum)`, stays so: a
+variable's call gives no `this`. Of another `this`, or of a variable
+changed between, `f.call(other, ..)`, as before.
+
+**A key's `js::method` read anywhere else is refused**, naming the form:
+the member may be no function, so a `&dyn Fn` of it held, given on or
+tested would be a lie (`Some(f)` of `undefined` is `None`). `js::get`
+reads a member as a value, and `js::classify`'s `Kind::Function` holds one
+that's a function. Of a `this` that isn't the path's variable, a key's
+read is refused too: JS's `f.call(other)` would call an object's own
+`call` where the member is no function, which `function::call` doesn't
+mean.
+
+### Alternatives
+
+- **A new function, `js::call_method(value, key, args)`.** It would read
+  the value once, `props.fill.applyFill(instance)` with no variable, but
+  it's a second way to call a function with a `this`, beside
+  `function::call`: refused by the one-way rule.
+- **Calling a key's `js::method` directly, `js::method((v, k))()`.** Its
+  type takes no arguments, so it would be a second way for calls of none.
+- **Two reads written as one.** `function::call(js::method((js::get(props,
+  "fill"), "applyFill")), Some(&js::get(props, "fill")), ..)` reads
+  `props.fill` twice in Rust; printing one read would drop a getter's
+  second run. Left to the user (rd334's report).
+
+### Consequences
+
+- A value that isn't a variable is held in one to call its member as its
+  method: `let subscriptions = js::get(instance, "_subscriptions");` is
+  `const subscriptions = instance._subscriptions;` before
+  `subscriptions[type]()`, where upstream reads it in the call.
+- Held by `test/lowering-is-function.test.ts`'s "function::call of
+  js::method whose this is its value is the method's call" (run: the
+  member read once through a getter, its `this` and arguments, a
+  `TypeError` of a non-function and of a missing key, an object's own
+  `call` member not called, the read before an argument that runs code,
+  and before one whose statements run first or that `?` returns early
+  of, held; a binding's method of
+  its value and of another, and of a variable changed in the `this`) and
+  "js::method of a key read other than as its value's method is refused";
+  the guide's types page. Mutations `method-call-other-variable`,
+  `method-call-function-unrecognized` (`body_queries/method_calls.ts`),
+  `method-call-unmarked` (`binding_calls.ts`), `own-method-call-of-variable`,
+  `own-method-call-other-this` (`js/make.ts`), `keyed-method-anywhere`
+  (`mir/calls/method_paths.ts`). A key's read is a getter's, as `js::get`'s, though
+  only a call's callee, read before what it's given either way, has it.

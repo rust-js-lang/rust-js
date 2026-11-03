@@ -5,6 +5,8 @@
 use super::*;
 use crate::lower::bindings::Asked;
 
+mod method_paths;
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call of what may read the `this` JS would give it
     /// (`may_read_this`): a JS function, a with_this function or a
@@ -943,52 +945,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.asked_of_number(asked, read, span)?;
         }
         self.mir_defined_parts(global, None, asked, span)
-    }
-
-    /// `js::method`'s method a path from a value names, read as a value,
-    /// the JS function itself: `(element, HTMLElement::focus)`'s
-    /// `element.focus`, its value read as it's read in the path, each step
-    /// a member (rd181). As its call reads it, a getter may answer it of a
-    /// value of any shape's type (ADR 0750). `None` of another call.
-    fn mir_method(
-        &mut self,
-        state: &mut State<'_, 'tcx>,
-        def_id: rustc_span::def_id::DefId,
-        args: &[rustc_span::Spanned<Operand<'tcx>>],
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Option<Expr>> {
-        let tcx = self.tcx;
-        let body = state.body;
-        if !bindings::is_binding(tcx, def_id) || !matches!(bindings::js_form(tcx, def_id), bindings::JsForm::Method) {
-            return Ok(None);
-        }
-        let refused = |cx: &Self| {
-            Err(cx.unsupported(
-                span,
-                "`js::method` of what isn't a path of a value and its method, `(element, HTMLElement::focus)`,",
-            ))
-        };
-        let [arg] = args else { return refused(self) };
-        let ty::Tuple(steps) = *arg.node.ty(&body.local_decls, tcx).kind() else {
-            return refused(self);
-        };
-        let steps = self.steps_named(body, &arg.node, steps);
-        let Some(value_ty) = value_first(&steps) else {
-            return refused(self);
-        };
-        let (path, _) = self.defined_path(&steps[1..], Some(value_ty), "js::method", span)?;
-        let value = self.path_value(state, &arg.node, "js::method", (span, out))?;
-        let getters = (steps[1..].iter()).any(|&step| {
-            crate::lower::fn_def(step)
-                .is_some_and(|(f, _)| crate::lower::binding_calls::method_may_be_a_getters(tcx, f))
-        });
-        let method = path.split('.').fold(value, Expr::member);
-        let method = match getters {
-            true => method.answered_by_a_getter(),
-            false => method,
-        };
-        Ok(Some(method.or_at(self.js_span(span))))
     }
 
     /// The value a path from a value starts at, the tuple's first item, as

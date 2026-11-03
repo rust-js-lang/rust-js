@@ -545,6 +545,187 @@ test("js::method of a method of another type is refused", () => {
   expect([p.code === 0, p.stderr]).toEqual([false, expect.stringContaining("`js::method` of a path of bindings where a step isn't a method of what the one before gives")]);
 });
 
+// react-art's `instance._applyProps(instance, props)`,
+// `instance._subscriptions[type]()` and `listener.handleEvent(event)`
+// (rd334): a member of a value of any shape, by its key, called as its
+// method, `function::call(js::method((value, key)), Some(value), args)`,
+// is JS's `value[key](...args)`, its `this` the value, the member read
+// once, a `TypeError` where it's no function. A binding's method called
+// so is its call too; of another `this`, `f.call(other, ..)`.
+test("function::call of js::method whose this is its value is the method's call", async () => {
+  const withWeb = ["--", "--edition", "2024", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("method-call-keyed");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Unknown, function};
+use webapi::{FocusOptions, HTMLElement};
+
+pub fn apply(instance: &'static Unknown, props: &'static Unknown) {
+    function::call(js::method((instance, "_applyProps")), Some(instance), (instance, props));
+}
+
+pub fn unsubscribe(instance: &'static Unknown, r#type: Option<&'static Unknown>) {
+    let subscriptions = js::get(instance, "_subscriptions");
+    function::call(js::method((subscriptions, &r#type)), Some(&subscriptions), ());
+}
+
+pub fn handled(listener: &'static Unknown, event: &'static Unknown) -> Option<&'static Unknown> {
+    let handle = move || function::call(js::method((listener, "handleEvent")), Some(listener), (event,));
+    handle()
+}
+
+/// Its member read first, before an argument that runs code, as Rust
+/// reads it.
+pub fn ordered(listener: &'static Unknown) -> Option<&'static Unknown> {
+    function::call(js::method((listener, "handleEvent")), Some(listener), (counted(), "x"))
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.counted")]
+fn counted() -> f64 {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.maybe")]
+fn maybe() -> Option<f64> {
+    unreachable!()
+}
+
+/// Read before an argument \`?\` may return early from, as Rust reads it.
+pub fn tried(listener: &'static Unknown) -> Option<Option<&'static Unknown>> {
+    Some(function::call(js::method((listener, "handleEvent")), Some(listener), (maybe()?,)))
+}
+
+pub fn focus(element: &HTMLElement, options: Option<&'static FocusOptions>) {
+    function::call(js::method((element, HTMLElement::focus)), Some(element), (options,));
+}
+
+pub fn focus_other(element: &HTMLElement, other: &HTMLElement) {
+    function::call(js::method((element, HTMLElement::focus)), Some(other), ());
+}
+
+/// The variable changed after its path is read: its \`this\` given.
+pub fn moved(mut element: &'static HTMLElement, other: &'static HTMLElement) {
+    function::call(
+        js::method((element, HTMLElement::focus)),
+        Some({
+            element = other;
+            element
+        }),
+        (),
+    );
+}
+
+/// The variable set again after the path's value is read: the method
+/// read of the value it was, given the one it is as its \`this\`.
+pub fn rekeyed(mut element: &'static HTMLElement, other: &'static HTMLElement) {
+    function::call(
+        js::method((element, {
+            element = other;
+            HTMLElement::focus
+        })),
+        Some(element),
+        (),
+    );
+}
+
+/// Read before an argument whose statements run first: held, and given
+/// its \`this\`.
+pub fn summed(listener: &'static Unknown, n: u32) -> Option<&'static Unknown> {
+    function::call(js::method((listener, "handleEvent")), Some(listener), ({
+        let mut sum = 0.0;
+        for _ in 0..n {
+            sum += counted();
+        }
+        sum
+    },))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function apply(instance, props) {\n  instance._applyProps(instance, props);\n}");
+  expect(js).toContain("  const subscriptions = instance._subscriptions;\n  subscriptions[type]();\n");
+  expect(js).toContain("listener.handleEvent(event)");
+  expect(js).toContain("  return listener.handleEvent(globalThis.counted(), \"x\");\n");
+  expect(js).toContain("export function focus(element, options) {\n  element.focus(options);\n}");
+  expect(js).toContain("  element.focus.call(other);\n");
+  expect(js).toContain("  element = other;\n  focus.call(element);\n");
+  expect(js).toContain("  return handleEvent.call(listener, sum);\n");
+  expect(js).toContain("  element = other;\n  htmlElement.focus.call(element);\n");
+  const lib = await import(join(dir, "lib.js"));
+  const calls: unknown[] = [];
+  let reads = 0;
+  const instance = {
+    get _applyProps() {
+      reads++;
+      return function (this: unknown, ...args: unknown[]) {
+        calls.push(["apply", this, args]);
+      };
+    },
+    _subscriptions: { click(this: unknown, ...args: unknown[]) { calls.push(["click", this, args]); } } as Record<string, unknown>,
+  };
+  const props = { x: 1 };
+  lib.apply(instance, props);
+  expect([reads, calls]).toEqual([1, [["apply", instance, [instance, props]]]]);
+  lib.unsubscribe(instance, "click");
+  expect(calls[1]).toEqual(["click", instance._subscriptions, []]);
+  const listener = { handleEvent(this: unknown, event: unknown) { calls.push(["handle", this, event]); return 7; } };
+  expect(lib.handled(listener, "e")).toBe(7);
+  expect(calls[2]).toEqual(["handle", listener, "e"]);
+  // No function: JS's TypeError, read once, as upstream's call throws it.
+  expect(() => lib.handled({ handleEvent: 5 }, "e")).toThrow(TypeError);
+  expect(() => lib.unsubscribe(instance, "missing")).toThrow(TypeError);
+  instance._subscriptions.call = function () { calls.push(["call"]); };
+  expect(() => lib.unsubscribe(instance, "call")).not.toThrow();
+  expect(calls.at(-1)).toEqual(["call"]);
+  const g = globalThis as Record<string, unknown>;
+  const order: string[] = [];
+  g.counted = () => (order.push("counted"), 2);
+  const logged = {
+    get handleEvent() {
+      order.push("read");
+      return function (this: unknown, ...args: unknown[]) {
+        order.push("called");
+        return [this === logged, args];
+      };
+    },
+  };
+  expect([lib.ordered(logged), order]).toEqual([[true, [2, "x"]], ["read", "counted", "called"]]);
+  order.length = 0;
+  expect([lib.summed(logged, 2), order]).toEqual([[true, [4]], ["read", "counted", "counted", "called"]]);
+  order.length = 0;
+  g.maybe = () => (order.push("maybe"), undefined);
+  expect([lib.tried(logged), order]).toEqual([undefined, ["read", "maybe"]]);
+  const element = { focus(this: unknown, ...args: unknown[]) { calls.push(["focus", this, args]); } };
+  const other = { name: "other" };
+  lib.focus(element, { preventScroll: true });
+  expect(calls.at(-1)).toEqual(["focus", element, [{ preventScroll: true }]]);
+  lib.focusOther(element, other);
+  expect(calls.at(-1)).toEqual(["focus", other, []]);
+  lib.moved(element, other);
+  expect(calls.at(-1)).toEqual(["focus", other, []]);
+  lib.rekeyed(element, other);
+  expect(calls.at(-1)).toEqual(["focus", other, []]);
+});
+
+// A member by its key may be no function: read other than as its value's
+// method, `js::method` of a key is refused, naming the form (rd334).
+test("js::method of a key read other than as its value's method is refused", () => {
+  const dir = fixture("method-keyed-refused");
+  for (const body of [
+    "let f = js::method((listener, \"handleEvent\"));\n    f()",
+    "function::call(js::method((listener, \"handleEvent\")), Some(other), ())",
+    "function::call(js::method((js::get(listener, \"a\"), \"b\")), Some(&js::get(listener, \"a\")), ())",
+  ]) {
+    writeFileSync(join(dir, "lib.rs"), `use js::{Unknown, function};
+
+pub fn handle(listener: &'static Unknown, other: &'static Unknown) -> Option<&'static Unknown> {
+    let _ = other;
+    ${body}
+}
+`);
+    const p = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 60_000);
+    expect([body, p.code === 0, p.stderr]).toEqual([body, false, expect.stringContaining("`js::method` of a key read otherwise yet: a member by its key may be no function")]);
+  }
+});
+
 // React DOM's localPromise (rd235): `typeof Promise === 'function' ?
 // Promise : undefined` held as the module loads, its static called on the
 // class it holds, `localPromise.resolve(null)`, not the global's: a page

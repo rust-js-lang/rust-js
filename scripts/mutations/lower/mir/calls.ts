@@ -898,15 +898,7 @@ export const mutations: Mutation[] = [
     replace: "(of != Some(before.peel_refs()) && !extends)",
     tests: ["test/lowering-is-function.test.ts", "-t", "js::method"],
   },
-  {
-    name: "method-path-step-unread",
-    breaks:
-      "`js::method((element, HTMLElement::focus))` is `element`, its method's step never read (rd181)",
-    file: "src/lower/mir/calls.rs",
-    find: "        let method = path.split('.').fold(value, Expr::member);\n",
-    replace: "        let method = value;\n",
-    tests: ["test/lowering-is-function.test.ts", "-t", "js::method"],
-  },
+
   {
     name: "cell-get-field-unseen",
     breaks:

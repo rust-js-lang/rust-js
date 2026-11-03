@@ -25,6 +25,7 @@ mod scopes;
 
 pub fn module(module: &mut js::Module) {
     module.each_expr_mut(&mut Expr::unbound_variable_read); // `(0, f)` is `f` (rd579).
+    module.each_expr_mut(&mut Expr::own_method_call); // `f.call(o, ..)` of `o.f` is `o.f(..)` (rd334).
     initializers::declared_at_top(module);
     initializers::assigned_in_place(&mut module.items);
     forwarding_functions(module);

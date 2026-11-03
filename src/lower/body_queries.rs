@@ -17,6 +17,7 @@ use std::collections::{HashMap, HashSet};
 
 mod constants;
 mod getter_unwraps;
+mod method_calls;
 mod ranges;
 mod set_reads;
 mod whole_casts;
@@ -157,6 +158,11 @@ pub(super) struct BodyFacts<'tcx> {
     /// read only as the callee or the `this` of the call it's made for,
     /// `getter_unwraps`'s (rd519).
     pub(super) getter_unwraps: HashSet<Span>,
+    /// Where each `function::call` is of a `js::method` of one step whose
+    /// `this` is the path's value, the method's call, and where each such
+    /// `js::method` is, `method_calls`'s (rd334).
+    pub(super) method_calls: HashSet<Span>,
+    pub(super) called_methods: HashSet<Span>,
     /// Where each `rev()`, `enumerate()` or `map()` is whose adapter a std
     /// iterator's method steps where it's made, and where each such method
     /// is, `in_place_adapters`'s.
@@ -178,6 +184,7 @@ impl<'tcx> BodyFacts<'tcx> {
     pub(super) fn collect(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
         let (jsx_given, jsx_bases) = jsx_given_props(tcx, thir);
         let (in_place_adapters, in_place_adapter_steps) = in_place_adapters(tcx, thir, None, &HashSet::new());
+        let (method_calls, called_methods) = method_calls::method_calls(tcx, thir);
         Self {
             kept_casts: whole_casts(tcx, thir)
                 .into_iter()
@@ -191,6 +198,8 @@ impl<'tcx> BodyFacts<'tcx> {
             resumed_as_given: resumed_as_given(tcx, thir),
             set_then_unwrapped: set_reads::set_then_unwrapped(tcx, thir),
             getter_unwraps: getter_unwraps::getter_unwraps(tcx, thir),
+            method_calls,
+            called_methods,
             in_place_adapters,
             in_place_adapter_steps,
             constant_patterns: constant_patterns(tcx, thir),

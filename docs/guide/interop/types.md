@@ -2794,6 +2794,46 @@ export function sameSource(prev, next) {
   );
 }
 ```
+- **A member called as its value's method is `function::call` of
+  `js::method`, its `this` the value**: of a value of any shape and a
+  key, `js::method((listener, "handleEvent"))` reads the member as
+  `js::get` does, and `function::call` of it given `Some` of the same
+  variable as its `this` is JS's call of it, `listener.handleEvent(event)`,
+  which reads the member once and throws JS's `TypeError`, a panic, where
+  it's no function, as upstream's call does. A value that isn't a
+  variable is held in one first. The member may be no function, so a
+  key's `js::method` read anywhere else, or given another `this`, is
+  refused: `js::get` reads it as a value, and `js::classify`'s
+  `Kind::Function` holds one that's a function. A binding's method
+  called so is its call too, `element.focus(options)`; of another
+  `this`, `f.call(other, ..)`. react-art calls the functions it sets on
+  art's nodes so
+  ([ADR 1025](../../decisions/1025-a-method-read-as-a-value-is-js-methods.md),
+  amended, rd334):
+
+```rust
+use js::{Unknown, function};
+
+pub fn apply_props(instance: &'static Unknown, props: &'static Unknown) {
+    function::call(js::method((instance, "_applyProps")), Some(instance), (instance, props));
+}
+
+pub fn unsubscribe(instance: &Unknown, r#type: &str) {
+    let subscriptions = js::get(instance, "_subscriptions");
+    function::call(js::method((subscriptions, r#type)), Some(&subscriptions), ());
+}
+```
+
+```js
+export function applyProps(instance, props) {
+  instance._applyProps(instance, props);
+}
+
+export function unsubscribe(instance, type) {
+  const subscriptions = instance._subscriptions;
+  subscriptions[type]();
+}
+```
 - **`function::bind(f, this_arg, args)` is `f.bind(thisArg, ...args)`**,
   its `this` any value as `apply`'s is, and `args` a tuple of `f`'s first
   arguments. Of none, `()`, it's a function of `f`'s own type, which does
