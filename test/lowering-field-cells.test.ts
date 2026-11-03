@@ -87,7 +87,8 @@ pub fn detach(fiber: &Fiber) {
   const types = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(types).toContain("    times: number[];\n");
   expect(types).toContain("    current: T;\n");
-  expect(types).toContain("    return?: Fiber | null | undefined;\n");
+  // Nullable, so there, `T | null`, whoever makes it (ADR 1072, amended).
+  expect(types).toContain("    return: Fiber | null;\n");
   const lib = await import(join(dir, "lib.js"));
   const root = { times: [0, 0, 0] };
   lib.mark(root, 1);

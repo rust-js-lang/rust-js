@@ -1142,11 +1142,15 @@ export function ratio(a, b) {
   upstream's `clones === null`, read whole, through a `let`, a
   `borrow()`, `as_ref()` or a `Cell`'s `get()`. That holds because each
   literal, derived `Default` and `..Default::default()` writes it `null`.
-  Its `.d.ts` says it's there, `x: unknown | null`, so a JS write of
-  `undefined` into it is outside its type, as a wrong type is (rd642).
   One of a struct JS may give, to an exported function or to a function
   a binding calls, even one the crate builds too (#519), an optional one,
-  or one of a type parameter's value stays `== null`
+  or one of a type parameter's value stays `== null`. Each nullable field
+  that isn't optional, nor of a type parameter's value, is declared
+  there, `x: unknown | null`, whoever makes its struct, as `nullable`
+  says JS gives `null`, never `undefined`: a JS write of `undefined`
+  into it, or an object JS gives without it, is outside its type, as a
+  wrong type is (rd642). Where it's tested `== null`, JS that leaves it
+  out still reads `None`
   ([ADR 1072](../../decisions/1072-a-nullable-field-only-the-crate-makes-is-tested-strictly.md),
   rd647, the user's decision).
   What's read of a nullable field is `null` or its value, so a variable
@@ -3599,7 +3603,7 @@ pub fn greet(name: &str, greeting: Option<&str>) -> String {
 export interface Profile {
     name: string;
     nickname?: string | undefined;
-    avatar?: string | null | undefined;
+    avatar: string | null;
     visits: bigint;
 }
 

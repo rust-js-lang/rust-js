@@ -48,7 +48,7 @@ pub fn lanes(state: &SuspenseState) -> Lanes {
     "// TODO: Ideally these types would be opaque but that doesn't work well with\n// our reconciler fork infra, since these leak into non-reconciler packages.\n\nexport type Lanes = number;\n",
   );
   expect(declarations).toContain(
-    "// A null SuspenseState represents an unsuspended normal Suspense boundary.\nexport interface SuspenseState {\n    // If this boundary is still dehydrated, we store the SuspenseInstance\n    // here to indicate that it is dehydrated (flag).\n    dehydrated?: number | null | undefined;\n    retryLane: Lanes;\n    // A comment before its doc comment.\n    /** Whether it's documented. */\n    documented: boolean;\n}",
+    "// A null SuspenseState represents an unsuspended normal Suspense boundary.\nexport interface SuspenseState {\n    // If this boundary is still dehydrated, we store the SuspenseInstance\n    // here to indicate that it is dehydrated (flag).\n    dehydrated: number | null;\n    retryLane: Lanes;\n    // A comment before its doc comment.\n    /** Whether it's documented. */\n    documented: boolean;\n}",
   );
   expect(declarations).toContain("\nexport function lanes(state: SuspenseState): Lanes;");
   expect(declarations.match(/Copyright/g)).toHaveLength(1);

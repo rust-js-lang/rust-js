@@ -740,15 +740,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^type_constant_of_a_module_constant.rs$"],
   },
   {
-    name: "strict-field-declared-optional",
-    breaks:
-      "a nullable field tested `=== null` is declared optional, `x?: unknown | null | undefined`, so JS may leave it out (rd647, #519)",
-    file: "src/lower/pipeline.rs",
-    find: "            super::bindings::null_or_value(tcx, field, constructed.contains(&field.did), only_the_crate_makes)\n",
-    replace: "            super::bindings::null_or_value(tcx, field, constructed.contains(&field.did), false)\n",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
-  },
-  {
     name: "recursive-fn-names-unreserved",
     breaks:
       "a function lowered after its module's `eqExpr` was made names its variable `eq_expr` `eqExpr`, which hides the module's: `const eqExpr = eqExpr(a, b)` throws (#517)",

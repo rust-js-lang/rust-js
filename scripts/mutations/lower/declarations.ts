@@ -1113,8 +1113,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable field of what may be `undefined` is declared optional, `serverModuleMap?: ServerManifest | null | undefined` (rd645)",
     file: "src/lower/declarations.rs",
-    find: "                    let present = self.present.contains(&field.did) || value;\n",
-    replace: "                    let present = self.present.contains(&field.did);\n",
+    find: "                    let present = super::bindings::declared_null_or_value(self.tcx, field) || value;\n",
+    replace: "                    let present = super::bindings::declared_null_or_value(self.tcx, field);\n",
     tests: ["test/lowering-nested-options.test.ts", "-t", "what may be undefined"],
   },
   {
@@ -1149,5 +1149,14 @@ export const mutations: Mutation[] = [
     find: "        DefKind::TyAlias => true,",
     replace: "        DefKind::TyAlias => aliases::declares_written_alias(tcx, did),",
     tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
+  },
+  {
+    name: "js-given-nullable-field-declared-optional",
+    breaks:
+      "a nullable field of a struct JS may give is declared optional, `moduleLoading?: unknown | null | undefined`, where `nullable` says JS gives `null`, never `undefined`, as upstream's `moduleLoading: ModuleLoading` does (ADR 1072, amended)",
+    file: "src/lower/declarations.rs",
+    find: "                    let present = super::bindings::declared_null_or_value(self.tcx, field) || value;\n",
+    replace: "                    let present = value;\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
   },
 ];

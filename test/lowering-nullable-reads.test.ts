@@ -1046,11 +1046,13 @@ pub fn closure_called() -> bool {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return g.x == null && g.cell == null;");
   expect(js).toContain("return own.x === null;");
-  // One tested so is declared there, `null` or a value; one JS may give
-  // may be left out (rd642).
+  // Each is declared there, `null` or a value, whoever makes its struct:
+  // `nullable` says JS gives `null`, never `undefined`. One JS may give is
+  // still tested `!= null`, so JS that leaves it out reads `None` (rd642,
+  // ADR 1072, amended).
   const dts = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(dts).toContain("export interface Own {\n    x: unknown | null;\n}");
-  expect(dts).toContain("export interface Options {\n    nonce?: string | null | undefined;\n}");
+  expect(dts).toContain("export interface Options {\n    nonce: string | null;\n}");
   expect(js).toContain("return options.nonce != null;");
   expect(js).toContain("return reply.body != null;");
   const lib = await import(join(dir, "lib.js"));

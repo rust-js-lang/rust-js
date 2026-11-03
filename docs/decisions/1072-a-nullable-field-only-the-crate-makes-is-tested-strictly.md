@@ -140,3 +140,31 @@ Held by `test/lowering-nullable-reads.test.ts`'s strictness test (`Own`'s
 `x: unknown | null;`, `Options`' `nonce?: ..`), mutation
 `strict-field-declared-optional` (`lower/pipeline.ts`); the rule's own
 mutations moved to `lower/bindings/nullable.ts`.
+
+## Amendment: every nullable field is declared there (2026-11-03, the user's decision)
+
+A nullable field of a struct JS may give, React's ServerConsumerManifest
+`moduleLoading`, stayed `moduleLoading?: unknown | null | undefined`,
+since JS may leave it out. Upstream declares it required, `moduleLoading:
+ModuleLoading` (`null | ..`), and `#[rust_js::nullable]` is the program's
+promise that JS gives `null`, never `undefined` (rd613).
+
+**Each `#[rust_js::nullable]` field that isn't optional, nor of a type
+parameter's value, is declared `field: T | null`, whoever makes its
+struct** (`bindings::declared_null_or_value`, which the `.d.ts` asks of
+the attributes alone). The test is unchanged: `null_or_value` is that
+and a struct only the crate makes, or that each constructor sets first,
+so one JS may give stays `== null`. JS that ignores the type and leaves
+the field out still reads `None`. The declaration is narrower than what
+the code tolerates, so no answer changes. The `.d.ts`'s `present` set,
+which `pipeline.rs` collected of `null_or_value`, is gone, with its
+mutation `strict-field-declared-optional`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. It's a
+declaration's form, and the JS is the same.
+
+- Held by `test/lowering-nullable-reads.test.ts`'s strictness test,
+  `Options`' `nonce: string | null`, which it still runs with `{}`, and
+  `test/lowering-field-cells.test.ts`'s `return: Fiber | null`. Mutation
+  `js-given-nullable-field-declared-optional` (`declarations.ts`); the
+  rule's `strict-*` mutations follow it into `declared_null_or_value`.

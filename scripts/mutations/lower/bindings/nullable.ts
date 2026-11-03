@@ -294,8 +294,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an optional nullable field, absent until it's set, is tested `=== null`, its absent `None` a `Some` (rd647)",
     file: "src/lower/bindings/nullable.rs",
-    find: "    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some() && (constructed || only_the_crate_makes)\n",
-    replace: "    is_nullable(tcx, field) && nullable_option(tcx, declared).is_some() && (constructed || only_the_crate_makes)\n",
+    find: "    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some()\n",
+    replace: "    is_nullable(tcx, field) && nullable_option(tcx, declared).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
   },
   {
@@ -303,8 +303,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable field of a type parameter's value is tested `=== null`, though generic code stores the `undefined` it's given (rd647)",
     file: "src/lower/bindings/nullable.rs",
-    find: "    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some() && (constructed || only_the_crate_makes)\n",
-    replace: "    null_where_made(tcx, field) && true && (constructed || only_the_crate_makes)\n",
+    find: "    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some()\n",
+    replace: "    null_where_made(tcx, field) && true\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
   },
   {
@@ -312,8 +312,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a class's nullable field its constructors don't each set first is tested `=== null`, though it's absent until set (rd647)",
     file: "src/lower/bindings/nullable.rs",
-    find: "    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some() && (constructed || only_the_crate_makes)\n",
-    replace: "    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some() && (true || only_the_crate_makes)\n",
+    find: "    declared_null_or_value(tcx, field) && (constructed || only_the_crate_makes)\n",
+    replace: "    declared_null_or_value(tcx, field) && (true || only_the_crate_makes)\n",
     tests: ["test/js-constructors.test.ts", "-t", "each constructor sets first"],
   },
   {
@@ -321,8 +321,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable field of a struct only JS gives is tested `=== null`, so a `{}` JS gives reads `undefined` as a `Some` (rd647)",
     file: "src/lower/bindings/nullable.rs",
-    find: "    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some() && (constructed || only_the_crate_makes)\n",
-    replace: "    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some() && (constructed || true)\n",
+    find: "    declared_null_or_value(tcx, field) && (constructed || only_the_crate_makes)\n",
+    replace: "    declared_null_or_value(tcx, field) && (constructed || true)\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
   },
 ];

@@ -66,7 +66,7 @@ pub fn has(context: &Context) -> bool {
   expect(js).toContain("export function reset(context) {\n  context.renderer = null;\n}");
   expect(js).toContain("export function set(context, renderer) {\n  context.renderer = renderer;\n}");
   expect(js).toContain("export function given(context, renderer) {\n  context.renderer = renderer ?? null;\n}");
-  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("    renderer?: unknown | null | undefined;\n    label?: string | null | undefined;\n");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("    renderer: unknown | null;\n    label: string | null;\n");
   const lib = await import(join(dir, "lib.js"));
   const context = lib.make(1);
   expect([context.renderer, lib.has(context)]).toEqual([null, false]);
@@ -296,7 +296,8 @@ pub fn leaf(tag: u8) -> Fiber {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  return {\n    tag,\n    child: null,\n    sibling: undefined,\n  };\n");
   const types = readFileSync(join(dir, "lib.d.ts"), "utf8");
-  expect(types).toContain("    child?: Fiber | null | undefined;\n    sibling: Fiber | null | undefined;\n");
+  // Nullable, so there, whoever makes it (ADR 1072, amended).
+  expect(types).toContain("    child: Fiber | null;\n    sibling: Fiber | null | undefined;\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.tag(lib.leaf(3)), lib.leaf(3).child]).toEqual([3, null]);
   // Not one of a type whose borrow is held while code that may borrow it

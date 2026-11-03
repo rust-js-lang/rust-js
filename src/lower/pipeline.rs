@@ -450,17 +450,6 @@ pub fn lower_crate<'tcx>(
     let struct_literals = super::aggregates::struct_literals(tcx);
     // The nullable fields each constructor of their struct sets first (rd628).
     let constructed = super::classes::set_where_constructed(tcx, &named_anywhere);
-    // The nullable fields `null` or a value wherever they're read, which
-    // the `.d.ts` declares there, `field: T | null` (rd628; rd647, #519).
-    let present: HashSet<DefId> = (tcx.hir_crate_items(()).definitions())
-        .filter(|&id| tcx.def_kind(id) == DefKind::Struct)
-        .flat_map(|id| tcx.adt_def(id).all_fields().map(move |field| (id, field)))
-        .filter(|&(id, field)| {
-            let only_the_crate_makes = cell_borrows.pointers().only_the_crate_makes(id.to_def_id());
-            super::bindings::null_or_value(tcx, field, constructed.contains(&field.did), only_the_crate_makes)
-        })
-        .map(|(_, field)| field.did)
-        .collect();
     let crate_facts = CrateFacts {
         flattened: &flattened,
         foreign: &foreign,
@@ -1365,7 +1354,7 @@ pub fn lower_crate<'tcx>(
                 &paths,
                 (&declared_reexports, &forwarded),
                 &aliased_items,
-                (ref_cells, &counted, &null_fields, &present, &flattened),
+                (ref_cells, &counted, &null_fields, &flattened),
                 (&fns, module_held, &module_variables),
             );
             // A `Drop` impl's `drop` of this module no other module calls,

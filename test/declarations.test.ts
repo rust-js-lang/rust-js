@@ -531,16 +531,18 @@ pub struct BadgeProps<'a> {
   expect(declarations).toContain("export const LanguagesContext: Context<LanguageItem[] | null | undefined>;");
   // A trailing `Option` is optional, left out by a caller (ADR 0443).
   expect(declarations).toContain("export function shown(name?: string | null | undefined): string;");
-  expect(declarations).toContain("export interface BadgeProps {\n    label?: string | null | undefined;\n    title?: string | undefined;\n    data?: unknown;\n    width?: any;\n    mid?: string | null | undefined;\n}");
+  // A nullable field is there, `T | null` (ADR 1072, amended).
+  expect(declarations).toContain("export interface BadgeProps {\n    label: string | null;\n    title?: string | undefined;\n    data?: unknown;\n    width?: any;\n    mid?: string | null | undefined;\n}");
   writeFileSync(join(dir, "use.tsx"), `import { LanguagesContext, shown, type BadgeProps } from "./lib.jsx";
 const languages: { code: string }[] | null = null;
 export const ok = [<LanguagesContext value={languages}>{shown(null)}</LanguagesContext>, shown(undefined), shown("a"), shown()];
-export const badges: BadgeProps[] = [{ label: null }, {}, { label: "a", title: "t" }];
-export const wrong: BadgeProps = { title: null };
-export const maybe = (title: string | undefined): BadgeProps => ({ title, label: title });
+export const badges: BadgeProps[] = [{ label: null }, { label: "a", title: "t" }];
+export const wrong: BadgeProps = { label: null, title: null };
+export const maybe = (title: string | undefined): BadgeProps => ({ title, label: title ?? null });
 `);
   const errors = typeChecked(dir, "use.tsx");
-  // Only the field not marked nullable refuses null.
+  // Only the field not marked nullable refuses null; the nullable one
+  // takes it, and is there.
   expect(errors.length).toBe(1);
   expect(errors[0]).toContain("use.tsx(5,");
   const { shown } = await import(join(dir, "lib.jsx"));
