@@ -779,9 +779,7 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Option
             }
         }
     });
-    let Some(item) = made else {
-        return None;
-    };
+    let item = made?;
     let known = item.facts;
     let field = |e: &Expr| {
         matches!(&e.kind, ExprKind::Index(of, at)
