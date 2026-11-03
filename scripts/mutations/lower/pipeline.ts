@@ -739,4 +739,13 @@ export const mutations: Mutation[] = [
     replace: "                    false if false => _ = owned_consts.insert(key.to_def_id(), constant),\n",
     tests: ["test/corpus.test.ts", "-t", "^type_constant_of_a_module_constant.rs$"],
   },
+  {
+    name: "strict-field-declared-optional",
+    breaks:
+      "a nullable field tested `=== null` is declared optional, `x?: unknown | null | undefined`, so JS may leave it out (rd647, #519)",
+    file: "src/lower/pipeline.rs",
+    find: "            super::bindings::null_or_value(tcx, field, constructed.contains(&field.did), only_the_crate_makes)\n",
+    replace: "            super::bindings::null_or_value(tcx, field, constructed.contains(&field.did), false)\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
+  },
 ];

@@ -1345,8 +1345,9 @@ export const ok = <Panel label="a" onClick={(event) => event.currentTarget.align
 
 // A binding's `#[rust_js::types]` is a TypeScript type, read into the
 // declaration model: webapi's `ConsoleTask`, Flow's `{ run<T>(f: () => T):
-// T }`, is that object, its method's own `T` its own (ADR 0811), where an
-// optional field and a result add `| null | undefined` to it.
+// T }`, is that object, its method's own `T` its own (ADR 0811), where a
+// nullable field of a struct only the crate makes adds `| null` (ADR 1072)
+// and a result `| null | undefined`.
 test("a binding's object type is declared as TypeScript has it", () => {
   buildReact();
   const dir = fixture("declarations-written-object");
@@ -1377,7 +1378,7 @@ pub fn held() -> Option<&'static Held<String>> {
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
-  expect(declarations).toContain("debugTask?: {\n        run<T>(f: () => T): T;\n    } | null | undefined;");
+  expect(declarations).toContain("debugTask: {\n        run<T>(f: () => T): T;\n    } | null;");
   expect(declarations).toContain("export function debugTask(): {\n    run<T>(f: () => T): T;\n} | null | undefined;");
   expect(declarations).toContain("export function held(): {\n    readonly value: string;\n    values: readonly string[];\n    map<T>(f: (value: T) => T): T[];\n} | null | undefined;");
   writeFileSync(join(dir, "use.ts"), `import { debugTask, held, owner } from "./lib.js";

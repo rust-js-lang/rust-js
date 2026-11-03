@@ -1042,10 +1042,15 @@ pub fn closure_called() -> bool {
 `,
   );
   writeFileSync(join(dir, "given.js"), "export const call = (f) => f({});\n");
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return g.x == null && g.cell == null;");
   expect(js).toContain("return own.x === null;");
+  // One tested so is declared there, `null` or a value; one JS may give
+  // may be left out (rd642).
+  const dts = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(dts).toContain("export interface Own {\n    x: unknown | null;\n}");
+  expect(dts).toContain("export interface Options {\n    nonce?: string | null | undefined;\n}");
   expect(js).toContain("return options.nonce != null;");
   expect(js).toContain("return reply.body != null;");
   const lib = await import(join(dir, "lib.js"));

@@ -1142,6 +1142,8 @@ export function ratio(a, b) {
   upstream's `clones === null`, read whole, through a `let`, a
   `borrow()`, `as_ref()` or a `Cell`'s `get()`. That holds because each
   literal, derived `Default` and `..Default::default()` writes it `null`.
+  Its `.d.ts` says it's there, `x: unknown | null`, so a JS write of
+  `undefined` into it is outside its type, as a wrong type is (rd642).
   One of a struct JS may give, to an exported function or to a function
   a binding calls, even one the crate builds too (#519), an optional one,
   or one of a type parameter's value stays `== null`

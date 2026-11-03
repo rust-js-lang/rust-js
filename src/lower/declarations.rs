@@ -53,7 +53,7 @@ pub(super) fn module<'tcx>(
     files: &HashMap<LocalModId, Vec<String>>,
     (reexports, forwarded): (&[Reexport], &HashMap<DefId, DefId>),
     aliases: &[(DefId, (String, String))],
-    (ref_cells, counted, null_fields, constructed, flattened): (
+    (ref_cells, counted, null_fields, present, flattened): (
         &super::drops::RefCells<'tcx>,
         &super::analysis::Counted<'tcx>,
         &HashSet<DefId>,
@@ -76,7 +76,7 @@ pub(super) fn module<'tcx>(
         ref_cells,
         counted,
         null_fields,
-        constructed,
+        present,
         flattened,
         imports: BTreeSet::new(),
         library_imports: BTreeSet::new(),
@@ -385,9 +385,11 @@ struct Declarations<'a, 'tcx> {
     counted: &'a super::analysis::Counted<'tcx>,
     /// The fields a `js::null()` is written to, `| null` (ADR 0935, amended).
     null_fields: &'a HashSet<DefId>,
-    /// The nullable fields each constructor of their struct sets first,
-    /// present, `T | null` (`classes::set_where_constructed`, rd628).
-    constructed: &'a HashSet<DefId>,
+    /// The nullable fields `null` or a value wherever they're read, which
+    /// are there, `T | null`, never left out (`bindings::null_or_value`):
+    /// each constructor of their struct sets them first (rd628), or only
+    /// the crate makes their struct (rd647, #519, ADR 1072).
+    present: &'a HashSet<DefId>,
     /// The enums told by their keys, each variant an object of its own
     /// keys, no tag (#504).
     flattened: &'a super::bindings::Flattened,
@@ -773,9 +775,9 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     let inner = self.as_written(written.and_then(|w| self.written_option(w)), |out| out.ts(inner));
                     // Nullable, or a plain one a `js::null()` is written
                     // to, which may hold `null` (ADR 0935, amended).
-                    // One its struct's constructors each set first is present
-                    // (rd628).
-                    let present = self.constructed.contains(&field.did) || value;
+                    // One that's `null` or a value wherever it's read is
+                    // there (rd628, rd647).
+                    let present = self.present.contains(&field.did) || value;
                     match is_nullable(self.tcx, field) || nested || value || self.null_fields.contains(&field.did) {
                         true => (!present, json!({ "kind": "union", "types": [inner, keyword("null")] })),
                         false => (true, inner),

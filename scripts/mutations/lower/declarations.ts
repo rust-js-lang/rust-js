@@ -1099,8 +1099,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable field of what may be `undefined` is declared optional, `serverModuleMap?: ServerManifest | null | undefined` (rd645)",
     file: "src/lower/declarations.rs",
-    find: "                    let present = self.constructed.contains(&field.did) || value;\n",
-    replace: "                    let present = self.constructed.contains(&field.did);\n",
+    find: "                    let present = self.present.contains(&field.did) || value;\n",
+    replace: "                    let present = self.present.contains(&field.did);\n",
     tests: ["test/lowering-nested-options.test.ts", "-t", "what may be undefined"],
   },
   {

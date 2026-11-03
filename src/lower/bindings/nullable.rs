@@ -130,6 +130,25 @@ pub(in crate::lower) fn is_optional(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     tcx.get_attrs_by_path(field.did, &path).next().is_some()
 }
 
+/// Whether `field` is `null` or a value wherever it's read, never
+/// `undefined`, so it's tested `=== null` and declared `field: T | null`
+/// (rd647, #519, ADR 1072). That needs it to be `#[rust_js::nullable]`
+/// and not optional (`null_where_made`), declared an `Option` or a cell of
+/// one, so not of a type parameter's value, which generic code stores as
+/// it's given, `undefined` too.
+/// Its struct must also be one only the crate makes (`only_the_crate_makes`),
+/// or each constructor of it must set the field first (`constructed`,
+/// rd628).
+pub(in crate::lower) fn null_or_value(
+    tcx: TyCtxt<'_>,
+    field: &FieldDef,
+    constructed: bool,
+    only_the_crate_makes: bool,
+) -> bool {
+    let declared = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some() && (constructed || only_the_crate_makes)
+}
+
 /// Whether a field's `None` is `null` from where it's made on, so its read is `null` or a value: a
 /// nullable one's, not an optional one's, which a literal's `None` leaves out (ADR 0810, amended).
 pub(in crate::lower) fn null_where_made(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {

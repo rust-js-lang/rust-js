@@ -18,26 +18,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether field `i` of `ty`, a struct, is `null` or a value wherever
     /// it's read, its `None` never `undefined`, so it's tested `=== null`
-    /// (rd647, the user's (1)). That holds where it's
-    /// `#[rust_js::nullable]` and not optional, an `Option` or a cell of one
-    /// (`null_where_made`), and only the crate makes its struct
-    /// (`only_the_crate_makes`), each literal writing it `null`; or each
-    /// constructor of its struct, `Class::of(function::with_this(..))`,
-    /// sets it first, so it's there from where `new` makes it (rd628).
+    /// (`bindings::null_or_value`, rd647, #519).
     pub(super) fn null_or_value_field(&self, ty: Ty<'tcx>, i: usize) -> bool {
-        let ty::Adt(adt, args) = ty.kind() else { return false };
+        let ty::Adt(adt, _) = ty.kind() else { return false };
         let Some(field) = self.struct_field_def(ty, i) else {
             return false;
         };
-        let field_ty = field.ty(self.tcx, args).skip_normalization();
-        // Not one of a type parameter's value, which generic code stores
-        // as it's given, `undefined` too (ADR 0586, amended).
-        let declared = self.tcx.type_of(field.did).instantiate_identity().skip_normalization();
-        bindings::null_where_made(self.tcx, field)
-            && bindings::nullable_option(self.tcx, field_ty).is_some()
-            && !bindings::of_type_parameter(self.tcx, declared)
-            && (self.krate.constructed.contains(&field.did)
-                || self.krate.cell_borrows.pointers().only_the_crate_makes(adt.did()))
+        let constructed = self.krate.constructed.contains(&field.did);
+        let only_the_crate_makes = self.krate.cell_borrows.pointers().only_the_crate_makes(adt.did());
+        bindings::null_or_value(self.tcx, field, constructed, only_the_crate_makes)
     }
 
     /// Whether `place`, read in `body`, is such a field

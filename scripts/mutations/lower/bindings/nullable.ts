@@ -289,4 +289,40 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
     snapshots: true,
   },
+  {
+    name: "strict-optional-field",
+    breaks:
+      "an optional nullable field, absent until it's set, is tested `=== null`, its absent `None` a `Some` (rd647)",
+    file: "src/lower/bindings/nullable.rs",
+    find: "    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some() && (constructed || only_the_crate_makes)\n",
+    replace: "    is_nullable(tcx, field) && nullable_option(tcx, declared).is_some() && (constructed || only_the_crate_makes)\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
+  },
+  {
+    name: "strict-type-parameter-field",
+    breaks:
+      "a nullable field of a type parameter's value is tested `=== null`, though generic code stores the `undefined` it's given (rd647)",
+    file: "src/lower/bindings/nullable.rs",
+    find: "    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some() && (constructed || only_the_crate_makes)\n",
+    replace: "    null_where_made(tcx, field) && true && (constructed || only_the_crate_makes)\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
+  },
+  {
+    name: "strict-class-field-unset",
+    breaks:
+      "a class's nullable field its constructors don't each set first is tested `=== null`, though it's absent until set (rd647)",
+    file: "src/lower/bindings/nullable.rs",
+    find: "    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some() && (constructed || only_the_crate_makes)\n",
+    replace: "    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some() && (true || only_the_crate_makes)\n",
+    tests: ["test/js-constructors.test.ts", "-t", "each constructor sets first"],
+  },
+  {
+    name: "strict-field-of-a-js-given-struct",
+    breaks:
+      "a nullable field of a struct only JS gives is tested `=== null`, so a `{}` JS gives reads `undefined` as a `Some` (rd647)",
+    file: "src/lower/bindings/nullable.rs",
+    find: "    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some() && (constructed || only_the_crate_makes)\n",
+    replace: "    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some() && (constructed || true)\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
+  },
 ];

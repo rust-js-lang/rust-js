@@ -117,3 +117,26 @@ each position in Node: an exported parameter `{}`, a field of one, `{
 inner: {} }`, and a `dyn Fn` and a closure a binding calls with `{}`. Each
 struct is also built by the crate. Mutations `js-given-*` are in
 `lower/analysis/fn_pointers.ts`.
+
+## Amendment: such a field is declared there, `field: T | null` (2026-11-03, rd642 part 1)
+
+A field tested `=== null` was still declared `field?: T | null |
+undefined`. That told JS it may leave the field out, or write `undefined`
+into an object the crate gave it, the same one hole #519 closed for what
+JS gives. The `.d.ts` now declares each such field there, `x: unknown |
+null`, with no `?` and no `| undefined`. One rule decides both the test
+and the declaration, `bindings::null_or_value`. `mir/nulled.rs` asks it
+of each read, and `pipeline.rs` collects the fields it holds for, the
+`.d.ts`'s `present` set, which a constructor's set-first fields (rd628)
+were before.
+
+So the contract is explicit. A JS write of `undefined` into such a field,
+or an object JS gives without it, is outside the declared type, as
+passing a value of the wrong type is. Rust's answer isn't promised there.
+A field rust-js tests loosely, of a struct JS may give, stays `field?: T |
+null | undefined`, as JS may leave it out.
+
+Held by `test/lowering-nullable-reads.test.ts`'s strictness test (`Own`'s
+`x: unknown | null;`, `Options`' `nonce?: ..`), mutation
+`strict-field-declared-optional` (`lower/pipeline.ts`); the rule's own
+mutations moved to `lower/bindings/nullable.ts`.

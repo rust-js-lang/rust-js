@@ -308,42 +308,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a cast of an Option is what it's given"],
   },
   {
-    name: "strict-field-of-a-js-given-struct",
-    breaks:
-      "a nullable field of a struct only JS gives is tested `=== null`, so a `{}` JS gives reads `undefined` as a `Some` (rd647)",
-    file: "src/lower/mir/nulled.rs",
-    find: "                || self.krate.cell_borrows.pointers().only_the_crate_makes(adt.did()))\n",
-    replace: "                || true)\n",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
-  },
-  {
-    name: "strict-optional-field",
-    breaks:
-      "an optional nullable field, absent until it's set, is tested `=== null`, its absent `None` a `Some` (rd647)",
-    file: "src/lower/mir/nulled.rs",
-    find: "        bindings::null_where_made(self.tcx, field)\n            && bindings::nullable_option",
-    replace: "        bindings::is_nullable(self.tcx, field)\n            && bindings::nullable_option",
-    tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
-  },
-  {
-    name: "strict-type-parameter-field",
-    breaks:
-      "a nullable field of a type parameter's value is tested `=== null`, though generic code stores the `undefined` it's given (rd647)",
-    file: "src/lower/mir/nulled.rs",
-    find: "            && !bindings::of_type_parameter(self.tcx, declared)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
-  },
-  {
-    name: "strict-class-field-unset",
-    breaks:
-      "a class's nullable field its constructors don't each set first is tested `=== null`, though it's absent until set (rd647)",
-    file: "src/lower/mir/nulled.rs",
-    find: "            && (self.krate.constructed.contains(&field.did)\n",
-    replace: "            && (true\n",
-    tests: ["test/js-constructors.test.ts", "-t", "each constructor sets first"],
-  },
-  {
     name: "strict-through-a-borrow-unseen",
     breaks:
       "a `RefCell` field's `borrow()` isn't followed to the field, so `clones.as_ref()` is tested `== null` (rd647)",
