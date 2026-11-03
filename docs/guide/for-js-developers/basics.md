@@ -2023,6 +2023,13 @@ export function earlyBailout(fiber, onB, onC) {
 }
 ```
 
+A guarded arm that only `continue`s, in a `match` that ends a loop's turn,
+goes past the `switch` whichever way its guard goes, so it's its case's
+`break;`: `1 if n > 3 => continue` is `case 1: break;`. A guard that does
+something is still called, `case 1: noted(log); break;`. A last case
+that's then nothing is no case
+([ADR 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md#amendment-a-guarded-arm-that-only-continues-is-its-cases-break-2026-11-03-488)).
+
 A guarded arm just before a last `_` that does something falls through to
 the `default`, which Rust tries next, as React writes `describeFiber`
 ([ADR 0636](../../decisions/0636-a-guarded-arm-is-a-case.md), amended):

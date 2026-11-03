@@ -554,13 +554,32 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "last-falling-case-keeps-break",
+    name: "case-ending-breaks-kept",
     breaks:
-      "the last case of a `switch` with no `default`, a guarded arm's that falls to nothing, keeps the `break;` ending its guard's branch, which the case's end does anyway (#389c)",
+      "a case that goes on past the `switch` keeps a `break;` MIR made ending its `if`'s branch, `case 1: if (n > 3) { break; } break;` of a guarded arm of `continue` (#488)",
     file: "src/lower/mir/tidy/switches.rs",
-    find: "                ending_breaks(&mut last.body);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^switch_guards_apart.rs$"],
+    find: "                ending_breaks(body);\n            }\n",
+    replace: "            }\n",
+    tests: ["test/corpus.test.ts", "-t", "^guarded_continue_ending_turn.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "case-ending-written-breaks-dropped",
+    breaks:
+      "a `break 'get_tag;` the program wrote, ending an `if` with no `else` in a case, goes, so what follows the `if` is its `else` (#488, ADR 0944)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "            Some(end) if matches!(end.kind, StmtKind::Break(None)) && end.span.is_none() => {\n",
+    replace: "            Some(end) if matches!(end.kind, StmtKind::Break(None)) => {\n",
+    tests: ["test/lowering-labels.test.ts", "-t", "whose inner switch leaves it"],
+  },
+  {
+    name: "empty-last-case-kept",
+    breaks:
+      "a last case of nothing, `3 if n > 1 => continue` before `_ => {}` ending a loop's turn, is printed `case 3:` (#488)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "            while default.is_none() && cases.last().is_some_and(|case| case.body.is_empty()) {\n",
+    replace: "            while false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^guarded_continue_ending_turn.rs$"],
     snapshots: true,
   },
   {

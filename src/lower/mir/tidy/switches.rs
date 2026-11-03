@@ -1279,20 +1279,22 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>, switches: &[Switch]) {
             if default.as_deref().is_some_and(does_nothing) {
                 *default = None;
             }
-            for body in (cases.iter_mut().filter(|case| !case.falls).map(|case| &mut case.body)).chain(default.as_mut())
-            {
+            // Each clause that goes on past the `switch` (#488).
+            let past = (cases.iter_mut().filter(|case| !case.falls)).map(|case| &mut case.body);
+            for body in past.chain(default.as_mut()) {
                 guard_held(body, switches);
-            }
-            // The last case's `break`, which its end does (ADR 0629,
-            // amended), one that falls to nothing's too, ending its guard's
-            // branch (#389c).
-            if default.is_none()
-                && let Some(last) = cases.iter_mut().rfind(|case| !case.values.is_empty())
-            {
-                if matches!(last.body.last().map(|s| &s.kind), Some(StmtKind::Break(None))) {
-                    last.body.pop();
+                // Its own `break`, which its end does (ADR 0629, amended),
+                // as the printer ends a case that goes on with one.
+                if matches!(body.last().map(|s| &s.kind), Some(StmtKind::Break(None))) {
+                    body.pop();
                 }
-                ending_breaks(&mut last.body);
+                ending_breaks(body);
+            }
+            // A last case then of nothing, `case 3:` of `3 if n > 1 =>
+            // continue` before `_ => {}`, which goes past the `switch` either
+            // way: none, as what it tests is only constants (#488).
+            while default.is_none() && cases.last().is_some_and(|case| case.body.is_empty()) {
+                cases.pop();
             }
             if discriminant_in_place(stmts, i) {
                 i -= 1;
@@ -1302,18 +1304,23 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>, switches: &[Switch]) {
     }
 }
 
-/// Of `stmts`, a case's, each `break;` that ends a branch of the `if` they
-/// end with, however deep, gone, which goes where that branch's end does;
-/// a branch then empty, as `emptied_branch` writes it.
+/// Of `stmts`, a case's that goes on past the `switch`, each `break;` MIR
+/// made that ends a branch of the `if` they end with, however deep, gone,
+/// which goes where that branch's end does; a branch then empty, as
+/// `emptied_branch` writes it: `case 1: if (n > 3) { break; } break;` of a
+/// guarded arm of `continue` in a loop's last `match` is `case 1: break;`
+/// (#488). Not one the program wrote, `break 'get_tag;`, whose `if` has no
+/// `else` (ADR 0944).
 pub(super) fn ending_breaks(stmts: &mut Vec<Stmt>) {
     let Some(StmtKind::If(_, then, otherwise)) = stmts.last_mut().map(|s| &mut s.kind) else {
         return;
     };
     for branch in std::iter::once(then).chain(otherwise) {
-        if matches!(branch.last().map(|s| &s.kind), Some(StmtKind::Break(None))) {
-            branch.pop();
-        } else {
-            ending_breaks(branch);
+        match branch.last() {
+            Some(end) if matches!(end.kind, StmtKind::Break(None)) && end.span.is_none() => {
+                branch.pop();
+            }
+            _ => ending_breaks(branch),
         }
     }
     let last = stmts.pop().expect("matched");

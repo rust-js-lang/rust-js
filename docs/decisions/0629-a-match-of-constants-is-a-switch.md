@@ -987,3 +987,45 @@ Held by the corpus case `switch_arm_binding_constants` against native
 Rust, and the mutation `binding-of-constants-unswitched`
 (`lower/mir/hints/constants.ts`).
 
+## Amendment: a guarded arm that only continues is its case's `break;` (2026-11-03, #488)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each way out of the
+case still goes past the `switch`, and the guard is still evaluated.
+
+`for &x in v { match x { 0 => { ..; continue; } 1 if n > 3 => continue,
+2 => n += 1, _ => {} } }` printed `case 1: if (n > 3) { break; } break;`.
+The `continue` MIR made ends the loop's turn, so it was the `switch`'s
+`break` (rd136), and the guard failing goes to `_ => {}`, which does
+nothing. Either way, the case goes past the `switch`. Only the last case
+had its `if`'s ending `break;`s taken off (#389c). **Each clause that
+goes on past the `switch`, a case that doesn't fall and the `default`,
+has its own `break;` and each `break;` MIR made that ends a branch of the
+`if` it ends with taken off** (`ending_breaks`), as the clause's end goes
+there anyway. The printer still ends a case that goes on with its
+`break;`. An `if` left with nothing is gone, and one whose guard does
+something is that call, as `emptied_branch` writes it:
+
+```js
+case 1:
+  break;
+```
+
+and `case 1: noted(log); break;` of `1 if noted(log) => continue`. A last
+case that's then nothing, `3 if n > 1 => continue` before `_ => {}`, is
+no case. Its values are constants, and a value no case takes goes past
+the `switch` too.
+
+A `break` the program wrote stays where it is, `break 'get_tag;` of ADR
+0944's labeled `switch`, so its `if` has no `else`, as written
+(`unwritten_else`). Before, the last case's written breaks went too, but
+nothing in the checks wrote one there. The last case's own rule for a
+case that falls to nothing (#389c) is gone with its mutation,
+`last-falling-case-keeps-break`. A probe under `check:fast --all` found
+no last case that falls once tidy reaches it, so the one rule covers
+what that rule did.
+
+Held by the corpus case `guarded_continue_ending_turn` against native
+Rust, `lowering-labels.test.ts`'s "a label the program wrote is the
+switch's whose inner switch leaves it", and the mutations
+`case-ending-breaks-kept`, `case-ending-written-breaks-dropped` and
+`empty-last-case-kept` (`lower/mir/tidy/switches.ts`).
