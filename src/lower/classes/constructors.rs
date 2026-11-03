@@ -65,8 +65,10 @@ pub(crate) fn refuse_counted_instances<'tcx>(tcx: TyCtxt<'tcx>, counts: impl Fn(
 /// crate makes with a literal writes each such field's `None` `null` (ADR
 /// 0772); one the crate's constructor makes is its constructor's; one JS
 /// makes, its `.d.ts`, which says so. A field one of a struct's
-/// constructors doesn't set first, or that's `#[rust_js::optional]`,
-/// absent until it's set (ADR 0810), isn't one.
+/// constructors doesn't set first isn't one. One that's also
+/// `#[rust_js::optional]`, absent until it's set (ADR 0810), is its
+/// readers' to leave out: `bindings::null_or_value`'s `null_where_made`,
+/// and a `Cell` field's `get()`, which asks `is_optional` first.
 pub(crate) fn set_where_constructed<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> HashSet<DefId> {
     let of_id: HashMap<DefId, &Body<'tcx>> = bodies.iter().map(|body| (body.def_id, *body)).collect();
     // Of each struct, the fields every constructor of it sets first.
@@ -107,7 +109,7 @@ pub(crate) fn set_where_constructed<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tc
         }
     }
     (set.into_values().flatten())
-        .filter(|&field| field_def(tcx, field).is_some_and(|def| crate::lower::bindings::null_where_made(tcx, def)))
+        .filter(|&field| field_def(tcx, field).is_some_and(|def| crate::lower::bindings::is_nullable(tcx, def)))
         .collect()
 }
 

@@ -75,11 +75,11 @@ export const mutations: Mutation[] = [
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
   },
   {
-    name: "set-first-optional",
-    breaks: "an optional nullable field, absent until set (ADR 0810), that its constructor sets first is declared present, `task: unknown | null` (rd628)",
+    name: "set-first-unnullable",
+    breaks: "a field not `#[rust_js::nullable]`, whose `None` is `undefined`, that its constructor sets first is taken for `null` or a value, so `prepare(response.plain)` gives a nullable parameter `undefined` (rd628)",
     file: "src/lower/classes/constructors.rs",
-    find: "crate::lower::bindings::null_where_made(tcx, def)",
-    replace: "crate::lower::bindings::is_nullable(tcx, def)",
+    find: "crate::lower::bindings::is_nullable(tcx, def)",
+    replace: "{ let _ = def; true }",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
   },
 ];

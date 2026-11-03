@@ -479,6 +479,7 @@ pub struct Response {
     pub after_given: Cell<Option<&'static Unknown>>,
     #[cfg_attr(rust_js, rust_js::nullable)]
     pub never: Cell<Option<&'static Unknown>>,
+    pub plain: Cell<Option<&'static Unknown>>,
 }
 
 unsafe impl js::Defined for Response {}
@@ -536,6 +537,7 @@ thread_local! {
             let response: &'static Response = unsafe { js::cast(this) };
             let chunks = js::unknown("chunks");
             response.module_loading.set(module_loading);
+            response.plain.set(module_loading);
             response.nonce.set(Some(chunks));
             response.task.set(None);
             response.copy.set(response.read_first.get());
@@ -639,6 +641,12 @@ pub fn never(response: &Response) -> &'static Unknown {
     prepare(response.never.get())
 }
 
+// One not nullable, whose \`None\` is \`undefined\`, set first too, isn't
+// \`null\` or a value: the nullable parameter's given it \`?? null\`.
+pub fn plain(response: &Response) -> &'static Unknown {
+    prepare(response.plain.get())
+}
+
 pub fn both(twice: &Twice) -> &'static Unknown {
     prepare(twice.both.get())
 }
@@ -693,7 +701,7 @@ pub fn has_module_loading(response: &Response) -> bool {
   for (const read of ["response.moduleLoading", "response.nonce", "response.copy", "twice.both"]) {
     expect(js).toContain(`  return prepare(${read});\n`);
   }
-  for (const read of ["task", "readFirst", "inIf", "afterGiven", "never"]) {
+  for (const read of ["task", "readFirst", "inIf", "afterGiven", "never", "plain"]) {
     expect(js).toContain(`  return prepare(response.${read} ?? null);\n`);
   }
   // Another nullable cell is given it as it is.

@@ -373,8 +373,17 @@ Held by `test/js-constructors.test.ts`'s "a nullable field each
 constructor sets first is present, given on as it is", run; mutations
 `set-first-of-one-constructor`, `set-first-past-this-given`,
 `set-first-past-cast-given`, `set-first-past-return`,
-`set-first-captures-unread`, `set-first-read-before`, `set-first-optional`
+`set-first-captures-unread`, `set-first-read-before`, `set-first-unnullable`
 (`classes/constructors.ts`), `constructed-get-coalesced`
 (`mir/structure.ts`), `constructed-get-unknown` (`mir/rvalues.ts`),
 `constructed-declared-optional` (`declarations.ts`) and
 `nulled-cell-write-of-a-getter-coalesced` (`std_types/cell.ts`).
+
+Amended (2026-11-03): an optional field is left out by its readers
+alone. Since ADR 1072, `bindings::null_or_value` asks `null_where_made`
+of every read, and a `Cell` field's `get()` asks `is_optional` first, so
+`set_where_constructed`'s own test that a field isn't optional was never
+the one that decided: its mutation, `set-first-optional`, survived. The
+set now holds each nullable field set first, and `set-first-unnullable`
+holds its one test, that the field is nullable: a plain `Cell` field set
+first is still given `?? null`.
