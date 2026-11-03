@@ -1275,14 +1275,19 @@ whose borrows can meet another is the property, `e.cleanup = e.fn()`.
   struct's is (above).
 - **MIR's**, `_5 = &((*_1) as Effect).1` and `borrow_mut(copy _5)`: the
   field its `Downcast` reads (`local_facts.rs`'s `lent_field`), so its
-  guard releases nothing. A binding of a variant's field whose cell is the
-  property is a handle on that place, read where it's used
+  guard releases nothing. A binding of a variant's `RefCell` field that's
+  the property is a handle on that place, read where it's used
   (`handle_on_kept_field`), of a variable nothing sets again, `kind` of
   `kind.cleanup`, as borrowck keeps what it's in: what the pattern matched
   is fixed where it's matched, `const job = task.job;`, so a variable the
-  program sets after, `task = second`, changes no binding of it. And a guard's handle a
-  `let` declares only once it sinks to its branch is read as its place
-  too (`tidy/values.rs`'s `read_handles`).
+  program sets after, `task = second`, changes no binding of it. Each of its
+  borrows is then the place, `e.cleanup = e.fn()`, where a `const` of its
+  handle read `{ get value() { return e.cleanup; }, .. }` (#542). A
+  `Cell`'s binding is a `const` of its handle as before, which
+  `read_handles` reads as ADR 0287 (amended, #532) says: once, where it's
+  read; twice, held once. And a guard's handle a `let` declares only once
+  it sinks to its branch is read as its place too (`tidy/values.rs`'s
+  `read_handles`).
 - **A generic variant's `RefCell<T>` field made where its variant is**,
   `Slot::Full { current: RefCell::new(value) }`, and a binding of it, are
   the field's own, no `RefCell<T>` of any value (`made_places`,
@@ -1319,10 +1324,10 @@ A struct's pattern binding by reference, `let Wrap { n } = &wrap;`, is so
 too: the one rule of a field's binding. Its uses before, a call given it,
 lent it, and still do: corpus `refcell_bound_field_held` is as it was.
 
-The readability baseline's corpus gains the cases below; three existing
-outputs read a binding's place where it was a `const`: `flattened_keyed_enum`'s
-`return node.pending;`, `match_arm_guard_first`'s `$index(pair, 0).sibling
-= node;` and the guide's keyed `read`'s `return node.current;`.
+The readability baseline's corpus gains the cases below; one existing
+output reads a handle's place where it was a `const`, the late
+`read_handles`' `match_arm_guard_first`'s `$index(pair, 0).sibling =
+node;`.
 
 Held by `test/lowering-field-cells.test.ts`, "an enum variant's RefCell
 field holds its value by its declaration", now its binding the field, no

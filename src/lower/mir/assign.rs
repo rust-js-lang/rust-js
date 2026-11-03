@@ -775,10 +775,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => false,
         };
-        // A reference to a variant's field whose cell is the property it
+        // A reference to a variant's `RefCell` field that's the property it
         // holds, made once, a pattern's binding of it, `cleanup` of
         // `Kind::Effect { cleanup, .. }`, a derive's too: a handle on that
-        // place, read where it's used (`handle_on_kept_field`, #503).
+        // place, read where it's used (`handle_on_kept_field`, #503), each of
+        // its borrows the place's. A `Cell`'s is a `const` of its handle,
+        // which `read_handles` reads (ADR 0287, amended, #532).
         if place.projection.is_empty()
             && state.locals.writes[local] == 1
             && !state.locals.borrowed[local]
@@ -787,6 +789,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Value::Expr(handle) | Value::Place(handle) = &value
             && self.handle_on_kept_field(handle)
             && refers_to_a_variant_field(state)
+            && self.is_std_type(state.body.local_decls[local].ty.peel_refs(), StdItem::RefCell)
         {
             state.in_place.insert(local, handle.clone());
             return Ok(());

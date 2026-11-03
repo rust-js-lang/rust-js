@@ -1110,4 +1110,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-field-cells.test.ts", "-t", "an enum variant's RefCell field"],
     snapshots: true,
   },
+  {
+    name: "cell-field-reference-held-in-place",
+    breaks:
+      "a `match` arm's binding of a variant's `Cell` field read twice is read twice where it's read, `kind.current + kind.current`, where ADR 0287 holds it once, `const current = kind.current;` (#532, #503)",
+    file: "src/lower/mir/assign.rs",
+    find: "            && self.is_std_type(state.body.local_decls[local].ty.peel_refs(), StdItem::RefCell)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cell_binding_read_once.rs$"],
+    snapshots: true,
+  },
 ];
