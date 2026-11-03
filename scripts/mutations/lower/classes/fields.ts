@@ -27,11 +27,11 @@ export const mutations: Mutation[] = [
     tests: ["test/es-classes.test.ts", "-t", "fields that would change what it does are refused"],
   },
   {
-    name: "field-named-constructor-declared",
-    breaks: "an ES class's field named `constructor` is declared, `constructor;`, a SyntaxError (#568)",
+    name: "field-of-no-js-name-declared",
+    breaks: "`class(es, fields)` of a field whose JS name is no JS name, `data-x`, compiles, its declaration `data-x;` a SyntaxError (#568)",
     file: "src/lower/classes/fields.rs",
-    find: "        && !matches!(name, \"constructor\" | \"__proto__\")\n",
-    replace: "        && !matches!(name, \"__proto__\")\n",
+    find: "        && chars.all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$')\n",
+    replace: "        && chars.all(|_| true)\n",
     tests: ["test/es-classes.test.ts", "-t", "fields that would change what it does are refused"],
   },
   {

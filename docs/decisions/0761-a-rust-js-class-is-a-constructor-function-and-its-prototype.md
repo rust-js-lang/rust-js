@@ -831,8 +831,9 @@ a refusal: Rust's assignment can't be kept in that form):
   value;`, the first of its statements that reads `this`, as Rust's
   `Self { .. }` is, which nothing can read before it's made: a field whose
   `None` is left out, `Labeled { label: None, size }`, absent until set;
-- a field isn't a JS name, or is `constructor`, which no class field may
-  be, or `__proto__`, whose assignment is `Object.prototype`'s setter's.
+- a field isn't a JS name, or is `__proto__`, whose assignment is
+  `Object.prototype`'s setter's (one named `constructor` is refused of
+  any class, below, rd750).
 
 Case N of ADR 0262 where it's declared: the define and the set make the
 same own property, in the same order. What's left that could tell them
@@ -847,15 +848,32 @@ ES class" (`class(es, fields)`: its fields declared, `Object.keys` in their
 order), "an ES class declares no fields unless it says so" (a `class(es)`
 whose prototype has the program's setter of `name`, called as its
 constructor sets it) and "an ES class's fields that would change what it
-does are refused" (its prototype read, a field left unset, a field named
-`constructor`, `fields` of no ES class), and
+does are refused" (its prototype read, a field left unset, a field of no
+JS name, `fields` of no ES class), and
 `test/binding-subclasses.test.ts`'s `class(es, fields)` of a subclass,
 refused, and "a field of a class that extends a binding's class is set
 through its accessor, undeclared", each run in Node; mutations
 `fields-declared-unasked`, `fields-of-a-read-prototype-allowed`,
-`fields-left-unset-allowed`, `field-named-constructor-declared`,
+`fields-left-unset-allowed`, `field-of-no-js-name-declared`,
 `fields-never-declared` (`lower/classes/fields.rs`), `fields-word-unread`,
 `fields-of-a-subclass-allowed`, `fields-without-es-allowed`
 (`lower/classes/forms.rs`), `es-class-prototype-read-unrecorded`
 (`lower/binding_calls.rs`), `es-class-fields-unprinted`
 (`to_oxc/statements.rs`).
+
+## Amendment: a class's field named `constructor` is refused (rd750)
+
+A class's field whose JS name is `constructor`, `pub constructor: u32`,
+was declared in its `.d.ts` `constructor: number;`, which TypeScript reads
+as a constructor's signature, or refuses outright as a field (TS18006,
+"Classes may not have a field named 'constructor'"), so the build failed
+reading the declarations it wrote, with no word of the field; and its JS,
+`this.constructor = 1`, hides the prototype's `constructor`, which a JS
+caller reads to find the class. **A `#[rust_js::class]`'s field named
+`constructor`, of either form, is refused at the field**, saying to name
+it otherwise or give it another JS name, `#[rust_js::name = ".."]`
+(`classes/fields.rs`' `named_constructor`). `class(es, fields)` no longer
+asks it of each field it declares. Held by `test/es-classes.test.ts`'s "a
+class's field named constructor is refused, saying what to write", of a
+constructor function and an ES class, and the mutation
+`constructor-field-allowed` (`lower/classes.rs`).

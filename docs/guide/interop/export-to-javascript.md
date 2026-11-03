@@ -775,9 +775,11 @@ order its constructor sets them. Where a declaration would change what
 the constructor does, `fields` is refused, saying why: the program reads
 its prototype, `js::class::<Plugin>().prototype()`, where it may define a
 setter of a field's name; the constructor leaves a field out, an
-`Option`'s `None`; a field is named `constructor` or `__proto__`; or the
+`Option`'s `None`; a field is named `__proto__` or isn't a JS name; or the
 class extends a binding's, whose prototype may have an accessor of the
-name. `fields` without `es` is refused too (#568). Its constants are its prototype's after it,
+name. `fields` without `es` is refused too (#568). A class's field named
+`constructor` is refused of either form, as no TypeScript class declares
+one and `this.constructor` hides its prototype's (rd750). Its constants are its prototype's after it,
 `Plugin.prototype.limit = 3;`, and its module's default declared as it,
 `export default class Plugin { .. }`. JS sees an ES class: its methods
 aren't enumerable, and a call without `new` throws a `TypeError`. Its

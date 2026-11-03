@@ -689,4 +689,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/method-forwarding.test.ts", "-t", "a prototype's method that only passes its parameters on"],
   },
+  {
+    name: "constructor-field-allowed",
+    breaks: "a class's field named `constructor` compiles, its `.d.ts` `constructor: number;`, which TypeScript refuses, so the build fails reading what it wrote (rd750)",
+    file: "src/lower/classes.rs",
+    find: "                if let Some(at) = fields::named_constructor(tcx, id) {\n",
+    replace: "                if let Some(at) = None::<rustc_span::Span> {\n",
+    tests: ["test/es-classes.test.ts", "-t", "field named constructor is refused"],
+  },
 ];

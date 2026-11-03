@@ -212,7 +212,7 @@ js::on_load! {
 // where it may define a setter of a field's name, which the define hides
 // from the assignment; its constructor leaves a field unset, its `None`
 // left out, which a declaration makes present, `undefined`; a field no
-// class declares, `constructor`; and `fields` of no ES class.
+// class declares, of no JS name; and `fields` of no ES class.
 test("an ES class's fields that would change what it does are refused", () => {
   const cases: [string, string, string][] = [
     ["es-fields-prototype-read", `#[cfg_attr(rust_js, rust_js::class(es, fields))]
@@ -256,17 +256,18 @@ impl Labeled {
 }
 `, "its constructor leaves `label` unset"],
     ["es-fields-reserved", `#[cfg_attr(rust_js, rust_js::class(es, fields))]
-pub struct Built {
-    pub constructor: u32,
+pub struct Dashed {
+    #[cfg_attr(rust_js, rust_js::name = "data-x")]
+    pub data: u32,
 }
 
 #[cfg_attr(rust_js, rust_js::class)]
-impl Built {
+impl Dashed {
     pub fn new() -> Self {
-        Built { constructor: 1 }
+        Dashed { data: 1 }
     }
 }
-`, "`constructor` is a field no class declares"],
+`, "`data-x` is a field no class declares"],
     ["es-fields-of-no-es-class", `#[cfg_attr(rust_js, rust_js::class(fields))]
 pub struct Labeled {
     pub label: Option<String>,
@@ -283,5 +284,28 @@ impl Labeled {
   ];
   for (const [name, rust, message] of cases) {
     expect(refused(name, rust)).toContain(message);
+  }
+});
+
+// rd750: a class's field named `constructor` is refused, of either form:
+// no TypeScript class declares one (TS18006), so its `.d.ts` couldn't be
+// written, and `this.constructor = ..` hides its prototype's.
+test("a class's field named constructor is refused, saying what to write", () => {
+  for (const form of ["class", "class(es)"]) {
+    const rust = `#[cfg_attr(rust_js, rust_js::${form})]
+pub struct Built {
+    pub constructor: u32,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Built {
+    pub fn new() -> Self {
+        Built { constructor: 1 }
+    }
+}
+`;
+    expect(refused(`class-field-constructor-${form === "class" ? "function" : "es"}`, rust)).toContain(
+      "has no field named `constructor`, which no TypeScript class declares and whose `this.constructor` hides its prototype's",
+    );
   }
 });

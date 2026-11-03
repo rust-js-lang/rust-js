@@ -29,7 +29,7 @@ use crate::js::{self, ExprKind, Stmt, StmtKind};
 ///   unset, its `None` left out, would be present, `undefined`, where it's
 ///   absent;
 /// - a field is named `__proto__`, `Object.prototype`'s accessor, or
-///   `constructor`, which no class field may be, or isn't a JS name.
+///   isn't a JS name.
 ///
 /// A class that extends a binding's, whose prototype may have an accessor
 /// of a field's name, is refused `es` already (`forms::form_misuse`).
@@ -121,20 +121,33 @@ fn declarable(body: &[Stmt], keys: &[String]) -> Result<Vec<String>, String> {
     }
     match set.iter().find(|name| !declarable_name(name)) {
         Some(name) => Err(format!(
-            "`{name}` is a field no class declares, `constructor` its constructor's, `__proto__` `Object.prototype`'s setter's, or what's no JS name"
+            "`{name}` is a field no class declares, `__proto__` `Object.prototype`'s setter's, or what's no JS name"
         )),
         None => Ok(set),
     }
 }
 
 /// Whether a field named `name` may be declared as it's set: a JS name,
-/// `chunkName;`, but `constructor`, which a class field can't be, and
-/// `__proto__`, whose assignment is `Object.prototype`'s setter's.
+/// `chunkName;`, but `__proto__`, whose assignment is `Object.prototype`'s
+/// setter's (one named `constructor` is refused of any class, rd750).
 fn declarable_name(name: &str) -> bool {
     let mut chars = name.chars();
     chars
         .next()
         .is_some_and(|c| c.is_ascii_alphabetic() || c == '_' || c == '$')
         && chars.all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$')
-        && !matches!(name, "constructor" | "__proto__")
+        && name != "__proto__"
+}
+
+/// Why a class's field named `constructor` is refused (rd750): no
+/// TypeScript class declares one (TS18006), so its `.d.ts` can't be
+/// written, and `this.constructor = ..` hides its prototype's.
+pub(super) const NAMED_CONSTRUCTOR: &str = "has no field named `constructor`, which no TypeScript class declares and whose `this.constructor` hides its prototype's: name it otherwise, or give it another JS name, `#[rust_js::name = \"..\"]` (rd750)";
+
+/// Where `class`'s field whose JS name is `constructor` is written, if it
+/// has one (rd750).
+pub(super) fn named_constructor(tcx: TyCtxt<'_>, class: DefId) -> Option<rustc_span::Span> {
+    (tcx.adt_def(class).non_enum_variant().fields.iter())
+        .find(|field| crate::lower::bindings::field_key(tcx, field).name() == Some("constructor"))
+        .map(|field| tcx.def_span(field.did))
 }

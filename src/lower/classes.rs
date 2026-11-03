@@ -593,6 +593,9 @@ pub(super) fn reject_misuse<'tcx>(
         match tcx.def_kind(def_id) {
             DefKind::Struct if marked(tcx, id) => {
                 let variant = tcx.adt_def(id).non_enum_variant();
+                if let Some(at) = fields::named_constructor(tcx, id) {
+                    refuse(at, fields::NAMED_CONSTRUCTOR);
+                }
                 if variant.ctor.is_some() {
                     refuse(
                         span,
