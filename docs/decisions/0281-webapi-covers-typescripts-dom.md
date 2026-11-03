@@ -459,17 +459,21 @@ export function listen(target) {
   expects, so it's given a `&'static Event` it may pass to a listener of
   `&'static` events. A listener typed of any borrow, `&'static dyn
   Fn(&Event)`, is one of `&'static` events too, by subtyping, so it's
-  given to `add_event_listener` and called as it was; and an annotation of
-  the new type, `&'static dyn Fn(&'static Event)`, compiles against the
-  old `listener` too, so a port can change its annotations before the
-  binding does.
+  given to `add_event_listener` and called as it was. An annotation of the
+  new type, `&'static dyn Fn(&'static Event)`, compiles against the old
+  `listener` too, by the same subtyping, except where a closure of the old
+  `listener`, given a lent event, passes it to a listener of the new type,
+  as React DOM's legacy FB wrapper does: so a port's annotations and the
+  binding change together.
 - What changes for a caller is a type that names `listener`'s result of
   any borrow: `let on_abort: &'static dyn Fn(&Event) = listener(..)` and a
-  struct field or function signature that holds one. Each is now
-  `&'static dyn Fn(&'static Event)`, as React DOM's port writes them
-  (`ReactFiberConfigDOM.rs`'s `on_abort` and `RemoveFocusListener`'s
-  `handle_focus`, `EventListener.rs`' `add_event_bubble_listener` and
-  `add_event_capture_listener`).
+  struct field, a type alias or a function signature that holds one. Each
+  is now `&'static dyn Fn(&'static Event)`, as React's port writes them:
+  `ReactFiberConfigDOM.rs`'s `on_abort` and `RemoveFocusListener`'s
+  `handle_focus`, each function of `EventListener.rs`,
+  `create_event_listener_wrapper_with_priority`'s result
+  (`ReactDOMEventListener.rs`), and the Flight server's `AbortListener`
+  and `BlobReading`'s `abort_blob` (`ReactFlightServer.rs`).
 - No compiler change: the JS is the same, the function itself.
 - Case ([0262](0262-when-rust-and-js-disagree.md)): none: JS gives the
   same values, and Rust may hold them as long as JS keeps them.
