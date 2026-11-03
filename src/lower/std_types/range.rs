@@ -326,6 +326,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect()
     }
 
+    /// The one bound of `{ start: a }` or `{ end: b }` itself, whatever it
+    /// does: of a range read once, its bound read where it's made.
+    pub(in crate::lower) fn range_literal_bound(&self, range: &Expr, kind: RangeKind) -> Option<Expr> {
+        let (&[name], js::ExprKind::Object(props, ..)) = (kind.bounds(), &range.kind) else {
+            return None;
+        };
+        match props.as_slice() {
+            [Prop::Field(field, value)] if field == name => Some(value.clone()),
+            _ => None,
+        }
+    }
+
     /// A range's bounds, each to be read once or more: from `{ start: a,
     /// end: b }` itself, or from the range, a `const` first if reading it
     /// again would differ.

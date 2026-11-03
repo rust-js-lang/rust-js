@@ -873,7 +873,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(n) => Expr::int(n + 1),
             None => Expr::bin(Op::Add, end, Expr::int(1)),
         };
-        let parts = self.range_parts(value, kind, out);
+        // A range of one bound, `start(log, 1)..`, read once: the bound
+        // itself, whatever it does, where the range is made, `$slice(items,
+        // start(log, 1))`, no `range` of it first.
+        let parts = match self.range_literal_bound(&value, kind) {
+            Some(bound) => vec![bound],
+            None => self.range_parts(value, kind, out),
+        };
         Ok(match (kind, parts.as_slice()) {
             (RangeKind::Exclusive, [start, end]) => (start.clone(), Some(end.clone())),
             (RangeKind::Inclusive, [start, end]) => (start.clone(), Some(past(end.clone()))),

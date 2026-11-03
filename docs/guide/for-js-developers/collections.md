@@ -301,6 +301,10 @@ pub fn middle(v: &[i32]) -> &[i32] {
     &v[1..v.len() - 1]
 }
 
+pub fn rest(v: &[i32], skipped: impl Fn() -> usize) -> &[i32] {
+    &v[skipped()..]
+}
+
 pub fn head(v: &[i32]) -> &[i32] {
     let truncated = v.len() > 3;
     if truncated { &v[..3] } else { v }
@@ -350,6 +354,10 @@ export function spread(a, extra) {
 
 export function middle(v) {
   return $slice(v, 1, (v.length - 1) >>> 0);
+}
+
+export function rest(v, skipped) {
+  return $slice(v, skipped());
 }
 
 export function head(v) {

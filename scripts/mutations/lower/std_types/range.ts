@@ -376,4 +376,14 @@ export const mutations: Mutation[] = [
       '        let index = Some(self.range_index(ty).expect("a bound\'s type"));\n        let (a, a_exhausted) = self.range_state(a, ty, out);\n',
     tests: ["test/corpus.test.ts", "-t", "^range_values.rs$"],
   },
+  {
+    name: "range-bound-spilled",
+    breaks:
+      "a range of one bound a call makes, `&items[start(log, 1)..]`, is a `range` object first, `const range = { start: start(log, 1) }; .. $slice(items, range.start)`, not its bound read where the slice is",
+    file: "src/lower/std_types/range.rs",
+    find: "            [Prop::Field(field, value)] if field == name => Some(value.clone()),\n",
+    replace: "            [Prop::Field(field, value)] if field == name && !value.has_effects() => Some(value.clone()),\n",
+    tests: ["test/corpus.test.ts", "-t", "^loop_start_read_in_place.rs$"],
+    snapshots: true,
+  },
 ];

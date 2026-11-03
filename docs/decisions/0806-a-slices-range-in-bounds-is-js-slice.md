@@ -112,3 +112,23 @@ which panics where Rust's does. Held by the corpus's `match_of_a_length`,
 run against native Rust (with each panic), and the mutations
 `length-arm-unknown`, `length-arms-not-passed`, `length-arm-guard-passed`
 and `length-arm-not-next-passed` (`body_queries/ranges/narrowing.ts`).
+
+## Amendment: a range of one bound is its bound where the slice reads it
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same calls in the
+same order. `for &item in &items[start(log, 1)..]` printed `const range =
+{ start: start(log, 1) }; for (const item of $slice(items, range.start))`.
+A range's bounds are read once or more (`range_parts`), so a literal one
+whose bound does something, a call, was made a `range` first. A range of
+one bound, `a..`, `..b`, `..=b`, is read once by every slice of it,
+`$slice`, `.slice`, `$strSlice`, `$drain` and the rest
+(`range_value_bounds`). **That bound is read where the slice is, whatever
+it does**, `for (const item of $slice(items, start(log, 1)))`, `$drain(items,
+start(log, 1))`. It runs when it ran, after the items, as Rust evaluates
+the place before the index, and once, as the `for…of` evaluates its
+iterable once. A range of two bounds a call makes keeps its `range`, as a
+drain reads its start twice, `end - start`.
+
+Held by corpus case `loop_start_read_in_place` against native Rust (a
+start, an end, a drain, and an end past the items, which panics), and the
+mutation `range-bound-spilled` (`lower/std_types/range.ts`).
