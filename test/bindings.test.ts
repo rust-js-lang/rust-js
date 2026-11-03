@@ -99,7 +99,8 @@ pub fn send(blob: &Blob, body: UploadBody, maybe: Option<&str>) {
 pub fn kind<'a>(body: impl IntoBodyInit + 'a) -> String {
     match BodyInit::of(body) {
         BodyInit::Str(text) => text.to_string(),
-        BodyInit::Blob(_) => "blob".to_string(),
+        // No \`BodyInit::Blob(_)\`: \`instanceof Blob\`, beside the other
+        // classes, is \`false\` of another realm's, refused (#555).
         _ => "other".to_string(),
     }
 }
@@ -139,7 +140,7 @@ pub fn page(el: &Element, blob: &Blob, url: &str) -> (&'static Response, js::Pro
   } finally {
     (globalThis as any).upload = previous;
   }
-  expect([kind("text"), kind(new Blob()), kind(new ArrayBuffer(1))]).toEqual(["text", "blob", "other"]);
+  expect([kind("text"), kind(new Blob()), kind(new ArrayBuffer(1))]).toEqual(["text", "other", "other"]);
   writeFileSync(join(dir, "lib.rs"), source.replace('upload("hello");', "upload(1.5);"));
   const wrong = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
   expect([wrong.exitCode === 0, wrong.stderr.toString().includes("is not a `string | Blob`")], wrong.stderr.toString()).toEqual([false, true]);

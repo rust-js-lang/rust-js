@@ -231,6 +231,9 @@ for (const [name, source, message, crate] of [
   ["an untagged enum's variant of an Option", '#[rust_js::untagged] pub enum E { A(Option<u32>), B(String) }\npub fn f(e: &E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }', "from another variant's value"],
   // `JsError`, whatever JS threw, may be of any kind, and an `instanceof
   // JsError` throws (#391).
+  // #555: `instanceof Date` is `false` of another realm's date.
+  ["an untagged enum of two classes told apart", "#[rust_js::untagged] pub enum E<'a> { A(&'a js::Date), B(&'a js::RegExp) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }", "JS can't tell `E::A`, a `Date`, from `E`'s other variants in every realm: `instanceof Date` is `false`", "js"],
+  ["a JS object type's test of a member of no number", '#[rust_js::types = "Node"]\n#[rust_js::test(nodeType = "x")]\npub struct N(std::marker::PhantomData<js::JsObject>);', "names the member that tells it apart and each number", "js"],
   ["an untagged enum's variant of what JS threw", "#[rust_js::untagged] pub enum E<'a> { A(&'a js::JsError), B(f64) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }", "JS can't tell a `&'a js::JsError` from another variant's value", "js"],
   ["a From into an untagged enum that does more", '#[rust_js::untagged] pub enum E { A(u32), B(String) }\nimpl From<u32> for E { fn from(n: u32) -> Self { E::A(n + 1) } }\npub fn f(n: u32) -> E { n.into() }', "is its variant of its argument"],
   ["serde of an untagged enum", '#[rust_js::untagged]\n#[derive(serde::Serialize)] pub enum E { A(u32), B(String) }\npub fn f(e: &E) -> String { serde_json::to_string(e).unwrap() }', "serde of the untagged enum", "serde"],

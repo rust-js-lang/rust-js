@@ -4,7 +4,7 @@
 
 use core::marker::PhantomData;
 use core::ops::Deref;
-use js::{ArrayBuffer, JsObject, RegExp};
+use js::JsObject;
 
 /// JS's `Error`, and its subclass `TypeError`, as `Deref` says, each the
 /// global class its `types` names.
@@ -12,6 +12,13 @@ use js::{ArrayBuffer, JsObject, RegExp};
 pub struct Error(PhantomData<JsObject>);
 #[cfg_attr(rust_js, rust_js::types = "TypeError")]
 pub struct TypeError(PhantomData<JsObject>);
+
+impl Error {
+    #[cfg_attr(rust_js, rust_js::link_name = "get message")]
+    pub fn message(&self) -> String {
+        unreachable!()
+    }
+}
 
 impl Deref for TypeError {
     type Target = Error;
@@ -22,13 +29,19 @@ impl Deref for TypeError {
     }
 }
 
+/// A `TypeError`'s message, read of the `Error` it extends.
+pub fn mistyped(error: &TypeError) -> String {
+    error.message()
+}
+
 pub struct Point {
     pub x: f64,
     pub y: f64,
 }
 
-/// TS's `string | number | bigint | boolean | string[] | RegExp |
-/// ArrayBuffer | Error | TypeError | ((n: number) => number) | Point`.
+/// TS's `string | number | bigint | boolean | string[] | ((n: number) =>
+/// number) | Point`. No class beside the `Point`, an object: `instanceof`
+/// would be `false` of another realm's, so one is refused (#555).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum Src<'a> {
     Text(&'a str),
@@ -36,10 +49,6 @@ pub enum Src<'a> {
     Big(i64),
     Flag(bool),
     Names(Vec<String>),
-    Pattern(&'a RegExp),
-    Bytes(&'a ArrayBuffer),
-    Failure(&'a Error),
-    Mistyped(&'a TypeError),
     Step(&'a dyn Fn(f64) -> f64),
     At(Point),
 }
@@ -50,20 +59,16 @@ impl<'a> From<&'a str> for Src<'a> {
     }
 }
 
-/// Which variant JS's value is, whatever order the arms are in: a
-/// `TypeError` is no plain `Error`, and an array no `Point`.
+/// Which variant JS's value is, whatever order the arms are in: an array
+/// is no `Point`.
 pub fn kind(src: Src) -> String {
     match src {
         Src::At(p) => format!("point {}", p.x + p.y),
-        Src::Failure(_) => "error".to_string(),
-        Src::Mistyped(_) => "type error".to_string(),
         Src::Text(t) => format!("text {t}"),
         Src::Number(n) => format!("number {n}"),
         Src::Big(b) => format!("big {b}"),
         Src::Flag(f) => format!("flag {f}"),
         Src::Names(names) => format!("names {}", names.join("+")),
-        Src::Pattern(_) => "pattern".to_string(),
-        Src::Bytes(b) => format!("bytes {}", b.byte_length()),
         Src::Step(f) => format!("step {}", f(1.0)),
     }
 }

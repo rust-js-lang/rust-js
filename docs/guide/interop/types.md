@@ -771,21 +771,31 @@ export function size(input) {
   an accepted port difference, the user's decision (rd435).
 - **`#[rust_js::untagged]` makes each value its payload**, as TypeScript's
   `string | number` is. `match` tests each payload's kind, `typeof`,
-  `Array.isArray` or `instanceof`, so each variant holds one value, and no
+  `Array.isArray` or a member, so each variant holds one value, and no
   two of one kind. An array whose type fixes its length, a tuple's, a
   tuple struct's or a `[T; N]`'s, is told from another of another length
   by its `length`, below; a `Vec` beside one is two arrays, an error. A
   `#[repr(transparent)]` struct is its field. A JS type's class is the global its
-  `#[rust_js::types]` names, `types = "URL"`'s `instanceof URL`, as the js
-  crate's `Date`, `RegExp`, `Promise`, buffers and `Intl` classes declare
-  theirs; a module's type, `types = "chart.js#Chart"`, is an object,
-  `typeof value === "object"`, as no `instanceof` can name a class its
-  module doesn't import, and so is a type that declares none, never
-  `instanceof` a class of its name JS may not have. Of an enum of one
-  class beside kinds JS tells by the value alone, a form entry's `File |
+  `#[rust_js::types]` names, `types = "URL"`, as the js crate's `Date`,
+  `RegExp`, `Promise`, buffers and `Intl` classes declare theirs; a
+  module's type, `types = "chart.js#Chart"`, is an object, `typeof value
+  === "object"`, as no `instanceof` can name a class its module doesn't
+  import, and so is a type that declares none. Of an enum of one class
+  beside kinds JS tells by the value alone, a form entry's `File |
   string`, the class is what the others leave, `typeof entry ===
-  "string"` tested, so no `instanceof File` runs where a host has no
-  `File` ([ADR 1062](../../decisions/1062-a-unions-one-class-is-what-its-other-kinds-leave.md)).
+  "string"` tested, so no `instanceof File` runs, which is `false` of
+  another realm's file and throws where a host has no `File`. A DOM node
+  is told by its `nodeType`, `source.nodeType === 9` of a `Document`, as
+  React tells one, in any realm and of no global: webapi's node classes
+  say theirs, `#[rust_js::test(nodeType = 9)]`, from WebIDL, a `Text`
+  `3 or 4`, as a `CDATASection` is one. Any other class a test would tell
+  by `instanceof`, two web classes, `Blob | Element`, two of one
+  `nodeType`, `HTMLElement | SVGElement`, ECMAScript's `Date | RegExp`, or
+  a class an object's test leaves out, is an error where it's tested,
+  naming the class: write a tagged enum. std's `Map` and `Set`, which only
+  the program makes, are `instanceof Map`
+  ([ADR 1062](../../decisions/1062-a-unions-one-class-is-what-its-other-kinds-leave.md),
+  amended).
   A `match` whose arms each do the same JS is that JS once, no test of
   the variant: FizzTestUtils' `source.first_child()` of a `Document |
   Element` is `source.firstChild`, never an `instanceof Document` a host

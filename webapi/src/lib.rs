@@ -725,6 +725,7 @@ impl CharacterData {
 
 /// [`Text`](https://developer.mozilla.org/docs/Web/API/Text)
 #[cfg_attr(rust_js, rust_js::types = "Text")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 3, nodeType = 4))]
 pub struct Text(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -810,6 +811,7 @@ impl Text {
 
 /// [`Comment`](https://developer.mozilla.org/docs/Web/API/Comment)
 #[cfg_attr(rust_js, rust_js::types = "Comment")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 8))]
 pub struct Comment(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -849,6 +851,7 @@ pub mod comment {
 
 /// [`Element`](https://developer.mozilla.org/docs/Web/API/Element)
 #[cfg_attr(rust_js, rust_js::types = "Element")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct Element(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -2281,6 +2284,7 @@ impl Element {
 
 /// [`Document`](https://developer.mozilla.org/docs/Web/API/Document)
 #[cfg_attr(rust_js, rust_js::types = "Document")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 9))]
 pub struct Document(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -4783,6 +4787,7 @@ impl Document {
 
 /// [`DocumentFragment`](https://developer.mozilla.org/docs/Web/API/DocumentFragment)
 #[cfg_attr(rust_js, rust_js::types = "DocumentFragment")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 11))]
 pub struct DocumentFragment(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -5479,6 +5484,7 @@ impl DocumentOrShadowRoot {
 
 /// [`HTMLElement`](https://developer.mozilla.org/docs/Web/API/HTMLElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -7430,6 +7436,7 @@ impl HTMLElement {
 
 /// [`HTMLAnchorElement`](https://developer.mozilla.org/docs/Web/API/HTMLAnchorElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLAnchorElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLAnchorElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -7760,6 +7767,7 @@ impl HTMLAnchorElement {
 
 /// [`HTMLButtonElement`](https://developer.mozilla.org/docs/Web/API/HTMLButtonElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLButtonElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLButtonElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -8006,6 +8014,7 @@ impl HTMLButtonElement {
 
 /// [`HTMLDivElement`](https://developer.mozilla.org/docs/Web/API/HTMLDivElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLDivElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLDivElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -8054,6 +8063,7 @@ impl HTMLDivElement {
 
 /// [`HTMLFormElement`](https://developer.mozilla.org/docs/Web/API/HTMLFormElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLFormElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 #[cfg_attr(rust_js, rust_js::indexed)]
 pub struct HTMLFormElement(PhantomData<JsObject>);
 
@@ -8279,6 +8289,7 @@ impl HTMLFormElement {
 
 /// [`HTMLHeadingElement`](https://developer.mozilla.org/docs/Web/API/HTMLHeadingElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLHeadingElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLHeadingElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -8327,6 +8338,7 @@ impl HTMLHeadingElement {
 
 /// [`HTMLImageElement`](https://developer.mozilla.org/docs/Web/API/HTMLImageElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLImageElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLImageElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -8667,6 +8679,7 @@ impl HTMLImageElement {
 
 /// [`HTMLInputElement`](https://developer.mozilla.org/docs/Web/API/HTMLInputElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLInputElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLInputElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -9368,6 +9381,7 @@ impl HTMLInputElement {
 
 /// [`HTMLLabelElement`](https://developer.mozilla.org/docs/Web/API/HTMLLabelElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLLabelElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLLabelElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -9430,6 +9444,7 @@ impl HTMLLabelElement {
 
 /// [`HTMLLIElement`](https://developer.mozilla.org/docs/Web/API/HTMLLIElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLLIElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLLIElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -9491,6 +9506,7 @@ impl HTMLLIElement {
 
 /// [`HTMLOListElement`](https://developer.mozilla.org/docs/Web/API/HTMLOListElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLOListElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLOListElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -9576,6 +9592,7 @@ impl HTMLOListElement {
 
 /// [`HTMLOptionElement`](https://developer.mozilla.org/docs/Web/API/HTMLOptionElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLOptionElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLOptionElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -9698,6 +9715,7 @@ impl HTMLOptionElement {
 
 /// [`HTMLOutputElement`](https://developer.mozilla.org/docs/Web/API/HTMLOutputElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLOutputElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLOutputElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -9832,6 +9850,7 @@ impl HTMLOutputElement {
 
 /// [`HTMLParagraphElement`](https://developer.mozilla.org/docs/Web/API/HTMLParagraphElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLParagraphElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLParagraphElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -9880,6 +9899,7 @@ impl HTMLParagraphElement {
 
 /// [`HTMLSelectElement`](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLSelectElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 #[cfg_attr(rust_js, rust_js::indexed)]
 pub struct HTMLSelectElement(PhantomData<JsObject>);
 
@@ -10137,6 +10157,7 @@ impl HTMLSelectElement {
 
 /// [`HTMLSpanElement`](https://developer.mozilla.org/docs/Web/API/HTMLSpanElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLSpanElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLSpanElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -10170,6 +10191,7 @@ pub mod html_span_element {
 
 /// [`HTMLTextAreaElement`](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTextAreaElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLTextAreaElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -10500,6 +10522,7 @@ impl HTMLTextAreaElement {
 
 /// [`HTMLUListElement`](https://developer.mozilla.org/docs/Web/API/HTMLUListElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLUListElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLUListElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -10560,6 +10583,7 @@ impl HTMLUListElement {
 
 /// [`HTMLTableElement`](https://developer.mozilla.org/docs/Web/API/HTMLTableElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTableElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLTableElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -10816,6 +10840,7 @@ impl HTMLTableElement {
 
 /// [`HTMLTableSectionElement`](https://developer.mozilla.org/docs/Web/API/HTMLTableSectionElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTableSectionElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLTableSectionElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -10919,6 +10944,7 @@ impl HTMLTableSectionElement {
 
 /// [`HTMLTableRowElement`](https://developer.mozilla.org/docs/Web/API/HTMLTableRowElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTableRowElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLTableRowElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -11048,6 +11074,7 @@ impl HTMLTableRowElement {
 
 /// [`HTMLTableCellElement`](https://developer.mozilla.org/docs/Web/API/HTMLTableCellElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTableCellElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLTableCellElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -11261,6 +11288,7 @@ impl HTMLTableCellElement {
 
 /// [`HTMLIFrameElement`](https://developer.mozilla.org/docs/Web/API/HTMLIFrameElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLIFrameElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLIFrameElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -11504,6 +11532,7 @@ impl HTMLIFrameElement {
 
 /// [`HTMLCanvasElement`](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLCanvasElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLCanvasElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -11599,6 +11628,7 @@ impl HTMLCanvasElement {
 
 /// [`HTMLDetailsElement`](https://developer.mozilla.org/docs/Web/API/HTMLDetailsElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLDetailsElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLDetailsElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -11659,6 +11689,7 @@ impl HTMLDetailsElement {
 
 /// [`HTMLHtmlElement`](https://developer.mozilla.org/docs/Web/API/HTMLHtmlElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLHtmlElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLHtmlElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -11707,6 +11738,7 @@ impl HTMLHtmlElement {
 
 /// [`HTMLHeadElement`](https://developer.mozilla.org/docs/Web/API/HTMLHeadElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLHeadElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLHeadElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -11740,6 +11772,7 @@ pub mod html_head_element {
 
 /// [`HTMLTitleElement`](https://developer.mozilla.org/docs/Web/API/HTMLTitleElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTitleElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLTitleElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -11788,6 +11821,7 @@ impl HTMLTitleElement {
 
 /// [`HTMLBaseElement`](https://developer.mozilla.org/docs/Web/API/HTMLBaseElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLBaseElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLBaseElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -11848,6 +11882,7 @@ impl HTMLBaseElement {
 
 /// [`HTMLLinkElement`](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLLinkElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLLinkElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -12103,6 +12138,7 @@ impl HTMLLinkElement {
 
 /// [`HTMLMetaElement`](https://developer.mozilla.org/docs/Web/API/HTMLMetaElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLMetaElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLMetaElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -12199,6 +12235,7 @@ impl HTMLMetaElement {
 
 /// [`HTMLStyleElement`](https://developer.mozilla.org/docs/Web/API/HTMLStyleElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLStyleElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLStyleElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -12284,6 +12321,7 @@ impl HTMLStyleElement {
 
 /// [`HTMLBodyElement`](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLBodyElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLBodyElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -12692,6 +12730,7 @@ impl HTMLBodyElement {
 
 /// [`HTMLHRElement`](https://developer.mozilla.org/docs/Web/API/HTMLHRElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLHRElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLHRElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -12788,6 +12827,7 @@ impl HTMLHRElement {
 
 /// [`HTMLPreElement`](https://developer.mozilla.org/docs/Web/API/HTMLPreElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLPreElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLPreElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -12837,6 +12877,7 @@ impl HTMLPreElement {
 
 /// [`HTMLQuoteElement`](https://developer.mozilla.org/docs/Web/API/HTMLQuoteElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLQuoteElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLQuoteElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -12885,6 +12926,7 @@ impl HTMLQuoteElement {
 
 /// [`HTMLMenuElement`](https://developer.mozilla.org/docs/Web/API/HTMLMenuElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLMenuElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLMenuElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -12933,6 +12975,7 @@ impl HTMLMenuElement {
 
 /// [`HTMLDListElement`](https://developer.mozilla.org/docs/Web/API/HTMLDListElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLDListElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLDListElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -12981,6 +13024,7 @@ impl HTMLDListElement {
 
 /// [`HTMLDataElement`](https://developer.mozilla.org/docs/Web/API/HTMLDataElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLDataElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLDataElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -13029,6 +13073,7 @@ impl HTMLDataElement {
 
 /// [`HTMLTimeElement`](https://developer.mozilla.org/docs/Web/API/HTMLTimeElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTimeElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLTimeElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -13077,6 +13122,7 @@ impl HTMLTimeElement {
 
 /// [`HTMLBRElement`](https://developer.mozilla.org/docs/Web/API/HTMLBRElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLBRElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLBRElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -13125,6 +13171,7 @@ impl HTMLBRElement {
 
 /// [`HTMLModElement`](https://developer.mozilla.org/docs/Web/API/HTMLModElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLModElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLModElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -13185,6 +13232,7 @@ impl HTMLModElement {
 
 /// [`HTMLPictureElement`](https://developer.mozilla.org/docs/Web/API/HTMLPictureElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLPictureElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLPictureElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -13218,6 +13266,7 @@ pub mod html_picture_element {
 
 /// [`HTMLSourceElement`](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLSourceElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLSourceElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -13340,6 +13389,7 @@ impl HTMLSourceElement {
 
 /// [`HTMLEmbedElement`](https://developer.mozilla.org/docs/Web/API/HTMLEmbedElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLEmbedElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLEmbedElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -13455,6 +13505,7 @@ impl HTMLEmbedElement {
 
 /// [`HTMLObjectElement`](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLObjectElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLObjectElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -13750,6 +13801,7 @@ impl HTMLObjectElement {
 
 /// [`HTMLVideoElement`](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLVideoElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLVideoElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -13918,6 +13970,7 @@ impl HTMLVideoElement {
 
 /// [`HTMLAudioElement`](https://developer.mozilla.org/docs/Web/API/HTMLAudioElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLAudioElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLAudioElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -13951,6 +14004,7 @@ pub mod html_audio_element {
 
 /// [`HTMLTrackElement`](https://developer.mozilla.org/docs/Web/API/HTMLTrackElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTrackElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLTrackElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -14076,6 +14130,7 @@ impl HTMLTrackElement {
 
 /// [`HTMLMediaElement`](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLMediaElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLMediaElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -14531,6 +14586,7 @@ impl HTMLMediaElement {
 
 /// [`HTMLMapElement`](https://developer.mozilla.org/docs/Web/API/HTMLMapElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLMapElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLMapElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -14585,6 +14641,7 @@ impl HTMLMapElement {
 
 /// [`HTMLAreaElement`](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLAreaElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLAreaElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -14891,6 +14948,7 @@ impl HTMLAreaElement {
 
 /// [`HTMLTableCaptionElement`](https://developer.mozilla.org/docs/Web/API/HTMLTableCaptionElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTableCaptionElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLTableCaptionElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -14939,6 +14997,7 @@ impl HTMLTableCaptionElement {
 
 /// [`HTMLTableColElement`](https://developer.mozilla.org/docs/Web/API/HTMLTableColElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTableColElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLTableColElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -15048,6 +15107,7 @@ impl HTMLTableColElement {
 
 /// [`HTMLDataListElement`](https://developer.mozilla.org/docs/Web/API/HTMLDataListElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLDataListElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLDataListElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -15090,6 +15150,7 @@ impl HTMLDataListElement {
 
 /// [`HTMLOptGroupElement`](https://developer.mozilla.org/docs/Web/API/HTMLOptGroupElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLOptGroupElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLOptGroupElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -15150,6 +15211,7 @@ impl HTMLOptGroupElement {
 
 /// [`HTMLProgressElement`](https://developer.mozilla.org/docs/Web/API/HTMLProgressElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLProgressElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLProgressElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -15222,6 +15284,7 @@ impl HTMLProgressElement {
 
 /// [`HTMLMeterElement`](https://developer.mozilla.org/docs/Web/API/HTMLMeterElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLMeterElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLMeterElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -15336,6 +15399,7 @@ impl HTMLMeterElement {
 
 /// [`HTMLFieldSetElement`](https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLFieldSetElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLFieldSetElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -15452,6 +15516,7 @@ impl HTMLFieldSetElement {
 
 /// [`HTMLLegendElement`](https://developer.mozilla.org/docs/Web/API/HTMLLegendElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLLegendElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLLegendElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -15507,6 +15572,7 @@ impl HTMLLegendElement {
 
 /// [`HTMLSelectedContentElement`](https://developer.mozilla.org/docs/Web/API/HTMLSelectedContentElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLSelectedContentElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLSelectedContentElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -15540,6 +15606,7 @@ pub mod html_selected_content_element {
 
 /// [`HTMLDialogElement`](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLDialogElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLDialogElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -15640,6 +15707,7 @@ impl HTMLDialogElement {
 
 /// [`HTMLScriptElement`](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLScriptElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLScriptElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -15846,6 +15914,7 @@ impl HTMLScriptElement {
 
 /// [`HTMLTemplateElement`](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTemplateElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLTemplateElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -15972,6 +16041,7 @@ impl HTMLTemplateElement {
 
 /// [`HTMLSlotElement`](https://developer.mozilla.org/docs/Web/API/HTMLSlotElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLSlotElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLSlotElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -29211,6 +29281,7 @@ impl ClipboardItem {
 
 /// [`SVGElement`](https://developer.mozilla.org/docs/Web/API/SVGElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -30851,6 +30922,7 @@ impl SVGElement {
 
 /// [`SVGGraphicsElement`](https://developer.mozilla.org/docs/Web/API/SVGGraphicsElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGGraphicsElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGGraphicsElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -30925,6 +30997,7 @@ impl SVGGraphicsElement {
 
 /// [`SVGGeometryElement`](https://developer.mozilla.org/docs/Web/API/SVGGeometryElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGGeometryElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGGeometryElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -30991,6 +31064,7 @@ impl SVGGeometryElement {
 
 /// [`SVGSVGElement`](https://developer.mozilla.org/docs/Web/API/SVGSVGElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGSVGElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGSVGElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -31530,6 +31604,7 @@ impl SVGSVGElement {
 
 /// [`SVGGElement`](https://developer.mozilla.org/docs/Web/API/SVGGElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGGElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGGElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -31563,6 +31638,7 @@ pub mod svgg_element {
 
 /// [`SVGDefsElement`](https://developer.mozilla.org/docs/Web/API/SVGDefsElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGDefsElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGDefsElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -31596,6 +31672,7 @@ pub mod svg_defs_element {
 
 /// [`SVGSymbolElement`](https://developer.mozilla.org/docs/Web/API/SVGSymbolElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGSymbolElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGSymbolElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -31644,6 +31721,7 @@ impl SVGSymbolElement {
 
 /// [`SVGUseElement`](https://developer.mozilla.org/docs/Web/API/SVGUseElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGUseElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGUseElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -31710,6 +31788,7 @@ impl SVGUseElement {
 
 /// [`SVGSwitchElement`](https://developer.mozilla.org/docs/Web/API/SVGSwitchElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGSwitchElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGSwitchElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -31743,6 +31822,7 @@ pub mod svg_switch_element {
 
 /// [`SVGTitleElement`](https://developer.mozilla.org/docs/Web/API/SVGTitleElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGTitleElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGTitleElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -31776,6 +31856,7 @@ pub mod svg_title_element {
 
 /// [`SVGDescElement`](https://developer.mozilla.org/docs/Web/API/SVGDescElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGDescElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGDescElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -31809,6 +31890,7 @@ pub mod svg_desc_element {
 
 /// [`SVGMetadataElement`](https://developer.mozilla.org/docs/Web/API/SVGMetadataElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGMetadataElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGMetadataElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -31842,6 +31924,7 @@ pub mod svg_metadata_element {
 
 /// [`SVGStyleElement`](https://developer.mozilla.org/docs/Web/API/SVGStyleElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGStyleElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGStyleElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -31933,6 +32016,7 @@ impl SVGStyleElement {
 
 /// [`SVGScriptElement`](https://developer.mozilla.org/docs/Web/API/SVGScriptElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGScriptElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGScriptElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -32001,6 +32085,7 @@ impl SVGScriptElement {
 
 /// [`SVGPathElement`](https://developer.mozilla.org/docs/Web/API/SVGPathElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGPathElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGPathElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -32055,6 +32140,7 @@ impl SVGPathElement {
 
 /// [`SVGRectElement`](https://developer.mozilla.org/docs/Web/API/SVGRectElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGRectElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGRectElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -32127,6 +32213,7 @@ impl SVGRectElement {
 
 /// [`SVGCircleElement`](https://developer.mozilla.org/docs/Web/API/SVGCircleElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGCircleElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGCircleElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -32181,6 +32268,7 @@ impl SVGCircleElement {
 
 /// [`SVGEllipseElement`](https://developer.mozilla.org/docs/Web/API/SVGEllipseElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGEllipseElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGEllipseElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -32241,6 +32329,7 @@ impl SVGEllipseElement {
 
 /// [`SVGLineElement`](https://developer.mozilla.org/docs/Web/API/SVGLineElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGLineElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGLineElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -32301,6 +32390,7 @@ impl SVGLineElement {
 
 /// [`SVGPolylineElement`](https://developer.mozilla.org/docs/Web/API/SVGPolylineElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGPolylineElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGPolylineElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -32349,6 +32439,7 @@ impl SVGPolylineElement {
 
 /// [`SVGPolygonElement`](https://developer.mozilla.org/docs/Web/API/SVGPolygonElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGPolygonElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGPolygonElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -32397,6 +32488,7 @@ impl SVGPolygonElement {
 
 /// [`SVGTextContentElement`](https://developer.mozilla.org/docs/Web/API/SVGTextContentElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGTextContentElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGTextContentElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -32514,6 +32606,7 @@ impl SVGTextContentElement {
 
 /// [`SVGTextPositioningElement`](https://developer.mozilla.org/docs/Web/API/SVGTextPositioningElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGTextPositioningElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGTextPositioningElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -32580,6 +32673,7 @@ impl SVGTextPositioningElement {
 
 /// [`SVGTextElement`](https://developer.mozilla.org/docs/Web/API/SVGTextElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGTextElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGTextElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -32613,6 +32707,7 @@ pub mod svg_text_element {
 
 /// [`SVGTSpanElement`](https://developer.mozilla.org/docs/Web/API/SVGTSpanElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGTSpanElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGTSpanElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -32646,6 +32741,7 @@ pub mod svgt_span_element {
 
 /// [`SVGTextPathElement`](https://developer.mozilla.org/docs/Web/API/SVGTextPathElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGTextPathElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGTextPathElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -32730,6 +32826,7 @@ impl SVGTextPathElement {
 
 /// [`SVGImageElement`](https://developer.mozilla.org/docs/Web/API/SVGImageElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGImageElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGImageElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -32816,6 +32913,7 @@ impl SVGImageElement {
 
 /// [`SVGForeignObjectElement`](https://developer.mozilla.org/docs/Web/API/SVGForeignObjectElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGForeignObjectElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGForeignObjectElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -32876,6 +32974,7 @@ impl SVGForeignObjectElement {
 
 /// [`SVGMarkerElement`](https://developer.mozilla.org/docs/Web/API/SVGMarkerElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGMarkerElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGMarkerElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -33020,6 +33119,7 @@ impl SVGMarkerElement {
 
 /// [`SVGGradientElement`](https://developer.mozilla.org/docs/Web/API/SVGGradientElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGGradientElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGGradientElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -33096,6 +33196,7 @@ impl SVGGradientElement {
 
 /// [`SVGLinearGradientElement`](https://developer.mozilla.org/docs/Web/API/SVGLinearGradientElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGLinearGradientElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGLinearGradientElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -33156,6 +33257,7 @@ impl SVGLinearGradientElement {
 
 /// [`SVGRadialGradientElement`](https://developer.mozilla.org/docs/Web/API/SVGRadialGradientElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGRadialGradientElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGRadialGradientElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -33228,6 +33330,7 @@ impl SVGRadialGradientElement {
 
 /// [`SVGStopElement`](https://developer.mozilla.org/docs/Web/API/SVGStopElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGStopElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGStopElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -33270,6 +33373,7 @@ impl SVGStopElement {
 
 /// [`SVGPatternElement`](https://developer.mozilla.org/docs/Web/API/SVGPatternElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGPatternElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGPatternElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -33366,6 +33470,7 @@ impl SVGPatternElement {
 
 /// [`SVGAElement`](https://developer.mozilla.org/docs/Web/API/SVGAElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGAElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGAElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -33606,6 +33711,7 @@ impl SVGAElement {
 
 /// [`SVGViewElement`](https://developer.mozilla.org/docs/Web/API/SVGViewElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGViewElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGViewElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -33654,6 +33760,7 @@ impl SVGViewElement {
 
 /// [`SVGAnimationElement`](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimationElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGAnimationElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -33800,6 +33907,7 @@ impl SVGAnimationElement {
 
 /// [`SVGAnimateElement`](https://developer.mozilla.org/docs/Web/API/SVGAnimateElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimateElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGAnimateElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -33833,6 +33941,7 @@ pub mod svg_animate_element {
 
 /// [`SVGSetElement`](https://developer.mozilla.org/docs/Web/API/SVGSetElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGSetElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGSetElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -33866,6 +33975,7 @@ pub mod svg_set_element {
 
 /// [`SVGAnimateMotionElement`](https://developer.mozilla.org/docs/Web/API/SVGAnimateMotionElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimateMotionElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGAnimateMotionElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -33899,6 +34009,7 @@ pub mod svg_animate_motion_element {
 
 /// [`SVGMPathElement`](https://developer.mozilla.org/docs/Web/API/SVGMPathElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGMPathElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGMPathElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -33941,6 +34052,7 @@ impl SVGMPathElement {
 
 /// [`SVGAnimateTransformElement`](https://developer.mozilla.org/docs/Web/API/SVGAnimateTransformElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimateTransformElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGAnimateTransformElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -33974,6 +34086,7 @@ pub mod svg_animate_transform_element {
 
 /// [`SVGFilterElement`](https://developer.mozilla.org/docs/Web/API/SVGFilterElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFilterElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFilterElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -34046,6 +34159,7 @@ impl SVGFilterElement {
 
 /// [`SVGFEBlendElement`](https://developer.mozilla.org/docs/Web/API/SVGFEBlendElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEBlendElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEBlendElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -34198,6 +34312,7 @@ impl SVGFEBlendElement {
 
 /// [`SVGFEColorMatrixElement`](https://developer.mozilla.org/docs/Web/API/SVGFEColorMatrixElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEColorMatrixElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEColorMatrixElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -34302,6 +34417,7 @@ impl SVGFEColorMatrixElement {
 
 /// [`SVGFEComponentTransferElement`](https://developer.mozilla.org/docs/Web/API/SVGFEComponentTransferElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEComponentTransferElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEComponentTransferElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -34374,6 +34490,7 @@ impl SVGFEComponentTransferElement {
 
 /// [`SVGComponentTransferFunctionElement`](https://developer.mozilla.org/docs/Web/API/SVGComponentTransferFunctionElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGComponentTransferFunctionElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGComponentTransferFunctionElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -34476,6 +34593,7 @@ impl SVGComponentTransferFunctionElement {
 
 /// [`SVGFEFuncRElement`](https://developer.mozilla.org/docs/Web/API/SVGFEFuncRElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEFuncRElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEFuncRElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -34509,6 +34627,7 @@ pub mod svgfe_func_r_element {
 
 /// [`SVGFEFuncGElement`](https://developer.mozilla.org/docs/Web/API/SVGFEFuncGElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEFuncGElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEFuncGElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -34542,6 +34661,7 @@ pub mod svgfe_func_g_element {
 
 /// [`SVGFEFuncBElement`](https://developer.mozilla.org/docs/Web/API/SVGFEFuncBElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEFuncBElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEFuncBElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -34575,6 +34695,7 @@ pub mod svgfe_func_b_element {
 
 /// [`SVGFEFuncAElement`](https://developer.mozilla.org/docs/Web/API/SVGFEFuncAElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEFuncAElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEFuncAElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -34608,6 +34729,7 @@ pub mod svgfe_func_a_element {
 
 /// [`SVGFECompositeElement`](https://developer.mozilla.org/docs/Web/API/SVGFECompositeElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFECompositeElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFECompositeElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -34744,6 +34866,7 @@ impl SVGFECompositeElement {
 
 /// [`SVGFEConvolveMatrixElement`](https://developer.mozilla.org/docs/Web/API/SVGFEConvolveMatrixElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEConvolveMatrixElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEConvolveMatrixElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -34898,6 +35021,7 @@ impl SVGFEConvolveMatrixElement {
 
 /// [`SVGFEDiffuseLightingElement`](https://developer.mozilla.org/docs/Web/API/SVGFEDiffuseLightingElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEDiffuseLightingElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEDiffuseLightingElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -34994,6 +35118,7 @@ impl SVGFEDiffuseLightingElement {
 
 /// [`SVGFEDisplacementMapElement`](https://developer.mozilla.org/docs/Web/API/SVGFEDisplacementMapElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEDisplacementMapElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEDisplacementMapElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -35110,6 +35235,7 @@ impl SVGFEDisplacementMapElement {
 
 /// [`SVGFEDropShadowElement`](https://developer.mozilla.org/docs/Web/API/SVGFEDropShadowElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEDropShadowElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEDropShadowElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -35213,6 +35339,7 @@ impl SVGFEDropShadowElement {
 
 /// [`SVGFEFloodElement`](https://developer.mozilla.org/docs/Web/API/SVGFEFloodElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEFloodElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEFloodElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -35279,6 +35406,7 @@ impl SVGFEFloodElement {
 
 /// [`SVGFEGaussianBlurElement`](https://developer.mozilla.org/docs/Web/API/SVGFEGaussianBlurElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEGaussianBlurElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEGaussianBlurElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -35392,6 +35520,7 @@ impl SVGFEGaussianBlurElement {
 
 /// [`SVGFEImageElement`](https://developer.mozilla.org/docs/Web/API/SVGFEImageElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEImageElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEImageElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -35476,6 +35605,7 @@ impl SVGFEImageElement {
 
 /// [`SVGFEMergeElement`](https://developer.mozilla.org/docs/Web/API/SVGFEMergeElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEMergeElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEMergeElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -35542,6 +35672,7 @@ impl SVGFEMergeElement {
 
 /// [`SVGFEMergeNodeElement`](https://developer.mozilla.org/docs/Web/API/SVGFEMergeNodeElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEMergeNodeElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEMergeNodeElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -35584,6 +35715,7 @@ impl SVGFEMergeNodeElement {
 
 /// [`SVGFEMorphologyElement`](https://developer.mozilla.org/docs/Web/API/SVGFEMorphologyElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEMorphologyElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEMorphologyElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -35686,6 +35818,7 @@ impl SVGFEMorphologyElement {
 
 /// [`SVGFEOffsetElement`](https://developer.mozilla.org/docs/Web/API/SVGFEOffsetElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEOffsetElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEOffsetElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -35770,6 +35903,7 @@ impl SVGFEOffsetElement {
 
 /// [`SVGFESpecularLightingElement`](https://developer.mozilla.org/docs/Web/API/SVGFESpecularLightingElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFESpecularLightingElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFESpecularLightingElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -35872,6 +36006,7 @@ impl SVGFESpecularLightingElement {
 
 /// [`SVGFETileElement`](https://developer.mozilla.org/docs/Web/API/SVGFETileElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFETileElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFETileElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -35944,6 +36079,7 @@ impl SVGFETileElement {
 
 /// [`SVGFETurbulenceElement`](https://developer.mozilla.org/docs/Web/API/SVGFETurbulenceElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFETurbulenceElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFETurbulenceElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -36070,6 +36206,7 @@ impl SVGFETurbulenceElement {
 
 /// [`SVGFEDistantLightElement`](https://developer.mozilla.org/docs/Web/API/SVGFEDistantLightElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEDistantLightElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEDistantLightElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -36118,6 +36255,7 @@ impl SVGFEDistantLightElement {
 
 /// [`SVGFEPointLightElement`](https://developer.mozilla.org/docs/Web/API/SVGFEPointLightElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEPointLightElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFEPointLightElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -36172,6 +36310,7 @@ impl SVGFEPointLightElement {
 
 /// [`SVGFESpotLightElement`](https://developer.mozilla.org/docs/Web/API/SVGFESpotLightElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFESpotLightElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGFESpotLightElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -36256,6 +36395,7 @@ impl SVGFESpotLightElement {
 
 /// [`SVGClipPathElement`](https://developer.mozilla.org/docs/Web/API/SVGClipPathElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGClipPathElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGClipPathElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -36304,6 +36444,7 @@ impl SVGClipPathElement {
 
 /// [`SVGMaskElement`](https://developer.mozilla.org/docs/Web/API/SVGMaskElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGMaskElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct SVGMaskElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -38944,6 +39085,7 @@ impl ByteLengthQueuingStrategy {
 
 /// [`CDATASection`](https://developer.mozilla.org/docs/Web/API/CDATASection)
 #[cfg_attr(rust_js, rust_js::types = "CDATASection")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 4))]
 pub struct CDATASection(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -46748,6 +46890,7 @@ pub mod document_timeline {
 
 /// [`DocumentType`](https://developer.mozilla.org/docs/Web/API/DocumentType)
 #[cfg_attr(rust_js, rust_js::types = "DocumentType")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 10))]
 pub struct DocumentType(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -51892,6 +52035,7 @@ impl HTMLAllCollection {
 
 /// [`HTMLDirectoryElement`](https://developer.mozilla.org/docs/Web/API/HTMLDirectoryElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLDirectoryElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLDirectoryElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -51940,6 +52084,7 @@ impl HTMLDirectoryElement {
 
 /// [`HTMLFontElement`](https://developer.mozilla.org/docs/Web/API/HTMLFontElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLFontElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLFontElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -52072,6 +52217,7 @@ impl HTMLFormControlsCollection {
 
 /// [`HTMLFrameElement`](https://developer.mozilla.org/docs/Web/API/HTMLFrameElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLFrameElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLFrameElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -52218,6 +52364,7 @@ impl HTMLFrameElement {
 
 /// [`HTMLFrameSetElement`](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLFrameSetElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLFrameSetElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -52578,6 +52725,7 @@ impl HTMLFrameSetElement {
 
 /// [`HTMLMarqueeElement`](https://developer.mozilla.org/docs/Web/API/HTMLMarqueeElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLMarqueeElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLMarqueeElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -52858,6 +53006,7 @@ impl HTMLOptionsCollection {
 
 /// [`HTMLParamElement`](https://developer.mozilla.org/docs/Web/API/HTMLParamElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLParamElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLParamElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -52942,6 +53091,7 @@ impl HTMLParamElement {
 
 /// [`HTMLUnknownElement`](https://developer.mozilla.org/docs/Web/API/HTMLUnknownElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLUnknownElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct HTMLUnknownElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -55421,6 +55571,7 @@ impl MIDIPort {
 
 /// [`MathMLElement`](https://developer.mozilla.org/docs/Web/API/MathMLElement)
 #[cfg_attr(rust_js, rust_js::types = "MathMLElement")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 1))]
 pub struct MathMLElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -63264,6 +63415,7 @@ impl PopStateEvent {
 
 /// [`ProcessingInstruction`](https://developer.mozilla.org/docs/Web/API/ProcessingInstruction)
 #[cfg_attr(rust_js, rust_js::types = "ProcessingInstruction")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 7))]
 pub struct ProcessingInstruction(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -69059,6 +69211,7 @@ impl ServiceWorkerRegistration {
 
 /// [`ShadowRoot`](https://developer.mozilla.org/docs/Web/API/ShadowRoot)
 #[cfg_attr(rust_js, rust_js::types = "ShadowRoot")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 11))]
 pub struct ShadowRoot(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -80892,6 +81045,7 @@ impl WritableStreamDefaultWriter {
 
 /// [`XMLDocument`](https://developer.mozilla.org/docs/Web/API/XMLDocument)
 #[cfg_attr(rust_js, rust_js::types = "XMLDocument")]
+#[cfg_attr(rust_js, rust_js::test(nodeType = 9))]
 pub struct XMLDocument(PhantomData<JsObject>);
 
 /// `a === b`: the same object.

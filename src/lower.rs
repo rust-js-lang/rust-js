@@ -586,6 +586,11 @@ struct FnCx<'a, 'tcx> {
     /// scope structs' values, by the function, whose fields are then its
     /// variables (ADR 1043, amended).
     scope_values: Vec<(DefId, String)>,
+    /// While a `match`'s tests of its arms are made, which it refuses
+    /// itself where they'd tell a variant by `instanceof` of a JS object
+    /// type's class, once it knows its arms differ (#555): no test of them
+    /// refuses it then.
+    telling_arms: Cell<bool>,
 }
 
 /// What a body being lowered has of its own, which a nested one, a

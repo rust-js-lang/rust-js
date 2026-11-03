@@ -144,17 +144,11 @@ export const mutations: Mutation[] = [
   {
     name: "deref-target-unknown",
     breaks:
-      "a JS class's `Deref` to the class it extends isn't followed, and an untagged enum takes a subclass and its class both",
+      "a JS class's `Deref` to the class it extends isn't followed, so a method of the class it extends, `CSSStyleDeclaration`'s `setProperty` of a `CSSStyleProperties`, is refused (rd232)",
     file: "src/lower/recognition/types.rs",
     find: "        .filter_by_name_unhygienic(sym::Target)\n",
     replace: "        .filter_by_name_unhygienic(sym::value)\n",
-    tests: [
-      "test/compiler.test.ts",
-      "test/lowering-options.test.ts",
-      "test/lowering-structs-enums.test.ts",
-      "-t",
-      "untagged enum",
-    ],
+    tests: ["test/lowering-is-function.test.ts", "-t", "a path from a value asks its member"],
   },
   {
     name: "boxed-slice-iter-unknown",

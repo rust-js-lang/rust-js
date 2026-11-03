@@ -452,6 +452,10 @@ const owners: Record<string, string[]> = {
   // And each scope's value's variable, whose fields its function's body,
   // once lowered, makes its variables (ADR 1043, amended).
   "self.scope_values": ["src/lower/mir.rs", "src/lower/mir/scopes.rs"],
+  // While a `match`'s tests of its arms are made, which it refuses itself
+  // once it knows its arms differ, where a class is told by `instanceof`
+  // (#555): set by its switch, read where a test is.
+  "self.telling_arms": ["src/lower/mir/structure.rs", "src/lower/untagged/classes.rs"],
 };
 // The rest of a function's context, which each module may read, and why:
 // what it lowers and where (set entering a body, `bodies.rs`), the names it

@@ -647,12 +647,9 @@ test("an untagged enum is its payload, told apart by its runtime kind", async ()
   expect(untagged.kind(12n)).toBe("big 12");
   expect(untagged.kind(false)).toBe("flag false");
   expect(untagged.kind(["x", "y"])).toBe("names x+y");
-  expect(untagged.kind(/x/)).toBe("pattern");
-  expect(untagged.kind(new ArrayBuffer(3))).toBe("bytes 3");
-  expect(untagged.kind(new Error("e"))).toBe("error");
-  expect(untagged.kind(new TypeError("t"))).toBe("type error");
   expect(untagged.kind((n: number) => n + 1)).toBe("step 2");
   expect(untagged.kind({ x: 1, y: 2 })).toBe("point 3");
+  expect(untagged.mistyped(new TypeError("t"))).toBe("t");
   expect(untagged.text("a.png")).toBe("a.png");
   expect(untagged.numbers([1, 2])).toEqual([1, 2]);
   expect(untagged.shown(2.5)).toBe("2.5");
@@ -660,26 +657,27 @@ test("an untagged enum is its payload, told apart by its runtime kind", async ()
   expect([untagged.isOther(["x"]), untagged.isOther(3), untagged.isOther("s")]).toEqual([true, true, false]);
 
   const js = await Bun.file(join(target, "untagged.js")).text();
-  expect(js).toContain("src instanceof Error && !(src instanceof TypeError)");
-  expect(js).toContain('typeof src === "object" &&\n    !Array.isArray(src) &&\n    !(src instanceof RegExp) &&\n    !(src instanceof ArrayBuffer) &&\n    !(src instanceof Error)\n  ) {');
+  expect(js).not.toContain("instanceof");
+  expect(js).toContain('  if (Array.isArray(src)) {\n    return `names ${src.join("+")}`;\n  }\n  switch (typeof src) {\n    case "object":\n');
   expect(js).toContain("export function text(s) {\n  return s;\n}");
   expect(js).toContain("String(n)");
   expect(js).toContain('return typeof value !== "string";');
 });
 
-// #391: the class an untagged enum's JS object variant is tested by is the
-// one TypeScript names it, a global's, `instanceof URL` of a `Url` declared
+// #391: the class an untagged enum's JS object variant is told by is the
+// one TypeScript names it, a global's, `URL` of a `Url` declared
 // `#[rust_js::types = "URL"]`, not of its Rust name; and a module's type,
 // `./shapes.js#Chart`, which an `instanceof` would read unimported, is
 // told apart as an object, as one that declares nothing is, never
 // `instanceof Tag` of a `Tag` JS may not have. The js crate's global
-// classes declare theirs, `js::RegExp` and `js::intl::Collator`.
+// classes declare theirs, `js::RegExp`. A lone class is what the other
+// kinds leave (ADR 1062), and one beside another class or an object is
+// refused where it's told apart, naming its class, `instanceof URL`
+// being `false` of another realm's (#555).
 test("an untagged enum's JS object is tested by the class TypeScript names", async () => {
   const dir = fixture("untagged-declared-classes");
   writeFileSync(join(dir, "shapes.js"), "export class Chart {}\n");
-  writeFileSync(
-    join(dir, "lib.rs"),
-    `use js::JsObject;
+  const declared = `use js::JsObject;
 use std::marker::PhantomData;
 
 #[cfg_attr(rust_js, rust_js::types = "URL")]
@@ -689,18 +687,19 @@ pub struct Url(PhantomData<JsObject>);
 pub struct Chart(PhantomData<JsObject>);
 
 pub struct Tag(PhantomData<JsObject>);
-
+`;
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `${declared}
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum Named<'a> {
     Tag(&'a Tag),
-    Date(&'a js::Date),
     Text(&'a str),
 }
 
 pub fn named(named: Named) -> String {
     match named {
         Named::Tag(_) => "tag".to_string(),
-        Named::Date(_) => "date".to_string(),
         Named::Text(text) => text.to_string(),
     }
 }
@@ -708,14 +707,12 @@ pub fn named(named: Named) -> String {
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum Link<'a> {
     Url(&'a Url),
-    Date(&'a js::Date),
     Text(&'a str),
 }
 
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum Drawn<'a> {
     Chart(&'a Chart),
-    Date(&'a js::Date),
     Charts(Vec<&'a Chart>),
     Name(&'a str),
 }
@@ -723,7 +720,6 @@ pub enum Drawn<'a> {
 pub fn link(link: Link) -> String {
     match link {
         Link::Url(_) => "url".to_string(),
-        Link::Date(_) => "date".to_string(),
         Link::Text(text) => text.to_string(),
     }
 }
@@ -731,14 +727,12 @@ pub fn link(link: Link) -> String {
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum Pattern<'a> {
     Regex(&'a js::RegExp),
-    Collator(&'a js::intl::Collator),
     Text(&'a str),
 }
 
 pub fn pattern(pattern: Pattern) -> String {
     match pattern {
         Pattern::Regex(_) => "regex".to_string(),
-        Pattern::Collator(_) => "collator".to_string(),
         Pattern::Text(text) => text.to_string(),
     }
 }
@@ -746,29 +740,44 @@ pub fn pattern(pattern: Pattern) -> String {
 pub fn drawn(drawn: Drawn) -> String {
     match drawn {
         Drawn::Chart(_) => "chart".to_string(),
-        Drawn::Date(_) => "date".to_string(),
         Drawn::Charts(charts) => format!("{} charts", charts.len()),
         Drawn::Name(name) => name.to_string(),
     }
 }
 `,
   );
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const crates = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...crates]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  // Each enum has a `Date` too: a lone class is what the other kinds
-  // leave, never tested (ADR 1062), so two are what's told by theirs.
-  expect(js).toContain("link instanceof URL");
-  expect(js).not.toContain("instanceof Url");
-  expect(js).not.toContain("instanceof Chart");
+  expect(js).not.toContain("instanceof");
+  expect(js).toContain('typeof drawn === "object" && !Array.isArray(drawn)');
+  // A type that declares no class is an object, tested in its arm's place.
+  expect(js).toContain('return typeof named === "object" ? "tag" : named;');
   const lib = await import(join(dir, "lib.js"));
   const { Chart } = await import(join(dir, "shapes.js"));
-  expect([lib.link(new URL("https://a.b")), lib.link(new Date(0)), lib.link("x")]).toEqual(["url", "date", "x"]);
-  expect([lib.drawn(new Chart()), lib.drawn(new Date(0)), lib.drawn([new Chart(), new Chart()]), lib.drawn("pie")]).toEqual(["chart", "date", "2 charts", "pie"]);
-  expect(js).toContain("pattern instanceof RegExp");
-  expect(js).toContain("pattern instanceof Intl.Collator");
-  expect(js).not.toContain("instanceof Tag");
-  expect([lib.named({ any: "tag" }), lib.named(new Date(0)), lib.named("x")]).toEqual(["tag", "date", "x"]);
-  expect([lib.pattern(/a/), lib.pattern(new Intl.Collator()), lib.pattern("x")]).toEqual(["regex", "collator", "x"]);
+  expect([lib.link(new URL("https://a.b")), lib.link("x")]).toEqual(["url", "x"]);
+  expect([lib.drawn(new Chart()), lib.drawn([new Chart(), new Chart()]), lib.drawn("pie")]).toEqual(["chart", "2 charts", "pie"]);
+  expect([lib.named({ any: "tag" }), lib.named("x")]).toEqual(["tag", "x"]);
+  expect([lib.pattern(/a/), lib.pattern("x")]).toEqual(["regex", "x"]);
+  // Beside another class, the one TypeScript names.
+  const refused = fixture("untagged-declared-classes-refused");
+  writeFileSync(
+    join(refused, "lib.rs"),
+    `${declared}
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Dated<'a> {
+    Url(&'a Url),
+    Date(&'a js::Date),
+}
+
+pub fn dated(dated: Dated) -> bool {
+    matches!(dated, Dated::Url(_))
+}
+`,
+  );
+  const built = Bun.spawnSync([compiler, join(refused, "lib.rs"), "-o", join(refused, "lib.js"), ...crates]);
+  expect(built.exitCode).not.toBe(0);
+  expect(built.stderr.toString()).toContain("JS can't tell `Dated::Url`, a `URL`, from `Dated`'s other variants in every realm: `instanceof URL` is `false`");
 });
 
 // A slice's `concat` of parts written out is an array of them, spread, as

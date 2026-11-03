@@ -16,6 +16,7 @@ use rustc_hir::def::{CtorKind, CtorOf, DefKind, Res};
 use rustc_middle::ty::{self, AdtDef, GenericArgsRef, Ty, TyCtxt, VariantDef};
 use rustc_span::def_id::DefId;
 
+mod classes;
 pub(in crate::lower) mod field_reads;
 
 /// What JS can tell a value is.
@@ -47,6 +48,10 @@ pub(super) enum Kind {
     Member(String, Box<Kind>),
     /// A variant without fields, its name's string, `"blocking"`.
     Literal(String),
+    /// A number of one of these values, what a JS object type's member is
+    /// that tells it, `#[rust_js::test(nodeType = 9)]`'s, a `Document`'s
+    /// `nodeType`: of a `Member` only (ADR 1062, amended, #555).
+    Constants(Vec<u32>),
     /// A variant without fields that's `undefined`, `#[rust_js::undefined]`,
     /// or `null`, `#[rust_js::null]` (ADR 0676).
     Undefined,
@@ -66,6 +71,14 @@ impl Kind {
             (Kind::Literal(_), Kind::String) | (Kind::String, Kind::Literal(_)) => true,
             // An array of any length may be of the one a tuple has.
             (Kind::Tuple(_), Kind::Array) | (Kind::Array, Kind::Tuple(_)) => true,
+            // Numbers of a value they share, `Text`'s `nodeType` 3 or 4 of
+            // a `CDATASection`'s 4, and so a member of them: an `Element` and
+            // an `HTMLElement`, both 1 (#555).
+            (Kind::Constants(a), Kind::Constants(b)) => a.iter().any(|value| b.contains(value)),
+            (Kind::Constants(_), Kind::Number) | (Kind::Number, Kind::Constants(_)) => true,
+            (Kind::Member(a, own), Kind::Member(b, theirs)) if matches!(**own, Kind::Constants(_)) => {
+                a == b && own.overlaps(theirs)
+            }
             (a, b) => a == b,
         }
     }
@@ -83,7 +96,7 @@ impl Kind {
     fn type_of(&self) -> Option<&'static str> {
         match self {
             Kind::String => Some("string"),
-            Kind::Number => Some("number"),
+            Kind::Number | Kind::Constants(_) => Some("number"),
             Kind::BigInt => Some("bigint"),
             Kind::Boolean => Some("boolean"),
             Kind::Symbol => Some("symbol"),
@@ -119,6 +132,10 @@ impl Kind {
             Kind::Member(key, kind) => format!("an object whose `{key}` is {}", kind.describe()),
             Kind::Object => "an object".into(),
             Kind::Literal(name) => format!("the string {name:?}"),
+            Kind::Constants(values) => {
+                let values: Vec<String> = values.iter().map(u32::to_string).collect();
+                format!("the number {}", values.join(" or "))
+            }
             Kind::Null => "`null`".into(),
             Kind::Undefined => "`undefined`".into(),
             Kind::Union(parts) => {
@@ -561,6 +578,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(kind);
         }
         let kind = self.untagged_kind(variant.fields.iter().next()?.ty(self.tcx, args).skip_normalization())?;
+        let kind = classes::member_of_class(self.tcx, kind);
         // A member another variant's object has too tells nothing apart
         // here: it's an object, what the others aren't, React's `Container
         // | Instance` an instance where its `rootID` isn't a string (rd291);
@@ -671,8 +689,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// The test that `value` is one of `variants`, an or-pattern's, or the
     /// one: each one's payload's kind, leaving out what another variant's
     /// more exactly is, so each test holds of its own values only, whatever
-    /// order they're tried in. A class's leaves out its subclasses in the
-    /// enum; an object's every array and class, and `null`, but of a value
+    /// order they're tried in. An object's leaves out every array and
+    /// class, and `null`, but of a value
     /// `present`, `classify(Some(value))`'s, which is never `null` (ADR
     /// 0676). Of more than one, what they are together (`union_parts`):
     /// `Object | Array`'s `typeof value === "object" && value !== null`
@@ -697,6 +715,34 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             _ => test,
         };
         let otherwise = |v: &VariantDef| bindings::is_otherwise(self.tcx, v.def_id);
+        // The one class beside kinds JS tells by the value alone is what
+        // they aren't, `typeof entry !== "string"`, as a `match` leaves it
+        // last (ADR 1062): no `instanceof File`, which is `false` of another
+        // realm's, nor a ReferenceError where the host has none (#555).
+        if let Some(lone) = self.lone_class_variant(adt, args).map(|lone| adt.variant(lone))
+            && let Some(i) = variants.iter().position(|v| v.def_id == lone.def_id)
+        {
+            let others: Vec<&VariantDef> = adt.variants().iter().filter(|v| v.def_id != lone.def_id).collect();
+            let none = match others.is_empty() {
+                true => Expr::bool(true),
+                false => Expr::unary(
+                    UnaryOp::Not,
+                    self.untagged_test(adt, args, &others, &[], value, present, class),
+                ),
+            };
+            let (rest, written): (Vec<&VariantDef>, Vec<js::Span>) = (variants.iter().copied().enumerate())
+                .filter(|&(j, _)| j != i)
+                .map(|(j, v)| (v, written.get(j).copied().unwrap_or(js::Span::NONE)))
+                .unzip();
+            return match rest.is_empty() {
+                true => at(i, none),
+                false => Expr::bin(
+                    Op::Or,
+                    self.untagged_test(adt, args, &rest, &written, value, present, class),
+                    at(i, none),
+                ),
+            };
+        }
         // What the others aren't: none of their tests, but where that's one
         // kind, as it is of `js::Kind`'s `Object`.
         if let Some(i) = (variants.iter()).position(|v| otherwise(v) && self.otherwise_kind(adt, args).is_none()) {
@@ -831,7 +877,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// a global the host may lack runs, `File` of a form's entry where
     /// Node 18 has none (rd506). None where two or more are classes, which
     /// `instanceof` tells apart, or one is an object, a test function's or
-    /// a member's, whose test leaves a class out by `instanceof` too.
+    /// a member's, whose test leaves a class out by `instanceof` too. A
+    /// class told by its member, a DOM node's `nodeType`, is a class here
+    /// too: `Element | string` still tests the string's `typeof` alone.
     pub(super) fn lone_class_variant(&self, adt: AdtDef<'tcx>, args: GenericArgsRef<'tcx>) -> Option<VariantIdx> {
         let mut class = None;
         for (index, variant) in adt.variants().iter_enumerated() {
@@ -840,6 +888,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             match self.untagged_variant_kind(variant, args)? {
                 Kind::Class(..) if class.is_none() => class = Some(index),
+                Kind::Member(..) if class.is_none() && self.holds_a_class(variant, args) => class = Some(index),
                 Kind::String
                 | Kind::Number
                 | Kind::BigInt
@@ -858,8 +907,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// `variant`'s kind and the kinds of the others its test leaves out, as
-    /// more exactly theirs: a class's its subclasses in the enum; an
-    /// object's every array and class, and `null` where the value may be
+    /// more exactly theirs: an object's every array and class, and `null`
+    /// where the value may be
     /// it, not `present`. Of an `otherwise` variant, the kind left
     /// (`otherwise_kind`).
     fn untagged_parts(
@@ -898,21 +947,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     true
                 }
                 (Kind::Object, Kind::Null) => !present,
-                (Kind::Class(_, Some(base)), Kind::Class(_, Some(sub))) => self.superclasses(*sub).contains(base),
+                // No class leaves out a subclass, `!(v instanceof File)` of
+                // a `Blob`'s: a test of two binding classes is refused, as
+                // `instanceof` is `false` of another realm's (#555).
                 _ => false,
             })
             .collect();
-        // A subclass of what's left out already is too: `!(v instanceof
-        // Error)` leaves out each `TypeError`.
-        let extends = |kind: &Kind, base: &Kind| match (kind, base) {
-            (Kind::Class(_, Some(sub)), Kind::Class(_, Some(base))) => self.superclasses(*sub).contains(base),
-            _ => false,
-        };
         let mut left_out: Vec<Kind> = Vec::new();
-        for kind in narrower
-            .iter()
-            .filter(|kind| !narrower.iter().any(|base| extends(kind, base)))
-        {
+        for kind in narrower {
             // An object leaves out every array, of any length.
             let kind = match kind {
                 Kind::Tuple(_) => Kind::Array,
@@ -974,6 +1016,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             Kind::Test(test) => Expr::call(class(test), vec![value.clone()]),
             Kind::Member(key, kind) => self.kind_test(kind, &Expr::member(value.clone(), key.clone()), class),
             Kind::Literal(name) => Expr::bin(Op::Eq, value.clone(), Expr::str(name)),
+            // Each of the numbers, `node.nodeType === 9`, `||` (#555).
+            Kind::Constants(values) => (values.iter())
+                .map(|&n| Expr::bin(Op::Eq, value.clone(), Expr::int(i128::from(n))))
+                .reduce(|either, test| Expr::bin(Op::Or, either, test))
+                .expect("a member of a number or more"),
             // `null` and `undefined` by `===`, as each is one value: never
             // `== null`, which is both.
             Kind::Null => Expr::bin(Op::Eq, value.clone(), Expr::null()),
@@ -1052,6 +1099,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         present: bool,
     ) -> Expr {
         let (adt, args) = self.untagged(ty).expect("an untagged enum");
+        self.refuse_untold(ty, variants);
         self.recognition()
             .untagged_test(adt, args, variants, written, value, present, &|name| self.js_ref(name))
     }
@@ -1120,8 +1168,11 @@ fn tested_by_impls<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, recognition: &Recogni
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Another variant of the untagged enum `ty` whose value is of
-    /// `variant`'s kind, which a test can't tell from it (ADR 0214).
-    pub(super) fn untagged_alike(&self, ty: Ty<'tcx>, variant: &VariantDef) -> Option<String> {
+    /// `variant`'s kind, which a test can't tell from it (ADR 0214); and of
+    /// a class told by its member, what both are, `an object whose
+    /// `nodeType` is the number 1`, an `HTMLElement`'s and an
+    /// `SVGElement`'s (#555).
+    pub(super) fn untagged_alike(&self, ty: Ty<'tcx>, variant: &VariantDef) -> Option<(String, Option<String>)> {
         let (adt, args) = self.untagged(ty)?;
         let recognition = self.recognition();
         let kind_of = |v: &VariantDef| {
@@ -1130,9 +1181,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .flatten()
         };
         let own = kind_of(variant)?;
+        let classes = matches!(&own, Kind::Member(_, told) if matches!(**told, Kind::Constants(_)));
         (adt.variants().iter())
             .find(|other| other.def_id != variant.def_id && kind_of(other).is_some_and(|k| k.overlaps(&own)))
-            .map(|other| other.name.to_string())
+            .map(|other| (other.name.to_string(), classes.then(|| own.describe())))
     }
 }
 
@@ -1300,6 +1352,16 @@ pub(super) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &super::library::Foreig
                     );
                 }
             }
+        }
+        // A member that tells a JS object type, `test(nodeType = 9)`: one
+        // key, each of its values a number (#555).
+        if tcx.def_kind(def_id) == DefKind::Struct && bindings::test_member(tcx, def_id.to_def_id()) == Some(None) {
+            error(
+                tcx.def_span(def_id),
+                "a JS object type's `#[rust_js::test(..)]` names the member that tells it apart and each number \
+                 it may be, `#[rust_js::test(nodeType = 3, nodeType = 4)]` (ADR 1062, amended)"
+                    .to_string(),
+            );
         }
         if let Some(message) = untagged_from_misuse(tcx, def_id.to_def_id()) {
             error(tcx.def_span(def_id), message);

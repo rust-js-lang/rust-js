@@ -242,9 +242,9 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's match of an untagged enum's variants of one kind takes the first for both",
     file: "src/lower/mir/structure.rs",
-    find: "                if bindings::is_untagged(self.tcx, adt.did())\n                    && let Some(other) = self.untagged_alike(*enum_ty, adt.variant(variant))\n",
+    find: "                if bindings::is_untagged(self.tcx, adt.did())\n                    && let Some((other, classes)) = self.untagged_alike(*enum_ty, adt.variant(variant))\n",
     replace:
-      "                if false\n                    && let Some(other) = self.untagged_alike(*enum_ty, adt.variant(variant))\n",
+      "                if false\n                    && let Some((other, classes)) = self.untagged_alike(*enum_ty, adt.variant(variant))\n",
     tests: [
       "test/lowering.test.ts",
       "-t",
@@ -662,5 +662,32 @@ export const mutations: Mutation[] = [
     replace: "                                    let place = place.clone();\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
     snapshots: true,
+  },
+  {
+    name: "untold-refused-of-alike-arms",
+    breaks:
+      "a `match` whose arms do the same JS, no test left, is refused as though it told its classes by `instanceof` (#555)",
+    file: "src/lower/mir/structure.rs",
+    find: "                if alike.is_none()\n                    && let Value::Discriminant(_, enum_ty, _) = &subject\n",
+    replace: "                if let Value::Discriminant(_, enum_ty, _) = &subject\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "arms are alike in JS"],
+  },
+  {
+    name: "untold-of-untested-arms",
+    breaks:
+      "a `match` of an `Element | Blob` that tests its element, `nodeType === 1`, the blob what's left, is refused for the blob's class it never tests (#555)",
+    file: "src/lower/mir/structure.rs",
+    find: "                        .filter(|(b, _)| tested_blocks.contains(b))\n",
+    replace: "                        .filter(|_| true)\n",
+    tests: ["test/webapi-objects.test.ts", "-t", "told by their nodeType"],
+  },
+  {
+    name: "untold-unrefused-in-match",
+    breaks:
+      "a `match` of `Dropped::Blob` and `Dropped::Element` is refused nowhere, its `instanceof Blob` `false` of another realm's (#555)",
+    file: "src/lower/mir/structure.rs",
+    find: "                    if let Some(refused) = self.untold_class(*enum_ty, &variants) {\n                        return Err(self.tcx.dcx().span_err(span, refused));\n",
+    replace: "                    if let Some(refused) = self.untold_class(*enum_ty, &variants).filter(|_| false) {\n                        return Err(self.tcx.dcx().span_err(span, refused));\n",
+    tests: ["test/webapi-objects.test.ts", "-t", "told by their nodeType"],
   },
 ];

@@ -19,7 +19,9 @@ object. Extended by [1046](1046-an-untagged-enums-arrays-are-told-by-their-lengt
 and a `&mut` to an enum each of whose values is an array it holds itself
 is the array, not a place, as #347's below says of the others.
 Amended (2026-11-03, rd687): a `match` whose arms each do the same JS is
-that JS once, no test of the variant, below.
+that JS once, no test of the variant, below. Amended (2026-11-04, #555):
+a class is told in any realm, a DOM node by its `nodeType`, or refused,
+below and in [1062](1062-a-unions-one-class-is-what-its-other-kinds-leave.md).
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -485,10 +487,8 @@ is still made first, once, as before. Of every enum, tagged too,
   place, `p._0.x` and `p._1.x`, a variant whose drop runs, a guard's.
 
 Not decided here: two classes whose arms differ, `match source {
-Document(_) => .., Element(e) => e.tag_name() }`, keep ADR 1062's
-`instanceof Document`, which throws in a host without the global, and is
-`false` of a document of another realm, a frame's `contentDocument` or a
-JSDOM window's in a browser test, whose variant Rust knows.
+Document(_) => .., Element(e) => e.tag_name() }`, kept ADR 1062's
+`instanceof Document`, decided since (#555, below).
 
 Held by the corpus case `match_arms_alike.rs`, against native Rust (an
 untagged enum's struct and array read alike, a tagged enum's payloads,
@@ -498,3 +498,25 @@ untagged enum's arms that each do the same are that JS, no instanceof of
 a global", run where the host has no `Document`. Mutations
 `alike-arms-tested`, `unalike-arms-taken` (`mir/structure.ts`) and
 `same-without-facts` (`js/stmt_walk.ts`).
+
+## Amendment: a class is told in any realm, or refused (#555, P0)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, Rust's answer, where
+`instanceof Document` was `false` of another realm's document, a frame's
+or a JSDOM window's, and threw where the host has no `Document`; D, a
+compile error, where no test tells the classes apart in every realm.
+
+The table's `instanceof` row, of a JS object type's class, is now
+[ADR 1062's amendment](1062-a-unions-one-class-is-what-its-other-kinds-leave.md):
+
+| payload | test |
+|---|---|
+| a DOM node class, `#[rust_js::test(nodeType = 9)]` from webapi's WebIDL | `v.nodeType === 9` |
+| a `Text`, which a `CDATASection` is too | `v.nodeType === 3 \|\| v.nodeType === 4` |
+| the one class beside kinds JS tells by the value alone | what those aren't (ADR 1062) |
+| std's `Map`, `Set` | `v instanceof Map` |
+| any other class, a test would tell by `instanceof` | refused where it's tested |
+
+So a class's test leaving its subclasses out, `File` of `Blob`, is
+`instanceof` no longer made: two binding classes are told by members or
+refused. The rest of this ADR stands. Held as 1062's amendment lists.

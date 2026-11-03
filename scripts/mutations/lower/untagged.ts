@@ -230,36 +230,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "untagged-class-takes-subclass",
-    breaks:
-      "an untagged enum's `Error` variant takes a `TypeError`, another variant's",
-    file: "src/lower/untagged.rs",
-    find: "                (Kind::Class(_, Some(base)), Kind::Class(_, Some(sub))) => self.superclasses(*sub).contains(base),\n",
-    replace: "",
-    tests: [
-      "test/compiler.test.ts",
-      "test/lowering-options.test.ts",
-      "test/lowering-structs-enums.test.ts",
-      "-t",
-      "untagged enum",
-    ],
-  },
-  {
-    name: "untagged-subclass-left-out-twice",
-    breaks:
-      "an untagged enum's test leaves out a `TypeError` as well as the `Error` it is",
-    file: "src/lower/untagged.rs",
-    find: "            .filter(|kind| !narrower.iter().any(|base| extends(kind, base)))\n        {\n",
-    replace: "        {\n",
-    tests: [
-      "test/compiler.test.ts",
-      "test/lowering-options.test.ts",
-      "test/lowering-structs-enums.test.ts",
-      "-t",
-      "untagged enum",
-    ],
-  },
-  {
     name: "untagged-kinds-alike",
     breaks:
       "an untagged enum's two string variants are accepted, which JS can't tell apart",
@@ -796,5 +766,39 @@ export const mutations: Mutation[] = [
     find: "kinds.contains(&Kind::Undefined) && !kinds.contains(&Kind::Null)",
     replace: "kinds.contains(&Kind::Undefined)",
     tests: ["test/lowering-nested-options.test.ts", "-t", "what may be undefined"],
+  },
+  {
+    name: "node-type-of-one-value",
+    breaks: "a `Text` is told by `nodeType === 3` alone, so a `CDATASection`, 4, is taken for another variant (#555)",
+    file: "src/lower/untagged.rs",
+    find: "                .reduce(|either, test| Expr::bin(Op::Or, either, test))\n                .expect(\"a member of a number or more\"),\n",
+    replace: "                .next()\n                .expect(\"a member of a number or more\"),\n",
+    tests: ["test/webapi-objects.test.ts", "-t", "told by their nodeType"],
+  },
+  {
+    name: "node-types-shared-apart",
+    breaks:
+      "an `HTMLElement` and an `SVGElement`, each `nodeType` 1, are taken as told apart, each `nodeType === 1` true of the other's (#555)",
+    file: "src/lower/untagged.rs",
+    find: "            (Kind::Constants(a), Kind::Constants(b)) => a.iter().any(|value| b.contains(value)),\n",
+    replace: "            (Kind::Constants(a), Kind::Constants(b)) => a == b && false,\n",
+    tests: ["test/webapi-objects.test.ts", "-t", "told by their nodeType"],
+  },
+  {
+    name: "lone-class-tested-in-impls",
+    breaks:
+      "a derived `==` of a `File | Vec<u32>` tests `a instanceof File`, `false` of another realm's file and a ReferenceError where the host has no `File` (#555)",
+    file: "src/lower/untagged.rs",
+    find: "        if let Some(lone) = self.lone_class_variant(adt, args).map(|lone| adt.variant(lone))\n",
+    replace: "        if let Some(lone) = self.lone_class_variant(adt, args).filter(|_| false).map(|lone| adt.variant(lone))\n",
+    tests: ["test/webapi-objects.test.ts", "-t", "derived =="],
+  },
+  {
+    name: "test-member-misuse-allowed",
+    breaks: "a JS object type's `#[rust_js::test(nodeType = \"x\")]` tells nothing, and isn't refused (#555)",
+    file: "src/lower/untagged.rs",
+    find: "        if tcx.def_kind(def_id) == DefKind::Struct && bindings::test_member(tcx, def_id.to_def_id()) == Some(None) {\n",
+    replace: "        if false && tcx.def_kind(def_id) == DefKind::Struct && bindings::test_member(tcx, def_id.to_def_id()) == Some(None) {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "test of a member of no number"],
   },
 ];

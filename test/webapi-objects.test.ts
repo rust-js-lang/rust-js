@@ -2,11 +2,11 @@
 // collection's key. Each test is a program of its own, compiled and run.
 
 import { beforeAll, expect, test } from "bun:test";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { node } from "./programs";
-import { buildReact, compiler, fixture, run, target } from "./support";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -299,7 +299,7 @@ test("a stream's reader is of the mode its options say, a BYOB one a Result", as
   const dir = fixture("webapi-get-reader");
   writeFileSync(join(dir, "lib.rs"), `use webapi::{
     Byob, ReadableStream, ReadableStreamBYOBReader, ReadableStreamDefaultReader, ReadableStreamGetByobReaderOptions,
-    ReadableStreamGetReaderOptions, ReadableStreamReader,
+    ReadableStreamGetReaderOptions,
 };
 
 fn serialize_binary_reader(reader: &ReadableStreamBYOBReader) -> String {
@@ -321,10 +321,7 @@ pub fn serialize_readable_stream(stream: &ReadableStream) -> String {
 }
 
 pub fn of_mode(stream: &ReadableStream, mode: Option<&str>) -> bool {
-    match stream.get_reader_with_options(ReadableStreamGetReaderOptions { mode }) {
-        Ok(ReadableStreamReader::ReadableStreamBYOBReader(_)) => true,
-        Ok(ReadableStreamReader::ReadableStreamDefaultReader(_)) | Err(_) => false,
-    }
+    stream.get_reader_with_options(ReadableStreamGetReaderOptions { mode }).is_ok()
 }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -338,7 +335,7 @@ pub fn of_mode(stream: &ReadableStream, mode: Option<&str>) -> bool {
   return serializeBinaryReader(binaryReader);`);
   const lib = await import(join(dir, "lib.js"));
   expect([lib.serializeReadableStream(new ReadableStream({ type: "bytes" })), lib.serializeReadableStream(new ReadableStream())]).toEqual(["binary", "values"]);
-  expect([lib.ofMode(new ReadableStream({ type: "bytes" }), "byob"), lib.ofMode(new ReadableStream(), undefined), lib.ofMode(new ReadableStream(), "byob")]).toEqual([true, false, false]);
+  expect([lib.ofMode(new ReadableStream({ type: "bytes" }), "byob"), lib.ofMode(new ReadableStream(), undefined), lib.ofMode(new ReadableStream(), "byob")]).toEqual([true, true, false]);
 });
 
 // rd535: a `From` into an untagged enum is the value it's given (ADR 0214),
@@ -761,6 +758,36 @@ pub fn file_name(data: &FormData, name: &str) -> Option<String> {
   }
 });
 
+// #555: the one class beside kinds JS tells by the value alone is what
+// they aren't wherever it's tested, a derived `==`'s too, `!Array.isArray(a)`,
+// never `a instanceof File`, `false` of another realm's file and a
+// ReferenceError where the host has no `File`.
+test("a union's one class is what the others aren't in a derived ==, no instanceof", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-lone-class-eq");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::File;
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(PartialEq)]
+pub enum Entry<'a> {
+    File(&'a File),
+    Items(Vec<u32>),
+}
+
+pub fn same(a: &Entry, b: &Entry) -> bool {
+    a == b
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("instanceof");
+  expect(js).toContain("!Array.isArray(a)\n    ? !Array.isArray(b) && a === b");
+  const lib = await import(join(dir, "lib.js"));
+  // A file of no class this host has, as another realm's is to its own.
+  const file = { name: "a.txt" };
+  expect([lib.same(file, file), lib.same(file, { name: "a.txt" }), lib.same([1, 2], [1, 2]), lib.same(file, [1])]).toEqual([true, false, true, false]);
+});
+
 // rd687 (P0): a `match` of an untagged enum whose arms each do the same
 // JS, FizzTestUtils' `source.firstChild` of a `Document | Element`, is that
 // JS once, no `instanceof Document`: Jest's node environment, whose DOM is a
@@ -822,14 +849,161 @@ pub fn first_of(source: ElementOrFragment<'_>) -> Option<&'static Node> {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function first(source) {\n  return source.firstChild;\n}");
   expect(js).toContain('  const scripts = source.querySelectorAll("script");\n');
-  expect(js.match(/instanceof Document/g)).toHaveLength(1);
-  expect(js).toContain("instanceof Element");
+  // Arms that differ are told by each node's `nodeType` (#555).
+  expect(js).not.toContain("instanceof");
+  expect(js).toContain('return source.nodeType === 9 ? "document" : source.tagName;');
+  expect(js).toContain("return source.nodeType === 1 ? source.firstChild : source.firstChild;");
   const lib = await import(join(dir, "lib.js"));
   // A host without the global, as Jest's node environment is.
   expect(typeof (globalThis as Record<string, unknown>).Document).toBe("undefined");
   const child = { nodeType: 1 };
   const element = { firstChild: child, querySelectorAll: () => ({ length: 2 }) };
   expect([lib.first(element), lib.count(element)]).toEqual([child, 2]);
+});
+
+// #555 (P0): an untagged enum of DOM node classes whose arms differ is
+// told by each node's `nodeType`, `source.nodeType === 9`, as React tells
+// one. `source instanceof Document` was `false` of another realm's
+// document, a frame's `contentDocument` or a JSDOM window's in a browser
+// test, so its `tagName` was read, `undefined`, where Rust returns
+// "document"; and it threw a ReferenceError where the host has no
+// `Document` global. Two happy-dom windows are two realms: the nodes are
+// one's, and the globals none, then the other's.
+test("an untagged enum's DOM nodes are told by their nodeType, in any realm and with no global", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-node-types");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Document, Element, Text};
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum DocumentOrElement<'a> {
+    Document(&'a Document),
+    Element(&'a Element),
+}
+
+pub fn named(source: DocumentOrElement<'_>) -> String {
+    match source {
+        DocumentOrElement::Document(_) => "document".to_string(),
+        DocumentOrElement::Element(element) => element.tag_name(),
+    }
+}
+
+pub fn tag(source: DocumentOrElement<'_>) -> Option<String> {
+    match source {
+        DocumentOrElement::Element(element) => Some(element.tag_name()),
+        DocumentOrElement::Document(_) => None,
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ElementOrText<'a> {
+    Element(&'a Element),
+    Text(&'a Text),
+}
+
+pub fn content(node: ElementOrText<'_>) -> String {
+    match node {
+        ElementOrText::Text(text) => text.data(),
+        ElementOrText::Element(element) => element.tag_name(),
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("instanceof");
+  expect(js).toContain('return source.nodeType === 9 ? "document" : source.tagName;');
+  expect(js).toContain("  if (source.nodeType === 1) {\n    return source.tagName;\n  }\n");
+  // A `Text` may be a `CDATASection`, whose `nodeType` is 4.
+  expect(js).toContain("node.nodeType === 3 || node.nodeType === 4 ? node.data : node.tagName");
+  const lib = await import(join(dir, "lib.js"));
+  const happyDom = Bun.resolveSync("happy-dom", realpathSync(join(root, "node_modules/@happy-dom/global-registrator")));
+  const { Window } = await import(happyDom);
+  const frame = new Window();
+  const page = new Window();
+  const doc = frame.document;
+  const section = doc.createElement("section");
+  const text = doc.createTextNode("hi");
+  const told = () => [lib.named(doc), lib.named(section), lib.tag(doc), lib.tag(section), lib.content(text), lib.content(section)];
+  const rust = ["document", "SECTION", undefined, "SECTION", "hi", "SECTION"];
+  // A host without the globals, as Jest's node environment is.
+  const globals = globalThis as Record<string, unknown>;
+  expect(typeof globals.Document).toBe("undefined");
+  expect(told()).toEqual(rust);
+  // Another realm's classes: a page's, of a frame's nodes.
+  Object.assign(globals, { Document: page.Document, Element: page.Element, Text: page.Text });
+  try {
+    expect(doc instanceof page.Document).toBe(false);
+    expect(told()).toEqual(rust);
+  } finally {
+    for (const name of ["Document", "Element", "Text"]) delete globals[name];
+  }
+  await frame.happyDOM.close();
+  await page.happyDOM.close();
+
+  // Classes no `nodeType` tells apart, which only `instanceof` did: an
+  // `HTMLElement` and an `SVGElement` are each 1, and a `Blob` has none.
+  const refused = (name: string, source: string, message: string) => {
+    const at = fixture(name);
+    writeFileSync(join(at, "lib.rs"), source);
+    const built = Bun.spawnSync([compiler, join(at, "lib.rs"), "-o", join(at, "lib.js"), ...withWeb]);
+    expect(built.exitCode).not.toBe(0);
+    expect(built.stderr.toString()).toContain(message);
+    expect(built.stderr.toString()).toContain("lib.rs:");
+  };
+  refused(
+    "webapi-node-types-alike",
+    `use webapi::{HTMLElement, SVGElement};
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Drawn<'a> {
+    Html(&'a HTMLElement),
+    Svg(&'a SVGElement),
+}
+
+pub fn is_svg(drawn: Drawn<'_>) -> bool {
+    matches!(drawn, Drawn::Svg(_))
+}
+`,
+    "`Svg` and `Html` are each an object whose `nodeType` is the number 1, which JS can't tell apart in an untagged enum in every realm",
+  );
+  refused(
+    "webapi-node-types-untold",
+    `use webapi::{Blob, Element};
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Dropped<'a> {
+    Element(&'a Element),
+    Blob(&'a Blob),
+}
+
+pub fn size(dropped: Dropped<'_>) -> f64 {
+    match dropped {
+        Dropped::Blob(blob) => blob.size(),
+        Dropped::Element(_) => 0.0,
+    }
+}
+`,
+    "JS can't tell `Dropped::Blob`, a `Blob`, from `Dropped`'s other variants in every realm: `instanceof Blob` is `false` of a `Blob` of another realm",
+  );
+  // Its element tested first, by its `nodeType`, the blob what's left: no
+  // `instanceof` made, nothing refused.
+  const first = fixture("webapi-node-types-element-first");
+  writeFileSync(join(first, "lib.rs"), `use webapi::{Blob, Element};
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Dropped<'a> {
+    Element(&'a Element),
+    Blob(&'a Blob),
+}
+
+pub fn size(dropped: Dropped<'_>) -> f64 {
+    match dropped {
+        Dropped::Element(_) => 0.0,
+        Dropped::Blob(blob) => blob.size(),
+    }
+}
+`);
+  run([compiler, join(first, "lib.rs"), "-o", join(first, "lib.js"), ...withWeb]);
+  expect(readFileSync(join(first, "lib.js"), "utf8")).toContain("return dropped.nodeType === 1 ? 0 : dropped.size;");
 });
 
 // React DOM's compareDocumentPositionForEmptyFragment tests a position

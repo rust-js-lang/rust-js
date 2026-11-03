@@ -583,6 +583,8 @@ pub async fn waited() -> bool {
   expect(js).toContain("const counts = new Int32Array(shared);");
   expect(js).toContain("Atomics.compareExchange(counts, 1, 0, 9);");
   expect(js).toContain('Atomics.wait(counts, 0, 0) === "not-equal"');
+  // The promise is what the string isn't (#555).
+  expect(js).not.toContain("instanceof");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.counted()).toEqual([5, 3, 9, 7n, true, false]);
   expect(await lib.waited()).toBe(true);

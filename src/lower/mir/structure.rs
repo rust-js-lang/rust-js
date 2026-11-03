@@ -434,6 +434,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .map(|place| crate::lower::body_queries::pattern_places(self.tcx, state.body, place));
                 let mut cases: Vec<(Expr, BasicBlock, u128)> = Vec::new();
                 let mut always = None;
+                // Its tests are made, and refused below where they'd tell a
+                // class by `instanceof` and its arms differ (#555).
+                let telling = self.telling_arms.replace(true);
                 // Past a guard that holds, to its arm (`held_arms`).
                 let past = |b: BasicBlock| state.facts.held_arms().get(&b).copied().unwrap_or(b);
                 for (value, target) in targets.iter().map(|(value, target)| (value, past(target))) {
@@ -447,12 +450,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                     }
                 }
+                self.telling_arms.set(telling);
                 if let Some(target) = always {
                     out.extend(self.mir_branch(state, block, target)?);
                     return Ok(out);
                 }
                 let mut otherwise = Some(past(targets.otherwise())).filter(|&b| reached(b));
                 self.settle_before_branches(state, block, &mut out);
+                let telling = self.telling_arms.replace(true);
                 // Values that go to one block, an or-pattern's `'+' | '-'`:
                 // one test of either, the block once, as the program wrote it.
                 let mut grouped: Vec<(Expr, BasicBlock, Vec<u128>)> = Vec::new();
@@ -529,6 +534,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .collect();
                     otherwise = Some(last).filter(|&b| reached(b));
                 }
+                self.telling_arms.set(telling);
+                // The values each block's test is of, which tell what it tests.
+                let told: Vec<(BasicBlock, Vec<u128>)> =
+                    (grouped.iter()).map(|(_, b, values)| (*b, values.clone())).collect();
                 let mut cases: Vec<(Expr, BasicBlock)> =
                     grouped.into_iter().map(|(test, target, _)| (test, target)).collect();
                 // Each case tested, an enum's `match`'s: its arms in the order
@@ -596,7 +605,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Value::Discriminant(..) if !cases.is_empty() => chain.clone(),
                     _ => None,
                 };
+                let mut tested_blocks: Vec<BasicBlock> = Vec::new();
                 for (test, target) in cases.into_iter().rev() {
+                    tested_blocks.push(target);
                     let then = self.mir_branch(state, block, target)?;
                     alike = alike.filter(|first| js::stmts_same(first, &then)).map(|_| then.clone());
                     let branches_panic = [panics(state.body, target), chain_panics];
@@ -610,6 +621,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     chain = Some(early_exit(test, then, chain, branches_panic, self.js_span(span)));
                     chain_panics = false;
+                }
+                // Arms that differ, told by `instanceof` of a JS object type's
+                // class, `false` of another realm's object and a
+                // ReferenceError where the host lacks the global: refused
+                // (#555).
+                if alike.is_none()
+                    && let Value::Discriminant(_, enum_ty, _) = &subject
+                    && let ty::Adt(adt, _) = enum_ty.kind()
+                    && bindings::is_untagged(self.tcx, adt.did())
+                {
+                    let values = (told.iter())
+                        .filter(|(b, _)| tested_blocks.contains(b))
+                        .flat_map(|(_, values)| values);
+                    let variants: Vec<&ty::VariantDef> = values
+                        .filter_map(|&value| adt.discriminants(self.tcx).find(|(_, d)| d.val == value))
+                        .map(|(variant, _)| adt.variant(variant))
+                        .collect();
+                    if let Some(refused) = self.untold_class(*enum_ty, &variants) {
+                        return Err(self.tcx.dcx().span_err(span, refused));
+                    }
                 }
                 out.extend(alike.or(chain).unwrap_or_default());
             }
@@ -874,13 +905,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .ok_or_else(|| self.unsupported(span, "this discriminant, from its MIR"))?;
                 // An untagged enum's variants JS can't tell apart: refused (ADR 0214).
                 if bindings::is_untagged(self.tcx, adt.did())
-                    && let Some(other) = self.untagged_alike(*enum_ty, adt.variant(variant))
+                    && let Some((other, classes)) = self.untagged_alike(*enum_ty, adt.variant(variant))
                 {
-                    let message = format!(
-                        "`{}` and `{other}` hold values of one kind, which JS can't tell apart in an untagged enum (ADR 0214)",
-                        adt.variant(variant).name
-                    );
-                    return Err(self.tcx.dcx().span_err(span, message));
+                    // Two classes of one member, refused once the arms are
+                    // known to differ (`untold_class`, #555).
+                    if classes.is_none() {
+                        let message = format!(
+                            "`{}` and `{other}` hold values of one kind, which JS can't tell apart in an untagged enum (ADR 0214)",
+                            adt.variant(variant).name
+                        );
+                        return Err(self.tcx.dcx().span_err(span, message));
+                    }
                 }
                 Ok(self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &[variant], &[], *present))
             }

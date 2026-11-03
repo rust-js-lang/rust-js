@@ -2325,6 +2325,41 @@ function listing(i: Interface, f: Fn): Fn {
   return { ...f, result: f.result.replace(/\bNodeList\b/, `NodeList<${typeName(item)}>`) };
 }
 
+// ── What a node is: its `nodeType` (ADR 1062, amended, #555) ───────────
+// `Node` names each kind of node by a constant, `ELEMENT_NODE`, as the
+// DOM names its interface, `Element`: an interface's `nodeType` is its own
+// constant, else its parent's. A class each interface below which, in any
+// spec, has one is told by it in an untagged enum, `node.nodeType === 9`,
+// the same in any realm and of no global, where `instanceof Document` is
+// `false` of a frame's document and throws where a host has no `Document`:
+// `#[rust_js::test(nodeType = 9)]`; a `Text`, which a `CDATASection` is
+// too, `test(nodeType = 3, nodeType = 4)`. `Node` and `CharacterData`,
+// which name none, have none, nor does what's below them only.
+const nodeConstants = new Map(
+  everywhere
+    .filter((d) => d.type === "interface" && d.name === "Node")
+    .flatMap((d) => d.members ?? [])
+    .filter((m) => m.type === "const")
+    .map((m) => [m.name!, Number((m as unknown as { value: { value: string } }).value.value)]),
+);
+// `CDATASection`'s `CDATA_SECTION_NODE`, as `Node`'s constants spell it.
+const nodeTypeOf = (name: string): number | undefined =>
+  nodeConstants.get(`${snakeWords(name).toUpperCase()}_NODE`) ?? (parents.get(name) ? nodeTypeOf(parents.get(name)!) : undefined);
+const childrenOf = new Map<string, string[]>();
+for (const [child, parent] of parents) if (parent) childrenOf.set(parent, [...(childrenOf.get(parent) ?? []), child]);
+/** The `nodeType`s a node of `name` may have, each its own or a subclass's: none where one has none. */
+const nodeTypes = (name: string): number[] | undefined => {
+  const own = nodeTypeOf(name);
+  if (own === undefined) return undefined;
+  const types = new Set([own]);
+  for (const child of childrenOf.get(name) ?? []) {
+    const theirs = nodeTypes(child);
+    if (!theirs) return undefined;
+    for (const type of theirs) types.add(type);
+  }
+  return [...types].sort((a, b) => a - b);
+};
+
 // Each class's constructor a window holds, its method (ADR 0891).
 const windowConstructors: Fn[] = [];
 // And the window's own members' names, which no constructor's may take.
@@ -2339,6 +2374,9 @@ for (const name of INTERFACES) {
   if (jsName(i) !== type) line(`#[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(jsName(i))})]`);
   // What it is to TypeScript: its DOM lib's interface of the same name.
   line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(listOf ? "NodeListOf<T>" : (i.ts ?? jsName(i)))})]`);
+  // A node's `nodeType`, which tells it in an untagged enum (#555).
+  const told = i.ts ? undefined : nodeTypes(name);
+  if (told) line(`#[cfg_attr(rust_js, rust_js::test(${told.map((type) => `nodeType = ${type}`).join(", ")}))]`);
   // An indexed list, whose `for` is an index loop (ADR 1042).
   if (indexedList(i)) line(`#[cfg_attr(rust_js, rust_js::indexed)]`);
   line(listOf ? `pub struct ${type}<T = Node>(PhantomData<JsObject>, PhantomData<T>);` : `pub struct ${type}(PhantomData<JsObject>);`);

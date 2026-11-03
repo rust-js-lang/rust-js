@@ -75,11 +75,12 @@ pub struct WaitAsyncResult {
 }
 
 /// How a `wait_async` ended, a string, or the promise of it, as its
-/// `async` says.
+/// `async` says: the promise is what isn't the string, `typeof value !==
+/// "string"`, never `instanceof Promise`, which is `false` of another
+/// realm's (ADR 1062, #555).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum WaitAsyncValue {
     Waiting(Promise<WaitResult>),
-    #[cfg_attr(rust_js, rust_js::otherwise)]
     Ended(WaitResult),
 }
 

@@ -56,5 +56,6 @@ pub(super) fn fn_cx<'a, 'tcx>(
         scope_copies: HashMap::new(),
         scope_self: None,
         scope_values: Vec::new(),
+        telling_arms: Default::default(),
     }
 }

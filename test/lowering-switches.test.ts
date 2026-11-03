@@ -1436,13 +1436,49 @@ pub fn disconnected(observer: Observer, ready: fn() -> bool) {
     if ready() { observer_disconnect(observer) } else { observer_disconnect(observer) }
 }
 
+#[allow(clippy::if_same_then_else)]
+pub fn either(observer: Observer, wide: bool) {
+    if wide { observer_disconnect(observer) } else { observer_disconnect(observer) }
+}
+
+pub fn partly(observers: &[Observer], wide: bool, ready: fn() -> bool) {
+    for &observer in observers {
+        if wide {
+            observer_disconnect(observer);
+        } else {
+            observer_disconnect(observer);
+            ready();
+        }
+        ready();
+    }
+}
+
 fn observer_disconnect(observer: Observer) {
     match observer {
         Observer::Intersection(observer) => observer.disconnect(),
         Observer::Resize(observer) => observer.disconnect(),
     }
 }
-
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  for (let i = 0; i < observers.length; i++) {\n    const observer = observers[i];\n    observer.observe(child);\n  }\n");
+  expect(js).toContain("function observerDisconnect(observer) {\n  observer.disconnect();\n}");
+  expect(js).toContain("if (ready()) {");
+  expect(js).not.toContain("instanceof");
+  // An \`if\` whose branches are alike is its branch; alike in part, kept.
+  expect(js).toContain("export function either(observer, wide) {\n  observerDisconnect(observer);\n}");
+  expect(js).toContain("    if (wide) {\n      observerDisconnect(observer);\n    } else {\n      observerDisconnect(observer);\n      ready();\n    }\n");
+  const lib = await import(join(dir, "lib.js"));
+  const seen: string[] = [];
+  const observer = (name: string) => ({ observe: (child: string) => void seen.push(`${name} ${child}`), disconnect: () => void seen.push(`${name} off`) });
+  lib.observeAll([observer("a"), observer("b")], "c");
+  let asked = 0;
+  lib.disconnected(observer("d"), () => ++asked > 0);
+  expect([seen, asked]).toEqual([["a c", "b c", "d off"], 1]);
+  // Arms alike only in part are told apart, by `instanceof` of a class,
+  // `false` of another realm's: refused (#555).
+  writeFileSync(join(dir, "lib.rs"), `${readFileSync(join(dir, "lib.rs"), "utf8")}${`
 pub fn watched(observers: &[Observer], child: &Element) {
     for observer in observers {
         match observer {
@@ -1455,19 +1491,8 @@ pub fn watched(observers: &[Observer], child: &Element) {
         observe_all(observers, child);
     }
 }
-`);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  for (let i = 0; i < observers.length; i++) {\n    const observer = observers[i];\n    observer.observe(child);\n  }\n");
-  expect(js).toContain("function observerDisconnect(observer) {\n  observer.disconnect();\n}");
-  expect(js).toContain("if (ready()) {");
-  // Arms alike only in part keep their test.
-  expect(js.match(/instanceof/g)).toEqual(["instanceof"]);
-  const lib = await import(join(dir, "lib.js"));
-  const seen: string[] = [];
-  const observer = (name: string) => ({ observe: (child: string) => void seen.push(`${name} ${child}`), disconnect: () => void seen.push(`${name} off`) });
-  lib.observeAll([observer("a"), observer("b")], "c");
-  let asked = 0;
-  lib.disconnected(observer("d"), () => ++asked > 0);
-  expect([seen, asked]).toEqual([["a c", "b c", "d off"], 1]);
+`}`);
+  const refused = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "refused.js"), ...withWeb]);
+  expect(refused.exitCode).not.toBe(0);
+  expect(refused.stderr.toString()).toContain("JS can't tell `Observer::Intersection`, a `IntersectionObserver`, from `Observer`'s other variants in every realm");
 });

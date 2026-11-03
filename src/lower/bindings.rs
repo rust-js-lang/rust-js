@@ -711,6 +711,39 @@ pub(super) fn test_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
     Some(test.to_string())
 }
 
+/// A JS object type's member that tells it apart in an untagged enum,
+/// `#[rust_js::test(nodeType = 9)]`: its JS key, and the numbers it may
+/// be, each `key = n` one, `test(nodeType = 3, nodeType = 4)` of a `Text`,
+/// which a `CDATASection` is too. webapi's generator writes a DOM node
+/// class's from WebIDL's `Node` constants (ADR 1062, amended, #555).
+/// `Some(None)` of one written otherwise, which `untagged::validate`
+/// refuses where it's declared.
+pub(super) fn test_member(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Option<(String, Vec<u32>)>> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("test")];
+    let items = tcx.get_attrs_by_path(def_id, &path).next()?.meta_item_list()?;
+    let mut key: Option<String> = None;
+    let mut values = Vec::new();
+    for item in &items {
+        let (Some(ident), Some(lit)) = (item.ident(), item.meta_item().and_then(|m| m.name_value_literal())) else {
+            return Some(None);
+        };
+        let LitKind::Int(value, _) = lit.kind else {
+            return Some(None);
+        };
+        let Ok(value) = u32::try_from(value.get()) else {
+            return Some(None);
+        };
+        if key.as_deref().is_some_and(|key| key != ident.as_str()) {
+            return Some(None);
+        }
+        key = Some(ident.to_string());
+        if !values.contains(&value) {
+            values.push(value);
+        }
+    }
+    Some(key.map(|key| (key, values)))
+}
+
 /// Whether `field`, a struct's, tells its struct apart in an untagged
 /// enum, a bare `#[rust_js::test]`: the struct is an object whose
 /// `field` is of its kind, `Array.isArray(child.children)` (rd291).
