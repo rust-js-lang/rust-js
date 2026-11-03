@@ -149,7 +149,7 @@ The `js` crate has the rest of JS's `Promise`:
 
 | JS | Rust |
 |---|---|
-| `new Promise((resolve, reject) => ..)` | `js::promise::new(\|resolve, reject\| ..)`, which runs before it returns, so it may set the variables around it; `reject` takes any value, an `Option<&Unknown>`, `reject(error)` ([ADR 0782](../../decisions/0782-a-promises-executor-borrows-and-then-takes-two-handlers.md)) |
+| `new Promise((resolve, reject) => ..)` | `js::promise::new(\|resolve, reject\| ..)`, which runs before it returns, so it may set the variables around it; `reject` takes any value, an `Option<&Unknown>`, `reject(error)` ([ADR 0782](../../decisions/0782-a-promises-executor-borrows-and-then-takes-two-handlers.md)); `resolve` of a number or text runs nothing, so a `RefCell` borrowed across it, `resolve(buffer.borrow().clone())`, isn't counted ([ADR 0898](../../decisions/0898-a-binding-that-runs-only-what-its-given.md), amended) |
 | `Promise.resolve(v)`, `Promise.reject(e)`, `Promise.reject()` | `js::promise::resolve(v)`, `js::promise::reject(Some(e))` of any value, `js::promise::reject(None)` |
 | `Promise.all([a, b])` | `js::promise::all(vec![a, b])`; of two of different types, `all2((a, b))`, up to `all4` |
 | `Promise.allSettled`, `race`, `any` | `js::promise::all_settled`, `race`, `any` |

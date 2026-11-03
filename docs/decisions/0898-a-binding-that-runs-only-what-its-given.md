@@ -158,3 +158,71 @@ export function mark(root, index, lane, now) {
   counted, and `already borrowed` where its `toString` borrows the cell.
 - Mutations in `scripts/mutations/lower/analysis/cell_borrows.ts`:
   `runs-only-given-ignored`, `given-objects-run-nothing`.
+
+## Amendment: a promise's resolve, given what runs nothing, runs nothing (rd654)
+
+React's react-markup collects Fizz's chunks in a buffer and settles its
+promise with them once Fizz is done, upstream's `resolve(buffer)`. Its
+port's natural Rust holds a borrow while it resolves:
+
+```rust
+promise::new(move |resolve, reject| {
+    let buffer = Rc::new(RefCell::new(String::new()));
+    let fizz_destination = Destination {
+        push: Rc::new(move |chunk: Option<&str>| {
+            if let Some(chunk) = chunk {
+                buffer.borrow_mut().push_str(chunk);
+            } else {
+                resolve(buffer.borrow().clone());
+            }
+            true
+        }),
+        ..
+    };
+    ..
+})
+```
+
+`resolve` is a `&'static dyn Fn(String)` JS gave, code no one can see, so
+the borrow was counted, and refused where a library borrows a
+`RefCell<String>` unchecked (ADR 0863), react-server's; the port wrote
+`buffer.take()` instead, which changes the buffer.
+
+What a promise's resolve runs is the spec's (ECMA-262,
+CreateResolvingFunctions): of a `resolution` that's no Object, it fulfils
+the promise, FulfillPromise, whose TriggerPromiseReactions only enqueues
+each reaction as a job, HostEnqueuePromiseJob, run after the current one
+ends; of an Object, it reads its `then` there and then, `Get(resolution,
+"then")`, which a getter or a proxy's trap runs in, and calls a `then`
+only in a later job, NewPromiseResolveThenableJob. A resolve already
+settled returns at once. So, given what JS reads with no code of
+anyone's, it runs nothing: case (1) is the `then` it reads, of an array
+`Array.prototype`'s, which has none, as this decision's reading of an
+array already takes; (2) its reactions, each a later job; and (3) can't
+be, as the function is a new one the constructor made, which nothing can
+replace.
+
+**A call of a promise's resolve function, given only what runs nothing as
+JS reads it, borrows nothing** (`cell_borrows::resolve_runs_nothing`, of
+`value_runs_nothing`, `given_what_runs_nothing`'s rule): a `dyn Fn`'s
+`call` whose callee is the first parameter of a closure written in place
+as the function a binding marked `#[rust_js::calls_with_resolvers]` is
+given, bound by value and never `mut`, read where it's bound or through
+the closures that capture it (`analysis/resolvers.rs`). The js crate
+marks `promise::new`. Nothing but JS calls such an executor, so its
+first parameter is the promise's resolve, whatever closure it's moved
+into. Anything else is what it was: a resolve given an object, the
+crate's struct whose `then` JS reads; a `&dyn Fn` a function is given; a
+resolve moved into another variable, a struct's field or a
+`PromiseWithResolvers`' `resolve`, which nothing here follows.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N for the check it drops,
+which can't fail: no borrow can meet the one held while nothing runs.
+Its JS is upstream's, `resolve(buffer.value)`, no `$borrow`.
+
+Held by `test/lowering-cell-borrows.test.ts`'s "a borrow held while a
+promise's resolve is given text isn't counted", with mutations
+`resolve-runs-anything`, `any-dyn-fn-a-resolve` and
+`resolve-given-objects-runs-nothing` in
+`lower/analysis/cell_borrows.ts`, and `resolve-of-a-mut-binding` in
+`lower/analysis/resolvers.ts`.

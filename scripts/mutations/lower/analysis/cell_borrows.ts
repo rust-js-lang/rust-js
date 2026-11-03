@@ -376,13 +376,39 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-cell-borrows.test.ts"],
   },
   {
+    name: "resolve-runs-anything",
+    breaks:
+      "a promise's resolve given text may run anything, so react-markup's `resolve(buffer.borrow().clone())` counts the borrow, `$borrow(buffer, true)`, refused where a library borrows a `RefCell<String>` unchecked (rd654)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        && super::resolvers::is_resolve(tcx, thir, *callee)\n",
+    replace: "        && super::resolvers::is_resolve(tcx, thir, *callee) && false\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "promise's resolve is given text"],
+  },
+  {
+    name: "any-dyn-fn-a-resolve",
+    breaks:
+      "any `&dyn Fn(String)` a function is given is taken for a promise's resolve, so a borrow held across it isn't counted and never panics `already borrowed` where it borrows the cell (rd654)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        && super::resolvers::is_resolve(tcx, thir, *callee)\n",
+    replace: "        && (super::resolvers::is_resolve(tcx, thir, *callee) || true)\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "promise's resolve is given text"],
+  },
+  {
+    name: "resolve-given-objects-runs-nothing",
+    breaks:
+      "a promise's resolve given the crate's object, whose `then` JS reads there and then, runs nothing, so a borrow held across it isn't counted (rd654)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        && (args.type_at(1).tuple_fields().iter()).all(|input| value_runs_nothing(recognition, input))\n",
+    replace: "        && (args.type_at(1).tuple_fields().iter()).all(|_| true)\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "promise's resolve is given text"],
+  },
+  {
     name: "given-objects-run-nothing",
     breaks:
       "an object given to `console.error(..)`, whose `toString` may borrow the cell, runs nothing, so a borrow held across it isn't counted and never panics `already borrowed`",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "                runs_nothing(recognition, items.type_at(0))\n            }\n            _ => false,\n",
-    replace:
-      "                runs_nothing(recognition, items.type_at(0))\n            }\n            _ => true,\n",
+    find: "            value_runs_nothing(recognition, items.type_at(0))\n        }\n        _ => false,\n",
+    replace: "            value_runs_nothing(recognition, items.type_at(0))\n        }\n        _ => true,\n",
     tests: ["test/lowering-cell-borrows.test.ts"],
   },
   {

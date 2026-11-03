@@ -94,6 +94,103 @@ pub fn touch(root: &Root) {
   }
 });
 
+// React's react-markup collects Fizz's chunks in a buffer and resolves its
+// promise with them, \`resolve(buffer.borrow().clone())\`, a borrow held
+// while \`resolve\` runs, JS no one can see: refused where a library borrows
+// a \`RefCell<String>\` unchecked (rd654). A promise's resolve function,
+// which JS gives \`promise::new\`'s executor, given what's no object, only
+// fulfils it, queuing its reactions (ECMA-262's CreateResolvingFunctions),
+// so it runs nothing and the borrow isn't counted (ADR 0898, amended). Given
+// an object, whose \`then\` it reads, or one that may be another function,
+// it's counted as before.
+test("a borrow held while a promise's resolve is given text isn't counted", async () => {
+  const dir = fixture("resolve-borrows");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+use js::{Promise, promise};
+
+pub struct Destination {
+    pub push: Rc<dyn Fn(Option<&str>) -> bool>,
+}
+
+/// Its chunks, written to a destination, and its promise of all of them.
+pub fn rendered(chunks: Vec<String>) -> Promise<String> {
+    promise::new(move |resolve, _reject| {
+        let buffer = Rc::new(RefCell::new(String::new()));
+        let destination = Destination {
+            push: Rc::new(move |chunk: Option<&str>| {
+                if let Some(chunk) = chunk {
+                    buffer.borrow_mut().push_str(chunk);
+                } else {
+                    resolve(buffer.borrow().clone());
+                }
+                true
+            }),
+        };
+        for chunk in &chunks {
+            (destination.push)(Some(chunk));
+        }
+        (destination.push)(None);
+    })
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('    let buffer = "";\n');
+  expect(js).toContain("          resolve(buffer);\n");
+  expect(js).not.toContain("$borrow");
+  expect(await (await import(join(dir, "lib.js"))).rendered(["<p>", "hi", "</p>"])).toBe("<p>hi</p>");
+  // Given an object, whose \`then\` JS reads; a \`mut\` one, which may be
+  // another function by then; and a function a function is given: counted.
+  const counted = fixture("resolve-borrows-counted");
+  writeFileSync(join(counted, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+use js::{Promise, promise};
+
+pub struct Tagged {
+    pub text: String,
+}
+
+pub fn tagged(text: Rc<RefCell<String>>) -> Promise<Tagged> {
+    promise::new(move |resolve, _reject| {
+        resolve(Tagged {
+            text: text.borrow().clone(),
+        });
+    })
+}
+
+pub fn reassigned(text: Rc<RefCell<String>>, other: &'static dyn Fn(String)) -> Promise<String> {
+    promise::new(move |mut resolve, _reject| {
+        if text.borrow().is_empty() {
+            resolve = other;
+        }
+        resolve(text.borrow().clone());
+    })
+}
+
+pub fn settled(text: &RefCell<String>, settle: &dyn Fn(String)) {
+    settle(text.borrow().clone());
+}
+
+pub fn touched(text: &RefCell<String>) {
+    text.borrow_mut().push('!');
+}
+`);
+  run([compiler, join(counted, "lib.rs"), "-o", join(counted, "lib.js"), ...withBindings]);
+  const out = readFileSync(join(counted, "lib.js"), "utf8");
+  const of = (name: string) => out.slice(out.indexOf(`export function ${name}(`), out.indexOf("\n}\n", out.indexOf(`export function ${name}(`)));
+  expect(["tagged", "reassigned", "settled"].filter((name) => !of(name).includes("$borrow(text, true)"))).toEqual([]);
+  const lib = await import(join(counted, "lib.js"));
+  const text = { value: "a" };
+  expect(await lib.tagged(text)).toEqual({ text: "a" });
+  expect(() => lib.settled(text, () => lib.touched(text))).toThrow("already borrowed");
+  const empty = { value: "" };
+  await expect(lib.reassigned(empty, () => lib.touched(empty))).rejects.toThrow("already borrowed");
+  expect(await lib.reassigned({ value: "b" }, () => {})).toBe("b");
+});
+
 // ADR 0907: React's ReactFiberLane picks a lane's index through `clz32`, a
 // thread-local fn pointer of `Math.clz32` or its fallback, while it holds
 // `root.entanglements`. What a fn pointer may be is each function the

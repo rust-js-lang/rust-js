@@ -707,7 +707,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0895 An `i32`'s `<<` and an operand of a bitwise operator need no wrap](0895-an-operand-of-a-bitwise-operator-needs-no-wrap.md) *(amended: a signed remainder given to `+`, `-` or `*` needs no wrap)*
 - [0896 A test of bits against `0` is their truth](0896-a-test-of-bits-against-zero-is-their-truth.md) *(amended: an integer's `!= 0` is its truth, not its `== 0` nor a remainder's or a `match` pattern's)*
 - [0897 An element a guard reaches is its place, and `vec![..]` borrows nothing](0897-an-element-a-guard-reaches-is-its-place.md)
-- [0898 A binding that runs only what it's given, given only numbers and text, borrows nothing](0898-a-binding-that-runs-only-what-its-given.md)
+- [0898 A binding that runs only what it's given, given only numbers and text, borrows nothing](0898-a-binding-that-runs-only-what-its-given.md) *(amended, rd654: a promise's resolve, given what runs nothing, runs nothing)*
 - [1050 A JS collection keeps what it's given only in itself](1050-a-js-collection-keeps-what-its-given-only-in-itself.md) *(issue #445, the user's decision: `#[rust_js::keeps_in_collection]`)*
 - [0899 A `Flatten` held is std's, and an associated type's `IntoIterator` is held as it is](0899-a-flatten-held-is-stds.md) *(extended by 0903: `FlatMap`)*
 - [0900 A dictionary's method is the program's, whatever its name](0900-a-dictionarys-method-is-the-programs.md)

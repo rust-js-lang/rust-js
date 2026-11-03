@@ -104,7 +104,10 @@ pub struct PromiseWithResolvers<T: 'static> {
 /// `any` is, `reject(Some(js::unknown(error)))` of a `&JsError` (ADR 0653).
 /// JS runs it before `new Promise` returns, so it may borrow what's around
 /// it, and set it, `resolve_debug_value = Some(resolve)` (ADR 0782).
+/// `resolve` of a number or text runs nothing, so a `RefCell` borrowed
+/// across it isn't counted (ADR 0898, amended).
 #[cfg_attr(rust_js, rust_js::link_name = "new Promise")]
+#[cfg_attr(rust_js, rust_js::calls_with_resolvers)]
 pub fn new<T: 'static>(executor: impl FnOnce(&'static dyn Fn(T), &'static dyn Fn(Option<&Unknown>))) -> Promise<T> {
     unreachable!()
 }

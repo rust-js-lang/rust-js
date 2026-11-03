@@ -6,7 +6,8 @@ mod callers_decide;
 mod cell_borrows;
 mod cell_flow;
 pub(super) use cell_borrows::{
-    Borrow, Cell, CellBorrows, binding_call_runs_nothing, binding_runs_nothing, borrowed, may_be_cell, unsized_in_place,
+    Borrow, Cell, CellBorrows, binding_call_runs_nothing, binding_runs_nothing, borrowed, may_be_cell,
+    resolve_runs_nothing, unsized_in_place,
 };
 pub(super) use cell_flow::CellClass;
 mod clones;
@@ -31,6 +32,7 @@ pub(super) mod only_called;
 pub(super) mod owned_by_return;
 mod plain_locals;
 mod rc_counts;
+mod resolvers;
 mod scopes;
 pub(super) use scopes::Scopes;
 mod self_handles;

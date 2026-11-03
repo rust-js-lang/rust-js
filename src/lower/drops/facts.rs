@@ -22,7 +22,7 @@ use super::super::recognition::{HandleStep, Std, StdItem, handle_step, is_as_der
 use super::super::{fn_def, strip};
 use rustc_middle::middle::region;
 
-use super::super::analysis::{Borrow, CellBorrows};
+use super::super::analysis::{Borrow, CellBorrows, resolve_runs_nothing};
 use super::types::{DropQuery, Drops, describe};
 
 /// What a body does with its values that have destructors: what's
@@ -844,7 +844,9 @@ impl<'c, 'a, 'tcx> Visitor<'a, 'tcx> for Seen<'c, 'a, 'tcx> {
             return;
         }
         self.seen = match expr.kind {
-            ExprKind::Call { fun, .. } => match fn_def(self.thir[fun].ty) {
+            ExprKind::Call { fun, ref args, .. } => match fn_def(self.thir[fun].ty) {
+                // A promise's resolve, given what runs nothing (rd654).
+                Some(called) if resolve_runs_nothing(self.recognition, self.thir, called, args) => true,
                 Some((id, args)) => !self.borrows.call_runs_unseen(self.recognition, (self.owner, id, args)),
                 // A fn pointer's, of what it may be (ADR 0907).
                 None => !self
@@ -1026,6 +1028,8 @@ impl<'c, 'q, 'a, 'tcx> Quiet<'c, 'q, 'a, 'tcx> {
         let ptr = self.thir[fun].ty;
         let receiver = args.first().map(|&receiver| (self.thir, receiver));
         let called = match fn_def(ptr) {
+            // A promise's resolve, given what runs nothing (rd654).
+            Some(called) if resolve_runs_nothing(recognition, self.thir, called, args) => false,
             Some((id, generic_args)) if self.seen_only => {
                 (self.borrows).call_asks_seen(recognition, (self.owner, id, generic_args), receiver, self.cell)
             }

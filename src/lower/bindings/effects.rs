@@ -1,7 +1,8 @@
 //! What a binding says of what it runs, which nothing of its JS shows:
 //! that it can't throw (ADR 0301), that it runs nothing (ADR 0867), or
-//! only what it's given (ADR 0898), or gives back what it was given (ADR
-//! 1022), or keeps what it's given only in its collection (ADR 1050).
+//! only what it's given (ADR 0898), or calls what it's given with a
+//! promise's resolving functions (rd654), or gives back what it was given
+//! (ADR 1022), or keeps what it's given only in its collection (ADR 1050).
 
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
@@ -31,6 +32,17 @@ pub(in crate::lower) fn runs_nothing(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// runs meets no other.
 pub(in crate::lower) fn runs_only_given(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("runs_only_given")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
+/// `#[rust_js::calls_with_resolvers]`: a binding that calls the function
+/// it's given first, at once, with a new promise's resolve and reject
+/// functions, as `new Promise(executor)` does (ECMA-262's
+/// CreateResolvingFunctions): its resolve runs only what it's given, the
+/// `then` it reads of an object, so given what runs nothing it runs
+/// nothing (rd654, ADR 0898, amended; `analysis/resolvers.rs`).
+pub(in crate::lower) fn calls_with_resolvers(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("calls_with_resolvers")];
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 

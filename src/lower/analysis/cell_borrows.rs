@@ -733,11 +733,7 @@ pub(in crate::lower) fn call_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// Whether `def_id`, a binding that runs no code but its own and what it's
 /// given, `#[rust_js::runs_only_given]` (ADR 0898), is given, of `args`,
-/// only what runs nothing as JS reads it: numbers, `bool`s, `char`s, text,
-/// and `Option`s, tuples, arrays, slices and `Vec`s of them, which
-/// `String(x)` and `+x` read with no code of anyone's. Not an object of the
-/// crate's, whose getter or `toString` may be its code, nor a JS value,
-/// which may be a function or a proxy of the crate's.
+/// only what runs nothing as JS reads it (`value_runs_nothing`).
 fn given_what_runs_nothing<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     def_id: DefId,
@@ -747,22 +743,52 @@ fn given_what_runs_nothing<'tcx>(
     if !is_binding(tcx, def_id) || !runs_only_given(tcx, def_id) {
         return false;
     }
-    fn runs_nothing<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> bool {
-        match ty.kind() {
-            ty::Bool | ty::Char | ty::Int(_) | ty::Uint(_) | ty::Float(_) | ty::Str | ty::Never => true,
-            ty::Ref(_, inner, _) | ty::Slice(inner) | ty::Array(inner, _) => runs_nothing(recognition, *inner),
-            ty::Tuple(items) => items.iter().all(|item| runs_nothing(recognition, item)),
-            ty::Adt(_, _) if recognition.is_lang_adt(ty, LangItem::String) => true,
-            ty::Adt(_, items)
-                if recognition.is_lang_adt(ty, LangItem::Option) || recognition.is_std_type(ty, StdItem::Vec) =>
-            {
-                runs_nothing(recognition, items.type_at(0))
-            }
-            _ => false,
-        }
-    }
     let sig = tcx.fn_sig(def_id).instantiate(tcx, args).skip_normalization();
-    (sig.skip_binder().inputs().iter()).all(|&input| runs_nothing(recognition, input))
+    (sig.skip_binder().inputs().iter()).all(|&input| value_runs_nothing(recognition, input))
+}
+
+/// Whether JS reads a value of `ty` with no code of anyone's: a number, a
+/// `bool`, a `char`, text, and `Option`s, tuples, arrays, slices and
+/// `Vec`s of them, which `String(x)` and `+x` read so (ADR 0898). Not an
+/// object of the crate's, whose getter or `toString` may be its code, nor
+/// a JS value, which may be a function or a proxy of the crate's.
+fn value_runs_nothing<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> bool {
+    match ty.kind() {
+        ty::Bool | ty::Char | ty::Int(_) | ty::Uint(_) | ty::Float(_) | ty::Str | ty::Never => true,
+        ty::Ref(_, inner, _) | ty::Slice(inner) | ty::Array(inner, _) => value_runs_nothing(recognition, *inner),
+        ty::Tuple(items) => items.iter().all(|item| value_runs_nothing(recognition, item)),
+        ty::Adt(_, _) if recognition.is_lang_adt(ty, LangItem::String) => true,
+        ty::Adt(_, items)
+            if recognition.is_lang_adt(ty, LangItem::Option) || recognition.is_std_type(ty, StdItem::Vec) =>
+        {
+            value_runs_nothing(recognition, items.type_at(0))
+        }
+        _ => false,
+    }
+}
+
+/// Whether a call of `def_id` of `args`, a `dyn Fn`'s `call`, given
+/// `call_args` in `thir`, calls a promise's resolve function, which JS gave
+/// its executor (`resolvers::is_resolve`), given only what runs nothing as
+/// JS reads it (`value_runs_nothing`): it fulfils the promise, which only
+/// queues its reactions, and runs nothing, so a borrow held across it
+/// meets no other (rd654, ADR 0898, amended).
+pub(in crate::lower) fn resolve_runs_nothing<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    thir: &Thir<'tcx>,
+    (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
+    call_args: &[ExprId],
+) -> bool {
+    let tcx = recognition.tcx;
+    let fn_trait = tcx
+        .trait_of_assoc(def_id)
+        .is_some_and(|of| tcx.fn_trait_kind_from_def_id(of).is_some());
+    let (true, [callee, _]) = (fn_trait, call_args) else {
+        return false;
+    };
+    matches!(args.type_at(0).peel_refs().kind(), ty::Dynamic(..))
+        && (args.type_at(1).tuple_fields().iter()).all(|input| value_runs_nothing(recognition, input))
+        && super::resolvers::is_resolve(tcx, thir, *callee)
 }
 
 /// Whether a call of `def_id`, a binding, of `args`, runs none of the
