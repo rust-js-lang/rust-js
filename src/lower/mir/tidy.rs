@@ -878,6 +878,7 @@ mod tests {
                 "nulled as they are",
                 "written jumps",
                 "written ors",
+                "written tests",
                 "commented jumps",
                 "named texts",
                 "stepped slices"

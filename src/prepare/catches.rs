@@ -497,12 +497,18 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     let StmtKind::If(test, then, otherwise) = &tested.kind else {
         return None;
     };
+    let (written, tested_at) = (test.facts.has(js::Known::Written), tested.span);
     // Whether the `if` is of the `Ok`: `TAG === "Ok"`, or `!== "Err"`.
     let (tested, ok, eq) = js::result::tested(test)?;
     if !matches!(&tested.kind, ExprKind::Var(v) if v == result) {
         return None;
     }
     let of_ok = ok == eq;
+    // A comment right above an `if` the program wrote of the `Err`, `// c\n
+    // if r.is_err() { .. }`, is the `catch`'s, first in it, as the arm it
+    // tests is; never one above a `match`'s arm, which MIR may test first,
+    // whose comments are that arm's (#489).
+    let said = (written && !of_ok).then(|| StmtKind::Comments.at(tested_at));
     // Each arm's statements, and how many of `rest` are one's: an `if`'s
     // and its `else`'s; or, after an arm that leaves, the other's, `rest`,
     // which leaves too, where it's the `Err`'s, the `catch`'s; or, after an
@@ -661,7 +667,9 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
                 true => StmtKind::Let(payload.clone(), Some(unwound)),
                 false => StmtKind::Const(payload.clone(), unwound),
             }
-            .at(span);
+            // Where its `if let Err(e)` binds it, after what's said above
+            // that `if`, of one the program wrote (#489).
+            .at(said.as_ref().map_or(span, |said| said.span));
             (Some(thrown), std::iter::once(made).chain(err.iter().cloned()).collect())
         }
         _ => (error.clone(), err.to_vec()),
@@ -677,7 +685,8 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
         if let Some(name) = value_name.as_deref().filter(|name| *name == result) {
             js::read_where_made(&mut tried, name);
         }
-        let (binding, handler) = read_as_thrown(binding.clone(), in_catch.clone());
+        let (binding, mut handler) = read_as_thrown(binding.clone(), in_catch.clone());
+        handler.splice(0..0, said.clone());
         StmtKind::TryCatch(tried, binding, handler).at(span)
     };
     let alone = StmtKind::Expr(call.clone()).at(span);

@@ -676,7 +676,7 @@ pub struct Expr {
 /// What the lowering knows of an expression, each of `Known`'s: a set, so
 /// one fact never hides another (the review's P2, ADR 0889).
 #[derive(Clone, Copy, PartialEq, Eq, Default)]
-pub struct Facts(u32);
+pub struct Facts(u64);
 
 impl Facts {
     /// Nothing known.
@@ -684,7 +684,7 @@ impl Facts {
 
     /// `known` alone.
     pub const fn of(known: Known) -> Facts {
-        Facts(1 << known as u32)
+        Facts(1 << known as u64)
     }
 
     pub fn has(self, known: Known) -> bool {
@@ -869,6 +869,11 @@ pub enum Known {
     /// where the program wrote it: never the test of the loop it's first in,
     /// `while ((parentA = a.return) != null)` (ADRs 0860, 0879, amended).
     Guard,
+    /// The test of an `if` the program wrote, `if r.is_err()` or `if let
+    /// Err(e) = r`, never one MIR makes of a `match`'s arm: what's said
+    /// right above it is said of that `if`, which a `try` may fold, its
+    /// `catch` an `Err` test's (`prepare/catches.rs`, #489).
+    Written,
     /// Of an `f64`, that it's a whole number below 10^21 in size, never
     /// `-0`: what a `#[rust_js::whole]` binding gives, a WebIDL integer,
     /// `response.status`. Its `{}` is JS's text of it, `${response.status}`,

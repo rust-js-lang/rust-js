@@ -747,6 +747,31 @@ fn unimplied(test: Expr) -> Expr {
         .expect("the last part is kept")
 }
 
+/// Of `ifs`, each `if`'s condition the program wrote, the one a test at
+/// `s` is MIR's of: the smallest that holds it, an `if let`'s pattern's
+/// test, or that it is, `if c`'s, from `if` to where `c` ends.
+pub(super) fn written_if(ifs: &[js::Span], s: js::Span) -> Option<js::Span> {
+    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    (ifs.iter())
+        .filter(|c| within(c, s) || (within(&s, **c) && s.hi == c.hi))
+        .min_by_key(|c| c.hi - c.lo)
+        .copied()
+}
+
+/// Each `if`'s test the program wrote says so (`Known::Written`), as
+/// `ifs`, their conditions, tell, once tidy's made its `if`s: a comment
+/// right above it is said of that `if`, never of a `match`'s arm MIR
+/// tests first, which preparation's `try` of a `Result` tells apart (#489).
+pub(super) fn written_tests(stmts: &mut [Stmt], ifs: &[js::Span]) {
+    for stmt in stmts {
+        if let StmtKind::If(test, ..) = &mut stmt.kind
+            && written_if(ifs, test.span).is_some()
+        {
+            test.facts = test.facts.with(js::Known::Written);
+        }
+    }
+}
+
 /// `if (a) { continue; } if (b) { continue; }`, MIR's of an `if` whose
 /// condition the program wrote `a || b`, each part's way to the one jump
 /// its branch is: `if (a || b) { continue; }`, as it's written, React
@@ -756,13 +781,7 @@ fn unimplied(test: Expr) -> Expr {
 /// holds it or that it is, MIR's test of an `if` that one; and of a jump
 /// alike in each, a `continue`, a `break` or a `return` of nothing.
 pub(super) fn written_ors(stmts: &mut Vec<Stmt>, ifs: &[js::Span]) {
-    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
-    let written = |s: js::Span| {
-        (ifs.iter())
-            .filter(|c| within(c, s) || (within(&s, **c) && s.hi == c.hi))
-            .min_by_key(|c| c.hi - c.lo)
-            .copied()
-    };
+    let written = |s: js::Span| written_if(ifs, s);
     let one = |a: js::Span, b: js::Span| written(a).is_some_and(|c| written(b) == Some(c));
     let jump = |stmts: &[Stmt]| match stmts {
         [stmt] => matches!(

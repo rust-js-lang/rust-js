@@ -834,6 +834,10 @@ export function described(value) {
   v,`, is in the `try`, above the value it sets, `value = (0,
   eval)(code);`; one above the `Err` arm, in the `catch`
   ([ADR 0637](../../decisions/0637-a-match-of-a-throwing-call-is-try-catch.md#amendment-a-comment-above-the-ok-arm-is-above-its-value-in-the-try-2026-11-02-rd630)).
+  One right above an `if` of the `Err`, `// c\n if r.is_err() { .. }` or
+  `if let Err(e) = r`, is first in the `catch`, before the payload's
+  binding too, `catch (thrown) { // c\n const e = $unwound(thrown); .. }`
+  ([ADR 0637](../../decisions/0637-a-match-of-a-throwing-call-is-try-catch.md#amendment-a-comment-above-an-if-of-the-err-is-first-in-the-catch-2026-11-03-489)).
 - **A flag the closure gives to return from its function is the `try` it
   returns from**: a closure can't return from its function, so the flag
   comes out, `if let Ok(true) = r { return false; }`; that's `try { ..;

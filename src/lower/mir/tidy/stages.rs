@@ -982,6 +982,11 @@ pub(super) const STAGES: &[Stage] = &[
             pass("written ors", |b, h| {
                 js::statement_lists(b, &mut |s| logicals::written_ors(s, &h.written.ifs))
             }),
+            // Each `if`'s test the program wrote, once the `if`s are made
+            // (#489).
+            pass("written tests", |b, h| {
+                js::statement_lists(b, &mut |s| logicals::written_tests(s, &h.written.ifs))
+            }),
             // The comments before a `break` or `continue` the program wrote,
             // after what's before it, where the jumps are settled (rd109).
             pass("commented jumps", |b, h| super::commented_jumps(b, h.commented_jumps)),

@@ -121,6 +121,128 @@ pub fn reveal(on: bool, log: &mut Vec<u32>) {
   expect(log).toEqual([1, 2]);
 });
 
+// A comment above the `if r.is_err()` a `try` folds, whose arm is the
+// `Err`'s, is the `catch`'s, before what it does, its payload's binding
+// too; it was lost (#489). Not one above a `match`'s `Ok` arm, whose
+// `if` MIR makes of the `Err` first: that arm's, where it is, and never the
+// `catch`'s, of an arm of nothing too.
+test("a comment above a folded is_err test is first in its catch", async () => {
+  const { js, lib } = await compiled("comment-above-an-err-test", `use std::panic::{AssertUnwindSafe, catch_unwind};
+
+pub fn errored(on: bool, log: &mut Vec<u32>) {
+    let started = catch_unwind(AssertUnwindSafe(|| {
+        if on {
+            panic!("off");
+        }
+        log.push(1);
+    }));
+    // What threw is logged.
+    if started.is_err() {
+        log.push(9);
+        log.push(10);
+    }
+    log.push(2);
+}
+
+pub fn returned(on: bool) -> u32 {
+    let made = catch_unwind(AssertUnwindSafe(|| {
+        if on {
+            panic!("off");
+        }
+        5
+    }));
+    // Of the Ok arm, not the catch's.
+    if let Ok(n) = made {
+        return n;
+    }
+    0
+}
+
+pub fn measured(on: bool, log: &mut Vec<usize>) {
+    let started = catch_unwind(AssertUnwindSafe(|| {
+        if on {
+            panic!("off");
+        }
+        log.push(1);
+    }));
+    // What threw is measured.
+    if let Err(e) = started {
+        let said = e.downcast_ref::<&str>().map_or(0, |s| s.len());
+        log.push(said);
+    }
+    log.push(2);
+}
+
+pub fn matched(on: bool, log: &mut Vec<u32>) -> u32 {
+    let made = catch_unwind(AssertUnwindSafe(|| {
+        if on {
+            panic!("off");
+        }
+        5
+    }));
+    match made {
+        // The value.
+        Ok(n) => log.push(n),
+        // What threw.
+        Err(_) => return 3,
+    }
+    0
+}
+
+pub fn ignored(on: bool, log: &mut Vec<u32>) {
+    let made = catch_unwind(AssertUnwindSafe(|| {
+        if on {
+            panic!("off");
+        }
+        log.push(1);
+    }));
+    match made {
+        // Fine.
+        Ok(()) => {}
+        Err(_) => log.push(3),
+    }
+    log.push(2);
+}
+`);
+  expect(js).toContain(`  } catch {
+    return 0;
+  }`);
+  expect(js).toContain(`  } catch {
+    // What threw is logged.
+    log.push(9);
+    log.push(10);
+  }
+  log.push(2);`);
+  expect(js).toContain(`  } catch (thrown) {
+    // What threw is measured.
+    const e = $unwound(thrown);`);
+  expect(js).toContain(`  } catch {
+    // What threw.
+    return 3;
+  }
+  // The value.
+  log.push(n);`);
+  expect(js).toContain(`  } catch {
+    log.push(3);
+  }`);
+  const log: number[] = [];
+  lib.errored(false as never, log as never);
+  lib.errored(true as never, log as never);
+  expect(log).toEqual([1, 2, 9, 10, 2]);
+  expect([lib.returned(false as never), lib.returned(true as never)]).toEqual([5, 0]);
+  const measured: number[] = [];
+  lib.measured(false as never, measured as never);
+  lib.measured(true as never, measured as never);
+  expect(measured).toEqual([1, 2, 3, 2]);
+  const matched: number[] = [];
+  expect([lib.matched(false as never, matched as never), lib.matched(true as never, matched as never)]).toEqual([0, 3]);
+  expect(matched).toEqual([5]);
+  const ignored: number[] = [];
+  lib.ignored(false as never, ignored as never);
+  lib.ignored(true as never, ignored as never);
+  expect(ignored).toEqual([1, 2, 3, 2]);
+});
+
 // React's beginWork: `oldProps !== newProps || hasLegacyContextChanged() ||
 // // Force a re-render if the implementation changed due to hot reload:
 // (__DEV__ ? workInProgress.type !== current.type : false)`. Its port's

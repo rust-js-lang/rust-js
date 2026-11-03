@@ -62,6 +62,15 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "written-tests-unsaid",
+    breaks:
+      "an `if`'s test the program wrote doesn't say so (`Known::Written`), so a comment above an `if r.is_err()` a `try` folds is lost (#489)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "            test.facts = test.facts.with(js::Known::Written);\n",
+    replace: "",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
+  },
+  {
     name: "unwritten-negation-kept",
     breaks:
       '`!matches!(status, Some("fulfilled" | "rejected"))` is `!(status === "fulfilled" || status === "rejected")`, not each alternative\'s negated test (ADR 0879, amended)',

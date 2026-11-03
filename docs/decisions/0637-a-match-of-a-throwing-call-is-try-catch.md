@@ -304,3 +304,50 @@ comment, and the mutations `held-assignment-without-its-arm`
 (`js/applied.ts`), `comment-attached-past-a-whole-arm`,
 `inner-comment-at-the-outer-start` (`to_oxc.ts`), `whole-arm-unseen`
 (`to_oxc/openings.ts`) and `own-place-not-given` (`to_oxc/placed.ts`).
+
+## Amendment: a comment above an `if` of the `Err` is first in the `catch` (2026-11-03, #489)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+`let r = catch_unwind(..);\n // What threw is logged.\n if r.is_err() {
+log.push(9); .. }` printed `try { .. } catch { log.push(9); .. }` with
+the comment nowhere: the `try` is where the call's `let` is, above the
+comment, and the `if` it was above, whose comments they were, is gone.
+**A comment right above an `if` of the `Err` the program wrote, `if
+r.is_err()` or `if let Err(e) = r`, is the `catch`'s, first in it**, as
+the arm it tests is, before the payload's binding too, `const e =
+$unwound(thrown);`, which is placed where its `if let` binds it: a
+block-of-comments marker (`StmtKind::Comments`, ADR 0753) at the `if`,
+first in the handler, as ADR 0660's rd634 amendment gives a flag's
+`catch`.
+
+Which `if` the program wrote is lowering's to say, not the JS's shape:
+MIR's first test of a `match`, `match r { // c\n Ok(()) => {} Err(_) =>
+log.push(3) }`, is an `if` of the `Err` too, placed at the first arm's
+pattern, and the comment there is that arm's, the `Ok`'s, never the
+`catch`'s. Tidy's last stage marks each `if`'s test whose condition the
+program wrote, as THIR's `if`s tell (`Written::ifs`), `Known::Written`,
+by the rule `written_ors` already matched an `if` to its condition by,
+now one function, `logicals::written_if`; preparation's `try_catch` asks
+only that. Deciding it from where the comment or the test is written was
+rejected: an `if let`'s test and a `match` arm's are both at a pattern.
+A fact on the test, as `Known::Else` and `Known::Guard` are, is how a
+later pass is told what the program wrote of an `if`. `Facts` is a `u64`
+now: `Known` has 33 facts.
+
+Not of an `if` of the `Ok`: `// c\n if let Ok(n) = r { return n; } 0` is
+`try { ..; return 5; } catch { return 0; }`, the `Ok` arm folded into
+the closure's `return`, and a marker first in the `try` is printed at
+its end, by where each statement starts, after `return 5;`. That comment
+is still lost, as is one above an `Ok(()) => {}` arm of a `match` the
+`try` folds, and one above a `let Ok(n) = r else { .. }`; each is left
+for its own change (#489's remainder).
+
+Held by `test/lowering-comments-inside.test.ts`'s "a comment above a
+folded is_err test is first in its catch", run: `is_err()`, `if let
+Err(e)` read as thrown, a `match` whose `Ok` arm has the comment, of
+something and of nothing, and an `if let Ok`'s, not put in the `catch`;
+and the mutations `err-test-comment-unsaid`, `arm-comment-caught`,
+`ok-test-comment-caught`, `thrown-binding-before-comment`
+(`prepare/catches.ts`) and `written-tests-unsaid`
+(`lower/mir/tidy/logicals.ts`). `arms-returned-comment-lost`, which a
+marker of every `Err` test made redundant, is caught again.

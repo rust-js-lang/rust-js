@@ -585,4 +585,40 @@ export const mutations: Mutation[] = [
     replace: "    Some(StmtKind::TryCatch(tried, None, caught).at(tested.span))\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "flagged catch_unwind"],
   },
+  {
+    name: "err-test-comment-unsaid",
+    breaks:
+      "a comment right above an `if r.is_err() { .. }` a `try` folds is lost, not first in its `catch` (#489)",
+    file: "src/prepare/catches.rs",
+    find: "    let said = (written && !of_ok).then(|| StmtKind::Comments.at(tested_at));\n",
+    replace: "    let said: Option<Stmt> = None;\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
+  },
+  {
+    name: "arm-comment-caught",
+    breaks:
+      "a comment above a `match`'s `Ok` arm, whose `if` MIR makes of the `Err` first, is put in the `catch`, where it isn't written of an `if` (#489)",
+    file: "src/prepare/catches.rs",
+    find: "    let said = (written && !of_ok).then(|| StmtKind::Comments.at(tested_at));\n",
+    replace: "    let said = (!of_ok).then(|| StmtKind::Comments.at(tested_at));\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
+  },
+  {
+    name: "ok-test-comment-caught",
+    breaks:
+      "a comment right above an `if let Ok(n) = r { return n; }` a `try` folds is put in its `catch`, which is the other way's (#489)",
+    file: "src/prepare/catches.rs",
+    find: "    let said = (written && !of_ok).then(|| StmtKind::Comments.at(tested_at));\n",
+    replace: "    let said = written.then(|| StmtKind::Comments.at(tested_at));\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
+  },
+  {
+    name: "thrown-binding-before-comment",
+    breaks:
+      "a `catch`'s payload binding, `const e = $unwound(thrown);`, is where the call's `let` is, so a comment above the `if let Err(e)` a `try` folds is after it, not first in the `catch` (#489)",
+    file: "src/prepare/catches.rs",
+    find: "            .at(said.as_ref().map_or(span, |said| said.span));\n",
+    replace: "            .at(span);\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
+  },
 ];
