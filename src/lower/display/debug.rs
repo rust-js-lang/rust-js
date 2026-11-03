@@ -699,8 +699,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// itself, its name (ADR 0013), but where `rust_js::name` gave one
     /// another, whose Rust name a table of them gives,
     /// `{ "best fit": "BestFit", lookup: "Lookup" }[fit]`; of a tagged
-    /// one's tag (ADR 0284).
-    fn variant_debug(&self, adt: ty::AdtDef<'tcx>, value: Expr) -> Expr {
+    /// one's tag (ADR 0284). An untagged enum's variant that's `undefined`
+    /// or `null` (ADR 0676), which no table's key is, is told by `===`
+    /// first, `mode === undefined ? "Default" : mode` (#510).
+    fn variant_debug(&mut self, adt: ty::AdtDef<'tcx>, value: Expr) -> Expr {
+        let nullish: Vec<(Expr, String)> = match bindings::is_untagged(self.tcx, adt.did()) {
+            true => (adt.variants().iter())
+                .filter_map(|v| {
+                    let unit = super::super::untagged::unit_value(self.tcx, v)?;
+                    matches!(unit.kind, js::ExprKind::Undefined | js::ExprKind::Null)
+                        .then(|| (unit, v.name.to_string()))
+                })
+                .collect(),
+            false => Vec::new(),
+        };
+        if nullish.is_empty() {
+            return self.named_variant_debug(adt, value);
+        }
+        let mut shown = self.named_variant_debug(adt, Expr::var("value"));
+        for (unit, name) in nullish.into_iter().rev() {
+            shown = Expr::cond(Expr::bin(Op::Eq, Expr::var("value"), unit), Expr::str(name), shown);
+        }
+        let f = Expr::arrow(
+            vec!["value".into()],
+            vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
+        );
+        self.applied(f, value)
+    }
+
+    /// `variant_debug`'s of a variant JS names: its value's name.
+    fn named_variant_debug(&self, adt: ty::AdtDef<'tcx>, value: Expr) -> Expr {
         let value = match bindings::declared_tag(self.tcx, adt.did()) {
             Some(key) => Expr::member(value, key),
             None => value,
@@ -716,7 +744,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let names = tags.into_iter().map(|(_, rust)| Expr::str(rust)).collect();
             return Expr::index(Expr::array(names), value);
         }
+        // Not an untagged one's `undefined` or `null`, told first.
+        let named = |v: &ty::VariantDef| {
+            !bindings::is_untagged(self.tcx, adt.did()) || !super::super::untagged::is_nullish(self.tcx, v)
+        };
         let names: Vec<(String, String)> = (adt.variants().iter().zip(tags))
+            .filter(|(v, _)| named(v))
             .map(|(v, (tag, rust))| match tag.kind {
                 js::ExprKind::Num(n) => (format!("{n}"), rust),
                 _ => (bindings::variant_name(self.tcx, v), rust),

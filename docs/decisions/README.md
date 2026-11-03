@@ -578,7 +578,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0670 A tree's writes have one owner, and its walks one definition](0670-a-trees-writes-have-one-owner.md)
 - [0671 A nested body is lowered in one call](0671-a-nested-body-is-lowered-in-one-call.md)
 - [0672 A property a chain tests and binds is read once](0672-a-property-a-test-reads-is-read-once.md) *(amended by 0701: a read nothing after reads is gone; amended: the read says it's a getter's, `js::Known`; a getter's read held by MIR isn't written at each use; amended by 0842: a chain after a test of its own isn't joined where it would read a place twice; amended by 0870: a chain's value reads its binding first; amended by 1022: a field of a struct JS made is a getter's read)*
-- [0676 `js::Kind` tells `undefined` and `null`](0676-kind-tells-undefined-and-null.md)
+- [0676 `js::Kind` tells `undefined` and `null`](0676-kind-tells-undefined-and-null.md) *(amended: `{:?}` of an `undefined` or `null` variant is its name, #510)*
 - [0677 A weak collection's key is what `js::Kind` holds](0677-a-weak-key-is-what-kind-holds.md) *(amended by 0910: an object or an array is one key, `kind.object()`)*
 - [0678 A parameter's leading `_` isn't in its JS name](0678-a-parameters-underscore-isnt-its-js-name.md) *(amended: a closure beside it is no binding of its function; amended: a private function's last `_` parameters are left out (the user's decision); amended: a parameter the body reads keeps its `_` (the user's decision))*
 - [0683 An `if` keeps its test and branches as written, and an `else if` stays a chain](0683-an-if-is-as-written-and-an-else-if-stays-a-chain.md)

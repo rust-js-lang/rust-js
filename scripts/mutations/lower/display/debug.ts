@@ -42,6 +42,25 @@ export const mutations: Mutation[] = [
     ],
   },
   {
+    name: "untagged-nullish-debug-by-name",
+    breaks:
+      "an untagged enum's `undefined` or `null` variant's `{:?}` is looked up by its value, which prints `undefined`, not its name (#510)",
+    file: "src/lower/display/debug.rs",
+    find: "        if nullish.is_empty() {\n",
+    replace: "        if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_unit_debug.rs$"],
+  },
+  {
+    name: "untagged-nullish-debug-in-table",
+    breaks:
+      "an untagged enum's `undefined` or `null` variant, told by `===` first, is in the table of names too, `{ Default: \"Default\", .. }`",
+    file: "src/lower/display/debug.rs",
+    find: "            .filter(|(v, _)| named(v))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_unit_debug.rs$"],
+    snapshots: true,
+  },
+  {
     name: "renamed-variant-debug-tag-unread",
     breaks: "a tagged fieldless enum's `{:?}` looks its object up, not its tag",
     file: "src/lower/display/debug.rs",

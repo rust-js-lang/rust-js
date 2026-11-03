@@ -144,3 +144,24 @@ switch (typeof value) {
 - Mutations in `scripts/mutations/lower/untagged.ts`,
   `scripts/mutations/lower/mir/tidy/switches.ts` and
   `scripts/mutations/lower/body_queries.ts`.
+
+## Amendment: `{:?}` of an `undefined` or `null` variant is its name (2026-11-03, #510)
+
+A derived `Debug` of a fieldless enum shows the variant's Rust name. A
+renamed literal's table gives it, `{ blocking: "Blocking" }[mode]`, or,
+where each JS name is its Rust name, the value itself (ADR 0013). An
+untagged enum's `#[rust_js::undefined]` or `#[rust_js::null]` variant
+keys no table and isn't its name. So `{:?}` of `Mode::Default` printed
+`undefined`, and `Mode::Cleared` printed the table's `undefined` too,
+where Rust prints `Default` and `Cleared`. That was a wrong answer (P0).
+Each is now told by `===` first, `mode === undefined ? "Default" : mode
+=== null ? "Cleared" : mode`, and left out of the table, which only
+literals key. This is ADR 0262's "results change" case: Rust's text,
+however it reads.
+
+Held by `test/corpus/untagged_unit_debug.rs` against native Rust: each
+variant alone, in an `Option` and in a `Vec`, pretty, and an enum with a
+payload beside them. Its mutations are `untagged-nullish-debug-by-name` and
+`untagged-nullish-debug-in-table` in
+`scripts/mutations/lower/display/debug.ts`. No React or alien-signals
+port site derives `Debug` of such an enum.
