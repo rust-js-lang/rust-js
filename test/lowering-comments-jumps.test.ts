@@ -621,12 +621,29 @@ test("a comment above a _ arm whose pattern's comment has brackets is before its
     }
     log
 }
+
+pub fn counted(tags: &[u8]) -> usize {
+    let mut n = 0;
+    for &tag in tags {
+        match tag {
+            1 => n += 1,
+            2 => n += 2,
+            _ /* "{" */ => continue,
+        }
+        n += 10;
+    }
+    n
+}
 `);
   // And the pattern's comment after its `default:`, the arm's first
-  // statement, an expression, on the next line, not after it (d1).
+  // statement, an expression, on the next line, not after it (d1); a
+  // `default:` of one statement that leaves, `continue;`, too, which
+  // oxc writes on its line, not after the statement.
   expect(js).toContain('      break;\n    // We assume anything else is JSON.\n    default: /* "{" "}" */\n      log.push(row);\n');
+  expect(js).toContain('      default: /* "{" */\n        continue;\n');
   const process = lib.process as (tag: number, row: string) => string[];
   expect([process(125, "x"), process(1, "{}")]).toEqual([["close"], ["{}"]]);
+  expect((lib.counted as (tags: number[]) => number)([1, 3, 2])).toBe(23);
 });
 
 // React's ReactFiberCommitWork: a guarded arm that falls to a last `_`
