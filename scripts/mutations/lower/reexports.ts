@@ -389,4 +389,13 @@ export const mutations: Mutation[] = [
     replace: "        let written = (statement, NO_LEAF);\n        let _ = name;\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "a pub use list.s comments are its names."],
   },
+  {
+    name: "own-module-reexported",
+    breaks:
+      "a namespace's method that's its own module's function is re-exported from its own module, `export { close } from \"./client.js\"` beside `export function close`, a duplicate export (#566)",
+    file: "src/lower/reexports.rs",
+    find: "                .filter(|&from| from != module);\n",
+    replace: ";\n",
+    tests: ["test/method-forwarding.test.ts", "-t", "a namespace's method that only passes its parameters on to its module's function"],
+  },
 ];

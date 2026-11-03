@@ -681,17 +681,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // One that's the function it passes its parameters on to, which its
         // module re-exports by its name (rd292b, ADR 1037 amended): in that
-        // module, which has no name of its own for it, that function's call.
+        // module, which has no name of its own for it, that function's call;
+        // of its own module's function, which is what its module exports by
+        // that name, that function's anywhere, by the name a module imports
+        // it by, `closeFlight` (#566).
+        let module_of = |id| self.krate.fns.get(&id).map(|info: &crate::lower::FnInfo| info.module);
         let def_id = match self.krate.forwarded.get(&def_id) {
-            Some(&target)
-                if self
-                    .krate
-                    .fns
-                    .get(&def_id)
-                    .is_some_and(|info| info.module == self.module) =>
-            {
-                target
-            }
+            Some(&target) if module_of(def_id) == Some(self.module) || module_of(target) == module_of(def_id) => target,
             _ => def_id,
         };
         let callee = match (copy, named) {

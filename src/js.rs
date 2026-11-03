@@ -265,12 +265,41 @@ pub struct Class {
     /// struct says so, `#[rust_js::class(es)]` (rd682); else a constructor
     /// function and its prototype (ADR 0761).
     pub es: bool,
+    /// Each prototype method, by its name, that's the function of its
+    /// module it passes its parameters on to, which the prototype's
+    /// property is where its JS is that call alone (`forwarded`),
+    /// `ReactDOMHydrationRoot.prototype.unstable_scheduleHydration =
+    /// scheduleHydration;` (rd715, ADR 0605 amended).
+    pub forwarding: Vec<String>,
     /// Whether the item after it, a `js::on_load!`'s one statement,
     /// replaces its prototype, `ReactPromise.prototype =
     /// Object.create(Promise.prototype)`: printed right after its
     /// constructor, before its methods are assigned to the prototype it
     /// makes, as upstream orders it (#448, ADR 0761 amended).
     pub prototype_set: bool,
+}
+
+impl Class {
+    /// What `method`, one of its prototype's, is in the prototype's place
+    /// where it's the function it passes its parameters on to
+    /// (`forwarding`): that function, named, where its JS, as it's linked,
+    /// is that call alone, of what it's given, in order, and nothing more,
+    /// `scheduleHydration` of `function (target) { scheduleHydration(target);
+    /// }`. Its result is the function's, as their Rust types are one, so a
+    /// call that's a statement gives what the function gives. Any
+    /// conversion its call needs, a box, a dictionary, is JS of its own,
+    /// and it stays a function (rd715). Never an ES class's, whose
+    /// methods are written in its body (`passed_on::forwarded_function`).
+    pub fn forwarded(&self, method: &Function) -> Option<Expr> {
+        if !self.forwarding.contains(&method.name) {
+            return None;
+        }
+        let callee = passes_on(&method.params, &method.body, true).filter(|callee| callee.is_named())?;
+        Some(Expr {
+            span: method.span,
+            ..callee.clone()
+        })
+    }
 }
 
 /// `const SIZE = 4096;`, maybe exported.

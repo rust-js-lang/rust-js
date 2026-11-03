@@ -6,7 +6,9 @@ the module's exports;
 rd292b, the user's decision: a method that only passes its parameters
 on is the function it calls; its import named by a `use`; rd311: a
 library's method through a value is its library's, and a flattened
-result exact; rd324: by its name too, each call flattened). Extends
+result exact; rd324: by its name too, each call flattened; #566: of its
+own module's function too, and #585: one its module names apart is
+refused). Extends
 [0943](0943-an-object-of-methods-reading-this.md) (an object of methods,
 whose `&self` methods are its module's functions too) and
 [1018](1018-a-function-called-through-its-module-is-read-through-its-namespace.md)
@@ -534,3 +536,51 @@ from`, run, and the refusal. The mutations are
 `forwarded-method-beside-its-pub-use-refused` and
 `forwarded-method-name-clash-unrefused`
 (`lower/reexports.ts`).
+
+## Amendment: of its own module's function too; one named apart is refused (#566, #585)
+
+React's Flight client is a factory, and ReactNoopFlightClient calls its
+functions through the instance it makes, so ReactFlightClient is a
+namespace whose `&self` methods only call the module's own free
+functions of their names, `pub fn close(&self, r: &WeakResponse) {
+close(r) }`. ReactMarkupServer imports those functions renamed, as
+upstream does, `use react_client::react_flight_client::{close as
+close_flight, ..}`. rust-js printed each method as a function of its
+own, `export function close$1(response) { close(response); }`, and every
+call of it by name, `ReactFlightClient.close(r)`, as `close$1(r)`.
+
+Worse, a call through the namespace's value, `client.close(r)`, the
+module imported whole, read `.close`, the free function, not `close$1`:
+where the method does anything else, a wrong answer (#585).
+
+**A namespace's method that only passes its parameters on, in order, to
+a `pub fn` of its own module that the module exports by the method's
+name, `close`, is that function** (`passed_on::forwarded_function`), as
+one of another module's is its re-export (rd292b). It prints nothing of
+its own, the namespace's value holds the function itself, and a call of
+it by name is the function's, in any module, by the name that module
+imports it by, `closeFlight(response)`. Its result's type is the
+function's too, which a method of `()` whose body is `f(x);` of another
+result isn't.
+
+**A namespace's method its module names apart from its property,
+`close$1` of `close`, is refused**, naming the method, the item that has
+the name, and what to write: another name with `#[rust_js::name]`, or a
+method that only passes its parameters on to that function, which it
+then is (`classes::exported_by_property`). A call through the value
+reads the property, so no output of the method's own could be called so.
+
+Cases ([0262](0262-when-rust-and-js-disagree.md)): the method as the
+function is the forwarding exception, decided by the user (rd292b's
+rule, widened by the coordinator on the user's behalf, 2026-11-04): only
+its `.name` and `.length` tell them apart. The refusal is case D:
+Rust's behavior can't be preserved under that name.
+
+Held by `test/method-forwarding.test.ts`: "a namespace's method that
+only passes its parameters on to its module's function is that function"
+(no `close$1`, the alias kept, the value's call run) and "a namespace's
+method its module names apart is refused" (both refusals, of a `pub` and
+a private function's name). Mutations `own-module-forwarding-unexported`
+(lower/passed_on.ts), `own-module-forwarded-call-own` (lower/mir/calls.ts),
+`own-module-reexported` (lower/reexports.ts) and
+`renamed-namespace-method-unrefused` (lower/classes/namespaces.ts).

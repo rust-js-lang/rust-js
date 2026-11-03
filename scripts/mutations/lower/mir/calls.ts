@@ -1005,8 +1005,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a namespace's own module calls its method that's another module's function by the method's name, which that module re-exports but doesn't declare (rd292b)",
     file: "src/lower/mir/calls.rs",
-    find: "                    .is_some_and(|info| info.module == self.module) =>\n",
-    replace: "                    .is_some_and(|info| info.module == self.module && false) =>\n",
+    find: "            Some(&target) if module_of(def_id) == Some(self.module) || module_of(target) == module_of(def_id) => target,\n",
+    replace: "            Some(&target) if module_of(target) == module_of(def_id) => target,\n",
     tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
   },
   {
@@ -1178,5 +1178,14 @@ export const mutations: Mutation[] = [
     find: "                    crate::lower::bindings::JsForm::Call(_) | crate::lower::bindings::JsForm::Get(_)\n",
     replace: "                    crate::lower::bindings::JsForm::Call(_)\n",
     tests: ["test/bindings.test.ts", "-t", "js::import! of a getter reads its export"],
+  },
+  {
+    name: "own-module-forwarded-call-own",
+    breaks:
+      "a call by name of a namespace's method that's its own module's function, in another module, imports the method's name, `close`, beside the function's alias, `closeFlight` (#566)",
+    file: "src/lower/mir/calls.rs",
+    find: "            Some(&target) if module_of(def_id) == Some(self.module) || module_of(target) == module_of(def_id) => target,\n",
+    replace: "            Some(&target) if module_of(def_id) == Some(self.module) => target,\n",
+    tests: ["test/method-forwarding.test.ts", "-t", "a namespace's method that only passes its parameters on to its module's function"],
   },
 ];

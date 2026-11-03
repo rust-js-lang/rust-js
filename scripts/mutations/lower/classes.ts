@@ -680,4 +680,13 @@ export const mutations: Mutation[] = [
     replace: "                if let Some(why) = None::<String> {\n",
     tests: ["test/binding-subclasses.test.ts", "-t", "marked as the trait marks it"],
   },
+  {
+    name: "prototype-forwarding-unplaced",
+    breaks:
+      "a prototype's method that only passes its parameters on is printed a function of its own, `X.prototype.m = function (..) { f(..); }` (rd715)",
+    file: "src/lower/classes.rs",
+    find: "        class.forwarding.push(name.to_owned());\n",
+    replace: "",
+    tests: ["test/method-forwarding.test.ts", "-t", "a prototype's method that only passes its parameters on"],
+  },
 ];

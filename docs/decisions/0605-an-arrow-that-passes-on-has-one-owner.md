@@ -1,6 +1,8 @@
 # 0605. Whether an arrow only passes on what it's given has one owner
 
-Status: Accepted; amended (2026-10-31, the user's eta rule, rd284). Amends [0198](0198-optional-handlers.md) and
+Status: Accepted; amended (2026-10-31, the user's eta rule, rd284;
+2026-11-04, a prototype's method that only passes its parameters on,
+rd715). Amends [0198](0198-optional-handlers.md) and
 [0279](0279-callbacks-passed-on.md). Amended below: `passed_on.rs` owns
 the question with each position's rule, and a binding's `FnOnce` callback
 is one ([0262](0262-when-rust-and-js-disagree.md), amended); and a
@@ -788,3 +790,62 @@ Rust, and the guide's `later`. Mutations `bound-of-parameters-alone`,
 `bound-borrowed-capture` (`mir/closures.ts`) and
 `rest-given-whole-passed-on` (`js/stmt_walk.ts`);
 `bound-thunk` goes, the condition it held gone.
+
+## Amendment: a prototype's method that only passes its parameters on (rd715)
+
+React's ReactDOMRoot gives its hydration root's prototype a module
+function itself:
+
+```js
+function scheduleHydration(target: Node) {
+  if (target) {
+    queueExplicitHydrationTarget(target);
+  }
+}
+ReactDOMHydrationRoot.prototype.unstable_scheduleHydration = scheduleHydration;
+```
+
+Its port's method only calls it, `pub fn unstable_schedule_hydration(&self,
+target: Option<&'static Node>) { schedule_hydration(target); }`, and
+rust-js printed a function of its own, `ReactDOMHydrationRoot.prototype.
+unstable_scheduleHydration = function (target) { scheduleHydration(target);
+};`.
+
+**A constructor function's prototype method ([0761](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md))
+that only passes its parameters on, past its `self`, in order, to a
+function of its own module, of its parameters' and result's types, is
+that function: `X.prototype.m = f;`** (`passed_on::forwarded_function`, the
+namespaces' rule, [1037](1037-a-module-namespace-is-a-unit-struct-of-its-functions.md)).
+
+- **Where its JS is that call alone** (`js::Class::forwarded`), of a
+  function it names: any conversion the call needs, a box, a
+  dictionary, is JS of its own, and it stays a function.
+- **The function reads no `this`**, as a free function of the crate's
+  never does, so the prototype's `this` changes nothing; nor
+  `arguments` (`js::arguments()`), so what JS gives it past its
+  parameters changes nothing either. Its result's type is the method's,
+  so a statement, `f(x);`, gives what the method gives.
+- **Of its own module's function, a declaration**: the prototype's
+  property is read where the module loads, which a declaration's
+  hoisting lets read anywhere. Another module's may not be loaded yet
+  in a cycle, so its method stays a function of its own; and the
+  function stays a declaration, not the variable it calls
+  ([0610](0610-a-forwarding-function-is-its-variable.md)),
+  nor a re-export in its place (rd575).
+- **Not an ES class's**, whose methods are written in its body.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): the forwarding
+exception the user decided (rd196): only the function's `.name` and
+`.length` tell it from the method's own, and the prototype's property
+is one function either way.
+
+Held by `test/method-forwarding.test.ts`'s "a prototype's method that only
+passes its parameters on is the function it calls" (two such methods,
+one of a result; one that does more and one of `()` whose function
+gives a value, functions of their own; run) and "a prototype's method
+passes its parameters on to a declaration its module's load can read".
+Mutations `prototype-forwarding-unasked`, `forwarded-result-unasked`,
+`prototype-forwarding-elsewhere` (lower/passed_on.ts),
+`prototype-forwarding-unplaced` (lower/classes.ts),
+`prototype-forwarding-printed-as-function` (to_oxc/statements.ts) and
+`prototype-forwarding-load-unread` (prepare/forwarding.ts).

@@ -719,7 +719,10 @@ fn forwarded_methods(
         let mut runs: Vec<Vec<(DefId, LocalModId)>> = Vec::new();
         let mut last: Option<LocalModId> = None;
         for &method in tcx.associated_item_def_ids(imp) {
-            let from = forwarded.get(&method).and_then(|target| Some(fns.get(target)?.module));
+            // Not one of its own module's function, which that exports
+            // by the method's name (#566).
+            let from = (forwarded.get(&method).and_then(|target| Some(fns.get(target)?.module)))
+                .filter(|&from| from != module);
             match (from, runs.last_mut()) {
                 (Some(from), Some(run)) if last == Some(from) => run.push((method, from)),
                 (Some(from), _) => runs.push(vec![(method, from)]),

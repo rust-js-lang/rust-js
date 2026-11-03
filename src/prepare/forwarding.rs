@@ -134,6 +134,17 @@ fn called_where_loaded(module: &js::Module, name: &str) -> bool {
         match item {
             js::Item::Const(constant) => loaded.push(StmtKind::Expr(constant.value.clone()).at(constant.span)),
             js::Item::Statements(stmts) => loaded.extend(stmts.iter().cloned()),
+            // A prototype's method that's the function it passes on to,
+            // which the module's load reads, `X.prototype.m = f;` (rd715).
+            js::Item::Namespace(js::Namespace {
+                class: Some(class),
+                methods,
+                ..
+            }) => loaded.extend(
+                (methods.iter())
+                    .filter_map(|method| class.forwarded(method))
+                    .map(|function| StmtKind::Expr(function).at(js::Span::NONE)),
+            ),
             _ => {}
         }
     }

@@ -203,10 +203,15 @@ impl<'a> Cx<'a> {
             let mut function = f.clone();
             function.name = String::new();
             function.export = false;
-            let mut value = js::Expr {
-                kind: js::ExprKind::Function(Box::new(function)),
-                span: f.span,
-                facts: js::Facts::NONE,
+            // One that's the function it passes on to, that function,
+            // `X.prototype.m = f;` (rd715).
+            let mut value = match class.forwarded(f) {
+                Some(function) => function,
+                None => js::Expr {
+                    kind: js::ExprKind::Function(Box::new(function)),
+                    span: f.span,
+                    facts: js::Facts::NONE,
+                },
             };
             // Each other class that shares it assigned the same function,
             // the later first, as upstream chains them,

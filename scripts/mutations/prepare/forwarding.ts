@@ -160,4 +160,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
   },
+  {
+    name: "prototype-forwarding-load-unread",
+    breaks:
+      "a function a prototype's property is, read where the module loads, is made the variable it calls (ADR 0610), which the load may read before it's set (rd715)",
+    file: "src/prepare/forwarding.rs",
+    find: "                    .filter_map(|method| class.forwarded(method))\n",
+    replace: "                    .filter_map(|method| class.forwarded(method).filter(|_| false))\n",
+    tests: ["test/method-forwarding.test.ts", "-t", "a declaration its module's load can read"],
+  },
 ];

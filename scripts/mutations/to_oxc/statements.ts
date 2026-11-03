@@ -426,4 +426,13 @@ export const mutations: Mutation[] = [
     replace: "            (false, Declaration::ClassDeclaration(declared)) => Statement::new_export_default_declaration(\n",
     tests: ["test/es-classes.test.ts", "-t", "whose struct says es is an ES class"],
   },
+  {
+    name: "prototype-forwarding-printed-as-function",
+    breaks:
+      "a prototype's method that's the function it passes on to is printed as its own function, `X.prototype.m = function (..) { f(..); }` (rd715)",
+    file: "src/to_oxc/statements.rs",
+    find: "            let mut value = match class.forwarded(f) {\n",
+    replace: "            let mut value = match None::<js::Expr> {\n",
+    tests: ["test/method-forwarding.test.ts", "-t", "a prototype's method that only passes its parameters on"],
+  },
 ];

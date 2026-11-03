@@ -120,28 +120,33 @@ pub(super) fn lowered_here(
         || (exports_reachable && super::super::library::reachable(tcx, id))
 }
 
-/// Each namespace's method of the crate that's the function of another of
-/// its modules it only passes its parameters on to
-/// (`passed_on::forwarded_function`, rd292b, ADR 1037 amended), by that
-/// function: one its module re-exports by the method's name, `export {
-/// batchedUpdates } from "./ReactFiberWorkLoop.js"`, where the two take
-/// what JS gives them alike, their parameters and, as they're of the same
-/// generic parameters, each given alike, what's given of those: its
-/// caller's location of both or neither, and the dictionaries of the same
-/// bounds; a type's facts and drops each asks of what it passes on alike.
-/// Not one its callers need a copy of (ADR 0051), which is its own.
+/// Each method of the crate that's the function it only passes its
+/// parameters on to (`passed_on::forwarded_function`, rd292b, ADR 1037
+/// amended), by that function: a namespace's, of another of its modules,
+/// one its module re-exports by the method's name, `export {
+/// batchedUpdates } from "./ReactFiberWorkLoop.js"`, or of its own, the
+/// function its module exports by that name (#566); a prototype's, its
+/// property (rd715). Where the two take what JS gives them alike, their
+/// parameters and, as they're of the same generic parameters, each given
+/// alike, what's given of those: its caller's location of both or neither,
+/// and the dictionaries of the same bounds; a type's facts and drops each
+/// asks of what it passes on alike. Not one its callers need a copy of
+/// (ADR 0051), which is its own. The namespaces' by their functions, which
+/// have no JS of their own; and the prototypes', lowered, each its
+/// property where its JS is that call alone (`classes::passed_on`).
 pub(super) fn forwarded<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &[&Body<'tcx>],
     (given, js_given): (super::super::traits::Given<'_>, &super::super::analysis::JsGiven),
-    caller_locations: &HashSet<DefId>,
+    (caller_locations, fns): (&HashSet<DefId>, &HashMap<DefId, super::super::FnInfo>),
     foreign: &Foreign<'_, 'tcx>,
-) -> HashMap<DefId, DefId> {
+) -> (HashMap<DefId, DefId>, HashMap<DefId, DefId>) {
     let bounds = |id: DefId| super::super::traits::bounds(tcx, foreign, given, id);
-    (bodies.iter())
+    let exported = |id: DefId| fns.get(&id).map(|info| info.exported().to_string());
+    let (namespaces, prototypes): (HashMap<DefId, DefId>, HashMap<DefId, DefId>) = (bodies.iter())
         .filter_map(|body| {
             let method = body.def_id;
-            let (target, args) = super::super::passed_on::forwarded_function(tcx, method, &body.thir)?;
+            let (target, args) = super::super::passed_on::forwarded_function(tcx, method, &body.thir, &exported)?;
             let theirs: Vec<_> = (bounds(target).into_iter())
                 .map(|bound| {
                     ty::EarlyBinder::bind(tcx, bound)
@@ -154,5 +159,24 @@ pub(super) fn forwarded<'tcx>(
                 && js_given.copies(method).next().is_none())
             .then_some((method, target))
         })
+        .partition(|&(method, _)| {
+            super::super::classes::member(tcx, method) == Some(super::super::classes::Member::Namespace)
+        });
+    (namespaces, prototypes)
+}
+
+/// Of `prototypes`, each prototype's method that's the function it passes
+/// its parameters on to, and that function (`forwarded`): those whose
+/// prototype's property is the function (rd715), one reading no
+/// `arguments`, which JS gives all it's given, nor re-exported in its
+/// place, `forwarders` (rd575), so a declaration the module's load reads.
+pub(super) fn forwarding(
+    prototypes: HashMap<DefId, DefId>,
+    reads_arguments: &HashSet<DefId>,
+    forwarders: &HashMap<DefId, DefId>,
+) -> HashSet<DefId> {
+    (prototypes.into_iter())
+        .filter(|(_, target)| !reads_arguments.contains(target) && !forwarders.contains_key(target))
+        .map(|(method, _)| method)
         .collect()
 }

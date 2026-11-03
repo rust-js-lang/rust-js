@@ -261,32 +261,55 @@ pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwardi
     })
 }
 
-/// Of `method`, a `#[rust_js::namespace]`'s method (ADR 1037), whose body
-/// is `thir`: the function of another of the crate's modules that it only
-/// passes its parameters on to, past its `self`, in order, each as it is,
-/// `react_fiber_work_loop::batched_updates(f, a)`, of its own parameters'
-/// types and generic parameters, and those as it's given them (rd292b, ADR 1037
+/// Of `method`, whose body is `thir`, a `#[rust_js::namespace]`'s method
+/// (ADR 1037) or a constructor function's prototype's (ADR 0761): the
+/// function of the crate's that it only passes its parameters on to, past
+/// its `self`, in order, each as it is, `react_fiber_work_loop::
+/// batched_updates(f, a)`, of its own parameters' types, its result's and
+/// generic parameters, and those as it's given them (rd292b, ADR 1037
 /// amended). It's that function, as a closure that only passes on what
 /// it's given is the function it calls (rd196), where the two take what JS
-/// gives them alike (`pipeline::reached::forwarded`): its module re-exports
-/// it by the method's name, `export { batchedUpdates } from
-/// "./ReactFiberWorkLoop.js"`, and a call of it on the namespace is that
-/// function's. Through any other value, `NoopRenderer.batchedUpdates(..)`,
-/// it's what that value has, as any of its methods is.
+/// gives them alike (`pipeline::reached::forwarded`). A namespace's, of
+/// another module's function: its module re-exports it by the method's
+/// name, `export { batchedUpdates } from "./ReactFiberWorkLoop.js"`; of its
+/// own module's, the function its module exports by the method's name,
+/// `exported` (#566); and a call of it on the namespace is that function's.
+/// Through any other value, `NoopRenderer.batchedUpdates(..)`, it's what
+/// that value has, as any of its methods is. A prototype's, of a function
+/// of its own module: the prototype's property is that function,
+/// `ReactDOMHydrationRoot.prototype.unstable_scheduleHydration =
+/// scheduleHydration;`, where its JS is that call alone (rd715,
+/// `pipeline::reached::passed_on_methods`).
 pub(in crate::lower) fn forwarded_function<'tcx>(
     tcx: TyCtxt<'tcx>,
     method: DefId,
     thir: &rustc_middle::thir::Thir<'tcx>,
+    exported: &dyn Fn(DefId) -> Option<String>,
 ) -> Option<(DefId, ty::GenericArgsRef<'tcx>)> {
-    if super::classes::member(tcx, method) != Some(super::classes::Member::Namespace) {
+    let prototype = super::classes::member(tcx, method) == Some(super::classes::Member::Method)
+        && (tcx.inherent_impl_of_assoc(method))
+            .and_then(|imp| super::classes::class_of(tcx, method).filter(|_| imp.is_local()))
+            .is_some_and(|class| !super::classes::is_es_class(tcx, class));
+    if super::classes::member(tcx, method) != Some(super::classes::Member::Namespace) && !prototype {
         return None;
     }
     let (target, args) = super::body_queries::forwards_to(thir, 1)?;
     let module = |id: DefId| id.as_local().map(|local| tcx.parent_module_from_def_id(local));
+    // Of a namespace's own module, the function exported by the method's
+    // name, which the namespace's property is (#566).
+    let own_unexported = !prototype
+        && module(target) == module(method)
+        && (!tcx.visibility(target).is_public()
+            || exported(target).as_deref() != Some(super::classes::property(tcx, method).as_str()));
+    // A prototype's, of its own module's function, a declaration its
+    // module's load reads, hoisted, where another module's may not be
+    // loaded yet in a cycle (rd715).
+    let elsewhere = prototype && module(target) != module(method);
     if tcx.def_kind(target) != DefKind::Fn
         || super::bindings::is_binding(tcx, target)
         || !target.is_local()
-        || module(target) == module(method)
+        || own_unexported
+        || elsewhere
     {
         return None;
     }
@@ -301,7 +324,7 @@ pub(in crate::lower) fn forwarded_function<'tcx>(
         |sig: ty::PolyFnSig<'tcx>| tcx.erase_and_anonymize_regions(tcx.instantiate_bound_regions_with_erased(sig));
     let mine = erased(tcx.fn_sig(method).instantiate_identity().skip_normalization());
     let theirs = erased(tcx.fn_sig(target).instantiate(tcx, args).skip_normalization());
-    (mine.inputs().get(1..) == Some(theirs.inputs())).then_some((target, args))
+    (mine.inputs().get(1..) == Some(theirs.inputs()) && mine.output() == theirs.output()).then_some((target, args))
 }
 
 /// Of `function`, a free function of the crate's of no type or const

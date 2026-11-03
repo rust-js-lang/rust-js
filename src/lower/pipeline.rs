@@ -369,7 +369,9 @@ pub fn lower_crate<'tcx>(
     let with_closures: Vec<&Body<'tcx>> = bodies.iter().copied().chain(closures.values().copied()).collect();
     let reads_arguments = super::analysis::arguments::reads_arguments(tcx, &with_closures);
     let nulled_params = NulledParams::scan(tcx, &with_closures, &|id| foreign.has_nulled_params(id));
-    let forwarded = reached::forwarded(tcx, &bodies, (given, &js_given), &caller_locations, &foreign);
+    let (forwarded, prototypes) =
+        reached::forwarded(tcx, &bodies, (given, &js_given), (&caller_locations, &fns), &foreign);
+    failed |= !super::classes::exported_by_property(tcx, &fns, &forwarded);
     // A function that only passes its parameters on to a function at one
     // instantiation, which its module re-exports where its JS is that call
     // alone (rd575, ADR 1064).
@@ -382,6 +384,7 @@ pub fn lower_crate<'tcx>(
         &js_given,
         facts,
     );
+    let forwarding_prototypes = reached::forwarding(prototypes, &reads_arguments.functions, &forwarders);
     // A trait impl's dictionary (ADR 0049) has no body of its own, so its
     // function context gets an empty one; a copied default brings its own.
     let no_body = rustc_middle::thir::Thir::new(rustc_middle::thir::BodyTy::Const(tcx.types.unit));
@@ -929,7 +932,8 @@ pub fn lower_crate<'tcx>(
                                     .map_or(js::Span::NONE, |adt| sources.item_span(tcx, adt)),
                                 ..super::classes::js_class(tcx, def_id, &import_names[&module])
                             });
-                            super::classes::place(member, class, &lowered.function.name);
+                            let forwarding = forwarding_prototypes.contains(&def_id);
+                            super::classes::place((member, forwarding), class, &lowered.function.name);
                         }
                         namespace.methods.push(lowered.function);
                         namespace.methods.extend(copies);

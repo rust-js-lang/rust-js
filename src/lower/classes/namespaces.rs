@@ -4,6 +4,7 @@
 
 use super::{Member, is_namespace, member};
 use rustc_middle::ty::TyCtxt;
+use rustc_span::def_id::DefId;
 use std::collections::{HashMap, HashSet};
 
 /// Whether `receiver`, the `self` a call of a namespace's method in `body`
@@ -195,4 +196,56 @@ pub(crate) fn taken_apart(fields: &[String], body: &[crate::js::Stmt]) -> Option
         keys.push(key.as_str());
     }
     (keys.iter().copied().eq(fields.iter().map(String::as_str))).then(|| value.clone())
+}
+
+/// Whether each of the crate's namespaces' methods (ADR 1037) is its
+/// module's export by its property's name, `close`, which a call through
+/// the namespace's value, the module imported whole, reads: one its module
+/// names apart, `close$1`, of a function of its module that has that name,
+/// is refused, as a call through the value would be that function's
+/// (#585, ADR 0262's "can't be preserved" case). Not one that's the
+/// function it passes its parameters on to, `forwarded`, which that
+/// function is (#566). `false` where one is refused.
+pub(in crate::lower) fn exported_by_property(
+    tcx: TyCtxt<'_>,
+    fns: &HashMap<DefId, crate::lower::FnInfo>,
+    forwarded: &HashMap<DefId, DefId>,
+) -> bool {
+    let mut valid = true;
+    let mut methods: Vec<_> = (fns.iter())
+        .filter(|&(&id, _)| member(tcx, id) == Some(Member::Namespace) && !forwarded.contains_key(&id))
+        .collect();
+    methods.sort_by_key(|&(&id, _)| tcx.def_span(id).lo());
+    for (&method, info) in methods {
+        let property = super::property(tcx, method);
+        if info.exported() == property {
+            continue;
+        }
+        let other =
+            (fns.iter()).find(|&(&id, other)| id != method && other.module == info.module && other.name == property);
+        let message = match other {
+            Some((&other, _)) => format!(
+                "rust-js: the namespace's method `{}` and `{}` are both `{property}` in JS, and a call through \
+                 the namespace reads its module's `{property}`, which would be `{}`; give one another name with \
+                 `#[rust_js::name = \"..\"]`, or have the method only pass its parameters on to `{}`, which it then is",
+                tcx.def_path_str(method),
+                tcx.def_path_str(other),
+                tcx.def_path_str(other),
+                tcx.def_path_str(other),
+            ),
+            None => format!(
+                "rust-js: the namespace's method `{}` is `{property}` in JS, which its module can't export it \
+                 by, and a call through the namespace reads `{property}`; give it another name with \
+                 `#[rust_js::name = \"..\"]`",
+                tcx.def_path_str(method),
+            ),
+        };
+        let mut error = tcx.dcx().struct_span_err(tcx.def_span(method), message);
+        if let Some((&other, _)) = other {
+            error = error.with_span_note(tcx.def_span(other), format!("`{property}` here"));
+        }
+        error.emit();
+        valid = false;
+    }
+    valid
 }

@@ -85,4 +85,13 @@ export const mutations: Mutation[] = [
     replace: "    (keys.len() == fields.len()).then(|| value.clone())\n",
     tests: ["test/namespace-values.test.ts", "-t", "other names"],
   },
+  {
+    name: "renamed-namespace-method-unrefused",
+    breaks:
+      "a namespace's method its module names apart, `close$1`, isn't refused, and a call through the namespace's value, `client.close(r)`, runs the module's function `close` (#585)",
+    file: "src/lower/classes/namespaces.rs",
+    find: "        if info.exported() == property {\n",
+    replace: "        if info.exported() == property || true {\n",
+    tests: ["test/method-forwarding.test.ts", "-t", "a namespace's method its module names apart is refused"],
+  },
 ];

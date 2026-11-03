@@ -30,6 +30,7 @@ pub(crate) use forms::{es_classes, es_prototype_refused, is_es_class};
 use forms::{form_misuse, impl_form_misuse};
 pub(crate) use getters::extended_getter;
 use getters::{marked_getter, reads_as_getter, trait_getter, trait_getter_misuse};
+pub(in crate::lower) use namespaces::exported_by_property;
 pub(crate) use namespaces::{names_namespace, taken_apart, unread_namespaces};
 pub(crate) use prototypes::{PrototypeSet, set_alone, set_prototypes, with_prototype_members};
 use states::spread_state;
@@ -1291,7 +1292,13 @@ pub(super) fn as_member(
 /// Where `class`'s member `name` is written, as `member` is of it: its
 /// constructor function, its prototype's method or getter; the rest, its
 /// statics and constants, written where they are.
-pub(super) fn place(member: Member, class: &mut js::Class, name: &str) {
+/// Where `name`, a class's `member`, is in `class`: a prototype's method
+/// that's the function it passes its parameters on to, `forwarding`, that
+/// function where its JS is that call alone (`js::Class::forwarded`, rd715).
+pub(super) fn place((member, forwarding): (Member, bool), class: &mut js::Class, name: &str) {
+    if forwarding && member == Member::Method {
+        class.forwarding.push(name.to_owned());
+    }
     match member {
         Member::Constructor => class.constructor = name.to_owned(),
         Member::Method => class.prototype.push(name.to_owned()),

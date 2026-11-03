@@ -493,9 +493,9 @@ export const mutations: Mutation[] = [
   {
     name: "forwarded-function-of-its-own-module",
     breaks:
-      "a namespace's method that passes its parameters on to its own module's function, which may be private, is that function re-exported from itself, `export { doubleIt as double } from \"./reconciler.js\"` (rd292b)",
+      "a namespace's method that passes its parameters on to its own module's function that it doesn't export by the method's name, which may be private, is that function re-exported from itself, `export { doubleIt as double } from \"./reconciler.js\"` (rd292b, #566)",
     file: "src/lower/passed_on.rs",
-    find: "        || module(target) == module(method)\n",
+    find: "        || own_unexported\n",
     replace: "",
     tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
   },
@@ -513,8 +513,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a namespace's method of a `&mut` the function takes as a `&` is that function, given the method's handle (rd292b)",
     file: "src/lower/passed_on.rs",
-    find: "    (mine.inputs().get(1..) == Some(theirs.inputs())).then_some((target, args))\n",
-    replace: "    Some((target, args))\n",
+    find: "    (mine.inputs().get(1..) == Some(theirs.inputs()) && mine.output() == theirs.output()).then_some((target, args))\n",
+    replace: "    (mine.output() == theirs.output()).then_some((target, args))\n",
     tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
   },
   {
@@ -851,5 +851,41 @@ export const mutations: Mutation[] = [
     find: "                ExprKind::Adt(ref adt) if let [only] = &adt.fields[..] => a = only.expr,\n",
     replace: "",
     tests: ["test/lowering-passed-on.test.ts", "-t", "of rest arguments, that passes on what it captured"],
+  },
+  {
+    name: "own-module-forwarding-unexported",
+    breaks:
+      "a namespace's method that only passes its parameters on to its own module's function is a function of its own, `close$1`, and refused as named apart (#566)",
+    file: "src/lower/passed_on.rs",
+    find: "        || own_unexported\n",
+    replace: "        || module(target) == module(method)\n",
+    tests: ["test/method-forwarding.test.ts", "-t", "a namespace's method that only passes its parameters on to its module's function"],
+  },
+  {
+    name: "forwarded-result-unasked",
+    breaks:
+      "a namespace's method of `()` whose body is `f(x);` of a function of another result is that function, whose result its JS callers then see (#566)",
+    file: "src/lower/passed_on.rs",
+    find: "    (mine.inputs().get(1..) == Some(theirs.inputs()) && mine.output() == theirs.output()).then_some((target, args))\n",
+    replace: "    (mine.inputs().get(1..) == Some(theirs.inputs())).then_some((target, args))\n",
+    tests: ["test/method-forwarding.test.ts", "-t", "a prototype's method that only passes its parameters on"],
+  },
+  {
+    name: "prototype-forwarding-unasked",
+    breaks:
+      "a prototype's method that only passes its parameters on is never the function it calls, `X.prototype.m = function (..) { f(..); }` (rd715)",
+    file: "src/lower/passed_on.rs",
+    find: "    if super::classes::member(tcx, method) != Some(super::classes::Member::Namespace) && !prototype {\n",
+    replace: "    if super::classes::member(tcx, method) != Some(super::classes::Member::Namespace) {\n",
+    tests: ["test/method-forwarding.test.ts", "-t", "a prototype's method that only passes its parameters on"],
+  },
+  {
+    name: "prototype-forwarding-elsewhere",
+    breaks:
+      "a prototype's method that only passes its parameters on to another module's function is that function, read where its module loads, which a cycle may not have loaded (rd715)",
+    file: "src/lower/passed_on.rs",
+    find: "    let elsewhere = prototype && module(target) != module(method);\n",
+    replace: "    let elsewhere = false;\n",
+    tests: ["test/method-forwarding.test.ts", "-t", "a declaration its module's load can read"],
   },
 ];

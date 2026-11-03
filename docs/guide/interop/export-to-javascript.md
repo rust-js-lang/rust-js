@@ -940,6 +940,18 @@ export function mounted(props?: unknown | null | undefined): Component;
   props;`, each field in the order it's written, a `None`'s left out, as
   an object leaves it out. The struct's `///` doc is the constructor
   function's JSDoc, before `new`'s own.
+- **A method that only passes its parameters on to a function of its
+  module is that function**, as React's ReactDOMRoot gives its
+  hydration root's prototype `scheduleHydration`: `pub fn
+  unstable_schedule_hydration(&self, target: Option<&'static Node>) {
+  schedule_hydration(target); }` is
+  `ReactDOMHydrationRoot.prototype.unstable_scheduleHydration =
+  scheduleHydration;`. Its parameters, past `self`, and its result are
+  the function's, passed on in order, as they are; else, or where the
+  function reads `js::arguments()` or is another module's, which a cycle
+  may not have loaded where this module loads, it's a function of its
+  own. Not an ES class's
+  ([ADR 0605, amended](../../decisions/0605-an-arrow-that-passes-on-has-one-owner.md#amendment-a-prototypes-method-that-only-passes-its-parameters-on-rd715)).
 - **A constructor of statements makes its instance in a variable**, as
   React's `FiberNode` sets fields on its flags and calls
   `Object.preventExtensions(this)`: the variable it returns, made of a
@@ -1767,6 +1779,18 @@ export function updateContainer(n) {
   once. A `pub use` of another item by that name is an error, since JS
   exports one value by a name
   ([ADR 1037](../../decisions/1037-a-module-namespace-is-a-unit-struct-of-its-functions.md), amended).
+  **One that only passes them on to its own module's `pub fn` of its
+  name is that function too**, `pub fn close(&self, r: &Response) {
+  close(r) }` of `pub fn close`: it prints nothing of its own, and a
+  call of it by name is the function's, by the name a module imports it
+  by, `closeFlight(response)` of `use client::close as close_flight`
+  ([ADR 1037, amended](../../decisions/1037-a-module-namespace-is-a-unit-struct-of-its-functions.md#amendment-of-its-own-modules-function-too-one-named-apart-is-refused-566-585)).
+- **A method its module names apart from its name is an error**: a
+  method `close` beside a function `close` of its module, which a call
+  through the namespace, `client.close(r)`, would read. Give one another
+  name with `#[rust_js::name = ".."]`, or have the method only pass its
+  parameters on to the function
+  ([ADR 1037, amended](../../decisions/1037-a-module-namespace-is-a-unit-struct-of-its-functions.md#amendment-of-its-own-modules-function-too-one-named-apart-is-refused-566-585)).
 - **A call through a value is the value's function**, the module's own
   JS, a library's too, which its consumer never compiles of its own. One
   given what may look like `None`, a type parameter's `Option`, is

@@ -1248,7 +1248,9 @@ test("what a module exports an item as is exported_as's alone", () => {
 // callback (ADR 0262's exception), and the arrows rust-js makes of a
 // function as a value. Its shape is `js::passes_on`'s, which a function
 // declaration's alias asks too (ADR 0610), as preparation can't ask
-// lowering. Besides `iterators::passed_on`, nine functions checked the
+// lowering, and a class's prototype method that's the function it passes
+// on, read as it's linked, `X.prototype.m = f;` (`js::Class::forwarded`,
+// rd715), whose function lowering names by symbols the link resolves. Besides `iterators::passed_on`, nine functions checked the
 // shape, each its own way: jsx's optional handler, a dictionary's `fmt`,
 // a binding's, a trait method's and any function's value, an impl's
 // dictionary entry, a function's drops, `js::called_alone` and
@@ -1268,7 +1270,7 @@ test("an arrow that passes on what it's given is passed_on's alone", () => {
   expect(sources.filter((file) => functions(file).some(optional))).toEqual(["src/lower/passed_on.rs"]);
   const owned = /fn (passed_on\(f: &Expr|passes_on|passed_handler|called_alone|called_by_name|calls_rust|closure_calls_rust|forwarded_to)\b/;
   expect(sources.filter((file) => owned.test(read(file)))).toEqual(["src/js/stmt_walk.rs", "src/lower/passed_on.rs"]);
-  expect(sources.filter((file) => /\bpasses_on\(/.test(read(file).replace(/fn passes_on/g, ""))).sort()).toEqual(["src/lower/passed_on.rs", "src/prepare/forwarding.rs"]);
+  expect(sources.filter((file) => /\bpasses_on\(/.test(read(file).replace(/fn passes_on/g, ""))).sort()).toEqual(["src/js.rs", "src/lower/passed_on.rs", "src/prepare/forwarding.rs"]);
   // Who asks, each by its position, and where the closure's fact is made:
   // once, where MIR makes the closure.
   const asking = sources.filter((file) => file !== "src/lower/passed_on.rs" && /\bpassed_on\(/.test(read(file).replace(/fn passed_on\(/g, "")));
