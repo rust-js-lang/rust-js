@@ -10,14 +10,20 @@
 //   bun scripts/crate-corpus.ts --check [name ...]
 //                                              and fail where one does worse
 //                                              than docs/crate-corpus.md says
+//   bun scripts/crate-corpus.ts --lock name ...
+//                                              resolve each one's graph anew,
+//                                              its newest releases, write its
+//                                              lock, and measure it
 //
-// The crates, each at its exact release, are docs/crate-corpus.md's rows.
+// The crates, each at its exact release, are docs/crate-corpus.md's rows,
+// and every crate of each one's graph is at the release its lock,
+// `crate-corpus/<name>.lock`, names, which Cargo is held to (`--locked`).
 // Writes `target/crate-corpus.json` and prints a line per crate: its own
-// verdict, then each crate of its graph rust-js refused, and why, then
-// whether its probe runs as natively.
+// verdict, then each crate of its graph rust-js refused, and why, or that
+// crashed, then whether its probe runs as natively.
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { cargoEnv } from "../tooling/cargo.js";
 
@@ -71,12 +77,35 @@ export function dependency(crate: Crate): string {
   return `${crate.name} = { ${spec} }`;
 }
 
+/** Where the lock of `name`'s graph is: every crate of it at one release,
+ * the row's crate at its row's, so a crate's verdict is this checkout's
+ * alone, never a dependency's new release (ADR 1067, amended). */
+export const lockOf = (name: string) => join(import.meta.dir, "crate-corpus", `${name}.lock`);
+
+/** The release of the crate `name` a lock, a Cargo.lock's text, names, or
+ * none. */
+export function lockedVersion(lock: string, name: string): string | undefined {
+  return lock.match(new RegExp(`\\[\\[package\\]\\]\\nname = "${name}"\\nversion = "([^"]+)"`))?.[1];
+}
+
+/** The crates of its graph Cargo's `stderr` says rust-js crashed on: each a
+ * crate that didn't compile, `process didn't exit successfully`, where a
+ * refusal is a compile error Cargo reports as one. Each named by its
+ * package's name, with what it ended with: its signal or exit status. */
+export function crashes(stderr: string): { name: string; how: string }[] {
+  const said = /could not compile `([^`]+)` \(lib\)[^\n]*\n\nCaused by:\n {2}process didn't exit successfully: .*\(([^()]*)\)$/gm;
+  return [...stderr.matchAll(said)].map(([, name, how]) => ({ name: name!, how: how! }));
+}
+
 type Refusal = { crate: string; error: string };
 type Result = {
   name: string;
   version: string;
   compiled: string[];
   refused: Refusal[];
+  // Each crate rust-js crashed on: a stack overflow, a panic. regex-syntax's
+  // went unseen, neither compiled nor refused, for weeks (#511).
+  crashed: Refusal[];
   own: "compiles" | "refused" | "blocked";
   // What Cargo said last where nothing was refused, though the crate wasn't
   // compiled: a crash, or a build script's failure.
@@ -104,13 +133,26 @@ function main() {
     process.exit(1);
   }
   const check = process.argv.includes("--check");
-  const wanted = process.argv.slice(2).filter((arg) => arg !== "--check");
+  const lock = process.argv.includes("--lock");
+  const wanted = process.argv.slice(2).filter((arg) => arg !== "--check" && arg !== "--lock");
   const unknown = wanted.filter((name) => !corpus.some((c) => c.name === name));
   if (unknown.length) {
     console.error(`docs/crate-corpus.md has no row of ${unknown.join(", ")}`);
     process.exit(1);
   }
+  // A graph is resolved anew only as asked, crate by crate, never the
+  // whole corpus at once by forgetting to name one.
+  if (lock && !wanted.length) {
+    console.error("`--lock` resolves the graph of each crate named: name each, `bun scripts/crate-corpus.ts --lock url`");
+    process.exit(1);
+  }
   const chosen = wanted.length ? corpus.filter((c) => wanted.includes(c.name)) : corpus;
+  const unlocked = lock ? [] : chosen.filter((c) => !existsSync(lockOf(c.name)));
+  if (unlocked.length) {
+    const names = unlocked.map((c) => c.name).join(" ");
+    console.error(`${names}: no lock of its graph in scripts/crate-corpus/: \`bun scripts/crate-corpus.ts --lock ${names}\` writes it`);
+    process.exit(1);
+  }
   const results: Result[] = [];
 
   for (const crate of chosen) {
@@ -123,13 +165,32 @@ function main() {
     );
     writeFileSync(join(dir, "lib.rs"), existsSync(probe) ? readFileSync(probe, "utf8") : "");
     writeFileSync(join(dir, "main.rs"), "fn main() {\n    print!(\"{}\", probe::report());\n}\n");
+    // Its graph at its lock's releases; or, `--lock`, at the newest each
+    // requirement allows today, written as its lock.
+    rmSync(join(dir, "Cargo.lock"), { force: true });
+    if (lock) {
+      const made = spawnSync("cargo", [`+${toolchain}`, "generate-lockfile"], { cwd: dir, encoding: "utf8" });
+      if (made.status !== 0) {
+        console.error(`${crate.name}: its graph doesn't resolve:\n${made.stderr.trim()}`);
+        process.exit(1);
+      }
+      copyFileSync(join(dir, "Cargo.lock"), lockOf(crate.name));
+    } else copyFileSync(lockOf(crate.name), join(dir, "Cargo.lock"));
     // Every crate the probe builds is rust-js's to compile, a registry's too.
     // Each a library, as a crate of crates.io is to the apps that use it.
-    const metadata = spawnSync("cargo", [`+${toolchain}`, "metadata", "--format-version=1"], { cwd: dir, maxBuffer: 256 * 1024 * 1024, encoding: "utf8" });
-    const crates = (JSON.parse(metadata.stdout).packages as { manifest_path: string }[]).map((pkg) => realpathSync(dirname(pkg.manifest_path)));
+    const metadata = spawnSync("cargo", [`+${toolchain}`, "metadata", "--format-version=1", "--locked"], { cwd: dir, maxBuffer: 256 * 1024 * 1024, encoding: "utf8" });
+    // A row whose release or features moved since its lock was written:
+    // Cargo's `--locked` won't change it.
+    if (metadata.status !== 0) {
+      const said = metadata.stderr.trim().split("\n").slice(-3).join("\n");
+      console.error(`${crate.name}: its lock, scripts/crate-corpus/${crate.name}.lock, isn't its row's graph:\n${said}\n\`bun scripts/crate-corpus.ts --lock ${crate.name}\` resolves it again`);
+      process.exit(1);
+    }
+    const packages = JSON.parse(metadata.stdout).packages as { name: string; version: string; manifest_path: string }[];
+    const crates = packages.map((pkg) => realpathSync(dirname(pkg.manifest_path)));
     const run = spawnSync(
       "cargo",
-      [`+${toolchain}`, "check", "--lib", "--keep-going", "--message-format=json", "--target", "wasm32-unknown-unknown"],
+      [`+${toolchain}`, "check", "--lib", "--keep-going", "--locked", "--message-format=json", "--target", "wasm32-unknown-unknown"],
       { cwd: dir, env: cargoEnv(compiler, undefined, { apps: [], crates }), maxBuffer: 256 * 1024 * 1024, encoding: "utf8" },
     );
     const compiled: string[] = [];
@@ -161,9 +222,15 @@ function main() {
       version: crate.version,
       compiled: compiled.filter((id) => !id.startsWith("probe@")),
       refused: [...refused].filter(([id]) => !id.startsWith("probe@")).map(([c, error]) => ({ crate: c, error })),
+      crashed: crashes(run.stderr)
+        .filter(({ name }) => name !== "probe")
+        .map(({ name, how }) => {
+          const pkg = packages.find((p) => p.name === name);
+          return { crate: pkg ? `${name}@${pkg.version}` : name, error: `rust-js crashed: ${how}` };
+        }),
       own: compiled.some(own) ? "compiles" : refused.size && [...refused.keys()].some(own) ? "refused" : "blocked",
     };
-    if (result.own !== "compiles" && !result.refused.length) {
+    if (result.own !== "compiles" && !result.refused.length && !result.crashed.length) {
       result.unexplained = run.stderr.trim().split("\n").slice(-12).join("\n");
     }
     if (result.own === "compiles" && existsSync(probe)) {
@@ -171,7 +238,7 @@ function main() {
       else if (!probeJs) result.runs = "the probe wasn't compiled";
       else {
         // Native Rust's report, built for the host, apart from rust-js's.
-        const native = spawnSync("cargo", [`+${toolchain}`, "run", "--quiet", "--bin", "native", "--target-dir", join(dir, "native")], {
+        const native = spawnSync("cargo", [`+${toolchain}`, "run", "--quiet", "--locked", "--bin", "native", "--target-dir", join(dir, "native")], {
           cwd: dir,
           maxBuffer: 64 * 1024 * 1024,
           encoding: "utf8",
@@ -187,8 +254,9 @@ function main() {
       }
     }
     results.push(result);
-    console.log(`${crate.name}@${crate.version}: ${result.own}, ${result.compiled.length} compiled, ${result.refused.length} refused`);
-    for (const { crate: c, error } of result.refused) console.log(`  ${c}: ${error}`);
+    const crashed = result.crashed.length ? `, ${result.crashed.length} crashed` : "";
+    console.log(`${crate.name}@${crate.version}: ${result.own}, ${result.compiled.length} compiled, ${result.refused.length} refused${crashed}`);
+    for (const { crate: c, error } of [...result.refused, ...result.crashed]) console.log(`  ${c}: ${error}`);
     if (result.unexplained) console.log(result.unexplained.replace(/^/gm, "  | "));
     if (result.runs) console.log(`  runs: ${result.runs}`);
   }

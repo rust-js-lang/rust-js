@@ -388,7 +388,6 @@ checked:
 | `test/node-bindings.test.ts`'s "node's modules are imported, and its globals called" | Builds the node crate in its own body, `buildNode()`, inside bun's 5 s: 7.8 s cold alone on the M3 Max (2026-11-02), 1.1 s once it's built; flaky in `check:fast` runs that start with no node crate built | `buildNode` in the file's `beforeAll`, as `buildReact` is, with a timeout that fits it |
 | `test/architecture.test.ts`'s "each runtime helper is asked for, or needed by another" | 0.8 s alone; past bun's 5 s beside `check:fast`'s other jobs, failing runs that passed with it alone, until its timeout was raised to 30 s; it reads every source and each helper's JS on each run | The sources read once for the file, shared by its tests, not again per test |
 | `test/runtime-package.test.ts`'s "room asked of a length, a resize's, a collect's or a hash table's, ends where wasm32's std ends it" | 2.5 s alone on the M3 Max (2026-11-02); killed at bun's 5 s in a loaded `check:fast --all`, its Node run reserving 117 MB | A timeout that fits it, as the snapshot tests declare |
-| rust-js compiling regex's graph, `bun scripts/crate-corpus.ts regex` | 6.3 GB at its peak in one process (the debug compiler, 2026-11-02), 10 s; four at once took a CI runner's 16 GB and shut it down (nightly 41417626908), so the nightly's `crates` job runs Cargo one crate at a time | Find which crate of the graph, aho-corasick's or regex-automata's, and what of its lowering holds that much |
 
 ## Working on `main`
 
@@ -503,8 +502,17 @@ It casts the crates' and the port's nets too (ADR 1067): `crates`,
 `bun scripts/crate-corpus.ts --check`, which fails where a crate does worse
 than its row in `docs/crate-corpus.md`, the corpus's one list, each crate at
 the exact release its row names, so a new release is measured by editing
-its row, never by crates.io's publishing it; one marked with an open issue,
-`runs (refused: #467)`, holding while it does just that; and `port`,
+its row, never by crates.io's publishing it. Every crate of each graph is
+held to that crate's lock, `scripts/crate-corpus/<name>.lock` (`--locked`),
+and `bun scripts/crate-corpus.ts --lock <name> ..` resolves a graph again
+on purpose and measures it (ADR 1067, amended). A row marked with an open
+issue, `runs (refused: #467)`, holds while the crate does just that. A
+crate rust-js crashed on is printed as crashed. Until #511, regex-syntax
+overflowed rust-js's stack, inlining a recursive type's `==` without end:
+6.9 GB at 8 s in the debug compiler, and enough in the release one to shut
+down a 16 GB runner even with Cargo building one crate at a time. Since
+the fix, the largest process of the whole corpus is regex-syntax's, at
+436 MB (debug) or 427 MB (release). Then `port`,
 react-in-rust at `ports/react-in-rust.pin`, each crate compiled to JS again
 and compared with what that commit committed, its summary listing each
 file that differs and its first lines, the whole diff a `react-in-rust-diff`

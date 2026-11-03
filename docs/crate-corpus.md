@@ -27,6 +27,18 @@ moves to a new release only by an edit of its row, measured as it's made,
 and `bun scripts/crate-corpus.ts` refuses a row of no exact release (ADR
 1067).
 
+Every crate of each row's graph is pinned too: its lock,
+[`scripts/crate-corpus/<name>.lock`](../scripts/crate-corpus/), a
+Cargo.lock that Cargo is held to (`--locked`), so a dependency's new
+release can't change a verdict either. Each was resolved on 2026-11-03.
+`bun scripts/crate-corpus.ts --lock <name> ..` resolves a crate's graph
+again, at the newest releases its requirements allow, writes its lock and
+measures it. That's how a graph moves, on purpose, and how a row whose
+release or features were edited gets a lock that matches it. A lock that
+doesn't match its row is refused, with the command that rewrites it. A crate
+of a graph that rust-js crashed on, rather than refused, is printed as
+crashed (#511).
+
 | Crate | Verdict | First refusals in its graph |
 |---|---|---|
 | strum 0.27.2 (`std`, `derive`) | runs | |
@@ -42,8 +54,8 @@ and `bun scripts/crate-corpus.ts` refuses a row of no exact release (ADR
 | once_cell 1.21.4 | refused | `std::thread::current` called |
 | semver 1.0.28 | compiles | measured 2026-10-21, after ADR 0562: its tagged pointers, inline identifiers and pointer constants compile; no probe runs it yet |
 | uuid 1.29.0 | runs | measured 2026-10-21, after ADR 0555 |
-| url 2.5.8 | blocked | yoke: raw pointers to erase lifetimes; 15 of its 16 crates compile |
-| regex 1.13.1 | blocked | aho-corasick: memchr's `memmem::Finder`, which ADR 0529 doesn't ship; its unaligned reads compile (ADR 0562); regex-syntax compiles (ADR 0556) |
+| url 2.5.8 | blocked | measured 2026-11-03, at its lock: 13 of its 16 crates compile. yoke: raw pointers to erase lifetimes. litemap 0.8.3, at `Hash::hash` in its derived `Hash`, since 88383e402, litemap 0.8.1 the same (#514). utf_types 1.0.0, new to the graph through utf8_iter 1.1.0, at `core::ptr::from_ref` |
+| regex 1.13.1 | blocked | aho-corasick: memchr's `memmem::Finder`, which ADR 0529 doesn't ship; its unaligned reads compile (ADR 0562). regex-syntax 0.8.11, measured 2026-11-03: refused at a `&mut ast::parse::Parser` in a generic function's parameters. Until #511, rust-js crashed on it, a stack overflow (regex-syntax 0.8.8 at e18f3d9d1 too), that the script counted as neither compiled nor refused |
 | rust_decimal 1.43.0 | runs | measured 2026-11-02, after ADR 0176's and 0914's amendments (#468): arrayvec's `ArrayVecImpl` impl it compiles has its `CAPACITY = CAP`, and its `a * b` is called through `decimalMul` |
 | chrono 0.4.45 (`alloc`) | runs | measured 2026-11-02, after ADR 0592's and 0051's amendments (#467): its `date` module's dictionaries, in a cycle with `time_delta`'s constants, and `format::parse`'s call of `parse_internal` |
 | time 0.3.55 (`alloc`) | blocked | powerfmt: a `Formatter` of its own; its `MaybeUninit` buffer's pointers compile (ADR 0562); deranged compiles (ADR 0165) |
@@ -52,7 +64,8 @@ and `bun scripts/crate-corpus.ts` refuses a row of no exact release (ADR
 | hex 0.4.3 | runs | measured 2026-10-21 |
 | num-traits 0.2.19 | compiles | a float's `log`, `sin_cos`, `rem_euclid` and the like (ADR 0064) |
 
-15 of 22 compile, and each of the 15 with a probe runs as natively.
+On 2026-11-03, at each crate's lock, 17 of 22 compile. 15 have a probe:
+14 of those run as natively, and itertools' probe is refused (its row).
 uuid, measured 2026-10-18, after ADRs 0447 to 0450, compiles: its clock,
 `SystemTime::now()`; its `transmute`s of a `&[u8; 16]` as a `&Uuid` and a
 `&Uuid` as a `&Hyphenated`; its lock's `PoisonError::into_inner`; and

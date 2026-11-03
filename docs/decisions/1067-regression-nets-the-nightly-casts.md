@@ -106,8 +106,50 @@ rust-js's: either and smallvec resolved to 1.19.0 and 1.16.4 on
 - The crates a pinned crate uses still resolve to their newest compatible
   releases: pinning them too would be a lockfile for each crate, kept up
   by hand. A night red from one of those names it, and its release, in
-  the refusal it prints, and its issue says which.
+  the refusal it prints, and its issue says which. (Withdrawn: each
+  graph is locked, amended below.)
 
 Case: none ([0262](0262-when-rust-and-js-disagree.md)); this decides what
 is measured, not what the JS does. `test/ci.test.ts`, "the crate corpus is
 its table's rows, each at an exact release", holds it.
+
+## Amendment: each crate's whole graph at its lock's releases
+
+Pinning only the row's crate wasn't enough. url's row said "15 of its 16
+crates compile", and on 2026-11-03 url measured 13 compiled and 3
+refused (#511). Its dependencies had resolved to newer releases: utf8_iter
+1.1.0 brought in utf_types 1.0.0, a crate the graph didn't have before,
+and litemap went from 0.8.1 to 0.8.3. A verdict could still be crates.io's
+doing, so the bullet above that left the graph unpinned is withdrawn.
+
+- **Each row's graph has a lock**, `scripts/crate-corpus/<name>.lock`, the
+  Cargo.lock of its Cargo project, committed. `bun scripts/crate-corpus.ts`
+  copies it into the project and runs every Cargo command against it with
+  `--locked`: `metadata`, `check`, and the probe's native `run`. Cargo
+  refuses to change a lock, so a night measures exactly the graph that was
+  locked.
+- **A lock moves only on purpose**: `bun scripts/crate-corpus.ts --lock
+  <name> ..` resolves each named crate's graph again at the newest releases
+  its requirements allow, writes the lock and measures it. Its row's
+  verdict is written as part of the same change. `--lock` with no crate
+  named is refused, so the whole corpus can't move by accident.
+- **A lock that doesn't match its row is refused** before anything is
+  measured, e.g. after a row's release or features were edited: the script
+  names the lock and the `--lock` command that rewrites it. A row with no
+  lock is refused the same way.
+- **A crash is said, not dropped.** Cargo's "process didn't exit
+  successfully" of a crate of the graph is printed as `crashed`, with its
+  signal or exit status. regex-syntax had been crashing rust-js, a stack
+  overflow, and the script counted it as neither compiled nor refused, so
+  nobody saw it (#511).
+
+`test/ci.test.ts`, "each crate of the corpus has a lock of its graph, its
+row's release in it, and Cargo is held to it", and "a crate of the corpus's
+graph rust-js crashed on is said to have crashed, not left out", hold it.
+The locks were written on 2026-11-03, and url's and regex's rows were
+measured at them. litemap is refused at its derived `Hash`, the same at
+0.8.1, a regression since 88383e402 (#514). utf_types is new to the graph,
+not a regression.
+
+Case: none ([0262](0262-when-rust-and-js-disagree.md)); this decides what
+is measured, not what the JS does.

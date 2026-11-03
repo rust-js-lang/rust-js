@@ -2,10 +2,10 @@
 // shards, the mutations a change touches, and each branch's latest run.
 
 import { expect, test } from "bun:test";
-import { cpSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, timingsRun } from "../scripts/ci";
-import { corpusRows, dependency } from "../scripts/crate-corpus";
+import { corpusRows, crashes, dependency, lockedVersion, lockOf } from "../scripts/crate-corpus";
 import { batches, type Change, changedLines, changedMutations, enclosingFunction, schema, setPasses, site, type Sited, testBlocks, testResults, testSet } from "../scripts/mutations";
 import { jobs as localNightly } from "../scripts/nightly";
 import { caseParts, caseShardParts, nightly, shard } from "../scripts/shard";
@@ -400,3 +400,38 @@ test("the crate corpus is its table's rows, each at an exact release", () => {
   expect(corpusRows(table("strum 0.27.2 (`std`, `derive`)"))).toEqual([{ name: "strum", version: "0.27.2", features: ["std", "derive"], bar: "runs" }]);
 });
 
+
+// And every crate of each one's graph at the release its lock names, which
+// Cargo is held to: url's dependencies resolved newer, and its row's "15 of
+// its 16 crates compile" measured 13 (ADR 1067, amended; #511).
+test("each crate of the corpus has a lock of its graph, its row's release in it, and Cargo is held to it", () => {
+  const rows = corpusRows(readFileSync(join(root, "docs/crate-corpus.md"), "utf8"));
+  if (!Array.isArray(rows)) throw new Error(rows.problem);
+  for (const crate of rows) {
+    expect(existsSync(lockOf(crate.name)), `scripts/crate-corpus/${crate.name}.lock`).toBe(true);
+    expect(lockedVersion(readFileSync(lockOf(crate.name), "utf8"), crate.name), crate.name).toBe(crate.version);
+  }
+  // No lock that's no row's.
+  const locks = readdirSync(join(root, "scripts/crate-corpus")).filter((file) => file.endsWith(".lock"));
+  expect(locks.sort()).toEqual(rows.map((c) => `${c.name}.lock`).sort());
+  // Each of Cargo's runs but the one that writes a lock, `--locked`.
+  const script = readFileSync(join(root, "scripts/crate-corpus.ts"), "utf8");
+  const runs = [...script.matchAll(/spawnSync\(\s*"cargo",\s*\[([^\]]*)\]/g)].map(([, args]) => args!);
+  expect(runs.length).toBe(4);
+  expect(runs.filter((args) => !args.includes('"--locked"'))).toEqual(['`+${toolchain}`, "generate-lockfile"']);
+});
+
+test("a crate of the corpus's graph rust-js crashed on is said to have crashed, not left out", () => {
+  const stderr = [
+    "    Checking regex-syntax v0.8.11",
+    "",
+    "thread 'rustc' (184122857) has overflowed its stack",
+    "fatal runtime error: stack overflow, aborting",
+    "error: could not compile `regex-syntax` (lib)",
+    "",
+    "Caused by:",
+    "  process didn't exit successfully: `rust-js rustc --crate-name regex_syntax --check-cfg 'cfg(feature, values(\"std\"))'` (signal: 6, SIGABRT: process abort signal)",
+    "error: could not compile `aho-corasick` (lib) due to 1 previous error",
+  ].join("\n");
+  expect(crashes(stderr)).toEqual([{ name: "regex-syntax", how: "signal: 6, SIGABRT: process abort signal" }]);
+});
