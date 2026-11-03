@@ -51,6 +51,7 @@ pub(super) fn end_of(
                     lo: hi - 1,
                     hi,
                     doc: false,
+                    inner: None,
                     written: true,
                 }])
                 .all(|other| {

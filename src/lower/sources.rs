@@ -186,9 +186,6 @@ pub(super) fn commented(sources: &CapturedSources, span: Span) -> Option<js::Spa
     (code < at.lo).then_some(at)
 }
 
-/// `text`'s comments, as rustc's lexer reads them, where they are in the
-/// arena, its first at `start` (ADR 0444): an outer doc comment, `///` or
-/// `/** */`, its item's; an inner one, `//!`, a plain one, as JS has none.
 /// Where the `break` or `continue` the program wrote right after `done`,
 /// what a branch did last, is, if comments are right before it: `done` the
 /// jump itself, as MIR places a `break`'s `()`, or what's before it, `i +=
@@ -252,11 +249,33 @@ pub(super) fn commented_jump(sources: &CapturedSources, done: js::Span) -> Optio
     commented_before(jump.lo).then_some(jump)
 }
 
+/// `text`'s comments, as rustc's lexer reads them, where they are in the
+/// arena, its first at `start` (ADR 0444): an outer doc comment, `///` or
+/// `/** */`, its item's; an inner one, `//!`, a plain one, as JS has none,
+/// where what it's in ends (#486).
 fn comments(text: &str, start: u32) -> Vec<Comment> {
     use rustc_lexer::{DocStyle, TokenKind};
-    let mut found = Vec::new();
+    let mut found: Vec<Comment> = Vec::new();
     let mut at = start;
+    // How deep in braces each token is, and each inner doc comment not yet
+    // closed, by where it is in `found` and how deep: the `}` that ends what
+    // it's in is where it ends.
+    let mut depth = 0usize;
+    let mut open: Vec<(usize, usize)> = Vec::new();
     for token in rustc_lexer::tokenize(text, rustc_lexer::FrontmatterAllowed::Yes) {
+        match token.kind {
+            TokenKind::OpenBrace => depth += 1,
+            TokenKind::CloseBrace => {
+                depth = depth.saturating_sub(1);
+                while let Some(&(i, d)) = open.last()
+                    && d > depth
+                {
+                    found[i].inner = Some(at);
+                    open.pop();
+                }
+            }
+            _ => {}
+        }
         let doc = match token.kind {
             TokenKind::LineComment { doc_style } => Some(doc_style),
             TokenKind::BlockComment {
@@ -275,10 +294,17 @@ fn comments(text: &str, start: u32) -> Vec<Comment> {
                 lo: at,
                 hi: at + written.len() as u32,
                 doc: matches!(doc_style, Some(DocStyle::Outer)),
+                inner: None,
                 written: true,
             });
+            if matches!(doc_style, Some(DocStyle::Inner)) {
+                open.push((found.len() - 1, depth));
+            }
         }
         at += token.len;
+    }
+    for (i, _) in open {
+        found[i].inner = Some(at);
     }
     // Those the JS leaves out, a `// SAFETY:` one's (ADR 0444, amended).
     let spans: Vec<(usize, usize)> = (found.iter())

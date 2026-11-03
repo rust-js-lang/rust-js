@@ -3,6 +3,30 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "module-doc-lost",
+    breaks: "a module's `//!` above a trait or a struct, items with no JS, is lost (#486)",
+    file: "src/to_oxc.rs",
+    find: "        if !own_docs.is_empty() {\n",
+    replace: "        if false && !own_docs.is_empty() {\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment is above its JS"],
+  },
+  {
+    name: "module-doc-of-an-inner-module",
+    breaks: "an inline module's `/*!` is its parent's too, above the parent's JS (#486)",
+    file: "src/to_oxc.rs",
+    find: "            !code.is_none() && code.lo <= c.lo && c.inner == Some(code.hi) && c.lo >= past\n",
+    replace: "            !code.is_none() && code.lo <= c.lo && c.inner.is_some() && c.lo >= past\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment is above its JS"],
+  },
+  {
+    name: "module-doc-also-a-statements",
+    breaks: "a module's `//!` is printed twice: above its JS and above the statement or import after it (#486)",
+    file: "src/to_oxc.rs",
+    find: "            .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !of_no_js(c) && !of_module(c))\n",
+    replace: "            .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !of_no_js(c))\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment is above its JS"],
+  },
+  {
     name: "inner-doc-printed-from-source",
     breaks: "a `/*!` a statement's comment is printed by oxc from the source as written, not as `in_js` writes it, `/* The lanes. */` (ADR 0444, amended)",
     file: "src/to_oxc.rs",
@@ -94,8 +118,8 @@ export const mutations: Mutation[] = [
     name: "trailing-comment-leading",
     breaks: "a comment after code on its line is also written before the next statement",
     file: "src/to_oxc.rs",
-    find: "            .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !of_no_js(c))\n",
-    replace: "            .filter(|c| c.lo >= past && !before_value(c) && !of_no_js(c))\n",
+    find: "            .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !of_no_js(c) && !of_module(c))\n",
+    replace: "            .filter(|c| c.lo >= past && !before_value(c) && !of_no_js(c) && !of_module(c))\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {

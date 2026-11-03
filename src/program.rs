@@ -41,12 +41,15 @@ pub struct Source {
 /// where its code is (ADR 0444). A doc comment, `///` or `/** */`, its
 /// item's, is a JSDoc one, `doc`. One the JS leaves out, a `// SAFETY:`
 /// one's (`comments::left_out`), isn't `written`: it's still a comment, no
-/// code, between what's before and after it.
+/// code, between what's before and after it. An inner doc comment, `//!`
+/// or `/*!`, its module's or block's, never an item's, has `inner`: where
+/// what it's in ends, that `}` or its file's end (#486).
 #[derive(Clone, Copy)]
 pub struct Comment {
     pub lo: u32,
     pub hi: u32,
     pub doc: bool,
+    pub inner: Option<u32>,
     pub written: bool,
 }
 

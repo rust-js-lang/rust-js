@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "inner-doc-not-inner",
+    breaks: "a `//!` isn't known for an inner doc comment, so one above a struct is lost (#486)",
+    file: "src/lower/sources.rs",
+    find: "            if matches!(doc_style, Some(DocStyle::Inner)) {\n",
+    replace: "            if false && matches!(doc_style, Some(DocStyle::Inner)) {\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment is above its JS"],
+  },
+  {
+    name: "inner-doc-not-closed-by-its-brace",
+    breaks: "an inline module's `/*!` isn't ended by the module's `}`, so it's above its parent's next code (#486)",
+    file: "src/lower/sources.rs",
+    find: "                    && d > depth\n",
+    replace: "                    && d > depth + 1\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment is above its JS"],
+  },
+  {
     name: "block-comment-unread",
     breaks: "a `/* .. */` comment of the Rust isn't in the JS",
     file: "src/lower/sources.rs",

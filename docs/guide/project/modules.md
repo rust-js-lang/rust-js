@@ -850,6 +850,11 @@ amended). A file's
 leading comments, a license's, are its JS's first
 ([ADR 0383](../../decisions/0383-a-files-leading-comments-are-its-jss.md),
 [ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md)).
+A module's `//!` doc, an inline `mod`'s `/*!` too, is its JS file's
+description, a plain `//` comment right after them, above its imports,
+whatever its first item is, a trait or a struct with no JS, with a blank
+line after it where the Rust has one
+([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md), amended).
 A comment above a `use` is above the import it makes, `// TODO: ..` above
 `import { getCurrentFiberOwnerNameInDevOrNull } from
 "react-reconciler/src/ReactCurrentFiber";`, wherever the imports' order

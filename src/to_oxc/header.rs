@@ -13,12 +13,23 @@ pub fn import_line(clause: &str, from: &str) -> String {
 /// What's above a module's code: its header, directives, imports and
 /// re-exports, one block in the order its `use`s are written (ADR 1063,
 /// amended, rd620), each after the comments before the `use` that makes it,
-/// `comments`. Layout, as `format::spaced`'s blank lines are, of what the
+/// `comments`, all below the module's own `//!`s, `docs`. Layout, as `format::spaced`'s blank lines are, of what the
 /// module says.
-pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, Vec<String>>) -> String {
+pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, Vec<String>>, docs: &Docs) -> String {
     let mut code = format!("{}\n", module.header);
+    // The module's `//!`s, then what's next right after them where the
+    // Rust has no blank line after them (#486).
+    let mut tight = false;
+    if !docs.lines.is_empty() {
+        code.push('\n');
+        code.push_str(&docs.lines.iter().map(|line| format!("{line}\n")).collect::<String>());
+        tight = !docs.apart;
+    }
     for directive in &module.directives {
-        code.push_str(&format!("\n{directive:?};\n"));
+        if !std::mem::take(&mut tight) {
+            code.push('\n');
+        }
+        code.push_str(&format!("{directive:?};\n"));
     }
     let packages = &module.packages;
     // Sorted already, and each once, as the artifact planner chose them.
@@ -119,22 +130,56 @@ pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, 
         (!helpers.is_empty()).then(|| import_line(&format!("{{ {} }}", helpers.join(", ")), crate::runtime::PACKAGE));
     let lines: Vec<String> = named.chain(effects).chain(runtime).collect();
     if !lines.is_empty() {
-        code.push('\n');
+        if !std::mem::take(&mut tight) {
+            code.push('\n');
+        }
         code.push_str(&lines.concat());
     }
     // A blank line before the code, but after leading comments right above
     // it, of a module that imports nothing, as the source has none (#419).
-    if !(module.header_on_code && lines.is_empty() && module.directives.is_empty()) {
+    let on_code = module.header_on_code && lines.is_empty() && module.directives.is_empty() && docs.lines.is_empty();
+    if !(on_code || tight) {
         code.push('\n');
     }
     code
+}
+
+/// A module's own inner doc comments, `//!` or `/*!`, as JS writes them,
+/// `//` (`comments::in_js`): above its JS, below rust-js's line and the
+/// file's leading comments, and above its directives and imports, as a
+/// file's description is (#486, ADR 0444, amended). A blank line between
+/// two where the Rust has one, and after them, `apart`, where it has one
+/// right after them.
+#[derive(Default)]
+pub(super) struct Docs {
+    lines: Vec<String>,
+    apart: bool,
+}
+
+/// `own`'s `Docs`, each where it is in `text`.
+pub(super) fn docs(own: &[crate::program::Comment], text: &str) -> Docs {
+    let blank_after = |hi: u32| {
+        let rest = &text[hi as usize..];
+        rest[..rest.len() - rest.trim_start().len()].matches('\n').count() > 1
+    };
+    let mut lines = Vec::new();
+    for (i, c) in own.iter().enumerate() {
+        if i > 0 && blank_after(own[i - 1].hi) {
+            lines.push(String::new());
+        }
+        lines.push(crate::comments::in_js(&text[c.lo as usize..c.hi as usize]));
+    }
+    Docs {
+        apart: own.last().is_some_and(|last| blank_after(last.hi)),
+        lines,
+    }
 }
 
 /// The comments `own`, before an import's `use` or a re-export's at `at`,
 /// as the header prints them above its line (rd92, rd620): a run of `///`
 /// lines one JSDoc, as an item's is (`jsdoc`), each other as JS writes it;
 /// and a blank line after them where the Rust has one between them and
-/// what they're above, a module's `//!` doc above its first `use`.
+/// what they're above.
 pub(super) fn above(own: &[crate::program::Comment], at: u32, text: &str) -> Vec<String> {
     let written = |c: &crate::program::Comment| &text[c.lo as usize..c.hi as usize];
     let mut texts = Vec::new();

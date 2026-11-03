@@ -117,6 +117,7 @@ pub fn emit(
         closing,
         exports,
         imports,
+        docs,
         own_places,
     } = comments_of(module, sources);
     let cx = Cx {
@@ -207,7 +208,7 @@ pub fn emit(
 
     // The header, imports and runtime helpers, plain text above the
     // generated code, none of which maps to Rust.
-    let mut code = header(module, &imports);
+    let mut code = header(module, &imports, &docs);
 
     // The generated code, each line after the header: where each ends up,
     // to fix the map.
@@ -443,6 +444,8 @@ struct Commented {
     /// use`, by where it's written: in the header, above its line (rd92,
     /// rd620).
     imports: std::collections::HashMap<u32, Vec<String>>,
+    /// The module's own inner doc comments, `//!`, above its JS (#486).
+    docs: header::Docs,
     /// Each statement, by its span, that starts where one it's in starts and
     /// has comments inside it of its own, before nothing printed of it,
     /// which are at a place of its own (`placed::own_places`, rd630).
@@ -535,6 +538,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             .find(|&&(lo, _)| lo >= start && (lo < end || lo == start))
             .map_or(start, |&(lo, _)| lo)
     };
+    let mut docs = header::Docs::default();
     let mut file_start = 0;
     for file in &sources.files {
         let start = file_start;
@@ -544,6 +548,20 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         let past = (start + crate::comments::leading_comments(&file.text).len()) as u32;
         let file_start = start;
         let in_file = |at: u32| at >= past && (at as usize) < end;
+        // The module's own `//!`s, what its code is in, its file or an
+        // inline `mod`'s braces, ends where the module's code does: above
+        // its JS, its imports' too, and nowhere else (#486).
+        let code = module.code;
+        let of_module = |c: &crate::program::Comment| {
+            !code.is_none() && code.lo <= c.lo && c.inner == Some(code.hi) && c.lo >= past
+        };
+        let own_docs: Vec<crate::program::Comment> = (file.comments.iter())
+            .filter(|c| of_module(c) && c.written)
+            .copied()
+            .collect();
+        if !own_docs.is_empty() {
+            docs = header::docs(&own_docs, &sources.text);
+        }
         if !starts.iter().any(|&at| in_file(at)) {
             continue;
         }
@@ -731,7 +749,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             }
         };
         let own_line: Vec<&crate::program::Comment> = (file.comments.iter())
-            .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !of_no_js(c))
+            .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !of_no_js(c) && !of_module(c))
             .collect();
         let (ending, own_line): (Vec<&crate::program::Comment>, Vec<&crate::program::Comment>) = own_line
             .into_iter()
@@ -762,6 +780,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                             lo: hi,
                             hi,
                             doc: false,
+                            inner: None,
                             written: true,
                         }])
                         .all(|other| {
@@ -781,6 +800,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                             lo: hi,
                             hi,
                             doc: false,
+                            inner: None,
                             written: true,
                         }])
                         .all(|other| {
@@ -944,9 +964,9 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         };
         // After the module's last code, to where its code ends, its file's
         // end or an inline `mod`'s `}`, only comments: its JS's end (ADR 0621).
-        let code = module.code;
         let ends: Vec<crate::program::Comment> = (file.comments.iter())
             .filter(|c| c.lo >= past && !after_code(c) && !code.is_none() && code.lo <= c.lo && c.hi <= code.hi)
+            .filter(|c| !of_module(c))
             .filter(|c| {
                 let mut past = c.hi as usize;
                 for other in file.comments.iter().filter(|o| o.lo >= c.hi && o.hi <= code.hi) {
@@ -974,6 +994,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             .collect();
         let unattached: Vec<(crate::program::Comment, (u32, u32))> = (file.comments.iter())
             .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !ends.iter().any(|e| e.lo == c.lo))
+            .filter(|c| !of_module(c))
             .filter(|c| !attached.iter().any(|(a, _)| a.lo == c.lo) && !ending.iter().any(|e| e.lo == c.lo))
             .filter(|c| !closed.contains(&c.lo))
             .filter_map(|c| {
@@ -1240,6 +1261,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         closing,
         exports,
         imports,
+        docs,
         own_places,
     }
 }

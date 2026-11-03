@@ -3,6 +3,30 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "module-doc-always-apart",
+    breaks: "a module's `//!` right above its first `use` has a blank line after it, which the Rust doesn't (#486)",
+    file: "src/to_oxc/header.rs",
+    find: "        tight = !docs.apart;\n",
+    replace: "        tight = false;\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment is above its JS"],
+  },
+  {
+    name: "module-doc-never-apart",
+    breaks: "a module's `//!` and a blank line, then its first `use`, has no blank line before its import (#486)",
+    file: "src/to_oxc/header.rs",
+    find: "        tight = !docs.apart;\n",
+    replace: "        tight = true;\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment is above its JS"],
+  },
+  {
+    name: "module-doc-runs-joined",
+    breaks: "two runs of a module's `//!`, a blank line between, are printed as one (#486)",
+    file: "src/to_oxc/header.rs",
+    find: "        if i > 0 && blank_after(own[i - 1].hi) {\n",
+    replace: "        if false && i > 0 && blank_after(own[i - 1].hi) {\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment is above its JS"],
+  },
+  {
     name: "named-imports-unwritten",
     breaks: "a module's named imports of a JS module, `import { readFileSync } from \"fs\"`, are left out, and what they name is unbound",
     file: "src/to_oxc/header.rs",
@@ -62,7 +86,7 @@ export const mutations: Mutation[] = [
     name: "header-on-code-spaced",
     breaks: "a file's leading comments right above its code are a blank line above its JS, where the source has none, React's `// This is a generated file.` above its first `export` (#419)",
     file: "src/to_oxc/header.rs",
-    find: "    if !(module.header_on_code && lines.is_empty() && module.directives.is_empty()) {\n",
+    find: "    if !(on_code || tight) {\n",
     replace: "    if true {\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "right above the code are right above its JS"],
   },

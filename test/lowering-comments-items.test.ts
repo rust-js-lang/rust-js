@@ -120,14 +120,24 @@ test("a module of re-exports alone keeps its inner doc and the blank line after 
 //! It re-exports what its module makes.
 
 pub use crate::shapes::area;
+// Its side, a plain comment.
+
+pub use crate::sides::side;
 
 mod shapes {
     pub fn area(r: f64) -> f64 {
         r * r
     }
 }
+
+mod sides {
+    pub fn side(a: f64) -> f64 {
+        a.sqrt()
+    }
+}
 `);
   expect(js).toContain('// The client\'s entry.\n// It re-exports what its module makes.\n\nexport { area } from "./shapes.js";\n');
+  expect(js).toContain('\n// Its side, a plain comment.\n\nexport { side } from "./sides.js";\n');
   expect((lib.area as (r: number) => number)(3)).toBe(9);
 });
 
@@ -318,6 +328,112 @@ import { lane } from "./lanes.js";
   expect(lanes).toContain("/* The lanes. */\n\nexport function lane() {");
   expect(lanes).not.toContain("/*!");
   expect((await import(join(dir, "lib.js"))).named()).toBe(2);
+});
+
+// #486: a module's `//!` is the module's, never an item's: above its JS,
+// as a file's description is, its imports' too, though what it's above in
+// the Rust has no JS, a trait or a struct, or an enum's methods first; a
+// blank line after it where the Rust has one. A struct's own `///` stays
+// its, nowhere in the JS.
+test("a module's inner doc comment is above its JS", async () => {
+  const dir = fixture("inner-doc-past-no-js");
+  writeFileSync(join(dir, "lib.rs"), `//! A header comment, above a trait and its impl.
+pub trait Letter {
+    fn letter(&self) -> u8;
+}
+
+/// The struct's.
+pub struct Upper;
+
+impl Letter for Upper {
+    fn letter(&self) -> u8 {
+        b'A'
+    }
+}
+
+pub mod lanes {
+    /*! The lanes. */
+
+    /// No JS.
+    pub struct Lane;
+
+    // Above the function.
+    pub fn lane() -> u32 {
+        let _lane = Lane;
+        1
+    }
+}
+
+pub fn show() -> String {
+    Upper.letter().to_string()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("// A header comment, above a trait and its impl.\n\nexport const upperLetter = {");
+  expect(js.split("A header comment").length).toBe(2);
+  expect(js).not.toContain("The lanes.");
+  expect(js).not.toContain("The struct's.");
+  expect((await import(join(dir, "lib.js"))).show()).toBe("65");
+  const lanes = readFileSync(join(dir, "lanes.js"), "utf8");
+  expect(lanes).toContain("/* The lanes. */\n\n// Above the function.\nexport function lane() {");
+  expect(lanes).not.toContain("No JS.");
+  // Above a type's `use`, which makes no import, and an enum's methods.
+  const typed = fixture("inner-doc-past-a-type-use");
+  writeFileSync(join(typed, "lib.rs"), `//! A type's \`use\` first.
+
+//! Then the enum.
+
+use crate::kinds::Count;
+use crate::lanes::lane;
+
+pub mod kinds {
+    pub type Count = u32;
+}
+
+pub mod lanes {
+    pub fn lane() -> u32 {
+        1
+    }
+}
+
+pub enum Shade {
+    Light,
+    Dark,
+}
+
+impl Shade {
+    pub fn count(&self) -> Count {
+        match self {
+            Shade::Light => lane(),
+            Shade::Dark => lane() + 1,
+        }
+    }
+}
+`);
+  run([compiler, join(typed, "lib.rs"), "-o", join(typed, "lib.js")]);
+  const doc = "// A type's `use` first.\n\n// Then the enum.\n\nimport { lane } from \"./lanes.js\";\n";
+  expect(readFileSync(join(typed, "lib.js"), "utf8")).toContain(doc);
+  // Right above its first `use`, no blank line between.
+  const above = fixture("inner-doc-right-above-a-use");
+  writeFileSync(join(above, "lib.rs"), `//! Right above.
+use crate::lanes::lane;
+
+pub mod lanes {
+    pub fn lane() -> u32 {
+        1
+    }
+}
+
+pub fn named() -> u32 {
+    //! A function's own, in its body.
+    lane() * 2
+}
+`);
+  run([compiler, join(above, "lib.rs"), "-o", join(above, "lib.js")]);
+  const right = readFileSync(join(above, "lib.js"), "utf8");
+  expect(right).toContain(`// Right above.\nimport { lane } from "./lanes.js";\n`);
+  expect(right).toContain("  // A function's own, in its body.\n  return");
 });
 
 // React's EventRegistry.registerDirectEvent: a blank line, then

@@ -2,6 +2,7 @@
 
 // The contacts, searched as you type. Each search replaces the last: the
 // one before is aborted, so an answer that comes late never shows.
+
 import { useEffect, useState } from "react";
 import { Failure } from "./api.js";
 import * as Api from "./api.js";

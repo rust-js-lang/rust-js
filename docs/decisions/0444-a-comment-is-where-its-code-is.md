@@ -816,3 +816,55 @@ since oxc prints what's at a start before the first node there, the
 outer one. The case, a `try`'s value of a `match`'s `Ok` arm, and its
 tests are in [ADR 0637](0637-a-match-of-a-throwing-call-is-try-catch.md)'s
 amendment of the same date.
+
+## Amendment: a module's `//!` is above its JS (2026-11-03, #486)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a comment's place.
+
+A module's inner doc comment, `//!` or an inline `mod`'s `/*!`, was placed
+as any comment is, before the code it's written above. Above a `use`
+that makes an import it was above that import; above a trait, a struct
+or a `use` of a type, all with no JS, it was lost wherever something
+with a `{ }` or a `;` came between it and the first statement, and where
+the module's imports were all unwritten, the runtime's helpers or a
+binding's, it was below them. The pair `unit_struct_of_instance`'s app
+lost its `//!` when its first item became an impl, and the pilot's
+`api.rs`, whose first JS is an enum's methods, would have had its own
+inside `export const Failure = {`, before `message`.
+
+Rust writes an inner doc comment before everything in what it's in: it
+documents the module, never an item. **A module's own `//!`s are its JS
+file's description, above its directives and imports, right below
+rust-js's line and the file's leading comments**
+(`to_oxc/header.rs`'s `Docs`), each as JS writes it (`comments::in_js`),
+a blank line between two where the Rust has one, and one after them
+where the Rust has one right after them. They're no statement's or
+import's comments. Which `//!`s are the module's is the lexer's to say
+(`lower/sources.rs`): each inner doc comment carries where what it's in
+ends, `Comment::inner`, the `}` that closes it or its file's end, so a
+module's are those that end where its code does (`LoweredModule::code`),
+an inline `mod`'s are its own and not its parent's. One inside a
+function's block, which rustc allows and nobody writes, is placed as
+before. Names run 44 chose this, a reversible call, over keeping each
+`//!` before the first code with JS after it, which put the pilot's
+inside an object and left builtins' and web_forms' below their imports.
+
+The snapshots async, builtins, imports, throws, todomvc and web_forms and
+the pilot's committed JS are re-blessed: builtins', web_forms' and the
+pilot models' `//!` move above their imports, the others' are kept where
+they were lost.
+
+- Held by `test/lowering-comments-items.test.ts`, "a module's inner doc
+  comment is above its JS", run: above a trait and its impl, once; an
+  inline module's `/*!`, past its struct, in its file and not its
+  parent's; above a type's `use` and an enum's methods, two runs and the
+  blank lines between and after them; and right above a `use`, no blank
+  line. Mutations `module-doc-lost`, `module-doc-of-an-inner-module`,
+  `module-doc-also-a-statements` (`to_oxc.ts`), `module-doc-always-apart`,
+  `module-doc-never-apart`, `module-doc-runs-joined`
+  (`to_oxc/header.ts`), `inner-doc-not-inner` and
+  `inner-doc-not-closed-by-its-brace` (`lower/sources.ts`). Since a
+  module's `//!` no longer reaches them, `inner-doc-printed-from-source`
+  is held by a function body's own `//!`, and 1063's
+  `header-comment-blank-dropped` by a plain comment and a blank line above
+  a re-export's `pub use`.
