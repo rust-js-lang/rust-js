@@ -846,4 +846,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nullable_generic_fields.rs$"],
     snapshots: true,
   },
+  {
+    name: "replace-unread-read",
+    breaks:
+      "React's useActionState, `metadata.action.replace(Some(..))` of a struct a server action's `$$FORM_ACTION` gives, reads the old value nothing reads, `const old = metadata.action;`, a getter's read the program never makes, where `*borrow_mut() = ..` writes alone (rd418, ADR 1022, amended)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                if call.unread {\n",
+    replace: "                if false {\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a replace of a JS-made struct's cell field whose old value nothing reads"],
+  },
 ];

@@ -282,16 +282,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 // A `Duration`'s or a clock's: its own `+` (ADRs 0188, 0447).
                 let tys = [ty, arg_tys[1]];
-                let call = crate::lower::calls::Call {
-                    def_id,
-                    generic_args,
-                    tys: &tys,
-                    nulled: &[],
-                    quiet: false,
-                    momentary: false,
-                    null_for_none: false,
-                    span,
-                };
+                let given = crate::lower::calls::Given::default();
+                let call = crate::lower::calls::Call::given((def_id, generic_args), &tys, given, span);
                 self.std_values(known, call, vec![place.clone(), rhs], false, ty, out)?
             } else {
                 return Err(self.unsupported(

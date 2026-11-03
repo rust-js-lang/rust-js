@@ -1236,16 +1236,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let boxed = self.option_of(output).is_some_and(|inner| self.boxed_payload(inner));
-        let call = crate::lower::calls::Call {
-            def_id,
-            generic_args,
-            tys: arg_tys,
-            nulled: given.nulled,
-            quiet: given.quiet,
-            momentary: given.momentary,
-            null_for_none: given.null_for_none,
-            span,
-        };
+        let call = crate::lower::calls::Call::given((def_id, generic_args), arg_tys, given, span);
         self.std_values(known, call, values, boxed, output, out)
     }
 
@@ -1313,6 +1304,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let held = self.boxed_payload(item).then(|| self.some_value(place.clone()));
         let some = self.value_expr(Value::Ref(held.unwrap_or(place)), span)?;
         Ok(Some(Expr::cond(none, Expr::undefined(), some)))
+    }
+
+    /// Whether nothing reads what the call being lowered gives: its
+    /// destination a temporary no statement reads, and whose drop reads
+    /// nothing, as one that does nothing doesn't (`unread`): a `OnceCell`'s
+    /// `set`'s `Result` (ADR 0847), a `Vec`'s `remove`'s item, a cell's
+    /// `replace`'s old value (rd418, ADR 1022, amended).
+    pub(super) fn result_unread(&self, state: &State<'_, 'tcx>) -> bool {
+        matches!(&state.body[state.at].terminator().kind,
+            mir::TerminatorKind::Call { destination, .. }
+                if destination.projection.is_empty() && self.unread(state, destination.local))
     }
 
     /// A std function rust-js knows, given what MIR made of its arguments.

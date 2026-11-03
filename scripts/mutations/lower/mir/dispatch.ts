@@ -1051,4 +1051,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^slice_range_reverse.rs$"],
     snapshots: true,
   },
+  {
+    name: "result-unread-of-what-is-read",
+    breaks:
+      "what a call gives that's read, `metadata.action.replace(..)`'s old value returned, is taken for unread, and the old value is lost, `undefined` (rd418)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "                if destination.projection.is_empty() && self.unread(state, destination.local))\n",
+    replace: "                if destination.projection.is_empty())\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_replace_dropped.rs$"],
+  },
 ];

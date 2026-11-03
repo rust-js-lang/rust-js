@@ -850,9 +850,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `set`'s `Result` nothing reads is made, `const unset = .. ; if (unset) ..`, where it's `if (node.cache === undefined) ..`",
     file: "src/lower/mir/std_calls.rs",
-    find: "                let read = !matches!(&state.body[state.at].terminator().kind,\n",
-    replace:
-      "                let read = true || !matches!(&state.body[state.at].terminator().kind,\n",
+    find: "                let read = !self.result_unread(state);\n",
+    replace: "                let read = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^once_cell_known_empty.rs$"],
     snapshots: true,
   },
@@ -914,5 +913,14 @@ export const mutations: Mutation[] = [
     replace: '} else { Value::Expr(this.view_call("$view", list)) })\n',
     tests: ["test/corpus.test.ts", "-t", "^slice_range_reverse.rs$"],
     snapshots: true,
+  },
+  {
+    name: "result-unread-untold",
+    breaks:
+      "a cell's `replace` whose old value nothing reads isn't told so, and reads it, `const old = metadata.action;`, a getter's read of a struct JS made (rd418, ADR 1022, amended)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "            unread: self.result_unread(state),\n",
+    replace: "            unread: false,\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a replace of a JS-made struct's cell field whose old value nothing reads"],
   },
 ];

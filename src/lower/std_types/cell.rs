@@ -306,6 +306,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     },
                     false => next,
                 };
+                // What nothing reads, whose drop does nothing, the write
+                // alone, as `*cell.borrow_mut() = v` is: the program sees no
+                // read of it, nor a getter's of a struct JS made (rd418, ADR
+                // 1022, amended).
+                if call.unread {
+                    out.push(StmtKind::Assign(place, next).at(js_span));
+                    return Ok(Some(Expr::undefined()));
+                }
                 // What was moved out apart from what's written, which an
                 // in-place cell, `Cell::from_mut`'s, writes into the same
                 // object (`moved_out`). Not a `RefCell`'s, nor a

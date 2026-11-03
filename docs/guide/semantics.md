@@ -389,6 +389,16 @@ export function run(task) {
 }
 ```
 
+A `replace` or `take` whose old value nothing reads, and whose drop does
+nothing, is the write alone, `task.callback = f;`, as
+`*task.callback.borrow_mut() = Some(f)` is: of a struct JS made too,
+whose old value a getter would give, upstream's `metadata.action =
+permalink;`. One whose old value the
+program reads, or whose drop runs code, reads it first, `const old =
+slot.held; slot.held = next;`
+([1022](../decisions/1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md),
+amended, the user's decision, rd418).
+
 - **A `Mutex` and an `RwLock` are counted as a `RefCell` is.** A lock
   locked again while its thread holds it, which deadlocks in Rust, throws
   `rust-js does not support locking a lock its thread holds, which

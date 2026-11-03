@@ -127,9 +127,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Comb(Comb::Remove) => {
                 let i = exprs.remove(0);
                 // What it removed, where it's read.
-                let read = !matches!(&state.body[state.at].terminator().kind,
-                    mir::TerminatorKind::Call { destination, .. }
-                        if destination.projection.is_empty() && self.unread(state, destination.local));
+                let read = !self.result_unread(state);
                 let spliced = |i| Expr::call(Expr::member(items.clone(), "splice"), vec![i, Expr::int(1)]);
                 return Ok(Value::Expr(match (first(&i), read) {
                     (true, _) => Expr::call(Expr::member(items.clone(), "shift"), Vec::new()),

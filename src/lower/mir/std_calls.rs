@@ -13,7 +13,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// values: which `Option`s are `null` already (`nulled`), whether the
     /// cell it's given is a place no borrow of which can meet another
     /// (`QuietCells`, ADR 0863, amended), and whether it's a nullable
-    /// thread-local's, its `None` `null` (ADR 0586, amended).
+    /// thread-local's, its `None` `null` (ADR 0586, amended); and whether
+    /// nothing reads what it gives (`result_unread`).
     pub(super) fn call_given<'n>(&self, state: &State<'_, 'tcx>, nulled: &'n [bool]) -> crate::lower::calls::Given<'n> {
         let cells = state.facts.quiet_cells();
         crate::lower::calls::Given {
@@ -21,6 +22,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             quiet: cells.calls.contains(&state.at),
             momentary: cells.momentary.contains(&state.at),
             null_for_none: cells.nullable.contains(&state.at),
+            unread: self.result_unread(state),
         }
     }
 }
@@ -1314,9 +1316,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Once(OnceOp::Set) => {
                 let empty =
                     (self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.set_empty.contains(&fun));
-                let read = !matches!(&state.body[state.at].terminator().kind,
-                    TerminatorKind::Call { destination, .. }
-                        if destination.projection.is_empty() && self.unread(state, destination.local));
+                let read = !self.result_unread(state);
                 let item = generic_args.type_at(0);
                 lower(move |this, state, values, out| {
                     let cell = this.value_expr(values.next().expect("the cell"), span)?;

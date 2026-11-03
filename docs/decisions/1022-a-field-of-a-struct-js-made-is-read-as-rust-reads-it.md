@@ -1,6 +1,6 @@
 # 1022. A field of a struct JS made is read as often as Rust reads it
 
-Status: Accepted (the user's decision, rd204); amended below, the user's decision: a binding that gives back what the program gave it, `#[rust_js::gives_back]`, gives the program's own object; and amended again, rd221: a struct the program builds is its own data, whatever JS gives of its type; and amended, #411, the user's decision: a binding that gives fresh plain data, `#[rust_js::gives_plain_data]`, gives no getter's object; and amended, #430: a pattern's subject is read once where it's tested; and amended, rd631, the user's decision: a closure's shared borrow of such a field is read where the closure derefs it. Amends
+Status: Accepted (the user's decision, rd204); amended below, the user's decision: a binding that gives back what the program gave it, `#[rust_js::gives_back]`, gives the program's own object; and amended again, rd221: a struct the program builds is its own data, whatever JS gives of its type; and amended, #411, the user's decision: a binding that gives fresh plain data, `#[rust_js::gives_plain_data]`, gives no getter's object; and amended, #430: a pattern's subject is read once where it's tested; and amended, rd631, the user's decision: a closure's shared borrow of such a field is read where the closure derefs it; and amended, rd418, the user's decision: a cell's `replace` or `take` whose old value nothing reads is the write alone. Amends
 [0194](0194-jsx-attributes-read-once.md),
 [0672](0672-a-property-a-test-reads-is-read-once.md) and
 [0866](0866-a-let-only-its-if-let-reads-is-read-there.md): a field of a
@@ -360,3 +360,45 @@ is read where it's derefed", whose getter's reads are counted. Mutations
 `getter-capture-read-first` and `getter-capture-given-on-read-late`
 (`lower/mir/closures.ts`) and `derefs-capture-whole-unseen`
 (`lower/mir/queries.ts`).
+
+## Amendment (2026-11-03): an old value nothing reads is no read (rd418, the user's decision)
+
+React's useActionState overrides the URL of the form action a server
+action's `$$FORM_ACTION` gives, upstream's `metadata.action =
+permalink;`. Its port writes shared's `ReactCustomFormAction.action`, a
+`RefCell<Option<String>>`, `metadata.action.replace(Some(..))`, and
+printed `const old = metadata.action; metadata.action = '' + permalink;`.
+The struct is one JS may make, so its field's read is a getter's, which
+this ADR keeps; and `replace` lowered as a read of the old value, then
+the write. Written `*metadata.action.borrow_mut() = Some(..)`, the same
+Rust, the old value dropped where it's replaced, it printed the write
+alone.
+
+**A cell's `replace` or `take` whose old value nothing reads, and whose
+drop does nothing, is the write alone**, `metadata.action = "" +
+permalink;`, as the assignment through a borrow is: no getter's read
+either way. Rust's program can't see the old value: it's moved out and
+dropped, and the drop does nothing JS runs. What tells, MIR's: the call's
+destination a temporary no statement reads and no drop reads
+(`FnCx::result_unread`, the rule a `OnceCell`'s `set` already asked of
+its `Result`, ADR 0847), carried to the lowering as `Call::unread`. An old
+value that's read, returned, bound by the program or printed, is read
+once, before the write, as before; so is one whose drop does something,
+an `Option<Noisy>` whose `Drop` prints, which runs after the write, as
+Rust's does.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, none. The program
+reads nothing it's told; a getter on the object JS made isn't run, as
+upstream's assignment runs none, and as `*borrow_mut() = v` already
+printed.
+
+Held by `test/corpus/cell_replace_dropped.rs`, against native Rust (a
+`RefCell`'s `replace` and `take` and a `Cell`'s `replace` dropped, in a
+closure too; an old value returned and one printed; one whose drop
+prints, replaced and taken), and by `test/cross-crate-items.test.ts`'s "a
+replace of a JS-made struct's cell field whose old value nothing reads is
+the write alone", the port's shape across crates, whose getter's reads
+are counted: none for the write, one where the old value is returned.
+Mutations `replace-unread-read` (`lower/std_types/cell.ts`),
+`result-unread-untold` and `result-unread-of-what-is-read`
+(`lower/mir/std_calls.ts`).

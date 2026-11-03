@@ -1220,6 +1220,88 @@ pub fn keyed(given: &Unknown) -> bool {
   expect([fiber.parent === fiber, keyed({ key: 0 })]).toEqual([true, false]);
 });
 
+// React's useActionState writes the form action a server action's
+// `$$FORM_ACTION` gives, shared's `ReactCustomFormAction`, a struct JS
+// makes: `metadata.action.replace(Some(..))` is upstream's `metadata.action
+// = permalink`, the write alone, as `*borrow_mut() = ..` is, no getter's
+// read of the old value nothing reads (rd418, ADR 1022, amended). One whose
+// old value is read reads it once.
+test("a replace of a JS-made struct's cell field whose old value nothing reads is the write alone", async () => {
+  const dir = fixture("cross-crate-replace-unread");
+  const { app } = compiled(dir, `use std::cell::RefCell;
+
+pub struct FormAction {
+    pub name: Option<String>,
+    #[cfg_attr(rust_js, rust_js::optional)]
+    pub action: RefCell<Option<String>>,
+}
+
+pub fn named(action: &FormAction) -> Option<String> {
+    action.action.borrow().clone()
+}
+`, `use std::marker::PhantomData;
+
+use dep::FormAction;
+use js::JsObject;
+
+pub struct ServerAction(PhantomData<JsObject>);
+
+impl ServerAction {
+    #[cfg_attr(rust_js, rust_js::link_name = "$$FORM_ACTION")]
+    fn form_action(&self, prefix: &str) -> &'static FormAction {
+        let _ = prefix;
+        unreachable!()
+    }
+}
+
+pub fn overridden(action: &ServerAction, permalink: Option<String>) -> &'static FormAction {
+    let metadata = action.form_action("p");
+    if let Some(permalink) = &permalink {
+        metadata
+            .action
+            .replace(Some(js::concat_text(permalink.as_str())));
+    }
+    metadata
+}
+
+pub fn cleared(action: &ServerAction) {
+    let metadata = action.form_action("p");
+    metadata.action.take();
+}
+
+pub fn swapped(action: &ServerAction, permalink: &str) -> Option<String> {
+    let metadata = action.form_action("p");
+    metadata.action.replace(Some(permalink.to_owned()))
+}
+`);
+  expect(app).toContain('  if (permalink != null) {\n    metadata.action = "" + permalink;\n  }\n');
+  expect(app).toContain('  const metadata = action.$$FORM_ACTION("p");\n  metadata.action = undefined;\n}');
+  expect(app).not.toContain("const old = metadata.action;\n    metadata.action =");
+  expect(app).toContain("  const old = metadata.action;\n  metadata.action = permalink;\n  return old;\n");
+  const { overridden, cleared, swapped } = await import(join(dir, "app", "lib.js"));
+  // An action whose `action` a getter answers, which counts its reads.
+  let reads = 0;
+  let stored: string | undefined = "/old";
+  const metadata = {
+    name: "form",
+    get action() {
+      reads++;
+      return stored;
+    },
+    set action(v: string | undefined) {
+      stored = v;
+    },
+  };
+  const server = { $$FORM_ACTION: () => metadata };
+  expect(overridden(server, "/new")).toBe(metadata);
+  expect([stored, reads]).toEqual(["/new", 0]);
+  cleared(server);
+  expect(stored).toBeUndefined();
+  expect(reads).toBe(0);
+  stored = "/kept";
+  expect([swapped(server, "/next"), stored, reads]).toEqual(["/kept", "/next", 1]);
+});
+
 // rd613 (ADR 0861, amended): a library's function whose own nullable
 // parameter each of its crate's calls gives `null` or a value tests it
 // `!== null`, as its contract says (`nulled_params`); a consumer's call
