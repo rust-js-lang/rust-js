@@ -150,7 +150,10 @@ fn owning(name: &'static str) {
 
 fn counted(n: u32) -> u32 {
     let start = n * 2;
-    let _guard = Finally(|| log(format!("counted from {start}")));
+    let _guard = Finally(|| {
+        let text = format!("counted from {start}");
+        log(text);
+    });
     n + start
 }
 

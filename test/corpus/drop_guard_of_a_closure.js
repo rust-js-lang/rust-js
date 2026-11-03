@@ -148,7 +148,8 @@ function owning(name) {
 function counted(n) {
   const start = n * 2;
   const result = n + start;
-  log(`counted from ${start}`);
+  const text = `counted from ${start}`;
+  log(text);
   return result;
 }
 

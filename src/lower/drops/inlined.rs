@@ -189,7 +189,12 @@ fn called_closure(body: &mut Vec<Stmt>, params: &[Pattern], name: &str) {
     if declared != 1 || js::mentions_in(body, name) != 1 || !reads_where_made(body, params, name, &closure_body) {
         return;
     }
-    let whole = body.clone();
+    // What's beside the body where it's called, the closure's `const` not:
+    // it goes, so what the closure declares is no other name there.
+    let mut whole = body.clone();
+    js::each_block_mut(&mut whole, &mut |stmts| {
+        stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(n, _) if n == name));
+    });
     let mut done = false;
     js::each_block_mut(body, &mut |stmts| {
         let called = |s: &Stmt| {

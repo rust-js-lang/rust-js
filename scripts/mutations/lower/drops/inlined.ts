@@ -504,4 +504,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_to_mut_ref.rs$"],
     snapshots: true,
   },
+  {
+    name: "guard-closure-beside-itself",
+    breaks:
+      "a guard's closure's body, in its call's place, names what it declares apart from its own `const`'s, `text$1`, alien-signals' `link$1$1` (#501)",
+    file: "src/lower/drops/inlined.rs",
+    find: "        stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(n, _) if n == name));\n    });\n    let mut done = false;\n",
+    replace: "    });\n    let mut done = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
+    snapshots: true,
+  },
 ];

@@ -317,7 +317,10 @@ It printed `finallyDrop_drop(_restore)` in the `finally`, of a
   was made, as lowering names a function's locals apart along each scope
   chain (`reads_where_made` says so of each, the sound reading, kept in
   case naming changes, as `alone`'s is, and no program reaches its other
-  cases today, so no mutation holds them).
+  cases today, so no mutation holds them). What the body declares is named
+apart only from what's beside it where it's called, not from the closure
+it was, which goes: alien-signals' `trigger` reads `let { value: link }`
+in its `finally`, not `link$1$1`.
 
 ```js
 function oper(node) {
@@ -357,7 +360,8 @@ dictionary and drop) against native Rust; and the mutations
 `generic-drop-kept`, `drop-call-of-drops-kept`, `guard-closure-kept`,
 `guard-closure-called-twice-inlined`,
 `closure-read-of-the-function-refused`, `closure-read-of-a-block-refused`
-and `lent-guard-field-unwritten`, held by `mut_ref_to_mut_ref`
+`guard-closure-beside-itself` and `lent-guard-field-unwritten`, held by
+`mut_ref_to_mut_ref`
 (`drops/inlined.ts`), `unread-parameter-read-given`,
 `closure-of-nothing-refused` and `expression-closure-kept`
 (`js/applied.ts`). That a parameter's argument has no effects, and
