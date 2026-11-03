@@ -895,8 +895,10 @@ pub fn made(ctor: &'static ResponseClass) -> f64 {
 // #449 (P0): a constructor's write through a `RefCell` field of its
 // `this`, in a block, `*this._held.borrow_mut() = Some(..)`, as React's
 // Flight client's ResponseInstance sets `this._weakResponse` in DEV, sets
-// the instance's field, `this._held = ..`. A handle on a place of `this`
-// that stays one, `&mut` lent, `bump(&mut this._count.borrow_mut())`,
+// the instance's field, `this._held = ..`. A `&mut` of it given to a
+// function, `bump(&mut this._count.borrow_mut())`, is the box read back
+// (ADR 0099), as a plain field's is; a handle on a place of `this` that
+// stays one, given on where a reference comes back, `bump(either(..))`,
 // reads it through `const this$ = this;`: its object's getter and setter
 // read their own `this`, that object, and the instance never had it.
 test("a constructor's write through its this's RefCell field sets the instance's", async () => {
@@ -925,6 +927,10 @@ fn bump(count: &mut f64) {
     *count += 1.0;
 }
 
+fn either<'a>(first: bool, a: &'a mut f64, b: &'a mut f64) -> &'a mut f64 {
+    if first { a } else { b }
+}
+
 unsafe impl js::Defined for Instance {}
 unsafe impl js::WeakKey for Instance {}
 
@@ -945,6 +951,8 @@ thread_local! {
                 *this._name.borrow_mut() = Some(name);
                 this._count.replace(n);
                 bump(&mut this._count.borrow_mut());
+                let mut spare = 0.0;
+                bump(either(n > 0.0, &mut this._count.borrow_mut(), &mut spare));
             }
             this
         }));
@@ -967,10 +975,11 @@ pub fn name(n: f64) -> String {
 `);
   expect(js).toContain("  if (dev) {\n    this._held = {\n");
   expect(js).toContain("    this._name = name;\n");
+  expect(js).toContain("    const count = { value: this._count };\n    bump(count);\n    this._count = count.value;\n");
   expect(js).toContain("function instance(n, dev) {\n  const this$ = this;\n");
-  expect(js).toContain("      get value() {\n        return this$._count;\n");
+  expect(js).toContain("          get value() {\n            return this$._count;\n");
   expect(js).not.toMatch(/get value\(\) \{\n\s*return this\./);
-  expect([lib.held(2), lib.name(3), lib.count(4)]).toEqual([2, "n3", 5]);
+  expect([lib.held(2), lib.name(3), lib.count(4), lib.count(-1)]).toEqual([2, "n3", 6, 0]);
 });
 
 // ADR 1049: a typed array's class, and a `DataView`'s, is typed by one
