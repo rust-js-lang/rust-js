@@ -625,15 +625,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "commented-case-in-its-body",
-    breaks:
-      "a comment above a `case` that does nothing, `// One is fine.\\n 1 => {}`, is in its body, `case 1: // One is fine.`, not above it (#508, rd619)",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "                        !(matches!(s.kind, StmtKind::Comments) && values.values.iter().any(|v| v.span.lo == s.span.lo))\n",
-    replace: "                        true\n",
-    tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment above an arm that does nothing is the arm.s"],
-  },
-  {
     name: "default-comment-marks-unread",
     breaks: "a comment above a last `_ => {}` keeps its `match` from being a `switch`, each arm its own copy of what follows (rd701)",
     file: "src/lower/mir/tidy/switches.rs",

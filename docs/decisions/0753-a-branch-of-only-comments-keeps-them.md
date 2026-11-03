@@ -301,7 +301,8 @@ that does nothing is the arm's" and "a comment above a loop's Ok arm of
 nothing is at its try's end", run; and the mutations
 `commented-arm-unplaced` (`lower/mir/assign.ts`), `commented-arm-of-a-guard`,
 `commented-first-arm-unmarked` (`lower/sources.ts`),
-`commented-case-in-its-body` (`lower/mir/tidy/switches.ts`),
+`commented-case-in-its-body` (`lower/mir/tidy/switches.ts`, gone with
+its filter: ADR 0629's red-main amendment),
 `first-arm-then-marker-kept` (`prepare/catches.ts`) and
 `loop-try-said-unfolded` (`prepare/labels.ts`).
 

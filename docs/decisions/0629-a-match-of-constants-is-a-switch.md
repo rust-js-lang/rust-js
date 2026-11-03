@@ -1103,7 +1103,16 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same JS. A
   `commented-arm-not-written-apart` puts it back. The same `break;` left
   `default-pattern-comment-after-statement` reached only by a `default:`
   of one statement that leaves, `_ /* "{" */ => continue`, which
-  `test/lowering-comments-jumps.test.ts` now holds.
+  `test/lowering-comments-jumps.test.ts` now holds. With the guard gone,
+  tidy's filter of a comment above an arm that does nothing out of its
+  case's body (`tidy/switches.rs`, #508, ADR 0753) changed nothing either,
+  as the case is printed where its value is, the comment above it: the
+  corpus's JS (1,575 files) and five probes, `1 => {}`, `1 => ()`, `1 | 2
+  => {}`, a guarded and a text arm, are the same without it. The filter
+  is gone, and its mutation `commented-case-in-its-body` with it;
+  lowering-comments-jumps' "a comment above an arm that does nothing is
+  the arm's" still holds the output, and `commented-arm-not-written-apart`
+  the printer's rule.
 
 ## Amendment: an `Option<bool>`'s `Some(false)` and `Some(true)` are a `switch`'s cases (#545, 2026-11-04, the user's decision)
 

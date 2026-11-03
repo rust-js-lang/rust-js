@@ -563,13 +563,10 @@ fn switch_at(
         match last {
             true => default = Some(body),
             // What's said above an arm that does nothing, at its pattern,
-            // is above its `case`, its constant's (#508).
+            // is above its `case`, its constant's (#508): `to_oxc` prints
+            // the case where its value is (`written_apart`, ADR 0629).
             false => switched.push(js::Case {
-                body: (body.into_iter())
-                    .filter(|s| {
-                        !(matches!(s.kind, StmtKind::Comments) && values.values.iter().any(|v| v.span.lo == s.span.lo))
-                    })
-                    .collect(),
+                body,
                 values: values.values,
                 falls,
             }),
