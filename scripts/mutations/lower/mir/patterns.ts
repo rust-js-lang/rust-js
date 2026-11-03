@@ -3,6 +3,25 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "frozen-borrow-of-a-cell",
+    breaks:
+      "a `let` of a `&Cell` is taken for a frozen borrow and read where it's made, `const count = store.count`, though a call it's held across sets it: the value before the call (rd658, P0)",
+    file: "src/lower/mir/patterns.rs",
+    find: "            held.is_some_and(|held| !held.has_escaping_bound_vars() && held.is_freeze(self.tcx, self.typing_env))\n",
+    replace: "            held.is_some_and(|held| !held.has_escaping_bound_vars())\n",
+    tests: ["test/corpus.test.ts", "-t", "^frozen_borrow_named.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "frozen-borrow-not-of-a-ref",
+    breaks: "a `RefCell`'s `Ref` isn't taken for a frozen borrow, so one held across a call loses its name (rd658)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                ty::Adt(_, args) if self.is_std_type(ty, StdItem::RefCellRef) => args.types().next(),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^frozen_borrow_named.rs$"],
+    snapshots: true,
+  },
+  {
     name: "tested-some-copy-unseen",
     breaks:
       "a `let` of `js::null()` set to a place just tested `is_some()` may be `undefined`, so the nullable parameter it's given is tested `!= null` (rd623)",

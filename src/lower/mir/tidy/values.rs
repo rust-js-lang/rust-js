@@ -628,7 +628,12 @@ fn its_place(place: &Expr) -> bool {
 /// which MIR declares before its `if`, a `const` only once `declarations`
 /// made it one (rd533); a field's others are their place later, in place
 /// (`handles_in_place`), where what's made before them is read into them.
-pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool) {
+///
+/// A `let` of a shared borrow of what has no cell of its own, `frozen`'s,
+/// `let chunks = store.chunks.borrow();`, is read where it's made, `const
+/// chunks = store.chunks;`, whatever runs before its uses: Rust lets
+/// nothing change what it's to while it's held (rd658).
+pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, frozen: &HashSet<String>) {
     let mut handles: Vec<(String, Expr, bool, js::Storage)> = Vec::new();
     js::each_list(body, &mut |stmts| {
         for (k, stmt) in stmts.iter().enumerate() {
@@ -637,7 +642,8 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool) {
                 && (matches!(place.kind, ExprKind::Member(..)) && !in_place
                     || matches!(storage, js::Storage::InPlace(_)) && place.reads_same())
             {
-                handles.push((name.clone(), (**place).clone(), read_at_once(stmts, k, name), *storage));
+                let at_once = frozen.contains(name) || read_at_once(stmts, k, name);
+                handles.push((name.clone(), (**place).clone(), at_once, *storage));
             }
         }
     });

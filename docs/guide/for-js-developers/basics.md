@@ -3167,6 +3167,14 @@ export function isAdult(p) {
   is the place read there, `workInProgress.child = current.child;`, where
   it's named as the field and nothing runs before it; named otherwise,
   given as an argument or tested, it keeps its name (ADR 0866, amended).
+  A `let` of a borrow that it holds, `let chunks =
+  store.chunks.borrow();`, keeps its name too, read where it's written,
+  `const chunks = store.chunks;`, whatever runs before its uses: nothing
+  can change the field while it's borrowed. A `let count =
+  &store.count;` of a `Cell`, which a call may `set` meanwhile, is the
+  field read where it's used
+  ([ADR 0287](../../decisions/0287-cells-as-variables.md), amended,
+  rd658).
 - `if let Some(cancel) = root.cancel.take()` tests the field and takes it
   where it's there, `if (root.cancel != null) { const cancel =
   root.cancel; root.cancel = undefined; .. }`, as JS writes it, of a

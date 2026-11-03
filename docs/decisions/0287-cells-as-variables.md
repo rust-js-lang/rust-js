@@ -72,3 +72,34 @@ lists didn't have saw none: not in `check:fast --all`, and not in the
 React port's 13 crates. The mutation is gone. lowering-cells' "a cell
 cloned in a closure is its function's let" still holds `let running =
 false;` and `let total = 0;`.
+
+## Amendment: a `let` of a shared borrow keeps its name (rd658)
+
+React's ReplyBackingFormData reads a `RefCell` field through a `let` of
+its guard, `let string_chunks = backing_store.string_chunks.borrow();`,
+then a call, `string_chunks.get(key)`. A field's `RefCell` no borrow of
+which meets another is a handle on the field (ADR 0863, amended), and the
+handle was read where it's made only where nothing that could set a field
+ran before its last use (`read_at_once`): past the call, each use was the
+field again, `backingStore.stringChunks.get(key)`, and the `let`'s name
+was lost, where upstream writes `const stringChunks =
+backingStore.stringChunks;`. getBackingBlob kept its `blobs` only because
+its last use was read into a temporary before the call that used it.
+
+**A `let` of a shared borrow, a `&T` or a `RefCell`'s `Ref<T>`, of a
+`T` with no cell of its own (`Freeze`), is read where it's made and keeps
+its name** (`LetNames::frozen`, which `read_handles` reads), whatever
+runs before its uses: while it's held, Rust lets nothing change what it's
+to, a `RefCell`'s `borrow_mut` panicking where rust-js counts borrows and
+proven unable to meet it where it doesn't. A `&Cell`'s, `let count =
+&store.count;`, whose `set` a call it's held across may run, still reads
+its place where it's used, and so does any other handle MIR makes. Case
+([0262](0262-when-rust-and-js-disagree.md)): none: the value read where
+the `let` is is the one each use would read.
+
+Held by the corpus's `frozen_borrow_named.rs`, against native Rust (a
+`Ref` held across calls that set the store's other cells and a variable
+it was borrowed through given another store; a `&Cell` across a call that
+sets it), and the mutations `mir-tidy-frozen-handle-at-its-uses`
+(`mir/tidy/values.ts`), `frozen-borrow-of-a-cell` and
+`frozen-borrow-not-of-a-ref` (`mir/patterns.ts`).

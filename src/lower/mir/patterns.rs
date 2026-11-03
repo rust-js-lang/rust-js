@@ -997,8 +997,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
             }
         };
+        // A shared borrow, `&T` or a `RefCell`'s `Ref<T>`, of a `T` with no
+        // cell of its own: what it's to can't change while it's held (rd658).
+        let frozen_borrow = |ty: Ty<'tcx>| {
+            let held = match ty.kind() {
+                ty::Ref(_, held, ty::Mutability::Not) => Some(*held),
+                ty::Adt(_, args) if self.is_std_type(ty, StdItem::RefCellRef) => args.types().next(),
+                _ => None,
+            };
+            held.is_some_and(|held| !held.has_escaping_bound_vars() && held.is_freeze(self.tcx, self.typing_env))
+        };
         let mut named = Vec::new();
         let mut ends_borrow = Vec::new();
+        let mut frozen = Vec::new();
         let mut guards = Vec::new();
         for stmt in thir.stmts.iter() {
             if let thir::StmtKind::Let {
@@ -1016,6 +1027,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // field's `#[rust_js::name]`, `_debugHookTypes`.
                 if initializer.and_then(borrow_cloned) == Some(binding) {
                     ends_borrow.push(pattern.span);
+                }
+                if frozen_borrow(pattern.ty) {
+                    frozen.push(pattern.span);
                 }
             }
         }
@@ -1052,6 +1066,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect(),
             named: names(&named),
             ends_borrow: names(&ends_borrow),
+            frozen: names(&frozen),
             guards,
         }
     }

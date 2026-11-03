@@ -326,7 +326,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0284 An enum tagged by a property of its own is a discriminated union](0284-discriminated-unions.md)
 - [0285 `std::ptr::eq` of JS objects is whether they're one](0285-ptr-eq.md) *(amended: an item that's an object and an object, `items[i] === r`, its index checked)*
 - [0286 A component that sometimes renders nothing returns an `Option`](0286-components-that-render-nothing.md)
-- [0287 A cell only its function reads and sets is a `let`](0287-cells-as-variables.md) *(amended by 0791: one written through is its place where it's used)*
+- [0287 A cell only its function reads and sets is a `let`](0287-cells-as-variables.md) *(amended by 0791: one written through is its place where it's used; amended: a `let` of a shared borrow keeps its name, rd658)*
 - [0288 A `Cell` in a field is the property it holds](0288-cell-fields.md) *(extended by 0847: a `OnceCell`'s too, absent until it's set)*
 - [0289 A `Copy` bound takes a copy only where a copy isn't the value](0289-copy-bounds.md) *(amended: a caller whose value is its own copy, JS among them, gives none; amended by 0914: a library's takes one only where its crate's calls give one)*
 - [0290 A pattern names a variable set again while nothing sets it](0290-steady-bindings.md)

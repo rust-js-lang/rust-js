@@ -162,10 +162,19 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's handle on a `Cell` field is read where it's made, though set before it's read",
     file: "src/lower/mir/tidy/values.rs",
-    find: "                handles.push((name.clone(), (**place).clone(), read_at_once(stmts, k, name), *storage));\n",
-    replace:
-      "                handles.push((name.clone(), (**place).clone(), true, *storage));\n",
+    find: "                let at_once = frozen.contains(name) || read_at_once(stmts, k, name);\n",
+    replace: "                let at_once = true;\n",
     tests: ["test/lowering-cells.test.ts", "-t", "a Cell a let takes apart"],
+  },
+  {
+    name: "mir-tidy-frozen-handle-at-its-uses",
+    breaks:
+      "a `let` of a `RefCell` field's `Ref` held across a call is read at each use, `store.chunks.get(key)`, its name lost (rd658)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "                let at_once = frozen.contains(name) || read_at_once(stmts, k, name);\n",
+    replace: "                let at_once = read_at_once(stmts, k, name);\n",
+    tests: ["test/corpus.test.ts", "-t", "^frozen_borrow_named.rs$"],
+    snapshots: true,
   },
   {
     name: "lazy-flatmap-stepped",

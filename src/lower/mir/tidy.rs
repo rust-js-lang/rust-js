@@ -62,6 +62,12 @@ pub(super) struct LetNames {
     /// reads as its value written in the statement right after it where
     /// only that reads it (ADR 0866, amended).
     pub(super) ends_borrow: HashSet<String>,
+    /// Of those, one of a shared borrow, a `&T` or a `RefCell`'s `Ref<T>`,
+    /// of a `T` with no cell of its own (`Freeze`), `let chunks =
+    /// store.chunks.borrow();`: what it's to can't change while it's held,
+    /// so a handle on its place reads, where it's made, what each of its
+    /// uses would (rd658).
+    pub(super) frozen: HashSet<String>,
     /// Where each `let` of a drop guard, a value of a type with a `Drop` of
     /// its own, is written, and where the block whose end drops it ends:
     /// the `try` its drop ends starts at the `let` (ADR 0865, amended).
