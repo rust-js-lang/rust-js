@@ -148,16 +148,19 @@ pub(super) fn impl_misuse(tcx: TyCtxt<'_>, imp: DefId, class: DefId) -> Vec<(rus
 
 /// The JS class `member`'s class is, made where its first member is
 /// placed: what it extends, a binding's, by the name its module imports it
-/// as, `imports`', `Component` of react's (rd331); `None` of a class that
-/// extends nothing, a constructor function.
+/// as, `imports`', `Component` of react's (rd331), `None` of a class that
+/// extends nothing; and whether it's an ES class, as one that extends a
+/// binding's is, or one whose struct says so (rd682), or a constructor
+/// function.
 pub(crate) fn js_class(
     tcx: TyCtxt<'_>,
     member: DefId,
     imports: &std::collections::HashMap<(String, String), String>,
 ) -> crate::js::Class {
+    let adt = class_of(tcx, member);
     crate::js::Class {
-        extends: (class_of(tcx, member).and_then(|adt| superclass(tcx, adt)))
-            .map(|(_, export)| imports[&export].clone()),
+        extends: (adt.and_then(|adt| superclass(tcx, adt))).map(|(_, export)| imports[&export].clone()),
+        es: adt.is_some_and(|adt| super::is_es_class(tcx, adt)),
         ..Default::default()
     }
 }

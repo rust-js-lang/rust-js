@@ -691,6 +691,18 @@ amended). A class that implements a binding's class, react's `Component`,
 extends it instead, an ES class, `class Surface extends Component { .. }`:
 see [class components](../react/components.md#class-components) ([ADR
 1041](../../decisions/1041-a-class-that-implements-a-bindings-class-extends-it.md)).
+One whose struct is marked `#[cfg_attr(rust_js, rust_js::class(es))]` is
+an ES class too, where upstream writes one: `class Plugin {
+constructor(options) { .. } apply(compiler) { .. } get count() { .. }
+static shout(text) { .. } }`, its constants its prototype's after it,
+`Plugin.prototype.limit = 3;`, and its module's default declared as it,
+`export default class Plugin { .. }`. JS sees an ES class: its methods
+aren't enumerable, and a call without `new` throws a `TypeError`. Its
+impl is marked `#[rust_js::class]` alone, as its struct says its form;
+its prototype replaced, which JS doesn't let be written, is refused, and
+so is `class(es)` of a class that extends a binding's, an ES class
+already ([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md),
+amended, rd682).
 React's `Component`, and its `PureComponent`, whose prototype inherits
 `Component`'s:
 

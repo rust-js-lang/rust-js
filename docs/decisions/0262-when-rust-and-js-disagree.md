@@ -286,8 +286,10 @@ react.dev's TopNav passes the same closure instead.
   class's aren't; and the class may be called without `new`, where an ES
   class's call throws a `TypeError`. A program that does neither, as
   react-art's callers don't, can't tell. A class that extends a binding's
-  is an ES class (ADR 1041). Listed in the guide's differences
-  (`semantics.md`, 37).
+  is an ES class (ADR 1041), and so is one whose struct is marked
+  `#[rust_js::class(es)]`, which a port writes where upstream writes an
+  ES class, so it isn't this case's (ADR 0761, amended, rd682). Listed in
+  the guide's differences (`semantics.md`, 37).
 - **A closure given as a descriptor's `get` is an arrow**, the second
   case's, which the user decided (2026-11-01, rd331f): react-art's Text
   defines `width` and the rest on its instance, `Object.defineProperty(this,

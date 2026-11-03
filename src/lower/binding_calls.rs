@@ -219,12 +219,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Object.create(Promise.prototype)` is (the pipeline's,
                 // `prototype_set`); a function's would drop them, refused
                 // (#448, ADR 0761 amended).
+                // An ES class's, which JS doesn't let be written (rd682).
+                let names = |adt: rustc_span::def_id::DefId| {
+                    super::classes::member_naming(self.tcx, adt).is_some_and(
+                        |ctor| matches!(self.fn_ref(ctor).kind, js::ExprKind::Member(ref of, _) if js::same_path(of, &this)),
+                    )
+                };
                 if name == "prototype"
-                    && let Some(adt) = (super::classes::with_prototype_members(self.tcx).into_iter()).find(|&adt| {
-                        super::classes::member_naming(self.tcx, adt).is_some_and(
-                            |ctor| matches!(self.fn_ref(ctor).kind, js::ExprKind::Member(ref of, _) if js::same_path(of, &this)),
-                        )
-                    })
+                    && let Some(adt) = super::classes::es_classes(self.tcx).into_iter().find(|&adt| names(adt))
+                {
+                    return Err(self.unsupported(span, &super::classes::es_prototype_refused(self.tcx, adt)));
+                }
+                if name == "prototype"
+                    && let Some(adt) =
+                        (super::classes::with_prototype_members(self.tcx).into_iter()).find(|&adt| names(adt))
                 {
                     if !(self.frame.owner == self.item && super::bindings::is_on_load(self.tcx, self.item)) {
                         let what = format!(

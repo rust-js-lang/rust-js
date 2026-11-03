@@ -17,6 +17,7 @@ use rustc_span::def_id::DefId;
 
 mod constructors;
 mod defaults;
+mod forms;
 mod getters;
 mod namespaces;
 mod prototypes;
@@ -25,6 +26,8 @@ mod subclasses;
 use constructors::gives_instance;
 pub(crate) use constructors::{refuse_counted_instances, set_where_constructed};
 pub(in crate::lower) use defaults::{prototype_defaults, take_default};
+pub(crate) use forms::{es_classes, es_prototype_refused, is_es_class};
+use forms::{form_misuse, impl_form_misuse};
 pub(crate) use getters::extended_getter;
 use getters::{marked_getter, reads_as_getter, trait_getter, trait_getter_misuse};
 pub(crate) use namespaces::{names_namespace, taken_apart, unread_namespaces};
@@ -601,6 +604,10 @@ pub(super) fn reject_misuse<'tcx>(
                     );
                 }
                 let extends = superclass_impls(tcx, id);
+                // Its form, an ES class's or a constructor function's (rd682).
+                if let Some(why) = form_misuse(tcx, id, !extends.is_empty()) {
+                    refuse(span, why);
+                }
                 if extends.len() > 1 {
                     refuse(
                         span,
@@ -653,6 +660,9 @@ pub(super) fn reject_misuse<'tcx>(
                     (true, false) => refuse(span, "struct's impl is marked `#[rust_js::class]` too"),
                     (false, true) => refuse(span, "impl is of a struct marked `#[rust_js::class]`"),
                     _ => {}
+                }
+                if let Some(why) = impl_form_misuse(tcx, id) {
+                    refuse(span, why);
                 }
                 let Some(class) = class_of_impl(tcx, id) else {
                     continue;

@@ -201,8 +201,8 @@ pub(super) fn statement_spans(module: &Module) -> Spans {
 /// 0761): `/** Base class helpers .. */ function Component(..)`.
 pub(super) fn declared_class(n: &js::Namespace) -> Option<(js::Span, js::Span)> {
     let class = n.class.as_ref().filter(|class| !class.declared.is_none())?;
-    // An ES class, which is where its struct is (rd331).
-    if class.extends.is_some() {
+    // An ES class, which is where its struct is (rd331, rd682).
+    if class.es {
         return Some((class.declared, class.declared));
     }
     let constructor = n.methods.iter().find(|f| f.name == class.constructor)?;

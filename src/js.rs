@@ -260,6 +260,11 @@ pub struct Class {
     /// Component { .. }`, as `extends` and `super(props)` are written
     /// (rd331); `None` of a constructor function.
     pub extends: Option<String>,
+    /// Whether it's an ES class, `class Plugin { constructor(..) { .. }
+    /// apply(..) { .. } }`: one that extends a binding's (rd331), or whose
+    /// struct says so, `#[rust_js::class(es)]` (rd682); else a constructor
+    /// function and its prototype (ADR 0761).
+    pub es: bool,
     /// Whether the item after it, a `js::on_load!`'s one statement,
     /// replaces its prototype, `ReactPromise.prototype =
     /// Object.create(Promise.prototype)`: printed right after its

@@ -51,8 +51,8 @@ export const mutations: Mutation[] = [
     name: "subclass-extends-nothing",
     breaks: "a class component's class extends nothing, printed as a constructor function whose `super(props)` is a SyntaxError",
     file: "src/lower/classes/subclasses.rs",
-    find: "        extends: (class_of(tcx, member).and_then(|adt| superclass(tcx, adt)))\n",
-    replace: "        extends: (class_of(tcx, member).and_then(|adt| superclass(tcx, adt)).filter(|_| false))\n",
+    find: "        extends: (adt.and_then(|adt| superclass(tcx, adt))).map(|(_, export)| imports[&export].clone()),\n",
+    replace: "        extends: (adt.and_then(|adt| superclass(tcx, adt)).filter(|_| false)).map(|(_, export)| imports[&export].clone()),\n",
     tests: [
       "test/class-components.test.ts",
       "-t",

@@ -86,6 +86,19 @@ fn defaulted(module: &Module) -> Option<&str> {
     module.default_export.as_deref().filter(|_| module.default_declared)
 }
 
+/// Whether `n`, a class of `module`, is its default declared as it, an ES
+/// class, `export default class ReactFlightWebpackPlugin { .. }`, as a
+/// class declaration can be (rd682); a constructor function is exported
+/// after its prototype's members, `export default Component;`.
+fn default_class(module: &Module, n: &js::Namespace) -> bool {
+    n.class.as_ref().is_some_and(|class| class.es) && module.default_export.as_deref() == Some(n.name.as_str())
+}
+
+/// The class of `module` declared as its default (`default_class`).
+fn declares_default_class(module: &Module) -> bool {
+    (module.items.iter()).any(|item| matches!(item, js::Item::Namespace(n) if default_class(module, n)))
+}
+
 /// Print `module` as JS, with a source map pointing into `rust_source`,
 /// laid out as the formatter lays it out (`format::laid_out`). What the
 /// crate's transforms make of it, and the `sourceMappingURL`, are the
@@ -148,12 +161,12 @@ pub fn emit(
                 let [js::Item::Statements(set), more @ ..] = rest else {
                     unreachable!("a class's prototype set is the item after it")
                 };
-                body.extend(cx.class(n, class, set));
+                body.extend(cx.class(n, class, set, default_class(module, n)));
                 items = more;
                 continue;
             }
             js::Item::Namespace(n) => match &n.class {
-                Some(class) => body.extend(cx.class(n, class, &[])),
+                Some(class) => body.extend(cx.class(n, class, &[], default_class(module, n))),
                 None => body.push(cx.namespace(n)),
             },
             // A constant declared as the default is its value (ADR 0625).
@@ -361,6 +374,7 @@ pub fn emit(
     // statements is of the ones before (ADR 0865, amended).
     if let Some(function) = &module.default_export
         && defaulted(module).is_none()
+        && !declares_default_class(module)
     {
         code.push_str(&format!("\nexport default {function};\n"));
         written.told.push(true);

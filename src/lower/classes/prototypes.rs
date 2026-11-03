@@ -68,8 +68,8 @@ pub(crate) fn with_prototype_members(tcx: TyCtxt<'_>) -> Vec<DefId> {
 /// (`js::Class::prototype_set`). Refused, saying why, where it's made of
 /// what the module makes, which isn't made there, where what the module
 /// runs as it loads is between them, which would see the prototype
-/// replaced first, and of another module's class or an ES class's, whose
-/// `prototype` JS doesn't let be written (#448, ADR 0761 amended).
+/// replaced first, and of another module's class (#448, ADR 0761 amended);
+/// an ES class's is refused where it's replaced (`es_prototype_refused`).
 pub(crate) fn set_prototypes(
     tcx: TyCtxt<'_>,
     items: &mut Vec<js::Item>,
@@ -104,18 +104,6 @@ pub(crate) fn set_prototypes(
             );
             continue;
         };
-        if let js::Item::Namespace(js::Namespace {
-            class: Some(js::Class {
-                extends: Some(extends), ..
-            }),
-            ..
-        }) = &items[class]
-        {
-            refuse(format!(
-                "an ES class extending `{extends}`, whose `prototype` JS doesn't let be written"
-            ));
-            continue;
-        }
         // What the module makes, which isn't made yet right after the
         // constructor: a function too, which may read it.
         let made: std::collections::HashSet<&str> = (items.iter())

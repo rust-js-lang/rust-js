@@ -1231,7 +1231,9 @@ React and JSX are [their own pages](README.md#react).
     throws: `for (k in g)` sees `applyFill`, and `LinearGradient(..)`
     runs. react-art's LinearGradient, RadialGradient and Pattern, which
     upstream writes as ES classes, are its (ADR 0262, the user's
-    decision, 2026-11-01).
+    decision, 2026-11-01). One whose struct is marked
+    `#[rust_js::class(es)]` is an ES class, as JS's (ADR 0761, amended,
+    rd682).
 38. A binding marked `#[rust_js::runs_nothing]` is taken at its word,
     though it runs what it's given: React DOM's Fizz config's
     `writeChunk(destination, chunk)`, which calls the destination's

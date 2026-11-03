@@ -865,8 +865,8 @@ export const mutations: Mutation[] = [
     name: "class-prototype-replaced-allowed",
     breaks: "a class's prototype with methods replaced at load compiles, its methods assigned to the prototype it replaces, `chunk.then` undefined (#448)",
     file: "src/lower/binding_calls.rs",
-    find: "                if name == \"prototype\"\n",
-    replace: "                if false\n",
+    find: "                if name == \"prototype\"\n                    && let Some(adt) =\n                        (super::classes::with_prototype_members",
+    replace: "                if false\n                    && let Some(adt) =\n                        (super::classes::with_prototype_members",
     tests: ["test/classes.test.ts", "-t", "replaced at load"],
   },
   {
@@ -957,5 +957,13 @@ export const mutations: Mutation[] = [
     find: "            } else if !output.walk().any(|named| named == ty::GenericArg::from(param))\n                && let Some(itself)",
     replace: "            } else if let Some(itself)",
     tests: ["test/rest-parameters.test.ts", "-t", "a function of rest arguments JS reads as a value is the function itself"],
+  },
+  {
+    name: "es-class-prototype-replaced-allowed",
+    breaks: "an ES class's prototype replaced compiles, `Plugin.prototype = ..`, which JS doesn't let be written: the load throws (rd682)",
+    file: "src/lower/binding_calls.rs",
+    find: "                    && let Some(adt) = super::classes::es_classes(self.tcx).into_iter().find(|&adt| names(adt))\n",
+    replace: "                    && let Some(adt) = super::classes::es_classes(self.tcx).into_iter().find(|_| false)\n",
+    tests: ["test/es-classes.test.ts", "-t", "what an ES class is refused"],
   },
 ];

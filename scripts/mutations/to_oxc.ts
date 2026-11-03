@@ -767,4 +767,12 @@ export const mutations: Mutation[] = [
     replace: "                let after_params = false\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "after a function.s return type"],
   },
+  {
+    name: "es-class-default-exported-twice",
+    breaks: "an ES class declared as its module's default is exported again after, `export default Plugin;`, a second default JS refuses (rd682)",
+    file: "src/to_oxc.rs",
+    find: "        && !declares_default_class(module)\n",
+    replace: "",
+    tests: ["test/es-classes.test.ts", "-t", "whose struct says es is an ES class"],
+  },
 ];

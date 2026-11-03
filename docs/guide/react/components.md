@@ -722,6 +722,8 @@ export function Clocks() {
 - A class that implements no binding's class is a constructor function
   and its prototype, as [JS classes](../interop/export-to-javascript.md#js-classes)
   are: its prototype's methods enumerable and its call without `new`
-  allowed, where an ES class's aren't ([differences](../semantics.md), 37).
+  allowed, where an ES class's aren't ([differences](../semantics.md), 37);
+  or, its struct marked `#[cfg_attr(rust_js, rust_js::class(es))]`, an ES
+  class, as react-art's `class LinearGradient` is upstream.
 
 Not yet: `this.state` and `setState`; `PureComponent`.

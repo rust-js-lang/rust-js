@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     name: "subclass-doc-unattached",
     breaks: "a class component's struct's `///` doc is nowhere, as a constructor function's is placed before its `new`",
     file: "src/to_oxc/starts.rs",
-    find: "    if class.extends.is_some() {\n",
+    find: "    if class.es {\n",
     replace: "    if false {\n",
     tests: [
       "test/class-components.test.ts",

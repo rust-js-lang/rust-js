@@ -131,7 +131,8 @@ test("a getter of the binding's class a class extends is its class's getter", as
 // rd679: a getter's mark that can't apply is refused, saying what to
 // write, never dropped: the trait's getter its impl doesn't mark, which
 // would print a method; the impl's of what the trait has as a method,
-// which would hide it; and the trait's of a method it binds.
+// which would hide it; and the trait's of a method it binds. rd682: and
+// `#[rust_js::class(es)]` of a class that's an ES class already.
 test("a getter of the class a class extends is marked as the trait marks it", () => {
   const unmarked = subclass.replace("impl ModuleDependency for ClientReferenceDependency {\n    #[cfg_attr(rust_js, rust_js::getter)]\n", "impl ModuleDependency for ClientReferenceDependency {\n");
   const method = dependency.replace("    /// `get type()`.\n    #[cfg_attr(rust_js, rust_js::getter)]\n", "");
@@ -139,6 +140,7 @@ test("a getter of the class a class extends is marked as the trait marks it", ()
   const cases: [string, string, string, string][] = [
     ["binding-subclass-getter-unmarked", dependency, unmarked, "a `#[rust_js::class]` method is a getter where `ModuleDependency`'s `type` is one, `get type()`: mark it `#[cfg_attr(rust_js, rust_js::getter)]` as the trait's is"],
     ["binding-subclass-getter-of-a-method", method, subclass, "getter overrides a getter, and `ModuleDependency`'s `type` is a method"],
+    ["binding-subclass-marked-es", dependency, subclass.replace("#[cfg_attr(rust_js, rust_js::class)]\npub struct", "#[cfg_attr(rust_js, rust_js::class(es))]\npub struct"), "that extends a binding's class is an ES class already: write it `#[rust_js::class]`"],
     ["binding-subclass-getter-bound", bound, subclass.replace("pub fn kind", "pub fn request_of(d: &ClientReferenceDependency) -> String {\n    d.request()\n}\n\npub fn kind").replace("impl ModuleDependency for ClientReferenceDependency {\n", "impl ModuleDependency for ClientReferenceDependency {\n    #[cfg_attr(rust_js, rust_js::getter)]\n    fn request(&self) -> String {\n        String::new()\n    }\n\n"), "getter of `ModuleDependency`'s is bound by its `link_name`, `\"get request\"`"],
   ];
   for (const [name, binding, rust, message] of cases) {

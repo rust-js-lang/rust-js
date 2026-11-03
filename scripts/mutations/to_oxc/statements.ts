@@ -332,10 +332,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "subclass-a-constructor-function",
-    breaks: "a class that extends one is a constructor function, `function Label(props) { super(props); .. }`, which can't extend",
+    breaks: "an ES class, one that extends one too, is a constructor function, `function Label(props) { super(props); .. }`, which can't extend",
     file: "src/to_oxc/statements.rs",
-    find: "        if let Some(extends) = &class.extends {\n",
-    replace: "        if let Some(extends) = class.extends.as_ref().filter(|_| false) {\n",
+    find: "        if class.es {\n",
+    replace: "        if false {\n",
     tests: [
       "test/class-components.test.ts",
       "-t",
@@ -417,5 +417,13 @@ export const mutations: Mutation[] = [
     find: "                false if class.getters.contains(&f.name) => (MethodDefinitionKind::Get, f.name.as_str(), false),\n",
     replace: "                false if false => (MethodDefinitionKind::Get, f.name.as_str(), false),\n",
     tests: ["test/binding-subclasses.test.ts", "-t", "is its class's getter"],
+  },
+  {
+    name: "es-class-default-declared-alone",
+    breaks: "an ES class that's its module's default is declared without `export default`, `class Plugin { .. }`, and its module exports no default (rd682)",
+    file: "src/to_oxc/statements.rs",
+    find: "            (true, Declaration::ClassDeclaration(declared)) => Statement::new_export_default_declaration(\n",
+    replace: "            (false, Declaration::ClassDeclaration(declared)) => Statement::new_export_default_declaration(\n",
+    tests: ["test/es-classes.test.ts", "-t", "whose struct says es is an ES class"],
   },
 ];

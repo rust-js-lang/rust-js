@@ -130,9 +130,15 @@ impl<'a> Cx<'a> {
     /// where its module's load replaces it, `prototype_set`, set right
     /// after its constructor, `ReactPromise.prototype =
     /// Object.create(Promise.prototype);`, before the methods (#448).
-    pub(super) fn class(&self, n: &js::Namespace, class: &js::Class, prototype_set: &[js::Stmt]) -> Vec<Statement<'a>> {
-        if let Some(extends) = &class.extends {
-            return self.subclass(n, class, extends);
+    pub(super) fn class(
+        &self,
+        n: &js::Namespace,
+        class: &js::Class,
+        prototype_set: &[js::Stmt],
+        default: bool,
+    ) -> Vec<Statement<'a>> {
+        if class.es {
+            return self.es_class(n, class, default);
         }
         let mut out = Vec::new();
         if let Some(constructor) = n.methods.iter().find(|f| f.name == class.constructor) {
@@ -231,14 +237,17 @@ impl<'a> Cx<'a> {
         out
     }
 
-    /// A class that extends one, a binding's (rd331): an ES class, as
-    /// `extends` and `super(props)` are written, `class Surface extends
-    /// Component { constructor(props) { super(props); .. } componentDidMount()
-    /// { .. } render() { .. } }`: its constructor, where it writes one, its
-    /// methods, getters and statics, each in the order its impls have it;
-    /// then its constants, its prototype's, as a constructor function's
-    /// are, `Surface.prototype.limit = 3;`.
-    fn subclass(&self, n: &js::Namespace, class: &js::Class, extends: &str) -> Vec<Statement<'a>> {
+    /// An ES class: one that extends a binding's (rd331), as `extends` and
+    /// `super(props)` are written, `class Surface extends Component {
+    /// constructor(props) { super(props); .. } componentDidMount() { .. }
+    /// render() { .. } }`, or one its struct says is, `class Plugin {
+    /// constructor(options) { .. } apply(compiler) { .. } }` (rd682): its
+    /// constructor, where it writes one, its methods, getters and statics,
+    /// each in the order its impls have it; then its constants, its
+    /// prototype's, as a constructor function's are,
+    /// `Surface.prototype.limit = 3;`. Its module's default, `default`, is
+    /// declared as it, `export default class Plugin { .. }`.
+    fn es_class(&self, n: &js::Namespace, class: &js::Class, default: bool) -> Vec<Statement<'a>> {
         let b = &self.b;
         let elements = n.methods.iter().map(|f| {
             let (kind, key, is_static) = match f.name == class.constructor {
@@ -282,23 +291,29 @@ impl<'a> Cx<'a> {
                 b,
             )
         });
-        let heritage = ClassHeritage::new(Expression::new_identifier(SPAN, self.name(extends), b), None, b);
+        let heritage = (class.extends.as_deref())
+            .map(|extends| ClassHeritage::new(Expression::new_identifier(SPAN, self.name(extends), b), None, b));
         let decl = Declaration::new_class_declaration(
             span(class.declared),
             ClassType::ClassDeclaration,
             ArenaVec::new_in(b),
             Some(BindingIdentifier::new(SPAN, self.name(&n.name), b)),
             None, // type parameters
-            Some(heritage),
+            heritage,
             ArenaVec::new_in(b),
             ClassBody::boxed(SPAN, ArenaVec::from_iter_in(elements, b), b),
             false, // abstract
             false, // declare
             b,
         );
-        let mut out = vec![match n.export {
-            true => Statement::new_export_declaration(span(class.declared), decl, b),
-            false => decl.into(),
+        let mut out = vec![match (default, decl) {
+            (true, Declaration::ClassDeclaration(declared)) => Statement::new_export_default_declaration(
+                span(class.declared),
+                oxc_ast::ast::ExportDefaultDeclarationKind::ClassDeclaration(declared),
+                b,
+            ),
+            (_, decl) if n.export => Statement::new_export_declaration(span(class.declared), decl, b),
+            (_, decl) => decl.into(),
         }];
         let prototype = || js::Expr::member(js::Expr::var(&n.name), "prototype");
         let assigned: Vec<js::Stmt> = (n.constants.iter())

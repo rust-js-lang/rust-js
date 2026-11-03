@@ -1,6 +1,6 @@
 # 0761. A `#[rust_js::class]` is a constructor function and its prototype
 
-Status: Accepted, by the user's decision of 2026-10-24; amended (rd325): a private class is its module's own; amended (rd554): a constructor may give an `Rc` of its instance; amended (#448): a prototype of methods isn't replaced at load; amended (#448, the user's decision of 2026-11-01): a load's prototype set right after its constructor; amended (2026-11-01, the user's decision): a class whose `new` isn't `pub` is its type alone; amended by [1049](1049-js-class-is-typed-by-classed.md) (the user's decision of 2026-11-01): a class `js::class` names is `js::Classed`, one line of the program's, and may implement a trait of types alone. Extends
+Status: Accepted, by the user's decision of 2026-10-24; amended (rd682, the user's decision of 2026-11-03): a class its struct marks `#[rust_js::class(es)]` is an ES class; amended (rd325): a private class is its module's own; amended (rd554): a constructor may give an `Rc` of its instance; amended (#448): a prototype of methods isn't replaced at load; amended (#448, the user's decision of 2026-11-01): a load's prototype set right after its constructor; amended (2026-11-01, the user's decision): a class whose `new` isn't `pub` is its type alone; amended by [1049](1049-js-class-is-typed-by-classed.md) (the user's decision of 2026-11-01): a class `js::class` names is `js::Classed`, one line of the program's, and may implement a trait of types alone. Extends
 [0047](0047-methods.md), whose object of functions stays every other
 struct's impl. Amended: its struct's comments, its `///` doc, are its
 constructor function's (below). Amended (2026-10-26, the user's
@@ -691,3 +691,82 @@ refused"'s `class-boxed`; the corpus's `class_constructor_rc`, against
 native Rust; mutations `class-constructor-of-an-rc-refused`,
 `class-constructor-of-any-pointer-allowed` and
 `class-constructor-of-a-counted-rc-allowed` (`classes/constructors.ts`).
+
+## Amendment: a class its struct marks `class(es)` is an ES class (rd682)
+
+Decided by the user (2026-11-03): an ES-class form. React's
+ReactFlightWebpackPlugin.js is `export default class
+ReactFlightWebpackPlugin { constructor(options) { .. } apply(compiler) {
+.. } resolveAllClientFiles(..) { .. } }`, a class that extends nothing,
+which this ADR printed as a constructor function and its prototype,
+`function ReactFlightWebpackPlugin(options) { .. }
+ReactFlightWebpackPlugin.prototype.apply = function (compiler) { .. };
+export default ReactFlightWebpackPlugin;`: the same for webpack, which
+constructs it and calls `plugin.apply(compiler)`, but not upstream's,
+and its whole file re-indented.
+
+**A `#[rust_js::class]` struct marked `#[cfg_attr(rust_js,
+rust_js::class(es))]` is an ES class**, printed as a class that extends a
+binding's is (ADR 1041), of no `extends`: `class Plugin {
+constructor(options) { .. } apply(compiler) { .. } get count() { .. }
+static shout(text) { .. } }`, its constants its prototype's after it,
+`Plugin.prototype.limit = 3;`; its module's default, `js::export_default!
+(Plugin)`, declared as it, `export default class Plugin { .. }`, where a
+constructor function is exported after its members, `export default
+Component;` (`classes/forms.rs`' `is_es_class`, `js::Class::es`,
+`to_oxc::Cx::es_class`). Its declaration is the same `declare class`.
+
+- **Its impl is marked `#[rust_js::class]` alone**: the struct says the
+  form, once; a form on the impl is refused, saying so.
+- **Refused, each saying what to write**: a word that's no form,
+  `class(function)`; `class(es)` of a class that extends a binding's,
+  which is an ES class already, by its impl (one way); and its prototype
+  replaced, `js::class::<Plugin>().set_prototype(..)`, which JS doesn't
+  let an ES class's be, so a load's assignment would throw: of any ES
+  class, where it's written (`binding_calls.rs`, `classes::
+  es_prototype_refused`), the one place it's refused now, a subclass's
+  too, where `set_prototypes` refused it of one with prototype methods
+  alone.
+- **What reads it as it loads is made after it**: a class declaration
+  isn't hoisted as a function is, and a module's items are ordered so
+  each that reads another as it loads follows it (`js::Item::declared`,
+  a namespace's name, a class's too), as a `const`'s are: `thread_local!
+  { static MADE: Plugin = Plugin::new("early"); }` written before the
+  struct is `const made = new Plugin("early");` after the class.
+
+### Why an attribute, not a rule
+
+A rule would say which form from what the Rust says. None can: the same
+Rust, a struct, its `new`, its `&self` methods, none of its prototype
+replaced, is upstream's `function RequestInstance(..)` in Fizz and
+Flight, `function ReactDOMRoot(..)`, `function FragmentInstance(..)`,
+`function AbortControllerShim()`, and its `class ReactTestInstance`, react-art's `class LinearGradient`, and
+ReactFlightWebpackPlugin's `export default class`. Both forms do what the
+Rust says of every use Rust makes, `new`, its methods, its getters, its
+statics; they differ only where JS outside the program calls it without
+`new` (or with `call`), enumerates its prototype, or replaces it. So which
+reads like upstream is the author's to say, where Rust meets JS: an
+attribute. A rule of ES classes unless the function form is needed
+(its prototype replaced or read) would keep React's `Component`,
+`ComponentDummy` and `PureComponent` and the Flight client's
+`ReactPromise` as they are, and make its others, `RequestInstance`,
+`ReactDOMRoot`, `FragmentInstance` and the rest, ES classes, unlike
+upstream's; one of constructor functions always is this ADR's, unlike
+the plugin's. Recorded as the user's decision of 2026-11-03, the
+second form of one construct, chosen per class by what upstream writes.
+
+React's classes are unchanged: unmarked, each is the constructor function
+it was. react-art's LinearGradient, RadialGradient and Pattern, ES classes
+upstream, may be marked now, which takes them off ADR 0262's second case
+(semantics.md, 37) once their port does.
+
+Held by `test/es-classes.test.ts`, run in Node: the class, its default
+export, a thread-local made of it before its line, a JS subclass's
+`super`, its methods not enumerable, a call without `new` a `TypeError`,
+and each refusal; `test/binding-subclasses.test.ts`'s `class(es)` of a
+subclass; mutations `es-class-a-constructor-function`,
+`es-class-of-a-subclass-allowed`, `class-form-of-any-word`,
+`class-form-on-its-impl` (`lower/classes/forms.rs`),
+`es-class-prototype-replaced-allowed` (`lower/binding_calls.rs`),
+`es-class-default-declared-alone` (`to_oxc/statements.rs`),
+`es-class-default-exported-twice` (`to_oxc.rs`).
