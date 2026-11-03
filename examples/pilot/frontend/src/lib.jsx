@@ -5,6 +5,7 @@
 // checks the workspace (ADR 0101).
 
 import { Toaster } from "sonner";
+
 import { ContactPage } from "./detail.jsx";
 import { NewContactForm } from "./form.jsx";
 import { ContactList } from "./list.jsx";
