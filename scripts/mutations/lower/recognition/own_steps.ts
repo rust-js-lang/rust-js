@@ -1,4 +1,4 @@
-// Mutations of src/lower/recognition/own_steps.rs (#182, #505).
+// Mutations of src/lower/recognition/own_steps.rs (#182, #505, #521).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -37,5 +37,23 @@ export const mutations: Mutation[] = [
     find: "            Some(\"Skip\" | \"Fuse\" | \"Peekable\" | \"Enumerate\" | \"Copied\" | \"Cloned\") => 1,\n            Some(\"Chain\") => 2,\n            _ => return false,\n        };\n        args.types().take(sources).any(|source| self.counts_its_own(source))",
     replace: "            Some(\"Skip\" | \"Fuse\" | \"Peekable\" | \"Enumerate\" | \"Copied\" | \"Cloned\") => 1,\n            Some(\"Chain\") => 2,\n            _ => return false,\n        };\n        args.types().take(sources).any(|_| false)",
     tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
+  },
+  {
+    name: "may-fold-its-own-not-generic",
+    breaks:
+      "generic code's `collect()` into a `String`, a `HashSet` or a `HashMap` steps its iterator by `next`, never asking the type's own `fold` (#521)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "        matches!(ty.kind(), ty::Param(_))\n            || self.folds_its_own(ty)\n",
+    replace: "        self.folds_its_own(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_own_fold.rs$"],
+  },
+  {
+    name: "may-fold-its-own-not-through-adapters",
+    breaks:
+      "generic code's `map(f).collect::<String>()` steps its iterator by `next`, never asking the type's own `fold` through the adapter (#521)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "            || self.folded_sources(ty).any(|source| self.may_fold_its_own(source))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_own_fold.rs$"],
   },
 ];

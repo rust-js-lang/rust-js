@@ -1,5 +1,6 @@
-//! Whether what std asks of an iterator, its `count` or its `last`,
-//! reaches the crate's own, which std's adapters pass on (#182, #505).
+//! Whether what std asks of an iterator, its `count`, its `last` or its
+//! `fold`, reaches the crate's own, which std's adapters pass on (#182,
+//! #505, #521).
 
 use super::*;
 
@@ -43,5 +44,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             _ => return false,
         };
         args.types().take(sources).any(|source| self.lasts_its_own(source))
+    }
+
+    /// Whether std's `fold` of a `ty`, an iterator, may reach the `fold`
+    /// the impl of a crate's iterator writes: where `folds_its_own` says it
+    /// does, and of a type parameter, or an adapter folding by one, whose
+    /// caller's type may write one (#521). What asks the iterator itself at
+    /// run time, `$folded`, asks this; what drops nothing after, as the
+    /// crate's own `fold` took it, asks `folds_its_own`, which is sure.
+    pub(in crate::lower) fn may_fold_its_own(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty);
+        matches!(ty.kind(), ty::Param(_))
+            || self.folds_its_own(ty)
+            || self.folded_sources(ty).any(|source| self.may_fold_its_own(source))
     }
 }

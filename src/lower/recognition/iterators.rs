@@ -607,7 +607,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// What std's `fold` of a `ty`, a std adapter, folds by: of each whose
     /// `fold` is its source's, its sources; none of another.
-    fn folded_sources(&self, ty: Ty<'tcx>) -> impl Iterator<Item = Ty<'tcx>> + 'tcx {
+    pub(super) fn folded_sources(&self, ty: Ty<'tcx>) -> impl Iterator<Item = Ty<'tcx>> + 'tcx {
         let (sources, args) = match ty.kind() {
             ty::Adt(adt, args) => {
                 let sources = match std_path(self.tcx, adt.did()).strip_prefix("std::iter::") {

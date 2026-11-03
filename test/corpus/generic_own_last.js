@@ -4,6 +4,7 @@ import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $count,
   $debugStr,
+  $folded,
   $iter,
   $iterator,
   $lastSome,
@@ -60,7 +61,7 @@ function chain(a, b) {
 }
 
 function mapped(it) {
-  return Array.from(Iterator.from(it).map((x) => (x + 1) >>> 0)).at(-1);
+  return Array.from($folded(Iterator.from(it).map((x) => (x + 1) >>> 0))).at(-1);
 }
 
 function fuseNth(it, IFused) {

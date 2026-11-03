@@ -74,3 +74,30 @@ once: by its own `fold`, which takes it, or after its consumer.**
 [ADR 0711](0711-what-stops-early-steps-by-try-fold.md): `$closing` and
 `$lent` pass on their iterator's `try_fold` and `nth` as they do its
 `fold`.
+
+## Amendment: generic code's collect asks the type's own `fold` (2026-11-03, #521)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+`fn text<I: Iterator<Item = char>>(it: I) -> String { it.collect() }`
+printed `Array.from(Iterator.from(it)).join("")`, and so did a `HashSet`'s
+and a `HashMap`'s collect, of a type parameter and of an `impl Iterator`.
+Std's `String`, `HashSet` and `HashMap` extend by `for_each`, which is the
+iterator's `fold`. So `text(Letters(0))` never called the `fold` that
+`Letters` writes. `folds_its_own` answers for sure, since what it says
+decides that nothing is dropped after the crate's own `fold` took the
+iterator, so a type parameter's is false. `nths_its_own` and
+`lasts_its_own` answer that a type parameter *may* (#496).
+
+`Recognition::may_fold_its_own` (`recognition/own_steps.rs`) answers
+that one: what `folds_its_own` says, and a type parameter, and an adapter
+folding by one. `by_its_fold` asks it, so the collect is
+`$folded(Iterator.from(it))`, which asks the iterator's `fold` at run
+time and is the iterator itself where it has none. What is dropped after
+still asks `folds_its_own`, through the dictionary's `fold` (#162). A
+`Vec`'s collect steps by `next`, as std's does.
+`generic_collect_own_fold.rs` holds it against native Rust in both builds,
+with the mutations `may-fold-its-own-not-generic` and
+`may-fold-its-own-not-through-adapters`
+(`lower/recognition/own_steps.ts`).

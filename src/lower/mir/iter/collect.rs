@@ -140,6 +140,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `it`, an iterator of type `iter_ty`, as a consumer std routes through
     /// `fold` takes it: where that reaches the crate's own `fold` (#162), or
+    /// may, of a type parameter, which `$folded` asks at run time (#521), or
     /// asks its `nth`, as a `skip`'s and a `step_by`'s does (#182), or steps
     /// a lent inclusive range (#414), or asks an `nth` of items with a
     /// destructor, which a reversed `Vec` drops as a slice, so its
@@ -154,7 +155,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.iterator_item(source)
                 .is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing)
         };
-        match recognition.folds_its_own(iter_ty)
+        match recognition.may_fold_its_own(iter_ty)
             || recognition.folds_by_its_own_nth(iter_ty)
             || self.steps_lent_inclusive(iter_ty)
             || recognition.nth_folded_sources(iter_ty).into_iter().any(drops)

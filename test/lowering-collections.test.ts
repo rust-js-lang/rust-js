@@ -483,8 +483,9 @@ pub fn counted(n: u32) -> String {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain('return ["h", "é", "!"].join("");');
-  // A JS iterator has no \`join\` but Bun's: its items, an array's.
-  expect(js).toContain('return Array.from(Iterator.from(items)).join("");');
+  // A JS iterator has no \`join\` but Bun's: its items, an array's, as
+  // its \`fold\` gives them, the type's own where it writes one (#521).
+  expect(js).toContain('return Array.from($folded(Iterator.from(items))).join("");');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.letters(), lib.backwards("axbc"), lib.counted(4)]).toEqual(["hé!", "cba", "0123"]);
 });

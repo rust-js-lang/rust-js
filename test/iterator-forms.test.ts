@@ -47,6 +47,7 @@ const few = [
   "rev_own_back_methods.rs",
   "held_back_folds_by_try_rfold.rs",
   "skip_try_fold.rs",
+  "generic_collect_own_fold.rs",
   "scan_object_state.rs",
   "scan_lazy_drops.rs",
   "flat_map_drops.rs",
