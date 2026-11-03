@@ -702,4 +702,13 @@ export const mutations: Mutation[] = [
     tests: ORS,
     snapshots: true,
   },
+  {
+    name: "commented-case-in-its-body",
+    breaks:
+      "a comment above a `case` that does nothing, `// One is fine.\\n 1 => {}`, is in its body, `case 1: // One is fine.`, not above it (#508, rd619)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "                        !(matches!(s.kind, StmtKind::Comments) && values.values.iter().any(|v| v.span.lo == s.span.lo))\n",
+    replace: "                        true\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment above an arm that does nothing is the arm.s"],
+  },
 ];

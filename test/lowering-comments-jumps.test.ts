@@ -682,3 +682,158 @@ pub fn returned(tag: u32, enabled: bool, log: &mut Vec<u32>) {
   run.returned(5, true, log);
   expect(log).toEqual([30, 0, 0, 5]);
 });
+
+// React's ReactFizzNewContext port writes `// Not equal, so not both the
+// root.` above `(None, None) => {}`, its last arm. MIR has no statement
+// of an arm that does nothing, and the comment was lost (#508). It's the
+// arm's, as one written in its `{}` is (ADR 0753): `} else { // Fine. }`,
+// a `switch`'s `case` above which it's written, and `default: // ..`. A
+// first arm's is above the `if` as before, and a guarded one's above its
+// `case`.
+test("a comment above an arm that does nothing is the arm's", async () => {
+  const { js, lib } = await compiled("comment-above-empty-arm", `pub fn err_first(r: Result<(), u32>, log: &mut Vec<u32>) {
+    match r {
+        // What failed.
+        Err(_) => log.push(3),
+        // Fine.
+        Ok(()) => {}
+    }
+    log.push(2);
+}
+
+pub fn ok_first(r: Result<(), u32>, log: &mut Vec<u32>) {
+    match r {
+        // Fine.
+        Ok(()) => {}
+        // What failed.
+        Err(_) => log.push(3),
+    }
+    log.push(2);
+}
+
+pub fn three(n: u8, log: &mut Vec<u32>) {
+    match n {
+        0 => log.push(0),
+        // One is fine.
+        1 => {}
+        _ => log.push(9),
+    }
+}
+
+pub fn defaulted(n: u8, log: &mut Vec<u32>) {
+    match n {
+        0 => log.push(0),
+        1 => log.push(1),
+        // Others are fine.
+        _ => {}
+    }
+}
+
+pub fn none_first(o: Option<u32>, log: &mut Vec<u32>) {
+    match o {
+        // Nothing yet.
+        None => {}
+        Some(n) => log.push(n),
+    }
+}
+`);
+  expect(js).toContain(`  if (r.TAG === "Err") {
+    // What failed.
+    log.push(3);
+  } else {
+    // Fine.
+  }
+  log.push(2);`);
+  expect(js).toContain(`  // Fine.
+  if (r.TAG !== "Ok") {
+    // What failed.
+    log.push(3);
+  }`);
+  expect(js).toContain(`      break;
+    // One is fine.
+    case 1:
+      break;
+    default:`);
+  expect(js).toContain(`    default:
+    // Others are fine.
+  }`);
+  expect(js).toContain(`  // Nothing yet.
+  if (o != null) {
+    log.push(o);
+  }
+}`);
+  const log: number[] = [];
+  lib.errFirst({ TAG: "Err", _0: 1 } as never, log as never);
+  lib.errFirst({ TAG: "Ok" } as never, log as never);
+  lib.okFirst({ TAG: "Err", _0: 1 } as never, log as never);
+  lib.three(1 as never, log as never);
+  lib.three(2 as never, log as never);
+  lib.defaulted(5 as never, log as never);
+  lib.defaulted(1 as never, log as never);
+  lib.noneFirst(undefined as never, log as never);
+  lib.noneFirst(6 as never, log as never);
+  expect(log).toEqual([3, 2, 2, 3, 2, 9, 1, 6]);
+});
+
+// In a loop, a `match` of `catch_unwind` whose first arm, `Ok(()) => {}`,
+// does nothing put the comment above it in the `catch`, before the `Err`
+// arm's code: MIR tested the `Err`, and a comment above MIR's `if` was
+// taken for the arm it names (#509). It's the first arm's, where that arm
+// is done, at the `try`'s end; and one in its `{}` no longer keeps the
+// closure an arrow called in place, `(() => { .. })();`.
+test("a comment above a loop's Ok arm of nothing is at its try's end", async () => {
+  const { js, lib } = await compiled("comment-above-loop-ok-arm", `use std::panic::{AssertUnwindSafe, catch_unwind};
+
+pub fn turns(xs: &[u32], log: &mut Vec<u32>) {
+    for &x in xs {
+        match catch_unwind(AssertUnwindSafe(|| {
+            if x == 1 {
+                return;
+            }
+            log.push(x);
+        })) {
+            // Next.
+            Ok(()) => {}
+            Err(_) => log.push(9),
+        }
+    }
+}
+
+pub fn inside(xs: &[u32], log: &mut Vec<u32>) {
+    for &x in xs {
+        match catch_unwind(AssertUnwindSafe(|| {
+            if x == 1 {
+                return;
+            }
+            log.push(x);
+        })) {
+            Ok(()) => {
+                // Next.
+            }
+            Err(_) => log.push(9),
+        }
+    }
+}
+`);
+  const tried = `    try {
+      if (x === 1) {
+        continue;
+      }
+      log.push(x);
+      // Next.
+    } catch {
+      log.push(9);
+    }`;
+  expect(js).toContain(`export function turns(xs, log) {
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i];
+${tried}`);
+  expect(js).toContain(`export function inside(xs, log) {
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i];
+${tried}`);
+  const log: number[] = [];
+  lib.turns([2, 1, 3] as never, log as never);
+  lib.inside([1, 4] as never, log as never);
+  expect(log).toEqual([2, 3, 4]);
+});

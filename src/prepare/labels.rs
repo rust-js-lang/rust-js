@@ -37,7 +37,8 @@ fn tried_jumps(stmts: &mut [Stmt]) {
         | StmtKind::For { label, body, .. } = &mut stmt.kind
         {
             // A `try` that ends the body: what its closure falls to, and
-            // so each `return;` of it, is the loop's next turn.
+            // so each `return;` of it, is the loop's next turn; past what's
+            // said above its `Ok` arm (#509).
             if let Some(Stmt {
                 kind: StmtKind::TryCatch(tried, ..),
                 span,
@@ -47,7 +48,9 @@ fn tried_jumps(stmts: &mut [Stmt]) {
                         kind: StmtKind::Expr(_),
                         ..
                     },
+                    said @ ..,
                 ] = &tried[..]
+                && said.iter().all(|s| matches!(s.kind, StmtKind::Comments))
             {
                 let mut next = tried.clone();
                 next.push(StmtKind::Continue(None).at(*span));

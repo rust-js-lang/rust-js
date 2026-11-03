@@ -484,7 +484,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `continue` with comments before it that tidy takes leaves them above the loop",
     file: "src/lower/mir/structure.rs",
-    find: "                _ if at.lo != done.lo => state.commented_jumps.push((done, at)),\n",
+    find: "                _ if at.lo != done.lo => state.commented.jumps.push((done, at)),\n",
     replace: "",
     tests: ["test/lowering-comments-jumps.test.ts"],
   },

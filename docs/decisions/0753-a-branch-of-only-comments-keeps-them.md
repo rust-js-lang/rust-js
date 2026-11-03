@@ -259,3 +259,48 @@ so it stays where it's written. Case (ADR 0262): N, comments.
 Held by `lowering-comments-ends.test.ts`'s "a function's comments aren't
 printed in a guard's finally written past it" and the mutations of
 `to_oxc/placed.ts`.
+
+## Amendment: a comment above an arm that does nothing is the arm's (#508, #509)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+React's ReactFizzNewContext port writes `// Not equal, so not both the
+root.` above `(None, None) => {}`, a `match`'s last arm, and it was lost:
+MIR has no statement of an arm that does nothing, and lowering made a
+`StmtKind::Comments` only of a block that holds comments. **A comment
+above an arm that does nothing, `{}`, unguarded, is the arm's, as one
+written in its `{}` is**: lowering makes the arm's `()` a `Comments`
+where the arm starts (`sources::commented_arms`, found in the HIR, only
+comments between it and the arm before, or the `match`'s `{`). So `Err(_)
+=> log.push(3), // Fine.\n Ok(()) => {}` is `} else { // Fine. }`, a
+`default:`'s `_ => {}` is `default: // ..`, and in a `switch` a case's
+own, at its constant, goes (`switches.rs`): its comment is above its
+`case` as before (rd619). A guarded arm's isn't made: its `case` holds the
+guard's comment as before.
+
+The first arm's marker is where MIR's `if` is, and only a `try` of a
+`Result` reads it (`prepare/catches.rs`): a comment above the `if` was
+said of the arm its test names, and in a loop MIR tested `Err` of
+`match catch_unwind(..) { // Next.\n Ok(()) => {} Err(_) => .. }`, so
+the comment was in the `catch`. The arm's own marker holds it, where that
+arm is done, at the `try`'s end, `try { ..; // Next. } catch { .. }`; and
+the loop's `try` folds its closure past it, `continue`, not an arrow
+called in place (`prepare/labels.rs`). Where no `try` takes it,
+preparation leaves it out of the `then` tidy writes the first arm in, the
+arm nothing again, `// Fine.\n if (r.TAG !== "Ok") { .. }`, as before
+(`catches::unfolded_first_arm`).
+
+The mutation `arm-comment-caught` (#489) is gone: the case it held, a
+comment above a first `Ok(()) => {}` whose `if` MIR makes of the `Err`,
+is now its arm's marker's, whichever arm the test names. Of a first arm
+that does something, tidy's `then`, the test names it, so `ok` and
+`of_ok` agree there, and no program tells the mutation from the code; the
+rule, the arm the test names of MIR's `if`, stays as run 42 wrote it.
+
+Held by `test/lowering-comments-jumps.test.ts`' "a comment above an arm
+that does nothing is the arm's" and "a comment above a loop's Ok arm of
+nothing is at its try's end", run; and the mutations
+`commented-arm-unplaced` (`lower/mir/assign.ts`), `commented-arm-of-a-guard`,
+`commented-first-arm-unmarked` (`lower/sources.ts`),
+`commented-case-in-its-body` (`lower/mir/tidy/switches.ts`),
+`first-arm-then-marker-kept` (`prepare/catches.ts`) and
+`loop-try-said-unfolded` (`prepare/labels.ts`).

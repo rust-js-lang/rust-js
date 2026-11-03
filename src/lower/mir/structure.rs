@@ -85,7 +85,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(at) = crate::lower::sources::commented_jump(self.krate.sources, done) {
             match out.last_mut() {
                 Some(jump) if at.lo == done.lo && js::ends(jump) && jump.span.is_none() => jump.span = at,
-                _ if at.lo != done.lo => state.commented_jumps.push((done, at)),
+                _ if at.lo != done.lo => state.commented.jumps.push((done, at)),
                 _ => {}
             }
         }

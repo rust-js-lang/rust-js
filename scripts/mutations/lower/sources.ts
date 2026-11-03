@@ -135,4 +135,22 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-comments-left-out.test.ts", "-t", "a SAFETY comment is left out"],
   },
+  {
+    name: "commented-arm-of-a-guard",
+    breaks:
+      "a guarded arm that does nothing, its comment above it, holds them in its body, so the guard's `case` no longer falls to the next (#508, rd619)",
+    file: "src/lower/sources.rs",
+    find: "                    if arm.guard.is_some()\n",
+    replace: "                    if false\n",
+    tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "a guarded arm whose constants the next arm names falls through to its case"],
+  },
+  {
+    name: "commented-first-arm-unmarked",
+    breaks:
+      "a first arm that does nothing has no marker, so a loop's `match catch_unwind(..)` whose test names the `Err` puts the comment above `Ok(()) => {}` in the `catch` (#509)",
+    file: "src/lower/sources.rs",
+    find: "                                TokenKind::OpenBrace if past && i == 0 => {}\n",
+    replace: "",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment above a loop.s Ok arm of nothing"],
+  },
 ];

@@ -595,15 +595,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
   },
   {
-    name: "arm-comment-caught",
-    breaks:
-      "a comment above a `match`'s `Ok` arm, whose `if` MIR makes of the `Err` first, is put in the `catch`, where it isn't written of an `if` (#489)",
-    file: "src/prepare/catches.rs",
-    find: "        false => ok,\n",
-    replace: "        false => of_ok,\n",
-    tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
-  },
-  {
     name: "ok-test-comment-caught",
     breaks:
       "a comment right above an `if let Ok(n) = r { return n; }` a `try` folds is put in its `catch`, which is the other way's (#489)",
@@ -673,5 +664,14 @@ export const mutations: Mutation[] = [
     find: "            Some(_) => Vec::new(),\n            None => [arm_said, value_said].concat(),\n",
     replace: "            _ => [arm_said, value_said].concat(),\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment above a match.s Ok arm is above its value in the try"],
+  },
+  {
+    name: "first-arm-then-marker-kept",
+    breaks:
+      "a first arm of nothing with a comment above it, `// Fine.\\n Ok(()) => {}`, is an `if` of nothing, `if (r.TAG === \"Ok\") {} else { .. }` (#508)",
+    file: "src/prepare/catches.rs",
+    find: "        *test = tested.negated_test();\n        *then = rest;\n",
+    replace: "        *test = tested;\n        *otherwise = Some(rest);\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment above an arm that does nothing is the arm.s"],
   },
 ];

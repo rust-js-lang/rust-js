@@ -41,10 +41,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // The `()` of a block of only comments, `if c { // why }`'s, which
         // MIR has no other statement of: where its comments end, which
-        // they're printed before (ADR 0753).
+        // they're printed before (ADR 0753); and of an arm that does
+        // nothing with comments above it, `// Fine.\n Ok(()) => {}`, its
+        // (#508).
         if let Rvalue::Use(Operand::Constant(c), _) = rvalue
             && c.ty().is_unit()
-            && let Some(end) = crate::lower::sources::comments_end(self.tcx, self.krate.sources, span)
+            && let Some(end) = crate::lower::sources::comments_end(self.tcx, self.krate.sources, span).or_else(|| {
+                let at = self.js_span(span);
+                (state.commented.arms.iter()).find_map(|&(block, end)| (block == at).then_some(end))
+            })
         {
             out.push(StmtKind::Comments.at(end));
         }

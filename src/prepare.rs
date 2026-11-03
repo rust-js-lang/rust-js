@@ -726,6 +726,7 @@ fn block(body: &mut Vec<Stmt>, ends: bool) {
     js::tried_set_where_made(body);
     left_out(body);
     for stmt in body.iter_mut() {
+        catches::unfolded_first_arm(stmt);
         if let Some(coalesced) = coalescing(stmt) {
             stmt.kind = coalesced;
         }

@@ -1067,4 +1067,13 @@ export const mutations: Mutation[] = [
     replace: "                if true\n",
     tests: ["test/corpus.test.ts", "-t", "^references_read_before_their_field_is_written.rs$"],
   },
+  {
+    name: "commented-arm-unplaced",
+    breaks:
+      "a comment above a match's last arm that does nothing, `// Fine.\\n Ok(()) => {}`, is lost: MIR has no statement of the arm (#508)",
+    file: "src/lower/mir/assign.rs",
+    find: "                (state.commented.arms.iter()).find_map(|&(block, end)| (block == at).then_some(end))\n",
+    replace: "                (state.commented.arms.iter()).find_map(|&(block, end)| (block == at && false).then_some(end))\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment above an arm that does nothing is the arm.s"],
+  },
 ];

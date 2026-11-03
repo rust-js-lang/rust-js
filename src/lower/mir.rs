@@ -705,7 +705,8 @@ struct State<'m, 'tcx> {
     /// As its structure is made, each `break` or `continue` the program wrote
     /// with comments before it that a branch jumps by: where what it does
     /// last is, and where the jump is (rd109, `tidy::commented_jumps`).
-    commented_jumps: Vec<(js::Span, js::Span)>,
+    /// And each arm that does nothing with comments above it (#508).
+    commented: crate::lower::sources::Commented,
     locals: Locals,
     /// Temporaries made and not yet used, in the order they were made.
     pending: Vec<(Local, Value<'tcx>)>,
@@ -1149,7 +1150,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             body: mir_body,
             facts,
             left: Default::default(),
-            commented_jumps: self.tail_if_comments(mir_body.source.def_id()),
+            commented: self.commented(mir_body.source.def_id()),
             locals,
             pending: Vec::new(),
             taken: Vec::new(),
@@ -1436,7 +1437,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 suggested: &self.temporaries_names(mir_body, &state),
                 named: &state.locals.named(),
                 again: &std::cell::Cell::new(false),
-                commented_jumps: &state.commented_jumps,
+                commented_jumps: &state.commented.jumps,
             },
         );
         let params = params.into_inner();

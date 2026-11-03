@@ -67,6 +67,28 @@ pub(super) fn try_catches(body: &mut Vec<Stmt>, ends: bool) {
     ignored_tries(body);
 }
 
+/// Of `stmt`, an `if` MIR made of a `match` whose first arm does nothing,
+/// with comments above it, `// Fine.\n Ok(()) => {}`: that arm's marker,
+/// where the `if` is (`sources::commented_arms`), which tells a `try` of
+/// a `Result` whose arm they're said of (#509), gone where no `try` took
+/// it: what's said above the first arm is above the `if`, as before, and
+/// the arm nothing, `if (r.TAG !== "Ok") { .. }`.
+pub(super) fn unfolded_first_arm(stmt: &mut Stmt) {
+    let at = stmt.span;
+    let StmtKind::If(test, then, otherwise) = &mut stmt.kind else {
+        return;
+    };
+    let marker = |stmts: &[Stmt]| matches!(stmts, [Stmt { kind: StmtKind::Comments, span }] if !at.is_none() && span.lo == at.lo);
+    // Its `then`: tidy writes a `match`'s first arm first.
+    if marker(then)
+        && let Some(rest) = otherwise.take_if(|rest| !rest.is_empty())
+    {
+        let tested = std::mem::replace(test, Expr::bool(true));
+        *test = tested.negated_test();
+        *then = rest;
+    }
+}
+
 /// Of `body`, after the `match`es whose arms it takes in, each `$try`
 /// whose result is ignored, or whose throwing is returned.
 fn ignored_tries(body: &mut [Stmt]) {

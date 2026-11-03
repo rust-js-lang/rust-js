@@ -511,9 +511,15 @@ fn switch_at(
     for ((values, body, last, _), falls) in cases.into_iter().zip(falls) {
         match last {
             true => default = Some(body),
+            // What's said above an arm that does nothing, at its pattern,
+            // is above its `case`, its constant's (#508).
             false => switched.push(js::Case {
+                body: (body.into_iter())
+                    .filter(|s| {
+                        !(matches!(s.kind, StmtKind::Comments) && values.values.iter().any(|v| v.span.lo == s.span.lo))
+                    })
+                    .collect(),
                 values: values.values,
-                body,
                 falls,
             }),
         }

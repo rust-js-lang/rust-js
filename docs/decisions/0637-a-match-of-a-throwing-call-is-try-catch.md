@@ -415,3 +415,11 @@ the rule above. Its `written-tests-unsaid` is held by `// c\n if
 !started.is_ok() { .. }`, an `if` the program wrote of the `Err` whose
 test names the `Ok`, `started.TAG !== "Ok"`: of MIR's, that'd be the
 `Ok`'s arm.
+
+## Amendment: a first arm of nothing holds its own comment (#509)
+
+A comment above a first `Ok(()) => {}` is now held by that arm's own marker
+(ADR 0753's #508 amendment), which a loop's `match catch_unwind(..)`, whose
+`if` MIR tests of the `Err`, needed: the comment is at the `try`'s end, not
+in the `catch`. The mutation `arm-comment-caught` is gone with it, as no
+program tells it from the code now (see there).

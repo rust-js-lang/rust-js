@@ -49,4 +49,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^tried_loop_jumps.rs$"],
     snapshots: true,
   },
+  {
+    name: "loop-try-said-unfolded",
+    breaks:
+      "a loop's `try` of a closure whose `Ok` arm's comments follow its call stays an arrow called in place, `(() => { .. return; .. })(); // Next.` (#509)",
+    file: "src/prepare/labels.rs",
+    find: "                && said.iter().all(|s| matches!(s.kind, StmtKind::Comments))\n",
+    replace: "                && said.is_empty()\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment above a loop.s Ok arm of nothing"],
+  },
 ];

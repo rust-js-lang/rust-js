@@ -1431,6 +1431,31 @@ export function logged(depth, value, out) {
 }
 ```
 
+A comment above a `match` arm that does nothing, `{}`, is that arm's, as
+one written in its `{}` is: in its branch, after the first arm, or above
+its `case` in a `switch`; above the first arm, it's above the `if`
+([amended](../../decisions/0753-a-branch-of-only-comments-keeps-them.md#amendment-a-comment-above-an-arm-that-does-nothing-is-the-arms-508-509)):
+
+```rust
+pub fn reported(r: Result<(), u32>, out: &mut Vec<u32>) {
+    match r {
+        Err(code) => out.push(code),
+        // Nothing to report.
+        Ok(()) => {}
+    }
+}
+```
+
+```js
+export function reported(r, out) {
+  if (r.TAG === "Err") {
+    out.push(r._0);
+  } else {
+    // Nothing to report.
+  }
+}
+```
+
 So is a comment after a body's last code, or before the `None` a function
 gives at its end, which is no `return;` of its own: it's at the end of the
 body, as written
