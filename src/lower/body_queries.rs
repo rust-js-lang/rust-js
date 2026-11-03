@@ -119,7 +119,8 @@ impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
 pub(super) struct BodyFacts<'tcx> {
     /// The items of a `Vec` or a slice whose index the body's ranges show
     /// in bounds (`ranges`): each `a[i]`, and the function of each
-    /// `Index::index(&v, i)`.
+    /// `Index::index(&v, i)`; and of each map's `m[k]` whose key its tests
+    /// show the map holds (rd558).
     pub(super) in_bounds: HashSet<ExprId>,
     /// Where each `+`, `-` and `*` of a small integer is written that the
     /// body's ranges show never leaves its type's range (`ranges`).

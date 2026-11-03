@@ -33,8 +33,12 @@ pub(in crate::lower) enum MapOp {
     Add,
     /// `get` and `get_mut`: `m.get(k)`, `undefined` for `None`.
     Get,
-    /// `m[k]`: `$unwrap(m.get(k), "no entry found for key")`, which panics as Rust's does.
-    Index,
+    /// `m[k]`: `$unwrap(m.get(k), "no entry found for key")`, which panics as
+    /// Rust's does; of a key the body's tests show it holds (`held`), its
+    /// `get(k)` (rd558).
+    Index {
+        held: bool,
+    },
     /// `contains_key` and `contains`: `m.has(k)`.
     Has,
     /// A map's `remove`: `m.delete(k)`, or `$remove(m, k)` for the old value.
@@ -708,14 +712,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (m, k) = (arg(), arg());
                 method(m, "get", vec![k])
             }
+            // Of a key the body's tests show it holds, the value there, a
+            // `None` too, which can't be a key that isn't (rd558).
+            MapOp::Index { held: true } => {
+                let (m, k) = (arg(), arg());
+                method(m, "get", vec![k])
+            }
             // Of a value that could look like `None`, a `None` that's there
             // isn't a key that isn't (ADR 0051): its `Some`, boxed, unwrapped.
-            MapOp::Index if types.get(1).is_some_and(|&value| self.boxed_payload(value)) => {
+            MapOp::Index { .. } if types.get(1).is_some_and(|&value| self.boxed_payload(value)) => {
                 let got = helper("$someGet", vec![arg(), arg()]);
                 let some = helper("$unwrap", vec![got, Expr::str("no entry found for key")]);
                 helper("$someValue", vec![some])
             }
-            MapOp::Index => {
+            MapOp::Index { .. } => {
                 let (m, k) = (arg(), arg());
                 let value = method(m, "get", vec![k]);
                 helper("$unwrap", vec![value, Expr::str("no entry found for key")])

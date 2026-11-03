@@ -21,6 +21,7 @@ mod cells;
 mod closures;
 mod empty;
 mod found;
+mod keys;
 mod known;
 mod narrowing;
 mod present;
@@ -759,6 +760,8 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             };
             *self.sets.entry(fun).or_insert(true) &= empty;
         }
+        // A map's `m[k]`, of a key its tests show it holds (`keys`).
+        self.judge_key(e, &before);
         let asked = self.asks(e);
         let grows = match asked {
             Some((SliceLength::Push, items)) => self.slice(items).map(|slice| (slice, 1)),

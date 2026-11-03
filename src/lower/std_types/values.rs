@@ -104,7 +104,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             | MapOp::SetReplace
                             | MapOp::Remove
                             | MapOp::Get
-                            | MapOp::Index
+                            | MapOp::Index { .. }
                             | MapOp::Has
                             | MapOp::Iter(_)
                             | MapOp::Entry
@@ -524,6 +524,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `Result`'s combinator, of their values: the subject one just made
         // where it's a call's.
         match known {
+            // `m[k]`, held where the body's tests show the map holds `k` (rd558).
+            Std::Map(MapOp::Index { .. }) => {
+                let held = MapOp::Index {
+                    held: self.indexes_in_bounds(def_id, call.span),
+                };
+                return self.map_values(held, (values.collect(), tys), generic_args, call.span, out);
+            }
             Std::Map(op) => return self.map_values(op, (values.collect(), tys), generic_args, call.span, out),
             Std::Range(op) => return self.range_call(op, values.collect(), tys, call.span, out),
             Std::Comb(comb) => {

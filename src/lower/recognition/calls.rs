@@ -535,7 +535,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             |ty: Ty<'tcx>| ty.peel_refs().is_slice() || ty.peel_refs().is_array() || self.is_vec_like(ty.peel_refs());
         // `m[k]` of a map: its value, or a panic, as `get(k).expect(..)`.
         if tcx.is_lang_item(trait_, LangItem::Index) && self.is_map(ty) && !self.is_set(ty) {
-            return Some(Std::Map(MapOp::Index));
+            return Some(Std::Map(MapOp::Index { held: false }));
         }
         // `&v[a..b]` of a slice, an array or a `Vec` (ADR 0063).
         if tcx.is_lang_item(trait_, LangItem::Index)

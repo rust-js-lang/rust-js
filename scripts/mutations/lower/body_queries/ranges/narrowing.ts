@@ -315,5 +315,14 @@ export const mutations: Mutation[] = [
     replace: "                let (mut yes, no) = self.branches(rhs, &mut runs);\n                self.refine(lhs, and, &mut yes);\n",
     tests: ["test/corpus.test.ts", "-t", "^test_changed_by_the_rest_of_its_condition\\.rs$"],
   },
-
+  {
+    name: "map-key-test-unshown",
+    breaks:
+      "`m.contains_key(k)` holding shows nothing, so ReactMarkupServer's `stashedErrors[id]` under its test is `$someValue($unwrap($someGet(..)))`, not upstream's `stashedErrors.get(id)`",
+    file: "src/lower/body_queries/ranges/narrowing.rs",
+    find: "            _ if holds && let Some(held) = self.tested_key(e) => {\n",
+    replace: "            _ if false && holds && let Some(held) = self.tested_key(e) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_index_of_a_key_held\\.rs$"],
+    snapshots: true,
+  },
 ];

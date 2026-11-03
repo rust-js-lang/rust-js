@@ -74,6 +74,12 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     k.at_least(&((Vec::new(), var), Below::LENGTH), 1);
                 }
             }
+            // Where a map holds a key, its index of it is its value (`keys`).
+            _ if holds && let Some(held) = self.tested_key(e) => {
+                if let Some(k) = known.as_mut() {
+                    k.keys.insert(held);
+                }
+            }
             // A variable that holds a test, the test's (ADR 0806).
             ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. }
                 if let Some((test, _)) = known.as_ref().and_then(|k| k.tests.get(&id)) =>

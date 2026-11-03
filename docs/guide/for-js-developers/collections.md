@@ -819,6 +819,54 @@ export function common(a, b) {
 
 - A `HashMap` iterates in insertion order, as a JS `Map` does. Native
   Rust's order is unspecified, so don't rely on it.
+- **`m[k]` where `m.contains_key(k)` held is `m.get(k)`,** as JS reads
+  `m.get(k)` after `m.has(k)`, while nothing between may take `k` out or
+  change `k`: no `&mut` of the map, and of a `RefCell`'s map, no call but
+  its views and no drop that runs code. Elsewhere `m[k]` panics where `k`
+  is missing, as Rust's does, `$unwrap(m.get(k), "no entry found for
+  key")` ([ADR 0059](../../decisions/0059-hashmap.md), amended):
+
+```rust
+use std::cell::RefCell;
+use std::collections::HashMap;
+
+pub fn stashed(errors: &RefCell<HashMap<String, Option<u32>>>, id: &str) -> Option<u32> {
+    let mut error = None;
+    if errors.borrow().contains_key(id) {
+        error = errors.borrow()[id];
+    }
+    error
+}
+
+pub fn removed(counts: &mut HashMap<String, u32>, key: &str) -> u32 {
+    if counts.contains_key(key) {
+        counts.remove(key);
+        return counts[key];
+    }
+    0
+}
+```
+
+```js
+import { $unwrap } from "@rust-js/runtime";
+
+export function stashed(errors, id) {
+  let error;
+  if (errors.has(id)) {
+    error = errors.get(id);
+  }
+  return error;
+}
+
+export function removed(counts, key) {
+  if (counts.has(key)) {
+    counts.delete(key);
+    return $unwrap(counts.get(key), "no entry found for key");
+  }
+  return 0;
+}
+```
+
 - **A struct, tuple or enum key compares by value,** as Rust's does, where
   a JS `Map` would compare objects by identity. Derive `Eq` and `Hash`, and
   the map is a `$KeyMap`:

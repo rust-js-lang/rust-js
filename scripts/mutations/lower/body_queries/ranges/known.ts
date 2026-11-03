@@ -212,4 +212,40 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^index_bounds_closures\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "held-keys-joined-as-either",
+    breaks:
+      "a key a map holds on one path into a join is held past it, so `counts[key]` after `if tested && !counts.contains_key(key) { return 0; }` reads `undefined` where Rust panics",
+    file: "src/lower/body_queries/ranges/known.rs",
+    find: "        let keys = self.keys.intersection(&other.keys).cloned().collect();\n",
+    replace: "        let keys = self.keys.union(&other.keys).cloned().collect();\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_index_of_a_key_held\\.rs$"],
+  },
+  {
+    name: "held-key-kept-when-changed",
+    breaks:
+      "a map lent as `&mut` or a key set again keeps the key it held, so `counts[key]` after `counts.remove(key)` reads `undefined` where Rust panics",
+    file: "src/lower/body_queries/ranges/known.rs",
+    find: "        self.keys.retain(|((_, map), key)| *map != var && *key != var);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^map_index_of_a_key_held\\.rs$"],
+  },
+  {
+    name: "held-key-kept-when-cells-change",
+    breaks:
+      "a `RefCell`'s map keeps the key it held past a call that may change it, so `errors.borrow()[id]` after `clear()` reads `undefined` where Rust panics",
+    file: "src/lower/body_queries/ranges/known.rs",
+    find: "        self.keys.retain(|(map, _)| !celled(map));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^map_index_of_a_key_held\\.rs$"],
+  },
+  {
+    name: "held-key-unseen-by-scope-drops",
+    breaks:
+      "a key a `RefCell`'s map holds isn't what a scope's drop may change, so `errors.borrow()[id]` after a `Clearer` dropped reads `undefined` where Rust panics",
+    file: "src/lower/body_queries/ranges/known.rs",
+    find: "            || self.keys.iter().any(|(map, _)| map.0.contains(&CELL))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^map_index_of_a_key_held\\.rs$"],
+  },
 ];

@@ -995,6 +995,36 @@ pub(in crate::lower) fn slice_length<'tcx>(
     }
 }
 
+/// What a function asks of a std map's key, a `HashMap`'s or a
+/// `BTreeMap`'s: whether the map holds it, `contains_key(k)`, `Has`; or its
+/// value, which panics where it doesn't, `m[k]`'s `Index::index`, `Index`.
+/// What knows a key held reads these (rd558).
+#[derive(Clone, Copy, PartialEq)]
+pub(in crate::lower) enum MapKey {
+    Has,
+    Index,
+}
+
+pub(in crate::lower) fn map_key<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<MapKey> {
+    let map = |ty: Ty<'tcx>| {
+        matches!(ty.peel_refs().kind(), ty::Adt(adt, _)
+            if is_std_def(tcx, adt.did(), StdItem::HashMap) || is_std_def(tcx, adt.did(), StdItem::BTreeMap))
+    };
+    if let Some(trait_) = tcx.trait_of_assoc(def_id) {
+        let indexed = args.types().next().is_some_and(map);
+        return (tcx.is_lang_item(trait_, LangItem::Index) && indexed).then_some(MapKey::Index);
+    }
+    let owner = tcx
+        .type_of(tcx.inherent_impl_of_assoc(def_id)?)
+        .instantiate_identity()
+        .skip_normalization();
+    (map(owner) && tcx.item_name(def_id).as_str() == "contains_key").then_some(MapKey::Has)
+}
+
 /// What a call of `def_id` gives of an item where it's there: a slice's
 /// `get(i)` of a `usize`, a `Vec`'s by its slice, the item at `i`, `Get`;
 /// or `Option`'s `copied()` or `cloned()`, `Some` where what it's given

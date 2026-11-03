@@ -291,6 +291,11 @@ pub(super) struct Known {
     /// terraces.len()]`, `([], terraces)`, so an index below one is below
     /// the other (#362).
     pub(super) same: HashMap<Slice, Slice>,
+    /// Each key a map holds, by the map, found as a slice is, and the
+    /// variable whose value is the key, while neither changes:
+    /// `(([CELL], errors), id)` of `errors.borrow().contains_key(id)`
+    /// (`keys`).
+    pub(super) keys: HashSet<(Slice, LocalVarId)>,
 }
 
 impl Known {
@@ -306,6 +311,7 @@ impl Known {
             .map(|(v, t)| (*v, t.clone()))
             .collect();
         let empty = self.empty.intersection(&other.empty).cloned().collect();
+        let keys = self.keys.intersection(&other.keys).cloned().collect();
         let same = (self.same.iter())
             .filter(|&(s, base)| other.same.get(s) == Some(base))
             .map(|(s, base)| (s.clone(), base.clone()))
@@ -321,6 +327,7 @@ impl Known {
             empty,
             reaches,
             same,
+            keys,
         }
     }
 
@@ -373,21 +380,23 @@ impl Known {
     }
 
     /// What's known after any code may have changed what a `RefCell`
-    /// holds, by another reference to it: nothing of a slice in one, but
-    /// `except`'s, whose cell a guard holds (ADR 0881).
+    /// holds, by another reference to it: nothing of a slice or a map in
+    /// one, but `except`'s, whose cell a guard holds (ADR 0881).
     pub(super) fn cells_changed(&mut self, except: Option<&Slice>) {
         let celled = |s: &Slice| s.0.contains(&CELL) && Some(s) != except;
         self.lengths.retain(|s, _| !celled(s));
         self.same.retain(|s, base| !celled(s) && !celled(base));
+        self.keys.retain(|(map, _)| !celled(map));
         for range in self.vars.values_mut() {
             range.below.retain(|(s, _)| !celled(s));
         }
     }
 
-    /// Whether anything is known of a slice in a `RefCell`.
+    /// Whether anything is known of a slice or a map in a `RefCell`.
     pub(super) fn knows_cells(&self) -> bool {
         self.lengths.keys().any(|s| s.0.contains(&CELL))
             || (self.vars.values()).any(|r| r.below.any(|(s, _)| s.0.contains(&CELL)))
+            || self.keys.iter().any(|(map, _)| map.0.contains(&CELL))
     }
 
     /// What's known after `var` may have changed, as an integer or as what
@@ -397,6 +406,7 @@ impl Known {
         self.vars.remove(&var);
         self.lengths.retain(|(_, v), _| *v != var);
         self.same.retain(|(_, v), (_, of)| *v != var && *of != var);
+        self.keys.retain(|((_, map), key)| *map != var && *key != var);
         self.tests
             .retain(|held, (_, reads)| *held != var && !reads.contains(&var));
         for range in self.vars.values_mut() {

@@ -1,7 +1,7 @@
 # 0059. `HashMap` is a JS `Map`, `HashSet` a `Set`, keyed by value
 
 Status: Accepted. Extends [0036](0036-iterators-and-sorting.md). Extended by
-[0121](0121-value-keys.md): a key that compares by value, a struct or a tuple. Amended: a value put in where it's missing, then used, is the map's own steps (below).
+[0121](0121-value-keys.md): a key that compares by value, a struct or a tuple. Amended: a value put in where it's missing, then used, is the map's own steps (below); `m[k]` of a key a test shows it holds is its `get` (below, rd558).
 
 Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -158,3 +158,64 @@ its statement's value alone, keep the helper.
   "HashMap and HashSet are a JS Map and Set", and the mutations
   `inserted-entries-helper` and `inserted-entry-value-alone`
   (`scripts/mutations/lower/std_types/map.ts`).
+
+## Amendment: `m[k]` of a key a test shows it holds is its `get` (rd558, 2026-11-03)
+
+React's ReactMarkupServer, ported, reads a stashed error where its test
+shows it's there, as upstream reads `stashedErrors.get(id)` after
+`stashedErrors.has(id)`:
+
+```rust
+if let Kind::String(id) = js::classify(id)
+    && stashed_errors.borrow().contains_key(id)
+{
+    error = stashed_errors.borrow()[id];
+}
+```
+
+It printed `$someValue($unwrap($someGet(stashedErrors, id), 'no entry
+found for key'))`, the check and the box of #311 above, where nothing
+can miss: the map holds `id`, and nothing between takes it out.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable. The
+index is unchecked only where Rust's can't panic; its box only tells a
+stored `None` from a key that isn't there, and the key is there.
+
+**`m[k]` of a `HashMap` or a `BTreeMap` where `m.contains_key(k)` held,
+with neither the map nor `k` changed since, is `m.get(k)`**, a stored
+`None`'s `undefined` too. What holds is ADR 0576's walk of the body, the
+owner of which index can't panic (`body_queries/ranges/keys.rs`): a test
+`contains_key(k)` holding shows the map holds `k`; the map is found as a
+slice is, a `RefCell`'s by the cell (ADR 0881), and the key is a variable,
+as it is or borrowed. What may change either forgets it, as a slice's
+length is: the key's variable set or bound again, the map's lent as `&mut`
+(its `remove`, `clear`), set or kept, and of a `RefCell`'s map, any call
+but one that only views it, and a drop that may run code. Where two paths
+meet, what both show. The index's function joins the body's in-bounds
+facts, which `std_values` reads as `MapOp::Index { held }`.
+
+So the port's read prints `error = stashedErrors.get(id);`, and
+`if counts.contains_key(key) { counts[key] } else { 0 }` prints
+`counts.has(key) ? counts.get(key) : 0`.
+
+**The port's Rust stays as it is.** `if let Some(&e) =
+stashed_errors.borrow().get(id) { error = e; }` is as natural, but of a
+value that could look like `None` it's `$someGet`'s box tested and
+unboxed, and further from upstream's `has` then `get` than the test and
+the index are.
+
+What isn't known: a key a literal is, `m["cy"]`; a key that's a field or
+a call, `m[&self.id]`; a map behind an `Rc` without a `RefCell`, or a
+thread-local's; and a closure, told nothing of what its maker's tests
+show of keys. An `insert(k, v)` doesn't show `k` held. Each keeps its
+check.
+
+Held by `test/corpus/map_index_of_a_key_held.rs` against native Rust,
+each of a different key, a different map, a `remove`, a `clear` on an
+`&&`'s right, a key set again, a call that empties the cell, a drop that
+does, and a key held on one path into a join panicking as Rust's does;
+and the mutations `map-key-test-unshown` (`ranges/narrowing.ts`),
+`map-index-held-unjudged`, `map-key-of-any-map` (`ranges/keys.ts`),
+`held-keys-joined-as-either`, `held-key-kept-when-changed`,
+`held-key-kept-when-cells-change` and `held-key-unseen-by-scope-drops`
+(`ranges/known.ts`).
