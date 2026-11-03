@@ -974,6 +974,8 @@ pub fn copies(n: u32) -> u32 {
 // reference_closure.bound else ..`, whose two `.then` callbacks each read
 // `bound_promise`, printed a copy for each, `const boundPromise = ..; const
 // boundPromise$1 = ..;`, where upstream closes over its one `boundPromise`.
+// One only a closure reads stays that closure's, React's RequestInstance's
+// `environmentName == null ? () => 'Server' : () => environmentName`.
 test("a binding closures take is one const they close over", async () => {
   const { js, lib } = await compiled(
     "binding-closures-take",
@@ -1014,8 +1016,26 @@ pub fn is_signature_equal(reference_closure: &ReferenceClosure, count: u32) -> b
         }
     }
 }
+
+pub struct Request {
+    pub environment: Box<dyn Fn() -> &'static str>,
+    pub count: u32,
+}
+
+pub fn request(name: Option<&'static str>, count: u32) -> Request {
+    Request {
+        environment: match name {
+            None => Box::new(|| "Server"),
+            Some(name) => Box::new(move || name),
+        },
+        count,
+    }
+}
 `,
   );
+  // One only its closure reads is that closure's, read where it's made.
+  expect(js).toContain('environment: name == null ? () => "Server" : () => name,');
+  expect((lib.request("Edge" as never, 1 as never) as unknown as { environment: () => string }).environment()).toBe("Edge");
   expect(js).toContain("const boundPromise = referenceClosure.bound;");
   expect(js).not.toContain("boundPromise$1");
   expect(js).toContain("const fulfilled = boundPromise;");

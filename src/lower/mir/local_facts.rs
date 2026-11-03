@@ -395,7 +395,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             pointed: self.pointed_locals(body),
             tested: self.tested_patterns(),
             jumps: self.written_jumps(),
-            payloads: self.mir_payloads(body),
+            payloads: self.mir_payloads(body, locals),
             patterned: self.mir_patterned(body),
             jsx_props: self.mir_jsx_props(body),
             offsets: self.mir_offsets(body, seed.as_ref()),

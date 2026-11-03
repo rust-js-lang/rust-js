@@ -6,7 +6,7 @@ use super::*;
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The locals that patterns bind in an enum's variant, by THIR's
     /// patterns: `if let`s', `match`es' and `let`s'.
-    pub(super) fn mir_payloads(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
+    pub(super) fn mir_payloads(&self, body: &mir::Body<'tcx>, locals: &Locals) -> std::collections::HashSet<Local> {
         let mut spans = Vec::new();
         let mut bound = |pat: &thir::Pat<'tcx>| {
             pat.walk(|p| match &p.kind {
@@ -44,11 +44,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             thir::PatKind::Binding { .. } => Some(arm.pattern.span),
             _ => None,
         }));
-        // Not one a closure takes by value: each closure that took it would
-        // read the place apart, its own copy where it's made, `const p =
-        // x.bound; const p$1 = x.bound;`, where the program wrote one
-        // variable, which they close over (rd640).
-        let captured = super::queries::captured_by_closures(body);
+        // Not one a closure takes by value and something else reads too: each
+        // that took it would read the place apart, its own copy where it's
+        // made, `const p = x.bound; const p$1 = x.bound;`, and what reads it
+        // after the place, where the program wrote one variable, which they
+        // close over (rd640). One only a closure reads is that closure's.
+        let captured: std::collections::HashSet<Local> = (super::queries::captured_by_closures(body).into_iter())
+            .filter(|&local| locals.reads[local] > 1)
+            .collect();
         (body.var_debug_info.iter())
             .filter_map(|info| match info.value {
                 mir::VarDebugInfoContents::Place(place)

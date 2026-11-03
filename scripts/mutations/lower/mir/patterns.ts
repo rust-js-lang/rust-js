@@ -642,4 +642,13 @@ export const mutations: Mutation[] = [
     replace: " =>\n",
     tests: ["test/lowering-moves.test.ts", "-t", "a binding closures take is one const"],
   },
+  {
+    name: "captured-once-held-apart",
+    breaks:
+      "React's RequestInstance's `environmentName == null ? () => 'Server' : .. () => environmentName`, a binding only its closure reads, is a `const` of its own, which breaks the conditional into `let tmp; if (..) { tmp = .. } else { tmp = .. }` and names every field's value before it (rd640, ADR 0879, amended)",
+    file: "src/lower/mir/patterns.rs",
+    find: "            .filter(|&local| locals.reads[local] > 1)\n",
+    replace: "",
+    tests: ["test/lowering-moves.test.ts", "-t", "a binding closures take is one const"],
+  },
 ];

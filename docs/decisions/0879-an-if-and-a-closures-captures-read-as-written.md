@@ -1100,11 +1100,18 @@ and the rest of the function read `referenceClosure.bound`. Upstream
 writes one `const boundPromise = referenceClosure.bound;`, which both
 callbacks close over.
 
-**A pattern's binding a closure takes by value is no payload read in
-place** (`captured_by_closures`, of each closure's aggregate in MIR): it's
-a `const` where the program binds it, `const boundPromise =
+**A pattern's binding a closure takes by value, which something else
+reads too, another closure or the maker, is no payload read in place**
+(`captured_by_closures`, of each closure's aggregate in MIR, and its
+reads): it's a `const` where the program binds it, `const boundPromise =
 referenceClosure.bound;`, which each closure and every later read reads,
-`throw boundPromise;`. Rust copies the value once, where it binds it; the
+`throw boundPromise;`. One only its closure reads stays that closure's,
+read where it's made: React's RequestInstance's `environmentName == null ?
+() => 'Server' : typeof environmentName === 'string' ? () =>
+environmentName : environmentName` and the scheduler's
+`localSetImmediate(performWorkUntilDeadline)` keep upstream's form, where
+a `const` of each would break the conditional into a `let` set in each
+branch and name each value before it. Rust copies the value once, where it binds it; the
 closures read that value, and so does JS's `const`. Case
 ([0262](0262-when-rust-and-js-disagree.md)): N for a struct the program
 built, whose field nothing writes meanwhile; where the field is a getter
@@ -1114,12 +1121,18 @@ copies apart already were.
 React's port, regenerated: ReactFlightReplyClient's isSignatureEqual is
 upstream's `boundPromise` throughout, and the test after its `null` check
 reads `referenceClosure.bound` once, where upstream reads `boundPromise`
-(the `let else`'s test, as ADR 0866 reads it). REACT_RD640.
+(the `let else`'s test, as ADR 0866 reads it). Two more move toward
+upstream: ReactFlightServer's patchConsole reads `const originalMethod =
+descriptor.value;` before `Object.getOwnPropertyDescriptor(originalMethod,
+'name')`, and ReactFiberHooks' imperativeHandleEffect `const refObject =
+ref;`, as upstream writes both. Nothing else in the port changes.
 
 Held by `test/lowering-moves.test.ts`'s "a binding closures take is one
 const they close over" (run; each callback reads what the binding took,
-though the field is given another value after) and "a closure's capture
+though the field is given another value after; `request`'s conditional
+of a binding only its closure reads) and "a closure's capture
 read first is named for its variable" (its `matchers`, now one `const id
 = action._0;` both closures read), corpus `binding_closures_take` against
-native Rust; mutation `captured-payload-in-place` (`mir/patterns.ts`).
+native Rust; mutations `captured-payload-in-place` and
+`captured-once-held-apart` (`mir/patterns.ts`).
 
