@@ -27,11 +27,12 @@ export function bufWrite(CAP) {
       writeAll: $ioWriteAll(write),
       writeFmt: $ioWriteFmt(write),
       $drop(buf) {
-        bufDrop_drop(buf, CAP);
+        console.log(`dropped ${buf.bytes.length}`);
       },
     };
   });
 }
+
 function bufWrite_write(buf, data, CAP) {
   const len = Math.min((CAP - buf.bytes.length) >>> 0, data.length);
   const items = data.slice(0, len);
@@ -42,10 +43,6 @@ function bufWrite_write(buf, data, CAP) {
 }
 
 function bufWrite_flush(buf, CAP) {}
-
-function bufDrop_drop(buf, CAP) {
-  console.log(`dropped ${buf.bytes.length}`);
-}
 
 function render(out, n, WWrite) {
   WWrite.writeFmt(out, `n=${n};`);
@@ -70,7 +67,7 @@ function main() {
       `${$unwrapOk($fromUtf8(b.bytes.slice(), true), undefined, (e) => $debugUtf8Error(e, true))} ${n == null ? "None" : `Some(${n})`}`,
     );
   } finally {
-    bufDrop_drop(b, 16);
+    console.log(`dropped ${b.bytes.length}`);
   }
 }
 //# sourceMappingURL=case.js.map

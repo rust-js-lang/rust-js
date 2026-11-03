@@ -76,7 +76,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a one-field tuple guard stays `const _restore = [level]`, read `_restore[0]`",
     file: "src/lower/drops/inlined.rs",
-    find: "                    one_field_of(&mut made, own_params, &guard);\n",
+    find: "    fields.extend(one_field_of(body, params, guard));\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
   },
@@ -125,8 +125,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard whose `Drop` takes its field, `set_current_fiber(self.0.take())`, stays `const _restore = [previousFiber]`, its `finally` `const old = _restore[0]; _restore[0] = undefined;` (ADR 0705, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "                    unread_writes(&mut made, &guard, GuardReads::default());\n",
-    replace: "",
+    find: "    unread_writes(body, guard, GuardReads::default());\n    let mut fields",
+    replace: "    let mut fields",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "takes its field"],
   },
   {
@@ -197,9 +197,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard whose field is written stays `const more = { hasMoreWork: true }`",
     file: "src/lower/drops/inlined.rs",
-    find: "    if reads != js::mentions_in(body, guard) {\n        return;\n    }\n    let mut names",
+    find: "    if reads != js::mentions_in(body, guard) {\n        return Vec::new();\n    }\n    let mut names",
     replace:
-      "    if reads != js::mentions_in(body, guard) || !written.is_empty() {\n        return;\n    }\n    let mut names",
+      "    if reads != js::mentions_in(body, guard) || !written.is_empty() {\n        return Vec::new();\n    }\n    let mut names",
     tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
   },
   {
@@ -217,8 +217,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard made only to be dropped stays an object, `const _restore = { previous: depth }`",
     file: "src/lower/drops/inlined.rs",
-    find: "                fields_of(&mut made, own_params, &guard);\n",
-    replace: "",
+    find: "    let mut fields = fields_of(body, params, guard);\n",
+    replace: "    let mut fields = Vec::new();\n",
     tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
   },
   {
@@ -435,6 +435,73 @@ export const mutations: Mutation[] = [
     find: "        self.whole || self.fields.contains(key)\n",
     replace: "        self.whole || !self.fields.is_empty() || key.is_empty()\n",
     tests: ["test/corpus.test.ts", "-t", "drop_guard_restores_taken_fields"],
+    snapshots: true,
+  },
+  {
+    name: "generic-drop-kept",
+    breaks:
+      "a generic `Drop`, given its type parameter's drop it never reads, stays `finallyDrop_drop(_restore)`, its function `finallyDrop_drop(finally$, dropF)` (#501)",
+    file: "src/lower/drops/inlined.rs",
+    find: "matches!(f.params.as_slice(), [Pattern::Name(_), ..])",
+    replace: "matches!(f.params.as_slice(), [Pattern::Name(_)])",
+    tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard of a closure"],
+  },
+  {
+    name: "drop-call-of-drops-kept",
+    breaks:
+      "a generic `Drop`'s call given its type parameter's drop too, `holderDrop_drop(_held, dropT)`, isn't found as its drop, so a `Drop` dropped so is never its body there (#501)",
+    file: "src/lower/drops/inlined.rs",
+    find: "            if !args.is_empty() && matches!(&callee.kind, ExprKind::Var(v) if v == name)))\n",
+    replace: "            if args.len() == 1 && matches!(&callee.kind, ExprKind::Var(v) if v == name)))\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "guard-closure-kept",
+    breaks:
+      "a guard of a closure is `function restore() { .. }`, called in the `finally`, where its body is the `finally`'s (#501)",
+    file: "src/lower/drops/inlined.rs",
+    find: "        called_closure(body, params, &field);\n",
+    replace: "",
+    tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard of a closure"],
+  },
+  {
+    name: "guard-closure-called-twice-inlined",
+    breaks:
+      "a guard's closure called at two drops is its body at the first and a call of it at the second (#501)",
+    file: "src/lower/drops/inlined.rs",
+    find: "    if declared != 1 || js::mentions_in(body, name) != 1 || !reads_where_made(",
+    replace: "    if declared != 1 || js::mentions_in(body, name) == 0 || !reads_where_made(",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "closure-read-of-the-function-refused",
+    breaks:
+      "a guard's closure that reads the function's own parameter or `const` stays `function restore() { .. }` (#501)",
+    file: "src/lower/drops/inlined.rs",
+    find: "            1 => {\n                let mut seen",
+    replace: "            1 => false,\n            2 => {\n                let mut seen",
+    tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard of a closure"],
+  },
+  {
+    name: "closure-read-of-a-block-refused",
+    breaks:
+      "a guard's closure that reads a `const` the function's block declares, `start`, stays a function, though the call sees the same `start` (#501)",
+    file: "src/lower/drops/inlined.rs",
+    find: "                    seen |= makes(stmts)\n",
+    replace: "                    seen |= false && makes(stmts)\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "lent-guard-field-unwritten",
+    breaks:
+      "a guard's field its `Drop` lends `&mut`, arrayvec's `ScopeExitGuard`'s `&mut self.value`, is a `const` the handle's setter assigns, a `TypeError` as it's dropped (#501)",
+    file: "src/lower/drops/inlined.rs",
+    find: "        ExprKind::Handle(place, _) | ExprKind::Pair(place, _) => Some(place),\n",
+    replace: "        ExprKind::Pair(place, _) => Some(place),\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_to_mut_ref.rs$"],
     snapshots: true,
   },
 ];

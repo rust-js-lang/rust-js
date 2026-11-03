@@ -4,17 +4,6 @@ export function entry() {
   main();
 }
 
-function scopeExitGuardDrop_drop(scopeExitGuard, dropT, dropData, dropF) {
-  scopeExitGuard.f(scopeExitGuard.data, {
-    get value() {
-      return scopeExitGuard.value;
-    },
-    set value(value) {
-      scopeExitGuard.value = value;
-    },
-  });
-}
-
 function bump(r) {
   r.value.value = (r.value.value + 1) >>> 0;
 }
@@ -47,24 +36,29 @@ function main() {
 
   function extend(n) {
     const len = len$1;
-    const guard = {
-      value: {
-        get value() {
-          return len$1;
-        },
-        set value(value) {
-          len$1 = value;
-        },
+    let value = {
+      get value() {
+        return len$1;
       },
-      data: len,
-      f(len, selfLen) {
-        selfLen.value.value = len;
+      set value(value) {
+        len$1 = value;
       },
     };
-    for (let i = 0; i < n; i++) {
-      guard.data = (guard.data + 1) >>> 0;
+    let data = len;
+    function f(len, selfLen) {
+      selfLen.value.value = len;
     }
-    scopeExitGuardDrop_drop(guard);
+    for (let i = 0; i < n; i++) {
+      data = (data + 1) >>> 0;
+    }
+    f(data, {
+      get value() {
+        return value;
+      },
+      set value(newValue) {
+        value = newValue;
+      },
+    });
   }
 
   extend(3);

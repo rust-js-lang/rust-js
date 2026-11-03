@@ -3,7 +3,8 @@
 Status: Accepted; amended (a name its body shares with the caller is
 named apart; a closure a `const` is made of is a function a drop is its
 body in; either value a conditional `const` chooses too, and what a
-module runs as it loads). Amends [0589](0589-a-drop-dropped-once-is-its-body-there.md).
+module runs as it loads; a guard of a closure is its body where it's
+dropped). Amends [0589](0589-a-drop-dropped-once-is-its-body-there.md).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: each drop runs the
 same code where it ran.
@@ -263,3 +264,102 @@ call at its top, in no closure, is put in its place only where its body
 returns nowhere, as `applied_call` already asks. Held by "a guard in a
 closure of what a module runs as it loads is its drop's body there", run,
 a throw too; the mutation `load-closure-drop-kept`.
+
+## Amended (2026-11-03): a guard of a closure is its body where it's dropped
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same code run
+in the same order, on every way out; only how the JS reads changes.
+
+alien-signals' `effect`, `computed`, `run` and `trigger` restore what
+they changed in a `try { .. } finally { .. }`. Its port writes Rust's form
+of that, a guard that runs a closure as it's dropped, scopeguard's
+`defer!` written by hand:
+
+```rust
+struct Finally<F: FnMut()>(F);
+
+impl<F: FnMut()> Drop for Finally<F> {
+    fn drop(&mut self) {
+        (self.0)();
+    }
+}
+
+fn oper(node: &Rc<Node>) -> u32 {
+    node.depth.set(node.depth.get() + 1);
+    let _restore = Finally(|| node.depth.set(node.depth.get() - 1));
+    (node.getter)()
+}
+```
+
+It printed `finallyDrop_drop(_restore)` in the `finally`, of a
+`function finallyDrop_drop(finally$, dropF)` and `const _restore = [() =>
+{ .. }]` (#501), for two reasons:
+
+- **A generic `Drop` is given its type parameters' drops**, `dropF`, as
+  each trait impl's method is (ADR 0163), so its function had two
+  parameters, and only a function of one was written where it's dropped.
+  **A parameter after the guard that the body never reads is given
+  nothing**, what's given it being of no effects, as a unit struct's
+  `self` is above (`js::applied`'s `in_place`): the `Drop` is its body
+  at each drop. One whose body reads it, `dropT?.(old)` or a `Default`
+  dictionary of a `Drop` that takes its field, stays the function, as one
+  whose body can't fit always has.
+- **The guard's field was the closure, called in the `finally`**: taken
+  apart, `const restore = () => { .. }; .. finally { restore(); }`, which
+  printed as `function restore() { .. }`. **A field a guard is taken
+  apart into, of a closure called once as a statement and named nowhere
+  else, is the closure's body where it's called**, as a closure called
+  where it's made is (`inlined.rs`'s `called_closure`, through
+  `js::applied_call`), its `const` gone. A closure of an expression, `()
+  => log(..)`, is that expression as a statement there. Making a closure
+  does nothing, so running its body where it was called runs the same
+  code at the same time; each name it reads is the one it read where it
+  was made, as lowering names a function's locals apart along each scope
+  chain (`reads_where_made` says so of each, the sound reading, kept in
+  case naming changes, as `alone`'s is, and no program reaches its other
+  cases today, so no mutation holds them).
+
+```js
+function oper(node) {
+  node.depth = (node.depth + 1) >>> 0;
+  try {
+    return node.getter();
+  } finally {
+    node.depth = (node.depth - 1) >>> 0;
+  }
+}
+```
+
+Its body written where it's dropped, a generic `Drop`'s guard is taken
+apart as any is, and one rule of that was short: **a field the `Drop`
+lends `&mut`, a handle on it, is written**, as one it assigns is
+(`inlined.rs`'s `lent`), so a `let`. arrayvec's `ScopeExitGuard`, of the
+corpus's `mut_ref_to_mut_ref`, gives `&mut self.value` to its closure; its
+field was a `const` the handle's setter assigned, a `TypeError` as it was
+dropped, where the `Drop` had stayed a function before. A one-field
+tuple's guard lent so stays the guard; lowering copies a tuple field's
+`&mut` in and back today, an assignment it already sees.
+
+A closure the guard calls in more than one place, a `return` and the
+scope's end that ADR 0693 doesn't make one `finally`, stays `function
+restore() { .. }`, called at each: its body isn't copied. A named field's
+guard, `Named { on_drop: || .. }`, is its body the same way. A panic in
+the closure is a throw in the `finally`, where the call threw before; a
+closure that owns a value runs before that value's drop, in the
+`finally` around it.
+
+Held by `test/lowering-drop-guards.test.ts`, "a guard of a closure is the
+closure's body in its finally", run in JS, a throw too; the corpus case
+`drop_guard_of_a_closure` (a guard on an early return, a panic, a panic
+of the closure, two guards, a closure that owns a `Drop`, one that reads
+a `const` of the function's, and a generic `Drop` that reads its
+dictionary and drop) against native Rust; and the mutations
+`generic-drop-kept`, `drop-call-of-drops-kept`, `guard-closure-kept`,
+`guard-closure-called-twice-inlined`,
+`closure-read-of-the-function-refused`, `closure-read-of-a-block-refused`
+and `lent-guard-field-unwritten`, held by `mut_ref_to_mut_ref`
+(`drops/inlined.ts`), `unread-parameter-read-given`,
+`closure-of-nothing-refused` and `expression-closure-kept`
+(`js/applied.ts`). That a parameter's argument has no effects, and
+`reads_where_made`'s cases no program reaches, no mutation holds: what's
+given a `Drop` for its type parameters is a function's name.

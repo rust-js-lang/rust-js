@@ -47,7 +47,7 @@ pub(in crate::lower) fn inlined_drops(items: &mut Vec<Item>, drops: &HashSet<Str
 /// `inlined_drops`' of the drop `name`.
 fn inline_drop(items: &mut Vec<Item>, name: &str) {
     let Some(at) = items.iter().position(
-        |item| matches!(item, Item::Function(f) if f.name == name && matches!(f.params.as_slice(), [Pattern::Name(_)])),
+        |item| matches!(item, Item::Function(f) if f.name == name && matches!(f.params.as_slice(), [Pattern::Name(_), ..])),
     ) else {
         return;
     };
@@ -115,18 +115,14 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
             // named twice, in each closure where it's its own.
             for guard in given {
                 if alone(own_params, &made, &guard, true) {
-                    unread_writes(&mut made, &guard, GuardReads::default());
-                    fields_of(&mut made, own_params, &guard);
-                    one_field_of(&mut made, own_params, &guard);
+                    taken_apart(&mut made, own_params, &guard);
                     continue;
                 }
                 js::each_expr_mut(&mut made, &mut |e| {
                     if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &mut e.kind
                         && alone(params, body, &guard, false)
                     {
-                        unread_writes(body, &guard, GuardReads::default());
-                        fields_of(body, params, &guard);
-                        one_field_of(body, params, &guard);
+                        taken_apart(body, params, &guard);
                     }
                 });
             }
@@ -148,6 +144,127 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
         });
     }
     items.remove(at);
+}
+
+/// `guard`, made in the function of `params` and `body` and dropped there,
+/// taken apart: the writes of its fields nothing reads after gone, each
+/// field a variable, and each field of a closure it calls once its body
+/// there (#501).
+fn taken_apart(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
+    unread_writes(body, guard, GuardReads::default());
+    let mut fields = fields_of(body, params, guard);
+    fields.extend(one_field_of(body, params, guard));
+    for field in fields {
+        called_closure(body, params, &field);
+    }
+}
+
+/// `const restore = () => { .. };` of `body`, a function of `params`, a
+/// guard's field taken apart, of the closure the guard was made of,
+/// `Finally(|| ..)`, read once, the call `restore();` its `Drop`'s `(self.0)()`
+/// is: its body there, as a closure called where it's made is
+/// (`js::applied_call`), and the `const` gone, as a person writes the
+/// `finally` (#501). The same code runs, when the call ran, in the same
+/// order: making the closure does nothing, and an arrow's `this` is the
+/// function's at either place. Only where each name its body reads is what
+/// it is where it's made: declared in the function nowhere else, so no
+/// declaration between the two shadows it (`reads_where_made`).
+fn called_closure(body: &mut Vec<Stmt>, params: &[Pattern], name: &str) {
+    let mut closure = None;
+    js::each_block_mut(&mut body.clone(), &mut |stmts| {
+        for s in stmts.iter() {
+            if let StmtKind::Const(n, value) = &s.kind
+                && n == name
+                && let ExprKind::Arrow(ps, b) = &value.kind
+            {
+                closure.get_or_insert((ps.clone(), b.clone()));
+            }
+        }
+    });
+    let Some((closure_params, closure_body)) = closure else {
+        return;
+    };
+    let mut declared = 0;
+    js::each_declared(body, &mut |n| declared += usize::from(n == name));
+    if declared != 1 || js::mentions_in(body, name) != 1 || !reads_where_made(body, params, name, &closure_body) {
+        return;
+    }
+    let whole = body.clone();
+    let mut done = false;
+    js::each_block_mut(body, &mut |stmts| {
+        let called = |s: &Stmt| {
+            matches!(&s.kind, StmtKind::Expr(e) if matches!(&e.kind, ExprKind::Call(callee, _)
+                if matches!(&callee.kind, ExprKind::Var(v) if v == name)))
+        };
+        if done || !stmts.iter().any(called) {
+            return;
+        }
+        done = true;
+        let k = stmts.iter().position(called).expect("found");
+        if let Some(block) = js::applied_call(&stmts[k], &whole, &closure_params, &closure_body) {
+            stmts.splice(k..=k, block);
+        }
+    });
+    if js::mentions_in(body, name) == 0 {
+        js::each_block_mut(body, &mut |stmts| {
+            stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(n, _) if n == name));
+        });
+    }
+}
+
+/// Whether each name `closure`, the body of the closure `const name = ..`
+/// of `body` holds, reads is, wherever `name` is called, what it is where
+/// it's made: one of the module's, which the function declares nowhere
+/// outside the closure; or one the function declares once outside it,
+/// where the closure sees it, a parameter of the function's, or a
+/// declaration at the top of a block, or a closure's parameter, that
+/// `name` is made in. Lowering names a function's locals apart along each
+/// scope chain, and apart from the module's, so no program reaches the
+/// other cases today: the sound reading, kept in case naming changes, as
+/// `alone`'s is.
+fn reads_where_made(body: &[Stmt], params: &[Pattern], name: &str, closure: &[Stmt]) -> bool {
+    let mut reads = HashSet::new();
+    js::visit_stmts(closure, &mut |n| _ = reads.insert(n.to_string()));
+    let mut inside: HashMap<String, usize> = HashMap::new();
+    js::each_declared(closure, &mut |n| *inside.entry(n.to_string()).or_default() += 1);
+    let mut all: HashMap<String, usize> = HashMap::new();
+    js::each_declared(body, &mut |n| *all.entry(n.to_string()).or_default() += 1);
+    for n in params.iter().flat_map(|p| p.names()) {
+        *all.entry(n.to_string()).or_default() += 1;
+    }
+    // Whether `stmts` make the closure, somewhere in them.
+    let makes = |stmts: &[Stmt]| {
+        let mut made = false;
+        js::each_declared(stmts, &mut |n| made |= n == name);
+        made
+    };
+    let mut copy = body.to_vec();
+    reads.into_iter().all(|v| {
+        let outside = all.get(&v).copied().unwrap_or(0) - inside.get(&v).copied().unwrap_or(0);
+        match outside {
+            0 => true,
+            1 if inside.contains_key(&v) => false,
+            1 => {
+                let mut seen = params.iter().any(|p| p.names().contains(&v.as_str()));
+                js::each_block_mut(&mut copy, &mut |stmts| {
+                    seen |= makes(stmts)
+                        && stmts.iter().any(|s| match &s.kind {
+                            StmtKind::Const(n, _) | StmtKind::Let(n, _) => *n == v,
+                            StmtKind::Destructure { pattern, .. } => pattern.names().contains(&v.as_str()),
+                            StmtKind::Function(function) => function.name == v,
+                            _ => false,
+                        });
+                });
+                js::each_expr_mut(&mut copy, &mut |e| {
+                    if let ExprKind::Arrow(ps, b) | ExprKind::AsyncArrow(ps, b) = &e.kind {
+                        seen |= ps.iter().any(|p| p.names().contains(&v.as_str())) && makes(b);
+                    }
+                });
+                seen
+            }
+            _ => false,
+        }
+    })
 }
 
 /// Whether `name` is one variable's in a function of `params` and `body`:
@@ -362,6 +479,16 @@ fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &str, 
     }
 }
 
+/// The place `e` lends `&mut`, a handle's, `{ get value() { .. }, set
+/// value(v) { place = v; } }`, which writes it: a guard's field lent so is
+/// written through it, as arrayvec's `ScopeExitGuard`'s `&mut self.value`.
+fn lent(e: &Expr) -> Option<&Expr> {
+    match &e.kind {
+        ExprKind::Handle(place, _) | ExprKind::Pair(place, _) => Some(place),
+        _ => None,
+    }
+}
+
 /// How often `item` names `name`.
 fn mentions_in_item(item: &Item, name: &str) -> usize {
     let value = |e: &Expr| js::mentions_in(&[StmtKind::Expr(e.clone()).at(e.span)], name);
@@ -427,11 +554,12 @@ fn each_function(item: &mut Item, f: &mut EachFunction<'_>) {
     }
 }
 
-/// Whether `stmt` is `name(arg);`.
+/// Whether `stmt` is `name(guard, ..);`, the guard and what else a generic
+/// `Drop` is given, its type parameters' drops (ADR 0163).
 fn calls(stmt: &Stmt, name: &str) -> bool {
     matches!(&stmt.kind, StmtKind::Expr(e)
         if matches!(&e.kind, ExprKind::Call(callee, args)
-            if args.len() == 1 && matches!(&callee.kind, ExprKind::Var(v) if v == name)))
+            if !args.is_empty() && matches!(&callee.kind, ExprKind::Var(v) if v == name)))
 }
 
 /// The variable `f(guard);` gives.
@@ -449,8 +577,8 @@ fn argument(stmt: &Stmt) -> Option<String> {
 /// one written, `let hasMoreWork = true;`, where no other name of the
 /// function is a field's; and a field of a variable that nothing sets
 /// once the guard's made, `{ prototype, prevProps }`'s, read as that
-/// variable, `prototype` (ADR 0705).
-fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
+/// variable, `prototype` (ADR 0705). The `const`s it made of its fields.
+fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<String> {
     let mut made = None;
     js::each_block_mut(body, &mut |stmts| {
         if made.is_none()
@@ -463,12 +591,12 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
             made = Some(props.clone());
         }
     });
-    let Some(props) = made else { return };
+    let Some(props) = made else { return Vec::new() };
     let mut fields = Vec::new();
     for prop in &props {
         match prop {
             Prop::Field(key, value) => fields.push((key.clone(), value.clone())),
-            _ => return,
+            _ => return Vec::new(),
         }
     }
     // Every read of it a field's, and nothing written through it.
@@ -482,7 +610,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
             reads += 1;
         }
     });
-    // Each field written through it, a `let` of its own.
+    // Each field written through it, or lent `&mut`, a `let` of its own.
     let mut written = HashSet::new();
     js::each_block_mut(&mut stmts, &mut |list| {
         for s in list.iter() {
@@ -494,8 +622,16 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
             }
         }
     });
+    js::each_expr_mut(&mut stmts, &mut |e| {
+        if let Some(place) = lent(e)
+            && let ExprKind::Member(of, key) = &place.kind
+            && matches!(&of.kind, ExprKind::Var(v) if v == guard)
+        {
+            written.insert(key.clone());
+        }
+    });
     if reads != js::mentions_in(body, guard) {
-        return;
+        return Vec::new();
     }
     let mut names = HashSet::new();
     js::names_in(body, &mut names);
@@ -512,7 +648,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
         .iter()
         .any(|field| read_as(field).is_none() && (names.contains(&field.0) || !crate::names::is_identifier(&field.0)))
     {
-        return;
+        return Vec::new();
     }
     // A copy of a field nothing writes, `const old = guard.previous;`, is
     // what the field reads as.
@@ -560,6 +696,10 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
             stmts.splice(k..=k, consts.collect::<Vec<_>>());
         }
     });
+    (fields.iter())
+        .filter(|field| read_as(field).is_none())
+        .map(|(key, _)| key.clone())
+        .collect()
 }
 
 /// The variables `body` declares once, or `params` do, that nothing sets
@@ -619,8 +759,9 @@ fn kept_variables(body: &[Stmt], params: &[Pattern], guard: &str, fields: &[(Str
 /// reads is `guard[0]`, none written: `const guard = x;`, read as `guard`,
 /// the field it's of (ADR 0608); and of a variable that nothing sets once
 /// the guard's made, read as that variable, `previousFiber`, as a named
-/// field of one is (`fields_of`, ADR 0705).
-fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
+/// field of one is (`fields_of`, ADR 0705). The `const` it made, if it
+/// made one.
+fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Option<String> {
     let mut made = None;
     js::each_block_mut(body, &mut |stmts| {
         for s in stmts.iter() {
@@ -634,7 +775,7 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
         }
     });
     let Some(item) = made else {
-        return;
+        return None;
     };
     let known = item.facts;
     let field = |e: &Expr| {
@@ -650,8 +791,9 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
             .iter()
             .any(|s| matches!(&s.kind, StmtKind::Assign(t, _) | StmtKind::Compound(_, t, _) if field(t)));
     });
+    js::each_expr_mut(&mut stmts, &mut |e| written |= lent(e).is_some_and(field));
     if written || reads != js::mentions_in(body, guard) {
-        return;
+        return None;
     }
     // The variable it was made of; or read now, so not by Rust's name for
     // what's only dropped, `_restore`, where `restore` is free.
@@ -707,4 +849,5 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
             }
         }
     });
+    variable.is_none().then_some(read)
 }

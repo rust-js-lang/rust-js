@@ -145,14 +145,16 @@ fn leaving_cases<'s>(
 /// `f(arg);`, a call as a statement in `whole`, the function's body, of a
 /// function of `params` and `body`: its body in its place, where a closure
 /// of them called there would be; a `Drop` impl's, at its one drop (ADR
-/// 0588).
+/// 0588); a guard's closure, at its `Drop`'s call (#501). One that returns
+/// a value only at its end, `() => log(..)`, is its body and that value,
+/// as a statement, as a closure called where it's made is (`value_of`).
 pub fn applied_call(stmt: &Stmt, whole: &[Stmt], params: &[Pattern], body: &[Stmt]) -> Option<Vec<Stmt>> {
     let StmtKind::Expr(e) = &stmt.kind else { return None };
     let ExprKind::Call(_, args) = &e.kind else {
         return None;
     };
     let call = StmtKind::Expr(Expr::call(Expr::arrow(params.to_vec(), body.to_vec()), args.clone())).at(stmt.span);
-    block_of(&call, whole, false, false, false)
+    block_of(&call, whole, false, false, false).or_else(|| value_of(&call, whole))
 }
 
 /// The statements `stmt`, a call of a closure made there, is, in `whole`,
@@ -337,7 +339,10 @@ pub fn read_where_made(stmts: &mut Vec<Stmt>, name: &str) {
 /// as what it's given, a variable or a path of one that reads the same;
 /// `None` where what it declares at its top is another name of the
 /// function's, or of what's `beside` it in `stmt`, or the variable given,
-/// or the parameter can't be read so.
+/// or the parameter can't be read so. A closure of none, called with
+/// nothing, is its body as it is; and a parameter after the first that the
+/// body never reads, a generic `Drop`'s drop of its `F` (ADR 0163), is
+/// given nothing, of what's given it of no effects (ADR 0608, amended).
 fn in_place(
     stmt: &Stmt,
     whole: &[Stmt],
@@ -346,8 +351,16 @@ fn in_place(
     mut body: Vec<Stmt>,
     hold: bool,
 ) -> Option<Vec<Stmt>> {
-    let ([Pattern::Name(param)], [arg]) = (params, args) else {
-        return None;
+    let parameter = match (params, args) {
+        ([], []) => None,
+        ([Pattern::Name(param), unread @ ..], [arg, extra @ ..])
+            if extra.len() <= unread.len()
+                && (unread.iter()).all(|p| matches!(p, Pattern::Name(n) if mentions_in(&body, n) == 0))
+                && !extra.iter().any(Expr::has_effects) =>
+        {
+            Some((param, arg))
+        }
+        _ => return None,
     };
     // What it's given, read the same wherever it's read: a variable, or a
     // field of one, a thread-local's `value`.
@@ -356,24 +369,27 @@ fn in_place(
     // Or, of a closure called where it's made, a thread-local made where
     // it's first used, `x()` (ADR 0037, amended): held first, `const cell =
     // x();`, as the call reads it before its body runs.
-    let (given, held) = match &arg.kind {
-        ExprKind::Var(name) => (Some(name), false),
-        ExprKind::Member(of, _)
-            if arg.reads_same()
-                && let ExprKind::Var(name) = &of.kind =>
-        {
-            (Some(name), false)
-        }
-        ExprKind::Symbol(_) => (None, false),
-        ExprKind::Member(of, _) if arg.reads_same() && matches!(of.kind, ExprKind::Symbol(_)) => (None, false),
-        ExprKind::Call(callee, called) if hold && called.is_empty() && callee.is_named() => (None, true),
-        // What a body that never reads its parameter is given, of no
-        // effects: nothing, `finishDrop({ value: _finish })` of a unit
-        // struct's `Drop`, which reads no `self` (ADR 0608, amended).
-        _ if !arg.has_effects() && mentions_in(&body, param) == 0 => (None, false),
-        _ => return None,
+    let (given, held) = match parameter {
+        None => (None, false),
+        Some((param, arg)) => match &arg.kind {
+            ExprKind::Var(name) => (Some(name), false),
+            ExprKind::Member(of, _)
+                if arg.reads_same()
+                    && let ExprKind::Var(name) = &of.kind =>
+            {
+                (Some(name), false)
+            }
+            ExprKind::Symbol(_) => (None, false),
+            ExprKind::Member(of, _) if arg.reads_same() && matches!(of.kind, ExprKind::Symbol(_)) => (None, false),
+            ExprKind::Call(callee, called) if hold && called.is_empty() && callee.is_named() => (None, true),
+            // What a body that never reads its parameter is given, of no
+            // effects: nothing, `finishDrop({ value: _finish })` of a unit
+            // struct's `Drop`, which reads no `self` (ADR 0608, amended).
+            _ if !arg.has_effects() && mentions_in(&body, param) == 0 => (None, false),
+            _ => return None,
+        },
     };
-    if held {
+    if held && let Some((param, arg)) = parameter {
         body.insert(0, StmtKind::Const(param.clone(), arg.clone()).at(stmt.span));
     }
     // The names beside the body in its place, which what it declares
@@ -386,7 +402,7 @@ fn in_place(
         let mut names: HashSet<String> = given.into_iter().cloned().collect();
         names_in(&others, &mut names);
         names_in(beside, &mut names);
-        if held {
+        if held && let Some((_, arg)) = parameter {
             arg.visit_vars(&mut |name| _ = names.insert(name.to_string()));
         }
         names
@@ -398,7 +414,9 @@ fn in_place(
     // parameter before it read as what it's given (ADR 0840, amended). Of
     // a first set the body's own statement, which no closure made before
     // it could see, else the call stays.
-    if sets(&body, param) {
+    if let Some((param, _)) = parameter
+        && sets(&body, param)
+    {
         let first = body.iter().position(|s| sets(std::slice::from_ref(s), param))?;
         let StmtKind::Assign(target, value) = &body[first].kind else {
             return None;
@@ -464,6 +482,9 @@ fn in_place(
     // Each read where it was in the body, not where the call is: a comment
     // above a thread-local's `with` is above the body's first statement,
     // not inside a loop's test that reads it (rd355).
+    let Some((param, arg)) = parameter else {
+        return Some(body);
+    };
     let mut read = arg.clone();
     read.each_mut(&mut |e| e.span = Span::NONE);
     if !held

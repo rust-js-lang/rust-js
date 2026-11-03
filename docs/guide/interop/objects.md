@@ -696,6 +696,46 @@ export function close(connection) {
   depth;`, restored in the `finally`, a `let` where a field is written. A
   one-field tuple's is its field by the guard's name, `restore`. A field
   whose name another guard's took, `_outer.name` above, stays the guard's.
+- **A guard of a closure, scopeguard's `defer!` written by hand, is the
+  closure's body in the `finally`**, where its `Drop` calls the closure
+  once ([ADR 0608](../../decisions/0608-a-drop-is-its-body-at-each-drop.md#amended-2026-11-03-a-guard-of-a-closure-is-its-body-where-its-dropped)):
+
+```rust
+use std::cell::Cell;
+
+thread_local! {
+    static DEPTH: Cell<u32> = const { Cell::new(0) };
+}
+
+struct Defer<F: FnMut()>(F);
+
+impl<F: FnMut()> Drop for Defer<F> {
+    fn drop(&mut self) {
+        (self.0)();
+    }
+}
+
+pub fn nested(work: impl FnOnce() -> u32) -> u32 {
+    let previous = DEPTH.get();
+    DEPTH.set(previous + 1);
+    let _restore = Defer(|| DEPTH.set(previous));
+    work()
+}
+```
+
+```js
+let depth = 0;
+
+export function nested(work) {
+  const previous = depth;
+  depth = (previous + 1) >>> 0;
+  try {
+    return work();
+  } finally {
+    depth = previous;
+  }
+}
+```
 
 - **A value JS holds is JS's.** `open(1)` gives JS a `Connection` that
   nothing drops until JS gives it to `close`.

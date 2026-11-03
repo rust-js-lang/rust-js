@@ -20,11 +20,6 @@ function noisyShow_show(noisy) {
   return noisy[0] | 0;
 }
 
-function wrapperDrop_drop(wrapper, dropT) {
-  wrapper[0].value = (wrapper[0].value + 400) | 0;
-  console.log("wrapper dropped");
-}
-
 function read(fat) {
   return (fat.size + fat.impl.show(fat.inner)) | 0;
 }
@@ -79,9 +74,8 @@ function main() {
   const value = $dynCell(wrapper, {});
   try {
     try {
-      wrapperDrop_drop(value, (value) => {
-        value.impl.$drop?.(value.value);
-      });
+      value[0].value = (value[0].value + 400) | 0;
+      console.log("wrapper dropped");
     } finally {
       value.impl.$drop?.(value[1]);
     }
@@ -110,9 +104,8 @@ function main() {
     try {
       try {
         try {
-          wrapperDrop_drop(held, (value) => {
-            value.impl.$drop?.(value.value);
-          });
+          held[0].value = (held[0].value + 400) | 0;
+          console.log("wrapper dropped");
         } finally {
           held.impl.$drop?.(held[1]);
         }

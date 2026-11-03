@@ -728,3 +728,68 @@ pub fn described() -> f64 {
   expect(() => lib.described()).toThrow("work");
   expect(lib.reentry()).toBe(false);
 });
+
+test("a guard of a closure is the closure's body in its finally", async () => {
+  // alien-signals' `computed` restores its depth as scopeguard's `defer!`
+  // does, a guard whose `Drop` calls the closure it holds (#501).
+  const { js, dir } = compiled(
+    "drop-guard-of-a-closure",
+    `use std::cell::Cell;
+use std::rc::Rc;
+
+pub struct Node {
+    pub getter: Box<dyn Fn() -> u32>,
+    pub depth: Cell<u32>,
+}
+
+struct Finally<F: FnMut()>(F);
+
+impl<F: FnMut()> Drop for Finally<F> {
+    fn drop(&mut self) {
+        (self.0)();
+    }
+}
+
+fn oper(node: &Rc<Node>) -> u32 {
+    node.depth.set(node.depth.get() + 1);
+    let _restore = Finally(|| node.depth.set(node.depth.get() - 1));
+    (node.getter)()
+}
+
+pub fn computed(getter: impl Fn() -> u32 + 'static) -> impl Fn() -> u32 {
+    let node = Rc::new(Node {
+        getter: Box::new(getter),
+        depth: Cell::new(0),
+    });
+    move || oper(&node)
+}
+
+pub fn depth_seen(fail: bool) -> u32 {
+    let seen = Rc::new(Cell::new(0));
+    let inner = Rc::clone(&seen);
+    let get = computed(move || {
+        if fail {
+            panic!("the getter failed");
+        }
+        inner.get() + 1
+    });
+    seen.set(get());
+    seen.get()
+}
+`,
+  );
+  expect(js).toContain(`function oper(node) {
+  node.depth = (node.depth + 1) >>> 0;
+  try {
+    return node.getter();
+  } finally {
+    node.depth = (node.depth - 1) >>> 0;
+  }
+}
+`);
+  expect(js).not.toContain("_drop");
+  expect(js).not.toContain("_restore");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.depthSeen(false)).toBe(1);
+  expect(() => lib.depthSeen(true)).toThrow("the getter failed");
+});
