@@ -449,11 +449,11 @@ export const mutations: Mutation[] = [
   {
     name: "drop-call-of-drops-kept",
     breaks:
-      "a generic `Drop`'s call given its type parameter's drop too, `holderDrop_drop(_held, dropT)`, isn't found as its drop, so a `Drop` dropped so is never its body there (#501)",
+      "a generic `Drop`'s call given its type parameter's drop too, `wrapperDrop_drop(value, (value) => { .. })`, isn't found as its drop, so a `Drop` dropped so is never its body there (#501)",
     file: "src/lower/drops/inlined.rs",
     find: "            if !args.is_empty() && matches!(&callee.kind, ExprKind::Var(v) if v == name)))\n",
     replace: "            if args.len() == 1 && matches!(&callee.kind, ExprKind::Var(v) if v == name)))\n",
-    tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
     snapshots: true,
   },
   {
@@ -507,7 +507,7 @@ export const mutations: Mutation[] = [
   {
     name: "guard-closure-beside-itself",
     breaks:
-      "a guard's closure's body, in its call's place, names what it declares apart from its own `const`'s, `text$1`, alien-signals' `link$1$1` (#501)",
+      "a guard's closure's body, in its call's place, names what it declares apart from its own `const`'s, `hold$1$1`, alien-signals' `link$1$1` (#501)",
     file: "src/lower/drops/inlined.rs",
     find: "        stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(n, _) if n == name));\n    });\n    let mut done = false;\n",
     replace: "    });\n    let mut done = false;\n",

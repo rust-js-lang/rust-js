@@ -8,6 +8,7 @@
 // runs before that value's dropped. A generic `Drop` that reads what it's
 // given for its type parameter, a dictionary and a drop, stays a function;
 // and a guard whose `Drop` lends its field `&mut` writes it through that.
+// `counted`'s closure declares `hold`, a name of the module's.
 
 use std::cell::{Cell, RefCell};
 use std::panic::{AssertUnwindSafe, catch_unwind};
@@ -151,8 +152,8 @@ fn owning(name: &'static str) {
 fn counted(n: u32) -> u32 {
     let start = n * 2;
     let _guard = Finally(|| {
-        let text = format!("counted from {start}");
-        log(text);
+        let hold = format!("counted from {start}");
+        log(hold);
     });
     n + start
 }
