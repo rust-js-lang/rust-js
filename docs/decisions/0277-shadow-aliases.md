@@ -3,7 +3,7 @@
 Status: Accepted. Amended: another's variable only where nothing runs
 before it's read (below); and past a `try`'s start and a binding's call
 that runs nothing (below); and set after its last read, in a loop too (below);
-and past a way that ends (below).
+and past a way that ends, but not by a `break` (below).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -319,9 +319,8 @@ took what either way of an `if` ran for what ran before the statement
 after it.
 
 **What follows an `if` sees only the way that goes on** (`after_ways`): a
-way that ends, by a `return`, a `throw`, a `break` or `continue`, or a
-call that never returns (`js::ends`), leaves the list the copy is
-declared in, so nothing it runs, or sets, comes before a read after the
+way that ends, by a `return`, a `throw`, a `continue`, or a call that
+never returns (`leaves`), leaves the list the copy is declared in, so nothing it runs, or sets, comes before a read after the
 `if`. Both `read_before_code`, of what may run code, and `read_before_set`,
 of what sets the variable, ask it. So `if (callServer == null) { throw
 new Error(..); } return callServer(id, args);`, as upstream writes it.
@@ -339,3 +338,23 @@ between, a call that sets it between, and a way that sets it while the
 other ends; the mutations `shadow-ended-way-runs-on`,
 `shadow-way-going-on-runs-nothing` and `shadow-ended-way-sets-on`
 (`prepare/shadows.ts`).
+
+### A `break` goes on past its block
+
+At first a way that ended by a `break` left the list too, as `js::ends`
+says of one, and that was a wrong answer: a `break` leaves a labeled block,
+or a `switch`, that the statements after the copy hold, for what follows
+it, where the copy is read. `'done: { if swap { CALL_SERVER.set(Some(triple));
+break 'done; } } call_server(id)` printed `done: { if (swap) { callServer =
+triple; break done; } } return callServer(id);`, which called `triple`
+where Rust calls the `double` it read (P0, found by a hunt for wrong
+answers, of e5818acfc).
+
+So a way leaves the list only where it reaches none of its statements
+(`leaves`, `prepare/shadows.rs`): it returns, throws, never returns, or
+goes round, by a `continue`, the loop that holds the copy, since a loop
+after the copy is looked at whole, never way by way. A `break` is never
+one. Case: N, as above. Held by `copy_read_past_an_exit.rs`'s
+`set_then_break`, and its `set_then_unwind`, a set in a way that throws
+in a `try` whose `catch` reads the copy, which stays a copy, run against
+native Rust; and the mutation `shadow-break-leaves`.

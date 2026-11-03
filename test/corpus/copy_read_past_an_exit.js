@@ -61,6 +61,40 @@ function resetOrKeep(id, reset) {
   return callServer$1(id);
 }
 
+function setThenBreak(id, swap, more) {
+  const callServer$1 = callServer;
+  if (callServer$1 == null) {
+    return 0;
+  }
+  let extra = 0;
+  done: {
+    if (swap) {
+      callServer = triple;
+      break done;
+    }
+    if (more) {
+      extra = 10;
+    }
+  }
+  return (callServer$1(id) + extra) >>> 0;
+}
+
+function setThenUnwind(id, swap) {
+  const callServer$1 = callServer;
+  if (callServer$1 == null) {
+    return 0;
+  }
+  try {
+    if (swap) {
+      callServer = triple;
+      throw new Error("swapped");
+    }
+  } catch {
+    return (callServer$1(id) + 100) >>> 0;
+  }
+  return callServer$1(id);
+}
+
 function double(n) {
   return (n * 2) >>> 0;
 }
@@ -81,5 +115,10 @@ function main() {
   console.log(`${resetOrKeep(2, false)} ${resetOrKeep(2, true)}`);
   console.log(`${callThenClear(4)}`);
   console.log(`${callServer == null}`);
+  setServerCallback(double);
+  console.log(`${setThenBreak(1, false, true)} ${setThenBreak(1, false, false)}`);
+  console.log(`${setThenBreak(1, true, false)}`);
+  setServerCallback(double);
+  console.log(`${setThenUnwind(1, false)} ${setThenUnwind(1, true)}`);
 }
 //# sourceMappingURL=case.js.map

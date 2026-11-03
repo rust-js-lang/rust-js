@@ -29,6 +29,15 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "shadow-break-leaves",
+    breaks: "a way that ends by a `break` is taken to reach nothing after the copy, so `done: { if (swap) { callServer = triple; break done; } } return callServer(id);` calls the callback the way set, not the one the copy holds",
+    file: "src/prepare/shadows.rs",
+    find: "        StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Continue(_) => true,\n",
+    replace: "        StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Continue(_) | StmtKind::Break(_) => true,\n",
+    tests: ["test/corpus.test.ts", "-t", "^copy_read_past_an_exit.rs$"],
+    snapshots: true,
+  },
+  {
     name: "shadow-receiver-read-after-getter",
     breaks: "a copy of a module's variable read as a property's object is taken to be read after the property's getter, so `activeElement.detachEvent(..)` keeps `const activeElement$1 = activeElement;` (rd146)",
     file: "src/prepare/shadows.rs",

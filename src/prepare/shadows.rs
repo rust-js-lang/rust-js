@@ -180,11 +180,27 @@ fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut bool) -> boo
 /// (callServer$1 == null) { throw new Error(..); }`, leaves the list,
 /// whatever it did (rd646, ADR 0277, amended).
 fn after_ways(a: &[Stmt], b: &[Stmt], in_a: bool, in_b: bool) -> bool {
-    let ends = |way: &[Stmt]| way.last().is_some_and(js::ends);
+    let ends = |way: &[Stmt]| way.last().is_some_and(leaves);
     match (ends(a), ends(b)) {
         (true, false) => in_b,
         (false, true) => in_a,
         _ => in_a || in_b,
+    }
+}
+
+/// Whether `stmt` reaches none of the statements after the copy: it
+/// returns, throws, never returns, or goes round the loop that holds the
+/// copy again, as a loop after the copy is looked at whole, never way by
+/// way. Not a `break`, which leaves a labeled block or a `switch` those
+/// statements may hold for what follows it: `done: { if (swap) {
+/// callServer = triple; break done; } } return callServer$1(id);` reads
+/// the copy, where `callServer` was set (ADR 0277, amended).
+fn leaves(stmt: &Stmt) -> bool {
+    match &stmt.kind {
+        StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Continue(_) => true,
+        StmtKind::Expr(_) => js::ends(stmt),
+        StmtKind::If(_, a, Some(b)) => a.last().is_some_and(leaves) && b.last().is_some_and(leaves),
+        _ => false,
     }
 }
 

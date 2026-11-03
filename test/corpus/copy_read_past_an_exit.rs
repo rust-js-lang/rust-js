@@ -5,8 +5,11 @@
 // `if (!callServer) { throw new Error(..); } return callServer(id, args);`
 // (rd646, ADR 0277, amended). One set between its reads, by a call or in
 // place, and one past a way that runs code and goes on, while the other
-// ends, stays a copy.
+// ends, stays a copy. So does one read past a `break` out of a labeled
+// block that holds a set, which goes on to what follows the block, and
+// past a `catch` an unwind's set reaches.
 use std::cell::Cell;
+use std::panic::catch_unwind;
 
 thread_local! {
     static CALL_SERVER: Cell<Option<fn(u32) -> u32>> = const { Cell::new(None) };
@@ -64,6 +67,39 @@ fn reset_or_keep(id: u32, reset: bool) -> u32 {
     call_server(id)
 }
 
+fn set_then_break(id: u32, swap: bool, more: bool) -> u32 {
+    let Some(call_server) = CALL_SERVER.get() else {
+        return 0;
+    };
+    let mut extra = 0;
+    'done: {
+        if swap {
+            CALL_SERVER.set(Some(triple));
+            break 'done;
+        }
+        if more {
+            extra = 10;
+        }
+    }
+    call_server(id) + extra
+}
+
+fn set_then_unwind(id: u32, swap: bool) -> u32 {
+    let Some(call_server) = CALL_SERVER.get() else {
+        return 0;
+    };
+    match catch_unwind(|| {
+        if swap {
+            CALL_SERVER.set(Some(triple));
+            panic!("swapped");
+        }
+    }) {
+        Ok(()) => {}
+        Err(_) => return call_server(id) + 100,
+    }
+    call_server(id)
+}
+
 fn double(n: u32) -> u32 {
     n * 2
 }
@@ -84,4 +120,9 @@ fn main() {
     println!("{} {}", reset_or_keep(2, false), reset_or_keep(2, true));
     println!("{}", call_then_clear(4));
     println!("{}", CALL_SERVER.get().is_none());
+    set_server_callback(double);
+    println!("{} {}", set_then_break(1, false, true), set_then_break(1, false, false));
+    println!("{}", set_then_break(1, true, false));
+    set_server_callback(double);
+    println!("{} {}", set_then_unwind(1, false), set_then_unwind(1, true));
 }
