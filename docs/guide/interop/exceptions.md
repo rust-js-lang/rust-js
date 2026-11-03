@@ -522,6 +522,49 @@ export function check(items, expected) {
   implemented`.
 - `debug_assert!` is checked, as `assert!` is.
 
+An arm that never runs, whose type is wider than any value the code
+makes, says so with `unsafe { std::hint::unreachable_unchecked() }`.
+Reaching it is undefined behaviour, so its test is left out, and the
+last arm tested is the `else`
+([ADR 0399](../../decisions/0399-unreachable-unchecked.md), amended):
+
+```rust
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Reply {
+    Text(String),
+    Params(&'static webapi::URLSearchParams),
+    Form(&'static webapi::FormData),
+}
+
+pub fn form_of(reply: Reply) -> &'static webapi::FormData {
+    match reply {
+        Reply::Text(text) => {
+            let data = webapi::form_data::new(None, None);
+            data.append("0", &text);
+            data
+        }
+        Reply::Form(data) => data,
+        // Nothing makes one yet.
+        Reply::Params(_) => unsafe { std::hint::unreachable_unchecked() },
+    }
+}
+```
+
+```js
+export function formOf(reply) {
+  if (typeof reply === "string") {
+    const data = new FormData();
+    data.append("0", reply);
+    return data;
+  }
+  return reply;
+}
+```
+
+`unreachable!()` is a panic, which a program may catch, so it keeps its
+throw. What a left-out test calls still runs: `if loud(n) { unsafe {
+std::hint::unreachable_unchecked() } }` is `loud(n);`.
+
 ## Catch an unwind: `catch_unwind`
 
 A panic is an ordinary `Error`, so JS that calls Rust catches it:

@@ -475,4 +475,14 @@ export const mutations: Mutation[] = [
     replace: "                && !matches!(elems.next(), Some(PlaceElem::Deref))\n",
     tests: ["test/lowering-moves.test.ts", "-t", "a closure's borrow of a getter's field"],
   },
+  {
+    name: "unreachable-past-false-edge-unseen",
+    breaks:
+      "a `match`'s arm of only `unsafe { unreachable_unchecked() }`, past its test's false edge, is taken for one that's reached, so its test and throw stay (rd643)",
+    file: "src/lower/mir/queries.rs",
+    find: "            TerminatorKind::Goto { target }\n            | TerminatorKind::FalseEdge {\n                real_target: target, ..\n            } => target,\n",
+    replace: "            TerminatorKind::Goto { target } => target,\n",
+    tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
+    snapshots: true,
+  },
 ];

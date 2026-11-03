@@ -73,8 +73,8 @@ use super::combinators::{IterComb, StepOp};
 use super::iterators::is_stepped_items;
 use super::jsx::JsxArg;
 use super::recognition::{
-    BuilderStep, DebugBuilder, PureStd, Std, StdItem, TraitCall, is_std_def, known_by_bounds, pure_std, std_item,
-    trait_method,
+    BuilderStep, DebugBuilder, PureStd, Std, StdItem, TraitCall, is_std_def, is_unreachable_hint, known_by_bounds,
+    pure_std, std_item, trait_method,
 };
 use super::refusal::{Refused, refuse};
 use super::representation::variant_field;
@@ -136,6 +136,14 @@ impl<'tcx> Mir<'tcx> {
                 }
             {
                 *unwind = UnwindAction::Unreachable;
+            }
+            // `hint::unreachable_unchecked()` is MIR's unreachable code (ADR
+            // 0399): a switch's way to it alone is left out, as one to
+            // `unreachable` is, so `match` tests the arms that run.
+            if let TerminatorKind::Call { func, .. } = &data.terminator().kind
+                && func.const_fn_def().is_some_and(|(id, _)| is_unreachable_hint(tcx, id))
+            {
+                data.terminator_mut().kind = TerminatorKind::Unreachable;
             }
         }
         // An optimized body's, std's, switch that goes one way whatever it

@@ -260,9 +260,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `match` of a call's value calls it once per arm it tests, `match note(1, x) { 1 => .., 2 => .., _ => .. }`",
     file: "src/lower/mir/structure.rs",
-    find: "                    && made.has_effects()\n                {",
+    find: "                    && made.has_effects()\n                {\n                    let value = std::mem::replace(made, Expr::undefined());\n                    *made = self.spill(",
     replace:
-      "                    && made.has_effects()\n                    && false\n                {",
+      "                    && made.has_effects()\n                    && false\n                {\n                    let value = std::mem::replace(made, Expr::undefined());\n                    *made = self.spill(",
     tests: ["test/corpus.test.ts", "-t", "^match_call_once.rs$"],
   },
   {
@@ -588,6 +588,24 @@ export const mutations: Mutation[] = [
     find: "                            let throws = called.last().is_some_and(|s| !s.cannot_throw());\n",
     replace: "                            let throws = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^written_through_before_a_panic.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "untested-switch-subject-dropped",
+    breaks:
+      "a switch that goes one way alone, the rest unreachable, drops what it tests, `if loud(n) { unsafe { unreachable_unchecked() } }`'s call (rd643)",
+    file: "src/lower/mir/structure.rs",
+    find: "                    out.push(StmtKind::Expr(value).at(self.js_span(span)));\n",
+    replace: "                    drop(value);\n",
+    tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
+  },
+  {
+    name: "unreachable-hint-falls-through",
+    breaks: "unreachable code a way doesn't leave out, a function's body of only `hint::unreachable_unchecked()`, throws nothing: what follows runs",
+    file: "src/lower/mir/structure.rs",
+    find: "                out.push(self.unreachable_code(span));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
     snapshots: true,
   },
 ];

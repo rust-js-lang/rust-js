@@ -441,7 +441,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0396 A compound assignment in generic code is given its dictionary](0396-a-compound-assignment-in-generic-code.md)
 - [0397 A `RefCell<dyn T>` is its cell, with its `impl`](0397-a-refcell-of-a-dyn.md)
 - [0398 An array some of whose items moved drops what's left, as rustc does](0398-an-array-some-of-whose-items-moved.md)
-- [0399 `hint::unreachable_unchecked()` is unreachable code's throw](0399-unreachable-unchecked.md)
+- [0399 `hint::unreachable_unchecked()` is unreachable code's throw](0399-unreachable-unchecked.md) *(amended, rd643: a way to it alone is left out)*
 - [0400 A `Cow` compares and orders as what it borrows](0400-a-cow-compares-as-what-it-borrows.md)
 - [0401 A path compares, orders and keys a map by its components](0401-a-path-compares-by-its-components.md)
 - [0402 A `Cow` keys a map by what it borrows](0402-a-cow-keys-a-map-by-what-it-borrows.md)

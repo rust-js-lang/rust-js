@@ -467,11 +467,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if tcx.is_lang_item(def_id, LangItem::PanicFmt) {
             return Some(Some(Std::PanicFmt));
         }
-        // `hint::unreachable_unchecked()`, which a program that's right never
-        // reaches: what MIR's unreachable code is.
-        if krate == Some(StdCrate::Core) && std_path(tcx, def_id) == "std::hint::unreachable_unchecked" {
-            return Some(Some(Std::Unreachable));
-        }
         if of_std_crate(tcx, def_id, StdCrate::Core) && tcx.item_name(def_id).as_str() == "assert_failed" {
             return Some(Some(Std::AssertFailed));
         }
@@ -1298,6 +1293,13 @@ pub(in crate::lower) fn unwind_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Unwi
         "std::panic::resume_unwind" => Some(UnwindOp::Resume),
         _ => None,
     }
+}
+
+/// Is `def_id` `hint::unreachable_unchecked()`, which a program that's
+/// right never reaches: what MIR's unreachable code is (ADR 0399, amended),
+/// which `Mir::new` makes each call of it, so no lowering sees the call.
+pub(in crate::lower) fn is_unreachable_hint(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    of_std_crate(tcx, def_id, StdCrate::Core) && std_path(tcx, def_id) == "std::hint::unreachable_unchecked"
 }
 
 /// Is `def_id` `vec!`'s of an item and a count, `vec![0.0; n]`, a `Vec` of

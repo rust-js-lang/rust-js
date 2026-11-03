@@ -750,10 +750,16 @@ fn written_within(body: &mir::Body<'_>, block: BasicBlock, depth: usize) -> Opti
     (!first.is_dummy()).then(|| first.lo())
 }
 
+/// Whether `block` does nothing but go to unreachable code, MIR's or
+/// `hint::unreachable_unchecked()`'s, which `Mir::new` makes MIR's: a
+/// `match`'s arm of only that, `Params(_) => unsafe { unreachable_unchecked()
+/// }`, past the edge its test goes on by (ADR 0399, amended).
 pub(super) fn is_unreachable(body: &mir::Body<'_>, block: BasicBlock) -> bool {
-    let data = &body.basic_blocks[block];
-    matches!(data.terminator().kind, TerminatorKind::Unreachable)
-        && data.statements.iter().all(|s| {
+    let mut seen = HashSet::new();
+    let mut block = block;
+    loop {
+        let data = &body.basic_blocks[block];
+        let idle = data.statements.iter().all(|s| {
             matches!(
                 s.kind,
                 StatementKind::FakeRead(_)
@@ -761,7 +767,20 @@ pub(super) fn is_unreachable(body: &mir::Body<'_>, block: BasicBlock) -> bool {
                     | StatementKind::StorageDead(_)
                     | StatementKind::Nop
             )
-        })
+        });
+        // A `loop {}` of nothing goes on forever, which is reached.
+        if !idle || !seen.insert(block) {
+            return false;
+        }
+        block = match data.terminator().kind {
+            TerminatorKind::Unreachable => return true,
+            TerminatorKind::Goto { target }
+            | TerminatorKind::FalseEdge {
+                real_target: target, ..
+            } => target,
+            _ => return false,
+        };
+    }
 }
 
 /// The bytes of a constant that's an array of them: a template's.

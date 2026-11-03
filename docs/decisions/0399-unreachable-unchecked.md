@@ -51,3 +51,57 @@ release build doesn't check either.
   form: in range, the same number.
 - The `assert_unchecked` and `unchecked_and_saturating_neg` corpus cases
   run against native Rust.
+
+## Amendment: a way to it alone is left out (rd643)
+
+Ported React declares a type wider than any value its code makes:
+encodeReply's `Promise<string | URLSearchParams | FormData>`, of an
+untagged `ReplyBody` whose `UrlSearchParams` no code builds. Its `match`
+then tested, and threw for, a variant that's never there: `else if (body
+instanceof FormData) { .. } else { throw .. }`, where upstream tests
+`typeof body === 'string'` alone. The user chose the form a Rust
+programmer writes for "never this": `ReplyBody::UrlSearchParams(_) =>
+unsafe { std::hint::unreachable_unchecked() }`.
+
+**`Mir::new` makes each call of `unreachable_unchecked()` MIR's
+unreachable code (`recognition::is_unreachable_hint`), and a block that
+only goes to it, past `goto`s and a `match`'s false edges, is unreachable
+(`queries::is_unreachable`).** Every body rust-js lowers is made by
+`Mir::new`, so no call of it is left to recognize: `Std::Unreachable`,
+its classification, is gone with its mutation, which survived. A
+switch leaves out its ways to such a block, as it leaves out MIR's own
+(`structure.rs`), so a `match`'s arm of only the hint goes with its test,
+and the last arm it tests is what's left:
+
+```js
+function size(body) {
+  if (body.TAG === "Text") {
+    return $byteLen(body._0);
+  }
+  return body._0.length * 2;
+}
+```
+
+- **Case A** ([0262](0262-when-rust-and-js-disagree.md)) still: reaching
+  the hint is undefined behaviour, so no program that's right sees its
+  test go. rustc's optimizer drops the same tests.
+- **`unreachable!()` keeps its throw.** It's a panic, which a program may
+  catch, not a promise; only the hint is left out. The "one form" above
+  no longer holds: where the hint isn't all a way does, or a function's
+  body is only the hint, it still throws, as MIR's unreachable code does.
+- **An `if` too**: `if n % 2 == 1 { unsafe { unreachable_unchecked() } }`
+  is nothing. What its test makes is still made: a switch that goes one
+  way alone keeps its subject's effects as a statement, `loud(n);` of
+  `if loud(n) { .. }`, where it had dropped it (this ADR's corpus case).
+- **A loop is reached**: the walk stops at any other terminator, a
+  loop's `falseUnwind` among them, and at a block it's seen, so a `goto`
+  of itself, as an optimized std body's `loop {}` is, isn't followed
+  forever. That guard has no test: no body rust-js lowers from its own
+  crate has one (borrowck's MIR keeps `falseUnwind`, and a `const fn`'s
+  evaluated MIR counts each turn, `ConstEvalCounter`).
+- **Tested** by the corpus's `unreachable_hint.rs`, against native Rust,
+  and the mutations `unreachable-hint-a-call`,
+  `unreachable-past-false-edge-unseen` and
+  `untested-switch-subject-dropped`; `unreachable-hint-falls-through`
+  now leaves out MIR's unreachable code's throw, which a function whose
+  body is only the hint keeps.

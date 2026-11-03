@@ -123,15 +123,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "unreachable-hint-falls-through",
-    breaks: "`hint::unreachable_unchecked()` throws nothing: what follows runs",
-    file: "src/lower/format_args.rs",
-    find: "            Std::Unreachable => {\n                out.push(self.unreachable_code(span));\n",
-    replace: "            Std::Unreachable => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
-    snapshots: true,
-  },
-  {
     name: "unreachable-display-unprefixed",
     breaks:
       "an edition 2018 `unreachable!(x)` panics with what `x` shows alone, not after std's words",

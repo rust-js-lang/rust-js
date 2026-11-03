@@ -576,4 +576,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "scope_struct_functions"],
     snapshots: true,
   },
+  {
+    name: "unreachable-hint-a-call",
+    breaks:
+      "`hint::unreachable_unchecked()` stays a call, not MIR's unreachable code, so a `match`'s arm of only it keeps its test and a throw (rd643)",
+    file: "src/lower/mir.rs",
+    find: "                data.terminator_mut().kind = TerminatorKind::Unreachable;\n            }\n        }\n        // An optimized body's",
+    replace: "            }\n        }\n        // An optimized body's",
+    tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
+    snapshots: true,
+  },
 ];

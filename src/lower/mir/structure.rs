@@ -318,7 +318,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What code a program that's right never reaches does, MIR's
     /// unreachable code's or `hint::unreachable_unchecked()`'s: Rust's is
     /// undefined, so JS's, a throw, which says where it went wrong.
-    pub(in crate::lower) fn unreachable_code(&self, span: Span) -> Stmt {
+    fn unreachable_code(&self, span: Span) -> Stmt {
         StmtKind::Throw(Expr::panic(Expr::str("internal error: entered unreachable code"))).at(self.js_span(span))
     }
 
@@ -414,6 +414,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     let value = std::mem::replace(made, Expr::undefined());
                     *made = self.spill("_$", value, &mut out);
+                }
+                // What goes one way alone, the rest unreachable, tests
+                // nothing, but still makes it as Rust does: `if loud(n) {
+                // unsafe { unreachable_unchecked() } }`'s call (ADR 0399).
+                let ways: HashSet<BasicBlock> = (targets.all_targets().iter().copied())
+                    .filter(|&b| reached(b))
+                    .collect();
+                if ways.len() < 2
+                    && let Value::Expr(made) | Value::Discriminant(made, ..) = &mut subject
+                    && made.has_effects()
+                {
+                    let value = std::mem::replace(made, Expr::undefined());
+                    out.push(StmtKind::Expr(value).at(self.js_span(span)));
                 }
                 // Where in what a pattern matches it is, which names its
                 // constants (`body_queries::pattern_places`).

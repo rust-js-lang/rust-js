@@ -301,8 +301,6 @@ pub(super) enum Std {
     /// `panic!(x)` before edition 2021, `std::rt::begin_panic(x)`: the
     /// same, with `x` as it is, if it's text.
     BeginPanic,
-    /// `hint::unreachable_unchecked()`: MIR's unreachable code's throw.
-    Unreachable,
     /// `size_of::<T>()` and `align_of::<T>()`, and `size_of_val(&x)` and
     /// `align_of_val(&x)` of a sized `x`: the wasm32 target's, as their
     /// constants are (ADR 0090).

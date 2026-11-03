@@ -309,15 +309,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^range_size_hint.rs$"],
   },
   {
-    name: "unreachable-hint-unknown",
-    breaks:
-      "`hint::unreachable_unchecked()` is refused, where it's unreachable code's throw",
-    file: "src/lower/recognition/calls.rs",
-    find: '        if krate == Some(StdCrate::Core) && std_path(tcx, def_id) == "std::hint::unreachable_unchecked" {\n',
-    replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
-  },
-  {
     name: "path-parent-unknown",
     breaks: "a path's `parent()` is refused",
     file: "src/lower/recognition/calls.rs",
