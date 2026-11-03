@@ -3,7 +3,9 @@
 Status: Accepted (the user's rd345 decision, B1, 2026-11-01). Amended
 (B2, the same decision): its fields are the function's variables.
 Amended (rd536): its function may be generic. Amended (#500): its
-struct may be of type parameters. Extends
+struct may be of type parameters; and (the user's decision) a closure
+that passes on to one of its methods is that method, where nothing reads
+its identity. Extends
 [0047](0047-methods.md), whose object of a type's methods stays every
 other struct's, and [0308](0308-local-functions.md), whose functions
 declared in a body are written there.
@@ -385,3 +387,63 @@ type, and one given a bound's dictionary, which stay objects. Mutations
 `scope-of-type-parameters-refused`, `scope-impl-of-other-args`,
 `scope-method-given-evidence-kept`, `scope-method-copy-unnested` and
 `scope-lowering-params-unasked`.
+
+## Amended (#500, the user's decision): a closure that passes on to one of its methods is that method, where nothing reads its identity
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): None, no observable
+difference, the user's decision (2026-11-03): not a widening of ADR 0262's
+eta exception, which stays a namespace's.
+
+`createReactiveSystem` gives back closures of its scope's methods,
+`Rc::new(move |link| system.shallow_propagate(link))`, each an arrow
+calling the method's function, `shallowPropagate: (link) =>
+shallowPropagate(link)`, where upstream returns `{ link, unlink,
+propagate, checkDirty, shallowPropagate }`. **A closure that passes all
+it's given, in order, to a scope's method through its value, giving back
+what that gives, is that method's function** (`passed_on.rs`' `eta`),
+where nothing can tell the two apart:
+
+- **Its identity**: two closures of one method are one function in JS,
+  and two in Rust. So it's the method's function only where the crate
+  reads no closure's identity: no `Rc::ptr_eq` of an `Rc<dyn Fn>` it
+  doesn't count (`Counted::compared_uncounted`, whose closures made an
+  `Rc`'s are arrows of their own already, `counted_closure`, ADR 0959),
+  and no raw pointer to a `dyn Fn`, which `ptr::eq`, `ptr::addr_eq`,
+  `Rc::as_ptr`, `Rc::into_raw` and a pointer's hash or cast are of
+  (`Counted::points_at_functions`, `rc_counts.rs`, the one owner of what
+  reads an `Rc`'s and a function's identity). A closure whose own address
+  is taken is a box of its own already, `{ value: (by) => step(by) }`. Where it reads
+  one, each stays an arrow, `Rc::ptr_eq(&first, &second)` `false` as in
+  Rust.
+- **Its `.length`**, which JS reads of an exported one: the arrow's is
+  what it's given, which it passes on, all of it, so the method takes as
+  many past its `self`; and a scope's method is given nothing besides its
+  arguments (above), so its function has those parameters alone, none
+  defaulted: the two are one length.
+- **What more a JS caller gives**: the method's function reads only its
+  parameters, as the arrow passes only those.
+- **Its value**: the scope's, which every `Rc` of it shares, and no scope's
+  `Rc` is counted (ADR 0320), so dropping the closure does nothing JS sees.
+
+```js
+export function createReactiveSystem({ update, notify, unwatched }) {
+  function link(dep, sub, version) { .. }
+  ..
+  return {
+    link,
+    unlink,
+    propagate,
+    checkDirty,
+    shallowPropagate,
+  };
+}
+```
+
+Held by `test/corpus/scope_struct_of_type_parameters.rs` (the system's
+closures its functions) and `scope_struct_generic.rs` (`const later =
+part;`), and, against native Rust, by `scope_method_closure_ptr_eq.rs`,
+two `Rc`s of one method that `Rc::ptr_eq` compares, and
+`scope_method_closure_addr_eq.rs`, two `Box`es that `ptr::addr_eq`
+compares, each `false`, their arrows kept. Mutations
+`scope-method-closure-kept`, `scope-method-closure-identity-unasked` and
+`functions-pointed-at-unseen`.

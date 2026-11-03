@@ -19,8 +19,8 @@ export function createReactiveSystem({ notify }) {
   }
 
   return {
-    propagate: (node) => propagate(node),
-    shallowPropagate: (node) => shallowPropagate(node),
+    propagate,
+    shallowPropagate,
   };
 }
 

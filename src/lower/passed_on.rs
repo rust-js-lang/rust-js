@@ -743,7 +743,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 item: true,
                 binds: false,
                 ignores: args.is_empty(),
-                eta: super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Namespace),
+                // Or a scope struct's method, its function's function
+                // closing over that value, where nothing reads a closure's
+                // identity, which the two share (ADR 1043, amended, #500).
+                eta: super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Namespace)
+                    || self.krate.scopes.of_method(def_id).is_some() && !self.krate.counted.points_at_functions,
                 fixed: false,
                 statement,
             }),

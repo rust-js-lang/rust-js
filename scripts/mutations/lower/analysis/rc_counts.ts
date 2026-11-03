@@ -296,4 +296,13 @@ export const mutations: Mutation[] = [
     replace: "    counted.compared_uncounted = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq_of_forwarding.rs$"],
   },
+  {
+    name: "functions-pointed-at-unseen",
+    breaks:
+      "a crate that holds a raw pointer to a `dyn Fn`, `ptr::addr_eq(&*first, &*second)`'s, is taken to read no closure's identity, so two closures of one scope method are one, and the comparison true where native gives false (#500)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "            points_at_functions |= raw_pointee(tcx, expr.ty)",
+    replace: "            points_at_functions |= false && raw_pointee(tcx, expr.ty)",
+    tests: ["test/corpus.test.ts", "-t", "^scope_method_closure_addr_eq.rs$"],
+  },
 ];

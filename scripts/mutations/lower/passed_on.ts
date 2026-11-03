@@ -522,8 +522,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure that passes all it's given to a namespace's function through a value, `move |f, a| renderer.batched_updates(f, a)`, keeps its arrow, not `renderer.batchedUpdates` (the user's decision)",
     file: "src/lower/passed_on.rs",
-    find: "                eta: super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Namespace),\n",
-    replace: "                eta: false,\n",
+    find: "                eta: super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Namespace)\n",
+    replace: "                eta: false\n",
     tests: ["test/namespaces.test.ts", "-t", "passes all it's given"],
   },
   {
@@ -769,5 +769,33 @@ export const mutations: Mutation[] = [
       "-t",
       "a field written a variable of the crate's own closure is called through its object",
     ],
+  },
+  {
+    name: "scope-method-closure-kept",
+    breaks:
+      "a closure that passes all it's given to a scope struct's method keeps its arrow, `propagate: (node) => propagate(node)` where upstream returns `{ propagate }` (#500)",
+    file: "src/lower/passed_on.rs",
+    find: "\n                    || self.krate.scopes.of_method(def_id).is_some() && !self.krate.counted.points_at_functions,",
+    replace: ",",
+    tests: ["test/corpus.test.ts", "-t", "scope_struct"],
+    snapshots: true,
+  },
+  {
+    name: "scope-method-closure-identity-unasked",
+    breaks:
+      "a closure that passes on to a scope struct's method is that method where the crate compares closures' addresses, so two of one method are one, `ptr::addr_eq` true where native gives false (#500, the user's decision)",
+    file: "src/lower/passed_on.rs",
+    find: "self.krate.scopes.of_method(def_id).is_some() && !self.krate.counted.points_at_functions,",
+    replace: "self.krate.scopes.of_method(def_id).is_some(),",
+    tests: ["test/corpus.test.ts", "-t", "^scope_method_closure_addr_eq.rs$"],
+  },
+  {
+    name: "counted-closure-ungated-of-a-scope-method",
+    breaks:
+      "a closure made an `Rc`'s that passes on to a scope struct's method is that method where the crate compares uncounted `Rc<dyn Fn>`s, so two `Rc`s of one method are `Rc::ptr_eq`, true where native gives false (#500, the user's decision)",
+    file: "src/lower/passed_on.rs",
+    find: "        if !self.krate.counted.compared_uncounted {\n            return false;\n        }\n",
+    replace: "        if true {\n            return false;\n        }\n",
+    tests: ["test/corpus.test.ts", "-t", "^scope_method_closure_ptr_eq.rs$"],
   },
 ];

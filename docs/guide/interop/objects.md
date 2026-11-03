@@ -226,7 +226,7 @@ export function createSystem(notify) {
     notify(node);
   }
 
-  return (node) => propagate(node);
+  return propagate;
 }
 ```
 

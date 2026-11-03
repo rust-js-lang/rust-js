@@ -27,7 +27,7 @@ function process(root, onDone, onPart, TDisplay) {
   }
 
   const shown = TDisplay.fmt(root);
-  const later = (text) => part(text);
+  const later = part;
   part(shown);
   later("later");
   const borrow = $borrow(parts, true);

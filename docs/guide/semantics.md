@@ -676,6 +676,18 @@ What's refused is in [the limitations](limitations.md).
   and `.length` tell them apart, as of a function passed on
   ([0605](../decisions/0605-an-arrow-that-passes-on-has-one-owner.md),
   amended).
+- **A closure that passes all it's given, in order, to a scope struct's
+  method through its value is that method's function**, where the crate
+  reads no closure's identity: alien-signals' `Rc::new(move |link|
+  system.shallow_propagate(link))` is `shallowPropagate`, returned as
+  upstream returns it, `{ link, .., shallowPropagate }`. Nothing tells
+  them apart: the method's function takes what the arrow passes, no more,
+  so their `.length`s are one, and reads no `this`. Where the crate
+  compares an `Rc<dyn Fn>` it doesn't count with `Rc::ptr_eq`, or holds a
+  raw pointer to a `dyn Fn`, `ptr::addr_eq(&*first, &*second)`'s, each
+  stays an arrow of its own, so two of one method compare `false`, as in
+  Rust ([1043](../decisions/1043-a-functions-scope-struct-is-its-scope.md),
+  amended, the user's decision).
 
 Differences:
 

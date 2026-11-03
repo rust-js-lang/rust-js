@@ -31,6 +31,13 @@ pub struct Counted<'tcx> {
     /// `Rc`'s stays a function of its own (`passed_on`'s
     /// `counted_closure`, rd313).
     pub compared_uncounted: bool,
+    /// Whether the crate holds a raw pointer to a `dyn Fn`, what `ptr::eq`,
+    /// `ptr::addr_eq`, `Rc::as_ptr` and `Rc::into_raw` give or take, whose
+    /// address, compared, hashed or cast, is its JS function's identity:
+    /// then a closure that passes on to a scope's method is a function of
+    /// its own, as two such are two to Rust (#500, the user's decision). A
+    /// closure whose own address is taken is a box of its own already.
+    pub points_at_functions: bool,
 }
 
 impl<'tcx> Counted<'tcx> {
@@ -177,6 +184,7 @@ pub(super) fn counted_rcs<'tcx>(
     // The closures made an `Rc<dyn Fn>` that are `Copy`, and those a body
     // clones: what else may be one JS function given it twice.
     let (mut copied, mut cloned): (HashSet<Ty<'tcx>>, HashSet<Ty<'tcx>>) = (HashSet::new(), HashSet::new());
+    let mut points_at_functions = false;
     for body in all_bodies {
         let owner = tcx.typeck_root_def_id(body.def_id);
         let env = ty::TypingEnv::non_body_analysis(tcx, owner);
@@ -192,6 +200,9 @@ pub(super) fn counted_rcs<'tcx>(
         }
         for (id, expr) in body.thir.exprs.iter_enumerated() {
             found(expr.ty, true, &mut seen);
+            points_at_functions |= raw_pointee(tcx, expr.ty).is_some_and(
+                |(pointee, _)| matches!(pointee.kind(), ty::Dynamic(predicates, ..) if is_fn_dyn(tcx, predicates)),
+            );
             if params_may_drop && !behind_pointer(&body.thir, id) {
                 owned_dropping(tcx, (env, &given), expr.ty, &mut owned_seen, &mut counted);
             }
@@ -292,6 +303,7 @@ pub(super) fn counted_rcs<'tcx>(
     let mut counted = Counted {
         all: false,
         compared_uncounted: false,
+        points_at_functions,
         types: counted,
     };
     loop {
