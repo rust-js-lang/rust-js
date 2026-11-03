@@ -413,7 +413,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => self.shape(ty),
         };
         // The keys whose `undefined`, a `None`'s, is kept: one a comment is
-        // written on, the comment's place (ADR 0280, amended).
+        // written on, the comment's place (ADR 0280, amended), but one
+        // declared optional, absent until it's set, whose comment changes
+        // no key (amended, the user's decision, 2026-11-03).
         let (mut kept, mut docs, mut written) = (Vec::new(), Vec::new(), Vec::new());
         let (shape, items) = match shape {
             // A `Cell` in an object's field is what it holds (ADR 0288).
@@ -421,6 +423,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // The layout's keys are text: one a symbol names is laid out
                 // as any value (ADR 1051).
                 kept = (self.commented_fields(&adt_def, variant_index, span).into_iter())
+                    .filter(|&i| {
+                        !(variant.fields.iter().nth(i)).is_some_and(|field| bindings::is_optional(self.tcx, field))
+                    })
                     .filter_map(|i| names.get(i).and_then(|(name, _)| name.name()).map(str::to_owned))
                     .collect();
                 // Where each field is written, what's before it is before.

@@ -6,7 +6,8 @@ use super::{ExprKind, ObjectLayout, Prop};
 
 /// `props` of an object written as `layout` says, without its keys of
 /// `undefined`. Not after a spread, whose field it would then be, nor one a
-/// comment is written after on its line, the comment's place (amended); a
+/// comment is written after on its line, the comment's place, but where the
+/// field is optional, absent until set (amended, 2026-11-03); a
 /// comment on lines of its own before one is before the next key, or the
 /// object's `}` (amended again, rd321): it changes no key. Nor a field that
 /// holds a cell, set later, `destroy: undefined`, the object's shape whole

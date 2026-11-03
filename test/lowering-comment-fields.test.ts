@@ -54,6 +54,101 @@ pub fn create_cache_node() -> CacheNode {
   expect(Object.keys(lib.createCacheNode() as object)).toEqual(["s", "v", "o"]);
 });
 
+// A `#[rust_js::optional]` field is absent until it's set (ADR 0810): a
+// comment after its `None` on its line changes no key, as one before it
+// doesn't (rd321). The field is left out and the comment is after the key
+// written before it, before the next, or before the object's `}`, on lines
+// of its own (the user's decision, 2026-11-03). Before, `owner: None, //
+// why` printed `owner: undefined, // why`, so the program's own
+// `js::has(&info, "owner")` was `true` with the comment and `false` without.
+// A field that isn't optional keeps createCacheNode's `v: undefined, //
+// why`.
+test("a comment after an optional field's None changes no key", async () => {
+  const { js, lib } = await compiled("comment-after-optional-none", `pub struct Info {
+    pub name: String,
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub env: Option<String>,
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub owner: Option<u32>,
+    pub start: f64,
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub stack: std::cell::Cell<Option<u32>>,
+    pub value: Option<u32>,
+}
+
+pub fn info(name: String) -> Info {
+    Info {
+        name,
+        env: None, // set where it's known
+        owner: None, /* the requesting owner */
+        start: 1.0,
+        stack: std::cell::Cell::new(None), // DEV only
+        value: None,
+    }
+}
+
+pub fn kept(name: String) -> Info {
+    Info {
+        name,
+        env: None,
+        owner: None,
+        start: 2.0,
+        stack: std::cell::Cell::new(None),
+        value: None, // the cached value
+    }
+}
+
+pub fn first() -> Info {
+    Info {
+        owner: None, // unknown
+        name: "a".to_string(),
+        env: None,
+        start: 3.0,
+        stack: std::cell::Cell::new(None),
+        value: None,
+    }
+}
+
+pub struct Short {
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub env: Option<u32>,
+    pub n: u32,
+}
+
+pub fn short() -> Short {
+    Short { env: None, n: 1 } // made on one line
+}
+
+pub fn has_keys() -> (bool, bool, bool, bool) {
+    let made = info("a".to_string());
+    let other = kept("b".to_string());
+    (js::has(&made, "owner"), js::has(&made, "env"), js::has(&made, "stack"), js::has(&other, "value"))
+}
+`);
+  expect(js).toContain(`  return {
+    name,
+    // set where it's known
+    /* the requesting owner */
+    start: 1,
+    // DEV only
+  };`);
+  expect(js).toContain(`    start: 2,
+    value: undefined, // the cached value
+  };`);
+  expect(js).toContain(`  return {
+    // unknown
+    name: "a",
+    start: 3,
+  };`);
+  // One after a literal written on one line is its statement's.
+  expect(js).toContain(`  return { n: 1 }; // made on one line`);
+  expect(Object.keys(lib.info("a" as never) as object)).toEqual(["name", "start"]);
+  expect("owner" in (lib.info("a" as never) as object)).toBe(false);
+  expect(Object.keys(lib.kept("b" as never) as object)).toEqual(["name", "start", "value"]);
+  expect(Object.keys(lib.first() as object)).toEqual(["name", "start"]);
+  expect(lib.hasKeys()).toEqual([false, false, false, true]);
+});
+
 // A comment on lines of their own before a field heads what follows: it
 // changes no key (amended again). React's createContext, `// These are
 // circular` before `Provider` and `Consumer`, leaves out its DEV-only

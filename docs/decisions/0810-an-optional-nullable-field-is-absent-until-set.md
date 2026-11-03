@@ -128,7 +128,9 @@ if (__DEV__) {
 
 - A comment before an optional field made `None` in the literal is before
   the next key the object writes, or its `}`, as one before any field left
-  out is: it never writes the key (ADR 0280, amended, rd321).
+  out is: it never writes the key (ADR 0280, amended, rd321); so is one
+  after its `None` on its line, after the key written before it (amended
+  again, the user's decision, 2026-11-03).
 
 ## What holds it
 

@@ -4,7 +4,9 @@ Status: Accepted. Amended: an optional `OnceCell` field is left out where it's m
 its line keeps its key, `undefined`, the comment's place; a comment before a
 field changes no key, and where no key follows it, it's before the object's
 `}` (rd321); a field that holds a cell keeps its key where it's made `None`
-(the user's decision, 2026-10-27).
+(the user's decision, 2026-10-27); an optional field's `None` is left out
+whatever its comments, one after it on its line too (the user's decision,
+2026-11-03).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)); B where upstream writes the key, `_owner: undefined`, the user's decision (2026-11-01, rd391): `in`, `Object.keys` and `hasOwnProperty` tell them apart, listed in 0262's Consequences.
 
@@ -318,3 +320,67 @@ place", now `Object.keys` of `["props", "_owner", "ref"]`; mutations
 `led-none-always-kept`, `led-none-last-left-out`,
 `commented-field-leading-unread` and `commented-field-leading-as-on`, go
 with its code.
+
+## Amendment: a comment after an optional field's `None` changes no key (the user's decision, 2026-11-03)
+
+The amendment above left one comment that decides a key: one after a
+`None`'s value on its line, createCacheNode's `v: undefined, // why`. It
+applied to `#[rust_js::optional]` fields too, which ADR 0810 says are
+absent until set, so `owner: None, // why` printed `owner: undefined`
+(and lost its comment, as the `None`'s JS has no place of its own), and
+the program's own `js::has(&info, "owner")` was `true` with the comment
+and `false` without it, as rd321's was.
+
+**The user's decision: an optional field's `None` is left out whatever
+its comments.** A comment after it on its line, or in its value, is the
+line of no code, and is placed as one on lines of its own before it is
+(rd321): after the key written before it, before the next, or before the
+object's `}`:
+
+```rust
+Info {
+    name,
+    env: None, // set where it's known
+    start: 1.0,
+    stack: Cell::new(None), // DEV only
+}
+```
+
+```js
+return {
+  name,
+  // set where it's known
+  start: 1,
+  // DEV only
+};
+```
+
+A field that isn't optional, whose `None` is no key only as JS leaves
+`undefined` out, keeps createCacheNode's `v: undefined, // why`, as
+upstream writes it.
+
+- **Which keys are kept is the struct literal's lowering**
+  (`aggregates.rs`): `ObjectLayout::kept` no longer has a commented field
+  declared optional (`bindings::is_optional`), so
+  `js::undefined_keys::left_out` leaves it out as any.
+- **Where the comment goes is the printer's**: `to_oxc::closing::left_out`
+  gives where each value is written of a field its object, as printed,
+  leaves out (`ObjectLayout::written` of a key the object has no field
+  of), and a comment whose line is that field alone, `env: None,` and
+  comments, `closing::of_left_out`, is no code's, so it's placed as one on
+  lines of its own, by the starts and `closing::end_of` that place
+  rd321's. One after a literal written on its line, `Short { env: None, n:
+  1 } // why`, is its statement's, as before.
+- Case ([0262](0262-when-rust-and-js-disagree.md)): C, as rd321's: a
+  program's `in`, `Object.keys` and `hasOwnProperty` of its own struct saw
+  a key a comment made. Native Rust has no `in`, so the test runs the
+  program's own `js::has`.
+
+Held by `test/lowering-comment-fields.test.ts`'s "a comment after an
+optional field's None changes no key" (a line comment before a written
+key, a block comment, one before the `}`, one before the first key, a
+non-optional field's kept, a literal on one line, `Object.keys`, `in`,
+and the program's `js::has`, run), and the mutations
+`commented-optional-none-kept` (`lower/aggregates.ts`),
+`left-out-fields-unknown`, `left-out-fields-every-written` and
+`left-out-line-of-other-code` (`to_oxc/closing.ts`).

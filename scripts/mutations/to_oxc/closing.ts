@@ -54,6 +54,33 @@ export const mutations: Mutation[] = [
     tests: commentFields,
   },
   {
+    name: "left-out-fields-unknown",
+    breaks:
+      "a comment after an optional field's `None` on its line, `env: None, // why`, is no code's, its field left out, and is lost (ADR 0280, amended, 2026-11-03)",
+    file: "src/to_oxc/closing.rs",
+    find: "        spans.extend((written.iter()).filter(|(key, _)| !writes(key)).map(|&(_, at)| at));\n",
+    replace: "        spans.extend((written.iter()).filter(|(key, _)| !writes(key) && false).map(|&(_, at)| at));\n",
+    tests: commentFields,
+  },
+  {
+    name: "left-out-fields-every-written",
+    breaks:
+      "a comment after a written field's value on its line, `value: undefined, // the cached value`, is placed as one on lines of its own, before the next key or the `}` (ADR 0280, amended, 2026-11-03)",
+    file: "src/to_oxc/closing.rs",
+    find: "        spans.extend((written.iter()).filter(|(key, _)| !writes(key)).map(|&(_, at)| at));\n",
+    replace: "        spans.extend((written.iter()).map(|&(_, at)| at));\n",
+    tests: commentFields,
+  },
+  {
+    name: "left-out-line-of-other-code",
+    breaks:
+      "a comment after a literal written on one line, `Short { env: None, n: 1 } // made on one line`, is taken for a left-out field's and moved off its statement's line (ADR 0280, amended, 2026-11-03)",
+    file: "src/to_oxc/closing.rs",
+    find: "        key.is_some_and(|key| crate::names::is_identifier(",
+    replace: "        true || key.is_some_and(|key| crate::names::is_identifier(",
+    tests: commentFields,
+  },
+  {
     name: "object-end-comment-of-any-code-after",
     breaks: "a comment before a struct literal's field, not after its last, is taken for one before its `}`",
     file: "src/to_oxc/closing.rs",

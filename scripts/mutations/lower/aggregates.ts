@@ -377,6 +377,15 @@ export const mutations: Mutation[] = [
     ],
   },
   {
+    name: "commented-optional-none-kept",
+    breaks:
+      "an optional field's `None` a comment is written after on its line keeps its key, `owner: undefined, // why`, so `js::has(&info, \"owner\")` is `true` for a comment's sake (ADR 0280, amended, 2026-11-03)",
+    file: "src/lower/aggregates.rs",
+    find: "                        !(variant.fields.iter().nth(i)).is_some_and(|field| bindings::is_optional(self.tcx, field))\n",
+    replace: "                        true\n",
+    tests: ["test/lowering-comment-fields.test.ts", "-t", "a comment after an optional field's None changes no key"],
+  },
+  {
     name: "field-docs-of-any-literal",
     breaks:
       "a struct made in two places prints its field's doc comment at each literal, a copy of the declaration's in each (ADR 0444, amended)",

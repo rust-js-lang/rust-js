@@ -1054,7 +1054,10 @@ A comment after a struct literal's field's value on its line is the
 field's, and a field that's `None`, which JS leaves out, keeps its key for
 it, `v: undefined, // why`. One on lines of their own before a field heads
 what follows: it changes no key, and is before the next key the object
-has, or, where none follows, before the object's `}`
+has, or, where none follows, before the object's `}`. A comment changes
+no key of a `#[rust_js::optional]` field, absent until it's set: its
+`None` is left out, and a comment after it on its line is placed as one
+on lines of their own before it is
 ([ADR 0280](../../decisions/0280-undefined-fields-left-out.md), amended).
 One before an `unsafe` block is its code's
 ([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md), amended):

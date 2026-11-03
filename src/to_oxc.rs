@@ -507,6 +507,7 @@ fn comments_of(
     let field_docs = field_docs(module);
     let argument_ends = arguments::argument_ends(module);
     let object_ends = closing::object_ends(module);
+    let left_out = closing::left_out(module);
     let mut closing = Vec::new();
     let mut exports = Vec::new();
     let param_starts = trailing::param_starts(module);
@@ -578,9 +579,12 @@ fn comments_of(
         // Each comment, past the leading ones, with what it's before.
         // One after code on its line is that code's: by its line, which the
         // map gives the JS of.
+        // One on the line of a field its object leaves out, a `None`, is no
+        // code's: placed as one on lines of its own (ADR 0280, amended).
         let after_code = |c: &crate::program::Comment| {
             let line_start = sources.text[..c.lo as usize].rfind('\n').map_or(0, |i| i + 1);
             !sources.text[line_start..c.lo as usize].trim().is_empty()
+                && !closing::of_left_out(c, &left_out, &sources.text, &file.comments)
         };
         for c in file
             .comments

@@ -1047,7 +1047,8 @@ pub struct ObjectLayout {
     pub commented: bool,
     /// The keys whose `undefined` is kept: one a comment is written on in
     /// its literal, `v: None, // why`, `v: undefined, // why`, the comment's
-    /// place (ADR 0280, amended); and one of a field that holds a cell, set
+    /// place, but an optional one's, absent until set (ADR 0280, amended);
+    /// and one of a field that holds a cell, set
     /// later, `destroy: undefined`, the object's shape whole from its start
     /// (amended, the user's decision, 2026-10-27).
     pub kept: Vec<String>,

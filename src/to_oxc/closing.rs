@@ -3,7 +3,9 @@
 //! object too, on lines of its own (ADR 0708, amended), which oxc's printer
 //! writes no comment before, so its line is split there, as a conditional's
 //! branch's is (ADR 0658). So is one after the last field the object
-//! writes, before fields it leaves out, `None`s (ADR 0280, amended, rd321).
+//! writes, before fields it leaves out, `None`s (ADR 0280, amended, rd321),
+//! and one after a left-out field's `None` on its line, which is no code's
+//! (amended, 2026-11-03).
 
 use super::*;
 
@@ -22,31 +24,14 @@ pub(super) struct ObjectEnd {
     written_to: Option<u32>,
 }
 
-/// Where each object literal of fields starts and ends.
-pub(super) fn object_ends(module: &Module) -> Vec<ObjectEnd> {
-    let mut ends = Vec::new();
+/// Each object literal of `module`, of a place of its own, given to `f`.
+fn each_object(module: &Module, f: &mut dyn FnMut(&js::Expr, &[js::Prop], &js::ObjectLayout)) {
     let mut of = |mut stmts: Vec<js::Stmt>| {
         js::each_expr_mut(&mut stmts, &mut |e| {
             if let ExprKind::Object(props, layout) = &e.kind
                 && !e.span.is_none()
             {
-                // Where a field's value ends, of its code a comment inside
-                // is in, a method's body's `// ..` (rd321).
-                let end = |value: &js::Expr| (!value.span.is_none()).then_some(value.span.hi);
-                let written_to = |prop: &js::Prop| match prop {
-                    js::Prop::Field(key, value)
-                    | js::Prop::Method(key, value)
-                    | js::Prop::Getter(key, value)
-                    | js::Prop::Setter(key, value) => layout.written(key).map(|written| written.hi).or(end(value)),
-                    js::Prop::Keyed(_, value) | js::Prop::KeyedMethod(_, value) | js::Prop::Spread(value) => end(value),
-                };
-                let written_to =
-                    (props.iter().map(written_to)).try_fold(e.span.lo, |last, to| to.map(|to| last.max(to)));
-                ends.push(ObjectEnd {
-                    lo: e.span.lo,
-                    hi: e.span.hi,
-                    written_to,
-                });
+                f(e, props, layout);
             }
         });
     };
@@ -58,6 +43,81 @@ pub(super) fn object_ends(module: &Module) -> Vec<ObjectEnd> {
             js::Item::Namespace(n) => n.methods.iter().for_each(|method| of(method.body.clone())),
         }
     }
+}
+
+/// Where each field's value is written that its object leaves out, a
+/// `None` (`js::undefined_keys::left_out`): a comment on its line is no
+/// code's, so it's placed as one on lines of its own (ADR 0280, amended,
+/// the user's decision, 2026-11-03).
+pub(super) fn left_out(module: &Module) -> Vec<js::Span> {
+    let mut spans = Vec::new();
+    each_object(module, &mut |_, props, layout| {
+        let written = layout.fields.as_deref().map_or(&[][..], |fields| &fields.written[..]);
+        let writes = |key: &str| {
+            (props.iter()).any(|p| matches!(p, js::Prop::Field(k, _) | js::Prop::Method(k, _) | js::Prop::Getter(k, _) | js::Prop::Setter(k, _) if k == key))
+        };
+        spans.extend((written.iter()).filter(|(key, _)| !writes(key)).map(|&(_, at)| at));
+    });
+    spans
+}
+
+/// Whether `c`'s line is only a field its object leaves out, of `left_out`,
+/// and comments: `env: None, // why`, `owner: None, /* why */`.
+pub(super) fn of_left_out(
+    c: &crate::program::Comment,
+    left_out: &[js::Span],
+    text: &str,
+    comments: &[crate::program::Comment],
+) -> bool {
+    let line_start = text[..c.lo as usize].rfind('\n').map_or(0, |i| i + 1);
+    let line_end = text[c.hi as usize..]
+        .find('\n')
+        .map_or(text.len(), |i| c.hi as usize + i);
+    // The line's code, each comment on it a space.
+    let code = |lo: usize, hi: usize| {
+        let mut code = String::new();
+        let mut at = lo;
+        for other in comments.iter().filter(|o| lo <= o.lo as usize && (o.hi as usize) <= hi) {
+            code.push_str(&text[at..other.lo as usize]);
+            code.push(' ');
+            at = other.hi as usize;
+        }
+        code.push_str(&text[at.min(hi)..hi]);
+        code
+    };
+    (left_out.iter()).any(|value| {
+        let (lo, hi) = (value.lo as usize, value.hi as usize);
+        // On its line, and nothing else is but its key, `env:`, and `,`.
+        if lo < line_start || line_end < hi {
+            return false;
+        }
+        let around = code(line_start, lo) + &code(hi, line_end);
+        let key = (around.trim().trim_end_matches(',').trim_end().strip_suffix(':')).map(str::trim_end);
+        key.is_some_and(|key| crate::names::is_identifier(key.strip_prefix("r#").unwrap_or(key)))
+    })
+}
+
+/// Where each object literal of fields starts and ends.
+pub(super) fn object_ends(module: &Module) -> Vec<ObjectEnd> {
+    let mut ends = Vec::new();
+    each_object(module, &mut |e, props, layout| {
+        // Where a field's value ends, of its code a comment inside
+        // is in, a method's body's `// ..` (rd321).
+        let end = |value: &js::Expr| (!value.span.is_none()).then_some(value.span.hi);
+        let written_to = |prop: &js::Prop| match prop {
+            js::Prop::Field(key, value)
+            | js::Prop::Method(key, value)
+            | js::Prop::Getter(key, value)
+            | js::Prop::Setter(key, value) => layout.written(key).map(|written| written.hi).or(end(value)),
+            js::Prop::Keyed(_, value) | js::Prop::KeyedMethod(_, value) | js::Prop::Spread(value) => end(value),
+        };
+        let written_to = (props.iter().map(written_to)).try_fold(e.span.lo, |last, to| to.map(|to| last.max(to)));
+        ends.push(ObjectEnd {
+            lo: e.span.lo,
+            hi: e.span.hi,
+            written_to,
+        });
+    });
     ends
 }
 
