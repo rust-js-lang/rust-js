@@ -846,6 +846,16 @@ function constantType(t: IdlType): string | { skip: string } {
   return typeof name === "string" && NUMBERS[name] && name !== "boolean" ? NUMBERS[name] : rustType(t, "result");
 }
 
+/** A value JS gives a callback, a parameter's type: JS's, which the
+ * callback may keep, of `'static` borrows, as a handler's event is (ADR
+ * 1021) and as a function's result is, `&'static str`, `&'static Node`,
+ * `FormDataEntryValue<'static>`: the one rule of each callback JS calls,
+ * a `forEach`'s (rd574), an observer's, a timer's or a request's, `&'static
+ * [&'static MutationRecord]`, and a promised one's (ADR 0281, amended, rd663). */
+function jsGives(type: string): string {
+  return type.replace(/&(?!')/g, "&'static ").replace(/<'_>/g, "<'static>");
+}
+
 /** The Rust type for a (non-union) WebIDL type, or why there isn't one. */
 function rustType(t: IdlType, at: Position): string | { skip: string } {
   if (at === "result" && isUnion(t)) return resultUnion(t);
@@ -900,7 +910,7 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
   // an `f64`, `impl Into<f64>` (\`generic\`) (ADR 0994, amended).
   if (NUMBERS[name]) return name === "boolean" ? "bool" : "f64";
   if (STRINGS.has(name) || enums.has(name)) return at === "param" ? "&str" : "String";
-  if (name === "EventListener" && at === "param") return "Box<dyn FnMut(&Event)>";
+  if (name === "EventListener" && at === "param") return `Box<dyn FnMut(${jsGives("&Event")})>`;
   // A callback a function takes is a closure, given what JS calls it with
   // as a function's parameters are, `None` of a `null` one:
   // `new IntersectionObserver(|entries, observer| ..)`. An event handler
@@ -915,7 +925,7 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
     });
     const result = rustType(callback.idlType!, "result");
     if (args.some((a) => !a || a === ANY) || typeof result !== "string") return { skip: "callback" };
-    return `Box<dyn FnMut(${args.join(", ")})${result === "()" ? "" : ` -> ${result}`}>`;
+    return `Box<dyn FnMut(${(args as string[]).map(jsGives).join(", ")})${result === "()" ? "" : ` -> ${result}`}>`;
   }
   // A function JS gives is a `dyn Fn` of its signature, `Function`'s, which
   // says none, `dyn Fn() -> Option<&'static Unknown>`, called of nothing
@@ -1377,12 +1387,6 @@ function promisedCallback(callback: Def): string | { skip: string } {
   }
   return known.lent ? `&dyn Into${name}` : `Box<dyn Into${name}>`;
 }
-
-/** A value JS gives a callback, a parameter's type: JS's, which the
- * callback may keep, of `'static` borrows, as a handler's event is (ADR
- * 1021) and as a function's result is, `&'static str`, `&'static Node`,
- * `FormDataEntryValue<'static>` (ADR 0281, amended, rd574). */
-const jsGives = (type: string): string => type.replace(/&(?!')/g, "&'static ").replace(/<'_>/g, "<'static>");
 
 /** The bound of a function `Into<name>` takes: its arguments, `jsGives`',
  * and any result `R`. */

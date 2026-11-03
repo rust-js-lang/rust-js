@@ -255,4 +255,6 @@ value alone until a port gives one a function of more; TypeScript's
 
 Held by `test/js-collections.test.ts`'s "a Map's forEach and iterators",
 run: a function of the three given as it is, deleting what it's given.
-React's port writes `|v, k, _|` where it wrote `|v, k|`.
+React's port writes `|v, k, _|` where it wrote `|v, k|`. The map it gives
+is JS's, `&'static Self`, which `f` may keep, as webapi's `forEach`s give
+theirs ([0281](0281-webapi-covers-typescripts-dom.md), amended, rd663).

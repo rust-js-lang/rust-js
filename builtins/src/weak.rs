@@ -175,9 +175,14 @@ impl<K: ?Sized + 'static, V> Map<K, V> {
     /// three is given as it is, `queuedPointers.forEach(attempt)`. JS runs
     /// `f` before `forEach` returns and keeps nothing of it, so it may borrow
     /// what's around it, as a [`Set`]'s `for_each` may (ADR 0875, amended):
-    /// `map.for_each(|value, _, _| names.push(value))`.
+    /// `map.for_each(|value, _, _| names.push(value))`. What it's given is
+    /// JS's, the map too, which `f` may keep, as webapi's `forEach`s give
+    /// theirs (ADR 0281, amended, rd663).
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
-    pub fn for_each(&self, f: impl FnMut(V, &'static K, &Self)) {
+    pub fn for_each(&self, f: impl FnMut(V, &'static K, &'static Self))
+    where
+        V: 'static,
+    {
         unreachable!()
     }
 

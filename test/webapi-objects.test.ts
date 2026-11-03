@@ -546,6 +546,105 @@ pub fn nodes(list: &NodeList) -> Vec<&'static webapi::Node> {
   expect(lib.nodes(list)).toEqual(["x", "y"]);
 });
 
+// rd663: what JS calls an observer's, a timer's or a request's callback
+// with is JS's too, as `forEach`'s arguments are (rd574), so the callback
+// may keep it: a `MutationObserver`'s records and the observer itself, an
+// idle callback's deadline, `getAsString`'s text, and a `js::Map`'s
+// `forEach`'s map.
+test("an observer's or a timer's callback is given values it may keep", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-callback-kept");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
+use webapi::{
+    DataTransferItem, IdleDeadline, MutationObserver, MutationRecord, ResizeObserver,
+    ResizeObserverEntry, mutation_observer, resize_observer, window_global,
+};
+
+type Kept = Vec<(&'static MutationRecord, &'static MutationObserver)>;
+
+thread_local! {
+    static RECORDS: RefCell<Kept> = const { RefCell::new(Vec::new()) };
+    static DEADLINE: Cell<Option<&'static IdleDeadline>> = const { Cell::new(None) };
+    static TEXT: Cell<Option<&'static str>> = const { Cell::new(None) };
+}
+
+pub fn observe() -> &'static MutationObserver {
+    mutation_observer::new(Box::new(|records, observer| {
+        RECORDS.with_borrow_mut(|kept| kept.extend(records.iter().map(|&record| (record, observer))))
+    }))
+}
+
+pub fn records() -> Kept {
+    RECORDS.with_borrow(|kept| kept.clone())
+}
+
+pub fn idle() -> f64 {
+    window_global::request_idle_callback(Box::new(|deadline| DEADLINE.set(Some(deadline))), None)
+}
+
+pub fn deadline() -> Option<&'static IdleDeadline> {
+    DEADLINE.get()
+}
+
+pub fn read(item: &DataTransferItem) -> Option<&'static str> {
+    item.get_as_string(Some(Box::new(|text| TEXT.set(Some(text)))));
+    TEXT.get()
+}
+
+pub fn resized() -> &'static ResizeObserver {
+    resize_observer::new(Box::new(|entries: &[&ResizeObserverEntry], _: &ResizeObserver| {
+        assert!(!entries.is_empty());
+    }))
+}
+
+pub fn map_of(map: &js::Map<str, f64>) -> Option<&'static js::Map<str, f64>> {
+    let mut kept = None;
+    map.for_each(|_, _, all| kept = Some(all));
+    kept
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return new MutationObserver((records, observer) => {");
+  expect(js).toContain("return requestIdleCallback((deadline) => {");
+  expect(js).toContain("map.forEach((_, _$1, all) => {");
+  const host = globalThis as Record<string, unknown>;
+  const names = ["MutationObserver", "ResizeObserver", "requestIdleCallback"];
+  const saved = names.map((name) => [name, host[name]] as const);
+  class Observer {
+    constructor(readonly callback: (entries: unknown[], observer: Observer) => void) {}
+  }
+  const idle = { timeRemaining: () => 5 };
+  host.MutationObserver = Observer;
+  host.ResizeObserver = Observer;
+  host.requestIdleCallback = (f: (deadline: unknown) => void) => (f(idle), 7);
+  try {
+    const lib = await import(join(dir, "lib.js"));
+    const observer = lib.observe();
+    const [added, changed] = [{ type: "childList" }, { type: "attributes" }];
+    observer.callback([added, changed], observer);
+    const records = lib.records();
+    expect(records.length).toBe(2);
+    expect(records[0][0]).toBe(added);
+    expect(records[1][0]).toBe(changed);
+    expect(records[1][1]).toBe(observer);
+    expect(lib.idle()).toBe(7);
+    expect(lib.deadline()).toBe(idle);
+    expect(lib.read({ getAsString: (f: (text: string) => void) => f("dropped") })).toBe("dropped");
+    const resized = lib.resized();
+    expect(() => resized.callback([], resized)).toThrow("assertion failed: !entries.is_empty()");
+    resized.callback([{}], resized);
+    const map = new Map([["a", 1]]);
+    expect(lib.mapOf(map)).toBe(map);
+    expect(lib.mapOf(new Map())).toBeUndefined();
+  } finally {
+    for (const [name, value] of saved) {
+      if (value === undefined) delete host[name];
+      else host[name] = value;
+    }
+  }
+});
+
 // rd506's audit: of an untagged enum of one class and kinds JS tells by
 // their value, a form entry's `File | string`, the class is what's left,
 // each other tested, `typeof entry === "string"`, so no `instanceof File`

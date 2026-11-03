@@ -1073,10 +1073,16 @@ export async function open(other) {
   FnMut(..)`, as a `js::Map`'s and a `js::Set`'s `for_each` take, so it
   may borrow and write what's around it: `body.for_each(|_, key, _| found =
   Some(key.to_string()))` of a `FormData` is `body.forEach((_, key) => {
-  found = key; })`. What it's given is JS's, as `get` gives it, of
-  `'static` borrows, so it may keep each: `body.for_each(|value, key, _|
-  entries.push((key, value)))` keeps a `(&'static str,
-  FormDataEntryValue<'static>)`, text or a file
+  found = key; })`. What JS gives any callback is JS's, as `get` gives
+  it, of `'static` borrows, so the callback may keep each:
+  `body.for_each(|value, key, _| entries.push((key, value)))` keeps a
+  `(&'static str, FormDataEntryValue<'static>)`, text or a file; a
+  `MutationObserver`'s `|records, observer| ..` is given `&'static
+  [&'static MutationRecord]` and `&'static MutationObserver`, an idle
+  callback's deadline is a `&'static IdleDeadline`, and a `js::Map`'s
+  `for_each` gives the map as a `&'static Map`. A closure that writes its
+  parameters' types, `|entries: &[&ResizeObserverEntry], _:
+  &ResizeObserver|`, is one of any borrow, so it's given these as it was
   ([ADR 0281](../../decisions/0281-webapi-covers-typescripts-dom.md), amended).
   JS keeps it, and has no drop: a closure boxed as it's given to a
   binding, `on_change(editor, Box::new(move || ..))`, drops nothing of

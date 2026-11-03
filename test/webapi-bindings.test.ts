@@ -151,7 +151,7 @@ pub fn framed(log: Box<dyn FnOnce(f64)>) -> f64 {
   const lib = readFileSync(join(root, "webapi", "src", "lib.rs"), "utf8");
   expect(lib).toContain("pub fn queue_microtask(callback: Box<dyn FnOnce()>)");
   // One JS calls again stays an `FnMut`: an observer's, a listener's.
-  expect(lib).toMatch(/pub fn new\(callback: Box<dyn FnMut\(&\[&ResizeObserverEntry\]/);
+  expect(lib).toMatch(/pub fn new\(callback: Box<dyn FnMut\(&'static \[&'static ResizeObserverEntry\]/);
 });
 
 // The `history` global, a window's, as `document` is, as react.dev's _app

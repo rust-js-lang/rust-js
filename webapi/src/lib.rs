@@ -11579,7 +11579,7 @@ impl HTMLCanvasElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/toBlob)
     /// `Err`: a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it.
     #[cfg_attr(rust_js, rust_js::link_name = "toBlob")]
-    pub fn to_blob(&self, callback: Box<dyn FnOnce(Option<&Blob>)>, r#type: Option<&str>, quality: Option<&dyn IntoUnknown>) -> Result<(), &'static JsError> {
+    pub fn to_blob(&self, callback: Box<dyn FnOnce(Option<&'static Blob>)>, r#type: Option<&str>, quality: Option<&dyn IntoUnknown>) -> Result<(), &'static JsError> {
         unreachable!()
     }
 
@@ -16607,7 +16607,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestIdleCallback)
     #[cfg_attr(rust_js, rust_js::link_name = "requestIdleCallback")]
     #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
-    pub fn request_idle_callback(&self, callback: Box<dyn FnOnce(&IdleDeadline)>, options: Option<IdleRequestOptions>) -> f64 {
+    pub fn request_idle_callback(&self, callback: Box<dyn FnOnce(&'static IdleDeadline)>, options: Option<IdleRequestOptions>) -> f64 {
         unreachable!()
     }
 
@@ -27290,7 +27290,7 @@ pub mod intersection_observer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/IntersectionObserver)
     #[cfg_attr(rust_js, rust_js::link_name = "new IntersectionObserver")]
-    pub fn new(callback: Box<dyn FnMut(&[&IntersectionObserverEntry], &IntersectionObserver)>, options: Option<IntersectionObserverInit<'_>>) -> &'static IntersectionObserver {
+    pub fn new(callback: Box<dyn FnMut(&'static [&'static IntersectionObserverEntry], &'static IntersectionObserver)>, options: Option<IntersectionObserverInit<'_>>) -> &'static IntersectionObserver {
         unreachable!()
     }
 }
@@ -37419,7 +37419,7 @@ pub mod audio_decoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/AudioDecoder)
     #[cfg_attr(rust_js, rust_js::link_name = "new AudioDecoder")]
-    pub fn new(init: AudioDecoderInit<'_>) -> &'static AudioDecoder {
+    pub fn new(init: AudioDecoderInit) -> &'static AudioDecoder {
         unreachable!()
     }
 
@@ -37572,7 +37572,7 @@ pub mod audio_encoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/AudioEncoder)
     #[cfg_attr(rust_js, rust_js::link_name = "new AudioEncoder")]
-    pub fn new(init: AudioEncoderInit<'_>) -> &'static AudioEncoder {
+    pub fn new(init: AudioEncoderInit) -> &'static AudioEncoder {
         unreachable!()
     }
 
@@ -38618,7 +38618,7 @@ impl BaseAudioContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/decodeAudioData)
     #[cfg_attr(rust_js, rust_js::link_name = "decodeAudioData")]
-    pub fn decode_audio_data(&self, audio_data: &ArrayBuffer, success_callback: Option<Box<dyn FnOnce(&AudioBuffer)>>, error_callback: Option<Box<dyn FnOnce(&DOMException)>>) -> Promise<&'static AudioBuffer> {
+    pub fn decode_audio_data(&self, audio_data: &ArrayBuffer, success_callback: Option<Box<dyn FnOnce(&'static AudioBuffer)>>, error_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) -> Promise<&'static AudioBuffer> {
         unreachable!()
     }
 
@@ -46252,7 +46252,7 @@ impl DataTransferItem {
     #[cfg_attr(rust_js, rust_js::link_name = "getAsString")]
     #[cfg_attr(rust_js, rust_js::nullable(callback))]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn get_as_string(&self, callback: Option<Box<dyn FnOnce(&str)>>) {
+    pub fn get_as_string(&self, callback: Option<Box<dyn FnOnce(&'static str)>>) {
         unreachable!()
     }
 
@@ -48461,14 +48461,14 @@ impl FileSystemDirectoryEntry {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryEntry/getFile)
     #[cfg_attr(rust_js, rust_js::link_name = "getFile")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn get_file(&self, path: Option<&str>, options: Option<FileSystemFlags>, success_callback: Option<Box<dyn FnOnce(&FileSystemEntry)>>, error_callback: Option<Box<dyn FnOnce(&DOMException)>>) {
+    pub fn get_file(&self, path: Option<&str>, options: Option<FileSystemFlags>, success_callback: Option<Box<dyn FnOnce(&'static FileSystemEntry)>>, error_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryEntry/getDirectory)
     #[cfg_attr(rust_js, rust_js::link_name = "getDirectory")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn get_directory(&self, path: Option<&str>, options: Option<FileSystemFlags>, success_callback: Option<Box<dyn FnOnce(&FileSystemEntry)>>, error_callback: Option<Box<dyn FnOnce(&DOMException)>>) {
+    pub fn get_directory(&self, path: Option<&str>, options: Option<FileSystemFlags>, success_callback: Option<Box<dyn FnOnce(&'static FileSystemEntry)>>, error_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) {
         unreachable!()
     }
 
@@ -48552,7 +48552,7 @@ impl FileSystemDirectoryReader {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryReader/readEntries)
     #[cfg_attr(rust_js, rust_js::link_name = "readEntries")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn read_entries(&self, success_callback: Box<dyn FnOnce(&[&FileSystemEntry])>, error_callback: Option<Box<dyn FnOnce(&DOMException)>>) {
+    pub fn read_entries(&self, success_callback: Box<dyn FnOnce(&'static [&'static FileSystemEntry])>, error_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) {
         unreachable!()
     }
 
@@ -48606,7 +48606,7 @@ impl FileSystemEntry {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemEntry/getParent)
     #[cfg_attr(rust_js, rust_js::link_name = "getParent")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn get_parent(&self, success_callback: Option<Box<dyn FnOnce(&FileSystemEntry)>>, error_callback: Option<Box<dyn FnOnce(&DOMException)>>) {
+    pub fn get_parent(&self, success_callback: Option<Box<dyn FnOnce(&'static FileSystemEntry)>>, error_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) {
         unreachable!()
     }
 
@@ -48649,7 +48649,7 @@ impl FileSystemFileEntry {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemFileEntry/file)
     #[cfg_attr(rust_js, rust_js::link_name = "file")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn file(&self, success_callback: Box<dyn FnOnce(&File)>, error_callback: Option<Box<dyn FnOnce(&DOMException)>>) {
+    pub fn file(&self, success_callback: Box<dyn FnOnce(&'static File)>, error_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) {
         unreachable!()
     }
 
@@ -51661,14 +51661,14 @@ impl Geolocation {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Geolocation/getCurrentPosition)
     #[cfg_attr(rust_js, rust_js::link_name = "getCurrentPosition")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn get_current_position(&self, success_callback: Box<dyn FnOnce(&GeolocationPosition)>, error_callback: Option<Box<dyn FnOnce(&GeolocationPositionError)>>, options: Option<PositionOptions>) {
+    pub fn get_current_position(&self, success_callback: Box<dyn FnOnce(&'static GeolocationPosition)>, error_callback: Option<Box<dyn FnOnce(&'static GeolocationPositionError)>>, options: Option<PositionOptions>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Geolocation/watchPosition)
     #[cfg_attr(rust_js, rust_js::link_name = "watchPosition")]
     #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
-    pub fn watch_position(&self, success_callback: Box<dyn FnMut(&GeolocationPosition)>, error_callback: Option<Box<dyn FnMut(&GeolocationPositionError)>>, options: Option<PositionOptions>) -> f64 {
+    pub fn watch_position(&self, success_callback: Box<dyn FnMut(&'static GeolocationPosition)>, error_callback: Option<Box<dyn FnMut(&'static GeolocationPositionError)>>, options: Option<PositionOptions>) -> f64 {
         unreachable!()
     }
 
@@ -58029,7 +58029,7 @@ impl MediaSession {
     #[cfg_attr(rust_js, rust_js::link_name = "setActionHandler")]
     #[cfg_attr(rust_js, rust_js::nullable(handler))]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn set_action_handler(&self, action: &str, handler: Option<Box<dyn FnMut(MediaSessionActionDetails<'_>)>>) {
+    pub fn set_action_handler(&self, action: &str, handler: Option<Box<dyn FnMut(MediaSessionActionDetails<'static>)>>) {
         unreachable!()
     }
 
@@ -58936,7 +58936,7 @@ pub mod mutation_observer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MutationObserver/MutationObserver)
     #[cfg_attr(rust_js, rust_js::link_name = "new MutationObserver")]
-    pub fn new(callback: Box<dyn FnMut(&[&MutationRecord], &MutationObserver)>) -> &'static MutationObserver {
+    pub fn new(callback: Box<dyn FnMut(&'static [&'static MutationRecord], &'static MutationObserver)>) -> &'static MutationObserver {
         unreachable!()
     }
 }
@@ -59917,7 +59917,7 @@ pub mod notification {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/requestPermission)
     #[cfg_attr(rust_js, rust_js::link_name = "Notification.requestPermission")]
-    pub fn request_permission(deprecated_callback: Option<Box<dyn FnOnce(&str)>>) -> Promise<String> {
+    pub fn request_permission(deprecated_callback: Option<Box<dyn FnOnce(&'static str)>>) -> Promise<String> {
         unreachable!()
     }
 
@@ -62335,7 +62335,7 @@ pub mod performance_observer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserver/PerformanceObserver)
     #[cfg_attr(rust_js, rust_js::link_name = "new PerformanceObserver")]
-    pub fn new(callback: Box<dyn FnMut(&PerformanceObserverEntryList, &PerformanceObserver, PerformanceObserverCallbackOptions)>) -> &'static PerformanceObserver {
+    pub fn new(callback: Box<dyn FnMut(&'static PerformanceObserverEntryList, &'static PerformanceObserver, PerformanceObserverCallbackOptions)>) -> &'static PerformanceObserver {
         unreachable!()
     }
 
@@ -64765,7 +64765,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/setLocalDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "setLocalDescription")]
-    pub fn set_local_description(&self, description: Option<RTCLocalSessionDescriptionInit<'_>>, success_callback: Option<Box<dyn FnOnce()>>, failure_callback: Option<Box<dyn FnOnce(&DOMException)>>) -> Promise<()> {
+    pub fn set_local_description(&self, description: Option<RTCLocalSessionDescriptionInit<'_>>, success_callback: Option<Box<dyn FnOnce()>>, failure_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) -> Promise<()> {
         unreachable!()
     }
 
@@ -64792,7 +64792,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/setRemoteDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "setRemoteDescription")]
-    pub fn set_remote_description(&self, description: RTCSessionDescriptionInit, success_callback: Option<Box<dyn FnOnce()>>, failure_callback: Option<Box<dyn FnOnce(&DOMException)>>) -> Promise<()> {
+    pub fn set_remote_description(&self, description: RTCSessionDescriptionInit, success_callback: Option<Box<dyn FnOnce()>>, failure_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) -> Promise<()> {
         unreachable!()
     }
 
@@ -64819,7 +64819,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/addIceCandidate)
     #[cfg_attr(rust_js, rust_js::link_name = "addIceCandidate")]
-    pub fn add_ice_candidate(&self, candidate: Option<RTCIceCandidateInit>, success_callback: Option<Box<dyn FnOnce()>>, failure_callback: Option<Box<dyn FnOnce(&DOMException)>>) -> Promise<()> {
+    pub fn add_ice_candidate(&self, candidate: Option<RTCIceCandidateInit>, success_callback: Option<Box<dyn FnOnce()>>, failure_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) -> Promise<()> {
         unreachable!()
     }
 
@@ -64988,13 +64988,13 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/createOffer)
     #[cfg_attr(rust_js, rust_js::link_name = "createOffer")]
-    pub fn create_offer_with_success_callback_and_failure_callback(&self, success_callback: Box<dyn FnOnce(RTCSessionDescriptionInit)>, failure_callback: Box<dyn FnOnce(&DOMException)>, options: Option<RTCOfferOptions>) -> Promise<()> {
+    pub fn create_offer_with_success_callback_and_failure_callback(&self, success_callback: Box<dyn FnOnce(RTCSessionDescriptionInit)>, failure_callback: Box<dyn FnOnce(&'static DOMException)>, options: Option<RTCOfferOptions>) -> Promise<()> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/createAnswer)
     #[cfg_attr(rust_js, rust_js::link_name = "createAnswer")]
-    pub fn create_answer_with_success_callback_and_failure_callback(&self, success_callback: Box<dyn FnOnce(RTCSessionDescriptionInit)>, failure_callback: Box<dyn FnOnce(&DOMException)>) -> Promise<()> {
+    pub fn create_answer_with_success_callback_and_failure_callback(&self, success_callback: Box<dyn FnOnce(RTCSessionDescriptionInit)>, failure_callback: Box<dyn FnOnce(&'static DOMException)>) -> Promise<()> {
         unreachable!()
     }
 
@@ -66378,7 +66378,7 @@ pub mod reporting_observer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReportingObserver/ReportingObserver)
     #[cfg_attr(rust_js, rust_js::link_name = "new ReportingObserver")]
-    pub fn new(callback: Box<dyn FnMut(&[Report], &ReportingObserver)>, options: Option<ReportingObserverOptions<'_>>) -> &'static ReportingObserver {
+    pub fn new(callback: Box<dyn FnMut(&'static [Report], &'static ReportingObserver)>, options: Option<ReportingObserverOptions<'_>>) -> &'static ReportingObserver {
         unreachable!()
     }
 }
@@ -66425,7 +66425,7 @@ pub mod resize_observer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ResizeObserver/ResizeObserver)
     #[cfg_attr(rust_js, rust_js::link_name = "new ResizeObserver")]
-    pub fn new(callback: Box<dyn FnMut(&[&ResizeObserverEntry], &ResizeObserver)>) -> &'static ResizeObserver {
+    pub fn new(callback: Box<dyn FnMut(&'static [&'static ResizeObserverEntry], &'static ResizeObserver)>) -> &'static ResizeObserver {
         unreachable!()
     }
 }
@@ -72644,7 +72644,7 @@ pub mod video_decoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/VideoDecoder)
     #[cfg_attr(rust_js, rust_js::link_name = "new VideoDecoder")]
-    pub fn new(init: VideoDecoderInit<'_>) -> &'static VideoDecoder {
+    pub fn new(init: VideoDecoderInit) -> &'static VideoDecoder {
         unreachable!()
     }
 
@@ -72754,7 +72754,7 @@ pub mod video_encoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/VideoEncoder)
     #[cfg_attr(rust_js, rust_js::link_name = "new VideoEncoder")]
-    pub fn new(init: VideoEncoderInit<'_>) -> &'static VideoEncoder {
+    pub fn new(init: VideoEncoderInit) -> &'static VideoEncoder {
         unreachable!()
     }
 
@@ -81806,7 +81806,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/IntersectionObserver)
     /// `new window.IntersectionObserver(..)`: this window's class, which is [`intersection_observer::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new IntersectionObserver")]
-    pub fn new_intersection_observer(&self, callback: Box<dyn FnMut(&[&IntersectionObserverEntry], &IntersectionObserver)>, options: Option<IntersectionObserverInit<'_>>) -> &'static IntersectionObserver {
+    pub fn new_intersection_observer(&self, callback: Box<dyn FnMut(&'static [&'static IntersectionObserverEntry], &'static IntersectionObserver)>, options: Option<IntersectionObserverInit<'_>>) -> &'static IntersectionObserver {
         unreachable!()
     }
 
@@ -81974,14 +81974,14 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/AudioDecoder)
     /// `new window.AudioDecoder(..)`: this window's class, which is [`audio_decoder::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new AudioDecoder")]
-    pub fn new_audio_decoder(&self, init: AudioDecoderInit<'_>) -> &'static AudioDecoder {
+    pub fn new_audio_decoder(&self, init: AudioDecoderInit) -> &'static AudioDecoder {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/AudioEncoder)
     /// `new window.AudioEncoder(..)`: this window's class, which is [`audio_encoder::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new AudioEncoder")]
-    pub fn new_audio_encoder(&self, init: AudioEncoderInit<'_>) -> &'static AudioEncoder {
+    pub fn new_audio_encoder(&self, init: AudioEncoderInit) -> &'static AudioEncoder {
         unreachable!()
     }
 
@@ -82624,7 +82624,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MutationObserver/MutationObserver)
     /// `new window.MutationObserver(..)`: this window's class, which is [`mutation_observer::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new MutationObserver")]
-    pub fn new_mutation_observer(&self, callback: Box<dyn FnMut(&[&MutationRecord], &MutationObserver)>) -> &'static MutationObserver {
+    pub fn new_mutation_observer(&self, callback: Box<dyn FnMut(&'static [&'static MutationRecord], &'static MutationObserver)>) -> &'static MutationObserver {
         unreachable!()
     }
 
@@ -82757,7 +82757,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserver/PerformanceObserver)
     /// `new window.PerformanceObserver(..)`: this window's class, which is [`performance_observer::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new PerformanceObserver")]
-    pub fn new_performance_observer(&self, callback: Box<dyn FnMut(&PerformanceObserverEntryList, &PerformanceObserver, PerformanceObserverCallbackOptions)>) -> &'static PerformanceObserver {
+    pub fn new_performance_observer(&self, callback: Box<dyn FnMut(&'static PerformanceObserverEntryList, &'static PerformanceObserver, PerformanceObserverCallbackOptions)>) -> &'static PerformanceObserver {
         unreachable!()
     }
 
@@ -82925,14 +82925,14 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReportingObserver/ReportingObserver)
     /// `new window.ReportingObserver(..)`: this window's class, which is [`reporting_observer::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ReportingObserver")]
-    pub fn new_reporting_observer(&self, callback: Box<dyn FnMut(&[Report], &ReportingObserver)>, options: Option<ReportingObserverOptions<'_>>) -> &'static ReportingObserver {
+    pub fn new_reporting_observer(&self, callback: Box<dyn FnMut(&'static [Report], &'static ReportingObserver)>, options: Option<ReportingObserverOptions<'_>>) -> &'static ReportingObserver {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ResizeObserver/ResizeObserver)
     /// `new window.ResizeObserver(..)`: this window's class, which is [`resize_observer::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ResizeObserver")]
-    pub fn new_resize_observer(&self, callback: Box<dyn FnMut(&[&ResizeObserverEntry], &ResizeObserver)>) -> &'static ResizeObserver {
+    pub fn new_resize_observer(&self, callback: Box<dyn FnMut(&'static [&'static ResizeObserverEntry], &'static ResizeObserver)>) -> &'static ResizeObserver {
         unreachable!()
     }
 
@@ -83100,14 +83100,14 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/VideoDecoder)
     /// `new window.VideoDecoder(..)`: this window's class, which is [`video_decoder::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new VideoDecoder")]
-    pub fn new_video_decoder(&self, init: VideoDecoderInit<'_>) -> &'static VideoDecoder {
+    pub fn new_video_decoder(&self, init: VideoDecoderInit) -> &'static VideoDecoder {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/VideoEncoder)
     /// `new window.VideoEncoder(..)`: this window's class, which is [`video_encoder::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new VideoEncoder")]
-    pub fn new_video_encoder(&self, init: VideoEncoderInit<'_>) -> &'static VideoEncoder {
+    pub fn new_video_encoder(&self, init: VideoEncoderInit) -> &'static VideoEncoder {
         unreachable!()
     }
 
@@ -83997,7 +83997,7 @@ pub mod window_global {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestIdleCallback)
     #[cfg_attr(rust_js, rust_js::link_name = "requestIdleCallback")]
     #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
-    pub fn request_idle_callback(callback: Box<dyn FnOnce(&IdleDeadline)>, options: Option<IdleRequestOptions>) -> f64 {
+    pub fn request_idle_callback(callback: Box<dyn FnOnce(&'static IdleDeadline)>, options: Option<IdleRequestOptions>) -> f64 {
         unreachable!()
     }
 
@@ -85517,20 +85517,20 @@ pub struct AudioDataInit<'a> {
 unsafe impl Defined for AudioDataInit<'_> {}
 
 /// The [`AudioDecoderInit`](https://developer.mozilla.org/docs/Web/API/AudioDecoderInit) dictionary: a JS object of these fields, a `None` one not given.
-pub struct AudioDecoderInit<'a> {
-    pub output: Box<dyn FnMut(&'a AudioData)>,
-    pub error: Box<dyn FnMut(&'a DOMException)>,
+pub struct AudioDecoderInit {
+    pub output: Box<dyn FnMut(&'static AudioData)>,
+    pub error: Box<dyn FnMut(&'static DOMException)>,
 }
 
-unsafe impl Defined for AudioDecoderInit<'_> {}
+unsafe impl Defined for AudioDecoderInit {}
 
 /// The [`AudioEncoderInit`](https://developer.mozilla.org/docs/Web/API/AudioEncoderInit) dictionary: a JS object of these fields, a `None` one not given.
-pub struct AudioEncoderInit<'a> {
-    pub output: Box<dyn FnMut(&'a EncodedAudioChunk, EncodedAudioChunkMetadata)>,
-    pub error: Box<dyn FnMut(&'a DOMException)>,
+pub struct AudioEncoderInit {
+    pub output: Box<dyn FnMut(&'static EncodedAudioChunk, EncodedAudioChunkMetadata)>,
+    pub error: Box<dyn FnMut(&'static DOMException)>,
 }
 
-unsafe impl Defined for AudioEncoderInit<'_> {}
+unsafe impl Defined for AudioEncoderInit {}
 
 /// The [`AudioNodeOptions`](https://developer.mozilla.org/docs/Web/API/AudioNodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Clone, Copy, Default)]
@@ -89023,12 +89023,12 @@ pub struct ValidityStateFlags {
 unsafe impl Defined for ValidityStateFlags {}
 
 /// The [`VideoDecoderInit`](https://developer.mozilla.org/docs/Web/API/VideoDecoderInit) dictionary: a JS object of these fields, a `None` one not given.
-pub struct VideoDecoderInit<'a> {
-    pub output: Box<dyn FnMut(&'a VideoFrame)>,
-    pub error: Box<dyn FnMut(&'a DOMException)>,
+pub struct VideoDecoderInit {
+    pub output: Box<dyn FnMut(&'static VideoFrame)>,
+    pub error: Box<dyn FnMut(&'static DOMException)>,
 }
 
-unsafe impl Defined for VideoDecoderInit<'_> {}
+unsafe impl Defined for VideoDecoderInit {}
 
 /// The [`VideoEncoderEncodeOptions`](https://developer.mozilla.org/docs/Web/API/VideoEncoderEncodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Clone, Copy, Default)]
@@ -89049,12 +89049,12 @@ pub struct VideoEncoderEncodeOptionsForAvc {
 unsafe impl Defined for VideoEncoderEncodeOptionsForAvc {}
 
 /// The [`VideoEncoderInit`](https://developer.mozilla.org/docs/Web/API/VideoEncoderInit) dictionary: a JS object of these fields, a `None` one not given.
-pub struct VideoEncoderInit<'a> {
-    pub output: Box<dyn FnMut(&'a EncodedVideoChunk, EncodedVideoChunkMetadata<'a>)>,
-    pub error: Box<dyn FnMut(&'a DOMException)>,
+pub struct VideoEncoderInit {
+    pub output: Box<dyn FnMut(&'static EncodedVideoChunk, EncodedVideoChunkMetadata<'static>)>,
+    pub error: Box<dyn FnMut(&'static DOMException)>,
 }
 
-unsafe impl Defined for VideoEncoderInit<'_> {}
+unsafe impl Defined for VideoEncoderInit {}
 
 /// The [`VideoFrameBufferInit`](https://developer.mozilla.org/docs/Web/API/VideoFrameBufferInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct VideoFrameBufferInit<'a> {

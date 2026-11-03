@@ -4,7 +4,9 @@ Status: Accepted. Extends [0024](0024-web-crate.md). Extended by
 [0891](0891-a-windows-constructor-is-the-windows.md): each constructor
 a window's global scope has is a `Window` method too. Amended (rd560):
 an iterable's `for_each` takes an `impl FnMut`, which may borrow; and
-(rd574) what it gives that callback is JS's, `'static`, which it may keep.
+(rd574) what it gives that callback is JS's, `'static`, which it may keep;
+and (rd663) so is what JS gives every callback, an observer's, a timer's
+or a request's.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -305,10 +307,103 @@ export function kept(body) {
   _: &Headers|`, is one of any lifetime, so of `'static` ones too: it
   compiles as it did, and the JS is the same.
 - What JS calls an observer's or a timer's `Box<dyn FnMut(..)>` with is
-  still typed lent, as a function takes it: rd574 is `forEach`'s.
+  still typed lent, as a function takes it: rd574 is `forEach`'s
+  (superseded by rd663, below).
 - Case ([0262](0262-when-rust-and-js-disagree.md)): none: JS gives the
   same values, and Rust may hold them as long as JS keeps them.
 
 Held by `test/webapi-objects.test.ts`'s "an iterable's forEach gives
 values a callback may keep", of a `FormData`'s text and `File`, a
 `Headers`' value and itself, and a `NodeList`'s nodes.
+
+## Amendment: what JS gives every callback is JS's, which it may keep (rd663)
+
+rd574 typed a `forEach`'s arguments `'static`; every other callback a
+function takes, generated of WebIDL's `callback` types, still typed what
+JS calls it with as a function takes it, lent for the call:
+`mutation_observer::new` took `Box<dyn FnMut(&[&MutationRecord],
+&MutationObserver)>`, `request_idle_callback` `Box<dyn
+FnOnce(&IdleDeadline)>`, `get_as_string` `Box<dyn FnOnce(&str)>`. A
+callback couldn't keep a record, the observer or a deadline JS gave it,
+where `take_records()` gives the same records `Vec<&'static
+MutationRecord>`; and a dictionary's callback borrowed for the
+dictionary's own `'a`, `VideoEncoderInit<'a>`'s `output: Box<dyn
+FnMut(&'a EncodedVideoChunk, EncodedVideoChunkMetadata<'a>)>`, so the
+struct had a lifetime of nothing it borrows.
+
+**What JS gives any callback is JS's, `jsGives`' `'static` borrows**: the
+generator's one rule of a value JS gives a callback is each generated
+callback's, a `forEach`'s, an observer's, a timer's, a request's, a
+success or error callback's, a dictionary's, and a promised one's (ADR
+1021). The js crate's `Map::for_each` gives the map so too, `&'static
+Self`, as webapi's `forEach`s give theirs, of a `V: 'static`, as the
+`&'static Map<K, V>` `map::new` gives is.
+
+```rust
+pub fn observe() -> &'static MutationObserver {
+    mutation_observer::new(Box::new(|records, observer| {
+        RECORDS.with_borrow_mut(|kept| kept.extend(records.iter().map(|&record| (record, observer))))
+    }))
+}
+```
+```js
+export function observe() {
+  return new MutationObserver((records, observer) => {
+    $extend(
+      RECORDS,
+      records.values().map((record) => [record, observer]),
+    );
+  });
+}
+```
+
+Each signature that changed, each argument `&'static` where it was `&`,
+`<'static>` where it was `<'_>` or `<'a>`:
+
+- Observers, each a constructor and its `Window` method
+  (`new_mutation_observer` ..): `MutationObserver`'s `&'static [&'static
+  MutationRecord], &'static MutationObserver`; `IntersectionObserver`'s
+  and `ResizeObserver`'s entries and observer of the same form;
+  `PerformanceObserver`'s `&'static PerformanceObserverEntryList,
+  &'static PerformanceObserver`; `ReportingObserver`'s `&'static [Report],
+  &'static ReportingObserver`.
+- Timers and requests: `request_idle_callback`'s `&'static IdleDeadline`
+  (a `Window`'s and the global scope's); `HTMLCanvasElement::to_blob`'s
+  `Option<&'static Blob>`; `DataTransferItem::get_as_string`'s and
+  `Notification::request_permission`'s `&'static str`;
+  `BaseAudioContext::decode_audio_data`'s `&'static AudioBuffer`;
+  `Geolocation`'s `get_current_position`'s and `watch_position`'s
+  position and error; `MediaSession::set_action_handler`'s
+  `MediaSessionActionDetails<'static>`; the file system entries'
+  `get_file`, `get_directory`, `get_parent`, `read_entries` (`&'static
+  [&'static FileSystemEntry]`) and `file` (`&'static File`); and each
+  error callback's `&'static DOMException`, of those and of
+  `RTCPeerConnection`'s `set_local_description`,
+  `set_remote_description`, `add_ice_candidate` and its
+  `create_offer_..`/`create_answer_..` forms.
+- Dictionaries: `AudioDecoderInit`, `AudioEncoderInit`, `VideoDecoderInit`
+  and `VideoEncoderInit`, whose `output` and `error` callbacks are given
+  `'static` values, so each has no lifetime: `AudioDecoderInit<'_>` is
+  `AudioDecoderInit`, as the constructors and `Window` methods that take
+  them are.
+- `js::Map::for_each`: `impl FnMut(V, &'static K, &'static Self)`, `where
+  V: 'static`.
+
+What stays lent: a function Rust calls, one a getter gives, `onclick()`'s
+`&'static dyn Fn(&Event)`, is given what Rust lends it, and any borrow is
+the most a Rust caller may give. `webapi::listener`'s `impl Fn(&E)`, which
+JS calls with its event, stays as it is: its result, `&'static dyn
+Fn(&E)`, is what react-in-rust's callers name, so making it `'static`
+needs their edit first.
+
+- A closure that writes its parameters' types, `|entries:
+  &[&ResizeObserverEntry], _: &ResizeObserver|`, is one of any lifetime,
+  so of `'static` ones too: it compiles as it did, and the JS is the same.
+  react-in-rust at its pin and at main compiles unchanged.
+- Case ([0262](0262-when-rust-and-js-disagree.md)): none: JS gives the
+  same values, and Rust may hold them as long as JS keeps them.
+
+Held by `test/webapi-objects.test.ts`'s "an observer's or a timer's
+callback is given values it may keep", of a `MutationObserver`'s records
+and itself, an idle deadline, `getAsString`'s text, a `ResizeObserver`
+closure that types its parameters, and a `js::Map`'s `forEach`'s map.
