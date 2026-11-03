@@ -183,3 +183,19 @@ pub fn made(ctor: &'static Class<fn(name: &'static str, size: Option<f64>) -> Un
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain("export function made(ctor: new (name: string, size: number | null | undefined) => unknown): unknown;");
 });
+
+// A function type's parameter is named after its type's last word, and one
+// JS keeps is named apart: a `ResolveFunction`'s `function$`, as React's
+// Flight Node loader's hooks are given, where `function` made a `.d.ts`
+// TypeScript can't parse (rd673).
+test("declarations name a function type's parameter apart from a word JS keeps", () => {
+  const dir = fixture("declarations-kept-parameter");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(
+    join(dir, "lib.rs"),
+    "#[repr(transparent)]\n#[derive(Clone, Copy)]\npub struct ResolveFunction(pub &'static dyn Fn(&str, ResolveFunction) -> u32);\n\npub fn resolve(next: ResolveFunction) -> u32 {\n    (next.0)(\"a\", next)\n}\n",
+  );
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("function$: ResolveFunction");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).not.toContain("function:");
+});

@@ -11,7 +11,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/declarations.rs",
     find: "            if crate::names::kept_word(&word) {\n",
     replace: "            if false && crate::names::kept_word(&word) {\n",
-    tests: ["test/declarations.test.ts", "-t", "apart from a word JS keeps"],
+    tests: ["test/declarations-function-types.test.ts", "-t", "apart from a word JS keeps"],
   },
   {
     name: "nested-field-declared-undefined",

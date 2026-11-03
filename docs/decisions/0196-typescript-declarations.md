@@ -216,7 +216,7 @@ function: ResolveFunction) => ..`: a word JS keeps, which TypeScript can't
 parse, and the app's Prettier refused the module. **A parameter whose name
 would be a word JS keeps is named apart, as a variable is, `function$`**
 (`declarations::param_name`, of `names::kept_word`, the one list of those
-words). Case N: nothing runs a declaration. Held by test/declarations.test.ts's
-"declarations name a function type's parameter apart from a word JS keeps",
-which type-checks a module calling it, and the mutation
+words). Case N: nothing runs a declaration. Held by
+test/declarations-function-types.test.ts's "declarations name a function
+type's parameter apart from a word JS keeps" and the mutation
 `kept-word-parameter-declared`.
