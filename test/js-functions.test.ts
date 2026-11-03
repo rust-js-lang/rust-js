@@ -189,13 +189,14 @@ test("a with_this function stored as a property is named as it", async () => {
 });
 
 // A function nested in it, another with_this's, reads its `this` through
-// `const outer = this;`; an arrow in it reads its `this` itself, as JS's
-// arrow sees the function's; one bound by a `let` is declared.
+// `const outer = this;`; a closure in it reads its `this` itself, as JS's
+// arrow sees the function's, a thunk that passes it on bound to it (ADR
+// 0605's #502 amendment); one bound by a `let` is declared.
 test("a function nested in a with_this function reads its `this` through a const", async () => {
   const { js, lib } = await program();
   expect(js).toContain("const outer = this;");
   expect(js).toContain("function inner() {");
-  expect(js).toContain("const arrow = () => nameOf(this);");
+  expect(js).toContain("const arrow = nameOf.bind(null, this);");
   const [arrow, inner] = lib.outer().call({ name: "o" });
   expect(arrow).toBe("o");
   expect(inner.call({ name: "i" })).toBe("i in o");
