@@ -19,6 +19,14 @@ function nameOf(f) {
   return f?.name ?? "none";
 }
 
+/**
+ * A store of a field that isn't nullable, which stores what it's given
+ * as it is: `workInProgress.sibling = current.sibling;`.
+ */
+function copySibling(workInProgress, current) {
+  workInProgress.sibling = current.sibling;
+}
+
 /** A store: `workInProgress.child = current.child;`. */
 function copyChild(workInProgress, current) {
   workInProgress.child = current.child;
@@ -110,5 +118,8 @@ function main() {
   console.log(`twice ${first} ${arg}`);
   copyIndex(work, current);
   console.log(`index ${work.index}`);
+  copySibling(work, current);
+  const siblingCopied = work.sibling;
+  console.log(`sibling ${nameOf(siblingCopied)}`);
 }
 //# sourceMappingURL=case.js.map

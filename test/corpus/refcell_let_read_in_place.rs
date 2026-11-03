@@ -3,7 +3,8 @@
 // current.child.borrow().clone(); work_in_progress.child.replace(child);`:
 // where nothing that statement runs before the read does anything, and its
 // name is the field's own, the place is read there, `workInProgress.child =
-// current.child;` (ADR 0866, amended). Not where something runs first,
+// current.child;`, of a field that isn't nullable too, `workInProgress.sibling =
+// current.sibling;` (ADR 0866, amended). Not where something runs first,
 // which may change the cell, nor where it's read again, nor where it's an
 // argument, which the program names, nor one named otherwise, nor a `let`
 // of a value that isn't a borrow's clone, a `Cell`'s `get()`.
@@ -30,6 +31,13 @@ fn fiber(name: &str) -> Rc<Fiber> {
 
 fn name_of(f: &Option<Rc<Fiber>>) -> String {
     f.as_ref().map_or("none".to_string(), |f| f.name.clone())
+}
+
+/// A store of a field that isn't nullable, which stores what it's given
+/// as it is: `workInProgress.sibling = current.sibling;`.
+fn copy_sibling(work_in_progress: &Fiber, current: &Fiber) {
+    let sibling = current.sibling.borrow().clone();
+    work_in_progress.sibling.replace(sibling);
 }
 
 /// A store: `workInProgress.child = current.child;`.
@@ -115,4 +123,7 @@ fn main() {
     println!("twice {first} {}", name_of(&sibling));
     copy_index(&work, &current);
     println!("index {}", work.index.get());
+    copy_sibling(&work, &current);
+    let sibling_copied = work.sibling.borrow().clone();
+    println!("sibling {}", name_of(&sibling_copied));
 }

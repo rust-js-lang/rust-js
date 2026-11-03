@@ -386,16 +386,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "ended-borrow-nulled-kept",
-    breaks:
-      "a `let` that ends a borrow, stored in a nullable field, `workInProgress.child = child ?? null`, stays a `const`",
-    file: "src/lower/mir/tidy/moves.rs",
-    find: "        ExprKind::Binary(Op::Coalesce, value, null) if matches!(null.kind, ExprKind::Null) => value,\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_let_read_in_place.rs$"],
-    snapshots: true,
-  },
-  {
     name: "tested-read-of-a-written-let",
     breaks:
       "a `let` the program wrote, `let types = t.types.borrow().clone(); if let Some(types) = types`, loses its name to its place's read, `if (t.types != null) { return t.types.length; }` (rd226, the user's decision)",

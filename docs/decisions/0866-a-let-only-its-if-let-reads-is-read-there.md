@@ -544,3 +544,17 @@ Held by the corpus's `if_let_field_read_again` (read in place, `name` and
 `props`; kept, `id` of another name, `depth` read after a call, `owner`
 read twice, `key` a clone held before its test), against native Rust, and the mutation
 `tested-binding-never-read-again` (`tidy/moves.ts`).
+
+## Note: a nullable store of an ended borrow is the fallback rule's too (2026-11-04)
+
+The mutations `ended-borrow-kept` and `ended-borrow-nulled-kept` survived
+on main: corpus `refcell_let_read_in_place` stored only a nullable field,
+`work_in_progress.child.replace(child)`, whose `child ?? null` rd664's
+`fallback_reads`, two passes on, reads in place as well, `const child =
+current.child; workInProgress.child = child ?? null;` becoming
+`workInProgress.child = current.child;`. So `stored_whole`'s `name ?? null`
+arm gives what the fallback rule gives, and its mutation,
+`ended-borrow-nulled-kept`, is equivalent and removed. The corpus case
+now stores a field that isn't nullable too, `copy_sibling`'s
+`workInProgress.sibling = current.sibling;`, which only `ended_borrows`
+reads in place, and which holds `ended-borrow-kept`.
