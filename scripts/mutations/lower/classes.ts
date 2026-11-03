@@ -169,8 +169,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a class's `Display`'s `fmt` is no prototype method, its `self` no `this` (#358)",
     file: "src/lower/classes.rs",
-    find: "    if shown_class(tcx, def_id).is_some() || trait_member_class(tcx, def_id).is_some() {\n",
-    replace: "    if trait_member_class(tcx, def_id).is_some() {\n",
+    find: "    if shown_class(tcx, def_id).is_some() {\n",
+    replace: "    if false {\n",
     tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
   },
   {
