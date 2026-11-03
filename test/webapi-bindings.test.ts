@@ -1311,7 +1311,7 @@ pub fn locked(locks: &LockManager) -> Promise<Option<&'static Unknown>> {
   expect(js).toContain("    document.startViewTransition({\n      update,\n      types: types ?? null,\n    });\n");
   expect(js).toContain("  document.startViewTransition({\n    update: mutationCallback,\n    types: transitionTypes ?? null,\n  });\n");
   expect(js).toContain("  document.startViewTransition(() => {\n    mutationCallback();\n  });\n");
-  expect(js).toContain("    handler: () => console.log(name),\n");
+  expect(js).toContain("  event.intercept({ handler: () => console.log(name) });\n");
   expect(js).toContain('  return locks.request("name", (lock) => lock != null);\n');
   const lib = await import(join(dir, "lib.js"));
   const given: { update?: () => unknown; types?: unknown }[] = [];

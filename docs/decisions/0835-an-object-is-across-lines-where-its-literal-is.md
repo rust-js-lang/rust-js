@@ -136,8 +136,10 @@ ADR 0262's case N: layout only.
   size: None }`, is `{ highWaterMark: 2048 }`. One too long for a line is
   across lines, as the formatter breaks any.
 
-Held by `test/lowering-structs-enums.test.ts`'s "an object is across lines
-where its struct literal is written so" (one field on one line, of a
+Held by "an object is across lines where its struct literal is written
+so", moved to `test/lowering-object-layout.test.ts` of its own, as
+`test/lowering-structs-enums.test.ts` was past the test files' cap (one
+field on one line, of a
 `const` too; one with a line comment or a block comment across lines; one
 of a `None` left out on one line), and mutations
 `one-field-object-across-lines`, `one-field-object-comment-ignored`

@@ -339,7 +339,7 @@ pub fn destroyed(instance: &EffectInstance) -> u32 {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  return {\n    destroy: undefined,\n  };\n");
+  expect(js).toContain("  return { destroy: undefined };\n");
   const lib = await import(join(dir, "lib.js"));
   const instance = lib.createEffectInstance();
   expect([Object.keys(instance), lib.destroyed(instance)]).toEqual([["destroy"], 4]);

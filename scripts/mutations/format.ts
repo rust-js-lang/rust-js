@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
     file: "src/format.rs",
     find: "            (true, false) => \"\\n\",\n",
     replace: "            (true, false) => continue,\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
+    tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
   },
   {
     name: "objects-kept-as-printed",
@@ -131,7 +131,7 @@ export const mutations: Mutation[] = [
     file: "src/format.rs",
     find: "            (false, true) if between.trim().is_empty() => \" \",\n",
     replace: "            (false, true) if false => \" \",\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
+    tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
   },
   {
     name: "interpolation-line-unwritten",

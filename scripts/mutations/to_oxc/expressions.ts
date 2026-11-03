@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "                    self.across_lines.borrow_mut().insert(&**made as *const _);\n",
     replace: "                    let _ = made;\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
+    tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
   },
   {
     name: "one-field-object-across-lines",
@@ -256,7 +256,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "                    && (made.properties.len() > 1 || layout.commented)\n",
     replace: "                    && (made.properties.len() > 0 || layout.commented)\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
+    tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
   },
   {
     name: "one-field-object-comment-ignored",
@@ -264,7 +264,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "                    && (made.properties.len() > 1 || layout.commented)\n",
     replace: "                    && made.properties.len() > 1\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
+    tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
   },
   {
     name: "assigned-value-alone",

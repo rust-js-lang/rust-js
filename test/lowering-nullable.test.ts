@@ -1187,7 +1187,7 @@ pub fn make(dev: bool) -> SharedStateClient {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "manifest.json")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("const internals = {\n    H: null,\n  };");
+  expect(js).toContain("const internals = { H: null };");
   expect(js).not.toContain("{}.value");
   expect(js).not.toContain("$dispose");
   installRuntime(dir);
@@ -1463,12 +1463,12 @@ pub fn read(dependency: &ContextDependency<Option<u32>>) -> Option<u32> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("export function createCursor(defaultValue) {\n  return {\n    current: defaultValue,\n  };\n}");
-  expect(js).toContain("  return {\n    current: null,\n  };\n");
+  expect(js).toContain("export function createCursor(defaultValue) {\n  return { current: defaultValue };\n}");
+  expect(js).toContain("  return { current: null };\n");
   expect(js).toContain("  cursor.current = null;\n");
-  expect(js).toContain("    memoizedValue: value ?? null,\n");
+  expect(js).toContain("  return { memoizedValue: value ?? null };\n");
   expect(js).toContain("  dependency.memoizedValue = null;\n");
-  expect(js).toContain("    memoizedValue: 1,\n");
+  expect(js).toContain("  return { memoizedValue: 1 };\n");
   const lib = await import(join(dir, "lib.js"));
   const cursor = lib.empty();
   expect(cursor).toEqual({ current: null });

@@ -1000,7 +1000,7 @@ pub fn later(code: Option<&str>) -> Props {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("return {\n    message: code ? code.toUpperCase() : null,\n  };");
+  expect(js).toContain("return { message: code ? code.toUpperCase() : null };");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.props("a"), lib.props(""), lib.props(undefined)]).toEqual([{ message: "A" }, { message: null }, { message: null }]);
   expect([lib.later("xa"), lib.later("a"), lib.later(""), lib.later(undefined)]).toEqual([{ message: "a" }, { message: null }, { message: null }, { message: null }]);

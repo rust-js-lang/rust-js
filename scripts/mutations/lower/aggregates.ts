@@ -275,7 +275,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "            true => literal_layout(self.tcx, span),\n",
     replace: "            true => js::ObjectLayout::default(),\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
+    tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
   },
   {
     name: "literal-comment-unseen",
@@ -283,7 +283,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "        commented,\n",
     replace: "        commented: commented && false,\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
+    tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
   },
   {
     name: "const-object-layout-ignored",
@@ -292,7 +292,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "        *layout = literal_layout(tcx, body.value.span);\n",
     replace: "",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
+    tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
   },
   {
     name: "object-layout-of-a-tuple-variant",
@@ -301,7 +301,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "        adt.variant(variant_index).ctor_kind().is_none()\n",
     replace: "        true\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
+    tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
   },
   {
     name: "commented-field-trailing-unread",
@@ -426,7 +426,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "                && adt.did().is_local()\n",
     replace: "",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
+    tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
   },
   {
     name: "field-docs-left-out",
