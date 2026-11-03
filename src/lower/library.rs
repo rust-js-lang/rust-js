@@ -266,17 +266,25 @@ pub(super) fn exports<'tcx>(
         nulled_params,
     } = contracts;
     let crate_name = tcx.crate_name(LOCAL_CRATE);
+    // What its module exports it by: its type's object's name, a
+    // namespace's method by its property, which is the function it passes
+    // its parameters on to where it's that (#596), else its own name.
+    let export_of = |id: DefId, info: &FnInfo| match super::classes::member(tcx, id) {
+        Some(super::classes::Member::Namespace) => super::classes::property(tcx, id),
+        _ => info.owner.clone().unwrap_or_else(|| info.name.clone()),
+    };
     let mut items: Vec<_> = functions
         .iter()
         .filter(|&(&id, info)| {
-            let name = info.owner.as_ref().unwrap_or(&info.name);
-            own(tcx, id) && reachable(tcx, id) && exported.contains(&(module_path(tcx, info.module), name.clone()))
+            own(tcx, id)
+                && reachable(tcx, id)
+                && exported.contains(&(module_path(tcx, info.module), export_of(id, info)))
         })
         .map(|(&id, info)| Item {
             key: key(tcx, id),
             rust_path: format!("{crate_name}::{}", tcx.def_path_str(id)),
             module: module_path(tcx, info.module),
-            export: info.owner.clone().unwrap_or_else(|| info.name.clone()),
+            export: export_of(id, info),
             member: info.owner.as_ref().map(|_| info.name.clone()),
             // As its own crate imports it (ADRs 0596, 0611, 0773).
             exported_as: (info.owner.is_none())

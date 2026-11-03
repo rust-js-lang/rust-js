@@ -1792,7 +1792,9 @@ export function updateContainer(n) {
   name is that function too**, `pub fn close(&self, r: &Response) {
   close(r) }` of `pub fn close`: it prints nothing of its own, and a
   call of it by name is the function's, by the name a module imports it
-  by, `closeFlight(response)` of `use client::close as close_flight`
+  by, `closeFlight(response)` of `use client::close as close_flight`;
+  it says the same `#[rust_js::nullable(..)]` of its parameters as the
+  function, or it's an error
   ([ADR 1037, amended](../../decisions/1037-a-module-namespace-is-a-unit-struct-of-its-functions.md#amendment-of-its-own-modules-function-too-one-named-apart-is-refused-566-585)).
 - **A method its module names apart from its name is an error**: a
   method `close` beside a function `close` of its module, which a call

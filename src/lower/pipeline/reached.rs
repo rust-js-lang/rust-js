@@ -154,10 +154,13 @@ pub(super) fn forwarded<'tcx>(
                         .skip_normalization()
                 })
                 .collect();
-            (caller_locations.contains(&method) == caller_locations.contains(&target)
+            let forwarded = caller_locations.contains(&method) == caller_locations.contains(&target)
                 && bounds(method) == theirs
-                && js_given.copies(method).next().is_none())
-            .then_some((method, target))
+                && js_given.copies(method).next().is_none();
+            if forwarded {
+                nullable_alike(tcx, method, target);
+            }
+            forwarded.then_some((method, target))
         })
         .partition(|&(method, _)| {
             super::super::classes::member(tcx, method) == Some(super::super::classes::Member::Namespace)
@@ -179,4 +182,44 @@ pub(super) fn forwarding(
         .filter(|(_, target)| !reads_arguments.contains(target) && !forwarders.contains_key(target))
         .map(|(method, _)| method)
         .collect()
+}
+
+/// Whether `method`, the function `target` it passes its parameters on to
+/// (`forwarded`), says each of its parameters past its `self` nullable,
+/// `#[rust_js::nullable(config)]`, as `target` says its own (#596): a call
+/// of it, through a namespace's value too, is the function's, whose `None`
+/// is `null` there, as the method's is only where it says so. Else an
+/// error naming what to write.
+fn nullable_alike(tcx: TyCtxt<'_>, method: DefId, target: DefId) -> bool {
+    let nullable = |id: DefId, from: usize| -> Vec<usize> {
+        let names = super::super::bindings::nullable_params(tcx, id);
+        (tcx.fn_arg_idents(id).iter().enumerate().skip(from))
+            .filter(|(_, ident)| ident.is_some_and(|ident| names.contains(&ident.name)))
+            .map(|(i, _)| i - from)
+            .collect()
+    };
+    if nullable(method, 1) == nullable(target, 0) {
+        return true;
+    }
+    let names = |id: DefId| {
+        let names = super::super::bindings::nullable_params(tcx, id);
+        match names.is_empty() {
+            true => "none".to_string(),
+            false => names
+                .iter()
+                .map(|name| format!("`{name}`"))
+                .collect::<Vec<_>>()
+                .join(", "),
+        }
+    };
+    let message = format!(
+        "rust-js: `{}` is `{}`, which it passes its parameters on to, so it says the same of them \
+         `#[rust_js::nullable(..)]`, as a call of it is that function's (the function's: {}; the method's: {})",
+        tcx.def_path_str(method),
+        tcx.def_path_str(target),
+        names(target),
+        names(method),
+    );
+    tcx.dcx().span_err(tcx.def_span(method), message);
+    false
 }

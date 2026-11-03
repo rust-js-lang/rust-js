@@ -8,7 +8,7 @@ on is the function it calls; its import named by a `use`; rd311: a
 library's method through a value is its library's, and a flattened
 result exact; rd324: by its name too, each call flattened; #566: of its
 own module's function too, and #585: one its module names apart is
-refused). Extends
+refused; #596: it says its function's nullable parameters). Extends
 [0943](0943-an-object-of-methods-reading-this.md) (an object of methods,
 whose `&self` methods are its module's functions too) and
 [1018](1018-a-function-called-through-its-module-is-read-through-its-namespace.md)
@@ -584,3 +584,41 @@ a private function's name). Mutations `own-module-forwarding-unexported`
 (lower/passed_on.ts), `own-module-forwarded-call-own` (lower/mir/calls.ts),
 `own-module-reexported` (lower/reexports.ts) and
 `renamed-namespace-method-unrefused` (lower/classes/namespaces.ts).
+
+## Amendment: a forwarding method says its function's nullable parameters (#596)
+
+ReactFlightClient's `create_response` is `#[rust_js::nullable(bundler_config,
+server_reference_config, module_loading)]`, and ReactNoopFlightClient calls
+it through the namespace's value. Its forwarding method with the same
+attribute panicked the compiler: `NulledParams::again` said it lowered the
+method again, which has no JS of its own, so the work list ran out. Without
+the attribute, a call through the value gave the method's `None`,
+`undefined`, where the function's is `null`: a wrong answer of a function
+that tests `=== null`.
+
+**A namespace's method that's the function it passes its parameters on to
+says the same `#[rust_js::nullable(..)]` of them as that function, at the
+same places past its `self`; a missing or different one is a compile error
+naming both lists** (`pipeline::reached::nullable_alike`). A call of it,
+through the value too, is then the function's, `client.createResponse(null,
+1)`. The coordinator's decision on the user's behalf (2026-11-04): taking
+the function's facts silently would make a second authority of whether a
+parameter is nullable, which each reader asks of the attribute. And
+`NulledParams::again` says it lowered something again only where it queued
+a body.
+
+Case D ([0262](0262-when-rust-and-js-disagree.md)) of the method that says
+otherwise: its own `None` can't be both.
+
+Held by `test/method-forwarding.test.ts`'s "a namespace's forwarding method
+says its function's nullable parameters" (the call through a value given
+`null`, run; both refusals). Mutations `forwarded-nullable-unasked`
+(lower/pipeline/reached.ts), `nulled-again-of-nothing` (lower/analysis/nulled_params.ts),
+`forwarded-method-uncontracted` (lower/library.ts). And a library's
+contract has such a method, by its property, which its module exports as
+the function it is, so another crate calls it through the namespace's
+value, ReactNoopFlightClient's `client.create_response(..)` (rd728's
+second part): "another crate calls a library's forwarding method through
+the namespace's value". rd613's test now says the attribute too (the
+user's decision, 2026-11-04).
+

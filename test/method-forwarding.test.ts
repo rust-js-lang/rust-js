@@ -259,3 +259,119 @@ pub fn ran(n: f64) -> f64 {
   `]);
   expect(ran.trim()).toBe("12");
 });
+
+// #596: ReactFlightClient's `create_response` is
+// `#[rust_js::nullable(bundler_config, ..)]`, and ReactNoopFlightClient
+// calls it through the namespace's value. Its forwarding method is that
+// function, so it says the same `#[rust_js::nullable(..)]`, and a call
+// through the value gives `null` where the function's `None` is `null`:
+// it panicked the compiler, and without the attribute gave `undefined`.
+// One that says otherwise, or nothing, is refused, naming both lists.
+test("a namespace's forwarding method says its function's nullable parameters", async () => {
+  const source = (said: string, functionSaid = "#[cfg_attr(rust_js, rust_js::nullable(config))]\n") => `pub struct Response {
+    pub n: f64,
+    pub configured: bool,
+}
+
+${functionSaid}pub fn create_response(config: Option<&'static str>, n: f64) -> Response {
+    Response {
+        n,
+        configured: config.is_some(),
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+pub struct Client;
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+impl Client {
+${said}    pub fn create_response(&self, config: Option<&'static str>, n: f64) -> Response {
+        create_response(config, n)
+    }
+}
+
+pub fn through(client: &Client) -> f64 {
+    client.create_response(None, 1.0).n + client.create_response(Some("c"), 2.0).n
+}
+`;
+  const { p, dir, read } = compiled("namespace-forwarding-nullable", {
+    "lib.rs": "pub mod client;\n",
+    "client.rs": source("    #[cfg_attr(rust_js, rust_js::nullable(config))]\n"),
+  });
+  expect(p.stderr).not.toContain("error");
+  expect(p.code).toBe(0);
+  const js = read("client.js");
+  expect(js).toContain("client.createResponse(null, 1).n");
+  expect(js).not.toContain("createResponse$1");
+  const ran = run(["node", "--input-type=module", "--eval", `
+    import * as client from ${JSON.stringify(join(dir, "client.js"))};
+    const given = [];
+    const spy = { createResponse: (config, n) => (given.push(config), client.createResponse(config, n)) };
+    console.log(JSON.stringify([client.through(spy), given]));
+  `]);
+  expect(ran.trim()).toBe('[3,[null,"c"]]');
+  const nullable = "    #[cfg_attr(rust_js, rust_js::nullable(config))]\n";
+  const cases: [string, string, string | undefined, string, string][] = [
+    ["unsaid", "", undefined, "`config`", "none"],
+    ["other", nullable, "", "none", "`config`"],
+  ];
+  for (const [name, said, functionSaid, theirs, method] of cases) {
+    const refused = compiled(`namespace-forwarding-nullable-${name}`, { "lib.rs": "pub mod client;\n", "client.rs": source(said, functionSaid) }).p;
+    expect(refused.code).not.toBe(0);
+    expect(refused.stderr).toContain(
+      `rust-js: \`client::Client::create_response\` is \`client::create_response\`, which it passes its parameters on to, so it says the same of them \`#[rust_js::nullable(..)]\`, as a call of it is that function's (the function's: ${theirs}; the method's: ${method})`,
+    );
+  }
+});
+
+// #596 (rd728): another crate's call of a library's forwarding method
+// through the namespace's value, ReactNoopFlightClient's
+// `client.create_response(..)` of ReactFlightClient's, compiles where the
+// method says its function's `#[rust_js::nullable(..)]`, and gives `null`.
+test("another crate calls a library's forwarding method through the namespace's value", async () => {
+  const dir = fixture("namespace-forwarding-cross-crate");
+  writeFileSync(join(dir, "dep.rs"), `pub struct Response {
+    pub n: f64,
+    pub configured: bool,
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(config))]
+pub fn create_response(config: Option<&'static str>, n: f64) -> Response {
+    Response {
+        n,
+        configured: config.is_some(),
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+pub struct Client;
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+impl Client {
+    #[cfg_attr(rust_js, rust_js::nullable(config))]
+    pub fn create_response(&self, config: Option<&'static str>, n: f64) -> Response {
+        create_response(config, n)
+    }
+}
+`);
+  const library = runSync([compiler, join(dir, "dep.rs"), "-o", join(dir, "dep", "lib.js"), "--library", "--manifest", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "dep", "--crate-type", "lib", `--emit=metadata=${join(dir, "libdep.rmeta")}`], root, 60_000);
+  expect(library.stderr).not.toContain("error");
+  writeFileSync(join(dir, "app.rs"), `pub fn through(client: &dep::Client) -> f64 {
+    client.create_response(None, 1.0).n + client.create_response(Some("c"), 2.0).n
+}
+`);
+  const app = runSync([compiler, join(dir, "app.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "app", "--crate-type", "lib", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir], root, 60_000);
+  expect(app.stderr).not.toContain("error");
+  expect(app.code).toBe(0);
+  expect(readFileSync(join(dir, "app", "lib.js"), "utf8")).toContain("client.createResponse(null, 1).n");
+  const ran = run(["node", "--input-type=module", "--eval", `
+    import * as client from ${JSON.stringify(join(dir, "dep", "lib.js"))};
+    import { through } from ${JSON.stringify(join(dir, "app", "lib.js"))};
+    const given = [];
+    const spy = { createResponse: (config, n) => (given.push(config), client.createResponse(config, n)) };
+    console.log(JSON.stringify([through(spy), given]));
+  `]);
+  expect(ran.trim()).toBe('[3,[null,"c"]]');
+});

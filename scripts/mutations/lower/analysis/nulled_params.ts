@@ -106,4 +106,13 @@ export const mutations: Mutation[] = [
     replace: "        return false && id.is_local()\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "catch_unwind gives"],
   },
+  {
+    name: "nulled-again-of-nothing",
+    breaks:
+      "a forwarding method with a nullable parameter is said lowered again, which has no JS of its own, and the compiler runs out of work and panics (#596)",
+    file: "src/lower/analysis/nulled_params.rs",
+    find: "        lowered_again\n",
+    replace: "        !again.is_empty()\n",
+    tests: ["test/method-forwarding.test.ts", "-t", "a namespace's forwarding method says its function's nullable parameters"],
+  },
 ];

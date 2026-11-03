@@ -214,8 +214,12 @@ impl NulledParams {
                 .filter(|&item| askers.contains(&id(item)))
                 .cloned()
                 .collect();
-            work.extend(asked);
-            return true;
+            // Of each asker lowered here: not a namespace's method that's
+            // the function it passes on to, which has no JS of its own (#596).
+            if !asked.is_empty() {
+                work.extend(asked);
+                return true;
+            }
         }
         let found = self.nulled(&self.seen.borrow());
         let mut nulled = self.nulled.borrow_mut();
@@ -224,8 +228,9 @@ impl NulledParams {
             .collect();
         nulled.extend(found);
         let queued: Vec<W> = work.iter().filter(|&item| again.contains(&id(item))).cloned().collect();
+        let lowered_again = !queued.is_empty();
         work.extend(queued);
-        !again.is_empty()
+        lowered_again
     }
 
     /// The parameters found so, by function and index, which a library's

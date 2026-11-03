@@ -125,8 +125,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a namespace's method that passes its parameters on to a function that tracks its caller is that function, which its callers give no location (rd292b)",
     file: "src/lower/pipeline/reached.rs",
-    find: "            (caller_locations.contains(&method) == caller_locations.contains(&target)\n                && bounds(method) == theirs\n",
-    replace: "            (bounds(method) == theirs\n",
+    find: "            let forwarded = caller_locations.contains(&method) == caller_locations.contains(&target)\n                && bounds(method) == theirs\n",
+    replace: "            let forwarded = bounds(method) == theirs\n",
     tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
   },
   {
@@ -152,8 +152,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a namespace's method its callers need a copy of (ADR 0051) is the function it passes its parameters on to, and the copy they call isn't written (rd292b)",
     file: "src/lower/pipeline/reached.rs",
-    find: "                && js_given.copies(method).next().is_none())\n",
-    replace: ")\n",
+    find: "                && js_given.copies(method).next().is_none();\n",
+    replace: ";\n",
     tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
   },
   {
@@ -165,5 +165,14 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^untagged_field_of_each_variant.rs$"],
     snapshots: true,
+  },
+  {
+    name: "forwarded-nullable-unasked",
+    breaks:
+      "a namespace's forwarding method that doesn't say its function's nullable parameters compiles, and a call through the value gives `undefined` where the function's `None` is `null` (#596)",
+    file: "src/lower/pipeline/reached.rs",
+    find: "                nullable_alike(tcx, method, target);\n",
+    replace: "",
+    tests: ["test/method-forwarding.test.ts", "-t", "a namespace's forwarding method says its function's nullable parameters"],
   },
 ];

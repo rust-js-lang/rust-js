@@ -561,8 +561,10 @@ pub fn loose(module_loading: Option<&ModuleLoading>) -> bool {
 
 // rd613: a call lowering never sees, a namespace's method that only passes
 // its parameter on, which is the function it forwards to (rd292b), leaves
-// that function's nullable parameter `!= null`: its callers give it what
-// they're given, `checked()` of `checked(None)`, `undefined`.
+// that function's nullable parameter `!= null`. The method says the
+// function's `#[rust_js::nullable(..)]` (#596, the user's decision,
+// 2026-11-04), so its callers give it `null`, `checked(null)` of
+// `checked(None)`.
 test("a nullable parameter a forwarding namespace method gives on is tested against undefined too", async () => {
   const dir = fixture("nullable-param-forwarded");
   writeFileSync(
@@ -591,6 +593,7 @@ pub mod forwarding {
 
     #[cfg_attr(rust_js, rust_js::namespace)]
     impl Reconciler {
+        #[cfg_attr(rust_js, rust_js::nullable(module_loading))]
         pub fn checked(&self, module_loading: Option<&ModuleLoading>) -> bool {
             work_loop::checked(module_loading)
         }

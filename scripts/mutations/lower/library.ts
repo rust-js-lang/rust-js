@@ -343,8 +343,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's manifest lists what its JS doesn't export, an impl's method, which its consumer then imports (ADR 0914, amended)",
     file: "src/lower/library.rs",
-    find: "            own(tcx, id) && reachable(tcx, id) && exported.contains(&(module_path(tcx, info.module), name.clone()))\n",
-    replace: "            own(tcx, id) && reachable(tcx, id)\n",
+    find: "                && exported.contains(&(module_path(tcx, info.module), export_of(id, info)))\n",
+    replace: "",
     tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
@@ -653,5 +653,14 @@ export const mutations: Mutation[] = [
     find: "            !module.is_top_level_module() && exported.contains(&(module_path(tcx, *module), export.clone()))\n",
     replace: "            exported.contains(&(module_path(tcx, *module), export.clone()))\n",
     tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
+  },
+  {
+    name: "forwarded-method-uncontracted",
+    breaks:
+      "a library's namespace method that's the function it passes its parameters on to is in no contract, so another crate's call of it through the namespace's value is refused (#596, rd728)",
+    file: "src/lower/library.rs",
+    find: "        Some(super::classes::Member::Namespace) => super::classes::property(tcx, id),\n",
+    replace: "        Some(super::classes::Member::Namespace) if false => super::classes::property(tcx, id),\n",
+    tests: ["test/method-forwarding.test.ts", "-t", "another crate calls a library's forwarding method"],
   },
 ];
