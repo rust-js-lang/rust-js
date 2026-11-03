@@ -181,10 +181,12 @@ for layout. A layout of Prettier's that would change the program isn't
 taken: the file is rust-js's layout, and `rust-js build` prints a
 `warning: rust-js: the app's Prettier ..` that says why.
 
-Either way, an object is on lines of its own where its struct literal is
-written across lines, as rustfmt writes one too long for a line, and on
-one line where it's written on one and fits, as Prettier keeps an object
-a person wrote ([ADR 0835](../../decisions/0835-an-object-is-across-lines-where-its-literal-is.md)).
+Either way, an object of two fields or more is on lines of its own where
+its struct literal is written across lines, as rustfmt writes one too long
+for a line, and on one line where it's written on one and fits, as
+Prettier keeps an object a person wrote. An object of one field is on one
+line where it fits, `{ highWaterMark: 2048 }`, unless its literal writes a
+comment in it ([ADR 0835](../../decisions/0835-an-object-is-across-lines-where-its-literal-is.md), amended, the user's decision).
 
 ## Commit the JS, not the maps
 

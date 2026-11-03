@@ -153,19 +153,7 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  const plains = [
-    {},
-    {},
-    {
-      instance: b,
-    },
-    {
-      instance: a,
-    },
-    {
-      instance: a,
-    },
-  ];
+  const plains = [{}, {}, { instance: b }, { instance: a }, { instance: a }];
   console.log(`${changes(plains)}`);
   const values = [1, undefined, 3];
   console.log(

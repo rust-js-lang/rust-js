@@ -29,9 +29,7 @@ function even(x) {
 
 function main() {
   const v = [1, 2, 3, 4, 5, 6, 7, 8];
-  const e = {
-    it: $filterEnds($iter(v), (item) => even(item)),
-  };
+  const e = { it: $filterEnds($iter(v), (item) => even(item)) };
   const first = Array.from($lent(e.it).take(2));
   const arg = $next(e.it);
   console.log(`[${first.join(", ")}] ${arg == null ? "None" : `Some(${arg})`}`);
@@ -71,9 +69,7 @@ function main() {
   );
   const arg$1 = $next(again.it);
   console.log(`[${back.join(", ")}] ${arg$1 == null ? "None" : `Some(${arg$1})`}`);
-  const odd = {
-    it: $filterEnds($iter(v), (item) => even(item)),
-  };
+  const odd = { it: $filterEnds($iter(v), (item) => even(item)) };
   const last = $nextBack(odd.it);
   const fromBack = Array.from($rev(odd.it).take(1));
   const value = $next(odd.it);

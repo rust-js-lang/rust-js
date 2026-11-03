@@ -63,12 +63,8 @@ function main() {
   console.log(
     `${sameListener(listener(a), listener(a))} ${sameListener(listener(a), listener(b))}`,
   );
-  const at = (fiber) => ({
-    target: fiber,
-  });
-  const index = {
-    target: 2,
-  };
+  const at = (fiber) => ({ target: fiber });
+  const index = { target: 2 };
   console.log(
     `${samePointer(at(current), at(current))} ${samePointer(at(current), at(work))} ${samePointer(index, at(work))}`,
   );

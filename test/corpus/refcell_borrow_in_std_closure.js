@@ -7,9 +7,7 @@ export function entry() {
 }
 
 function main() {
-  const log = {
-    items: [1, 2],
-  };
+  const log = { items: [1, 2] };
   $borrowMut(log.items).push(3);
   console.log(`${$borrow(log.items).length}`);
   const borrow = $borrow(log.items, true);

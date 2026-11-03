@@ -993,11 +993,17 @@ impl TemplateLayout {
 /// How an object's source writes it: across lines, its first field on a
 /// line after its `{`, as rustfmt lays out a struct literal too long for
 /// one, which its JS keeps on lines of its own, as Prettier keeps an
-/// object a person wrote so; or on one line, which its JS is on where it
-/// fits (ADR 0835). One no source writes, a representation's, is on one.
+/// object a person wrote so, where it has two fields or more, or its
+/// literal a comment; or on one line, which its JS is on where it fits
+/// (ADR 0835, amended). One no source writes, a representation's, is on
+/// one.
 #[derive(Clone, PartialEq, Eq, Default)]
 pub struct ObjectLayout {
     pub lines: bool,
+    /// Whether its literal writes a comment between its braces, which
+    /// keeps an object of one field across lines where the literal is
+    /// (ADR 0835, amended, the user's decision).
+    pub commented: bool,
     /// The keys whose `undefined` is kept: one a comment is written on in
     /// its literal, `v: None, // why`, `v: undefined, // why`, the comment's
     /// place (ADR 0280, amended); and one of a field that holds a cell, set

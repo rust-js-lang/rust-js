@@ -22,9 +22,7 @@ function peek(cursor, f, TClone) {
 
 function main() {
   const vecClone = { clone: (value) => value.slice() };
-  const cursor = {
-    current: [1],
-  };
+  const cursor = { current: [1] };
   console.log(`[${peek(cursor, () => {}, vecClone).join(", ")}]`);
   const captured = $fieldCell(cursor, "current");
   const seen = peek(

@@ -61,9 +61,7 @@ export function once(button) {
     (e) => {
       globalThis.record(e.clientX);
     },
-    {
-      once: true,
-    },
+    { once: true },
   );
 }
 
@@ -74,9 +72,7 @@ export function aborted(button) {
     (e) => {
       globalThis.record(e.clientX);
     },
-    {
-      signal: controller.signal,
-    },
+    { signal: controller.signal },
   );
   controller.abort();
 }
@@ -110,9 +106,7 @@ export function namedOnce(button) {
     () => {
       globalThis.record(1);
     },
-    {
-      once: true,
-    },
+    { once: true },
   );
 }
 

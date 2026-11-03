@@ -73,9 +73,7 @@ Books.prototype.count = function () {
 // Its `items` gives a field of what an `Rc` holds, not of its own: a
 // method of its prototype.
 function Tally() {
-  this.shared = {
-    items: [],
-  };
+  this.shared = { items: [] };
 }
 
 Tally.prototype.items = function () {

@@ -25,9 +25,7 @@ function report(root, f) {
 }
 
 function main() {
-  const root = {
-    log: [],
-  };
+  const root = { log: [] };
   function pushed(root) {
     $borrowMut(root.log).push(2);
     return 2;

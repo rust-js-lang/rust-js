@@ -51,9 +51,7 @@ function keys(keys) {
 }
 
 function main() {
-  const text = {
-    text: "hi",
-  };
+  const text = { text: "hi" };
   const span = {
     children: [text],
     tag: "span",

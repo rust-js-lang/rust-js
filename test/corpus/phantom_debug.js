@@ -20,9 +20,7 @@ function marker(TName) {
 
 function main() {
   const stringDebug = { fmt: (value) => $debugStr(value) };
-  const keyed = {
-    len: 2,
-  };
+  const keyed = { len: 2 };
   console.log(
     `${keyedDebug_fmt(keyed, { fmt: (value) => String(value) }, stringDebug, "u32", "alloc::string::String")}`,
   );

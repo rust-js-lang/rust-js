@@ -1075,12 +1075,8 @@ export const Logger = {
 
 export function twoLoggers() {
   const lines = [];
-  const a = {
-    lines,
-  };
-  const b = {
-    lines,
-  };
+  const a = { lines };
+  const b = { lines };
   Logger.log(a, "from a");
   Logger.log(b, "from b");
   return lines.length;

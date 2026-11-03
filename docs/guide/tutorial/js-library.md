@@ -168,9 +168,7 @@ export function App() {
   const [last, setLast] = useState(undefined);
 
   function save() {
-    const details = {
-      description: "Your changes are on the server.",
-    };
+    const details = { description: "Your changes are on the server." };
     setLast(toast.success("Saved", details));
   }
 

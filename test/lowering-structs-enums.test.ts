@@ -1426,6 +1426,35 @@ pub fn described() -> Described {
     }
 }
 
+pub fn commented() -> Described {
+    Described {
+        // Why it says so.
+        description: "one field, a comment in it",
+    }
+}
+
+pub fn block_commented() -> Described {
+    Described {
+        description: /* why */ "one field",
+    }
+}
+
+pub struct Strategy {
+    pub high_water_mark: Option<f64>,
+    pub size: Option<f64>,
+}
+
+pub fn strategy() -> Strategy {
+    Strategy {
+        high_water_mark: Some(2048.0),
+        size: None,
+    }
+}
+
+pub const ONE_FIELD: Described = Described {
+    description: "a const's one field",
+};
+
 pub fn events() -> Vec<Event> {
     vec![
         Event::Moved { dx: 1, dy: -2 },
@@ -1471,7 +1500,15 @@ pub static ONE_LINE: Ref = Ref { kind: "static", render: 1 };
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('const elementType = {\n    kind: "forward_ref",\n    render,\n  };');
   expect(js).toContain('return { kind: "short", render };');
-  expect(js).toContain('return {\n    description: "one field, too long for rustfmt\'s line",\n  };');
+  // An object of one field is on one line where it fits, as a person
+  // writes it, unless its literal writes a comment in it (ADR 0835,
+  // amended, the user's decision); one of one field JS has, its `None`
+  // left out, too.
+  expect(js).toContain('return { description: "one field, too long for rustfmt\'s line" };');
+  expect(js).toContain('return {\n    // Why it says so.\n    description: "one field, a comment in it",\n  };');
+  expect(js).toContain('return {\n    description: /* why */ "one field",\n  };');
+  expect(js).toContain("return { highWaterMark: 2048 };");
+  expect(js).toContain('export const ONE_FIELD = { description: "a const\'s one field" };');
   expect(js).toContain('{ TAG: "Moved", dx: 1, dy: -2 },\n    {\n      TAG: "Moved",\n      dx: 3,\n      dy: 4,\n    },\n    { TAG: "Placed", _0: 5 },');
   expect(js).toContain('return {\n    ...base,\n    kind: "updated",\n  };');
   expect(js).toContain("return { start: fromTheStart ? 0 : 1, end: 2 };");

@@ -37,9 +37,7 @@ function entangledLanes(root, renderLanes) {
 }
 
 function main() {
-  const root = {
-    entanglements: Array.from({ length: 31 }, (_, i) => 1 << (((i + 3) | 0) % 31)),
-  };
+  const root = { entanglements: Array.from({ length: 31 }, (_, i) => 1 << (((i + 3) | 0) % 31)) };
   for (const lanes of [0, 1, 6, 0b10100000, 2147483647]) {
     const arg = entangledLanes(root, lanes);
     console.log(`${lanes} -> ${arg}`);

@@ -75,9 +75,7 @@ function made(state) {
 }
 
 function main() {
-  const chunk = made({
-    status: "pending",
-  });
+  const chunk = made({ status: "pending" });
   console.log(`${read(chunk)}`);
   requeue(chunk, undefined, [9]);
   requeue(chunk, [7], [8]);

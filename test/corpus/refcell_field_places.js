@@ -35,19 +35,13 @@ function bump(cell) {
 }
 
 function main() {
-  const root = {
-    times: new Array(3).fill(0),
-  };
+  const root = { times: new Array(3).fill(0) };
   mark(root, 1);
   console.log(`[${root.times.map((item) => $debugF64(item)).join(", ")}]`);
 
-  const numbers = {
-    current: 5,
-  };
+  const numbers = { current: 5 };
   numbers.current = (numbers.current + 1) & 255;
-  const names = {
-    current: "root",
-  };
+  const names = { current: "root" };
   names.current += "!";
   console.log(`${read(numbers)} ${read(names)}`);
 

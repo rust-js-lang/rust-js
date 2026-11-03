@@ -278,6 +278,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
   },
   {
+    name: "literal-comment-unseen",
+    breaks: "a struct literal's comment between its braces isn't seen, and its object of one field is on one line where it's written across lines (ADR 0835, amended, rd665)",
+    file: "src/lower/aggregates.rs",
+    find: "        commented,\n",
+    replace: "        commented: commented && false,\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
+  },
+  {
     name: "const-object-layout-ignored",
     breaks:
       "a `const`'s struct literal written across lines is an object on one line, as rustc's value is, where one written in place is across lines (ADR 0835)",

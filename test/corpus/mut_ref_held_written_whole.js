@@ -74,9 +74,7 @@ function vecOfRefs() {
 
 function nested() {
   const a = { balance: 0 };
-  const outer = {
-    inner: { account: a },
-  };
+  const outer = { inner: { account: a } };
   $assign(outer.inner.account, { balance: 8 });
   return a.balance;
 }

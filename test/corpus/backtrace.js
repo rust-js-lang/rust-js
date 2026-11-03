@@ -8,9 +8,7 @@ export function entry() {
 
 const Failure = {
   new(message) {
-    return {
-      message,
-    };
+    return { message };
   },
 };
 

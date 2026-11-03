@@ -228,9 +228,7 @@ function instanceOf(kind) {
 
 function main() {
   console.log(`${instanceOf("clip")} ${instanceOf("group")} ${instanceOf("text")}`);
-  const chunk = {
-    state: { TAG: "Done", _0: 4 },
-  };
+  const chunk = { state: { TAG: "Done", _0: 4 } };
   function reads(v) {
     // The chunk is no longer borrowed.
     const arg = describe(chunk);
@@ -256,15 +254,9 @@ function main() {
   then(chunk, undefined, rejects);
   console.log(`${describe(chunk)}`);
   const chunks = [
-    {
-      state: { TAG: "Done", _0: 1 },
-    },
-    {
-      state: { TAG: "Lost", _0: "lost" },
-    },
-    {
-      state: { TAG: "Failed", _0: "failed" },
-    },
+    { state: { TAG: "Done", _0: 1 } },
+    { state: { TAG: "Lost", _0: "lost" } },
+    { state: { TAG: "Failed", _0: "failed" } },
   ];
   const value = firstReason(chunks);
   console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);

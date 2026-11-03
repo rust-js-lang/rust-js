@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "object-of-one-field-not-broken",
-    breaks: "an object of one field written across lines is on one line, as the printer writes it, where its struct literal is across lines (ADR 0835)",
+    breaks: "an object of one field whose literal writes a comment in it, across lines, is on one line, as the printer writes it, where its struct literal is across lines (ADR 0835, amended)",
     file: "src/format.rs",
     find: "            (true, false) => \"\\n\",\n",
     replace: "            (true, false) => continue,\n",

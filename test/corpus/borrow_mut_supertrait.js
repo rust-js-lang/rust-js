@@ -83,9 +83,7 @@ function main() {
   console.log(`${vecPoolIndex.len([1, 2])}`);
   console.log(`${total([5, 6], vecPoolIndex)}`);
   console.log(`${total([7, 8, 9], _usize__K_PoolIndex(3))}`);
-  const tail = {
-    items: [10, 20, 30],
-  };
+  const tail = { items: [10, 20, 30] };
   console.log(
     `${bump([1, 2], {
       borrowMut: (value) => value,

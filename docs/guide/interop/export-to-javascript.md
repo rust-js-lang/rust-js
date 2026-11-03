@@ -755,9 +755,7 @@ pub fn mounted(props: Option<&'static Unknown>) -> Component {
 ```
 
 ```js
-export const NOOP = {
-  enqueueForceUpdate() {},
-};
+export const NOOP = { enqueueForceUpdate() {} };
 
 /** Base class helpers for the updating state of a component. */
 export function Component(props, updater) {
@@ -962,9 +960,7 @@ function RequestInstance(
 ) {
   this.pingedTasks = [];
   for (let i = 0; i < tasks; i++) {
-    const task = {
-      request: this,
-    };
+    const task = { request: this };
     this.pingedTasks.push(task);
   }
 }

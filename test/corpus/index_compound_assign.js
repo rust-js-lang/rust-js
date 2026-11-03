@@ -27,9 +27,7 @@ function plain(v, index, lane) {
 }
 
 function main() {
-  const root = {
-    entanglements: new Array(4).fill(0),
-  };
+  const root = { entanglements: new Array(4).fill(0) };
   upgrade(root, 0b1011);
   spawned(root, 2, 0b1100);
   console.log(`[${root.entanglements.join(", ")}]`);

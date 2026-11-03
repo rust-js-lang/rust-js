@@ -78,9 +78,7 @@ function main() {
   reset(first);
   cleared(first, first, first);
   console.log(`${first.memoizedState} ${first.baseState}`);
-  const fiber = {
-    current: undefined,
-  };
+  const fiber = { current: undefined };
   append(fiber, first);
   const second = hook(2);
   append(fiber, second);
@@ -90,9 +88,7 @@ function main() {
     `${next == null ? "None" : `Some(${next})`} ${last == null ? "None" : `Some(${last})`}`,
   );
   const node = hook(3);
-  const pinned = {
-    current: hook(4),
-  };
+  const pinned = { current: hook(4) };
   currentOf(pinned, node);
   console.log(`${$unwrap(node.next) === node}`);
   node.next = undefined;

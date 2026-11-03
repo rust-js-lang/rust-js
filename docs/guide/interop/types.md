@@ -1779,9 +1779,7 @@ export function createContext(value) {
     consumer: null,
   };
   context.provider = context;
-  context.consumer = {
-    context,
-  };
+  context.consumer = { context };
   return context;
 }
 ```
@@ -1816,13 +1814,7 @@ pub fn share(doc: &Rc<Doc>) -> Rc<Doc> {
 import { $rcClone } from "@rust-js/runtime";
 
 export function open(title) {
-  return {
-    value: {
-      title,
-    },
-    strong: 1,
-    weak: 0,
-  };
+  return { value: { title }, strong: 1, weak: 0 };
 }
 
 export function owners(doc) {
@@ -2127,9 +2119,7 @@ export function payload(dev) {
     info: undefined,
   };
   if (dev) {
-    const info = {
-      name: "lazy",
-    };
+    const info = { name: "lazy" };
     payload.info = info;
   }
   return payload;
@@ -2140,9 +2130,7 @@ export function name(payload) {
 }
 
 export function rename(payload, name) {
-  const info = {
-    name,
-  };
+  const info = { name };
   const unset = payload.info === undefined;
   if (unset) {
     payload.info = info;
@@ -2814,9 +2802,7 @@ thread_local! {
 ```
 
 ```js
-const callRender = {
-  react_stack_bottom_frame: (lanes) => (lanes + 1) >>> 0,
-};
+const callRender = { react_stack_bottom_frame: (lanes) => (lanes + 1) >>> 0 };
 
 export const callRenderInDev = callRender.react_stack_bottom_frame.bind(callRender);
 ```

@@ -958,10 +958,13 @@ export function moved(p, dx) {
   them, `{ ...p, y, x }`
   ([ADR 0674](../../decisions/0674-a-struct-literals-fields-are-in-the-order-written.md)).
   `{:?}` still shows them as the struct declares them.
-- A struct literal written across lines, as rustfmt writes one too long
-  for a line, is an object on lines of its own; one written on one line is
-  on one line where it fits
-  ([ADR 0835](../../decisions/0835-an-object-is-across-lines-where-its-literal-is.md)).
+- A struct literal of two fields or more written across lines, as rustfmt
+  writes one too long for a line, is an object on lines of its own; one
+  written on one line is on one line where it fits. An object of one field
+  is on one line where it fits, `{ highWaterMark: 2048 }`, however rustfmt
+  writes its literal, unless the literal writes a comment in it
+  ([ADR 0835](../../decisions/0835-an-object-is-across-lines-where-its-literal-is.md),
+  amended, the user's decision).
 - Methods go in an `impl` block: [Advanced: classes](advanced.md#classes).
 - An object used as a dictionary, with keys only known at run time, is a
   `HashMap`: [Collections: maps](collections.md#map-and-set).

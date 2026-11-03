@@ -53,9 +53,7 @@ function grow(m) {
 }
 
 function rename(shape) {
-  shape.value = {
-    name: "renamed",
-  };
+  shape.value = { name: "renamed" };
 }
 
 function main() {

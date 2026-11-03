@@ -66,20 +66,14 @@ function takenApart(a, log) {
 
 function main() {
   const none = {};
-  const empty = {
-    debugChannel: {},
-  };
-  const full = {
-    debugChannel: { readable: 4 },
-  };
+  const empty = { debugChannel: {} };
+  const full = { debugChannel: { readable: 4 } };
   const response = [];
   for (const options of [undefined, none, empty, full]) {
     console.log(`${readFrom(options, response)}`);
   }
   console.log(`[${response.join(", ")}]`);
-  const low = {
-    debugChannel: { readable: 2 },
-  };
+  const low = { debugChannel: { readable: 2 } };
   const log = [];
   for (const options of [undefined, none, low, full]) {
     console.log(`${overTwo(options, log)}`);

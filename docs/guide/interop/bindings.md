@@ -198,17 +198,13 @@ function quiet() {}
 
 export function silence() {
   savedLog = console.log;
-  const quieted = {
-    value: quiet,
-  };
+  const quieted = { value: quiet };
   Object.defineProperty(console, "log", quieted);
 }
 
 export function restore() {
   const saved = savedLog;
-  const restored = {
-    value: saved,
-  };
+  const restored = { value: saved };
   Object.defineProperty(console, "log", restored);
   if (saved != null) {
     saved("restored", 1);

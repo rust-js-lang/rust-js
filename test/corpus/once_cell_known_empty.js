@@ -70,9 +70,7 @@ function main() {
     id: 4,
     cache: undefined,
   };
-  const holder = {
-    node: shared,
-  };
+  const holder = { node: shared };
   fill(holder.node);
   const unset$2 = shared.cache === undefined;
   if (unset$2) {
@@ -86,9 +84,7 @@ function main() {
     id: 5,
     cache: undefined,
   };
-  const other = {
-    node: kept,
-  };
+  const other = { node: kept };
   kept.cache = "mine";
   set = { TAG: "Ok" };
   show("kept", kept, set);
@@ -108,9 +104,7 @@ function main() {
     id: 13,
     cache: undefined,
   };
-  const via = {
-    node: through,
-  };
+  const via = { node: through };
   if (via.node.cache === undefined) {
     via.node.cache = "via";
   }
@@ -137,9 +131,7 @@ function main() {
     id: 15,
     cache: undefined,
   };
-  const pointed = {
-    node: raw,
-  };
+  const pointed = { node: raw };
   const pointer = $ptrTo(pointed);
   fill(pointer.value.node);
   const unset$4 = raw.cache === undefined;
@@ -169,9 +161,7 @@ function main() {
     id: 7,
     cache: undefined,
   };
-  let _guard = {
-    node: guarded,
-  };
+  let _guard = { node: guarded };
   if (_guard.node.cache === undefined) {
     _guard.node.cache = "dropped";
   }
@@ -185,9 +175,7 @@ function main() {
     id: 8,
     cache: undefined,
   };
-  _guard = {
-    node: broken,
-  };
+  _guard = { node: broken };
   if (_guard.node.cache === undefined) {
     _guard.node.cache = "dropped";
   }

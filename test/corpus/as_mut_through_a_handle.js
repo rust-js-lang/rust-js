@@ -8,9 +8,7 @@ export function entry() {
 
 const Node = {
   leaf(value) {
-    return {
-      value,
-    };
+    return { value };
   },
 
   childMut(node, left) {

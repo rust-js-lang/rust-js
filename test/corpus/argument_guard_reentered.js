@@ -17,9 +17,7 @@ function prepare(nonce, response) {
 }
 
 export function main() {
-  const response = {
-    nonce: "abc",
-  };
+  const response = { nonce: "abc" };
   console.log(`${measured($borrow($fieldCell(response, "nonce")).value)}`);
   const { value: copied } = $borrow($fieldCell(response, "nonce"));
   console.log(`${prepare(copied, response)}`);

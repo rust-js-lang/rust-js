@@ -11,9 +11,7 @@ function addUpdater(root, fiber) {
 function main() {
   const a = { lanes: 1 };
   const b = { lanes: 1 };
-  const root = {
-    memoizedUpdaters: new Set(),
-  };
+  const root = { memoizedUpdaters: new Set() };
   addUpdater(root, a);
   addUpdater(root, a);
   addUpdater(root, b);

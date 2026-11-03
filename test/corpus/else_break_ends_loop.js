@@ -90,9 +90,7 @@ function node(id, child, sibling) {
 }
 
 function main() {
-  let leaf = {
-    debugStack: "at leaf",
-  };
+  let leaf = { debugStack: "at leaf" };
   const stop = {};
   const middle = {
     debugStack: "at middle",

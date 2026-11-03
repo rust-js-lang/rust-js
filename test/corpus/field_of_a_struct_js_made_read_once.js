@@ -21,9 +21,7 @@ function main() {
   describe(JSON.parse('{"margin":"4px"}'), out);
   describe(JSON.parse('{"padding":"2px"}'), out);
   describe(JSON.parse("{}"), out);
-  const own = {
-    margin: "1px",
-  };
+  const own = { margin: "1px" };
   describe(own, out);
   for (let i = 0; i < out.length; i++) {
     const line = out[i];

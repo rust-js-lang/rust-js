@@ -16,13 +16,9 @@ function lazy(dev) {
     status: 0,
     ioInfo: undefined,
   };
-  const lazy = {
-    payload,
-  };
+  const lazy = { payload };
   if (dev) {
-    const ioInfo = {
-      name: "lazy",
-    };
+    const ioInfo = { name: "lazy" };
     payload.ioInfo = ioInfo;
     lazy.debug = ioInfo;
   }
@@ -36,9 +32,7 @@ function describe(payload) {
 
 // Set again where it may be set already: `Err` gives the value back.
 function rename(payload, name) {
-  const value = {
-    name,
-  };
+  const value = { name };
   const unset = payload.ioInfo === undefined;
   if (unset) {
     payload.ioInfo = value;

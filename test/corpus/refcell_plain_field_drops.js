@@ -17,9 +17,7 @@ function fill(slot, name) {
 }
 
 function main() {
-  const slot = {
-    held: ["a"],
-  };
+  const slot = { held: ["a"] };
   const loud = ["b"];
   try {
     try {
@@ -39,27 +37,14 @@ function main() {
     }
     console.log(`empty ${slot.held == null}`);
     fill(slot, "d");
-    const slots = [
-      {
-        held: ["e"],
-      },
-      {
-        held: undefined,
-      },
-    ];
+    const slots = [{ held: ["e"] }, { held: undefined }];
     console.log(`slots ${slots.length}`);
     for (const item of slots) {
       if (item.held != null) {
         console.log(`drop ${item.held[0]}`);
       }
     }
-    const shared = {
-      value: {
-        held: ["f"],
-      },
-      strong: 1,
-      weak: 0,
-    };
+    const shared = { value: { held: ["f"] }, strong: 1, weak: 0 };
     let other;
     try {
       other = $rcClone(shared);

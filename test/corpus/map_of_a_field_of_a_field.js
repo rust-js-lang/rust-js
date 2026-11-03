@@ -39,9 +39,7 @@ function main() {
       debugChannel: channel(1),
       name: "a",
     },
-    {
-      debugChannel: channel(undefined, 4),
-    },
+    { debugChannel: channel(undefined, 4) },
   ]) {
     const named = options?.name;
     const value = debugOf(options);

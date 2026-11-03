@@ -251,6 +251,22 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
   },
   {
+    name: "one-field-object-across-lines",
+    breaks: "an object of one field whose struct literal rustfmt writes across lines is across lines, `{\\n  highWaterMark: 2048,\\n}`, where a person writes `{highWaterMark: 2048}` (ADR 0835, amended, rd665)",
+    file: "src/to_oxc/expressions.rs",
+    find: "                    && (made.properties.len() > 1 || layout.commented)\n",
+    replace: "                    && (made.properties.len() > 0 || layout.commented)\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
+  },
+  {
+    name: "one-field-object-comment-ignored",
+    breaks: "an object of one field whose literal writes a comment in it is on one line, `{ description: /* why */ \"..\" }`, not across lines as written (ADR 0835, amended, rd665)",
+    file: "src/to_oxc/expressions.rs",
+    find: "                    && (made.properties.len() > 1 || layout.commented)\n",
+    replace: "                    && made.properties.len() > 1\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
+  },
+  {
     name: "assigned-value-alone",
     breaks: "a loop's test's `(step = iterator.next())` sets another variable, `unset`, its `step` never set (ADR 0860)",
     file: "src/to_oxc/expressions.rs",

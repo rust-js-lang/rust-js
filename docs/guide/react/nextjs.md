@@ -360,9 +360,7 @@ const geist = Geist({
 });
 
 export function generateMetadata() {
-  return {
-    title: "My site",
-  };
+  return { title: "My site" };
 }
 
 function RootLayout({ children }) {
@@ -453,9 +451,7 @@ export function proxy(request) {
   return NextResponse.rewrite(about);
 }
 
-export const config = {
-  matcher: "/old",
-};
+export const config = { matcher: "/old" };
 ```
 
 A `static` keeps its Rust name, as a constant does ([ADR 0579](../../decisions/0579-a-thread-local-is-named-as-a-variable.md)), so one
@@ -527,21 +523,11 @@ function Post({ title }) {
 }
 
 export async function getStaticProps({ params }) {
-  return params != null
-    ? {
-        props: { title: params.slug },
-      }
-    : {
-        notFound: true,
-      };
+  return params != null ? { props: { title: params.slug } } : { notFound: true };
 }
 
 export async function getStaticPaths(_) {
-  const path = (slug) => ({
-    params: {
-      slug,
-    },
-  });
+  const path = (slug) => ({ params: { slug } });
   return {
     paths: [path("hello"), path("world")],
     fallback: "blocking",

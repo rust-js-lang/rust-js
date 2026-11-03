@@ -23,9 +23,7 @@ function finish(transition) {
 function main() {
   const a = { lanes: 1 };
   const b = { lanes: 1 };
-  const transition = {
-    updatedFibers: new Set(),
-  };
+  const transition = { updatedFibers: new Set() };
   update(transition, a);
   update(transition, a);
   update(transition, b);

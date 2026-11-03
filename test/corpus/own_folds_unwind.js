@@ -314,9 +314,7 @@ function main() {
     }
   });
   run("inspect fold", () => {
-    const w = {
-      items: [[4], [5], [6]],
-    };
+    const w = { items: [[4], [5], [6]] };
     function inspect(d) {
       if (d[0] === 5) {
         throw new Error("5");
@@ -364,9 +362,7 @@ function main() {
     }
   });
   run("owned map fold", () => {
-    const owned = {
-      items: [[7], [8], [9]],
-    };
+    const owned = { items: [[7], [8], [9]] };
     const x = $foldDropping(
       $closing(
         $iterator(

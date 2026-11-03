@@ -155,18 +155,14 @@ export function updateLent(state, gesture, clear) {
 
 function main() {
   const none = {};
-  const some = {
-    clones: [1, 2],
-  };
+  const some = { clones: [1, 2] };
   for (const state of [none, some]) {
     for (const gesture of [true, false]) {
       const value = update(state, gesture);
       console.log(`(${value[0]}, ${value[1]}, ${value[2]})`);
       const value$1 = updateMatched(state, gesture);
       console.log(`(${value$1[0]}, ${value$1[1]})`);
-      const fiber = {
-        memoized: [4, 5],
-      };
+      const fiber = { memoized: [4, 5] };
       console.log(
         `${updateCleared(state, fiber, gesture)} ${updateCleared(state, fiber, gesture)}`,
       );

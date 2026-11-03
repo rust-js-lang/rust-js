@@ -30,9 +30,7 @@ function bump(holder) {
 }
 
 function main() {
-  const holder$1 = {
-    item: { TAG: "Count", _0: 1 },
-  };
+  const holder$1 = { item: { TAG: "Count", _0: 1 } };
   const first = {
     ...holder$1,
     item: $withBorrow($fieldCell(holder$1, "item"), (value) => itemClone_clone(value)),

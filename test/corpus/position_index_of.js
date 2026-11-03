@@ -106,9 +106,7 @@ function removeAfterPop(xs, x) {
 }
 
 function main() {
-  const parent = {
-    children: [],
-  };
+  const parent = { children: [] };
   const a = { name: "a" };
   const b = { name: "b" };
   const c = { name: "c" };

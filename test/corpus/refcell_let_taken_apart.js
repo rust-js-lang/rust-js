@@ -10,9 +10,7 @@ const DEV = true;
 
 function transition(types) {
   types = types.length !== 0 ? types.slice() : undefined;
-  return {
-    types,
-  };
+  return { types };
 }
 
 function finish(prev, current) {
@@ -125,12 +123,8 @@ function main() {
   console.log(`read first ${readFirst(transition(["x", "y"]))} ${readFirst(transition([]))}`);
   console.log(`counted ${counted(outer)} ${counted(transition([]))}`);
   console.log(`unset ${unset(outer)} ${unset(transition([]))}`);
-  const named = {
-    autoName: "a",
-  };
-  const unnamed = {
-    autoName: undefined,
-  };
+  const named = { autoName: "a" };
+  const unnamed = { autoName: undefined };
   console.log(`own ${own(named)} ${own(unnamed)}`);
   const seen = [];
   console.log(`own twice ${ownTwice(named, seen)} ${ownTwice(unnamed, seen)}`);

@@ -16,9 +16,7 @@ function run(touch) {
 }
 
 function main() {
-  const holder = {
-    cell: [1],
-  };
+  const holder = { cell: [1] };
   console.log(`${run({ value: holder, impl: holderTouch })}`);
   const held = $borrowMut(holder.cell, true);
   try {

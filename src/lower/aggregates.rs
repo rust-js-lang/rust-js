@@ -37,15 +37,21 @@ pub(super) enum Given {
 /// written, which its object is written as (ADR 0835): across lines where
 /// its `{` ends a line, as rustfmt writes one too long for a line, and as
 /// Prettier tells an object a person wrote across lines. On one line
-/// otherwise, and of a macro's or a desugaring's, a range's, `a..b`.
+/// otherwise, and of a macro's or a desugaring's, a range's, `a..b`. And
+/// whether it writes a comment inside, which keeps an object of one field
+/// across lines where it is (ADR 0835, amended).
 fn literal_layout(tcx: ty::TyCtxt<'_>, span: Span) -> js::ObjectLayout {
     let code = match span.from_expansion() {
         true => String::new(),
         false => tcx.sess.source_map().span_to_snippet(span).unwrap_or_default(),
     };
     let after = code.find('{').map_or("", |brace| &code[brace + 1..]);
+    let commented = rustc_lexer::tokenize(after, rustc_lexer::FrontmatterAllowed::No).any(|t| {
+        matches!(t.kind, rustc_lexer::TokenKind::LineComment { .. } | rustc_lexer::TokenKind::BlockComment { .. })
+    });
     js::ObjectLayout {
         lines: after[..after.len() - after.trim_start().len()].contains('\n'),
+        commented,
         ..Default::default()
     }
 }

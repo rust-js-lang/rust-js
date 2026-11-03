@@ -17,9 +17,7 @@ function record(root, f) {
 }
 
 function main() {
-  const root = {
-    log: [],
-  };
+  const root = { log: [] };
   const counted = (root) => $borrow(root.log).length;
   const constant = () => 7;
   record(root, constant);

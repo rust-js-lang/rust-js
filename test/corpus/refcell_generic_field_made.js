@@ -7,9 +7,7 @@ export function entry() {
 }
 
 export function cursor(value) {
-  return {
-    current: value,
-  };
+  return { current: value };
 }
 
 function total(log) {

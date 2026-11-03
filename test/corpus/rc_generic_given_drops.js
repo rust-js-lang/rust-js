@@ -11,13 +11,7 @@ function loudDrop_drop(loud) {
 }
 
 function keep(value) {
-  return {
-    value: {
-      value,
-    },
-    strong: 1,
-    weak: 0,
-  };
+  return { value: { value }, strong: 1, weak: 0 };
 }
 
 function shared(slot) {

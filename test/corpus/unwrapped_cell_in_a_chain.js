@@ -23,9 +23,7 @@ function main() {
     kind: "stylesheet",
     state: { loading: 1 },
   };
-  const script = {
-    kind: "script",
-  };
+  const script = { kind: "script" };
   console.log(`${maySuspend(sheet)} ${maySuspend(script)}`);
   console.log(`${inserted(sheet)} ${maySuspend(sheet)}`);
 }

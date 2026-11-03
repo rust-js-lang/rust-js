@@ -39,9 +39,7 @@ function notNext(blob) {
 
 function main() {
   const blobs = [
-    {
-      type: "",
-    },
+    { type: "" },
     {
       type: "text/plain",
       name: "a.txt",

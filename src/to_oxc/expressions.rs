@@ -139,8 +139,13 @@ impl<'a> Cx<'a> {
             ExprKind::Object(props, layout) => {
                 let props = props.iter().map(|prop| self.property(prop, layout));
                 let object = Expression::new_object_expression(sp, ArenaVec::from_iter_in(props, b), b);
-                // Across lines as its source is, which the formatter's told.
-                if let (true, Expression::ObjectExpression(made)) = (layout.lines, &object) {
+                // Across lines as its source is, which the formatter's told:
+                // of two fields or more, or one its literal writes a comment
+                // in; one of one field is on one line where it fits, as a
+                // person writes it (ADR 0835, amended, the user's decision).
+                if let (true, Expression::ObjectExpression(made)) = (layout.lines, &object)
+                    && (made.properties.len() > 1 || layout.commented)
+                {
                     self.across_lines.borrow_mut().insert(&**made as *const _);
                 }
                 object

@@ -1,6 +1,8 @@
 # 0835. An object is across lines where its struct literal is
 
-Status: Accepted. Extends [0444](0444-a-comment-is-where-its-code-is.md),
+Status: Accepted; amended below: an object of one field is on one line
+where it fits, unless its literal writes a comment in it (rd665, the
+user's decision). Extends [0444](0444-a-comment-is-where-its-code-is.md),
 whose comments and blank lines are where the source has them, and
 [0381](0381-the-apps-prettier-lays-it-out.md), whose Prettier lays out
 what rust-js writes. Changes [0065](0065-format-with-oxfmt.md)'s layout of
@@ -98,3 +100,48 @@ either way.
   `const-object-layout-ignored`, `object-layout-of-a-tuple-variant`,
   `object-of-one-field-not-broken`, `objects-kept-as-printed` and
   `objects-across-lines-untold` prove them.
+
+## Amendment: an object of one field is on one line where it fits (rd665, the user's decision)
+
+The user's decision (2026-11-03): **an object of one field is on one line
+where it fits, unless its struct literal writes a comment between its
+braces; an object of two fields or more keeps its literal's layout**, as
+decided above.
+
+rustfmt breaks a literal by its width, past `struct_lit_width`'s 18
+columns, not by what a person chose, and its Rust's names and values are
+longer than the JS's: `Some(QueuingStrategy {\n high_water_mark:
+Some(2048.0),\n })` is across lines, where React's Bun, Edge, Node and
+Static entries write `new ReadableStream({..}, {highWaterMark: 2048})` and
+`{highWaterMark: 0}`. Across the port's JS, of 483 objects across lines
+that match an upstream object of the same fields, upstream writes 321
+across lines, 296 of them of two fields or more; of the 136 of one field,
+upstream writes 111 on one line (`{bubbles: true}`, `{cause: error}`,
+`{subtree: true}`) and 25 across lines (ReactFiberStack's `{current:
+defaultValue}`). Laying out one field on one line matches 407 of the 483,
+where the decision above matched 321; joining every object, which the
+port's first report asked about, 162; and a width rule mirroring
+rustfmt's, a second authority, 385.
+
+ADR 0262's case N: layout only.
+
+- **The lowering says whether the literal writes a comment**:
+  `literal_layout`'s `js::ObjectLayout::commented`, of any line or block
+  comment between its `{` and its `}`, a `const`'s literal's too.
+- **The printer counts the fields**: `to_oxc` names an object across
+  lines to the formatter where its source is and it has two properties or
+  more, a spread among them, `{ ...base, kind }`, or its literal a
+  comment. It counts the JS object's, so a literal of two fields one of
+  which is a `None` left out, `Strategy { high_water_mark: Some(2048.0),
+  size: None }`, is `{ highWaterMark: 2048 }`. One too long for a line is
+  across lines, as the formatter breaks any.
+
+Held by `test/lowering-structs-enums.test.ts`'s "an object is across lines
+where its struct literal is written so" (one field on one line, of a
+`const` too; one with a line comment or a block comment across lines; one
+of a `None` left out on one line), and mutations
+`one-field-object-across-lines`, `one-field-object-comment-ignored`
+(`to_oxc/expressions.ts`) and `literal-comment-unseen` (`aggregates.ts`);
+`object-of-one-field-not-broken` holds the formatter's line break of one
+with a comment. The corpus's, the examples' and the guide's one-field
+objects are on one line now.

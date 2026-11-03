@@ -4,8 +4,6 @@
 
 /** `target.addEventListener(type, f, { signal })`: until `controller` aborts. */
 export function listen(target, type, f, controller) {
-  target.addEventListener(type, f, {
-    signal: controller.signal,
-  });
+  target.addEventListener(type, f, { signal: controller.signal });
 }
 //# sourceMappingURL=listen.js.map

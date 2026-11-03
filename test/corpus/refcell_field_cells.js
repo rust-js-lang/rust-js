@@ -16,17 +16,13 @@ function bump(cell) {
 }
 
 function main() {
-  const counter = {
-    hits: 1,
-  };
+  const counter = { hits: 1 };
   counter.hits = (counter.hits + 1) >>> 0;
   const copy = { ...counter };
   counter.hits = (counter.hits + 1) >>> 0;
   const value = $eq(counter, copy);
   console.log(`${counterDebug_fmt(counter)} ${counterDebug_fmt(copy)} ${value}`);
-  const wrap = {
-    n: 5,
-  };
+  const wrap = { n: 5 };
   wrap.n = (wrap.n + 1) & 65535;
   const lent = $fieldCell(wrap, "n");
   console.log(`${bump(lent)}`);

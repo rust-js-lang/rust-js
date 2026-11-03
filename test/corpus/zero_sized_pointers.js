@@ -23,9 +23,7 @@ const DANGLING = $ptrFrom(1, 1);
 const EMPTY_REF = $ptrSlice(DANGLING, 0);
 
 function main() {
-  const handle = {
-    node: $ptrFrom(1, 0),
-  };
+  const handle = { node: $ptrFrom(1, 0) };
   console.log(`${Node.name(Handle.get(handle))} ${handle.node === null}`);
   handle.node.value = undefined;
 

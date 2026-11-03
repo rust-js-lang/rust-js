@@ -476,9 +476,7 @@ export function thenable(k) {
 }
 
 export function doubler() {
-  return {
-    double: (n) => (n * 2) >>> 0,
-  };
+  return { double: (n) => (n * 2) >>> 0 };
 }
 ```
 

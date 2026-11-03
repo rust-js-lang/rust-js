@@ -7,9 +7,7 @@ export function entry() {
 }
 
 export function createCursor(defaultValue) {
-  return {
-    current: defaultValue,
-  };
+  return { current: defaultValue };
 }
 
 export function push(cursor, value, stack) {
@@ -50,9 +48,7 @@ function main() {
   const value$2 = hiddenLanes();
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`} ${hidden.current == null}`);
 
-  const cursor = {
-    current: null,
-  };
+  const cursor = { current: null };
   const was = cursor.current;
   cursor.current = 3;
   console.log(
@@ -63,13 +59,9 @@ function main() {
     `${cursor.current == null ? "None" : `Some(${cursor.current})`} ${cursor.current == undefined}`,
   );
 
-  const dependency = {
-    memoizedValue: 1,
-  };
+  const dependency = { memoizedValue: 1 };
   dependency.memoizedValue = null;
-  const numbers = {
-    memoizedValue: 2,
-  };
+  const numbers = { memoizedValue: 2 };
   const memoizedValue = dependency.memoizedValue;
   if (memoizedValue != null) {
     const value = memoizedValue;

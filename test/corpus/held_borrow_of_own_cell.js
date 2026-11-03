@@ -28,9 +28,7 @@ function copyInto(from, to) {
   }
 }
 
-const pending = {
-  items: [],
-};
+const pending = { items: [] };
 
 // A thread-local's queue walked while a callback runs, which code rust-js
 // can't see calls, the callback reaching the queue by its key, not by
@@ -56,16 +54,10 @@ function each(watched, f) {
 }
 
 function main() {
-  const first = {
-    items: [1, 2, 3],
-  };
-  const second = {
-    items: [],
-  };
+  const first = { items: [1, 2, 3] };
+  const second = { items: [] };
   drainInto(first, second);
-  const third = {
-    items: [],
-  };
+  const third = { items: [] };
   copyInto(first, third);
   console.log(
     `[${first.items.join(", ")}] [${second.items.join(", ")}] [${third.items.join(", ")}]`,
@@ -96,9 +88,7 @@ function main() {
   });
   console.log(`[${queued.join(", ")}]`);
 
-  const watched = {
-    items: [4, 5],
-  };
+  const watched = { items: [4, 5] };
   const tried = each(watched, (item) => {
     const tryBorrowMut = $tryBorrow(watched.items, true);
     let tryBorrowMut$4$0$live = true;

@@ -19,9 +19,7 @@ function main() {
   const controller = { error, close };
   console.log(`${$displayF64(controller.close(-1.5))}`);
   console.log(`${$displayF64(controller.error(4))}`);
-  const listener = {
-    listen: (x) => Math.abs(x),
-  };
+  const listener = { listen: (x) => Math.abs(x) };
   console.log(`${$displayF64((0, listener.listen)(-2.5))}`);
 }
 //# sourceMappingURL=case.js.map
