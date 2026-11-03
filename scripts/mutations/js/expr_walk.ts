@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "math-call-does",
-    "breaks": "`Math`'s functions count as doing something: a stage of `Math.imul(x, 2)` keeps its chain lazy, and a range's end of `Math.max` is a `{ end }` made first",
+    "breaks": "`Math`'s functions count as doing something: a stage of `Math.imul(x, x)` keeps its chain lazy, and a range's end of `Math.max` is a `{ end }` made first",
     "file": "src/js/expr_walk.rs",
     "find": "                        \"Math\" => name != \"random\",\n",
     "replace": "                        \"Math\" => false,\n",

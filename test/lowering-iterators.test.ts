@@ -540,6 +540,10 @@ pub fn joined(prev: &[u32], more: &[u32]) -> Vec<u32> {
     let messages: Vec<u32> = prev.iter().cloned().chain(new_logs).collect();
     messages
 }
+pub fn squared(prev: &[u32], more: &[u32]) -> Vec<u32> {
+    let squares = more.iter().map(|&x| x * x);
+    prev.iter().cloned().chain(squares).collect()
+}
 pub fn rolled(prev: &[f64], more: &[f64]) -> usize {
     let rolled = more.iter().map(|&x| x + random());
     let all: Vec<f64> = prev.iter().cloned().chain(rolled).collect();
@@ -549,11 +553,14 @@ pub fn rolled(prev: &[f64], more: &[f64]) -> usize {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("  const newLogs = more.filter((x) => x > 1).map((x) => (x * 2) >>> 0);\n");
+  // A stage of `Math`'s other functions, which only compute their value,
+  // `Math.imul`, too.
+  expect(js).toContain("  const squares = more.map((x) => Math.imul(x, x) >>> 0);\n");
   // Not of `Math.random()`, which does something: lazy, the array's own
   // iterator.
   expect(js).toContain("  const rolled = more.values().map((x) => x + Math.random());\n");
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.joined([1], [1, 2, 3]), lib.rolled([1], [2])]).toEqual([[1, 4, 6], 2]);
+  expect([lib.joined([1], [1, 2, 3]), lib.squared([1], [2, 3]), lib.rolled([1], [2])]).toEqual([[1, 4, 6], [1, 4, 9], 2]);
 });
 
 // A consumer that stops early, `position`, `any`, `find`, `all`, of an
