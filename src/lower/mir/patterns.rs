@@ -48,7 +48,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // read the place apart, its own copy where it's made, `const p =
         // x.bound; const p$1 = x.bound;`, where the program wrote one
         // variable, which they close over (rd640).
-        let captured = captured_by_closures(body);
+        let captured = super::queries::captured_by_closures(body);
         (body.var_debug_info.iter())
             .filter_map(|info| match info.value {
                 mir::VarDebugInfoContents::Place(place)
@@ -1470,33 +1470,4 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             cases: mir.cases.clone(),
         })
     }
-}
-
-/// The locals `body`'s closures take by value where they're made,
-/// `{closure}(copy _5)`.
-fn captured_by_closures(body: &mir::Body<'_>) -> std::collections::HashSet<Local> {
-    (body.basic_blocks.iter())
-        .flat_map(|block| &block.statements)
-        .filter_map(|stmt| match &stmt.kind {
-            mir::StatementKind::Assign(assign) => match &assign.1 {
-                mir::Rvalue::Aggregate(kind, operands)
-                    if matches!(
-                        **kind,
-                        mir::AggregateKind::Closure(..)
-                            | mir::AggregateKind::Coroutine(..)
-                            | mir::AggregateKind::CoroutineClosure(..)
-                    ) =>
-                {
-                    Some(operands)
-                }
-                _ => None,
-            },
-            _ => None,
-        })
-        .flatten()
-        .filter_map(|operand| match operand {
-            Operand::Copy(place) | Operand::Move(place) => place.as_local(),
-            _ => None,
-        })
-        .collect()
 }
