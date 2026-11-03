@@ -368,6 +368,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.extend(self.mir_branch(state, block, *real_target)?)
             }
             TerminatorKind::Return => {
+                // Whether what it returns is `null` or a value (rd632).
+                self.note_nulled_returns(state);
                 let ret = mir::RETURN_PLACE;
                 let value = match (&state.writer, state.locals.names[ret].is_empty()) {
                     // A closure's that writes its maker's string, nothing.

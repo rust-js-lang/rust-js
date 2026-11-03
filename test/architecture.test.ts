@@ -513,6 +513,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/jsx_props.rs": ["body"],
   "src/lower/mir/locals.rs": ["body", "locals"],
   "src/lower/mir/nested_options.rs": ["body"],
+  "src/lower/mir/nulled.rs": ["at", "body", "locals", "writer"],
   "src/lower/mir/operands.rs": ["body", "locals", "pending", "taken"],
   "src/lower/mir/patterns.rs": ["in_place", "locals"],
   "src/lower/mir/places.rs": ["binding_var", "body", "branches", "cuts", "defaults", "deferred", "in_place", "locals", "named"],

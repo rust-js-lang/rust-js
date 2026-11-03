@@ -1057,8 +1057,13 @@ export function ratio(a, b) {
   `js::null()` set only to a place just tested `is_some()`, as React DOM's
   createRoot's `transitionCallbacks` is; a nullable parameter of the
   caller's own given on is one only where it is so itself, each passing
-  on followed, rd624) and nothing uses the
-  function but to call it, its body tests it `!== null`, `if
+  on followed, rd624; a call of the crate's function whose every return
+  is so, React DOM's `getEventTarget`'s `target.parentNode` or
+  `target`; a variable each of whose writes is so, `if profiling {
+  reason() } else { js::null() }`; a shared `as_deref()` of such, rd632)
+  and nothing uses the function but to call it, or to `function::bind`
+  each of its parameters, `completeRoot.bind(null, root, ..)`, its body
+  tests it `!== null`, `if
   (moduleLoading !== null)`; one call that gives what may be `undefined`,
   or a use of the function as a value, and it's `!= null`. Another crate's
   call of such a function gives `?? null` where what it gives may be

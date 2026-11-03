@@ -435,3 +435,69 @@ behavior: a `None` JS leaves out is `None`.
   function called from Node with its arguments left out), and the
   mutations `given-on-taken-as-nulled` (`lower/analysis/nulled_params.ts`)
   and `given-on-param-unsaid` (`lower/mir/rvalues.ts`).
+
+## Amendment: a function's every return, a bind, a variable's every write and an `as_deref()` (2026-11-03, rd632)
+
+Five tests in React's port were `!= null` where upstream has `!== null`,
+each of a parameter whose chain of calls is followed to a source that
+`stored_given` couldn't say is `null` or a value. Each is followed now.
+Each is also exactly as sound as its source: JS gives such a parameter
+only `null` or a value.
+
+**A function of the crate's whose every return is `null` or a value
+gives so** (`NulledParams::returns_nulled`). React DOM's `getEventTarget`
+returns `node.parent_node().map(|p| &**p)`, a nullable binding's result
+mapped to itself, or `Some(target)`. ScrollEndEventPlugin's
+`nativeEventTarget` is given its call. Lowering a function's body says
+whether each write of its result is so (`mir/nulled.rs`'s
+`note_nulled_returns`). It must be a whole assignment or a call's
+result, never lent as a `&mut` nor a variant set, and each must be
+`stored_given`'s `Nulled` of no parameter. A function that returns its
+own nullable parameter isn't counted: a call of the crate's may give
+that parameter `undefined`. A copy of the function, an `async` one, a
+writer, a binding, a trait's method, and one already
+`#[rust_js::nullable]` (`may_return_nulled`) are skipped. A call of such
+a function is `Nulled` wherever `stored_given` asks. A body that asked
+before the function was found is lowered again (`again`) before any
+parameter is found. What it saw of calls is seen anew: `NulledCalls`
+keeps each record by the item whose lowering saw it. What's found only
+grows, so each lowering again only finds more.
+
+**A `function::bind` of a function with each of its parameters bound is
+a call of it, given what's bound**: React's
+`scheduleTimeout(completeRoot.bind(null, root, .., suspendedCommitReason))`.
+Before, the function was used as a value (`as_values`), so none of its
+parameters was ever found. `scan` (`bound_all`) counts the bind as the
+function's call site where the tuple has as many items as the function
+has parameters. A bind of some parameters leaves the rest to whatever
+calls it, and it's still a use as a value. Lowering records what each
+item of the tuple made at the bind gives (`record_bound`).
+
+**A variable written more than once is `null` or a value where every
+write is**, each whole, nothing lending it as a `&mut`: `if profiling {
+suspended_reason() } else { js::null() }`'s temporary. A variable written
+once is as before. One write of a `None` it makes, `undefined`, and it
+isn't so.
+
+**A shared `as_ref()` or `as_deref()` of such is so**, the option itself
+in JS (Std::Pointee, ADR 0023): commitPlacement's
+`parentFragmentInstances.as_deref()` of `getParentFragmentInstances`'s
+nullable result. An `as_mut()` isn't counted, as its items may be boxed.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior: a test `=== null` only of what's never `undefined`.
+
+Held by corpus `nulled_returns_given_on` (each source and each loose
+kind, against native Rust), and by `test/lowering-nullable-reads.test.ts`'s
+"a function whose every return is null or a value returns null or a
+value" (`run` is lowered before `event_target`, so it's lowered again)
+and "a bind of each parameter is a call of the function" (a bind of all,
+of some, and of what JS gave). Mutations `returns-nulled-unfound`,
+`returns-nulled-unasked`, `returns-own-param-nulled`,
+`writes-nulled-any`, `writes-nulled-unfollowed`, `as-deref-unfollowed`,
+`bound-tuple-unnulled` and `bound-call-unrecorded`
+(`lower/mir/nulled.ts`), and `returns-askers-never-again`,
+`returns-askers-calls-kept`, `bind-a-value-use` and
+`bind-of-some-parameters-a-call` (`lower/analysis/nulled_params.ts`).
+`stored_from` and what it asks moved from `mir/rvalues.rs` to
+`mir/nulled.rs`, along with their mutations.

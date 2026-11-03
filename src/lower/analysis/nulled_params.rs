@@ -9,6 +9,13 @@
 //! it. Another crate's call of one gives `?? null` where what it gives may
 //! be `undefined`, as its contract says (`Calling::nulled_params`); its use
 //! as a value is refused.
+//! A `function::bind` of one with each of its parameters bound is a call of
+//! it, given what's bound (rd632).
+//! And which of the crate's functions return `null` or a value at each of
+//! their returns, never `undefined` (`returns_nulled`, rd632): React DOM's
+//! `getEventTarget`, `target.parentNode` or `target`, which a call gives
+//! such a parameter as it is. Lowering finds it, and a body lowered
+//! before it was found that asked is lowered again (`again`).
 
 use crate::lower::Body;
 use crate::lower::refusal::{Refused, refuse};
@@ -33,18 +40,32 @@ pub(in crate::lower) struct NulledParams {
     seen: RefCell<NulledCalls>,
     /// The parameters found so, once every body's calls are seen (`again`).
     nulled: RefCell<HashSet<(DefId, usize)>>,
+    /// The functions found to return `null` or a value (`returns_nulled`).
+    returns: RefCell<Returns>,
 }
 
 /// What lowering saw of the calls of the crate's functions with nullable
-/// parameters: each call lowered, by the function calling and its block,
-/// and each parameter one gave what may be `undefined`.
+/// parameters, each by the item whose lowering saw it, which a lowering
+/// again sees anew: each call lowered, by the function calling and its
+/// block, and each parameter one gave what may be `undefined`.
 #[derive(Default)]
 pub(in crate::lower) struct NulledCalls {
-    seen: HashSet<(DefId, BasicBlock)>,
-    unnulled: HashSet<(DefId, usize)>,
+    seen: HashSet<(DefId, (DefId, BasicBlock))>,
+    unnulled: HashSet<(DefId, (DefId, usize))>,
     /// Each parameter a call gave the caller's own nullable parameter, by
     /// index, which is `null` or a value only where that one is (rd624).
-    given_on: HashSet<((DefId, usize), (DefId, usize))>,
+    given_on: HashSet<(DefId, (Param, Param))>,
+}
+
+/// A function's parameter, by index, its `self` first.
+type Param = (DefId, usize);
+
+/// The crate's functions lowering found return `null` or a value, and, of
+/// each it hasn't, the items whose lowering asked.
+#[derive(Default)]
+struct Returns {
+    found: HashSet<DefId>,
+    asked: HashMap<DefId, HashSet<DefId>>,
 }
 
 impl NulledParams {
@@ -65,6 +86,7 @@ impl NulledParams {
             }
         }
         let mut found = Found {
+            tcx,
             candidates: &candidates,
             foreign,
             caller: None,
@@ -102,34 +124,57 @@ impl NulledParams {
             as_values,
             seen: Default::default(),
             nulled: Default::default(),
+            returns: Default::default(),
         }
     }
 
     /// The call of `callee`, one that `may_have` such a parameter, in
-    /// `caller`'s block `at`, giving each parameter what's `null` or a value
-    /// where `nulled` says so.
+    /// `caller`'s block `at`, which lowering `item` saw, giving each
+    /// parameter what's `null` or a value where `nulled` says so.
     /// A parameter given the caller's own nullable one, `given_on`'s index,
     /// is so only where that one is, which `nulled` tells once every call
     /// is seen (rd624); of a caller that may have none, a closure's, as
     /// declared.
     pub(in crate::lower) fn record(
         &self,
-        (caller, at): (DefId, BasicBlock),
+        (item, (caller, at)): (DefId, (DefId, BasicBlock)),
         callee: DefId,
         nulled: &[bool],
         given_on: &[Option<usize>],
     ) {
         let mut seen = self.seen.borrow_mut();
-        seen.seen.insert((caller, at));
+        seen.seen.insert((item, (caller, at)));
         for (i, &nulled) in nulled.iter().enumerate() {
             if !nulled {
-                seen.unnulled.insert((callee, i));
+                seen.unnulled.insert((item, (callee, i)));
             } else if let Some(&Some(param)) = given_on.get(i)
                 && self.candidates.contains_key(&caller)
             {
-                seen.given_on.insert(((callee, i), (caller, param)));
+                seen.given_on.insert((item, ((callee, i), (caller, param))));
             }
         }
+    }
+
+    /// Whether `callee`'s every return is found `null` or a value, never
+    /// `undefined`, as its lowering found (`returned_nulled`); as lowering
+    /// `item` asks, which is lowered again once it's found, where it wasn't
+    /// yet.
+    pub(in crate::lower) fn returns_nulled(&self, item: DefId, callee: DefId) -> bool {
+        let mut returns = self.returns.borrow_mut();
+        if returns.found.contains(&callee) {
+            return true;
+        }
+        returns.asked.entry(callee).or_default().insert(item);
+        false
+    }
+
+    /// That `id`'s every return is `null` or a value, as its own lowering
+    /// found: what's assigned its result each a `Some(..)`, a nullable
+    /// field's read, a call of what gives `null` for `None` (`stored_given`).
+    /// What its lowering again finds is found once, as what it's found of
+    /// only grows.
+    pub(in crate::lower) fn returned_nulled(&self, id: DefId) {
+        self.returns.borrow_mut().found.insert(id);
     }
 
     /// Whether `id`'s parameter `index` is found so: its body tests it
@@ -144,7 +189,34 @@ impl NulledParams {
     /// whether any is, none once each is. What each call gives doesn't
     /// change with it: a nullable parameter given on is said of the one it's
     /// given (`record`'s `given_on`), whichever it is.
+    /// First, each item that asked whether a function returns `null` or a
+    /// value before it was found to, queued again, what it saw of calls
+    /// forgotten to be seen anew; the parameters are found only once none
+    /// is (rd632).
     pub(in crate::lower) fn again<W: Clone>(&self, work: &mut Vec<W>, id: impl Fn(&W) -> DefId) -> bool {
+        let askers: HashSet<DefId> = {
+            let mut returns = self.returns.borrow_mut();
+            let Returns { found, asked } = &mut *returns;
+            let newly: Vec<DefId> = asked.keys().filter(|callee| found.contains(callee)).copied().collect();
+            newly
+                .iter()
+                .flat_map(|callee| asked.remove(callee).unwrap_or_default())
+                .collect()
+        };
+        if !askers.is_empty() {
+            let mut seen = self.seen.borrow_mut();
+            seen.seen.retain(|(item, _)| !askers.contains(item));
+            seen.unnulled.retain(|(item, _)| !askers.contains(item));
+            seen.given_on.retain(|(item, _)| !askers.contains(item));
+            drop(seen);
+            let asked: Vec<W> = work
+                .iter()
+                .filter(|&item| askers.contains(&id(item)))
+                .cloned()
+                .collect();
+            work.extend(asked);
+            return true;
+        }
         let found = self.nulled(&self.seen.borrow());
         let mut nulled = self.nulled.borrow_mut();
         let again: HashSet<DefId> = (found.iter().map(|&(id, _)| id))
@@ -172,23 +244,25 @@ impl NulledParams {
     /// call: each call of the function lowered, as `calls` says, each
     /// giving it so, and the function never used but to be called.
     fn nulled(&self, calls: &NulledCalls) -> HashSet<(DefId, usize)> {
+        let seen: HashSet<(DefId, BasicBlock)> = calls.seen.iter().map(|&(_, site)| site).collect();
+        let unnulled: HashSet<(DefId, usize)> = calls.unnulled.iter().map(|&(_, key)| key).collect();
         let all_seen = |id: DefId| {
             (self.calls.iter())
                 .filter(|&(_, &callee)| callee == id)
-                .all(|(site, _)| calls.seen.contains(site))
+                .all(|(site, _)| seen.contains(site))
         };
         let mut nulled: HashSet<(DefId, usize)> = (self.candidates.iter())
             .filter(|&(&id, _)| !self.as_values.contains(&id) && all_seen(id))
             .flat_map(|(&id, params)| params.iter().map(move |&i| (id, i)))
-            .filter(|key| !calls.unnulled.contains(key))
+            .filter(|key| !unnulled.contains(key))
             .collect();
         // What's given another's own parameter on is so only where that one
         // is, each passing on followed to its end: the parameters left once
         // none given one that isn't so remains (rd624).
         loop {
             let loose: Vec<(DefId, usize)> = (calls.given_on.iter())
-                .filter(|(given, of)| nulled.contains(given) && !nulled.contains(of))
-                .map(|&(given, _)| given)
+                .filter(|(_, (given, of))| nulled.contains(given) && !nulled.contains(of))
+                .map(|&(_, (given, _))| given)
                 .collect();
             if loose.is_empty() {
                 break nulled;
@@ -224,8 +298,27 @@ fn candidate(tcx: TyCtxt<'_>, id: DefId) -> Option<Vec<usize>> {
     (!params.is_empty()).then_some(params)
 }
 
+/// Whether `id` is a function of the crate's whose returns lowering may
+/// find each `null` or a value (`NulledParams::returns_nulled`): one only
+/// its crate's calls and JS call by name, as `candidate`'s, whose result
+/// is an `Option` not `#[rust_js::nullable]`, which says so already.
+pub(in crate::lower) fn may_return_nulled(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    let callable = match tcx.def_kind(id) {
+        DefKind::Fn => true,
+        DefKind::AssocFn => tcx.trait_of_assoc(id).is_none() && tcx.trait_impl_of_assoc(id).is_none(),
+        _ => false,
+    };
+    callable
+        && id.is_local()
+        && !crate::lower::bindings::is_binding(tcx, id)
+        && !crate::lower::bindings::nullable_result(tcx, id)
+        && matches!(tcx.fn_sig(id).skip_binder().skip_binder().output().kind(),
+            ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option))
+}
+
 /// What `scan` finds walking MIR.
-struct Found<'f> {
+struct Found<'f, 'tcx> {
+    tcx: TyCtxt<'tcx>,
     candidates: &'f HashMap<DefId, Vec<usize>>,
     foreign: &'f dyn Fn(DefId) -> bool,
     caller: Option<DefId>,
@@ -234,8 +327,24 @@ struct Found<'f> {
     refused: Vec<rustc_span::Span>,
 }
 
-impl<'tcx> Visitor<'tcx> for Found<'_> {
+impl<'tcx> Visitor<'tcx> for Found<'_, 'tcx> {
     fn visit_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: mir::Location) {
+        // A `function::bind` of one with each of its parameters bound, its
+        // tuple's items, is a call of it, given those (rd632): what calls
+        // the function it makes gives it nothing else.
+        if let mir::TerminatorKind::Call { func, args, .. } = &terminator.kind
+            && let Some((bind, generic_args)) = func.const_fn_def()
+            && crate::lower::recognition::is_function_bind(self.tcx, bind)
+            && let Some(id) = bound_all(self.tcx, generic_args)
+            && self.candidates.contains_key(&id)
+            && let Some(caller) = self.caller
+        {
+            self.calls.insert((caller, location.block), id);
+            for arg in args.iter().skip(1) {
+                self.visit_operand(&arg.node, location);
+            }
+            return;
+        }
         // A call's function is called, not used: what it's given is.
         if let mir::TerminatorKind::Call { func, args, .. } = &terminator.kind
             && let Some((id, _)) = func.const_fn_def()
@@ -263,4 +372,18 @@ impl<'tcx> Visitor<'tcx> for Found<'_> {
             self.refused.push(constant.span);
         }
     }
+}
+
+/// The function a `function::bind` of `generic_args` binds each parameter
+/// of, its tuple as many as it has: `bind(complete_root, None, (root,
+/// lanes))` of `complete_root(root, lanes)`.
+pub(in crate::lower) fn bound_all<'tcx>(tcx: TyCtxt<'tcx>, generic_args: ty::GenericArgsRef<'tcx>) -> Option<DefId> {
+    let mut types = generic_args.types();
+    let ty::FnDef(id, _) = *types.next()?.kind() else {
+        return None;
+    };
+    let ty::Tuple(items) = types.nth(1)?.kind() else {
+        return None;
+    };
+    (items.len() == tcx.fn_sig(id).skip_binder().skip_binder().inputs().len()).then_some(id)
 }

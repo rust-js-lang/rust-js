@@ -690,3 +690,98 @@ test("a nullable parameter given on what JS may leave out is tested against unde
   expect([lib.updateContainer(1), lib.updateContainer(1, undefined, (n: number) => seen.push(n)), lib.updateContainer(1, { context: 10 })]).toEqual([1, 1, 11]);
   expect(seen).toEqual([1]);
 });
+
+// rd632 (ADR 0861, amended): a function of the crate's whose every return
+// is `null` or a value, React DOM's `getEventTarget`, gives a nullable
+// parameter so, which its body then tests `!== null`, as upstream's
+// ScrollEndEventPlugin does; so does a temporary each of whose writes is
+// so, and a shared `as_deref()` of such. One that may return a `None` it
+// makes or its own nullable parameter, given what JS may leave
+// `undefined`, keeps `!= null`. `event_target` comes after `run`, so `run`
+// is lowered again once it's found.
+test("a function whose every return is null or a value returns null or a value", async () => {
+  const dir = fixture("nulled-returns");
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(import.meta.dir, "corpus/nulled_returns_given_on.rs"), "utf8"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("function eventTarget(node) {\n  return node.text ? parentOf(node) : node;\n}");
+  expect(js).toContain("function dispatch(target) {\n  return target !== null ? target.id : 0;\n}");
+  expect(js).toContain("function dispatchLoose(target) {\n  return target != null ? target.id : 0;\n}");
+  expect(js).toContain("function dispatchGivenBack(target) {\n  return target != null ? target.id : 0;\n}");
+  expect(js).toContain("function commit(reason) {\n  return reason !== null ?");
+  expect(js).toContain("function commitLoose(reason) {\n  return reason != null ?");
+  expect(js).toContain("function commitReassigned(reason) {\n  return reason != null ?");
+  expect(js).toContain("function placed(instances) {\n  if (instances === null) {");
+  const lib = await import(join(dir, "lib.js"));
+  // A node JS made leaves out its `parent`, which `parent_of` gives `null`.
+  expect(lib.run({ id: 5, text: true }, true)).toEqual([0, 0, 0, 9, 9, 0]);
+  expect(lib.run({ id: 1, text: true, parent: { id: 2, text: false } }, false)).toEqual([2, 0, 0, 0, 0, 2]);
+  expect([lib.reassigned(undefined, false), lib.reassigned(undefined, true)]).toEqual([0, 3]);
+});
+
+// rd632: a `function::bind` of the crate's function with each of its
+// parameters bound is a call of it, given what's bound, React's
+// `scheduleTimeout(commitRoot.bind(null, root, .., suspendedCommitReason))`:
+// its nullable parameter is tested `!== null`. A bind of some of them
+// leaves the rest to whatever calls it, and one bound what JS gave may be
+// `undefined`: `!= null`.
+test("a bind of each parameter is a call of the function", async () => {
+  const dir = fixture("nulled-param-bound");
+  writeFileSync(join(dir, "lib.rs"), `use std::rc::Rc;
+
+#[cfg_attr(rust_js, rust_js::nullable(reason))]
+fn complete(root: u32, reason: Option<&str>) -> u32 {
+    match reason {
+        Some(reason) => root + reason.len() as u32,
+        None => root,
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(reason))]
+fn partly(root: u32, reason: Option<&str>) -> u32 {
+    match reason {
+        Some(reason) => root + reason.len() as u32,
+        None => root,
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(reason))]
+fn given_on(root: u32, reason: Option<&str>) -> u32 {
+    match reason {
+        Some(reason) => root + reason.len() as u32,
+        None => root,
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+fn reason_of(root: u32) -> Option<&'static str> {
+    if root > 1 { Some("Throttled") } else { None }
+}
+
+pub fn scheduled(root: u32, profiling: bool) -> Rc<dyn Fn() -> u32> {
+    let reason = if profiling { reason_of(root) } else { js::null() };
+    Rc::from(js::function::bind(complete, None, (root, reason)))
+}
+
+pub fn throttled(root: u32) -> Rc<dyn Fn() -> u32> {
+    Rc::from(js::function::bind(complete, None, (root, Some("Throttled"))))
+}
+
+pub fn later(root: u32) -> Rc<dyn Fn(Option<&'static str>) -> u32> {
+    Rc::from(js::function::bind(partly, None, (root,)))
+}
+
+pub fn given(root: u32, reason: Option<&'static str>) -> Rc<dyn Fn() -> u32> {
+    Rc::from(js::function::bind(given_on, None, (root, reason)))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("function complete(root, reason) {\n  return reason !== null ?");
+  expect(js).toContain("function partly(root, reason) {\n  return reason != null ?");
+  expect(js).toContain("function givenOn(root, reason) {\n  return reason != null ?");
+  expect(js).toContain("  return complete.bind(undefined, root, reason);\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.scheduled(3, true)(), lib.scheduled(1, true)(), lib.scheduled(3, false)(), lib.throttled(1)()]).toEqual([12, 1, 3, 10]);
+  expect([lib.later(2)(undefined), lib.later(2)("ab"), lib.given(2, undefined)(), lib.given(2, "ab")()]).toEqual([2, 4, 2, 4]);
+});

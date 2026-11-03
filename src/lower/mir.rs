@@ -29,6 +29,7 @@ mod jsx_props;
 mod local_facts;
 mod locals;
 mod nested_options;
+mod nulled;
 mod offsets;
 mod operands;
 mod patterns;

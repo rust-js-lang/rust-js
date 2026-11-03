@@ -510,10 +510,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A parameter of the caller's own given on is so only where that one
         // is, each of its calls giving it so (rd624).
         if self.krate.nulled_params.may_have(callee.0) {
-            let caller = (state.body.source.def_id(), state.at);
+            let caller = (self.item, (state.body.source.def_id(), state.at));
             let given_on: Vec<Option<usize>> = operands.iter().map(|o| self.given_on_param(state, o)).collect();
             self.krate.nulled_params.record(caller, callee.0, &nulled, &given_on);
         }
+        self.record_bound(state, callee, operands);
         let mut values = self.take_operands(state, operands, out)?;
         // Of another crate's, one its crate's calls each give `null` or a
         // value, which its body tests `!== null`: what may be `undefined`
