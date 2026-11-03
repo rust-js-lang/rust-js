@@ -564,6 +564,15 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "case-own-break-kept",
+    breaks:
+      "a clause that goes on past the `switch` keeps the `break;` MIR ended it with, `default: level = 0; break;`, which JS falls out of anyway; tidy is the one rule of it, the printer's gone (#488, #512)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "                if matches!(body.last().map(|s| &s.kind), Some(StmtKind::Break(None))) {\n",
+    replace: "                if false && matches!(body.last().map(|s| &s.kind), Some(StmtKind::Break(None))) {\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment between an arm.s patterns or in a last _"],
+  },
+  {
     name: "case-ending-written-breaks-dropped",
     breaks:
       "a `break 'get_tag;` the program wrote, ending an `if` with no `else` in a case, goes, so what follows the `if` is its `else` (#488, ADR 0944)",

@@ -251,15 +251,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to its case"],
   },
   {
-    name: "last-clause-tidy-break-kept",
-    breaks: "a `default` after a guarded case that falls through keeps the `break;` tidy ended it with, which JS falls out of anyway",
-    file: "src/to_oxc/statements.rs",
-    find: "            Some((end, before)) if last && matches!(end.kind, StmtKind::Break(None)) => before,\n",
-    replace: "            Some((end, before)) if false && last && matches!(end.kind, StmtKind::Break(None)) => before,\n",
-    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_chains.rs$"],
-    snapshots: true,
-  },
-  {
     name: "param-mapped-nowhere",
     breaks: "a parameter's JS maps nowhere, so a comment before it is lost and its line isn't the Rust's",
     file: "src/to_oxc/statements.rs",
@@ -321,14 +312,6 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/statements.rs",
     find: "                            false => Span::new(next.span.lo, next.span.lo),\n",
     replace: "                            false => SPAN,\n",
-    tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment between an arm"],
-  },
-  {
-    name: "default-comments-after-switch",
-    breaks: "a last `_` of only comments that tidy ends with a `break`, a guarded switch's, prints an empty `default:` and its comments after the `switch`",
-    file: "src/to_oxc/statements.rs",
-    find: "        Some((end, before)) if matches!(end.kind, StmtKind::Break(None)) => before,\n",
-    replace: "",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment between an arm"],
   },
   {

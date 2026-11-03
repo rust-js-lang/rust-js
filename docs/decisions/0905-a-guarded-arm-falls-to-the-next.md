@@ -187,7 +187,7 @@ clause's end does.
 - `test/lowering-switch-ends.test.ts`, "a default after a guarded case
   needs no break", run; `test/corpus/shadow_set_in_cases.rs` beside native
   Rust, its JS without the `break;`.
-- Mutation `last-clause-tidy-break-kept`.
+- Mutation `last-clause-tidy-break-kept` (removed with the printer's rule, #512; tidy's is `case-own-break-kept`).
 
 ## Amendment: a comment before an arm fallen to is before its `// Fallthrough`
 
@@ -731,7 +731,7 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): N. Comments only.
 Held by `test/lowering-comments-jumps.test.ts` ("a comment between an
 arm's patterns or in a last _ of a guarded switch is in its clause"), run,
 and the mutations `pattern-comment-in-body` (`to_oxc/cases.ts`),
-`pattern-case-unplaced` and `default-comments-after-switch`
+`pattern-case-unplaced` and `default-comments-after-switch` (removed, #512)
 (`to_oxc/statements.ts`).
 
 ## Amendment: a comment above an arm of patterns is above its first `case` (rd143, 2026-10-29)
@@ -940,3 +940,26 @@ extractEvents printed `// Fallthrough` where upstream has it. **It's
 writer); a comment the program writes that says it (`says_fallthrough`)
 is kept as written, with none beside it. The corpus's snapshots, the
 lowering tests and the guide's examples say so.
+
+## Amendment: tidy alone leaves out a last clause's `break` (#512)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same JS.
+Two rules said the last clause's `break;` goes: tidy's `breaks past
+switches` pass, which since #488 (ADR 0629, amended) leaves out the
+`break` that ends each clause going on past the `switch`, a `default`
+and a case that doesn't fall through, and each MIR made in the `if` the
+clause ends with; and `to_oxc`'s `case_body` and `commented_clause`,
+which dropped a `break` they were given there. Since #488 none reaches
+the printer: with each of the printer's arms made a panic, the whole of
+`check:fast --all` (corpus, lowering, guide, ports) runs, and the
+Nightly's mutations `last-clause-tidy-break-kept` and
+`default-comments-after-switch` survive. **Tidy's pass is the one rule,
+and the printer's arms are gone**, with those two mutations: what tidy
+leaves in a clause, the printer writes. Held, as before, by
+`lowering-comments-jumps`' "a comment between an arm's patterns or in a
+last _ of a guarded switch is in its clause" and `lowering-switch-fallthrough`' "two
+guarded arms, one falling to the next, one to nothing, are one switch",
+run, the corpus' `guarded_arm_chains` and `switch_guards_apart`, and
+tidy's mutations `case-ending-breaks-kept` and, new, `case-own-break-kept`
+(`mir/tidy/switches.ts`), which they catch now that nothing after tidy
+hides it.

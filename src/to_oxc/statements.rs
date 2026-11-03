@@ -461,14 +461,12 @@ impl<'a> Cx<'a> {
     /// declare, which the cases' one scope would share (ADR 0629).
     /// A case's statements, a `break` last where it goes on to another,
     /// not where it falls through to the next, `falls`, nor in the last
-    /// clause, `last`, which JS falls out of: there, not tidy's either,
-    /// `default: level = 0;` (ADR 0905, amended).
+    /// clause, `last`, which JS falls out of, `default: level = 0;` (ADR
+    /// 0905, amended). Tidy's own `break` ending a clause that goes on past
+    /// the `switch` it leaves out (`switches::breaks_past_switches`, #488),
+    /// the one rule of it (#512).
     fn case_body(&self, body: &[js::Stmt], falls: bool, last: bool) -> ArenaVec<'a, Statement<'a>> {
         let falls_out = falls || last;
-        let body = match body.split_last() {
-            Some((end, before)) if last && matches!(end.kind, StmtKind::Break(None)) => before,
-            _ => body,
-        };
         let mut stmts = self.stmts(body);
         if !falls_out && !body.last().is_some_and(js::ends) {
             // After the case's comments, where they end, so they're before
@@ -953,12 +951,8 @@ fn commented_end(stmts: &[js::Stmt]) -> Span {
 /// before its end, as a block's (ADR 0753, amended). Empty, so nothing is
 /// mapped there.
 fn commented_clause(at: Span, body: &[js::Stmt]) -> Span {
-    // Its `break` left out, as the last clause's is (`case_body`), a guarded
-    // fall-through's `default: // .. break;` too (rd138).
-    let body = match body.split_last() {
-        Some((end, before)) if matches!(end.kind, StmtKind::Break(None)) => before,
-        _ => body,
-    };
+    // No `break` ends it, a guarded fall-through's `default: // ..` (rd138):
+    // tidy leaves out its own (`switches::breaks_past_switches`, #488, #512).
     match body.last() {
         Some(end) if at == SPAN && matches!(end.kind, StmtKind::Comments) && !end.span.is_none() => {
             Span::new(end.span.lo + 1, end.span.lo + 1)
