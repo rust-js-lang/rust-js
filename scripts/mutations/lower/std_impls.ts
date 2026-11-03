@@ -1009,4 +1009,14 @@ export const mutations: Mutation[] = [
     replace: "                            self.held(Expr::member(a.clone(), field.clone()), Some(def).filter(|_| false), t),\n                            self.held(Expr::member(b.clone(), field), Some(def).filter(|_| false), t),\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_variant_derives.rs$"],
   },
+  {
+    name: "cloned-option-held-first",
+    breaks:
+      "an `Option<&T>`'s `cloned()` of a type parameter's, whose clone is itself, is held in a `const` first, `const value = items.at(-1); return value;` (#587)",
+    file: "src/lower/std_impls.rs",
+    find: "                        self.names.remove(held);\n                        out.pop();\n                        return Ok(written);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_option_of_a_type_parameter.rs$"],
+    snapshots: true,
+  },
 ];

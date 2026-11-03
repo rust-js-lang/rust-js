@@ -413,6 +413,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0367 A state's setter is the function it is](0367-state-setter-is-a-function.md)
 - [0368 `util.promisify` of a callback function](0368-promisify.md)
 - [0369 A tuple's parts that act are each held, not an array](0369-tuple-parts-held-each.md)
+- [1080 A value held only to be read twice, read once, is read in place](1080-a-value-held-to-be-read-twice-read-once-is-read-in-place.md) *(#587, #588)*
 - [0370 A loop's exits come first, as a person writes them](0370-loop-exits-first.md)
 - [0371 Tests and names as a person writes them](0371-tests-and-names-as-written.md)
 - [0372 A check whose panic drops is written where it's made](0372-a-check-that-drops.md)

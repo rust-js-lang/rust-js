@@ -268,7 +268,18 @@ pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
             }),
             // `count()`'s, `reduce((n) => n + 1, 0)`: the array's `length`.
             ("reduce", [f, init]) if init.as_int() == Some(0) && counts(f) => {
-                eager_items(chain, true, None).map(|(items, _)| Expr::member(items, "length"))
+                eager_items(chain, true, None).map(|(items, _)| match &items.kind {
+                    // An `Option`'s items, `o == null ? [] : [o]`: how many
+                    // each branch has, `o == null ? 0 : 1` (#588).
+                    js::ExprKind::Cond(test, none, some)
+                        if matches!(&none.kind, js::ExprKind::Array(items) if items.is_empty())
+                            && matches!(&some.kind, js::ExprKind::Array(items)
+                                if matches!(items.as_slice(), [item] if !item.has_effects())) =>
+                    {
+                        Expr::cond((**test).clone(), Expr::int(0), Expr::int(1))
+                    }
+                    _ => Expr::member(items, "length"),
+                })
             }
             // Its start is made before any item is stepped, as Rust's `fold`
             // is given it: one that does something, before no stage that

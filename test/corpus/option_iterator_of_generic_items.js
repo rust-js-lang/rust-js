@@ -21,7 +21,7 @@ function firstTwice(it, IItemClone) {
   const stepped = $iter(option == null ? [] : [$someValue(option)]);
   const one = $nextSome(stepped) != null;
   const rest = stepped.reduce((n) => n + 1, 0);
-  return ((((one ? 1 : 0) + rest) >>> 0) + (first == null ? [] : [$someValue(first)]).length) >>> 0;
+  return ((((one ? 1 : 0) + rest) >>> 0) + (first == null ? 0 : 1)) >>> 0;
 }
 
 function main() {

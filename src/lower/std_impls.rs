@@ -429,6 +429,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => {}
         }
         // Read more than once below.
+        let written = place.clone();
         let place = if !place.reads_same() {
             self.spill("value", place, out)
         } else {
@@ -494,8 +495,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.clone_value(place.clone(), inner, span, out)?
                 };
                 // Of a payload whose clone is itself, the `Option` itself,
-                // not `key == null ? key : key`.
+                // not `key == null ? key : key`; as it's written, not held
+                // first to be read once, `items.at(-1)` (#587).
                 if some == place {
+                    if written != place
+                        && let js::ExprKind::Var(held) = &place.kind
+                        && out
+                            .last()
+                            .is_some_and(|s| matches!(&s.kind, StmtKind::Const(name, _) if name == held))
+                    {
+                        self.names.remove(held);
+                        out.pop();
+                        return Ok(written);
+                    }
                     return Ok(place);
                 }
                 let none = Expr::bin(Op::LooseEq, place.clone(), Expr::null());

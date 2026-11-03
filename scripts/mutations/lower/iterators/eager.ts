@@ -539,4 +539,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^any_of_one_value_is_includes.rs$"],
     snapshots: true,
   },
+  {
+    name: "option-count-of-its-array",
+    breaks:
+      "an `Option`'s `iter().count()` is the length of an array made of it, `(option == null ? [] : [option]).length`, the `Option` held in a `const` and a tuple's elements before it too (#588)",
+    file: "src/lower/iterators/eager.rs",
+    find: "                        Expr::cond((**test).clone(), Expr::int(0), Expr::int(1))\n",
+    replace: "                        Expr::member(items.clone(), \"length\")\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_iter_count_in_a_tuple.rs$"],
+    snapshots: true,
+  },
 ];

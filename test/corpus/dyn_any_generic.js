@@ -16,10 +16,7 @@ function relay(TId) {
 
 function find(items, TId) {
   return items
-    .map((item) => {
-      const value = item.impl.typeId() === TId ? item.value : undefined;
-      return value;
-    })
+    .map((item) => (item.impl.typeId() === TId ? item.value : undefined))
     .filter((item) => item != null);
 }
 
