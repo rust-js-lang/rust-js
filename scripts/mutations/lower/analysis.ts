@@ -310,8 +310,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `const { MaybeUninit::uninit() }` block is a constant of its module, made as code, not `undefined` where it's used",
     file: "src/lower/analysis.rs",
-    find: "                && super::representation::const_value_js(\n",
-    replace: "                && super::eval_const(\n",
+    find: "                && super::representation::const_value_js(\n                    tcx,\n                    &HashSet::new(),\n",
+    replace: "                && super::eval_const(\n                    tcx,\n",
     tests: ["test/corpus.test.ts", "-t", "^const_block_uninit_array.rs$"],
     snapshots: true,
   },
