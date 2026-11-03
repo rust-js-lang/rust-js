@@ -46,9 +46,9 @@ fn literal_layout(tcx: ty::TyCtxt<'_>, span: Span) -> js::ObjectLayout {
         false => tcx.sess.source_map().span_to_snippet(span).unwrap_or_default(),
     };
     let after = code.find('{').map_or("", |brace| &code[brace + 1..]);
-    let commented = rustc_lexer::tokenize(after, rustc_lexer::FrontmatterAllowed::No).any(|t| {
-        matches!(t.kind, rustc_lexer::TokenKind::LineComment { .. } | rustc_lexer::TokenKind::BlockComment { .. })
-    });
+    use rustc_lexer::TokenKind::{BlockComment, LineComment};
+    let commented = rustc_lexer::tokenize(after, rustc_lexer::FrontmatterAllowed::No)
+        .any(|t| matches!(t.kind, LineComment { .. } | BlockComment { .. }));
     js::ObjectLayout {
         lines: after[..after.len() - after.trim_start().len()].contains('\n'),
         commented,
