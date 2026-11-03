@@ -314,7 +314,8 @@ fn erasures(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<(u32, DefId)> {
 }
 
 /// A parameter's name, of its type's: `event` of a `MouseEvent`, `element`
-/// of an `HTMLButtonElement`, its last word's; `value` of any other.
+/// of an `HTMLButtonElement`, its last word's, named apart where JS keeps
+/// it, `function$` of a `ResolveFunction`; `value` of any other.
 fn param_name(ty: &Value) -> String {
     let Some(name) = ty["name"].as_str().filter(|_| ty["kind"] == "reference") else {
         return "value".to_string();
@@ -327,7 +328,14 @@ fn param_name(ty: &Value) -> String {
     let word = &name[start..];
     let mut chars = word.chars();
     match chars.next() {
-        Some(first) => first.to_lowercase().chain(chars).collect(),
+        Some(first) => {
+            let word: String = first.to_lowercase().chain(chars).collect();
+            if crate::names::kept_word(&word) {
+                format!("{word}$")
+            } else {
+                word
+            }
+        }
         None => "value".to_string(),
     }
 }

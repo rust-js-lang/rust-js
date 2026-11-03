@@ -742,6 +742,23 @@ test("declarations name a parameter as its JS does", () => {
   expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function create(new$: number): number;");
 });
 
+// A function type's parameter is named after its type's last word, and one
+// JS keeps is named apart: a `ResolveFunction`'s `function$`, as React's
+// Flight Node loader's hooks are given, where `function` made a `.d.ts`
+// TypeScript can't parse (rd673).
+test("declarations name a function type's parameter apart from a word JS keeps", () => {
+  const dir = fixture("declarations-kept-parameter");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(
+    join(dir, "lib.rs"),
+    "#[repr(transparent)]\n#[derive(Clone, Copy)]\npub struct ResolveFunction(pub &'static dyn Fn(&str, ResolveFunction) -> u32);\n\npub fn resolve(next: ResolveFunction) -> u32 {\n    (next.0)(\"a\", next)\n}\n",
+  );
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("function$: ResolveFunction");
+  writeFileSync(join(dir, "use.ts"), 'import { resolve } from "./lib.js";\nexport const n: number = resolve((s, next) => s.length);\n');
+  expect(typeChecked(dir, "use.ts")).toEqual([]);
+});
+
 // A type written as one of @types/react's aliases is declared by it, as a
 // person writes it, `onClick?: MouseEventHandler<HTMLButtonElement>`, an
 // argument left to its default left out, `MouseEventHandler`, where
