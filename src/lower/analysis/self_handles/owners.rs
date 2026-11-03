@@ -59,6 +59,9 @@ pub(crate) struct OwnerHandle<'tcx> {
     /// What the `Rc` points at, the `Weak`'s, or the cell of a value cell:
     /// the cell is the variable only where nothing counts it.
     pub(super) pointee: Ty<'tcx>,
+    /// Whether the cell holds the `Rc` itself, not its `Weak` (#577): the
+    /// variable only where a `Some` of it isn't boxed.
+    pub(super) strong: bool,
     /// What the maker writes of the cell: nothing, at each.
     pub(super) made: HashSet<Location>,
     /// Of each closure, what it writes of reading the cell, nothing at
@@ -125,27 +128,30 @@ pub(super) fn owner_made<'tcx>(
     (of, owned): (&HashMap<DefId, &mir::Body<'tcx>>, &dyn Fn(DefId, u32) -> bool),
     unowned: &mut Vec<Unowned<'tcx>>,
 ) -> Option<OwnerHandle<'tcx>> {
-    // An `Rc<OnceCell<Weak<D>>>`.
-    let pointee = once_weak(tcx, body.local_decls[cell].ty)?;
+    // An `Rc<OnceCell<Weak<D>>>`, or an `Rc<OnceCell<Rc<D>>>` (#577).
+    let (pointee, held) = once_held(tcx, body.local_decls[cell].ty)?;
     let mut made = HashSet::new();
-    // What it's made of: `Rc::new(OnceCell::new())`.
+    // What it's made of: `Rc::new(OnceCell::new())`, or `Rc::default()`.
     let at = uses.def(cell)?;
-    let (HandleStep::RcNew, args, _) = call_at(tcx, body, at)? else {
-        return None;
-    };
-    made.insert(at);
     let declared = at.block;
-    let inner = whole(args.first()?)?;
-    let at = uses.def(inner)?;
-    let (HandleStep::OnceNew, args, _) = call_at(tcx, body, at)? else {
-        return None;
-    };
-    if !args.is_empty() {
-        return None;
-    }
-    made.insert(at);
-    if !only_made(body, uses, inner, &mut made) {
-        return None;
+    match call_at(tcx, body, at)? {
+        (HandleStep::RcDefault, args, _) if args.is_empty() => _ = made.insert(at),
+        (HandleStep::RcNew, args, _) => {
+            made.insert(at);
+            let inner = whole(args.first()?)?;
+            let at = uses.def(inner)?;
+            let (HandleStep::OnceNew, args, _) = call_at(tcx, body, at)? else {
+                return None;
+            };
+            if !args.is_empty() {
+                return None;
+            }
+            made.insert(at);
+            if !only_made(body, uses, inner, &mut made) {
+                return None;
+            }
+        }
+        _ => return None,
     }
     // All made of it: a clone for each closure, and its one setting.
     let mut slice: Vec<Local> = vec![cell];
@@ -185,7 +191,8 @@ pub(super) fn owner_made<'tcx>(
         }
     }
     // Set once, where it's set, of the `Rc` the call returns: `let _ =
-    // cell.set(Rc::downgrade(&handle))`, what it gives only dropped.
+    // cell.set(Rc::downgrade(&handle))`, or `Rc::clone(&handle)` of a
+    // strong one, what it gives only dropped.
     let [(set_at, value, result)] = sets[..] else {
         return None;
     };
@@ -201,7 +208,11 @@ pub(super) fn owner_made<'tcx>(
         let at = uses.def(local)?;
         made.insert(at);
         if let Some((step, args, _)) = call_at(tcx, body, at) {
-            if step != HandleStep::Downgrade || args.len() != 1 {
+            let step_of = match held {
+                Held::Weak => HandleStep::Downgrade,
+                Held::Strong => HandleStep::RcClone,
+            };
+            if step != step_of || args.len() != 1 {
                 return None;
             }
             set.push(whole(args[0])?);
@@ -254,6 +265,14 @@ pub(super) fn owner_made<'tcx>(
             capture = Some((closure, index, assign_at(body, at)?.0.local));
         }
         let (closure, index, mut value) = capture?;
+        // A strong one's closures may be anywhere: none can read what the
+        // cell holds before the call returns, whoever calls it, and each
+        // reads `None` before it as the `let` is `undefined`; after, the
+        // value, which no closure owns (#577).
+        if held == Held::Strong {
+            closures.push((closure, index, 0));
+            continue;
+        }
         // Moved on, made an `Rc`, coerced and put in a `Some`, to the call.
         loop {
             uses.def(value)?;
@@ -318,7 +337,7 @@ pub(super) fn owner_made<'tcx>(
             given,
         })
         .collect();
-    if !not_owned.is_empty() {
+    if held == Held::Weak && !not_owned.is_empty() {
         unowned.extend(not_owned);
         return None;
     }
@@ -341,16 +360,23 @@ pub(super) fn owner_made<'tcx>(
     if reaches(body, set_at.block, set_at.block) {
         return None;
     }
-    // Each closure reads the cell only by `cell.get().and_then(Weak::upgrade)`.
+    // Each closure reads the cell only by `cell.get().and_then(Weak::upgrade)`,
+    // or a strong one's by `cell.get()`.
+    let chain = match held {
+        Held::Weak => Chain::Owner,
+        Held::Strong => Chain::Strong,
+    };
     let mut read = HashMap::new();
     let mut upgrades = Vec::new();
     let mut unwrapped = Vec::new();
     for &(closure, index, _) in &closures {
         let body = of.get(&closure)?;
-        let (at, own, spans) = super::read(tcx, body, (index, Chain::Owner))?;
+        let (at, own, spans) = super::read(tcx, body, (index, chain))?;
         upgrades.extend(spans.into_iter().map(|span| (closure, span)));
         let reads = Uses::of(body);
-        for &option in own.values() {
+        // A strong one's `unwrap` stays: its call isn't asked what it may
+        // call before it returns (`called`).
+        for &option in own.values().filter(|_| held == Held::Weak) {
             if let Some(at) = unwrapped_at(tcx, body, &reads, option) {
                 unwrapped.push((closure, at));
             }
@@ -358,6 +384,9 @@ pub(super) fn owner_made<'tcx>(
         read.insert(closure, (at, own));
     }
     let given: Vec<u32> = closures.iter().map(|&(_, _, given)| given).collect();
+    // What owns a strong one's closures isn't asked, so neither is what it
+    // may call before it returns (`quiet`).
+    let called = (held == Held::Weak).then_some((callee, given));
     Some(OwnerHandle {
         maker,
         handle,
@@ -367,10 +396,11 @@ pub(super) fn owner_made<'tcx>(
             .map(|(closure, index, _)| (maker, closure, index))
             .collect(),
         pointee,
+        strong: held == Held::Strong,
         made,
         read,
         upgrades,
-        called: Some((callee, given)),
+        called,
         unwrapped,
     })
 }
@@ -402,14 +432,29 @@ fn unwrapped_at<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, uses: &Uses, op
     })
 }
 
-/// `Rc<OnceCell<Weak<D>>>`'s `D`.
-pub(super) fn once_weak<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+/// What an owner handle's cell holds of what the call returns.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum Held {
+    /// Its `Weak`, which gives it while what it owns is alive.
+    Weak,
+    /// Its `Rc` itself, a clone, which gives it once it's set (#577).
+    Strong,
+}
+
+/// `Rc<OnceCell<Weak<D>>>`'s `D`, or `Rc<OnceCell<Rc<D>>>`'s, whose `Some`
+/// is the variable only where `D` never looks like `None`, which
+/// `SelfHandles::unboxed` asks.
+pub(super) fn once_held<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, Held)> {
     let cell = crate::lower::recognition::rc_pointee(tcx, ty)?;
     let ty::Adt(adt, args) = *cell.kind() else { return None };
     if !crate::lower::recognition::is_std_def(tcx, adt.did(), crate::lower::recognition::StdItem::OnceCell) {
         return None;
     }
-    weak_pointee(tcx, args.type_at(0))
+    let held = args.type_at(0);
+    if let Some(pointee) = weak_pointee(tcx, held) {
+        return Some((pointee, Held::Weak));
+    }
+    Some((crate::lower::recognition::rc_pointee(tcx, held)?, Held::Strong))
 }
 
 /// The call at `at`, a block's terminator, of any function: it, its

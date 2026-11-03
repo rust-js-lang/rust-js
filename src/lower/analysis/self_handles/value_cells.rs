@@ -277,6 +277,7 @@ pub(super) fn value_made<'tcx>(
         declared: None,
         closures,
         pointee,
+        strong: false,
         made,
         read,
         upgrades: Vec::new(),

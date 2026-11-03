@@ -1014,6 +1014,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     }
     // A handle on itself is no JS where nothing counts its `Rc`.
     self_handles.uncounted(|pointee| counted.counts(tcx, pointee));
+    self_handles.unboxed(|pointee| super::representation::may_look_like_none(&recognition, pointee));
     // A function's scope struct, of an `Rc` counted none (ADR 1043).
     let mut scopes = Scopes::new(tcx, all_bodies);
     scopes.retain(|s| !counted.counts(tcx, tcx.type_of(s.adt).instantiate_identity().skip_normalization()));

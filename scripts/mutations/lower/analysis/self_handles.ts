@@ -110,4 +110,13 @@ export const mutations: Mutation[] = [
     replace: "                false => true,\n",
     tests: ["test/crates.test.ts", "-t", "owns its callbacks alone"],
   },
+  {
+    name: "owner-handle-strong-boxed",
+    breaks:
+      "a cell of an `Rc` of an `Option` or of a struct of no fields is its variable, which holds what the call gives where `get()` gives its `Some` boxed, so a `Some` of `undefined` reads as `None` (#577)",
+    file: "src/lower/analysis/self_handles.rs",
+    find: "        self.owners.retain(|o| !o.strong || !looks_like_none(o.pointee));\n",
+    replace: "        self.owners.retain(|o| !o.strong || !o.pointee.is_unit());\n",
+    tests: ["test/corpus.test.ts", "-t", "^owner_handle_strong_cells.rs$"],
+  },
 ];

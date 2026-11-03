@@ -12,6 +12,8 @@ set once after the call they're given to, is that `Rc`'s `let`; and
 (rd621) value cells an executor's callbacks read are the call's `const`,
 and where nothing the call runs before it returns may call the
 callbacks, each `unwrap` of the upgrade is the `let` itself.
+Amended (#577): a cell of the call's `Rc` itself, not its `Weak`, read by
+`cell.get()`, is that `Rc`'s `let` too, whoever has its readers.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)), but for `wait()`
 and a `OnceLock`'s reentrant init, D: refused.
@@ -68,6 +70,7 @@ setting it must check it's unset.**
 - [Below](#amendment-callbacks-handle-on-what-owns-them-is-its-let): Callbacks' handle on what owns them is its `let`
 - [Below](#amendment-a-callback-a-public-field-holds-isnt-the-returns-alone-rd553): A callback a public field holds isn't the return's alone (rd553)
 - [Below](#amendment-callbacks-made-in-an-executor-read-its-calls-value-rd621): Callbacks made in an executor read its call's value (rd621)
+- [Below](#amendment-a-cell-of-the-calls-rc-itself-is-its-let-577): A cell of the call's `Rc` itself is its `let` (#577)
 
 ## Amendment: callbacks' handle on what owns them is its `let`
 
@@ -546,3 +549,135 @@ throw (`owner_handle_guarded`).
   (`may_run.rs`). A drop of a `dyn Fn` runs what any function the crate
   makes one of holds, but no owner handle can show it: a crate whose `dyn
   Fn`s hold what drops counts each `Rc<dyn Fn>`, so it makes none.
+
+## Amendment: a cell of the call's `Rc` itself is its `let` (#577)
+
+React's port, rd718 (#577, 2026-11-04). Case
+([0262](0262-when-rust-and-js-disagree.md)): A, no observable difference,
+under the proof below; where it doesn't hold, the cell is a cell, as
+written.
+
+### Context
+
+ReactDOMRootFB's legacy roots wrap the user's callback in a function that
+reads the root the next statement makes, which upstream closes over:
+
+```js
+if (typeof callback === 'function') {
+  const originalCallback = callback;
+  callback = function () {
+    const instance = getPublicRootInstance(root);
+    originalCallback.call(instance);
+  };
+}
+const root = createHydrationContainer(initialChildren, callback, ..);
+```
+
+The port's Rust holds the root in a cell the wrapper shares, set once the
+root is made, of the root's `Rc` itself: the root owns nothing of the
+wrapper's that a `Weak` would free.
+
+```rust
+let created: Rc<OnceCell<Rc<FiberRoot>>> = Rc::default();
+if let Kind::Function(original_callback) = js::classify(callback) {
+    let created = Rc::clone(&created);
+    callback = Some(js::unknown_of(move || {
+        let instance = ReactFiberReconciler.get_public_root_instance(created.get().unwrap());
+        function::call(original_callback, Some(&instance), ());
+    }));
+}
+let root = ReactFiberReconciler.create_hydration_container(initial_children, callback, ..);
+let _ = created.set(Rc::clone(&root));
+```
+
+ADR 0287 made the cell a `let`, but a `let` of its own, set by a test,
+`let created; .. $unwrap(created) .. if (created === undefined) { created
+= root; }`, where upstream has one variable.
+
+### Decision
+
+An owner handle's cell may hold the `Rc` the call returns, a clone of it,
+as it may its `Weak` (`self_handles/owners.rs`, `Held::Strong`): an
+`Rc<OnceCell<Rc<D>>>` of a `D` a `Some` of which isn't boxed, never
+looking like `None` (ADR 0051's `may_look_like_none`), made empty by `Rc::new(OnceCell::new())` or
+`Rc::default()`, cloned only into closures, each of which reads it only by
+`cell.get()`, set once, `let _ = cell.set(Rc::clone(&root))`, of the
+variable the call's value is given to, a variable never changed after,
+right after the call, with nothing between, never reached again, and
+nothing counting `D`'s `Rc`s. Then the cell is the `Rc`'s `let`, as the
+`Weak`'s is: `let root;` where the cell is made, `root = call(..)`, each
+`get()` the variable, and the cell's making, clones, setting and drops no
+JS. Each `unwrap` of what `get()` gives stays, `$unwrap(root)`, as Rust's
+panics before the set:
+
+```js
+let root;
+if (typeof callback === "function") {
+  const originalCallback = callback;
+  callback = () => {
+    const instance = getPublicRootInstance($unwrap(root));
+    originalCallback.call(instance);
+  };
+}
+root = createHydrationContainer(initialChildren, callback, ..);
+```
+
+`rust-js` asks nothing of where the closures go or who calls them: unlike
+a `Weak`, which gives the `Rc` only while what owns the closures keeps it,
+a clone, once it's set, is there as long as the cell is, so no call need
+own them (`owned_by_return`). Not asked, the call isn't asked what it may
+call before it returns either (`quiet`), so the `unwrap`s stay. Otherwise,
+the cell is a cell, as written, ADR 0287's `let` where it's one.
+
+### Why
+
+ADR 0262's first case, no difference. The `let` is `undefined` until the
+call returns, as the cell is `None` until it's set; the set is next after
+the call, with nothing between that could run a closure, so from then on
+both give the root, the variable's value the cell's clone, the same
+object where nothing counts its `Rc`. A closure run before, by the call or
+the maker, reads `None` and `undefined`, and its `unwrap` panics as Rust's
+does, with Rust's message: no TDZ is reached, the `let` being made with
+the cell. A second set, which Rust refuses, `Err`, can't happen: there's
+one, never reached again, and the closures only read.
+
+- Of `D` that may be `undefined`, an `Option`, `()` or a struct of no
+  fields, the cell's `Some` boxes it (`$some`), so the variable, which holds what the call gives,
+  isn't what `get()` gives: kept as a cell.
+- A set only on one path, or of another `Rc`, or a read between, would
+  give `None` where the variable holds the root: kept as cells.
+- A counted `Rc`'s clone is a count, which `Rc::strong_count` shows: kept
+  as a cell.
+
+### Alternatives
+
+- The closure reads upstream's `const root` itself, its `unwrap` gone, as
+  the porter asked: a call before the set would throw a `ReferenceError`
+  (TDZ) where Rust panics with `unwrap`'s message, case B of ADR 0262,
+  never decided alone. Without the `unwrap` only where nothing may call
+  the closures before the set (rd621 A's `quiet`): the reconciler keeps
+  the callback in an update queue whose commit `may_run` finds behind the
+  call's scheduling, so the proof isn't there.
+- The wrapper a `function () {..}`, as upstream's: an arrow is rust-js's
+  one form of a closure, and nothing reads its `this`; the reconciler's
+  `callback.call(instance)` can't tell them apart (the coordinator's
+  decision for the user, #577).
+- A JS-level rewrite of `let x; .. const r = call(); if (x === undefined)
+  x = r;`: it would reconstruct a cell's facts from the JS shape, where
+  the owner handle already says them.
+
+### What holds it
+
+- `test/corpus/owner_handle_strong.rs`, against native Rust: ReactDOMRootFB's
+  shape, a wrapper the root's flush calls, no callback, one the call
+  calls before it returns, whose `unwrap` panics, and one its maker calls
+  before the root is made, `None`, each the root's `let`.
+- `test/corpus/owner_handle_strong_cells.rs`, each a cell, as written: a
+  read between the call and the set, a set on one path, a set each turn of
+  a loop, a set of another root, and an `Rc` of an `Option` and of a
+  struct of no fields;
+  `test/corpus/owner_handle_strong_counted.rs`, a counted root.
+- Mutations `owner-handle-strong-boxed` (`self_handles.rs`),
+  `owner-handle-strong-traced` and `owner-handle-strong-owned`
+  (`self_handles/owners.rs`).
+

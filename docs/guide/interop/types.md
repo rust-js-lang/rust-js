@@ -2267,6 +2267,15 @@ export function rename(payload, name) {
   request = createRequest(..)`, where what the call returns alone owns
   them ([ADR 0317](../../decisions/0317-once-cells.md#amendment-callbacks-handle-on-what-owns-them-is-its-let);
   [an example](../for-js-developers/advanced.md)).
+- **Callbacks' `Rc<OnceCell<Rc<T>>>`, of the `Rc` itself**, set once right
+  after the call that returns it, `let _ = cell.set(Rc::clone(&root))`,
+  and read by `cell.get()`, is that `Rc`'s `let` too, whoever the
+  callbacks are given to: `let root; .. $unwrap(root) .. root =
+  createContainer(..)`, `undefined` until the call returns, as the cell
+  is `None` until it's set, so a callback called before panics as Rust's
+  does. One read between the call and the set, set on one path or in a
+  loop, of an `Option` or of a counted `Rc` is a cell
+  ([ADR 0317](../../decisions/0317-once-cells.md#amendment-a-cell-of-the-calls-rc-itself-is-its-let-577)).
 - What's set to a cell of a `()` or an `Option`, which look like `None`,
   is boxed, so the cell set is never `undefined`
   ([ADR 0317](../../decisions/0317-once-cells.md)).

@@ -359,7 +359,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0314 Each std data structure works or is refused, and coverage only grows](0314-std-data-structures.md)
 - [0315 A `Vec`'s capacity does nothing, and its edits are std's](0315-vec-capacity-and-edits.md) *(amended by 0774: the room asked is checked)*
 - [0316 A `LinkedList` is an array, as a `VecDeque` is](0316-linked-list.md)
-- [0317 A `OnceCell` is a `{ value }` of an `Option`, set once](0317-once-cells.md) *(amended by 0847: in a field it's the property; a `set` of one still empty is assigned, else tested, without `$onceSet`; amended: callbacks' `Rc<OnceCell<Weak<T>>>` of what owns them, set once after the call, is its `let`; amended (rd621): callbacks an executor makes, reading an `Rc<Cell<Option<T>>>` set to its call's value next, read that value's variable)*
+- [0317 A `OnceCell` is a `{ value }` of an `Option`, set once](0317-once-cells.md) *(amended by 0847: in a field it's the property; a `set` of one still empty is assigned, else tested, without `$onceSet`; amended: callbacks' `Rc<OnceCell<Weak<T>>>` of what owns them, set once after the call, is its `let`; amended (rd621): callbacks an executor makes, reading an `Rc<Cell<Option<T>>>` set to its call's value next, read that value's variable; amended (#577): a cell of the call's `Rc` itself, read by `get()`, is its `let`, its `unwrap`s kept)*
 - [0318 A `LazyCell` makes its value when it's first used, as Rust's does](0318-lazy-cells.md)
 - [0319 A `Cow` is its enum, made owned by a clone of what it borrowed](0319-cows.md)
 - [0320 An `Rc` whose counts are read is counted, as Rust counts it](0320-counted-rcs.md) *(amended by 0843: a `Weak` nothing upgrades counts nothing)*

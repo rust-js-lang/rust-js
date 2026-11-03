@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a callback given a call whose return doesn't alone own it is taken for one only the request owns, so called after the request is dropped it reads the request, where Rust's upgrade gives `None`",
     file,
-    find: "    if !not_owned.is_empty() {\n",
+    find: "    if held == Held::Weak && !not_owned.is_empty() {\n",
     replace: "    if false {\n",
     tests: corpus("owner_handle_stashed"),
   },
@@ -87,6 +87,26 @@ export const mutations: Mutation[] = [
     find: "            read.insert(unwrapped.at);\n",
     replace: "",
     tests: corpus("owner_handle_quiet"),
+    snapshots: true,
+  },
+  {
+    name: "owner-handle-strong-traced",
+    breaks:
+      "a cell of the call's `Rc` itself is asked where its closures go, as a `Weak`'s is, so a callback kept in a variable assigned twice keeps its cell, `let created; .. if (created === undefined) created = root;` (#577)",
+    file,
+    find: "        if held == Held::Strong {\n            closures.push((closure, index, 0));\n",
+    replace: "        if false {\n            closures.push((closure, index, 0));\n",
+    tests: corpus("owner_handle_strong"),
+    snapshots: true,
+  },
+  {
+    name: "owner-handle-strong-owned",
+    breaks:
+      "a cell of the call's `Rc` itself is asked whether the call owns its closures, as a `Weak`'s is, so one given to a call that keeps them apart stays a cell (#577)",
+    file,
+    find: "    if held == Held::Weak && !not_owned.is_empty() {\n",
+    replace: "    if !not_owned.is_empty() {\n",
+    tests: corpus("owner_handle_strong"),
     snapshots: true,
   },
 ];

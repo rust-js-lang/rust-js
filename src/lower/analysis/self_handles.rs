@@ -42,7 +42,7 @@ mod owners;
 mod value_cells;
 use super::owned_by_return::OwnedByReturn;
 pub(crate) use owners::Unowned;
-use owners::{OwnerHandle, once_weak, owner_made};
+use owners::{OwnerHandle, once_held, owner_made};
 use value_cells::{value_cell, value_made};
 
 /// A closure's handle on itself, of its maker and of the closure.
@@ -107,7 +107,7 @@ impl<'tcx> SelfHandles<'tcx> {
                 .filter(|(_, decl)| {
                     user_variable(decl)
                         && (held_weak(tcx, decl.ty).is_some()
-                            || once_weak(tcx, decl.ty).is_some()
+                            || once_held(tcx, decl.ty).is_some()
                             || value_cell(tcx, decl.ty).is_some())
                 })
                 .map(|(local, _)| local)
@@ -201,6 +201,14 @@ impl<'tcx> SelfHandles<'tcx> {
     pub(crate) fn uncounted(&mut self, counts: impl Fn(Ty<'tcx>) -> bool) {
         self.handles.retain(|h| !counts(h.pointee));
         self.owners.retain(|o| !counts(o.pointee));
+    }
+
+    /// Keep a strong owner handle only where what its `Rc` points at never
+    /// looks like `None` (`looks_like_none`, the representation's rule):
+    /// a `Some` of one that may is boxed, `$some(root)`, not the variable
+    /// (#577).
+    pub(crate) fn unboxed(&mut self, looks_like_none: impl Fn(Ty<'tcx>) -> bool) {
+        self.owners.retain(|o| !o.strong || !looks_like_none(o.pointee));
     }
 
     /// The handle `body` makes of `closure`, if any: which of its captures
@@ -724,7 +732,8 @@ fn set_next(body: &mir::Body<'_>, (from, to): (Location, Location), made: &HashS
 /// where each `Weak::upgrade` is written. None where it reads the cell
 /// otherwise. Of a `OnceCell`'s, `Chain::Owner`, each read is `cell.get()
 /// .and_then(Weak::upgrade)`, and the blocks those give its owner's `Rc`
-/// or `None`, to the local each gives it to (`owners`); of a value cell's,
+/// or `None`, to the local each gives it to (`owners`), of a strong one's,
+/// `Chain::Strong`, `cell.get()` alone; of a value cell's,
 /// `Chain::Value`, `cell.get().unwrap()`, the value itself (`value_cells`).
 #[allow(clippy::type_complexity)]
 fn read<'tcx>(
@@ -734,6 +743,7 @@ fn read<'tcx>(
 ) -> Option<(HashSet<Location>, HashMap<BasicBlock, Local>, Vec<Span>)> {
     let once = chain == Chain::Owner;
     let value = chain == Chain::Value;
+    let strong = chain == Chain::Strong;
     let env = Local::from_usize(1);
     let uses = Uses::of(body);
     let mut read = HashSet::new();
@@ -821,6 +831,10 @@ fn read<'tcx>(
                     slice.push(destination);
                 }
                 (HandleStep::RcDeref | HandleStep::OnceGet, [_]) if once => slice.push(destination),
+                (HandleStep::RcDeref, [_]) if strong => slice.push(destination),
+                (HandleStep::OnceGet, [_]) if strong && owned && !lent_mut(body, &uses, destination) => {
+                    own.insert(at.block, destination);
+                }
                 (HandleStep::AndThen, [_, Operand::Constant(upgrade)])
                     if fn_def(upgrade.ty())
                         .is_some_and(|(id, generics)| handle_step(tcx, id, generics) == Some(HandleStep::Upgrade))
@@ -843,7 +857,7 @@ fn read<'tcx>(
             read.insert(at);
         }
     }
-    (!own.is_empty() && (value || !upgrades.is_empty())).then_some((read, own, upgrades))
+    (!own.is_empty() && (value || strong || !upgrades.is_empty())).then_some((read, own, upgrades))
 }
 
 /// Which chain a closure reads its handle by (`read`).
@@ -855,6 +869,8 @@ enum Chain {
     Owner,
     /// A value cell's: `cell.get().unwrap()`.
     Value,
+    /// A strong owner handle's: `cell.get()`, the `Rc`'s variable (#577).
+    Strong,
 }
 
 /// Whether `local` is lent mutably or by a pointer, through which what's
