@@ -318,4 +318,24 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^tuple_of_taken_parts.rs$"],
   },
+  {
+    name: "destructured-items-of-any-part",
+    breaks:
+      "the second destructuring takes apart any part read, one property too, `const { value: wrap } = WRAP;`, which then makes a `static mut` a box",
+    file: "src/lower/mir/tidy/destructuring.rs",
+    find: "        let other = items && (made || !indexed || count < 2);\n",
+    replace: "        let other = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(static_mut|calculator).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "destructured-items-left-apart",
+    breaks:
+      "a tuple `match`'s item's parts are read one by one, `const module = tests[0]; const files = tests[1];`, not `const [module, files] = tests;`",
+    file: "src/lower/mir/tidy/destructuring.rs",
+    find: "        let other = items && (made || !indexed || count < 2);\n",
+    replace: "        let other = items;\n",
+    tests: ["test/corpus.test.ts", "-t", "^tuple_match_item_destructured.rs$"],
+    snapshots: true,
+  },
 ];

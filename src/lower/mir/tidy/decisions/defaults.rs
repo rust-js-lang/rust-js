@@ -38,9 +38,72 @@ pub(in crate::lower::mir::tidy) fn default_values(stmts: &mut Vec<Stmt>) {
             let last = body.pop().expect("split");
             stmts.insert(i, last);
             i += 1;
+        } else if copied_into_branches(stmts, i) {
+            continue;
         }
         i += 1;
     }
+}
+
+/// `bb7: { if (a) { .. x = 1; break bb7; } else if (b) { x = 2; break bb7; }
+/// x = v; }`, a block MIR made of a value whose end gives `v`, a variable,
+/// which reading again runs no code, where `default_values` can't give it
+/// first (a constant it can't is left, which `switches` makes a `default:`
+/// of, `default: hit = false;`): `v` given at the end of each branch that went on to
+/// the block's end, `if (a) { .. x = 1; } else if (b) { x = 2; } else { x =
+/// v; }`, and the block gone, as a person writes a `match`'s arms (#567).
+/// The same assignment runs at the same point of each path, so it's what
+/// MIR's does: only where each `break` of the block ends a branch the
+/// block ends with too, and each way on to its end does.
+fn copied_into_branches(stmts: &mut Vec<Stmt>, i: usize) -> bool {
+    let StmtKind::Labeled(label, body) = &stmts[i].kind else {
+        return false;
+    };
+    let Some((last, rest)) = body.split_last() else {
+        return false;
+    };
+    let StmtKind::Assign(target, value) = &last.kind else {
+        return false;
+    };
+    if !matches!(target.kind, ExprKind::Var(_)) || !matches!(value.kind, ExprKind::Var(_)) {
+        return false;
+    }
+    // `stmts`, which end where the block does: the block's `break` at the
+    // end of each, gone, and `tail` where it goes on to the end.
+    fn tailed(stmts: &mut Vec<Stmt>, tail: &Stmt, label: &str) -> bool {
+        let ended = stmts.last().is_some_and(js::ends);
+        match stmts.last_mut().map(|s| &mut s.kind) {
+            Some(StmtKind::Break(Some(l))) if l == label => {
+                stmts.pop();
+                true
+            }
+            Some(StmtKind::If(_, then, otherwise)) => {
+                let then = tailed(then, tail, label);
+                match otherwise {
+                    Some(otherwise) => then && tailed(otherwise, tail, label),
+                    None => {
+                        *otherwise = Some(vec![tail.clone()]);
+                        then
+                    }
+                }
+            }
+            Some(_) if ended => true,
+            _ => {
+                stmts.push(tail.clone());
+                true
+            }
+        }
+    }
+    let mut rest = rest.to_vec();
+    // Only of a block with a branch: else it's `default_values`', or nothing to copy into.
+    if !matches!(rest.last().map(|s| &s.kind), Some(StmtKind::If(..))) {
+        return false;
+    }
+    if !tailed(&mut rest, last, label) || js::names_jump(&rest, label) {
+        return false;
+    }
+    stmts.splice(i..=i, rest);
+    true
 }
 
 /// Whether `x` is declared in `before`, `let x = ..;`, and named by nothing

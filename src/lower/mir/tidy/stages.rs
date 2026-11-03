@@ -50,7 +50,16 @@ pub(super) const STAGES: &[Stage] = &[
     // then a conditional, a range's loop a `for` (rd200, ADR 0659, amended).
     Stage {
         name: "drop scopes",
-        passes: &[pass("looped drops", looped_drops_of)],
+        passes: &[
+            pass("looped drops", looped_drops_of),
+            // And a scope a loop's in, deeper than its own list, its steps'
+            // `try`s gone before `loops` reads them (rd711).
+            pass("scoped loops", |b, h| {
+                js::statement_lists(b, &mut |stmts| {
+                    unwinds::scoped_loops(stmts, h.result, &h.lets.guards);
+                })
+            }),
+        ],
         ensures: &[contracts::NOTHING_AFTER_A_JUMP],
         again: &[],
     },
@@ -205,7 +214,7 @@ pub(super) const STAGES: &[Stage] = &[
             }),
             pass("destructured", |b, h| {
                 js::statement_lists(b, &mut |s| {
-                    destructured(s, (&h.lets.patterns, &h.lets.named, &h.named.user))
+                    destructured(s, (&h.lets.patterns, &h.lets.named, &h.named.user), false)
                 })
             }),
             pass("rest parts", |b, _| js::statement_lists(b, &mut rest_parts)),
@@ -274,7 +283,7 @@ pub(super) const STAGES: &[Stage] = &[
             // d[0];`, which the first pass left as it is (ADR 0705).
             pass("destructured declared", |b, h| {
                 js::statement_lists(b, &mut |s| {
-                    destructured(s, (&HashSet::new(), &h.lets.named, &h.named.user))
+                    destructured(s, (&HashSet::new(), &h.lets.named, &h.named.user), false)
                 })
             }),
             pass("assigned parts", |b, _| js::statement_lists(b, &mut assigned_parts)),
@@ -297,6 +306,15 @@ pub(super) const STAGES: &[Stage] = &[
                 let changing = changing(b);
                 let set_elsewhere = set_elsewhere(b);
                 js::statement_lists(b, &mut |s| tuple_reads(s, &changing, &set_elsewhere, &h.made.captured))
+            }),
+            // And the parts of a tuple's item those give, a tuple `match`'s
+            // `(true, Some((module, files)))`, `const module = tests[0];
+            // const files = tests[1];`: one pattern, `const [module, files]
+            // = tests;`, as `if let` reads it.
+            pass("destructured items", |b, h| {
+                js::statement_lists(b, &mut |s| {
+                    destructured(s, (&h.lets.patterns, &h.lets.named, &h.named.user), true)
+                })
             }),
             // A tuple of clones read part by part, `const chunk = this`:
             // the value each is a clone of (rd515, ADR 0846, amended).

@@ -799,6 +799,41 @@ mod tests {
         assert!(one_assignment(&c, (&then, &otherwise), none, ("_0", &switches), &[]).is_some());
     }
 
+    /// A block MIR made of a value whose end gives a variable, `bb7: { if
+    /// (a) { n = 1; break bb7; } n = v; }`, gives it in each branch that
+    /// fails to it, the block gone (#567); not where a `break` of the block
+    /// doesn't end a branch the block ends with, `if (b) { n = 2; break
+    /// bb7; } s;` before the last `if`, which would leave a `break` of no
+    /// block.
+    #[test]
+    fn a_default_is_copied_only_where_each_break_ends_a_branch() {
+        use super::decisions::default_values;
+        let none = js::Span::NONE;
+        let set = |v: Expr| StmtKind::Assign(Expr::var("n"), v).at(none);
+        let leave = || StmtKind::Break(Some("bb7".to_string())).at(none);
+        let branch =
+            |test: &str, v: f64| StmtKind::If(Expr::var(test), vec![set(Expr::num(v)), leave()], None).at(none);
+        let block = |mut body: Vec<Stmt>| {
+            body.push(set(Expr::var("v")));
+            vec![StmtKind::Labeled("bb7".to_string(), body).at(none)]
+        };
+        let mut copied = block(vec![branch("a", 1.0)]);
+        default_values(&mut copied);
+        assert!(
+            matches!(copied.as_slice(), [Stmt { kind: StmtKind::If(_, then, Some(otherwise)), .. }]
+                if then.len() == 1 && otherwise.len() == 1)
+        );
+        let mut kept = block(vec![branch("b", 2.0), call("s"), branch("a", 1.0)]);
+        default_values(&mut kept);
+        assert!(matches!(
+            kept.as_slice(),
+            [Stmt {
+                kind: StmtKind::Labeled(..),
+                ..
+            }]
+        ));
+    }
+
     /// An `Option<bool>`'s `if (x != null) { switch (x) { case false: ..
     /// case true: .. } } else { none }` is the `switch`, `none` its
     /// `default`, of a `match` whose last arm takes `None` (#545); not

@@ -10,8 +10,7 @@ function entries(test, tests, main, root, sources) {
   let entries = [];
   if (test) {
     if (tests != null) {
-      const module = tests[0];
-      const files = tests[1];
+      const [module, files] = tests;
       sources.push(module);
       entries = files.slice();
     }

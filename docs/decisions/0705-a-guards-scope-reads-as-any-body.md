@@ -340,3 +340,28 @@ drops; one whose name a closure's parameter shares); the corpus case
 `field-write-read-in-finally-dropped`, `field-write-in-loop-kept`,
 `field-copy-named-elsewhere-read`, `named-field-copy-kept`,
 `written-field-copy-read-as` and `one-field-copy-kept` (`drops/inlined.rs`).
+
+## Amendment: a loop in a guard's scope, deeper than its list (rd711, 2026-11-04)
+
+The late "scopes" stage makes a guard's scope one `try { .. } finally {
+.. }`, but `loops` ran long before, while each step of a loop in the
+scope was still its own `try { t = $next(iter); } catch (error) {
+drop(g); throw error; }`, which `for_of` doesn't read as a step. The
+early "drop scopes" stage made a `for` only of a loop whose ways out each
+drop the value (rd191, rd200). A loop in an `if` of the scope, which
+leaves to the scope's end, stayed MIR's: `const iter =
+$iter(debugInfo.toReversed()); while ((info = $next(iter)) != null)`,
+where its twin outside a guard's scope is `for (let i = debugInfo.length
+- 1; i >= 0; i--)` (React's ReactChildFiber, in the closure that
+restores its debug info). **The early stage now makes a scope's `try`
+first where the scope steps such a loop** (`unwinds::scoped_loops`, the
+same `scoped_drops` of only those runs), so `loops` reads its steps as
+any body's. Only those runs: the rest of a body's scopes are made where
+they were, so nothing else changes.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The `finally` is the
+one the late stage made, its drops the same, run in the same order on
+either path. Held by corpus `guard_scope_loop_in_an_if.rs` (from the
+back, from the front, and in a `catch_unwind`'s `Err` arm of a boxed
+closure) against native Rust, and the mutation
+`scoped-loops-left-to-their-steps`.

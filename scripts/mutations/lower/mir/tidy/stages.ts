@@ -789,7 +789,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a tuple `let` in a guard's `try` stays its tuple read `[0]`, `[1]`, not `const [a, b] = f();`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "                js::statement_lists(b, &mut |s| {\n                    destructured(s, (&HashSet::new(), &h.lets.named, &h.named.user))\n                })\n",
+    find: "                js::statement_lists(b, &mut |s| {\n                    destructured(s, (&HashSet::new(), &h.lets.named, &h.named.user), false)\n                })\n",
     replace: "                let _ = (b, h);\n",
     tests: ["test/lowering.test.ts", "-t", "a tuple let in a guard's try"],
   },
@@ -1073,8 +1073,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop that drops a value before each way out of it keeps a `catch` of the drop around each step until the late `scopes` stage, after `values` and `loops` have read it, so no range's `for` is made of it (rd200)",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '        passes: &[pass("looped drops", looped_drops_of)],\n',
-    replace: "        passes: &[],\n",
+    find: '            pass("looped drops", looped_drops_of),\n',
+    replace: "",
     tests: [
       "test/corpus.test.ts",
       "-t",

@@ -659,3 +659,29 @@ moved `Rc`, and one with no guard), `switch_turn_end_unguarded`,
 `guards_that_call` and `guarded_arm_chains`, run against native Rust, and
 the mutation `switched-guard-decided` (`mir/tidy/decisions.ts`), which
 takes `decisions-switch-guard-chained`'s place.
+
+## Amendment: a variable's default, given in each branch that fails to it (#567, 2026-11-04)
+
+#556 gave an empty array first, as a constant is. A `_ => fallback` of a
+variable, which `default_values` doesn't give first, still printed MIR's
+labeled block, `bb10: { if (test) { if (tests != null) { ..; n = t + 1;
+break bb10; } } else if (main) { n = 7; break bb10; } n = fallback; }`.
+A JS label the Rust lacks is never accepted. **Where the block's last
+statement assigns a variable, which reading again runs no code, and each `break` of the block ends a branch the block ends with,
+the assignment is given at the end of each branch that goes on to the
+block's end, `} else { n = fallback; }`, and the block is gone**
+(`defaults::copied_into_branches`, the coordinator's decision on the
+user's behalf). The same assignment runs at the same point of each path
+as MIR's does at the block's end, so it's what MIR's does whatever the
+value; the value is limited to what runs no code only so nothing is
+written twice. Not a constant `default_values` can't give first: an
+`Option` of symbols' `None` and `_ => hit = false`, which `switches`
+makes the `switch`'s `default:` (`lowering-switch-symbols`). A computed
+`_`, a call, keeps the labeled block, its form
+left for the user to decide (#567).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Held by the corpus
+`let_match_variable_default.rs` against native Rust, the mutation
+`default-copied-into-no-branch`, and the unit test
+`a_default_is_copied_only_where_each_break_ends_a_branch` (a `break` of
+the block before its last `if`, which keeps the block).

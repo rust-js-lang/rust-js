@@ -221,7 +221,7 @@ pub(in crate::lower::mir::tidy) fn continues_written(
 
 /// Where the last statement of `stmts` starts, however deep, that has a
 /// place.
-fn latest(stmts: &[Stmt]) -> u32 {
+pub(super) fn latest(stmts: &[Stmt]) -> u32 {
     let mut past = 0;
     js::each_list(stmts, &mut |list| {
         past = (list.iter()).fold(

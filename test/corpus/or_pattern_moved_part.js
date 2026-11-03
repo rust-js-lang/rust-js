@@ -11,19 +11,17 @@ export function f(p) {
   let p$1$0$live = true;
   let p$0$0$live = true;
   let result;
-  bb10: {
-    let t;
-    if (p[0] != null) {
-      p$0$0$live = false;
-      t = p[0];
-    } else if (p[1] != null) {
-      p$1$0$live = false;
-      t = p[1];
-    } else {
-      result = undefined;
-      break bb10;
-    }
+  let t;
+  if (p[0] != null) {
+    p$0$0$live = false;
+    t = p[0];
     result = t;
+  } else if (p[1] != null) {
+    p$1$0$live = false;
+    t = p[1];
+    result = t;
+  } else {
+    result = undefined;
   }
   if (p[0] != null) {
     if (p$0$0$live) {

@@ -1,12 +1,13 @@
 //! Tidy's jumps: `break`s, `continue`s, `return`s and labels, as a person
 //! writes a loop's or a block's exits.
 
+mod branch_ends;
 mod continues;
 mod labels;
 mod tails;
 mod tried;
 
-pub(super) use self::{continues::*, labels::*, tails::*, tried::*};
+pub(super) use self::{branch_ends::*, continues::*, labels::*, tails::*, tried::*};
 
 use super::*;
 use crate::js::result;

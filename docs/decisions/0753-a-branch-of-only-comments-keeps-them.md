@@ -368,3 +368,32 @@ Held by corpus `switch_default_comment_falls.rs` against native Rust,
 and by the mutations `ending-block-before-comments-kept`,
 `ending-comments-after-jump`, `default-marks-after-jump`,
 `default-of-a-jump-marked` and `guard-held-before-marks`.
+
+## Amendment: a then-block of only a comment, and a `return` arm before a last `_ => {}`'s comment (rd714, rd702, 2026-11-04)
+
+The rd702 amendment above let `jumps::ending` merge a block past the
+comments after it. That also took the mark of a then-block of only a
+comment, `if a || b || (c && d) { // retain these nodes } else { s }`,
+React's clearHead: MIR's inner block holds `s`, written after the
+comment, so merging it put the comment before `s`, and the test printed
+as `if (a || b) { // retain } else if (c !== .. || d !== ..) { s }`.
+**`ending` now merges past comments only when nothing in the block is
+written after them** (`continues::latest(body) < marked`): a last `_ =>
+{}`'s comment is after every arm, a then-block's comment before its
+`else`. The `if` is upstream's again, its test as written.
+
+And a `match` with an arm that returns, `1 => { ..; return None; }`,
+leaves MIR's block a `return result;` after its own `break bb24;`, which
+only `jumps again` drops, after `branch ends` ran. The block before the
+comment then kept its label until the `switch` was made, and each case
+ended `return finish(log);`, the comment in the first case: React's
+attemptEarlyBailoutIfNoScheduledUpdate. **`ending` now looks past that
+own `break` after the comments too**: a `break` of the block that ends
+it goes on where it would anyway. The comment is in the last case,
+above its `break;`, and the tail is after the `switch` once.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a comment runs
+nothing. Held by the corpus `if_only_comment_or_test.rs` and
+`switch_default_comment_after_return.rs` against native Rust, and the
+mutations `ending-merged-past-a-comment-before-code` and
+`ending-own-break-after-comments-kept`.

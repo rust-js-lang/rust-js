@@ -125,4 +125,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^let_match_empty_default.rs$"],
     snapshots: true,
   },
+  {
+    name: "default-copied-into-no-branch",
+    breaks:
+      "a `match`'s `_ => fallback`, a variable, keeps MIR's labeled block, `bb10: { .. break bb10; .. n = fallback; }`, not the assignment in each branch that fails to it (#567)",
+    file: "src/lower/mir/tidy/decisions/defaults.rs",
+    find: "        } else if copied_into_branches(stmts, i) {\n",
+    replace: "        } else if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_match_variable_default.rs$"],
+    snapshots: true,
+  },
 ];

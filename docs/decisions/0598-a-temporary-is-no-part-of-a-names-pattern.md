@@ -332,3 +332,19 @@ pattern and the copy, so the field the pattern reads has the value the
 copy reads. A copy that's changed after it, `let mut x = *x;`, makes the
 pattern's `const` a `let`. Held by corpus `pattern_binding_copied.rs`
 against native Rust and the mutation `copied-field-binding-own-let`.
+
+## Amendment: a tuple `match`'s item's parts are one pattern (2026-11-04)
+
+A tuple `match`'s pattern of a tuple in an item, the playground's
+`prepare`'s `(true, Some((module, files)))`, printed `const module =
+tests[0]; const files = tests[1];`, where `if let` and a `match` of the
+item alone print `const [module, files] = tests;`. MIR reads the parts
+of the tuple it made, `_4[1][0]`, and `tuple reads` makes them `tests[0]`
+only after `destructured` ran. **A second `destructured`, "destructured
+items", right after `tuple reads`, takes apart two or more items of a
+variable the program names**: no property alone, `const { value: wrap }
+= WRAP;`, nor what a temporary made, which the first pass decided.
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same reads in
+the same order. Held by corpus `tuple_match_item_destructured.rs`
+against native Rust and the mutations `destructured-items-left-apart`
+and `destructured-items-of-any-part`.

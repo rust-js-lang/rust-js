@@ -8,9 +8,12 @@ use super::*;
 /// b: c } = e;`; `let` if one of them is. Of a variable the program names,
 /// two or more parts in a row, `let (a, b) = t;`'s: `const [a, b] = t;`;
 /// one too of a `let`'s pattern, `patterns`, `const { message } = error;`.
+/// Where `items`, only the items of a variable the program names, two or
+/// more, `const [module, files] = tests;`.
 pub(super) fn destructured(
     stmts: &mut Vec<Stmt>,
     (patterns, lets, user): (&HashSet<String>, &HashSet<String>, &HashSet<String>),
+    items: bool,
 ) {
     let mut i = 0;
     while i < stmts.len() {
@@ -55,7 +58,8 @@ pub(super) fn destructured(
         let bound = parts.iter().all(|(_, name, ..)| patterns.contains(name));
         let enough = count >= if made || bound { 1 } else { 2 };
         let pattern = pattern_of(&parts);
-        if !enough || pattern.is_none() || (made && js::mentions_in(&stmts[first + count..], &name) > 0) {
+        let other = items && (made || !indexed || count < 2);
+        if !enough || other || pattern.is_none() || (made && js::mentions_in(&stmts[first + count..], &name) > 0) {
             i += 1;
             continue;
         }

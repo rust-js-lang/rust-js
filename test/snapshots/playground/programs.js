@@ -137,8 +137,7 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
   let entries = [];
   if (test) {
     if (tests != null) {
-      const module = tests[0];
-      const files = tests[1];
+      const [module, files] = tests;
       // The runner's `test`, as the test files import it: the frame's.
       sources.push([module, "export const test = globalThis.test;\n"]);
       entries = files.slice();

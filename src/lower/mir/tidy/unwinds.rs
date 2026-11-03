@@ -18,10 +18,30 @@ use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
 /// guard's `let` is written and where the block it's dropped at the end of
 /// ends. Whether it made one.
 pub(super) fn scoped_drops(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, u32)]) -> bool {
+    scoped_runs(stmts, result, guards, &|_| true)
+}
+
+/// `scoped_drops` of only the runs that step a loop `loops` makes a `for`
+/// of (`stepped`), however deep: as the early "drop scopes" stage asks,
+/// before `loops` reads them, each step's own `try` gone, so a loop in a
+/// drop guard's scope, in an `if` of it, `if (xs != null) { for (let i =
+/// xs.length - 1; i >= 0; i--) { .. } }`, is the `for` it is out of one
+/// (rd711). Whether it made one.
+pub(super) fn scoped_loops(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, u32)]) -> bool {
+    let steps = |run: &[Stmt]| {
+        let mut found = false;
+        js::each_list(run, &mut |list| found |= list.iter().any(|s| stepped(s).is_some()));
+        found
+    };
+    scoped_runs(stmts, result, guards, &steps)
+}
+
+/// `scoped_drops` of the runs `taken` takes.
+fn scoped_runs(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, u32)], taken: &dyn Fn(&[Stmt]) -> bool) -> bool {
     let mut scoped = false;
     let mut i = 0;
     while i < stmts.len() {
-        if let Some(end) = scope_end(stmts, i, result) {
+        if let Some(end) = scope_end(stmts, i, result).filter(|&end| taken(&stmts[i..end])) {
             let drop = stmts[end].clone();
             // A guard's `let` past each statement before the run, and what
             // their blocks hold: the run's, not an earlier value's.

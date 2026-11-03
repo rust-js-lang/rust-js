@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
     breaks:
       "each statement a value's drop ends stays its own `try { .. } catch (error) { drop(x); throw error; }`, not one `try { .. } finally { drop(x) }`",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "        if let Some(end) = scope_end(stmts, i, result) {\n",
+    find: "        if let Some(end) = scope_end(stmts, i, result).filter(|&end| taken(&stmts[i..end])) {\n",
     replace:
       "        if let Some(end) = scope_end(stmts, i, result).filter(|_| false) {\n",
     tests: panics,
@@ -410,5 +410,15 @@ export const mutations: Mutation[] = [
     find: "        StmtKind::Assign(target, value) => matches!(target.kind, ExprKind::Var(_)) && !value.has_effects(),\n",
     replace: "        StmtKind::Assign(_, value) => !value.has_effects(),\n",
     tests: ["test/corpus.test.ts", "-t", "^for_left_drops_its_rest_where_it_ends.rs$"],
+  },
+  {
+    name: "scoped-loops-left-to-their-steps",
+    breaks:
+      "a loop in an `if` in a drop guard's scope keeps each step's own `try` until `loops` has read it, so it's `$iter(xs.toReversed())` and `$next`, not a `for` (rd711)",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "        js::each_list(run, &mut |list| found |= list.iter().any(|s| stepped(s).is_some()));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^guard_scope_loop_in_an_if.rs$"],
+    snapshots: true,
   },
 ];

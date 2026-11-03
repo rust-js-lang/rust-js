@@ -13,19 +13,17 @@ const Mapped = {
     let mapped$0$live = true;
     let mapped$0$live$1 = true;
     let result;
-    bb9: {
-      let t;
-      if (mapped.TAG === "Single") {
-        mapped$0$live$1 = false;
-        t = mapped._0;
-      } else if (mapped.TAG === "Ambiguous") {
-        mapped$0$live = false;
-        t = mapped._0;
-      } else {
-        result = undefined;
-        break bb9;
-      }
+    let t;
+    if (mapped.TAG === "Single") {
+      mapped$0$live$1 = false;
+      t = mapped._0;
       result = t;
+    } else if (mapped.TAG === "Ambiguous") {
+      mapped$0$live = false;
+      t = mapped._0;
+      result = t;
+    } else {
+      result = undefined;
     }
     if (mapped.TAG === "Single") {
       if (mapped$0$live$1) {
@@ -44,19 +42,17 @@ const Mapped = {
     let mapped$1$live = true;
     let mapped$0$live = true;
     let result;
-    bb9: {
-      let t;
-      if (mapped.TAG === "Single") {
-        mapped$0$live = false;
-        t = mapped._0;
-      } else if (mapped.TAG === "Ambiguous") {
-        mapped$1$live = false;
-        t = mapped._1;
-      } else {
-        result = undefined;
-        break bb9;
-      }
+    let t;
+    if (mapped.TAG === "Single") {
+      mapped$0$live = false;
+      t = mapped._0;
       result = t;
+    } else if (mapped.TAG === "Ambiguous") {
+      mapped$1$live = false;
+      t = mapped._1;
+      result = t;
+    } else {
+      result = undefined;
     }
     if (mapped.TAG === "Single") {
       if (mapped$0$live) {
