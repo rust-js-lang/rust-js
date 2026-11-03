@@ -1079,8 +1079,12 @@ export async function open(other) {
   `(&'static str, FormDataEntryValue<'static>)`, text or a file; a
   `MutationObserver`'s `|records, observer| ..` is given `&'static
   [&'static MutationRecord]` and `&'static MutationObserver`, an idle
-  callback's deadline is a `&'static IdleDeadline`, and a `js::Map`'s
-  `for_each` gives the map as a `&'static Map`. A closure that writes its
+  callback's deadline is a `&'static IdleDeadline`, a `js::Map`'s
+  `for_each` gives the map as a `&'static Map`, a shared listener,
+  `webapi::listener(|event| ..)`'s, is a `&'static dyn Fn(&'static
+  Event)`, and a `js::ProxyHandler`'s `apply` is given its arguments as a
+  `&'static [Option<&'static Unknown>]` and its `define_property` the
+  descriptor as a `&'static PropertyDescriptor<'static>`. A closure that writes its
   parameters' types, `|entries: &[&ResizeObserverEntry], _:
   &ResizeObserver|`, is one of any borrow, so it's given these as it was
   ([ADR 0281](../../decisions/0281-webapi-covers-typescripts-dom.md), amended).

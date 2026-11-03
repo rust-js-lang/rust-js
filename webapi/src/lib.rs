@@ -84102,8 +84102,10 @@ impl<T: IsA<EventTarget>> EventTargetExt for T {}
 /// The function itself, never a wrapper. For shared mutable state, capture a Cell or RefCell.
 /// Specify the event when inference needs it: listener::<PointerEvent>(|e| ..).
 /// A function of its `this`, `function::with_this(..)`'s, is a listener as it is (rd209).
+/// JS calls it, so it's given the event as JS gives it, `&'static E`, which it may keep,
+/// as every callback JS calls is (ADR 0281, amended).
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-pub fn listener<E>(this: impl Fn(&E) + 'static) -> &'static dyn Fn(&E) {
+pub fn listener<E: 'static>(this: impl Fn(&'static E) + 'static) -> &'static dyn Fn(&'static E) {
     unreachable!()
 }
 

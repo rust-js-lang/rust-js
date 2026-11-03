@@ -645,6 +645,77 @@ pub fn map_of(map: &js::Map<str, f64>) -> Option<&'static js::Map<str, f64>> {
   }
 });
 
+// rd663's follow-up: a shared listener, `webapi::listener(..)`'s, is a
+// callback JS calls too, so it's given its event as JS gives it, which it
+// may keep, `&'static dyn Fn(&'static E)`, as every other callback's is; a
+// closure that types its parameter, and a listener typed of any borrow,
+// compile as they did.
+test("a shared listener is given an event it may keep", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-listener-kept");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use webapi::{Event, EventTarget, EventTargetExt, HTMLElement, PointerEvent, listener};
+
+thread_local! {
+    static LAST: Cell<Option<&'static Event>> = const { Cell::new(None) };
+    static CLICKED: Cell<Option<&'static PointerEvent>> = const { Cell::new(None) };
+}
+
+pub fn listen(target: &EventTarget) -> &'static dyn Fn(&'static Event) {
+    let kept = listener(|event| LAST.set(Some(event)));
+    target.add_event_listener_named("custom", kept, None);
+    kept
+}
+
+pub fn last() -> Option<&'static Event> {
+    LAST.get()
+}
+
+pub fn clicked(button: &HTMLElement) {
+    button.set_onclick(Some(&listener(|event: &PointerEvent| CLICKED.set(Some(event)))));
+}
+
+pub fn click() -> Option<&'static PointerEvent> {
+    CLICKED.get()
+}
+
+pub fn once(target: &'static EventTarget, given: &'static dyn Fn(&Event)) -> &'static dyn Fn(&'static Event) {
+    let shared = listener(move |event: &Event| {
+        target.remove_event_listener_named("custom", given, None);
+        given(event);
+    });
+    target.add_event_listener_named("custom", shared, None);
+    shared
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  function kept(event) {\n    LAST = event;\n  }\n  target.addEventListener("custom", kept);\n  return kept;');
+  expect(js).toContain("  button.onclick = (event) => {\n    CLICKED = event;\n  };");
+  const lib = await import(join(dir, "lib.js"));
+  const added: [string, Function][] = [];
+  const removed: [string, Function][] = [];
+  const host = {
+    addEventListener: (type: string, f: Function) => void added.push([type, f]),
+    removeEventListener: (type: string, f: Function) => void removed.push([type, f]),
+  };
+  const kept = lib.listen(host);
+  expect(added).toEqual([["custom", kept]]);
+  const event = { type: "custom" };
+  kept(event);
+  expect(lib.last()).toBe(event);
+  const button: { onclick?: Function } = {};
+  lib.clicked(button);
+  const click = { type: "click" };
+  button.onclick!(click);
+  expect(lib.click()).toBe(click);
+  const seen: unknown[] = [];
+  const given = (e: unknown) => void seen.push(e);
+  const shared = lib.once(host, given);
+  shared(event);
+  expect([seen, removed]).toEqual([[event], [["custom", given]]]);
+});
+
 // rd506's audit: of an untagged enum of one class and kinds JS tells by
 // their value, a form entry's `File | string`, the class is what's left,
 // each other tested, `typeof entry === "string"`, so no `instanceof File`

@@ -38,8 +38,9 @@ test("event methods and reusable listeners emit direct JavaScript", () => {
   // checkPassiveEvents' options object, the listener and both options.
   expect(js).toContain('button.addEventListener("test", listener, options);\n  button.removeEventListener("test", listener, options);');
   expect(js).toContain('if (typeof given === "function") {\n      given.call(this, event);\n    } else {\n      given.handleEvent(event);\n    }');
-  // A listener typed `&'static dyn Fn(&Event)`, of every event's lifetime, is
-  // one too: made, assigned, returned and removed as the function itself.
+  // A listener typed `&'static dyn Fn(&'static Event)`, as JS gives its
+  // event, is one too: made, assigned, returned and removed as the function
+  // itself.
   expect(js).toContain('if (once) {\n    const original = shared;\n    shared = (event) => {\n      button.removeEventListener("custom", original);\n      original(event);\n    };\n  }\n  button.addEventListener("custom", shared);\n  return shared;');
 });
 

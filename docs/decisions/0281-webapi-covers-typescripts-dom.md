@@ -6,7 +6,8 @@ a window's global scope has is a `Window` method too. Amended (rd560):
 an iterable's `for_each` takes an `impl FnMut`, which may borrow; and
 (rd574) what it gives that callback is JS's, `'static`, which it may keep;
 and (rd663) so is what JS gives every callback, an observer's, a timer's
-or a request's.
+or a request's; and (rd663's follow-up) a shared listener's,
+`webapi::listener(..)`'s, and a proxy's traps'.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -394,7 +395,7 @@ What stays lent: a function Rust calls, one a getter gives, `onclick()`'s
 the most a Rust caller may give. `webapi::listener`'s `impl Fn(&E)`, which
 JS calls with its event, stays as it is: its result, `&'static dyn
 Fn(&E)`, is what react-in-rust's callers name, so making it `'static`
-needs their edit first.
+needs their edit first (done, below).
 
 - A closure that writes its parameters' types, `|entries:
   &[&ResizeObserverEntry], _: &ResizeObserver|`, is one of any lifetime,
@@ -407,3 +408,75 @@ Held by `test/webapi-objects.test.ts`'s "an observer's or a timer's
 callback is given values it may keep", of a `MutationObserver`'s records
 and itself, an idle deadline, `getAsString`'s text, a `ResizeObserver`
 closure that types its parameters, and a `js::Map`'s `forEach`'s map.
+
+## Amendment: a shared listener and a proxy's traps are given what JS gives (rd663's follow-up)
+
+rd663 left two callbacks JS calls lent. `webapi::listener<E>(impl
+Fn(&E) + 'static) -> &'static dyn Fn(&E)`, the shared listener a
+program adds and removes by identity and sets as an event handler, is a
+function JS calls with its event, yet couldn't keep it: `listener(|event|
+LAST.set(Some(event)))` was refused, "borrowed data escapes outside of
+closure". And the js crate's `ProxyHandler` gave `apply` and `construct`
+their arguments as `&[Option<&'static Unknown>]` and `define_property` its
+descriptor as `&PropertyDescriptor<'_>`, where JS gives each trap an array
+and an object it made for the call, which nothing else holds.
+
+**Each is given what JS gives it, `jsGives`' `'static` borrows**, the one
+rule of a value JS gives a callback:
+
+- `webapi::listener<E: 'static>(this: impl Fn(&'static E) + 'static) ->
+  &'static dyn Fn(&'static E)`, written by the generator through
+  `jsGives`. What it gives is what every listener and handler sink already
+  takes, `Fn(&'static E) + Copy + 'static`.
+- `ProxyHandler::apply`: `Fn(&'static Unknown, Option<&'static Unknown>,
+  &'static [Option<&'static Unknown>]) -> Option<&'static Unknown>`;
+  `construct`: `Fn(&'static Unknown, &'static [Option<&'static Unknown>],
+  &'static Unknown) -> &'static Unknown`; `define_property`:
+  `Fn(&'static Unknown, &'static Unknown, &'static
+  PropertyDescriptor<'static>) -> bool`. The other traps were given
+  `&'static` values already (ADR 0283, amended, rd471), and what a trap
+  gives back, `get_own_property_descriptor`'s and `own_keys`', is its own.
+
+```rust
+pub fn listen(target: &EventTarget) -> &'static dyn Fn(&'static Event) {
+    let kept = listener(|event| LAST.set(Some(event)));
+    target.add_event_listener_named("custom", kept, None);
+    kept
+}
+```
+```js
+export function listen(target) {
+  function kept(event) {
+    LAST = event;
+  }
+  target.addEventListener("custom", kept);
+  return kept;
+}
+```
+
+- A closure that types its parameter, `listener(move |event: &Event|
+  ..)`, compiles as it did: rustc takes its signature from what `listener`
+  expects, so it's given a `&'static Event` it may pass to a listener of
+  `&'static` events. A listener typed of any borrow, `&'static dyn
+  Fn(&Event)`, is one of `&'static` events too, by subtyping, so it's
+  given to `add_event_listener` and called as it was; and an annotation of
+  the new type, `&'static dyn Fn(&'static Event)`, compiles against the
+  old `listener` too, so a port can change its annotations before the
+  binding does.
+- What changes for a caller is a type that names `listener`'s result of
+  any borrow: `let on_abort: &'static dyn Fn(&Event) = listener(..)` and a
+  struct field or function signature that holds one. Each is now
+  `&'static dyn Fn(&'static Event)`, as React DOM's port writes them
+  (`ReactFiberConfigDOM.rs`'s `on_abort` and `RemoveFocusListener`'s
+  `handle_focus`, `EventListener.rs`' `add_event_bubble_listener` and
+  `add_event_capture_listener`).
+- No compiler change: the JS is the same, the function itself.
+- Case ([0262](0262-when-rust-and-js-disagree.md)): none: JS gives the
+  same values, and Rust may hold them as long as JS keeps them.
+
+Held by `test/webapi-objects.test.ts`'s "a shared listener is given an
+event it may keep", of a listener that keeps its event, an `onclick` one
+that types its parameter and keeps it, and one that calls a listener typed
+of any borrow; and `test/js-builtins.test.ts`'s "a proxy's traps are
+given values they may keep", of `apply`'s, `construct`'s and
+`defineProperty`'s.

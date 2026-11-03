@@ -278,6 +278,14 @@ gives back what it's given. Closures written before compile as they did.
 Held by `test/js-builtins.test.ts` ("Reflect and Proxy are JS's",
 `provided`).
 
+rd663's follow-up gave the rest what JS gives them, as every callback JS
+calls is given (ADR 0281, amended): **`apply`'s and `construct`'s
+arguments are `&'static [Option<&'static Unknown>]`**, the array JS made of
+them, and **`define_property`'s descriptor `&'static
+PropertyDescriptor<'static>`**, the object JS made of it, so a trap may
+keep either. Held by `test/js-builtins.test.ts` ("a proxy's traps are
+given values they may keep").
+
 ## Amendment (2026-11-01): `error::new`'s message is optional (rd474)
 
 React's Flight server stashes `new Error()` on a thenable's DEV

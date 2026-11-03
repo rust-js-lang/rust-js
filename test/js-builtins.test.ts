@@ -486,6 +486,72 @@ pub fn keyed(id: u32) -> (&'static JsObject, &'static WeakMap<JsObject, u32>) {
   expect(known.get(reference)).toBe(7);
 });
 
+// rd663's follow-up: what JS gives a trap is JS's, `'static`, which the trap
+// may keep, as what JS gives every callback is (ADR 0281, amended): `apply`'s
+// and `construct`'s arguments, the array JS made of them, and
+// `defineProperty`'s descriptor, the object JS made of it.
+test("a proxy's traps are given values they may keep", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("js-proxy-kept");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use js::{JsObject, PropertyDescriptor, ProxyHandler, Unknown, proxy, reflect};
+
+type Arguments = &'static [Option<&'static Unknown>];
+
+thread_local! {
+    static CALLED: Cell<Arguments> = const { Cell::new(&[]) };
+    static MADE: Cell<Arguments> = const { Cell::new(&[]) };
+    static DEFINED: Cell<Option<&'static PropertyDescriptor<'static>>> = const { Cell::new(None) };
+}
+
+pub fn proxied(target: &'static JsObject) -> &'static JsObject {
+    let handler = ProxyHandler {
+        apply: Some(Box::new(|_, _, arguments| {
+            CALLED.set(arguments);
+            None
+        })),
+        construct: Some(Box::new(|target, arguments, _| {
+            MADE.set(arguments);
+            target
+        })),
+        define_property: Some(Box::new(|target, key, descriptor| {
+            DEFINED.set(Some(descriptor));
+            reflect::define_property(target, key, descriptor)
+        })),
+        ..Default::default()
+    };
+    proxy::new(target, &handler)
+}
+
+pub fn called() -> Arguments {
+    CALLED.get()
+}
+
+pub fn made() -> Arguments {
+    MADE.get()
+}
+
+pub fn defined() -> Option<&'static PropertyDescriptor<'static>> {
+    DEFINED.get()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    apply(_, _$1, arguments$) {\n      CALLED = arguments$;\n    },\n    construct(target, arguments$) {\n      MADE = arguments$;");
+  expect(js).toContain("    defineProperty(target, key, descriptor) {\n      DEFINED = descriptor;");
+  const lib = await import(join(dir, "lib.js"));
+  const callee = function () {};
+  const p = lib.proxied(callee);
+  p(1, "a");
+  expect(lib.called()).toEqual([1, "a"]);
+  expect(new p(2)).toBe(callee);
+  expect(lib.made()).toEqual([2]);
+  Object.defineProperty(p, "x", { value: 3, configurable: true });
+  expect(lib.defined()).toEqual({ value: 3, configurable: true });
+  expect((callee as unknown as { x: number }).x).toBe(3);
+});
+
 // ADR 0283: Atomics' functions take an integer typed array, its element a
 // Rust number of its kind, and one that a thread may wait on a
 // SharedArrayBuffer's.

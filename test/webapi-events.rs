@@ -174,10 +174,10 @@ pub fn kept_wrapped(buttons: &[&HTMLButtonElement], given: EventListenerOrEventL
     attached
 }
 
-// React DOM's listeners, typed as a Rust engineer types them, `&'static
-// dyn Fn(&Event)`: one made of a closure of `&Event`, assigned over the one
-// given and returned as one, and the one given removed.
-pub fn unsubscribed(button: &'static HTMLButtonElement, given: &'static dyn Fn(&Event), once: bool) -> &'static dyn Fn(&Event) {
+// React DOM's listeners, typed as JS gives them their event, `&'static
+// dyn Fn(&'static Event)`: one made of a closure of `&Event`, assigned over
+// the one given and returned as one, and the one given removed.
+pub fn unsubscribed(button: &'static HTMLButtonElement, given: &'static dyn Fn(&'static Event), once: bool) -> &'static dyn Fn(&'static Event) {
     let mut shared = given;
     if once {
         let original = shared;

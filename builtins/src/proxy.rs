@@ -50,15 +50,19 @@ impl<T: ?Sized> RevocableProxy<T> {
 /// operation without one is its target's. Each takes the target, and a
 /// key is a string or a symbol, each a JS value, `&'static`, as what JS
 /// gives is, so a trap may give one back, `get`'s `receiver`, React's
-/// Flight `case 'Provider': return receiver;`.
+/// Flight `case 'Provider': return receiver;`, or keep it: `apply`'s and
+/// `construct`'s arguments, the array JS made of them, and
+/// `defineProperty`'s descriptor, the object JS made of it, are JS's too,
+/// as what JS gives every callback is (ADR 0281, amended, rd663).
 #[derive(Default)]
 #[allow(clippy::type_complexity)]
 pub struct ProxyHandler {
     /// `apply(target, this, args)`: a call of the proxy.
-    pub apply: Option<Box<dyn Fn(&'static Unknown, Option<&'static Unknown>, &[Option<&'static Unknown>]) -> Option<&'static Unknown>>>,
+    pub apply: Option<Box<dyn Fn(&'static Unknown, Option<&'static Unknown>, &'static [Option<&'static Unknown>]) -> Option<&'static Unknown>>>,
     /// `construct(target, args, newTarget)`: `new` of the proxy, an object.
-    pub construct: Option<Box<dyn Fn(&'static Unknown, &[Option<&'static Unknown>], &'static Unknown) -> &'static Unknown>>,
-    pub define_property: Option<Box<dyn Fn(&'static Unknown, &'static Unknown, &PropertyDescriptor<'_>) -> bool>>,
+    pub construct: Option<Box<dyn Fn(&'static Unknown, &'static [Option<&'static Unknown>], &'static Unknown) -> &'static Unknown>>,
+    /// `defineProperty(target, key, descriptor)`: `Object.defineProperty(proxy, key, ..)`, whether it was.
+    pub define_property: Option<Box<dyn Fn(&'static Unknown, &'static Unknown, &'static PropertyDescriptor<'static>) -> bool>>,
     pub delete_property: Option<Box<dyn Fn(&'static Unknown, &'static Unknown) -> bool>>,
     /// `get(target, key, receiver)`: `proxy[key]`.
     pub get: Option<Box<dyn Fn(&'static Unknown, &'static Unknown, &'static Unknown) -> Option<&'static Unknown>>>,

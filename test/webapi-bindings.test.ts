@@ -315,7 +315,7 @@ pub fn listen() {
     );
 }
 
-pub fn listened() -> &'static dyn Fn(&SubmitEvent) {
+pub fn listened() -> &'static dyn Fn(&'static SubmitEvent) {
     let submitted = listener(|event: &SubmitEvent| event.prevent_default());
     window_global::add_event_listener(Submit, submitted, None);
     window_global::remove_event_listener(Submit, submitted, None);

@@ -177,9 +177,9 @@ export function keptWrapped(buttons, given) {
   return attached;
 }
 
-// React DOM's listeners, typed as a Rust engineer types them, `&'static
-// dyn Fn(&Event)`: one made of a closure of `&Event`, assigned over the one
-// given and returned as one, and the one given removed.
+// React DOM's listeners, typed as JS gives them their event, `&'static
+// dyn Fn(&'static Event)`: one made of a closure of `&Event`, assigned over
+// the one given and returned as one, and the one given removed.
 export function unsubscribed(button, given, once) {
   let shared = given;
   if (once) {
