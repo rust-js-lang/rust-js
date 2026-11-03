@@ -402,4 +402,58 @@ export const mutations: Mutation[] = [
     replace: "            comb @ crate::lower::combinators::Comb::Or,\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "catch_unwind gives"],
   },
+  {
+    name: "nullable-ref-as-given",
+    breaks:
+      "a `&mut` to a nullable place is its place alone, so what's written through it, a callee's box copied back, `mem::swap`, is stored as it is, `fiber.owner = slot.value` (#541)",
+    file: "src/lower/mir/nulled.rs",
+    find: "|| !self.stores_null_for_none(state, place) {\n",
+    replace: "|| true {\n",
+    tests: ["test/lowering-nullable-borrows.test.ts", "-t", "written through a borrow"],
+  },
+  {
+    name: "nullable-assigned-undefined",
+    breaks:
+      "a nullable field assigned `None`, `context.label = None`, is `undefined`, where its cell's `set` writes `null` (ADR 0810)",
+    file: "src/lower/mir/nulled.rs",
+    find: "            Some(field) => bindings::is_nullable(self.tcx, field),\n",
+    replace:
+      "            Some(field) => false && bindings::is_nullable(self.tcx, field),\n",
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "an optional nullable field",
+    ],
+  },
+  {
+    name: "own-nullable-param-set-undefined",
+    breaks:
+      "a function's own nullable parameter set to `None` is `undefined`, `children = undefined`, where its callback is to be given `null` (ADR 0861)",
+    file: "src/lower/mir/nulled.rs",
+    find: "            None => self.own_nullable_param(state, place),\n",
+    replace: "            None => false,\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
+  },
+  {
+    name: "got-mut-written-undefined",
+    breaks:
+      "a nullable `RefCell` field written through its `get_mut` is `undefined` for `None`, not `null` (ADR 0863)",
+    file: "src/lower/mir/nulled.rs",
+    find: "            .or_else(|| self.field_got_mut(state, place))\n",
+    replace: "",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable RefCell field"],
+  },
+  {
+    name: "nullable-item-written-undefined",
+    breaks:
+      "a nullable field's `Vec<Option<T>>` item set `None` by index is `undefined`, where React's JS tests `=== null`",
+    file: "src/lower/mir/nulled.rs",
+    find: "            .or_else(|| self.field_item(state, place));\n",
+    replace: "            ;\n",
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "Vec of Options holds null",
+    ],
+  },
 ];

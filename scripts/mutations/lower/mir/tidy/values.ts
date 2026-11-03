@@ -370,14 +370,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "set only to values"],
   },
   {
-    name: "handle-in-place-write-unstored",
-    breaks: "a nullable field's handle put in place and written, `(handle).value = undefined`, is its place written `undefined`, where its handle stores `null`",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "        ExprKind::Handle(place, storage) if its_place(place) => Some(*storage),\n",
-    replace: "        ExprKind::Handle(place, storage) if its_place(place) && false => Some(*storage),\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "written through its guard in a branch"],
-  },
-  {
     name: "in-place-handle-assigned",
     breaks: "a flattened state written whole through its handle assigns the variable holding its object, `chunk = { status }`, not each key (rd380)",
     file: "src/lower/mir/tidy/values.rs",
@@ -440,6 +432,26 @@ export const mutations: Mutation[] = [
     find: "                && (matches!(place.kind, ExprKind::Member(..))\n                    && !(in_place && matches!(storage, js::Storage::InPlace(_)))\n",
     replace: "                && (matches!(place.kind, ExprKind::Member(..))\n                    && !in_place\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_variant_fields.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "nullable-handle-of-variable-kept",
+    breaks:
+      "a variable's handle on a nullable parameter or an item isn't read as its place, `const place = { get value() { return x; } .. }` (#541)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "                    || matches!(storage, js::Storage::NullForNone)\n",
+    replace: "                    || false && matches!(storage, js::Storage::NullForNone)\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "handle-of-an-item-not-reread",
+    breaks:
+      "a handle on an item, `fiber.lanes[0]`, isn't read again where it's used, so it's kept, `const place = { get value() { return fiber.lanes[0]; } .. }` (#541)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        while let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &root.kind {\n",
+    replace: "        while let ExprKind::Member(of, _) = &root.kind {\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
     snapshots: true,
   },
 ];

@@ -156,6 +156,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         .then_some(js::Known::NoneNull)
     }
 
+    /// Whether `place` stores `null` for `None`, however it's written: a
+    /// `#[rust_js::nullable]` field, one a `RefCell`'s `get_mut` lent, `*t.types.get_mut()` (ADR 0863), an
+    /// item of one's items, `v[i]` (ADR 0586, amended), or a parameter its
+    /// function names nullable (ADR 0861). The one answer of it: a write of
+    /// it stores so (`Storage::NullForNone`), and so does a `&mut` to it,
+    /// its handle, wherever that's given (#541).
+    pub(super) fn stores_null_for_none(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
+        let field = (self.place_field(state, place))
+            .or_else(|| self.field_got_mut(state, place))
+            .or_else(|| self.field_item(state, place));
+        match field {
+            Some(field) => bindings::is_nullable(self.tcx, field),
+            None => self.own_nullable_param(state, place),
+        }
+    }
+
+    /// A `&mut` to `place`, `target` its JS: of one that stores `null` for
+    /// `None` (`stores_null_for_none`), a handle on it that stores so,
+    /// held, its `value` the `&mut`'s place, whatever's written through
+    /// it, a callee's box copied back too, `fiber.owner = slot.value ??
+    /// null` (#541). Of any other, `target`.
+    pub(super) fn nullable_ref(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        place: Place<'tcx>,
+        target: Expr,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        if self.option_of(place.ty(state.body, self.tcx).ty).is_none() || !self.stores_null_for_none(state, place) {
+            return Ok(Value::Ref(target));
+        }
+        self.flush(state, out)?;
+        let handle = Expr::stored_handle(target, js::Storage::NullForNone);
+        Ok(Value::Ref(self.through_handle(handle, out)))
+    }
+
     /// What `operand`, an `Option`, is to a `#[rust_js::nullable]` place
     /// it's stored in: `null` or a value already (`nulled`), what an
     /// optional nullable field holds, read, which another such takes as it

@@ -42,6 +42,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .is_some_and(|held| self.is_value_cell(self.ref_cell_of(held)))
     }
 
+    /// What a `with` or a `with_borrow_mut` of a `#[rust_js::nullable]`
+    /// thread-local lends what it runs, `key` the cell: of one that's its
+    /// module's variable (`quiet`), a handle on what it holds that stores
+    /// `null` for `None`, whatever's written through it, inlined
+    /// `current = noneOf(n) ?? null` (#541); of another, the cell itself,
+    /// which stores so of itself (`plain_statics`). Of any other, `key`.
+    fn nullable_lent(&self, key: Expr, call: &Call<'_, 'tcx>) -> Expr {
+        match call.null_for_none && call.quiet {
+            true => Expr::stored_handle(Expr::held(key), js::Storage::NullForNone),
+            false => key,
+        }
+    }
+
     /// What changes a place: `Cell`s, atomics, thread-locals, and `mem::drop` and `forget` (ADRs 0025, 0074, 0098): `None` if `known` is another.
     pub(in crate::lower) fn cell_call(
         &mut self,
@@ -506,7 +519,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if generic_args.type_at(0).is_bool() {
                     key.facts = key.facts.with(js::Known::Boolean);
                 }
-                crate::lower::calls::apply(f, vec![key])
+                crate::lower::calls::apply(f, vec![self.nullable_lent(key, &call)])
             }
             Std::LocalBorrow { mutable } => {
                 let mut given = vec![arg(), arg()];
@@ -524,7 +537,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if call.quiet {
                     let [key, f] = <[Expr; 2]>::try_from(given).ok().expect("a key and a function");
                     let given = match itself || mutable && !self.is_object(generic_args.type_at(0)) {
-                        true => key,
+                        true => self.nullable_lent(key, &call),
                         false => Expr::held(key),
                     };
                     return Ok(Some(crate::lower::calls::apply(f, vec![given])));
@@ -563,11 +576,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// gave the closure of each what it holds, an object's, which it shares
 /// (ADR 0328), where its borrow was lowered (`Std::LocalBorrow`). And of `held_values`, its thread-locals of a value
 /// and `static mut`s (`holds_a_value`), those it exports still their `{
-/// value }`, which the caller refuses (ADR 0270, amended).
+/// value }`, which the caller refuses (ADR 0270, amended). A
+/// `#[rust_js::nullable]` one of `nullable` kept as its cell, lent whole
+/// where something counts its borrows, is a cell that stores `null` for
+/// `None` however it's written, `$nullableCell(null)`, as its reads take it
+/// (#541).
 pub(in crate::lower) fn plain_statics(
     items: &mut [js::Item],
     quiet: &HashSet<&str>,
     held_values: &HashSet<&str>,
+    nullable: &HashSet<&str>,
 ) -> (Vec<(String, bool)>, Vec<String>) {
     // A closure called where it's made: its body (ADRs 0581, 0840), in a
     // function or in what the module runs when it's loaded, which no
@@ -702,7 +720,42 @@ pub(in crate::lower) fn plain_statics(
             _ => None,
         })
         .collect();
+    for item in items.iter_mut() {
+        if let js::Item::Const(c) = item
+            && nullable.contains(c.name.as_str())
+        {
+            nullable_cell(&mut c.value);
+        }
+    }
     (exported, boxed)
+}
+
+/// `made`, a thread-local's cell, `{ value: init }`, as one that stores
+/// `null` for `None`, `$nullableCell(init)`; of one made where it's first
+/// used, `$local(() => ({ value: init }))`, what its initializer returns
+/// (#541).
+fn nullable_cell(made: &mut Expr) {
+    match &mut made.kind {
+        js::ExprKind::Object(props, ..) if is_box(&Expr::object(props.clone())) => {
+            if let Some(js::Prop::Field(_, init)) = props.pop() {
+                *made = Expr::call_helper("$nullableCell", vec![init]);
+            }
+        }
+        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$local") => {
+            if let [arrow] = args.as_mut_slice()
+                && let js::ExprKind::Arrow(_, body) = &mut arrow.kind
+            {
+                js::statement_lists(body, &mut |stmts| {
+                    for stmt in stmts.iter_mut() {
+                        if let StmtKind::Return(Some(cell)) = &mut stmt.kind {
+                            nullable_cell(cell);
+                        }
+                    }
+                });
+            }
+        }
+        _ => {}
+    }
 }
 
 /// Each `$take(name, v)` of `stmts`, a `take()` or `replace(v)` of the

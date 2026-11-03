@@ -829,4 +829,22 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "a replace of a JS-made struct's cell field whose old value nothing reads"],
   },
+  {
+    name: "nullable-lent-as-given",
+    breaks:
+      "a nullable thread-local that's its module's variable is lent its box, so what's written through it is stored as it is, `current = noneOf(1)` (#541)",
+    file: "src/lower/std_types/cell.rs",
+    find: "            true => Expr::stored_handle(Expr::held(key), js::Storage::NullForNone),\n",
+    replace: "            true => key,\n",
+    tests: ["test/lowering-nullable-borrows.test.ts", "-t", "written through a borrow"],
+  },
+  {
+    name: "nullable-cell-kept-plain",
+    breaks:
+      "a nullable thread-local kept as its cell is a `{ value }`, so what a counted lend writes, `$withBorrowMut(counted, clearGeneric, true)`, is stored as it is (#541)",
+    file: "src/lower/std_types/cell.rs",
+    find: "            nullable_cell(&mut c.value);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
+  },
 ];

@@ -202,4 +202,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^refcell_field_lent_held.rs$"],
   },
+  {
+    name: "nullable-cell-stores-undefined",
+    breaks:
+      "a nullable thread-local's cell stores what it's written, `undefined` too, where its reads are tested `=== null` (#541)",
+    file: "src/runtime/borrow.js",
+    find: "      value = given ?? null;\n",
+    replace: "      value = given;\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
+  },
 ];

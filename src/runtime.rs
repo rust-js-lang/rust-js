@@ -387,6 +387,8 @@ const PURE: &[&str] = &[
     // A struct's `RefCell` field's one cell, made where it's first asked
     // (ADR 0863, amended).
     "$fieldCell",
+    // A nullable thread-local's cell, its `None` `null` (#541).
+    "$nullableCell",
     // A thread-local's holder, whose initializer runs at its first use
     // (ADR 0037, amended).
     "$local",

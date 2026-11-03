@@ -50,6 +50,21 @@ function $fieldCell(object, key, nullable) {
   return cell;
 }
 
+// A `#[rust_js::nullable]` thread-local's cell, kept as a cell where it's
+// lent whole (#541): its `None` `null` however it's written, through a
+// `with`'s `&RefCell` or a `with_borrow_mut`'s `&mut` too, as its reads
+// take it; its `value` alone seen, as a `{ value }`'s is.
+function $nullableCell(value) {
+  return {
+    get value() {
+      return value;
+    },
+    set value(given) {
+      value = given ?? null;
+    },
+  };
+}
+
 // `try_borrow()`, `try_borrow_mut()`: `Ok` of a guard held, or `Err` of
 // the error, which is its message.
 function $tryBorrow(cell, mutable) {

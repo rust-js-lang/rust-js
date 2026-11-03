@@ -113,3 +113,12 @@ read and write a place made fixed the same way.
   each of `set`, `replace` and `take`, of a nullable and a plain `Cell`),
   and `cell_reached_through_a_call.rs` and `cell_alias_in_a_closure.rs`
   against native Rust.
+
+## Amendment: a `&mut` to any nullable place (2026-11-04, #541)
+
+The handle that stores as its place does is now the `&mut` to any place that
+stores `null` for `None`, a field, an item or a parameter, not only to a
+nullable field's cell. It's held by a variable, as a guard's is, since
+`Expr::held` of a handle is its place alone. The same goes for what a nullable
+thread-local that's its module's variable lends, resolved where its closure is
+applied in place ([ADR 1078](1078-a-nullable-place-stores-null-however-its-written.md)).

@@ -757,4 +757,13 @@ export const mutations: Mutation[] = [
     replace: "    if false\n        && ref_cells.get().is_none()\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "a library none of whose bodies borrows a RefCell says its quiet fields"],
   },
+  {
+    name: "nullable-cells-unnamed",
+    breaks:
+      "no thread-local of a module is said nullable to `plain_statics`, so one kept as its cell is a `{ value }` that stores what it's written (#541)",
+    file: "src/lower/pipeline.rs",
+    find: "                        && super::bindings::nullable_local_cell(tcx, key.to_def_id())\n",
+    replace: "                        && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
+  },
 ];

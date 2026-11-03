@@ -1157,6 +1157,17 @@ export function ratio(a, b) {
   current : undefined) != null`, where one of a value that's always
   there, `wanted.then_some(item).is_some()`, is its test alone, `wanted`
   (ADR 0910, amended, #539).
+  A nullable place stores `null` for `None` however it's written. That
+  includes writes through a borrow: what a thread-local's `with` or
+  `with_borrow_mut` lends, `TARGET.with_borrow_mut(|t| *t = none_of(n))`'s
+  `target = noneOf(n) ?? null;`. It includes a `&mut` to a nullable field,
+  to an item of one's items or to a nullable parameter, given to generic
+  code too: `clear_slot(&mut fiber.owner, n)`'s `const slot = { value:
+  fiber.owner }; clearSlot(slot, n); fiber.owner = slot.value ?? null;`.
+  A nullable thread-local kept as its cell, lent where its borrows are
+  counted, is one that stores so itself, `const target =
+  $nullableCell(null);`
+  ([ADR 1078](../../decisions/1078-a-nullable-place-stores-null-however-its-written.md)).
   A `Some(..)` given to one is its value, `Object.create(Object.prototype)`.
   A result is `?? null` of an `Option` that may be `undefined`, and a
   nullable function's call as it is, `null` for `None` already, `return

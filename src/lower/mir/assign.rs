@@ -266,13 +266,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // (ADR 0863).
         // What an optional one holds, given another, is as it is (ADR 0810,
         // amended).
-        let field = (self.place_field(state, *place))
-            .or_else(|| self.field_got_mut(state, *place))
-            .or_else(|| self.field_item(state, *place));
-        let nullable = match field {
-            Some(field) => bindings::is_nullable(self.tcx, field),
-            None => self.own_nullable_param(state, *place),
-        };
+        let nullable = self.stores_null_for_none(state, *place);
         let optional = (self.place_field(state, *place)).is_some_and(|field| bindings::is_optional(self.tcx, field));
         let value = match nullable {
             true => {

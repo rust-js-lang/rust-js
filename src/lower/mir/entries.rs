@@ -340,12 +340,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::MemTake => (self.default_value(pointee, span)?, None),
             _ => (self.value_expr(values.next().expect("a value"), span)?, None),
         };
-        // A `#[rust_js::nullable]` field, or an item of one's items, stores
-        // `null` for `None`, `root.pending.take()` (ADR 0996), `v[i].take()`
-        // (ADR 0586, amended).
-        let b = match b_place.is_none() && self.lends_nullable_place(state) {
-            true => js::Storage::NullForNone.written(b, false),
-            false => b,
+        // A `&mut` to a place that stores `null` for `None`, a handle on it
+        // (`nulled::nullable_ref`): a `#[rust_js::nullable]` field's,
+        // `root.pending.take()` (ADR 0996), an item of one's items,
+        // `v[i].take()` (ADR 0586, amended), written so here, its place read
+        // and written as a path (ADR 1078).
+        let (a, b) = match self.unhandled(&a).filter(|_| b_place.is_none()) {
+            Some(place) => (place, js::Storage::NullForNone.written(b, false)),
+            None => (a, b),
         };
         // A take of a place rust-js made, read and written as a path, may
         // write where it was `Some` (`Known::Taken`, ADR 0996).

@@ -733,20 +733,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "nullable-assigned-undefined",
-    breaks:
-      "a nullable field assigned `None`, `context.label = None`, is `undefined`, where its cell's `set` writes `null` (ADR 0810)",
-    file: "src/lower/mir/assign.rs",
-    find: "            Some(field) => bindings::is_nullable(self.tcx, field),\n",
-    replace:
-      "            Some(field) => false && bindings::is_nullable(self.tcx, field),\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "an optional nullable field",
-    ],
-  },
-  {
     name: "nullable-assigned-some-coalesced",
     breaks:
       "a nullable field assigned `Some(label)`, through MIR's temporary, is `label ?? null`, where a `Some` is never `undefined` (ADR 0810)",
@@ -787,15 +773,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "own-nullable-param-set-undefined",
-    breaks:
-      "a function's own nullable parameter set to `None` is `undefined`, `children = undefined`, where its callback is to be given `null` (ADR 0861)",
-    file: "src/lower/mir/assign.rs",
-    find: "            None => self.own_nullable_param(state, *place),\n",
-    replace: "            None => false,\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
-  },
-  {
     name: "own-nullable-param-any-argument",
     breaks:
       "a function's parameter its function doesn't name nullable, or another argument, set to `None` is `null` (ADR 0861)",
@@ -817,15 +794,6 @@ export const mutations: Mutation[] = [
       "-t",
       "a comment before a None given",
     ],
-  },
-  {
-    name: "got-mut-written-undefined",
-    breaks:
-      "a nullable `RefCell` field written through its `get_mut` is `undefined` for `None`, not `null` (ADR 0863)",
-    file: "src/lower/mir/assign.rs",
-    find: "            .or_else(|| self.field_got_mut(state, *place))\n",
-    replace: "",
-    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable RefCell field"],
   },
   {
     name: "dropping-assignment-at-place",
@@ -851,19 +819,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "nullable-item-written-undefined",
-    breaks:
-      "a nullable field's `Vec<Option<T>>` item set `None` by index is `undefined`, where React's JS tests `=== null`",
-    file: "src/lower/mir/assign.rs",
-    find: "            .or_else(|| self.field_item(state, *place));\n",
-    replace: "            ;\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "Vec of Options holds null",
-    ],
-  },
-  {
     name: "in-place-not-held",
     breaks:
       "a temporary's place read in place, `s.v`, through a reference reassigned while it's borrowed, `s = o`, is the new one's",
@@ -885,7 +840,7 @@ export const mutations: Mutation[] = [
     find: "            if !reached.is_empty() || !(matches!(target.kind, js::ExprKind::Var(_)) || settled_place(state, &target)) {\n",
     replace:
       "            if !reached.is_empty() || !matches!(target.kind, js::ExprKind::Var(_)) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^nullable_items.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^item_written_of_its_own_read.rs$"],
     snapshots: true,
   },
   {

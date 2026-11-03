@@ -72,3 +72,12 @@ Not yet: a write through a borrow of a nullable place, `CURRENT.with(|c|
 c.set(None))` or `TARGET.with_borrow_mut(|t| *t = None)`, stores
 `undefined`, so such a read can be `undefined` where this says it isn't
 (#541).
+
+## Amendment: what's read is what each write stores (2026-11-04, #541)
+
+The "not yet" above is done. A write through a borrow of a nullable place
+stores `null` for `None`, as a direct one does ([ADR 1078](1078-a-nullable-place-stores-null-however-its-written.md)), so a nullable
+thread-local's whole read is `null` or a value, as this ADR takes it. That
+covers what `with` and `with_borrow_mut` lend, and a cell kept as one,
+`$nullableCell(null)`. The reads' answer, `nulled::reads_nullable_local`, is
+as it was.

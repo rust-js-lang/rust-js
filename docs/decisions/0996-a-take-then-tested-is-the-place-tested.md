@@ -239,3 +239,11 @@ kept past the take, an appender beside a reader, a drop that reads the
 cell, and a count its closure reads to bump, each against native Rust),
 the unit test, and the mutations `unread-resets-off` and
 `unread-resets-past-closure-reads` (`lower/mir/tidy/values.ts`).
+
+## Amendment: a nullable place's by its handle (2026-11-04, #541)
+
+That a `take()` writes a nullable field's or item's `None` as `null` is now
+told by the `&mut` it's given. That's a handle that stores so
+(`nulled::nullable_ref`), no longer `lends_nullable_place`'s walk of MIR's
+reborrows ([ADR 1078](1078-a-nullable-place-stores-null-however-its-written.md)).
+The JS is as it was.

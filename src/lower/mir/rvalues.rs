@@ -22,6 +22,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )
     }
 
+    /// The place `handle` is on, a handle that stores what's written as
+    /// its place does, `null` for `None` of a nullable one (`nullable_ref`),
+    /// as the `&mut`'s place: its `value`, of a variable holding it, which
+    /// tidy reads and writes as the place, as its storage stores (ADR 0791,
+    /// #541). `Expr::held` of the handle itself would be the place alone,
+    /// which stores what it's written.
+    pub(super) fn through_handle(&mut self, handle: Expr, out: &mut Vec<Stmt>) -> Expr {
+        let on = match &handle.kind {
+            js::ExprKind::Handle(on, _) => Some((**on).clone()),
+            _ => None,
+        };
+        let handle = self.spill("place", handle, out);
+        if let (js::ExprKind::Var(name), Some(on)) = (&handle.kind, on) {
+            self.locals.mir.made.handles.insert(name.clone(), on);
+        }
+        Expr::held(handle)
+    }
+
+    /// The place `place` is, of a handle `through_handle` holds, `fiber.owner`
+    /// of `place.value`; `None` of any other.
+    pub(super) fn unhandled(&self, place: &Expr) -> Option<Expr> {
+        match &place.kind {
+            js::ExprKind::Member(of, key) if key == js::HELD => match &of.kind {
+                js::ExprKind::Var(name) => self.locals.mir.made.handles.get(name).cloned(),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
     pub(super) fn mir_rvalue(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -120,6 +150,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                         ..Expr::undefined()
                                     }
                                 }
+                                // A handle that stores as its place does, a
+                                // nullable field's cell's `get_mut()` (#541).
+                                js::ExprKind::Handle(_, js::Storage::NullForNone) => {
+                                    self.flush(state, out)?;
+                                    self.through_handle(cell, out)
+                                }
                                 _ => Expr::held(cell),
                             };
                             return Ok(Value::Ref(place));
@@ -158,7 +194,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     {
                         self.locals.mir.cells.push((**cell).clone());
                     }
-                    return Ok(Value::Ref(target));
+                    return self.nullable_ref(state, *place, target, out);
                 }
                 // `&error.title` of a `Cell` a field holds, a handle on it,
                 // through a reference written again, `error = other` after:
@@ -1022,43 +1058,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => None,
         })
-    }
-
-    /// Whether the call that ends the block being lowered is given first a
-    /// `&mut` to a `#[rust_js::nullable]` field, `root.pending.take()`'s
-    /// (ADR 0996), or to an item of one's items, `v[i].take()`'s
-    /// (`field_item`): what it writes there, `null` for `None` (ADR 0586,
-    /// amended).
-    pub(super) fn lends_nullable_place(&self, state: &State<'_, 'tcx>) -> bool {
-        let mir::TerminatorKind::Call { args, .. } = &state.body.basic_blocks[state.at].terminator().kind else {
-            return false;
-        };
-        let Some(lent) = args.first().and_then(|arg| arg.node.place()) else {
-            return false;
-        };
-        // What it reborrows, through each `&mut *r` MIR makes of another,
-        // `mem::take(&mut root.pending)`'s.
-        let reborrowed = |lent: Place<'tcx>| {
-            (state.body.basic_blocks.iter().flat_map(|b| &b.statements)).find_map(|s| match &s.kind {
-                mir::StatementKind::Assign(assign) if assign.0 == lent => match &assign.1 {
-                    Rvalue::Ref(_, _, place) => Some(*place),
-                    _ => None,
-                },
-                _ => None,
-            })
-        };
-        let mut item = reborrowed(lent).unwrap_or_else(|| self.tcx.mk_place_deref(lent));
-        for _ in 0..state.body.local_decls.len() {
-            match (item.as_local(), item.projection.as_slice()) {
-                (None, [PlaceElem::Deref]) => match reborrowed(Place::from(item.local)) {
-                    Some(place) => item = place,
-                    None => break,
-                },
-                _ => break,
-            }
-        }
-        self.field_item(state, item).is_some()
-            || (self.place_field(state, item)).is_some_and(|field| bindings::is_nullable(self.tcx, field))
     }
 
     /// The `#[rust_js::nullable]` field whose `Vec<Option<T>>` the items

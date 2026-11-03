@@ -645,7 +645,13 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::L
                 && let ExprKind::Handle(place, storage) = &value.kind
                 && (matches!(place.kind, ExprKind::Member(..))
                     && !(in_place && matches!(storage, js::Storage::InPlace(_)))
-                    || matches!(storage, js::Storage::InPlace(_)) && place.reads_same())
+                    || matches!(storage, js::Storage::InPlace(_)) && place.reads_same()
+                    // A `&mut`'s to a place that stores `null` for `None`, a
+                    // nullable parameter or an item of a nullable field's
+                    // items, `v[0]` (#541).
+                    || matches!(storage, js::Storage::NullForNone)
+                        && (place.reads_same()
+                            || matches!(&place.kind, ExprKind::Index(of, at) if of.reads_same() && at.reads_same())))
             {
                 let at_once = frozen.contains(name) || read_at_once(stmts, k, name);
                 handles.push((name.clone(), (**place).clone(), at_once, *storage));
@@ -721,7 +727,7 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::L
     }
     handles
         .retain(|(name, _, _, storage)| !(matches!(storage, js::Storage::InPlace(_)) && written_whole.contains(name)));
-    handles.retain_mut(|(name, place, at_once, _)| {
+    handles.retain_mut(|(name, place, at_once, storage)| {
         // Each use of it one of its `value`: none left once those are.
         let mut rest = body.clone();
         js::each_expr_mut(&mut rest, &mut |e| {
@@ -733,7 +739,7 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::L
             }
         });
         let mut root = &*place;
-        while let ExprKind::Member(of, _) = &root.kind {
+        while let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &root.kind {
             root = of;
         }
         let rereads = matches!(root.kind, ExprKind::Var(_) | ExprKind::This | ExprKind::Handle(..));
@@ -744,6 +750,11 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::L
         // name, as `lets side by side` does (ADR 0287, amended).
         let written = lets.patterns.contains(name.as_str()) || lets.named.contains(name.as_str());
         if *at_once && rereads && !written && js::mentions_in(body, name) == 1 {
+            *at_once = false;
+        }
+        // A `&mut`'s handle on a nullable place nothing reads, its place
+        // written as a path where it's used (`nulled::unhandled`, #541): none.
+        if matches!(storage, js::Storage::NullForNone) && js::mentions_in(body, name) == 0 {
             *at_once = false;
         }
         js::mentions_in(&rest, name) == 0 && (*at_once || rereads)

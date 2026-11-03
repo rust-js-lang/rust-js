@@ -660,3 +660,10 @@ never there (`Known::Present`, ADR 0910, amended): `return searchTarget;`
 as before, and `keep.then(|| TARGET.with_borrow(Clone::clone)).flatten()
 .is_some()` tested, not `keep` (#539). `nullable-local-read-unknown`
 (`mir/nulled.ts`) replaces the mutation.
+
+## Amendment: and through a `&mut` to it (2026-11-04, #541)
+
+A function's own nullable parameter lent `&mut`, `clear(&mut x)` or
+`mem::swap(&mut x, &mut other)`, stores `null` for `None` too, `x =
+slot.value ?? null`. So its reads, given on as they are, are `null` or a
+value ([ADR 1078](1078-a-nullable-place-stores-null-however-its-written.md)).

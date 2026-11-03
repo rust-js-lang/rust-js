@@ -644,4 +644,23 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
     snapshots: true,
   },
+  {
+    name: "nullable-call-ref-as-given",
+    breaks:
+      "a `&mut` a call gives to a nullable place, `&mut v[i]` of a nullable field's items, is its place alone, so a callee's box is copied back as it is, `fiber.lanes[0] = slot.value` (#541)",
+    file: "src/lower/mir/structure.rs",
+    find: "                                self.nullable_ref(state, pointee, target, &mut called)?\n",
+    replace: "                                Value::Ref(target)\n",
+    tests: ["test/lowering-nullable-borrows.test.ts", "-t", "written through a borrow"],
+  },
+  {
+    name: "nullable-handle-place-unread",
+    breaks:
+      "the place a handle on a nullable place is on isn't read where a copy back is held on unwinding, so one from a callee that may throw is made in a `finally` (#541)",
+    file: "src/lower/mir/structure.rs",
+    find: "                                    let place = self.handled_place(place.clone());\n",
+    replace: "                                    let place = place.clone();\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
+    snapshots: true,
+  },
 ];

@@ -847,7 +847,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let mut dropped = Vec::new();
             self.drop_value(f.clone(), *f_ty, span, &mut dropped)?;
-            let made = self.held_in_option(apply(f, Vec::new()), item);
+            let made = self.inserted(apply(f, Vec::new()), item);
             let assign = StmtKind::Assign(place.clone(), made).at(js_span);
             let absent = Expr::bin(Op::LooseEq, place.clone(), Expr::null());
             out.push(StmtKind::If(absent, vec![assign], Some(dropped)).at(js_span));
@@ -890,7 +890,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let dropped = dropped.map(|call| vec![StmtKind::Expr(call).at(js_span)]);
         let present = Expr::bin(Op::LooseNe, place.clone(), Expr::null());
-        let assign = StmtKind::Assign(place.clone(), self.held_in_option(value, item)).at(js_span);
+        let assign = StmtKind::Assign(place.clone(), self.inserted(value, item)).at(js_span);
         match (op, dropped) {
             (OptionPlaceOp::Insert, Some(dropped)) => {
                 out.push(StmtKind::If(present, dropped, None).at(js_span));
@@ -903,6 +903,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Ok(through)
+    }
+
+    /// `value`, an `item`, as the `Some` an `insert` or a `get_or_insert`
+    /// writes to its place holds it (`held_in_option`): of what's never
+    /// boxed, there, `Known::Present`, which a nullable place stores as it
+    /// is, `thenableState ??= createThenableState()` (#541).
+    fn inserted(&mut self, value: Expr, item: Ty<'tcx>) -> Expr {
+        match self.boxed_payload(item) {
+            true => self.some(value),
+            false => value.present(),
+        }
     }
 
     /// `value`, an `item`, as an `Option` of it holds it: boxed where it may

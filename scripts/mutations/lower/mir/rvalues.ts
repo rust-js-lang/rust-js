@@ -667,25 +667,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-passed-on.test.ts", "-t", "lent as a dyn Fn"],
   },
   {
-    name: "nullable-field-taken-undefined",
-    breaks:
-      "a `#[rust_js::nullable]` field taken, `root.pending.take()`, is left `undefined`, not its `None`, `null`",
-    file: "src/lower/mir/rvalues.rs",
-    find: "            || (self.place_field(state, item)).is_some_and(|field| bindings::is_nullable(self.tcx, field))\n",
-    replace: "",
-    tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
-  },
-  {
-    name: "nullable-reborrow-unfollowed",
-    breaks:
-      "`mem::take(&mut root.pending)`, whose MIR reborrows the field, leaves a nullable field `undefined`",
-    file: "src/lower/mir/rvalues.rs",
-    find: "                (None, [PlaceElem::Deref]) => match reborrowed(Place::from(item.local)) {\n",
-    replace:
-      "                (None, [PlaceElem::Deref]) if false => match reborrowed(Place::from(item.local)) {\n",
-    tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
-  },
-  {
     name: "nested-option-test-loose",
     breaks:
       "a held `Option` of an `Option` is tested `!= null`, so its `Some(None)`, `null`, is `None` (ADR 1017)",
@@ -771,5 +752,24 @@ export const mutations: Mutation[] = [
     find: "                let none = self.held_none(place.ty(decls, tcx).ty);\n",
     replace: "                let none = Expr::undefined();\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
+  },
+  {
+    name: "nullable-get-mut-reborrow-as-given",
+    breaks:
+      "a reborrow of a nullable `RefCell` field's `get_mut()` is its place alone, so a callee's box is copied back as it is, `fiber.target = slot.value` (#541)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                                js::ExprKind::Handle(_, js::Storage::NullForNone) => {\n",
+    replace: "                                js::ExprKind::Handle(_, js::Storage::NullForNone) if false => {\n",
+    tests: ["test/lowering-nullable-borrows.test.ts", "-t", "written through a borrow"],
+  },
+  {
+    name: "nullable-handle-unrecorded",
+    breaks:
+      "a handle a variable holds on a nullable place isn't known to be that place's, so a copy back from a callee that may throw is made in a `finally`, as if the place outlived the body (#541)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "            self.locals.mir.made.handles.insert(name.clone(), on);\n",
+    replace: "            _ = (name, on);\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
+    snapshots: true,
   },
 ];

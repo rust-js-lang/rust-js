@@ -401,6 +401,17 @@ pub(in crate::lower) fn nullable_local(tcx: TyCtxt<'_>, key: DefId) -> bool {
     nullable_alone(tcx, key)
 }
 
+/// Whether `key`, a `#[rust_js::nullable]` thread-local's, is of a `Cell`
+/// or a `RefCell` of an `Option`, whose cell, and what it lends, stores
+/// `null` for `None` however it's written (ADR 1078, #541). Not one of an
+/// `Option` itself, nor of a generic type made of one, whose own fields say.
+pub(in crate::lower) fn nullable_local_cell(tcx: TyCtxt<'_>, key: DefId) -> bool {
+    nullable_local(tcx, key)
+        && matches!(tcx.type_of(key).instantiate_identity().skip_normalization().kind(),
+            ty::Adt(local_key, args) if crate::lower::recognition::is_std_def(tcx, local_key.did(), crate::lower::recognition::StdItem::LocalKey)
+                && nullable_option(tcx, args.type_at(0)).is_some_and(|option| option != args.type_at(0)))
+}
+
 /// Whether `key`, a `#[rust_js::nullable]` thread-local's, holds an
 /// `Option` itself, no cell of one: a `const` of its module, `null` where
 /// it's made `None`, `export const callComponentInDEV = __DEV__ ? .. :

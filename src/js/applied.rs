@@ -386,6 +386,16 @@ fn in_place(
             }
             ExprKind::Symbol(_) => (None, false),
             ExprKind::Member(of, _) if arg.reads_same() && matches!(of.kind, ExprKind::Symbol(_)) => (None, false),
+            // A handle on such a place, a nullable thread-local's what a
+            // `with_borrow_mut` lends (#541): its place where its `value`
+            // is read, and written as the handle stores it.
+            ExprKind::Handle(place, _)
+                if place.reads_same()
+                    && let ExprKind::Member(of, _) = &place.kind
+                    && let ExprKind::Var(name) = &of.kind =>
+            {
+                (Some(name), false)
+            }
             ExprKind::Call(callee, called) if hold && called.is_empty() && callee.is_named() => (None, true),
             // What a body that never reads its parameter is given, of no
             // effects: nothing, `finishDrop({ value: _finish })` of a unit
@@ -498,7 +508,49 @@ fn in_place(
     {
         return None;
     }
+    if let ExprKind::Handle(..) = arg.kind {
+        through_handles(&mut body);
+    }
     Some(body)
+}
+
+/// Each `value` of a handle on a place in `body` that place: read, and
+/// written as the handle's storage stores what's written, `current =
+/// noneOf(n) ?? null` of a nullable thread-local's (#541).
+fn through_handles(body: &mut Vec<Stmt>) {
+    // Each write, a closure's in it too, first.
+    fn stored(body: &mut Vec<Stmt>) {
+        statement_lists(body, &mut |stmts| {
+            for stmt in stmts.iter_mut() {
+                if let StmtKind::Assign(target, value) = &mut stmt.kind
+                    && let ExprKind::Member(of, key) = &target.kind
+                    && key == crate::js::HELD
+                    && let ExprKind::Handle(place, storage) = &of.kind
+                {
+                    let written = storage.written(std::mem::replace(value, Expr::undefined()), false);
+                    stmt.kind = StmtKind::Assign((**place).clone(), written);
+                }
+            }
+        });
+        each_expr_mut(body, &mut |e| match &mut e.kind {
+            ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => stored(inner),
+            ExprKind::Function(function) => stored(&mut function.body),
+            _ => {}
+        });
+    }
+    stored(body);
+    each_expr_mut(body, &mut |e| {
+        if let ExprKind::Member(of, key) = &e.kind
+            && key == crate::js::HELD
+            && let ExprKind::Handle(place, _) = &of.kind
+        {
+            let span = e.span;
+            *e = Expr {
+                span,
+                ..(**place).clone()
+            };
+        }
+    });
 }
 
 /// Whether `stmts` set `name`, `name = ..` or `name += ..`, in any block,

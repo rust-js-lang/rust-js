@@ -404,4 +404,33 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
     snapshots: true,
   },
+  {
+    name: "handle-given-not-applied",
+    breaks:
+      "a closure given a handle on a nullable thread-local, a `with_borrow_mut`'s, stays its call of the handle, `((t) => { .. })({ get value() .. })` (#541)",
+    file: "src/js/applied.rs",
+    find: "            ExprKind::Handle(place, _)\n                if place.reads_same()\n",
+    replace: "            ExprKind::Handle(place, _)\n                if false && place.reads_same()\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "through-handles-skipped",
+    breaks:
+      "a closure applied in place of a handle keeps the handle's writes, `({ get value() .. }).value = noneOf(1)` (#541)",
+    file: "src/js/applied.rs",
+    find: "        through_handles(&mut body);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "through-handles-as-given",
+    breaks:
+      "what's written through a handle applied in place is stored as it is, `current = noneOf(1)`, not as the handle stores it (#541)",
+    file: "src/js/applied.rs",
+    find: "                    let written = storage.written(std::mem::replace(value, Expr::undefined()), false);\n",
+    replace: "                    let written = std::mem::replace(value, Expr::undefined());\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
+  },
 ];

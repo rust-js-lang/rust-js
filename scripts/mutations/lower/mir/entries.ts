@@ -138,8 +138,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable field's `Vec<Option<T>>` item taken, `v[i].take()`, is left `undefined`",
     file: "src/lower/mir/entries.rs",
-    find: "        let b = match b_place.is_none() && self.lends_nullable_place(state) {\n",
-    replace: "        let b = match b_place.is_none() && false {\n",
+    find: "            Some(place) => (place, js::Storage::NullForNone.written(b, false)),\n",
+    replace: "            Some(place) => (place, b),\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",

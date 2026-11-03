@@ -125,6 +125,11 @@ pub(super) struct QuietCells {
     /// Each call that writes a `#[rust_js::nullable]` thread-local's cell,
     /// whose `None` is `null` (ADR 0586, amended).
     pub(super) nullable: HashSet<BasicBlock>,
+    /// Each `with` or `with_borrow_mut` that lends a `#[rust_js::nullable]`
+    /// thread-local's cell, or what it holds, to what it runs, which may
+    /// write it: what's written through the lend stores `null` for `None`
+    /// too (#541).
+    pub(super) nullable_lent: HashSet<BasicBlock>,
 }
 
 impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
@@ -709,11 +714,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 quiet.nullable.insert(block);
             }
+            // A nullable one lent, `KEY.with(f)` or `KEY.with_borrow_mut(f)`
+            // (#541).
+            if let Some(Std::LocalWith | Std::LocalBorrow { mutable: true }) =
+                self.recognition().classify(def_id, generic_args)
+                && let Some(key) = local_key(&first.node)
+                && crate::lower::bindings::nullable_local_cell(tcx, key)
+            {
+                quiet.nullable_lent.insert(block);
+            }
             match self.recognition().classify(def_id, generic_args) {
                 Some(Std::Drop) => drops.push((block, first.node.place())),
                 // A `with_borrow` of one of this module's, given what it
-                // holds where it's called (`cell_call`, ADR 0866, amended).
-                Some(Std::LocalBorrow { .. })
+                // holds where it's called (`cell_call`, ADR 0866, amended),
+                // and a `with`, its cell.
+                Some(Std::LocalBorrow { .. } | Std::LocalWith)
                     if let Some(key) = local_key(&first.node)
                         && let Some(key) = key.as_local()
                         && self.krate.quiet_locals.contains(&key)

@@ -416,3 +416,11 @@ that left it out reads `null`, as declared. Mutation
 `optional-cell-taken-as-is` (`std_types/cell.ts`, of
 `test/lowering-nullable.test.ts`'s "a nullable field's value a variable
 holds is stored as it is") hold the rule.
+
+## Amendment: written through a borrow too (2026-11-04, #541)
+
+A nullable field, an item of a nullable field's items, and a nullable
+thread-local store `null` for `None` however they're written. That includes
+a `&mut` given to generic code, a callee's box copied back `?? null`, and what
+a thread-local's `with` and `with_borrow_mut` lend ([ADR 1078](1078-a-nullable-place-stores-null-however-its-written.md)).
+`nulled::stores_null_for_none` is the one answer of which places do.

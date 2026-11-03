@@ -245,4 +245,23 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(dyn_ref_cells|lock_destructors).rs$"],
     snapshots: true,
   },
+  {
+    name: "nullable-lend-unmarked",
+    breaks:
+      "no `with` or `with_borrow_mut` lends a nullable thread-local, so what's written through the lend of its module's variable is stored as it is, `current = noneOf(1)` (#541)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                quiet.nullable_lent.insert(block);\n",
+    replace: "",
+    tests: ["test/lowering-nullable-borrows.test.ts", "-t", "written through a borrow"],
+  },
+  {
+    name: "local-with-not-quiet",
+    breaks:
+      "a `with` of a module's variable isn't quiet, so a nullable one's cell is lent whole, kept a `$nullableCell`, not its module's variable (#541)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                Some(Std::LocalBorrow { .. } | Std::LocalWith)\n",
+    replace: "                Some(Std::LocalBorrow { .. })\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
+    snapshots: true,
+  },
 ];

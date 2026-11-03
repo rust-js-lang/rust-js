@@ -768,6 +768,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             value => value,
                         };
                         let value = self.nullable_written(state, *destination, value, nulled, span)?;
+                        // A `&mut` it gives to a place that stores `null` for
+                        // `None`, a nullable field's `RefCell`'s `get_mut()`
+                        // or an item of its items, `&mut v[i]` (#541).
+                        let value = match value {
+                            Value::Ref(target)
+                                if destination.projection.is_empty()
+                                    && matches!(
+                                        state.body.local_decls[destination.local].ty.kind(),
+                                        ty::Ref(_, _, ty::Mutability::Mut)
+                                    ) =>
+                            {
+                                let pointee = self.tcx.mk_place_deref(*destination);
+                                self.nullable_ref(state, pointee, target, &mut called)?
+                            }
+                            value => value,
+                        };
                         self.mir_store(state, *destination, value, span, &mut called)?;
                         // Each box given, copied back once the call returns;
                         // and as it unwinds, where it may (#487): what it was
@@ -784,6 +800,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 let js_span = self.js_span(span);
                                 let back = self.copied_back(place.clone(), &boxed, object, js_span);
                                 if throws {
+                                    let place = self.handled_place(place.clone());
                                     on_unwind.push((back.clone(), outlives(state, &place)));
                                 }
                                 called.push(back);
@@ -1012,6 +1029,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// Whether what's at `place`, a box's, may be read once this body has
 /// unwound: anything but a variable of its own, or what one holds, `v[0]`;
 /// a captured one's, or what a reference reaches, may (#487).
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `place`, of what a handle a variable holds is on where its root is
+    /// that variable, `fiber.owner` of `place.value` (`Made::handles`).
+    fn handled_place(&self, place: Expr) -> Expr {
+        let handles = &self.locals.mir.made.handles;
+        (place.substitute(&|v| handles.get(v).cloned())).unwrap_or(place)
+    }
+}
+
 fn outlives(state: &State<'_, '_>, place: &Expr) -> bool {
     let mut root = place;
     while let js::ExprKind::Member(object, _) | js::ExprKind::Index(object, _) = &root.kind {

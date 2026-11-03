@@ -1320,10 +1320,20 @@ pub fn lower_crate<'tcx>(
             // their importers read by name (ADR 0270, amended); one it
             // exports still its `{ value }`, which a JS module importing
             // it would read as the box, refused.
+            // And its `#[rust_js::nullable]` thread-locals of a cell, whose
+            // `None` is `null` however it's written (#541).
+            let nullable: HashSet<&str> = (thread_local_inits.values())
+                .filter(|&&key| {
+                    tcx.parent_module_from_def_id(key) == module
+                        && super::bindings::nullable_local_cell(tcx, key.to_def_id())
+                })
+                .filter_map(|&key| Some(fns.get(&key.to_def_id())?.name.as_str()))
+                .collect();
             let (made, boxed) = super::std_types::cell::plain_statics(
                 &mut lowered.items,
                 &quiet,
                 &held_values.keys().copied().collect(),
+                &nullable,
             );
             for name in boxed {
                 super::analysis::refuse_boxed_export(tcx, held_values[name.as_str()].to_def_id());
