@@ -314,7 +314,9 @@ use art::mode::PATH;` is `export const Path = Mode.Path;`
 where it is, in the order written, with the comments before it; a run of
 them from one module with no comment or blank line between, their
 attributes aside, is one `export { .. } from`
-([ADR 0874](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md)). One of the module's own
+([ADR 0874](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md)).
+A comment inside a `pub use`'s list is its name's, after it on its line,
+`act, // DEV-only`, or before it on lines of its own (amended, rd338). One of the module's own
 functions or constants by another name is exported by that name alone:
 it's declared without `export`, and one `export { .. as .. }` after the
 module's code lists each such name, in the order the `pub use`s are
@@ -421,8 +423,9 @@ pub use hooks::use_id;
 pub use hooks::use_cache_refresh as unstable_use_cache_refresh;
 #[cfg_attr(rust_js, rust_js::name = "__COMPILER_RUNTIME")]
 pub use crate::runtime as __COMPILER_RUNTIME;
-// DEV-only
-pub use server::cache;
+pub use server::{
+    cache, // DEV-only
+};
 
 #[cfg_attr(rust_js, rust_js::name = "_jsxDEV")]
 use runtime::jsx_dev as _jsx_dev;
@@ -466,8 +469,9 @@ pub use crate::cache::cache;
 // Hooks
 export { useId, useCacheRefresh as unstable_useCacheRefresh } from "./hooks.js";
 export * as __COMPILER_RUNTIME from "./runtime.js";
-// DEV-only
-export { cache } from "./server.js";
+export {
+  cache, // DEV-only
+} from "./server.js";
 
 import { jsxDev as _jsxDEV } from "./runtime.js";
 

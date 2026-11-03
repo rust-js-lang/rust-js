@@ -125,8 +125,9 @@ enum Says<'m> {
     Namespace(&'m str),
     /// `import "x";`, for its effect.
     Effect,
-    /// `export { a, b as c } from`, each `(export, alias)`.
-    Reexport(Vec<(&'m str, &'m str)>),
+    /// `export { a, b as c } from`, each `(export, alias)`, and where its
+    /// `use` writes it (`Reexport::written`).
+    Reexport(Vec<(&'m str, &'m str, (js::Span, js::Span))>),
     /// `export * as ns from` (ADR 0240, amended).
     ReexportAll(&'m str),
 }
@@ -226,7 +227,14 @@ pub(super) fn entries(module: &Module) -> Vec<Entry<'_>> {
         let relative = crate::program::is_relative_specifier(&reexport.from);
         let says = match reexport.named.as_slice() {
             [(namespace, alias)] if namespace == "*" => Says::ReexportAll(alias),
-            named => Says::Reexport(pairs(named.iter())),
+            named => Says::Reexport(
+                (named.iter().enumerate())
+                    .map(|(i, (export, alias))| {
+                        let written = (reexport.written.get(i).copied()).unwrap_or((js::Span::NONE, js::Span::NONE));
+                        (export.as_str(), alias.as_str(), written)
+                    })
+                    .collect(),
+            ),
         };
         let entry = Entry {
             says,
@@ -303,9 +311,25 @@ impl<'a> Cx<'a> {
                 )]))
             }
             Says::Effect => import(None),
+            // Each where its leaf is, which the map places it at, so the
+            // comments its `use` writes after it on its line are after it
+            // and those before it on lines of their own before it (rd338).
             Says::Reexport(named) => {
-                let specifiers = named.iter().map(|&(export, alias)| {
-                    ExportSpecifier::new(SPAN, name(export), name(alias), ImportOrExportKind::Value, b)
+                let specifiers = named.iter().map(|&(export, alias, (local, exported))| {
+                    let named =
+                        |at: js::Span, name: &str| ModuleExportName::new_identifier_name(span(at), self.name(name), b);
+                    let whole = js::Span {
+                        lo: local.lo,
+                        hi: exported.hi,
+                    };
+                    let at = if local.is_none() { js::Span::NONE } else { whole };
+                    ExportSpecifier::new(
+                        span(at),
+                        named(local, export),
+                        named(exported, alias),
+                        ImportOrExportKind::Value,
+                        b,
+                    )
                 });
                 let specifiers = ArenaVec::from_iter_in(specifiers, b);
                 Statement::new_export_from_declaration(at, specifiers, from, ImportOrExportKind::Value, None, b)

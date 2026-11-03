@@ -1,6 +1,6 @@
 # 0874. A module's `pub use`s are re-exported as written, or refused
 
-Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below; a glob's names, each, rd153; through a module that re-exports it, whatever it is, rd338; a private `use` through one imports from it, rd650). Amends [0240](0240-reexports.md), whose re-exports were
+Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below; a glob's names, each, rd153; through a module that re-exports it, whatever it is, rd338; a private `use` through one imports from it, rd650; a `pub use` list's comments are its names', rd338). Amends [0240](0240-reexports.md), whose re-exports were
 one statement for each module, ordered by its path, of the crate's
 functions and bindings alone, and refused a JS module's namespace; and
 [0596](0596-a-pub-use-of-a-modules-own-item-exports-it.md), whose private
@@ -292,7 +292,7 @@ export { __COMPILER_RUNTIME, Component, Fragment } from "./client.js";
   home (`'./src/ReactHooks.js'`, upstream `'./src/ReactClient'`). Same
   binding, readability only; it changes which module the importer loads
   first, which `load_cycles` would have to know. (Done, rd650, below.) Neither are the `//
-  DEV-only` comments inside a `use` list printed yet.
+  DEV-only` comments inside a `use` list printed yet. (Done, below.)
 
 Held by `test/reexports-through.test.ts`: a library's constant, the
 crate's, a class, a module and a function through one module, an alias
@@ -368,3 +368,57 @@ crate's root, a load cycle, from its home; run. Mutations
 (`pipeline/crate_imports.ts`, which `default-class-imported-by-name`
 moved to with its code), `reimport-left-in-package`
 (`pipeline/packages.ts`) and `reimport-dropped-unread` (`link.ts`).
+
+## Amendment: a `pub use` list's comments are its names' (rd338, 2026-11-03)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments.
+
+React's experimental entries mark two of ReactClient's names, `act, //
+DEV-only` and `captureOwnerStack, // DEV-only`, in their `export { .. }
+from './src/ReactClient'`. The port's `pub use crate::react_client::{..,
+act, // DEV-only\n capture_owner_stack, // DEV-only\n ..};` printed the
+list without them: a re-export's names had no place in the source, only
+its statement had, so the map placed nothing a comment inside the list
+could follow.
+
+**Each name a `pub use` re-exports is where its leaf is written**
+(`program::Reexport::written`, of `reexports::Leaf`: where the leaf writes
+the name its path gives and the one it re-exports it by, `a` and `b` of
+`a as b`), so its specifier's names are mapped there (`header::Cx::entry`):
+a comment after it on its line is after it, as one after any code is (ADR
+0444, 0733), and the formatter writes the list a name a line, `act, //
+DEV-only`; one after the list's last name, which no later JS of its line
+follows, is after that name, before the list's `}`, as one after a
+function's last parameter is before its `)` (`trailing::after_param`, ADR
+0708, amended); one on lines of their own before a name is before it, a
+part's comment as a field's is (`arguments::part_starts`). A glob's names
+and a forwarder's have no leaf, `NONE`, and are placed as before. The `use`'s order is rustfmt's, which sorts a list's
+names with their comments, so they're in that order in the JS.
+
+```rust
+pub use crate::client::{
+    act, // DEV-only
+    capture_owner_stack, // DEV-only
+    use_id,
+};
+```
+
+```js
+export {
+  act, // DEV-only
+  captureOwnerStack, // DEV-only
+  useId,
+} from "./client.js";
+```
+
+Held by `test/lowering-comments-ends.test.ts`'s "a pub use list's comments are its
+names'", a renamed name's too, run; mutations `reexport-leaf-unwritten`
+(`reexports.ts`), `reexport-leaf-comments-unplaced` (`to_oxc/arguments.ts`)
+and `reexport-last-name-comment-after-statement` (`to_oxc/trailing.ts`);
+`default-of-another-unexported`'s and `module-reexport-named`'s finds follow the
+code.
+
+What's left of rd338 is nothing: its names (React's `Fragment`, the
+port's nine `#[rust_js::name]`s gone in its d41c07e4) and its modules (a
+library's item, a class and a module through ReactClient) are the
+amendment above's, and a private `use` through it rd650's.

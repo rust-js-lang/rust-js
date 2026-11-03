@@ -44,4 +44,12 @@ export const mutations: Mutation[] = [
     replace: "                    starts.insert(s.lo, (e.span.lo, field));\n",
     tests: ["test/lowering-comment-fields.test.ts", "-t", "a blank line before a method call's field"],
   },
+  {
+    name: "reexport-leaf-comments-unplaced",
+    breaks: "a comment on lines of its own before a name in a `pub use` list, `// State` above `use_state`, isn't before its name in the `export { .. } from` (rd338)",
+    file: "src/to_oxc/arguments.rs",
+    find: "            starts.entry(name.lo).or_insert((reexport.span.lo, true));\n",
+    replace: "            let _ = name;\n",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "a pub use list.s comments are its names."],
+  },
 ];

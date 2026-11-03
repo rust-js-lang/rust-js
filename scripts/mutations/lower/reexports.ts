@@ -16,8 +16,8 @@ export const mutations: Mutation[] = [
     breaks:
       "another module's function named the default isn't re-exported as it",
     file: "src/lower/reexports.rs",
-    find: "        found.push((\n            span,\n",
-    replace: "        drop((\n            span,\n",
+    find: "        found.push((\n            (span, NO_LEAF),\n",
+    replace: "        drop((\n            (span, NO_LEAF),\n",
     tests: ["test/modules.test.ts", "-t", "default of another module"],
   },
   {
@@ -86,8 +86,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `pub use` of a module is `export { * as ns } from`, which isn't JS, not `export * as ns from` (ADR 0240, amended)",
     file: "src/lower/reexports.rs",
-    find: '                            ("*".to_string(), alias),\n',
-    replace: '                            ("default".to_string(), alias),\n',
+    find: 'js::ImportFrom::Module(from.clone()), ("*".to_string(), alias)));\n',
+    replace: 'js::ImportFrom::Module(from.clone()), ("default".to_string(), alias)));\n',
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
   },
   {
@@ -380,5 +380,13 @@ export const mutations: Mutation[] = [
     find: "                        tcx.dcx()\n                            .struct_span_err(span(method), message)\n                            .with_span_note(*written, \"the `pub use`\")\n                            .emit();\n",
     replace: "                        let _ = (message, written);\n",
     tests: ["test/namespaces.test.ts", "-t", "beside a pub use of its function"],
+  },
+  {
+    name: "reexport-leaf-unwritten",
+    breaks: "a `pub use` list's names have no place of their own, so `act, // DEV-only` prints `export { act, captureOwnerStack, useId } from` without its comments (rd338)",
+    file: "src/lower/reexports.rs",
+    find: "        let written = (statement, (name, ident.span));\n",
+    replace: "        let written = (statement, NO_LEAF);\n        let _ = name;\n",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "a pub use list.s comments are its names."],
   },
 ];

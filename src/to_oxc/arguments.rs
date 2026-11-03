@@ -125,5 +125,16 @@ pub(super) fn part_starts(module: &Module) -> std::collections::HashMap<u32, (u3
             js::Item::Namespace(n) => n.methods.iter().for_each(|method| of(method.body.clone())),
         }
     }
+    // A re-export's names, each where its `use` writes it, whose comments
+    // on lines of their own are before it, as a field's are (rd338).
+    for reexport in &module.reexports {
+        for (name, _) in reexport
+            .written
+            .iter()
+            .filter(|(name, _)| !name.is_none() && name.lo > reexport.span.lo)
+        {
+            starts.entry(name.lo).or_insert((reexport.span.lo, true));
+        }
+    }
     starts
 }

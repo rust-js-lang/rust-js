@@ -91,7 +91,10 @@ pub(super) fn opened_on(text: &str, (line_start, at): (usize, usize)) -> Option<
 /// methods' too, a class's constructor function's, `function
 /// RequestInstance(.., keepDebugAlive, // DEV-only` (rd554). And where
 /// each function's name starts, by where it ends: a block comment after
-/// the return type of one of no parameter is after its `()` (#506).
+/// the return type of one of no parameter is after its `()` (#506). And
+/// where each name a re-export's `use` lists is written, by where it ends,
+/// `use_state, // the hook`, the last's: after its name, before the list's
+/// `}` (rd338).
 pub(super) struct ParamStarts {
     by_end: HashMap<u32, u32>,
     names: HashMap<u32, u32>,
@@ -105,9 +108,13 @@ pub(super) fn param_starts(module: &crate::js::Module) -> ParamStarts {
             crate::js::Item::Const(_) | crate::js::Item::Statements(_) => &[],
         })
     };
+    let listed = (module.reexports.iter())
+        .flat_map(|reexport| reexport.written.iter().map(|&(_, alias)| alias))
+        .filter(|alias| !alias.is_none());
     ParamStarts {
         by_end: functions()
             .flat_map(|f| f.param_spans.iter().filter(|s| !s.is_none()).map(|s| (s.hi, s.lo)))
+            .chain(listed.map(|alias| (alias.hi, alias.lo)))
             .collect(),
         names: functions()
             .filter(|f| !f.name_span.is_none())
@@ -254,7 +261,8 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
         };
         // One after a parameter: after its name, `start // DEV-only`, the
         // rest of the line, `) {`, on the next, as the list's next
-        // parameter is (ADR 0708, amended).
+        // parameter is (ADR 0708, amended); and after a re-export's last
+        // name, before its list's `}` (rd338).
         if let Some((line, column)) = comment.after_param
             && let Some(found) = (map.get_tokens())
                 .filter(|t| t.get_src_line() == line && t.get_src_col() == column)
@@ -263,7 +271,7 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
                     let end = word_end(text, t.get_dst_col())?;
                     text[end..]
                         .trim_start()
-                        .starts_with(')')
+                        .starts_with([')', '}'])
                         .then_some((t.get_dst_line(), end as u32))
                 })
         {

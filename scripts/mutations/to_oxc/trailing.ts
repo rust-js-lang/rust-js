@@ -235,4 +235,12 @@ export const mutations: Mutation[] = [
     replace: "            '>' => {\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "after a function.s return type is before its body, of no parameter"],
   },
+  {
+    name: "reexport-last-name-comment-after-statement",
+    breaks: "a comment after a `pub use` list's last name, `use_state, // the hook`, is after the statement, `} from \"./client.js\"; // the hook`, not after its name (rd338)",
+    file: "src/to_oxc/trailing.rs",
+    find: "                        .starts_with([')', '}'])\n",
+    replace: "                        .starts_with(')')\n",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "a pub use list.s comments are its names."],
+  },
 ];

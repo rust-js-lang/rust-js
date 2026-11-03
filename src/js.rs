@@ -332,6 +332,8 @@ impl Import {
 /// the imports, in the order JS loads them (ADR 1063, amended).
 pub struct Reexport {
     pub named: Vec<(String, String)>,
+    /// Where each of `named` is written (`program::Reexport::written`).
+    pub written: Vec<(Span, Span)>,
     pub from: String,
     pub span: Span,
     /// Where it's printed among the imports (`program::Reexport::at`).

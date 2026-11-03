@@ -1,6 +1,7 @@
 // Where the compiler writes a comment at the end of a list: after a
 // parameter on its line, `start, // DEV-only`, and on lines of its own
-// after a struct literal's last field, before its `}` (ADR 0708, amended).
+// after a struct literal's last field, before its `}` (ADR 0708, amended);
+// and in a `pub use`'s list, after or before its name (ADR 0874, amended).
 // Each test is a program of its own, compiled and run.
 
 import { expect, test } from "bun:test";
@@ -626,4 +627,55 @@ pub fn listed(dev: bool) -> Vec<usize> {
   const made = lib.made as (options: { replay?: boolean } | undefined, dev: boolean) => number;
   const listed = lib.listed as (dev: boolean) => number[];
   expect([made(undefined, true), made({ replay: false }, true), listed(true)]).toEqual([5, 4, [2, 2]]);
+});
+
+// React's experimental entries list ReactClient's names with a comment on
+// two of them, `act, // DEV-only\n captureOwnerStack, // DEV-only`; its
+// port's `pub use crate::react_client::{.., act, // DEV-only\n
+// capture_owner_stack, // DEV-only\n ..};` dropped them. A comment in a
+// `pub use`'s list is its name's: after it on its line, after its name; on
+// lines of their own, before it (rd338, ADR 0874, amended).
+test("a pub use list's comments are its names'", async () => {
+  const dir = fixture("reexport-list-comments");
+  writeFileSync(join(dir, "lib.rs"), `mod client;
+
+pub use crate::client::{
+    act, // DEV-only
+    capture_owner_stack, // DEV-only
+    use_id,
+};
+
+pub use crate::client::{
+    use_ref,
+    // State
+    use_state, // the hook
+};
+
+pub use crate::client::{
+    // Renamed
+    use_ref as use_reference, // its last
+};
+`);
+  writeFileSync(join(dir, "client.rs"), ["act", "capture_owner_stack", "use_id", "use_ref", "use_state"].map((name, i) => `pub fn ${name}() -> u32 {\n    ${i + 1}\n}\n`).join("\n"));
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export {
+  act, // DEV-only
+  captureOwnerStack, // DEV-only
+  useId,
+} from "./client.js";
+
+export {
+  useRef,
+  // State
+  useState, // the hook
+} from "./client.js";
+
+export {
+  // Renamed
+  useRef as useReference, // its last
+} from "./client.js";
+`);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.act(), lib.captureOwnerStack(), lib.useId(), lib.useRef(), lib.useState(), lib.useReference()]).toEqual([1, 2, 3, 4, 5, 4]);
 });

@@ -108,6 +108,10 @@ pub struct LoweredModule {
 pub struct Reexport {
     pub from: js::ImportFrom,
     pub named: Vec<(String, String)>,
+    /// Where the `use` writes each of `named`, by its index: its leaf's
+    /// name and alias (`reexports::Leaf`), whose comments are its own,
+    /// `act, // DEV-only` (rd338); `NONE` of one no leaf writes, a glob's.
+    pub written: Vec<(js::Span, js::Span)>,
     /// The `pub use` it's of, which its comments are before.
     pub span: js::Span,
     /// Where it's among the module's imports, as JS loads them (ADR 1063,

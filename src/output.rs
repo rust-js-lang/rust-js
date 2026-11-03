@@ -110,6 +110,7 @@ impl OutputPlan {
             let reexports = (module.reexports.iter())
                 .map(|reexport| js::Reexport {
                     named: reexport.named.clone(),
+                    written: reexport.written.clone(),
                     from: from_here(&reexport.from),
                     span: reexport.span,
                     at: reexport.at,

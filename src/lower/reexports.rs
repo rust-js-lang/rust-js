@@ -23,7 +23,19 @@ pub(super) type TypeReexport = (rustc_span::Span, Option<js::ImportFrom>, (Strin
 /// One name a module re-exports, where it's written: the statement, which
 /// its names of one module share; where it's from; and `(export, alias)`,
 /// what that exports it as and the name it's re-exported by.
-pub(super) type Named = (rustc_span::Span, js::ImportFrom, (String, String));
+pub(super) type Named = (Written, js::ImportFrom, (String, String));
+
+/// Where one name a module re-exports is written: the statement, which its
+/// names of one module share and its comments are before, and its `Leaf`.
+pub(super) type Written = (rustc_span::Span, Leaf);
+
+/// The leaf of a `use` that names what's re-exported, whose comments are
+/// its own, `act, // DEV-only` (rd338): where it writes the name its path
+/// gives and the name it re-exports it by, `act` and `act`, `a` and `b` of
+/// `a as b`; `NO_LEAF` of none, a glob's or a forwarder's.
+pub(super) type Leaf = (rustc_span::Span, rustc_span::Span);
+
+const NO_LEAF: Leaf = (rustc_span::DUMMY_SP, rustc_span::DUMMY_SP);
 
 /// What `module` re-exports, each name of each `pub use` statement's
 /// `export { .. } from`, which `assembled` orders, by where it's from (ADR
@@ -69,10 +81,10 @@ pub(super) fn reexports(
         };
         let at = held.span.unwrap_or(rustc_span::DUMMY_SP);
         if held.export {
-            found.push((at, from.clone(), (import.clone(), held.name.clone())));
+            found.push(((at, NO_LEAF), from.clone(), (import.clone(), held.name.clone())));
         }
         if held.default {
-            found.push((at, from, (import.clone(), "default".to_string())));
+            found.push(((at, NO_LEAF), from, (import.clone(), "default".to_string())));
         }
     }
     if let Some((function, span)) = default_from
@@ -81,7 +93,7 @@ pub(super) fn reexports(
     {
         let export = super::default_exports::exported_as(tcx, function, info.exported());
         found.push((
-            span,
+            (span, NO_LEAF),
             js::ImportFrom::Module(from.clone()),
             (export, "default".to_string()),
         ));
@@ -110,6 +122,9 @@ pub(super) fn reexports(
             }
             continue;
         };
+        // Its leaf, whose comments are its own (rd338).
+        let name = path.segments.last().map_or(ident.span, |segment| segment.ident.span);
+        let written = (statement, (name, ident.span));
         let alias = |name: &str| {
             let named = (ident.name, named_of(path));
             super::bindings::use_name(tcx, item.owner_id.to_def_id(), named, || name.to_string())
@@ -127,14 +142,14 @@ pub(super) fn reexports(
         {
             // A binding of a JS module's export, itself, not a path in it.
             if super::bindings::is_binding(tcx, def_id) {
-                if let Some(written) = super::bindings::js_path(tcx, def_id)
-                    && let Some(((from, export), "")) = super::bindings::js_import(&written)
+                if let Some(path) = super::bindings::js_path(tcx, def_id)
+                    && let Some(((from, export), "")) = super::bindings::js_import(&path)
                 {
                     // Its namespace too, `export * as ns from` (ADR 0240, amended).
                     let alias = super::bindings::use_name(tcx, item.owner_id.to_def_id(), (ident.name, def_id), || {
                         ident.to_string()
                     });
-                    found.push((statement, js::ImportFrom::Specifier(from), (export, alias)));
+                    found.push((written, js::ImportFrom::Specifier(from), (export, alias)));
                 }
                 // A global's, the module's `const` (ADR 0622), or one held
                 // through another module, above.
@@ -160,7 +175,7 @@ pub(super) fn reexports(
                     ),
                 };
                 let Some(from) = paths.get(&from) else { continue };
-                found.push((statement, js::ImportFrom::Module(from.clone()), (export, alias)));
+                found.push((written, js::ImportFrom::Module(from.clone()), (export, alias)));
                 continue;
             }
             // A library's: through the crate's module its path names that
@@ -173,12 +188,12 @@ pub(super) fn reexports(
                     && let Some(from) = paths.get(&through)
                 {
                     let alias = through_alias(&export);
-                    found.push((statement, js::ImportFrom::Module(from.clone()), (export, alias)));
+                    found.push((written, js::ImportFrom::Module(from.clone()), (export, alias)));
                     continue;
                 }
                 if let Some((from, export)) = foreign.import_key(def_id, module) {
                     let from = js::ImportFrom::Specifier(from);
-                    found.push((statement, from, (export, alias(&imported.name))));
+                    found.push((written, from, (export, alias(&imported.name))));
                     continue;
                 }
             }
@@ -200,18 +215,14 @@ pub(super) fn reexports(
                     && let Some(from) = paths.get(&through)
                 {
                     let alias = through_alias(&export);
-                    found.push((statement, js::ImportFrom::Module(from.clone()), (export, alias)));
+                    found.push((written, js::ImportFrom::Module(from.clone()), (export, alias)));
                     continue;
                 }
                 let from = (named.as_local()).and_then(|local| paths.get(&LocalModId::new_unchecked(local)));
                 match from {
                     Some(from) => {
                         let alias = super::bindings::alias_name(tcx, item.owner_id.to_def_id(), ident.name);
-                        found.push((
-                            statement,
-                            js::ImportFrom::Module(from.clone()),
-                            ("*".to_string(), alias),
-                        ));
+                        found.push((written, js::ImportFrom::Module(from.clone()), ("*".to_string(), alias)));
                     }
                     // One with no JS of its own, of types alone, a binding
                     // crate's or std's, is nothing; another crate's of
@@ -255,12 +266,12 @@ pub(super) fn reexports(
                     && let Some(through) = paths.get(&through)
                 {
                     let alias = through_alias(&named);
-                    found.push((statement, js::ImportFrom::Module(through.clone()), (named, alias)));
+                    found.push((written, js::ImportFrom::Module(through.clone()), (named, alias)));
                     continue;
                 }
                 let alias =
                     super::bindings::use_name(tcx, item.owner_id.to_def_id(), (ident.name, class), || export.clone());
-                found.push((statement, from, (export, alias)));
+                found.push((written, from, (export, alias)));
             }
             // A type, a trait or a macro: no JS (ADR 0240).
             _ => {}
@@ -340,14 +351,22 @@ fn statement_of(item: &hir::Item<'_>) -> rustc_span::Span {
 pub(super) fn assembled(mut found: Vec<Named>, sources: &super::sources::CapturedSources) -> Vec<Reexport> {
     // In the order they're written; a statement's names from one module
     // one `export { .. } from` of it, in their order.
-    found.sort_by_key(|(at, ..)| at.lo());
+    found.sort_by_key(|((at, _), ..)| at.lo());
+    let at = |span: rustc_span::Span| match span.is_dummy() {
+        true => js::Span::NONE,
+        false => sources.span(span),
+    };
+    let leaf = |(name, alias): Leaf| (at(name), at(alias));
     let mut reexports: Vec<(rustc_span::Span, Reexport)> = Vec::new();
-    for (at, from, named) in found {
+    for ((at, written), from, named) in found {
         match reexports
             .iter_mut()
             .find(|(was, reexport)| was.lo() == at.lo() && reexport.from == from)
         {
-            Some((_, reexport)) => reexport.named.push(named),
+            Some((_, reexport)) => {
+                reexport.named.push(named);
+                reexport.written.push(leaf(written));
+            }
             None => {
                 let span = match at.is_dummy() {
                     true => js::Span::NONE,
@@ -358,6 +377,7 @@ pub(super) fn assembled(mut found: Vec<Named>, sources: &super::sources::Capture
                     Reexport {
                         from,
                         named: vec![named],
+                        written: vec![leaf(written)],
                         span,
                         at: span,
                     },
@@ -382,6 +402,7 @@ pub(super) fn assembled(mut found: Vec<Named>, sources: &super::sources::Capture
                     .is_some_and(|between| only_attributes(between, false)) =>
             {
                 last.named.extend(reexport.named);
+                last.written.extend(reexport.written);
                 last.span.hi = reexport.span.hi;
                 last.at.hi = reexport.span.hi;
             }
@@ -436,6 +457,8 @@ fn globbed(
     found: &mut Vec<Named>,
 ) {
     use rustc_middle::metadata::Reexport as Via;
+    // A glob writes no name's leaf.
+    let written = (statement, NO_LEAF);
     let refuse = |what: String, why: &str| {
         super::refusal::refuse(tcx, statement, super::refusal::Refused::Because(&what, why));
     };
@@ -457,13 +480,13 @@ fn globbed(
                         true => info.exported().to_string(),
                         false => super::bindings::alias_name(tcx, glob, child.ident.name),
                     };
-                    found.push((statement, js::ImportFrom::Module(from.clone()), (export, alias)));
+                    found.push((written, js::ImportFrom::Module(from.clone()), (export, alias)));
                 } else if let Some(imported) = foreign.item(id)
                     && imported.member.is_none()
                     && let Some((from, export)) = foreign.import_key(id, module)
                 {
                     found.push((
-                        statement,
+                        written,
                         js::ImportFrom::Specifier(from),
                         (export, imported.name.clone()),
                     ));
@@ -724,7 +747,7 @@ fn forwarded_methods(
                 // beside its namespace's method: one re-export of it (rd424).
                 match found.iter().find(|(_, _, (_, alias))| *alias == named.1) {
                     Some((_, was, already)) if *was == from && *already == named => continue,
-                    Some((written, ..)) => {
+                    Some(((written, _), ..)) => {
                         let message = format!(
                             "rust-js: `{}` is a `pub use` of another item, and this method is its namespace's \
                              re-export of `{}` by that name: JS exports one value by a name",
@@ -737,7 +760,7 @@ fn forwarded_methods(
                             .emit();
                         continue;
                     }
-                    None => found.push((statement, from, named)),
+                    None => found.push(((statement, NO_LEAF), from, named)),
                 }
             }
         }
@@ -789,7 +812,7 @@ pub(super) fn forwarded_functions(
         }
         let statement = each[run_start].0.to(each[at].0);
         for (_, from, named) in &each[run_start..=at] {
-            found.push((statement, from.clone(), named.clone()));
+            found.push(((statement, NO_LEAF), from.clone(), named.clone()));
         }
         run_start = at + 1;
     }
