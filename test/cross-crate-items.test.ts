@@ -1181,6 +1181,7 @@ use js::Unknown;
 
 pub struct Fiber {
     pub parent: Cell<Option<Rc<Fiber>>>,
+    pub key: Option<&'static Unknown>,
 }
 
 pub struct Props {
@@ -1188,7 +1189,10 @@ pub struct Props {
 }
 
 pub fn fiber(parent: Option<Rc<Fiber>>) -> Rc<Fiber> {
-    Rc::new(Fiber { parent: Cell::new(parent) })
+    Rc::new(Fiber {
+        parent: Cell::new(parent),
+        key: None,
+    })
 }
 `, `use std::rc::Rc;
 
@@ -1204,6 +1208,13 @@ pub fn reparent(fiber: &Fiber, parent: Rc<Fiber>) {
     fiber.parent.replace(Some(parent));
 }
 
+pub fn fiber_keyed(fiber: &Fiber) -> bool {
+    match fiber.key {
+        Some(key) => js::truthy(Some(key)),
+        None => false,
+    }
+}
+
 pub fn keyed(given: &Unknown) -> bool {
     // Safety: what's given is props.
     let props: &dep::Props = unsafe { js::cast(Some(given)) };
@@ -1214,10 +1225,12 @@ pub fn keyed(given: &Unknown) -> bool {
   expect(JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library.built).toHaveLength(1);
   expect(app).toContain("export function reparent(fiber, parent) {\n  fiber.parent = parent;\n}");
   expect(app).toContain("  const key = props.key;\n");
-  const { reparent, keyed } = await import(join(dir, "app", "lib.js"));
-  const fiber = { parent: null };
+  // The fiber's field, plain data, read where it's read.
+  expect(app).toContain("  if (fiber.key != null) {\n");
+  const { reparent, keyed, fiberKeyed } = await import(join(dir, "app", "lib.js"));
+  const fiber = { parent: null, key: "k" };
   reparent(fiber, fiber);
-  expect([fiber.parent === fiber, keyed({ key: 0 })]).toEqual([true, false]);
+  expect([fiber.parent === fiber, keyed({ key: 0 }), fiberKeyed(fiber)]).toEqual([true, false, true]);
 });
 
 // React's useActionState writes the form action a server action's
@@ -1300,6 +1313,46 @@ pub fn swapped(action: &ServerAction, permalink: &str) -> Option<String> {
   expect(reads).toBe(0);
   stored = "/kept";
   expect([swapped(server, "/next"), stored, reads]).toEqual(["/kept", "/next", 1]);
+});
+
+// A library of types alone, none of whose bodies asks what its `RefCell`s
+// are, says each struct's field no borrow of which can meet another is
+// quiet all the same (ADR 0863, amended), so a consumer's closure writes it
+// in place, not through its one cell, `$fieldCell(metadata, "action")`
+// (rd418).
+test("a library none of whose bodies borrows a RefCell says its quiet fields", async () => {
+  const dir = fixture("cross-crate-quiet-unasked");
+  const { app } = compiled(dir, `use std::cell::RefCell;
+
+pub struct FormAction {
+    pub action: RefCell<Option<String>>,
+}
+`, `use dep::FormAction;
+
+fn each(f: &dyn Fn(&str), given: &str) {
+    f(given)
+}
+
+pub fn renamed(make: &dyn Fn() -> &'static FormAction, permalink: Option<String>) {
+    each(
+        &move |_| {
+            let metadata = make();
+            if let Some(permalink) = &permalink {
+                *metadata.action.borrow_mut() = Some(permalink.clone());
+            }
+        },
+        "p",
+    );
+}
+`);
+  const facts = JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library.fields;
+  expect(facts).toEqual([expect.objectContaining({ facts: ["quiet"] })]);
+  expect(app).not.toContain("$fieldCell");
+  expect(app).toContain("      metadata.action = permalink;\n");
+  const { renamed } = await import(join(dir, "app", "lib.js"));
+  const metadata: { action?: string } = {};
+  renamed(() => metadata, "/new");
+  expect(metadata.action).toBe("/new");
 });
 
 // rd613 (ADR 0861, amended): a library's function whose own nullable

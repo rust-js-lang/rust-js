@@ -67,3 +67,26 @@ the names this ABI knows, `test/manifest.test.ts` holds it, and std's
 manifest is regenerated. Mutations `library-quiet-fields-unlisted` and
 `library-plain-unread` (`drops/ref_cells.rs`).
 
+
+## Amendment: every library's contract says its quiet fields (rd418)
+
+The crate's `RefCell` facts are found once, when a body first asks of
+them (`FnCx::ref_cells`, a `OnceCell`). A library none of whose bodies
+asks, one of types alone, wrote no `fields`: its contract read the facts
+as unfound and said none. Its consumers then took each of its `RefCell`
+fields for one some borrow of which may meet another, and a closure's
+`*metadata.action.borrow_mut() = ..` wrote it through its one cell,
+`const value = $fieldCell(metadata, "action"); value.value = ..`. Now a
+library's facts are found before its contract is written, whether or not
+a body asked, in a context of one of its structs (`pipeline/contexts.rs`,
+which makes every body's context too): each of its structs' `RefCell`
+fields that no body lends, binds, moves or holds a borrow of is `quiet`,
+and its consumer writes it in place, `metadata.action = permalink;`.
+Nothing changes for a library whose bodies asked, nor for a crate that
+isn't one.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, none: what the
+contract says is what the library's code does, as for a library whose
+bodies asked. Held by `test/cross-crate-items.test.ts`'s "a library none
+of whose bodies borrows a RefCell says its quiet fields"; mutation
+`library-ref-cells-unasked-unsaid` (`lower/pipeline.ts`).

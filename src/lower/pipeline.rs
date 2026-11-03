@@ -1,5 +1,6 @@
 //! Orchestrate analyzed crate facts, function emission, reachability and symbolic module assembly.
 
+mod contexts;
 mod copies;
 mod crate_imports;
 mod field_reads;
@@ -14,7 +15,7 @@ use self::load_cycles::{ModuleJs, module_imports};
 use self::reached::written_where_reached;
 use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, nulled_params::NulledParams};
 use super::bindings::Export;
-use super::{Body, CrateFacts, FnCx, Locals, const_js, located, module_file, static_value};
+use super::{Body, CrateFacts, const_js, located, module_file, static_value};
 use crate::js::{self, Expr, Prop, StmtKind};
 use crate::program::{LoweredModule, Unlinked, UnlinkedModule};
 use rustc_hir::def::DefKind;
@@ -545,6 +546,12 @@ pub fn lower_crate<'tcx>(
     field_reads::first(&mut work, &field_reads);
     let (mut used, mut queued) = (HashSet::new(), HashSet::new());
     let no_facts = super::body_queries::BodyFacts::default();
+    let shared = contexts::Shared {
+        tcx,
+        krate: &crate_facts,
+        no_body: &no_body,
+        no_facts: &no_facts,
+    };
     let mut next = 0;
     loop {
         // Then the codecs something uses, a round at a time, each in the
@@ -619,35 +626,13 @@ pub fn lower_crate<'tcx>(
             .flat_map(|scope| scope.methods.iter())
             .map(|&method| (method, crate::names::fresh_in(&mut names, &fns[&method].name)))
             .collect();
-        let mut cx = FnCx {
-            tcx,
-            typing_env: ty::TypingEnv::post_analysis(tcx, def_id),
-            given: Default::default(),
-            codecs: Vec::new(),
-            krate: &crate_facts,
-            dependencies: Default::default(),
-            drops_observed: Default::default(),
-            frame: super::BodyFrame {
-                thir: body.map_or(&no_body, |body| &body.thir),
-                facts: body.map_or(&no_facts, |body| &body.facts),
-                owner: def_id,
-            },
-            module,
-            locals: Locals::default(),
+        let mut cx = contexts::fn_cx(
+            &shared,
+            (def_id, body, copy),
+            (module, &taken[&module]),
             names,
-            module_names: &taken[&module],
-            jsx: false,
-            writing: Default::default(),
-            recursive: Default::default(),
-            item: def_id,
-            copy,
-            walks: Default::default(),
-            drop_state: Default::default(),
             scope_functions,
-            scope_copies: HashMap::new(),
-            scope_self: None,
-            scope_values: Vec::new(),
-        };
+        );
         cx.nest_scope_copies();
         let result = match body {
             // Each body, a function's or an initializer's, from its MIR (ADR 0364).
@@ -695,6 +680,24 @@ pub fn lower_crate<'tcx>(
             }
             Err(_) => failed = true,
         }
+    }
+    // A library's contract says of its `RefCell`s, its structs' fields'
+    // too, though none of its bodies asked (rd418): found in a context of
+    // one of its structs, as any body's finds them, of the crate.
+    let a_struct = || (tcx.hir_crate_items(()).definitions()).find(|&id| tcx.def_kind(id) == DefKind::Struct);
+    if export_library
+        && ref_cells.get().is_none()
+        && let Some(id) = a_struct()
+    {
+        let given = (CRATE_MOD_ID, &taken[&CRATE_MOD_ID]);
+        contexts::fn_cx(
+            &shared,
+            (id.to_def_id(), None, None),
+            given,
+            HashSet::new(),
+            HashMap::new(),
+        )
+        .ref_cells();
     }
     // What of its libraries the crate's lowering found it compiles itself,
     // which their JS doesn't export: the crate lowered again with them, as

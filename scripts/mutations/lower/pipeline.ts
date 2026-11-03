@@ -748,4 +748,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^recursive_fns_per_module.rs$"],
   },
+  {
+    name: "library-ref-cells-unasked-unsaid",
+    breaks:
+      "a library none of whose bodies asks what its `RefCell`s are says none of its fields quiet, so a consumer's closure writes one through its one cell, `$fieldCell(metadata, \"action\")` (rd418)",
+    file: "src/lower/pipeline.rs",
+    find: "    if export_library\n        && ref_cells.get().is_none()\n",
+    replace: "    if false\n        && ref_cells.get().is_none()\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a library none of whose bodies borrows a RefCell says its quiet fields"],
+  },
 ];
