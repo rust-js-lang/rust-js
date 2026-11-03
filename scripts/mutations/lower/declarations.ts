@@ -1159,4 +1159,12 @@ export const mutations: Mutation[] = [
     replace: "                    let present = value;\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
   },
+  {
+    name: "variant-refcell-declared-box",
+    breaks: "a variant's `RefCell` field that holds its value is declared `{ value: T }`, where it's the `T` (#503)",
+    file: "src/lower/declarations.rs",
+    find: "                            let ty = self.field_ts(field.ty(self.tcx, args).skip_normalization(), Some(field));\n",
+    replace: "                            let ty = self.field_ts(field.ty(self.tcx, args).skip_normalization(), None);\n",
+    tests: ["test/lowering-field-cells.test.ts", "-t", "an enum variant's RefCell field"],
+  },
 ];

@@ -1,6 +1,6 @@
 # 0863. A `RefCell` of an object is the object, and one no borrow of which can meet another is never checked
 
-Status: Accepted; amended below (`as_deref` of an `Option` of a guard, a guard that's only a call's receiver, a guard read only for a binding's argument (rd427), a held borrow counts the cells that can be its own (#445), a library's cell only its own code and constants reach is its flow's (#456), and a `RefCell` that's a box is declared `{ value: T }` (#503)). Amends [0328](0328-refcell-borrow-counts.md) (what a
+Status: Accepted; amended below (`as_deref` of an `Option` of a guard, a guard that's only a call's receiver, a guard read only for a binding's argument (rd427), a held borrow counts the cells that can be its own (#445), a library's cell only its own code and constants reach is its flow's (#456), and a `RefCell` that's a box is declared `{ value: T }`, and an enum variant's `RefCell` field holds its value by its declaration (#503)). Amends [0328](0328-refcell-borrow-counts.md) (what a
 `RefCell` is, and which of its borrows are counted),
 [0362](0362-refcell-fields-never-counted.md) (a field's plain cell, a
 library's too), [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)
@@ -1171,3 +1171,72 @@ as no JS reads it.
 Held by `test/declarations.test.ts`'s "declarations type what a module
 exports", `counted(cell: { value: number })`, and mutation
 `boxed-refcell-declared-any` (`declarations.ts`).
+
+## Amendment: an enum variant's `RefCell` field holds its value by its declaration (#503)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference in what the program does: each reader and writer of the field
+reaches the one property, as a struct's does; what changes is the shape JS
+sees, which its declaration now says.
+
+alien-signals' effect node, `NodeKind::Effect { r#fn, cleanup:
+RefCell<Option<Rc<dyn Fn()>>> }`, flattened into its node (ADR 1071), was
+made `cleanup: {}` and set `e.cleanup.value = e.fn()`, a `{ value }` box,
+where upstream's `ReactiveNode` has `cleanup` the function or `undefined`.
+A struct's field held its value by its declaration (above); a variant's
+was a box, as every `RefCell` of its type that isn't the object it holds:
+`ref_cells.rs`'s `struct_field`, which each place that asks whether a
+field holds its value asks, said `DefKind::Struct` alone.
+
+**A variant's `RefCell` field holds its value by its declaration, as a
+struct's does**, a tagged enum's `{ TAG: "Effect", cleanup }` and a keyed
+one's own key, of named fields and of unnamed, `_0`: `ref_cells.rs`'s
+`object_field`, which `struct_field` is now, says a variant's field is a
+property of the object its value is, and every place that asks a field
+whether it holds its value asks it so. A variant's field is reached through
+MIR's `Downcast`, which `mir_field` and `place_field` already read of the
+variant they're read as, and `adt_value` makes a variant's fields as a
+struct's: `representation.rs`'s `struct_field_def`, of a struct's field
+by its index, is asked only where the value is a struct's.
+
+- **Made**, its `None` is the key kept, `cleanup: undefined`, as a
+  struct's cell field's is (ADR 0280, amended).
+- **A pattern's binding of it** lends it, as a struct's does (above): its
+  one cell, `$fieldCell(e, "cleanup")`, whose `value` is the property.
+  Moved out whole, `let Outcome::Finished { lines, tries } = outcome;`, a
+  cell of its own of what it held.
+- **Its enum's derives** read it as a struct's do: `Clone` copies a
+  variant holding one, `{ ...a }`, of what it holds a clone, and `==` and
+  `Debug` read what it holds (`std_impls.rs`'s `clone_fields`, given the
+  variant). A variant that holds a cell that's the property is copied
+  however the enum is used, as its cell is set in place; before, a
+  `RefCell` field's own `needs_clone` stood for that.
+- **A constant of the variant**, a thread-local's `const { Kind::Pair(
+  RefCell::new(5), 1) }`, is its initializer's, as a struct's of a
+  `RefCell` field is (`representation/consts.rs`).
+- **Declared** as what it holds, `cleanup: (() => void) | null |
+  undefined`.
+
+An untagged enum's payload is the value it holds (ADR 0214), so its
+`RefCell` is one only of an object, the object (`untagged::held_payloads`
+refuses any other); std's generic enums' fields are declared `T`, no
+`RefCell`. Neither needs a case of its own.
+
+Held by `test/lowering-field-cells.test.ts`, "an enum variant's RefCell
+field holds its value by its declaration", given objects JS made, the
+issue's program and a keyed enum's; and the corpus's
+`refcell_variant_fields` (alien-signals' node and a tagged enum's, made,
+borrowed and replaced through bindings, its variant replaced whole, and
+one moved out), `refcell_variant_derives` (`Clone`, `==` of a hand-written
+`==`, `Debug`, `{:#?}`, a thread-local of a constant),
+`refcell_generic_variant_field` and those that must panic as std's does:
+`refcell_variant_field_held` (a binding given on, held while another
+borrows it), `refcell_variant_field_twice` (`already borrowed` through one
+binding), `refcell_variant_replaced_held` (the enum's own cell replaced
+while a variant's field is borrowed), `refcell_variant_derive_meets` (a
+derived `Clone` that borrows it again) and `refcell_generic_variant_held`,
+each against native Rust. Mutations `variant-refcell-boxed` (`drops/ref_cells.ts`),
+`variant-clone-boxes-cells`, `variant-clone-of-cells-shared` and
+`variant-eq-boxes-cells` (`std_impls.ts`), `variant-refcell-const-boxed`
+(`representation/consts.ts`) and `variant-refcell-declared-box`
+(`declarations.ts`).

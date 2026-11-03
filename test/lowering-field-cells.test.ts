@@ -345,3 +345,84 @@ pub fn destroyed(instance: &EffectInstance) -> u32 {
   const instance = lib.createEffectInstance();
   expect([Object.keys(instance), lib.destroyed(instance)]).toEqual([["destroy"], 4]);
 });
+
+// alien-signals' effect node (#503): a variant's `RefCell` field holds its
+// value by its declaration, as a struct's does, made, set through a
+// pattern's binding, which lends it, its one cell, and declared as what it
+// holds; given objects JS made, a keyed enum's flattened in its node too.
+test("an enum variant's RefCell field holds its value by its declaration", async () => {
+  const dir = fixture("refcell-variant-fields");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+pub enum Kind {
+    Effect {
+        cleanup: RefCell<Option<Rc<dyn Fn()>>>,
+    },
+    Scope,
+}
+
+pub fn effect() -> Kind {
+    Kind::Effect {
+        cleanup: RefCell::new(None),
+    }
+}
+
+pub fn set_cleanup(kind: &Kind, cleanup: Rc<dyn Fn()>) {
+    if let Kind::Effect { cleanup: cell } = kind {
+        *cell.borrow_mut() = Some(cleanup);
+    }
+}
+
+pub fn run_cleanup(kind: &Kind) -> bool {
+    match kind {
+        Kind::Effect { cleanup } => {
+            let ran = cleanup.borrow().is_some();
+            if let Some(f) = cleanup.take() {
+                f();
+            }
+            ran
+        }
+        Kind::Scope => false,
+    }
+}
+
+pub enum NodeKind {
+    Signal { current: Cell<u32> },
+    Effect { cleanup: RefCell<Option<u32>> },
+}
+
+pub struct Node {
+    pub flags: u32,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub kind: NodeKind,
+}
+
+pub fn cleaned(node: &Node) -> Option<u32> {
+    let NodeKind::Effect { cleanup } = &node.kind else {
+        return None;
+    };
+    cleanup.replace(Some(node.flags))
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('    TAG: "Effect",\n    cleanup: undefined,\n');
+  expect(js).toContain('    const cell = $fieldCell(kind, "cleanup");\n    cell.value = cleanup;\n');
+  expect(js).toContain('  if (!("cleanup" in node)) {\n');
+  expect(js).toContain('  const cleanup = $fieldCell(node, "cleanup");\n  const old = cleanup.value;\n');
+  const types = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(types).toContain('    TAG: "Effect";\n    cleanup: (() => void) | null | undefined;\n');
+  expect(types).toContain("    cleanup: number | null | undefined;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const made = lib.effect();
+  expect(made).toEqual({ TAG: "Effect", cleanup: undefined });
+  let runs = 0;
+  const kind = { TAG: "Effect", cleanup: undefined };
+  lib.setCleanup(kind, () => runs++);
+  expect(typeof kind.cleanup).toBe("function");
+  expect([lib.runCleanup(kind), runs, kind.cleanup]).toEqual([true, 1, undefined]);
+  expect([lib.runCleanup(kind), lib.runCleanup("Scope"), runs]).toEqual([false, false, 1]);
+  const node = { flags: 3, cleanup: 9 };
+  expect([lib.cleaned(node), node.cleanup, lib.cleaned({ flags: 1, current: 2 })]).toEqual([9, 3, undefined]);
+});

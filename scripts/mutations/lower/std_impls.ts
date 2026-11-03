@@ -985,4 +985,28 @@ export const mutations: Mutation[] = [
     replace: "        if false && self.is_recursive(ty) {\n            let ty::Adt(adt, _) = ty.kind() else {\n                unreachable!(\"a recursive type is an ADT\");\n            };\n            let base = format!(\"eq{}\"",
     tests: ["test/corpus.test.ts", "-t", "^recursive_eq.rs$"],
   },
+  {
+    name: "variant-clone-boxes-cells",
+    breaks: "a derived `Clone` of an enum reads its variant's `RefCell` field that holds its value as `{ value }`, `{ ...a, runs: { value: $borrow(a.runs).value } }` (#503)",
+    file: "src/lower/std_impls.rs",
+    find: "                Some(variant) => variant.fields.get(rustc_abi::FieldIdx::from_usize(i)),\n",
+    replace: "                Some(_) => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_variant_derives.rs$"],
+  },
+  {
+    name: "variant-clone-of-cells-shared",
+    breaks: "a derived `Clone` of an enum whose variant holds a cell that's the property it holds is the value it clones, `const b = a`, so a write to one's cell is the other's (#503)",
+    file: "src/lower/std_impls.rs",
+    find: "                    (variant.fields.iter().zip(fields)).any(|(def, &(_, t))| cx.property_cell(Some(def), t).is_some())\n",
+    replace: "                    (variant.fields.iter().zip(fields)).any(|(def, &(_, t))| cx.property_cell(Some(def), t).is_some() && false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_variant_derives.rs$"],
+  },
+  {
+    name: "variant-eq-boxes-cells",
+    breaks: "a derived `==` of an enum whose variant's field compares as it's written reads its `RefCell` field that holds its value as `{ value }` (#503)",
+    file: "src/lower/std_impls.rs",
+    find: "                            self.held(Expr::member(a.clone(), field.clone()), Some(def), t),\n                            self.held(Expr::member(b.clone(), field), Some(def), t),\n",
+    replace: "                            self.held(Expr::member(a.clone(), field.clone()), Some(def).filter(|_| false), t),\n                            self.held(Expr::member(b.clone(), field), Some(def).filter(|_| false), t),\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_variant_derives.rs$"],
+  },
 ];

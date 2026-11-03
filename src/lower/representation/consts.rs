@@ -208,6 +208,14 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
             if fields.is_empty() {
                 return Some((unit.unit)(adt.did(), variant));
             }
+            // A variant's `RefCell` field may be the value it holds, as a
+            // struct's (below): its initializer's, which a body lowers (#503).
+            if variant.fields.iter().any(|f| {
+                let declared = tcx.type_of(f.did).instantiate_identity().skip_normalization();
+                matches!(declared.kind(), ty::Adt(cell, _) if is_std_def(tcx, cell.did(), StdItem::RefCell))
+            }) {
+                return None;
+            }
             let values = fields_of(fields)?;
             let props = values
                 .into_iter()

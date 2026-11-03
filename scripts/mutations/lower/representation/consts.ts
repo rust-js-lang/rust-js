@@ -207,4 +207,12 @@ export const mutations: Mutation[] = [
     replace: "                    layout.kept = (Vec::<Prop>::new().iter())\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_const.rs$"],
   },
+  {
+    name: "variant-refcell-const-boxed",
+    breaks: "a constant of a variant with a `RefCell` field, a thread-local's `Kind::Pair(RefCell::new(5), 1)`, is `{ _0: { value: 5 } }`, where the field holds its value (#503)",
+    file: "src/lower/representation/consts.rs",
+    find: "            if variant.fields.iter().any(|f| {\n",
+    replace: "            if false && variant.fields.iter().any(|f| {\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_variant_derives.rs$"],
+  },
 ];

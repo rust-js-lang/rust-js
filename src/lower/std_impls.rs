@@ -537,24 +537,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 // `{ TAG: "Line", _0: .. }` (ADR 0033): a variant with fields
                 // that need it gets a copy, and every other value is itself.
+                // A variant with a cell that's the property it holds, set in
+                // place, is copied, of what it holds a clone (#503).
+                let cells = |cx: &Self, variant: &ty::VariantDef, fields: &[(String, Ty<'tcx>)]| {
+                    (variant.fields.iter().zip(fields)).any(|(def, &(_, t))| cx.property_cell(Some(def), t).is_some())
+                };
                 let itself = self.mutated_itself(ty);
+                // Whether a variant's field needs a clone of its own: of such a
+                // cell, what it holds.
+                let needs = |cx: &Self, variant: &ty::VariantDef, fields: &[(String, Ty<'tcx>)]| {
+                    (variant.fields.iter().zip(fields)).any(|(def, &(_, t))| {
+                        (cx.property_cell(Some(def), t)).map_or(cx.needs_clone(t), |item| cx.needs_clone(item))
+                    })
+                };
                 // Each variant copied whole, with no field to clone: one `{ ...place }`.
                 let fields: Vec<_> = adt.variants().iter().map(|v| self.variant_fields(v, args)).collect();
-                if itself
+                let variants = || adt.variants().iter().zip(&fields);
+                if (itself || variants().any(|(v, f)| cells(self, v, f)))
                     && !fields.is_empty()
-                    && fields
-                        .iter()
-                        .all(|f| !f.is_empty() && f.iter().all(|&(_, t)| !self.needs_clone(t)))
+                    && variants().all(|(v, f)| !f.is_empty() && !needs(self, v, f))
                 {
-                    return self.clone_fields(place, ty, fields[0].clone(), span, out);
+                    return self.clone_fields(place, (ty, None), fields[0].clone(), span, out);
                 }
                 let mut value = place.clone();
                 for variant in adt.variants().iter().rev() {
                     let fields = self.variant_fields(variant, args);
-                    if fields.is_empty() || !(itself || fields.iter().any(|&(_, t)| self.needs_clone(t))) {
+                    if fields.is_empty() || !(itself || cells(self, variant, &fields) || needs(self, variant, &fields))
+                    {
                         continue;
                     }
-                    let copy = self.clone_fields(place.clone(), ty, fields, span, out)?;
+                    let copy = self.clone_fields(place.clone(), (ty, Some(variant)), fields, span, out)?;
                     let index = adt.variant_index_with_id(variant.def_id);
                     let test = self.variant_test(place.clone(), ty, *adt, index, false);
                     value = Expr::cond(test, copy, value);
@@ -585,7 +597,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(self.stepped_items(left))
             }
             _ if !matches!(ty.kind(), ty::Adt(adt, _) if self.is_std(adt.did())) => match self.shape(ty) {
-                Shape::Object(fields) => self.clone_fields(place, ty, Self::named_fields(fields), span, out),
+                Shape::Object(fields) => self.clone_fields(place, (ty, None), Self::named_fields(fields), span, out),
                 Shape::Array(tys) => Ok(Expr::array(
                     tys.into_iter()
                         .enumerate()
@@ -599,11 +611,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `{ ...place, v: <clone of place.v> }`: a new object, with a clone of
-    /// each field that needs one, of `fields`, those of a `ty`.
+    /// each field that needs one, of `fields`, those of a `ty`, a struct, or
+    /// of its `variant`, an enum's (#503).
     fn clone_fields(
         &mut self,
         place: Expr,
-        ty: Ty<'tcx>,
+        (ty, variant): (Ty<'tcx>, Option<&'tcx ty::VariantDef>),
         fields: Vec<(String, Ty<'tcx>)>,
         span: Span,
         out: &mut Vec<Stmt>,
@@ -612,7 +625,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for (i, (name, t)) in fields.into_iter().enumerate() {
             // A cell in a field is what it holds (`property_cell`): a clone
             // of one is a copy of that, which the spread makes if it needs none.
-            let def = self.struct_field_def(ty, i);
+            let def = match variant {
+                Some(variant) => variant.fields.get(rustc_abi::FieldIdx::from_usize(i)),
+                None => self.struct_field_def(ty, i),
+            };
             if self
                 .property_cell(def, t)
                 .map_or(self.needs_clone(t), |item| self.needs_clone(item))
@@ -1254,10 +1270,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let index = adt.variant_index_with_id(variant.def_id);
                     let tag = |cx: &Self, x: &Expr| cx.variant_test(x.clone(), ty, *adt, index, false);
                     let mut same = tag(self, &b);
-                    for (field, t) in fields {
+                    for ((field, t), def) in fields.into_iter().zip(&variant.fields) {
                         let field = self.eq_value(
-                            self.held(Expr::member(a.clone(), field.clone()), None, t),
-                            self.held(Expr::member(b.clone(), field), None, t),
+                            self.held(Expr::member(a.clone(), field.clone()), Some(def), t),
+                            self.held(Expr::member(b.clone(), field), Some(def), t),
                             t,
                             span,
                             out,

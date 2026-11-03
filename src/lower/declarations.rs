@@ -902,7 +902,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         }
                         let tag = (!keyed).then(|| json!({ "kind": "property", "name": key, "optional": false, "readonly": false, "type": name }));
                         let fields = v.fields.iter().enumerate().map(|(i, field)| {
-                            let ty = self.field_ts(field.ty(self.tcx, args).skip_normalization(), None);
+                            let ty = self.field_ts(field.ty(self.tcx, args).skip_normalization(), Some(field));
                             let name = crate::lower::representation::variant_field(self.tcx, v, i);
                             json!({ "kind": "property", "name": name, "optional": false, "readonly": false, "type": ty })
                         });

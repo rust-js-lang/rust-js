@@ -47,9 +47,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a struct's `RefCell` field is `{ value }`, `root.times.value[..]` of the array JS made, where its declaration says it holds its value (ADR 0863, amended)",
     file: "src/lower/drops/ref_cells.rs",
-    find: "            && struct_field(tcx, field.did)\n            && !self.is_value_cell(tcx, ty)\n",
+    find: "            && object_field(tcx, field.did)\n            && !self.is_value_cell(tcx, ty)\n",
     replace:
-      "            && struct_field(tcx, field.did)\n            && false\n",
+      "            && object_field(tcx, field.did)\n            && false\n",
     tests: ["test/lowering-field-cells.test.ts"],
   },
   {
@@ -518,5 +518,13 @@ export const mutations: Mutation[] = [
     find: "classes.contains(&CellClass::Anything { shared: true })",
     replace: "classes.iter().any(|class| matches!(class, CellClass::Anything { .. }))",
     tests: ["test/crates.test.ts", "-t", "constants reach"],
+  },
+  {
+    name: "variant-refcell-boxed",
+    breaks: "an enum variant's `RefCell` field is `{ value }`, alien-signals' effect's `cleanup: {}` and `e.cleanup.value`, where its declaration says it holds its value, as a struct's does (#503)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "        DefKind::Variant => true,\n",
+    replace: "        DefKind::Variant => false,\n",
+    tests: ["test/lowering-field-cells.test.ts", "-t", "an enum variant's RefCell field"],
   },
 ];

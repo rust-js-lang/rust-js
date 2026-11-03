@@ -2017,10 +2017,10 @@ export function shared() {
   `Option` field's `None` is left out; a nullable and optional one is
   absent until it's set
   ([ADR 0280](../../decisions/0280-undefined-fields-left-out.md), amended).
-- **A `RefCell` in a struct's field is the value it holds**, by the
-  field's declaration, as JS that makes the object writes it: whatever
-  else has its type, a generic struct's `RefCell<T>`, a thread-local, and
-  however the field itself is used
+- **A `RefCell` in a struct's or an enum variant's field is the value it
+  holds**, by the field's declaration, as JS that makes the object writes
+  it: whatever else has its type, a generic struct's `RefCell<T>`, a
+  thread-local, and however the field itself is used
   ([ADR 0362](../../decisions/0362-refcell-fields-never-counted.md),
   [ADR 0585](../../decisions/0585-a-refcells-replace-holds-it-for-a-moment.md),
   [ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)).

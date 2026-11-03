@@ -81,7 +81,7 @@ impl<'tcx> RefCells<'tcx> {
     pub(in crate::lower) fn holds_value(&self, tcx: TyCtxt<'tcx>, field: &ty::FieldDef) -> bool {
         let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
         matches!(ty.kind(), ty::Adt(adt, _) if crate::lower::recognition::is_std_def(tcx, adt.did(), StdItem::RefCell))
-            && struct_field(tcx, field.did)
+            && object_field(tcx, field.did)
             && !self.is_value_cell(tcx, ty)
     }
 
@@ -682,7 +682,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if matches!(tcx.def_kind(id), DefKind::Struct) {
                 for field in tcx.adt_def(id).all_fields() {
                     let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-                    if !self.is_std_type(ty, StdItem::RefCell) || !struct_field(tcx, field.did) {
+                    if !self.is_std_type(ty, StdItem::RefCell) || !object_field(tcx, field.did) {
                         continue;
                     }
                     match lent.get(&field.did).or(counted_fields.get(&field.did)) {
@@ -790,7 +790,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 for field in adt.all_fields() {
                     let declared = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-                    if refcell(declared) && declared.has_param() && struct_field(tcx, field.did) && loud(field.did) {
+                    if refcell(declared) && declared.has_param() && object_field(tcx, field.did) && loud(field.did) {
                         let made = field.ty(tcx, args).skip_normalization();
                         if let ty::Adt(_, held) = made.kind()
                             && holds_itself(tcx, held.type_at(0))
@@ -872,7 +872,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for field in tcx.adt_def(id).all_fields() {
                     let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
                     of_objects(ty, &mut boxed);
-                    let holds_value = refcell(ty) && struct_field(tcx, field.did);
+                    let holds_value = refcell(ty) && object_field(tcx, field.did);
                     for part in ty.walk().filter_map(|part| part.as_type()) {
                         let its_own = holds_value && part == ty;
                         all |= !its_own && any_value(part);
@@ -1049,7 +1049,8 @@ struct Found<'tcx> {
     span: rustc_span::Span,
 }
 
-/// Each struct's `RefCell` field a pattern binds, not as `_` (ADR 0362).
+/// Each `RefCell` field of a struct or an enum's variant a pattern binds,
+/// not as `_` (ADR 0362, #503).
 struct BoundRefCells<'a, 'b, 'tcx> {
     recognition: crate::lower::recognition::Recognition<'a, 'tcx>,
     thir: &'b rustc_middle::thir::Thir<'tcx>,
@@ -1062,15 +1063,29 @@ impl<'b, 'tcx> rustc_middle::thir::visit::Visitor<'b, 'tcx> for BoundRefCells<'_
     }
 
     fn visit_pat(&mut self, pat: &'b Pat<'tcx>) {
-        if let rustc_middle::thir::PatKind::Leaf { ref subpatterns } = pat.kind
-            && let ty::Adt(adt, _) = pat.ty.kind()
-            && adt.is_struct()
-        {
+        use rustc_middle::thir::PatKind;
+        // A struct's, or a variant's (#503).
+        let variant = match pat.kind {
+            PatKind::Leaf { ref subpatterns }
+                if let ty::Adt(adt, _) = pat.ty.kind()
+                    && adt.is_struct() =>
+            {
+                Some((adt.non_enum_variant(), subpatterns))
+            }
+            PatKind::Variant {
+                adt_def,
+                variant_index,
+                ref subpatterns,
+                ..
+            } => Some((adt_def.variant(variant_index), subpatterns)),
+            _ => None,
+        };
+        if let Some((variant, subpatterns)) = variant {
             for field in subpatterns {
-                if !matches!(field.pattern.kind, rustc_middle::thir::PatKind::Wild)
+                if !matches!(field.pattern.kind, PatKind::Wild)
                     && self.recognition.is_std_type(field.pattern.ty, StdItem::RefCell)
                 {
-                    let did = adt.non_enum_variant().fields[field.field].did;
+                    let did = variant.fields[field.field].did;
                     self.found.entry(did).or_insert(field.pattern.span);
                 }
             }
@@ -1122,14 +1137,20 @@ pub(in crate::lower) fn holds_itself<'tcx>(tcx: TyCtxt<'tcx>, held: Ty<'tcx>) ->
     !markers && !crate::lower::classes::is_class(tcx, adt.did())
 }
 
-/// Whether `field` is a struct's, not `#[repr(transparent)]`, which is its
-/// field (ADR 0584): one that's the property it holds, where a `RefCell`
-/// field holds its value (ADR 0863, amended). Not an enum's variant's, read
-/// by the pattern that binds it.
-pub(in crate::lower) fn struct_field(tcx: TyCtxt<'_>, field: DefId) -> bool {
+/// Whether `field` is a property of the object its value is, where a
+/// `RefCell` field holds its value (ADR 0863, amended): a struct's, not
+/// `#[repr(transparent)]`, which is its field (ADR 0584); and a variant's,
+/// `{ TAG: "Effect", cleanup }`, a keyed one's own key (ADR 1071), as it's
+/// declared (#503). An untagged enum's payload, its value (ADR 0214), is a
+/// `RefCell` only of an object (`untagged::held_payloads`), the object; and
+/// std's generic enums' are declared `T`.
+pub(in crate::lower) fn object_field(tcx: TyCtxt<'_>, field: DefId) -> bool {
     let owner = tcx.parent(field);
-    matches!(tcx.def_kind(owner), DefKind::Struct)
-        && crate::lower::recognition::transparent_field(tcx, tcx.adt_def(owner)).is_none()
+    match tcx.def_kind(owner) {
+        DefKind::Struct => crate::lower::recognition::transparent_field(tcx, tcx.adt_def(owner)).is_none(),
+        DefKind::Variant => true,
+        _ => false,
+    }
 }
 
 /// The cell `lent`, a `RefCell`'s method's receiver, is: `x.f` of
@@ -1247,7 +1268,7 @@ fn made_places<'tcx>(tcx: TyCtxt<'tcx>, body: &crate::lower::Body<'tcx>) -> Hash
                 let def = &adt.adt_def.non_enum_variant().fields[field.name];
                 let declared = tcx.type_of(def.did).instantiate_identity().skip_normalization();
                 if matches!(declared.kind(), ty::Adt(cell, _) if crate::lower::recognition::is_std_def(tcx, cell.did(), StdItem::RefCell))
-                    && struct_field(tcx, def.did)
+                    && object_field(tcx, def.did)
                 {
                     made.push(field.expr);
                 }
@@ -1302,7 +1323,7 @@ fn property_reads<'tcx>(
                         return false;
                     };
                     crate::lower::recognition::is_std_def(tcx, cell.did(), StdItem::RefCell)
-                        && struct_field(tcx, field.did)
+                        && object_field(tcx, field.did)
                         && crate::lower::analysis::head(tcx, args.type_at(0)).is_none()
                 }),
                 ExprKind::Borrow { arg, .. } | ExprKind::RawBorrow { arg, .. } | ExprKind::Deref { arg } => {
