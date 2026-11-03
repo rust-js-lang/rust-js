@@ -6,10 +6,21 @@ use rustc_middle::ty::TypeVisitableExt;
 use rustc_span::Span;
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
-use crate::lower::recognition::{TypeFact, trait_method};
+use crate::lower::recognition::{Std, TypeFact, trait_method};
 use crate::lower::representation::Num;
 use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R};
+
+/// The helper that does what `known` does to a view of part of a slice,
+/// given the slice and where the part starts and ends, `(v, start, end?)`,
+/// where it has one: JS has no method over part of an array, so a view's
+/// is the slice's own, in place, no view made (ADR 1073).
+pub(in crate::lower) fn ranged(known: Std) -> Option<&'static str> {
+    match known {
+        Std::Method("reverse") => Some("$reverseRange"),
+        _ => None,
+    }
+}
 
 /// What an unstable sort orders by: its items' own order, a comparator
 /// (`_by`), or a key (`_by_key`).

@@ -552,7 +552,9 @@ What's refused is in [the limitations](limitations.md).
   nothing changes `v` while it's borrowed
   ([0153](../decisions/0153-collection-and-cell-methods.md)). **A `&mut`
   slice is a view of its array,** `$view(v, 1)`, whose writes are the
-  array's ([0335](../decisions/0335-slice-views.md)).
+  array's ([0335](../decisions/0335-slice-views.md)); a part reversed,
+  `v[a..b].reverse()`, is reversed where it is, `$reverseRange(v, a, b)`,
+  no view made ([1073](../decisions/1073-a-part-of-a-slice-reversed-is-reversed-in-place.md)).
 - **`starts_with` and `ends_with` of a slice compare items as `==` does,**
   by `===` of numbers, strings and `bool`s, and by the items' own
   `PartialEq` of the rest ([0336](../decisions/0336-slice-prefixes-by-eq.md)).

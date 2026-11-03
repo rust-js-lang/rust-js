@@ -11,6 +11,7 @@ import {
   $iter,
   $mutAt,
   $rchunksMut,
+  $reverseRange,
   $rotateLeft,
   $sliceSplitAt,
   $sliceSplitByMut,
@@ -44,7 +45,7 @@ function main() {
   const v = [5, 3, 9, 1, 4, 8];
   $view(v, 1, 4).sort((a, b) => a - b);
   console.log(`[${v.join(", ")}]`);
-  $view(v, 0, 3).reverse();
+  $reverseRange(v, 0, 3);
   console.log(`[${v.join(", ")}]`);
   $view(v, 4).fill(0);
   console.log(`[${v.join(", ")}]`);

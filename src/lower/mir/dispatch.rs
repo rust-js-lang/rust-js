@@ -1141,10 +1141,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         state: &mut State<'_, 'tcx>,
         (known, def_id, generic_args): (Std, rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
-        ((arg_tys, nulled), values, output): ((&[Ty<'tcx>], &[bool]), Vec<Value<'tcx>>, Ty<'tcx>),
+        ((arg_tys, nulled), mut values, output): ((&[Ty<'tcx>], &[bool]), Vec<Value<'tcx>>, Ty<'tcx>),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
+        // A view of part of a slice given alone to what has a form of its
+        // own over a range of the slice, `v[a..b].reverse()`: that form, of
+        // the slice and the range, `$reverseRange(v, a, b)`, no view made
+        // (ADR 1073).
+        if let [Value::View(..)] = values.as_slice()
+            && let Some(helper) = crate::lower::std_types::slice::ranged(known)
+            && let Some(Value::View(list, at)) = values.pop()
+        {
+            let ranged = Value::Expr(self.view_call(helper, list).or_at(at));
+            return Ok(self.std_value_as(ranged, output, arg_tys));
+        }
         let given = self.call_given(state, nulled);
         let value = self.mir_std_call(
             state,

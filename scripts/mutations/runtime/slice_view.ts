@@ -154,4 +154,20 @@ export const mutations: Mutation[] = [
     replace: ": v[at]);",
     tests: ["test/corpus.test.ts","-t","slice_disjoint"],
   },
+  {
+    name: "reverse-range-unchecked",
+    breaks: "`v[1..4].reverse()` of three items swaps past the end, where Rust panics before any moves (ADR 1073)",
+    file: "src/runtime/slice_view.js",
+    find: "  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);\n  for (let left = start,",
+    replace: "  for (let left = start,",
+    tests: ["test/corpus.test.ts", "-t", "^slice_range_reverse.rs$"],
+  },
+  {
+    name: "reverse-range-short",
+    breaks: "`v[a..b].reverse()` leaves its last item where it was (ADR 1073)",
+    file: "src/runtime/slice_view.js",
+    find: "right = end - 1; left < right;",
+    replace: "right = end - 2; left < right;",
+    tests: ["test/corpus.test.ts", "-t", "^slice_range_reverse.rs$"],
+  },
 ];

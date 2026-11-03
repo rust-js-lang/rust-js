@@ -65,8 +65,8 @@ export const mutations: Mutation[] = [
     name: "mir-view-whole",
     breaks: "`&mut v[a..b]` from MIR is all of `v`, not a view of those items",
     file: "src/lower/mir/std_calls.rs",
-    find: '                    this.view_call(if checked { "$viewGet" } else { "$view" }, list)\n',
-    replace: "                    list.remove(0)\n",
+    find: '} else { Value::View(list, js::Span::NONE) })\n',
+    replace: "} else { Value::Expr(list[0].clone()) })\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_loop_bounds"],
   },
   {
@@ -905,5 +905,14 @@ export const mutations: Mutation[] = [
     find: "                        IterComb::FilterMap,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^filter_map_of_given_from_its_back.rs$"],
+  },
+  {
+    name: "view-made-at-once",
+    breaks: "`&mut v[a..b]` is made a view where it's borrowed, so `v[a..b].reverse()` reverses a `Proxy`, where it's `$reverseRange(v, a, b)` (ADR 1073)",
+    file: "src/lower/mir/std_calls.rs",
+    find: '} else { Value::View(list, js::Span::NONE) })\n',
+    replace: '} else { Value::Expr(this.view_call("$view", list)) })\n',
+    tests: ["test/corpus.test.ts", "-t", "^slice_range_reverse.rs$"],
+    snapshots: true,
   },
 ];

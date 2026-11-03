@@ -533,6 +533,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Value::Expr(e)
             }
             Value::List(items, at) if at.is_none() => Value::List(items, self.js_span(span)),
+            Value::View(list, at) if at.is_none() => Value::View(list, self.js_span(span)),
             value => value,
         };
         // A write's result a function gives, of what it called last, that

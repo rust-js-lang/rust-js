@@ -456,4 +456,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^utf16_sort.rs$"],
     snapshots: true,
   },
+  {
+    name: "ranged-reverse-unknown",
+    breaks: "`v[a..b].reverse()` makes a view, a `Proxy`, to reverse, `$view(v, a, b).reverse()`, where it's `$reverseRange(v, a, b)` (ADR 1073)",
+    file: "src/lower/std_types/slice.rs",
+    find: "        Std::Method(\"reverse\") => Some(\"$reverseRange\"),\n",
+    replace: "        Std::Method(\"reverse\") => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_range_reverse.rs$"],
+    snapshots: true,
+  },
 ];

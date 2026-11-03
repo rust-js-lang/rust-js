@@ -809,20 +809,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(StmtKind::Assign(place, left).at(this.js_span(span)));
                 Expr::index(split, Expr::int(1))
             }))),
-            // `&mut v[a..b]`, `get_mut(a..b)`: a view of those items (ADR 0335).
-            Std::Slice(SliceOp::View { checked }) => lower(move |this, _, values, out| Ok(Value::Expr({
+            // `&mut v[a..b]`, `get_mut(a..b)`: a view of those items (ADR 0335),
+            // an unchecked one kept unmade until it's used (`Value::View`).
+            Std::Slice(SliceOp::View { checked }) => lower(move |this, _, values, out| {
                 let items = this.value_expr(values.next().expect("the items"), span)?;
                 let range = this.value_expr(values.next().expect("the range"), span)?;
                 let (start, end) = this.range_value_bounds(range, arg_tys[1], span, out)?;
                 // `&mut v[..]`: all of it, which is `v`.
                 if !checked && start.as_int() == Some(0) && end.is_none() {
-                    items
-                } else {
-                    let mut list = vec![items, start];
-                    list.extend(end);
-                    this.view_call(if checked { "$viewGet" } else { "$view" }, list)
+                    return Ok(Value::Expr(items));
                 }
-            }))),
+                let list = [vec![items, start], end.into_iter().collect()].concat();
+                Ok(if checked { Value::Expr(this.view_call("$viewGet", list)) } else { Value::View(list, js::Span::NONE) })
+            }),
             // `vec![item; n]`: each a clone, of what it can't remake.
             // A count rustc knows, a constant's read by its name, is known
             // to fit where it does (ADR 0774, amended).

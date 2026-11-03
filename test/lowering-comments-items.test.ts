@@ -856,6 +856,38 @@ pub fn walk(id: u32, key: &str) -> usize {
   expect((lib.walk as (id: number, key: string) => number)(1, "ab")).toBe(9);
 });
 
+// A view of part of a slice is held unmade until it's used (ADR 1073); made
+// there, it's still where its Rust is, so the comment after it is after it,
+// and its source map has it at `v[1..]`.
+test("a comment after a view argument is after it", async () => {
+  const dir = fixture("comment-after-a-view-argument");
+  writeFileSync(join(dir, "lib.rs"), `pub fn bump(part: &mut [i32], by: i32) {
+    for x in part.iter_mut() {
+        *x += by;
+    }
+}
+
+pub fn bumped(mut v: Vec<i32>, by: i32) -> Vec<i32> {
+    bump(
+        &mut v[1..], // the tail
+        by,
+    );
+    v
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  bump(\n    $view(v, 1), // the tail\n    by,\n  );");
+  const lib = await import(join(dir, "lib.js"));
+  expect((lib.bumped as (v: number[], by: number) => number[])([1, 2, 3], 2)).toEqual([1, 4, 5]);
+  const { decodeMappings } = await import("./sourcemap");
+  const at = js.split("\n").findIndex((line) => line.includes("$view(v, 1)"));
+  const map = JSON.parse(readFileSync(join(dir, "lib.js.map"), "utf8"));
+  // Its end, at line 9, 1-based, of `&mut v[1..], // the tail`, the `]`.
+  const mapped = decodeMappings(map.mappings).filter((s) => s.jsLine === at).map((s) => [s.srcLine + 1, s.srcCol]);
+  expect(mapped).toContainEqual([9, 18]);
+});
+
 // React DOM's ReactDOMServerExternalRuntime writes "// Imports are resolved
 // statically by the closure compiler .." above its import, as its port
 // writes it above its `js::import!(..)`: the comment was lost (rd666). An

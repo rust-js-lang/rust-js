@@ -453,6 +453,37 @@ export function add(into, from) {
 }
 ```
 
+A part of an array changed in place, `&mut v[a..b]`, is a view of those
+items, `$view(v, a, b)`, which JS's array methods change as they change an
+array, and every write is `v`'s
+([ADR 0335](../../decisions/0335-slice-views.md)). A part reversed,
+`v[a..b].reverse()`, is the runtime's `$reverseRange(v, a, b)`, which
+swaps the items where they are, no view made: JS's `reverse` takes no
+range ([ADR 1073](../../decisions/1073-a-part-of-a-slice-reversed-is-reversed-in-place.md)).
+Both panic as Rust does where the range isn't in the array:
+
+```rust
+pub fn flip(queued: &mut [u32], first: usize, end: usize) {
+    queued[first..end].reverse();
+}
+
+pub fn sort_tail(v: &mut [i32]) {
+    v[1..].sort();
+}
+```
+
+```js
+import { $reverseRange, $view } from "@rust-js/runtime";
+
+export function flip(queued, first, end) {
+  $reverseRange(queued, first, end);
+}
+
+export function sortTail(v) {
+  $view(v, 1).sort((a, b) => a - b);
+}
+```
+
 ## Sorting
 
 `sort()` sorts in place, as JS's does, but numbers sort as numbers and

@@ -549,4 +549,12 @@ export const mutations: Mutation[] = [
     replace: "        let made = match copied_back.iter().any(|&(_, outlives)| outlives) {\n",
     tests: ["test/corpus.test.ts", "-t", "^written_through_before_a_panic.rs$"],
   },
+  {
+    name: "view-unmade-as-its-parts",
+    breaks: "a view used as a value, `let part = &mut v[2..]`, is an array of its slice and range, `[v, 2]`, not `$view(v, 2)` (ADR 1073)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            Value::View(list, at) => self.view_call(\"$view\", list).or_at(at),\n",
+    replace: "            Value::View(list, at) => Expr::array(list).or_at(at),\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_range_reverse.rs$"],
+  },
 ];

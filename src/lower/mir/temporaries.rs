@@ -658,6 +658,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .collect::<R<Vec<_>>>()?,
             )
             .or_at(at),
+            Value::View(list, at) => self.view_call("$view", list).or_at(at),
             // An enum's discriminant held as a value, as rustc's MIR does
             // where jump threading reads it in two blocks: its number, of
             // the variant `switch_test` finds it is (ADR 0899).

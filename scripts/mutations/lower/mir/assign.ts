@@ -1084,4 +1084,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(written) = None::<R<()>> {\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_enum.rs$"],
   },
+  {
+    name: "view-unplaced",
+    breaks: "a view given as an argument, `&mut v[1..], // the tail`, isn't where its Rust is, so the comment after it isn't after its line's JS (ADR 1073)",
+    file: "src/lower/mir/assign.rs",
+    find: "            Value::View(list, at) if at.is_none() => Value::View(list, self.js_span(span)),\n",
+    replace: "",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "a comment after a view argument"],
+  },
 ];

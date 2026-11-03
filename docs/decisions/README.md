@@ -377,7 +377,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [0332 A `MaybeUninit` is its value, or `undefined` before it's written](0332-maybe-uninit.md)
 - [0333 A heap's `append`, `retain`, `drain` and `peek_mut`, and a `Vec`'s `push_mut`](0333-heap-and-vec-methods.md)
 - [0334 A `&mut str` is a cell of the text, written in place](0334-mut-str.md)
-- [0335 A `&mut` of part of a slice is a view of those items](0335-slice-views.md)
+- [0335 A `&mut` of part of a slice is a view of those items](0335-slice-views.md) *(amended by 1073: a part reversed is reversed in place, no view made)*
+- [1073 A part of a slice reversed is reversed in place](1073-a-part-of-a-slice-reversed-is-reversed-in-place.md)
 - [0336 A slice's prefixes compare its items by their own `==`](0336-slice-prefixes-by-eq.md)
 - [0337 A slice as arrays of `N`, and arrays as one slice](0337-slice-as-arrays.md)
 - [0338 A slice's `split_off`, and a `&mut` to a shared reference](0338-slice-split-off.md)

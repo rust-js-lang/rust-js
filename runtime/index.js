@@ -7533,6 +7533,17 @@ export function $view(items, start, end = items.length) {
   );
 }
 
+// `v[start..end].reverse()`: those items of `items` reversed where they
+// are, checked as `&mut v[start..end]` is, no view made (ADR 1073).
+export function $reverseRange(items, start, end = items.length) {
+  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);
+  for (let left = start, right = end - 1; left < right; left++, right--) {
+    const item = items[left];
+    items[left] = items[right];
+    items[right] = item;
+  }
+}
+
 // An array of `length` items to JS's own methods, each read by `read(i)`
 // and written by `write(i, item)`.
 export function $proxy(length, read, write) {

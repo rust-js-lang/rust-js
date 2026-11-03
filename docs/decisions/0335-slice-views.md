@@ -1,6 +1,6 @@
 # 0335. A `&mut` of part of a slice is a view of those items
 
-Status: Accepted. Amends [0063](0063-text.md); extends
+Status: Accepted; amended by [1073](1073-a-part-of-a-slice-reversed-is-reversed-in-place.md). Amends [0063](0063-text.md); extends
 [0324](0324-slice-methods.md) and [0152](0152-std-item-handles.md);
 counted by [0314](0314-std-data-structures.md).
 
@@ -117,3 +117,10 @@ part twice. Seven corpus cases read the shorter JS.
 them its making makes, a `$iter` of it, which knows its back and its
 length. They're `iterates_items`'s now, an array made where it's made.
 Held by `test/corpus/chunks_from_their_back.rs`.
+
+## Amendment: a part reversed is reversed in place
+
+`v[a..b].reverse()` (2026-11-03, #524) is `$reverseRange(v, a, b)`, the
+items swapped where they are, checked as the view is, no view made: the
+view is held unmade until it's used, and given alone to what has a form
+of its own over a range, that ([1073](1073-a-part-of-a-slice-reversed-is-reversed-in-place.md)).

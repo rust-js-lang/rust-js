@@ -1042,4 +1042,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
     snapshots: true,
   },
+  {
+    name: "ranged-form-untaken",
+    breaks: "`v[a..b].reverse()` makes a view, a `Proxy`, to reverse, where it's `$reverseRange(v, a, b)` (ADR 1073)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            && let Some(helper) = crate::lower::std_types::slice::ranged(known)\n",
+    replace: "            && let Some(helper) = crate::lower::std_types::slice::ranged(known).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_range_reverse.rs$"],
+    snapshots: true,
+  },
 ];

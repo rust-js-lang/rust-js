@@ -417,6 +417,9 @@ enum Value<'tcx> {
     /// An array of values, `format_args!`'s arguments among them, and
     /// where it's made, which its JS is at, as a value's is (`mir_store`).
     List(Vec<Value<'tcx>>, js::Span),
+    /// `&mut v[a..b]` unmade, `[v, a, b]` (`b` short of the end) and where: a view where it's used,
+    /// `$view(v, a, b)`, or what it's given alone to's form over a range, `$reverseRange` (ADR 1073).
+    View(Vec<Expr>, js::Span),
     /// The variant of an enum, read to choose a branch: the enum, its type,
     /// and whether it's an untagged one given of what's there, never
     /// `undefined` nor `null`, `classify(Some(value))`'s (ADR 0676).
