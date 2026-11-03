@@ -177,7 +177,7 @@ macro_rules! walks {
                         callee.$expr(f);
                         args.$iter().for_each(|a| a.$expr(f));
                     }
-                    ExprKind::Array(items) | ExprKind::Template(_, items, _) => {
+                    ExprKind::Array(items) | ExprKind::Template(_, items, _) | ExprKind::Sequence(items) => {
                         items.$iter().for_each(|a| a.$expr(f))
                     }
                     ExprKind::Object(fields, ..) => props(fields, f),

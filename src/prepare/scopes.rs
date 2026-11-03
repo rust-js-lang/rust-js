@@ -392,7 +392,9 @@ impl Walk {
                 self.expr(f);
                 args.iter().for_each(|a| self.expr(a));
             }
-            ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().for_each(|i| self.expr(i)),
+            ExprKind::Array(items) | ExprKind::Template(_, items, _) | ExprKind::Sequence(items) => {
+                items.iter().for_each(|i| self.expr(i))
+            }
             ExprKind::Object(props, ..) => self.props(props),
             ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => self.closure(params, body),
             ExprKind::Function(function) => self.function(function, true),

@@ -58,8 +58,25 @@ impl Writes {
                     self.handled.insert(name.clone());
                 }
             }
-            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => self.lists(body, true),
-            ExprKind::Function(function) => self.lists(&function.body, true),
+            // `(x.f = ..)` in an expression, a sequence's (#523): a write
+            // as a statement's is, and a closure's where one holds it.
+            ExprKind::Assigned(target, _) => self.target(target, in_closure),
+            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => {
+                self.lists(body, true);
+                each_expr(body, &mut |e| {
+                    if let ExprKind::Assigned(target, _) = &e.kind {
+                        self.target(target, true);
+                    }
+                });
+            }
+            ExprKind::Function(function) => {
+                self.lists(&function.body, true);
+                each_expr(&function.body, &mut |e| {
+                    if let ExprKind::Assigned(target, _) = &e.kind {
+                        self.target(target, true);
+                    }
+                });
+            }
             _ => {}
         });
     }
@@ -157,6 +174,23 @@ mod tests {
         }
         let writes = Writes::of(&body);
         assert_eq!(names(&writes.replaced_in_closures), ["x"]);
+    }
+
+    /// `(o.f = 1, false)`, a sequence's assignment in a condition (#523):
+    /// a write of `o`'s object, a closure's where one holds it.
+    #[test]
+    fn an_assignment_in_an_expression_writes() {
+        let set = |of: &str| {
+            let assigned = Expr::assigned(Expr::member(Expr::var(of), "f"), Expr::int(1));
+            Expr::sequence(vec![assigned, Expr::bool(false)])
+        };
+        let closure = Expr::arrow(Vec::new(), vec![stmt(StmtKind::Expr(set("c")))]);
+        let writes = Writes::of(&[
+            stmt(StmtKind::Expr(set("o"))),
+            stmt(StmtKind::Const("g".into(), closure)),
+        ]);
+        assert_eq!(names(&writes.changed), ["c", "o"]);
+        assert_eq!(names(&writes.changed_in_closures), ["c"]);
     }
 
     #[test]

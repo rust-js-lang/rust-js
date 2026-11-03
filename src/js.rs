@@ -1176,6 +1176,13 @@ pub enum ExprKind {
     /// `const a = x; x = a + 1;`, `const a = x++;` (ADR 0948). Nothing
     /// before preparation makes one, so lowering and tidy never see it.
     Stepped(Op, Box<Expr>),
+    /// `(a, b)`: each in turn, the last's value, as a condition holds a
+    /// block's statements before its value, `check(f) || ((flags.value =
+    /// f & ~32), false)` of `check(f) || { flags.set(f & !32); false }`
+    /// (#523). Only tidy makes one, of what an `if`'s test does on its way
+    /// (`logicals::skipped_tests`): of calls, and of `Assigned`s of a
+    /// field, which set no binding.
+    Sequence(Vec<Expr>),
 }
 
 /// A JSX element (ADR 0040).

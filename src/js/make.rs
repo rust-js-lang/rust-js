@@ -542,6 +542,11 @@ impl Expr {
         Expr::new(ExprKind::Assigned(Box::new(target), Box::new(value)))
     }
 
+    /// `(a, b)`, each in turn, its value the last's (#523).
+    pub fn sequence(items: Vec<Expr>) -> Expr {
+        Expr::new(ExprKind::Sequence(items))
+    }
+
     /// What a box, a cell or a handle holds: `b.value` (`HELD`).
     pub fn held(of: Expr) -> Expr {
         Expr::member(of, HELD)
@@ -668,6 +673,17 @@ impl Expr {
             // Where the `!` was written, what it tests is, a test made of
             // a method's call, `!word` of `word.is_empty()` (#301).
             ExprKind::Unary(UnaryOp::Not, inner) => inner.or_at(self.span),
+            // What it does first, then its value's negation, `(s, false)` of
+            // `(s, true)` (#523).
+            ExprKind::Sequence(mut items) => {
+                let last = items.pop().map(Expr::negated_test).unwrap_or_else(|| Expr::bool(true));
+                items.push(last);
+                Expr {
+                    kind: ExprKind::Sequence(items),
+                    span: self.span,
+                    facts: self.facts,
+                }
+            }
             // Of integers, the converse: `!(n < 0)` is `n >= 0`.
             ExprKind::Binary(op @ (Op::Lt | Op::Le | Op::Gt | Op::Ge), a, b) if self.facts.has(Known::NeverNaN) => {
                 let converse = match op {

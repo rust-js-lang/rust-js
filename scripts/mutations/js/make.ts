@@ -625,4 +625,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/js-any-values.test.ts", "-t", "eval is the global eval, called indirectly"],
   },
+  {
+    name: "negated-sequence-whole",
+    breaks: "a sequence's negation negates the whole, `!((s), true)`, not its value, `(s, false)` (#523)",
+    file: "src/js/make.rs",
+    find: "            ExprKind::Sequence(mut items) => {\n",
+    replace: "            ExprKind::Sequence(mut items) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^condition_block_sequence.rs$"],
+    snapshots: true,
+  },
 ];

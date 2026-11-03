@@ -994,12 +994,15 @@ fn read_of_a_path(e: &Expr) -> bool {
     }
 }
 
-/// Whether each `if` of `tree` is a test of a logical the program wrote.
+/// Whether each `if` of `tree` is a test of a logical the program wrote,
+/// and what's done on a way, a call or a set, is written in one too, a
+/// block's in the condition, not the `if`'s own statements (#523).
 fn tests_within(tree: &[Stmt], within: &dyn Fn(js::Span) -> bool) -> bool {
     tree.iter().all(|s| match &s.kind {
         StmtKind::If(_, a, b) => {
             within(s.span) && tests_within(a, within) && b.as_deref().is_none_or(|b| tests_within(b, within))
         }
+        StmtKind::Expr(_) | StmtKind::Assign(..) => within(s.span),
         _ => true,
     })
 }
@@ -1013,19 +1016,45 @@ enum Truth {
 }
 
 /// Where `stmts`, `if`s whose branches are `if`s and `break label`s only,
-/// go on past their end: each `break label` a way they don't. `None` of
-/// another statement, or of an `if` whose branches give a test each, `c ?
-/// x : y`, which `&&` and `||` don't write.
+/// go on past their end: each `break label` a way they don't. What a way
+/// does on it, a call or a field set, `{ flags.set(f & !32); false }` of a
+/// condition's `||`, is done where it is, in the test's sequence: `(s,
+/// false)` where the way then leaves, `(s, true)` where it goes on, `(s,
+/// t)` before a test `t` (#523). `None` of another statement, or of an
+/// `if` whose branches give a test each, `c ? x : y`, which `&&` and `||`
+/// don't write.
 fn falls(stmts: &[Stmt], label: &str) -> Option<Truth> {
     let mut all = Truth::Always;
+    let mut done = Vec::new();
+    // What's done, then `truth`: a sequence of them where anything is.
+    let after = |done: &mut Vec<Expr>, truth: Truth| match (done.is_empty(), truth) {
+        (true, truth) => truth,
+        (false, truth) => {
+            let last = match truth {
+                Truth::Always => Expr::bool(true),
+                Truth::Never => Expr::bool(false),
+                Truth::Test(test) => test,
+            };
+            Truth::Test(Expr::sequence(std::mem::take(done).into_iter().chain([last]).collect()))
+        }
+    };
     for stmt in stmts {
         let one = match &stmt.kind {
-            StmtKind::Break(Some(l)) if l == label => Truth::Never,
+            StmtKind::Expr(e) => {
+                done.push(e.clone());
+                continue;
+            }
+            // A field's, which sets no binding a pass reads.
+            StmtKind::Assign(target, value) if matches!(target.kind, ExprKind::Member(..) | ExprKind::Index(..)) => {
+                done.push(Expr::assigned(target.clone(), value.clone()));
+                continue;
+            }
+            StmtKind::Break(Some(l)) if l == label => after(&mut done, Truth::Never),
             StmtKind::If(test, then, otherwise) => {
                 let yes = falls(then, label)?;
                 let no = falls(otherwise.as_deref().unwrap_or_default(), label)?;
                 let test = test.clone();
-                match (yes, no) {
+                let truth = match (yes, no) {
                     (Truth::Always, Truth::Always) => return None,
                     (Truth::Never, Truth::Never) => return None,
                     (Truth::Always, Truth::Never) => Truth::Test(test),
@@ -1035,7 +1064,8 @@ fn falls(stmts: &[Stmt], label: &str) -> Option<Truth> {
                     // An `else` that tests, which tidy has made the `if`
                     // after a `then` that leaves already; and `c ? x : y`.
                     (_, Truth::Test(_)) => return None,
-                }
+                };
+                after(&mut done, truth)
             }
             _ => return None,
         };
@@ -1047,7 +1077,12 @@ fn falls(stmts: &[Stmt], label: &str) -> Option<Truth> {
             (Truth::Test(a), Truth::Always) => Truth::Test(a),
         };
     }
-    Some(all)
+    Some(match (all, after(&mut done, Truth::Always)) {
+        (all, Truth::Always) => all,
+        (Truth::Always, done) => done,
+        (Truth::Test(a), Truth::Test(b)) => Truth::Test(Expr::bin(Op::And, a, b)),
+        (Truth::Never, _) | (_, Truth::Never) => return None,
+    })
 }
 
 /// Of `l: { if (a) { if (b) { s; break l; } } t }`: its tests, `[a, b]`,

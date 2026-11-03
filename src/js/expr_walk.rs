@@ -59,7 +59,9 @@ impl Expr {
                 f.visit_vars(read);
                 args.iter().for_each(|a| a.visit_vars(read));
             }
-            ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().for_each(|a| a.visit_vars(read)),
+            ExprKind::Array(items) | ExprKind::Template(_, items, _) | ExprKind::Sequence(items) => {
+                items.iter().for_each(|a| a.visit_vars(read))
+            }
             ExprKind::Object(fields, ..) => props(fields, read),
             // Its parameters' defaults too, read where it's called.
             ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
@@ -232,6 +234,7 @@ impl Expr {
             ExprKind::Index(a, b) => ExprKind::Index(one(a)?, one(b)?),
             ExprKind::OptionalIndex(a, b) => ExprKind::OptionalIndex(one(a)?, one(b)?),
             ExprKind::Array(items) => ExprKind::Array(all(items)?),
+            ExprKind::Sequence(items) => ExprKind::Sequence(all(items)?),
             ExprKind::Object(fields, layout) => ExprKind::Object(props(fields)?, layout.clone()),
             ExprKind::Unary(op, a) => ExprKind::Unary(*op, one(a)?),
             ExprKind::Binary(op, a, b) => ExprKind::Binary(*op, one(a)?, one(b)?),
@@ -650,7 +653,9 @@ impl Expr {
             ExprKind::Index(object, index) | ExprKind::OptionalIndex(object, index) => {
                 object.has_effects() || index.has_effects()
             }
-            ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().any(Expr::has_effects),
+            ExprKind::Array(items) | ExprKind::Template(_, items, _) | ExprKind::Sequence(items) => {
+                items.iter().any(Expr::has_effects)
+            }
             ExprKind::Object(props, ..) => props.iter().any(|p| match p {
                 Prop::Field(_, value)
                 | Prop::Getter(_, value)

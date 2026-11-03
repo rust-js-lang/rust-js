@@ -1394,7 +1394,7 @@ fn expr(e: &mut Expr) {
                 *e = object;
             }
         }
-        ExprKind::Array(items) => items.iter_mut().for_each(expr),
+        ExprKind::Array(items) | ExprKind::Sequence(items) => items.iter_mut().for_each(expr),
         ExprKind::Object(props, layout) => {
             // A field that's `undefined` is no key, `{ code }` (ADR 0280).
             js::undefined_keys::left_out(props, layout);

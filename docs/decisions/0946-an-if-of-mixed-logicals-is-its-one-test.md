@@ -1,6 +1,8 @@
 # 0946. An `if` of `&&`, `||` and `!` mixed is its one test
 
-Status: Accepted. Extends [0613](0613-and-or-mixed-are-returned-as-written.md),
+Status: Accepted. Extended by
+[1073](1073-a-block-in-a-condition-is-a-comma-expression.md): what a way
+through the condition does is a comma expression in it. Extends [0613](0613-and-or-mixed-are-returned-as-written.md),
 a value of `&&` and `||` mixed returned as one, and
 [0790](0790-a-break-the-program-wrote-is-where-it-is-written.md)'s `or_blocks`,
 an `if` of `!a || b`, to any `if` whose condition MIR made a tree of

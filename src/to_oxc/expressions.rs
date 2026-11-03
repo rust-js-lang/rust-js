@@ -127,6 +127,12 @@ impl<'a> Cx<'a> {
             ExprKind::Stringed(value) => {
                 self.expr(&js::Expr::call(js::Expr::var("String"), vec![(**value).clone()]).or_at(e.span))
             }
+            // `(a, b)`, wrapped where what's around it needs it (#523).
+            ExprKind::Sequence(items) => Expression::new_sequence_expression(
+                sp,
+                ArenaVec::from_iter_in(items.iter().map(|e| self.expr(e)), b),
+                b,
+            ),
             ExprKind::Array(items) => {
                 let items = items.iter().map(|item| match &item.kind {
                     ExprKind::Spread(all) => {

@@ -320,7 +320,7 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
                 expr(a, visitor);
             }
         }
-        ExprKind::Array(items) | ExprKind::Template(_, items, _) => {
+        ExprKind::Array(items) | ExprKind::Template(_, items, _) | ExprKind::Sequence(items) => {
             for item in items {
                 expr(item, visitor);
             }

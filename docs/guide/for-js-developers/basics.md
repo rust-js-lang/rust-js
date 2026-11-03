@@ -1287,6 +1287,53 @@ on stays an `else`; a `!( .. )` you wrote of an `&&` or `||` stays one,
 && status !== "rejected"`; and so is an `if`'s value, `if a == 0 || a > b
 { a } else { b }` being `a === 0 || a > b ? a : b`
 ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md)).
+A block in the condition that does something before its value, `check(f)
+|| { flags.set(f & !32); false }`, is a comma expression there, what it
+calls and the fields it sets, then its value, run only on its way, as
+alien-signals writes `(this.flags = flags & ~Pending, false)`; a block
+that sets a variable of its own is not one yet
+([ADR 1073](../../decisions/1073-a-block-in-a-condition-is-a-comma-expression.md)):
+
+```rust
+use std::cell::Cell;
+
+fn dirty(f: u32) -> bool {
+    f > 40
+}
+
+pub fn step(flags: &Cell<u32>, value: &Cell<u32>) -> u32 {
+    let f = flags.get();
+    if f & 16 != 0
+        || (f & 32 != 0
+            && (dirty(f) || {
+                flags.set(f & !32);
+                false
+            }))
+    {
+        value.set(value.get() + 10);
+    } else if f == 0 {
+        flags.set(1);
+    }
+    value.get()
+}
+```
+
+```js
+function dirty(f) {
+  return f > 40;
+}
+
+export function step(flags, value) {
+  const f = flags.value;
+  if (f & 16 || (f & 32 && (dirty(f) || ((flags.value = (f & ~32) >>> 0), false)))) {
+    value.value = (value.value + 10) >>> 0;
+  } else if (f === 0) {
+    flags.value = 1;
+  }
+  return value.value;
+}
+```
+
 An `else` you wrote after a branch that returns stays an `else`, and an
 `else if` chain stays one chain, whether statements follow the `if`, as
 `place`'s do, or not, a loop's ending `else { break; }` too, a late `let
