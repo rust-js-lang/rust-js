@@ -1219,7 +1219,7 @@ export function count() {
   function; so does a function of a value another reads, or one the
   module sets. A call that leaves a `None` out, `unlink(sub)`, is one
   by its parameters, as it gives what it would given `undefined`
-  ([ADR 0313](../../decisions/0313-undefined-arguments.md))
+  ([ADR 0313](../../decisions/0313-console-forms.md))
   ([ADR 0610](../../decisions/0610-a-forwarding-function-is-its-variable.md),
   amended, #533):
 
