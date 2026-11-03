@@ -645,7 +645,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // the closure's does (rd660); of one that gives a value, the closure
         // discards it, which the function wouldn't.
         let gives_nothing = || {
-            let sig = self.tcx.fn_sig(def_id).instantiate(self.tcx, generic_args).skip_normalization();
+            let sig = self
+                .tcx
+                .fn_sig(def_id)
+                .instantiate(self.tcx, generic_args)
+                .skip_normalization();
             let output = sig.skip_binder().output();
             output.is_unit() || output.is_never()
         };
