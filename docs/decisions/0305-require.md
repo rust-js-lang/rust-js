@@ -114,3 +114,37 @@ Case N: each read and call is the JS upstream's is. `test/node-bindings.test.ts`
 a message", runs both paths in Node: a CommonJS module's `module`, whose
 `setImmediate` is the real one past a faked global, and an ES module's,
 which posts a message.
+
+## Amendment: the node crate binds `require.resolve` (rd681)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, Node's own call.
+
+React's ReactFlightWebpackPlugin.js finds its Flight client's file where
+its module loads, `const clientFileName =
+require.resolve('../client.browser.js');`, a CommonJS module's own
+`require`, @types/node's `NodeJS.Require`, whose `resolve(request,
+options?)` gives the full path of the file `require(request)` would load,
+without loading it. The node crate bound `module` and its `require`
+method, not `require.resolve`, so a port had no way to write it.
+
+**`node::require::resolve(request, options)` is `require.resolve(request,
+options)`**, a binding of the global's member as `process.cwd` is,
+`#[rust_js::link_name = "require.resolve"]`: its options,
+`RequireResolveOptions { paths }`, a dictionary whose `None` is left out,
+`require.resolve(request)` of `None`. What it throws of a module it can't
+find, `MODULE_NOT_FOUND`, is a panic, as a binding's throw is; so is a
+call in an ES module, which has no `require`, as a read of `node::module`
+there is. Its module, `require`, is CommonJS's global's: `require.cache`,
+`require.extensions` and `require.main` aren't bound yet, as
+`node/coverage.txt`'s `require 1 of 4` counts (`node/coverage.ts` counts
+the global's members as `process`'s are).
+
+- Rejected: a `#[rust_js::require]` binding of `resolve`, which reads a
+  module's export through `require(module)`, not a member of `require`;
+  and `module.require.resolve`, which `NodeJS.Module` doesn't declare.
+- Held by `test/node-bindings.test.ts`'s "require.resolve finds a module's
+  file from the module it's in", run in Node where `require` is the
+  module's own, its `paths` given and left out and of a module it can't
+  find; and `test/node-coverage.test.ts`. A binding has no compiler code to
+  mutate: its test is what fails where its `link_name` or its options'
+  keys are wrong.

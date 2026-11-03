@@ -1362,3 +1362,53 @@ console.log(JSON.stringify([writable(w) === w, readable(r) === r, duplex(d) === 
   expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
   expect(JSON.parse(p.stdout.toString())).toEqual([true, true, true, true, true, false]);
 });
+
+// rd681: CommonJS's `require.resolve`, a module's file found without
+// loading it, as React's ReactFlightWebpackPlugin finds its client's,
+// `const clientFileName = require.resolve("../client.browser.js")`; run
+// where `require` is the module's own, as a CommonJS module's is, its
+// `paths` given and left out, and of a module it can't find, its
+// `MODULE_NOT_FOUND`, a panic.
+test("require.resolve finds a module's file from the module it's in", () => {
+  const dir = fixture("node-require-resolve");
+  const node = buildNode();
+  writeFileSync(join(dir, "lib.rs"), `use node::require::{RequireResolveOptions, resolve};
+
+thread_local! {
+    static CLIENT_FILE_NAME: String = resolve("./client.js", None);
+}
+
+pub fn client_file_name() -> String {
+    CLIENT_FILE_NAME.with(Clone::clone)
+}
+
+pub fn found_in(request: &str, directory: String) -> String {
+    let paths = [directory];
+    resolve(request, Some(&RequireResolveOptions { paths: Some(&paths) }))
+}
+
+pub fn missing() -> String {
+    resolve("./missing.js", None)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('const CLIENT_FILE_NAME = require.resolve("./client.js");');
+  expect(js).toContain("  const paths = [directory];\n  return require.resolve(request, { paths });");
+  expect(js).toContain('return require.resolve("./missing.js");');
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  writeFileSync(join(dir, "client.js"), "export {};\n");
+  mkdirSync(join(dir, "other", "node_modules", "dep"), { recursive: true });
+  writeFileSync(join(dir, "other", "node_modules", "dep", "index.js"), "module.exports = 1;\n");
+  // A CommonJS module's own `require`, of the module's file.
+  writeFileSync(join(dir, "run.js"), `import { createRequire } from "node:module";
+globalThis.require = createRequire(new URL("./lib.js", import.meta.url));
+const lib = await import("./lib.js");
+let missing;
+try { lib.missing(); } catch (e) { missing = e.code; }
+console.log(JSON.stringify([lib.clientFileName(), lib.foundIn("dep", ${JSON.stringify(join(dir, "other"))}), missing]));
+`);
+  const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  expect(JSON.parse(p.stdout.toString())).toEqual([join(dir, "client.js"), join(dir, "other", "node_modules", "dep", "index.js"), "MODULE_NOT_FOUND"]);
+});

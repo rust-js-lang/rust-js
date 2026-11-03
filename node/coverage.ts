@@ -21,11 +21,14 @@ export type Module = { name: string; exports: { name: string; kind: Kind; bound:
 
 // The globals whose members are counted, each by its interface and the
 // file that declares it: `process` and `console` are `export =` the global,
-// and `Error`'s are what `globals.d.ts` adds to `ErrorConstructor`.
+// `Error`'s are what `globals.d.ts` adds to `ErrorConstructor`, and
+// `require`'s, a CommonJS module's, `NodeJS.Require`'s.
 const GLOBALS = [
   { name: "process", shape: "Process", file: "process.d.ts" },
   { name: "console", shape: "Console", file: "console.d.ts" },
   { name: "Error", shape: "ErrorConstructor", file: "globals.d.ts" },
+  // A CommonJS module's own `require`, `NodeJS.Require`, as `module` is.
+  { name: "require", shape: "Require", file: "module.d.ts" },
 ];
 
 // What isn't bound by design, each list with why: `x`, counted apart, as

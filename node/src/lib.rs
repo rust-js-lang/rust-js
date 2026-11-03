@@ -39,6 +39,7 @@ pub mod module;
 pub mod path;
 pub mod process;
 pub mod querystring;
+pub mod require;
 pub mod stream;
 pub mod url;
 pub mod util;

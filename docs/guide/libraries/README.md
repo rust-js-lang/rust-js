@@ -552,6 +552,14 @@ export function unhooked() {
   { pub const DEFAULT_PREPARE_STACK_TRACE: Option<&'static
   PrepareStackTrace<String>> = None; }` is `export default undefined;`.
 
+A CommonJS module's own `require` finds a module's file without loading
+it: `node::require::resolve("../client.browser.js", None)` is
+`require.resolve("../client.browser.js")`, its `paths` given as
+`Some(&RequireResolveOptions { paths: Some(&paths) })`, `{ paths }`. A
+module it can't find is its `MODULE_NOT_FOUND`, a panic; so is a call in
+an ES module, which has no `require`
+([ADR 0305](../../decisions/0305-require.md), amended).
+
 An emitter's events are typed by it, as `@types/node`'s `on` and `emit`
 overloads are: a listener is given what Node gives it, and `emit` takes
 what TypeScript's does, `process::emit(UncaughtException, (error,))` being
