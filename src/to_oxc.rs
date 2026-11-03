@@ -619,7 +619,7 @@ fn comments_of(
                 let closes = (sources.text[line_start..c.lo as usize].chars().rev())
                     .take_while(|c| c.is_whitespace() || ")]};,".contains(*c))
                     .filter(|c| ")]}".contains(*c))
-                    .count() as u32;
+                    .collect();
                 // One after an argument's closing brackets alone, `}, //
                 // defaults to true`, is the argument's (rd615).
                 let opened_on = (!block)
@@ -672,7 +672,7 @@ fn comments_of(
                     after_param: None,
                     before_link: None,
                     of_default: false,
-                    closes: 0,
+                    closes: String::new(),
                     opened_on: None,
                     after_params: None,
                 });
@@ -692,7 +692,7 @@ fn comments_of(
                     after_param: None,
                     before_link: None,
                     of_default: false,
-                    closes: 0,
+                    closes: String::new(),
                     opened_on: None,
                     after_params: None,
                 });
@@ -714,7 +714,7 @@ fn comments_of(
                     after_param: None,
                     before_link: None,
                     of_default: false,
-                    closes: 0,
+                    closes: String::new(),
                     opened_on: None,
                     after_params: None,
                 });

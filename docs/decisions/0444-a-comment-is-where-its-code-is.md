@@ -1,6 +1,6 @@
 # 0444. A comment is in the JS where its code is, and so is a blank line
 
-Status: Accepted. Amended (2026-11-03): an index loop's item is before its body's comments. Amended (2026-11-01): a `// SAFETY:` comment is left out of the JS, the user's decision. Amended (2026-10-29): a comment above a `use` is above the import it makes; an inner doc comment is JS's plain one. Amended (2026-10-28): a field's doc comment is its struct's one literal's. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
+Status: Accepted. Amended (2026-11-03): a comment after a drop guard's `let` is after its `finally`'s statement. Amended (2026-11-03): an index loop's item is before its body's comments. Amended (2026-11-01): a `// SAFETY:` comment is left out of the JS, the user's decision. Amended (2026-10-29): a comment above a `use` is above the import it makes; an inner doc comment is JS's plain one. Amended (2026-10-28): a field's doc comment is its struct's one literal's. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
 an object is across lines where its struct literal is. Extends [0383](0383-a-files-leading-comments-are-its-jss.md),
 whose rules for what JS can hold are now every comment's, and
 [0018](0018-print-with-oxc.md). Its amendment, a branch's comment keeps it a statement, is
@@ -745,6 +745,38 @@ opened nothing. Held by the corpus's `array_trailing_comments`, run
 against native Rust, `lowering-comment-fields.test.ts`, and the
 mutations `statement-comment-on-last-item` and
 `closed-lines-past-their-brackets` (`to_oxc/trailing.ts`).
+
+## Amendment: a comment after a drop guard's `let` is after what its `finally` does (#501, 2026-11-03)
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): comments.
+
+A guard of a closure, `let _restore = Finally(|| depth.set(0)); //
+zeroed`, is a `try` whose `finally` is the closure's body (ADR 0865):
+
+```js
+try {
+  return getter();
+} finally {
+  depth.value = 0;
+} // zeroed
+```
+
+The `let`'s line is the JS's `try {` and `depth.value = 0;`, and the
+rd605 amendment's lines of brackets after them took the `finally`'s `}`
+for the `)` of `Finally(..)`, which the JS of the line opened and left
+open. **The lines of brackets past the last JS of a comment's line hold
+only brackets of the kinds the Rust's line ends closing**, the `]` of
+`32.0];` for `];`, so a block's `}` after code whose line ends `));` is
+not its line's: `depth.value = 0; // zeroed`, as the closure's own
+comment is, `depth.value = (depth.value - 1) >>> 0; // one less`. A
+struct literal's `};` and an array's `];` are as before, and a field of
+a struct the JS of its line closes itself, `range: Range { start: 3 },
+// range`, stays after it, not past the outer object's `};`, as the JS of
+its line opened nothing (the corpus's `array_trailing_comments`, which
+holds `closed-lines-past-their-brackets` now that a `)` no longer
+reaches a `}`). Held by `lowering-drop-guards.test.ts`, "a comment after
+a guard's let is after what its finally does", run, and the mutation
+`closed-lines-of-another-kind` (`to_oxc/trailing.ts`).
 
 ## Amendment: a comment after a promoted array argument is after it (rd525, 2026-11-02)
 

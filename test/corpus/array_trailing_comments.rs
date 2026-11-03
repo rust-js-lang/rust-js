@@ -13,16 +13,23 @@ static TRACK_NAMES: [&str; 3] = [
 
 /// Of an object, a comment after a field whose Rust closes what the JS
 /// doesn't have, `Cell::new(None)`'s `)`, is after the field, not the
-/// object's `}`.
+/// object's `}`; nor one after a field of a struct, `Range { .. }`'s `}`,
+/// which the JS of its line closes itself.
 struct CacheNode {
     status: u32,
     object: std::cell::Cell<Option<u32>>,
+    range: Range,
+}
+
+struct Range {
+    start: u32,
 }
 
 fn cache_node() -> CacheNode {
     CacheNode {
         status: 0,                          // status
         object: std::cell::Cell::new(None), // object cache
+        range: Range { start: 3 },          // range
     }
 }
 
@@ -40,5 +47,12 @@ fn main() {
         println!("{code}: {}", is_end(code));
     }
     let node = cache_node();
-    println!("{:?} {:?} {} {:?}", TRACK_NAMES, tabs(), node.status, node.object.get());
+    println!(
+        "{:?} {:?} {} {:?} {}",
+        TRACK_NAMES,
+        tabs(),
+        node.status,
+        node.object.get(),
+        node.range.start
+    );
 }

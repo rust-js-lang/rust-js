@@ -34,12 +34,14 @@ pub(super) struct Trailing {
     /// after its `default:`, which no code of its line maps to, before the
     /// clause's `{` (rd525), `default: /* .. */ {`, as upstream writes it.
     pub(super) of_default: bool,
-    /// How many brackets the code before it on its line ends closing, `]`
-    /// of `[9.0, 13.0, 27.0, 32.0]; // Tab, ..`: the JS's lines of only
-    /// those after its last JS, of an array the JS writes an item a line,
-    /// are its line's too, so it's after the statement, not its last item
-    /// (rd605).
-    pub(super) closes: u32,
+    /// The brackets the code before it on its line ends closing, `]` of
+    /// `[9.0, 13.0, 27.0, 32.0]; // Tab, ..`: the JS's lines of only those
+    /// after its last JS, of an array the JS writes an item a line, are its
+    /// line's too, so it's after the statement, not its last item (rd605).
+    /// Only of their kinds: a `finally`'s `}` after the drop guard's `let
+    /// _restore = Finally(|| depth.set(0)); // zeroed`, whose `try {` the
+    /// `let` is, closes no `)` of its line (#501).
+    pub(super) closes: String,
     /// Of a line comment after only an argument's closing brackets and its
     /// `,`, `}, // defaults to true` of an `if` given as one, which no JS
     /// of its line maps to: the line its last bracket opened on, whose
@@ -478,7 +480,7 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
                 let first = of_lines().map(|t| (t.get_dst_line(), t.get_dst_col())).min();
                 let last = (of_lines().map(|t| t.get_dst_line()).max())
                     .zip(first)
-                    .map(|(last, first)| closed_after(first, last, comment.closes, generated_lines));
+                    .map(|(last, first)| closed_after(first, last, &comment.closes, generated_lines));
                 if let Some(last) = last {
                     after.entry(last).or_default().push(&comment.text);
                 }
@@ -489,27 +491,30 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
 }
 
 /// Of `last`, the last line of the JS of a comment's line, from `first`,
-/// its first JS's line and column, whose code ends closing `closes`
-/// brackets: the last of the lines after it that hold only brackets the
-/// JS of the line opened and left open, `];` of an array the JS writes an
-/// item a line (rd605). Not one of what's around it, the `};` of an object
-/// after `o: Cell::new(None), // object cache`, whose `)` no JS has.
-fn closed_after(first: (u32, u32), last: u32, closes: u32, generated_lines: &[&str]) -> u32 {
+/// its first JS's line and column, whose code ends closing `closes`: the
+/// last of the lines after it that hold only brackets the JS of the line
+/// opened and left open, of the kinds its code closes, `];` of an array
+/// the JS writes an item a line (rd605). Not one of what's around it, the
+/// `};` of an object after `o: Cell::new(None), // object cache`, whose
+/// `)` no JS has; nor a block's `}` the code's `)` doesn't close (#501).
+fn closed_after(first: (u32, u32), last: u32, closes: &str, generated_lines: &[&str]) -> u32 {
     let (lines, column) = (generated_lines.get(first.0 as usize..=last as usize), first.1);
-    let Some(lines) = lines.filter(|_| closes > 0) else {
+    let Some(lines) = lines.filter(|_| !closes.is_empty()) else {
         return last;
     };
     let text = (lines.iter().enumerate())
         .map(|(k, line)| if k == 0 { &line[in_bytes(line, column)..] } else { line })
         .collect::<Vec<_>>()
         .join("\n");
-    let mut open = opened(&text).min(closes);
+    let mut open = opened(&text).min(closes.chars().count() as u32);
     let mut at = last;
     while open > 0
         && let Some(next) = generated_lines.get(at as usize + 1)
         && let text = next.trim()
         && !text.is_empty()
-        && text.chars().all(|c| ")]};,".contains(c))
+        && text
+            .chars()
+            .all(|c| ";,".contains(c) || (")]}".contains(c) && closes.contains(c)))
     {
         let closing = text.chars().filter(|c| ")]}".contains(*c)).count() as u32;
         if closing > open {

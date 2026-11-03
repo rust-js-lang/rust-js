@@ -18,6 +18,7 @@ function cacheNode() {
   return {
     status: 0, // status
     object: undefined, // object cache
+    range: { start: 3 }, // range
   };
 }
 
@@ -39,7 +40,7 @@ function main() {
   const node = cacheNode();
   const value = tabs();
   console.log(
-    `[${TRACK_NAMES.map((item) => $debugStr(item)).join(", ")}] [${value.join(", ")}] ${node.status} ${node.object == null ? "None" : `Some(${node.object})`}`,
+    `[${TRACK_NAMES.map((item) => $debugStr(item)).join(", ")}] [${value.join(", ")}] ${node.status} ${node.object == null ? "None" : `Some(${node.object})`} ${node.range.start}`,
   );
 }
 //# sourceMappingURL=case.js.map

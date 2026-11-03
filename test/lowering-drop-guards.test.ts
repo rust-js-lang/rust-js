@@ -793,3 +793,42 @@ pub fn depth_seen(fail: bool) -> u32 {
   expect(lib.depthSeen(false)).toBe(1);
   expect(() => lib.depthSeen(true)).toThrow("the getter failed");
 });
+
+test("a comment after a guard's let is after what its finally does", async () => {
+  // `let _restore = Finally(|| depth.set(0)); // zeroed`: the `let` is the
+  // `try {`, and its `)`s close no block, so the comment is after the
+  // closure's body in the `finally`, not after its `}` (#501, ADR 0444).
+  const { js, dir } = compiled(
+    "drop-guard-comment-after-its-let",
+    `use std::cell::Cell;
+
+struct Finally<F: FnMut()>(F);
+
+impl<F: FnMut()> Drop for Finally<F> {
+    fn drop(&mut self) {
+        (self.0)();
+    }
+}
+
+pub fn zeroed(depth: &Cell<u32>, fail: bool) -> u32 {
+    let _restore = Finally(|| depth.set(0)); // zeroed
+    if fail {
+        panic!("failed");
+    }
+    depth.get() + 1
+}
+`,
+  );
+  expect(js).toContain(`  } finally {
+    depth.value = 0; // zeroed
+  }
+}
+`);
+  const lib = await import(join(dir, "lib.js"));
+  const depth = { value: 5 };
+  expect(lib.zeroed(depth, false)).toBe(6);
+  expect(depth.value).toBe(0);
+  depth.value = 5;
+  expect(() => lib.zeroed(depth, true)).toThrow("failed");
+  expect(depth.value).toBe(0);
+});

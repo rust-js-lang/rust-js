@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a line comment after an array's statement on its line, `[9.0, 13.0, 27.0, 32.0]; // Tab, ..`, is after the array's last item, the JS's line of it, `32, // Tab, ..` inside the array an item a line, not after the statement as upstream's (rd605)",
     file: "src/to_oxc/trailing.rs",
-    find: "                    .map(|(last, first)| closed_after(first, last, comment.closes, generated_lines));\n",
+    find: "                    .map(|(last, first)| closed_after(first, last, &comment.closes, generated_lines));\n",
     replace: "                    .map(|(last, _)| last);\n",
     tests: ["test/corpus.test.ts", "-t", "^array_trailing_comments\\.rs$"],
     snapshots: true,
@@ -161,8 +161,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a statement comment goes past the lines of brackets the JS of its line didn't open, `o: null, // object cache` after the object's `};`, where `Cell::new(None)`'s `)` closed nothing JS has (rd605)",
     file: "src/to_oxc/trailing.rs",
-    find: "    let mut open = opened(&text).min(closes);\n",
-    replace: "    let mut open = closes;\n",
+    find: "    let mut open = opened(&text).min(closes.chars().count() as u32);\n",
+    replace: "    let mut open = closes.chars().count() as u32;\n",
     tests: ["test/corpus.test.ts", "-t", "^array_trailing_comments\\.rs$"],
     snapshots: true,
   },
@@ -242,5 +242,14 @@ export const mutations: Mutation[] = [
     find: "                        .starts_with([')', '}'])\n",
     replace: "                        .starts_with(')')\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "a pub use list.s comments are its names."],
+  },
+  {
+    name: "closed-lines-of-another-kind",
+    breaks:
+      "a comment after a drop guard's `let`, `let _restore = Finally(|| depth.set(0)); // zeroed`, goes past the `finally`'s `}`, a bracket of a kind its `)`s don't close, the `let` being the `try {` (#501)",
+    file: "src/to_oxc/trailing.rs",
+    find: "            .all(|c| \";,\".contains(c) || (\")]}\".contains(c) && closes.contains(c)))\n",
+    replace: "            .all(|c| \";,\".contains(c) || \")]}\".contains(c))\n",
+    tests: ["test/lowering-drop-guards.test.ts", "-t", "a comment after a guard.s let"],
   },
 ];
