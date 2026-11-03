@@ -536,9 +536,10 @@ pub(super) fn imported_through<'tcx>(
                 }))
             }),
     };
-    // Each `use`'s first naming of each item, of a module that re-exports
-    // it or not.
-    let mut first: HashMap<(LocalModId, DefId), (rustc_span::Span, Option<(LocalModId, String)>)> = HashMap::new();
+    // Each `use`'s first naming of each item, where, and through the module
+    // that re-exports it, by what, or not.
+    type First = (rustc_span::Span, Option<(LocalModId, String)>);
+    let mut first: HashMap<(LocalModId, DefId), First> = HashMap::new();
     for id in tcx.hir_crate_items(()).free_items() {
         let used = tcx.hir_item(id);
         let hir::ItemKind::Use(path, hir::UseKind::Single(_)) = used.kind else {
