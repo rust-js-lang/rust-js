@@ -18,6 +18,8 @@ object. Extended by [1046](1046-an-untagged-enums-arrays-are-told-by-their-lengt
 (rd490): an array whose type fixes its length is told by its `length`,
 and a `&mut` to an enum each of whose values is an array it holds itself
 is the array, not a place, as #347's below says of the others.
+Amended (2026-11-03, rd687): a `match` whose arms each do the same JS is
+that JS once, no test of the variant, below.
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -446,3 +448,53 @@ field, `container.root_id` and `instance.tag`.
   `field-read-written-anyway` (`pipeline/reached.ts`),
   `field-read-lowered-in-order` (`pipeline/field_reads.ts`),
   `field-read-of-any-return` (`untagged/field_reads.ts`).
+
+## Amendment: arms that each do the same JS are that JS, untested (rd687)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, Rust's answer,
+where the JS threw a `ReferenceError` where Rust runs on.
+
+React's FizzTestUtils moves the nodes of a `source: Document | Element`,
+which the port writes as Rust does, a `match` of each variant reading the
+same of each, `source.first_child()`. It printed
+
+```js
+return source instanceof Document ? source.firstChild : source.firstChild;
+```
+
+where upstream reads `source.firstChild`. Jest's node environment, whose
+DOM is a JSDOM window's, has no `Document` global, so each call threw
+`ReferenceError: Document is not defined`. ADR 1062's two classes keep
+their `instanceof`, so it wasn't left out there.
+
+**A `match` of an enum whose every arm's JS is the same, wherever each
+is written, and the same is known of each part (`js::stmts_same`), is
+that JS once, and tests no variant**
+(`mir/structure.rs`'s switch): `return source.firstChild;`. Rust's read
+of a discriminant does nothing, and the arms do the same of the value,
+so only the test is left out, whose JS may throw where Rust's doesn't:
+an `instanceof` of a class the host lacks. A subject made with effects
+is still made first, once, as before. Of every enum, tagged too,
+`t.TAG === "One" ? t._0 : t._0` is `t._0`, and an `Option`'s.
+
+- **Arms alike but for what's known of them are each tested**: an
+  element's `firstChild`, a getter's read, and a struct's field of that
+  name are the same text, but what's known of one isn't of the other
+  (`Known::Getter`), and later passes read it.
+- **Arms that differ in anything are each tested**, a field at another
+  place, `p._0.x` and `p._1.x`, a variant whose drop runs, a guard's.
+
+Not decided here: two classes whose arms differ, `match source {
+Document(_) => .., Element(e) => e.tag_name() }`, keep ADR 1062's
+`instanceof Document`, which throws in a host without the global, and is
+`false` of a document of another realm, a frame's `contentDocument` or a
+JSDOM window's in a browser test, whose variant Rust knows.
+
+Held by the corpus case `match_arms_alike.rs`, against native Rust (an
+untagged enum's struct and array read alike, a tagged enum's payloads,
+fields at other places, a subject made with effects, a guard's arms, an
+`Option`'s and a drop's), and `test/webapi-objects.test.ts`'s "an
+untagged enum's arms that each do the same are that JS, no instanceof of
+a global", run where the host has no `Document`. Mutations
+`alike-arms-tested`, `unalike-arms-taken` (`mir/structure.ts`) and
+`same-without-facts` (`js/stmt_walk.ts`).

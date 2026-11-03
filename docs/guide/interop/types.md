@@ -786,6 +786,11 @@ export function size(input) {
   string`, the class is what the others leave, `typeof entry ===
   "string"` tested, so no `instanceof File` runs where a host has no
   `File` ([ADR 1062](../../decisions/1062-a-unions-one-class-is-what-its-other-kinds-leave.md)).
+  A `match` whose arms each do the same JS is that JS once, no test of
+  the variant: FizzTestUtils' `source.first_child()` of a `Document |
+  Element` is `source.firstChild`, never an `instanceof Document` a host
+  without it throws of ([ADR 0214](../../decisions/0214-untagged-enums.md),
+  amended, rd687).
   `JsError`, what JS
   threw, may be any value, and is an error as a variant's payload
   ([ADR 0214](../../decisions/0214-untagged-enums.md), amended). A

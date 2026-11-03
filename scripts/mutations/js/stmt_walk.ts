@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "same-without-facts",
+    breaks:
+      "statements alike but for what's known of their parts are the same, so one arm's field read stands for another's getter, its facts taken for both (rd687)",
+    file: "src/js/stmt_walk.rs",
+    find: "        if !facts {\n",
+    replace: "        if true {\n",
+    tests: ["test/webapi-objects.test.ts", "-t", "arms that each do the same"],
+  },
+  {
     name: "this-no-path",
     breaks: "`this` isn't a path, so `this.count = this.count - 1` isn't `this.count--` (rd196)",
     file: "src/js/stmt_walk.rs",
@@ -163,8 +172,8 @@ export const mutations: Mutation[] = [
     name: "stmts-alike-by-name",
     breaks: "two drops alike but for the names they declare, `for (const item$1 of v)` and `for (const item of v)`, aren't, so a scope stays a `try` per statement",
     file: "src/js/stmt_walk.rs",
-    find: "            .map(|(i, name)| (name, format!(\"${i}\")))\n",
-    replace: "            .map(|(_, name)| (name.clone(), name))\n",
+    find: "        .map(|(i, name)| (name, format!(\"${i}\")))\n",
+    replace: "        .map(|(_, name)| (name.clone(), name))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_auto_traits.rs$"],
     snapshots: true,
   },
@@ -172,8 +181,8 @@ export const mutations: Mutation[] = [
     name: "stmts-alike-by-span",
     breaks: "two drops alike but where each was written aren't, so a scope stays a `try` per statement",
     file: "src/js/stmt_walk.rs",
-    find: "        unspan(&mut stmts);\n        let mut declared = Vec::new();\n",
-    replace: "        let mut declared = Vec::new();\n",
+    find: "    unspan(&mut stmts);\n    let mut declared = Vec::new();\n",
+    replace: "    let mut declared = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^(drop_on_panic|dyn_auto_traits).rs$"],
     snapshots: true,
   },

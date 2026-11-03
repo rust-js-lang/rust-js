@@ -761,6 +761,77 @@ pub fn file_name(data: &FormData, name: &str) -> Option<String> {
   }
 });
 
+// rd687 (P0): a `match` of an untagged enum whose arms each do the same
+// JS, FizzTestUtils' `source.firstChild` of a `Document | Element`, is that
+// JS once, no `instanceof Document`: Jest's node environment, whose DOM is a
+// JSDOM window's, has no `Document` global, and the test threw a
+// ReferenceError where Rust runs on. Arms that differ are still told apart.
+test("an untagged enum's arms that each do the same are that JS, no instanceof of a global", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-alike-arms");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Document, Element, Node};
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum DocumentOrElement<'a> {
+    Document(&'a Document),
+    Element(&'a Element),
+}
+
+pub fn first(source: DocumentOrElement<'_>) -> Option<&'static Node> {
+    match source {
+        DocumentOrElement::Document(source) => source.first_child(),
+        DocumentOrElement::Element(source) => source.first_child(),
+    }
+}
+
+pub fn count(source: DocumentOrElement<'_>) -> f64 {
+    let scripts = match source {
+        DocumentOrElement::Document(source) => source.query_selector_all("script"),
+        DocumentOrElement::Element(source) => source.query_selector_all("script"),
+    };
+    scripts.length()
+}
+
+pub fn named(source: DocumentOrElement<'_>) -> String {
+    match source {
+        DocumentOrElement::Document(_) => "document".to_string(),
+        DocumentOrElement::Element(element) => element.tag_name(),
+    }
+}
+
+pub struct Fragment {
+    pub first_child: Option<&'static Node>,
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ElementOrFragment<'a> {
+    Element(&'a Element),
+    Fragment(&'a Fragment),
+}
+
+// The same JS, \`source.firstChild\`, but a getter's read in one arm and a
+// field's in the other: what's known of one isn't of the other.
+pub fn first_of(source: ElementOrFragment<'_>) -> Option<&'static Node> {
+    match source {
+        ElementOrFragment::Element(element) => element.first_child(),
+        ElementOrFragment::Fragment(fragment) => fragment.first_child,
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function first(source) {\n  return source.firstChild;\n}");
+  expect(js).toContain('  const scripts = source.querySelectorAll("script");\n');
+  expect(js.match(/instanceof Document/g)).toHaveLength(1);
+  expect(js).toContain("instanceof Element");
+  const lib = await import(join(dir, "lib.js"));
+  // A host without the global, as Jest's node environment is.
+  expect(typeof (globalThis as Record<string, unknown>).Document).toBe("undefined");
+  const child = { nodeType: 1 };
+  const element = { firstChild: child, querySelectorAll: () => ({ length: 2 }) };
+  expect([lib.first(element), lib.count(element)]).toEqual([child, 2]);
+});
+
 // React DOM's compareDocumentPositionForEmptyFragment tests a position
 // against `Node.DOCUMENT_POSITION_CONTAINED_BY`: webapi's constants are
 // WebIDL's `const unsigned short`, `u16`, each read by its JS name, a

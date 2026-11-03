@@ -3,6 +3,24 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "alike-arms-tested",
+    breaks:
+      "an untagged enum's arms that each do the same JS still test the variant, `source instanceof Document ? source.firstChild : source.firstChild`, which throws a ReferenceError in a host without the `Document` global where Rust runs on (a wrong answer, rd687)",
+    file: "src/lower/mir/structure.rs",
+    find: "                out.extend(alike.or(chain).unwrap_or_default());\n",
+    replace: "                out.extend(chain.unwrap_or_default());\n",
+    tests: ["test/webapi-objects.test.ts", "-t", "arms that each do the same"],
+  },
+  {
+    name: "unalike-arms-taken",
+    breaks:
+      "an enum's arms are taken for one where they differ, a variant's `p._0.x` read of every variant, `p._1.x`'s too (a wrong answer, rd687)",
+    file: "src/lower/mir/structure.rs",
+    find: "                    alike = alike.filter(|first| js::stmts_same(first, &then)).map(|_| then.clone());\n",
+    replace: "                    alike = alike.map(|_| then.clone());\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_arms_alike.rs$"],
+  },
+  {
     name: "lone-class-branch-dropped",
     breaks:
       "an untagged enum's lone class, tested by the others' tests, is no branch: a form entry that's a `File` goes to the string's arm (a wrong answer, rd506's audit)",

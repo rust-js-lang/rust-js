@@ -585,8 +585,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     chain_panics = panics(state.body, last);
                     chain = Some(self.mir_branch(state, block, last)?);
                 }
+                // An enum's arms that each do the same JS, `match source {
+                // Document(s) => s.firstChild, Element(s) => s.firstChild }`'s:
+                // that JS once, the first arm's, and no test of the variant
+                // (rd687). Rust's read of a discriminant does nothing; JS's
+                // test of it may throw where Rust runs on, an `instanceof` of
+                // a class the host lacks, so it isn't made where nothing
+                // tells the arms apart.
+                let mut alike = match &subject {
+                    Value::Discriminant(..) if !cases.is_empty() => chain.clone(),
+                    _ => None,
+                };
                 for (test, target) in cases.into_iter().rev() {
                     let then = self.mir_branch(state, block, target)?;
+                    alike = alike.filter(|first| js::stmts_same(first, &then)).map(|_| then.clone());
                     let branches_panic = [panics(state.body, target), chain_panics];
                     // Its test where its arm's pattern is, a `match`'s, or its
                     // `if`, which its `if` takes once it's tidied (`tidy`): till
@@ -599,7 +611,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     chain = Some(early_exit(test, then, chain, branches_panic, self.js_span(span)));
                     chain_panics = false;
                 }
-                out.extend(chain.unwrap_or_default());
+                out.extend(alike.or(chain).unwrap_or_default());
             }
             TerminatorKind::Assert { target, .. }
                 if let Some(check) = self.assert_check(state.body, state.facts.drops(), terminator) =>

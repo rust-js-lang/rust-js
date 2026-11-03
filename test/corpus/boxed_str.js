@@ -15,9 +15,7 @@ function itemDebug_fmt(item) {
 
 const Item = {
   toOwned(item) {
-    return item.TAG === "Literal"
-      ? { TAG: "OwnedLiteral", _0: item._0 }
-      : { TAG: "OwnedLiteral", _0: item._0 };
+    return { TAG: "OwnedLiteral", _0: item._0 };
   },
 
   text(item) {

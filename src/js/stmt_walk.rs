@@ -445,40 +445,53 @@ pub fn is_read_pair(props: &[Prop]) -> bool {
 /// v)`, say, one of a function the analysis found never unwinds, so marked,
 /// the other not (ADR 0902).
 pub fn stmts_alike(a: &[Stmt], b: &[Stmt]) -> bool {
-    let canonical = |stmts: &[Stmt]| {
-        let mut stmts = stmts.to_vec();
-        unspan(&mut stmts);
-        let mut declared = Vec::new();
-        binders(&mut stmts, &mut declared);
-        let names: HashMap<String, String> = (declared.into_iter().enumerate())
-            .map(|(i, name)| (name, format!("${i}")))
-            .collect();
-        let rename = |name: &mut String| {
-            if let Some(to) = names.get(name.as_str()) {
-                *name = to.clone();
-            }
-        };
-        rename_binders(&mut stmts, &mut |n| rename(n));
-        each_expr_mut(&mut stmts, &mut |e| {
-            e.span = Span::NONE;
-            e.facts = Facts::NONE;
-            match &mut e.kind {
-                ExprKind::Var(name) => rename(name),
-                ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
-                    params.iter_mut().for_each(|p| p.each_name_mut(&mut |n| rename(n)));
-                    unspan(body);
-                    rename_binders(body, &mut |n| rename(n));
-                }
-                ExprKind::Function(function) => {
-                    unspan(&mut function.body);
-                    rename_binders(&mut function.body, &mut |n| rename(n));
-                }
-                _ => {}
-            }
-        });
-        stmts
+    a.len() == b.len() && canonical(a, false) == canonical(b, false)
+}
+
+/// Whether `a` and `b` are the same JS, as `stmts_alike` says, and the
+/// same is known of each of their parts: either may stand for the other
+/// where what's known of it is read after, an enum's arms that each do
+/// the same (rd687), one `Getter`'s read never another's that may go.
+pub fn stmts_same(a: &[Stmt], b: &[Stmt]) -> bool {
+    a.len() == b.len() && canonical(a, true) == canonical(b, true)
+}
+
+/// `stmts` as `stmts_alike` compares them: unspanned, what they declare
+/// numbered, and what's known of their parts forgotten unless `facts`.
+fn canonical(stmts: &[Stmt], facts: bool) -> Vec<Stmt> {
+    let mut stmts = stmts.to_vec();
+    unspan(&mut stmts);
+    let mut declared = Vec::new();
+    binders(&mut stmts, &mut declared);
+    let names: HashMap<String, String> = (declared.into_iter().enumerate())
+        .map(|(i, name)| (name, format!("${i}")))
+        .collect();
+    let rename = |name: &mut String| {
+        if let Some(to) = names.get(name.as_str()) {
+            *name = to.clone();
+        }
     };
-    a.len() == b.len() && canonical(a) == canonical(b)
+    rename_binders(&mut stmts, &mut |n| rename(n));
+    each_expr_mut(&mut stmts, &mut |e| {
+        e.span = Span::NONE;
+        if !facts {
+            e.facts = Facts::NONE;
+        }
+        match &mut e.kind {
+            ExprKind::Var(name) => rename(name),
+            ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
+                params.iter_mut().for_each(|p| p.each_name_mut(&mut |n| rename(n)));
+                unspan(body);
+                rename_binders(body, &mut |n| rename(n));
+            }
+            ExprKind::Function(function) => {
+                unspan(&mut function.body);
+                rename_binders(&mut function.body, &mut |n| rename(n));
+            }
+            _ => {}
+        }
+    });
+    stmts
 }
 
 /// Whether `stmts` declare the name `name`, however deep, a closure's

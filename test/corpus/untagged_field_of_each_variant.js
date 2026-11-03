@@ -21,23 +21,14 @@ function removeChild(parentInstance, child) {
 
 const Parent = {
   count(parent) {
-    return typeof parent.rootId === "string"
-      ? {
-          get value() {
-            return parent.count;
-          },
-          set value(value) {
-            parent.count = value;
-          },
-        }
-      : {
-          get value() {
-            return parent.count;
-          },
-          set value(value) {
-            parent.count = value;
-          },
-        };
+    return {
+      get value() {
+        return parent.count;
+      },
+      set value(value) {
+        parent.count = value;
+      },
+    };
   },
 
   // Of each its own field: a method still.
