@@ -199,4 +199,31 @@ export const mutations: Mutation[] = [
     replace: "                        let open = text.get(from..)?.find(\") {\")? + from;\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "after a function.s return type"],
   },
+  {
+    name: "after-params-of-no-parameter-unplaced",
+    breaks:
+      "a block comment after the return type of a function of no parameter is after its name, `now /* Milliseconds. */() {`, not after its `()` (#506)",
+    file: "src/to_oxc/trailing.rs",
+    find: "            .filter(|f| !f.name_span.is_none())\n",
+    replace: "            .filter(|f| !f.name_span.is_none() && !f.param_spans.is_empty())\n",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "after a function.s return type is before its body, of no parameter"],
+  },
+  {
+    name: "after-params-generics-unread",
+    breaks:
+      "a block comment after the return type of a generic function of no parameter, `generic<T: Default>() -> T /* Made. */ {`, is after its name, not after its `()` (#506)",
+    file: "src/to_oxc/trailing.rs",
+    find: "            Some(generics) => match generics_end(generics) {\n",
+    replace: "            Some(generics) => match None::<usize>.filter(|_| generics.is_empty()) {\n",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "after a function.s return type is before its body, of no parameter"],
+  },
+  {
+    name: "after-params-generics-end-at-an-arrow",
+    breaks:
+      "a generic `F: Fn() -> u8`'s arrow ends its generics, so a block comment after the return type of `called<F: Fn() -> u8>() -> u8 /* .. */ {` is after its name (#506)",
+    file: "src/to_oxc/trailing.rs",
+    find: "            '>' if previous != '-' => {\n",
+    replace: "            '>' => {\n",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "after a function.s return type is before its body, of no parameter"],
+  },
 ];

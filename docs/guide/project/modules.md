@@ -1253,17 +1253,27 @@ export function track(
 
 A block comment after a function's return type, before its body, is
 after its parameters' `)`, where JS has no type
-([ADR 0708](../../decisions/0708-a-comment-before-an-argument-is-before-it.md#amendment-a-comment-after-a-functions-return-type-rd641)):
+([ADR 0708](../../decisions/0708-a-comment-before-an-argument-is-before-it.md#amendment-a-comment-after-a-functions-return-type-rd641)),
+a function's of none too, after its `()`
+([amended](../../decisions/0708-a-comment-before-an-argument-is-before-it.md#amendment-of-a-function-of-no-parameter-506)):
 
 ```rust
 pub fn encode(value: Option<&'static str>) -> Option<&'static str> /* Not yet one. */ {
     value
+}
+
+pub fn now() -> f64 /* Milliseconds. */ {
+    0.0
 }
 ```
 
 ```js
 export function encode(value) /* Not yet one. */ {
   return value;
+}
+
+export function now() /* Milliseconds. */ {
+  return 0;
 }
 ```
 

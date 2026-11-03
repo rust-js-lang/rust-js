@@ -122,6 +122,47 @@ pub fn spaced(value: u32 /* The count. */) -> u32 {
   expect(lib.twice(4 as never)).toBe(8);
 });
 
+// A function of no parameter has none whose JS places such a comment. It
+// was after the function's name, `now /* Milliseconds. */() {`: its `()`
+// is after the name's JS, and the comment after that (#506). A method's
+// too, and a generic one's, whose `()` JS fills with what it's given.
+test("a block comment after a function's return type is before its body, of no parameter", async () => {
+  const { js, lib } = await compiled("comment-after-return-type-bare", `pub fn now() -> f64 /* Milliseconds. */ {
+    0.0
+}
+
+pub fn reset() /* Nothing kept. */ {}
+
+pub fn generic<T: Default + Into<f64>>() -> T /* Made. */ {
+    T::default()
+}
+
+pub fn called<F: Fn() -> u8>() -> u8 /* Not called. */ {
+    0
+}
+
+pub struct Clock;
+
+impl Clock {
+    pub fn tick() -> u32 /* A tick. */ {
+        1
+    }
+}
+
+pub fn made() -> f64 {
+    generic::<f64>() + f64::from(called::<fn() -> u8>()) + f64::from(Clock::tick())
+}
+`);
+  expect(js).toContain("export function now() /* Milliseconds. */ {\n");
+  expect(js).toContain("export function reset() /* Nothing kept. */ {}\n");
+  expect(js).toContain("export function generic(TDefault, TIntoF64) /* Made. */ {\n");
+  expect(js).toContain("export function called() /* Not called. */ {\n");
+  expect(js).toContain("  tick() /* A tick. */ {\n");
+  expect(js).not.toContain("now /*");
+  expect(lib.now()).toBe(0);
+  expect(lib.made()).toBe(1);
+});
+
 // React's getActivityInstanceFromFiber ends `// TODO: Implement this on
 // ActivityComponent.` then `return null;`. The port's tail `None` of a
 // nullable result is `return null;`, where the `None`'s comments end: they

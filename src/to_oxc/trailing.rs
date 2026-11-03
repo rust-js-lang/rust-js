@@ -89,16 +89,31 @@ pub(super) fn opened_on(text: &str, (line_start, at): (usize, usize)) -> Option<
 /// Where each function's parameter starts, by where it ends: a line
 /// comment after it on its line is after it (ADR 0708, amended). A type's
 /// methods' too, a class's constructor function's, `function
-/// RequestInstance(.., keepDebugAlive, // DEV-only` (rd554).
-pub(super) fn param_starts(module: &crate::js::Module) -> HashMap<u32, u32> {
-    (module.items.iter())
-        .flat_map(|item| match item {
+/// RequestInstance(.., keepDebugAlive, // DEV-only` (rd554). And where
+/// each function's name starts, by where it ends: a block comment after
+/// the return type of one of no parameter is after its `()` (#506).
+pub(super) struct ParamStarts {
+    by_end: HashMap<u32, u32>,
+    names: HashMap<u32, u32>,
+}
+
+pub(super) fn param_starts(module: &crate::js::Module) -> ParamStarts {
+    let functions = || {
+        (module.items.iter()).flat_map(|item| match item {
             crate::js::Item::Function(f) => std::slice::from_ref(f),
             crate::js::Item::Namespace(namespace) => &namespace.methods[..],
             crate::js::Item::Const(_) | crate::js::Item::Statements(_) => &[],
         })
-        .flat_map(|f| f.param_spans.iter().filter(|s| !s.is_none()).map(|s| (s.hi, s.lo)))
-        .collect()
+    };
+    ParamStarts {
+        by_end: functions()
+            .flat_map(|f| f.param_spans.iter().filter(|s| !s.is_none()).map(|s| (s.hi, s.lo)))
+            .collect(),
+        names: functions()
+            .filter(|f| !f.name_span.is_none())
+            .map(|f| (f.name_span.hi, f.name_span.lo))
+            .collect(),
+    }
 }
 
 /// Of a comment at `at` of its line, from `line_start`, in `text`, the
@@ -106,11 +121,11 @@ pub(super) fn param_starts(module: &crate::js::Module) -> HashMap<u32, u32> {
 pub(super) fn after_param(
     text: &str,
     (line_start, at): (usize, usize),
-    param_starts: &HashMap<u32, u32>,
+    param_starts: &ParamStarts,
 ) -> Option<(u32, u32)> {
     let code = text[line_start..at].trim_end();
     let code = code.strip_suffix(',').unwrap_or(code).trim_end();
-    let &lo = param_starts.get(&((line_start + code.len()) as u32))?;
+    let &lo = param_starts.by_end.get(&((line_start + code.len()) as u32))?;
     let start = text[..lo as usize].rfind('\n').map_or(0, |i| i + 1);
     Some((text[..lo as usize].matches('\n').count() as u32, lo - start as u32))
 }
@@ -118,27 +133,62 @@ pub(super) fn after_param(
 /// Of a block comment from `at` to `end` of its line, which ends at
 /// `line_end`, in `text`, after a function's last parameter, the list's
 /// `)` and its return type, with the function's body's `{` after it: the
-/// line and column that parameter starts at (rd641).
+/// line and column that parameter starts at (rd641). Of a function of no
+/// parameter, `fn now() -> f64 /* .. */ {`, its name's (#506).
 pub(super) fn after_params(
     text: &str,
     (at, end, line_end): (usize, usize, usize),
-    param_starts: &HashMap<u32, u32>,
+    param_starts: &ParamStarts,
 ) -> Option<(u32, u32)> {
     if !text[end..line_end].trim_start().starts_with('{') {
         return None;
     }
-    let signature_end = |hi: usize| {
-        let past = text[hi..at].trim_start_matches(|c: char| c.is_whitespace() || c == ',');
+    let returned = |past: &str| {
         past.strip_prefix(')').is_some_and(|returned| {
             let returned = returned.trim();
             returned.is_empty() || returned.starts_with("->") && !returned.contains(['{', '}', ';'])
         })
     };
-    let (_, &lo) = (param_starts.iter())
-        .filter(|&(&hi, _)| (hi as usize) < at && signature_end(hi as usize))
+    let after_param = |hi: usize| returned(text[hi..at].trim_start_matches(|c: char| c.is_whitespace() || c == ','));
+    // After a name, its generics, if any, and an empty `(` `)`.
+    let after_name = |hi: usize| {
+        let past = text[hi..at].trim_start();
+        let past = match past.strip_prefix('<') {
+            Some(generics) => match generics_end(generics) {
+                Some(end) => &generics[end..],
+                None => return false,
+            },
+            None => past,
+        };
+        (past.trim_start().strip_prefix('(')).is_some_and(|inside| returned(inside.trim_start()))
+    };
+    let (_, &lo) = (param_starts.by_end.iter())
+        .filter(|&(&hi, _)| (hi as usize) < at && after_param(hi as usize))
+        .chain((param_starts.names.iter()).filter(|&(&hi, _)| (hi as usize) < at && after_name(hi as usize)))
         .max_by_key(|&(&hi, _)| hi)?;
     let start = text[..lo as usize].rfind('\n').map_or(0, |i| i + 1);
     Some((text[..lo as usize].matches('\n').count() as u32, lo - start as u32))
+}
+
+/// Of generics past their `<`, where their `>` ends them; an arrow's,
+/// `F: Fn() -> u8`, ends nothing.
+fn generics_end(generics: &str) -> Option<usize> {
+    let mut depth = 1usize;
+    let mut previous = ' ';
+    for (i, c) in generics.char_indices() {
+        match c {
+            '<' => depth += 1,
+            '>' if previous != '-' => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some(i + 1);
+                }
+            }
+            _ => {}
+        }
+        previous = c;
+    }
+    None
 }
 
 /// Where in its line of JS a comment inside an expression is (ADR 0630),

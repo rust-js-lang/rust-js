@@ -484,10 +484,35 @@ where each ends, the parameters `comments_of` already places a line
 comment after (`trailing::param_starts`, rd554); the comment is placed
 from the JS of that parameter, to the first `) {` from there
 (`trailing::after_params`). A function of no parameter has none to place
-it by, and its comment is still lost.
+it by; its comment was after its name (amended below, #506).
 
 Held by `test/lowering-comments-ends.test.ts`'s "a block comment after a
 function's return type is before its body", run: of several parameters
 across lines, of one, of no return type, and one inside the parameters,
 which stays there; and the mutations `after-params-unplaced` (`to_oxc.ts`)
 and `after-params-before-paren` (`to_oxc/trailing.ts`).
+
+## Amendment: of a function of no parameter (#506)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+The rd641 amendment placed a block comment after a function's return type
+by the JS of its last parameter, and one of no parameter, `pub fn now()
+-> f64 /* Milliseconds. */ {`, has none: its comment was placed by the
+rule for one inside an expression (ADR 0630), after the JS of the code
+right before it, the function's name, `now /* Milliseconds. */() {`.
+**A block comment after the return type of a function of no parameter is
+after its `()`**, as one of parameters is after theirs: `now() /*
+Milliseconds. */ {`. It's placed by the function's name, where the text
+from the name's end to the comment is the `()` and the return type,
+generics between, if any (an arrow's `>` in them, `F: Fn() -> u8`, closes
+none); from the JS of the name, to the first `) {` from there
+(`trailing::after_params`, by `ParamStarts`' `names`). The `()` JS fills
+with what a generic function is given, `generic(TDefault) /* Made. */ {`,
+is its list too. A method's is the same, `tick() /* A tick. */ {`.
+
+Held by `test/lowering-comments-ends.test.ts`'s "a block comment after a
+function's return type is before its body, of no parameter", run: of no
+return type, generic, with an arrow in its generics, and a method; and
+the mutations `after-params-of-no-parameter-unplaced`,
+`after-params-generics-unread` and `after-params-generics-end-at-an-arrow`
+(`to_oxc/trailing.ts`).
