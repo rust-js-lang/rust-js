@@ -141,10 +141,9 @@ depends on what the program does:
 - `extend()` of a pair of collections: `let mut p: (Vec<i32>, Vec<char>) = (vec![], vec![]); p.extend([(1, 'a')]); println!("{p:?}");`
 - `collect()` into a `Box<str>`: `let b: Box<str> = ['a', 'b'].into_iter().collect(); println!("{b}");`
 - `collect()` into an `Rc<[T]>`: `let r: std::rc::Rc<[i32]> = (1..4).collect(); println!("{r:?}");`
-- `rposition()` of a lazy iterator held in a variable: `let v = [1, 2, 3]; let mut it = v.iter().map(|x| x + 1); println!("{:?}", it.rposition(|x| x == 3));`
 - A map's `into_keys()` of values with a destructor, or its `into_values()` of keys with one, which Rust drops as it steps each entry (#432, [ADR 0422](../decisions/0422-an-iterator-holding-a-value-is-closed-to-drop-it.md), amended): `struct D; impl Drop for D { fn drop(&mut self) {} } let mut m = std::collections::HashMap::new(); m.insert(1, D); println!("{}", m.into_keys().count());`
 - `HashMap::get_disjoint_mut`: `let mut m: std::collections::HashMap<&str, i32> = [("a", 1), ("b", 2)].into(); let [a, b] = m.get_disjoint_mut(["a", "b"]); println!("{:?} {:?}", a, b);`
-- `rposition` of a `skip()` or a `take()`, of a held `map()`, or of a `map()` of a range or of the crate's iterator, which rust-js can't count yet: `let v = vec![1, 2, 3]; println!("{:?}", v.iter().skip(1).rposition(|&x| x == 2));`
+- `rposition` of a `skip()` or a `take()`, or of a `map()` of a range or of the crate's iterator, which rust-js can't count yet: `let v = vec![1, 2, 3]; println!("{:?}", v.iter().skip(1).rposition(|&x| x == 2));`
 - `rfind` of a `skip()` or a `take()`, which rust-js can't step from its back yet: `let v = vec![1, 2, 3]; println!("{:?}", v.iter().take(2).rfind(|x| **x > 1));`
 - Stepping from its back a `chain()` or a `step_by()` of a `Vec`'s items that have a destructor, which is held where it's made: `struct L(u32); impl Drop for L { fn drop(&mut self) {} } let v: Vec<L> = vec![L(1), L(2)].into_iter().chain(vec![L(3)]).rev().collect(); println!("{}", v.len());`
 
