@@ -393,6 +393,10 @@ pub fn tallied(cell: &std::cell::Cell<u32>) -> u32 {
     cell.get()
 }
 
+pub fn counted(cell: &std::cell::RefCell<u32>) -> u32 {
+    *cell.borrow()
+}
+
 pub fn fail(message: &str) -> ! {
     panic!("{message}")
 }
@@ -444,6 +448,8 @@ pub fn fail(message: &str) -> ! {
     // So is a `RefCell` only ever borrowed for a moment (ADR 0362).
     "export interface Shelf {\n    books: string[];\n}",
     "export function tallied(cell: {\n    value: number;\n}): number;",
+    // A `RefCell` that isn't what it holds is `{ value }` too, not `any` (#503).
+    "export function counted(cell: {\n    value: number;\n}): number;",
     // A `OnceCell` in a field is absent until it's set (ADR 0847).
     "export interface Loaded {\n    ioInfo?: string | undefined;\n}",
     // A function that never returns returns `never` (ADR 0386).

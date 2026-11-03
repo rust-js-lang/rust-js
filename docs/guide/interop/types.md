@@ -1980,7 +1980,8 @@ export function shared() {
   the cell.
 - **A `RefCell` of an array, a `Map`, a `Set` or a struct's object is that
   object**, `list` above, its whole writes, `replace`, `take`, `*cell.get_mut()
-  = v`, made in place; of a number, a string or an `Option` it's `{ value }`.
+  = v`, made in place; of a number, a string or an `Option` it's `{ value }`, declared
+  `{ value: T }`.
   Of a `#[repr(transparent)]` struct it's its field's: a `Vec`'s newtype's
   is the array.
   Generic code's `RefCell<T>` of any `T`, and one made a `RefCell<dyn T>`,

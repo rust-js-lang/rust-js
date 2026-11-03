@@ -581,9 +581,23 @@ export const mutations: Mutation[] = [
     name: "lent-cell-declared-any",
     breaks: "a `&Cell` parameter is declared `any`, where it's `{ value }`",
     file: "src/lower/declarations.rs",
-    find: "                if is_std_def(tcx, did, StdItem::Cell) {\n",
+    find: "                if is_std_def(tcx, did, StdItem::Cell) || is_std_def(tcx, did, StdItem::RefCell) {\n",
     replace:
-      "                if false && is_std_def(tcx, did, StdItem::Cell) {\n",
+      "                if false && is_std_def(tcx, did, StdItem::Cell) || is_std_def(tcx, did, StdItem::RefCell) {\n",
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations type what a module exports",
+    ],
+  },
+  {
+    name: "boxed-refcell-declared-any",
+    breaks:
+      "a `&RefCell<u32>` parameter, and a variant's boxed `RefCell` field, are declared `any`, where each is `{ value }` (#503)",
+    file: "src/lower/declarations.rs",
+    find: "                if is_std_def(tcx, did, StdItem::Cell) || is_std_def(tcx, did, StdItem::RefCell) {\n",
+    replace:
+      "                if is_std_def(tcx, did, StdItem::Cell) {\n",
     tests: [
       "test/declarations.test.ts",
       "-t",

@@ -1,6 +1,6 @@
 # 0863. A `RefCell` of an object is the object, and one no borrow of which can meet another is never checked
 
-Status: Accepted; amended below (`as_deref` of an `Option` of a guard, a guard that's only a call's receiver, a guard read only for a binding's argument (rd427), a held borrow counts the cells that can be its own (#445), and a library's cell only its own code and constants reach is its flow's (#456)). Amends [0328](0328-refcell-borrow-counts.md) (what a
+Status: Accepted; amended below (`as_deref` of an `Option` of a guard, a guard that's only a call's receiver, a guard read only for a binding's argument (rd427), a held borrow counts the cells that can be its own (#445), a library's cell only its own code and constants reach is its flow's (#456), and a `RefCell` that's a box is declared `{ value: T }` (#503)). Amends [0328](0328-refcell-borrow-counts.md) (what a
 `RefCell` is, and which of its borrows are counted),
 [0362](0362-refcell-fields-never-counted.md) (a field's plain cell, a
 library's too), [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)
@@ -1148,3 +1148,26 @@ and the corpus's `argument_guard_reentered`, against native Rust; mutations
 (`drops/facts.ts`), and `as-deref-unrecognized` (`recognition/wrappers.ts`,
 whose `is_as_deref` says which call is an `as_deref`).
 
+
+## Amendment: a `RefCell` that's a box is declared `{ value: T }` (#503)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference: the JS is as it was, and its `.d.ts` now says what it is.
+
+A `RefCell` that isn't the value it holds, nor the object it is, is a
+`{ value }` box: `fn counted(cell: &RefCell<u32>)` reads `cell.value`.
+Its declaration was `any`, `export function counted(cell: any): number;`,
+looser than the box, where a lent `Cell`'s is `{ value: number }` (ADR
+0288). Found in the alien-signals port, an effect's `cleanup:
+RefCell<Option<Rc<dyn Fn()>>>` in an enum variant's field, declared
+`cleanup: any`.
+
+**A `RefCell` that's a box is declared `{ value: T }`, as a `Cell` that's
+one is**: `declarations.rs`'s `ts` asks one question of both, after a
+`RefCell` that's what it holds (`is_value_cell`) and before anything
+else. Its non-enumerable `borrows`, where it's counted, isn't declared,
+as no JS reads it.
+
+Held by `test/declarations.test.ts`'s "declarations type what a module
+exports", `counted(cell: { value: number })`, and mutation
+`boxed-refcell-declared-any` (`declarations.ts`).

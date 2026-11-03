@@ -1284,8 +1284,9 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 if self.ref_cells.is_value_cell(tcx, ty) {
                     return self.ts(args.type_at(0));
                 }
-                // A `Cell` of its own, or one lent, is `{ value }` (ADRs 0023, 0288).
-                if is_std_def(tcx, did, StdItem::Cell) {
+                // A `Cell` of its own, or one lent, is `{ value }` (ADRs 0023, 0288),
+                // and so is a `RefCell` that isn't what it holds (ADRs 0328, 0863).
+                if is_std_def(tcx, did, StdItem::Cell) || is_std_def(tcx, did, StdItem::RefCell) {
                     let value = json!({ "kind": "property", "name": "value", "optional": false, "readonly": false, "type": self.ts(args.type_at(0)) });
                     return json!({ "kind": "object", "members": [value] });
                 }
