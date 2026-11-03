@@ -215,6 +215,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .then(|| place.local.as_usize() - 1);
             return (Given::Nulled, param);
         }
+        // The `Ok` of what `catch_unwind(f)` gave, what `f` returned: `null`
+        // or a value where each of `f`'s returns is, React DOM's
+        // getActiveElement's `doc.activeElement ?? doc.body` (rd16). Its
+        // `Err`'s, a `Box<dyn Any>`, is never an `Option` a nullable place
+        // stores.
+        if let [PlaceElem::Downcast(..), PlaceElem::Field(..)] = place.projection.as_slice()
+            && let Some(caught) = self.caught_function(state, place.local)
+        {
+            return match self.returns_null_or_value(caught) {
+                true => (Given::Nulled, None),
+                false => (Given::Unknown, None),
+            };
+        }
         if let Some((PlaceElem::Field(..), _)) = place.projection.split_last() {
             let given = match self.place_field(state, place) {
                 Some(field) if bindings::null_where_made(self.tcx, field) => Given::Nulled,
@@ -322,11 +335,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether the function lowered, `self.item`'s own, returns `null` or a
     /// value at each return, each write of its result so, which its callers
     /// then give as it is (`NulledParams::returns_nulled`, rd632): React
-    /// DOM's `getEventTarget`, `target.parentNode` or `target`. Not a copy
-    /// of it, an `async` one's, or a writer's.
+    /// DOM's `getEventTarget`, `target.parentNode` or `target`. Or a
+    /// closure it holds, which `catch_unwind` calls (rd16). Not a copy of
+    /// it, an `async` one's, or a writer's.
     pub(super) fn note_nulled_returns(&self, state: &State<'_, 'tcx>) {
         let id = state.body.source.def_id();
-        if id != self.item
+        if (id != self.item && !self.tcx.is_closure_like(id))
             || self.copy.is_some()
             || state.body.coroutine.is_some()
             || state.writer.is_some()
@@ -342,6 +356,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         });
         if nulled {
             self.krate.nulled_params.returned_nulled(id);
+        }
+    }
+
+    /// Whether what a call of `def_id` gives is `null` or a value: a
+    /// `#[rust_js::nullable]` function's, a binding's too, its `None` `null`
+    /// (ADRs 0578, 0638), or one of the crate's, or a closure, that returns
+    /// so at each return (rd632, rd16).
+    fn returns_null_or_value(&self, def_id: rustc_span::def_id::DefId) -> bool {
+        crate::lower::calls::gives_null_for_none(self.tcx, def_id)
+            || (crate::lower::analysis::nulled_params::may_return_nulled(self.tcx, def_id)
+                && self.krate.nulled_params.returns_nulled(self.item, def_id))
+    }
+
+    /// The function or closure that `catch_unwind` calls whose result
+    /// `local` is, written once: `catch_unwind(f)`'s `f`, in an
+    /// `AssertUnwindSafe` or not (ADR 0660).
+    fn caught_function(&self, state: &State<'_, 'tcx>, local: Local) -> Option<rustc_span::def_id::DefId> {
+        if state.locals.writes[local] != 1 {
+            return None;
+        }
+        let (func, args) = (state.body.basic_blocks.iter()).find_map(|b| match &b.terminator().kind {
+            mir::TerminatorKind::Call {
+                func,
+                args,
+                destination,
+                ..
+            } if *destination == local.into() => Some((func, args)),
+            _ => None,
+        })?;
+        let (def_id, _) = fn_def(func.ty(state.body, self.tcx))?;
+        if crate::lower::recognition::unwind_op(self.tcx, def_id)
+            != Some(crate::lower::std_types::unwind::UnwindOp::Catch)
+        {
+            return None;
+        }
+        let [f] = &args[..] else { return None };
+        let f = match f.node.ty(state.body, self.tcx).kind() {
+            ty::Adt(adt, args) if crate::lower::recognition::is_assert_unwind_safe(self.tcx, adt.did()) => {
+                args.type_at(0)
+            }
+            _ => f.node.ty(state.body, self.tcx),
+        };
+        match f.kind() {
+            ty::Closure(def_id, _) | ty::FnDef(def_id, _) => Some(*def_id),
+            _ => None,
         }
     }
 
@@ -399,10 +458,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `None` `null` (ADRs 0578, 0638): `ReactSharedInternals.T` kept in
         // `prevTransition` (ADR 0841, amended). And what a function of the
         // crate's gives that returns so at each return (rd632).
-        if crate::lower::calls::gives_null_for_none(self.tcx, def_id)
-            || (crate::lower::analysis::nulled_params::may_return_nulled(self.tcx, def_id)
-                && self.krate.nulled_params.returns_nulled(self.item, def_id))
-        {
+        if self.returns_null_or_value(def_id) {
             return (Given::Nulled, None);
         }
         // A binding that's its argument in JS, `js::cast(Some(js::unknown(options)))`
@@ -426,6 +482,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )
         {
             return self.stored_in(state, &option.node, seen);
+        }
+        // `a.or(b)` and `a.or_else(f)`, `a ?? b`: `a` where it's `Some`,
+        // else `b`, or what `f` returns, so `null` or a value where both
+        // are, React DOM's `doc.active_element().or_else(|| doc.body())`
+        // (rd16).
+        if let Some(crate::lower::Std::Comb(
+            comb @ (crate::lower::combinators::Comb::Or | crate::lower::combinators::Comb::OrElse),
+        )) = known
+            && let [option, fallback] = args
+            && self.stored_in(state, &option.node, seen).0 == Given::Nulled
+        {
+            let fallback = match comb {
+                crate::lower::combinators::Comb::Or => self.stored_in(state, &fallback.node, seen).0 == Given::Nulled,
+                _ => match fallback.node.ty(state.body, self.tcx).kind() {
+                    ty::Closure(f, _) | ty::FnDef(f, _) => self.returns_null_or_value(*f),
+                    _ => false,
+                },
+            };
+            if fallback {
+                return (Given::Nulled, None);
+            }
         }
         // A shared `as_ref()` or `as_deref()` of such, the option itself in
         // JS (ADR 0023): `parent_fragment_instances.as_deref()` (rd632).

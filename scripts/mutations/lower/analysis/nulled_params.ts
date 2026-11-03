@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "    Some(id).filter(|_| !items.is_empty())\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a bind of each parameter"],
   },
+  {
+    name: "closure-never-returns-nulled",
+    breaks: "no closure's returns are asked, so `catch_unwind(|| found())` keeps `?? null` (rd16)",
+    file: "src/lower/analysis/nulled_params.rs",
+    find: "        return id.is_local()\n",
+    replace: "        return false && id.is_local()\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "catch_unwind gives"],
+  },
 ];

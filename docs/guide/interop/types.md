@@ -1060,7 +1060,10 @@ export function ratio(a, b) {
   caller's own given on is one only where it is so itself, each passing
   on followed, rd624; a call of the crate's function whose every return
   is so, React DOM's `getEventTarget`'s `target.parentNode` or
-  `target`; a variable each of whose writes is so, `if profiling {
+  `target`; the `Ok` of `catch_unwind(f)` of a function or closure whose
+  every return is so, and `a.or(b)` or `a.or_else(f)` of two that are,
+  React DOM's getActiveElement's `doc.activeElement ?? doc.body`, rd16;
+  a variable each of whose writes is so, `if profiling {
   reason() } else { js::null() }`; a shared `as_deref()` of such; a `let`
   a call writes that only such parameters and tests that read `null` and
   `undefined` alike read, `is_some()`, `map_or`, whose `None` is then

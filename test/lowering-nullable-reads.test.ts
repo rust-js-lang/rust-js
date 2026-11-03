@@ -1069,3 +1069,102 @@ pub fn closure_called() -> bool {
   expect([lib.given({}), lib.given({ x: null, cell: null }), lib.given({ x: 1 })]).toEqual([true, true, false]);
   expect([lib.own(undefined), lib.own(1)]).toEqual([true, false]);
 });
+
+// React DOM's getActiveElement returns what `catch_unwind` of a closure
+// gave, `doc.active_element().or_else(|| doc.body())`, which printed
+// `const activeElement = ..; return activeElement ?? null;`. A
+// `catch_unwind(f)`'s `Ok` is what `f` returns: `null` or a value where each
+// of `f`'s returns is, a closure's as a function's (rd16). `a.or(b)` and
+// `a.or_else(f)` are so where both sides are. A closure JS is also given
+// returns what its body returns, whoever calls it. Where any side may be
+// `undefined`, a binding's plain `Option`, a parameter JS gives, or another
+// function that takes a closure, it's still given `?? null`.
+test("what catch_unwind gives of a closure that returns null or a value is given as it is", async () => {
+  const dir = fixture("nullable-caught-returns");
+  writeFileSync(join(dir, "lib.rs"), `use std::panic::{AssertUnwindSafe, catch_unwind};
+
+use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::link_name = "./found.js#found", rust_js::nullable)]
+fn found() -> Option<&'static Unknown> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./found.js#maybe")]
+fn maybe() -> Option<&'static Unknown> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./found.js#keep")]
+fn keep<F: Fn() -> Option<&'static Unknown> + 'static>(f: F) {
+    let _ = f;
+    unreachable!()
+}
+
+fn attempt<F: FnOnce() -> Option<&'static Unknown>>(f: F) -> Result<Option<&'static Unknown>, ()> {
+    let _ = f;
+    Ok(maybe())
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn caught() -> Option<&'static Unknown> {
+    match catch_unwind(AssertUnwindSafe(|| found().or_else(found))) {
+        Ok(found) => found,
+        Err(_) => None,
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn given_too() -> Option<&'static Unknown> {
+    let f = || found();
+    keep(f);
+    match catch_unwind(f) {
+        Ok(found) => found,
+        Err(_) => None,
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn captured(given: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    match catch_unwind(AssertUnwindSafe(|| given)) {
+        Ok(given) => given,
+        Err(_) => None,
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn attempted() -> Option<&'static Unknown> {
+    match attempt(found) {
+        Ok(found) => found,
+        Err(()) => None,
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn or_found() -> Option<&'static Unknown> {
+    found().or(found())
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn or_maybe() -> Option<&'static Unknown> {
+    found().or(maybe())
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn or_else_maybe() -> Option<&'static Unknown> {
+    found().or_else(maybe)
+}
+`);
+  writeFileSync(join(dir, "found.js"), "export const found = () => null;\nexport const maybe = () => undefined;\nexport const keep = () => {};\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  try {\n    return found() ?? found();\n  } catch {\n");
+  expect(js).toContain("  try {\n    return f();\n  } catch {\n");
+  expect(js).toContain("  return option ?? fallback;\n}");
+  expect(js).toContain("  return option ?? fallback ?? null;\n}");
+  expect(js).toContain("  return found() ?? maybe() ?? null;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  // Each `None` is `null`, never `undefined`.
+  expect([lib.caught(), lib.givenToo(), lib.captured(undefined), lib.attempted()]).toEqual([null, null, null, null]);
+  expect([lib.orFound(), lib.orMaybe(), lib.orElseMaybe()]).toEqual([null, null, null]);
+});

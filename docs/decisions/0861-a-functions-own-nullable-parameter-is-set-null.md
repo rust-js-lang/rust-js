@@ -612,3 +612,39 @@ count. Now that the count adds up, rd623's `let` of `js::null()` would be
 instead, `either(if c { js::null() } else { None })`'s `either(null)`.
 Only the rule that `js::null()` isn't a call that may give `undefined`
 makes it so, because a temporary isn't a `let`.
+
+## Amendment: what `catch_unwind` gives of a closure, and `or`/`or_else` (2026-11-03, rd16)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. Each value is
+`null` or a value already, so only a `?? null` that never applied goes.
+
+React DOM's getActiveElement returns `catch_unwind`'s `Ok`, a closure's
+`doc.active_element().or_else(|| doc.body())`. It printed `const
+activeElement = doc.activeElement ?? doc.body; return activeElement ??
+null;`, because nothing said what `catch_unwind` gives, nor what `or_else`
+gives.
+
+**The `Ok` of `catch_unwind(f)`, bare or in an `AssertUnwindSafe`, is what
+`f` returns** (`mir/nulled.rs`' `caught_function`). It's `null` or a value
+where `f` returns so: a `#[rust_js::nullable]` function or binding, or a
+function or closure of the crate's whose every return is so. The rd632
+facts above take closures too (`may_return_nulled`,
+`note_nulled_returns`), noted where each closure's body is lowered.
+Nothing but a call of the crate's asks about a closure's returns. Those
+are its body's whoever calls it, so a closure also given to JS keeps them.
+**`a.or(b)` and `a.or_else(f)` are `null` or a value where `a` is and `b`
+is, or `f` returns so.** getActiveElement is `return doc.activeElement ??
+doc.body;`, and its `const` goes too, as nothing names it twice.
+
+Only `catch_unwind` counts: another function given a closure, which may
+return what it likes, `attempt(found)`'s `Ok(maybe())`, gives `?? null`
+still. So do a captured parameter JS may give `undefined` and a binding's
+plain `Option`.
+
+- Held by `test/lowering-nullable-reads.test.ts`, "what catch_unwind gives
+  of a closure that returns null or a value is given as it is", run. Its
+  mutations are `caught-ok-unknown`, `caught-closure-returns-unnoted`,
+  `caught-in-assert-unwind-safe-unseen`, `caught-by-any-call`,
+  `or-fallback-unchecked`, `or-else-fallback-unchecked` and
+  `or-else-unknown` (`mir/nulled.ts`), and
+  `closure-never-returns-nulled` (`analysis/nulled_params.ts`).

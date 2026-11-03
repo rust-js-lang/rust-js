@@ -301,8 +301,21 @@ fn candidate(tcx: TyCtxt<'_>, id: DefId) -> Option<Vec<usize>> {
 /// Whether `id` is a function of the crate's whose returns lowering may
 /// find each `null` or a value (`NulledParams::returns_nulled`): one only
 /// its crate's calls and JS call by name, as `candidate`'s, whose result
-/// is an `Option` not `#[rust_js::nullable]`, which says so already.
+/// is an `Option` not `#[rust_js::nullable]`, which says so already; or a
+/// closure of the crate's whose result is an `Option`, which only a call
+/// of the crate's asks of, `catch_unwind(|| ..)`'s `Ok` (rd16). What JS
+/// gets back of a call of it isn't asked: its returns are its body's.
 pub(in crate::lower) fn may_return_nulled(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    let option = |output: ty::Ty<'_>| {
+        matches!(output.kind(),
+            ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option))
+    };
+    if tcx.def_kind(id) == DefKind::Closure {
+        return id.is_local()
+            && tcx.coroutine_kind(id).is_none()
+            && matches!(tcx.type_of(id).instantiate_identity().skip_normalization().kind(),
+                ty::Closure(_, args) if option(args.as_closure().sig().output().skip_binder()));
+    }
     let callable = match tcx.def_kind(id) {
         DefKind::Fn => true,
         DefKind::AssocFn => tcx.trait_of_assoc(id).is_none() && tcx.trait_impl_of_assoc(id).is_none(),
@@ -312,8 +325,7 @@ pub(in crate::lower) fn may_return_nulled(tcx: TyCtxt<'_>, id: DefId) -> bool {
         && id.is_local()
         && !crate::lower::bindings::is_binding(tcx, id)
         && !crate::lower::bindings::nullable_result(tcx, id)
-        && matches!(tcx.fn_sig(id).skip_binder().skip_binder().output().kind(),
-            ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option))
+        && option(tcx.fn_sig(id).skip_binder().skip_binder().output())
 }
 
 /// What `scan` finds walking MIR.
