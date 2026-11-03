@@ -70,6 +70,14 @@ pub(super) struct LetNames {
     /// so a handle on its place reads, where it's made, what each of its
     /// uses would (rd658).
     pub(super) frozen: HashSet<String>,
+    /// What an `if let`'s or a let chain's pattern binds of its scrutinee's
+    /// whole payload, named as the field the scrutinee reads, by their Rust
+    /// names: `debug_task` of `let Some(debug_task) =
+    /// fiber.debug_task.get()`, a name that says nothing the field doesn't,
+    /// so a chain's binding the test read is read again in its place
+    /// (`moves::read_again`); `prev_state` of `current.memoized_state` is
+    /// the program's name, which stays (ADR 0866, amended, rd706).
+    pub(super) own_field: HashSet<String>,
     /// Where each `let` of a drop guard, a value of a type with a `Drop` of
     /// its own, is written, and where the block whose end drops it ends:
     /// the `try` its drop ends starts at the `let` (ADR 0865, amended).

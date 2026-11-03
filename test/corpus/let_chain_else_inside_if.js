@@ -56,7 +56,8 @@ function restore(x, log) {
 function firstOf(a, b, on, log) {
   if (on) {
     if (a != null && a[0] != null && b != null) {
-      log.push((a[0] + b) >>> 0);
+      const item = a[0];
+      log.push((item + b) >>> 0);
     } else {
       log.push(0);
     }

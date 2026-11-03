@@ -1,7 +1,8 @@
 // A let chain's binding of a field its test read is the field read again
 // where the body reads it first (ADR 0866, amended); where the body's code
 // may change the field before it's read, or it's read twice, the binding
-// stays the value the test read.
+// stays the value the test read. Named otherwise than the field, it's the
+// program's name, a `const` though it's read once (rd226, rd706).
 
 use std::cell::Cell;
 
@@ -51,6 +52,26 @@ fn cleared_first(fiber: Option<&Fiber>) -> u32 {
     0
 }
 
+// The program's name: `const currentTask = fiber.task;`.
+fn named_otherwise(fiber: Option<&Fiber>) -> u32 {
+    if let Some(fiber) = fiber
+        && let Some(current_task) = fiber.task.get()
+    {
+        return current_task.run(fiber, false);
+    }
+    0
+}
+
+// A `Cell`'s `set` through a binding named otherwise: `const prevTask =
+// fiber.task; prevTask.runs = 0;`.
+fn reset(fiber: Option<&Fiber>) {
+    if let Some(fiber) = fiber
+        && let Some(prev_task) = fiber.task.get()
+    {
+        prev_task.runs.set(0);
+    }
+}
+
 fn main() {
     let task: &'static Task = Box::leak(Box::new(Task { runs: Cell::new(0) }));
     let fiber = Fiber { task: Cell::new(Some(task)) };
@@ -58,4 +79,9 @@ fn main() {
     println!("{} {}", twice(Some(&fiber)), fiber.task.get().is_none());
     fiber.task.set(Some(task));
     println!("{} {} {}", cleared_first(Some(&fiber)), fiber.task.get().is_none(), once(Some(&fiber)));
+    println!("{} {}", named_otherwise(Some(&fiber)), named_otherwise(None));
+    reset(None);
+    println!("{}", task.runs.get());
+    reset(Some(&fiber));
+    println!("{} {}", task.runs.get(), once(Some(&fiber)));
 }

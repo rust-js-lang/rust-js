@@ -1171,3 +1171,77 @@ pub fn not_next(blob: &Unknown) -> String {
   });
   expect([lib.named(info("n") as never), lib.named(info(undefined) as never), reads]).toEqual(["n", "unknown", 2]);
 });
+
+// React's ReactFiberCompleteWork, completeDehydratedActivityBoundary and
+// completeDehydratedSuspenseBoundary: `if (current !== null &&
+// current.memoizedState !== null) { const prevState = current.memoizedState;
+// prevState.hydrationErrors = hydrationErrors; }`. The chain's binding is
+// named otherwise than the field it reads, the program's name, which keeps
+// its `const` though the body reads it once (rd226, rd706); the compiler's
+// temporary of a struct pattern's scrutinee is still the field read again.
+test("a let chain's binding named otherwise than its field keeps its const", async () => {
+  const { js, lib } = await compiled("chain-binding-named-otherwise", `use js::Unknown;
+use std::cell::{Cell, RefCell};
+
+pub struct ActivityState {
+    pub retry_lane: Cell<u32>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub hydration_errors: RefCell<Option<Vec<String>>>,
+}
+
+pub struct Fiber {
+    pub memoized_state: Cell<Option<&'static Unknown>>,
+}
+
+pub fn complete(current: Option<&Fiber>, hydration_errors: Option<Vec<String>>) {
+    if let Some(current) = current
+        && let Some(prev_state) =
+            unsafe { js::cast::<Option<&ActivityState>>(current.memoized_state.get()) }
+    {
+        prev_state.hydration_errors.replace(hydration_errors);
+    }
+}
+
+pub fn retry(current: Option<&Fiber>) {
+    if let Some(current) = current
+        && let Some(prev_state) =
+            unsafe { js::cast::<Option<&ActivityState>>(current.memoized_state.get()) }
+    {
+        prev_state.retry_lane.set(1);
+    }
+}
+
+pub struct Lanes {
+    pub retry: Cell<u32>,
+}
+
+pub struct Holder {
+    pub lanes: Cell<Option<&'static Lanes>>,
+}
+
+/// MIR's temporary of what the pattern takes apart, read again in place.
+pub fn lane(holder: Option<&Holder>) -> u32 {
+    if let Some(holder) = holder
+        && let Some(Lanes { retry }) = holder.lanes.get()
+    {
+        return retry.get();
+    }
+    0
+}
+`);
+  expect(js).toContain(
+    "  if (current != null && current.memoizedState != null) {\n    const prevState = current.memoizedState;\n    prevState.hydrationErrors = hydrationErrors ?? null;\n  }\n",
+  );
+  expect(js).toContain(
+    "  if (current != null && current.memoizedState != null) {\n    const prevState = current.memoizedState;\n    prevState.retryLane = 1;\n  }\n",
+  );
+  expect(js).toContain("  if (holder != null && holder.lanes != null) {\n    return holder.lanes.retry;\n  }\n");
+  const state = { retryLane: 0, hydrationErrors: null as unknown };
+  const fiber = { memoizedState: state };
+  lib.complete(fiber as never, ["a"] as never);
+  lib.retry(fiber as never);
+  expect(state).toEqual({ retryLane: 1, hydrationErrors: ["a"] });
+  lib.complete({ memoizedState: null } as never, ["b"] as never);
+  lib.retry(null as never);
+  expect([lib.lane({ lanes: { retry: 7 } } as never), lib.lane({ lanes: null } as never), lib.lane(null as never)]).toEqual([7, 0, 0]);
+});

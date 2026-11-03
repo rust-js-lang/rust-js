@@ -424,8 +424,16 @@ fn guards_before_others(stmts: &mut [Stmt], conditions: &[(js::Span, js::Span)])
 /// would read a property twice (`bound_into`): `const url = request.url;
 /// if (typeof url === "string") { return url; }` stays, but where its `s`
 /// breaks out to a label (`read_once_first`); nor where it would read a
-/// place twice that `a` doesn't test (`read_twice_apart`).
-pub(super) fn and_tests(stmts: &mut Vec<Stmt>, conditions: &[(js::Span, js::Span)], switches: &[Switch]) {
+/// place twice that `a` doesn't test (`read_twice_apart`). Of the bindings
+/// the test read, the compiler's temporaries and those `own_field` names,
+/// each named as the field it reads, are read again where the body reads
+/// them first; the program's own names stay `const`s (rd226, rd706).
+pub(super) fn and_tests(
+    stmts: &mut Vec<Stmt>,
+    conditions: &[(js::Span, js::Span)],
+    switches: &[Switch],
+    own_field: &HashSet<String>,
+) {
     guards_before_others(stmts, conditions);
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
     let mut first_reads = Vec::new();
@@ -453,15 +461,6 @@ pub(super) fn and_tests(stmts: &mut Vec<Stmt>, conditions: &[(js::Span, js::Span
         if read_twice_apart(test, bound, second, &again) || read_past_code(bound, second, &again) {
             continue;
         }
-        // The bindings the second test reads, in their place now: not one
-        // a pattern takes apart, `const a = value[0];`, the program's name
-        // of what no test read.
-        let tested: HashSet<String> = (bound.iter())
-            .filter_map(|s| match &s.kind {
-                StmtKind::Const(name, _) if second.mentions_var(name) => Some(name.clone()),
-                _ => None,
-            })
-            .collect();
         let second = second_joined;
         let bound = bound.len();
         let Some(Stmt {
@@ -476,13 +475,17 @@ pub(super) fn and_tests(stmts: &mut Vec<Stmt>, conditions: &[(js::Span, js::Span
         let made = then.len() + body.len();
         then.extend(body);
         unread_bound(then, bound);
-        // Each binding left that the test read, read in its place again
-        // where the body reads it first (`moves::read_again`): the test's
-        // code, a binding's read past which stays apart (`read_past_code`),
-        // ran before it.
+        // Each binding left that's a temporary or named as the field it
+        // reads, which the test read (a pattern's whole payload, tested as
+        // it's bound), read in its place again where the body reads it first
+        // (`moves::read_again`): the test's code, a binding's read past
+        // which stays apart (`read_past_code`), ran before it. One the
+        // program named, `prev_state` of `current.memoized_state`, or a
+        // pattern's part, `const a = value[0];`, keeps its `const` (rd226,
+        // rd706).
         let kept = bound - (made - then.len());
         for at in (0..kept).rev() {
-            if matches!(&then[at].kind, StmtKind::Const(name, _) if tested.contains(name)) {
+            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name) || own_field.contains(name)) {
                 read_again(then, at);
             }
         }

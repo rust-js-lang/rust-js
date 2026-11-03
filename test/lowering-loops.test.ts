@@ -268,9 +268,10 @@ pub fn chained(nodes: &[Node]) -> u32 {
 `);
   expect(js).toContain("  if (a != null) {\n    if (b) {\n");
   // Its written `else`, which `written elses` keeps once `and tests` has
-  // made the chain's tests one, not a `continue;` and what follows.
+  // made the chain's tests one, not a `continue;` and what follows; its
+  // binding `c`, the program's name, keeps its `const` (rd706).
   expect(js).toContain(
-    "    if (node.seen && node.count != null && node.count > 1) {\n      n = (n + node.count) >>> 0;\n    } else {\n      n = (n + 1) >>> 0;\n    }\n",
+    "    if (node.seen && node.count != null && node.count > 1) {\n      const c = node.count;\n      n = (n + c) >>> 0;\n    } else {\n      n = (n + 1) >>> 0;\n    }\n",
   );
   expect(js).not.toContain("let iter");
   expect(js).not.toMatch(/\bbb\d+:/);

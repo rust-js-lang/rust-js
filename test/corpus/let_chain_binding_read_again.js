@@ -38,6 +38,24 @@ function clearedFirst(fiber) {
   return 0;
 }
 
+// The program's name: `const currentTask = fiber.task;`.
+function namedOtherwise(fiber) {
+  if (fiber != null && fiber.task != null) {
+    const currentTask = fiber.task;
+    return Task.run(currentTask, fiber, false);
+  }
+  return 0;
+}
+
+// A `Cell`'s `set` through a binding named otherwise: `const prevTask =
+// fiber.task; prevTask.runs = 0;`.
+function reset(fiber) {
+  if (fiber != null && fiber.task != null) {
+    const prevTask = fiber.task;
+    prevTask.runs = 0;
+  }
+}
+
 function main() {
   const task = { runs: 0 };
   const fiber = { task };
@@ -45,5 +63,10 @@ function main() {
   console.log(`${twice(fiber)} ${fiber.task == null}`);
   fiber.task = task;
   console.log(`${clearedFirst(fiber)} ${fiber.task == null} ${once(fiber)}`);
+  console.log(`${namedOtherwise(fiber)} ${namedOtherwise()}`);
+  reset();
+  console.log(`${task.runs}`);
+  reset(fiber);
+  console.log(`${task.runs} ${once(fiber)}`);
 }
 //# sourceMappingURL=case.js.map

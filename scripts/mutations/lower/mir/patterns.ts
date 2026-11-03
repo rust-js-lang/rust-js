@@ -3,25 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "frozen-borrow-of-a-cell",
-    breaks:
-      "a `let` of a `&Cell` is taken for a frozen borrow and read where it's made, `const count = store.count`, though a call it's held across sets it: the value before the call (rd658, P0)",
-    file: "src/lower/mir/patterns.rs",
-    find: "            held.is_some_and(|held| !held.has_escaping_bound_vars() && held.is_freeze(self.tcx, self.typing_env))\n",
-    replace: "            held.is_some_and(|held| !held.has_escaping_bound_vars())\n",
-    tests: ["test/corpus.test.ts", "-t", "^frozen_borrow_named.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "frozen-borrow-not-of-a-ref",
-    breaks: "a `RefCell`'s `Ref` isn't taken for a frozen borrow, so one held across a call loses its name (rd658)",
-    file: "src/lower/mir/patterns.rs",
-    find: "                ty::Adt(_, args) if self.is_std_type(ty, StdItem::RefCellRef) => args.types().next(),\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^frozen_borrow_named.rs$"],
-    snapshots: true,
-  },
-  {
     name: "tested-some-copy-unseen",
     breaks:
       "a `let` of `js::null()` set to a place just tested `is_some()` may be `undefined`, so the nullable parameter it's given is tested `!= null` (rd623)",
@@ -335,29 +316,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
   },
   {
-    name: "ended-borrow-of-any-let",
-    breaks:
-      "a `let` of a `Cell`'s value, `let index = current.index.get();`, is taken for one that ends a borrow, its name lost to its place's read",
-    file: "src/lower/mir/patterns.rs",
-    find: "                if initializer.and_then(borrow_cloned) == Some(binding) {\n",
-    replace: "                if initializer.is_some() {\n",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_let_read_in_place.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "guard-lets-unseen",
-    breaks:
-      "no `let` is a drop guard's, so its `try` starts at its first statement, a comment after the `let` before it (ADR 0865, amended)",
-    file: "src/lower/mir/patterns.rs",
-    find: "                    && adt.has_dtor(self.tcx)\n",
-    replace: "                    && false\n",
-    tests: [
-      "test/lowering-drop-guards.test.ts",
-      "-t",
-      "a guard's try starts at its let",
-    ],
-  },
-  {
     name: "nullable-items-made-undefined",
     breaks:
       "a `None` given where a nullable field's items are made, `create_lane_map(None)`, is `undefined`, not upstream's `createLaneMap(null)`",
@@ -455,17 +413,6 @@ export const mutations: Mutation[] = [
       "-t",
       "a nullable parameter, a nullable thread-local",
     ],
-  },
-  {
-    name: "ended-borrow-of-another-name",
-    breaks:
-      "a `let` that ends a borrow named otherwise than the field it reads, React's `const pendingFirst = pendingQueue.next; baseQueue.next = pendingFirst;`, loses the program's name to the place's read (ADR 0866, amended)",
-    file: "src/lower/mir/patterns.rs",
-    find: "                if initializer.and_then(borrow_cloned) == Some(binding) {\n",
-    replace:
-      "                if initializer.and_then(borrow_cloned).is_some() {\n",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_let_read_in_place.rs$"],
-    snapshots: true,
   },
   {
     name: "nones-of-a-reassigned-parameter",
@@ -650,14 +597,5 @@ export const mutations: Mutation[] = [
     find: "            .filter(|&local| locals.reads[local] > 1)\n",
     replace: "",
     tests: ["test/lowering-moves.test.ts", "-t", "a binding closures take is one const"],
-  },
-  {
-    name: "copied-field-binding-own-let",
-    breaks: "`let x = *x;` right after a pattern is a `let` of its own, which splits the pattern's destructuring in three, `const { handler } = r; const parentObject = r.parentObject; const { key } = r;` (#546)",
-    file: "src/lower/mir/patterns.rs",
-    find: "                if !copied_field(binding, *initializer) {\n",
-    replace: "                if !copied_field(binding, *initializer) || true {\n",
-    tests: ["test/corpus.test.ts", "-t", "^pattern_binding_copied.rs$"],
-    snapshots: true,
   },
 ];

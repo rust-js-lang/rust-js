@@ -7,7 +7,8 @@ binding of a thread-local's value only its test reads; and a `let` that
 ends a borrow that the statement after it stores; and a `let` the program
 wrote read first by the next statement's `||` or `??` (rd664, the user's
 decision); and one read only as the receiver and `this` of the next
-keyed method call (rd226b, the user's decision). Extends [0842](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)'s
+keyed method call (rd226b, the user's decision); and a let chain's
+binding read again only where it's named as its field (rd706). Extends [0842](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)'s
 and [0780](0780-an-or-patterns-tests-are-as-written-of-a-field-read-in-place.md)'s
 places read in a test to a `let` the program names, of a `RefCell`'s value
 too, which [0863](0863-a-refcell-of-an-object-is-the-object.md) made the
@@ -558,3 +559,72 @@ arm gives what the fallback rule gives, and its mutation,
 now stores a field that isn't nullable too, `copy_sibling`'s
 `workInProgress.sibling = current.sibling;`, which only `ended_borrows`
 reads in place, and which holds `ended-borrow-kept`.
+
+## Amendment: a let chain's binding read again only where it's named as its field (rd706)
+
+React's ReactFiberCompleteWork writes, in completeDehydratedActivityBoundary
+and completeDehydratedSuspenseBoundary,
+
+```js
+if (current !== null && current.memoizedState !== null) {
+  const prevState = current.memoizedState;
+  prevState.hydrationErrors = hydrationErrors;
+}
+```
+
+and its port `if let Some(current) = current && let Some(prev_state) =
+unsafe { js::cast::<Option<&ActivityState>>(current.memoized_state.get())
+} { prev_state.hydration_errors.replace(hydration_errors); }`. Since
+1a167522f made an unread `replace` the write alone, `prevState` is read
+once, so the let chain's binding read again (the amendment above, of
+runWithFiberInDEV) took it: `current.memoizedState.hydrationErrors =
+hydrationErrors;`, the program's name gone; a `Cell`'s `set`,
+`prev_state.retry_lane.set(1)`, already printed `current.memoizedState.retryLane
+= 1;`. That breaks rd226's rule, which the read again was never an exception
+to: the bindings it was decided of, runWithFiberInDEV's `debug_task` of
+`fiber.debug_task`, are named as their field, as getViewTransitionName's
+`auto_name` is.
+
+**A let chain's binding the test read is read again in its place only where
+it says nothing the field doesn't: named as the field its scrutinee reads,
+by their Rust names (`LetNames::own_field`, `mir/patterns/let_names.rs`),
+`debug_task` of `fiber.debug_task.get()`, a `#[rust_js::name =
+"_debugTask"]` field's too, or a temporary the compiler made, `_5` of
+`let Some(Lanes { retry }) = holder.lanes.get()`.** One named otherwise is
+the program's name, a `const` though it's read once: `const prevState =
+current.memoizedState; prevState.hydrationErrors = ..`, as upstream writes
+it. The Rust names are THIR's: the binding of the scrutinee's whole payload
+(through `Some(..)`, a struct's or a reference's pattern of one part), and
+the field the scrutinee reads through borrows, derefs and a call's first
+argument, a `get()`'s receiver or a cast's value. This is rd226 restored in
+`and tests`, no new choice; rd664's `fallback_reads` and rd226b's
+`receiver_reads`, its two exceptions, are `moves.rs`'s and stay as they are.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The JS is the same
+program either way: the test reads the place, then the body reads it once,
+through the `const` or in place, nothing run between; the field is a
+struct's the program built, which no getter answers (ADR 1022). Held in a
+`const`, it's read once, where Rust reads it.
+
+What changes: the corpus's `let_chain_else_inside_if.rs`, `const item =
+a[0];` of `let Some(item) = items.first()`, and `test/lowering-loops.test.ts`'s
+`const c = node.count;` of `let Some(c) = node.count`, each a name the
+Rust gives. A binding by reference of a field that isn't a cell, `if let
+Some(prev_state) = &current.state`, is MIR's handle on the field's place,
+which lowering reads where it's used before tidy sees it (ADRs 0672 and
+0863), not this pass's: it stays so, apart from this amendment.
+
+Held by `test/lowering-moves.test.ts`'s "a let chain's binding named
+otherwise than its field keeps its const", React's two sites and a
+temporary still read in place, run in JS; the corpus's
+`let_chain_binding_read_again.rs`, `named_otherwise` and `reset`, against
+native Rust; and the mutations `chain-binding-of-another-name-read-again`,
+`chain-temporary-kept` (`tidy/logicals.ts`), `own-field-binding-of-any-name`
+and `own-field-binding-not-through-calls` (`mir/patterns/let_names.ts`).
+The test's read of a binding asked apart, which kept `const a = value[0];
+const b = value[1];` of a pattern's parts, is gone with its mutation
+`chain-binding-untested-read-again`: a part is no payload, so it's no
+`own_field`, and a payload binding or a temporary is read by the test
+right after it, which the mutation, surviving, showed. `LetNames`' THIR
+reading moved from `mir/patterns.rs` to
+`mir/patterns/let_names.rs`, with its mutations, for the file cap.

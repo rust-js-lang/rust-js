@@ -3350,14 +3350,16 @@ export function isAdult(p) {
   before the member and the arguments. Read again, `mut`, or past the next
   statement, it stays
   ([ADR 0866](../../decisions/0866-a-let-only-its-if-let-reads-is-read-there.md),
-  amended, rd226b, the user's decision). A chain's binding of a field its test read, `if let Some(fiber) =
-  &fiber && let Some(task) = fiber.debug_task.get() { return
-  task.run(..); }`, where the body reads it first, before anything runs:
-  `if (fiber != null && fiber._debugTask) { return
-  fiber._debugTask.run(..); }`. Where code runs before it's read, or it's
-  read again, it's `const task = fiber._debugTask;`, the value the test
-  read
-  ([ADR 0866](../../decisions/0866-a-let-only-its-if-let-reads-is-read-there.md), amended).
+  amended, rd226b, the user's decision). A chain's binding of a field its test read, named as
+  the field, `if let Some(fiber) = &fiber && let Some(debug_task) =
+  fiber.debug_task.get() { return debug_task.run(..); }`, where the body
+  reads it first, before anything runs: `if (fiber != null &&
+  fiber._debugTask) { return fiber._debugTask.run(..); }`. Where code runs
+  before it's read, or it's read again, it's `const debugTask =
+  fiber._debugTask;`, the value the test read; named otherwise, `let
+  Some(prev_state) = current.memoized_state.get()`, it's the program's
+  name, `const prevState = current.memoizedState;`, read once or not
+  ([ADR 0866](../../decisions/0866-a-let-only-its-if-let-reads-is-read-there.md), amended, rd706).
   And an `if let`'s binding of a thread-local that's its module's
   variable, `if let Some(last_fiber) = LAST_FIBER.with_borrow(Clone::clone)
   && last_fiber.index == fiber.index`, only its test reads: the variable,

@@ -524,6 +524,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/nulled.rs": ["at", "body", "locals", "writer"],
   "src/lower/mir/operands.rs": ["body", "locals", "pending", "taken"],
   "src/lower/mir/patterns.rs": ["in_place", "locals"],
+  "src/lower/mir/patterns/let_names.rs": ["locals"],
   "src/lower/mir/places.rs": ["binding_var", "body", "branches", "cuts", "defaults", "deferred", "in_place", "locals", "named"],
   "src/lower/mir/queries.rs": ["body", "locals", "own_names"],
   "src/lower/mir/rvalues.rs": ["at", "body", "branches", "cuts", "locals", "pending", "statement", "writer"],
