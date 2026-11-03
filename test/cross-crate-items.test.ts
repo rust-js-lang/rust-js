@@ -1225,8 +1225,9 @@ pub fn keyed(given: &Unknown) -> bool {
   expect(JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library.built).toHaveLength(1);
   expect(app).toContain("export function reparent(fiber, parent) {\n  fiber.parent = parent;\n}");
   expect(app).toContain("  const key = props.key;\n");
-  // The fiber's field, plain data, read where it's read.
-  expect(app).toContain("  if (fiber.key != null) {\n");
+  // The fiber's field, plain data, read where it's read: its truth, which
+  // `None`'s `undefined` has none of.
+  expect(app).toContain("  return !!fiber.key;\n");
   const { reparent, keyed, fiberKeyed } = await import(join(dir, "app", "lib.js"));
   const fiber = { parent: null, key: "k" };
   reparent(fiber, fiber);
