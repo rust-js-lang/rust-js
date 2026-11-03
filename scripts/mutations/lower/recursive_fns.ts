@@ -43,9 +43,9 @@ export const mutations: Mutation[] = [
   {
     name: "recursive-fn-imports-unmerged",
     breaks:
-      "a module's recursive `==` that calls another module's hand-written `PartialEq`, `setPartialEq_eq`, is written where nothing imports it (#517)",
+      "a module's recursive `==` that calls another module's hand-written `PartialEq`, `setPartialEq_eq`, is written where nothing imports it: what it uses isn't its callers' too (#517)",
     file: "src/lower/recursive_fns.rs",
-    find: "        merge(&mut self.dependencies.borrow_mut(), &own, self.item);\n",
+    find: "    into.references.extend(uses.references.iter().copied());\n",
     replace: "",
     tests: perModule,
   },
