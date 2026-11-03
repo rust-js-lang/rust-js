@@ -135,8 +135,23 @@ pub fn run(node: &Node, profiling: bool) -> (u32, u32, u32, usize, usize, u32) {
     )
 }
 
-// After `run`, which is lowered first, then again once this is found to
-// return `null` or a value.
+#[cfg_attr(rust_js, rust_js::nullable(target))]
+fn dispatch_direct(target: Option<&Node>) -> u32 {
+    match target {
+        Some(target) => target.id,
+        None => 0,
+    }
+}
+
+// Its call given straight to the parameter, no `let` that's `null` for
+// `None` where it's written: what its first lowering saw of the call, a
+// value that may be `undefined`, is forgotten once `event_target` is found.
+pub fn direct(node: &Node) -> u32 {
+    dispatch_direct(event_target(node))
+}
+
+// After `run` and `direct`, which are lowered first, then again once this
+// is found to return `null` or a value.
 fn event_target(node: &Node) -> Option<&Node> {
     if node.text { parent_of(node) } else { Some(node) }
 }
@@ -167,5 +182,6 @@ fn main() {
     println!("{:?}", run(&lone, true));
     let element = text.parent.as_deref().unwrap();
     println!("{:?}", run(element, true));
+    println!("{} {} {}", direct(&text), direct(&lone), direct(element));
     println!("{} {} {}", reassigned(None, false), reassigned(None, true), reassigned(Some("given"), false));
 }

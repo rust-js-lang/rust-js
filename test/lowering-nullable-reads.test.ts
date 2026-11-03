@@ -45,6 +45,11 @@ pub fn current() -> Option<&'static Unknown> {
     CURRENT.get()
 }
 
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn current_of(fiber: Option<u32>) -> Option<&'static Unknown> {
+    fiber.and_then(|_| CURRENT.get())
+}
+
 pub fn set_current(value: Option<&'static Unknown>) {
     CURRENT.set(value);
 }
@@ -57,6 +62,9 @@ pub fn set_current(value: Option<&'static Unknown>) {
   // amended).
   expect(js).toContain("  const suspenseState = memoizedState;\n  if (suspenseState != null) {\n    return suspenseState.dehydrated;\n  }\n  return null;\n");
   expect(js).toContain("export function current() {\n  return CURRENT;\n}");
+  // A closure's read of it is `null` or a value too, so its `and_then`'s
+  // `None` is `null`, as the read's is.
+  expect(js).toContain("export function currentOf(fiber) {\n  return fiber != null ? CURRENT : null;\n}");
   expect(js).toContain("  CURRENT = value ?? null;\n");
   const lib = await import(join(dir, "lib.js"));
   const one = {};
@@ -65,6 +73,7 @@ pub fn set_current(value: Option<&'static Unknown>) {
   expect(lib.current()).toBe(null);
   lib.setCurrent(one);
   expect(lib.current()).toBe(one);
+  expect([lib.currentOf(1), lib.currentOf(undefined)]).toEqual([one, null]);
 });
 
 // ADR 0957: React's popHydrationStateOnInterruptedWork, `if (fiber.tag ===
@@ -708,8 +717,9 @@ test("a nullable parameter given on what JS may leave out is tested against unde
 // ScrollEndEventPlugin does; so does a temporary each of whose writes is
 // so, and a shared `as_deref()` of such. One that may return a `None` it
 // makes or its own nullable parameter, given what JS may leave
-// `undefined`, keeps `!= null`. `event_target` comes after `run`, so `run`
-// is lowered again once it's found.
+// `undefined`, keeps `!= null`. `event_target` comes after `run` and
+// `direct`, so each is lowered again once it's found, what it saw of its
+// calls before forgotten.
 test("a function whose every return is null or a value returns null or a value", async () => {
   const dir = fixture("nulled-returns");
   writeFileSync(join(dir, "lib.rs"), readFileSync(join(import.meta.dir, "corpus/nulled_returns_given_on.rs"), "utf8"));
@@ -720,6 +730,9 @@ test("a function whose every return is null or a value returns null or a value",
   expect(js).toContain("  const target = eventTarget(node);\n");
   expect(js).toContain("function dispatch(target) {\n  return target !== null ? target.id : 0;\n}");
   expect(js).toContain("function dispatchLoose(target) {\n  return target != null ? target.id : 0;\n}");
+  // Given the call straight, which `direct`'s first lowering saw before
+  // `event_target` was found, and forgot.
+  expect(js).toContain("function dispatchDirect(target) {\n  return target !== null ? target.id : 0;\n}");
   expect(js).toContain("function dispatchGivenBack(target) {\n  return target != null ? target.id : 0;\n}");
   expect(js).toContain("function commit(reason) {\n  return reason !== null ?");
   expect(js).toContain("function commitLoose(reason) {\n  return reason != null ?");
@@ -730,6 +743,7 @@ test("a function whose every return is null or a value returns null or a value",
   expect(lib.run({ id: 5, text: true }, true)).toEqual([0, 0, 0, 9, 9, 0]);
   expect(lib.run({ id: 1, text: true, parent: { id: 2, text: false } }, false)).toEqual([2, 0, 0, 0, 0, 2]);
   expect([lib.reassigned(undefined, false), lib.reassigned(undefined, true)]).toEqual([0, 3]);
+  expect([lib.direct({ id: 5, text: true }), lib.direct({ id: 4, text: false })]).toEqual([0, 4]);
 });
 
 // rd632: a `function::bind` of the crate's function with each of its

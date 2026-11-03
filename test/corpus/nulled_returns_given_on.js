@@ -101,8 +101,19 @@ export function run(node, profiling) {
   ];
 }
 
-// After `run`, which is lowered first, then again once this is found to
-// return `null` or a value.
+function dispatchDirect(target) {
+  return target !== null ? target.id : 0;
+}
+
+// Its call given straight to the parameter, no `let` that's `null` for
+// `None` where it's written: what its first lowering saw of the call, a
+// value that may be `undefined`, is forgotten once `event_target` is found.
+export function direct(node) {
+  return dispatchDirect(eventTarget(node));
+}
+
+// After `run` and `direct`, which are lowered first, then again once this
+// is found to return `null` or a value.
 function eventTarget(node) {
   return node.text ? parentOf(node) : node;
 }
@@ -141,6 +152,7 @@ function main() {
   console.log(
     `(${value$3[0]}, ${value$3[1]}, ${value$3[2]}, ${value$3[3]}, ${value$3[4]}, ${value$3[5]})`,
   );
+  console.log(`${direct(text)} ${direct(lone)} ${direct(element)}`);
   console.log(
     `${reassigned(undefined, false)} ${reassigned(undefined, true)} ${reassigned("given", false)}`,
   );
