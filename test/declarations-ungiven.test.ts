@@ -8,7 +8,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { compiler, fixture, root, run } from "./support";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 const program = `use std::any::{Any, TypeId};
 use std::collections::{BTreeSet, HashMap, HashSet};
@@ -118,7 +118,8 @@ test("a function whose JS takes a fact of a type or a dictionary is a note, not 
   expect(declarations).not.toContain("unstable_named");
   // A method whose JS takes one is left out of its object; a `T: Clone`,
   // whose clone of a value JS leaves out, is declared.
-  expect(declarations).not.toContain("sizeOf");
+  expect(declarations).not.toContain("sizeOf<");
+  expect(declarations).toContain(note("Counter.sizeOf", "`T`'s size_of"));
   expect(declarations).toContain("export function first<T>(items: T[]): T | null | undefined;");
   expect(declarations).toContain("export function total(): number;");
   // TypeScript that imports one is refused; one declared is called.
@@ -142,4 +143,34 @@ export const wrong = size();
   expect(errors.length).toBe(1);
   expect(errors[0]).toContain("use.ts(2,");
   expect(errors[0]).toContain("has no exported member 'size'");
+});
+
+// A module namespace's function (ADR 1037), an object of methods' (ADR
+// 0943) and a class's method and static (ADR 0761) whose JS takes one are
+// left out too, each a note after what it's of (#559).
+test("a namespace's, an object's and a class's member whose JS takes a fact is a note", () => {
+  buildReact();
+  const dir = fixture("declarations-ungiven-members");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(import.meta.dir, "fixtures/ungiven_members.rs"), "utf8"));
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("Widget.prototype.isU32 = function (TId) {");
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  const note = (name: string, what: string) =>
+    `// \`${name}\` isn't declared: its JS takes ${what} after its arguments, which a JS caller can't give (ADR 1077).`;
+  expect(declarations).toContain("export function count(n: number): number;");
+  expect(declarations).not.toContain("export function sizeOf");
+  expect(declarations).toContain(note("sizeOf", "`T`'s size_of"));
+  expect(declarations).not.toContain("named<T>");
+  expect(declarations).toContain(note("Scope.named", "`T`'s type_name"));
+  expect(declarations).not.toContain("isU32<");
+  expect(declarations).not.toContain("static shown");
+  expect(declarations).toContain("    area(): number;");
+  // Each class's note after it, before what follows.
+  const isU32 = declarations.indexOf(note("Widget.isU32", "`T`'s the `TypeId`"));
+  const shown = declarations.indexOf(note("Widget.shown", "`T`'s `Display` dictionary"));
+  expect(isU32).toBeGreaterThan(declarations.indexOf("export declare class Widget"));
+  expect(shown).toBeGreaterThan(isU32);
+  expect(declarations.indexOf("export function total")).toBeGreaterThan(shown);
 });

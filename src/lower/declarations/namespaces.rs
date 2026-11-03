@@ -26,6 +26,9 @@ impl Declarations<'_, '_> {
                 if !tcx.visibility(method).is_public() || forwarded.contains_key(&method) {
                     continue;
                 }
+                if out.leave_out(method, &out.js_name(method)) {
+                    continue;
+                }
                 out.erased = out.erased(method);
                 let mut function = out.function(method);
                 if let Some(params) = function["params"].as_array_mut()
@@ -117,8 +120,10 @@ impl Declarations<'_, '_> {
         // (ADR 1077).
         let methods: Vec<(DefId, DefId)> = (items.iter())
             .filter(|&&(_, item)| tcx.def_kind(item) == DefKind::AssocFn && tcx.visibility(item).is_public())
-            .filter(|&&(_, item)| self.ungiven(item).is_none())
             .copied()
+            .collect();
+        let methods: Vec<(DefId, DefId)> = (methods.into_iter())
+            .filter(|&(_, item)| !self.leave_out(item, &format!("{name}.{}", self.js_name(item))))
             .collect();
         for (imp, method) in methods {
             let outer = std::mem::take(&mut self.erased);

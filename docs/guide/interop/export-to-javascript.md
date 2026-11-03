@@ -2076,8 +2076,10 @@ note stands where its declaration would be:
 // `size` isn't declared: its JS takes `T`'s size_of after its arguments, which a JS caller can't give (ADR 1077).
 ```
 
-TypeScript that imports it is refused, `Module has no exported member
-'size'`, and a Rust caller, another module's or a library's consumer,
+A method of a type's object, of an object of methods, of a namespace or
+of a class is left out of it alike, its note after it, `// \`Widget.isU32\`
+isn't declared: ..`. TypeScript that imports it is refused, `Module has no
+exported member 'size'`, and a Rust caller, another module's or a library's consumer,
 calls it as before. Untyped JS can still import it and call it without
 what it takes, and gets a wrong answer: `size()` is `undefined`. For a
 function JS calls, write one it can call as declared: one of a concrete

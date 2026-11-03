@@ -89,6 +89,7 @@ pub(super) fn module<'tcx>(
         named: Vec::new(),
         function_names: Vec::new(),
         filled: None,
+        notes: Vec::new(),
         type_facts,
         bounds_given: given,
     };
@@ -106,6 +107,8 @@ pub(super) fn module<'tcx>(
     let mut objects = HashSet::new();
     let mut left_out = HashSet::new();
     for item in tcx.hir_module_free_items(module) {
+        // The notes of what the item before left out, after it (#559).
+        items.append(&mut out.notes);
         let def_id = item.owner_id.to_def_id();
         // A class whose struct is another module's, declared where its
         // constructor function is (ADR 0761, amended).
@@ -142,9 +145,9 @@ pub(super) fn module<'tcx>(
         // a note where it would be, not declared (#549, ADR 1077).
         if tcx.def_kind(def_id) == DefKind::Fn
             && !is_binding(tcx, def_id)
-            && let Some(ungiven) = out.ungiven(def_id)
+            && out.leave_out(def_id, &out.js_name(def_id))
         {
-            items.push(out.ungiven_note(def_id, &ungiven));
+            items.append(&mut out.notes);
             left_out.insert(def_id);
             continue;
         }
@@ -235,6 +238,7 @@ pub(super) fn module<'tcx>(
             items.push(json!({ "kind": "export-default", "name": fn_name(tcx, def_id) }));
         }
     }
+    items.append(&mut out.notes);
     // What it names that it doesn't export, each declared here, not
     // exported, before what names it, as TypeScript has it: another crate's
     // untagged enums, `js::Json`, the union of their payloads, named, so it
@@ -450,6 +454,9 @@ struct Declarations<'a, 'tcx> {
     /// JS takes after its parameters (`ungiven`).
     type_facts: &'a TypeFacts,
     bounds_given: super::traits::Given<'a>,
+    /// The notes of the members the declaration just made left out
+    /// (`leave_out`), which the module's items take after it.
+    notes: Vec<Value>,
 }
 
 impl<'tcx> Declarations<'_, 'tcx> {
@@ -837,6 +844,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
         // each that's `pub` (ADR 0943).
         for method in super::classes::own_methods(self.tcx, def_id) {
             if !self.tcx.visibility(method).is_public() {
+                continue;
+            }
+            let name = format!("{}.{}", self.tcx.item_name(def_id), self.js_name(method));
+            if self.leave_out(method, &name) {
                 continue;
             }
             let function = self.function(method);

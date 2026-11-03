@@ -1235,8 +1235,8 @@ export const mutations: Mutation[] = [
     name: "ungiven-function-declared",
     breaks: "a free function whose JS takes what a JS caller can't give is declared, not a note (#549)",
     file: "src/lower/declarations.rs",
-    find: "            && let Some(ungiven) = out.ungiven(def_id)\n        {\n            items.push(out.ungiven_note(def_id, &ungiven));\n            left_out.insert(def_id);\n            continue;\n",
-    replace: "            && let Some(ungiven) = out.ungiven(def_id).filter(|_| false)\n        {\n            items.push(out.ungiven_note(def_id, &ungiven));\n            left_out.insert(def_id);\n            continue;\n",
+    find: "            && out.leave_out(def_id, &out.js_name(def_id))\n",
+    replace: "            && false\n",
     tests: ["test/declarations-ungiven.test.ts"],
   },
   {
@@ -1245,6 +1245,22 @@ export const mutations: Mutation[] = [
     file: "src/lower/declarations.rs",
     find: "        .filter(|(item, (_, export))| !by_own_name(fns, *item, export) && !left_out.contains(item))\n",
     replace: "        .filter(|(item, (_, export))| !by_own_name(fns, *item, export))\n",
+    tests: ["test/declarations-ungiven.test.ts"],
+  },
+  {
+    name: "ungiven-object-method-declared",
+    breaks: "an object of methods' method whose JS takes a fact, `scope.named(TName)`, is declared `named<T>(): string` (#559)",
+    file: "src/lower/declarations.rs",
+    find: "            if self.leave_out(method, &name) {\n",
+    replace: "            if false && self.leave_out(method, &name) {\n",
+    tests: ["test/declarations-ungiven.test.ts"],
+  },
+  {
+    name: "ungiven-notes-at-the-end",
+    breaks: "a member's note is at the module's end, not after what it's of (#559)",
+    file: "src/lower/declarations.rs",
+    find: "        // The notes of what the item before left out, after it (#559).\n        items.append(&mut out.notes);\n",
+    replace: "",
     tests: ["test/declarations-ungiven.test.ts"],
   },
 ];

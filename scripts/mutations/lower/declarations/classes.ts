@@ -54,4 +54,12 @@ export const mutations: Mutation[] = [
       "an ES class React renders"
     ]
   },
+  {
+    name: "ungiven-class-member-declared",
+    breaks: "a class's method or static whose JS takes a fact or a dictionary, `isU32(TId)`, `shown(value, TDisplay)`, is declared (#559)",
+    file: "src/lower/declarations/classes.rs",
+    find: "                    && self.leave_out(item, &format!(\"{class_name}.{}\", self.js_name(item)))\n",
+    replace: "                    && false\n",
+    tests: ["test/declarations-ungiven.test.ts"],
+  },
 ];

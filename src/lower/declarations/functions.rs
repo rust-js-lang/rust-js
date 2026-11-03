@@ -260,14 +260,19 @@ impl<'tcx> Declarations<'_, 'tcx> {
         ))
     }
 
-    /// The note where a function `ungiven` leaves out would be declared: what
-    /// it takes, and that a JS caller can't give it.
-    pub(super) fn ungiven_note(&self, function: DefId, ungiven: &str) -> Value {
-        let name = self.js_name(function);
-        json!({
+    /// Whether `function`, which its declaration names `name`, `size` or a
+    /// member's `Counter.sizeOf`, is left out (`ungiven`): then a note is
+    /// where it would be, what it takes and that a JS caller can't give it,
+    /// after the declaration it's of (`notes`, #549, #559).
+    pub(super) fn leave_out(&mut self, function: DefId, name: &str) -> bool {
+        let Some(ungiven) = self.ungiven(function) else {
+            return false;
+        };
+        self.notes.push(json!({
             "kind": "note",
             "text": format!("// `{name}` isn't declared: its JS takes {ungiven} after its arguments, which a JS caller can't give (ADR 1077)."),
-        })
+        }));
+        true
     }
 
     pub(super) fn function(&mut self, def_id: DefId) -> Value {

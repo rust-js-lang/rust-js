@@ -1,6 +1,8 @@
 # 1077. A function JS can't call as declared isn't declared
 
-Status: Accepted (#549, the user's decision, 2026-11-03, option B). Amends
+Status: Accepted (#549, the user's decision, 2026-11-03, option B);
+amended (#559): a namespace's function, an object's and a class's member
+too. Amends
 [0196](0196-typescript-declarations.md), whose `.d.ts` declared every
 `pub` function, and the guide's "A type parameter with no bound takes
 none" ([0145](0145-type-facts.md)'s facts take one).
@@ -105,9 +107,6 @@ the same table.
   or no `pub` for one only Rust calls.
 - A function of a bound comes back into the `.d.ts` once its trait's
   dictionaries are declared (#550).
-- A module namespace's function (ADR 1037), an object of methods' (ADR
-  0943) and a class's method are declared as before: they aren't covered
-  yet.
 - A `#[track_caller]` function's `location` and a const parameter's `N`
   are evidence too. They're out of this decision: a JS caller that leaves
   `location` out gets a panic of no location, and `N` is a number a caller
@@ -120,3 +119,21 @@ still declared, and `tsc` refusing the import, and by the corpus's
 `pub_type_facts`, which calls each from Rust against native Rust.
 Mutations in `lower/declarations/functions.ts`, `lower/declarations.ts`
 and `lower/declarations/namespaces.ts`.
+
+## Amended (#559): every member
+
+1639d621b left three places declaring such a function by its Rust
+parameters alone, the same wrong answer: a module namespace's function
+(ADR 1037), `sizeOf(TSize)` declared `sizeOf<T>(): number`; an object of
+methods' method (ADR 0943); and a class's method or static (ADR 0761),
+`Widget.prototype.isU32(TId)`, `Widget.shown(value, TDisplay)`. Each is
+left out now, as a type's object method is, and every note is
+`Declarations::leave_out`'s: it's kept in `notes` and printed after the
+declaration it's of, the module's next item first taking them, `//
+\`Widget.isU32\` isn't declared: ..`. A class's trait method is never
+one: a class implements no trait whose methods have type parameters (ADR
+0761 refuses it). Held by `test/declarations-ungiven.test.ts`'s
+"a namespace's, an object's and a class's member whose JS takes a fact is a
+note" (its program `test/fixtures/ungiven_members.rs`), and the mutations
+`ungiven-namespace-function-declared`, `ungiven-object-method-declared`,
+`ungiven-class-member-declared` and `ungiven-notes-at-the-end`.

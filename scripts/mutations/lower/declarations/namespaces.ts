@@ -92,8 +92,16 @@ export const mutations: Mutation[] = [
     name: "ungiven-type-method-declared",
     breaks: "a type's method whose JS takes a fact, `Counter.sizeOf(counter, TSize)`, is declared in its object, `sizeOf<T>(counter: Counter): number` (#549)",
     file: "src/lower/declarations/namespaces.rs",
-    find: "            .filter(|&&(_, item)| self.ungiven(item).is_none())\n",
+    find: "            .filter(|&(_, item)| !self.leave_out(item, &format!(\"{name}.{}\", self.js_name(item))))\n",
     replace: "",
+    tests: ["test/declarations-ungiven.test.ts"],
+  },
+  {
+    name: "ungiven-namespace-function-declared",
+    breaks: "a module namespace's function whose JS takes a fact, `sizeOf(TSize)`, is declared `sizeOf<T>(): number` (#559)",
+    file: "src/lower/declarations/namespaces.rs",
+    find: "                if out.leave_out(method, &out.js_name(method)) {\n",
+    replace: "                if false && out.leave_out(method, &out.js_name(method)) {\n",
     tests: ["test/declarations-ungiven.test.ts"],
   },
 ];

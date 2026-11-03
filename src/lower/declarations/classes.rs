@@ -51,9 +51,17 @@ impl Declarations<'_, '_> {
             }
         }
         members.splice(0..0, self.state_keys(def_id));
+        let class_name = super::type_name(self.tcx, def_id);
         for &imp in self.tcx.inherent_impls(def_id) {
             for &item in self.tcx.associated_item_def_ids(imp) {
                 if !self.tcx.visibility(item).is_public() {
+                    continue;
+                }
+                // One whose JS takes what a JS caller can't give, a note
+                // after the class (#559, ADR 1077).
+                if self.tcx.def_kind(item) == rustc_hir::def::DefKind::AssocFn
+                    && self.leave_out(item, &format!("{class_name}.{}", self.js_name(item)))
+                {
                     continue;
                 }
                 let declared = match member(self.tcx, item) {
