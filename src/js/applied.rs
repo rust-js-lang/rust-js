@@ -18,10 +18,24 @@ use std::collections::HashSet;
 /// `with(|d| ..)`, that returns only at its end: its body before the
 /// statement, and `v` in the call's place (`value_of`, ADR 0840). In each
 /// closure `body` makes too, whose body a `return;` ends, as `REPORT.with(|&f|
-/// ..)` in a `catch_unwind`'s closure is (ADR 0840, amended).
+/// ..)` in a `catch_unwind`'s closure is (ADR 0840, amended); and again
+/// where a closure's calls were made its body: a call kept as a closure in
+/// it read its parameter, `A.with(|a| B.with(|b| f(a, b)))`, is
+/// in place once that closure's call is its body, `f(A, B)` (ADR 0840,
+/// amended, rd661).
 pub fn applied_blocks(body: &mut Vec<Stmt>, ends_function: bool) {
     applied_in(body, ends_function);
-    each_expr_mut(body, &mut applied_in_closure);
+    while closures_applied(body) {
+        applied_in(body, ends_function);
+    }
+}
+
+/// `applied_in` of each closure `body` makes; whether one's call was made
+/// its body.
+fn closures_applied(body: &mut [Stmt]) -> bool {
+    let mut any = false;
+    each_expr_mut(body, &mut |e| any |= applied_in_closure(e));
+    any
 }
 
 /// `applied_blocks`' of each closure `value` makes, a `const`'s value's,
@@ -30,24 +44,27 @@ pub fn applied_blocks(body: &mut Vec<Stmt>, ends_function: bool) {
 /// NESTED.with(|d| set_h(d.as_ref())) }` is `setH(nested ?? null)` (ADR
 /// 0581, amended). The value itself is no body.
 pub fn applied_closures(value: &mut Expr) {
-    value.each_mut(&mut applied_in_closure);
+    value.each_mut(&mut |e| _ = applied_in_closure(e));
 }
 
 /// `applied_in` of `e`'s body, where it's a closure or a function, whose
-/// body a `return;` ends.
-fn applied_in_closure(e: &mut Expr) {
+/// body a `return;` ends; whether a call in it was made its body.
+fn applied_in_closure(e: &mut Expr) -> bool {
     match &mut e.kind {
         ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => applied_in(inner, true),
         ExprKind::Function(function) => applied_in(&mut function.body, true),
-        _ => {}
+        _ => false,
     }
 }
 
-/// `applied_blocks`' of `body` itself, not the closures it makes.
-fn applied_in(body: &mut Vec<Stmt>, ends_function: bool) {
+/// `applied_blocks`' of `body` itself, not the closures it makes; whether
+/// a call in it was made its body.
+fn applied_in(body: &mut Vec<Stmt>, ends_function: bool) -> bool {
+    let mut any = false;
     loop {
         let whole = body.clone();
         if ends_function && tail_applied(body, &whole) {
+            any = true;
             continue;
         }
         let mut done = false;
@@ -80,7 +97,9 @@ fn applied_in(body: &mut Vec<Stmt>, ends_function: bool) {
         if !done {
             break;
         }
+        any = true;
     }
+    any
 }
 
 /// The call that ends the function's body `whole`, the last of `stmts`,

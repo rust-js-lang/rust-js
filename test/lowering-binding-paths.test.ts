@@ -297,3 +297,76 @@ js::export_default!(assign);
   expect(lib.default).toBe(lib.internals());
   expect((await import(join(dir, "assign.js"))).merged({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
 });
+
+// React's ReactSharedInternalsServer throws as it loads where `react`'s
+// server internals are absent, and its users import what it checked as
+// there: `const ReactSharedInternalsServer = ..; if (!..) throw ..; export
+// default ReactSharedInternalsServer;`. In Rust that's a thread-local of
+// the binding's `expect`, made as its module loads (ADR 1006), so a module
+// that names it reads a plain reference, `ReactSharedInternals.A`, with no
+// `$unwrap` of its own, and where the internals are absent, importing the
+// module throws its message (rd661).
+test("a binding its module checks as it loads is a thread-local of its expect, which its users read as it is", async () => {
+  const dir = fixture("held-binding-checked-at-load");
+  writeFileSync(join(dir, "lib.rs"), "pub mod flight;\npub mod server;\n");
+  writeFileSync(join(dir, "server.rs"), `use std::cell::Cell;
+
+pub struct Internals {
+    pub a: Cell<Option<u32>>,
+}
+
+unsafe extern "Rust" {
+    #[link_name = "react#*.__SERVER_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE"]
+    safe static SERVER_INTERNALS: Option<&'static Internals>;
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::name = "ReactSharedInternalsServer")]
+    pub static REACT_SHARED_INTERNALS_SERVER: &'static Internals =
+        SERVER_INTERNALS.expect("The \\"react-server\\" condition must be enabled.");
+}
+
+js::export_default!(REACT_SHARED_INTERNALS_SERVER);
+`);
+  writeFileSync(join(dir, "flight.rs"), `use crate::server::{Internals, REACT_SHARED_INTERNALS_SERVER as REACT_SHARED_INTERNALS};
+
+pub fn install(dispatcher: u32) -> Option<u32> {
+    let before = REACT_SHARED_INTERNALS.with(|internals| internals.a.get());
+    REACT_SHARED_INTERNALS.with(|internals| internals.a.set(Some(dispatcher)));
+    before
+}
+
+pub fn internals() -> &'static Internals {
+    REACT_SHARED_INTERNALS.with(|internals| *internals)
+}
+`);
+  mkdirSync(join(dir, "node_modules/react"), { recursive: true });
+  writeFileSync(join(dir, "node_modules/react/package.json"), '{ "name": "react", "type": "module", "main": "index.js" }\n');
+  writeFileSync(join(dir, "node_modules/react/index.js"), "export const __SERVER_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE = { a: null };\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
+  const server = readFileSync(join(dir, "server.js"), "utf8");
+  expect(server).toContain(`const ReactSharedInternalsServer = $unwrap(
+  React.__SERVER_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE,
+  'The "react-server" condition must be enabled.',
+);
+
+export default ReactSharedInternalsServer;
+`);
+  const flight = readFileSync(join(dir, "flight.js"), "utf8");
+  expect(flight).toContain('import ReactSharedInternals from "./server.js";\n');
+  expect(flight).toContain("  const before = ReactSharedInternals.a;\n  ReactSharedInternals.a = dispatcher;\n  return before;\n");
+  expect(flight).toContain("  return ReactSharedInternals;\n");
+  expect(flight).not.toContain("$unwrap");
+  const lib = await import(join(dir, "flight.js"));
+  const react = await import(join(dir, "node_modules/react/index.js"));
+  expect(lib.internals()).toBe(react.__SERVER_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE);
+  expect(lib.install(3)).toBeNull();
+  expect(lib.install(4)).toBe(3);
+  // Where \`react\` has no server internals, the module's load throws.
+  const absent = join(dir, "absent");
+  mkdirSync(join(absent, "node_modules/react"), { recursive: true });
+  writeFileSync(join(absent, "node_modules/react/package.json"), '{ "name": "react", "type": "module", "main": "index.js" }\n');
+  writeFileSync(join(absent, "node_modules/react/index.js"), "export const version = '19';\n");
+  writeFileSync(join(absent, "server.js"), server);
+  await expect(import(join(absent, "server.js"))).rejects.toThrow('The "react-server" condition must be enabled.');
+});

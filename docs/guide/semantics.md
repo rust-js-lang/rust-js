@@ -474,6 +474,11 @@ where it's made, whose `return` is its own, and so does one in what a
 module runs when it's loaded that ends with a `return;`, which a module
 can't
 ([0840](../decisions/0840-a-thread-locals-with-is-its-closures-body.md)).
+A `with` in another's closure, reading what the outer one lends, is each
+one's body too, `const a = ReactSharedInternals.A;` of
+`DEFAULT.with(|d| INTERNALS.with(|internals| ..))`
+([0840](../decisions/0840-a-thread-locals-with-is-its-closures-body.md),
+amended, rd661).
 
 **A thread-local is made as its module loads, whatever its initializer
 runs**, after the modules it imports, as JS's `const` and `export const`

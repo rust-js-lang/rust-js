@@ -51,6 +51,15 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-cells.test.ts", "-t", "closure's body where it's called"],
   },
   {
+    name: "applied-nested-not-again",
+    breaks: "a thread-local's `with` in another's closure that reads the outer parameter leaves the outer one `((d) => { .. })(DEFAULT)` (rd661)",
+    file: "src/js/applied.rs",
+    find: "    while closures_applied(body) {\n        applied_in(body, ends_function);\n    }\n",
+    replace: "    closures_applied(body);\n",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_with_nested.rs$"],
+    snapshots: true,
+  },
+  {
     name: "tried-const-called",
     breaks: "`catch_unwind(|| { .. })`'s body whose value an `Ok` arm reads stays a closure called in the `try`, `const value = (() => { .. })();`",
     file: "src/js/applied.rs",

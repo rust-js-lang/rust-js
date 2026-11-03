@@ -5,7 +5,9 @@ extends [0100](0100-separate-crates.md) and [0240](0240-reexports.md). Amended b
 [0773](0773-a-held-default-is-exported-once.md): a binding the default names is
 exported as the default alone. Amended (rd651): a `use .. as` of a
 binding through a module that holds it names its import. Amended (rd659): a module reads what it
-holds by its `const`.
+holds by its `const`. Amended (rd661): a value its module checks as it
+loads, which its users take as there, is a thread-local of the binding's
+`expect`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): the program can't
 observe it: the module's `const` is the JS value the binding reads, read
@@ -267,3 +269,77 @@ const", one of the new mutation's.
 Held by `test/lowering-binding-paths.test.ts`'s "a module that holds a
 binding reads it by its const", run in Node against a stand-in `react`,
 and the mutation `held-at-home-in-place` (`bindings/held.ts`).
+
+## Amendment: a value its module checks as it loads (rd661)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): B, ADR 1006's accepted
+difference, where Rust would panic at the thread-local's first use and
+JS throws as its module loads, which is upstream's; none in what the
+program reads.
+
+React's ReactSharedInternalsServer throws where `react` resolved to its
+client entry, which has no server internals, and its users import what it
+checked as there:
+
+```js
+const ReactSharedInternalsServer = React.__SERVER_INTERNALS_..;
+if (!ReactSharedInternalsServer) { throw new Error(..); }
+export default ReactSharedInternalsServer;
+```
+
+The port declared the binding `Option<&'static SharedStateServer>`, its
+default, and checked it in `js::on_load!` (rd659). That's the module's
+JS, but a Rust user of the export gets the `Option`, which nothing in its
+type says the load checked, and which it would `.unwrap()` at each read,
+`$unwrap(ReactSharedInternalsServer).A`. ReactFlightServer and
+react-markup bound the module's JS by its path instead, typed `&'static
+SharedStateServer`, a stand-in of the crate's own export, which AGENTS.md
+rules out.
+
+**The natural Rust is a thread-local of the binding's `expect`**, the
+binding private:
+
+```rust
+unsafe extern "Rust" {
+    #[link_name = "react#*.__SERVER_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE"]
+    safe static SERVER_INTERNALS: Option<&'static SharedStateServer>;
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::name = "ReactSharedInternalsServer")]
+    pub static REACT_SHARED_INTERNALS_SERVER: &'static SharedStateServer =
+        SERVER_INTERNALS.expect("The \"react\" package ..");
+}
+
+js::export_default!(REACT_SHARED_INTERNALS_SERVER);
+```
+
+A `static` can't hold it: what a binding reads is no constant, and a
+`LazyLock` needs `Sync`, which a value of `Cell`s isn't. A `pub fn` that
+`expect`s it at each call isn't what upstream's users import; an
+`Option` its users `expect` repeats the check at each read. The
+thread-local is made as its module loads (ADR 1006), so its panic is the
+module's load failing, as upstream's `throw` is, and what its users read
+is the reference: `use crate::react_shared_internals_server::
+REACT_SHARED_INTERNALS_SERVER as REACT_SHARED_INTERNALS;` is `import
+ReactSharedInternals from './ReactSharedInternalsServer.js';`, and its
+`with(|internals| internals.a.get())` is `ReactSharedInternals.A` (ADR
+0840, amended for a `with` in a `with`, which ReactFlightServer's
+dispatcher writes). Its `.d.ts` declares it `SharedStateServer`, upstream's
+type, not `| null | undefined`. Nothing in the compiler changed for the
+form itself; the guide (`project/modules.md`) says it.
+
+**Left to the user**: the module's own JS is `const
+ReactSharedInternalsServer = $unwrap(React.__SERVER_INTERNALS_.., '..');`,
+ADR 0030's form of every `expect`, where upstream writes the `const`, then
+`if (!ReactSharedInternalsServer) throw new Error(..)`. The two run the
+same (`$unwrap` throws the message as an `Error` where the value is
+`null` or `undefined`). Printing an `expect` a `const` is made of as the
+name, then its test, is a change to ADR 0030's one form of `expect`, which
+266 `const`s of react-in-rust's JS print `$unwrap(..)` today, so it isn't
+made here.
+
+Held by `test/lowering-binding-paths.test.ts`'s "a binding its module
+checks as it loads is a thread-local of its expect, which its users read
+as it is", run in Node against a stand-in `react` with the internals and
+one without, whose import throws the message; and the guide's example.

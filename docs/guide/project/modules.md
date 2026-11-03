@@ -563,6 +563,75 @@ reads its own: `if REACT_SHARED_INTERNALS_SERVER.is_none() { panic!(..)
 ([ADR 0633](../../decisions/0633-a-binding-named-through-a-module-is-read-through-it.md),
 amended, rd659).
 
+A value the module checks as it loads, which the modules that import it
+take as there, as React's `ReactSharedInternalsServer` throws where
+`react`'s server internals are absent, is a thread-local of the binding's
+`expect`: it's made as its module loads, so its panic is the module's
+load failing, as upstream's `throw` is, and what a module that names it
+reads is the reference itself, never an `Option` to unwrap again
+([ADR 1006](../../decisions/1006-a-pub-thread-local-is-made-as-its-module-loads.md),
+[ADR 0633](../../decisions/0633-a-binding-named-through-a-module-is-read-through-it.md),
+amended, rd661). The binding stays private, its `Option` what JS may hold:
+
+```rust
+// src/lib.rs
+pub mod flight;
+pub mod internals;
+```
+
+```rust
+// src/internals.rs
+use std::cell::Cell;
+
+pub struct Internals {
+    pub a: Cell<Option<u32>>,
+}
+
+unsafe extern "Rust" {
+    #[link_name = "react#*.__SERVER_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE"]
+    safe static SERVER_INTERNALS: Option<&'static Internals>;
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::name = "ReactSharedInternalsServer")]
+    pub static REACT_SHARED_INTERNALS_SERVER: &'static Internals =
+        SERVER_INTERNALS.expect("The \"react-server\" condition must be enabled.");
+}
+
+js::export_default!(REACT_SHARED_INTERNALS_SERVER);
+```
+
+```rust
+// src/flight.rs
+use crate::internals::REACT_SHARED_INTERNALS_SERVER as REACT_SHARED_INTERNALS;
+
+pub fn install(dispatcher: u32) {
+    REACT_SHARED_INTERNALS.with(|internals| internals.a.set(Some(dispatcher)));
+}
+```
+
+```js
+// src/internals.js
+import * as React from "react";
+import { $unwrap } from "@rust-js/runtime";
+
+const ReactSharedInternalsServer = $unwrap(
+  React.__SERVER_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE,
+  'The "react-server" condition must be enabled.',
+);
+
+export default ReactSharedInternalsServer;
+```
+
+```js
+// src/flight.js
+import ReactSharedInternals from "./internals.js";
+
+export function install(dispatcher) {
+  ReactSharedInternals.a = dispatcher;
+}
+```
+
 A module that names a binding through a module that holds it, its
 default or a `pub use`, reads it through that module, as it reads a
 function: it imports that module's default, or the name it exports, and

@@ -1,7 +1,7 @@
 # 0840. A thread-local's `with` is its closure's body, wherever it's called
 
 Status: Accepted; amended (in a closure's body too; one that only throws;
-at the end of a branch that ends the function). Extends [0581](0581-a-closure-called-as-a-statement-is-its-body.md),
+at the end of a branch that ends the function; a `with` in a `with`, rd661). Extends [0581](0581-a-closure-called-as-a-statement-is-its-body.md),
 whose closure called as a statement in a function is its body, to what a
 module runs when it's loaded and to a closure whose value a statement
 reads first.
@@ -269,3 +269,45 @@ the closure's body there leaves the function, as leaving the closure
 there does. Held by `test/lowering-throws.test.ts`'s "a with whose
 closure throws, a match arm's value, is its throw" (`track`) and the
 mutation `tail-branch-unapplied`.
+
+## Amendment: a `with` in a `with` (rd661)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A: each body runs
+where its call ran, in the order it ran it.
+
+React's ReactFlightServer, once it reads ReactSharedInternalsServer's
+thread-local (ADR 0633, amended, rd661), installs its dispatcher in one
+thread-local's `with` inside another's:
+
+```rust
+DEFAULT_ASYNC_DISPATCHER.with(|default_async_dispatcher| {
+    REACT_SHARED_INTERNALS.with(|internals| {
+        if let Some(a) = internals.a.get()
+            && !js::strict_equals(a, default_async_dispatcher)
+        {
+            panic!("Currently React only supports one RSC renderer at a time.");
+        }
+        internals.a.set(..);
+    });
+});
+```
+
+It printed `((defaultAsyncDispatcher) => { const a =
+ReactSharedInternals.A; .. })(DefaultAsyncDispatcher);`, where upstream
+writes the statements at the function's top: the outer call was asked
+first, while the inner one was still a closure, which reads the outer
+parameter and so can't have it read as what it's given (`substitute`
+leaves a closure that reads a name it replaces); the inner call was then
+made its body, in the outer closure's, and the outer one never asked
+again.
+
+**`js::applied_blocks` asks a body again once a closure in it had a call
+made its body** (`closures_applied`, as many times as one was): the
+outer call, of statements alone now, is its body as any is. A constant's
+value's closures (`applied_closures`) are asked once, as before. What the first pass made is
+as before; the second only puts in place what it kept.
+
+Held by corpus `thread_local_with_nested`, against native Rust: a `with`
+in a `with`'s statement and one in a `with` whose value is returned,
+each reading the outer parameter, which print where they run; and the
+mutation `applied-nested-not-again` (`js/applied.ts`).
