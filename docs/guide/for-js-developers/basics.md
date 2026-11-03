@@ -1292,7 +1292,7 @@ A block in the condition that does something before its value, `check(f)
 calls and the fields it sets, then its value, run only on its way, as
 alien-signals writes `(this.flags = flags & ~Pending, false)`; a block
 that sets a variable of its own is not one yet
-([ADR 1073](../../decisions/1073-a-block-in-a-condition-is-a-comma-expression.md)):
+([ADR 1074](../../decisions/1074-a-block-in-a-condition-is-a-comma-expression.md)):
 
 ```rust
 use std::cell::Cell;

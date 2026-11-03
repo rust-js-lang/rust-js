@@ -1,4 +1,4 @@
-# 1073. A block in a condition is a comma expression
+# 1074. A block in a condition is a comma expression
 
 Status: Accepted (#523, 2026-11-03). Extends
 [0946](0946-an-if-of-mixed-logicals-is-its-one-test.md), whose `skipped
