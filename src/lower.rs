@@ -476,9 +476,7 @@ struct CrateFacts<'a, 'tcx> {
     /// How many literals the crate writes of each struct: one's fields'
     /// doc comments are its object's (ADR 0444, amended).
     struct_literals: &'a HashMap<DefId, usize>,
-    /// The nullable fields each constructor of their struct sets first,
-    /// present, so a read of one is `null` or a value
-    /// (`classes::set_where_constructed`, rd628).
+    /// The nullable fields present, set first (`classes::set_where_constructed`).
     constructed: &'a HashSet<DefId>,
     /// Each body run where its module loads, a thread-local's value, a
     /// static's or constant's initializer lowered as code, a `js::on_load!`,

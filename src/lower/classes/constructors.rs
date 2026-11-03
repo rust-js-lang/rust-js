@@ -9,7 +9,7 @@
 use super::{constructor_of, is_class};
 use crate::lower::Body;
 use crate::lower::body_queries::strip;
-use crate::lower::recognition::{StdItem, is_class_of, is_with_this, js_root_fn, rc_pointee, std_item};
+use crate::lower::recognition::{is_cell_set, is_class_of, is_with_this, js_root_fn, rc_pointee};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::visit::{Visitor, walk_expr};
 use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, PatKind, StmtKind, Thir};
@@ -162,13 +162,12 @@ fn set_first<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, root: ExprId) -> HashSe
     let ExprKind::Block { block } = thir[strip(thir, root)].kind else {
         return first;
     };
-    let cell = std_item(tcx, StdItem::Cell);
     let mut reads = Reads {
         thir,
         this,
         cast: None,
         fields: HashSet::new(),
-        given: false,
+        escaped: false,
     };
     for &stmt in thir[block].stmts.iter() {
         match thir[stmt].kind {
@@ -190,16 +189,12 @@ fn set_first<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, root: ExprId) -> HashSe
             StmtKind::Expr { expr, .. }
                 if let ExprKind::Call { fun, ref args, .. } = thir[strip(thir, expr)].kind
                     && let ty::FnDef(set, _) = *thir[strip(thir, fun)].ty.kind()
-                    && tcx.item_name(set).as_str() == "set"
-                    && (tcx.opt_parent(set)).is_some_and(|imp| {
-                        matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
-                            ty::Adt(adt, _) if adt.did() == cell)
-                    })
+                    && is_cell_set(tcx, set)
                     && let [receiver, value] = args[..]
                     && let Some(field) = reads.field_of(receiver) =>
             {
                 reads.visit_expr(&thir[value]);
-                if reads.given {
+                if reads.escaped {
                     break;
                 }
                 if reads.fields.insert(field) {
@@ -208,7 +203,7 @@ fn set_first<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, root: ExprId) -> HashSe
             }
             _ => {
                 reads.visit_stmt(&thir[stmt]);
-                if reads.given {
+                if reads.escaped {
                     break;
                 }
             }
@@ -251,7 +246,7 @@ struct Reads<'a, 'tcx> {
     this: LocalVarId,
     cast: Option<LocalVarId>,
     fields: HashSet<DefId>,
-    given: bool,
+    escaped: bool,
 }
 
 impl Reads<'_, '_> {
@@ -298,8 +293,8 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for Reads<'a, 'tcx> {
 
     fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
         match expr.kind {
-            ExprKind::VarRef { id } if id == self.this || Some(id) == self.cast => self.given = true,
-            ExprKind::Return { .. } | ExprKind::Become { .. } | ExprKind::Yield { .. } => self.given = true,
+            ExprKind::VarRef { id } if id == self.this || Some(id) == self.cast => self.escaped = true,
+            ExprKind::Return { .. } | ExprKind::Become { .. } | ExprKind::Yield { .. } => self.escaped = true,
             // What a closure captures is read where it's made.
             ExprKind::Closure(ref closure) => {
                 for &upvar in closure.upvars.iter() {

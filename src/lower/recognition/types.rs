@@ -1258,6 +1258,16 @@ pub(in crate::lower) fn is_untyped_class(tcx: TyCtxt<'_>, ty: ty::Ty<'_>) -> boo
         })
 }
 
+/// Whether `did` is `Cell::set`, what a constructor sets its `this`'s cell
+/// fields with (`classes::set_where_constructed`, rd628).
+pub(in crate::lower) fn is_cell_set(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.item_name(did).as_str() == "set"
+        && tcx.opt_parent(did).is_some_and(|imp| {
+            matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
+                ty::Adt(adt, _) if adt.did() == std_item(tcx, StdItem::Cell))
+        })
+}
+
 /// Whether `did` is `js::Class::of`, a function the program writes as the
 /// constructor it is (ADR 1009).
 pub(in crate::lower) fn is_class_of(tcx: TyCtxt<'_>, did: DefId) -> bool {
