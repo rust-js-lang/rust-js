@@ -1,7 +1,7 @@
 # 0994. A number a binding takes is TypeScript's `number`, an `f64`
 
 Status: Accepted; amended (below; the last: a nullable one's `Some`, and
-a variable given one; a counter, rd266; a field or a function a counter's number is in, rd537; and a number a closure takes by value, rd653). Amends [0024](0024-web-crate.md), whose WebIDL integer
+a variable given one; a counter, rd266; a field or a function a counter's number is in, rd537; a number a closure takes by value, rd653; and a thread-local's `Cell<f64>`, rd707). Amends [0024](0024-web-crate.md), whose WebIDL integer
 parameters were Rust integers, an `unsigned long` a `u32`; and
 [0283](0283-js-crate-covers-typescripts-es-library.md), whose typed
 arrays took their element's type and `u32`/`i32` lengths, indices and
@@ -448,3 +448,41 @@ value is always read through its destination local, so `given_by`'s fact
 is gone, and with it the mutation. `whole_locals` is the one authority.
 test/webapi-bindings.test.ts' "a WebIDL integer is a whole number in its
 type's range" holds it.
+
+## Amended (2026-11-04, rd707): a thread-local's `Cell<f64>`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no difference: the
+text is Rust's for every value each can hold.
+
+react-noop-renderer's flight-modules counts the modules it saves, `let
+moduleIdx = 0; .. const idx = '' + moduleIdx++;`. Its port's
+`thread_local! { static MODULE_IDX: Cell<f64> = const { Cell::new(0.0) }
+}`, read `MODULE_IDX.get().to_string()` and set
+`MODULE_IDX.set(MODULE_IDX.get() + 1.0)`, was `$displayF64(moduleIdx)`:
+rd537's fields were a struct's, and rd653's a closure's.
+
+- **A thread-local's `Cell<f64>` is a field**, of its key
+  (`wholes.rs`'s `Field::Key`), where it isn't `pub`, so no other crate
+  reaches it, and its `init` makes a `Cell` of a whole number: a `const {
+  Cell::new(0.0) }`'s value as rustc evaluates it, or an `init`
+  function's only write of its result, `Cell::new(1.0)`. Its key's `get`,
+  `take` and `replace` give a whole number, `take` leaving `0.0`, one
+  too; its `set` and `replace` must be given one, as rd537's field's.
+- **Its key is lent only to those four.** Its `with`, which lends the
+  cell, puts it out, and so does any other mention of the key, a
+  promoted `&KEY` given to a function, held or kept: each of a body's
+  mentions of it must be one of those calls'
+  receiver, directly or through a local assigned it once, reborrowed
+  too, `&*key`, that's used only so. The key's receiver is the one
+  answer `mir::referred_key` gives, which `LocalFacts`' quiet cells ask
+  too.
+
+So `const idx = String(moduleIdx); moduleIdx++;`. Upstream's `'' +
+moduleIdx++` is the same text; rd537 decided `"" + n` reads worse, and
+the read and the step are two statements in Rust.
+
+Held by `test/corpus/whole_thread_locals.rs`, against native Rust, whose
+kept cases are a thread-local made `-0.0` and one made `1e21` by its
+`init` function, one set `1e21` by `replace`, one given a parameter, one
+set through `with`, one lent to a function and a `pub` one; one taken is
+whole. Mutations `whole-key-*` in `lower/analysis/wholes.ts`.

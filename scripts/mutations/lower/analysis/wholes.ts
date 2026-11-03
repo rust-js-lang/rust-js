@@ -182,4 +182,89 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^whole_(captures|counters).rs$"],
     snapshots: true,
   },
+  {
+    name: "whole-key-unfound",
+    breaks:
+      "a thread-local `Cell<f64>` counter, flight-modules' `MODULE_IDX`, isn't whole, `$displayF64(moduleIdx)` where upstream's text is JS's (rd707)",
+    file: "src/lower/analysis/wholes.rs",
+    find: "                wholes.fields.insert(Field::Key(key.to_def_id()));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^whole_thread_locals.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "whole-key-public",
+    breaks:
+      "a `pub` thread-local `Cell<f64>`, which another crate may set `-0.0`, is taken for whole (rd707)",
+    file: "src/lower/analysis/wholes.rs",
+    find: "                || tcx.visibility(key).is_public()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^whole_thread_locals.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "whole-key-constant-init-unchecked",
+    breaks:
+      "a thread-local made `const { Cell::new(-0.0) }` is taken for whole, `String(signed)` printing `0` where Rust prints `-0` (rd707)",
+    file: "src/lower/analysis/wholes.rs",
+    find: "                    .is_some_and(|scalar| whole_number(f64::from_bits(scalar.to_bits_unchecked() as u64))),\n",
+    replace: "                    .is_some(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^whole_thread_locals.rs$"],
+  },
+  {
+    name: "whole-key-init-function-unchecked",
+    breaks:
+      "a thread-local whose `init` function makes `Cell::new(1e21)` is taken for whole, `String(far)` printing `1e+21` where Rust prints its digits (rd707)",
+    file: "src/lower/analysis/wholes.rs",
+    find: "                    && !made_whole(tcx, mir, &locals, &counts)\n",
+    replace: "                    && !made_whole(tcx, mir, &locals, &counts) && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^whole_thread_locals.rs$"],
+  },
+  {
+    name: "whole-key-get-unread",
+    breaks:
+      "a whole thread-local's `get()` isn't known whole, `$displayF64(moduleIdx)` (rd707)",
+    file: "src/lower/analysis/wholes.rs",
+    find: "                                    && wholes.fields.contains(&Field::Key(key))\n",
+    replace: "                                    && wholes.fields.contains(&Field::Key(key)) && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^whole_thread_locals.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "whole-key-set-anything",
+    breaks:
+      "a thread-local set what isn't known whole, `GIVEN.set(n)` of `1e300`, is taken for whole, its text JS's `1e+300` (rd707)",
+    file: "src/lower/analysis/wholes.rs",
+    find: "            CellMethod::Writes => args.get(1).is_some_and(|value| whole_operand(tcx, &value.node, locals)),\n",
+    replace: "            CellMethod::Writes => true,\n",
+    tests: ["test/corpus.test.ts", "-t", "^whole_thread_locals.rs$"],
+  },
+  {
+    name: "whole-key-take-unknown",
+    breaks:
+      "a thread-local's `take()`, which gives what it held and leaves `0.0`, puts its counter out, `$displayF64(taken)` (rd707)",
+    file: "src/lower/analysis/wholes.rs",
+    find: "        \"get\" | \"take\" => CellMethod::Get,\n",
+    replace: "        \"get\" => CellMethod::Get,\n",
+    tests: ["test/corpus.test.ts", "-t", "^whole_thread_locals.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "whole-key-mentions-unseen",
+    breaks:
+      "a thread-local's key lent to a function, `set_far(&LENT)`, which sets it `1e21`, is taken for whole (rd707)",
+    file: "src/lower/analysis/wholes.rs",
+    find: "        if found > accounted.get(&key).copied().unwrap_or(0) {\n",
+    replace: "        if found > accounted.get(&key).copied().unwrap_or(0) && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^whole_thread_locals.rs$"],
+  },
+  {
+    name: "whole-key-receiver-uses-unseen",
+    breaks:
+      "a local holding a thread-local's key is taken for only its methods' receiver however else it's used, so a key lent to a function is taken for whole (rd707)",
+    file: "src/lower/analysis/wholes.rs",
+    find: "        self.uses[local.as_usize()] == self.received.get(&local).copied().unwrap_or(0) + lent.len()\n            && ",
+    replace: "        ",
+    tests: ["test/corpus.test.ts", "-t", "^whole_thread_locals.rs$"],
+  },
 ];

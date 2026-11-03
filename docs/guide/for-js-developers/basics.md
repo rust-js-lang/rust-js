@@ -3599,6 +3599,10 @@ Cell::new(1.0); move || { let id = idx.get().to_string(); idx.set(idx.get()
 + 1.0); id }`'s `String(idx)`, where nothing sets it before the closure
 takes it or lends it after; one a closure borrows keeps `$displayF64`
 ([ADR 0994](../../decisions/0994-a-number-a-binding-takes-is-typescripts-number.md#amended-2026-11-02-rd653-a-number-a-closure-takes-by-value));
+so is a thread-local `Cell<f64>` counter that isn't `pub`, read and set
+only by its `get`, `set`, `take` and `replace`, `MODULE_IDX.get().to_string()`'s
+`String(moduleIdx)`
+([ADR 0994](../../decisions/0994-a-number-a-binding-takes-is-typescripts-number.md#amended-2026-11-04-rd707-a-thread-locals-cellf64));
 and text joined to a number is `prefix + id`.
 
 A value from JavaScript whose type you don't know, what an `any` API

@@ -7,7 +7,9 @@
 //! `prefix + &id.to_string()` is upstream's `prefix + id` (rd537). And
 //! each `f64` or `Cell<f64>` a closure takes by value, react-markup's `let
 //! stash_error_idx = Cell::new(1.0)` its `move |error| ..` counts in, a
-//! field of the closure's own (rd653).
+//! field of the closure's own (rd653). And each thread-local `Cell<f64>`
+//! of the crate's own, react-noop-renderer's flight-modules' `MODULE_IDX`,
+//! made `0.0` and set one more each time, by its key (rd707).
 //!
 //! A whole number here is one at most 2^53 from zero and never `-0`: a
 //! constant such, a `#[rust_js::whole]` binding's, or such a number and
@@ -17,15 +19,16 @@ use std::collections::{HashMap, HashSet};
 
 use rustc_abi::FieldIdx;
 use rustc_hir::def::DefKind;
+use rustc_index::IndexVec;
 use rustc_middle::mir::visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor};
 use rustc_middle::mir::{self, AggregateKind, BinOp, BorrowKind, Local, Operand, PlaceElem, Rvalue, StatementKind};
 use rustc_middle::mir::{RETURN_PLACE, TerminatorKind};
 use rustc_middle::ty::{self, Ty, TyCtxt};
-use rustc_span::def_id::DefId;
+use rustc_span::def_id::{DefId, LocalDefId};
 
 use crate::lower::Body;
 use crate::lower::bindings;
-use crate::lower::recognition::{CellMethod, cell_own_method};
+use crate::lower::recognition::{CellMethod, StdItem, cell_own_method, is_std_def, local_key_access};
 
 /// The crate's functions whose result is always whole, and the fields of
 /// its structs and closures each write of which is (`of_crate`).
@@ -37,11 +40,13 @@ pub(in crate::lower) struct Wholes {
 
 /// A field a number is kept in: a struct's, or what a closure takes by
 /// value, of the closure and its place among its captures, which only its
-/// own body reads and writes.
+/// own body reads and writes; or a thread-local's `Cell`, by its key, which
+/// only the crate's code reaches (rd707).
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 enum Field {
     Struct(DefId),
     Capture(DefId, FieldIdx),
+    Key(DefId),
 }
 
 impl Wholes {
@@ -55,11 +60,15 @@ impl Wholes {
     /// `replace`, or as a shared reference to a number. And each `f64` or
     /// `Cell<f64>` a closure takes by value, a field of its own, which only
     /// its body reads, made by its literal where the closure is, which a
-    /// body has. Each taken whole at first, and one each body finds isn't
-    /// put out, until none is: a counter's writes are of itself.
+    /// body has. And each thread-local `Cell<f64>` not `pub`, its `init`,
+    /// of `inits`, a `Cell::new` of a whole number, read and written only
+    /// by its key's `get`, `set`, `take` and `replace` (rd707). Each taken
+    /// whole at first, and one each body finds isn't put out, until none
+    /// is: a counter's writes are of itself.
     pub(in crate::lower) fn of_crate<'tcx>(
         tcx: TyCtxt<'tcx>,
         bodies: &[&Body<'tcx>],
+        inits: &HashMap<LocalDefId, LocalDefId>,
         js_may_make: &dyn Fn(DefId) -> bool,
     ) -> Wholes {
         let mut wholes = Wholes::default();
@@ -94,6 +103,32 @@ impl Wholes {
                 }
             }
         }
+        // A thread-local's, by its key, which no other crate reaches: of
+        // the crate's own `Cell<f64>`, its `init` a `Cell` of a whole
+        // number, a `const { Cell::new(0.0) }`'s as rustc evaluates it.
+        // An `init` function's is asked with its body's, below.
+        for (&init, &key) in inits {
+            let ty = tcx.type_of(key).instantiate_identity().skip_normalization();
+            let ty::Adt(local_key, args) = ty.kind() else { continue };
+            if !is_std_def(tcx, local_key.did(), StdItem::LocalKey)
+                || !cell_of_f64(tcx, args.type_at(0))
+                || tcx.visibility(key).is_public()
+            {
+                continue;
+            }
+            let whole = match tcx.def_kind(init) {
+                DefKind::Fn => bodies
+                    .iter()
+                    .any(|body| body.def_id == init.to_def_id() && body.mir.is_some()),
+                DefKind::Const { .. } => (tcx.const_eval_poly(init.to_def_id()).ok())
+                    .and_then(|value| value.try_to_scalar_int())
+                    .is_some_and(|scalar| whole_number(f64::from_bits(scalar.to_bits_unchecked() as u64))),
+                _ => false,
+            };
+            if whole {
+                wholes.fields.insert(Field::Key(key.to_def_id()));
+            }
+        }
         // A constant's value is rustc's, its writes not seen: a struct of
         // which a constant may hold, of an item's type or a body's, has
         // none, `static SIGNED: Fixed = Fixed { n: -0.0 }`.
@@ -119,7 +154,7 @@ impl Wholes {
         // `const { .. }` too, whose body is lowered as any other's.
         (wholes.fields).retain(|&field| match field {
             Field::Struct(field) => !constant.structs.contains(&tcx.parent(field)),
-            Field::Capture(..) => true,
+            Field::Capture(..) | Field::Key(..) => true,
         });
         for body in bodies {
             if matches!(tcx.def_kind(body.def_id), DefKind::Fn | DefKind::AssocFn)
@@ -133,13 +168,22 @@ impl Wholes {
             let mut gone = Wholes::default();
             for body in bodies {
                 let Some(mir) = &body.mir else { continue };
-                let mir = &mir.body;
+                let (promoted, mir) = (&mir.promoted, &mir.body);
                 let counts = write_counts(mir);
-                let locals = whole_locals(tcx, mir, &wholes, &|local| counts[local.as_usize()]);
+                let locals = whole_locals(tcx, (mir, promoted), &wholes, &|local| counts[local.as_usize()]);
                 if wholes.returns.contains(&body.def_id) && !locals.contains(&RETURN_PLACE) {
                     gone.returns.insert(body.def_id);
                 }
-                gone.fields.extend(unwhole_writes(tcx, mir, &wholes, &locals, &counts));
+                // A thread-local's `init` function gives a `Cell` of a
+                // whole number, `Cell::new(0.0)`, its only write.
+                if let Some(key) = (body.def_id.as_local()).and_then(|init| inits.get(&init))
+                    && wholes.fields.contains(&Field::Key(key.to_def_id()))
+                    && !made_whole(tcx, mir, &locals, &counts)
+                {
+                    gone.fields.insert(Field::Key(key.to_def_id()));
+                }
+                gone.fields
+                    .extend(unwhole_writes(tcx, (mir, promoted), &wholes, &locals, &counts));
             }
             if gone.returns.is_empty() && gone.fields.iter().all(|f| !wholes.fields.contains(f)) {
                 return wholes;
@@ -214,6 +258,15 @@ impl<'tcx> Visitor<'tcx> for Uses {
     }
 }
 
+/// How many times `body` uses each of its locals, as `Uses` counts.
+fn uses_of(body: &mir::Body<'_>) -> Vec<usize> {
+    let mut uses = Uses {
+        uses: vec![0; body.local_decls.len()],
+    };
+    uses.visit_body(body);
+    uses.uses
+}
+
 /// Whether `ty` is a `Cell<f64>`.
 fn cell_of_f64<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, args)
@@ -281,10 +334,67 @@ fn receiver_field(operand: &Operand<'_>, borrows: &HashMap<Local, Field>) -> Opt
 /// A whole `f64` constant, from 2^53 to -2^53, not `-0`.
 fn whole_constant<'tcx>(tcx: TyCtxt<'tcx>, c: &mir::ConstOperand<'tcx>) -> bool {
     c.ty() == tcx.types.f64
-        && (c.const_.try_to_scalar_int()).is_some_and(|scalar| {
-            let n = f64::from_bits(scalar.to_bits_unchecked() as u64);
-            n.fract() == 0.0 && n.abs() <= 9007199254740992.0 && !(n == 0.0 && n.is_sign_negative())
+        && (c.const_.try_to_scalar_int())
+            .is_some_and(|scalar| whole_number(f64::from_bits(scalar.to_bits_unchecked() as u64)))
+}
+
+/// Whether `n` is whole, from 2^53 to -2^53, not `-0`.
+fn whole_number(n: f64) -> bool {
+    n.fract() == 0.0 && n.abs() <= 9007199254740992.0 && !(n == 0.0 && n.is_sign_negative())
+}
+
+/// Whether `body`'s result, of its whole `locals` and each local's write
+/// `counts`, is a `Cell` of a whole number, its only write a `Cell::new`
+/// of one: a thread-local's `init` function's (rd707).
+fn made_whole<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, locals: &HashSet<Local>, counts: &[usize]) -> bool {
+    counts[RETURN_PLACE.as_usize()] == 1
+        && body.basic_blocks.iter().any(|data| {
+            matches!(&data.terminator().kind, TerminatorKind::Call { func, args, destination, .. }
+                if *destination == RETURN_PLACE.into()
+                    && func.const_fn_def().is_some_and(|(id, _)| cell_own_method(tcx, id) == Some(CellMethod::New))
+                    && args.first().is_some_and(|value| whole_operand(tcx, &value.node, locals)))
         })
+}
+
+/// What each of `body`'s locals written once, `counts` says, is assigned,
+/// where a statement assigns it whole.
+fn assigned_once<'b, 'tcx>(body: &'b mir::Body<'tcx>, counts: &[usize]) -> HashMap<Local, &'b Rvalue<'tcx>> {
+    (body.basic_blocks.iter().flat_map(|data| &data.statements))
+        .filter_map(|statement| match &statement.kind {
+            StatementKind::Assign(assign)
+                if assign.0.projection.is_empty() && counts[assign.0.local.as_usize()] == 1 =>
+            {
+                Some((assign.0.local, &assign.1))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+/// Of a call of `id` given `receiver` first, a thread-local's key's
+/// method, which it is and the key, `MODULE_IDX` of `MODULE_IDX.get()`:
+/// `get`, which reads it, or `take`, which reads it and writes `0.0`, a
+/// whole number; `set` or `replace`, which write what they're given
+/// second; or any other, a `RefCell`'s, never a `Cell<f64>`'s (rd707). A
+/// `with`, which lends the cell, is none, so its key is lent (`Mentions`).
+/// Of `body`'s `promoted` constants and its locals `assigned` once.
+fn key_method<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (promoted, assigned): (
+        &IndexVec<mir::Promoted, mir::Body<'tcx>>,
+        &HashMap<Local, &Rvalue<'tcx>>,
+    ),
+    id: DefId,
+    receiver: &Operand<'tcx>,
+) -> Option<(CellMethod, DefId)> {
+    local_key_access(tcx, id)?;
+    let method = match tcx.item_name(id).as_str() {
+        "get" | "take" => CellMethod::Get,
+        "set" | "replace" => CellMethod::Writes,
+        _ => CellMethod::Other,
+    };
+    let key = crate::lower::mir::referred_key(promoted, |local| assigned.get(&local).copied(), receiver)?;
+    Some((method, key))
 }
 
 /// Whether `operand` gives a whole number, of `locals`, `body`'s whole ones.
@@ -309,11 +419,12 @@ fn whole_operand<'tcx>(tcx: TyCtxt<'tcx>, operand: &Operand<'tcx>, locals: &Hash
 /// `writes` counts them (ADR 0994, amended). Its result's too.
 pub(in crate::lower) fn whole_locals<'tcx>(
     tcx: TyCtxt<'tcx>,
-    body: &mir::Body<'tcx>,
+    (body, promoted): (&mir::Body<'tcx>, &IndexVec<mir::Promoted, mir::Body<'tcx>>),
     wholes: &Wholes,
     writes: &dyn Fn(Local) -> usize,
 ) -> HashSet<Local> {
     let borrows = field_borrows(tcx, body);
+    let assigned = assigned_once(body, &write_counts(body));
     // What each write gives: a whole number, or another's.
     let mut written: HashMap<Local, Vec<Option<Local>>> = HashMap::new();
     let mut unknown: HashSet<Local> = HashSet::new();
@@ -377,6 +488,12 @@ pub(in crate::lower) fn whole_locals<'tcx>(
                             && (args.first())
                                 .and_then(|receiver| receiver_field(&receiver.node, &borrows))
                                 .is_some_and(|field| wholes.fields.contains(&field)))
+                        || (args.first())
+                            .and_then(|receiver| key_method(tcx, (promoted, &assigned), def_id, &receiver.node))
+                            .is_some_and(|(method, key)| {
+                                matches!(method, CellMethod::Get | CellMethod::Writes)
+                                    && wholes.fields.contains(&Field::Key(key))
+                            })
                 });
                 match whole && destination.projection.is_empty() {
                     true => written.entry(destination.local).or_default().push(None),
@@ -413,24 +530,170 @@ pub(in crate::lower) fn whole_locals<'tcx>(
     }
 }
 
+/// The thread-locals of `wholes` a write of `body`'s may make other than
+/// whole, by their keys, of its whole `locals` and each local's write
+/// `counts`: a `set` or `replace` of what isn't whole, any other of the
+/// key's methods, `take` and `with` too, and a key used any other way, lent
+/// to a function or kept (rd707). Each mention of a key, a promoted
+/// `&KEY`'s, is one of these calls' receivers, or a local's assigned it
+/// once and only their receiver, or puts it out.
+fn unwhole_key_writes<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (body, promoted): (&mir::Body<'tcx>, &IndexVec<mir::Promoted, mir::Body<'tcx>>),
+    wholes: &Wholes,
+    locals: &HashSet<Local>,
+    counts: &[usize],
+) -> Vec<Field> {
+    let keys: HashSet<DefId> = (wholes.fields.iter())
+        .filter_map(|&field| match field {
+            Field::Key(key) => Some(key),
+            _ => None,
+        })
+        .collect();
+    let mut gone = Vec::new();
+    if keys.is_empty() {
+        return gone;
+    }
+    let assigned = assigned_once(body, counts);
+    let uses = uses_of(body);
+    // How many times each local is a key's method's receiver, and each key
+    // a constant one's.
+    let mut received: HashMap<Local, usize> = HashMap::new();
+    let mut accounted: HashMap<DefId, usize> = HashMap::new();
+    for data in body.basic_blocks.iter() {
+        let TerminatorKind::Call { func, args, .. } = &data.terminator().kind else {
+            continue;
+        };
+        let Some((id, _)) = func.const_fn_def() else { continue };
+        let Some(receiver) = args.first() else { continue };
+        let Some((method, key)) = key_method(tcx, (promoted, &assigned), id, &receiver.node) else {
+            continue;
+        };
+        if !keys.contains(&key) {
+            continue;
+        }
+        match receiver.node.place() {
+            Some(place) if place.projection.is_empty() => *received.entry(place.local).or_default() += 1,
+            Some(_) => {}
+            None => *accounted.entry(key).or_default() += 1,
+        }
+        let whole = match method {
+            CellMethod::Get => true,
+            CellMethod::Writes => args.get(1).is_some_and(|value| whole_operand(tcx, &value.node, locals)),
+            CellMethod::New | CellMethod::Other => false,
+        };
+        if !whole {
+            gone.push(Field::Key(key));
+        }
+    }
+    // Each reborrow of a local, `_5 = &(*_23)`, by the local it's of.
+    let mut reborrows: HashMap<Local, Vec<Local>> = HashMap::new();
+    for (&local, rvalue) in &assigned {
+        if let Rvalue::Ref(_, _, lent) = rvalue
+            && lent.projection.as_slice() == [PlaceElem::Deref]
+        {
+            reborrows.entry(lent.local).or_default().push(local);
+        }
+    }
+    let only_received = OnlyReceived {
+        uses: &uses,
+        received: &received,
+        reborrows: &reborrows,
+    };
+    for (&local, rvalue) in &assigned {
+        if let Rvalue::Use(operand @ Operand::Constant(_), _) = rvalue
+            && let Some(key) = crate::lower::mir::referred_key(promoted, |_| None, operand)
+            && keys.contains(&key)
+            && only_received.of(local)
+        {
+            *accounted.entry(key).or_default() += 1;
+        }
+    }
+    let mut mentions = Mentions {
+        keys: &keys,
+        promoted,
+        found: HashMap::new(),
+    };
+    mentions.visit_body(body);
+    for (key, found) in mentions.found {
+        if found > accounted.get(&key).copied().unwrap_or(0) {
+            gone.push(Field::Key(key));
+        }
+    }
+    gone
+}
+
+/// Of a body's locals, how many times each is used (`Uses`), a key's
+/// method's receiver, and reborrowed, `&*local`, by which.
+struct OnlyReceived<'r> {
+    uses: &'r [usize],
+    received: &'r HashMap<Local, usize>,
+    reborrows: &'r HashMap<Local, Vec<Local>>,
+}
+
+impl OnlyReceived<'_> {
+    /// Whether each use of `local` is a receiver of a key's method, or a
+    /// reborrow, `&*local`, held by a local only that is too. Each local's
+    /// assigned once, so a reborrow is of a local before it.
+    fn of(&self, local: Local) -> bool {
+        let lent = self.reborrows.get(&local).map_or(&[][..], Vec::as_slice);
+        self.uses[local.as_usize()] == self.received.get(&local).copied().unwrap_or(0) + lent.len()
+            && lent.iter().all(|&by| by != local && self.of(by))
+    }
+}
+
+/// How many times a body's operands mention each of `keys`, a
+/// thread-local's key: itself, or within a promoted constant, `&KEY`
+/// (rd707).
+struct Mentions<'k, 'tcx> {
+    keys: &'k HashSet<DefId>,
+    promoted: &'k IndexVec<mir::Promoted, mir::Body<'tcx>>,
+    found: HashMap<DefId, usize>,
+}
+
+impl<'tcx> Visitor<'tcx> for Mentions<'_, 'tcx> {
+    fn visit_operand(&mut self, operand: &Operand<'tcx>, _: mir::Location) {
+        let Operand::Constant(constant) = operand else {
+            return;
+        };
+        let mir::Const::Unevaluated(uv, _) = constant.const_ else {
+            return;
+        };
+        match uv.promoted {
+            Some(at) => {
+                if let Some(promoted) = self.promoted.get(at) {
+                    let mut within = Mentions {
+                        keys: self.keys,
+                        promoted: &IndexVec::new(),
+                        found: HashMap::new(),
+                    };
+                    within.visit_body(promoted);
+                    for (key, found) in within.found {
+                        *self.found.entry(key).or_default() += found;
+                    }
+                }
+            }
+            None if self.keys.contains(&uv.def) => *self.found.entry(uv.def).or_default() += 1,
+            None => {}
+        }
+    }
+}
+
 /// The fields of `wholes` a write of `body`'s may make other than whole,
 /// of its whole `locals` and each local's write `counts`: a literal's,
 /// an assignment's, a `Cell`'s `set` or `replace` of what isn't whole, any
 /// other `Cell` method, and a borrow that lends it to anything else.
 fn unwhole_writes<'tcx>(
     tcx: TyCtxt<'tcx>,
-    body: &mir::Body<'tcx>,
+    (body, promoted): (&mir::Body<'tcx>, &IndexVec<mir::Promoted, mir::Body<'tcx>>),
     wholes: &Wholes,
     locals: &HashSet<Local>,
     counts: &[usize],
 ) -> Vec<Field> {
     let mut gone = Vec::new();
     let borrows = field_borrows(tcx, body);
-    let mut uses = Uses {
-        uses: vec![0; body.local_decls.len()],
-    };
-    uses.visit_body(body);
-    let uses = uses.uses;
+    gone.extend(unwhole_key_writes(tcx, (body, promoted), wholes, locals, counts));
+    let uses = uses_of(body);
     // Each local a `Cell::new` of a whole number makes, written once and
     // used once, moved where it's kept: never lent, to be set before then,
     // `let idx = Cell::new(1.0); idx.set(-0.0); move || ..` (rd653).

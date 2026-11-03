@@ -1031,6 +1031,44 @@ pub(in crate::lower) fn referred_constant<'tcx>(body: &mir::Body<'tcx>) -> Optio
     (Some(local) == referred).then_some(c)
 }
 
+/// The constant `operand` refers to, `&KEY` of a thread-local's
+/// `KEY.get()`: a promoted reference to it, held by a local `assigned`
+/// once, or one reborrowed, `&*r`, of a body whose promoted constants are
+/// `promoted`. `assigned` says what a local is assigned, where it's
+/// assigned once.
+pub(in crate::lower) fn referred_key<'a, 'tcx: 'a>(
+    promoted: &IndexVec<mir::Promoted, mir::Body<'tcx>>,
+    assigned: impl Fn(Local) -> Option<&'a Rvalue<'tcx>>,
+    operand: &Operand<'tcx>,
+) -> Option<rustc_span::def_id::DefId> {
+    let mut operand = operand.clone();
+    let constant = loop {
+        let Some(place) = operand.place() else {
+            break operand.constant().copied();
+        };
+        match assigned(place.local) {
+            Some(Rvalue::Use(Operand::Constant(c), _)) if place.projection.is_empty() => break Some(**c),
+            Some(Rvalue::Ref(_, _, lent))
+                if place.projection.is_empty() && lent.projection.as_slice() == [PlaceElem::Deref] =>
+            {
+                operand = Operand::Copy(lent.local.into());
+            }
+            _ => break None,
+        }
+    };
+    let referred = match constant.map(|c| c.const_) {
+        Some(mir::Const::Unevaluated(uv, _)) => match uv.promoted {
+            Some(at) => referred_constant(promoted.get(at)?).map(|c| c.const_),
+            None => None,
+        },
+        _ => None,
+    };
+    match referred {
+        Some(mir::Const::Unevaluated(uv, _)) if uv.promoted.is_none() => Some(uv.def),
+        _ => None,
+    }
+}
+
 /// The constant a promoted `&Some(c)` holds, `_1 = Some(const c); _0 =
 /// &_1`, if that's all it is: a `Some` always, of `C` by its name where
 /// it's a named one (ADR 0771).

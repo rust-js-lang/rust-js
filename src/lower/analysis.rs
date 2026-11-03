@@ -1057,7 +1057,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         (all_bodies, &clones),
         &|ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
     );
-    let wholes = Wholes::of_crate(tcx, all_bodies, &|adt| cell_borrows.pointers().js_may_make(adt));
+    let wholes = Wholes::of_crate(tcx, all_bodies, &thread_local_inits, &|adt| {
+        cell_borrows.pointers().js_may_make(adt)
+    });
     // What `with_borrow` runs while its thread-local is borrowed, that can't
     // ask whether it is (ADRs 0328, 0587): borrows nothing that may be it,
     // held as it's held, a `with_borrow`'s shared, which only a mutable

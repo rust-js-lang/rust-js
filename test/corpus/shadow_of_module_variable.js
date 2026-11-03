@@ -40,8 +40,8 @@ function last() {
 }
 
 function main() {
-  console.log(`${$displayF64(counted())} ${$displayF64(count)}`);
-  console.log(`${$displayF64(tested())} ${$displayF64(count)}`);
+  console.log(`${$displayF64(counted())} ${count}`);
+  console.log(`${$displayF64(tested())} ${count}`);
   const value = last();
   console.log(
     `${value == null ? "None" : `Some(${value})`} ${LAST == null ? "None" : `Some(${LAST})`}`,

@@ -414,7 +414,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             unlowered,
             own,
             declares: handles.declared(def_id),
-            wholes: self.mir_wholes(body, locals),
+            wholes: self.mir_wholes((body, &mir.promoted), locals),
             made_pointers: self.mir_made_pointers(body),
             tried_ints: self.mir_tried_ints(body),
             found_indexes: self.mir_found_indexes(body),
@@ -600,7 +600,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// JS's text of it is Rust's (rd266). Never a parameter, which its
     /// caller gives first, nor one written any other way, in part, through
     /// a `&mut` or a pointer (ADR 0994, amended).
-    fn mir_wholes(&self, body: &mir::Body<'tcx>, locals: &Locals) -> HashSet<Local> {
+    fn mir_wholes(
+        &self,
+        body: (&mir::Body<'tcx>, &IndexVec<mir::Promoted, mir::Body<'tcx>>),
+        locals: &Locals,
+    ) -> HashSet<Local> {
         let wholes = &self.krate.wholes;
         crate::lower::analysis::whole_locals(self.tcx, body, wholes, &|local| locals.writes[local])
     }
@@ -657,33 +661,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // The thread-local `operand` is, `&KEY`: a promoted reference to
         // it, or one reborrowed, `&*r`.
-        let local_key = |operand: &Operand<'tcx>| -> Option<rustc_span::def_id::DefId> {
-            let mut operand = operand.clone();
-            let constant = loop {
-                let Some(place) = operand.place() else {
-                    break operand.constant().copied();
-                };
-                match assigned.get(&place.local) {
-                    Some(Some(Rvalue::Use(Operand::Constant(c), _))) if place.projection.is_empty() => break Some(**c),
-                    Some(Some(Rvalue::Ref(_, _, lent)))
-                        if place.projection.is_empty() && lent.projection.as_slice() == [PlaceElem::Deref] =>
-                    {
-                        operand = Operand::Copy(lent.local.into());
-                    }
-                    _ => break None,
-                }
-            };
-            let referred = match constant.map(|c| c.const_) {
-                Some(mir::Const::Unevaluated(uv, _)) => match uv.promoted {
-                    Some(at) => queries::referred_constant(&promoted[at]).map(|c| c.const_),
-                    None => None,
-                },
-                _ => None,
-            };
-            match referred {
-                Some(mir::Const::Unevaluated(uv, _)) if uv.promoted.is_none() => Some(uv.def),
-                _ => None,
-            }
+        let local_key = |operand: &Operand<'tcx>| {
+            queries::referred_key(promoted, |local| assigned.get(&local).copied().flatten(), operand)
         };
         let mut drops = Vec::new();
         for (block, data) in body.basic_blocks.iter_enumerated() {
