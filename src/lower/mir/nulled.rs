@@ -265,6 +265,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return (Given::Nulled, None);
         }
+        // A binding that's its argument in JS, `js::cast(Some(js::unknown(options)))`
+        // of an `Option`: what it's given (rd632).
+        if bindings::is_binding(self.tcx, def_id)
+            && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This)
+            && self.option_of(state.body.local_decls[local].ty).is_some()
+            && let [arg] = args
+            && self.option_of(arg.node.ty(state.body, self.tcx)).is_some()
+        {
+            return self.stored_in(state, &arg.node, seen);
+        }
         let known = self.recognition().classify(def_id, generic_args);
         // An `Option::map` that's the option itself in JS is what it maps:
         // `native_event_target.map(js::unknown)` (the port's gap rd94).

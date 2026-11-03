@@ -299,4 +299,12 @@ export const mutations: Mutation[] = [
     replace: "                Some(Std::Comb(crate::lower::combinators::Comb::MapOr)) if false => {\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "read by a nullable parameter and alike"],
   },
+  {
+    name: "cast-of-a-nulled-unfollowed",
+    breaks: "a `js::cast` of an `Option` that's `null` or a value isn't taken as so, so hydrateRoot's `options ?? null` is `options != null ? (options ?? null) : null` (rd632)",
+    file: "src/lower/mir/nulled.rs",
+    find: "            && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This)\n",
+    replace: "            && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This) && false\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a cast of an Option is what it's given"],
+  },
 ];

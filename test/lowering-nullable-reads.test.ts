@@ -874,3 +874,39 @@ pub fn run(node: &'static Node, text: bool) -> (bool, bool, u32) {
   expect(lib.run({ parentNode: null }, true)).toEqual([false, false, 0]);
   expect(lib.run({ parentNode: { id: 1 } }, true)).toEqual([true, true, 1]);
 });
+
+// rd632: what a binding that's its argument in JS gives, `js::cast` of an
+// `Option`, is what it's given: React DOM's hydrateRoot's `match options {
+// Some(options) => js::cast(Some(js::unknown(options))), None => js::null() }`
+// is `options ?? null` alone, upstream's `options != null ? options : null`,
+// and the parameter it's given is tested `!== null`.
+test("a cast of an Option is what it's given", async () => {
+  const dir = fixture("nullable-cast-given");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+pub struct Options {
+    pub prefix: String,
+}
+
+unsafe impl js::Defined for Options {}
+
+#[cfg_attr(rust_js, rust_js::nullable(callbacks))]
+fn create(callbacks: Option<&'static Unknown>) -> bool {
+    callbacks.is_some()
+}
+
+pub fn hydrate(options: Option<&'static Options>) -> bool {
+    let callbacks = match options {
+        Some(options) => unsafe { js::cast(Some(js::unknown(options))) },
+        None => js::null(),
+    };
+    create(callbacks)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const callbacks = options ?? null;\n");
+  expect(js).toContain("function create(callbacks) {\n  return callbacks !== null;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.hydrate(undefined), lib.hydrate(null), lib.hydrate({ prefix: "" })]).toEqual([false, false, true]);
+});

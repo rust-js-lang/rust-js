@@ -550,6 +550,14 @@ printed the option alone, by the arrow's JS (`is_identity`). Now
 or a value. One answer serves both: the map's lowering asks
 `maps_to_itself` first.
 
+**What a binding that's its argument in JS gives, of an `Option`, is what
+it's given**: `js::cast(Some(js::unknown(options)))`, whose `Some` is
+never `undefined`. React DOM's hydrateRoot's `match options {
+Some(options) => js::cast(Some(js::unknown(options))), None => js::null() }`
+is `options ?? null` alone. Without it, (B)'s `?? null` at the cast's write
+made it `options != null ? (options ?? null) : null` (held by "a cast of
+an Option is what it's given", mutation `cast-of-a-nulled-unfollowed`).
+
 Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
 Rust's behavior. A `None` given a parameter tested `!== null` is `null`;
 where JS can tell `null` from `undefined`, it's as Rust's code made it.
