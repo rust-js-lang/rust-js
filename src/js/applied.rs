@@ -326,11 +326,16 @@ pub fn read_where_made(stmts: &mut Vec<Stmt>, name: &str) {
         ..value
     };
     // What's said before the value, `// Whether it's three.`, is said
-    // before what reads it now.
+    // before what reads it now: the reader starts where the value did. And
+    // what's said before it as the first line of the closure that made it,
+    // `// Called once.`, which the reader would hold inside, before nothing,
+    // is where the value was. A reader that starts before the value is
+    // before those already.
     let made = stmts.remove(at);
     if !made.span.is_none() && (stmts[at].span.is_none() || made.span.lo < stmts[at].span.lo) {
         stmts[at].span.lo = made.span.lo;
         stmts[at].span.hi = stmts[at].span.hi.max(made.span.hi);
+        stmts.insert(at, StmtKind::Comments.at(made.span));
     }
 }
 

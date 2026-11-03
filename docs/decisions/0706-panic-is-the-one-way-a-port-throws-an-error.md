@@ -686,16 +686,21 @@ function whose `Ok(active_element) => active_element` the result's
 conversion makes `return activeElement ?? null;`. It printed `const
 activeElement = doc.activeElement ?? doc.body; return activeElement ??
 null;`, because a value the program names kept its name in the `try`
-(the amendment above). Out of a `try`, tidy reads any `const` that's
-read once where it's read, a name the program gave it too: the same arm
-without `catch_unwind` prints `return doc.activeElement ?? doc.body;`.
+(the amendment above). Out of a `try`, the same arm without
+`catch_unwind` prints `return doc.activeElement ?? doc.body;`: an arm
+whose value is its binding, `Ok(x) => x`, gives the matched value itself.
+(Tidy doesn't read every `const` read once where it's read: out of a
+`try`, `let result = f(x); let doubled = result * 2;` keeps `const
+result`, and so does `match Some(f(x)) { Some(result) => .. }`. In a
+`try`, the rule below reads such a value in place too; only the `Ok(x)
+=> x` shape is what tidy's output out of a `try` is.)
 
 **A value the program names is read where it's read, as one it never
 named is** (`js::read_where_made`, asked of every `Ok` value the `try`
 keeps): read once, by what follows, before anything else that evaluates.
 The result is `return doc.activeElement ?? doc.body ?? null;`. The
 `?? null` is bindings run 18's. This replaces "a value the program names
-keeps its name", which was a second rule beside tidy's for one place.
+keeps its name".
 
 m6-wife cleared the change on one condition: what goes into the `try`
 must not throw. That holds, since `read_where_made` is asked only of what
@@ -715,3 +720,14 @@ Rust catches them, and both negatives. `catch_unwind_value_in_place`'s
 `const`. The mutation `value-in-place-of-named`, which this rule now
 is, becomes `value-named-kept` (`prepare/catches.ts`), which puts the
 old rule back.
+
+What's said before the value, inside the closure that made it too,
+stays: the reader's span starts where the value's did, and
+`read_where_made` also leaves a `StmtKind::Comments` at the value's span,
+as `set_at` does for a value set where it's made. A comment that's the
+closure's first line, `catch_unwind(|| { // Called once.\n f(x) })`, which
+the widened reader held inside, before no statement, where it was lost, is
+printed there, before what reads the value, `try { // Called once.\n const
+doubled = (f(x) * 2) >>> 0; .. }` (test/lowering-comments.test.ts "a
+comment in catch_unwind's closure is in the try"; mutation
+`value-in-place-comment-lost`).

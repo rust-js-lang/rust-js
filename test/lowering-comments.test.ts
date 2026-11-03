@@ -406,7 +406,9 @@ pub fn run(f: &dyn Fn(u32) -> u32, x: u32) -> u32 {
     }
 }
 `);
-  expect(js).toContain("  try {\n    // Called once.\n    const result = f(x);\n");
+  // The value read once where it's read (rd16), its comment before what
+  // reads it now, where it was.
+  expect(js).toContain("  try {\n    // Called once.\n    const doubled = (f(x) * 2) >>> 0;\n");
   expect(js).not.toContain("// Called once.\n  try");
   expect(lib.run(((n: number) => n + 1) as never, 2 as never)).toBe(6);
   expect(

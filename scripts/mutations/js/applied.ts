@@ -313,6 +313,14 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "value-in-place-comment-lost",
+    breaks: "the comment in `catch_unwind`'s closure, `// Called once.`, above the value the program names, the closure's first line, is lost once the value's read where it's read: the reader, its span widened to start where the value's did, holds it inside, before no statement (rd16)",
+    file: "src/js/applied.rs",
+    find: "        stmts.insert(at, StmtKind::Comments.at(made.span));\n",
+    replace: "",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment in catch_unwind's closure is in the try"],
+  },
+  {
     name: "returns-set-never",
     breaks: "a closure that returns early, its value a `let`'s, stays `found = (() => { if (n === 0) { return 0; } .. })();`, a closure called (rd60)",
     file: "src/js/applied.rs",
