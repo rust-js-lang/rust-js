@@ -743,6 +743,13 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             uses.named.insert(export, imported.name.clone());
         }
     }
+    // And through a library's module that re-exports it, by what that
+    // module's file exports it as (rd704).
+    for export in foreign.all_reexported() {
+        uses.bound_to.entry(export.clone()).or_default();
+        uses.imported.entry(export.clone()).or_default();
+        uses.named.insert(export.clone(), export.1.clone());
+    }
     // A library's module a path names a function through, imported whole,
     // `import * as Scheduler from "scheduler"` (rd114, ADR 1018): from where
     // the module the path is in imports the function, by its name.

@@ -135,3 +135,51 @@ pub fn render() -> u32 {
   expect((await import(join(dir, "app", "renamed.js"))).render()).toBe(9);
   expect((await import(join(dir, "app", "lib.js"))).cycled()).toBe(3);
 });
+
+// A library's item a use names through another of the library's modules,
+// one whose pub use re-exports it, is imported from that module's file,
+// as upstream's ReactART imports `defaultOnCaughtError` with
+// `createContainer` from 'react-reconciler/src/ReactFiberReconciler':
+// one import of each use (rd704, ADR 0874, amended).
+test("a use through a library's module that re-exports its item imports it from there", async () => {
+  const dir = fixture("imports-through-library");
+  mkdirSync(join(dir, "dep"));
+  writeFileSync(join(dir, "dep.rs"), `pub mod error_logger {
+    pub fn default_on_caught_error() -> u32 {
+        7
+    }
+
+    pub fn log() -> u32 {
+        1
+    }
+}
+
+pub mod reconciler {
+    pub use crate::error_logger::default_on_caught_error;
+    pub use crate::error_logger::log as log_error;
+
+    pub fn create_container() -> u32 {
+        8
+    }
+}
+`);
+  run([compiler, join(dir, "dep.rs"), "-o", join(dir, "dep", "lib.js"), "--library", "--manifest", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(dir, "libdep.rmeta")}`, ...js]);
+  mkdirSync(join(dir, "app"));
+  writeFileSync(join(dir, "app", "lib.rs"), `use dep::error_logger::log;
+use dep::reconciler::{create_container, default_on_caught_error, log_error};
+
+pub fn render() -> u32 {
+    create_container() + default_on_caught_error() + log_error() + log()
+}
+`);
+  run([compiler, join(dir, "app", "lib.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js]);
+  const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  expect(app).toContain('import { createContainer, defaultOnCaughtError } from "../dep/reconciler.js";\n');
+  // One item is one import of the module, from where the first path
+  // written names it, its home here, named as the module's `use` renames
+  // it (ADR 0202, amended).
+  expect(app).toContain('import { log as logError } from "../dep/error_logger.js";\n');
+  expect((await import(join(dir, "app", "lib.js"))).render()).toBe(17);
+});

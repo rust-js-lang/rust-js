@@ -539,7 +539,7 @@ fn glob_export(
     (name, item): (Symbol, DefId),
 ) -> Option<(LocalModId, String)> {
     let source = glob_source(tcx, glob)?;
-    Some((source, exported_by(tcx, (fns, foreign), source, (name, item))?))
+    Some((source, exported_by(tcx, (fns, Some(foreign)), source, (name, item))?))
 }
 
 /// What the crate's `module` exports `item` as, where it names it `name`
@@ -553,7 +553,7 @@ fn glob_export(
 /// `None` where it exports it by none.
 pub(super) fn exported_by(
     tcx: TyCtxt<'_>,
-    (fns, foreign): (&HashMap<DefId, FnInfo>, &super::library::Foreign<'_, '_>),
+    (fns, foreign): (&HashMap<DefId, FnInfo>, Option<&super::library::Foreign<'_, '_>>),
     mut module: LocalModId,
     (mut name, item): (Symbol, DefId),
 ) -> Option<String> {
@@ -561,8 +561,7 @@ pub(super) fn exported_by(
     let mut seen = std::collections::HashSet::new();
     let own = |name: Symbol| match fns.get(&item) {
         Some(info) => info.exported().to_string(),
-        None => foreign
-            .item(item)
+        None => (foreign.and_then(|foreign| foreign.item(item)))
             .map_or_else(|| name.to_string(), |imported| imported.name.clone()),
     };
     loop {
@@ -643,6 +642,37 @@ pub(super) fn exported_in(
     }
     let used = reexporting_use(tcx, module, name, item)?;
     Some(super::bindings::use_name(tcx, used, (name, item), || info.name.clone()))
+}
+
+/// Each item of the crate's a module of it re-exports of another of its
+/// modules by a `pub use`, by the name the `use` gives it, and what it
+/// exports it as (`exported_by`): what a library's contract says its
+/// consumers import through that module, from its file (rd704).
+pub(super) fn reexported_items(
+    tcx: TyCtxt<'_>,
+    fns: &HashMap<DefId, FnInfo>,
+) -> Vec<(LocalModId, Symbol, DefId, String)> {
+    let mut found = Vec::new();
+    for id in tcx.hir_crate_items(()).free_items() {
+        let used = tcx.hir_item(id);
+        let hir::ItemKind::Use(path, hir::UseKind::Single(ident)) = used.kind else {
+            continue;
+        };
+        if !super::analysis::is_reexport(tcx, used) {
+            continue;
+        }
+        let module = tcx.parent_module_from_def_id(used.owner_id.def_id);
+        for res in path.res.present_items() {
+            let Res::Def(_, item) = res else { continue };
+            let elsewhere = fns
+                .get(&item)
+                .is_some_and(|info| info.owner.is_none() && info.module != module);
+            if elsewhere && let Some(export) = exported_by(tcx, (fns, None), module, (ident.name, item)) {
+                found.push((module, ident.name, item, export));
+            }
+        }
+    }
+    found
 }
 
 /// The crate's module a `pub use`'s `path` names `item` through, whose

@@ -399,7 +399,14 @@ dep::config::create_state;` is `import { createState } from
 load reaches the importer's, which the crate's root's re-exports often
 do, the import would make a load cycle, so it stays its home's
 ([ADR 0874](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md),
-amended). Otherwise a library's item, its default
+amended). A library's item named through another of the library's
+modules that re-exports it is imported from that module's file, as its
+contract says: `use react_reconciler::react_fiber_reconciler::{
+ReactFiberReconciler, default_on_caught_error};` is one import from
+`react-reconciler/src/ReactFiberReconciler`; of an item named by two
+paths in one module, the first written names its import
+([ADR 0874, amended](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md#amendment-a-librarys-item-through-its-module-that-re-exports-it-rd704)).
+Otherwise a library's item, its default
 or a binding a module of it holds is re-exported from the library's
 file; a class, by its constructor; a module, its namespace, `export * as
 ns from`, as is a JS module's, `#*`. A private `use .. as`'s

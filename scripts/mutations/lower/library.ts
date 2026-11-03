@@ -423,8 +423,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an item a module names through its library's root, `kids::bump`, is imported by its module's file, where its package's entry re-exports it, `import {Children} from 'react'` (ADR 1008, amended)",
     file: "src/lower/library.rs",
-    find: "            Some(by_package) if rooted() => by_package.clone(),\n",
-    replace: "            Some(by_package) if false => by_package.clone(),\n",
+    find: "            && paths.rooted.contains(&(module, id))\n",
+    replace: "            && false\n",
     tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
   },
   {
@@ -626,5 +626,32 @@ export const mutations: Mutation[] = [
     find: "                .filter(|&&id| id.is_local() && reachable(tcx, id))\n                .map(|&id| key(tcx, id))\n                .collect();\n            keys.sort();\n            keys\n        },\n        identities: {\n",
     replace: "                .filter(|_| false)\n                .map(|&id| key(tcx, id))\n                .collect();\n            keys.sort();\n            keys\n        },\n        identities: {\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "contract"],
+  },
+  {
+    name: "reexported-unsaid",
+    breaks:
+      "a library's contract says none of its modules' re-exports, so a consumer naming an item through ReactFiberReconciler imports it from its home, a second import (rd704)",
+    file: "src/lower/library.rs",
+    find: "    let mut reexported: Vec<Reexported> = (super::reexports::reexported_items(tcx, functions).into_iter())\n",
+    replace: "    let mut reexported: Vec<Reexported> = (super::reexports::reexported_items(tcx, functions).into_iter().filter(|_| false))\n",
+    tests: ["test/reexports-through.test.ts", "-t", "a use through a library's module that re-exports its item imports it from there"],
+  },
+  {
+    name: "through-path-unread",
+    breaks:
+      "a library's item named through its module that re-exports it is imported from its home all the same (rd704)",
+    file: "src/lower/library.rs",
+    find: "        Some(through.unwrap_or_else(|| (item.from.clone(), item.export.clone())))\n",
+    replace: "        Some(through.filter(|_| false).unwrap_or_else(|| (item.from.clone(), item.export.clone())))\n",
+    tests: ["test/reexports-through.test.ts", "-t", "a use through a library's module that re-exports its item imports it from there"],
+  },
+  {
+    name: "reexported-of-the-root",
+    breaks:
+      "a library's contract says its root's re-exports, of a root that writes no JS where its package's entry re-exports them, so its consumer fails, `dependency export references a missing module` (rd704, ADR 1008)",
+    file: "src/lower/library.rs",
+    find: "            !module.is_top_level_module() && exported.contains(&(module_path(tcx, *module), export.clone()))\n",
+    replace: "            exported.contains(&(module_path(tcx, *module), export.clone()))\n",
+    tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
   },
 ];

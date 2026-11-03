@@ -226,6 +226,25 @@ pub struct Held {
     pub name: String,
 }
 
+/// An item a module of the library re-exports by a `pub use` of another
+/// of its modules' (ADR 0874), which a consumer naming it through that
+/// module imports from that module's file, by what it exports it as
+/// (rd704).
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Reexported {
+    /// rustc's `DefPathHash` of the item.
+    pub item: String,
+    /// rustc's `DefPathHash` of the module that re-exports it, which a
+    /// consumer's path names.
+    pub holder: String,
+    /// The name its `pub use` gives it there, which the path names it by.
+    pub rust_name: String,
+    /// That module's, whose file it's imported from.
+    pub module: Vec<String>,
+    /// What that file exports it as.
+    pub export: String,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Library {
     pub version: u32,
@@ -268,6 +287,11 @@ pub struct Library {
     /// wrote before held none a consumer read through it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub held: Vec<Held>,
+    /// What its modules re-export of its others' items (rd704). A library a
+    /// compiler wrote before said none, its items imported from their own
+    /// modules.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub reexported: Vec<Reexported>,
     /// What the `Rc`s it counts point at, each `{ value, strong, weak }`
     /// (ADR 0320), and every one that may be one of them; each other the
     /// value itself (ADRs 0844, 0852): a crate it hands one counts as it
@@ -509,6 +533,10 @@ pub struct Exports {
     /// Each binding a module holds, by the module's key and the binding's
     /// name in it.
     pub held: HashMap<(String, String), HeldImport>,
+    /// Each item a module re-exports, by the module's key and the name
+    /// its `pub use` gives it: the item's key, and where it's imported from
+    /// through it, by what (rd704).
+    pub reexported: HashMap<(String, String), (String, (String, String))>,
     /// Each type its declarations export, by key: the `.d.ts` that declares
     /// it, by its JS file's specifier, relative to the consumer's output,
     /// its name there, and whether it's its default (ADR 0210, amended).
@@ -674,6 +702,16 @@ impl Dependencies {
                     name: held.name,
                 };
                 if exports.held.insert((held.holder, held.rust_name), imported).is_some() {
+                    return Err("duplicate dependency export".into());
+                }
+            }
+            for reexported in library.reexported {
+                let imported = (reexported.item, imported_from(&reexported.module, reexported.export)?);
+                if exports
+                    .reexported
+                    .insert((reexported.holder, reexported.rust_name), imported)
+                    .is_some()
+                {
                     return Err("duplicate dependency export".into());
                 }
             }

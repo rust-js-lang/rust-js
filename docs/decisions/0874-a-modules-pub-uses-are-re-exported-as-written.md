@@ -1,6 +1,6 @@
 # 0874. A module's `pub use`s are re-exported as written, or refused
 
-Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below; a glob's names, each, rd153; through a module that re-exports it, whatever it is, rd338; a private `use` through one imports from it, rd650; a `pub use` list's comments are its names', rd338; a glob's names are its module's, #592). Amends [0240](0240-reexports.md), whose re-exports were
+Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below; a glob's names, each, rd153; through a module that re-exports it, whatever it is, rd338; a private `use` through one imports from it, rd650; a `pub use` list's comments are its names', rd338; a glob's names are its module's, #592; a library's item through its module that re-exports it, rd704). Amends [0240](0240-reexports.md), whose re-exports were
 one statement for each module, ordered by its path, of the crate's
 functions and bindings alone, and refused a JS module's namespace; and
 [0596](0596-a-pub-use-of-a-modules-own-item-exports-it.md), whose private
@@ -467,4 +467,36 @@ a library's module that renames an item is refused". Mutations
 `glob-names-its-definer`, `glob-export-kept-name-unfollowed`,
 `glob-export-glob-unfollowed`, `glob-library-renamed-unrefused`
 (lower/reexports.ts) and `glob-module-unwritten` (lower/analysis.ts).
+
+## Amendment: a library's item through its module that re-exports it (rd704)
+
+ReactFiberReconciler writes upstream's `pub use
+crate::react_fiber_error_logger::{default_on_caught_error, ..};` (rd424),
+and ReactART, ReactDOMRoot and ReactTestRenderer name the handlers through
+it, `use react_reconciler::react_fiber_reconciler::{ReactFiberReconciler,
+default_on_caught_error, ..};`, as upstream imports them from
+'react-reconciler/src/ReactFiberReconciler'. That one `use` printed two
+imports, the handlers from ReactFiberErrorLogger, their home, as rd650's
+rule reads the crate's own modules only.
+
+**A library's item a module names through another of the library's
+modules, whose `pub use` re-exports it, is imported from that module's
+file, by what it exports it as** (`Foreign::import_key`): the library's
+contract says each re-export, `Reexported`, the item, the module that
+re-exports it and the name its `pub use` gives it, and what that module's
+file exports it as (`reexports::reexported_items`, of `exported_by`); not its root's, which ADR 1008's package entry re-exports. One
+`use` of the module is then one import of it. Of two paths of one item in
+a module, the first written names its import, its home's too, as an item
+is one import of the module. A library a compiler wrote before says none,
+its items imported from their homes.
+
+- Case N ([0262](0262-when-rust-and-js-disagree.md)): an ES module's
+  re-export is the same binding, so the value is the same either way.
+
+Held by `test/reexports-through.test.ts`'s "a use through a library's
+module that re-exports its item imports it from there": one import from
+the re-exporting module, the first path's home import of an item named
+twice, run. Mutations `reexported-unsaid` (lower/library.ts),
+`through-path-unread`, `reexported-of-the-root` (lower/library.ts) and
+`reexported-imports-unnamed` (lower/analysis.ts).
 

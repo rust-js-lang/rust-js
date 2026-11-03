@@ -691,4 +691,13 @@ export const mutations: Mutation[] = [
     replace: ";\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob re-exports each name as the module it names exports it"],
   },
+  {
+    name: "reexported-imports-unnamed",
+    breaks:
+      "an import through a library's re-exporting module is named nowhere before lowering, which panics rustc reading it (rd704)",
+    file: "src/lower/analysis.rs",
+    find: "    for export in foreign.all_reexported() {\n",
+    replace: "    for export in foreign.all_reexported().filter(|_| false) {\n",
+    tests: ["test/reexports-through.test.ts", "-t", "a use through a library's module that re-exports its item imports it from there"],
+  },
 ];
