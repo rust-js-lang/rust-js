@@ -984,4 +984,12 @@ export const mutations: Mutation[] = [
     replace: "                let export = match false {\n",
     tests: ["test/bindings.test.ts", "-t", "js::import! of a getter reads its export"],
   },
+  {
+    name: "es-class-prototype-read-unrecorded",
+    breaks: "a read of an ES class's prototype, `js::class::<T>().prototype()`, isn't recorded, so `class(es, fields)` of it compiles, its fields declared over a setter it may define there of a field's name (#568)",
+    file: "src/lower/binding_calls.rs",
+    find: "                    self.dependencies.borrow_mut().prototypes_read.insert(adt);\n",
+    replace: "",
+    tests: ["test/es-classes.test.ts", "-t", "fields that would change what it does are refused"],
+  },
 ];

@@ -529,6 +529,10 @@ struct Dependencies {
     /// set right after its constructor, before its methods (#448, ADR
     /// 0761 amended).
     prototype_set: Option<(DefId, rustc_span::Span)>,
+    /// Each ES class whose prototype it reads as a value,
+    /// `js::class::<T>().prototype()`, where an accessor may be defined of
+    /// a field's name: its fields undeclared (#568).
+    prototypes_read: HashSet<DefId>,
 }
 
 struct FnCx<'a, 'tcx> {

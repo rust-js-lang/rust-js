@@ -56,8 +56,8 @@ struct Pass {
     /// Each method a class takes of a trait of classes' default, its
     /// prototype's, by the class (rd283).
     class_defaults: Vec<(DefId, js::Function)>,
-    /// Each class's prototype a `js::on_load!` replaces (#448).
-    prototypes_set: Vec<super::classes::PrototypeSet>,
+    /// Each class's prototype a `js::on_load!` replaces (#448), each ES class's read (#568).
+    prototypes: super::classes::Prototypes,
 }
 
 /// How the crate is built, as its command asks.
@@ -847,6 +847,7 @@ pub fn lower_crate<'tcx>(
             pass.dictionary_names
                 .extend(consts[made..].iter().map(|c| c.name.clone()));
         }
+        pass.prototypes.read.extend(&lowered.dependencies.prototypes_read);
         match lowered {
             lowered
                 if let Some(key) = def_id.as_local().and_then(|local| {
@@ -942,8 +943,7 @@ pub fn lower_crate<'tcx>(
                         // One replacing a class's prototype, set right after
                         // its constructor, alone (#448, ADR 0761 amended).
                         let set = lowered.dependencies.prototype_set;
-                        pass.prototypes_set
-                            .extend(super::classes::set_alone(tcx, module, set, &lowered.function.body));
+                        pass.prototypes.set_alone(tcx, module, set, &lowered.function.body);
                         pass.statements.entry(module).or_default().push(lowered.function.body)
                     }
                     // Named in itself alone, as the Rust names it, unless
@@ -1278,9 +1278,9 @@ pub fn lower_crate<'tcx>(
             // Each re-export among the imports (rd620).
             super::reexports::place(tcx, &mut lowered.reexports, &uses, (&fns, &foreign, &paths), &written);
             // A class's prototype its load replaces, set right after its
-            // constructor (#448, ADR 0761 amended).
+            // constructor (#448, ADR 0761 amended); an ES class's fields (#568).
             let owner_of = |constructor| fns[&constructor].owner.clone();
-            super::classes::set_prototypes(tcx, &mut lowered.items, module, &pass.prototypes_set, owner_of);
+            super::classes::place_prototypes(tcx, &mut lowered.items, module, &pass.prototypes, owner_of, &sources);
             // One of types alone has no JS of its own: what it imports is
             // what its items read, of which it has none (the user's
             // decision, ADR 1005). Not the crate's root, its entry, which a

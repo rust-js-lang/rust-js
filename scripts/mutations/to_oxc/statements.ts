@@ -435,4 +435,12 @@ export const mutations: Mutation[] = [
     replace: "            let mut value = match None::<js::Expr> {\n",
     tests: ["test/method-forwarding.test.ts", "-t", "a prototype's method that only passes its parameters on"],
   },
+  {
+    name: "es-class-fields-unprinted",
+    breaks: "an ES class's declared fields are printed nowhere, `chunkName;` gone (#568)",
+    file: "src/to_oxc/statements.rs",
+    find: "            ClassBody::boxed(SPAN, ArenaVec::from_iter_in(fields.chain(elements), b), b),\n",
+    replace: "            ClassBody::boxed(SPAN, ArenaVec::from_iter_in(fields.take(0).chain(elements), b), b),\n",
+    tests: ["test/es-classes.test.ts", "-t", "whose struct says es is an ES class"],
+  },
 ];

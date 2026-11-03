@@ -768,7 +768,16 @@ see [class components](../react/components.md#class-components) ([ADR
 One whose struct is marked `#[cfg_attr(rust_js, rust_js::class(es))]` is
 an ES class too, where upstream writes one: `class Plugin {
 constructor(options) { .. } apply(compiler) { .. } get count() { .. }
-static shout(text) { .. } }`, its constants its prototype's after it,
+static shout(text) { .. } }`. Marked `#[cfg_attr(rust_js,
+rust_js::class(es, fields))]`, it declares its fields too, where upstream
+does, `class Plugin { chunkName; constructor(options) { .. } }`, in the
+order its constructor sets them. Where a declaration would change what
+the constructor does, `fields` is refused, saying why: the program reads
+its prototype, `js::class::<Plugin>().prototype()`, where it may define a
+setter of a field's name; the constructor leaves a field out, an
+`Option`'s `None`; a field is named `constructor` or `__proto__`; or the
+class extends a binding's, whose prototype may have an accessor of the
+name. `fields` without `es` is refused too (#568). Its constants are its prototype's after it,
 `Plugin.prototype.limit = 3;`, and its module's default declared as it,
 `export default class Plugin { .. }`. JS sees an ES class: its methods
 aren't enumerable, and a call without `new` throws a `TypeError`. Its

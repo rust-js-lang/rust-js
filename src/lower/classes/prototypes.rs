@@ -22,7 +22,7 @@ pub(crate) struct PrototypeSet {
 /// class's prototype, where: the statement, set right after its
 /// constructor; refused, saying so, where the body has other statements,
 /// a `let` it reads say.
-pub(crate) fn set_alone(
+fn set_alone(
     tcx: TyCtxt<'_>,
     module: LocalModId,
     set: Option<(DefId, rustc_span::Span)>,
@@ -59,6 +59,45 @@ pub(crate) fn with_prototype_members(tcx: TyCtxt<'_>) -> Vec<DefId> {
         .collect()
 }
 
+/// What the crate does with its classes' prototypes: each a `js::on_load!`
+/// replaces (#448), and each ES class's a function reads as a value,
+/// `js::class::<T>().prototype()`, whose fields are then undeclared (#568).
+#[derive(Default)]
+pub(crate) struct Prototypes {
+    pub(crate) set: Vec<PrototypeSet>,
+    pub(crate) read: std::collections::HashSet<DefId>,
+}
+
+impl Prototypes {
+    /// Of a `js::on_load!` body lowered, `body`, which replaces `set`'s
+    /// class's prototype, that statement, set right after its constructor
+    /// (`set_alone`).
+    pub(crate) fn set_alone(
+        &mut self,
+        tcx: TyCtxt<'_>,
+        module: LocalModId,
+        set: Option<(DefId, rustc_span::Span)>,
+        body: &[js::Stmt],
+    ) {
+        self.set.extend(set_alone(tcx, module, set, body));
+    }
+}
+
+/// Of `module`'s items, each class's prototype its load replaces set
+/// right after its constructor (`set_prototypes`), and each ES class's
+/// fields declared where that changes nothing (`fields::declare_fields`).
+pub(crate) fn place_prototypes(
+    tcx: TyCtxt<'_>,
+    items: &mut Vec<js::Item>,
+    module: LocalModId,
+    prototypes: &Prototypes,
+    owner_of: impl Fn(DefId) -> Option<String> + Copy,
+    sources: &crate::lower::sources::CapturedSources,
+) {
+    set_prototypes(tcx, items, module, &prototypes.set, owner_of);
+    super::fields::declare_fields(tcx, (items, module), &prototypes.read, owner_of, sources);
+}
+
 /// Each class's prototype its module's load replaces, a `js::on_load!` of
 /// `set_prototype` alone, `ReactPromise.prototype =
 /// Object.create(Promise.prototype)`, given as `(class, its namespace's name,
@@ -70,7 +109,7 @@ pub(crate) fn with_prototype_members(tcx: TyCtxt<'_>) -> Vec<DefId> {
 /// runs as it loads is between them, which would see the prototype
 /// replaced first, and of another module's class (#448, ADR 0761 amended);
 /// an ES class's is refused where it's replaced (`es_prototype_refused`).
-pub(crate) fn set_prototypes(
+fn set_prototypes(
     tcx: TyCtxt<'_>,
     items: &mut Vec<js::Item>,
     module: LocalModId,

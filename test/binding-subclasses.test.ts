@@ -132,7 +132,9 @@ test("a getter of the binding's class a class extends is its class's getter", as
 // write, never dropped: the trait's getter its impl doesn't mark, which
 // would print a method; the impl's of what the trait has as a method,
 // which would hide it; and the trait's of a method it binds. rd682: and
-// `#[rust_js::class(es)]` of a class that's an ES class already.
+// `#[rust_js::class(es)]` of a class that's an ES class already, and #568's
+// `class(es, fields)`, whose fields an accessor of the class it extends may
+// answer.
 test("a getter of the class a class extends is marked as the trait marks it", () => {
   const unmarked = subclass.replace("impl ModuleDependency for ClientReferenceDependency {\n    #[cfg_attr(rust_js, rust_js::getter)]\n", "impl ModuleDependency for ClientReferenceDependency {\n");
   const method = dependency.replace("    /// `get type()`.\n    #[cfg_attr(rust_js, rust_js::getter)]\n", "");
@@ -140,6 +142,7 @@ test("a getter of the class a class extends is marked as the trait marks it", ()
   const cases: [string, string, string, string][] = [
     ["binding-subclass-getter-unmarked", dependency, unmarked, "a `#[rust_js::class]` method is a getter where `ModuleDependency`'s `type` is one, `get type()`: mark it `#[cfg_attr(rust_js, rust_js::getter)]` as the trait's is"],
     ["binding-subclass-getter-of-a-method", method, subclass, "getter overrides a getter, and `ModuleDependency`'s `type` is a method"],
+    ["binding-subclass-marked-es-fields", dependency, subclass.replace("#[cfg_attr(rust_js, rust_js::class)]\npub struct", "#[cfg_attr(rust_js, rust_js::class(es, fields))]\npub struct"), "that extends a binding's class is an ES class already: write it `#[rust_js::class]`"],
     ["binding-subclass-marked-es", dependency, subclass.replace("#[cfg_attr(rust_js, rust_js::class)]\npub struct", "#[cfg_attr(rust_js, rust_js::class(es))]\npub struct"), "that extends a binding's class is an ES class already: write it `#[rust_js::class]`"],
     ["binding-subclass-getter-bound", bound, subclass.replace("pub fn kind", "pub fn request_of(d: &ClientReferenceDependency) -> String {\n    d.request()\n}\n\npub fn kind").replace("impl ModuleDependency for ClientReferenceDependency {\n", "impl ModuleDependency for ClientReferenceDependency {\n    #[cfg_attr(rust_js, rust_js::getter)]\n    fn request(&self) -> String {\n        String::new()\n    }\n\n"), "getter of `ModuleDependency`'s is bound by its `link_name`, `\"get request\"`"],
   ];
@@ -192,4 +195,30 @@ pub fn given(_request: &dep::WebRequest) -> bool {
   const lib = await import(join(dir, "lib.js"));
   const base = (await import(join(module, "ModuleDependency.js"))).default;
   expect(new lib.ClientReferenceDependency("./client.js") instanceof base).toBe(true);
+});
+
+// #568: the fields of a class that extends a binding's class are never
+// declared (`class(es, fields)` is refused it, above), as the class it extends may have an accessor of a field's
+// name on its prototype, which the constructor's assignment calls and a
+// declaration, defined after `super(..)` returns, would hide: here
+// webpack's class upper-cases what's set as its `tag`, and the subclass's
+// constructor sets it.
+test("a field of a class that extends a binding's class is set through its accessor, undeclared", async () => {
+  const dir = fixture("binding-subclass-field-accessor");
+  bindings(dir, dependency);
+  writeFileSync(
+    join(dir, "node_modules", "webpackish", "index.js"),
+    moduleDependency.replace("  get type() {", "  set tag(given) {\n    this._tag = given.toUpperCase();\n  }\n  get tag() {\n    return this._tag;\n  }\n  get type() {"),
+  );
+  writeFileSync(
+    join(dir, "lib.rs"),
+    subclass
+      .replace("pub struct ClientReferenceDependency {}", "pub struct ClientReferenceDependency {\n    pub tag: String,\n}")
+      .replace("    pub fn new(_request: &str) -> Self {\n        ClientReferenceDependency {}", "    pub fn new(request: &str) -> Self {\n        ClientReferenceDependency {\n            tag: request.to_string(),\n        }"),
+  );
+  run([compiler, ...app(dir)]);
+  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(out).toContain("export class ClientReferenceDependency extends ModuleDependency {\n  constructor(request) {\n    super(request);\n    this.tag = request;\n  }");
+  const lib = await import(join(dir, "lib.js"));
+  expect(new lib.ClientReferenceDependency("client").tag).toBe("CLIENT");
 });

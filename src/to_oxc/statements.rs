@@ -4,6 +4,7 @@
 use super::*;
 use oxc_ast::ast::{
     ClassBody, ClassElement, ClassHeritage, ClassType, Function, MethodDefinitionKind, MethodDefinitionType,
+    PropertyDefinitionType,
 };
 
 impl<'a> Cx<'a> {
@@ -254,6 +255,27 @@ impl<'a> Cx<'a> {
     /// declared as it, `export default class Plugin { .. }`.
     fn es_class(&self, n: &js::Namespace, class: &js::Class, default: bool) -> Vec<Statement<'a>> {
         let b = &self.b;
+        // Its fields declared first, `chunkName;`, where they're declared (#568).
+        let fields = class.fields.iter().map(|(at, name)| {
+            let key = PropertyKey::new_static_identifier(span(*at), self.name(name), b);
+            ClassElement::new_property_definition(
+                span(*at),
+                PropertyDefinitionType::PropertyDefinition,
+                ArenaVec::new_in(b),
+                key,
+                None,  // type annotation
+                None,  // value
+                false, // computed
+                false, // static
+                false, // declare
+                false, // override
+                false, // optional
+                false, // definite
+                false, // readonly
+                None,  // accessibility
+                b,
+            )
+        });
         let elements = n.methods.iter().map(|f| {
             let (kind, key, is_static) = match f.name == class.constructor {
                 true => (MethodDefinitionKind::Constructor, "constructor", false),
@@ -306,7 +328,7 @@ impl<'a> Cx<'a> {
             None, // type parameters
             heritage,
             ArenaVec::new_in(b),
-            ClassBody::boxed(SPAN, ArenaVec::from_iter_in(elements, b), b),
+            ClassBody::boxed(SPAN, ArenaVec::from_iter_in(fields.chain(elements), b), b),
             false, // abstract
             false, // declare
             b,

@@ -203,6 +203,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // one that runs nothing, a data property's, a function's
             // `prototype` (rd181).
             (JsForm::Get(name), Some(this)) if args.is_empty() && !name.contains('#') => {
+                // An ES class's prototype read as a value, where an accessor
+                // may be defined of a field's name: its fields undeclared (#568).
+                if name == "prototype"
+                    && let Some(adt) =
+                        (super::classes::es_classes(self.tcx).into_iter()).find(|&adt| self.names_class(adt, &this))
+                {
+                    self.dependencies.borrow_mut().prototypes_read.insert(adt);
+                }
                 match super::bindings::runs_nothing(self.tcx, def_id) {
                     true => Expr::member(this, name),
                     false => Expr::member(this, name).answered_by_a_getter(),
@@ -220,11 +228,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // `prototype_set`); a function's would drop them, refused
                 // (#448, ADR 0761 amended).
                 // An ES class's, which JS doesn't let be written (rd682).
-                let names = |adt: rustc_span::def_id::DefId| {
-                    super::classes::member_naming(self.tcx, adt).is_some_and(
-                        |ctor| matches!(self.fn_ref(ctor).kind, js::ExprKind::Member(ref of, _) if js::same_path(of, &this)),
-                    )
-                };
+                let names = |adt: rustc_span::def_id::DefId| self.names_class(adt, &this);
                 if name == "prototype"
                     && let Some(adt) = super::classes::es_classes(self.tcx).into_iter().find(|&adt| names(adt))
                 {
@@ -435,6 +439,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether binding `def_id`, of `generic_args`, is given an indexed
     /// list first, `node_list::iter(&NodeList<T>)` (ADR 1042).
+    /// Whether `this`, a value a binding's member is read of, is `adt`'s
+    /// class, the crate's, `js::class::<Plugin>()`'s `Plugin`: as its
+    /// members name it (#448, #568).
+    fn names_class(&self, adt: DefId, this: &Expr) -> bool {
+        super::classes::member_naming(self.tcx, adt).is_some_and(
+            |ctor| matches!(self.fn_ref(ctor).kind, js::ExprKind::Member(ref of, _) if js::same_path(of, this)),
+        )
+    }
+
     fn of_indexed_list(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
         let sig = self
             .tcx

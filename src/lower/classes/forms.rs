@@ -13,6 +13,10 @@ use super::{is_class, superclass};
 /// The word of `#[rust_js::class(es)]`, a class that's an ES class.
 const ES: &str = "es";
 
+/// The word of `#[rust_js::class(es, fields)]`, an ES class that declares
+/// its fields (#568).
+const FIELDS: &str = "fields";
+
 /// What `#[rust_js::class(..)]` says of `def_id`'s form, the words in its
 /// parentheses, `es` of `#[rust_js::class(es)]`; none of `#[rust_js::class]`.
 fn class_form(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<String> {
@@ -29,6 +33,13 @@ fn class_form(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<String> {
 /// constructor function and its prototype (ADR 0761).
 pub(crate) fn is_es_class(tcx: TyCtxt<'_>, adt: DefId) -> bool {
     is_class(tcx, adt) && (class_form(tcx, adt).iter().any(|word| word == ES) || superclass(tcx, adt).is_some())
+}
+
+/// Does `adt`, a class, declare its fields, `#[rust_js::class(es, fields)]`,
+/// `class Plugin { chunkName; constructor(..) { .. } }`, as its author
+/// writes it where upstream does (#568, the user's decision of 2026-11-04)?
+pub(crate) fn declares_fields(tcx: TyCtxt<'_>, adt: DefId) -> bool {
+    is_class(tcx, adt) && matches!(class_form(tcx, adt).as_slice(), [es, fields] if es == ES && fields == FIELDS)
 }
 
 /// Each of the crate's ES classes (`is_es_class`).
@@ -55,16 +66,23 @@ pub(crate) fn es_prototype_refused(tcx: TyCtxt<'_>, adt: DefId) -> String {
 }
 
 /// What's refused of the form `class`'s struct says, which extends a
-/// binding's class where `extends`: a word that's no form, and `es` of one
-/// that's an ES class already, by its impl (one way).
+/// binding's class where `extends`: a word that's no form, `es` of one
+/// that's an ES class already, by its impl (one way), and `fields` of one
+/// that isn't `es`, which only an ES class declares.
 pub(super) fn form_misuse(tcx: TyCtxt<'_>, class: DefId, extends: bool) -> Option<&'static str> {
     match class_form(tcx, class).as_slice() {
         [] => None,
-        [word] if word == ES && extends => {
+        [word, ..] if word == ES && extends => {
             Some("that extends a binding's class is an ES class already: write it `#[rust_js::class]`")
         }
         [word] if word == ES => None,
-        _ => Some("is a constructor function, `#[rust_js::class]`, or an ES class, `#[rust_js::class(es)]`"),
+        [es, fields] if es == ES && fields == FIELDS => None,
+        words if words.iter().any(|word| word == FIELDS) => Some(
+            "declares its fields as an ES class, `#[rust_js::class(es, fields)]`: a constructor function has no field declarations",
+        ),
+        _ => Some(
+            "is a constructor function, `#[rust_js::class]`, an ES class, `#[rust_js::class(es)]`, or one that declares its fields, `#[rust_js::class(es, fields)]`",
+        ),
     }
 }
 

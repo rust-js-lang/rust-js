@@ -1,6 +1,6 @@
 # 0761. A `#[rust_js::class]` is a constructor function and its prototype
 
-Status: Accepted, by the user's decision of 2026-10-24; amended (rd682, the user's decision of 2026-11-03): a class its struct marks `#[rust_js::class(es)]` is an ES class; amended (rd325): a private class is its module's own; amended (rd554): a constructor may give an `Rc` of its instance; amended (#448): a prototype of methods isn't replaced at load; amended (#448, the user's decision of 2026-11-01): a load's prototype set right after its constructor; amended (2026-11-01, the user's decision): a class whose `new` isn't `pub` is its type alone; amended by [1049](1049-js-class-is-typed-by-classed.md) (the user's decision of 2026-11-01): a class `js::class` names is `js::Classed`, one line of the program's, and may implement a trait of types alone. Extends
+Status: Accepted, by the user's decision of 2026-10-24; amended (rd682, the user's decision of 2026-11-03): a class its struct marks `#[rust_js::class(es)]` is an ES class; amended (#568, the user's decision of 2026-11-04): one marked `class(es, fields)` declares its fields; amended (rd325): a private class is its module's own; amended (rd554): a constructor may give an `Rc` of its instance; amended (#448): a prototype of methods isn't replaced at load; amended (#448, the user's decision of 2026-11-01): a load's prototype set right after its constructor; amended (2026-11-01, the user's decision): a class whose `new` isn't `pub` is its type alone; amended by [1049](1049-js-class-is-typed-by-classed.md) (the user's decision of 2026-11-01): a class `js::class` names is `js::Classed`, one line of the program's, and may implement a trait of types alone. Extends
 [0047](0047-methods.md), whose object of functions stays every other
 struct's impl. Amended: its struct's comments, its `///` doc, are its
 constructor function's (below). Amended (2026-10-26, the user's
@@ -777,3 +777,85 @@ subclass; mutations `es-class-a-constructor-function`,
 Decided by the user (2026-11-04): `#[cfg_attr(rust_js,
 rust_js::class(es))]` on the struct is the one way to ask for an ES
 class; no other attribute, option or rule asks for one.
+
+## Amendment: an ES class that says `fields` declares them (#568)
+
+Decided by the user (2026-11-04): a per-class opt-in. React's
+ReactFlightWebpackPlugin.js declares its fields, `export default class
+ReactFlightWebpackPlugin { clientReferences; chunkName;
+clientManifestFilename; serverConsumerManifestFilename; constructor(options)
+{ .. } }`, which the `class(es)` form printed none of: the plugin's
+largest difference from upstream.
+
+### Why an attribute, not a rule
+
+The first version declared every ES class's fields where nothing could
+tell the declaration from the constructor's assignment. Then react-art's
+LinearGradient, RadialGradient and Pattern, `class(es)` too, each gained
+`_args;`, which upstream's ReactART.js doesn't write, where the plugin and
+react-test-renderer's `class ReactTestInstance { _fiber; .. }` do. The
+same Rust, a struct and its `new`, is either upstream, as rd682 found of
+the class itself: which reads like upstream is the author's to say, where
+Rust meets JS. **`#[cfg_attr(rust_js, rust_js::class(es, fields))]`** says
+it; `class(es)` declares none, as before. `fields` is a word of the
+struct's `class(..)`, as `es` is, and only beside it: `class(fields)` is
+refused, as a constructor function has no field declarations.
+
+### What it declares, and what's refused
+
+A declaration is no assignment. `chunkName;` *defines* the instance's own
+property, `undefined`, before the constructor's body runs (of a class
+that extends another, as `super(..)` returns), where `this.chunkName =
+..` *sets* it, through whatever the prototype chain has of the name: a
+setter it calls, a read-only property it can't write. And the field is
+there, `undefined`, from the start, where it was absent until set.
+
+**A class that says `fields` declares them, in the order its constructor
+sets them** (`classes/fields.rs`' `declare_fields`, printed by
+`to_oxc::Cx::es_class` before its constructor, each at its Rust field's
+span). **Where a declaration could change what the constructor does,
+`fields` is refused, saying why, never dropped** (case C of ADR 0262 made
+a refusal: Rust's assignment can't be kept in that form):
+
+- the class extends a binding's: the class it extends may have an
+  accessor of a field's name on its prototype, which `this.tag = ..` after
+  `super(..)` calls and a field defined after `super(..)` returns would
+  hide; `class(es, ..)` of it is refused already, as it's an ES class by
+  its impl (`forms::form_misuse`);
+- the program reads its prototype as a value,
+  `js::class::<Plugin>().prototype()` (`binding_calls.rs` records it,
+  `Dependencies::prototypes_read`), where it may define a setter of a
+  field's name, `Object.defineProperty(Plugin.prototype, "name", { set
+  })`, which the constructor's assignment calls;
+- its constructor doesn't set every field in one run of `this.name =
+  value;`, the first of its statements that reads `this`, as Rust's
+  `Self { .. }` is, which nothing can read before it's made: a field whose
+  `None` is left out, `Labeled { label: None, size }`, absent until set;
+- a field isn't a JS name, or is `constructor`, which no class field may
+  be, or `__proto__`, whose assignment is `Object.prototype`'s setter's.
+
+Case N of ADR 0262 where it's declared: the define and the set make the
+same own property, in the same order. What's left that could tell them
+apart is JS outside the program, as rd682's call without `new` is: a JS
+subclass of the class that defines an accessor of a field's name, or a
+script that defines one on its prototype, doesn't see the constructor's
+set, as of upstream's class, which declares the same fields. Rust says
+nothing of either.
+
+Held by `test/es-classes.test.ts`'s "a class whose struct says es is an
+ES class" (`class(es, fields)`: its fields declared, `Object.keys` in their
+order), "an ES class declares no fields unless it says so" (a `class(es)`
+whose prototype has the program's setter of `name`, called as its
+constructor sets it) and "an ES class's fields that would change what it
+does are refused" (its prototype read, a field left unset, a field named
+`constructor`, `fields` of no ES class), and
+`test/binding-subclasses.test.ts`'s `class(es, fields)` of a subclass,
+refused, and "a field of a class that extends a binding's class is set
+through its accessor, undeclared", each run in Node; mutations
+`fields-declared-unasked`, `fields-of-a-read-prototype-allowed`,
+`fields-left-unset-allowed`, `field-named-constructor-declared`,
+`fields-never-declared` (`lower/classes/fields.rs`), `fields-word-unread`,
+`fields-of-a-subclass-allowed`, `fields-without-es-allowed`
+(`lower/classes/forms.rs`), `es-class-prototype-read-unrecorded`
+(`lower/binding_calls.rs`), `es-class-fields-unprinted`
+(`to_oxc/statements.rs`).
