@@ -9,7 +9,9 @@ decision): `let`s side by side are `const`s side by side, as written;
 only a pattern destructures, which supersedes "`let`s side by side, each
 named as its part, are one destructuring". Amended (2026-10-28, the
 user's decision): a cast's `let` is a `const` as every `let` is, which
-supersedes "a cast's is the variable".
+supersedes "a cast's is the variable". Amended (2026-11-03, the user's
+decision, #534): `let`s side by side, each named as its field, stay
+`const`s side by side, alien-signals' `unlink` too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: one pattern or two
 reads of the same properties, in the same order.
@@ -277,3 +279,32 @@ A: the same reads, in the same order, of one name more.
 - Mutations `cast-let-named` and `cast-variable-read-after` went with the
   fold; `cast-let-of-a-place-tested-in-its-place` holds the rest.
 
+
+## Amendment: `let`s named as their fields stay apart, #534 closed (2026-11-03)
+
+alien-signals' `unlink` (system.ts) writes `const { dep, prevDep,
+nextDep, nextSub, prevSub } = link;`. Its port reads each field into a
+`let` named as it, `let prev_dep = link.prev_dep.borrow().clone();`, and
+prints five `const`s, as this page's rule says. #534 asked that a run of
+them, each named exactly as its field with nothing between, be one
+destructuring.
+
+Measured on React's port before building it: of its 73 runs of two or
+more back-to-back `const x = o.x;`, each named as its field, upstream
+writes **45 as separate `const`s** (ReactFiberLane's `const
+suspendedLanes = root.suspendedLanes; const pingedLanes =
+root.pingedLanes; ..` five times, ReactFizzServer's reads of `task`,
+createFiberFromElement's `type` and `key`, ReactFiberCommitEffects'
+`create` and `inst`, ..), **16 as one destructuring**
+(getComponentNameFromFiber, ReactFiberHotReloading, ReactFiberScope
+twice, ReactDOMSelection, DOMPluginEventSystem twice, ReactFizzConfigDOM's
+bootstrap reads, ..), and 12 otherwise. alien-signals has the one run.
+Nothing in the Rust tells them apart: each is a `let` of a name alone.
+
+**The user's decision (B): keep the rule, `let`s side by side are
+`const`s side by side.** The 16 React sites and alien-signals' `unlink`
+are accepted differences from upstream; #534 is closed. Rejected: (A)
+the run destructured, 45 differences added to fix 17; (C) a pattern of
+`RefCell` fields read once, `let Link { prev_dep, .. } = &**link;`,
+which bends the port's Rust. Case N either way: each field is read once,
+in its order. Nothing in the compiler changed.

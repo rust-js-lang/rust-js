@@ -1290,8 +1290,11 @@ on stays an `else`; a `!( .. )` you wrote of an `&&` or `||` stays one,
 A block in the condition that does something before its value, `check(f)
 || { flags.set(f & !32); false }`, is a comma expression there, what it
 calls and the fields it sets, then its value, run only on its way, as
-alien-signals writes `(this.flags = flags & ~Pending, false)`; a block
-that sets a variable of its own is not one yet
+alien-signals writes `(this.flags = flags & ~Pending, false)`. A block's
+`let` read once, by what follows it, `{ let deps =
+this.deps.borrow().clone(); deps.unwrap() }`, is its value read there,
+`checkDirty($unwrap(this$.deps), this$)`; a block that sets a variable of
+its own, or reads its `let` twice, is not one yet
 ([ADR 1074](../../decisions/1074-a-block-in-a-condition-is-a-comma-expression.md)):
 
 ```rust

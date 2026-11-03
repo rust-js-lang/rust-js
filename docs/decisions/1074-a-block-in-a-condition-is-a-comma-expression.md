@@ -1,6 +1,7 @@
 # 1074. A block in a condition is a comma expression
 
-Status: Accepted (#523, 2026-11-03). Extends
+Status: Accepted (#523, 2026-11-03). Amended (2026-11-03): a block's
+`let` read once, right after it, is read in place. Extends
 [0946](0946-an-if-of-mixed-logicals-is-its-one-test.md), whose `skipped
 tests` make an `if`'s one test of the `if`s and `break`s MIR made of its
 `&&`, `||` and `!`.
@@ -113,3 +114,41 @@ value is `true`, a local's set kept apart, each ways' logs), and mutations
 `condition-binding-set-sequenced`, `condition-sequence-leaving-goes-on`,
 `condition-sequence-of-the-ifs-own` (`logicals.ts`), `negated-sequence-whole` (`make.ts`); the `Writes` arm by its unit test, `cargo test`, which the
 mutation runner doesn't run.
+
+## Amendment: a block's `let` read once is read where it's read (2026-11-03)
+
+alien-signals' `computedOper` gives its call a block with a `let`:
+
+```rust
+|| (flags & PENDING != 0
+    && (check_dirty(
+        {
+            let deps = this.deps.borrow().clone();
+            deps.unwrap()
+        },
+        Rc::clone(this),
+    ) || { .. }))
+```
+
+`falls` refused the `const deps = this$.deps;` on the way, so the `if`
+stayed labeled blocks, `bb56:` and `bb25:`. **A block's `let` on a way
+through the condition, read once, by the test right after it, where
+nothing JS evaluates before it there does anything, is read there** (`moves::read_again`, the one answer to a
+`const` read again in its next statement's place): `if (flags & 16 ||
+(flags & 32 && (checkDirty($unwrap(this$.deps), this$) || ((this$.flags
+= flags & ~32), false))))`, as upstream writes `checkDirty(this.deps!,
+this)`. Case N: the value runs where it ran against all that does
+something, and nothing between its `let` and its read did anything.
+One read twice, `{ let d = flags.get(); d * d }`, or read past a call,
+`more(flags.get(), { let d = bump(flags); d + 1 })`, whose read of
+`flags` is held before the call, stays as MIR made it: JS has no
+statement in a condition, and those need one. What the `if`'s own
+branch does is kept out by its other statements, which `tests_within`
+holds to the condition: a `let` on a way is read by a test or by what
+the way does, and a way of tests alone, no call or set, does nothing a
+`let` could be part of. Corpus `condition_block_sequence.rs`'s `held`,
+against native Rust; `lowering-condition-lets.test.ts`, "a condition's
+let read twice or past a call stays where it's bound", run, its answers
+native Rust's; mutations
+`condition-let-kept` and `condition-let-unread`
+(`logicals.ts`).

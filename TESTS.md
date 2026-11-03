@@ -4,7 +4,7 @@ As of 2026-10-30, `main` at `120772e2`; times are CI's, check run 41022723550.
 
 | Suite | Size | What it proves | Time |
 |---|---|---|---|
-| `bun run test` | 3,725 tests in 162 files | Everything below except mutations, rustc, fuzz and the nightly's files | 11–13 min on 2 machines: each one's corpus parts, 8.5–9.6 min, then its browser files |
+| `bun run test` | 3,727 tests in 163 files | Everything below except mutations, rustc, fuzz and the nightly's files | 11–13 min on 2 machines: each one's corpus parts, 8.5–9.6 min, then its browser files |
 | ↳ the nightly's files (`nightly` in `scripts/shard.ts`, ADR 1030) | 19 files, ~170 tests: tidy's stages, iterator forms, fuzz's seeds, the release's packaging, the coverage ratchets, React's releases, the editor's check, the harness, build history, limitations | What each says; a mutation that names one still runs it | ~1,000 s of CPU, run only by the nightly's suite, `--nightly` |
 | ↳ corpus | 1,323 Rust programs (`test/corpus/*.rs`) | Each one's JS prints what native Rust prints, and matches its snapshot; built as a library too, each push only the 120 marked `library-differs`, the nightly every one (ADR 0360) | about half the suite |
 | ↳ the other 161 files | ~2,350 tests | Lowering rules, diagnostics, bindings (js, webapi, React, Node), hosts (Vite, Next, cargo), React's ported modules against their snapshots, docs, architecture | the rest |

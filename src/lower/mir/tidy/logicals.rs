@@ -1022,8 +1022,23 @@ enum Truth {
 /// false)` where the way then leaves, `(s, true)` where it goes on, `(s,
 /// t)` before a test `t` (#523). `None` of another statement, or of an
 /// `if` whose branches give a test each, `c ? x : y`, which `&&` and `||`
-/// don't write.
+/// don't write. A block's `let` on a way, `{ let deps =
+/// this.deps.borrow().clone(); deps.unwrap() }` of a call's argument, is
+/// read where it's read, once, in the test right after it, before
+/// anything there does anything (`read_again`), so it runs where it ran
+/// against all that does: `checkDirty($unwrap(this$.deps), this$)`, as JS
+/// has no statement in a condition (#523). Read again, or past what does
+/// something, it's no test's.
 fn falls(stmts: &[Stmt], label: &str) -> Option<Truth> {
+    if stmts.iter().any(|s| matches!(s.kind, StmtKind::Const(..))) {
+        let mut read = stmts.to_vec();
+        while let Some(k) = read.iter().position(|s| matches!(s.kind, StmtKind::Const(..))) {
+            if !read_again(&mut read, k) {
+                return None;
+            }
+        }
+        return falls(&read, label);
+    }
     let mut all = Truth::Always;
     let mut done = Vec::new();
     // What's done, then `truth`: a sequence of them where anything is.

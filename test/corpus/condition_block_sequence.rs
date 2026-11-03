@@ -6,7 +6,10 @@
 // runs where Rust runs it and only on its way: a call logs, a field set,
 // two statements, a block whose value is a test, one in an `&&`, and the
 // `else if` after it. A field read before it is read before it still, and
-// a local's set, which sets a binding, is no part of one yet.
+// a local's set, which sets a binding, is no part of one yet. A block's
+// `let` read once, by what comes right after it, `{ let deps =
+// *deps.borrow(); deps.unwrap() }` of a call's argument, is read where
+// it's read, `check(log, $unwrap(deps.value))`, after the tests before it.
 use std::cell::{Cell, RefCell};
 
 fn check(log: &RefCell<Vec<String>>, n: u32) -> bool {
@@ -102,6 +105,22 @@ fn marked(log: &RefCell<Vec<String>>, flags: &Cell<u32>, f: u32) -> u32 {
     0
 }
 
+fn held(log: &RefCell<Vec<String>>, flags: &Cell<u32>, deps: &RefCell<Option<u32>>, f: u32) -> u32 {
+    if f & 1 != 0
+        || (f & 2 != 0
+            && (check(log, {
+                let deps = *deps.borrow();
+                deps.unwrap()
+            }) || {
+                flags.set(f | 8);
+                false
+            }))
+    {
+        flags.set(flags.get() + 100);
+    }
+    flags.get()
+}
+
 struct Counter {
     n: u32,
 }
@@ -146,6 +165,11 @@ fn main() {
         println!("read before {f}: {}", read_before(&log, &flags, f));
         println!("local {f}: {}", local(&log, f));
         println!("marked {f}: {}", marked(&log, &flags, f));
+        log.borrow_mut().clear();
+        let deps = RefCell::new(Some(f * 20));
+        let n = held(&log, &flags, &deps, f);
+        println!("held {f}: {n} {:?}", log.borrow());
+        log.borrow_mut().clear();
         let mut counter = Counter { n: 3 };
         println!("through {f}: {} {}", through(&log, &mut counter, f), counter.n);
     }

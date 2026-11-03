@@ -860,4 +860,21 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
     snapshots: true,
   },
+  {
+    name: "condition-let-kept",
+    breaks: "a block's `let` in a condition, `{ let deps = *deps.borrow(); deps.unwrap() }`, read once by the test after it, is no part of the test, so the `if` stays MIR's labeled blocks (#523)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "    if stmts.iter().any(|s| matches!(s.kind, StmtKind::Const(..))) {\n",
+    replace: "    if false && stmts.iter().any(|s| matches!(s.kind, StmtKind::Const(..))) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^condition_block_sequence.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "condition-let-unread",
+    breaks: "a block's `let` in a condition is dropped where the test after it doesn't read it once in its place, so the test reads a variable nothing declares (#523)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "            if !read_again(&mut read, k) {\n                return None;\n            }\n",
+    replace: "            if !read_again(&mut read, k) {\n                read.remove(k);\n            }\n",
+    tests: ["test/lowering-condition-lets.test.ts"],
+  },
 ];
