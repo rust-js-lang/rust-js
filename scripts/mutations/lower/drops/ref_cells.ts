@@ -261,8 +261,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a transparent struct's `RefCell` of an array, React's taint `RequestCleanupQueue`, is taken for a field that holds its value, where the struct is the cell (ADRs 0584, 0863)",
     file: "src/lower/drops/ref_cells.rs",
-    find: "        && crate::lower::recognition::transparent_field(tcx, tcx.adt_def(owner)).is_none()\n",
-    replace: "",
+    find: "        DefKind::Struct => crate::lower::recognition::transparent_field(tcx, tcx.adt_def(owner)).is_none(),\n",
+    replace: "        DefKind::Struct => true,\n",
     tests: [
       "test/crates.test.ts",
       "-t",

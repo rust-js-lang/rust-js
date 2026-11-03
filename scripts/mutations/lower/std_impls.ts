@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
     name: "enum-clone-whole-shared",
     breaks: "a clone of an enum changed in place is the same object",
     file: "src/lower/std_impls.rs",
-    find: "                    return self.clone_fields(place, ty, fields[0].clone(), span, out);\n",
+    find: "                    return self.clone_fields(place, (ty, None), fields[0].clone(), span, out);\n",
     replace: "                    return Ok(place);\n",
     tests: ["test/corpus.test.ts", "-t", "or_bindings"],
   },
