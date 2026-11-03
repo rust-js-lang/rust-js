@@ -330,4 +330,13 @@ export const mutations: Mutation[] = [
     replace: "        if span.is_none() {\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
   },
+  {
+    name: "imports-through-none",
+    breaks:
+      "no item a `use` names through a module that re-exports it is imported from there, react-markup's `createResumableState` from ReactFizzConfigDOM (rd650)",
+    file: "src/lower/reexports.rs",
+    find: "                if module != scope\n",
+    replace: "                if false && module != scope\n",
+    tests: ["test/reexports-through.test.ts", "-t", "a use through a module"],
+  },
 ];

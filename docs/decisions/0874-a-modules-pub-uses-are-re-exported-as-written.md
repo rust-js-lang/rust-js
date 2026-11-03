@@ -1,6 +1,6 @@
 # 0874. A module's `pub use`s are re-exported as written, or refused
 
-Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below; a glob's names, each, rd153; through a module that re-exports it, whatever it is, rd338). Amends [0240](0240-reexports.md), whose re-exports were
+Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below; a glob's names, each, rd153; through a module that re-exports it, whatever it is, rd338; a private `use` through one imports from it, rd650). Amends [0240](0240-reexports.md), whose re-exports were
 one statement for each module, ordered by its path, of the crate's
 functions and bindings alone, and refused a JS module's namespace; and
 [0596](0596-a-pub-use-of-a-modules-own-item-exports-it.md), whose private
@@ -291,7 +291,7 @@ export { __COMPILER_RUNTIME, Component, Fragment } from "./client.js";
   crate::react_client::use_optimistic;`, still imports from the item's
   home (`'./src/ReactHooks.js'`, upstream `'./src/ReactClient'`). Same
   binding, readability only; it changes which module the importer loads
-  first, which `load_cycles` would have to know. Neither are the `//
+  first, which `load_cycles` would have to know. (Done, rd650, below.) Neither are the `//
   DEV-only` comments inside a `use` list printed yet.
 
 Held by `test/reexports-through.test.ts`: a library's constant, the
@@ -301,3 +301,68 @@ own, each the same value as the module's. Mutations
 `reexport-through-library-from-home`, `reexport-through-module-namespace`,
 `reexport-through-class-home`, `reexporting-use-value-only`,
 `through-alias-given-ignored` and `through-reexport-name-unread`.
+
+## Amendment: a private `use` through a module that re-exports its item imports from it (rd650)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N for the binding, which
+is the same through either module (ES modules' re-exports are live
+bindings of the home's). What could change results is the load order:
+the importer now loads the re-exporting module first, and where that
+module's load reached the importer, a load cycle, what loads in it could
+read another's before it's made (C). That import isn't taken.
+
+react-markup's entries write `use crate::react_fizz_config_markup::{
+create_render_state, create_resumable_state, create_root_format_context,
+};`, ReactFizzConfigMarkup re-exporting each of ReactFizzConfigDOM's
+(`pub use react_dom_bindings::react_fizz_config_dom::{..}`), where
+upstream imports them `from './ReactFizzConfigMarkup'`. They printed
+`import {..} from 'react-dom-bindings/src/server/ReactFizzConfigDOM'`:
+rd338 followed the path's module for a `pub use` alone.
+
+**An item a module names through another of the crate's modules whose
+`pub use` re-exports it by the name the path gives is imported from that
+module, by what it re-exports it as** (`reexports::imported_through`, of
+`reexporting_use` and `exported_in`, rd338's own): the crate's function
+or constant, and a library's. Of a `use`'s path or a body's; of two, the
+first written. Its import is placed at that `use`, as one of the
+module's (`UsesWritten`, its holder, as a held binding's is, rd609),
+`import { createRenderState, createResumableState,
+createRootFormatContext } from './ReactFizzConfigMarkup'`, its names
+among that module's others, by what each imports.
+
+**Unless that makes a load cycle**: where the re-exporting module's load
+reaches the importer's, through what the crate's modules import of each
+other (`load_order::ModuleImports::imports_without_cycle`), the import
+stays its home's. The crate's root re-exports from most of its modules,
+so `use crate::Circle;` of a root's `pub use shapes::Circle;` in a module
+the root re-exports from imports from `shapes` still. Each is asked in
+turn, by the importer's path and where it's named, of the graph with the
+ones before taken, and one taken is an edge of it, so no taken import
+closes a cycle and the cycles the crate's lowering asked of (ADR 0031,
+amended; ADRs 0592, 1006) are the same: the decision is made when the
+modules' imports are assembled, after lowering, without lowering again
+(`pipeline::load_cycles::taken_through`).
+
+A library's item is read in the code by its import's local name, a
+package's, and keeps it: its entry leaves the library's file's import
+(`pipeline::packages::through_reexports`) and is an import of the
+crate's module the linker writes by that name whatever the module reads
+of its symbol (`ImportRequest::always`). The crate's own is a symbol the
+linker names, now from the re-exporting module's path
+(`pipeline::crate_imports`).
+
+Not yet: a class, a module's namespace or a binding through such a
+module, which rd338's `pub use` follows, are still imported from their
+home.
+
+Held by `test/reexports-through.test.ts`'s "a use through a module that
+re-exports its item imports it from there": a library's function, the
+crate's, and the module's own function, one import placed before a
+library's import whose `use` follows; renamed by the `use`; one of the
+crate's root, a load cycle, from its home; run. Mutations
+`imports-through-none` (`reexports.ts`), `imports-through-cycle-taken`
+(`load_order.ts`), `imports-through-unplaced` (`analysis/naming.ts`),
+`through-function-from-home` and `reimported-after-the-others`
+(`pipeline/crate_imports.ts`, which `default-class-imported-by-name`
+moved to with its code), `reimport-left-in-package`
+(`pipeline/packages.ts`) and `reimport-dropped-unread` (`link.ts`).

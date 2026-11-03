@@ -538,12 +538,14 @@ pub(in crate::lower) struct UsesWritten {
 
 impl UsesWritten {
     /// `module`'s, in the order written, each a whole statement, which each
-    /// of a tree's leaves shares.
+    /// of a tree's leaves shares. `through`: the module of the crate's an
+    /// item is imported from that re-exports it (rd650), whose import its
+    /// `use` makes.
     pub(in crate::lower) fn of(
         tcx: TyCtxt<'_>,
         module: LocalModId,
-        foreign: &crate::lower::library::Foreign<'_, '_>,
-        held: &bindings::Held,
+        (foreign, held): (&crate::lower::library::Foreign<'_, '_>, &bindings::Held),
+        through: &dyn Fn(DefId) -> Option<LocalModId>,
     ) -> Self {
         let items = || tcx.hir_module_items(module).free_items().map(|id| tcx.hir_item(id));
         // A tree's, `use crate::{a::x, b::y};`: its leaves' spans are their
@@ -567,7 +569,12 @@ impl UsesWritten {
                     let Res::Def(_, id) = res else { continue };
                     match held.use_holder(foreign, path.segments, id) {
                         Some(holder) => holders.push(holder),
-                        None => named.push(id),
+                        // And one imported from a module that re-exports
+                        // it, that module's (rd650).
+                        None => match through(id) {
+                            Some(module) => holders.push(bindings::Holder::Module(module)),
+                            None => named.push(id),
+                        },
                     }
                 }
                 Some((statement(item.span), named, holders, super::is_reexport(tcx, item)))

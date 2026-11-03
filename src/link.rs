@@ -87,16 +87,24 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Has
     // exhaustive `match` needn't write, `Dark` (ADR 0722), isn't written.
     let replacements: HashMap<_, _> = imports
         .iter()
-        .filter(|request| read.contains(&request.symbol))
+        .filter(|request| request.always || read.contains(&request.symbol))
         .map(|request| {
-            let alias = fresh_in(&mut names, &request.local);
+            // One the module reads by its name already has it.
+            let alias = match request.always {
+                true => request.local.clone(),
+                false => fresh_in(&mut names, &request.local),
+            };
             let named = grouped.entry(request.path.clone()).or_default();
             // The module itself, its own `import * as` (rd114, ADR 1018).
             match request.export == crate::js::NAMESPACE {
                 true => _ = namespaces.insert(request.path.clone(), alias.clone()),
                 false => named.push((request.export.clone(), alias.clone())),
             }
-            at.entry(request.path.clone()).or_insert(request.at);
+            // The first `use` of any of its imports.
+            let first = at.entry(request.path.clone()).or_insert(request.at);
+            if first.is_none() || (!request.at.is_none() && request.at.lo < first.lo) {
+                *first = request.at;
+            }
             (request.symbol.clone(), alias)
         })
         .collect();

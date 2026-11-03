@@ -275,3 +275,21 @@ pub(super) fn module_imports<'d>(
         js_modules,
     )
 }
+
+/// Of `through`, what a module names through another of the crate's
+/// modules that re-exports it (`reexports::imported_through`), each that
+/// `imports` takes from there without a load cycle, asked in turn, by the
+/// importer's path and where it's named, of the imports with those taken
+/// before (rd650, ADR 0874, amended): of a path its code reads or not, as
+/// an edge more keeps a later one from no cycle it could make.
+pub(super) fn taken_through(
+    through: HashMap<(LocalModId, DefId), crate::lower::reexports::Through>,
+    paths: &HashMap<LocalModId, Vec<String>>,
+    imports: &mut crate::lower::load_order::ModuleImports,
+) -> HashMap<(LocalModId, DefId), crate::lower::reexports::Through> {
+    let mut through: Vec<_> = through.into_iter().collect();
+    through.sort_by(|((a, _), at), ((b, _), bt)| (&paths[a], at.at.lo()).cmp(&(&paths[b], bt.at.lo())));
+    (through.into_iter())
+        .filter(|((from, _), through)| imports.imports_without_cycle(*from, through.module))
+        .collect()
+}

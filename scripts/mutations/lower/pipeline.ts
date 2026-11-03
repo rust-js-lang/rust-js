@@ -49,20 +49,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "default-class-imported-by-name",
-    breaks:
-      "a module that uses another's default class imports `{ Complex }`, which isn't exported",
-    file: "src/lower/pipeline.rs",
-    find: "            Some(_) if let Some(class) = super::classes::class_of(tcx, id) => (\n",
-    replace:
-      "            Some(_) if let Some(class) = super::classes::class_of(tcx, id).filter(|_| false) => (\n",
-    tests: [
-      "test/classes.test.ts",
-      "-t",
-      "a class is its module's default export",
-    ],
-  },
-  {
     name: "static-lock-refused",
     breaks:
       "a static `Mutex`, `RwLock` or atomic is refused where it's one JS cell (#330)",
@@ -153,19 +139,6 @@ export const mutations: Mutation[] = [
     replace:
       "                    js::Item::Const(constant) if false && aliased(&constant.name) => constant.export = false,\n",
     tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
-  },
-  {
-    name: "own-import-sorted-by-local",
-    breaks:
-      "an import lists what it imports by the items' own names, `{ MAX as LIMIT, unstable_now, toArray }`",
-    file: "src/lower/pipeline.rs",
-    find: "(&paths[a], ae, an).cmp(&(&paths[b], be, bn))",
-    replace: "(&paths[a], an, ae).cmp(&(&paths[b], bn, be))",
-    tests: [
-      "test/modules.test.ts",
-      "-t",
-      "a module's own item a pub use renames is imported by that name",
-    ],
   },
   {
     name: "block-directive-allowed",
@@ -260,33 +233,6 @@ export const mutations: Mutation[] = [
     find: "                    Some(directive) => directives.push(directive.to_string()),",
     replace: "                    Some(_) => {}",
     tests: ["test/modules.test.ts", "-t", "make a module a Next.js route"],
-  },
-  {
-    name: "default-imported-by-name",
-    breaks:
-      "a module's default export is imported by its name, `import { Memoized as Label }`",
-    file: "src/lower/pipeline.rs",
-    find: "                super::default_exports::exported_as(tcx, id, info.exported()),\n",
-    replace: "                name.clone(),\n",
-    tests: [
-      "test/declarations.test.ts",
-      "-t",
-      "default export is imported as one",
-    ],
-  },
-  {
-    name: "default-import-unrenamed",
-    breaks:
-      "a default import is named as its item is, `import Memoized`, not as the importer's `use .. as Label` names it",
-    file: "src/lower/pipeline.rs",
-    find: "                renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()),",
-    replace:
-      "                defaulted.contains(&id).then(|| name.clone()).unwrap_or_else(|| renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone())),",
-    tests: [
-      "test/declarations.test.ts",
-      "-t",
-      "default export is imported as one",
-    ],
   },
   {
     name: "on-load-a-function",
@@ -410,16 +356,6 @@ export const mutations: Mutation[] = [
     find: "                    export: (tcx.def_kind(key) != DefKind::AnonConst && tcx.visibility(key).is_public())",
     replace: "                    export: (tcx.visibility(key).is_public())",
     tests: ["test/corpus.test.ts", "-t", "slice_uninit"],
-  },
-  {
-    name: "named-import-alias-dropped",
-    breaks:
-      "a `use` that renames another module's function imports it by its own name",
-    file: "src/lower/pipeline.rs",
-    find: "                renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()),",
-    replace:
-      "                (!defaulted.contains(&id)).then(|| name.clone()).unwrap_or_else(|| renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone())),",
-    tests: ["test/modules.test.ts", "-t", "renames another module's function"],
   },
   {
     name: "mir-statics-boxed",
@@ -750,15 +686,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "js-given-copy-unimported",
-    breaks:
-      "a copy of another module's function a module calls by the name its `use` gives isn't imported, so `relay_named`'s `wrappedUnboxed` has no import, and the case fails",
-    file: "src/lower/pipeline.rs",
-    find: "        targets.entry(from).or_default().insert(target);",
-    replace: "        let _ = (from, target);",
-    tests: ["test/corpus.test.ts", "-t", "js_given_copies"],
-  },
-  {
     name: "namespaced-library-variable-held",
     breaks:
       "a library's thread-local read through its namespace, `dep::NAME.with_borrow(..)`, is read as its cell, `Dep.name.value`, where it's the library's variable (rd114a, ADR 1018)",
@@ -770,34 +697,6 @@ export const mutations: Mutation[] = [
       "test/lowering-module-variables.test.ts",
       "-t",
       "library's exported cell",
-    ],
-  },
-  {
-    name: "export-named-apart-imported-apart",
-    breaks:
-      "another module of the crate imports an export named apart by its module's name for it, `import { delete$ }`, which its module doesn't export (#338)",
-    file: "src/lower/pipeline.rs",
-    find: "                super::default_exports::exported_as(tcx, id, info.exported()),\n",
-    replace:
-      "                super::default_exports::exported_as(tcx, id, &name),\n",
-    tests: [
-      "test/lowering-module-variables.test.ts",
-      "-t",
-      "an export its module names apart is exported by its own name",
-    ],
-  },
-  {
-    name: "reexporter-namespace-unimported",
-    breaks:
-      "a module that reads a function only through a module that re-exports it, `Plugins.doubled(2)`, isn't offered that module's namespace import, and the linker panics (rd137)",
-    file: "src/lower/pipeline.rs",
-    find: "let targets = imports.iter().map(|&(target, ..)| target).chain(reexporters);\n",
-    replace:
-      "let targets = imports.iter().map(|&(target, ..)| target).chain(reexporters.take(0));\n",
-    tests: [
-      "test/modules.test.ts",
-      "-t",
-      "a function called through its module is read through its namespace",
     ],
   },
   {

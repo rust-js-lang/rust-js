@@ -46,6 +46,22 @@ impl ModuleImports {
         Self { edges }
     }
 
+    /// Whether `from` may import `to` without a load cycle, where it
+    /// doesn't yet: an import of what `to` re-exports, which may be from its
+    /// home instead (rd650, ADR 0874, amended). One that would make a cycle,
+    /// `to`'s load reaching `from`'s, would let what loads in it read
+    /// another's before it's made, and change what the cycles the program
+    /// has are, which its lowering asked of the imports it makes (ADR 0031,
+    /// amended): it's not taken. One taken is an edge of the graph, so the
+    /// next is asked of it.
+    pub(super) fn imports_without_cycle(&mut self, from: LocalModId, to: LocalModId) -> bool {
+        if from == to || self.reaches(to, from) {
+            return false;
+        }
+        self.edges.entry(from).or_default().insert(to);
+        true
+    }
+
     /// Whether `from`'s JS imports `to`'s, or imports what does.
     pub(super) fn reaches(&self, from: LocalModId, to: LocalModId) -> bool {
         let mut seen = HashSet::from([from]);

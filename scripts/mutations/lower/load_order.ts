@@ -29,4 +29,13 @@ export const mutations: Mutation[] = [
       "a bound JS file imports back",
     ],
   },
+  {
+    name: "imports-through-cycle-taken",
+    breaks:
+      "an import through a module that re-exports it is taken where that module's load reaches the importer, `import { helper } from \"./lib.js\"` of a module the root re-exports, a load cycle (rd650)",
+    file: "src/lower/load_order.rs",
+    find: "        if from == to || self.reaches(to, from) {\n",
+    replace: "        if from == to {\n",
+    tests: ["test/reexports-through.test.ts", "-t", "a use through a module"],
+  },
 ];

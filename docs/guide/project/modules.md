@@ -369,7 +369,16 @@ What a `pub use` names is re-exported from the module its path names,
 which may re-export it itself, by the name it has there, a library's
 item, a class or a module as a function: `pub use client::FRAGMENT;` of
 `client`'s `#[rust_js::name = "Fragment"] pub use ..` is `export {
-Fragment } from "./client.js"`. Otherwise a library's item, its default
+Fragment } from "./client.js"`. So does a private `use` of a function or
+constant, the crate's or a library's, through such a module: `use
+crate::config_markup::create_state;` of `config_markup`'s `pub use
+dep::config::create_state;` is `import { createState } from
+"./config_markup.js"`, placed at that `use`, as react-markup imports
+`createResumableState` from `./ReactFizzConfigMarkup`. Where that module's
+load reaches the importer's, which the crate's root's re-exports often
+do, the import would make a load cycle, so it stays its home's
+([ADR 0874](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md),
+amended). Otherwise a library's item, its default
 or a binding a module of it holds is re-exported from the library's
 file; a class, by its constructor; a module, its namespace, `export * as
 ns from`, as is a JS module's, `#*`. A private `use .. as`'s

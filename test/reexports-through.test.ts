@@ -75,3 +75,63 @@ export { Fragment as unstable_Fragment } from "./client.js";
   expect(new app.Component(2).props).toBe(2);
   expect((await import(join(dir, "app", "again.js"))).Frag).toBe("react.fragment");
 });
+
+// And a private `use` through such a module imports from it, by the name it
+// re-exports the item as, as upstream's react-markup imports
+// `createResumableState` from './ReactFizzConfigMarkup', which re-exports it
+// from ReactFizzConfigDOM: a library's function and the crate's alike. One
+// whose re-exporting module's load reaches the importer's, a load cycle,
+// is from its home (rd650, ADR 0874, amended).
+test("a use through a module that re-exports its item imports it from there", async () => {
+  const dir = fixture("imports-through");
+  mkdirSync(join(dir, "dep"));
+  writeFileSync(join(dir, "dep.rs"), "pub mod config {\n    pub fn create_state() -> u32 {\n        7\n    }\n\n    pub fn other() -> u32 {\n        8\n    }\n}\n");
+  run([compiler, join(dir, "dep.rs"), "-o", join(dir, "dep", "lib.js"), "--library", "--manifest", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(dir, "libdep.rmeta")}`, ...js]);
+  mkdirSync(join(dir, "app"));
+  writeFileSync(join(dir, "app", "lib.rs"), `mod config_markup;
+mod home;
+pub mod markup;
+pub mod renamed;
+pub mod user;
+
+pub use home::helper;
+pub use user::cycled;
+`);
+  writeFileSync(join(dir, "app", "config_markup.rs"), `pub use crate::home::helper;
+pub use dep::config::{create_state, other};
+
+pub fn own() -> u32 {
+    1
+}
+`);
+  writeFileSync(join(dir, "app", "home.rs"), "pub fn helper() -> u32 {\n    2\n}\n");
+  writeFileSync(join(dir, "app", "markup.rs"), `use crate::config_markup::{create_state, helper, own};
+use dep::config::other;
+
+pub fn render() -> u32 {
+    create_state() + helper() + own() + other()
+}
+`);
+  writeFileSync(join(dir, "app", "renamed.rs"), `use crate::config_markup::create_state as make_state;
+use crate::config_markup::helper as help;
+
+pub fn render() -> u32 {
+    make_state() + help()
+}
+`);
+  writeFileSync(join(dir, "app", "user.rs"), "use crate::helper;\n\npub fn cycled() -> u32 {\n    helper() + 1\n}\n");
+  run([compiler, join(dir, "app", "lib.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js]);
+  const markup = readFileSync(join(dir, "app", "markup.js"), "utf8");
+  expect(markup).toContain('import { createState, helper, own } from "./config_markup.js";\nimport { other } from "../dep/config.js";\n');
+  expect(markup).not.toContain("home.js");
+  expect(readFileSync(join(dir, "app", "renamed.js"), "utf8")).toContain('import { createState as makeState, helper as help } from "./config_markup.js";\n');
+  // The crate's root re-exports `cycled` from user.js: user.js importing
+  // `helper` from it would load it first, a cycle, so it's from its home.
+  expect(readFileSync(join(dir, "app", "user.js"), "utf8")).toContain('import { helper } from "./home.js";\n');
+  const app = await import(join(dir, "app", "markup.js"));
+  expect(app.render()).toBe(18);
+  expect((await import(join(dir, "app", "renamed.js"))).render()).toBe(9);
+  expect((await import(join(dir, "app", "lib.js"))).cycled()).toBe(3);
+});

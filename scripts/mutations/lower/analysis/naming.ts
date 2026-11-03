@@ -855,4 +855,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
   },
+  {
+    name: "imports-through-unplaced",
+    breaks:
+      "a `use` through a module that re-exports what it names places that module's import nowhere, so `./config_markup.js` is after `../dep/config.js`, whose `use` is after it (rd650)",
+    file: "src/lower/analysis/naming.rs",
+    find: "                            Some(module) => holders.push(bindings::Holder::Module(module)),\n",
+    replace: "                            Some(_) => named.push(id),\n",
+    tests: ["test/reexports-through.test.ts", "-t", "a use through a module"],
+  },
 ];

@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "unread-module-imported",
     breaks: "a module imports another's item it doesn't read, a numbered enum's variant whose test an exhaustive `match` needn't write, `import { Fast, Slow }`",
     file: "src/link.rs",
-    find: "        .filter(|request| read.contains(&request.symbol))\n",
+    find: "        .filter(|request| request.always || read.contains(&request.symbol))\n",
     replace: "",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variants are its module's consts"],
   },
@@ -57,5 +57,14 @@ export const mutations: Mutation[] = [
     find: "        module.types_only = false;\n",
     replace: "        let _ = &module;\n",
     tests: ["test/corpus.test.ts", "-t", "^module_of_types_reexported.rs$"],
+  },
+  {
+    name: "reimport-dropped-unread",
+    breaks:
+      "a library's item imported from the crate's module that re-exports it, read by its name and not a symbol, is taken for unread and not imported: `createState` is undeclared (rd650)",
+    file: "src/link.rs",
+    find: "        .filter(|request| request.always || read.contains(&request.symbol))\n",
+    replace: "        .filter(|request| read.contains(&request.symbol))\n",
+    tests: ["test/reexports-through.test.ts", "-t", "a use through a module"],
   },
 ];

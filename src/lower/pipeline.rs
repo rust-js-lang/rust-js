@@ -1,6 +1,7 @@
 //! Orchestrate analyzed crate facts, function emission, reachability and symbolic module assembly.
 
 mod copies;
+mod crate_imports;
 mod forwarders;
 mod holes;
 mod load_cycles;
@@ -10,16 +11,16 @@ mod reached;
 use self::holes::{Holes, fill_hole, fill_holes};
 use self::load_cycles::{ModuleJs, module_imports};
 use self::reached::written_where_reached;
-use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, nulled_params::NulledParams, renamed_in};
+use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, nulled_params::NulledParams};
 use super::bindings::Export;
-use super::{Body, CrateFacts, FnCx, Locals, const_js, located, module_file, module_symbol, static_value};
+use super::{Body, CrateFacts, FnCx, Locals, const_js, located, module_file, static_value};
 use crate::js::{self, Expr, Prop, StmtKind};
-use crate::program::{ImportRequest, LoweredModule, Unlinked, UnlinkedModule};
+use crate::program::{LoweredModule, Unlinked, UnlinkedModule};
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Symbol;
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
 /// Retained functions and their dependencies, grouped for output.
 #[derive(Default)]
@@ -1038,49 +1039,6 @@ pub fn lower_crate<'tcx>(
     // A copy of a function another module calls, exported by its name (ADR
     // 0051, amended).
     copies::export(&js_given, &fns, &pass.copy_references, &mut pass.functions);
-    // What each module imports of another: what that module exports its
-    // item as, its name, its default or the name a `pub use` gives it
-    // (`default_exports::exported_as`), each by what the importer's `use`
-    // names it, `import { SandpackClient as Sandpack }`, or by its name,
-    // `import { unstable_now as getCurrentTime }`.
-    let mut targets: HashMap<LocalModId, HashSet<(LocalModId, String, String, String)>> = HashMap::new();
-    for &(from, id) in &pass.references {
-        let info = &fns[&id];
-        let name = info.owner.as_ref().unwrap_or(&info.name).clone();
-        let (export, local) = match info.owner {
-            // A class's member, by its class, which may be its module's
-            // default (ADR 0761).
-            Some(_) if let Some(class) = super::classes::class_of(tcx, id) => (
-                super::default_exports::exported_as(tcx, class, &name),
-                renamed_in(tcx, from).remove(&class).unwrap_or_else(|| name.clone()),
-            ),
-            Some(_) => (name.clone(), name.clone()),
-            None => (
-                super::default_exports::exported_as(tcx, id, info.exported()),
-                renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()),
-            ),
-        };
-        targets
-            .entry(from)
-            .or_default()
-            .insert((info.module, name, export, local));
-    }
-    // And a copy of a function, by its name (ADR 0051, amended).
-    for (from, target) in copies::imported(&js_given, &fns, &pass.copy_references) {
-        targets.entry(from).or_default().insert(target);
-    }
-    // And a binding it reads through another that holds it, by its export
-    // there, named as the importer's `use` names it (ADR 0633).
-    for (from, holder, name, default, binding) in &pass.held {
-        let local = renamed_in(tcx, *from).remove(binding).unwrap_or_else(|| name.clone());
-        let export = if *default { "default".to_string() } else { name.clone() };
-        (targets.entry(*from).or_default()).insert((*holder, name.clone(), export, local));
-    }
-    // What another module than its own calls, which stays a function.
-    let called_elsewhere: HashSet<DefId> = (pass.references.iter())
-        .filter(|&&(from, id)| fns[&id].module != from)
-        .map(|&(_, id)| id)
-        .collect();
     let copy_edges: Vec<(LocalModId, DefId)> = (pass.copy_references.iter()).map(|&(from, id, _)| (from, id)).collect();
     let edges = (
         pass.references.iter().chain(copy_edges.iter()),
@@ -1088,8 +1046,20 @@ pub fn lower_crate<'tcx>(
         pass.package_uses.iter(),
         pass.reexporters.iter(),
     );
-    let imports = module_imports(&places, &fns, edges, (&imported, &reexports_from), js_modules);
+    let mut imports = module_imports(&places, &fns, edges, (&imported, &reexports_from), js_modules);
     load_cycles::refuse_dictionaries_in_load_cycles(tcx, &pass, &const_items, (&modules, &imports));
+    // What a module names through another of the crate's modules that
+    // re-exports it, imported from there where that makes no load cycle
+    // (rd650).
+    let through = super::reexports::imported_through(tcx, (&fns, &foreign));
+    let imported_through = load_cycles::taken_through(through, &paths, &mut imports);
+    let copies = copies::imported(&js_given, &fns, &pass.copy_references);
+    let mut targets = crate_imports::of_crate(tcx, (&pass, &fns), copies, &imported_through);
+    // What another module than its own calls, which stays a function.
+    let called_elsewhere: HashSet<DefId> = (pass.references.iter())
+        .filter(|&&(from, id)| fns[&id].module != from)
+        .map(|&(_, id)| id)
+        .collect();
     // The exported thread-locals and `static mut`s their modules made
     // their variables.
     let mut variables: HashSet<DefId> = HashSet::new();
@@ -1097,7 +1067,8 @@ pub fn lower_crate<'tcx>(
         .into_iter()
         .map(|module| {
             // Where each import's `use` is, which its comments are before.
-            let uses = super::analysis::UsesWritten::of(tcx, module, &foreign, &held);
+            let through = |id| imported_through.get(&(module, id)).map(|through| through.module);
+            let uses = super::analysis::UsesWritten::of(tcx, module, (&foreign, &held), &through);
             let written = |at: Option<rustc_span::Span>| at.map_or(js::Span::NONE, |at| sources.span(at));
             // One `import` per JS module, of what this file uses from it, and
             // of what it imports for what that does when loaded (ADR 0110).
@@ -1388,31 +1359,20 @@ pub fn lower_crate<'tcx>(
             // Not what nothing reads (ADR 0722), nor what only a function
             // re-exported in its place read (rd575).
             packages::unread(&mut lowered, (&imported, module), &loaded, &forwarded_reads);
-            let mut imports: Vec<_> = targets.remove(&module).unwrap_or_default().into_iter().collect();
-            // By what each imports, `import { MAX as LIMIT, unstable_now as getCurrentTime }`.
-            imports.sort_by(|(a, an, ae, _), (b, bn, be, _)| (&paths[a], ae, an).cmp(&(&paths[b], be, bn)));
-            // And each module it imports of, itself, which it reads where a
-            // path names a function through it, `Plugin.extractEvents`, or one
-            // it re-exports, `Plugin.registerEvents` (rd114, rd137, ADR 1018):
-            // after what it imports by name, which keeps its name.
+            // A library's item it names through another of the crate's
+            // modules that re-exports it, imported from there (rd650).
+            let reimported = packages::through_reexports(
+                &mut lowered.packages,
+                &loaded,
+                (imported_through.iter())
+                    .filter(|((from, _), _)| *from == module)
+                    .filter_map(|(&(_, id), through)| Some((foreign.import_key(id, module)?, through))),
+            );
+            let imports = targets.remove(&module).unwrap_or_default();
             let reexporters = (pass.reexporters.iter()).filter_map(|&(from, to)| (from == module).then_some(to));
-            let targets = imports.iter().map(|&(target, ..)| target).chain(reexporters);
-            let through: BTreeMap<&Vec<String>, LocalModId> = targets.map(|to| (&paths[&to], to)).collect();
-            let namespaces: Vec<_> = (through.into_values())
-                .map(|target| {
-                    let name = super::analysis::namespace_in(tcx, module, target);
-                    (target, js::NAMESPACE.to_string(), js::NAMESPACE.to_string(), name)
-                })
-                .collect();
-            let candidates: Vec<_> = (imports.into_iter().chain(namespaces))
-                .map(|(target, name, export, local)| ImportRequest {
-                    symbol: module_symbol(target, &name),
-                    export,
-                    local,
-                    path: paths[&target].clone(),
-                    at: written(uses.module_at(tcx, &fns, target)),
-                })
-                .collect();
+            let candidates = crate_imports::requests(tcx, module, (imports, reimported, reexporters), &paths, &|of| {
+                written(uses.module_at(tcx, &fns, of))
+            });
             UnlinkedModule {
                 module: lowered,
                 imports: candidates,

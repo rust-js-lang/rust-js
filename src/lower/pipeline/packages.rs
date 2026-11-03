@@ -110,3 +110,40 @@ pub(super) fn unread(
             || loaded.contains(&package.from)
     });
 }
+
+/// Of `packages`, the imports of a library's items each of `through` says
+/// the module names through another of the crate's modules that re-exports
+/// it, taken out, each a package's export, `(from, export)`, and where
+/// it's imported instead (rd650, ADR 0874, amended): each, that module,
+/// what it exports it as, and the name the module reads it by, which
+/// stays. A package left of nothing is gone, but one imported for its
+/// effects, `loaded`.
+pub(super) fn through_reexports<'t>(
+    packages: &mut Vec<js::Package>,
+    loaded: &HashSet<String>,
+    through: impl Iterator<Item = (Export, &'t super::super::reexports::Through)>,
+) -> Vec<(LocalModId, String, String)> {
+    let (mut moved, mut emptied) = (Vec::new(), HashSet::new());
+    for ((from, export), through) in through {
+        let Some(package) = packages.iter_mut().find(|package| package.from == from) else {
+            continue;
+        };
+        let local = match export.as_str() {
+            "default" => package.default.take(),
+            "*" => None,
+            _ => (package.named.iter().position(|(named, _)| *named == export)).map(|at| package.named.remove(at).1),
+        };
+        if let Some(local) = local {
+            moved.push((through.module, through.export.clone(), local));
+            emptied.insert(from);
+        }
+    }
+    packages.retain(|package| {
+        !emptied.contains(&package.from)
+            || !package.named.is_empty()
+            || package.default.is_some()
+            || package.namespace.is_some()
+            || loaded.contains(&package.from)
+    });
+    moved
+}

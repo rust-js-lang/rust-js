@@ -33,4 +33,13 @@ export const mutations: Mutation[] = [
     replace: "    let only_forwarded = |_: &str| false;\n",
     tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
   },
+  {
+    name: "reimport-left-in-package",
+    breaks:
+      "a library's item imported from the crate's module that re-exports it is imported from the library's file too, `import { createState, other }` (rd650)",
+    file: "src/lower/pipeline/packages.rs",
+    find: ".map(|at| package.named.remove(at).1),\n",
+    replace: ".map(|at| package.named[at].1.clone()),\n",
+    tests: ["test/reexports-through.test.ts", "-t", "a use through a module"],
+  },
 ];

@@ -173,6 +173,11 @@ pub struct ImportRequest {
     /// The first `use` of the importer's naming what the module it's from
     /// has, or that module, which the import is where it's written.
     pub at: js::Span,
+    /// Imported by `local` as it is, whatever the module reads of `symbol`:
+    /// a library's item its code reads by that name, imported from the
+    /// crate's module that re-exports it (rd650). Else only where the module
+    /// reads `symbol`, by a name the linker keeps apart.
+    pub always: bool,
 }
 
 /// Symbolic module output. Imports and the helpers it asks for are filled

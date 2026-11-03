@@ -496,6 +496,92 @@ fn through_reexport(
     Some((through, super::bindings::use_name(tcx, used, (name, item), own)))
 }
 
+/// Where a module imports an item from: the crate's module its path names
+/// it through, which re-exports it, by what that module exports it as.
+pub(super) struct Through {
+    pub(super) module: LocalModId,
+    pub(super) export: String,
+    /// The path that names it so, the first written.
+    pub(super) at: rustc_span::Span,
+}
+
+/// Each item a module of the crate names through another of its modules
+/// whose `pub use` re-exports it by the name the path gives, by the module
+/// and the item: the crate's function or constant, or a library's,
+/// imported from that module, as upstream's react-markup imports
+/// `createResumableState` from `./ReactFizzConfigMarkup`, which re-exports
+/// it, not from ReactFizzConfigDOM (rd650, ADR 0874, amended). Of a path
+/// of a `use` or of a body; of two, the first written. Whether the import
+/// is taken from there is the load order's to say
+/// (`load_order::ModuleImports::imports_without_cycle`), as one that makes
+/// a load cycle stays its home's.
+pub(super) fn imported_through<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (fns, foreign): (&HashMap<DefId, FnInfo>, &super::library::Foreign<'_, 'tcx>),
+) -> HashMap<(LocalModId, DefId), Through> {
+    use rustc_hir::intravisit::{self, Visitor};
+    struct Paths<'a, 'b, 'tcx> {
+        tcx: TyCtxt<'tcx>,
+        fns: &'a HashMap<DefId, FnInfo>,
+        foreign: &'a super::library::Foreign<'b, 'tcx>,
+        through: HashMap<(LocalModId, DefId), Through>,
+    }
+    impl<'tcx> Visitor<'tcx> for Paths<'_, '_, 'tcx> {
+        type NestedFilter = rustc_middle::hir::nested_filter::All;
+        fn maybe_tcx(&mut self) -> TyCtxt<'tcx> {
+            self.tcx
+        }
+        fn visit_path(&mut self, path: &hir::Path<'tcx>, id: hir::HirId) {
+            let tcx = self.tcx;
+            if let Res::Def(_, item) = path.res
+                && let [.., parent, last] = path.segments
+                && let Res::Def(DefKind::Mod, module) = parent.res
+                && let Some(module) = module.as_local().map(LocalModId::new_unchecked)
+            {
+                let scope = tcx.parent_module(id);
+                let name = last.ident.name;
+                let export = match self.fns.get(&item) {
+                    Some(info) if info.owner.is_none() && info.module != module => {
+                        exported_in(tcx, self.fns, module, name, item)
+                    }
+                    Some(_) => None,
+                    None => (self.foreign.item(item))
+                        .filter(|imported| imported.member.is_none())
+                        .and_then(|imported| {
+                            let used = reexporting_use(tcx, module, name, item)?;
+                            Some(super::bindings::use_name(tcx, used, (name, item), || {
+                                imported.name.clone()
+                            }))
+                        }),
+                };
+                if module != scope
+                    && let Some(export) = export
+                {
+                    let at = path.span;
+                    let first = Through { module, export, at };
+                    match self.through.entry((scope, item)) {
+                        std::collections::hash_map::Entry::Occupied(mut was) => {
+                            if at.lo() < was.get().at.lo() {
+                                was.insert(first);
+                            }
+                        }
+                        std::collections::hash_map::Entry::Vacant(entry) => _ = entry.insert(first),
+                    }
+                }
+            }
+            intravisit::walk_path(self, path);
+        }
+    }
+    let mut paths = Paths {
+        tcx,
+        fns,
+        foreign,
+        through: HashMap::new(),
+    };
+    tcx.hir_visit_all_item_likes_in_crate(&mut paths);
+    paths.through
+}
+
 /// The `pub use` of `module` that re-exports `item` by `name`, which its
 /// file's JS re-exports (`analysis::is_reexport`), as `pub use
 /// crate::props::register_simple as register_events;` does: the `use`
