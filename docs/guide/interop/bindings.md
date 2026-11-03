@@ -358,7 +358,11 @@ export function initial() {
   ([ADR 0304](../../decisions/0304-dynamic-import.md)).
 - **`#[rust_js::require]` reads it through `require(module)`**, where a
   module must be read that way, an ESLint plugin's
-  ([ADR 0305](../../decisions/0305-require.md)). One a bundler mustn't
+  ([ADR 0305](../../decisions/0305-require.md)). Its module's namespace,
+  `get ReactFiberErrorDialog#*`, is the module itself,
+  `require("ReactFiberErrorDialog")`, as `import * as` binds it, and a
+  path past it, `#*.options.title`, the module's properties
+  ([ADR 0305, amended](../../decisions/0305-require.md#amendment-a-required-modules-namespace-is-the-module-572)). One a bundler mustn't
   see, Node's own `timers` past fake ones, is read off Node's `module`,
   `node::module`, by a name the program makes, `js::get(js::unknown(node::module),
   &require_string)`, `module[requireString]`, and called with

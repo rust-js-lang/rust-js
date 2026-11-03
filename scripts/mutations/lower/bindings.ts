@@ -266,7 +266,7 @@ export const mutations: Mutation[] = [
     find: "            JsForm::Call(name) | JsForm::New(name) | JsForm::Get(name) if !is_method(tcx, def_id) => Some(name),\n",
     replace:
       "            JsForm::Call(name) | JsForm::New(name) if !is_method(tcx, def_id) => Some(name),\n",
-    tests: ["test/bindings.test.ts", "-t", "a required binding"],
+    tests: ["test/bindings-require.test.ts", "-t", "a required binding"],
   },
   {
     name: "bool-tag-string",

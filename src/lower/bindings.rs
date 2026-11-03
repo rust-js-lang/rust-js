@@ -40,7 +40,7 @@ pub(super) use given_before::reject_made_in_place;
 pub(in crate::lower) use given_names::alias_cased;
 pub(super) use given_names::{given_let_names, given_parameter_name, named_lets, named_parameters};
 pub(in crate::lower) use held::{Held, HeldBinding, HeldRead, Holder, held, held_path, library_uses};
-pub(super) use imports::{Export, file_stem, js_import, module_binding, namespace_name, stem_binding};
+pub(super) use imports::{Export, file_stem, js_import, module_binding, namespace_name, required, stem_binding};
 use indexed::indexed_refused;
 pub(in crate::lower) use indexed::is_indexed_list;
 pub(super) use nullable::{

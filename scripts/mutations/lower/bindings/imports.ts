@@ -16,4 +16,13 @@ export const mutations: Mutation[] = [
       "a namespace import is named as its link_name",
     ],
   },
+  {
+    name: "required-namespace-read-as-property",
+    breaks:
+      "a required binding of a whole module, `ReactFiberErrorDialog#*`, is `require(\"ReactFiberErrorDialog\")[\"*\"]`, `undefined` (#572)",
+    file: "src/lower/bindings/imports.rs",
+    find: "    match export.1 == js::NAMESPACE {\n",
+    replace: "    match false && export.1 == js::NAMESPACE {\n",
+    tests: ["test/bindings-require.test.ts", "-t", "a required binding of a whole module"],
+  },
 ];

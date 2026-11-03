@@ -176,3 +176,36 @@ write is the JS upstream's is. test/node-bindings.test.ts, "Module's
 prototype is patched and a module's exports read and set", runs it in
 Node: a "use client" module's exports replaced, a "use server" one's read
 after its code runs, and a plain one compiled by the original `_compile`.
+
+## Amendment: a required module's namespace is the module (#572)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, a result that
+changed: the JS read `undefined` where the Rust reads the module.
+
+React's ReactDOMRootFB reads www's module whole, `const
+ReactFiberErrorDialogWWW = require('ReactFiberErrorDialog');`, then checks
+its `showErrorDialog`. Its binding is the guide's module-namespace path,
+`#*` (ADR 0256), read through `require`:
+`#[link_name = "get ReactFiberErrorDialog#*"] #[rust_js::require]`. It
+printed `require("ReactFiberErrorDialog")["*"]`, the property `"*"` of the
+module, `undefined`, so every www root threw a `TypeError` where it loaded.
+It's as old as this ADR (c3b910366): a required export was read as
+`require(module)`'s property, and `*` is no property but the module.
+
+**`#*` is the module itself through `require` too, as it is through
+`import * as`**: `require("ReactFiberErrorDialog")`, and a path past it
+the module's properties, `#*.options.title`'s
+`require("ReactFiberErrorDialog").options.title`. What `require` reads of
+an export is `bindings::required`, beside `js_import`, which reads the
+path: one owner of what a path's `#*` means.
+
+- The other readers of `#*` are each right but one: an import's is
+  `import * as`, a re-export's `export * as`, and a `#[rust_js::types]`
+  of one is refused, as it names no type. `js::import!` of a getter
+  binding is wrong of any export, `#*`'s too, which is filed apart:
+  it isn't what `require` reads.
+- Held by test/bindings-require.test.ts's "a required binding of a whole
+  module is the module", run in Node of a CommonJS module: the binding is
+  `require(..)`'s module, its method called and a path past it read, and
+  the `.d.ts` its `#[rust_js::types]`; and the mutation
+  `required-namespace-read-as-property`.

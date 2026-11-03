@@ -1,6 +1,8 @@
 //! What a binding's path imports from a JS module (ADR 0028): the export
 //! it names, the rest of its path, and what a default or namespace import
-//! is called.
+//! is called, and what `require` reads of it.
+
+use crate::js::{self, Expr};
 
 /// What a JS module exports under a name, `("node:path", "join")`, or
 /// `"default"` or `"*"` for its default export or the module itself.
@@ -22,6 +24,18 @@ pub(in crate::lower) fn js_import(path: &str) -> Option<(Export, &str)> {
     }
     let export = super::first_name(path);
     (!from.is_empty() && !export.is_empty()).then(|| ((from.to_string(), export.to_string()), &path[export.len()..]))
+}
+
+/// What `require` reads of `export` (ADR 0305): the module itself of its
+/// namespace, `require("ReactFiberErrorDialog")` of
+/// `ReactFiberErrorDialog#*`, as `import * as` binds it, not its property
+/// `"*"`; else its export's property, `require("node:path").sep`.
+pub(in crate::lower) fn required(export: &Export) -> Expr {
+    let module = Expr::call(Expr::var("require"), vec![Expr::str(&export.0)]);
+    match export.1 == js::NAMESPACE {
+        true => module,
+        false => Expr::member(module, &export.1),
+    }
 }
 
 /// What a namespace import `js_import` reads is named, `Scheduler` of

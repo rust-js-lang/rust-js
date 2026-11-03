@@ -89,7 +89,7 @@ const jobs: [string, string[], Record<string, string>][] = [
     [
       ["lowering", ["test/lowering"]],
       ["compiler", ["test/compiler.test.ts"]],
-      ["bindings", ["test/bindings.test.ts", "test/js-builtins.test.ts", "test/js-errors.test.ts", "test/node-bindings.test.ts", "test/webapi-bindings.test.ts"]],
+      ["bindings", ["test/bindings.test.ts", "test/bindings-require.test.ts", "test/js-builtins.test.ts", "test/js-errors.test.ts", "test/node-bindings.test.ts", "test/webapi-bindings.test.ts"]],
     ] as const
   ).map(([name, files]): [string, string[], Record<string, string>] => [name, ["bun", "test", ...files], {}]),
   ...(jsx ? [["JSX", ["bun", "test", "test/jsx"], {}] as [string, string[], Record<string, string>]] : []),

@@ -272,7 +272,7 @@ export const mutations: Mutation[] = [
     find: "                Some((_, Some((export, _)))) if bindings::requires(tcx, def_id) => {\n",
     replace:
       "                Some((_, Some((export, _)))) if false && bindings::requires(tcx, def_id) => {\n",
-    tests: ["test/bindings.test.ts", "-t", "a required binding"],
+    tests: ["test/bindings-require.test.ts", "-t", "a required binding"],
   },
   {
     name: "local-functions-none",

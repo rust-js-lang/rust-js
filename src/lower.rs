@@ -1112,10 +1112,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// (ADRs 0028, 0305).
 fn path_read(path: &str, required: &HashSet<Export>, import: impl FnOnce(&Export) -> String) -> Expr {
     match bindings::js_import(path) {
-        Some((export, rest)) if required.contains(&export) => {
-            let module = Expr::call(Expr::var("require"), vec![Expr::str(&export.0)]);
-            bindings::read_path(Expr::member(module, export.1), rest)
-        }
+        Some((export, rest)) if required.contains(&export) => bindings::read_path(bindings::required(&export), rest),
         Some((export, rest)) => global(&format!("{}{rest}", import(&export))),
         None => global(path),
     }
