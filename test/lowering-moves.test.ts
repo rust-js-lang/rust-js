@@ -935,6 +935,13 @@ pub fn matchers(action: &Action) -> Option<(Matcher, Matcher)> {
     }
 }
 
+pub fn matcher(action: &Action) -> Option<Matcher> {
+    match *action {
+        Action::Toggle(id) => Some(Box::new(move |x| x == id)),
+        Action::Clear => None,
+    }
+}
+
 pub fn part() -> Box<dyn Fn() -> String> {
     let entry = descriptor_of();
     Box::new(move || shown(entry.value))
@@ -953,6 +960,8 @@ pub fn copies(n: u32) -> u32 {
   // its own JS named apart where it's read, `n$1`.
   expect(js).toContain("  const captured = n;\n  const get = () => captured;\n");
   expect(lib.copies(2 as never)).toBe(2102);
+  // One closure's copy of a binding only it reads is named for it.
+  expect(js).toContain("    const id = action._0;\n    return (x) => x === id;\n");
   // Two closures that take one binding close over its one `const` (rd640).
   expect(js).toContain("    const id = action._0;\n    return [(x) => x === id, (x) => x !== id];\n");
   const [is, isnt] = lib.matchers({ TAG: "Toggle", _0: 2 } as never) as unknown as [(x: number) => boolean, (x: number) => boolean];

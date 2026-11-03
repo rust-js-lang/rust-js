@@ -1132,7 +1132,8 @@ const they close over" (run; each callback reads what the binding took,
 though the field is given another value after; `request`'s conditional
 of a binding only its closure reads) and "a closure's capture
 read first is named for its variable" (its `matchers`, now one `const id
-= action._0;` both closures read), corpus `binding_closures_take` against
+= action._0;` both closures read; its `matcher`, one closure's, still
+named for the variable, which keeps rd656's mutations caught), corpus `binding_closures_take` against
 native Rust; mutations `captured-payload-in-place` and
 `captured-once-held-apart` (`mir/patterns.ts`).
 
