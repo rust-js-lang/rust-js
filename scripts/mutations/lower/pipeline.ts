@@ -723,4 +723,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "scope_struct"],
   },
+  {
+    name: "type-constant-of-a-value-by-name",
+    breaks: "a type's constant of a value is found for its object by its name, so a module's constant of that name is taken in its place (#513)",
+    file: "src/lower/pipeline.rs",
+    find: "            false if info.owner.is_some() => _ = owned_consts.insert(named.to_def_id(), constant),\n",
+    replace: "            false if false => _ = owned_consts.insert(named.to_def_id(), constant),\n",
+    tests: ["test/impl-constants.test.ts", "-t", "pub constants are its object"],
+  },
+  {
+    name: "type-constant-of-code-module-level",
+    breaks: "a type's constant lowered as code is its module's constant, which shadows the module's own of that name, `export const MIN = MIN` (#513)",
+    file: "src/lower/pipeline.rs",
+    find: "                    false if info.owner.is_some() => _ = owned_consts.insert(key.to_def_id(), constant),\n",
+    replace: "                    false if false => _ = owned_consts.insert(key.to_def_id(), constant),\n",
+    tests: ["test/corpus.test.ts", "-t", "^type_constant_of_a_module_constant.rs$"],
+  },
 ];

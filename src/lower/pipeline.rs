@@ -226,6 +226,10 @@ pub fn lower_crate<'tcx>(
         _ => {}
     }
     let mut const_items: HashMap<LocalModId, Vec<js::Const>> = HashMap::new();
+    // Each inherent impl's constant, its type's object's, by its item: a
+    // module's constant may have its name, `pub(crate) const MIN` beside
+    // chrono's `impl TimeDelta { pub const MIN: Self = MIN; }` (#513).
+    let mut owned_consts: HashMap<DefId, js::Const> = HashMap::new();
     // Each `const` written in a function's body, its function's (ADR 0031,
     // amended).
     let mut local_const_holes: Vec<(DefId, js::Const)> = Vec::new();
@@ -345,6 +349,7 @@ pub fn lower_crate<'tcx>(
         // One written in a function's body, where it's written there.
         match local_consts.contains_key(&named.to_def_id()) {
             true => local_const_holes.push((named.to_def_id(), constant)),
+            false if info.owner.is_some() => _ = owned_consts.insert(named.to_def_id(), constant),
             false => const_items.entry(info.module).or_default().push(constant),
         }
     }
@@ -859,6 +864,7 @@ pub fn lower_crate<'tcx>(
                 };
                 match local_consts.contains_key(&key.to_def_id()) {
                     true => local_const_holes.push((key.to_def_id(), constant)),
+                    false if info.owner.is_some() => _ = owned_consts.insert(key.to_def_id(), constant),
                     false => pass.local_consts.entry(info.module).or_default().push(constant),
                 }
                 if lowered.jsx {
@@ -980,13 +986,9 @@ pub fn lower_crate<'tcx>(
     for &def_id in &consts {
         let info = &fns[&def_id.to_def_id()];
         let Some(owner) = &info.owner else { continue };
-        let Some(items) = const_items.get_mut(&info.module) else {
+        let Some(constant) = owned_consts.remove(&def_id.to_def_id()) else {
             continue;
         };
-        let Some(at) = items.iter().position(|c| c.name == info.name) else {
-            continue;
-        };
-        let constant = items.remove(at);
         let namespace = js::Namespace::of(pass.namespaces.entry(info.module).or_default(), owner);
         namespace.export |= constant.export;
         namespace.constants.push(constant);

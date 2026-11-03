@@ -135,3 +135,18 @@ Held by `test/impl-constants.test.ts`'s "a type's pub constant of a value
 no value tree says is its initializer's", run, and `bun
 scripts/crate-corpus.ts --check semver`; mutation
 `type-constant-initializer-dropped` (`lower/analysis.ts`).
+
+The first form of that fix broke chrono and rust_decimal, which compiled but
+threw as they loaded: `export const MIN = { ...MIN }`, "Cannot access 'MIN'
+before initialization" (a regression of 882cfa286). chrono writes
+`pub(crate) const MIN: TimeDelta = ..` beside `impl TimeDelta { pub const
+MIN: Self = MIN; }`. The type's constant, now lowered as code, was its
+module's `const` of its name, `MIN`, and its object took its constants
+from the module's by that name, so it took the module's own `MIN` and left
+the type's reading itself. **A type's constant goes to its object by its
+item, never by its name** (`owned_consts`, `pipeline.rs`): `export const
+TimeDelta = { MIN, MAX, .. }` of the module's `const MIN = { .. }`. Held
+by the corpus's `type_constant_of_a_module_constant`, chrono's shape,
+against native Rust, and `bun scripts/crate-corpus.ts --check`; mutations
+`type-constant-of-a-value-by-name` and `type-constant-of-code-module-level`
+(`lower/pipeline.ts`).
