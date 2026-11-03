@@ -5,9 +5,11 @@
 // clean page, and a frame made while its section is showing is drawn at once.
 
 import { useEffect, useRef } from "react";
+
 import { listen } from "../listen.js";
 import { outcome as outcome$1 } from "../programs.js";
 import { HEADING } from "../styles.js";
+
 import { readReport } from "../../frame-report.js";
 import { $displayF64, $f64Max, $f64Min } from "@rust-js/runtime";
 

@@ -129,8 +129,14 @@ and a value that may hold a function, `Box<dyn Fn()>`, is read by its
 name, so a call of it gives the function no `this`
 ([ADR 1018](../../decisions/1018-a-function-called-through-its-module-is-read-through-its-namespace.md)).
 
-Imports are one block, in the order the module's `use`s are written,
-as JS loads a module's imports in their order: each import where the
+Imports are in the order the module's `use`s are written, as JS loads
+a module's imports in their order, each a statement where its `use` is:
+an item written between two `use`s is between their imports, and one
+inside a function is right above it, as ES hoists them all; a blank line
+is between two where your Rust has one between their `use`s, and none
+where it has none
+([ADR 1069](../../decisions/1069-imports-are-statements-of-the-module.md)).
+Each import is where the
 first `use` that makes it is, a binding's JS module, a library's module
 and the crate's own alike, a module that holds a binding the `use`
 names through it, `use shared::assign::assign;`'s `shared/assign`, a
@@ -144,7 +150,7 @@ ReactDOMFizzServerNode writes `use react_server::..;`, a blank line, then
 ReactFizzConfigDOM. A binding the module declares itself, a
 `#[rust_js::link_name = "./config.js#name"]` function, is named where
 it's declared, so its import goes there among the `use`s'. A re-export
-is in the block too, as JS loads it in the same order: a `pub use`
+is among them too, as JS loads it in the same order: a `pub use`
 where it's written, and a namespace's forwarding method's or a
 forwarder's `export { .. } from` at the `use` of its module, React's
 reconciler's `use crate::react_portal;`. A `pub use` places the import
@@ -449,6 +455,7 @@ export { useId, useCacheRefresh as unstable_useCacheRefresh } from "./hooks.js";
 export * as __COMPILER_RUNTIME from "./runtime.js";
 // DEV-only
 export { cache } from "./server.js";
+
 import { jsxDev as _jsxDEV } from "./runtime.js";
 
 export function element() {
@@ -937,7 +944,8 @@ A blank line is where your Rust has one between the code of the JS's
 lines, and nowhere else: two functions, or a `static` and the
 `js::on_load!` it's frozen in, written right below each other are right
 below each other in the JS, and one apart is apart, a type with no JS
-between too. An object's fields are apart where the struct literal's are;
+between too, and so are two imports, two `use`s' or a `use`'s and the
+code's. An object's fields are apart where the struct literal's are;
 a `let` with no JS of its own, an erased cast's or a guard's whose drop
 is a `finally`, is no code between a blank line and the statement after
 it, the guard's `try`. The `try` starts where the guard's `let` is: a

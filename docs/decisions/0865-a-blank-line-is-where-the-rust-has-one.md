@@ -263,3 +263,18 @@ Held by `lowering-comments-jumps.test.ts`'s "a comment above a `let` of a
 `printed-first-of-a-let-on-its-line` (`to_oxc.ts`),
 `let-value-of-any-start` and `let-end-past-its-indentation`
 (`to_oxc/openings.ts`).
+
+## Amendment: a module's imports and re-exports too (rd637, ADR 1069)
+
+The header's imports were plain text above the code's program, one block
+with none of the Rust's blank lines between, and `format::spaced` kept
+them so. They're statements of the program now, each with the span of the
+`use` that places it ([ADR 1069](1069-imports-are-statements-of-the-module.md)),
+so rule 1 is theirs: a blank line between two imports or re-exports where
+the Rust has one between their `use`s, or before the comments above the
+later, none where it has none, and between the last and the code as the
+Rust has it. Rule 2, where the Rust tells nothing, keeps two imports or
+re-exports one block and sets one apart from the code. Held by
+`test/lowering-comments-items.test.ts`'s "the header's blank lines are
+the Rust's"; mutations `imports-code-together`, `imports-comment-glued`
+and `declared-import-spaced`.

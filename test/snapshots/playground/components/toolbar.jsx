@@ -5,6 +5,7 @@
 import { ExamplePicker } from "./example_picker.jsx";
 import { StatusLine } from "./status_line.jsx";
 import { CONTROL } from "../styles.js";
+
 import { cancelCompile } from "../../compiler-client.js";
 
 export function Toolbar({ examples, example, onExample, ready, compiling, onCompile, status }) {

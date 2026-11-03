@@ -445,10 +445,11 @@ pub(crate) fn laid_out(code: String, map: String, js_file_name: &str, across_lin
 
 /// `code`, laid out, with a blank line between two top-level statements
 /// where either is a function or spans lines, but after a `let x;` of no
-/// value, as a person separates them, of those the source doesn't tell of,
-/// `told`, its last statements' (ADR 0444, amended),
-/// and `map` moved to match. Its imports stay one block (ADR 1063). Read
-/// from its parse, so a line of a template literal is never taken for one.
+/// value, or between an import or a re-export and the code, as a person
+/// separates them, of those the source doesn't tell of, `told`, its last
+/// statements' (ADR 0444, amended), and `map` moved to match. Of two
+/// imports or re-exports none, one block (rd637). Read from its parse, so a
+/// line of a template literal is never taken for one.
 fn spaced(code: String, map: String, js_file_name: &str, told: &[bool]) -> (String, String) {
     let blank = blank_lines_before(&code, told);
     if blank.is_empty() {
@@ -485,6 +486,12 @@ fn blank_lines_before(code: &str, told: &[bool]) -> std::collections::HashSet<us
         Statement::ExportDeclaration(export) => matches!(export.declaration, Declaration::FunctionDeclaration(_)),
         _ => false,
     };
+    let imported = |statement: &Statement<'_>| {
+        matches!(
+            statement,
+            Statement::ImportDeclaration(_) | Statement::ExportFromDeclaration(_) | Statement::ExportAllDeclaration(_)
+        )
+    };
     let lines = |statement: &Statement<'_>| {
         let span = oxc_span::GetSpan::span(statement);
         (line_of(span.start), line_of(span.end))
@@ -507,6 +514,7 @@ fn blank_lines_before(code: &str, told: &[bool]) -> std::collections::HashSet<us
         }
         line
     };
+    let lines_of: Vec<&str> = code.lines().collect();
     let body = &parsed.program.body;
     // Of the module's code, after its header: its last statements.
     let header = body.len().checked_sub(told.len());
@@ -515,16 +523,22 @@ fn blank_lines_before(code: &str, told: &[bool]) -> std::collections::HashSet<us
         .filter(|&(i, _)| !is_told(i + 1))
         .filter_map(|(_, pair)| {
             let ((first, last), (next, next_last)) = (lines(&pair[0]), lines(&pair[1]));
-            let imports = matches!(pair[0], Statement::ImportDeclaration(_))
-                || matches!(pair[1], Statement::ImportDeclaration(_));
+            // Two imports or re-exports are one block, as a person writes
+            // them; one and the code after or before it apart (rd637).
+            let imports = (imported(&pair[0]), imported(&pair[1]));
             // `let x;` and what sets it, `if (..) { x = .. }`, are one
             // thing, as a person writes them (ADR 0601).
             let declared_only = matches!(&pair[0], Statement::VariableDeclaration(d)
                 if d.declarations.iter().all(|d| d.init.is_none()));
-            let apart =
-                function(&pair[0]) || function(&pair[1]) || !declared_only && (first < last || next < next_last);
+            let apart = imports.0 != imports.1
+                || function(&pair[0])
+                || function(&pair[1])
+                || !declared_only && (first < last || next < next_last);
             let next = top(next);
-            (apart && !imports && last + 1 == next).then_some(next)
+            // Of an import and the code, right after the first, before a
+            // comment above the second apart from it too.
+            let after = imports.0 != imports.1 && lines_of.get(last + 1).is_some_and(|line| !line.trim().is_empty());
+            (apart && !(imports.0 && imports.1) && (last + 1 == next || after)).then_some(last + 1)
         })
         .collect()
 }

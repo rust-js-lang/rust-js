@@ -209,3 +209,14 @@ ReactART writes `use react::{CSSProperties, Component, HostType, JSX, jsx};` fir
 
 A module made only of re-exports, a package's entry, printed its `//!` doc right above its `export {..} from`, with no blank line between, where the Rust and the file it ports have one. A module with code kept the blank line, which the code's printer keeps. **A comment block in the header, above an import or a re-export, keeps one blank line after it where only whitespace with a blank line is between it and what it's above.** That doesn't apply to one moved from a `use` that makes no import to the next import, as other `use`s are between. A re-export's span was a statement start of its own in `to_oxc/starts.rs`, from when it printed in the code. The header's starts, the imports' and re-exports', hold it now, so that start is gone, and with it `reexport-comments-unplaced`, which survived on main since rd620. Held by `test/lowering-comments-items.test.ts`'s "a module of re-exports alone keeps its inner doc and the blank line after it" and "a module's inner doc comment is a plain JS comment". Mutations `header-comment-blank-dropped` and `header-comment-blank-of-anything` (`to_oxc.ts`).
 
+
+## Amendment: each import is a statement where its `use` is (rd652, ADR 1069)
+
+The imports and re-exports were one block of text above the code, so an
+item written between two `use`s printed after every import, React's
+ReactFizzConfigMarkup's `isPrimaryRenderer`. They're statements of the
+module's program now, in this order, each after the code written before
+its place ([ADR 1069](1069-imports-are-statements-of-the-module.md)); one
+the source names neither way is right after the one before it, so the
+order JS loads them in is this ADR's, unchanged. The order's owner is
+`to_oxc/header.rs`'s `entries`.

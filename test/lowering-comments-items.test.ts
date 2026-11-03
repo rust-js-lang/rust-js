@@ -291,6 +291,130 @@ import * as Flags from "./common/flags.js";
   expect((tree.lib.named as () => string)()).toBe("App 3");
 });
 
+// React DOM's ReactDOMClient groups its imports and re-exports as its
+// author wrote them, a blank line between groups and none in one (rd637).
+// Imports and re-exports are statements of the module's program, each at
+// its \`use\`, so the one rule of every statement's blank lines is theirs:
+// a blank line where the Rust has one between two \`use\`s or before the
+// comments above the later, none where it has none, a multi-line \`export
+// {..} from\` among the imports too (ADR 0865, amended).
+test("the header's blank lines are the Rust's", async () => {
+  const { js, lib } = await compiled("header-blank-lines", `pub use crate::roots::{create_root, hydrate_root};
+
+use crate::lanes::lane;
+pub use crate::versions::{
+    REACT_VERSION_WITH_A_LONG_NAME as VERSION, SECOND_VERSION_WITH_A_LONG_NAME,
+    THIRD_VERSION_WITH_A_LONG_NAME,
+};
+
+// Its internals.
+use crate::internals::INTERNALS;
+
+pub mod lanes {
+    pub fn lane() -> u32 {
+        1
+    }
+}
+
+pub mod roots {
+    pub fn create_root() -> u32 {
+        2
+    }
+
+    pub fn hydrate_root() -> u32 {
+        3
+    }
+}
+
+pub mod versions {
+    pub const REACT_VERSION_WITH_A_LONG_NAME: &str = "19";
+    pub const SECOND_VERSION_WITH_A_LONG_NAME: &str = "20";
+    pub const THIRD_VERSION_WITH_A_LONG_NAME: &str = "21";
+}
+
+pub mod internals {
+    pub const INTERNALS: u32 = 4;
+}
+
+pub fn named() -> u32 {
+    lane() + INTERNALS
+}
+`);
+  expect(js).toContain('export { createRoot, hydrateRoot } from "./roots.js";\n\nimport { lane } from "./lanes.js";\nexport {\n');
+  expect(js).toContain('} from "./versions.js";\n\n// Its internals.\nimport { INTERNALS } from "./internals.js";\n\nexport function named() {');
+  expect([(lib.named as () => number)(), (lib.createRoot as () => number)(), lib.VERSION]).toEqual([5, 2, "19"]);
+  // The runtime's helpers, which no \`use\` places, are apart from the code
+  // after them, as a person sets them, and from a comment above it too.
+  const helpers = await compiled("header-helpers-apart", `use std::cell::Cell;
+// The value, kept.
+use std::rc::Rc;
+
+pub static FIRST: u32 = 1;
+
+pub fn kept(value: Option<u32>) -> Rc<Cell<u32>> {
+    Rc::new(Cell::new(value.unwrap() + FIRST))
+}
+`);
+  expect(helpers.js).toContain('import { $unwrap } from "@rust-js/runtime";\n\n// The value, kept.\n\nexport const FIRST = 1;');
+  expect((helpers.lib.kept as (v: number) => { value: number })(7).value).toBe(8);
+});
+
+// React's ReactFizzConfigMarkup declares \`export const isPrimaryRenderer =
+// false;\` between two of its imports, as its port declares the \`const\`
+// between two \`use\`s: it printed after every import (rd652). Each import
+// is where its \`use\` is among the module's statements, which ES hoists, so
+// where it's printed changes nothing it does (ADR 0262's case "None").
+test("an item between two uses is between their imports", async () => {
+  const { js, lib } = await compiled("item-between-uses", `use crate::lanes::lane;
+
+// Allow embedding inside another render.
+pub const IS_PRIMARY_RENDERER: bool = false;
+
+use crate::versions::VERSION;
+
+pub mod lanes {
+    pub fn lane() -> u32 {
+        1
+    }
+}
+
+pub mod versions {
+    pub const VERSION: &str = "19";
+}
+
+pub fn named() -> String {
+    format!("{} {}", lane(), VERSION)
+}
+`);
+  expect(js).toContain(`import { lane } from "./lanes.js";
+
+// Allow embedding inside another render.
+export const IS_PRIMARY_RENDERER = false;
+
+import { VERSION } from "./versions.js";
+
+export function named() {`);
+  expect([(lib.named as () => string)(), lib.IS_PRIMARY_RENDERER]).toEqual(["1 19", false]);
+  // A \`use\` inside a function, where JS has no import: right above it.
+  const inside = await compiled("use-inside-a-function", `pub mod lanes {
+    pub fn lane() -> u32 {
+        1
+    }
+}
+
+pub fn first() -> u32 {
+    2
+}
+
+pub fn named() -> u32 {
+    use crate::lanes::lane;
+    lane() + first()
+}
+`);
+  expect(inside.js).toContain('export function first() {\n  return 2;\n}\n\nimport { lane } from "./lanes.js";\n\nexport function named() {');
+  expect((inside.lib.named as () => number)()).toBe(3);
+});
+
 // The pilot's modules start with what each is for, `//! Where the app is:
 // ..`, above their `use`s: a plain comment above the imports (ADR 0444's
 // rule 3), but JS has no doc comment of what it's in, so it's JS's plain

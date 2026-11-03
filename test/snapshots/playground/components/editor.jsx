@@ -4,6 +4,7 @@
 // CodeMirror's, made when the component mounts and destroyed when it goes.
 
 import { useEffect, useRef } from "react";
+
 import { openView, setTheme, show } from "../codemirror.js";
 import { useDarkMode } from "../dark_mode.js";
 import { $unwrap } from "@rust-js/runtime";

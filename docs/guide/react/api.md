@@ -58,6 +58,7 @@ export const Theme = createContext("light");
 ```jsx
 // src/lib.jsx
 import { useContext } from "react";
+
 import { Theme } from "./theme.js";
 
 export function Toolbar() {
@@ -451,6 +452,7 @@ pub fn html() -> String {
 import { createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
 import { renderToString } from "react-dom/server";
+
 import { App } from "./app.jsx";
 import { StrictMode } from "react";
 

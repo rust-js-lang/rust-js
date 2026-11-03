@@ -106,6 +106,8 @@ pub fn emit(
 ) -> Output {
     let rust_source = sources.text.as_str();
     let allocator = Allocator::default();
+    // Its imports and re-exports, statements among its code (rd637).
+    let entries = header::entries(module);
     // The module's comments, each where its code is (ADR 0444), whose text
     // the program's source has, a doc comment's JSDoc after the Rust.
     let Commented {
@@ -116,10 +118,9 @@ pub fn emit(
         tops,
         closing,
         exports,
-        imports,
         docs,
         own_places,
-    } = comments_of(module, sources);
+    } = comments_of(module, sources, &header::commented_at(&entries));
     let cx = Cx {
         b: AstBuilder::new(&allocator),
         allocator: &allocator,
@@ -181,6 +182,9 @@ pub fn emit(
             c.attached_to = places[i].unwrap_or(own_places[i].0);
         }
     }
+    // Its imports and re-exports, each where it's placed among them.
+    let made = entries.iter().map(|entry| (cx.entry(entry), entry.placed)).collect();
+    let imports = header::among(&mut body, made, sources, b);
     // A blank line between two statements where the Rust has one between
     // their code, where it tells (ADR 0444, amended).
     let (comments, told) = apart(&body, comments, &tops, sources, text.len() as u32);
@@ -206,9 +210,9 @@ pub fn emit(
         ..across_lines(&program, &cx)
     };
 
-    // The header, imports and runtime helpers, plain text above the
-    // generated code, none of which maps to Rust.
-    let mut code = header(module, &imports, &docs);
+    // The header, the module's `//!`s and its directives, plain text above
+    // the generated code, none of which maps to Rust.
+    let mut code = header(module, imports, &docs);
 
     // The generated code, each line after the header: where each ends up,
     // to fix the map.
@@ -440,10 +444,6 @@ struct Commented {
     closing: closing::Closing,
     /// The comments of each namespace thread-local's export list (`closing::exported`).
     exports: closing::Exports,
-    /// The comments before each import's `use`, and each re-export's `pub
-    /// use`, by where it's written: in the header, above its line (rd92,
-    /// rd620).
-    imports: std::collections::HashMap<u32, Vec<String>>,
     /// The module's own inner doc comments, `//!`, above its JS (#486).
     docs: header::Docs,
     /// Each statement, by its span, that starts where one it's in starts and
@@ -452,14 +452,17 @@ struct Commented {
     own_places: Vec<(u32, u32)>,
 }
 
-fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented {
+fn comments_of(
+    module: &Module,
+    sources: &crate::program::Sources,
+    commented_at: &std::collections::HashMap<u32, u32>,
+) -> Commented {
     use oxc_ast::{CommentKind, CommentPosition};
     let mut text = sources.text.clone();
     let mut found = Vec::new();
     // The cases whose comments the program wrote say they're fallen to.
     let mut said_fallen = std::collections::HashSet::new();
     let mut tops = std::collections::HashMap::new();
-    let mut imports: std::collections::HashMap<u32, Vec<String>> = std::collections::HashMap::new();
     let mut trailing = Vec::new();
     let mut arm_comments = Vec::new();
     let mut inner: Vec<(crate::program::Comment, (u32, u32))> = Vec::new();
@@ -504,14 +507,8 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     starts.extend(case_starts.iter().copied());
     starts.extend(pattern_starts);
     // Each import's `use`, and each re-export's, which the comments before
-    // it are above the line of, in the header (rd92, rd620).
-    let import_starts: std::collections::HashSet<u32> = (module.imports.iter().map(|i| i.span))
-        .chain(module.packages.iter().map(|p| p.span))
-        .chain(module.reexports.iter().map(|r| r.span))
-        .filter(|span| !span.is_none())
-        .map(|span| span.lo)
-        .collect();
-    starts.extend(import_starts.iter().copied());
+    // it are before the statement of (rd92, rd620).
+    starts.extend(commented_at.keys().copied());
     starts.sort_unstable();
     starts.dedup();
     // What's before the Rust statement at `start` is before the first JS
@@ -1028,15 +1025,6 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             // Placed, but not written: a `// SAFETY:` comment (ADR 0444,
             // amended), whose blank line before is what's after it's.
             own.retain(|c| c.written);
-            // An import's, in the header, above its line.
-            // An import's, or a re-export's, in the header (`header::above`).
-            if import_starts.contains(&at) {
-                imports
-                    .entry(at)
-                    .or_default()
-                    .extend(header::above(&own, at, &sources.text));
-                continue;
-            }
             // Where its Rust starts, what a blank line is before: an `if`'s
             // keyword, before the comments its test's are (ADR 0883).
             let mut written = at;
@@ -1180,10 +1168,13 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             // An object's field's, its own: not a statement its value holds
             // on its line, `getInstanceFromNode() { throw .. }` (rd296).
             let field = (parts.get(&at)).is_some_and(|&(_, field)| field).then_some(at);
-            // Comments a block holds before a statement, that one's, which
-            // may start before them, a `catch_unwind` closure's value of an
-            // `Ok` arm they're said above (#489).
-            let attached_to = (classes.get(&at).copied())
+            // An import's or a re-export's, before the first statement of
+            // its `use` (`header::commented_at`, rd92). Comments a block
+            // holds before a statement, that one's, which may start before
+            // them, a `catch_unwind` closure's value of an `Ok` arm they're
+            // said above (#489).
+            let attached_to = (commented_at.get(&at).copied())
+                .or(classes.get(&at).copied())
                 .or(case)
                 .or(field)
                 .or(comments_before.get(&at).copied())
@@ -1264,7 +1255,6 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         tops,
         closing,
         exports,
-        imports,
         docs,
         own_places,
     }
