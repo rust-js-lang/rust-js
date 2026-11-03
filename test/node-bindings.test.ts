@@ -1064,6 +1064,67 @@ process.exit(0);
   expect(JSON.parse(p.stdout.toString())).toEqual(["node", "channel"]);
 });
 
+// ADR 0272, amended: the `module` module's class, its default export, whose
+// prototype's `_compile` a CommonJS hook patches, and a module's `exports`,
+// read and set, as React's Flight Node register makes a "use client"
+// module's exports a proxy and reads a "use server" one's after it runs.
+test("Module's prototype is patched and a module's exports read and set", () => {
+  const dir = fixture("node-module-compile");
+  const node = buildNode();
+  writeFileSync(join(dir, "lib.rs"), `use js::{IntoUnknown, Unknown, function};
+use node::module::{MODULE, Module};
+
+js::export_default! {
+    fn register() {
+        let prototype = MODULE.prototype();
+        let original_compile = js::get(prototype, "_compile");
+        js::set(
+            prototype,
+            "_compile",
+            function::with_this(move |this, (content, filename): (&str, &str)| {
+                // SAFETY: Node's _compile is a function.
+                let original: &dyn Fn() -> Option<&'static Unknown> = unsafe { js::cast(original_compile) };
+                let this_arg = this.map(|this| this as &dyn IntoUnknown);
+                if !content.contains("use client") && !content.contains("use server") {
+                    return function::apply(original, this_arg, Some(js::arguments()));
+                }
+                // SAFETY: _compile is called on a module.
+                let module: &Module = unsafe { js::cast(this) };
+                if content.contains("use client") {
+                    module.set_exports(Some(&format!("client {filename}")));
+                } else {
+                    function::apply(original, this_arg, Some(js::arguments()));
+                    let keys = js::object::keys(module.exports().unwrap());
+                    module.set_exports(Some(&keys));
+                }
+                None
+            }),
+        );
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('import Module from "module";');
+  expect(js).toContain("const prototype = Module.prototype;");
+  expect(js).toContain("return original.apply(this, arguments);");
+  expect(js).toContain("this.exports = `client ${filename}`;");
+  expect(js).toContain("Object.keys($unwrap(this.exports))");
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  writeFileSync(join(dir, "client.cjs"), '"use client";\nmodule.exports = 1;\n');
+  writeFileSync(join(dir, "server.cjs"), '"use server";\nexports.a = 1;\nexports.b = 2;\n');
+  writeFileSync(join(dir, "plain.cjs"), "module.exports = { plain: true };\n");
+  writeFileSync(join(dir, "run.js"), `import { createRequire } from "node:module";
+import register from "./lib.js";
+register();
+const require = createRequire(import.meta.url);
+console.log(JSON.stringify([require("./client.cjs").replace(/ .*\\//, " /"), require("./server.cjs"), require("./plain.cjs")]));
+`);
+  const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  expect(JSON.parse(p.stdout.toString())).toEqual(["client /client.cjs", ["a", "b"], { plain: true }]);
+});
+
 // ADR 0272, amended: `crypto`'s hash and `stream`'s `Writable`, as React's
 // server stream config for Node hashes a key and writes its chunks, text
 // and bytes, to the response; `util`'s `TextEncoder` is imported from

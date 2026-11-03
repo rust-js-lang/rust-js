@@ -148,3 +148,31 @@ the global's members as `process`'s are).
   find; and `test/node-coverage.test.ts`. A binding has no compiler code to
   mutate: its test is what fails where its `link_name` or its options'
   keys are wrong.
+## Amendment: a CommonJS hook's `Module` and a module's `exports`
+
+React's Flight Node register is a CommonJS hook: `const Module =
+require('module')`, its `Module.prototype._compile` replaced by a function
+that passes on all it's given, `originalCompile.apply(this, arguments)`,
+and a module's `this.exports` read and set; and it reads the package's own
+server entry when it's called, `require('react-server-dom-webpack/server')`
+inside `register()`, so it throws outside `--conditions react-server` only
+then. Of these, the node crate bound none:
+
+- **`node::module::MODULE`, the `module` module's default export**,
+  @types/node's `export = Module`, imported `import Module from "module"`
+  (`#[rust_js::name = "Module"]`, as the type's tuple-struct constructor
+  holds the Rust name): a `&'static js::Class`, whose `prototype()` is
+  `Module.prototype`. `_compile`, which @types/node doesn't declare, is
+  read and set by `js::get` and `js::set`.
+- **`Module::exports()` and `Module::set_exports(..)`**, `module.exports`,
+  @types/node's `exports: any`: any value, `None` of `undefined`.
+
+A require at the point it's read is this ADR's `#[rust_js::require]`, as a
+getter of the export, `#[link_name = "get react-server-dom-webpack/server#registerServerReference"]`,
+read where `register()` reads it: no bare `require` binding is added beside
+it (one way to read a module through `require`), and `node::module`'s
+`require` stays the one a bundler doesn't see. Case N: each read, call and
+write is the JS upstream's is. test/node-bindings.test.ts, "Module's
+prototype is patched and a module's exports read and set", runs it in
+Node: a "use client" module's exports replaced, a "use server" one's read
+after its code runs, and a plain one compiled by the original `_compile`.

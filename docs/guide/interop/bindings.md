@@ -365,7 +365,10 @@ export function initial() {
   `js::function::call(node_require, Some(&node::module), ("timers",))`,
   `nodeRequire.call(module, "timers")`; in an ES module, which has no
   `module`, the read throws, which `catch_unwind` catches, a `try`
-  ([ADR 0305, amended](../../decisions/0305-require.md#amendment-a-require-no-bundler-sees)).
+  ([ADR 0305, amended](../../decisions/0305-require.md#amendment-a-require-no-bundler-sees)). A CommonJS hook's `Module`, `import Module from "module"`, is
+  `node::module::MODULE`, `MODULE.prototype()` its `Module.prototype`, and
+  a module's `module.exports` its `exports()` and `set_exports(..)`
+  ([ADR 0305, amended](../../decisions/0305-require.md#amendment-a-commonjs-hooks-module-and-a-modules-exports)).
 - **A private `use` that renames a global is the module's `const`**:
   `use js::array::SLICE as slice;` is `const slice =
   Array.prototype.slice;`, and `function::call(slice, ..)` is

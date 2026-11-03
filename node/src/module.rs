@@ -3,12 +3,23 @@
 
 use core::marker::PhantomData;
 
-use js::{JsObject, Unknown};
+use js::{IntoUnknown, JsObject, Unknown};
 
 /// [A CommonJS module](https://nodejs.org/api/modules.html#the-module-object),
 /// `NodeJS.Module`, `module.Module`'s: what [`crate::module`] is, of the
-/// module its code is in.
+/// module its code is in. Its class is [`MODULE`].
 pub struct Module(PhantomData<JsObject>);
+
+unsafe extern "Rust" {
+    /// [`Module`](https://nodejs.org/api/module.html#the-module-object), the
+    /// `module` module's default export, @types/node's `export = Module`:
+    /// the class of each CommonJS [`Module`], `import Module from "module"`,
+    /// whose `prototype` each module inherits from, as React's Flight Node
+    /// register patches `Module.prototype._compile`.
+    #[link_name = "module#default"]
+    #[cfg_attr(rust_js, rust_js::name = "Module")]
+    pub safe static MODULE: &'static js::Class;
+}
 
 // An object, never `undefined`: a value of any shape, whose properties
 // `js::get` reads by a name it makes, `module[requireString]`.
@@ -26,6 +37,22 @@ impl Module {
     /// its file's full path.
     #[cfg_attr(rust_js, rust_js::link_name = "get filename")]
     pub fn filename(&self) -> String {
+        unreachable!()
+    }
+
+    /// [`module.exports`](https://nodejs.org/api/modules.html#moduleexports):
+    /// what its code exports, any value, @types/node's `exports: any`, as
+    /// `require` gives it; `None` of `undefined` or `null`.
+    #[cfg_attr(rust_js, rust_js::link_name = "get exports")]
+    pub fn exports(&self) -> Option<&'static Unknown> {
+        unreachable!()
+    }
+
+    /// `module.exports = exports`: what `require` of it gives, any value,
+    /// a module's own export replaced, as React's Flight Node register sets
+    /// a client module's to its proxy.
+    #[cfg_attr(rust_js, rust_js::link_name = "set exports")]
+    pub fn set_exports(&self, exports: Option<&dyn IntoUnknown>) {
         unreachable!()
     }
 
