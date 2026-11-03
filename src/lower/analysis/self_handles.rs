@@ -155,6 +155,33 @@ impl<'tcx> SelfHandles<'tcx> {
         self.unowned.iter().find(|u| u.closure == closure && u.cell == held)
     }
 
+    /// Find what the crate's functions' returns alone own that nothing they
+    /// run before they return may call, as `runs` finds what they run, and
+    /// make each owner handle whose call may call none of its closures
+    /// before it returns read as the variable, its `unwrap`s too (rd621);
+    /// `foreign` says so of a library's function, as its contract does
+    /// (`quiet_by_return`).
+    pub(crate) fn quiet(
+        &mut self,
+        tcx: TyCtxt<'tcx>,
+        runs: &super::may_run::Runs<'_, 'tcx>,
+        foreign: &dyn Fn(DefId, u32) -> bool,
+    ) {
+        self.owned.find_quiet(runs, tcx);
+        for owner in &mut self.owners {
+            let Some((callee, given)) = &owner.called else {
+                continue;
+            };
+            let quiet = |index: u32| match callee.is_local() {
+                true => self.owned.quiet(*callee, index),
+                false => foreign(*callee, index),
+            };
+            if given.iter().all(|&index| quiet(index)) {
+                owner.direct();
+            }
+        }
+    }
+
     /// What the crate's functions' returns alone own, which its contract
     /// says (ADR 0317, amended).
     pub(crate) fn owned_by_return(&self) -> &OwnedByReturn {

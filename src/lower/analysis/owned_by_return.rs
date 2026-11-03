@@ -37,11 +37,32 @@ use rustc_span::def_id::DefId;
 use std::collections::{HashMap, HashSet};
 
 /// The parameters of each of the crate's functions that what it returns
-/// alone owns, by index.
+/// alone owns, by index, and those of them nothing it runs before it
+/// returns may call (`quiet`).
 #[derive(Default)]
 pub(crate) struct OwnedByReturn {
     owned: HashMap<DefId, Vec<u32>>,
+    /// Where each it owns is kept, of the function and the index: each
+    /// field of the crate's it's moved to; none known where a library's
+    /// function keeps it.
+    kept: HashMap<(DefId, u32), Kept>,
+    /// The bodies that name each field of a struct an owner returns an `Rc`
+    /// of: all that may call what it keeps, as it's private to its crate.
+    naming: Naming,
+    /// Each it owns that nothing it runs before it returns may call: no
+    /// body naming a field it's kept in is among what it may run
+    /// (`may_run`), so a closure given it runs only once its call returns
+    /// (ADR 0317, amended, rd621).
+    quiet: HashMap<DefId, Vec<u32>>,
 }
+
+/// Where a parameter a function's return alone owns is kept: each field
+/// of the crate's struct it's moved to; `None` where a library's function
+/// keeps it, whose fields the crate can't name.
+type Kept = Option<Vec<(DefId, FieldIdx)>>;
+
+/// The bodies that name each field, by its struct and index.
+type Naming = HashMap<(DefId, FieldIdx), HashSet<DefId>>;
 
 impl OwnedByReturn {
     /// What `bodies` return alone own, given what a library's function's
@@ -77,25 +98,27 @@ impl OwnedByReturn {
         let structs: HashSet<DefId> = (candidates.iter())
             .filter_map(|(_, body, _)| returned_struct(tcx, body.local_decls[mir::RETURN_PLACE].ty))
             .collect();
-        let read = read_otherwise(tcx, &of, &structs);
+        let (read, naming) = read_otherwise(tcx, &of, &structs);
         let field_kept = |adt: DefId, field: FieldIdx| kept_field(tcx, adt, field) && !read.contains(&(adt, field));
         // Each only of what it calls already found, to a fixed point: a
         // function that gives it on to another, `create_request`'s to
         // `request_instance`.
         let mut owned: HashMap<DefId, Vec<u32>> = HashMap::new();
+        let mut kept: HashMap<(DefId, u32), Kept> = HashMap::new();
         loop {
             let mut more = false;
             for (id, body, params) in &candidates {
                 for &index in params {
-                    if owned.get(id).is_some_and(|o| o.contains(&index)) {
+                    if kept.contains_key(&(*id, index)) {
                         continue;
                     }
                     let by = |g: DefId, j: u32| match g.is_local() {
-                        true => owned.get(&g).is_some_and(|o| o.contains(&j)),
-                        false => foreign(g, j),
+                        true => kept.get(&(g, j)).cloned(),
+                        false => foreign(g, j).then_some(None),
                     };
-                    if owns(tcx, body, index, &field_kept, &by) {
+                    if let Some(at) = owns(tcx, body, index, &field_kept, &by) {
                         owned.entry(*id).or_default().push(index);
+                        kept.insert((*id, index), at);
                         more = true;
                     }
                 }
@@ -107,7 +130,47 @@ impl OwnedByReturn {
         for indices in owned.values_mut() {
             indices.sort();
         }
-        OwnedByReturn { owned }
+        OwnedByReturn {
+            owned,
+            kept,
+            naming,
+            quiet: HashMap::new(),
+        }
+    }
+
+    /// Find what each function's return alone owns that nothing it runs
+    /// before it returns may call, as `runs` finds what it may run: no body
+    /// naming a field it's kept in is among them, nor a function of the
+    /// crate's it can't read. Any it may run that rust-js can't follow, or
+    /// a library's function keeping it, may call it.
+    pub(crate) fn find_quiet(&mut self, runs: &super::may_run::Runs<'_, '_>, tcx: TyCtxt<'_>) {
+        let mut quiet: HashMap<DefId, Vec<u32>> = HashMap::new();
+        for (&(id, index), kept) in &self.kept {
+            let Some(fields) = kept else { continue };
+            let Some(reached) = runs.of(id) else { continue };
+            let names =
+                |body: DefId| (fields.iter()).any(|field| self.naming.get(field).is_some_and(|n| n.contains(&body)));
+            // A function of the crate's whose body it can't read, which may.
+            let unread = |body: DefId| {
+                runs.body(body).is_none()
+                    && matches!(
+                        tcx.def_kind(body),
+                        rustc_hir::def::DefKind::Fn
+                            | rustc_hir::def::DefKind::AssocFn
+                            | rustc_hir::def::DefKind::Closure
+                    )
+            };
+            if std::iter::once(id)
+                .chain(reached)
+                .all(|body| !names(body) && !unread(body))
+            {
+                quiet.entry(id).or_default().push(index);
+            }
+        }
+        for indices in quiet.values_mut() {
+            indices.sort();
+        }
+        self.quiet = quiet;
     }
 
     /// Does what `id`, the crate's function, returns alone own its
@@ -119,6 +182,18 @@ impl OwnedByReturn {
     /// Its parameters what `id` returns alone owns, for its contract.
     pub(crate) fn of(&self, id: DefId) -> Vec<u32> {
         self.owned.get(&id).cloned().unwrap_or_default()
+    }
+
+    /// Does nothing `id`, the crate's function, runs before it returns call
+    /// its parameter `index`, which what it returns alone owns?
+    pub(crate) fn quiet(&self, id: DefId, index: u32) -> bool {
+        self.quiet.get(&id).is_some_and(|indices| indices.contains(&index))
+    }
+
+    /// Its parameters of those nothing `id` runs before it returns calls,
+    /// for its contract.
+    pub(crate) fn quiet_of(&self, id: DefId) -> Vec<u32> {
+        self.quiet.get(&id).cloned().unwrap_or_default()
     }
 }
 
@@ -157,14 +232,16 @@ fn kept_field(tcx: TyCtxt<'_>, adt: DefId, field: FieldIdx) -> bool {
 
 /// The fields of `structs` some body reads but to call through what they
 /// hold: anything but a shared borrow of the field, `&request.on_all_ready`,
-/// that's only dereferenced, or a drop of it.
+/// that's only dereferenced, or a drop of it; and the bodies that name
+/// each.
 fn read_otherwise<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &[(DefId, &mir::Body<'tcx>)],
     structs: &HashSet<DefId>,
-) -> HashSet<(DefId, FieldIdx)> {
+) -> (HashSet<(DefId, FieldIdx)>, Naming) {
     let mut read = HashSet::new();
-    for &(_, body) in bodies {
+    let mut naming = Naming::new();
+    for &(id, body) in bodies {
         let mut hits: Vec<(Location, Place<'tcx>, DefId, FieldIdx, bool)> = Vec::new();
         let mut visitor = Fields {
             tcx,
@@ -178,12 +255,13 @@ fn read_otherwise<'tcx>(
         }
         let uses = Uses::of(body);
         for (at, place, adt, field, last) in hits {
+            naming.entry((adt, field)).or_default().insert(id);
             if !last || !only_called(tcx, body, &uses, at, place) {
                 read.insert((adt, field));
             }
         }
     }
-    read
+    (read, naming)
 }
 
 /// Each place of a field of one of `structs`, and whether that field is
@@ -310,15 +388,15 @@ fn reads_any(operand: &Operand<'_>, locals: &[Local]) -> bool {
 /// Whether what `body` returns alone owns its parameter `index`: moved, as
 /// it is or as its payload, into a field `field_kept` says keeps it, of a
 /// struct an `Rc::new` is given, or given on to a function whose return
-/// owns it, `by`; that `Rc` only moved, borrowed shared and dropped, and
-/// what each path returns.
+/// owns it, `by`, where that keeps it; that `Rc` only moved, borrowed
+/// shared and dropped, and what each path returns. Where it's kept, if so.
 fn owns<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &mir::Body<'tcx>,
     index: u32,
     field_kept: &dyn Fn(DefId, FieldIdx) -> bool,
-    by: &dyn Fn(DefId, u32) -> bool,
-) -> bool {
+    by: &dyn Fn(DefId, u32) -> Option<Kept>,
+) -> Option<Kept> {
     let uses = Uses::of(body);
     let param = Local::from_u32(index + 1);
     // What holds the parameter's value, as it is or as its payload.
@@ -328,12 +406,15 @@ fn owns<'tcx>(
     let mut rcs: Vec<Local> = Vec::new();
     // Where the return place is given one of those `Rc`s.
     let mut returned: HashSet<Location> = HashSet::new();
+    // The fields it's moved to, and whether a library's function keeps it.
+    let mut kept_in: Vec<(DefId, FieldIdx)> = Vec::new();
+    let mut foreign = false;
     let mut i = 0;
     while i < held.len() {
         let local = held[i];
         i += 1;
         if local == mir::RETURN_PLACE || (local != param && uses.def(local).is_none()) {
-            return false;
+            return None;
         }
         for &at in uses.uses(local) {
             if drops(body, at, local) {
@@ -341,7 +422,7 @@ fn owns<'tcx>(
             }
             if let Some((to, rvalue)) = assign_at(body, at) {
                 if !to.projection.is_empty() {
-                    return false;
+                    return None;
                 }
                 match rvalue {
                     Rvalue::Use(operand, ..) | Rvalue::Cast(_, operand, _)
@@ -351,65 +432,61 @@ fn owns<'tcx>(
                     }
                     Rvalue::Aggregate(kind, fields) => {
                         let AggregateKind::Adt(adt, variant, ..) = **kind else {
-                            return false;
+                            return None;
                         };
                         if fields.iter().filter(|f| reads_any(f, &[local])).count() != 1 {
-                            return false;
+                            return None;
                         }
-                        let Some(field) = fields
+                        let field = fields
                             .iter()
-                            .position(|f| matches!(f, Operand::Move(_)) && whole(f) == Some(local))
-                        else {
-                            return false;
-                        };
+                            .position(|f| matches!(f, Operand::Move(_)) && whole(f) == Some(local))?;
                         // `Some(on_all_ready)`, given on.
                         if tcx.is_lang_item(adt, rustc_hir::attrs::lang_items::LangItem::Option) {
                             if variant.as_u32() != 1 {
-                                return false;
+                                return None;
                             }
                             held.push(to.local);
                             continue;
                         }
                         if !tcx.adt_def(adt).is_struct() || !field_kept(adt, FieldIdx::from_usize(field)) {
-                            return false;
+                            return None;
                         }
+                        kept_in.push((adt, FieldIdx::from_usize(field)));
                         values.push(to.local);
                     }
-                    _ => return false,
+                    _ => return None,
                 }
                 continue;
             }
-            let Some((id, generics, args, to)) = call_at(tcx, body, at) else {
-                return false;
-            };
-            let Some(given) = args.iter().position(|a| reads_any(a, &[local])) else {
-                return false;
-            };
+            let (id, generics, args, to) = call_at(tcx, body, at)?;
+            let given = args.iter().position(|a| reads_any(a, &[local]))?;
             if args.iter().filter(|a| reads_any(a, &[local])).count() != 1
                 || !matches!(args[given], Operand::Move(_))
                 || whole(args[given]) != Some(local)
             {
-                return false;
+                return None;
             }
             match handle_step(tcx, id, generics) {
                 // Its payload, or what's made in its place.
                 Some(HandleStep::Unwrap | HandleStep::UnwrapOr) if given == 0 => held.push(to),
-                _ if tcx.generics_of(id).count() == 0 && by(id, given as u32) => {
+                _ if tcx.generics_of(id).count() == 0 && by(id, given as u32).is_some() => {
+                    match by(id, given as u32).flatten() {
+                        Some(kept) => kept_in.extend(kept),
+                        None => foreign = true,
+                    }
                     if to == mir::RETURN_PLACE {
                         returned.insert(at);
                     } else {
                         rcs.push(to);
                     }
                 }
-                _ => return false,
+                _ => return None,
             }
         }
     }
     // Each struct made of it, given `Rc::new` alone.
     for &value in &values {
-        if uses.def(value).is_none() {
-            return false;
-        }
+        uses.def(value)?;
         for &at in uses.uses(value) {
             if drops(body, at, value) {
                 continue;
@@ -426,7 +503,7 @@ fn owns<'tcx>(
                         rcs.push(to);
                     }
                 }
-                _ => return false,
+                _ => return None,
             }
         }
     }
@@ -435,18 +512,14 @@ fn owns<'tcx>(
     while i < rcs.len() {
         let rc = rcs[i];
         i += 1;
-        if uses.def(rc).is_none() {
-            return false;
-        }
+        uses.def(rc)?;
         for &at in uses.uses(rc) {
             if drops(body, at, rc) {
                 continue;
             }
-            let Some((to, rvalue)) = assign_at(body, at) else {
-                return false;
-            };
+            let (to, rvalue) = assign_at(body, at)?;
             if !to.projection.is_empty() {
-                return false;
+                return None;
             }
             match rvalue {
                 Rvalue::Use(operand @ Operand::Move(_), ..) if whole(operand) == Some(rc) => {
@@ -458,7 +531,7 @@ fn owns<'tcx>(
                 }
                 Rvalue::Ref(_, mir::BorrowKind::Shared | mir::BorrowKind::Fake(_), p)
                     if p.local == rc && p.projection.is_empty() => {}
-                _ => return false,
+                _ => return None,
             }
         }
     }
@@ -467,5 +540,6 @@ fn owns<'tcx>(
         .copied()
         .filter(|at| !body.basic_blocks[at.block].is_cleanup)
         .collect();
-    !defs.is_empty() && defs.iter().all(|at| returned.contains(at))
+    let all = !defs.is_empty() && defs.iter().all(|at| returned.contains(at));
+    all.then(|| (!foreign).then_some(kept_in))
 }

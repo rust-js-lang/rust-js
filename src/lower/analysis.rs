@@ -21,6 +21,7 @@ mod iterator_steps;
 mod js_given;
 pub(super) use js_given::{JsGiven, Params, flattened_alike, flattened_by_name, js_facing, read_by_flatten};
 mod lazy_locals;
+mod may_run;
 mod mutation;
 mod namespaces;
 pub(super) use namespaces::{Through, module_paths, namespace_in, namespace_of};
@@ -1075,26 +1076,32 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // (`plain_statics`), its quiet borrows given what's in it (ADR 0364).
     // Those made where they're first used, which aren't plain: a variable
     // can't be made as it's read (ADR 0037, amended).
+    // What each body may run of the crate's, the one rule (`may_run`).
+    let std_runs = |id, args| {
+        let recognition = Recognition {
+            tcx,
+            typing_env: ty::TypingEnv::fully_monomorphized(),
+            trait_impls: &trait_impls,
+            foreign: &foreign,
+        };
+        recognition
+            .is_std(id)
+            .then(|| cell_borrows.std_runs(&recognition, id, args))
+    };
+    let drop_runs = |ty, owner| runs_where(&closure_facts, &counted, ty, owner);
+    let runs = may_run::Runs::new(
+        tcx,
+        all_bodies,
+        (&thread_local_inits, closures::handed_fn_dyns(tcx, all_bodies)),
+        (cell_borrows.pointers(), &std_runs, &drop_runs),
+    );
     let lazy_locals::LazyLocals {
         lazy: lazy_locals,
         at_load: locals_at_load,
-    } = lazy_locals::lazy_locals(
-        tcx,
-        all_bodies,
-        (&thread_local_inits, made_where_used),
-        cell_borrows.pointers(),
-        &|id, args| {
-            let recognition = Recognition {
-                tcx,
-                typing_env: ty::TypingEnv::fully_monomorphized(),
-                trait_impls: &trait_impls,
-                foreign: &foreign,
-            };
-            recognition
-                .is_std(id)
-                .then(|| cell_borrows.std_runs(&recognition, id, args))
-        },
-    );
+    } = lazy_locals::lazy_locals((&thread_local_inits, made_where_used), &runs);
+    // What a function whose return alone owns a callback runs before it
+    // returns that may call it (ADR 0317, amended, rd621).
+    self_handles.quiet(tcx, &runs, &|id, index| foreign.quiet_by_return(id, index));
     let quiet_locals = plain_locals::plain_thread_locals(
         tcx,
         all_bodies,

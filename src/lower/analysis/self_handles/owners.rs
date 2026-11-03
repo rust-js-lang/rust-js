@@ -34,6 +34,11 @@
 //! its making the `let`, its clones, its setting and its drops no JS, the
 //! call's value assigned to it, and each closure's `get().and_then(
 //! Weak::upgrade)` the variable, `undefined` until it's set, as `None` is.
+//!
+//! Where nothing the call runs before it returns may call any of them
+//! (`OwnedByReturn::quiet`), none runs before the cell is set, so each
+//! `unwrap` of its upgrade is the variable too, never `undefined` where
+//! it's read: `startFlowing(request, ..)` (rd621).
 
 use super::*;
 
@@ -64,6 +69,37 @@ pub(crate) struct OwnerHandle<'tcx> {
     /// Where each `Weak::upgrade` of the reads is written, by its closure,
     /// which asks no count.
     pub(super) upgrades: Vec<(DefId, Span)>,
+    /// The function the call is of, and the parameters it's given the
+    /// closures as; none of a value cell's.
+    pub(super) called: Option<(DefId, Vec<u32>)>,
+    /// Of each closure, each read whose `unwrap` of the upgrade is the
+    /// variable where none runs before the cell is set (`direct`).
+    pub(super) unwrapped: Vec<(DefId, Unwrapped)>,
+}
+
+/// A closure's `unwrap` of its owner's upgrade, `cell.get().and_then(
+/// Weak::upgrade).unwrap()`: where the `unwrap` is, the local it gives the
+/// `Rc` to, and the drops of what the `and_then` gives.
+#[derive(Clone)]
+pub(super) struct Unwrapped {
+    at: Location,
+    value: Local,
+    drops: Vec<Location>,
+}
+
+impl OwnerHandle<'_> {
+    /// Each closure's `unwrap` of its upgrade the variable: none runs
+    /// before the cell is set, so it's never `None` where it's read.
+    pub(super) fn direct(&mut self) {
+        for (closure, unwrapped) in std::mem::take(&mut self.unwrapped) {
+            let Some((read, own)) = self.read.get_mut(&closure) else {
+                continue;
+            };
+            own.insert(unwrapped.at.block, unwrapped.value);
+            read.insert(unwrapped.at);
+            read.extend(unwrapped.drops);
+        }
+    }
 }
 
 /// A cell made as an owner handle's is, but given, in a closure's `Rc`, to
@@ -308,11 +344,20 @@ pub(super) fn owner_made<'tcx>(
     // Each closure reads the cell only by `cell.get().and_then(Weak::upgrade)`.
     let mut read = HashMap::new();
     let mut upgrades = Vec::new();
+    let mut unwrapped = Vec::new();
     for &(closure, index, _) in &closures {
-        let (at, own, spans) = super::read(tcx, of.get(&closure)?, (index, Chain::Owner))?;
+        let body = of.get(&closure)?;
+        let (at, own, spans) = super::read(tcx, body, (index, Chain::Owner))?;
         upgrades.extend(spans.into_iter().map(|span| (closure, span)));
+        let reads = Uses::of(body);
+        for &option in own.values() {
+            if let Some(at) = unwrapped_at(tcx, body, &reads, option) {
+                unwrapped.push((closure, at));
+            }
+        }
         read.insert(closure, (at, own));
     }
+    let given: Vec<u32> = closures.iter().map(|&(_, _, given)| given).collect();
     Some(OwnerHandle {
         maker,
         handle,
@@ -325,6 +370,35 @@ pub(super) fn owner_made<'tcx>(
         made,
         read,
         upgrades,
+        called: Some((callee, given)),
+        unwrapped,
+    })
+}
+
+/// The `unwrap` of `option`, what the `and_then` ending `and_then` gives,
+/// where that's all it's used for but its drops: of a local of its own,
+/// set once and lent nowhere mutably, the variable in its place.
+fn unwrapped_at<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, uses: &Uses, option: Local) -> Option<Unwrapped> {
+    let mut drops = Vec::new();
+    let mut unwrap = None;
+    for &at in uses.uses(option) {
+        if super::drops(body, at, option) {
+            drops.push(at);
+            continue;
+        }
+        if unwrap.replace(at).is_some() {
+            return None;
+        }
+    }
+    let at = unwrap?;
+    let (HandleStep::Unwrap, args, value) = call_at(tcx, body, at)? else {
+        return None;
+    };
+    let owned = value != mir::RETURN_PLACE && uses.def(value) == Some(at);
+    (args.len() == 1 && whole(args[0]) == Some(option) && owned && !lent_mut(body, uses, value)).then_some(Unwrapped {
+        at,
+        value,
+        drops,
     })
 }
 

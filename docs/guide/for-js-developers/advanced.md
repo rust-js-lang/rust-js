@@ -219,6 +219,13 @@ the value is alive, and the cell is the value's `let`, which they close
 over: `undefined`, `None`, until it's set, so a callback called before
 reads `None`, and its `unwrap` panics as Rust's does
 ([ADR 0317](../../decisions/0317-once-cells.md#amendment-callbacks-handle-on-what-owns-them-is-its-let)).
+Where nothing the call runs before it returns may call them, none runs
+before the cell is set, so each `unwrap` is the value itself, as below:
+no code it may run names a field they're kept in, and none is what
+rust-js can't follow, a `dyn Fn`'s call or a drop of one that runs a
+destructor. A library's contract says so of its function
+([ADR 0317, amended](../../decisions/0317-once-cells.md#amendment-a-callback-nothing-calls-before-its-call-returns-reads-the-value-rd621-a)).
+Otherwise the `unwrap` stays, `const request$1 = $unwrap(request);`.
 One kept apart from the value, by a clone, a list or a field read but to
 call it, or a cell set again or read otherwise, is counted, as written.
 So is one kept in a public field, which any crate may clone out: keep a
@@ -264,8 +271,6 @@ pub fn render(name: &str) -> Rc<Request> {
 ```
 
 ```js
-import { $unwrap } from "@rust-js/runtime";
-
 export function createRequest(name, onAllReady) {
   return {
     name,
@@ -281,8 +286,7 @@ export function completeAll(request) {
 export function render(name) {
   let request;
   const onAllReady = () => {
-    const request$1 = $unwrap(request);
-    console.log(`${request$1.name} is ready`);
+    console.log(`${request.name} is ready`);
   };
   request = createRequest(name, onAllReady);
   return request;

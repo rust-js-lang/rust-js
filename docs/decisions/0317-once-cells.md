@@ -8,7 +8,10 @@ property, absent until it's set; a `set` is an assignment where the cell
 is known empty, else a test, and `$onceSet` is gone. Amended below
 (rd573): callbacks' handle on what owns them, an `Rc<OnceCell<Weak<T>>>`
 set once after the call they're given to, is that `Rc`'s `let`; and
-(rd553) one kept in a public field stays counted, its refusal naming why.
+(rd553) one kept in a public field stays counted, its refusal naming why;
+(rd621) value cells an executor's callbacks read are the call's `const`,
+and where nothing the call runs before it returns may call the
+callbacks, each `unwrap` of the upgrade is the `let` itself.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)), but for `wait()`
 and a `OnceLock`'s reentrant init, D: refused.
@@ -430,3 +433,116 @@ any set, where Rust panics and the variable would throw another error.
   `value-cell-changed-in-place` and `value-cell-variable-changed`
   (`self_handles/value_cells.rs`).
 
+
+## Amendment: a callback nothing calls before its call returns reads the value (rd621 A)
+
+### Context
+
+React's Fizz server's entries, ReactDOMFizzServerNode's and the others,
+make `onAllReady` and its fellows before the request they flow, as
+above, and each reads it by `cell.get().and_then(Weak::upgrade)
+.unwrap()`. The cell is the request's `let`, but each callback's
+`unwrap` stayed, `const request$1 = $unwrap(request);`, six of them,
+where upstream reads `request`. A callback called before the cell is set
+reads `None` there, and its `unwrap` panics as Rust's does; read as the
+variable, it would throw another error, so the `unwrap` could go only
+where no callback can run before the set.
+
+### Decision
+
+A parameter what a function returns alone owns is quiet where nothing
+the function may run before it returns may call it
+(`OwnedByReturn::quiet`): its value is kept in fields of the crate's
+struct, which `owns` now reports, through the functions it's given on to,
+and no body naming one of those fields, all that may call what it holds
+(the field is private, read only to call through it), is among what the
+function may run, nor a function of the crate's whose body rust-js can't
+read. What a body may run is one rule, `analysis/may_run.rs`, which a
+thread-local's initializer asked already (ADR 1006, amended): the bodies
+it calls, std's calls by the bounds they're called under
+(`cell_borrows::std_runs`), what a library's or a binding's call is given,
+each impl of a trait a call through it may be of, a fn pointer's targets
+(ADR 0907), each thread-local's initializer it reads, and the
+destructors its drops run. Any it can't follow gives no answer, so
+quiet is never assumed: a `dyn Fn`'s call of what isn't its parameter's
+given, a type parameter's call of what it's given, a fn pointer that may
+be anything, a body whose MIR it can't read, or a drop of a `dyn` whose
+drop may run a destructor (`drops::drop_runs`, the one rule of what a
+drop runs). One a library's function keeps, whose fields the crate can't
+name, would be none, but none is owned so: a library's function can't
+return an `Rc` of the crate's struct. A library's contract lists its quiet parameters,
+`Calling::quiet_by_return`, beside `owned_by_return`, of the same owner
+(library ABI 14); a stale manifest is refused by its compiler identity
+and ABI, so it can't claim one.
+
+An owner handle whose call is quiet in every parameter its closures are
+given as reads its `Rc` as the variable at each `unwrap` of the upgrade
+too: the `and_then` and the `unwrap` are no JS, and the local the
+`unwrap` gives is the variable, `startFlowing(request, "all")`. A read
+that tests the upgrade, `match` or `if let`, reads the variable as
+before.
+
+The drop rule of `may_run` was a type's walk of its arguments for the
+crate's destructors: a destructor of a field of the crate's type, or one
+a `dyn` hides, wasn't found. Now a drop that runs none runs nothing; one
+that does, or holds a `dyn Fn`, runs each destructor of the crate's
+through the crate's types' fields and what std's and a library's hold,
+what a library's destructor holds of a closure, and what each closure the
+crate makes a `dyn Fn` of only to hand it to JS holds
+(`closures::handed_fn_dyns`): `drop_runs` leaves those out of what a
+`dyn Fn`'s drop runs, and any other function made one whose drop runs
+code makes every `dyn Fn`'s drop run, which rust-js can't follow. Walking
+every function made a `dyn Fn` instead refused React's
+`RECONCILE_CHILD_FIBERS`, a `pub` thread-local, whose generic closures'
+`dyn`s it couldn't read. A
+thread-local's initializer asks the same (ADR 1006, amended).
+
+### Why
+
+ADR 0262's first case, no difference: a closure kept in such a field is
+called only by a body naming it, as owned_by_return proves, and none of
+those runs before the call returns, nor does the maker run anything
+between the call and the set (`set_next`), so each callback runs only
+once the cell is set, and its `unwrap` gives the value the variable
+holds. Neither Rust's panic nor JS's `undefined` is reached.
+
+A handle is direct where every closure's parameter is quiet, not each
+closure alone: React's makers give all of theirs to one quiet call, and
+a call that runs one of them before it returns, `complete_shell` above,
+calls a `dyn Fn`, which may run anything, the others too. A guard with a
+destructor around a direct read needs no `try`: nothing between can
+throw (`owner_handle_guarded`).
+
+### Alternatives
+
+- The callee's `Rc` untouched until returned (run 43's design): Fizz's
+  `create_request` lends `&request` to its helpers, so nothing changed.
+- A second reachability for this question, std's MIR walked: hashbrown's
+  rehash calls a `&dyn Fn` and `LocalKey::with` a fn pointer, so Fizz
+  would give up; and two answers to what a body runs is two authorities.
+
+### What holds it
+
+- `test/corpus/owner_handle_quiet.rs`, against native Rust: a request
+  that lends itself to helpers, gives std a closure, hashes a task of its
+  own and reads a thread-local, each `unwrap` the request; one that calls
+  a `dyn Fn` it's given, one that drops a struct whose field's destructor
+  calls a `dyn Fn`, and
+  one that calls a `dyn` of the crate's trait, an impl of which may run a
+  derived `PartialEq`, whose body rust-js doesn't read, keep theirs.
+  `owner_handle.rs`'s, whose request may complete before it returns, keep
+  theirs; `owner_handle_guarded.rs`'s direct read needs no `try`.
+- `test/corpus/owner_handle_named.rs`: a request whose helper names the
+  field one callback is kept in, without calling it, is quiet in the
+  other only, so the handle keeps both `unwrap`s.
+- `test/crates.test.ts`, "a library's request that owns its callbacks
+  alone ..": `create_request`, whose `complete_shell` calls a `dyn Fn`, is
+  quiet in none, and its consumer's `unwrap` stays; `create_quiet_request`
+  is quiet in both, and its consumer's reads are the request.
+- Mutations `quiet-field-named`, `quiet-unfollowed` and
+  `quiet-unread-body` (`owned_by_return.rs`), `quiet-handle-any` and
+  `quiet-library-assumed` (`self_handles.rs`), `quiet-unwrap-lowered`
+  (`self_handles/owners.rs`), and `may-run-field-destructor`
+  (`may_run.rs`). A drop of a `dyn Fn` runs what any function the crate
+  makes one of holds, but no owner handle can show it: a crate whose `dyn
+  Fn`s hold what drops counts each `Rc<dyn Fn>`, so it makes none.

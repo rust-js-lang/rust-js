@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a parameter given on to a function that keeps it apart is taken to be owned by what that returns, so called after the request is dropped the callback reads it, where Rust's upgrade gives `None`",
     file,
-    find: "                _ if tcx.generics_of(id).count() == 0 && by(id, given as u32) => {\n",
+    find: "                _ if tcx.generics_of(id).count() == 0 && by(id, given as u32).is_some() => {\n",
     replace: "                _ if tcx.generics_of(id).count() == 0 => {\n",
     tests: corpus("owner_handle_stashed"),
   },
@@ -48,8 +48,39 @@ export const mutations: Mutation[] = [
     breaks:
       "a function that keeps the request its callback is given to and returns another is taken to own it by what it returns, so the callback reads the one returned after it's dropped, where Rust's upgrade gives `None`",
     file,
-    find: "    !defs.is_empty() && defs.iter().all(|at| returned.contains(at))\n",
-    replace: "    !defs.is_empty() || !values.is_empty()\n",
+    find: "    let all = !defs.is_empty() && defs.iter().all(|at| returned.contains(at));\n",
+    replace: "    let all = !defs.is_empty() || !values.is_empty();\n",
     tests: corpus("owner_handle_returns_another"),
   },
+  {
+    name: "quiet-field-named",
+    breaks:
+      "a body that names the field a callback is kept in, all that may call it, is taken to call none, so a request that lends it to a helper reading the field is quiet and its handle's `unwrap`s are the request (rd621)",
+    file,
+    find: "                .all(|body| !names(body) && !unread(body))\n",
+    replace: "                .all(|body| !unread(body))\n",
+    tests: corpus("owner_handle_named"),
+    snapshots: true,
+  },
+  {
+    name: "quiet-unfollowed",
+    breaks:
+      "what rust-js can't follow of what a function runs, a `dyn Fn` it's given, is taken to run nothing, so a request that calls one before it returns is quiet, though that may call its callbacks before the cell is set (rd621)",
+    file,
+    find: "            let Some(reached) = runs.of(id) else { continue };\n",
+    replace: "            let reached = runs.of(id).unwrap_or_default();\n",
+    tests: corpus("owner_handle_quiet"),
+    snapshots: true,
+  },
+  {
+    name: "quiet-unread-body",
+    breaks:
+      "a function of the crate's whose body rust-js doesn't read, a derived `PartialEq`'s a `dyn` of the crate's trait may run, is taken to run nothing, so the request that calls it is quiet (rd621)",
+    file,
+    find: "                .all(|body| !names(body) && !unread(body))\n",
+    replace: "                .all(|body| !names(body))\n",
+    tests: corpus("owner_handle_quiet"),
+    snapshots: true,
+  },
+
 ];

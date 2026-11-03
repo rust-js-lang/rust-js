@@ -91,4 +91,23 @@ export const mutations: Mutation[] = [
     replace: "                (_, _) if once && step != HandleStep::AndThen => slice.push(destination),\n",
     tests: corpus("owner_handle_closure_sets"),
   },
+  {
+    name: "quiet-handle-any",
+    breaks:
+      "an owner handle whose call may call one of its closures before it returns is taken to call none where another is quiet, so the other's `unwrap` is the request, though the one called may have run anything first (rd621)",
+    file: "src/lower/analysis/self_handles.rs",
+    find: "            if given.iter().all(|&index| quiet(index)) {\n",
+    replace: "            if given.iter().any(|&index| quiet(index)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^owner_handle_named.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "quiet-library-assumed",
+    breaks:
+      "a library's function is taken to call none of what it's given before it returns, whatever its contract says, so a consumer's callbacks given React-like `create_request`, whose `complete_shell` calls one, read the request as the variable (rd621)",
+    file: "src/lower/analysis/self_handles.rs",
+    find: "                false => foreign(*callee, index),\n",
+    replace: "                false => true,\n",
+    tests: ["test/crates.test.ts", "-t", "owns its callbacks alone"],
+  },
 ];

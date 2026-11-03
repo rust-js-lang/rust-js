@@ -273,14 +273,27 @@ test("a library that reads no count counts no Rc, and a crate counting one it ha
 // request's `let`, as React's Fizz server's entries do upstream.
 test("a library's request that owns its callbacks alone is its consumer's callbacks' let", () => {
   const out = chain(pairs, "owner_handle", ["dep", "app"]);
-  const createRequest = contract(out).items.find((item: { rust_path: string }) => item.rust_path === "dep::create_request");
+  const item = (path: string) => contract(out).items.find((item: { rust_path: string }) => item.rust_path === path);
+  const createRequest = item("dep::create_request");
   expect(createRequest.owned_by_return).toEqual([1, 2]);
+  // Its `complete_shell` calls `on_shell_ready` before it returns, which may
+  // be anything, `start_work` of the request too, so neither is quiet (rd621).
+  expect(createRequest.quiet_by_return).toBeUndefined();
+  expect(item("dep::create_quiet_request").quiet_by_return).toEqual([1, 2]);
   // Of a public field, which another crate may clone, none.
-  const openRequest = contract(out).items.find((item: { rust_path: string }) => item.rust_path === "dep::open_request");
+  const openRequest = item("dep::open_request");
   expect(openRequest.owned_by_return).toBeUndefined();
+  expect(openRequest.quiet_by_return).toBeUndefined();
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
   expect(app).toContain("  let request;\n  const onAllReady = () => {\n");
   expect(app).toContain("  request = createRequest(name, onAllReady, onShellReady);\n  return request;\n");
+  // A callback the library may call before it returns, before the cell is
+  // set, keeps the cell's `None` there, so its fellow's `unwrap` stays.
+  expect(app).toContain("    const request$1 = $unwrap(request);\n    startFlowing(request$1, \"all\");\n");
+  // Where the library's contract says none is called before it returns,
+  // each `unwrap` is the request (rd621).
+  expect(app).toContain("  const onAllReady = () => {\n    startFlowing(request, \"quiet all\");\n  };\n");
+  expect(app).toContain("  const onShellReady = () => {\n    startFlowing(request, \"quiet shell\");\n  };\n");
   expect(app).not.toContain("strong");
   expect(readFileSync(join(out, "dep", "lib.js"), "utf8")).not.toContain("strong");
 }, 300_000);

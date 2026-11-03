@@ -303,6 +303,7 @@ pub(super) fn exports<'tcx>(
                 .filter_map(|(fact, holds)| holds.then_some(fact))
                 .collect(),
                 owned_by_return: owned_by_return.of(id),
+                quiet_by_return: owned_by_return.quiet_of(id),
                 nulled_params: {
                     let mut nulled: Vec<u32> = (nulled_params.iter())
                         .filter(|&&(of, _)| of == id)
@@ -823,6 +824,14 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     pub(super) fn owned_by_return(&self, id: DefId, index: u32) -> bool {
         self.item(id)
             .is_some_and(|item| item.calling.owned_by_return.contains(&index))
+    }
+
+    /// Does nothing `id`, a library's function, runs before it returns
+    /// call its parameter `index`, which what it returns alone owns, as its
+    /// contract says (ADR 0317, amended, rd621)?
+    pub(super) fn quiet_by_return(&self, id: DefId, index: u32) -> bool {
+        self.item(id)
+            .is_some_and(|item| item.calling.quiet_by_return.contains(&index))
     }
 
     /// Does a library's `id` take its parameter `index` as `null` or a

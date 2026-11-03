@@ -31,8 +31,11 @@ use std::path::Path;
 /// it may give `undefined` (ADR 0861, amended). 13: the facts its traits'
 /// dictionaries carry of each associated type, `associated`, which a
 /// consumer's dictionaries of its own impls carry too and its code reads,
-/// `AArray.ItemSize` (ADR 0145, amended).
-pub const VERSION: u32 = 13;
+/// `AArray.ItemSize` (ADR 0145, amended). 14: of a function's parameters
+/// what it returns alone owns, those nothing it runs before it returns may
+/// call, `quiet_by_return`, which a consumer's closures given them read
+/// as the variable, never `None` (ADR 0317, amended, rd621).
+pub const VERSION: u32 = 14;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -80,6 +83,11 @@ pub struct Calling {
     /// given one runs only while that `Rc` is alive.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub owned_by_return: Vec<u32>,
+    /// Of those, the parameters nothing it runs before it returns may call
+    /// (ADR 0317, amended, rd621): a consumer's closure given one runs only
+    /// once the call returns, so the cell it reads its `Rc` by is set.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub quiet_by_return: Vec<u32>,
     /// Its own `#[rust_js::nullable(..)]` parameters, by index, its `self`
     /// first, that each of its crate's calls gives `null` or a value, which
     /// its body tests `!== null` (ADR 0861, amended): a consumer's call

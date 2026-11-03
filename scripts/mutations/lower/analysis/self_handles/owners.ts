@@ -79,4 +79,14 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: corpus("owner_handle_swapped"),
   },
+  {
+    name: "quiet-unwrap-lowered",
+    breaks:
+      "a direct handle's `unwrap` is lowered though the `and_then` it unwraps is no JS, so it reads a variable never written (rd621)",
+    file,
+    find: "            read.insert(unwrapped.at);\n",
+    replace: "",
+    tests: corpus("owner_handle_quiet"),
+    snapshots: true,
+  },
 ];

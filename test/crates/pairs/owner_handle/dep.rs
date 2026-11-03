@@ -38,6 +38,22 @@ pub fn create_request(
     request
 }
 
+/// One that completes nothing before it returns: nothing it runs may call
+/// what it's given, which its contract says too (rd621).
+pub fn create_quiet_request(
+    name: &str,
+    on_all_ready: Option<Rc<dyn Fn()>>,
+    on_shell_ready: Option<Rc<dyn Fn()>>,
+) -> Rc<Request> {
+    let request = request_instance(name, on_all_ready, on_shell_ready);
+    note(&request, "made");
+    request
+}
+
+fn note(request: &Request, what: &str) {
+    request.log.borrow_mut().push(format!("{} {what}", request.name));
+}
+
 fn complete_shell(request: &Rc<Request>) {
     let on_shell_ready = &request.on_shell_ready;
     on_shell_ready();

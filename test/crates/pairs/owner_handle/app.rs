@@ -5,7 +5,7 @@
 use std::cell::OnceCell;
 use std::rc::{Rc, Weak};
 
-use dep::{Request, create_request, start_flowing, start_work};
+use dep::{Request, create_quiet_request, create_request, start_flowing, start_work};
 
 fn render_to_pipeable_stream(name: &str) -> Rc<Request> {
     let request_cell: Rc<OnceCell<Weak<Request>>> = Rc::new(OnceCell::new());
@@ -28,9 +28,36 @@ fn render_to_pipeable_stream(name: &str) -> Rc<Request> {
     request
 }
 
+// The library's contract says nothing `create_quiet_request` runs before
+// it returns calls them, so each runs once the cell is set, and its
+// `unwrap` is the request itself (rd621).
+fn render_quiet(name: &str) -> Rc<Request> {
+    let request_cell: Rc<OnceCell<Weak<Request>>> = Rc::new(OnceCell::new());
+    let on_all_ready: Rc<dyn Fn()> = {
+        let cell = Rc::clone(&request_cell);
+        Rc::new(move || {
+            let request = cell.get().and_then(Weak::upgrade).unwrap();
+            start_flowing(&request, "quiet all");
+        })
+    };
+    let on_shell_ready: Rc<dyn Fn()> = {
+        let cell = Rc::clone(&request_cell);
+        Rc::new(move || {
+            let request = cell.get().and_then(Weak::upgrade).unwrap();
+            start_flowing(&request, "quiet shell");
+        })
+    };
+    let request = create_quiet_request(name, Some(on_all_ready), Some(on_shell_ready));
+    let _ = request_cell.set(Rc::downgrade(&request));
+    request
+}
+
 pub fn main() {
     let request = render_to_pipeable_stream("a");
     start_work(&request);
     start_work(&request);
     println!("{}: {:?}", request.name, request.log.borrow());
+    let quiet = render_quiet("b");
+    start_work(&quiet);
+    println!("{}: {:?}", quiet.name, quiet.log.borrow());
 }

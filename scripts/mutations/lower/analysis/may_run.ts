@@ -1,4 +1,4 @@
-// Mutations of src/lower/analysis/lazy_locals.rs (ADR 0093).
+// Mutations of src/lower/analysis/may_run.rs (ADR 0093): what a body may run.
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "at-load-own-const-reached",
     breaks:
       "a `const` an initializer reads itself, which it reads as its value, makes it run another module of a cycle, so `load_cycle_values`' `pub` `COUNT` of `Cell::new(LIMIT)` is refused",
-    file: "src/lower/analysis/lazy_locals.rs",
-    find: "            if id == init\n                && !made_of.contains_key(&read)\n",
+    file: "src/lower/analysis/may_run.rs",
+    find: "            if id == start\n                && !made_of.contains_key(&read)\n",
     replace:
       "            if false\n                && !made_of.contains_key(&read)\n",
     tests: ["test/corpus.test.ts", "-t", "^load_cycle_values.rs$"],
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     name: "at-load-key-read-as-const",
     breaks:
       "a thread-local's key an initializer reads, a `const` of std's macro, is taken for a `const` read as its value, so what that thread-local's initializer runs isn't followed: `pub N` of `M.with(..)`, whose `M` reads `N`, isn't refused",
-    file: "src/lower/analysis/lazy_locals.rs",
+    file: "src/lower/analysis/may_run.rs",
     find: "                && !made_of.contains_key(&read)\n",
     replace: "\n",
     tests: [
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
     name: "at-load-binding-runs-nothing-followed",
     breaks:
       "a binding that runs nothing, React's `memo`, is taken to run what it's given, a `dyn Fn` rust-js can't follow, so `memo(Badge, Some(..))` is made where it's first used, which JSX can't name",
-    file: "src/lower/analysis/lazy_locals.rs",
+    file: "src/lower/analysis/may_run.rs",
     find: "            if super::cell_borrows::call_runs_nothing(tcx, callee) {\n                return true;\n            }\n",
     replace:
       "            if false {\n                return true;\n            }\n",
@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
     name: "exported-local-reads-unfollowed",
     breaks:
       "what a thread-local a `pub` one reads runs as it's made there isn't asked, so one reading itself through it compiles, and throws reading itself before it's made (ADR 0037, amended)",
-    file: "src/lower/analysis/lazy_locals.rs",
+    file: "src/lower/analysis/may_run.rs",
     find: "            if let Some(&made) = made_of.get(&read) {\n",
     replace:
       "            if let Some(&made) = made_of.get(&read).filter(|_| false) {\n",
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     name: "exported-local-callee-unfollowed",
     breaks:
       "what a `pub` thread-local's initializer calls of the crate's isn't asked, so one that runs a module in an import cycle with its own compiles, and reads what isn't made yet (ADR 0037, amended)",
-    file: "src/lower/analysis/lazy_locals.rs",
+    file: "src/lower/analysis/may_run.rs",
     find: "                                        called.push((f, instance.args, gives));\n",
     replace: "                                        drop::<Given<'tcx>>(gives);\n",
     tests: [
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     name: "exported-local-std-given-unfollowed",
     breaks:
       "a closure a `pub` thread-local's initializer gives std isn't asked, so one that runs a module in an import cycle with its own compiles (ADR 0037, amended)",
-    file: "src/lower/analysis/lazy_locals.rs",
+    file: "src/lower/analysis/may_run.rs",
     find: "                            .map(|(f, f_args)| (f, f_args.unwrap_or_else(|| identity(f)))),\n",
     replace:
       "                            .map(|(f, f_args)| (f, f_args.unwrap_or_else(|| identity(f))))\n                            .filter(|_| false),\n",
@@ -84,7 +84,7 @@ export const mutations: Mutation[] = [
     name: "exported-local-dyn-fn-followed",
     breaks:
       "a `dyn Fn`'s call in a `pub` thread-local's initializer is taken to run none of the crate's code, which may be a module's not loaded yet (ADR 0037, amended)",
-    file: "src/lower/analysis/lazy_locals.rs",
+    file: "src/lower/analysis/may_run.rs",
     find: "            if tcx.fn_trait_kind_from_def_id(trait_id).is_some() {\n                return false;\n            }\n            for &imp in impls.of_trait",
     replace:
       "            if tcx.fn_trait_kind_from_def_id(trait_id).is_some() {\n                return true;\n            }\n            for &imp in impls.of_trait",
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
     name: "type-argument-dyn-followed",
     breaks:
       "a `dyn Fn` a binding's call names only as a type argument, `js::class::<WeakMap<dyn Fn() -> .., String>>()`, is taken for one it may call, so React's componentFrameCache is `$local(() => ..)` and each read a call (rd281)",
-    file: "src/lower/analysis/lazy_locals.rs",
+    file: "src/lower/analysis/may_run.rs",
     find: "                .filter(|part| matches!(part.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))\n",
     replace: "",
     tests: [
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     name: "fn-item-arguments-walked",
     breaks:
       "a function item's type arguments, `js::weak_map::new::<dyn Fn() -> .., String>` given to `call_static`, are taken for values it holds, so a `dyn Fn` among them makes the thread-local `$local` (rd281)",
-    file: "src/lower/analysis/lazy_locals.rs",
+    file: "src/lower/analysis/may_run.rs",
     find: "                walker.skip_current_subtree();\n",
     replace: "",
     tests: [
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
     name: "dyn-given-followed-to-nothing",
     breaks:
       "a `dyn Fn` parameter is taken to run nothing its call gave it, so a `pub` thread-local whose `call(&|| N.with(..))` reads itself isn't refused (rd542)",
-    file: "src/lower/analysis/lazy_locals.rs",
+    file: "src/lower/analysis/may_run.rs",
     find: "                [] => given.get(local.as_usize() - 1).cloned().flatten(),\n",
     replace: "                [] => Some(Vec::new()),\n",
     tests: ["test/diagnostics.test.ts", "-t", "whose dyn Fn reads it"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
     name: "dyn-given-unfollowed",
     breaks:
       "a `dyn Fn`'s call is what rust-js can't follow, whatever its call gave it, so React's noop renderer's `pub` `REACT_NOOP = create_react_noop(&react_fiber_reconciler, true)` is refused (rd542)",
-    file: "src/lower/analysis/lazy_locals.rs",
+    file: "src/lower/analysis/may_run.rs",
     find: "                [] => given.get(local.as_usize() - 1).cloned().flatten(),\n",
     replace: "                [] => None,\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "dyn Fn is what its call gave it"],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     name: "dyn-given-lent-mutably-followed",
     breaks:
       "a `dyn Fn` variable lent mutably, which a callee may set to anything, is followed to what it was first given (rd542)",
-    file: "src/lower/analysis/lazy_locals.rs",
+    file: "src/lower/analysis/may_run.rs",
     find: "                && !lent.projection.iter().any(|step| matches!(step, PlaceElem::Deref))\n            {\n                return None;\n",
     replace: "                && !lent.projection.iter().any(|step| matches!(step, PlaceElem::Deref))\n            {\n",
     tests: ["test/diagnostics.test.ts", "-t", "dyn Fn"],
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
     name: "closure-clone-runs-it",
     breaks:
       "a clone of a closure is taken to run it, so React's noop renderer's `export const { .. } = createReactNoop(..)`, whose createReactNoop clones a closure that calls what rust-js can't follow, is refused (rd542)",
-    file: "src/lower/analysis/lazy_locals.rs",
+    file: "src/lower/analysis/may_run.rs",
     find: "                                        cloned(tcx, of, impls, &mut work);\n                                        true\n",
     replace: "                                        given(&[of], &mut work)\n",
     tests: ["test/lowering-constants.test.ts", "-t", "clones a closure"],
@@ -160,9 +160,20 @@ export const mutations: Mutation[] = [
     name: "closure-clone-runs-nothing",
     breaks:
       "a clone of a closure is taken to run nothing, though the clone of a captured value of the crate's runs its `Clone`, which may read the thread-local before it's made (rd542)",
-    file: "src/lower/analysis/lazy_locals.rs",
+    file: "src/lower/analysis/may_run.rs",
     find: "            if trait_id == clone {\n",
     replace: "            if trait_id == clone && false {\n",
     tests: ["test/diagnostics.test.ts", "-t", "closure's clone reads it"],
+  },
+
+  {
+    name: "may-run-field-destructor",
+    breaks:
+      "a destructor of a field of the crate's struct a drop drops isn't followed, so a request that drops what holds a closer calling a `dyn Fn` is quiet (rd621)",
+    file: "src/lower/analysis/may_run.rs",
+    find: "                        if adt.did().is_local() {\n                            parts.extend(",
+    replace: "                        if false {\n                            parts.extend(",
+    tests: ["test/corpus.test.ts", "-t", "^owner_handle_quiet.rs$"],
+    snapshots: true,
   },
 ];

@@ -2,7 +2,8 @@
 
 Status: Accepted. The user's decision (2026-10-28, React port gap rd51).
 Amended (rd542): a `dyn Fn` its call is given is what that call gave it,
-and a clone of a closure runs none of it.
+and a clone of a closure runs none of it. Amended (rd621): `may_run` is
+its own rule, and a drop runs the destructors its fields and `dyn`s hold.
 Amends [0037](0037-thread-locals.md), whose amendment refusing a `pub`
 thread-local made where it's first used it replaces.
 
@@ -372,3 +373,20 @@ by `test/lowering-constants.test.ts`'s "a pub thread-local whose
 initializer clones a closure doesn't run it" and `diagnostics.test.ts`'s
 "a pub thread-local whose closure's clone reads it"; mutations
 `closure-clone-runs-it` and `closure-clone-runs-nothing`.
+
+## Amendment: what a body may run is its own rule (rd621)
+
+`loaded_by` is `analysis/may_run.rs`'s `may_run`, the one answer of what
+a body of the crate's may run, which a function whose return alone owns
+a callback asks too, of what it runs before it returns (ADR 0317,
+amended). Its drop rule was a walk of a type's arguments for the crate's
+destructors, which missed one of a field of the crate's struct, a
+library's destructor calling a closure it holds, and whatever a `dyn`
+holds. A drop now runs nothing where it runs no destructor
+(`drops::drop_runs`) and holds no `dyn Fn`; else each destructor of the
+crate's through its types' fields and what std's and a library's hold, a
+library's destructor's closures, and, of a `dyn Fn`, what each closure
+the crate makes one of only to hand it to JS holds, which `drop_runs`
+leaves out; a `dyn` whose drop may run one is what rust-js can't follow. An initializer that drops such a `dyn` is made
+where it's first used, a `pub` one refused, as one calling a `dyn Fn`
+is. Mutation `may-run-field-destructor`.

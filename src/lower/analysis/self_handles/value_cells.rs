@@ -280,6 +280,8 @@ pub(super) fn value_made<'tcx>(
         made,
         read,
         upgrades: Vec::new(),
+        called: None,
+        unwrapped: Vec::new(),
     })
 }
 

@@ -351,6 +351,19 @@ pub(super) fn any_dyns_drop<'tcx>(
             .any(|from| drops(from) || params_may_drop && from.has_non_region_param())
 }
 
+/// Each closure `all_bodies` make a `dyn Fn` of only to hand it to JS: what
+/// a drop of a `dyn Fn` of the crate's may drop beside what `drop_runs`
+/// says, which `dropping_fn_dyn` leaves them out of (`may_run`). Each other
+/// function made one whose drop runs code makes every `dyn Fn`'s drop run.
+pub(super) fn handed_fn_dyns<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Vec<Ty<'tcx>> {
+    let mut functions: Vec<Ty<'tcx>> = (all_bodies.iter())
+        .flat_map(|body| fn_dyn_sources(tcx, &body.thir))
+        .filter_map(|(_, function, handed)| handed.then_some(function))
+        .collect();
+    functions.dedup();
+    functions
+}
+
 /// The functions `thir` makes `dyn Fn`s of, `Box<F>` to `Box<dyn Fn()>`'s
 /// `F`, each with where it's made one and whether it's a closure made one
 /// only to hand it to JS.
