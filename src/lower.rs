@@ -70,6 +70,7 @@ mod places;
 mod plain;
 mod pointers;
 mod recognition;
+mod recursive_fns;
 mod reexports;
 mod refusal;
 mod representation;
@@ -486,6 +487,8 @@ struct CrateFacts<'a, 'tcx> {
     /// (`FnCx::reads_by_name`, `pipeline::load_cycles`, ADR 0031, amended).
     /// Lowered again once it's known.
     loads_in_cycles: std::cell::RefCell<HashSet<DefId>>,
+    /// Each module's function of a recursive type's `==`, clone or order.
+    module_fns: RefCell<recursive_fns::ModuleFns<'tcx>>,
     /// The own nullable parameters each call gives `null` or a value, as
     /// lowering sees their calls (ADR 0861, amended, rd613).
     nulled_params: &'a analysis::nulled_params::NulledParams,
@@ -555,12 +558,9 @@ struct FnCx<'a, 'tcx> {
     jsx: bool,
     /// What writing to a `Formatter` knows (ADRs 0054, 0137).
     writing: display::Writing,
-    /// The recursive types being cloned, ordered, partially or not, and
-    /// compared, and the function each one's clone, order or `==` is
-    /// (`clone_value`, `cmp_value`, `eq_value`), which one inside it calls.
-    cloning: Vec<(Ty<'tcx>, String)>,
-    ordering: Vec<(Ty<'tcx>, bool, String)>,
-    comparing: Vec<(Ty<'tcx>, String)>,
+    /// The functions of recursive types only a caller knows being made
+    /// here, which one inside calls (`recursive_fns`).
+    recursive: recursive_fns::Making<'tcx>,
     /// The item being lowered: what `fn_ref` records as using its target.
     item: DefId,
     /// Which copy of it, where it's one its callers need besides its own JS

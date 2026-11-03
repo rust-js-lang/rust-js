@@ -981,17 +981,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a derived `==` of a type inside itself with a custom part, regex-syntax's `Hir`, is expanded in place, the one inside it again, until rust-js's stack overflows (#511)",
     file: "src/lower/std_impls.rs",
-    find: "        if self.is_recursive(ty) {\n            if let Some((_, name)) = self.comparing",
-    replace: "        if false && self.is_recursive(ty) {\n            if let Some((_, name)) = self.comparing",
-    tests: ["test/corpus.test.ts", "-t", "^recursive_eq.rs$"],
-  },
-  {
-    name: "recursive-eq-of-another-type",
-    breaks:
-      "inside a recursive type's `==` function, another recursive type's `==`, `HirKind`'s in `Hir`'s, calls the outer one, `eqHir(a.kind, b.kind)` (#511)",
-    file: "src/lower/std_impls.rs",
-    find: "self.comparing.iter().find(|(t, _)| *t == ty)",
-    replace: "self.comparing.iter().find(|(t, _)| *t != ty)",
+    find: "        if self.is_recursive(ty) {\n            let ty::Adt(adt, _) = ty.kind() else {\n                unreachable!(\"a recursive type is an ADT\");\n            };\n            let base = format!(\"eq{}\"",
+    replace: "        if false && self.is_recursive(ty) {\n            let ty::Adt(adt, _) = ty.kind() else {\n                unreachable!(\"a recursive type is an ADT\");\n            };\n            let base = format!(\"eq{}\"",
     tests: ["test/corpus.test.ts", "-t", "^recursive_eq.rs$"],
   },
 ];

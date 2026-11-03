@@ -30,9 +30,11 @@ export function exprDebug(e) {
   return exprDebug_fmt(e);
 }
 
+function cloneExpr(expr) {
+  return expr.TAG === "Add" ? { ...expr, _0: cloneExpr(expr._0), _1: cloneExpr(expr._1) } : expr;
+}
+
 function exprClone(e) {
-  const cloneExpr = (expr) =>
-    expr.TAG === "Add" ? { ...expr, _0: cloneExpr(expr._0), _1: cloneExpr(expr._1) } : expr;
   return cloneExpr(e);
 }
 

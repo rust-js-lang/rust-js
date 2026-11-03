@@ -748,4 +748,13 @@ export const mutations: Mutation[] = [
     replace: "            super::bindings::null_or_value(tcx, field, constructed.contains(&field.did), false)\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
   },
+  {
+    name: "recursive-fn-names-unreserved",
+    breaks:
+      "a function lowered after its module's `eqExpr` was made names its variable `eq_expr` `eqExpr`, which hides the module's: `const eqExpr = eqExpr(a, b)` throws (#517)",
+    file: "src/lower/pipeline.rs",
+    find: "        names.extend(crate_facts.module_fns.borrow().names(module).map(str::to_owned));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^recursive_fns_per_module.rs$"],
+  },
 ];

@@ -529,6 +529,13 @@ export function equal(a, b) {
   `{ x: 0, y: 0 }`.
 - **A derived `PartialOrd` or `Ord` compares field by field**: `sort()`
   of them is `versions.sort((a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor))`.
+- **A type inside itself is cloned, compared and ordered by a function of
+  its module's**, one each, which every place in the module calls, and
+  which calls itself for the ones inside: `cloneExpr(e)`, `cmpExpr(a, b)`,
+  `partialCmpExpr(a, b)`, and `eqExpr(a, b)` where a part has your own
+  `PartialEq` (otherwise `$eq` compares it). Of one made of a type
+  parameter, `Tree<T>` in generic code, it's a function of the generic
+  function, which reads the dictionaries that function is given.
 
 ## `Display` and operators
 

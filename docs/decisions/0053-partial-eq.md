@@ -126,3 +126,46 @@ while a type that isn't recursive is still inlined as before, its size
 bounded by the type itself. Held by `test/corpus/recursive_eq.rs`, run
 against native Rust, and the mutations `recursive-eq-in-place` and
 `recursive-eq-of-another-type`.
+
+## Amendment: one function of each recursive type for each module (#517)
+
+Since #511, each place that compared a type inside itself made its own
+function, and so did each place that cloned or ordered one (ADRs 0052,
+0057). One module, comparing a `Hir` four times on a line, wrote `eqHir`,
+`eqHir$1`, `eqHir$2` and `eqHir$3`, each of them with its own copy of
+`eqHirKind` inside. A person writes one `function eqHir(a, b)` for the
+module and calls it from each place.
+
+**A recursive type's `==`, clone and order, of a type its module knows,
+are each a function of that module, named for the type, `eqHir`,
+`cloneHir`, `cmpHir`, and `partialCmpHir` for a partial order. Each place
+in the module calls it, and so does the function of another recursive type
+inside it.** `recursive_fns.rs` owns this. Its registry is keyed by
+module, kind and type, and lives in the crate's facts. It names each
+function before lowering the body, so the ones inside find it. It lowers
+the body as a function of its own: with its own names, no dictionary of
+the item that asked, and its own uses, which every item that calls it takes
+on as its own imports and reached items. A module writes the function just
+before the first item it keeps that calls it, so a function that only an
+unkept item called is never written. Its name is kept apart from the
+module's names, from its other functions' names, and from every name of
+the bodies that call it, and the functions lowered after it reserve it.
+
+A type made of a type parameter, `Tree<T>` in generic code, reads the
+dictionaries its function is given, so its function is still the generic
+function's own, `const eqTree = (a, b) => ..`, as before. It's made where
+it's first asked for, and the ones inside call it.
+
+Case: none ([0262](0262-when-rust-and-js-disagree.md)). The comparison,
+clone and order are the same functions, written once instead of at each
+place, so they give the same results. Recursion still goes through a
+named function, so #511's endless expansion can't come back: a function's
+name is in the registry before its body is lowered. Held by
+`test/corpus/recursive_fns_per_module.rs`, against native Rust: a type
+whose `==` has another module's hand-written part, compared, cloned and
+ordered in two modules, more than once each; a variable named like the
+function, in the function that makes it and in one lowered after it; and a
+generic `Tree<T>`. Also by `recursive_eq.rs`, whose output is now one
+`eqHir`, `eqHirKind`, `eqGroup`, `eqRule` and `cloneHir`. Mutations are in
+`scripts/mutations/lower/recursive_fns.ts`, with
+`recursive-fn-names-unreserved` (`pipeline.rs`) and `recursive-eq-in-place`.

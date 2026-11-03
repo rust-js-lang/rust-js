@@ -41,7 +41,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0048 Let chains: each part runs only once the ones before it held](0048-let-chains.md)
 - [0051 `Option<T>` in generic code: boxed only when it looks like `None`](0051-generic-options.md) *(amended: a type parameter bound by a function trait is a function; amended: a type parameter no call gives what may look like `None` is never boxed; amended: a function JS calls takes what JS gives as it gives it; by 1017: a local `Option` of an `Option` held where it's made is its payload; amended: a thread-local's closure's `Option`, as it gives it; amended: a local isn't named as a copy's function, #467)*
 - [0052 The crate's own `Default`, `From` and `Clone`, and the trait ABI kept](0052-std-trait-impls.md) *(amended: `into()` of a type parameter's target is its bound's `from`; amended: an impl and a function of one name are named apart, #453)*
-- [0053 `==`: JS's `===` or `$eq`, until a hand-written `eq` is in it](0053-partial-eq.md) *(amended: an item-by-item `==`'s arrow names are fresh; by 1015: an object `===` compares is a custom part)*
+- [0053 `==`: JS's `===` or `$eq`, until a hand-written `eq` is in it](0053-partial-eq.md) *(amended: an item-by-item `==`'s arrow names are fresh; by 1015: an object `===` compares is a custom part; amended: a recursive type's `==`, clone and order are one function of its module's, #517)*
 - [0054 `Display`: a `fmt` returns the string it writes](0054-display.md)
 - [0055 The crate's own `Iterator` is a JS iterator](0055-iterator.md)
 - [0056 Indexing: `$index(v, i)` to read, `v[$at(v, i)] = x` to write](0056-indexing.md)

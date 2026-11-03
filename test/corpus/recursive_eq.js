@@ -62,250 +62,75 @@ function capture(sub, name) {
   };
 }
 
+function eqHir(a, b) {
+  return eqHirKind(a.kind, b.kind) && $eq(a.props, b.props);
+}
+
+function eqHirKind(a, b) {
+  return a.TAG === "Class"
+    ? b.TAG === "Class" && setPartialEq_eq(a._0, b._0)
+    : a.TAG === "Concat"
+      ? b.TAG === "Concat" && a._0.length === b._0.length && a._0.every((x, i) => eqHir(x, b._0[i]))
+      : a.TAG === "Capture"
+        ? b.TAG === "Capture" && eqHir(a.sub, b.sub) && $eq(a.name, b.name)
+        : $eq(a, b);
+}
+
+function cloneHir(hir) {
+  return { ...hir, kind: cloneHirKind(hir.kind), props: hir.props };
+}
+
+function cloneHirKind(hirKind) {
+  return hirKind.TAG === "Class"
+    ? { ...hirKind, _0: [hirKind._0[0].slice()] }
+    : hirKind.TAG === "Concat"
+      ? { ...hirKind, _0: hirKind._0.map((item) => cloneHir(item)) }
+      : hirKind.TAG === "Capture"
+        ? { ...hirKind, sub: cloneHir(hirKind.sub), name: hirKind.name }
+        : hirKind;
+}
+
+function eqGroup(a, b) {
+  return (
+    setPartialEq_eq(a.set, b.set) &&
+    (a.rule == null || b.rule == null ? a.rule == b.rule : eqRule(a.rule, b.rule))
+  );
+}
+
+function eqRule(a, b) {
+  return a.groups.length === b.groups.length && a.groups.every((x, i) => eqGroup(x, b.groups[i]));
+}
+
 function main() {
   const a = capture(class$([3, 1, 2]), "x");
   const b = capture(class$([1, 2, 3, 3]), "x");
   const c = capture(class$([1, 2]), "x");
   const d = capture(class$([1, 2, 3]));
-  function eqHir(a, b) {
-    const eqHirKind = (a, b) =>
-      a.TAG === "Class"
-        ? b.TAG === "Class" && setPartialEq_eq(a._0, b._0)
-        : a.TAG === "Concat"
-          ? b.TAG === "Concat" &&
-            a._0.length === b._0.length &&
-            a._0.every((x, i) => eqHir(x, b._0[i]))
-          : a.TAG === "Capture"
-            ? b.TAG === "Capture" && eqHir(a.sub, b.sub) && $eq(a.name, b.name)
-            : $eq(a, b);
-    return eqHirKind(a.kind, b.kind) && $eq(a.props, b.props);
-  }
-  function eqHir$1(a, b) {
-    const eqHirKind = (a, b) =>
-      a.TAG === "Class"
-        ? b.TAG === "Class" && setPartialEq_eq(a._0, b._0)
-        : a.TAG === "Concat"
-          ? b.TAG === "Concat" &&
-            a._0.length === b._0.length &&
-            a._0.every((x, i) => eqHir$1(x, b._0[i]))
-          : a.TAG === "Capture"
-            ? b.TAG === "Capture" && eqHir$1(a.sub, b.sub) && $eq(a.name, b.name)
-            : $eq(a, b);
-    return eqHirKind(a.kind, b.kind) && $eq(a.props, b.props);
-  }
-  const value = eqHir(a, b);
-  function eqHir$2(a, b) {
-    const eqHirKind = (a, b) =>
-      a.TAG === "Class"
-        ? b.TAG === "Class" && setPartialEq_eq(a._0, b._0)
-        : a.TAG === "Concat"
-          ? b.TAG === "Concat" &&
-            a._0.length === b._0.length &&
-            a._0.every((x, i) => eqHir$2(x, b._0[i]))
-          : a.TAG === "Capture"
-            ? b.TAG === "Capture" && eqHir$2(a.sub, b.sub) && $eq(a.name, b.name)
-            : $eq(a, b);
-    return eqHirKind(a.kind, b.kind) && $eq(a.props, b.props);
-  }
-  function cloneHir(hir) {
-    const cloneHirKind = (hirKind) =>
-      hirKind.TAG === "Class"
-        ? { ...hirKind, _0: [hirKind._0[0].slice()] }
-        : hirKind.TAG === "Concat"
-          ? { ...hirKind, _0: hirKind._0.map((item) => cloneHir(item)) }
-          : hirKind.TAG === "Capture"
-            ? { ...hirKind, sub: cloneHir(hirKind.sub), name: hirKind.name }
-            : hirKind;
-    return { ...hir, kind: cloneHirKind(hir.kind), props: hir.props };
-  }
-  function eqHir$3(a, b) {
-    const eqHirKind = (a, b) =>
-      a.TAG === "Class"
-        ? b.TAG === "Class" && setPartialEq_eq(a._0, b._0)
-        : a.TAG === "Concat"
-          ? b.TAG === "Concat" &&
-            a._0.length === b._0.length &&
-            a._0.every((x, i) => eqHir$3(x, b._0[i]))
-          : a.TAG === "Capture"
-            ? b.TAG === "Capture" && eqHir$3(a.sub, b.sub) && $eq(a.name, b.name)
-            : $eq(a, b);
-    return eqHirKind(a.kind, b.kind) && $eq(a.props, b.props);
-  }
-  console.log(`${value} ${eqHir$1(a, c)} ${!eqHir$2(a, d)} ${eqHir$3(a, cloneHir(a))}`);
+  console.log(`${eqHir(a, b)} ${eqHir(a, c)} ${!eqHir(a, d)} ${eqHir(a, cloneHir(a))}`);
 
   const concat = (parts) => ({
     kind: { TAG: "Concat", _0: parts },
     props: { min: 0 },
   });
-  function cloneHir$1(hir) {
-    const cloneHirKind = (hirKind) =>
-      hirKind.TAG === "Class"
-        ? { ...hirKind, _0: [hirKind._0[0].slice()] }
-        : hirKind.TAG === "Concat"
-          ? { ...hirKind, _0: hirKind._0.map((item) => cloneHir$1(item)) }
-          : hirKind.TAG === "Capture"
-            ? { ...hirKind, sub: cloneHir$1(hirKind.sub), name: hirKind.name }
-            : hirKind;
-    return { ...hir, kind: cloneHirKind(hir.kind), props: hir.props };
-  }
-  const e = concat([cloneHir$1(a), class$([7])]);
-  function cloneHir$2(hir) {
-    const cloneHirKind = (hirKind) =>
-      hirKind.TAG === "Class"
-        ? { ...hirKind, _0: [hirKind._0[0].slice()] }
-        : hirKind.TAG === "Concat"
-          ? { ...hirKind, _0: hirKind._0.map((item) => cloneHir$2(item)) }
-          : hirKind.TAG === "Capture"
-            ? { ...hirKind, sub: cloneHir$2(hirKind.sub), name: hirKind.name }
-            : hirKind;
-    return { ...hir, kind: cloneHirKind(hir.kind), props: hir.props };
-  }
-  const f = concat([cloneHir$2(b), class$([7, 7])]);
-  function cloneHir$3(hir) {
-    const cloneHirKind = (hirKind) =>
-      hirKind.TAG === "Class"
-        ? { ...hirKind, _0: [hirKind._0[0].slice()] }
-        : hirKind.TAG === "Concat"
-          ? { ...hirKind, _0: hirKind._0.map((item) => cloneHir$3(item)) }
-          : hirKind.TAG === "Capture"
-            ? { ...hirKind, sub: cloneHir$3(hirKind.sub), name: hirKind.name }
-            : hirKind;
-    return { ...hir, kind: cloneHirKind(hir.kind), props: hir.props };
-  }
-  const g = concat([cloneHir$3(b)]);
-  function eqHir$4(a, b) {
-    const eqHirKind = (a, b) =>
-      a.TAG === "Class"
-        ? b.TAG === "Class" && setPartialEq_eq(a._0, b._0)
-        : a.TAG === "Concat"
-          ? b.TAG === "Concat" &&
-            a._0.length === b._0.length &&
-            a._0.every((x, i) => eqHir$4(x, b._0[i]))
-          : a.TAG === "Capture"
-            ? b.TAG === "Capture" && eqHir$4(a.sub, b.sub) && $eq(a.name, b.name)
-            : $eq(a, b);
-    return eqHirKind(a.kind, b.kind) && $eq(a.props, b.props);
-  }
-  function eqHir$5(a, b) {
-    const eqHirKind = (a, b) =>
-      a.TAG === "Class"
-        ? b.TAG === "Class" && setPartialEq_eq(a._0, b._0)
-        : a.TAG === "Concat"
-          ? b.TAG === "Concat" &&
-            a._0.length === b._0.length &&
-            a._0.every((x, i) => eqHir$5(x, b._0[i]))
-          : a.TAG === "Capture"
-            ? b.TAG === "Capture" && eqHir$5(a.sub, b.sub) && $eq(a.name, b.name)
-            : $eq(a, b);
-    return eqHirKind(a.kind, b.kind) && $eq(a.props, b.props);
-  }
-  console.log(`${eqHir$4(e, f)} ${eqHir$5(e, g)}`);
+  const e = concat([cloneHir(a), class$([7])]);
+  const f = concat([cloneHir(b), class$([7, 7])]);
+  const g = concat([cloneHir(b)]);
+  console.log(`${eqHir(e, f)} ${eqHir(e, g)}`);
 
   const empty = {
     kind: "Empty",
     props: { min: 0 },
   };
-  function cloneHir$4(hir) {
-    const cloneHirKind = (hirKind) =>
-      hirKind.TAG === "Class"
-        ? { ...hirKind, _0: [hirKind._0[0].slice()] }
-        : hirKind.TAG === "Concat"
-          ? { ...hirKind, _0: hirKind._0.map((item) => cloneHir$4(item)) }
-          : hirKind.TAG === "Capture"
-            ? { ...hirKind, sub: cloneHir$4(hirKind.sub), name: hirKind.name }
-            : hirKind;
-    return { ...hir, kind: cloneHirKind(hir.kind), props: hir.props };
-  }
-  function cloneHir$5(hir) {
-    const cloneHirKind = (hirKind) =>
-      hirKind.TAG === "Class"
-        ? { ...hirKind, _0: [hirKind._0[0].slice()] }
-        : hirKind.TAG === "Concat"
-          ? { ...hirKind, _0: hirKind._0.map((item) => cloneHir$5(item)) }
-          : hirKind.TAG === "Capture"
-            ? { ...hirKind, sub: cloneHir$5(hirKind.sub), name: hirKind.name }
-            : hirKind;
-    return { ...hir, kind: cloneHirKind(hir.kind), props: hir.props };
-  }
-  function cloneHir$6(hir) {
-    const cloneHirKind = (hirKind) =>
-      hirKind.TAG === "Class"
-        ? { ...hirKind, _0: [hirKind._0[0].slice()] }
-        : hirKind.TAG === "Concat"
-          ? { ...hirKind, _0: hirKind._0.map((item) => cloneHir$6(item)) }
-          : hirKind.TAG === "Capture"
-            ? { ...hirKind, sub: cloneHir$6(hirKind.sub), name: hirKind.name }
-            : hirKind;
-    return { ...hir, kind: cloneHirKind(hir.kind), props: hir.props };
-  }
-  const all = [cloneHir$4(a), cloneHir$5(empty), cloneHir$6(e)];
+  const all = [cloneHir(a), cloneHir(empty), cloneHir(e)];
   console.log(
-    `${all.some((each) => {
-      function eqHir$6(a, b) {
-        const eqHirKind = (a, b) =>
-          a.TAG === "Class"
-            ? b.TAG === "Class" && setPartialEq_eq(a._0, b._0)
-            : a.TAG === "Concat"
-              ? b.TAG === "Concat" &&
-                a._0.length === b._0.length &&
-                a._0.every((x, i) => eqHir$6(x, b._0[i]))
-              : a.TAG === "Capture"
-                ? b.TAG === "Capture" && eqHir$6(a.sub, b.sub) && $eq(a.name, b.name)
-                : $eq(a, b);
-        return eqHirKind(a.kind, b.kind) && $eq(a.props, b.props);
-      }
-      return eqHir$6(each, b);
-    })} ${all.some((each) => {
-      function eqHir(a, b) {
-        const eqHirKind = (a, b) =>
-          a.TAG === "Class"
-            ? b.TAG === "Class" && setPartialEq_eq(a._0, b._0)
-            : a.TAG === "Concat"
-              ? b.TAG === "Concat" &&
-                a._0.length === b._0.length &&
-                a._0.every((x, i) => eqHir(x, b._0[i]))
-              : a.TAG === "Capture"
-                ? b.TAG === "Capture" && eqHir(a.sub, b.sub) && $eq(a.name, b.name)
-                : $eq(a, b);
-        return eqHirKind(a.kind, b.kind) && $eq(a.props, b.props);
-      }
-      return eqHir(each, empty);
-    })} ${all.some((each) => {
-      function eqHir(a, b) {
-        const eqHirKind = (a, b) =>
-          a.TAG === "Class"
-            ? b.TAG === "Class" && setPartialEq_eq(a._0, b._0)
-            : a.TAG === "Concat"
-              ? b.TAG === "Concat" &&
-                a._0.length === b._0.length &&
-                a._0.every((x, i) => eqHir(x, b._0[i]))
-              : a.TAG === "Capture"
-                ? b.TAG === "Capture" && eqHir(a.sub, b.sub) && $eq(a.name, b.name)
-                : $eq(a, b);
-        return eqHirKind(a.kind, b.kind) && $eq(a.props, b.props);
-      }
-      return eqHir(each, c);
-    })}`,
+    `${all.some((each) => eqHir(each, b))} ${all.some((each) => eqHir(each, empty))} ${all.some((each) => eqHir(each, c))}`,
   );
-  const value$1 = all.at(-1);
-  function eqHir$6(a, b) {
-    const eqHirKind = (a, b) =>
-      a.TAG === "Class"
-        ? b.TAG === "Class" && setPartialEq_eq(a._0, b._0)
-        : a.TAG === "Concat"
-          ? b.TAG === "Concat" &&
-            a._0.length === b._0.length &&
-            a._0.every((x, i) => eqHir$6(x, b._0[i]))
-          : a.TAG === "Capture"
-            ? b.TAG === "Capture" && eqHir$6(a.sub, b.sub) && $eq(a.name, b.name)
-            : $eq(a, b);
-    return eqHirKind(a.kind, b.kind) && $eq(a.props, b.props);
-  }
-  if (!(f == null || value$1 == null ? f == value$1 : eqHir$6(f, value$1))) {
+  const hir = all.at(-1);
+  if (!(f == null || hir == null ? f == hir : eqHir(f, hir))) {
     $assertFailed(
       "Eq",
       f == null ? "None" : `Some(${hirDebug_fmt(f)})`,
-      value$1 == null ? "None" : `Some(${hirDebug_fmt(value$1)})`,
+      hir == null ? "None" : `Some(${hirDebug_fmt(hir)})`,
     );
   }
 
@@ -322,32 +147,8 @@ function main() {
     set: [[1]],
     rule: rule([[2, 3]]),
   };
-  function eqGroup(a, b) {
-    const eqRule = (a, b) =>
-      a.groups.length === b.groups.length && a.groups.every((x, i) => eqGroup(x, b.groups[i]));
-    return (
-      setPartialEq_eq(a.set, b.set) &&
-      (a.rule == null || b.rule == null ? a.rule == b.rule : eqRule(a.rule, b.rule))
-    );
-  }
-  function eqGroup$1(a, b) {
-    const eqRule = (a, b) =>
-      a.groups.length === b.groups.length && a.groups.every((x, i) => eqGroup$1(x, b.groups[i]));
-    return (
-      setPartialEq_eq(a.set, b.set) &&
-      (a.rule == null || b.rule == null ? a.rule == b.rule : eqRule(a.rule, b.rule))
-    );
-  }
-  const eqRule = (a, b) =>
-    a.groups.length === b.groups.length &&
-    a.groups.every((x, i) => {
-      const eqGroup = (a, b) =>
-        setPartialEq_eq(a.set, b.set) &&
-        (a.rule == null || b.rule == null ? a.rule == b.rule : eqRule(a.rule, b.rule));
-      return eqGroup(x, b.groups[i]);
-    });
   console.log(
-    `${eqGroup(x, y)} ${eqGroup$1(x, z)} ${x.rule == null || y.rule == null ? x.rule == y.rule : eqRule(x.rule, y.rule)}`,
+    `${eqGroup(x, y)} ${eqGroup(x, z)} ${x.rule == null || y.rule == null ? x.rule == y.rule : eqRule(x.rule, y.rule)}`,
   );
 }
 //# sourceMappingURL=case.js.map

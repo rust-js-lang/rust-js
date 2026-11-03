@@ -208,7 +208,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Destructors and their facts | `drops.rs`, `drops/`; `mir/drops.rs` follows rustc's drop elaboration |
 | std types and calls | `std_types/`, `std_types/number/`; `std_types/values.rs` dispatches to each type's module |
 | Iterators and combinators | `iterators.rs`, `iterators/`, `combinators.rs`, `combinators/` |
-| Item references, traits, dictionaries and standard impls | `items.rs`, `traits.rs`, `traits/`, `std_impls.rs`, `std_impls/defaults.rs`, `ordering.rs` |
+| Item references, traits, dictionaries and standard impls; a recursive type's `==`, clone and order, one function for each module | `items.rs`, `traits.rs`, `traits/`, `std_impls.rs`, `std_impls/defaults.rs`, `ordering.rs`, `recursive_fns.rs` |
 | Formatting | `display.rs`, `display/`, `format_args.rs`, `format_spec.rs` |
 | Serde and supported external crate APIs | `serde.rs`, `serde/`, `shipped.rs` |
 | JSX, JS bindings, untagged values and JS-visible uses | `jsx.rs`, `jsx_api.rs`, `bindings.rs`, `bindings/`, `binding_calls.rs`, `untagged.rs`, `liveness.rs` |

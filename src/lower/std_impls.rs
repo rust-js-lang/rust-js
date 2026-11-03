@@ -5,6 +5,7 @@
 mod defaults;
 
 use super::recognition::StdItem;
+use super::recursive_fns::Kind;
 use super::representation::Num;
 use super::{FnCx, R, Shape, lower_first};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
@@ -311,24 +312,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(self.copy(place, ty));
         }
         // A type inside itself, `Value` in `Obj(BTreeMap<String, Value>)`: its
-        // clone is a function, which calls itself for the ones inside.
+        // clone is a function, which calls itself for the ones inside
+        // (`recursive_fns`).
         if self.is_recursive(ty) {
-            if let Some((_, name)) = self.cloning.iter().find(|(t, _)| *t == ty) {
-                return Ok(Expr::call(Expr::var(name), vec![place]));
-            }
-            let type_name = match ty.kind() {
-                ty::Adt(adt, _) => self.tcx.item_name(adt.did()).to_string(),
-                _ => "Value".to_string(),
+            let ty::Adt(adt, _) = ty.kind() else {
+                unreachable!("a recursive type is an ADT");
             };
-            let name = self.fresh(&format!("clone{type_name}"));
-            let param = self.fresh(&lower_first(&type_name));
-            self.cloning.push((ty, name.clone()));
-            let mut body = Vec::new();
-            let value = self.clone_parts(Expr::var(&param), ty, span, &mut body);
-            self.cloning.pop();
-            body.push(StmtKind::Return(Some(value?)).at(js::Span::NONE));
-            let f = Expr::arrow(vec![param.into()], body);
-            out.push(StmtKind::Const(name.clone(), f).at(js::Span::NONE));
+            let type_name = self.tcx.item_name(adt.did()).to_string();
+            let (base, param) = (format!("clone{type_name}"), lower_first(&type_name));
+            let name = self.recursive_fn(
+                (Kind::Clone, ty, &base),
+                &[&param],
+                |cx, params, body| cx.clone_parts(params[0].clone(), ty, span, body),
+                out,
+            )?;
             return Ok(Expr::call(Expr::var(&name), vec![place]));
         }
         self.clone_parts(place, ty, span, out)
@@ -1121,22 +1118,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A type inside itself, `Hir` in `HirKind::Capture`'s `Box<Hir>`: its
         // `==` is a function, which calls itself for the ones inside, as its
         // clone and its order are. Expanded in place, it never ended (#511).
+        // One for each type and module (`recursive_fns`, #517).
         if self.is_recursive(ty) {
-            if let Some((_, name)) = self.comparing.iter().find(|(t, _)| *t == ty) {
-                return Ok(Expr::call(Expr::var(name), vec![a, b]));
-            }
             let ty::Adt(adt, _) = ty.kind() else {
                 unreachable!("a recursive type is an ADT");
             };
-            let name = self.fresh(&format!("eq{}", self.tcx.item_name(adt.did())));
-            let (x, y) = (self.fresh("a"), self.fresh("b"));
-            self.comparing.push((ty, name.clone()));
-            let mut body = Vec::new();
-            let same = self.eq_derived(Expr::var(&x), Expr::var(&y), ty, span, &mut body);
-            self.comparing.pop();
-            body.push(StmtKind::Return(Some(same?)).at(js::Span::NONE));
-            let f = Expr::arrow(vec![x.into(), y.into()], body);
-            out.push(StmtKind::Const(name.clone(), f).at(js::Span::NONE));
+            let base = format!("eq{}", self.tcx.item_name(adt.did()));
+            let name = self.recursive_fn(
+                (Kind::Eq, ty, &base),
+                &["a", "b"],
+                |cx, params, body| cx.eq_derived(params[0].clone(), params[1].clone(), ty, span, body),
+                out,
+            )?;
             return Ok(Expr::call(Expr::var(&name), vec![a, b]));
         }
         self.eq_derived(a, b, ty, span, out)

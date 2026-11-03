@@ -518,6 +518,7 @@ pub fn lower_crate<'tcx>(
         struct_literals: &struct_literals,
         constructed: &constructed,
         loads_in_cycles: Default::default(),
+        module_fns: Default::default(),
         nulled_params: &nulled_params,
     };
     // What a library's manifest says of its writers (ADR 0137).
@@ -609,7 +610,9 @@ pub fn lower_crate<'tcx>(
         // Locals must never shadow a function or an import of this file; an
         // `on_load!` body's are at its top, beside an earlier body's, which
         // they mustn't be either (ADR 0267).
+        // And its recursive types' functions' (`recursive_fns`).
         let mut names = taken[&module].clone();
+        names.extend(crate_facts.module_fns.borrow().names(module).map(str::to_owned));
         if super::bindings::is_on_load(tcx, def_id) {
             let earlier = lowered_items
                 .iter()
@@ -641,9 +644,7 @@ pub fn lower_crate<'tcx>(
             module_names: &taken[&module],
             jsx: false,
             writing: Default::default(),
-            cloning: Vec::new(),
-            ordering: Vec::new(),
-            comparing: Vec::new(),
+            recursive: Default::default(),
             item: def_id,
             copy,
             walks: Default::default(),
@@ -698,6 +699,8 @@ pub fn lower_crate<'tcx>(
     // which their JS doesn't export: the crate lowered again with them, as
     // with what its calls give more (ADR 0914, amended).
     let asked = crate_facts.asked.take();
+    // Each module's recursive types' functions (`recursive_fns`).
+    let mut module_fns = crate_facts.module_fns.take();
     if !asked.is_empty() && tcx.dcx().has_errors().is_none() {
         return Lowered::Instances(super::instances::asked(tcx, asked));
     }
@@ -770,6 +773,10 @@ pub fn lower_crate<'tcx>(
         .filter(|(id, _)| !derived.contains(id) || reached.contains(id))
     {
         let module = fns[&def_id].module;
+        // Each recursive type's function it calls, its module's, before it
+        // where it's the first that calls it (`recursive_fns`).
+        let first = module_fns.written_before(def_id);
+        pass.functions.entry(module).or_default().extend(first);
         let initializer = initialized.iter().any(|body| body.def_id == def_id);
         // Each copy of it its callers need besides, beside it (ADR 0051,
         // amended).
@@ -1397,7 +1404,9 @@ pub fn lower_crate<'tcx>(
             UnlinkedModule {
                 module: lowered,
                 imports: candidates,
-                reserved_names: taken[&module].clone(),
+                reserved_names: (taken[&module].iter().cloned())
+                    .chain(module_fns.names(module).map(str::to_owned))
+                    .collect(),
             }
         })
         .collect();
