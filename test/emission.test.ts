@@ -357,16 +357,21 @@ test("a file's leading comments are its JS's", async () => {
   writeFileSync(join(dir, "lib.rs"), readFileSync(join(dir, "lib.rs"), "utf8") + "mod after;\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   expect(readFileSync(join(dir, "after.js"), "utf8")).toContain("Do not edit.\n\n// The license.\n\n// The function's, right above it.\nexport function four() {");
-  // Of a module that imports, its header is above the code, its import
-  // where its \`use\` is, written last (ADR 1069): an item's doc comment and
-  // the run right above its code stay the item's.
-  writeFileSync(join(dir, "imported_docs.rs"), "// Kept.\n/** The item's docs. */\npub fn two() -> i32 {\n    answer() - 40\n}\n\nuse super::answer;\n");
-  writeFileSync(join(dir, "imported_after.rs"), "// The license.\n\n// The function's, right above it.\npub fn four() -> i32 {\n    answer() / 10\n}\n\nuse super::answer;\n");
-  writeFileSync(join(dir, "lib.rs"), readFileSync(join(dir, "lib.rs"), "utf8") + "mod imported_docs;\nmod imported_after;\n");
+  // Of a module that imports, its header is above its imports, which no
+  // \`use\` places, first (ADR 1069): an item's doc comment and the run
+  // right above its code stay the item's, after them.
+  writeFileSync(join(dir, "imported_docs.rs"), "// Kept.\n/** The item's docs. */\npub fn two() -> i32 {\n    super::answer() - 40\n}\n");
+  writeFileSync(join(dir, "imported_after.rs"), "// The license.\n\n// The function's, right above it.\npub fn four() -> i32 {\n    super::answer() / 10\n}\n");
+  // One whose \`use\` is written last, its import last: its header right
+  // above the code, as the Rust has it (#419).
+  writeFileSync(join(dir, "used_last.rs"), "// Kept.\n/** The item's docs. */\npub fn five() -> i32 {\n    answer() - 37\n}\n\nuse super::answer;\n");
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(dir, "lib.rs"), "utf8") + "mod imported_docs;\nmod imported_after;\nmod used_last;\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  expect(readFileSync(join(dir, "imported_docs.js"), "utf8")).toContain('Do not edit.\n\n// Kept.\n/** The item\'s docs. */\nexport function two() {');
-  expect(readFileSync(join(dir, "imported_docs.js"), "utf8")).toContain('}\n\nimport { answer } from "./lib.js";\n');
-  expect(readFileSync(join(dir, "imported_after.js"), "utf8")).toContain('Do not edit.\n\n// The license.\n\n// The function\'s, right above it.\nexport function four() {');
+  expect(readFileSync(join(dir, "imported_docs.js"), "utf8")).toContain('Do not edit.\n\n// Kept.\n\nimport { answer } from "./lib.js";\n\n/** The item\'s docs. */\nexport function two() {');
+  expect(readFileSync(join(dir, "imported_after.js"), "utf8")).toContain('Do not edit.\n\n// The license.\n\nimport { answer } from "./lib.js";\n\n// The function\'s, right above it.\nexport function four() {');
+  const usedLast = readFileSync(join(dir, "used_last.js"), "utf8");
+  expect(usedLast).toContain("Do not edit.\n\n// Kept.\n/** The item's docs. */\nexport function five() {");
+  expect(usedLast).toContain('}\n\nimport { answer } from "./lib.js";\n');
   expect((await import(join(dir, "lib.js"))).answer()).toBe(42);
 });
 

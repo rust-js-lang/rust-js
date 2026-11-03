@@ -68,14 +68,6 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations.test.ts", "-t", "default export is imported as one"],
   },
   {
-    name: "use-comment-at-last",
-    breaks: "of two imports one `use` makes, its comment is above the second, not the first printed (rd92)",
-    file: "src/to_oxc/header.rs",
-    find: "        at.entry(entry.commented.lo).or_insert(entry.at().lo);\n",
-    replace: "        at.insert(entry.commented.lo, entry.at().lo);\n",
-    tests: ["test/lowering-comments-items.test.ts", "-t", "above a use"],
-  },
-  {
     name: "namespace-import-unwritten",
     breaks: "a module read through its namespace, `Plugin.extractEvents(..)`, imports none, so `Plugin` is undefined (rd114, ADR 1018)",
     file: "src/to_oxc/header.rs",

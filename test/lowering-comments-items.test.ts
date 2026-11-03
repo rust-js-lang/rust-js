@@ -289,6 +289,29 @@ import { lane } from "./lanes.js";
 import * as Flags from "./common/flags.js";
 `);
   expect((tree.lib.named as () => string)()).toBe("App 3");
+  // A forwarder's doc comment, above its re-export placed at its module's
+  // \`use\`, far above where the function is written (rd620, ADR 1069).
+  const forwarder = await compiled("comment-of-a-forwarder", `use crate::plugins::lanes;
+
+pub mod plugins {
+    pub mod lanes {
+        pub fn lane() -> u32 {
+            1
+        }
+    }
+}
+
+pub fn first() -> u32 {
+    2
+}
+
+/// The lane, by its module's name.
+pub fn lane() -> u32 {
+    lanes::lane()
+}
+`);
+  expect(forwarder.js).toContain('/** The lane, by its module\'s name. */\nexport { lane } from "./plugins/lanes.js";\n');
+  expect((forwarder.lib.lane as () => number)()).toBe(1);
 });
 
 // React DOM's ReactDOMClient groups its imports and re-exports as its
@@ -357,6 +380,23 @@ pub fn kept(value: Option<u32>) -> Rc<Cell<u32>> {
 `);
   expect(helpers.js).toContain('import { $unwrap } from "@rust-js/runtime";\n\n// The value, kept.\n\nexport const FIRST = 1;');
   expect((helpers.lib.kept as (v: number) => { value: number })(7).value).toBe(8);
+  // None between them and an import across lines before them: one block.
+  const long = await compiled("header-helpers-after-long", `use crate::versions::{
+    REACT_VERSION_WITH_A_LONG_NAME, SECOND_VERSION_WITH_A_LONG_NAME, THIRD_VERSION_WITH_A_LONG_NAME,
+};
+
+pub mod versions {
+    pub const REACT_VERSION_WITH_A_LONG_NAME: u32 = 19;
+    pub const SECOND_VERSION_WITH_A_LONG_NAME: u32 = 20;
+    pub const THIRD_VERSION_WITH_A_LONG_NAME: u32 = 21;
+}
+
+pub fn versions(more: Option<u32>) -> u32 {
+    REACT_VERSION_WITH_A_LONG_NAME + SECOND_VERSION_WITH_A_LONG_NAME + THIRD_VERSION_WITH_A_LONG_NAME + more.unwrap()
+}
+`);
+  expect(long.js).toContain('} from "./versions.js";\nimport { $unwrap } from "@rust-js/runtime";\n\nexport function versions(more) {');
+  expect((long.lib.versions as (more: number) => number)(1)).toBe(61);
 });
 
 // React's ReactFizzConfigMarkup declares \`export const isPrimaryRenderer =
@@ -538,6 +578,8 @@ impl Shade {
   run([compiler, join(typed, "lib.rs"), "-o", join(typed, "lib.js")]);
   const doc = "// A type's `use` first.\n\n// Then the enum.\n\nimport { lane } from \"./lanes.js\";\n";
   expect(readFileSync(join(typed, "lib.js"), "utf8")).toContain(doc);
+  // Once, the import's comments none of them.
+  expect(readFileSync(join(typed, "lib.js"), "utf8").split("Then the enum.").length).toBe(2);
   // Right above its first `use`, no blank line between.
   const above = fixture("inner-doc-right-above-a-use");
   writeFileSync(join(above, "lib.rs"), `//! Right above.
@@ -557,6 +599,7 @@ pub fn named() -> u32 {
   run([compiler, join(above, "lib.rs"), "-o", join(above, "lib.js")]);
   const right = readFileSync(join(above, "lib.js"), "utf8");
   expect(right).toContain(`// Right above.\nimport { lane } from "./lanes.js";\n`);
+  expect(right.split("Right above.").length).toBe(2);
   expect(right).toContain("  // A function's own, in its body.\n  return");
 });
 

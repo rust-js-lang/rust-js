@@ -73,8 +73,7 @@ export const mutations: Mutation[] = [
     file: "src/format.rs",
     find: "            (apart && !(imports.0 && imports.1) && (last + 1 == next || after)).then_some(last + 1)\n",
     replace: "            (apart && (last + 1 == next || after)).then_some(last + 1)\n",
-    tests: ["test/snapshots.test.ts", "-t", "apis"],
-    snapshots: true,
+    tests: ["test/lowering-comments-items.test.ts", "-t", "the header's blank lines"],
   },
   {
     name: "imports-code-together",
