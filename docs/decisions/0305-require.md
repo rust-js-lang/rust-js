@@ -6,7 +6,9 @@ export is read.
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
 Amended below: a `require` no bundler sees is read off Node's `module`,
-`node::module[requireString]`, and called by `js::function::call`.
+`node::module[requireString]`, and called by `js::function::call`. Amended
+below (rd684): a `use` of a library's function marked `#[rust_js::require]`
+reads it through `require(module)` where the module reads it.
 
 ## Context
 
@@ -209,3 +211,76 @@ path: one owner of what a path's `#*` means.
   `require(..)`'s module, its method called and a path past it read, and
   the `.d.ts` its `#[rust_js::types]`; and the mutation
   `required-namespace-read-as-property`.
+## Amendment: a `use` of a library's function (rd684)
+
+Status: the user's decision (2026-11-03, rd684).
+
+React's FizzTestUtils reads React's `createElement` where it calls it,
+because a test's `jest.resetModules()` loads React anew between tests,
+and the element must be the React the test renders with:
+
+```js
+children.push(
+  require('react').createElement(node.tagName.toLowerCase(), props),
+);
+```
+
+The port's `use react_isomorphic::create_element;` imports React as the
+module loads, `import {createElement} from 'react'`, the first React; the
+one form that read it at its call was a `#[rust_js::require]` binding of
+`react#createElement` typed by hand, a second declaration of React's own
+function, which the `react_isomorphic` crate is.
+
+**`#[rust_js::require]` on a `use` of a library's function reads it
+through `require(module)` where the module reads it**: the import the
+`use` would make, its module and its export, read at each call, never
+imported. The same attribute, on the one thing that names the import.
+
+```rust
+#[cfg_attr(rust_js, rust_js::require)]
+use react_isomorphic::create_element;
+
+children.push(create_element(&tag, props));
+```
+
+```js
+children.push(require("react").createElement(tag, props));
+```
+
+- **Each read in the module**, through the `use`'s name or a path,
+  `element::create_element(..)`, is `require(module).name`: one module,
+  read one way. Another module's `use` of it imports it as before.
+- **At each call, in order**: the `require` and the member are the call's
+  callee, which JS reads before the arguments, where the call is, as
+  upstream writes it. Rust has no module load to place: the attribute
+  asks for JS's, and its function is the same function whichever load
+  gave it. A value of it, `let f = create_element;`, reads it where the
+  value is made.
+- **A function that reads its `this`** (ADR 1081) is called with none,
+  `(0, require("m").f)()`, not the module's exports.
+- `require` is a name no local of the crate takes, as for a binding.
+- **Refused, saying what to write**: on a group or a glob, which names
+  more than one; on a `pub use`, the module's `export .. from`, which JS
+  loads as the module loads; on a `use` of a binding, whose own
+  `#[rust_js::require]` reads every read of its export so; on a `use` of
+  the crate's own function, whose module loads with the crate; and on a
+  `use` of anything but a library's function.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): **None**, the user's
+decision (2026-11-04): Rust has no module load to order, so where the load
+falls against the call's arguments, before them, as JS reads a callee, is
+no difference Rust can see; the function called is the same function
+whichever load gave it.
+
+Held by `test/require.test.ts`: a library's function read through
+`require` at each call, each call in a function, two in one expression,
+through a module path and of a function that reads its `this`, a local
+named `require` renamed; run in Bun, its module loaded where it's first
+called, not where the consumer loads, and loaded anew once its cache is
+cleared, as `jest.resetModules()` does; another module's import of it;
+and each refusal. Mutations `required-use-unread`,
+`required-use-group-kept`, `required-pub-use-kept`,
+`required-binding-use-unsaid`, `required-own-use-unsaid`
+(`analysis/naming.rs`), `required-use-imported`,
+`required-use-namespace-path` (`items.rs`) and
+`required-use-name-unreserved` (`analysis.rs`).

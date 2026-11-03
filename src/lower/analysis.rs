@@ -66,7 +66,7 @@ use mutation::{cloned_params, copied_params, mutated_types, unboxed_params};
 pub(super) use mutation::{clones_by_itself, copies_by_callers};
 use naming::{
     exported_across_modules, js_uses, local_consts, local_functions, name_imports, name_items, named_expressions,
-    refuse_two_names,
+    refuse_two_names, required_uses,
 };
 pub(super) use plain_locals::{holds_a_value, module_statics, refuse_boxed_export};
 use rc_counts::counted_rcs;
@@ -478,6 +478,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub imported: BTreeMap<Export, HashSet<LocalModId>>,
     /// The exports read through `require(module)` (ADR 0305).
     pub required: HashSet<Export>,
+    /// Each library's function a module's `use` reads through
+    /// `require(module)` (rd684, ADR 0305, amended).
+    pub required_uses: HashSet<(LocalModId, DefId)>,
     pub thread_local_inits: HashMap<LocalDefId, LocalDefId>,
     pub consts: Vec<LocalDefId>,
     /// Each variant of a numbered enum, its module's `const` of its number,
@@ -1219,6 +1222,12 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         &consts,
         &local_functions,
     );
+    // A library's function a `use` reads through `require(module)`, a
+    // global no local takes (rd684, ADR 0305, amended).
+    let (required_uses, failed_uses) = required_uses(tcx, &modules, &foreign);
+    if !required_uses.is_empty() {
+        uses.globals.insert("require".to_string());
+    }
     let (mut taken, fns, failed) = name_items(
         tcx,
         &items,
@@ -1228,7 +1237,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         &named_expressions,
         instances,
     );
-    let failed = failed | refuse_two_names(tcx, &modules, &foreign);
+    let failed = failed | failed_uses | refuse_two_names(tcx, &modules, &foreign);
     let import_names = name_imports(tcx, &uses, &taken, &foreign);
     for (module, names) in taken.iter_mut() {
         names.extend(import_names[module].values().cloned());
@@ -1320,6 +1329,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         import_names,
         imported,
         required,
+        required_uses,
         thread_local_inits,
         consts,
         variants,

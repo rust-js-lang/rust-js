@@ -829,6 +829,27 @@ known only as the program runs, a URL a server sent: a promise of the
 module's namespace, any value. A bundler leaves it for the host to load
 ([ADR 0304, amended](../../decisions/0304-dynamic-import.md)).
 
+A library's function a module must read from what's loaded where it's
+called, as React's test utilities read React past a test's
+`jest.resetModules()`, is a `use` marked `#[rust_js::require]`: the import
+the `use` would make, read through `require(module)` at each read in the
+module, never imported
+([ADR 0305, amended](../../decisions/0305-require.md#amendment-a-use-of-a-librarys-function-rd684)):
+
+```rust excerpt
+#[cfg_attr(rust_js, rust_js::require)]
+use react_isomorphic::create_element;
+
+children.push(create_element(&tag, props));
+```
+
+is `children.push(require("react").createElement(tag, props));`, the
+`require` the call's callee, read where the call is, before its
+arguments, as JS reads a callee. Another module's `use` of the function
+imports it. On a group, a `pub use`, a binding, whose own
+`#[rust_js::require]` it would be, or the crate's own function, it's a
+compile error.
+
 ## Run code when the module loads
 
 `js::on_load!` is what the module runs when it's loaded: its body becomes

@@ -838,6 +838,65 @@ fn use_renames(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(DefId, String, rustc
         .collect()
 }
 
+/// Each `use` of a library's function marked `#[rust_js::require]`, by its
+/// module: the import it would make, read through `require(module)` where
+/// the function's read in that module, at each call, as React's
+/// FizzTestUtils reads `require('react').createElement(..)` past a test's
+/// `jest.resetModules()` (rd684, ADR 0305, amended). The same attribute a
+/// binding's is, which reads its export so (ADR 0305); one on a `use` of
+/// anything else is refused, saying what to write. Whether one was.
+pub(super) fn required_uses(
+    tcx: TyCtxt<'_>,
+    modules: &[LocalModId],
+    foreign: &crate::lower::library::Foreign<'_, '_>,
+) -> (HashSet<(LocalModId, DefId)>, bool) {
+    let mut required = HashSet::new();
+    let mut failed = false;
+    for &module in modules {
+        for id in tcx.hir_module_items(module).free_items() {
+            let item = tcx.hir_item(id);
+            let ItemKind::Use(path, kind) = item.kind else { continue };
+            if !bindings::requires(tcx, item.owner_id.to_def_id()) {
+                continue;
+            }
+            let function = match path.res.value_ns {
+                Some(Res::Def(DefKind::Fn, def_id)) => Some(def_id),
+                _ => None,
+            };
+            let why = match (kind, function) {
+                (UseKind::ListStem | UseKind::Glob, _) => Some(
+                    "names the `use` of one function, `use react::create_element;`: write a `use` of its own for each",
+                ),
+                _ if tcx.visibility(item.owner_id).is_public() => Some(
+                    "is of a `use` the module reads alone: a `pub use` is the module's `export .. from`, which JS \
+                     loads where the module loads",
+                ),
+                (_, Some(def_id)) if is_binding(tcx, def_id) => Some(
+                    "of a binding is the binding's own, `#[rust_js::require]` on its declaration, which every read \
+                     of its export reads so (ADR 0305)",
+                ),
+                (_, Some(def_id)) if foreign.item(def_id).is_some_and(|item| item.member.is_none()) => {
+                    required.insert((module, def_id));
+                    None
+                }
+                (_, Some(def_id)) if def_id.is_local() => Some(
+                    "is of a `use` of another crate's function, which its library exports: the crate's own modules \
+                     load with it",
+                ),
+                _ => Some("is of a `use` of another crate's function, which its library exports"),
+            };
+            if let Some(why) = why {
+                tcx.dcx().span_err(
+                    item.span,
+                    format!("rust-js: `#[rust_js::require]` on a `use` {why} (ADR 0305, amended)"),
+                );
+                failed = true;
+            }
+        }
+    }
+    (required, failed)
+}
+
 /// A module whose `use`s give one item two names, `use dep::helper as
 /// assist;` and `use dep::helper as aid;`: refused, as its file imports it
 /// once, by one name, and either would leave the other unsaid (ADR 0202,

@@ -298,6 +298,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Body module placement | `lower.rs` | `body_module` |
 | A crate's `#[test]`s, which module's test file registers each, and which module of tests is its parent's test file (ADR 1076); what each runner's `test` is imported from | `analysis/tests.rs`; `settings.rs` | `collect_tests`; `Runner` |
 | Which `const`s written in a function's body are its, a `const` there, and what reads each (ADR 0031, amended) | `analysis/naming.rs` | `local_consts` |
+| Which library functions a module's `use` marked `#[rust_js::require]` reads through `require(module)` where it reads them, each other `use` so marked refused (rd684, ADR 0305, amended); `fn_ref` reads them so | `analysis/naming.rs`; `items.rs` | `required_uses`; `fn_ref` |
 | A parameter's JS name, its body's and its declaration's, and a fn pointer's written one (ADR 1075) | `parameter_names.rs` | `parameter_name`, `written_parameter_name` |
 | A declared function type's parameter names, a fn pointer's as written and a `dyn Fn` field's as every literal fills it, and which trailing parameters may be left out (ADRs 0443, 1075) | `declarations/functions.rs` | `optional_from`, `filled_names`, `written_function_names`, `function_names` |
 | Std body capture | `analysis.rs` | `collect_std_bodies` |

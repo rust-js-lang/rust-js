@@ -700,4 +700,12 @@ export const mutations: Mutation[] = [
     replace: "    for export in foreign.all_reexported().filter(|_| false) {\n",
     tests: ["test/reexports-through.test.ts", "-t", "a use through a library's module that re-exports its item imports it from there"],
   },
+  {
+    name: "required-use-name-unreserved",
+    breaks: "a local named `require` in a module that reads a function through `require` keeps its name, so the read calls the local (rd684)",
+    file: "src/lower/analysis.rs",
+    find: "        uses.globals.insert(\"require\".to_string());\n",
+    replace: "",
+    tests: ["test/require.test.ts"],
+  },
 ];

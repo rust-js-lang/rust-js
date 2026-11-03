@@ -397,4 +397,20 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "reads only its parameters is its function"],
   },
+  {
+    name: "required-use-imported",
+    breaks: "a library's function a module's `use` reads through `require` is imported there as the module loads, `createElement(tag())` (rd684)",
+    file: "src/lower/items.rs",
+    find: "            if self.krate.required_uses.contains(&(self.module, def_id)) {\n",
+    replace: "            if false {\n",
+    tests: ["test/require.test.ts"],
+  },
+  {
+    name: "required-use-namespace-path",
+    breaks: "a library's function a module's `use` reads through `require`, named there through its module, `element::create_element(..)`, is read through the module's namespace import, two ways in one module (rd684)",
+    file: "src/lower/items.rs",
+    find: "            && !self.krate.required_uses.contains(&(self.module, def_id))\n",
+    replace: "",
+    tests: ["test/require.test.ts"],
+  },
 ];

@@ -404,6 +404,10 @@ struct CrateFacts<'a, 'tcx> {
     imports: &'a HashMap<LocalModId, HashMap<Export, String>>,
     /// The exports read through `require(module)`, not imported (ADR 0305).
     required: &'a HashSet<Export>,
+    /// Each library's function a module's `use` reads through
+    /// `require(module)`, at each read, not imported (rd684, ADR 0305,
+    /// amended).
+    required_uses: &'a HashSet<(LocalModId, DefId)>,
     /// Where a path reads a binding through the module that holds it, by
     /// the path's span (ADR 0633).
     held_reads: &'a HashMap<Span, bindings::HeldRead>,

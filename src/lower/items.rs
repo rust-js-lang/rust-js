@@ -72,6 +72,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A library's, imported by the name it chose (ADR 0100).
         if let Some(item) = self.krate.foreign.item(def_id) {
             let export = (self.krate.foreign.import_key(def_id, self.module)).expect("a library's item");
+            // One the module's `use` reads through `require(module)`, the
+            // import it would make, where it's read: never imported (rd684,
+            // ADR 0305, amended).
+            if self.krate.required_uses.contains(&(self.module, def_id)) {
+                return Expr::member(Expr::call(Expr::var("require"), vec![Expr::str(&export.0)]), export.1);
+            }
             self.dependencies
                 .borrow_mut()
                 .package_uses
@@ -171,6 +177,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if through
             && copy.is_none()
             && !self.asked_of_library(def_id)
+            && !self.krate.required_uses.contains(&(self.module, def_id))
             && let Some(item) = self.krate.foreign.item(def_id)
             && item.member.is_none()
             && let Some((from, export)) = self.krate.foreign.import_key(def_id, self.module)

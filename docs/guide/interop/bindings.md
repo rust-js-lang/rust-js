@@ -377,6 +377,9 @@ export function initial() {
   `node::module::MODULE`, `MODULE.prototype()` its `Module.prototype`, and
   a module's `module.exports` its `exports()` and `set_exports(..)`
   ([ADR 0305, amended](../../decisions/0305-require.md#amendment-a-commonjs-hooks-module-and-a-modules-exports)).
+  A library's Rust function, of no binding, is read so where a `use` of it
+  is marked `#[rust_js::require]`, in that module
+  ([Load a module later](../project/modules.md#load-a-module-later)).
 - **A private `use` that renames a global is the module's `const`**:
   `use js::array::SLICE as slice;` is `const slice =
   Array.prototype.slice;`, and `function::call(slice, ..)` is
@@ -1499,7 +1502,7 @@ See [Components and props](../react/components.md).
 | `#[rust_js::nullable]`, `#[rust_js::nullable(param)]` | its result's, or that parameter's, `None` is `null`; of a collection's type, `#[rust_js::nullable(V)]`, its value's, which each binding given a `V` writes `null` and its `get` reads by JS's read alone, TypeScript's `Map<K, V \| null>` ([ADR 0884](../../decisions/0884-a-maps-value-is-any-value.md), amended) |
 | `#[rust_js::optional]` | its result's `None` is `undefined`, TypeScript's `T \| undefined`, never `null` |
 | `#[rust_js::variadic]` | its last parameter, `impl js::Rest<T>` or a tuple, is the rest arguments |
-| `#[rust_js::require]` | it's read through `require(module)`, not imported |
+| `#[rust_js::require]` | it's read through `require(module)`, not imported; on a `use` of a library's function, so is each read of it in that module |
 | `#[rust_js::cannot_throw]` | it can't throw, as reading a data property can't |
 | `#[rust_js::reads_only_its_parameters]` | its function reads only the arguments its parameters declare, and no `this`, as React's host config's `measureClonedInstance(instance)` does: as a value it's the function itself, `.map(measure_cloned_instance)` as `clones.map(measureClonedInstance)`, where unsaid it's the arrow of its call, `(instance) => measureClonedInstance(instance)`, as an array method gives its callback the index and the array too, which a JS function may read, `parseInt`'s radix. It's refused on what isn't a binding, on a method, a constructor or a property, and on one of rest arguments ([ADR 0605](../../decisions/0605-an-arrow-that-passes-on-has-one-owner.md), amended, the user's decision) |
 | `#[rust_js::called_constructs]` | of a constructor, `new C(..)`: JS's spec makes it alike called without `new`, as `Error(m)` is `new Error(m)`, so as a value it's `C` itself, `Error.bind(null, m)`, not an arrow that constructs ([ADR 0602](../../decisions/0602-a-binding-taken-as-a-fn-is-its-function.md), amended) |
