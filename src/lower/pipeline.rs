@@ -632,6 +632,7 @@ pub fn lower_crate<'tcx>(
             writing: Default::default(),
             cloning: Vec::new(),
             ordering: Vec::new(),
+            comparing: Vec::new(),
             item: def_id,
             copy,
             walks: Default::default(),

@@ -555,13 +555,12 @@ struct FnCx<'a, 'tcx> {
     jsx: bool,
     /// What writing to a `Formatter` knows (ADRs 0054, 0137).
     writing: display::Writing,
-    /// The recursive types being cloned, and the function each one's clone
-    /// is (`clone_value`), which a clone inside it calls.
+    /// The recursive types being cloned, ordered, partially or not, and
+    /// compared, and the function each one's clone, order or `==` is
+    /// (`clone_value`, `cmp_value`, `eq_value`), which one inside it calls.
     cloning: Vec<(Ty<'tcx>, String)>,
-    /// The recursive types being ordered, partially or not, and the
-    /// function each one's order is (`cmp_value`), which an order inside it
-    /// calls.
     ordering: Vec<(Ty<'tcx>, bool, String)>,
+    comparing: Vec<(Ty<'tcx>, String)>,
     /// The item being lowered: what `fn_ref` records as using its target.
     item: DefId,
     /// Which copy of it, where it's one its callers need besides its own JS

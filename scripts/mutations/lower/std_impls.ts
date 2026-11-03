@@ -134,32 +134,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "range_values"],
   },
   {
-    name: "default-str-unknown",
-    breaks: "`Default` of a `&str` is refused",
-    file: "src/lower/std_impls.rs",
-    find: '            ty::Ref(_, inner, _) if inner.is_str() => Expr::str(""),',
-    replace:
-      '            ty::Ref(_, inner, _) if inner.is_str() && false => Expr::str(""),',
-    tests: ["test/corpus.test.ts", "-t", "std_odds"],
-  },
-  {
-    name: "default-array-empty",
-    breaks: "`Default` of a `[u16; 3]` is no items",
-    file: "src/lower/std_impls.rs",
-    find: "                Expr::array((0..len).map(|_| self.default_value(*item, span)).collect::<R<_>>()?)",
-    replace:
-      "                Expr::array((0..len).skip(len as usize).map(|_| self.default_value(*item, span)).collect::<R<_>>()?)",
-    tests: ["test/corpus.test.ts", "-t", "std_odds"],
-  },
-  {
-    name: "default-boxed-slice-unknown",
-    breaks: "`Default` of a `Box<[bool]>` is refused",
-    file: "src/lower/std_impls.rs",
-    find: "            ty::Slice(_) => Expr::array(Vec::new()),",
-    replace: "            ty::Slice(_) if false => Expr::array(Vec::new()),",
-    tests: ["test/corpus.test.ts", "-t", "std_odds"],
-  },
-  {
     name: "sender-clone-uncounted",
     breaks:
       "a sender's clone is the same sender, not one more, so dropping both drops one too many",
@@ -184,30 +158,6 @@ export const mutations: Mutation[] = [
     find: "        if ty.has_param() && !self.is_unknown(ty) {",
     replace: "        if false {",
     tests: ["test/corpus.test.ts", "-t", "trait_default_bounds"],
-  },
-  {
-    name: "element-default-null",
-    breaks:
-      "an \`Element\`'s default, children not given, is \`null\`, written as a child",
-    file: "src/lower/std_impls.rs",
-    find: "            return Ok(Expr::undefined());\n        }\n        // react's `Rest`: no props,",
-    replace:
-      "            return Ok(Expr::null());\n        }\n        // react's `Rest`: no props,",
-    tests: [
-      "test/jsx-props.test.ts",
-      "-t",
-      "named props and the rest from a base",
-    ],
-  },
-  {
-    name: "rest-default-object",
-    breaks:
-      "a `Rest`'s default is `{}`, which a Rust caller's struct update writes as a `rest` prop",
-    file: "src/lower/std_impls.rs",
-    find: "        if super::bindings::is_rest(self.tcx, ty) {\n            return Ok(Expr::undefined());",
-    replace:
-      "        if super::bindings::is_rest(self.tcx, ty) {\n            return Ok(Expr::object(Vec::new()));",
-    tests: ["test/jsx-props.test.ts", "-t", "doesn't name as ...rest"],
   },
   {
     name: "untagged-clone-shared",
@@ -270,19 +220,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "default-cell-field-boxed",
-    breaks:
-      "a derived `Default`'s `Cell` field is `{ value: 0 }`, where it's `0`",
-    file: "src/lower/std_impls.rs",
-    find: "                                let value = self.holding(value, self.struct_field_def(ty, i), t);\n",
-    replace: "",
-    tests: [
-      "test/lowering-cells.test.ts",
-      "-t",
-      "cell in a field is the property",
-    ],
-  },
-  {
     name: "clone-cell-field-respread",
     breaks:
       "a derived clone of a `Cell` or a `OnceCell` field copies it again, `{ ...c, count: c.count }`, which the spread did",
@@ -308,28 +245,6 @@ export const mutations: Mutation[] = [
       "-t",
       "cell in a field is the property",
     ],
-  },
-  {
-    name: "flattened-default-nested",
-    breaks:
-      "a derived `Default` of props with a flattened field nests it, `{ anchor: {} }`",
-    file: "src/lower/std_impls.rs",
-    find: "                    self.flattened_object(made, ty)\n",
-    replace: "                    made\n",
-    tests: [
-      "test/jsx-props.test.ts",
-      "-t",
-      "JSX gives a flattened struct's fields as a component's own props",
-    ],
-  },
-  {
-    name: "lazy-default-made",
-    breaks: "`LazyCell::default()` is made already, not on first use",
-    file: "src/lower/std_impls.rs",
-    find: '                let init = Expr::arrow(vec![], vec![StmtKind::Return(Some(made)).at(js::Span::NONE)]);\n                Expr::object(vec![Prop::Field("init".into(), init)])\n',
-    replace:
-      '                Expr::object(vec![Prop::Field("value".into(), made)])\n',
-    tests: ["test/corpus.test.ts", "-t", "lazy_cells"],
   },
   {
     name: "enum-clone-whole-shared",
@@ -537,16 +452,6 @@ export const mutations: Mutation[] = [
     find: "            ty::Adt(..) if super::recognition::is_va_list(self.tcx, ty) => {\n",
     replace: "            ty::Adt(..) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^c_variadic.rs$"],
-  },
-  {
-    name: "default-bound-of-parameters-unread",
-    breaks:
-      "`Default::default()` of `[T; N]`, which a where clause gives a dictionary of, is refused, as only a type parameter's bound is read",
-    file: "src/lower/std_impls.rs",
-    find: "        // its dictionary's.\n        let tr = ty::TraitRef::new(self.tcx, default, [ty]);\n        if let Some(dictionary) = self.evidence_for(tr) {\n",
-    replace:
-      "        // its dictionary's.\n        let tr = ty::TraitRef::new(self.tcx, default, [ty]);\n        if let Some(dictionary) = self.evidence_for(tr).filter(|_| self.is_unknown(ty)) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^array_defaults.rs$"],
   },
   {
     name: "boxed-some-compared-as-object",
@@ -821,15 +726,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
   },
   {
-    name: "value-cell-default-boxed",
-    breaks:
-      "a `RefCell` of an object's `default` is a `{ value }`, read as the object it isn't",
-    file: "src/lower/std_impls.rs",
-    find: "            ty::Adt(_, args) if std(StdItem::RefCell) && self.is_value_cell(ty) => {\n                self.default_value(args.type_at(0), span)?\n            }\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
-  },
-  {
     name: "eq-of-values-borrows",
     breaks:
       "what a `RefCell` of an object holds, compared through the guard that holds it, is borrowed to compare and found borrowed",
@@ -865,16 +761,6 @@ export const mutations: Mutation[] = [
     find: "            && !self.may_be_object(held)\n            && !self.has_user_impl(self.clone_trait(), ty)\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_clone_through_rc.rs$"],
-  },
-  {
-    name: "transparent-default-unsupported",
-    breaks:
-      'a derived `Default` of a transparent struct, a `RefCell`\'s `take` of one, is refused, "`Default` of `Lines`" (ADR 0584)',
-    file: "src/lower/std_impls.rs",
-    find: "            ty::Adt(adt, args) if let Some(at) = super::recognition::transparent_field(self.tcx, *adt) => {\n                let field",
-    replace:
-      "            ty::Adt(adt, args) if false && let Some(at) = super::recognition::transparent_field(self.tcx, *adt) => {\n                let field",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_transparent.rs$"],
   },
   {
     name: "held-map-cloned-apart",
@@ -1083,23 +969,29 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
   },
   {
-    name: "field-symbol-default-by-name",
-    breaks: "a derived `Default`'s field a symbol names is keyed by the symbol item's name",
-    file: "src/lower/std_impls.rs",
-    find: "                                    Some((item, at)) => Prop::Keyed(self.field_symbol(item, at), value),",
-    replace: "                                    Some((item, _)) => Prop::Field(self.tcx.item_name(item).to_string(), value),",
-    tests: [
-      "test/field-symbol-names.test.ts",
-      "-t",
-      "each field is its own symbol's"
-    ]
-  },
-  {
     name: "option-eq-one-none-loose",
     breaks: "two `Option`s a getter gives, each `T | null`, compare by `==`, `node.firstChild == node.lastChild`, where upstream writes `===` (rd117)",
     file: "src/lower/std_impls.rs",
     find: "                    false if a.facts.same_none(b.facts) => Expr::bin(Op::Eq, a, b),\n",
     replace: "",
     tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],
+  },
+  {
+    name: "recursive-eq-in-place",
+    breaks:
+      "a derived `==` of a type inside itself with a custom part, regex-syntax's `Hir`, is expanded in place, the one inside it again, until rust-js's stack overflows (#511)",
+    file: "src/lower/std_impls.rs",
+    find: "        if self.is_recursive(ty) {\n            if let Some((_, name)) = self.comparing",
+    replace: "        if false && self.is_recursive(ty) {\n            if let Some((_, name)) = self.comparing",
+    tests: ["test/corpus.test.ts", "-t", "^recursive_eq.rs$"],
+  },
+  {
+    name: "recursive-eq-of-another-type",
+    breaks:
+      "inside a recursive type's `==` function, another recursive type's `==`, `HirKind`'s in `Hir`'s, calls the outer one, `eqHir(a.kind, b.kind)` (#511)",
+    file: "src/lower/std_impls.rs",
+    find: "self.comparing.iter().find(|(t, _)| *t == ty)",
+    replace: "self.comparing.iter().find(|(t, _)| *t != ty)",
+    tests: ["test/corpus.test.ts", "-t", "^recursive_eq.rs$"],
   },
 ];

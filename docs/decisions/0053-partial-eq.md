@@ -103,3 +103,26 @@ compare a `Vec<Vec<String>>` with the `Vec<Vec<&str>>` they expect, failed.
 `a.every((x$1, i) => x$1 === x[i])`, `x.every((x, i$1) => x ===
 wrong[i][i$1])`; a `RefCell`'s `$withBorrow` arrows too. Held by the corpus
 case `eq_items_of_other_types` and the mutation `eq-items-fixed-names`.
+
+## Amendment: the derived `==` of a type inside itself (#511)
+
+A derived `==` with a part that has its own `==` is its parts' `==`s
+written inline, and `$eq` compares the rest. Of a type inside itself,
+regex-syntax's `Hir`, whose `HirKind::Capture` holds a `Box<Hir>` and
+whose class is an `IntervalSet` with a hand-written `PartialEq`, that
+inlining never ended. In the debug compiler, rust-js's stack overflowed at
+6.9 GB. In the release compiler, whose frames are smaller, it went on
+until a 16 GB CI runner was shut down. It's the same bug ADR 0057's order
+had (#148), and it has the same fix: the `==` of a type inside itself is a
+function, `function eqHir(a, b) { .. }`, that calls itself for the values
+inside, as its clone (`clone_value`) and its order (`cmp_value`) do. Each
+place that compares one makes its own, as each clone and each order does.
+A type that `$eq` compares, with no custom part, stays `$eq`.
+
+Case: none ([0262](0262-when-rust-and-js-disagree.md)). The function gives
+the same answer the inlined parts would, and no program that compiled
+before is affected: a recursive type with a custom part only crashed,
+while a type that isn't recursive is still inlined as before, its size
+bounded by the type itself. Held by `test/corpus/recursive_eq.rs`, run
+against native Rust, and the mutations `recursive-eq-in-place` and
+`recursive-eq-of-another-type`.
