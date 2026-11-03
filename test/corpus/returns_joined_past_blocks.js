@@ -13,7 +13,7 @@ function atPriority(log, f) {
 
 function instanceOf(tag) {
   if (tag > 1) {
-    return (tag * 10) >>> 0;
+    return tag * 10;
   }
 }
 

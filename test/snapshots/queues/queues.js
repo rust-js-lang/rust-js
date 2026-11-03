@@ -120,7 +120,7 @@ export function bfsOrder(n, edges) {
     for (let i = 0; i < edges.length; i++) {
       const [a, b] = edges[i];
       if (a === u && !$index(seen, b)) {
-        seen[$at(seen, b)] = true;
+        seen[b] = true;
         q.push(b);
       }
     }
