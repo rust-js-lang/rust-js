@@ -277,19 +277,14 @@ react.dev's TopNav passes the same closure instead.
   them apart. Said in the guide's global values
   (`interop/global-scope.md`).
 - **A class that extends nothing is a constructor function and its
-  prototype**, the second case's, which the user decided (2026-11-01,
-  rd331): ADR 0761's form, where a port's upstream writes an ES class,
-  react-art's `class LinearGradient { constructor(..) { .. } applyFill(..)
-  { .. } }`, its RadialGradient's and Pattern's. Two things tell them
-  apart: the prototype's methods are enumerable, `for (k in g)` and
-  `Object.assign({}, Object.getPrototypeOf(g))` see `applyFill`, where a
-  class's aren't; and the class may be called without `new`, where an ES
-  class's call throws a `TypeError`. A program that does neither, as
-  react-art's callers don't, can't tell. A class that extends a binding's
-  is an ES class (ADR 1041), and so is one whose struct is marked
-  `#[rust_js::class(es)]`, which a port writes where upstream writes an
-  ES class, so it isn't this case's (ADR 0761, amended, rd682). Listed in
-  the guide's differences (`semantics.md`, 37).
+  prototype**, which was the second case's, decided by the user
+  (2026-11-01, rd331), is no case now: ADR 0761's form differs from an
+  ES class only to JS that calls it without `new` or enumerates its
+  prototype, and the ports whose upstream wrote an ES class, react-art's
+  LinearGradient, RadialGradient and Pattern, mark their structs
+  `#[rust_js::class(es)]` (ADR 0761, amended, rd682), as a port does
+  where upstream writes one. The guide's difference 37 is gone (the
+  coordinator's decision on the user's behalf, 2026-11-04).
 - **A closure given as a descriptor's `get` is an arrow**, the second
   case's, which the user decided (2026-11-01, rd331f): react-art's Text
   defines `width` and the rest on its instance, `Object.defineProperty(this,

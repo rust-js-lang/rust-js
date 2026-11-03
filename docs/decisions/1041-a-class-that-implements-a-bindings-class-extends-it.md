@@ -262,6 +262,10 @@ the paragraph its ref callback set.
 Decided by the user (2026-11-01): react-art's LinearGradient,
 RadialGradient and Pattern stay constructor functions, ADR 0262's second
 case, listed in its Consequences and the guide's differences (37).
+Superseded (2026-11-04, the coordinator's decision on the user's behalf):
+they mark their structs `#[rust_js::class(es)]` and are ES classes, as
+upstream's are (ADR 0761, amended, rd682); the guide's difference 37 is
+gone.
 
 ## Amendment: a class component is an element of `jsx!` (rd331i)
 

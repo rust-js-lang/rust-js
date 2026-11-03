@@ -757,8 +757,9 @@ second form of one construct, chosen per class by what upstream writes.
 
 React's classes are unchanged: unmarked, each is the constructor function
 it was. react-art's LinearGradient, RadialGradient and Pattern, ES classes
-upstream, may be marked now, which takes them off ADR 0262's second case
-(semantics.md, 37) once their port does.
+upstream, are marked (react-in-rust, 2026-11-04, the coordinator's
+decision on the user's behalf), which takes them off ADR 0262's second
+case: no class is left of it, and the guide's difference 37 is gone.
 
 Held by `test/es-classes.test.ts`, run in Node: the class, its default
 export, a thread-local made of it before its line, a JS subclass's

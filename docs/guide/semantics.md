@@ -1225,15 +1225,6 @@ React and JSX are [their own pages](README.md#react).
     performance.getEntriesByType === "function"`, React DOM's
     estimateBandwidth's, throws a `ReferenceError` there (ADR 0942,
     amended; ADR 0262, the user's decision, 2026-10-31).
-37. A `#[rust_js::class]` that extends nothing is a constructor function
-    and its prototype (ADR 0761), where a hand-written ES class's
-    prototype methods aren't enumerable and its call without `new`
-    throws: `for (k in g)` sees `applyFill`, and `LinearGradient(..)`
-    runs. react-art's LinearGradient, RadialGradient and Pattern, which
-    upstream writes as ES classes, are its (ADR 0262, the user's
-    decision, 2026-11-01). One whose struct is marked
-    `#[rust_js::class(es)]` is an ES class, as JS's (ADR 0761, amended,
-    rd682).
 38. A binding marked `#[rust_js::runs_nothing]` is taken at its word,
     though it runs what it's given: React DOM's Fizz config's
     `writeChunk(destination, chunk)`, which calls the destination's
