@@ -107,7 +107,7 @@ pub fn pretending(target: &'static JsObject) -> &'static JsObject {
 `,
   );
   expect(js).toContain("return Object.create(Promise.prototype);");
-  expect(js).toContain("getPrototypeOf: (_target) => Promise.prototype,");
+  expect(js).toContain("const handler = { getPrototypeOf: (_target) => Promise.prototype };");
   writeFileSync(
     join(dir, "run.mjs"),
     `import * as lib from "./lib.js";
