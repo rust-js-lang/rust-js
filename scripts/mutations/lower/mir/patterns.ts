@@ -59,8 +59,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`let owner = None;` given to a nullable field is `undefined` where it's made, and `owner ?? null` where it's given (ADR 0781)",
     file: "src/lower/mir/patterns.rs",
-    find: "                *given.entry(of).or_default() += 1;\n",
-    replace: "",
+    find: "                    0 => *given.entry(of).or_default() += 1,\n",
+    replace: "                    0 => {}\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -100,7 +100,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `None` copied to a variable read elsewhere is `null`, so `let other = owner;` returns `null`, not `undefined` (ADR 0781)",
     file: "src/lower/mir/patterns.rs",
-    find: "            if locals.writes[copy] == 1 && given.get(&copy).is_some_and(|&n| n == locals.reads[copy]) {\n",
+    find: "            if locals.writes[copy] == 1 && to + alike_to == locals.reads[copy] && to + alike_to > 0 {\n",
     replace: "            if locals.writes[copy] == 1 {\n",
     tests: [
       "test/lowering-nullable.test.ts",
@@ -218,8 +218,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `#[rust_js::nullable]` function's `Some(x)` is `x ?? null`, where it's made a value and is one",
     file: "src/lower/mir/patterns.rs",
-    find: "                    true => true,\n",
-    replace: "                    true => false,\n",
+    find: "            if local == mir::RETURN_PLACE && result {\n",
+    replace: "            if local == mir::RETURN_PLACE && result && false {\n",
     tests: [
       "test/bindings.test.ts",
       "-t",
@@ -326,25 +326,12 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "null-nones-clones-written",
-    breaks:
-      "a nullable field's clone given to one is written `?? null` where it's made, `message.id ?? null`",
-    file: "src/lower/mir/patterns.rs",
-    find: "            if !cloned\n",
-    replace: "            if true\n",
-    tests: [
-      "test/lowering-options.test.ts",
-      "-t",
-      "a nullable field given a nullable field's copy",
-    ],
-  },
-  {
     name: "null-nones-own-param-call-coalesced",
     breaks:
       "a call's `Option` only a function's own nullable parameter reads is written `?? null`, `mapIntoArray(init(payload) ?? null, ..)`, where its body reads either (ADR 0861)",
     file: "src/lower/mir/patterns.rs",
-    find: "                            && (!called.contains(&local) || stored.contains(&local))\n",
-    replace: "",
+    find: "            if !(called && !stored.contains(&local)) {\n",
+    replace: "            if true {\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
   },
   {
@@ -584,5 +571,38 @@ export const mutations: Mutation[] = [
     find: "            held.insert(param, Ok(Some(js::Known::NoneNull)));\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "each call gives null or a value"],
+  },
+  {
+    name: "let-alike-of-a-temporary",
+    breaks: "a temporary a call writes, given straight to a nullable parameter, `commitLoose(profiling ? reason() : undefined)`, is `null` for `None` too, a `?? null` where no `let` is (rd632, the user's (B) is of a `let`)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                && lets.contains(&local)\n",
+    replace: "",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "returns null or a value"],
+  },
+  {
+    name: "let-read-otherwise-nulled",
+    breaks: "a `let` a call writes, read by a nullable parameter and any other way, a binding's `String(previous)` say, is `null` for `None`, so `String` gives \"null\" where Rust's gives \"undefined\" (rd632)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                && given + alike == locals.reads[local]\n",
+    replace: "",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "read by a nullable parameter and alike"],
+  },
+  {
+    name: "null-nones-clones-written",
+    breaks:
+      "a clone of an optional nullable field, which may be left out, is written `?? null` where it's made, so another optional field given it stores `null` where it should store `undefined` (ADR 0810, amended; a nullable field's clone is given as it is either way since rd632's `call_nulled`)",
+    file: "src/lower/mir/patterns.rs",
+    find: "            if !cloned\n",
+    replace: "            if true\n",
+    tests: ["test/lowering-optional-fields.test.ts", "-t", "an optional nullable field given another's value stores it as it is"],
+  },
+  {
+    name: "let-arms-uncounted",
+    breaks: "a `let` whose arm is a `let` of its own, `let previous = previous_of(..); previous`, has a write that isn't what it makes, so it's never `null` for `None` and `measure(previous)` stays `!= null` (rd632)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                && writes + arms.len() == locals.writes[local]\n",
+    replace: "                && writes == locals.writes[local]\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "read by a nullable parameter and alike"],
   },
 ];

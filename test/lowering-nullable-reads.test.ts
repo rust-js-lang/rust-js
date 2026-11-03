@@ -705,6 +705,8 @@ test("a function whose every return is null or a value returns null or a value",
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("function eventTarget(node) {\n  return node.text ? parentOf(node) : node;\n}");
+  // Its call is written as it is, no `?? null`.
+  expect(js).toContain("  const target = eventTarget(node);\n");
   expect(js).toContain("function dispatch(target) {\n  return target !== null ? target.id : 0;\n}");
   expect(js).toContain("function dispatchLoose(target) {\n  return target != null ? target.id : 0;\n}");
   expect(js).toContain("function dispatchGivenBack(target) {\n  return target != null ? target.id : 0;\n}");
@@ -784,4 +786,91 @@ pub fn given(root: u32, reason: Option<&'static str>) -> Rc<dyn Fn() -> u32> {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.scheduled(3, true)(), lib.scheduled(1, true)(), lib.scheduled(3, false)(), lib.throttled(1)()]).toEqual([12, 1, 3, 10]);
   expect([lib.later(2)(undefined), lib.later(2)("ab"), lib.given(2, undefined)(), lib.given(2, "ab")()]).toEqual([2, 4, 2, 4]);
+});
+
+// rd632 (the user's decision (B)): a `let` a call writes, React's
+// `previousMeasurements`, `state.clones?.map(..)` in one arm and a `let` of
+// what's cast in the other, read by the crate's own nullable parameter
+// through `as_deref()`, and otherwise by `is_some()` and `map_or` alone,
+// which read `null` and `undefined` alike, is `null` for `None` where it's
+// written, so the parameter is tested `!== null`. Read by a binding's
+// parameter that isn't nullable, returned, kept in a field, captured, or
+// lent as a `&mut`, it's what the call gave, `undefined` too, and the
+// parameter is tested `!= null`.
+test("a let a call writes, read by a nullable parameter and alike, is null for None", async () => {
+  const dir = fixture("nullable-let-read-alike");
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(import.meta.dir, "corpus/nullable_let_read_alike.rs"), "utf8"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("function measure(previous) {\n  return previous !== null ?");
+  expect(js).toContain("    previous = clones != null ? measured(clones) : null;\n");
+  expect(js).toContain("    previous = previousOf(state, gesture) ?? null;\n");
+  expect(js).toContain("function measureMatched(previous) {\n  return previous !== null ?");
+  for (const kept of ["Shown", "Returned", "Stored", "Captured", "Lent"]) {
+    expect(js).toContain(`function measure${kept}(previous) {\n  return previous != null ?`);
+  }
+  expect(js.match(/: undefined;\n/g)?.length).toBe(5);
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.update({}, true)).toEqual([0, false, 0]);
+  expect(lib.update({ clones: [1, 2] }, true)).toEqual([30, true, 2]);
+  expect([lib.updateMatched({}, true), lib.updateMatched({}, false), lib.updateMatched({ clones: [1] }, true)]).toEqual([[0, 0], [0, 0], [10, 1]]);
+  expect(lib.updateShown({}, true)).toEqual([0, "undefined"]);
+  expect(lib.updateReturned({}, true)[1]).toBe(undefined);
+  expect(lib.updateStored({}, true)[1].previous).toBe(undefined);
+  expect([lib.updateCaptured({}, true), lib.updateLent({}, true, false), lib.updateLent({ clones: [1] }, true, true)]).toEqual([0, 0, 0]);
+});
+
+// rd632: a closure that gives its argument as the same JS value, React
+// DOM's `parent_node().map(|parent_node| &**parent_node)`, a `Node`'s
+// `Deref` to its base `EventTarget`, maps the option to itself, so a
+// nullable binding's `null` is given on as it is, and `getEventTarget`'s
+// every return is `null` or a value. One that does anything else, counts
+// a call say, is made as before, `undefined` for `None`.
+test("a closure that gives its argument maps an option to itself", async () => {
+  const dir = fixture("nullable-closure-identity-map");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::Cell;
+
+use webapi::{EventTarget, Node};
+
+thread_local! {
+    static MAPPED: Cell<u32> = const { Cell::new(0) };
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(target))]
+fn dispatch(target: Option<&EventTarget>) -> bool {
+    target.is_some()
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(target))]
+fn dispatch_counted(target: Option<&EventTarget>) -> bool {
+    target.is_some()
+}
+
+fn event_target(node: &'static Node, text: bool) -> Option<&'static EventTarget> {
+    if text { node.parent_node().map(|parent| &**parent) } else { Some(node) }
+}
+
+fn counted_target(node: &'static Node) -> Option<&'static EventTarget> {
+    node.parent_node().map(|parent| {
+        MAPPED.set(MAPPED.get() + 1);
+        &**parent
+    })
+}
+
+pub fn run(node: &'static Node, text: bool) -> (bool, bool, u32) {
+    (dispatch(event_target(node, text)), dispatch_counted(counted_target(node)), MAPPED.get())
+}
+`,
+  );
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return text ? node.parentNode : node;\n");
+  expect(js).toContain("function dispatch(target) {\n  return target !== null;\n}");
+  expect(js).toContain("function dispatchCounted(target) {\n  return target != null;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.run({ parentNode: null }, true)).toEqual([false, false, 0]);
+  expect(lib.run({ parentNode: { id: 1 } }, true)).toEqual([true, true, 1]);
 });

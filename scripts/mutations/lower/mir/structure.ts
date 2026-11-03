@@ -465,8 +465,9 @@ export const mutations: Mutation[] = [
     tests: [
       "test/lowering-nullable-reads.test.ts",
       "test/lowering-options.test.ts",
+      "test/lowering-bool-ternaries.test.ts",
       "-t",
-      "a variable of what a nullable function gave is returned and stored as it is|nullable function's call is the call",
+      "a variable of what a nullable function gave is returned and stored as it is|nullable function's call is the call|another module's function that gives a bool",
     ],
   },
   {
@@ -565,7 +566,7 @@ export const mutations: Mutation[] = [
     name: "constructed-get-coalesced",
     breaks: "a nullable field each constructor of its struct sets first, read for a nullable parameter, is given `?? null`: `prepare(response.moduleLoading ?? null)` (rd628)",
     file: "src/lower/mir/structure.rs",
-    find: "                        let nulled = self.gets_constructed(state, (func, &args[..]));\n",
+    find: "                        let nulled = self.call_nulled(state, destination.local, (func, &args[..]));\n",
     replace: "                        let nulled = false;\n",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
   },

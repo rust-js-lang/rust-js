@@ -143,9 +143,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an option mapped by a function giving each variant its own name, `section.map(Section::as_str)`, is a conditional of a call, not `section`",
     file: "src/lower/std_types/option.rs",
-    find: "        (itself || self.gives_its_argument(self.callee(function, args).0))\n",
-    replace:
-      "        (itself || false && self.gives_its_argument(self.callee(function, args).0))\n",
+    find: "                    || self.gives_its_argument(self.callee(function, args).0)\n",
+    replace: "                    || false && self.gives_its_argument(self.callee(function, args).0)\n",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "enum's own names"],
   },
   {
@@ -415,9 +414,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a map by a binding that's its argument, `map(js::unknown)`, isn't the option to what a nullable place stores, which is `?? null` (rd94)",
     file: "src/lower/std_types/option.rs",
-    find: "        (itself || self.gives_its_argument(self.callee(function, args).0))\n",
-    replace:
-      "        (self.gives_its_argument(self.callee(function, args).0))\n",
+    find: "                (super::super::bindings::is_binding(self.tcx, function)\n",
+    replace: "                (false && super::super::bindings::is_binding(self.tcx, function)\n",
     tests: ["test/js-constructors.test.ts", "-t", "identity map"],
   },
   {
@@ -436,5 +434,21 @@ export const mutations: Mutation[] = [
     find: "                if self.frame.facts.set_then_unwrapped.contains(&span) && !list[1..].iter().any(Expr::has_effects) {\n",
     replace: "                if self.frame.facts.set_then_unwrapped.contains(&span) {\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_set_then_read_back.rs$"],
+  },
+  {
+    name: "closure-map-unrecognized",
+    breaks: "a closure that gives its argument as it is, `|parent| &**parent`, isn't taken as mapping the option to itself, so `getEventTarget`'s `parentNode` isn't `null` or a value and `dispatch` tests `!= null` (rd632)",
+    file: "src/lower/std_types/option.rs",
+    find: "            None => self.closure_gives_its_argument(f),\n",
+    replace: "            None => false,\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "maps an option to itself"],
+  },
+  {
+    name: "closure-map-effects-dropped",
+    breaks: "a closure that does more than give its argument back, counts a call, is taken as mapping the option to itself, so its count is never made (rd632)",
+    file: "src/lower/std_types/option.rs",
+    find: "        steps == writes.len()\n",
+    replace: "        true\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "maps an option to itself"],
   },
 ];

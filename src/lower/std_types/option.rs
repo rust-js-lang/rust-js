@@ -17,21 +17,110 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `(from, to)`, is the option itself in JS: by a function each call of
     /// which is what it's given, `section.map(Section::as_str)` (ADR 0264),
     /// `lane.map(EventPriority::from)` (ADR 0584, amended), or a binding
-    /// that's its argument, `map(js::unknown)` (`JsForm::This`); of neither
-    /// boxed. The one answer, of the map's lowering and of what a nullable
-    /// place stores of it as given (the port's gap rd94).
+    /// that's its argument, `map(js::unknown)` (`JsForm::This`), or a
+    /// closure that gives it as it is, `|parent| &**parent` (rd632,
+    /// `closure_gives_its_argument`); of neither boxed. The one answer, of
+    /// the map's lowering and of what a nullable place stores of it as
+    /// given (the port's gap rd94).
     pub(in crate::lower) fn maps_to_itself(&self, f: Ty<'tcx>, (from, to): (Ty<'tcx>, Ty<'tcx>)) -> bool {
-        let Some((function, args)) = crate::lower::fn_def(f) else {
+        let itself = match crate::lower::fn_def(f) {
+            Some((function, args)) => {
+                (super::super::bindings::is_binding(self.tcx, function)
+                    && matches!(
+                        super::super::bindings::js_form(self.tcx, function),
+                        super::super::bindings::JsForm::This
+                    ))
+                    || self.gives_its_argument(self.callee(function, args).0)
+            }
+            None => self.closure_gives_its_argument(f),
+        };
+        itself && !self.boxed_payload(from) && !self.boxed_payload(to)
+    }
+
+    /// Whether `f` is a closure that captures nothing and does nothing but
+    /// give its one argument back as the same JS value: each step a copy, a
+    /// reborrow, `&*p`, or a call that's the value itself (`Std::Same`, a
+    /// JS object's `Deref` to its class's base, ADR 0024; `Std::Pointee`),
+    /// React DOM's `parent_node().map(|parent_node| &**parent_node)`
+    /// (rd632). No branch, no other call or statement.
+    fn closure_gives_its_argument(&self, f: Ty<'tcx>) -> bool {
+        let ty::Closure(def_id, args) = *f.kind() else {
             return false;
         };
-        let itself = super::super::bindings::is_binding(self.tcx, function)
-            && matches!(
-                super::super::bindings::js_form(self.tcx, function),
-                super::super::bindings::JsForm::This
-            );
-        (itself || self.gives_its_argument(self.callee(function, args).0))
-            && !self.boxed_payload(from)
-            && !self.boxed_payload(to)
+        if !args.as_closure().upvar_tys().is_empty() {
+            return false;
+        }
+        let Some(mir) = self.krate.closures.get(&def_id).and_then(|body| body.mir.as_ref()) else {
+            return false;
+        };
+        let body = &mir.body;
+        if body.arg_count != 2 {
+            return false;
+        }
+        use rustc_middle::mir::{self, Operand, Rvalue, StatementKind, TerminatorKind};
+        // What writes a local whole: an assignment's value, or a call.
+        type Written<'b, 'tcx> =
+            Result<&'b Rvalue<'tcx>, (&'b Operand<'tcx>, &'b [rustc_span::Spanned<Operand<'tcx>>])>;
+        let mut writes: Vec<(mir::Local, Written<'_, 'tcx>)> = Vec::new();
+        for data in body.basic_blocks.iter() {
+            for statement in &data.statements {
+                match &statement.kind {
+                    StatementKind::Assign(assign) if assign.0.projection.is_empty() => {
+                        writes.push((assign.0.local, Ok(&assign.1)));
+                    }
+                    StatementKind::StorageLive(_) | StatementKind::StorageDead(_) | StatementKind::Nop => {}
+                    StatementKind::FakeRead(_) | StatementKind::PlaceMention(_) => {}
+                    _ => return false,
+                }
+            }
+            match &data.terminator().kind {
+                TerminatorKind::Call {
+                    func,
+                    args,
+                    destination,
+                    ..
+                } if destination.projection.is_empty() => writes.push((destination.local, Err((func, args)))),
+                TerminatorKind::Goto { .. } | TerminatorKind::Return | TerminatorKind::UnwindResume => {}
+                _ => return false,
+            }
+        }
+        // Each step back from what it returns, to its argument.
+        let argument = mir::Local::from_usize(2);
+        let mut at = mir::RETURN_PLACE;
+        let mut steps = 0;
+        while at != argument {
+            let mut of = writes.iter().filter(|(local, _)| *local == at);
+            let (Some((_, write)), None) = (of.next(), of.next()) else {
+                return false;
+            };
+            let from = match write {
+                Ok(Rvalue::Use(Operand::Copy(p) | Operand::Move(p), _))
+                | Ok(Rvalue::CopyForDeref(p))
+                | Ok(Rvalue::Ref(_, mir::BorrowKind::Shared, p)) => *p,
+                Err((func, [arg])) => {
+                    let known = (func.const_fn_def())
+                        .and_then(|(def_id, generic_args)| self.recognition().classify(def_id, generic_args));
+                    match (known, arg.node.place()) {
+                        (Some(Std::Same | Std::Pointee), Some(p)) => p,
+                        _ => return false,
+                    }
+                }
+                _ => return false,
+            };
+            // Of a place whole, or what a reference refers to.
+            if !matches!(from.projection.as_slice(), [] | [mir::PlaceElem::Deref]) {
+                return false;
+            }
+            at = from.local;
+            steps += 1;
+            // Every write steps back to one written before, so a step more
+            // than its writes is a cycle.
+            if steps > writes.len() {
+                return false;
+            }
+        }
+        // Each write is a step, or it does something else.
+        steps == writes.len()
     }
 
     /// An `Option`'s or a `Result`'s method, and `bool::then` (ADRs 0030, 0062): `None` if `known` is another.

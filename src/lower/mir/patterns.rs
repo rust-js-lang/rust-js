@@ -61,6 +61,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// nullable field's or binding parameter's, or a copy's only they read
     /// (ADR 0781, amended by 0841); or a
     /// `#[rust_js::nullable]` function's result, by its return.
+    /// A `let` a call writes too, where a nullable parameter of the crate's
+    /// own reads it, and each other read is one too, through a shared
+    /// `as_ref()` or `as_deref()`, or a test that reads `null` and
+    /// `undefined` alike (`alike_reads`): React's `previousMeasurements`
+    /// (rd632, the user's decision (B)).
     fn mir_null_nones(&self, body: &mir::Body<'tcx>, locals: &Locals) -> std::collections::HashSet<Local> {
         let mut made: std::collections::HashMap<Local, (usize, bool)> = Default::default();
         let mut given: std::collections::HashMap<Local, usize> = Default::default();
@@ -70,6 +75,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // bodies reading `null` and `undefined` alike (ADR 0861).
         let mut called: std::collections::HashSet<Local> = Default::default();
         let mut stored: std::collections::HashSet<Local> = Default::default();
+        // What the crate's own function's nullable parameter reads (rd632).
+        let mut toward: std::collections::HashSet<Local> = Default::default();
         // Each copy of a variable, `_2 = copy _1`, MIR's of `owner` in `Info
         // { owner }`: the variable's read, given where the copy is.
         let mut copies: Vec<(Local, Local)> = Vec::new();
@@ -185,9 +192,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && (named || of_a_type_parameter)
                 {
                     *given.entry(read.local).or_default() += 1;
-                    if binding {
-                        stored.insert(read.local);
-                    }
+                    match binding {
+                        true => stored.insert(read.local),
+                        false => toward.insert(read.local),
+                    };
                 }
             }
         }
@@ -248,14 +256,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for option in options {
             *given.entry(option).or_default() += 1;
         }
+        // A `let`'s reads through a shared `as_ref()` or `as_deref()` given
+        // on, and its tests that read `null` and `undefined` alike (rd632).
+        // Only a `let` a call writes is asked of them, so a `let x;` that
+        // only `None`s and `Some`s write is as it was, `undefined`.
+        let mut alike: std::collections::HashMap<Local, usize> = Default::default();
+        for (local, to_param) in self.alike_reads(body, locals, &given, &toward) {
+            *alike.entry(local).or_default() += 1;
+            if to_param {
+                toward.insert(local);
+            }
+        }
         // A copy made once and only given to nullable fields or parameters
         // gives what it's a copy of to them: `let owner = None;`'s `None` is `null` where
         // it's made (ADR 0781).
+        // A `let`, the program's variable, not MIR's temporary, and what MIR
+        // makes it of, each arm's value of `let x = if c { a } else { b };`.
+        let mut lets: std::collections::HashSet<Local> = (body.var_debug_info.iter())
+            .filter_map(|info| match info.value {
+                mir::VarDebugInfoContents::Place(place) if place.projection.is_empty() => Some(place.local),
+                _ => None,
+            })
+            .collect();
+        // So does one a test reads too, alike, which the `let` it's a copy of
+        // is read alike by (rd632).
         for &(copy, of) in &copies {
-            if locals.writes[copy] == 1 && given.get(&copy).is_some_and(|&n| n == locals.reads[copy]) {
-                *given.entry(of).or_default() += 1;
+            let (to, alike_to) = (
+                given.get(&copy).copied().unwrap_or_default(),
+                alike.get(&copy).copied().unwrap_or_default(),
+            );
+            if locals.writes[copy] == 1 && to + alike_to == locals.reads[copy] && to + alike_to > 0 {
+                match alike_to {
+                    0 => *given.entry(of).or_default() += 1,
+                    _ => *alike.entry(of).or_default() += 1,
+                }
                 if stored.contains(&copy) {
                     stored.insert(of);
+                }
+                if toward.contains(&copy) {
+                    toward.insert(of);
+                }
+                if lets.contains(&copy) && locals.reads[of] == 1 {
+                    lets.insert(of);
                 }
             }
         }
@@ -273,21 +315,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `#[rust_js::nullable]` function's result is read by its return,
         // and a nullable thread-local's of an `Option`, its `init`'s.
         let result = bindings::null_result(self.tcx, body.source.def_id());
-        (made.into_iter())
-            .filter(|&(local, (writes, none))| {
-                // Of a function's result, each write: what isn't an
-                // `Option` it makes is `nullable_written`'s.
-                match local == mir::RETURN_PLACE && result {
-                    true => true,
-                    false => {
-                        none && writes == locals.writes[local]
-                            && given.get(&local) == Some(&locals.reads[local])
-                            && (!called.contains(&local) || stored.contains(&local))
-                    }
+        // What a `let` is written, besides what it makes, of its arms' own
+        // `let`s or temporaries, each written once by what makes an
+        // `Option`, read once, there: `let x = if c { let y = f(); y }
+        // else { g() };`'s `y` (rd632). Each is a `let` read alike as `x`
+        // is, its copy's (`lets`, `alike`, `toward` above), so `null` for
+        // `None` where `x` is.
+        let arm = |of: Local| {
+            locals.writes[of] == 1 && locals.reads[of] == 1 && made.get(&of).is_some_and(|&(writes, _)| writes == 1)
+        };
+        let mut nulled = std::collections::HashSet::new();
+        let candidates: std::collections::HashSet<Local> = (made.keys().copied())
+            .chain(copies.iter().filter(|&&(_, of)| arm(of)).map(|&(copy, _)| copy))
+            .collect();
+        for local in candidates {
+            let (writes, none) = made.get(&local).copied().unwrap_or_default();
+            // Of a function's result, each write: what isn't an `Option` it
+            // makes is `nullable_written`'s.
+            if local == mir::RETURN_PLACE && result {
+                nulled.insert(local);
+                continue;
+            }
+            let given = given.get(&local).copied().unwrap_or_default();
+            let arms: Vec<Local> = (copies.iter())
+                .filter(|&&(copy, of)| copy == local && arm(of))
+                .map(|&(_, of)| of)
+                .collect();
+            let called = called.contains(&local) || arms.iter().any(|of| called.contains(of));
+            if !(called && !stored.contains(&local)) {
+                if made.contains_key(&local) && none && writes == locals.writes[local] && given == locals.reads[local] {
+                    nulled.insert(local);
                 }
-            })
-            .map(|(local, _)| local)
-            .collect()
+                continue;
+            }
+            // A `let` a call writes, read by the crate's own nullable
+            // parameter and alike otherwise (rd632, the user's (B)).
+            let alike = alike.get(&local).copied().unwrap_or_default();
+            if toward.contains(&local)
+                && lets.contains(&local)
+                && given + alike == locals.reads[local]
+                && writes + arms.len() == locals.writes[local]
+            {
+                nulled.insert(local);
+            }
+        }
+        nulled
     }
 
     /// Whether `place`, an `Option` read at `at`, is a `Some` there: read

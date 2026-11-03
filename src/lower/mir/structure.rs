@@ -730,8 +730,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             value => value,
                         };
                         // A nullable field its struct's constructors each set
-                        // first, `null` or a value already (rd628).
-                        let nulled = self.gets_constructed(state, (func, &args[..]));
+                        // first, `null` or a value already (rd628), or what
+                        // else gives so, a function's that returns so (rd632).
+                        let nulled = self.call_nulled(state, destination.local, (func, &args[..]));
                         let value = self.nullable_written(state, *destination, value, nulled, span)?;
                         self.mir_store(state, *destination, value, span, &mut called)?;
                         // Each box given, copied back once the call returns;

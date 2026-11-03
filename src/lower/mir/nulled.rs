@@ -41,18 +41,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.place_field(state, self.borrowed(state, &arg.node)?)
     }
 
-    /// Whether a call of `func` with `args` reads a nullable field each
-    /// constructor of its struct sets first, `null` or a value from where
-    /// it's made on (`classes::set_where_constructed`, rd628):
-    /// `response._moduleLoading` given on as it is.
-    pub(super) fn gets_constructed(
-        &self,
-        state: &State<'_, 'tcx>,
-        call: (&Operand<'tcx>, &[rustc_span::Spanned<Operand<'tcx>>]),
-    ) -> bool {
-        (self.cell_field_got(state, call)).is_some_and(|field| self.krate.constructed.contains(&field.did))
-    }
-
     /// Of what `stored_given` says is `null` or a value, the function's own
     /// nullable parameter it's that parameter given on, by index: `null` or
     /// a value only where that one is, each call of the function giving it
@@ -217,6 +205,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether the call of `func` with `args` the block lowered ends with,
+    /// written to `local`, gives `null` or a value (`stored_given`).
+    pub(super) fn call_nulled(
+        &self,
+        state: &State<'_, 'tcx>,
+        local: Local,
+        (func, args): (&Operand<'tcx>, &[rustc_span::Spanned<Operand<'tcx>>]),
+    ) -> bool {
+        let write = Write::Call(state.at, func, args);
+        self.written_given(state, local, &write, &mut Vec::new()) == (Given::Nulled, None)
+    }
+
     /// What `write` of `local` gives a nullable place (`stored_given`).
     fn written_given(
         &self,
@@ -365,6 +365,94 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let caller = (self.item, (state.body.source.def_id(), state.at));
         self.krate.nulled_params.record(caller, f, &nulled, &given_on);
+    }
+
+    /// Each read of a local, an `Option`, that a nullable parameter takes or
+    /// that reads `null` and `undefined` alike, besides those `given` counts,
+    /// and whether it's given a nullable parameter of the crate's own
+    /// (rd632): a shared reference to it that a shared `as_ref()` or
+    /// `as_deref()` alone reads, whose result each read is so, `given` and
+    /// `toward`; its test, `is_some()`, `is_none()`, a `match`'s or an `if
+    /// let`'s, a `Some`'s value read, or `map_or`'s. Not a `&mut` of it,
+    /// nor any other read, which keeps it as it is.
+    pub(super) fn alike_reads(
+        &self,
+        body: &mir::Body<'tcx>,
+        locals: &Locals,
+        given: &std::collections::HashMap<Local, usize>,
+        toward: &std::collections::HashSet<Local>,
+    ) -> Vec<(Local, bool)> {
+        let option = |local: Local| self.option_of(body.local_decls[local].ty).is_some();
+        let mut reads = Vec::new();
+        // Each shared reference to a whole `Option`, made once.
+        let mut lent: std::collections::HashMap<Local, Local> = Default::default();
+        for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
+            let mir::StatementKind::Assign(assign) = &statement.kind else {
+                continue;
+            };
+            match &assign.1 {
+                Rvalue::Ref(_, BorrowKind::Shared, of)
+                    if of.projection.is_empty() && assign.0.projection.is_empty() && option(of.local) =>
+                {
+                    if locals.writes[assign.0.local] == 1 {
+                        lent.insert(assign.0.local, of.local);
+                    }
+                }
+                Rvalue::Discriminant(of) if of.projection.is_empty() && option(of.local) => {
+                    reads.push((of.local, false))
+                }
+                // A `Some`'s value, `if let Some(v) = x`'s `v`.
+                Rvalue::Use(mir::Operand::Copy(of) | mir::Operand::Move(of), _)
+                    if matches!(of.projection.as_slice(), [PlaceElem::Downcast(_, variant), PlaceElem::Field(..)] if variant.as_u32() == 1)
+                        && option(of.local) =>
+                {
+                    reads.push((of.local, false));
+                }
+                _ => {}
+            }
+        }
+        for block in body.basic_blocks.iter() {
+            let mir::TerminatorKind::Call {
+                func,
+                args,
+                destination,
+                ..
+            } = &block.terminator().kind
+            else {
+                continue;
+            };
+            let Some((def_id, generic_args)) = func.const_fn_def() else {
+                continue;
+            };
+            let Some(arg) = args
+                .first()
+                .and_then(|arg| arg.node.place())
+                .filter(|arg| arg.projection.is_empty())
+            else {
+                continue;
+            };
+            match self.recognition().classify(def_id, generic_args) {
+                // A shared `as_ref()` or `as_deref()`, the option itself in
+                // JS, its result read so (ADR 0023).
+                Some(Std::Pointee)
+                    if destination.projection.is_empty()
+                        && locals.writes[destination.local] == 1
+                        && given.get(&destination.local) == Some(&locals.reads[destination.local])
+                        && locals.reads[arg.local] == 1
+                        && let Some(&of) = lent.get(&arg.local) =>
+                {
+                    reads.push((of, toward.contains(&destination.local)));
+                }
+                Some(Std::IsSome | Std::IsNone) if locals.reads[arg.local] == 1 && lent.contains_key(&arg.local) => {
+                    reads.push((lent[&arg.local], false));
+                }
+                Some(Std::Comb(crate::lower::combinators::Comb::MapOr)) if option(arg.local) => {
+                    reads.push((arg.local, false));
+                }
+                _ => {}
+            }
+        }
+        reads
     }
 }
 

@@ -275,4 +275,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: bound632,
   },
+  {
+    name: "alike-as-deref-unsaid",
+    breaks: "a `let`'s `as_deref()` given a nullable parameter of the crate's own isn't said to be, so the `let` is never `null` for `None` and `measure(previous)` stays `!= null` (rd632)",
+    file: "src/lower/mir/nulled.rs",
+    find: "                    reads.push((of, toward.contains(&destination.local)));\n",
+    replace: "                    reads.push((of, false));\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "read by a nullable parameter and alike"],
+  },
+  {
+    name: "alike-is-some-unread",
+    breaks: "a `let`'s `is_some()`, which reads `null` and `undefined` alike, isn't counted, so the `let` is never `null` for `None` (rd632)",
+    file: "src/lower/mir/nulled.rs",
+    find: "                Some(Std::IsSome | Std::IsNone) if locals.reads[arg.local] == 1 && lent.contains_key(&arg.local) => {\n",
+    replace: "                Some(Std::IsSome | Std::IsNone) if false => {\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "read by a nullable parameter and alike"],
+  },
+  {
+    name: "alike-map-or-unread",
+    breaks: "a `let`'s `map_or`, which reads `null` and `undefined` alike, isn't counted, so the `let` is never `null` for `None` (rd632)",
+    file: "src/lower/mir/nulled.rs",
+    find: "                Some(Std::Comb(crate::lower::combinators::Comb::MapOr)) if option(arg.local) => {\n",
+    replace: "                Some(Std::Comb(crate::lower::combinators::Comb::MapOr)) if false => {\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "read by a nullable parameter and alike"],
+  },
 ];

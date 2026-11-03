@@ -1060,7 +1060,11 @@ export function ratio(a, b) {
   on followed, rd624; a call of the crate's function whose every return
   is so, React DOM's `getEventTarget`'s `target.parentNode` or
   `target`; a variable each of whose writes is so, `if profiling {
-  reason() } else { js::null() }`; a shared `as_deref()` of such, rd632)
+  reason() } else { js::null() }`; a shared `as_deref()` of such; a `let`
+  a call writes that only such parameters and tests that read `null` and
+  `undefined` alike read, `is_some()`, `map_or`, whose `None` is then
+  `null` where it's written, `previousMeasurements = state.clones?.map(..)
+  ?? null`, rd632)
   and nothing uses the function but to call it, or to `function::bind`
   each of its parameters, `completeRoot.bind(null, root, ..)`, its body
   tests it `!== null`, `if

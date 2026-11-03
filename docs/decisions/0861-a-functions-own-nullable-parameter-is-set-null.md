@@ -501,3 +501,68 @@ of some, and of what JS gave). Mutations `returns-nulled-unfound`,
 `bind-of-some-parameters-a-call` (`lower/analysis/nulled_params.ts`).
 `stored_from` and what it asks moved from `mir/rvalues.rs` to
 `mir/nulled.rs`, along with their mutations.
+
+## Amendment: a `let` a call writes, read by a nullable parameter and alike, is `null` for `None` (2026-11-03, rd632, the user's decision (B))
+
+The fifth site was really `undefined`. React's measureUpdateViewTransition
+keeps `let previous_measurements = if gesture { clones.as_ref().map(..) }
+else { let previous_measurements = js::cast(old_fiber.memoized_state.get());
+..; previous_measurements };`. Its JS is `state.clones?.map(..)`, which is
+`undefined` where `clones` is `null`. The `let` is given
+`measureViewTransitionHostInstances` as `previous_measurements.as_deref()`
+and read by `map_or(0, |p| p.len())`. The user chose (B) over accepting
+`!= null`.
+
+**A `let` a call writes is `null` for `None` where it's written when a
+nullable parameter of the crate's own reads it, and every other read is
+one too or reads `null` and `undefined` alike** (`mir_null_nones`'s `(B)`
+branch, `nulled::alike_reads`). The reads it takes are a shared `as_ref()`
+or `as_deref()` given on to such a parameter, `is_some()`, `is_none()`, a
+`match`'s or `if let`'s test, a `Some`'s value read, and `map_or`. The
+`let` is a variable the program wrote, not MIR's temporary. Each of its
+arms' own `let`s or temporaries, written once and read once there, is
+written so too. Its writes are then `previousMeasurements =
+state.clones?.map(..) ?? null;` and `previousMeasurements =
+oldFiber.memoizedState ?? null;`. Upstream writes `previousMeasurements =
+null` in an `if` and `= oldFiber.memoizedState`, a field TypeScript types
+`any`. Any other read keeps the `let` as it was, what the call gave,
+`undefined` too: a binding's parameter that isn't nullable (JS's
+`String(undefined)` is "undefined"), a return, a field, a capture, or a
+`&mut`. A temporary given straight to a parameter, `f(g())`, is as it was,
+so no `?? null` is written where no `let` is.
+
+**A call's result written where a nullable place takes it is as it is
+where `stored_given` says the call gives `null` or a value**
+(`nulled::call_nulled`, which replaces rd628's `gets_constructed` at the
+call's destination). A function found to return so is one: React DOM's
+`return diffHydratedProperties(..)`, and `const nativeEventTarget =
+getEventTarget(nativeEvent);` with no `?? null`.
+
+**A closure that captures nothing and gives its one argument back as the
+same JS value maps an option to itself**
+(`std_types/option.rs`'s `maps_to_itself`, `closure_gives_its_argument`).
+Each step must be a copy, a reborrow, or a call that's the value itself
+(`Std::Same`, a JS object's `Deref` to its base, `Std::Pointee`), with no
+branch and no other call or statement. This is React DOM's
+`parent_node().map(|parent_node| &**parent_node)`. Its lowering already
+printed the option alone, by the arrow's JS (`is_identity`). Now
+`stored_given` knows it too, so `getEventTarget` is found to return `null`
+or a value. One answer serves both: the map's lowering asks
+`maps_to_itself` first.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior. A `None` given a parameter tested `!== null` is `null`;
+where JS can tell `null` from `undefined`, it's as Rust's code made it.
+
+Held by corpus `nullable_let_read_alike` (the widened `let` and each
+excluded read, against native Rust; the binding `String` says
+"undefined"), and by `test/lowering-nullable-reads.test.ts`'s "a let a
+call writes, read by a nullable parameter and alike, is null for None"
+and "a closure that gives its argument maps an option to itself". Mutations
+`let-alike-of-a-temporary`, `let-read-otherwise-nulled` and
+`let-arms-uncounted` (`lower/mir/patterns.ts`), `alike-as-deref-unsaid`,
+`alike-is-some-unread` and `alike-map-or-unread` (`lower/mir/nulled.ts`),
+and `closure-map-unrecognized` and `closure-map-effects-dropped`
+(`lower/std_types/option.ts`). Each excluded read is a read `alike_reads`
+doesn't count, so the corpus case holds it rather than a mutation of a
+condition of its own.
