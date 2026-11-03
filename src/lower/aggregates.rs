@@ -402,15 +402,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (shape, items) = match shape {
             // A `Cell` in an object's field is what it holds (ADR 0288).
             Shape::Object(names) => {
-                let on = self.commented_fields(&adt_def, variant_index, span);
                 // The layout's keys are text: one a symbol names is laid out
                 // as any value (ADR 1051).
-                let keys = |at: Vec<usize>| -> Vec<String> {
-                    (at.into_iter())
-                        .filter_map(|i| names.get(i).and_then(|(name, _)| name.name()).map(str::to_owned))
-                        .collect()
-                };
-                kept = keys(on);
+                kept = (self.commented_fields(&adt_def, variant_index, span).into_iter())
+                    .filter_map(|i| names.get(i).and_then(|(name, _)| name.name()).map(str::to_owned))
+                    .collect();
                 // Where each field is written, what's before it is before.
                 written = (self.field_starts(&adt_def, variant_index, span).into_iter())
                     .filter_map(|(i, at)| Some((names.get(i)?.0.name()?.to_owned(), at)))

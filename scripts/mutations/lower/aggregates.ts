@@ -368,8 +368,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `None` field a comment is written on is left out, and its comment with it, `v: undefined, // why` gone",
     file: "src/lower/aggregates.rs",
-    find: "                kept = keys(on);\n",
-    replace: "",
+    find: "                kept = (self.commented_fields(&adt_def, variant_index, span).into_iter())\n",
+    replace: "                kept = (self.commented_fields(&adt_def, variant_index, span).into_iter().filter(|_| false))\n",
     tests: [
       "test/lowering-comment-fields.test.ts",
       "-t",
