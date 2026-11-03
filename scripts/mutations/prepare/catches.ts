@@ -484,12 +484,12 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "evaluated first is the call"],
   },
   {
-    name: "value-in-place-of-named",
-    breaks: "a value the program names, `Ok(found) => if found { .. }`, is the call where it's read, its name lost (ADR 0706, amended)",
+    name: "value-named-kept",
+    breaks: "a value the program names, read once where it's read, keeps its name in the `try`, `const word = wordAt(text, 0); return word ?? null;`, where tidy reads any such `const` in place (rd16)",
     file: "src/prepare/catches.rs",
-    find: "        if let Some(name) = value_name.as_deref().filter(|name| *name == result) {\n",
-    replace: "        if let Some(name) = value_name.as_deref() {\n",
-    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_value_in_place.rs$"],
+    find: "        if let Some(name) = value_name.as_deref() {\n",
+    replace: "        if let Some(name) = value_name.as_deref().filter(|name| *name == result) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_value_read_first.rs$"],
     snapshots: true,
   },
   {

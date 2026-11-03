@@ -384,9 +384,10 @@ pub fn turns(xs: &[u32], log: &mut Vec<u32>) {
   log.push(n);
   return n;
 }`);
-  expect(js).toContain(`    const n = 5;
+  // The value read once where it's read, the program's `n` too (rd16).
+  expect(js).toContain(`    }
     // Doubled where it is made.
-    const twice = (n * 2) >>> 0;`);
+    const twice = (5 * 2) >>> 0;`);
   expect(js).toContain(`    }
     // Set where it is made.
     n = 5;

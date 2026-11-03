@@ -728,10 +728,13 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
         let own = tried.len().saturating_sub(1);
         let sets = !matches!(tried.first().map(|s| &s.kind), Some(StmtKind::Expr(_)));
         let mut tried = js::applied_tried(tried);
-        // A value the program never named, read by the `Result`'s name,
-        // `catchUnwind`, is the call where it's read first (ADR 0706,
-        // amended).
-        if let Some(name) = value_name.as_deref().filter(|name| *name == result) {
+        // The value, read once by what follows before anything else it
+        // evaluates, is the call there (ADR 0706, amended): one the program
+        // never named, read by the `Result`'s name, `catchUnwind`, and one
+        // it names, `Ok(active_element) => active_element`'s `return
+        // activeElement ?? null;` of a nullable result (rd16), as tidy reads
+        // any `const` read once where it's read.
+        if let Some(name) = value_name.as_deref() {
             js::read_where_made(&mut tried, name);
         }
         let at = tried.len().saturating_sub(own);

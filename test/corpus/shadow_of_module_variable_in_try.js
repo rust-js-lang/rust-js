@@ -55,8 +55,7 @@ function startTwice() {
 function raised() {
   const level$1 = level;
   try {
-    const n = raise();
-    return (((n * 10) >>> 0) + level$1) >>> 0;
+    return (((raise() * 10) >>> 0) + level$1) >>> 0;
   } catch {
     return (level$1 + 100) >>> 0;
   }

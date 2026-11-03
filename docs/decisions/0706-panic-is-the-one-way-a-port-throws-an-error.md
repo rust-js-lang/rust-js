@@ -677,3 +677,41 @@ nothing; `catch_unwind_flag_return` holds `flagged_try`'s. Mutations
 `returned-in-loop-jumps` and `returned-in-loop-goes-on`
 (`js/applied.rs`); `returns-set-never`
 and `returns-set-rest-dropped` find the walk where it is now.
+
+## Amendment: a value the program names is read in place too (rd16)
+
+React DOM's getActiveElement, `try { return doc.activeElement || doc.body; }
+catch (e) { return doc.body; }`, is ported as a `#[rust_js::nullable]`
+function whose `Ok(active_element) => active_element` the result's
+conversion makes `return activeElement ?? null;`. It printed `const
+activeElement = doc.activeElement ?? doc.body; return activeElement ??
+null;`, because a value the program names kept its name in the `try`
+(the amendment above). Out of a `try`, tidy reads any `const` that's
+read once where it's read, a name the program gave it too: the same arm
+without `catch_unwind` prints `return doc.activeElement ?? doc.body;`.
+
+**A value the program names is read where it's read, as one it never
+named is** (`js::read_where_made`, asked of every `Ok` value the `try`
+keeps): read once, by what follows, before anything else that evaluates.
+The result is `return doc.activeElement ?? doc.body ?? null;`. The
+`?? null` is bindings run 18's. This replaces "a value the program names
+keeps its name", which was a second rule beside tidy's for one place.
+
+m6-wife cleared the change on one condition: what goes into the `try`
+must not throw. That holds, since `read_where_made` is asked only of what
+the `try` holds already. An `Ok` arm whose rest can throw is after the
+`try` (ADR 0637), because Rust's `catch_unwind` doesn't catch a panic in
+the arm. A value read twice, `word != null ? word : "-"`, or after
+another read, `before + (word ?? "")`, keeps its name.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, none. The call runs
+where its value was read first, with nothing between, in the same `try`.
+
+Held by the corpus case `catch_unwind_value_read_first` against native
+Rust. It covers the fold, an `Ok` arm whose `expect` panics past the
+`catch_unwind`, a sum whose other operand panics, both caught outside as
+Rust catches them, and both negatives. `catch_unwind_value_in_place`'s
+`namedOnce` and `shadow_of_module_variable_in_try`'s `raised` lose their
+`const`. The mutation `value-in-place-of-named`, which this rule now
+is, becomes `value-named-kept` (`prepare/catches.ts`), which puts the
+old rule back.

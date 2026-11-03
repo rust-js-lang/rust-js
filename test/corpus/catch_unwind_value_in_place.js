@@ -72,8 +72,7 @@ function twice(n) {
 /** A value the program names, read once. */
 function namedOnce(n) {
   try {
-    const found = same(n, 4);
-    return found ? 5 : 6;
+    return same(n, 4) ? 5 : 6;
   } catch {
     note(8);
     return 7;
