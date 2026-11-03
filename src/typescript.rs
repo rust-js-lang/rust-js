@@ -3,55 +3,32 @@
 //! as TypeScript's syntax tree and prints them with TypeScript's printer,
 //! all in one session of TypeScript's, run where the crate is.
 
-use std::io::Write;
-use std::process::{Command, Stdio};
-
+use crate::node_session::{self, Failure};
 use crate::settings::Settings;
 
 /// `@rust-js/typescript`, where `RUST_JS_TYPESCRIPT` says, `rust-js
 /// build`'s own (ADR 0412), or else the crate's, found from where it is,
-/// given the models on its stdin, writing their texts on its stdout.
+/// given the models, writing their texts (`node_session`'s).
 const PRINT: &str = r#"import { pathToFileURL } from "node:url";
 const at = process.env.RUST_JS_TYPESCRIPT;
 const { printModules } = await import(at ? pathToFileURL(at).href : "@rust-js/typescript");
-let input = "";
-for await (const chunk of process.stdin) input += chunk;
-process.stdout.write(JSON.stringify(await printModules(JSON.parse(input))));
+process.stdout.write(JSON.stringify(await printModules(await given())));
 "#;
 
 /// The text of each of `modules`' `.d.ts`, as TypeScript prints them, or
 /// why there's none.
 pub fn print(settings: &Settings, modules: &[serde_json::Value]) -> Result<Vec<String>, String> {
-    // Node runs it, as it does a crate's JS; `RUST_JS_NODE` names another.
-    let node = std::env::var("RUST_JS_NODE").unwrap_or_else(|_| "node".to_string());
+    let node = node_session::node();
     let needs = format!(
         "a crate's declarations are printed by TypeScript, through @rust-js/typescript, which `{node}` runs where the crate is, `{}`: install `@rust-js/build`, which has it",
         settings.dir.display()
     );
-    let mut child = Command::new(&node)
-        .args(["--input-type=module", "--eval", PRINT])
-        .current_dir(&settings.dir)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|e| format!("{needs}; `{node}` can't be run: {e}"))?;
-    let input = serde_json::to_string(modules).map_err(|e| e.to_string())?;
-    let mut stdin = child.stdin.take().expect("a piped stdin");
-    // Written as it's read, so neither side waits on a full pipe.
-    let output = std::thread::scope(|scope| {
-        scope.spawn(move || stdin.write_all(input.as_bytes()));
-        child.wait_with_output()
-    })
-    .map_err(|e| format!("{needs}; `{node}` failed: {e}"))?;
-    if !output.status.success() {
-        return Err(format!(
-            "{needs}:\n{}",
-            String::from_utf8_lossy(&output.stderr).trim_end()
-        ));
-    }
-    let texts: Vec<String> =
-        serde_json::from_slice(&output.stdout).map_err(|e| format!("{needs}; it gave what isn't its texts: {e}"))?;
+    let texts: Vec<String> = node_session::run(&settings.dir, PRINT, modules).map_err(|failure| match failure {
+        Failure::CantRun(e) => format!("{needs}; `{node}` can't be run: {e}"),
+        Failure::Failed(e) => format!("{needs}; `{node}` failed: {e}"),
+        Failure::Exited(stderr) => format!("{needs}:\n{stderr}"),
+        Failure::Unreadable(e) => format!("{needs}; it gave what isn't its texts: {e}"),
+    })?;
     if texts.len() != modules.len() {
         return Err(format!(
             "{needs}; it gave {} texts of {} modules",

@@ -47,7 +47,7 @@ compiled for WASI; it is a separate build package, not a second compiler.
 | Rust analysis and lowering | `src/lower.rs`, `src/lower/` (detailed below) |
 | Owned JS tree, source arena and comments | `src/js.rs`, `src/js/`, `src/program.rs`, `src/comments.rs` |
 | Reachability, linking and names | `src/reachability.rs`, `src/link.rs`, `src/names.rs` |
-| Readability and printing | `src/prepare.rs`, `src/prepare/`, `src/to_oxc.rs`, `src/to_oxc/`, `src/format.rs`, `src/typescript.rs`, `src/prettier.rs`; `typescript/` prints the declaration model |
+| Readability and printing | `src/prepare.rs`, `src/prepare/`, `src/to_oxc.rs`, `src/to_oxc/`, `src/format.rs`, `src/typescript.rs`, `src/prettier.rs`, `src/node_session.rs` (the Node session each of the last two runs, its JSON read whole as UTF-8, ADR 1079); `typescript/` prints the declaration model |
 | Library contracts, configuration, hooks and path utilities; a crate's npm package, what its entry re-exports (ADR 1008) and the subpaths its `exports` resolves (ADR 0770) | `src/library.rs`, `src/settings.rs`, `src/hooks.rs`, `src/paths.rs`, `src/packages.rs` |
 | Artifact planning, manifest and publication | `src/output.rs`, `src/manifest.rs`, `src/publish.rs` |
 | Runtime helper catalog and implementations | `src/runtime.rs`, `src/runtime/`; generated package in `runtime/` |
@@ -166,7 +166,7 @@ These are dependency rules, not execution order. Paths are relative to `src/`.
 | Driver | `main.rs`, `command.rs`, `cargo.rs`, `clippy.rs`, `panic_runtime.rs`, `std_sysroot.rs` | Every layer |
 | Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | Front end and earlier-use owned data/utilities; no linking, preparation or publication |
 | Owned output | `js.rs`, `js/`, `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs`, `packages.rs` | Owned output; no rustc |
-| Printing | `to_oxc.rs`, `to_oxc/`, `format.rs`, `typescript.rs`, `prettier.rs` | Printing and owned output; no rustc |
+| Printing | `to_oxc.rs`, `to_oxc/`, `format.rs`, `typescript.rs`, `prettier.rs`, `node_session.rs` | Printing and owned output; no rustc |
 
 The named orchestration exceptions are `output.rs`, which invokes the printing
 adapters, and `hooks.rs`, which invokes `format.rs`. Only printing adapters use

@@ -54,6 +54,7 @@ mod link;
 mod lower;
 mod manifest;
 mod names;
+mod node_session;
 mod output;
 mod packages;
 mod panic_runtime;

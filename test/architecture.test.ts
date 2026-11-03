@@ -21,7 +21,7 @@ const layers = {
   owned: ["src/library.rs", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/comments.rs", "src/js.rs", "src/js/",
     "src/prepare.rs", "src/prepare/", "src/output.rs", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
     "src/paths.rs", "src/packages.rs"],
-  printing: ["src/to_oxc.rs", "src/to_oxc/", "src/format.rs", "src/typescript.rs", "src/prettier.rs"],
+  printing: ["src/to_oxc.rs", "src/to_oxc/", "src/format.rs", "src/typescript.rs", "src/prettier.rs", "src/node_session.rs"],
 };
 const layerOf = (file: string) =>
   Object.entries(layers).find(([, paths]) => paths.some(p => p.endsWith("/") ? file.startsWith(p) : file === p))?.[0];

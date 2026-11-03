@@ -65,3 +65,7 @@ export default Button;
   process**, a second or so the first time.
 - **A crate with declarations needs @rust-js/typescript installed**, and
   TypeScript 7 with it.
+
+## Amended by
+
+- [1079](1079-a-node-sessions-input-is-read-whole.md): its session reads its input whole, as one UTF-8 text, `node_session`'s

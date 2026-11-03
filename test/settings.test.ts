@@ -242,6 +242,35 @@ test("a crate's declarations are laid out by Prettier too", async () => {
   expect(await typed({})).toContain("\n  x: number;\n");
 }, 300_000);
 
+// A Node session, Prettier's and TypeScript's, reads its stdin as UTF-8
+// text, not each chunk of it alone, which garbled a character split across
+// two, React's `⚛` (rd716, ADR 1079). Each 10 bytes is a character of 3, an
+// astral one of 4, and `e` and its combining accent, of 2: 300 kB of them,
+// past a pipe's 64 kB chunks a few times, so one splits a character
+// wherever they fall. Prettier's layout was refused, with a warning, as it
+// changed a string; TypeScript's `.d.ts` had the replacement characters,
+// unwarned.
+const straddling = (characters: string) => `${characters}e\u0301`.repeat(30_000);
+
+test("non-ASCII text across a Node session's stdin chunks is Prettier's whole", async () => {
+  const text = straddling("⚛😀");
+  const out = await cargoBuilt(`pub fn track() -> &'static str {\n    "${text}"\n}\n`, { singleQuote: true });
+  const literal = out.js.match(/\n {2}return '([^']*)';\n/)?.[1];
+  expect(literal === undefined ? undefined : JSON.parse(`"${literal}"`) === text).toBe(true);
+}, 300_000);
+
+// With no Prettier config, the `.d.ts` is TypeScript's alone: a name of
+// non-ASCII letters, `名` and an astral `𠀀`, and a doc comment's text.
+test("non-ASCII names and docs across a Node session's stdin chunks are TypeScript's whole", async () => {
+  const [name, doc] = [straddling("名𠀀"), straddling("⚛😀")];
+  const out = await cargoBuilt(`/// ${doc}\npub struct Track {\n    pub ${name}: u32,\n}\n`);
+  // Its key as TypeScript writes it, quoted, `"\u540D\uD840\uDC00\u00E9.."`,
+  // of the name rustc has, in NFC: `e` and its accent are `é`, 9 bytes.
+  const key = out.types.match(/\n {4}("[^"]*"|[^\s:]+): number;\n/)?.[1];
+  expect(key?.startsWith('"') ? JSON.parse(key) === name.normalize("NFC") : key).toBe(true);
+  expect(out.types.includes(doc)).toBe(true);
+}, 300_000);
+
 test("the formatter's options are the app's Prettier config's, not Cargo.toml's", () => {
   const out = build("[package.metadata.rust-js.format]\nprintWidth = 120");
   expect(out.code).toBe(1);

@@ -131,3 +131,7 @@ crate's checks say (ADR 0117). Case N: what's printed.
 
 Held by `test/settings.test.ts`, "rust-js build says why the app's
 Prettier's layout wasn't taken", of a Prettier that adds a statement.
+
+## Amended by
+
+- [1079](1079-a-node-sessions-input-is-read-whole.md): its session reads its input whole, as one UTF-8 text, `node_session`'s

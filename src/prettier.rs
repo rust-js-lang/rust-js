@@ -5,16 +5,15 @@
 //! layout stands: an app without Prettier, a file Prettier has no config
 //! for, or a file compiled alone, which is no app's.
 
-use std::io::Write;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
 
 use serde::Deserialize;
 
+use crate::node_session::{self, Failure};
 use crate::settings::Settings;
 
-/// The app's Prettier, found from where it is, given the files on its
-/// stdin, writing what it lays out on its stdout: for each file, its text,
+/// The app's Prettier, found from where it is, given the files, writing
+/// what it lays out (`node_session`'s): for each file, its text,
 /// or `null` where Prettier finds no config for it, or where the app has no
 /// Prettier; and the configs it read.
 const LAY_OUT: &str = r#"// A session that doesn't finish says where it was, not hangs its build.
@@ -32,11 +31,9 @@ try {
   if (error?.code !== "ERR_MODULE_NOT_FOUND" || !String(error.message).includes("'prettier'")) throw error;
 }
 at = "reading the files";
-let input = "";
-for await (const chunk of process.stdin) input += chunk;
 const texts = [];
 const configs = new Set();
-for (const { file, code } of JSON.parse(input)) {
+for (const { file, code } of await given()) {
   at = `laying out ${file}`;
   const config = prettier && (await prettier.resolveConfigFile(file));
   if (!config) {
@@ -73,42 +70,25 @@ pub fn laid_out(settings: &Settings, files: &[(PathBuf, &str)]) -> Result<LaidOu
             configs: Vec::new(),
         });
     }
-    // Node runs it, as it does a crate's JS; `RUST_JS_NODE` names another.
-    let node = std::env::var("RUST_JS_NODE").unwrap_or_else(|_| "node".to_string());
     let failed = |why: String| {
         format!(
-            "the app's Prettier, which `{node}` runs where the crate is, `{}`, {why}",
+            "the app's Prettier, which `{}` runs where the crate is, `{}`, {why}",
+            node_session::node(),
             settings.dir.display()
         )
     };
-    let mut child = Command::new(&node)
-        .args(["--input-type=module", "--eval", LAY_OUT])
-        .current_dir(&settings.dir)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|e| failed(format!("can't be run: {e}")))?;
     let given: Vec<serde_json::Value> = files
         .iter()
         .map(|(file, code)| serde_json::json!({ "file": file, "code": code }))
         .collect();
-    let input = serde_json::to_string(&given).map_err(|e| e.to_string())?;
-    let mut stdin = child.stdin.take().expect("a piped stdin");
-    // Written as it's read, so neither side waits on a full pipe.
-    let output = std::thread::scope(|scope| {
-        scope.spawn(move || stdin.write_all(input.as_bytes()));
-        child.wait_with_output()
-    })
-    .map_err(|e| failed(format!("failed: {e}")))?;
-    if !output.status.success() {
-        return Err(failed(format!(
-            "failed:\n{}",
-            String::from_utf8_lossy(&output.stderr).trim_end()
-        )));
-    }
-    let laid_out: LaidOut =
-        serde_json::from_slice(&output.stdout).map_err(|e| failed(format!("gave what isn't its layout: {e}")))?;
+    let laid_out: LaidOut = node_session::run(&settings.dir, LAY_OUT, &given).map_err(|failure| {
+        failed(match failure {
+            Failure::CantRun(e) => format!("can't be run: {e}"),
+            Failure::Failed(e) => format!("failed: {e}"),
+            Failure::Exited(stderr) => format!("failed:\n{stderr}"),
+            Failure::Unreadable(e) => format!("gave what isn't its layout: {e}"),
+        })
+    })?;
     if laid_out.texts.len() != files.len() {
         return Err(failed(format!(
             "gave {} texts of {} files",

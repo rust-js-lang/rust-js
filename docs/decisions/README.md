@@ -247,7 +247,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1064 A function that only passes its parameters on to one instantiation is that function, re-exported](1064-a-function-that-only-passes-its-parameters-on-is-its-re-export.md)
 - [0205 Flattened structs chain, and the props' own name is theirs](0205-flattened-chains.md)
 - [0206 TypeScript, read and written by TypeScript's own parser and printer](0206-typescript-module.md)
-- [0207 A crate's `.d.ts` is printed by TypeScript](0207-declarations-printed-by-typescript.md)
+- [0207 A crate's `.d.ts` is printed by TypeScript](0207-declarations-printed-by-typescript.md) *(amended by 1079: its input read whole, as UTF-8)*
 - [0208 Each element's attributes, as @types/react types them](0208-react-attributes.md)
 - [0209 A two-arm `match` that's a value is a conditional](0209-match-conditional.md)
 - [0210 A module's declarations import another's types](0210-declarations-import-module-types.md)
@@ -424,7 +424,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [0378 A Next.js app moves to Rust one file at a time](0378-one-file-at-a-time.md)
 - [0379 A compiler that ran is no change to it](0379-a-compiler-that-ran-is-no-change.md)
 - [0380 The app's config compiles its Rust: `withRustJs(nextConfig)`](0380-with-rust-js.md) *(superseded by 0412)*
-- [0381 The app's Prettier lays out what rust-js writes](0381-the-apps-prettier-lays-it-out.md) *(amended: the app's build only; its config for where the file goes, beside its Rust; amended: `rust-js build` says why a layout wasn't taken)*
+- [0381 The app's Prettier lays out what rust-js writes](0381-the-apps-prettier-lays-it-out.md) *(amended: the app's build only; its config for where the file goes, beside its Rust; amended: `rust-js build` says why a layout wasn't taken; amended by 1079: its input read whole, as UTF-8)*
+- [1079 A Node session's input is read whole, as one UTF-8 text](1079-a-node-sessions-input-is-read-whole.md) *(amends 0207, 0381; #573)*
 - [0382 A module has a file for what it has, the root too](0382-a-module-has-a-file-for-what-it-has.md)
 - [0383 A file's leading comments are its JS's](0383-a-files-leading-comments-are-its-jss.md) *(amended: a blank line inside a block comment parts nothing)*
 - [0384 A ref a prop holds is @types/react's `Ref<T>`, and an element's props `DetailedHTMLProps`](0384-a-ref-prop-is-reacts-ref.md)
