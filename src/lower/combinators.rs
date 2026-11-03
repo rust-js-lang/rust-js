@@ -307,7 +307,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let value = if self.boxed_payload(some) {
                 self.some(value)
             } else {
-                value.defined()
+                value.present()
             };
             return Ok(Expr::cond(test, value, Expr::undefined()));
         }

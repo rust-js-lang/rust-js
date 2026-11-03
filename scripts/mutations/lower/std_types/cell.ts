@@ -133,12 +133,22 @@ export const mutations: Mutation[] = [
     ],
   },
   {
+    name: "optional-cell-taken-as-is",
+    breaks:
+      "what a cell's `take()` gives is taken as never `undefined`, so an optional nullable field's, `undefined` where it's left out, is returned as it is (#539)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                let old = self.spill(\"old\", moved, out);\n                out.push(StmtKind::Assign(place, next).at(js_span));\n                old\n",
+    replace:
+      "                let old = self.spill(\"old\", moved, out);\n                out.push(StmtKind::Assign(place, next).at(js_span));\n                old.defined()\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable field's value a variable holds is stored as it is"],
+  },
+  {
     name: "mir-quiet-local-borrow-not-inlined",
     breaks: "MIR's quiet thread-local's borrow stays a called arrow",
     file: "src/lower/std_types/cell.rs",
-    find: "                    return Ok(Some(read(crate::lower::calls::apply(f, vec![given]))));\n",
+    find: "                    return Ok(Some(crate::lower::calls::apply(f, vec![given])));\n",
     replace:
-      "                    return Ok(Some(read(Expr::call(f, vec![given]))));\n",
+      "                    return Ok(Some(Expr::call(f, vec![given])));\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -657,42 +667,6 @@ export const mutations: Mutation[] = [
     find: "                let held = crate::lower::recognition::cell_of_key(self.tcx, tys[0].peel_refs());\n",
     replace: "                let held = tys[0].peel_refs();\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_refcell_take"],
-  },
-  {
-    name: "nullable-cell-taken-unknown",
-    breaks:
-      "what a nullable thread-local's `take()` gives may be `undefined`, so a nullable function returns it `old ?? null`",
-    file: "src/lower/std_types/cell.rs",
-    find: "                match stores_null {\n                    true => old.defined(),\n",
-    replace:
-      "                match false {\n                    true => old.defined(),\n",
-    tests: [
-      "test/lowering-module-variables.test.ts",
-      "-t",
-      "a nullable thread-local of an Option is null where it's made",
-    ],
-  },
-  {
-    name: "nullable-cell-get-undefined",
-    breaks:
-      "a nullable thread-local's read may be `undefined`, `return CURRENT ?? null;` (ADR 0949)",
-    file: "src/lower/std_types/cell.rs",
-    find: "                    facts: read.facts.with(js::Known::Defined),\n",
-    replace: "                    facts: read.facts,\n",
-    tests: ["test/lowering-nullable-reads.test.ts"],
-  },
-  {
-    name: "nullable-local-clone-maybe-undefined",
-    breaks:
-      "what a nullable thread-local's `with_borrow(Clone::clone)` gives isn't known never `undefined`, `return searchTarget ?? null`",
-    file: "src/lower/std_types/cell.rs",
-    find: "                        facts: e.facts.with(js::Known::Defined),\n",
-    replace: "                        facts: e.facts,\n",
-    tests: [
-      "test/lowering-nullable-reads.test.ts",
-      "-t",
-      "a nullable parameter, a nullable thread-local",
-    ],
   },
   {
     name: "constant-closure-with-applied-kept",

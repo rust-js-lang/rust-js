@@ -1305,6 +1305,11 @@ pub fn show(props: &Props) {
     let banner = props.banner.borrow().clone();
     props.shown.replace(banner);
 }
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn take_banner(props: &Props) -> Option<String> {
+    props.banner.take()
+}
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
@@ -1324,6 +1329,10 @@ pub fn show(props: &Props) {
   const props = lib.props();
   lib.show(props);
   expect(props.shown).toBe(null);
+  // Its `take()` may give `undefined` too, so a nullable function returns
+  // it `?? null`, React's claimQueuedTransitionTypes (#539).
+  expect(js).toContain("  props.banner = null;\n  return old ?? null;\n");
+  expect(lib.takeBanner({})).toBe(null);
 });
 
 // React's \`findFirstSuspended\` takes a fiber's sibling once its loop's

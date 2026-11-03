@@ -3,7 +3,7 @@
 use super::*;
 
 /// An `Option` made where it's tested, `const x = t ? v : undefined; if
-/// (x) { a } else { b }`, of a value `v` that's there (`Known::Defined`):
+/// (x) { a } else { b }`, of a value `v` that's there (`Known::Present`):
 /// `if (t) { a } else { b }`, `x` read as `v` in `a`, as `if let Some(x) =
 /// kind.object()` is upstream's `if (typeof value === "object" && value
 /// !== null)` (ADR 0910). Its test is the `Option`'s presence, `x != null`,
@@ -49,7 +49,7 @@ fn tested_option(
         return None;
     };
     let ExprKind::Var(v) = &value.kind else { return None };
-    if !matches!(none.kind, ExprKind::Undefined) || !value.facts.has(js::Known::Defined) || changing.contains(v) {
+    if !matches!(none.kind, ExprKind::Undefined) || !value.facts.has(js::Known::Present) || changing.contains(v) {
         return None;
     }
     let StmtKind::If(presence, then, otherwise) = &tested.kind else {

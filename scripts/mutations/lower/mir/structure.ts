@@ -563,6 +563,24 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^owner_handle.rs$"],
   },
   {
+    name: "nullable-local-read-unmarked",
+    breaks:
+      "a nullable thread-local's read isn't known never `undefined` where it's given on, so `fiber.and_then(|_| CURRENT.get())` is `fiber != null ? CURRENT : undefined`, returned `?? null` (ADR 0949)",
+    file: "src/lower/mir/structure.rs",
+    find: "                            Value::Expr(e) if self.reads_nullable_local(state, block, destination.local) => {\n",
+    replace: "                            Value::Expr(e) if false => {\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable place's read is returned as it is"],
+  },
+  {
+    name: "nullable-local-read-present",
+    breaks:
+      "a nullable thread-local's read is there, so `keep.then(|| CURRENT.get()).flatten().is_some()` is `keep`, true where the cell is `None` (#539)",
+    file: "src/lower/mir/structure.rs",
+    find: "                                Value::Expr(e.defined())\n",
+    replace: "                                Value::Expr(e.present())\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_local_read_tested.rs$"],
+  },
+  {
     name: "constructed-get-coalesced",
     breaks: "a nullable field each constructor of its struct sets first, read for a nullable parameter, is given `?? null`: `prepare(response.moduleLoading ?? null)` (rd628)",
     file: "src/lower/mir/structure.rs",

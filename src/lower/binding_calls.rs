@@ -374,7 +374,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => self.spill("kind", this, out),
                 };
                 let test = self.object_test(kind, &this);
-                Expr::cond(test, this.defined(), Expr::undefined())
+                Expr::cond(test, this.present(), Expr::undefined())
             }
             (JsForm::Throw, Some(this)) if args.is_empty() => {
                 out.push(StmtKind::Throw(this).at(self.js_span(span)));

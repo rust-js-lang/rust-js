@@ -648,3 +648,15 @@ plain `Option`.
   `or-fallback-unchecked`, `or-else-fallback-unchecked` and
   `or-else-unknown` (`mir/nulled.ts`), and
   `closure-never-returns-nulled` (`analysis/nulled_params.ts`).
+
+## Amendment: a nullable thread-local's clone is said once (2026-11-03, #539)
+
+`KEY.with_borrow(Clone::clone)` of a nullable thread-local was marked
+`Known::Defined` in `cell.rs` and said `null` or a value again by
+`mir/nulled.rs`, two owners; mutation `nullable-local-clone-maybe-undefined`
+survived as either was enough. **It's `nulled::reads_nullable_local`'s
+alone** (ADR 0949, amended), which marks the call's value `Known::Defined`,
+never there (`Known::Present`, ADR 0910, amended): `return searchTarget;`
+as before, and `keep.then(|| TARGET.with_borrow(Clone::clone)).flatten()
+.is_some()` tested, not `keep` (#539). `nullable-local-read-unknown`
+(`mir/nulled.ts`) replaces the mutation.

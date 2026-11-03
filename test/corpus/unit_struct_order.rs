@@ -13,6 +13,10 @@ struct Tagged {
     n: u32,
 }
 
+fn order(a: &Tagged, b: &Tagged) -> Ordering {
+    a.tag.cmp(&b.tag).then(a.n.cmp(&b.n))
+}
+
 fn main() {
     let mut map = BTreeMap::new();
     map.insert(Unit, 1);
@@ -28,4 +32,5 @@ fn main() {
     let mut tagged = vec![Tagged { tag: Unit, n: 3 }, Tagged { tag: Unit, n: 1 }];
     tagged.sort();
     println!("{tagged:?} {:?}", tagged.iter().max());
+    println!("{:?}", order(&tagged[0], &tagged[1]));
 }

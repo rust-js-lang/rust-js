@@ -5,7 +5,8 @@ whose `Kind::Object(_) | Kind::Array(_)` was no one key, and extends
 [0668](0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md)'s
 test of them, `typeof value === "object" && value !== null`. Amended
 (2026-10-26): an `Option` made where it's tested is its test before its
-branches are one value.
+branches are one value. Amended (2026-11-03, #539): only of a value that's
+there, `Known::Present`, never of one that's only never `undefined`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. It's the value
 itself where it's an object or an array, and `None` where it isn't, as
@@ -190,3 +191,56 @@ of its name is its test", run in JS, with a closure of its own `value`
 that reads `object` keeping the `const`; the mutations
 `tested-option-read-where-another` (`lower/mir/tidy/options.ts`) and
 `read-where-other-any-own` (`js/stmt_walk.ts`).
+
+## Amendment: of a value that's there, not one that's only never `undefined` (2026-11-03, #539)
+
+A wrong answer. A nullable thread-local's read made into an `Option` where
+it's tested was taken as there:
+
+```rust
+keep.then(|| CURRENT.get()).flatten().is_some()
+keep.then(|| TARGET.with_borrow(Clone::clone)).flatten().is_some()
+keep.then(|| found(n)).flatten().is_some() // `found` a `#[rust_js::nullable]` fn
+```
+
+Each printed `return keep;`, `true` where the cell is `None` and Rust
+says `false`. `Expr::presence` read `t ? v : undefined` as `t` of a `v`
+marked `Known::Defined`, which meant two things: a `Some`'s value, there,
+which `bool::then`, `map` and `kind.object()` mark; and a whole `Option`
+that's `null` or a value, never `undefined` but maybe `None`, which a
+nullable place stores as it is (ADR 0841): a nullable thread-local's
+`get()`, `take()`, `replace(..)` and `with_borrow(Clone::clone)` (ADRs
+0949, 0586, 0861), a nullable function's call (`calls::given_by`, ADR
+0841, amended), a nullable field's read where it's made (ADR 0620). Of
+`Option<Option<T>>` held as its payload (ADR 1017), `flatten()` is the
+value itself, so the whole `Option` reached the test as `v`.
+
+**Each meaning is a fact of its own.** `Known::Present`, `Expr::present()`,
+is a `Some`'s value its `Option` doesn't box: `then`'s and `then_some`'s
+(`combinators.rs`), `map`'s (`option.rs`), `kind.object()`'s
+(`binding_calls.rs`). `Expr::presence` and tidy's `tested options` read it
+alone. `Known::Defined`, `Expr::defined()`, is only never `undefined`: what
+a nullable place stores as it is (`Expr::may_be_undefined`, which reads
+both) and what an `and_then`'s `None` is `null` of (`calls::and_then_given`).
+Now `(keep ? current : undefined) != null`. Case R
+([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is kept; `wanted.then_some(item).is_some()` of a value always
+there is `wanted` still, case N as before.
+
+The wrong answer began with bfe11a04d (2026-10-27, ADR 0861 amended),
+which marked `with_borrow(Clone::clone)`'s value `Known::Defined` that this
+fold already read as there; `get()`'s, marked since 1ab099b95, was folded
+from 4b30cd7cd on (2026-10-28, ADR 0298 amended), which made every
+presence test `Expr::presence`'s. Each found by building the commits
+against the issue's program.
+
+Held by the corpus case `nullable_local_read_tested`, against native Rust:
+`get`, `with_borrow(Clone::clone)`, `take`, `replace` and a nullable
+function's call through `then(..).flatten()`, tested by `is_some`,
+`is_none`, `if let Some`, `map` and `unwrap_or`, and `map(..).flatten()`
+and `then_some(..).flatten()`, each with the cell `None` and `Some`. Its
+mutations are `nullable-local-read-present` (`mir/structure.ts`),
+`present-may-be-undefined` (`js/make.ts`), `then-value-not-present`
+(`combinators.ts`), and `presence-of-a-made-option`, `map-some-undefined`,
+`kind-object-any-value` and `tested-option-*`, which now mutate
+`Known::Present`.

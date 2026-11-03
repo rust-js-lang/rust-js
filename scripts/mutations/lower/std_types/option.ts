@@ -374,7 +374,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `map`'s `Some` isn't known never `undefined`, so a nullable field given it is `(c ? c(..) : undefined) ?? null`",
     file: "src/lower/std_types/option.rs",
-    find: "                    value.defined()\n",
+    find: "                    value.present()\n",
     replace: "                    value\n",
     tests: [
       "test/lowering-nullable.test.ts",

@@ -1146,6 +1146,12 @@ export function ratio(a, b) {
   `return searchTarget;`, and so is a `let` of `None` a nullable function
   returns, set only to `Some`s, which starts `null`, `let
   maybeStrictRoot = null;` (ADR 0861, amended).
+  Such a read, and a nullable function's call, is never `undefined`, but
+  it may still be `None`: an `Option` made of it where it's tested,
+  `keep.then(|| CURRENT.get()).flatten().is_some()`, tests it, `(keep ?
+  current : undefined) != null`, where one of a value that's always
+  there, `wanted.then_some(item).is_some()`, is its test alone, `wanted`
+  (ADR 0910, amended, #539).
   A `Some(..)` given to one is its value, `Object.create(Object.prototype)`.
   A result is `?? null` of an `Option` that may be `undefined`, and a
   nullable function's call as it is, `null` for `None` already, `return

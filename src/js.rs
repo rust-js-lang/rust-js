@@ -780,12 +780,22 @@ pub enum Known {
     /// mapping's or a text escape's (ADRs 0070, 0971), which joined is the
     /// text itself.
     Chars,
-    /// Never `undefined`, as Rust's types tell, though maybe `null`: a
-    /// `Some`'s value, `map`'s, or what's set through a variable holding a
-    /// cell's handle that MIR shows is `null` or a value already,
-    /// `make(context)` of `set(Some(make(context)))`. A nullable place
-    /// stores it as it is (`Storage::written`, ADR 0841).
+    /// Never `undefined`, though maybe `null`: a whole `Option` that's
+    /// `null` or a value already, a nullable thread-local's whole read
+    /// (`nulled::reads_nullable_local`, ADR 0949), a nullable function's
+    /// call (`calls::given_by`), a nullable field's read where it's made
+    /// (ADR 0620), or what's set through a variable holding a cell's
+    /// handle that MIR shows is so, `make(context)` of
+    /// `set(Some(make(context)))`. A nullable place stores it as it is
+    /// (`Storage::written`, ADR 0841). It says nothing of whether an
+    /// `Option` is there, which may be `None`: that's `Present`'s (#539).
     Defined,
+    /// There, never `undefined` nor `null`: a `Some`'s value its `Option`
+    /// doesn't box, `map`'s, `then`'s, `kind.object()`'s. An `Option` made
+    /// of it where it's tested, `t ? v : undefined`, is there exactly where
+    /// `t` holds (`Expr::presence`, ADR 0910). Never `undefined`, so a
+    /// nullable place stores it as it is too.
+    Present,
     /// The `None` a `take()` writes over a place rust-js made, a variable
     /// or a crate struct's field, a plain data property, read into a
     /// `const` just before (ADR 0996): nothing but that `const` sees the

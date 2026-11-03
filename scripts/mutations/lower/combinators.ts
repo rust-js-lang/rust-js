@@ -3,6 +3,16 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "then-value-not-present",
+    breaks:
+      "`bool::then_some(v)`'s `v`, of a `Some` not boxed, isn't known there, so `if let Some(x) = wanted.then_some(item)` tests `x != null`, not `wanted` (ADR 0910)",
+    file: "src/lower/combinators.rs",
+    find: "                value.present()\n            };\n            return Ok(Expr::cond(test, value, Expr::undefined()));\n",
+    replace: "                value\n            };\n            return Ok(Expr::cond(test, value, Expr::undefined()));\n",
+    tests: ["test/corpus.test.ts", "-t", "^tested_options.rs$"],
+    snapshots: true,
+  },
+  {
     name: "extend-whole-array-unseen",
     breaks:
       "a `Vec`'s `extend` of a slice, an array or a `Vec` given whole, `v.extend(&xs)`, is `$extend(v, xs)`, not the index loop that pushes each (ADR 1042, amended)",

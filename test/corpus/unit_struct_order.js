@@ -6,6 +6,7 @@ import {
   $btreeMap,
   $btreeSet,
   $cmp,
+  $index,
   $maxBy,
   $sortedKeys,
 } from "@rust-js/runtime";
@@ -20,6 +21,10 @@ function unitDebug_fmt(unit) {
 
 function taggedDebug_fmt(tagged) {
   return `Tagged { tag: ${unitDebug_fmt(tagged.tag)}, n: ${tagged.n} }`;
+}
+
+function order(a, b) {
+  return $cmp(a.n, b.n);
 }
 
 function main() {
@@ -46,5 +51,7 @@ function main() {
   console.log(
     `[${tagged.map((item) => taggedDebug_fmt(item)).join(", ")}] ${arg == null ? "None" : `Some(${taggedDebug_fmt(arg)})`}`,
   );
+  const value = $index(tagged, 0);
+  console.log(`${["Less", "Equal", "Greater"][order(value, $index(tagged, 1)) + 1]}`);
 }
 //# sourceMappingURL=case.js.map

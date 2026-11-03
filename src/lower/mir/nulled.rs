@@ -404,6 +404,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether the call `block` ends with, written to `local`, an
+    /// `Option`, reads a `#[rust_js::nullable]` thread-local whole: its
+    /// `get()`, `take()`, `replace(v)` or `with_borrow(Clone::clone)`,
+    /// which give what it holds, `null` or a value, as each write of it
+    /// stores (ADRs 0586, 0861, 0949). The one answer of it: `stored_given`
+    /// reads it, and the call's value is marked so (`Known::Defined`)
+    /// wherever it goes, never `Known::Present`, as it may be `None`
+    /// (#539).
+    pub(super) fn reads_nullable_local(&self, state: &State<'_, 'tcx>, block: BasicBlock, local: Local) -> bool {
+        state.facts.quiet_cells().nullable.contains(&block)
+            && self.option_of(state.body.local_decls[local].ty).is_some()
+    }
+
     /// Whether the call of `func` with `args` the block lowered ends with,
     /// written to `local`, gives `null` or a value (`stored_given`).
     pub(super) fn call_nulled(
@@ -444,11 +457,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
             }
         };
-        // What a `#[rust_js::nullable]` thread-local gives, read whole,
-        // `KEY.with_borrow(Clone::clone)`, or taken, `KEY.take()`: what it
-        // holds, `null` or a value (ADR 0949), a guard's field made of it
-        // restored as it is (rd523).
-        if state.facts.quiet_cells().nullable.contains(&block) {
+        // A guard's field made of a nullable thread-local's read restored
+        // as it is (rd523).
+        if self.reads_nullable_local(state, block, local) {
             return (Given::Nulled, None);
         }
         let Some((def_id, generic_args)) = fn_def(func.ty(state.body, self.tcx)) else {

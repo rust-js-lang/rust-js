@@ -81,9 +81,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`kind.object()` is the value of any kind, a string's too, which `WeakMap.prototype.set` throws of (ADR 0910)",
     file: "src/lower/binding_calls.rs",
-    find: "                Expr::cond(test, this.defined(), Expr::undefined())\n",
+    find: "                Expr::cond(test, this.present(), Expr::undefined())\n",
     replace:
-      "                {\n                    let _ = test;\n                    this.defined()\n                }\n",
+      "                {\n                    let _ = test;\n                    this.present()\n                }\n",
     tests: ["test/js-object.test.ts", "-t", "one weak key"],
   },
   {

@@ -43,3 +43,32 @@ or a value already, as every write of it stores.
 - `test/lowering-nullable-reads.test.ts`.
 - Mutations: `nullable-return-of-nulled-coalesced`,
   `nullable-local-get-unmarked`, `nullable-cell-get-undefined`.
+
+## Amendment: one owner of what a nullable thread-local's read is (2026-11-03, #539)
+
+`cell.rs` marked a nullable thread-local's `get()` `Known::Defined` as it
+lowered it, and `mir/nulled.rs` said the same of its call where MIR writes
+it (`stored_given`, rd523, rd632): two owners of one rule. And
+`Known::Defined` was read as there by `Expr::presence` too, a wrong answer
+(ADR 0910, amended).
+
+**`nulled::reads_nullable_local` is the one answer**: whether the call a
+block ends with, written to an `Option`, is a nullable thread-local's whole
+read, `get()`, `take()`, `replace(..)` or `with_borrow(Clone::clone)`, as
+`local_facts` finds them (`QuietCells::nullable`). `stored_given` asks it,
+and where MIR lowers the call, its value is marked `Known::Defined`
+(`mir/structure.rs`), never `Known::Present`: never `undefined`, but maybe
+`None`. `cell.rs` marks none of them now; it still writes each of its
+`set`s `null` for `None` (ADR 0586, amended). The JS is the same:
+`return CURRENT;`, `return searchTarget;`, `fiber != null ? CURRENT :
+null`.
+
+Mutations: `nullable-local-read-unknown` and `nullable-local-read-unnulled`
+(`mir/nulled.ts`), `nullable-local-read-unmarked` and
+`nullable-local-read-present` (`mir/structure.ts`) in place of
+`nullable-cell-get-undefined`, whose code is gone.
+
+Not yet: a write through a borrow of a nullable place, `CURRENT.with(|c|
+c.set(None))` or `TARGET.with_borrow_mut(|t| *t = None)`, stores
+`undefined`, so such a read can be `undefined` where this says it isn't
+(#541).

@@ -30,14 +30,25 @@ impl Expr {
         }
     }
 
-    /// This, which lowering knows is never `undefined`, a `Some`'s value
-    /// (`Known::Defined`); one it knows otherwise of, a getter's read say,
-    /// as it is. What it knows of the `None` it can be, of an `Option`'s
-    /// read (`Known::NoneNull`), is no other knowledge.
+    /// This, which lowering knows is never `undefined`, though maybe
+    /// `null` (`Known::Defined`); one it knows otherwise of, a getter's
+    /// read say, as it is. What it knows of the `None` it can be, of an
+    /// `Option`'s read (`Known::NoneNull`), is no other knowledge.
     pub fn defined(self) -> Expr {
+        self.known_as(Known::Defined)
+    }
+
+    /// This, which lowering knows is there, a `Some`'s value its `Option`
+    /// doesn't box (`Known::Present`); one it knows otherwise of, as
+    /// `defined` keeps it.
+    pub fn present(self) -> Expr {
+        self.known_as(Known::Present)
+    }
+
+    fn known_as(self, known: Known) -> Expr {
         match self.facts.of_presence() == self.facts {
             true => Expr {
-                facts: self.facts.with(Known::Defined),
+                facts: self.facts.with(known),
                 ..self
             },
             false => self,
@@ -54,10 +65,12 @@ impl Expr {
     /// amended by the user, 2026-10-28: by what its `None` can be).
     pub fn presence(option: Expr, set: bool) -> Expr {
         // Of one made where it's tested, `t ? v : undefined` of a `v`
-        // that's there, the test it's made by, `t` (ADR 0910).
+        // that's there, the test it's made by, `t` (ADR 0910). Not of a
+        // `v` that's only never `undefined`, an `Option` that may be
+        // `null` (#539).
         if let ExprKind::Cond(test, value, none) = &option.kind
             && matches!(none.kind, ExprKind::Undefined)
-            && value.facts.has(Known::Defined)
+            && value.facts.has(Known::Present)
         {
             let test = (**test).clone();
             return if set { test } else { test.negated_test() };
@@ -1234,14 +1247,17 @@ impl Expr {
     /// `undefined`, `null` among them, and what's made here, an object, an
     /// array, a function, a `new`, a template, a regex or JSX, never is; nor
     /// what an operator gives but `&&`, `||` and `??`, which may give an
-    /// operand that may be; nor what lowering knows is `Known::Defined`,
-    /// nor one of the program's functions (`Known::Item`).
+    /// operand that may be; nor what lowering knows is `Known::Defined` or
+    /// `Known::Present`, nor one of the program's functions (`Known::Item`).
     /// Anything else, a variable or a call, may be. The one answer of
     /// whether a JS value may be `undefined`, which a nullable place's
     /// storage asks (`Storage::written`).
     pub fn may_be_undefined(&self) -> bool {
         match &self.kind {
-            _ if self.facts.has(Known::Defined) || self.facts.has(Known::Item) || self.facts.has(Known::NoneNull) => {
+            _ if [Known::Defined, Known::Present, Known::Item, Known::NoneNull]
+                .into_iter()
+                .any(|known| self.facts.has(known)) =>
+            {
                 false
             }
             ExprKind::Undefined | ExprKind::GivenUndefined => true,

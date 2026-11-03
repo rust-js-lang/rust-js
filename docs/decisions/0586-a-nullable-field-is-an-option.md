@@ -388,3 +388,31 @@ for `None`, as a nullable `const` is** (`pipeline.rs`), and as the same
 thread-local made without the block already was. Held by
 `test/lowering-module-variables.test.ts`'s "a nullable const's None is
 null" and mutation `nullable-const-block-local-undefined`.
+
+## Amendment: what a nullable cell's `take` and `replace` give is said once (2026-11-03, #539)
+
+The 2026-10-26 amendment's `take` and `replace` of a nullable cell marked
+what they gave `Known::Defined` in `cell.rs`, of a thread-local's and of a
+nullable field's cell's handle. A thread-local's was said a second time by
+`mir/nulled.rs` (ADR 0949, amended); a field's held of one that's `null`
+where it's made is its place's read, `Known::Defined` already
+(`representation.rs`, ADR 0620), so `old`, read as it, is too. But the
+handle's mark was of any nullable field, an optional one's too, absent
+until it's set (ADR 0810): React's `claimQueuedTransitionTypes`,
+`root.transition_types.take()` of a `#[rust_js::nullable,
+rust_js::optional]` field, returned `old` as it was, `undefined` to a
+caller its nullable result promises `null`. And `Known::Defined` was read
+as there, a wrong answer (#539, ADR 0910, amended).
+
+**`cell.rs` no longer marks them**: a thread-local's is
+`nulled::reads_nullable_local`'s, a field's its place's. `const old =
+componentEffectErrors; componentEffectErrors = null; return old;` as
+before; an optional field's is `return old ?? null;`. Case R
+([0262](0262-when-rust-and-js-disagree.md)) for the optional field: JS
+that left it out reads `null`, as declared. Mutation
+`nullable-cell-taken-unknown` is gone with its code;
+`nullable-local-read-unknown` (`mir/nulled.ts`), the place's
+`nullable-field-read-may-be-undefined` (`representation.ts`) and
+`optional-cell-taken-as-is` (`std_types/cell.ts`, of
+`test/lowering-nullable.test.ts`'s "a nullable field's value a variable
+holds is stored as it is") hold the rule.

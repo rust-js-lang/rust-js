@@ -20,10 +20,19 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable thread-local read whole or taken, `KEY.with_borrow(Clone::clone)`, `KEY.take()`, kept in a guard's field is restored `?? null`, as if it may be `undefined` (rd523)",
     file: "src/lower/mir/nulled.rs",
-    find: "        if state.facts.quiet_cells().nullable.contains(&block) {\n",
+    find: "        if self.reads_nullable_local(state, block, local) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_guard_restores_nullable_fields.rs$"],
     snapshots: true,
+  },
+  {
+    name: "nullable-local-read-unknown",
+    breaks:
+      "no call is a nullable thread-local's whole read, so what it gives may be `undefined`, `return searchTarget ?? null` (ADRs 0861, 0949)",
+    file: "src/lower/mir/nulled.rs",
+    find: "        state.facts.quiet_cells().nullable.contains(&block)\n",
+    replace: "        false && state.facts.quiet_cells().nullable.contains(&block)\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable parameter, a nullable thread-local"],
   },
   {
     name: "nullable-result-not-nulled",

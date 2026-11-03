@@ -130,18 +130,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::CellNew if self.is_value_cell(self.owner_of(call.def_id, generic_args)) => arg(),
             Std::CellNew => Expr::object(vec![Prop::Field(js::HELD.into(), arg())]),
             // `RefCell::into_inner`'s, of one that's its object, the object.
-            // A nullable one's, `null` or a value, never `undefined`, as
-            // each write of it stores (ADR 0949).
-            Std::CellGet if null_for_none => {
-                let read = match self.is_value_cell(tys[0]) {
-                    true => arg(),
-                    false => self.copy_if_needed(Expr::held(arg()), generic_args.type_at(0)),
-                };
-                Expr {
-                    facts: read.facts.with(js::Known::Defined),
-                    ..read
-                }
-            }
+            // A nullable thread-local's, `null` or a value, is what MIR
+            // says its call gives (`nulled::reads_nullable_local`, ADR 0949).
             Std::CellGet if self.is_value_cell(tys[0]) => arg(),
             Std::CellGet => self.copy_if_needed(Expr::held(arg()), generic_args.type_at(0)),
             // Of a value with a destructor, the old dropped once the new is
@@ -255,11 +245,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::CellReplace | Std::CellTake => {
                 let item = generic_args.type_at(0);
                 let cell = arg();
-                // What a cell that stores `null` for `None` held, a nullable
-                // field's or thread-local's, is `null` or a value already,
-                // as each of its writes made it (`Known::Defined`).
-                let stores_null =
-                    null_for_none || matches!(cell.kind, js::ExprKind::Handle(_, js::Storage::NullForNone));
+                // What it held is `old`, read as its place is: of a nullable
+                // field there where it's made, `null` or a value already
+                // (`Known::Defined`, ADR 0620, amended); of an optional one,
+                // maybe `undefined`. A nullable thread-local's is what MIR
+                // says its call gives (`nulled::reads_nullable_local`, ADR
+                // 0586, amended).
                 let next = written(
                     &cell,
                     match known {
@@ -324,10 +315,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let old = self.spill("old", moved, out);
                 out.push(StmtKind::Assign(place, next).at(js_span));
-                match stores_null {
-                    true => old.defined(),
-                    false => old,
-                }
+                old
             }
             // A `&mut` to what it holds: the object itself, or for a number or
             // text the cell, the `{ value }` box a `&mut` to one is (ADR 0074).
@@ -531,21 +519,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // it's called, as `plain_statics` would: what tidy reads,
                 // `const last = LAST.value` a place's read (ADR 0866, amended).
                 // A nullable one's clone, `with_borrow(Clone::clone)`, `null`
-                // or a value, never `undefined` (ADR 0861, amended).
-                let read = |e: Expr| match null_for_none {
-                    true => Expr {
-                        facts: e.facts.with(js::Known::Defined),
-                        ..e
-                    },
-                    false => e,
-                };
+                // or a value, is what MIR says its call gives
+                // (`nulled::reads_nullable_local`, ADR 0861, amended).
                 if call.quiet {
                     let [key, f] = <[Expr; 2]>::try_from(given).ok().expect("a key and a function");
                     let given = match itself || mutable && !self.is_object(generic_args.type_at(0)) {
                         true => key,
                         false => Expr::held(key),
                     };
-                    return Ok(Some(read(crate::lower::calls::apply(f, vec![given]))));
+                    return Ok(Some(crate::lower::calls::apply(f, vec![given])));
                 }
                 let name = match mutable {
                     true => {
@@ -561,7 +543,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         "$withBorrow"
                     }
                 };
-                read(Expr::call(Expr::helper(name), given))
+                Expr::call(Expr::helper(name), given)
             }
             _ => return Ok(None),
         }))
