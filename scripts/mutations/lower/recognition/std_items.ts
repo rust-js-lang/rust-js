@@ -76,11 +76,11 @@ export const mutations: Mutation[] = [
   {
     name: "std-questions-impure",
     breaks:
-      '`is_empty()` and the like are taken as calls that may panic, so the temporary `make("c").name().is_empty()` reads is dropped in a `try { .. } finally { .. }` (ADR 0301)',
+      "`len()` and the like are taken as calls that may panic, so `queue.borrow().len()` of a guard dropped after it is `const { length: result } = $borrow(queue); return result;`, not `return $borrow(queue).length;` (ADR 0301; drop_temporaries' `make(\"c\").name().is_empty()` no longer shows it, #606)",
     file: "src/lower/recognition/std_items.rs",
     find: '"is_err" if tcx.trait_of_assoc(id).is_none() => {',
     replace: '"is_err" if false => {',
-    tests: ["test/corpus.test.ts", "-t", "^drop_temporaries.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^refcell_vec_bounds.rs$"],
     snapshots: true,
   },
   {

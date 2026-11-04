@@ -951,7 +951,9 @@ test("a guarded binding of an Option's string is its truth", async () => {
 // Text's truth, `!!code` of `!code.is_empty()`, isn't a presence test: an
 // empty string is there. `code ? code.toUpperCase() : undefined` is not
 // `code?.toUpperCase()`, which gives `""` where Rust gives `None`; an
-// `Option`'s `o != null` is one (ADR 0298).
+// `Option`'s `o != null` is one (ADR 0298). A test of text alone is now
+// `s !== ""`; one of an `Option<&str>` that `filter` keeps, `s && s !==
+// ""`, is still its truth, `s ? s.toUpperCase() : undefined` (#606).
 test("a test of text's truth is no optional chain", async () => {
   const dir = fixture("text-truth-chain");
   writeFileSync(join(dir, "lib.rs"), `pub fn held(code: Option<&str>) -> Option<String> {
@@ -965,12 +967,16 @@ pub fn upper(s: &str) -> Option<String> {
     let upper = if !s.is_empty() { Some(s.to_uppercase()) } else { None };
     upper
 }
+pub fn filtered(code: Option<&str>) -> Option<String> {
+    code.filter(|code| !code.is_empty()).map(|code| code.to_uppercase())
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).not.toContain("?.toUpperCase()");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.held(""), lib.held("a"), lib.held(undefined), lib.upper(""), lib.upper("b")]).toEqual([undefined, "A", undefined, undefined, "B"]);
+  expect([lib.filtered(""), lib.filtered("c"), lib.filtered(undefined)]).toEqual([undefined, "C", undefined]);
 });
 
 // A let chain's tests, each read where it's tested once what holds them

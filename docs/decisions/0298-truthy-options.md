@@ -332,7 +332,9 @@ always marks the `!!x` it makes. Its one caller,
 `a != null && Array.isArray(a)` → `Array.isArray(a)`, now asks
 `null_test(.., true)`, and the arm's mutation `presence-truthy-unread`,
 which survived, is gone with it. `text-truth-chained` still breaks the
-optional-chain fold the same way, inline, and is still caught.
+optional-chain fold the same way, inline, and is still caught. (Since
+text's `!s.is_empty()` is `s !== ""`, it's caught by an `Option<&str>`
+that `filter` keeps, `s ? s.toUpperCase() : undefined`, alone, #606.)
 
 ## Amendment: a const of one `Option`'s presence alone is `x != null`
 
