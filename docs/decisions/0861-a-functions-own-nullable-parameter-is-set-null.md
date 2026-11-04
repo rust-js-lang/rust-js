@@ -767,9 +767,10 @@ a function that tests `!== null`, so Rust's behavior.
   function's" (`!== null` of `checked(None)` through the method, `!= null`
   of what JS gave); `test/cross-crate-items.test.ts`'s "a library's
   nullable parameter its calls give null is given null by its consumer"
-  (`relays(undefined)`, run) and "a library's function and the namespace's
-  method that's it say one contract" (the library with and without the
-  method, the consumer's JS the same, `?? null`, run). Mutations
+  (`relays(undefined)`, run); `test/method-forwarding.test.ts`'s "a
+  library's function and the namespace's method that's it say one
+  contract" (the library with and without the method, the consumer's JS
+  the same, `?? null`, run). Mutations
   `own-nullable-param-taken-as-found` (`mir/nulled.ts`),
   `given-on-recorded-as-found` (`mir/dispatch.ts`),
   `forwarded-method-a-candidate`, `forwarded-body-a-call`,

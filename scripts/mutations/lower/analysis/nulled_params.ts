@@ -131,7 +131,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/nulled_params.rs",
     find: "            if forwarded.contains_key(&body.def_id) {\n                continue;\n            }\n",
     replace: "",
-    tests: ["test/cross-crate-items.test.ts", "-t", "say one contract"],
+    tests: ["test/method-forwarding.test.ts", "-t", "say one contract"],
   },
   {
     name: "forwarded-call-not-the-functions",
@@ -149,6 +149,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/nulled_params.rs",
     find: "        nulled.iter().copied().chain(methods).collect()\n",
     replace: "        nulled.iter().copied().chain(methods.filter(|_| false)).collect()\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "say one contract"],
+    tests: ["test/method-forwarding.test.ts", "-t", "say one contract"],
   },
 ];
