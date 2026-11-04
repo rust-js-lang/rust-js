@@ -510,3 +510,38 @@ private; no `pub` one refused. alien-signals' JS is unchanged.
   now). `test/diagnostics.test.ts`: the four refusals.
 - Mutations in `scripts/mutations/lower/analysis/lazy_locals.ts`, and
   `nullable-local-set-plain` (`std_types/cell.rs`).
+
+## Amendment: a namespace thread-local is first used as its module loads (#554)
+
+The amendment above asked of every thread-local whether its making as its
+module loads would show, a namespace one's too (rd293, ADR 1061). So
+`test/namespace-values.test.ts`'s noop renderer, React's noop entries'
+`export const { render, .. } = createReactNoop(..)`, was refused: its
+`pub static NOOP: Renderer = create(3)`, whose `create` counts what it
+makes in `MADE`, which `made`, a `pub fn`, reads, "reads `noop::MADE`,
+which `noop::create` may change after the modules load". Valid Rust that
+compiled before, and a refusal of what can't be made lazy: a namespace is
+its module's exports, `export const { .. }`, never a `$local`.
+
+**A namespace thread-local isn't asked whether its making would show**
+(`lazy_locals`, by `classes::is_value_namespace`): Rust never reads it, a
+read refused (ADR 1061), and JS reads it as its module's exports, which
+are there from its module's load, so its first use is that load. Where
+its module's load can't make it first, `load_cycles::out_of_order`'s
+refusal holds as before.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference: Rust makes it at its first use, and its only use, JS's, is
+its module's load.
+
+Held by `test/namespace-values.test.ts`, whose fixture's `create` writes
+`MADE` and whose JS reads `made()` after the import, and the mutation
+`at-load-namespace-shows` (`analysis/lazy_locals.ts`).
+
+`test/es-classes.test.ts`'s ES class, whose thread-local `MADE` is made
+by `Plugin::new`, which prints, is made where it's first used now, as
+this amendment's rule says: Rust prints `made loud` before `made early`,
+as `run.mjs` makes its `Loud` before it calls `early()`, which the
+`const made = new Plugin("early")` it printed before reversed (case C).
+Its class before what its module makes of it as it loads is held by a
+second, `SHOUTED`, `Plugin::shout("hi")`, `const SHOUTED` after the class.

@@ -548,7 +548,9 @@ after a panic. One `set` before it's used is made of what it's given, `if
 amended, #554). **A `pub` one of those is refused**, as what JS's
 importers read is its value: make it `pub(crate)` and export a `pub fn`
 that reads it, move what it runs out of the cycle, or call what it runs by
-its name.
+its name. A `#[rust_js::namespace]` one, which only JS reads, is first
+used as its module loads, so it's made then whatever its initializer
+prints or changes; only a load that can't make it first refuses it.
 
 Differences:
 

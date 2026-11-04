@@ -37,6 +37,7 @@ const plugin = `use std::cell::Cell;
 
 thread_local! {
     static MADE: Plugin = Plugin::new("early");
+    static SHOUTED: String = Plugin::shout("hi");
 }
 
 /// A plugin, as webpack's are written.
@@ -73,9 +74,14 @@ impl Plugin {
     }
 }
 
-/// The plugin its module made as it loaded, before its class's line.
+/// The plugin made where it's first used, as its constructor prints.
 pub fn early() -> String {
     MADE.with(|made| made.apply("early"))
+}
+
+/// What its module made of the class as it loaded, before its class's line.
+pub fn greeting() -> String {
+    SHOUTED.with(String::clone)
 }
 
 js::export_default!(Plugin);
@@ -84,8 +90,10 @@ js::export_default!(Plugin);
 // Its fields are declared, `name;`, as upstream's are, as it says,
 // `class(es, fields)`, in the order its constructor sets them, which sets
 // each before anything reads the instance (#568); its constructor, methods, getter and static are the
-// class's, its constant its prototype's after it; a thread-local made of it is made
-// after the class, which isn't hoisted as a function is; its module's
+// class's, its constant its prototype's after it; a thread-local its module
+// makes of it as it loads is made after the class, which isn't hoisted as a
+// function is, and one whose constructor prints is made where it's first
+// used, after JS's own `new Loud(..)`, as Rust orders it (ADR 1006, #554); its module's
 // default is declared as it, `export default class Plugin`. JS sees an ES
 // class: its methods not enumerable, a call without `new` a `TypeError`,
 // and a JS subclass's `super(..)` runs its constructor.
@@ -118,26 +126,27 @@ export default class Plugin {
 
 Plugin.prototype.limit = 3;
 
-const made = new Plugin("early");
+const made = $local(() => new Plugin("early"));
+const SHOUTED = Plugin.shout("hi");
 `);
   expect(js).not.toContain("export default Plugin;");
   expect(ts).toContain("declare class Plugin {");
   expect(ts).toContain("export default Plugin;");
   writeFileSync(
     join(dir, "run.mjs"),
-    `import Plugin, { early } from "./lib.js";
+    `import Plugin, { early, greeting } from "./lib.js";
 class Loud extends Plugin {
   apply(to) { return super.apply(to).toUpperCase(); }
 }
 const loud = new Loud("loud");
-const said = [early(), loud.apply("js"), loud.count, loud.limit, Plugin.shout("hi"), Object.keys(Plugin.prototype).join(), loud instanceof Plugin, Object.keys(loud).join()];
+const said = [early(), greeting(), loud.apply("js"), loud.count, loud.limit, Plugin.shout("hi"), Object.keys(Plugin.prototype).join(), loud instanceof Plugin, Object.keys(loud).join()];
 let thrown;
 try { Plugin("called"); } catch (e) { thrown = e.constructor.name; }
 console.log(JSON.stringify([...said, thrown]));`,
   );
   const ran = runSync([node ?? "node", join(dir, "run.mjs")], dir, 30_000);
   expect(ran.stderr).toBe("");
-  expect(ran.stdout).toBe('made early\nmade loud\n["early applied to early","LOUD APPLIED TO JS",1,3,"HI","limit",true,"name,applied","TypeError"]\n');
+  expect(ran.stdout).toBe('made loud\nmade early\n["early applied to early","HI","LOUD APPLIED TO JS",1,3,"HI","limit",true,"name,applied","TypeError"]\n');
 });
 
 // What an ES class can't be is refused, saying what to write: one that

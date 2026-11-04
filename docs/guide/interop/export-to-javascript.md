@@ -1987,7 +1987,10 @@ export const { render, act } = create(3);
 - **Each field is an export**, by its JS name, `#[rust_js::name]`'s too,
   declared in its `.d.ts`; a `None` the value leaves out is an export
   that's `undefined`, as upstream's `act` is.
-- **Made as its module loads**, never where it's first used.
+- **Made as its module loads**, never where it's first used: only JS
+  reads it, so its first use is its module's load, and its initializer
+  may print or change what the crate's functions read later, as React's
+  `createReactNoop` does (ADR 1006, amended, #554).
 - **JS reads it, Rust doesn't**: a Rust read, `NOOP.with(..)`, is
   refused; so is one of no struct of named fields, or not `pub`.
 

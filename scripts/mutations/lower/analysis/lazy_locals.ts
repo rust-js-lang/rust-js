@@ -140,4 +140,13 @@ export const mutations: Mutation[] = [
     replace: "            if false && tcx.visibility(key).is_public() {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a pub thread-local whose initializer prints"],
   },
+  {
+    name: "at-load-namespace-shows",
+    breaks:
+      "a namespace thread-local, whose first use is its module's load as only JS reads it, is asked whether its making then would show, so React's noop renderer's `pub static NOOP: Renderer = create(3)`, whose `create` counts what it makes, is refused (#554, ADR 1061)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "            .filter(|(_, key)| !crate::lower::classes::is_value_namespace(tcx, key.to_def_id()))\n",
+    replace: "            .filter(|(_, key)| true || !crate::lower::classes::is_value_namespace(tcx, key.to_def_id()))\n",
+    tests: ["test/namespace-values.test.ts", "-t", "fields are its module's exports"],
+  },
 ];

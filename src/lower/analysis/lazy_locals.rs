@@ -76,8 +76,12 @@ pub(super) fn lazy_locals<'tcx>(
     loop {
         let loading = loading(tcx, &keyed, &found.lazy, (bodies, &only_called));
         let outside = Outside::of(&touches, &loading);
+        // A namespace thread-local (ADR 1061) is its module's exports, which
+        // only JS reads, so its first use is its module's load: made then,
+        // it shows nothing Rust would order otherwise.
         let shown: Vec<(LocalDefId, Shows)> = (keyed.iter())
             .filter(|(_, key)| !found.lazy.contains(key))
+            .filter(|(_, key)| !crate::lower::classes::is_value_namespace(tcx, key.to_def_id()))
             .filter_map(|&(init, key)| {
                 let reached = found.at_load[&key].as_deref()?;
                 Some((key, shows(&touches, &outside, init.to_def_id(), reached)?))
