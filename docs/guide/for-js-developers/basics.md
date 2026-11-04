@@ -1885,10 +1885,13 @@ continue,`: `case 1:\n // Skipped.\n continue;`, as React DOM writes
 Skipped.\n continue; }`, the `continue` kept where it's written. So is a
 block of only a `continue` with a comment in it, a last arm's `_ => { //
 c\n continue; }` the `else` of the arm before, `} else { // c\n continue;
-}`. An arm of `continue` with no comment is the `if` of the rest, `if (k
-!== 3) { .. }`
+}`. So is each commented one of a `match` with more arms of `continue`,
+`Some(n) if *n > 5 => continue, Some(n) => *n, // c\n None => continue,`'s
+`if (x == null) { // c\n continue; } if (x > 5) { continue; }`. An arm of
+`continue` with no comment is the `if` of the rest, `if (k !== 3) { .. }`
 ([ADR 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md#amendment-a-comment-above-an-arm-thats-a-continue-alone-2026-11-04-the-users-decision-610),
-[amended](../../decisions/0629-a-match-of-constants-is-a-switch.md#amendment-a-block-of-only-a-commented-continue-666)).
+[amended](../../decisions/0629-a-match-of-constants-is-a-switch.md#amendment-a-block-of-only-a-commented-continue-666),
+[amended](../../decisions/0629-a-match-of-constants-is-a-switch.md#amendment-each-commented-arm-of-continue-mir-joins-keeps-its-comment-680)).
 
 One before an arm that does nothing is before its `case`
 ([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md), amended):

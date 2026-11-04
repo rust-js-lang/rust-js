@@ -522,8 +522,8 @@ export const mutations: Mutation[] = [
     breaks:
       "getHostSibling's `if (isScope(node)) { continue siblings; }` is a `break` past MIR's block to its one `continue`, the rest nested in negated tests",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            replaced(body, &of, None);\n",
-    replace: "",
+    find: "            let mut found = Found::default();\n            replaced(body, &of, Tested::default(), &mut found);\n",
+    replace: "            let found = Found::default();\n",
     tests: [
       "test/lowering-early-exits.test.ts",
       "-t",
@@ -651,8 +651,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an arm that does nothing but `continue`, `\"C\" => continue`, isn't known by the `if` of its pattern, so its `match` is an `if` chain, not a `switch` (#518)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                    replaced(then, of, (!at.is_none()).then_some(at.lo));\n",
-    replace: "                    replaced(then, of, None);\n",
+    find: "                    replaced(then, of, Tested { at, own, within: None }, found);\n",
+    replace: "                    replaced(then, of, Tested { at: None, own, within: None }, found);\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_arms_continue.rs$"],
     snapshots: true,
   },
@@ -761,8 +761,68 @@ export const mutations: Mutation[] = [
     breaks:
       "of a `match` whose arms of `continue` MIR joins, `// One is skipped.\\n 1 => continue, .. // Three is skipped.\\n 3 => continue,`, each `break` to the `continue` is placed where the `if` is, the `match`, so both comments print above the `switch`, not each in its case (#610)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                    let at = match !test.span.is_none() && commented(test.span) {\n",
+    find: "                    let at = match own.is_some_and(|written| of.commented.contains(&written)) {\n",
     replace: "                    let at = match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "joined-continue-arm-unplaced",
+    breaks:
+      "of a `match` whose arms of `continue` MIR joins, `Some(n) if *n > 5 => continue, Some(n) => *n, // c\\n None => continue,`, the commented arm's `break` MIR tests at the `match` stays MIR's, so tidy inverts its `if` and the comment prints above it, not before its `continue` (#680)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "            if !given.is_empty() {\n",
+    replace: "            if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "joined-continue-arm-of-no-comment",
+    breaks:
+      "an arm of `continue` MIR joins with no comment above it keeps its `continue`, `if (x == null) { continue; }`, not the `if` of the rest, `if (x != null) { .. }` (#680)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                        (Some(&(.., written)), None) if commented.contains(&written) => Some((matched, written)),\n",
+    replace: "                        (Some(&(.., written)), None) => Some((matched, written)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "joined-continue-tested-arm-untold",
+    breaks:
+      "an uncommented arm's `break`, `1 => continue`'s, which the `if` of its pattern tests, isn't known as its arm's, so a commented last `_ => continue` isn't the one left, and its comment prints above the `for` (#680)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                (None, Some(written)) => {\n                    found.arms.push(written);\n                    None\n                }\n",
+    replace: "                (None, Some(_)) => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "joined-continue-placed-arm-untold",
+    breaks:
+      "an arm's `break` placed where the arm is, `Some(0) => { log.push(-1); continue; }`'s, isn't known as its arm's, so a commented `None => continue` beside it isn't the one left (#680)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                (Some(written), _) => {\n                    found.arms.push(written);\n",
+    replace: "                (Some(written), _) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "joined-continue-else-not-within",
+    breaks:
+      "the `else` of an `if` tested in a `match`, a last `_ => continue`'s `break`, is of no `match`, so its comment prints above the `for`, not before its `continue` in `default:` (#680)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                            within: tests,\n",
+    replace: "                            within: None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "joined-continue-of-the-outer-match",
+    breaks:
+      "a `break` tested at an inner `match`, `None => continue` of `Some(inner) => match inner { .. }`, is taken as the outer one's, which then has two, so the outer commented `None => continue`'s comment prints above the `for` (#680)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                .min_by_key(|m| m.hi - m.lo)\n",
+    replace: "                .max_by_key(|m| m.hi - m.lo)\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
     snapshots: true,
   },

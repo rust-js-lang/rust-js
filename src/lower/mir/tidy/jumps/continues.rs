@@ -151,30 +151,81 @@ pub(in crate::lower::mir::tidy) fn continues_written(
     (rests, commented): (&HashMap<String, u32>, &[js::Span]),
 ) {
     /// A block's `break`s, `block`, each of which goes on to `jump`, and
-    /// the arms of a `continue` whose `match` is before something it holds;
-    /// and the `continue`s of arms with comments above them (#610).
+    /// the arms of a `continue` whose `match` is before something it holds,
+    /// with their `match`'s place; and the `continue`s of arms with
+    /// comments above them (#610).
     struct Of<'w> {
         block: &'w str,
         jump: &'w Stmt,
         guards: &'w [(js::Span, js::Span)],
-        arms: Vec<(js::Span, js::Span)>,
+        arms: Vec<(js::Span, js::Span, js::Span)>,
         commented: &'w [js::Span],
     }
-    // `stmts`' `break`s of the block, the `then` of an `if` tested where
-    // `tested` is.
-    fn replaced(stmts: &mut [Stmt], of: &Of, tested: Option<u32>) {
+    /// Of the block's `break`s: the arms' `continue`s each is of; of the
+    /// rest, where each is tested, or what's before it, the `match`
+    /// whose arm it's of by elimination; and, of a `match`, that arm's
+    /// `continue`, which its one is given (#680).
+    #[derive(Default)]
+    struct Found {
+        arms: Vec<js::Span>,
+        untold: Vec<js::Span>,
+        given: Vec<(js::Span, js::Span)>,
+    }
+    impl Of<'_> {
+        /// The `continue` of the arm `at` is in.
+        fn arm(&self, at: u32) -> Option<js::Span> {
+            (self.arms.iter())
+                .find(|(_, arm, _)| arm.lo <= at && at < arm.hi)
+                .map(|&(.., w)| w)
+        }
+        /// The innermost `match` `at` is in.
+        fn matched(&self, at: u32) -> Option<js::Span> {
+            (self.arms.iter())
+                .map(|&(matched, ..)| matched)
+                .filter(|m| m.lo <= at && at < m.hi)
+                .min_by_key(|m| m.hi - m.lo)
+        }
+    }
+    /// Where a list of the block is tested: the `then` of an `if` tested
+    /// `at`, whose test is in the arm whose `continue` is `own`; or the
+    /// `else` of one tested `within` a `match` (#680).
+    #[derive(Clone, Copy, Default)]
+    struct Tested {
+        at: Option<u32>,
+        own: Option<js::Span>,
+        within: Option<u32>,
+    }
+    // `stmts`' `break`s of the block, where `tested`.
+    fn replaced(stmts: &mut [Stmt], of: &Of, tested: Tested, found: &mut Found) {
         let breaks = |s: &Stmt| matches!(&s.kind, StmtKind::Break(Some(l)) if l == of.block);
         // What an arm of a `continue` does last, its `break`: where that
         // arm is, of what's before it, or of the `if` of its pattern.
         let n = stmts.len();
-        if stmts.last().is_some_and(breaks)
-            && let Some(at) = (n.checked_sub(2).and_then(|k| first_written(&stmts[k..k + 1]))).or(tested)
-            && let Some(&(_, written)) = of.arms.iter().find(|(arm, _)| arm.lo <= at && at < arm.hi)
-        {
-            stmts[n - 1] = Stmt {
-                kind: of.jump.kind.clone(),
-                span: written,
+        if stmts.last().is_some_and(breaks) {
+            let at = (n.checked_sub(2).and_then(|k| first_written(&stmts[k..k + 1]))).or(tested.at);
+            let placed = match (at.and_then(|at| of.arm(at)), tested.own) {
+                (Some(written), _) => {
+                    found.arms.push(written);
+                    Some(written)
+                }
+                (None, Some(written)) => {
+                    found.arms.push(written);
+                    None
+                }
+                (None, None) => {
+                    let matched = at.or(tested.within).and_then(|at| of.matched(at));
+                    found.untold.extend(matched);
+                    (found.given.iter())
+                        .find(|&&(m, _)| Some(m) == matched)
+                        .map(|&(_, w)| w)
+                }
             };
+            if let Some(written) = placed {
+                stmts[n - 1] = Stmt {
+                    kind: of.jump.kind.clone(),
+                    span: written,
+                };
+            }
         }
         for stmt in stmts.iter_mut() {
             let span = stmt.span;
@@ -187,27 +238,32 @@ pub(in crate::lower::mir::tidy) fn continues_written(
                         span: then[0].span,
                     };
                     if let Some(otherwise) = otherwise {
-                        replaced(otherwise, of, None);
+                        replaced(otherwise, of, Tested::default(), found);
                     }
                 }
                 StmtKind::If(test, then, otherwise) => {
                     // Where the `if` is; or, of an arm with comments above
                     // it, a `continue` alone MIR tests where the `match` is,
-                    // where its test is, its pattern (#610).
-                    let commented = |at: js::Span| {
-                        (of.arms.iter())
-                            .any(|&(arm, written)| arm.lo <= at.lo && at.lo < arm.hi && of.commented.contains(&written))
-                    };
-                    let at = match !test.span.is_none() && commented(test.span) {
+                    // where its test is, its pattern (#610). Its `else`, past
+                    // what it tests, is within the `match` it tests in, a
+                    // last `_ => continue`'s (#680).
+                    let tests = [test.span, span].into_iter().find(|s| !s.is_none()).map(|s| s.lo);
+                    let own = (!test.span.is_none()).then(|| of.arm(test.span.lo)).flatten();
+                    let at = match own.is_some_and(|written| of.commented.contains(&written)) {
                         true => test.span,
                         false => span,
                     };
-                    replaced(then, of, (!at.is_none()).then_some(at.lo));
+                    let at = (!at.is_none()).then_some(at.lo);
+                    replaced(then, of, Tested { at, own, within: None }, found);
                     if let Some(otherwise) = otherwise {
-                        replaced(otherwise, of, None);
+                        let within = Tested {
+                            within: tests,
+                            ..Tested::default()
+                        };
+                        replaced(otherwise, of, within, found);
                     }
                 }
-                StmtKind::Labeled(_, body) => replaced(body, of, None),
+                StmtKind::Labeled(_, body) => replaced(body, of, Tested::default(), found),
                 _ => {}
             }
         }
@@ -224,11 +280,35 @@ pub(in crate::lower::mir::tidy) fn continues_written(
                     .filter(|&&(matched, _, written)| {
                         !matched.is_none() && past >= matched.hi && written != after[0].span
                     })
-                    .map(|&(_, arm, written)| (arm, written))
+                    .copied()
                     .collect(),
                 commented,
             };
-            replaced(body, &of, None);
+            let mut found = Found::default();
+            replaced(body, &of, Tested::default(), &mut found);
+            // A `match` whose arms of `continue` MIR joins: its one `break`
+            // of no arm `replaced` tells, of an `if` it tests where the
+            // `match` is, `if (x == null) { break l; }`, or the last past
+            // the arms' tests, is of its one arm no other `break` is, its
+            // `continue` where it's written where comments are above it,
+            // `if (x == null) { // None is skipped.\n continue; }` (#680).
+            let given: Vec<(js::Span, js::Span)> = (found.untold.iter())
+                .filter(|&&matched| found.untold.iter().filter(|&&m| m == matched).count() == 1)
+                .filter_map(|&matched| {
+                    let mut left = (of.arms.iter()).filter(|&&(m, _, w)| m == matched && !found.arms.contains(&w));
+                    match (left.next(), left.next()) {
+                        (Some(&(.., written)), None) if commented.contains(&written) => Some((matched, written)),
+                        _ => None,
+                    }
+                })
+                .collect();
+            if !given.is_empty() {
+                let mut found = Found {
+                    given,
+                    ..Found::default()
+                };
+                replaced(body, &of, Tested::default(), &mut found);
+            }
         }
     }
 }

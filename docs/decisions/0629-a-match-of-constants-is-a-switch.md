@@ -1279,3 +1279,51 @@ mutations `commented-continue-blocks-unfound`,
 `commented-continue-blocks-in-only` and `arms-of-nothing-of-no-comment`
 (`lower/sources.ts`); `continue-at-the-match-uncommented`'s find moved
 (`mir/tidy/jumps/continues.ts`).
+
+## Amendment: each commented arm of `continue` MIR joins keeps its comment (#680)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only. Of a
+`match` with two arms of `continue`, which MIR joins into one block their
+`break`s go to (`continues_written`), a comment above one of them still
+printed above the `if` or the `for`: `Some(n) if *n > 5 => continue,
+Some(n) => *n, // None is skipped.\n None => continue,` was `// None is
+skipped.\n if (x != null) { .. }`. The amendments above placed a
+commented arm's `break` where its test is, its pattern; but MIR tests an
+`Option`'s `None` where the `match` is, `if (x == null) { break l; }`,
+and a last `_` is no test, the `else` of the test before it, so neither
+`break` said which arm it was of, and tidy inverted the `if`.
+
+Now, as the user's decision B asks of each such arm, **each commented
+arm of `continue` MIR joins keeps its `continue` where it's written**, by
+elimination: each `break` of the block whose arm the `if` around it tells,
+by its test's place, a guard's too, or what the arm does before it, is that
+arm's, commented or not; a `break` of no arm told is of the innermost
+`match` it's tested in, or whose `if` its `else` is of; and where a
+`match` has one such `break` and one arm of `continue` no other `break`
+is of, the `break` is that arm's, its `continue` where it's written where
+comments are above the arm: `if (x == null) { // None is skipped.\n
+continue; } if (x > 5) { continue; }`; beside a block arm's `if (x ===
+0) { log.push(-1); continue; }`; `default:\n // The rest are skipped.\n
+continue;` after an uncommented `1 => continue`; each of two blocks', `if
+(x == null) { // None.\n continue; } if (x === 0) { // Zero.\n continue;
+}`; and an outer `None => continue`'s beside an inner `match`'s. One with
+no comment is the `if` of the rest, as before.
+
+The `break` that's placed is the block's own `continue` either way, so
+what runs is the same; only where the comment is printed is decided
+here. Where a `match` has two `break`s no arm tells, an arm of two
+patterns MIR tests apart, nothing is given (a guard no program of the
+corpus tells, kept as the elimination's premise). A commented `continue
+'outer` arm beside an arm of the inner loop's `continue`, which MIR
+doesn't join, is outside this rule: it's still printed above the `if`
+(#693).
+
+Held by corpus `comment_before_a_bare_continue_arm` (`guarded`,
+`after_a_block`, `last_of_two`, `two_blocks`, `nested_matches`,
+`uncommented_joined`) against native Rust, and the mutations
+`joined-continue-arm-unplaced`, `joined-continue-arm-of-no-comment`,
+`joined-continue-tested-arm-untold`,
+`joined-continue-placed-arm-untold`, `joined-continue-else-not-within`
+and `joined-continue-of-the-outer-match` (`mir/tidy/jumps/continues.ts`);
+`continues-written-left-breaks`', `arm-continue-of-the-ifs-test-unseen`'s
+and `shared-continue-arm-at-the-match`'s finds moved.
