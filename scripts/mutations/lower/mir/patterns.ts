@@ -598,4 +598,22 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-moves.test.ts", "-t", "a binding closures take is one const"],
   },
+  {
+    name: "null-nones-local-set-unread",
+    breaks:
+      "an `Option` a nullable thread-local's `set` alone reads keeps its `None` `undefined` where it's made: React's ReactFlightServer printed `importStringRequest = __DEV__ && debug ? undefined : request;`, where upstream writes `null` (#683, ADR 0861, amended)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                    .is_some_and(|key| bindings::nullable_local(self.tcx, key))\n            {\n                *given.entry(read.local).or_default() += 1;\n",
+    replace: "                    .is_some_and(|key| bindings::nullable_local(self.tcx, key))\n            {\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "stores a test tidy makes of its value"],
+  },
+  {
+    name: "null-nones-any-local-set",
+    breaks:
+      "an `Option` any thread-local's `set` alone reads is `null` for `None` where it's made, though one not `#[rust_js::nullable]` holds `undefined` for `None` (#683, ADR 0861, amended)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                    .is_some_and(|key| bindings::nullable_local(self.tcx, key))\n",
+    replace: "                    .is_some()\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "stores a test tidy makes of its value"],
+  },
 ];

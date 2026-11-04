@@ -70,7 +70,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The locals `OptionWrites::null_nones` says: each write a `Some(..)`, a
     /// `None` or a call, one that may give `None` at least, and each read a
-    /// nullable field's or binding parameter's, or a copy's only they read
+    /// nullable field's or binding parameter's, or a `#[rust_js::nullable]`
+    /// thread-local's `set` or `replace` (#683), or a copy's only they read
     /// (ADR 0781, amended by 0841); or a
     /// `#[rust_js::nullable]` function's result, by its return.
     /// A `let` a call writes too, where a nullable parameter of the crate's
@@ -78,7 +79,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `as_ref()` or `as_deref()`, or a test that reads `null` and
     /// `undefined` alike (`alike_reads`): React's `previousMeasurements`
     /// (rd632, the user's decision (B)).
-    fn mir_null_nones(&self, body: &mir::Body<'tcx>, locals: &Locals) -> std::collections::HashSet<Local> {
+    fn mir_null_nones(
+        &self,
+        body: &mir::Body<'tcx>,
+        promoted: &IndexVec<Promoted, mir::Body<'tcx>>,
+        locals: &Locals,
+    ) -> std::collections::HashSet<Local> {
         let mut made: std::collections::HashMap<Local, (usize, bool)> = Default::default();
         let mut given: std::collections::HashMap<Local, usize> = Default::default();
         // What a call makes, and what JS reads as it's stored, a field's or
@@ -98,6 +104,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // and the variable returned as it is (ADR 0957, amended, the user's
         // decision, 2026-10-27).
         let returns_nullable = bindings::nullable_result(self.tcx, body.source.def_id());
+        // Each local assigned once, and what it's assigned: what a
+        // thread-local's key is read through (`queries::referred_key`).
+        let mut assigned: std::collections::HashMap<Local, Option<&Rvalue<'tcx>>> = Default::default();
+        for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
+            if let mir::StatementKind::Assign(assign) = &statement.kind
+                && assign.0.projection.is_empty()
+            {
+                let once = !assigned.contains_key(&assign.0.local);
+                assigned.insert(assign.0.local, once.then_some(&assign.1));
+            }
+        }
         let statements = (body.basic_blocks.iter_enumerated())
             .flat_map(|(block, data)| data.statements.iter().enumerate().map(move |(i, s)| (block, i, s)));
         for (block, statement_index, statement) in statements {
@@ -183,6 +200,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let Some((def_id, _)) = func.const_fn_def() else {
                 continue;
             };
+            // What a `#[rust_js::nullable]` thread-local is set, `KEY.set(v)`
+            // or `KEY.replace(v)`'s `v`, which it stores `null` for `None`
+            // as a nullable field does: `importStringRequest = __DEV__ &&
+            // debug ? null : request` of a test's `None` and `Some` (#683).
+            if crate::lower::recognition::local_key_cell_method(self.tcx, def_id)
+                == Some(crate::lower::recognition::LocalKeyCellMethod::Writes)
+                && let [key, value] = &args[..]
+                && let Some(read) = value.node.place()
+                && read.projection.is_empty()
+                && queries::referred_key(promoted, |local| assigned.get(&local).copied().flatten(), &key.node)
+                    .is_some_and(|key| bindings::nullable_local(self.tcx, key))
+            {
+                *given.entry(read.local).or_default() += 1;
+            }
             let nullable = bindings::nullable_params(self.tcx, def_id);
             // What a `#[rust_js::nullable]` thread-local is made of, its
             // `init`'s call's value: each `Option` given for a type
@@ -659,7 +690,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> OptionWrites {
         let (nested, held_results) = self.mir_nested(body, &locals.writes, result_held);
         OptionWrites {
-            null_nones: self.mir_null_nones(body, locals),
+            null_nones: self.mir_null_nones(body, promoted, locals),
             nones: self.mir_nones(body, locals),
             made_some: self.mir_made_some(body, promoted, locals),
             nested,

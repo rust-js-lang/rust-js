@@ -1,6 +1,6 @@
 # 0861. A function's own nullable parameter is `null` where it's given or set `None`
 
-Status: Accepted. Amended (2026-11-04): a nullable thread-local nothing reads apart stores what it's given as it is (#665). Amended (2026-11-04): a parameter is `null` or a value where it's found so; a forwarding namespace method's calls are its function's (#601). Amended (2026-10-29): its map by what's its argument in JS is stored as given. Amended (2026-11-02): a parameter each call gives `null` or a value is tested `!== null` (rd613). Extends [0275](0275-nullable-writes-null.md)'s
+Status: Accepted. Amended (2026-11-04): an `Option` read only by a nullable thread-local's `set` or `replace` is `null` for `None` where it's made (#683). Amended (2026-11-04): a nullable thread-local nothing reads apart stores what it's given as it is (#665). Amended (2026-11-04): a parameter is `null` or a value where it's found so; a forwarding namespace method's calls are its function's (#601). Amended (2026-10-29): its map by what's its argument in JS is stored as given. Amended (2026-11-02): a parameter each call gives `null` or a value is tested `!== null` (rd613). Extends [0275](0275-nullable-writes-null.md)'s
 `#[rust_js::nullable(name)]`, a binding's parameter, to a function of the
 crate's own, and [0772](0772-a-nullable-cell-field-writes-null.md) and
 [0841](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)'s
@@ -869,7 +869,8 @@ ReactFiberCommitWork's five `hostParent = ..stateNode;`, ReactFiberWorkLoop's
 `importStringRequest = __DEV__ && debug ? undefined : request;`, where
 upstream writes `null`: MIR writes that `None` to a temporary each branch
 sets, which tidy makes the test after the store is lowered, so its
-`undefined` stays (correct, as nothing reads it apart).
+`undefined` stays (correct, as nothing reads it apart). #683's amendment,
+below, makes it upstream's `null`.
 
 - Held by corpus `nullable_local_read_alike` (one tested, unwrapped and
   given a fallback, one cloned, tested and set back, each stored as given;
@@ -886,3 +887,48 @@ sets, which tidy makes the test after the store is lowered, so its
   `alike-store-coalesced` (`lower/std_types/cell.ts`),
   `alike-none-written-undefined` (`js/make.ts`) and `alike-set-unsaid`
   (`lower/mir/local_facts.ts`).
+
+## Amendment: an `Option` read only by a nullable thread-local's `set` is `null` for `None` where it's made (2026-11-04, #683)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. The place stores
+`null` for `None` (ADR 0586, amended); the temporary's `None` is written
+`null` where it's made, so the store holds what it held before.
+
+React's ReactFlightServer:
+
+```rust
+IMPORT_STRING_REQUEST.set(if __DEV__ && debug {
+    None
+} else {
+    Some(Rc::clone(request))
+});
+```
+
+printed `importStringRequest = __DEV__ && debug ? undefined : request;`,
+where upstream writes `null`. MIR makes the `Option` in a temporary each
+branch writes, `_t = None` and `_t = Some(move _c)`, and the `set` reads
+the temporary. #665's `Storage::written_alike` writes the temporary as it
+is, and tidy makes the branches' writes the test only after the store is
+lowered, so the store never sees its `None`. Before #665 it was `(..) ??
+null`.
+
+Which `None` is `null` where it's made is `OptionWrites::null_nones`'s
+answer (`mir_null_nones`, ADR 0275): an `Option` made only `Some(..)` or
+`None`, each read of which is a nullable field's, a nullable parameter's
+or a copy's only they read. **A `#[rust_js::nullable]` thread-local's
+`set` or `replace` is such a read too**, `v` of `KEY.set(v)`, its key
+found as `QuietCells` finds it (`queries::referred_key`). So the
+temporary's `None` is `null` where each branch writes it, its `Some` the
+value, and `stored_given` says it's `null` or a value (`Given::Nulled`),
+which either storage stores as it is: `importStringRequest = __DEV__ &&
+debug ? null : request;`, upstream's. That holds of every nullable
+thread-local, read alike or not: a store that would coalesce, `t ?? null`,
+is given `null` or a value already. What's read otherwise, given to a
+call, returned, or made by one (`f()`'s `Option`, which may be
+`undefined`), isn't among them, and is stored as before: `?? null`, or as
+it's given where nothing reads it apart.
+
+- Held by `test/lowering-nullable-reads.test.ts`'s "a nullable
+  thread-local nothing reads apart stores a test tidy makes of its value
+  with its None null" (React's form, run in JS), and the mutation
+  `null-nones-local-set-unread` (`lower/mir/patterns.ts`).

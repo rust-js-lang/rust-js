@@ -647,8 +647,9 @@ fn unnamed(locals: &Locals, local: Local) -> bool {
 #[derive(Default)]
 struct OptionWrites {
     /// The `Option`s made only `Some(..)` or `None` and read only by
-    /// `#[rust_js::nullable]` fields: their `None` is `null` where it's made,
-    /// `c ? v : null` (ADR 0275).
+    /// `#[rust_js::nullable]` fields, parameters and thread-locals: their
+    /// `None` is `null` where it's made, `c ? v : null` (ADRs 0275, 0861,
+    /// amended).
     null_nones: std::collections::HashSet<Local>,
     /// The `Option`s whose `None` is only `undefined`, or only `null`, as
     /// each of their writes gives (`mir_nones`): each read of one says so,

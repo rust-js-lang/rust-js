@@ -1388,3 +1388,57 @@ pub fn give(value: Option<&'static Unknown>) {
   expect([lib.current(), lib.genericNow(), lib.lent(), lib.counted(), lib.shared()]).toEqual([false, false, false, 0, false]);
   expect([lib.handed(), lib.copied(), lib.moved()]).toEqual([false, false, null]);
 });
+
+// #683: React's ReactFlightServer, `importStringRequest = __DEV__ && debug ?
+// null : request;`. MIR sets a temporary in each branch, which tidy makes
+// the test after the store is lowered: its `None` is `null` there too.
+test("a nullable thread-local nothing reads apart stores a test tidy makes of its value with its None null", async () => {
+  const dir = fixture("nullable-local-alike-test");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Request {
+    pub id: u32,
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static IMPORT_STRING_REQUEST: RefCell<Option<Rc<Request>>> = const { RefCell::new(None) };
+    static PLAIN: RefCell<Option<Rc<Request>>> = const { RefCell::new(None) };
+}
+
+// One not nullable holds \`undefined\` for \`None\`, as its \`None\` is made.
+pub fn plain(request: &Rc<Request>, debug: bool) -> bool {
+    PLAIN.set(if debug { None } else { Some(Rc::clone(request)) });
+    PLAIN.with_borrow(Option::is_some)
+}
+
+fn replacer() -> u32 {
+    let request = IMPORT_STRING_REQUEST.with_borrow(Clone::clone);
+    let Some(request) = request else {
+        return 0;
+    };
+    request.id
+}
+
+pub fn stringify(request: &Rc<Request>, dev: bool, debug: bool) -> u32 {
+    let prev_request = IMPORT_STRING_REQUEST.with_borrow(Clone::clone);
+    IMPORT_STRING_REQUEST.set(if dev && debug {
+        None
+    } else {
+        Some(Rc::clone(request))
+    });
+    let result = replacer();
+    IMPORT_STRING_REQUEST.set(prev_request);
+    result
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  importStringRequest = dev && debug ? null : request;\n");
+  expect(js).toContain("debug ? undefined : request");
+  const lib = await import(join(dir, "lib.js"));
+  const request = { id: 7 };
+  expect([lib.stringify(request, true, true), lib.stringify(request, true, false), lib.stringify(request, false, true)]).toEqual([0, 7, 7]);
+  expect([lib.plain(request, true), lib.plain(request, false)]).toEqual([false, true]);
+});

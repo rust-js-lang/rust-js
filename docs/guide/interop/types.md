@@ -1180,7 +1180,11 @@ export function ratio(a, b) {
   handler;`: no read tells `null` from `undefined`. One exported, read by
   another module or by generic code, lent to a closure, or whose read is
   kept in a field, returned, compared or given to a function, stores
-  `handler ?? null` (ADR 0861, amended, #665).
+  `handler ?? null` (ADR 0861, amended, #665). Either one, set an
+  `Option` made only `Some(..)` or `None` and read only there, stores it
+  with its `None` `null` where it's made, `importStringRequest = __DEV__ &&
+  debug ? null : request;` of `KEY.set(if __DEV__ && debug { None } else {
+  Some(Rc::clone(request)) })` (#683).
   Such a read, and a nullable function's call, is never `undefined`, but
   it may still be `None`: an `Option` made of it where it's tested,
   `keep.then(|| CURRENT.get()).flatten().is_some()`, tests it, `(keep ?
