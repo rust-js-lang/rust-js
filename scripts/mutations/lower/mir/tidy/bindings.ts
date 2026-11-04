@@ -722,7 +722,10 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                && (is_temporary(alias) || fixed.contains(alias))\n",
     replace: "                && (is_temporary(alias) || fixed.is_empty() && fixed.contains(alias))\n",
-    tests: ["test/corpus.test.ts", "-t", "^or_pattern_one_place.rs$"],
+    // or_pattern_one_place's chunk is read in place without it now; the
+    // flattened state of one variant's, `listen`'s `get_or_insert_with`,
+    // isn't (the Nightly of 3c71ee8f9).
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell.rs$"],
     snapshots: true,
   },
   {

@@ -406,7 +406,11 @@ export const mutations: Mutation[] = [
     find: "            ty::Adt(..) if self.recognition.is_guard(ty) && (walk.guards_none || self.uncounted_guard(ty)) => {\n",
     replace:
       "            ty::Adt(..) if self.recognition.is_guard(ty) && walk.guards_none => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_quiet_borrows.rs$"],
+    // refcell_quiet_borrows' guards are each a local, which the drop of
+    // one skips itself (mir/drops.rs), so its JS is the same with it; a
+    // guard of a field read through, `fiber.r#return.borrow()`, is held as a
+    // `const` with it (the Nightly of 3c71ee8f9).
+    tests: ["test/corpus.test.ts", "-t", "^refcell_field_places.rs$"],
     snapshots: true,
   },
 ];

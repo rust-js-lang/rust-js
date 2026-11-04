@@ -9,7 +9,10 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/alternatives.rs",
     find: "                    alike.held_as.insert(later, earlier);\n",
     replace: "",
-    tests: ["test/classes-flattened-state.test.ts", "-t", "an or-pattern of a field each variant has"],
+    // A flattened state's, `Pending { value } | Blocked { value }`, is one
+    // test of its tag without it now; a tagged enum's `Circle { r } |
+    // Square { r }` of a `&mut`, run, isn't (the Nightly of 3c71ee8f9).
+    tests: ["test/corpus.test.ts", "-t", "^or_pattern_one_place.rs$"],
   },
   {
     name: "alike-alternatives-of-any-field",

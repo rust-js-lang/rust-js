@@ -913,5 +913,9 @@ export const mutations: Mutation[] = [
     find: "        let ty::Adt(adt, args) = ty.kind() else {\n            return matches!(ty.kind(), ty::Param(_));\n        };\n        // A chain's, its second side's",
     replace: "        let ty::Adt(adt, args) = ty.kind() else {\n            return false;\n        };\n        // A chain's, its second side's",
     tests: ["test/corpus.test.ts", "-t", "^generic_own_last.rs$"],
+    // The runtime asks the value's own `nth` either way, so it's how the
+    // JS reads that's checked: `$nthSome(it, 1)`, not a `drop(1).take(1)`
+    // collected (the Nightly of 3c71ee8f9).
+    snapshots: true,
   },
 ];
