@@ -192,16 +192,16 @@ export const mutations: Mutation[] = [
     breaks:
       "a value of a type parameter whose dictionary's `count` is `$count` is made a JS iterator again, losing its own `tryFold`, so a generic `map(..).any(..)` of a `skip` asks `nth(n)` where Rust asks `nth(n - 1)` (#520)",
     file: "src/runtime/iterator.js",
-    find: "last: $last, count: $count }, {",
-    replace: "last: $last }, {",
+    find: '  if (step === $count) return "count";\n',
+    replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^skip_try_fold with"],
   },
   {
     name: "given-boxed-steps-not-own",
     breaks: "a value of a type parameter whose dictionary boxes its `Some`, `$nextSome`'s, is made a JS iterator whose `nth` asks the value's, which a JS array iterator has none of: generic `skip(1).last()` throws (#522)",
     file: "src/runtime/iterator.js",
-    find: " || (boxed && boxedSteps[name] === step)",
-    replace: "",
+    find: '    Object.entries(dictionary).every(([name, step]) => name === "getUnchecked" || $askedStep(step, boxed) === name);\n',
+    replace: '    Object.entries(dictionary).every(([name, step]) => name === "getUnchecked" || $askedStep(step) === name);\n',
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_own_last with"],
   },
   {

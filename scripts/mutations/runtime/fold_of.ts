@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "fold-of-unwind-lost",
     breaks: "a dictionary's `fold` of std's struct, `$foldOf`, gives it no `unwind`: generic code's fold of a `copied()` of the crate's own behind a `fuse()`, whose `next` panics, drops none of what it folded (#615)",
     file: "src/runtime/fold_of.js",
-    find: '  return typeof it.fold === "function" ? it.fold(init, f, unwind) : $foldDropping(it, init, f, unwind);\n',
-    replace: '  return typeof it.fold === "function" ? it.fold(init, f) : $foldDropping(it, init, f, unwind);\n',
+    find: "function $foldOf(it, init, f, unwind) {\n  return it.fold(init, f, unwind);\n",
+    replace: "function $foldOf(it, init, f, unwind) {\n  return it.fold(init, f);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_unwind_given_on.rs$"],
   },
   {
@@ -73,14 +73,5 @@ export const mutations: Mutation[] = [
     find: "  if (typeof it.fold !== \"function\") return $collectDropping(it, drop, restFirst);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_counted_uses.rs$"],
-  },
-  {
-    name: "fold-of-foldless",
-    breaks:
-      "a dictionary's `fold`, `$foldOf`, of a type parameter's value with no `fold` of its own, JS's helper, calls one it doesn't have: generic code's `fuse().fold(..)` of a slice's `map()` throws a TypeError (#621)",
-    file: "src/runtime/fold_of.js",
-    find: '  return typeof it.fold === "function" ? it.fold(init, f, unwind) : $foldDropping(it, init, f, unwind);\n',
-    replace: "  return it.fold(init, f, unwind);\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_steps_a_type_parameter_may_reach.rs$"],
   },
 ];

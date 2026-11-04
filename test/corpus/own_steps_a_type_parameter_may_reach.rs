@@ -94,8 +94,50 @@ fn peeked_reversed<I: DoubleEndedIterator<Item = D>>(it: I) -> u32 {
     it.rev().fold(0, |sum, d| sum + d.0)
 }
 
-fn fused_sum<I: Iterator<Item = u32>>(it: I) -> u32 {
-    it.fuse().fold(0, |sum, n| sum + n)
+fn fused_total<I: Iterator<Item = u32>>(it: I) -> u32 {
+    let total = it.fuse().fold(D(0), |mut total, n| {
+        total.0 += n;
+        total
+    });
+    total.0
+}
+
+/// One that counts, with a destructor and no `fold` of its own.
+struct Counter(u32);
+
+impl Iterator for Counter {
+    type Item = u32;
+    fn next(&mut self) -> Option<u32> {
+        (self.0 < 3).then(|| {
+            self.0 += 1;
+            self.0
+        })
+    }
+}
+
+impl Drop for Counter {
+    fn drop(&mut self) {
+        println!("counter dropped at {}", self.0);
+    }
+}
+
+/// What holds an iterator and sums it, through its dictionary.
+struct Holder<I> {
+    it: I,
+}
+
+impl<I: Iterator<Item = u32>> Holder<I> {
+    fn total(self) -> u32 {
+        self.it.sum()
+    }
+}
+
+fn held_total<I: Iterator<Item = u32>>(it: I) -> u32 {
+    Holder { it }.total()
+}
+
+fn held_mapped_total<I: Iterator<Item = u32>>(it: I) -> u32 {
+    Holder { it: it.map(|n| n + 1) }.total()
 }
 
 fn main() {
@@ -109,5 +151,7 @@ fn main() {
     println!("peeked {:?}", it.peek().map(|d| d.0));
     println!("{}", it.rev().fold(0, |sum, d| sum + d.0));
     let names = ["a", "bb", "ccc"];
-    println!("{}", fused_sum(names.iter().map(|name| name.len() as u32)));
+    println!("{}", held_total(Counter(0)));
+    println!("{}", held_mapped_total(Counter(0)));
+    println!("{}", fused_total(names.iter().map(|name| name.len() as u32)));
 }

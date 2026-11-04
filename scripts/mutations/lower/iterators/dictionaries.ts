@@ -259,15 +259,12 @@ export const mutations: Mutation[] = [
   {
     name: "std-struct-fold-undictionaried",
     breaks:
-      "a `Map` std's `FlatMap` makes has no `fold` in its dictionary, so std's `FlattenCompat::fold` steps it by `next`, not the crate's own `fold` (ADR 0912)",
+      "std's compiled struct over what writes no `fold` of its own, a held `peekable()`'s, has no `fold` in its dictionary, so std's compiled code given it steps it by `next`, not by its compiled `fold`, std's meaning (ADR 0912); of a type parameter's, `Reach::May` says it has one",
     file: "src/lower/iterators/dictionaries.rs",
     find: '                    || (crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)\n                        && self.compiled_fold_of(ty, (iterator, "fold"))?.is_some());\n',
     replace: ";\n",
-    tests: [
-      "test/std-package.test.ts",
-      "-t",
-      "the committed @rust-js/std is std's bodies",
-    ],
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^peekable_drops.rs$"],
   },
   {
     name: "mut-ref-dictionary-whole",

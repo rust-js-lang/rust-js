@@ -198,8 +198,6 @@ the answer is asked of the value at run time:
 - **A type parameter's dictionaries say what `Reach::May` says**: `fold:
   $foldOf`, `rfold: $foldBack`, each std's helper, which asks the value
   itself (`iterator_dictionary`, `iterator_extension_dictionary`).
-  `$foldOf` of a value with no `fold`, JS's own helper, folds it as
-  `$foldDropping` does.
 - **Whether a dictionary's step took the value, so generic code drops
   nothing of it after, is `$took(step, value)`**: none didn't; the crate's
   own or std's compiled step did; std's helper did where the value's own
@@ -218,10 +216,13 @@ the answer is asked of the value at run time:
 Rust: a `map().fuse().fold(..)` and a `peekable().rev().fold(..)` in
 generic code of the crate's iterator that writes its `fold` and `rfold`,
 one that writes neither, and a `Vec`'s; a peekable's `rev()` that isn't
-generic; and a `fuse().fold(..)` of a slice's `map()`, JS's helper.
+generic; and a `sum()` through a held struct's dictionary of a value
+generic code was given, and of its `map()`.
 Mutations: `type-parameter-fold-unsaid` and `type-parameter-rfold-unsaid`
 (`lower/iterators/dictionaries.ts`), `knowing-rfold-only-its-owns`
 (`lower/iterators/knowing.ts`), `dictionary-step-took-unasked`
 (`lower/mir/iter.ts`), `took-helper-trusted` and `took-own-unasked`
-(`runtime/iterator.ts`) and `fold-of-foldless` (`runtime/fold_of.ts`);
-`own-steps-not-the-value` and `fold-of-unwind-lost` name their new text.
+(`runtime/iterator.ts`); `own-steps-not-the-value`, `given-count-not-own`,
+`given-boxed-steps-not-own` and `knowing-rfold-unasked` name their new
+text, and `std-struct-fold-undictionaried` a compiled struct's JS, as a
+type parameter's `fold` is `Reach::May`'s now.

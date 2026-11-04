@@ -13,7 +13,9 @@ import {
   $count,
   $dropEach,
   $foldBack,
+  $foldDropping,
   $foldOf,
+  $given,
   $held,
   $iter,
   $iterator,
@@ -24,6 +26,7 @@ import {
   $nth,
   $peek,
   $rev,
+  $took,
   $tryOf,
 } from "@rust-js/runtime";
 
@@ -262,12 +265,69 @@ function peekedReversed(it, dropI) {
   }, 0);
 }
 
-function fusedSum(it, IFused) {
-  return iterator_fuse(
-    it,
+function fusedTotal(it, IFused) {
+  const total = $foldDropping(
+    iterator_fuse(
+      it,
+      { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+      IFused,
+    ),
+    [0],
+    (total, n) => {
+      total[0] = (total[0] + n) >>> 0;
+      return total;
+    },
+    dDrop_drop,
+  );
+  const result = total[0];
+  dDrop_drop(total);
+  return result;
+}
+
+function counterIterator_next(counter) {
+  function value() {
+    counter[0] = (counter[0] + 1) >>> 0;
+    return counter[0];
+  }
+  return counter[0] < 3 ? value() : undefined;
+}
+
+const Holder = {
+  total(holder, IIterator, dropI) {
+    const iter = holder.it;
+    try {
+      return $given(iter, IIterator).reduce((a, b) => (a + b) >>> 0, 0);
+    } finally {
+      if (!$took(IIterator.fold, iter)) {
+        dropI?.(iter);
+      }
+    }
+  },
+};
+
+function heldTotal(it, dropI) {
+  return Holder.total(
+    { it },
     { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
-    IFused,
-  ).reduce((sum, n) => (sum + n) >>> 0, 0);
+    dropI,
+  );
+}
+
+function heldMappedTotal(it, dropI) {
+  return Holder.total(
+    {
+      it: iterator_map(
+        it,
+        (n) => (n + 1) >>> 0,
+        { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+        dropI,
+      ),
+    },
+    { next: $next, fold: $foldOf },
+    (map) => {
+      map.return();
+    },
+  );
 }
 
 function main() {
@@ -385,7 +445,17 @@ function main() {
   );
   const names = ["a", "bb", "ccc"];
   console.log(
-    `${fusedSum(
+    `${heldTotal($iterator([0], counterIterator_next), (it) => {
+      console.log(`counter dropped at ${it.of[0]}`);
+    })}`,
+  );
+  console.log(
+    `${heldMappedTotal($iterator([0], counterIterator_next), (it) => {
+      console.log(`counter dropped at ${it.of[0]}`);
+    })}`,
+  );
+  console.log(
+    `${fusedTotal(
       names.values().map((name) => $byteLen(name)),
       true,
     )}`,

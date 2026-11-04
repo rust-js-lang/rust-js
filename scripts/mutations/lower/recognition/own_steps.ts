@@ -163,7 +163,7 @@ export const mutations: Mutation[] = [
       "`last()` of a `scan` or a `map_while` isn't by its fold, so a `step_by` inside asks the crate's own `nth(0)` first (#216)",
     file: "src/lower/recognition/own_steps.rs",
     find: "                \"Map\" | \"Filter\" | \"FilterMap\" | \"Enumerate\" | \"Inspect\" | \"Skip\" | \"SkipWhile\" | \"Copied\" | \"Cloned\"\n                | \"Fuse\" | \"Peekable\" | \"FlatMap\" | \"Flatten\" | \"Take\" | \"TakeWhile\" | \"Scan\" | \"MapWhile\",\n",
-    replace: "                \"Map\" | \"Filter\" | \"FilterMap\" | \"Enumerate\" | \"Inspect\" | \"Skip\" | \"SkipWhile\" | \"Copied\" | \"Cloned\"\n                | \"Fuse\" | \"Peekable\" | \"FlatMap\" | \"Flatten\" | \"Take\" | \"TakeWhile\" | \"MapWhile\",\n",
+    replace: "                \"Map\" | \"Filter\" | \"FilterMap\" | \"Enumerate\" | \"Inspect\" | \"Skip\" | \"SkipWhile\" | \"Copied\" | \"Cloned\"\n                | \"Fuse\" | \"Peekable\" | \"FlatMap\" | \"Flatten\" | \"Take\" | \"TakeWhile\",\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
   {
@@ -223,8 +223,7 @@ export const mutations: Mutation[] = [
       "a `take`'s `rfold` isn't said to trim by its source's own `nth_back` (#220)",
     file: "src/lower/recognition/own_steps.rs",
     find: "            (Rfold, \"Take\") => &[(0, Rfold), (0, NthBack)],\n",
-    replace:
-      "                .is_some_and(|source| self.reaches_its_own(source, OwnStep::Rfold, Reach::Sure)),\n",
+    replace: "            (Rfold, \"Take\") => &[(0, Rfold)],\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
     snapshots: true,
   },
@@ -234,8 +233,7 @@ export const mutations: Mutation[] = [
       "a `skip`'s `rfold`, its `try_rfold`, isn't said to reach a `take`'s trim by the crate's `nth_back` (#220)",
     file: "src/lower/recognition/own_steps.rs",
     find: "            (Rfold, \"Skip\") => &[(0, TryRfold)],\n",
-    replace:
-      "            // A `skip`'s, its `try_rfold`, its source's.\n            Some(\"Never\") => args\n",
+    replace: "            (Rfold, \"Skip\") => &[],\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {
