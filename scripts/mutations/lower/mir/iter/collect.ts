@@ -480,7 +480,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `fold` whose stages its JS still holds as a variable is judged one no stage of may panic (#423)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        self.panicking_steps(iter_ty) > 0 || self.unseen_steps_may_panic(iter_ty)\n",
+    find: "        self.panicking_steps(iter_ty) > 0\n            || self.unseen_steps_may_panic(iter_ty)\n",
     replace: "        self.unseen_steps_may_panic(iter_ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
   },
@@ -489,8 +489,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a fold of a type parameter's iterator, std's `Fuse::fold`'s of what it fuses, is given no drop of its accumulator (#424)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "let may_throw = receiver.has_param() || self.steps_may_panic(receiver);",
-    replace: "let may_throw = self.steps_may_panic(receiver);",
+    find: "            ty::Dynamic(..) | ty::Param(_) => true,\n",
+    replace: "            ty::Dynamic(..) => true,\n",
     tests: [
       "test/std-package.test.ts",
       "-t",
@@ -567,16 +567,16 @@ export const mutations: Mutation[] = [
     name: "dyn-iterator-steps-unseen",
     breaks: "a `dyn` iterator behind std's adapters is taken to step without panicking, so `boxed.fuse().fold(..)` never drops the accumulator its panicking `next` strands (rd768)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            ty::Dynamic(..) => true,\n",
-    replace: "            ty::Dynamic(..) => false,\n",
+    find: "            ty::Dynamic(..) | ty::Param(_) => true,\n",
+    replace: "            ty::Param(_) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_steps_behind_adapters_unwind.rs$"],
   },
   {
     name: "collect-own-steps-unseen",
     breaks: "a collect of std's adapter over the crate's iterator whose `next` panics is `Array.from(..)`, which drops neither what it collected nor what's left (rd765)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        self.panicking_steps(iter_ty) > 0 || self.unseen_steps_may_panic(iter_ty)\n",
-    replace: "        self.panicking_steps(iter_ty) > 0\n",
+    find: "            || self.unseen_steps_may_panic(iter_ty)\n",
+    replace: "\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
   },
   {

@@ -636,7 +636,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// are anyone's (#424), and it has a destructor. `$foldDropping`'s and
     /// `$foldBack`'s `unwind`.
     pub(super) fn stranded_drop(&mut self, receiver: Ty<'tcx>, acc: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
-        let may_throw = receiver.has_param() || self.steps_may_panic(receiver);
+        let may_throw = self.steps_may_panic(receiver);
         match may_throw && self.drops(acc) != crate::lower::drops::Drops::Nothing {
             true => self.drop_function(acc, span),
             false => Ok(None),
