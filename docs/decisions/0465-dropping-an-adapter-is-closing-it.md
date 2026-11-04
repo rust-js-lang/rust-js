@@ -905,9 +905,9 @@ rd762–rd768: `$mapEnds` and `$enumerate` folds that skip the crate's own
 panicking `next` that is given no drop, and generic code that drops a
 `fuse()` twice as it unwinds.
 
-## Amendment: what may panic behind std's adapters, and who drops what as it unwinds (2026-11-04, rd762–rd769)
+## Amendment: what may panic behind std's adapters, and who drops what as it unwinds (2026-11-04, rd762–rd768, rd771)
 
-Probing #615 found eight wrong answers (P0s #621–#627, and rd769), each of
+Probing #615 found eight wrong answers (P0s #621–#627 and #640), each of
 the crate's iterator whose `next` panics behind an adapter, under
 `catch_unwind`. Results change, so Rust's behavior is kept (ADR 0262).
 Each has the same root: what may throw as an iterator is stepped, and who
@@ -955,7 +955,7 @@ drops what as it unwinds.
 - **A `skip(n)` whose first step, its source's `nth(n - 1)`, panics drops
   `init`, then itself**, as std's `Skip::fold(self, init, ..)` does: its
   `fold` and `try_fold` give that step `init`'s drop, `$staged`'s, and its
-  `fold` and `count`, which take it, close it, `$consumed` (rd769).
+  `fold` and `count`, which take it, close it, `$consumed` (rd771, #640).
 
 `adapters_over_own_next_that_panics.rs`, `own_steps_behind_adapters_unwind.rs`
 and `try_folds_of_stages_unwind.rs` hold the shapes against native Rust:
@@ -966,7 +966,10 @@ of the crate's iterators, an `impl Iterator` and a `Box<dyn Iterator>`, and
 crate's iterator, or of a closure's `map`, stepped from its back is refused,
 as before. A consumed collect's JS now closes its iterator in a `finally`
 after `$collectDropping`, which closes it too; the second close does
-nothing (`$closed`), and is a readability gap to remove.
+nothing (`$closed`), and is a readability gap to remove. A consumed
+iterator's drop after its call, where the crate's `next` may panic, is in
+a `finally` now: the readability baseline's renamed `x$1` is 584.6 of
+10,000 lines, from 584.5, each a `result$1` it's held in.
 
 Mutations: `map-ends-fold-not-its-sources`, `enumerate-fold-unwind-lost`,
 `enumerate-rfold-unwind-lost` and `enumerate-try-fold-unwind-lost`

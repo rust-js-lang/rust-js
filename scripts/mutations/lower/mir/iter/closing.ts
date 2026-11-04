@@ -255,8 +255,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a consumer that takes each item of an owning source, `for_each`, `fold`, is given it unclosed, so a panic in its closure drops none of what's left (#422)",
     file: "src/lower/mir/iter/closing.rs",
-    find: "            false => self.closing(it, iter_ty, span),\n        }\n    }\n",
-    replace: "            false => Ok(it),\n        }\n    }\n",
+    find: "            true => self.closing(it, iter_ty, span),\n            false => Ok(it),\n        }\n    }\n",
+    replace: "            true => Ok(it),\n            false => Ok(it),\n        }\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_iteration_drops.rs$"],
   },
   {

@@ -6,7 +6,7 @@
 // that knows its length folds by its source's `fold` (rd762); an
 // `enumerate()` gives its source the accumulator's drop (rd767); a
 // generic fold of a `fuse()` drops it once (rd764); a `skip(n)` whose
-// first step panics drops `init`, then itself (rd769); and its own `rfold`,
+// first step panics drops `init`, then itself (rd771); and its own `rfold`,
 // through an `enumerate()` too, is given the accumulator's drop (rd767).
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
