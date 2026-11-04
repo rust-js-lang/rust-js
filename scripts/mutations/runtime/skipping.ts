@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "skipping-rfold-kept",
     breaks: "a `skip`'s `rfold`, which consumes it, isn't done with what it steps (#225)",
     file: "src/runtime/skipping.js",
-    find: "    const folded = skipping.tryRfold(init, f, () => false, unwind);\n    $closed(skipping.iter);\n",
-    replace: "    const folded = skipping.tryRfold(init, f, () => false, unwind);\n",
+    find: "    const folded = $consumed(skipping, () => skipping.tryRfold(init, f, () => false, unwind));\n    $closed(skipping.iter);\n",
+    replace: "    const folded = $consumed(skipping, () => skipping.tryRfold(init, f, () => false, unwind));\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
   },
   {
