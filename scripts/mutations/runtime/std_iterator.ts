@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "std-iterator-back-own-unknown",
     breaks: "a compiled `fuse()` isn't given its `rfold` and `nth_back` where they're asked (#224)",
     file: "src/runtime/std_iterator.js",
-    find: "      rfold: rfold && ((init, f, unwind) => rfold(it, init, f, unwind)),\n      nthBack: nthBack && ((k) => step(nthBack(it, k))),\n",
-    replace: "",
+    find: "      rfold:\n        rfold &&\n",
+    replace: "      rfold:\n        false &&\n        rfold &&\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {
@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "std-iterator-rfold-unwind-lost",
     breaks: "std's compiled struct's `rfold`, known where it's used, gets no `unwind`: a stage's panic leaves the accumulator undropped (#423)",
     file: "src/runtime/std_iterator.js",
-    find: "      rfold: rfold && ((init, f, unwind) => rfold(it, init, f, unwind)),\n",
-    replace: "      rfold: rfold && ((init, f) => rfold(it, init, f)),\n",
+    find: "            return rfold(it, init, f, unwind);\n",
+    replace: "            return rfold(it, init, f);\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_folds_unwind with"],
   },
   {
