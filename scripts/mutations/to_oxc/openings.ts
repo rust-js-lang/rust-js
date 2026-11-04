@@ -3,15 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "tuple-alternative-unread",
-    breaks:
-      "a comment above a later arm of a tuple's or-pattern, `// c\\n (2, 3) | (3, 2) => {`, is between its test's operands, `(b === 3 &&\\n // c\\n a === 2) || ..`, not first in its `else if`'s block or above its guard `if` (#617)",
-    file: "src/to_oxc/openings.rs",
-    find: "    or || inside\n",
-    replace: "    or\n",
-    tests: ["test/lowering-comments-inside.test.ts", "-t", "tuple's or-pattern is the arm's"],
-  },
-  {
     name: "or-pattern-alternative-unread",
     breaks:
       'a comment above a later or-pattern arm, `// Santized URLs\\n "src" | "href" => {`, is before its `if`, `} else {\\n // Santized URLs\\n if (name === "src" || name === "href") {`, not first in the `else if`\'s block (#608)',

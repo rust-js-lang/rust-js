@@ -1000,8 +1000,8 @@ fn simplified(tests: &[Expr]) -> Option<Vec<Expr>> {
     // === 3 && a === 2) || (b === 2 && a === 3)` (#617).
     let mut i = 0;
     while i < out.len() {
-        let stronger = atom(&out[i])
-            .and_then(|(subject, set)| (i + 1..out.len()).find(|&j| says_within(&out[j], &subject, &set)));
+        let stronger =
+            atom(&out[i]).and_then(|(subject, set)| (i + 1..out.len()).find(|&j| says_within(&out[j], &subject, &set)));
         match stronger {
             Some(j) => out[i] = out.remove(j),
             None => i += 1,

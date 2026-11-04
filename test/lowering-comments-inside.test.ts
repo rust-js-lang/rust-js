@@ -991,12 +991,13 @@ test("a comment above a later arm of a returned match is above its if", async ()
   expect([pick(3, 4), pick(undefined, 4), pick(undefined, undefined), pick(3)]).toEqual([3, 10, 0, 3]);
 });
 
-// A later arm of a tuple's or-pattern, `// c\n (2, 3) | (3, 2) => {`, its
-// alternatives' starts inside their tuples: its comment is first in its
-// `else if`'s block, or above its guard `if`, past them all, not between
-// its test's operands; and the arms are a chain as written, `if (a === 1 ||
-// b === 1)` first, not MIR's `if (a !== 1 && b !== 1) { .. continue; }` of
-// the arms after it (#617, ADR 0444, amended; ADR 0364, amended).
+// A later arm of a tuple's or-pattern, `// c\n (2, 3) | (3, 2) => {`: the
+// arms are a chain as written, `if (a === 1 || b === 1)` first, not MIR's
+// `if (a !== 1 && b !== 1) { .. continue; }` of the arms after it, whose
+// tests were placed inside the tuples, the comment between their operands;
+// it's first in the arm's `else if`'s block, or above its guard `if` of a
+// returned `match`, a tuple's of no `|` too (#617, ADR 0364, ADR 0444,
+// amended).
 test("a comment above a later arm of a tuple's or-pattern is the arm's", async () => {
   const { js, lib } = await compiled("comment-above-a-tuple-or-arm", `pub fn looped(pairs: &[(u32, u32)]) -> Vec<bool> {
     let mut seen = Vec::new();
