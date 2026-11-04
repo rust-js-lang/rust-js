@@ -4,8 +4,8 @@
 // Cargo would. `check`, a native binary calling `frontend::main`, is the oracle.
 
 import { beforeAll, expect, test } from "bun:test";
-import { cpSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { cpSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { node } from "./programs";
 import { buildCompiler, buildSerde, compiler, fixture, root, run } from "./support";
 import { cargo, check, printed, throughRustJs } from "./crates";
@@ -86,6 +86,43 @@ test("Cargo is told which rust-js it runs, so another one's crates are built aga
   const dir = fixture("crates-cargo-identity");
   await check(workspace(dir));
   expect(readFileSync(join(dir, "target", ".rustc_info.json"), "utf8")).toContain(line);
+}, 600_000);
+
+// And which `@rust-js/typescript` prints its `.d.ts`, which isn't in the
+// binary: a checkout's `typescript/index.js` changed, at the same path, and
+// a regen of React's port kept the `.d.ts` the printer before it had printed,
+// by Cargo's fingerprints, until its cache was cleared by hand (#675). Of
+// what it is, not its date: one copied in as old is a build again too.
+test("Cargo is told which declarations printer rust-js runs, so another one's crates are built again", async () => {
+  const dir = fixture("cargo-printer");
+  writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app"]\nresolver = "2"\n');
+  mkdirSync(join(dir, "app", "src"), { recursive: true });
+  writeFileSync(join(dir, "app", "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "app", "src", "lib.rs"), "pub fn answer(n: u32) -> u32 {\n    n + 1\n}\n");
+  // A printer of its own, as a checkout's is, beside the TypeScript it runs.
+  const printer = join(dir, "printer");
+  mkdirSync(printer);
+  for (const file of ["index.js", "package.json"]) cpSync(join(root, "typescript", file), join(printer, file));
+  symlinkSync(join(root, "typescript", "node_modules"), join(printer, "node_modules"));
+  const module = join(printer, "index.js");
+  const manifest = join(dir, "Cargo.toml");
+  // The `.d.ts` of the build of `app` Cargo has now, built or found done,
+  // in the environment each build gives Cargo, its rustc's shim written
+  // again, so Cargo asks `rustc -vV` again: it can't see the printer change.
+  const declared = async () => {
+    const env = { ...(await throughRustJs(manifest)), RUST_JS_TYPESCRIPT: module };
+    const messages = run(cargo(manifest, "check", "--target", "wasm32-unknown-unknown", "--message-format=json"), 600_000, env);
+    const built = messages.split("\n").filter(Boolean).map((line) => JSON.parse(line))
+      .find((message) => message.reason === "compiler-artifact" && message.target.name === "app");
+    const metadata: string = built.filenames.find((file: string) => file.endsWith(".rmeta"));
+    return readFileSync(join(dirname(metadata), "rust-js", basename(metadata).slice("lib".length, -".rmeta".length), "lib.d.ts"), "utf8");
+  };
+  const before = await declared();
+  expect(before).toContain("export function answer(n: number): number;");
+  const { mtime } = statSync(module);
+  writeFileSync(module, readFileSync(module, "utf8").replace("texts.push(await ts.print(module));", 'texts.push((await ts.print(module)) + "// another printer\'s\\n");'));
+  utimesSync(module, mtime, mtime);
+  expect(await declared()).toBe(`${before}// another printer's\n`);
 }, 600_000);
 
 // What Cargo has as done is what rust-js made (ADR 0101): Cargo rebuilds a

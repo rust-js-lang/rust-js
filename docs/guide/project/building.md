@@ -339,6 +339,13 @@ refused, as rust-js runs the app's Prettier itself.
 Cargo decides what's rebuilt. A crate whose Rust, dependencies and features
 haven't changed is fresh, and its JS is the JS that build wrote.
 
+- **Another compiler is another build.** Cargo is told which rust-js runs,
+  its build, and the `@rust-js/typescript` that prints the `.d.ts`, each
+  by what it is, not by its path or its date
+  ([ADR 1003](../../decisions/1003-a-compilers-build-is-its-identity.md)):
+  a compiler rebuilt or swapped in, a `git pull` of rust-js's say, builds
+  every crate again. The cache never needs clearing for it.
+
 - **Cargo builds in `node_modules/.cache/rust-js/target`**, out of what your
   bundler watches. Set `CARGO_TARGET_DIR` to build elsewhere.
 - **A file rust-js wrote that a build no longer writes is removed**: a

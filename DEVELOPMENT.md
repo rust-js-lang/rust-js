@@ -403,6 +403,7 @@ checked:
 | `check:fast`'s corpus parts while other agents' worktrees build and test | Each part is killed at `checkFast.ts`'s 290 s, failing the run with no case failed: every job starts at once, its parts as many as the Mac's cores, beside the other agents' jobs (load 14–20 on the 12-core M3 Max, 2026-11-03). The same corpus passes run by hand in six parts, three at a time, all 1,518 cases (alien-signals run 4), so an agent runs the corpus apart and loses the timings `check:fast` keeps | Parts sized to the cores the machine's load leaves free, not all of them, or a part's timeout scaled by the load it started under; the corpus's cases' usual times kept, so a part killed says which case was slow |
 | `test/runtime-package.test.ts`'s "room asked of a length, a resize's, a collect's or a hash table's, ends where wasm32's std ends it" | 2.5 s alone on the M3 Max (2026-11-02); killed at bun's 5 s in a loaded `check:fast --all`, its Node run reserving 117 MB | A timeout that fits it, as the snapshot tests declare |
 | The iterator matrix in full on the Mac, `ITERATOR_MATRIX=all` (ADR 1090) | 2,970 s in 4 parts at a load of 15–60 (2026-11-04), about 3.3 CPU-hours: 1,700 programs of 60 cases, each built natively and twice by the debug compiler, its compile the most of it | The release compiler for its builds, or a compile of a batch's two builds in one rust-js process; the nightly runs it on six machines |
+| An app's `node_modules/.cache/rust-js`, React's port's above all | 26–32 GB in react-in-rust (2026-11-04): each build of the compiler is another `rustc -vV` line, so another `-C metadata` and another copy of every crate, never removed, 50 of `shared`'s; 15 GB of it rustc's `incremental/`, 3.8 GB `deps/`; a worktree that copies it copies all of it, for nothing, as its crates' paths differ and Cargo builds them again | The builds of other compilers' lines removed after a build (Cargo's own cache GC is unstable), and rustc's incremental cache off for the crates rust-js compiles whole anyway |
 | `test/lowering-functions.test.ts`'s "a long function is lowered block by block" | 3 s alone on the M3 Max, 54 billion instructions for 3,000 `v.push(..)`s (24 billion for 1,500), the same at b80aedb1e and 707d7eea0 (2026-11-04); on CI 9 s, then 17 s, then past its 30 s timeout beside the test job's other files, so its timeout is 60 s | A lowering of a long straight-line body that costs less per statement: profile where its 18 million instructions a statement go |
 
 ## Working on `main`
@@ -462,6 +463,12 @@ the workflow's 2 machines; `--shards=4` splits it across four.
 - **The inner loop is never delegated.** The failing test is seen to fail
   here, before the fix, and its mutations caught here, before the push.
 - **Read every bless patch before committing it.**
+- **A compiler change needs no cache cleared by hand.** Cargo is told the
+  compiler's build and the `@rust-js/typescript` that prints the `.d.ts`,
+  each by what it is (ADR 1003, amended for #675): a `yarn rust` or a regen
+  after rust-js changes, at the same path or another, builds every crate
+  again. A cache copied from another checkout is rebuilt too, as its
+  crates' paths differ; copy none, as it's tens of GB ([slow spots](#slow-spots-still-to-fix)).
 - **A red run is the change's.** Fix it at once, on `main`, and say what
   broke, with the failing job's log.
 

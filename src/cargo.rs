@@ -492,7 +492,9 @@ fn expand(given: &[String]) -> Result<Vec<String>, String> {
 /// rust-js, an app's upgrade or its rollback, is another build: an installed
 /// compiler's file is as old as its package says, too old for Cargo to see
 /// by its date that it changed. Its build too: another build of one version,
-/// another checkout's or worktree's, is another build (ADR 1003).
+/// another checkout's or worktree's, is another build (ADR 1003). And the
+/// `@rust-js/typescript` that prints its `.d.ts`, which isn't in the binary:
+/// another, at the same path, is another build too (ADR 1003, amended; #675).
 fn verbose_version(rustc: &str) -> Invocation {
     let output = match std::process::Command::new(rustc).arg("-vV").output() {
         Ok(output) => output,
@@ -512,11 +514,21 @@ fn verbose_version(rustc: &str) -> Invocation {
         ..
     } = Compiler::current();
     let build = crate::manifest::BUILD;
+    // What prints its `.d.ts`, which isn't in the binary (#675).
+    let printer = match crate::typescript::printer() {
+        Ok(printer) => printer.map(|hash| format!(", declarations {hash}")).unwrap_or_default(),
+        Err(error) => {
+            eprintln!("rust-js: {error}");
+            return Invocation::Rustc(ExitCode::FAILURE);
+        }
+    };
     let mut out = std::io::stdout().lock();
-    match out
-        .write_all(&output.stdout)
-        .and_then(|()| writeln!(out, "rust-js: {version}, Rust {toolchain}, ABI {abi}, build {build}"))
-    {
+    match out.write_all(&output.stdout).and_then(|()| {
+        writeln!(
+            out,
+            "rust-js: {version}, Rust {toolchain}, ABI {abi}, build {build}{printer}"
+        )
+    }) {
         Ok(()) => Invocation::Rustc(ExitCode::SUCCESS),
         Err(error) => {
             eprintln!("rust-js: cannot write rustc's version: {error}");

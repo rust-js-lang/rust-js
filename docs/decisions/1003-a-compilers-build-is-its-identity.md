@@ -85,3 +85,49 @@ file** (`build.rs`'s `RUST_JS_BUILD`, `manifest::BUILD`).
 - Mutations `cargo-version-without-build` (`cargo.rs`),
   `manifest-build-unread` (`manifest.rs`) and `std-manifest-of-a-build`
   (`output.rs`).
+
+## Amendment: the `@rust-js/typescript` that prints its `.d.ts` (#675)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, as above.
+
+A regen of React's port kept what a compiler before it had written, until
+`node_modules/.cache/rust-js` was cleared by hand: reported as the cache
+keying the compiler by its path. It doesn't: what Cargo is
+told, `rustc -vV`'s line, says the build, and a crate's dep-info names the
+binary, so a compiler rebuilt at the same path rebuilds every crate, and
+one swapped in older than the cache does too, by its build. But what
+rust-js writes isn't all the binary's. A crate's `.d.ts` is printed by
+`@rust-js/typescript` (ADR 0207), `rust-js build`'s own, which it names in
+`RUST_JS_TYPESCRIPT` (ADR 0412): a checkout's `typescript/index.js`, read
+at run time. It was in neither the build's hash nor the dep-info, so a
+commit that changed it alone, 2301d08f4's quoting of a member's name, left
+every crate fresh, and its `.d.ts` the printer before it had printed.
+
+**Cargo is told the printer too**: `rust-js: 0.0.4, Rust 1.99.0, ABI 1,
+build 52c100506ffb5402, declarations 4081613b597496de`, a hash of the
+module `RUST_JS_TYPESCRIPT` names and of its package's manifest, which pins
+the TypeScript it runs exactly (`typescript::printer`). Another printer at
+the same path, of another commit or copied in as old as the cache, is
+another build.
+
+- **Of what it is, not its date**: the dep-info's dates miss a file copied
+  in older than the cache, as an installed compiler's are (above).
+- **Asked each build**: Cargo keeps what `rustc -vV` says by the size and
+  dates of its rustc and its wrapper, neither of them the printer. The
+  tooling writes rustc's shim anew for each build (`rustcShim`), so Cargo
+  asks again each time; a build that kept the shim would keep the line.
+- **Not in a manifest's identity**: a library's facts, which a consumer
+  reads, aren't the printer's, and `--version-json` stays the binary's.
+- **Not the app's Prettier**, which lays the JS out (ADR 0381): the app's
+  input, not the compiler's. Its configs are in the dep-info; which
+  Prettier is installed isn't, a gap of its own.
+
+Each change to the printer rebuilds every crate of a Cargo build, as a
+change to the compiler's sources does, its files kept beside the others'
+(a toolchain release's `-C metadata` hashes the line too).
+
+What holds it: `test/cargo-workspace.test.ts`, "Cargo is told which
+declarations printer rust-js runs": a crate's `.d.ts` built, the printer
+changed at the same path and dated as before, and the next build's `.d.ts`
+the new printer's. Mutations `cargo-version-without-printer` (`cargo.rs`),
+`printer-unnamed` and `printer-of-its-package-alone` (`typescript.rs`).

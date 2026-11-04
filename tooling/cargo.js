@@ -128,7 +128,10 @@ export function rustcShim(compiler) {
   // Written whole, then moved into place: every build with this compiler
   // shares the shim, and one rewriting it in place while another's Cargo
   // runs it fails both, Linux's ETXTBSY. A Cargo running it keeps the file
-  // it opened; the next one runs the new.
+  // it opened; the next one runs the new. A new file each build is also what
+  // has Cargo ask `rustc -vV` again, which it keeps by the dates of its
+  // rustc and wrapper: the `@rust-js/typescript` that line names, of each
+  // build, isn't either of them (ADR 1003, amended; #675).
   const writing = `${shim}.${process.pid}`;
   writeFileSync(writing, `#!/bin/sh\nexec ${JSON.stringify(compiler)} --rustc "$@"\n`, { mode: 0o755 });
   renameSync(writing, shim);
