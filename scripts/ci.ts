@@ -68,16 +68,18 @@ function runMutationsPassed(run: Run): boolean {
 }
 
 /** What `gh` prints. A read is asked again, up to three times, as GitHub's
- * API at times ends its answer early, `unexpected end of JSON input`, which
- * failed a nightly's test shard before its suite ran (#606); a write, a
- * workflow started, is asked once. */
+ * API at times answers a 500 with no body, `unexpected end of JSON input`,
+ * which failed a nightly's test shard before its suite ran (#606); a write,
+ * a workflow started, is asked once. Each retry is said on stderr: `plan`'s
+ * stdout is GitHub's step outputs, where a line not `name=value` fails the
+ * step (#606). */
 function gh(args: string[], { write = false } = {}): string {
   for (let attempt = 1; ; attempt++) {
     const p = Bun.spawnSync(["gh", ...args], { cwd: root, stdout: "pipe", stderr: "pipe" });
     if (p.exitCode === 0) return p.stdout.toString();
     const failed = `gh ${args.join(" ")} failed:\n${p.stderr.toString()}`;
     if (write || attempt === 3) throw new Error(failed);
-    console.log(`${failed.trimEnd()}\nasking again in ${5 * attempt} s`);
+    console.error(`${failed.trimEnd()}\nasking again in ${5 * attempt} s`);
     Bun.sleepSync(5000 * attempt);
   }
 }
@@ -192,10 +194,13 @@ export function timingsRun(artifacts: Artifact[]): number | undefined {
 
 /** In CI, before the suite: the last run's `timings-*` artifacts, into
  * `target/shard-timings/`, which `bun run test` gives `bun test --shard`
- * (scripts/test.ts). */
+ * (scripts/test.ts). The runs are those whose first shard kept its timings,
+ * `timings-1`, as each that ran the suite has: GitHub lists those by name,
+ * where its list of all the repository's artifacts fails as often as not
+ * with a 500 that three asks don't get past (#606). */
 function fetchTimings() {
   const listed: { name: string; workflow_run: { id: number }; created_at: string; expired: boolean }[] = JSON.parse(
-    gh(["api", "repos/{owner}/{repo}/actions/artifacts?per_page=100", "--jq", "[.artifacts[] | {name, workflow_run, created_at, expired}]"]),
+    gh(["api", "repos/{owner}/{repo}/actions/artifacts?per_page=100&name=timings-1", "--jq", "[.artifacts[] | {name, workflow_run, created_at, expired}]"]),
   );
   const run = timingsRun(listed.map((a) => ({ name: a.name, run: a.workflow_run.id, createdAt: a.created_at, expired: a.expired })));
   const dir = join(root, shardTimings);

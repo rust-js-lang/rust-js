@@ -4,11 +4,11 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "closing-advance-unforwarded",
-    breaks: "a closed compiled `Fuse`'s `advance_by` steps each item, not its source's, a `Rev`'s of a `Vec` (#286)",
+    breaks: "a closed iterator's own `advance_by` is lost, so it steps each item, not by its source's: a `skip()` of a `rev()` of a `Vec` drops 4, 3, 2, 1, where std's `Skip::advance_by` drops the `Vec`'s tail as one slice, 1 to 4 (#286)",
     file: "src/runtime/closing.js",
     find: "    advanceBy: slice ? advanceBy : Object.hasOwn(it, \"advanceBy\") ? \"advanceBy\" : undefined,\n",
     replace: "    advanceBy: slice ? advanceBy : undefined,\n",
-    tests: ["test/corpus.test.ts", "-t", "^(chain_sides_own_steps|generic_skip_of_owned_rev).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^generic_chain_nth_past_a_skipped_rev.rs$"],
   },
   {
     name: "closing-own-nth-unsaid",

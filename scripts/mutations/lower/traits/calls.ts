@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/calls.rs",
     find: "        if Some(trait_id) == self.to_string_trait() {\n            return Ok(None);\n        }",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^locks"],
+    tests: ["test/corpus.test.ts", "-t", "^(fmt_error_to_string|whole_counters).rs$"],
     snapshots: true,
   },
   {
