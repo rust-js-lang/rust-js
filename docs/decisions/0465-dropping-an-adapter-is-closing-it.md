@@ -1230,3 +1230,23 @@ Still open in #655:
 - `peekable().enumerate().count()`, whose `Enumerate::count` is
   `Peekable::count` in std. That one keeps the peeked item until its frame
   unwinds.
+
+## Amendment: an `enumerate()` of a `take()` or a `step_by()` stepped from its back is made knowing its back, or refused (2026-11-04, #651)
+
+`vec.into_iter().take(4).enumerate().rfold(..)` of items with a destructor
+was `$foldBack($enumerate($closing(..).take(4)), ..)`. That is
+`$Steps`' `take`, which knows neither its back nor its length, so it
+threw `TypeError: enumerated.iter.len is not a function` with no panic at
+all. A `step_by(2)`'s was the same, `$stepBy` where `$stepByEnds` knows
+its back. The enumerate's guard let it through, as its type `nth`s a
+slice, and nothing made its source knowing.
+
+Of a `take()` or a `step_by()` the crate steps from its back, its source
+is now made knowing its back and its length by `as_exact_size`, or
+refused there: one of items with a destructor is, as a `.rev()` of a
+`take()` of them is already. A refusal is better than a crash; a `skip()`
+of them, `$skipping`, knew its back already and is as it was.
+
+`enumerate_of_take_from_back_refused.rs` holds the refusal, and the guide's
+limitations list it. Mutation: `enumerate-of-take-from-back-unknowing`
+(`lower/mir/iter/backs.ts`).

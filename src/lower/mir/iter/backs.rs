@@ -234,6 +234,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     {
                         knowing
                     }
+                    // Of a `take(n)` or a `step_by(n)` the crate steps from its
+                    // back, whose JS, `.take(n)` and `$stepBy`, knows neither
+                    // its back nor its length, which its index from the back
+                    // is counted by: made knowing them, or refused
+                    // (`as_exact_size`), never stepped by what it lacks (#651).
+                    None if self.stepped_from_its_back(output)
+                        && (crate::lower::recognition::counted_source(self.tcx, iter_ty)
+                            .is_some_and(|(_, skip)| !skip)
+                            || crate::lower::recognition::stepped_by_source(self.tcx, iter_ty).is_some()) =>
+                    {
+                        let it = self.as_exact_size(receiver.clone(), iter_ty, true, span)?;
+                        self.closing(it, held, span)?
+                    }
                     None => self.closing(receiver.clone(), held, span)?,
                 };
                 Expr::call_helper("$enumerate", vec![it])

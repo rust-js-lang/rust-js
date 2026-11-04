@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`rev()` of an enumeration of std's compiled `Fuse` the crate steps from its back gives `$enumerate` the struct as it is: `TypeError: enumerated.iter.len is not a function` (#383)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    None if self.stepped_from_its_back(output)\n",
-    replace: "                    None if false\n",
+    find: "                    None if self.stepped_from_its_back(output)\n                        && let Some(knowing)",
+    replace: "                    None if false\n                        && let Some(knowing)",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -587,5 +587,13 @@ export const mutations: Mutation[] = [
     find: "        && (crate::lower::iterators::is_stepped_items(it)\n",
     replace: "        && (true\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_of_rev_folds_its_source.rs$"],
+  },
+  {
+    name: "enumerate-of-take-from-back-unknowing",
+    breaks: "an `enumerate()` of a `take()` of items with a destructor, folded from its back, is `$enumerate` of `.take(n)`, which knows neither its back nor its length: `enumerated.iter.len is not a function` (#651)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                    None if self.stepped_from_its_back(output)\n                        && (crate::lower::recognition::counted_source(self.tcx, iter_ty)\n",
+    replace: "                    None if false\n                        && (crate::lower::recognition::counted_source(self.tcx, iter_ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_take_from_back_refused.rs$"],
   },
 ];
