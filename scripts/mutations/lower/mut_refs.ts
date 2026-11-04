@@ -187,7 +187,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/limitations.test.ts",
       "-t",
-      "an .Option., which it has as a box",
+      "inside what generic code takes or gives, an .Option. or a struct.s field",
     ],
   },
   {
