@@ -480,8 +480,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `fold` whose stages its JS still holds as a variable is judged one no stage of may panic (#423)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        self.panicking_steps(iter_ty) > 0\n",
-    replace: "        false\n",
+    find: "        self.panicking_steps(iter_ty) > 0 || self.unseen_steps_may_panic(iter_ty)\n",
+    replace: "        self.unseen_steps_may_panic(iter_ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
   },
   {

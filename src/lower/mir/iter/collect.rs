@@ -283,7 +283,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Or of a chain whose JS hides a stage its type has, a variable
         // holding it: more of its closures that may panic than its JS shows
         // callbacks, each taken to throw, as nothing shows it can't (#423).
-        let hidden = iter_ty.is_some_and(|ty| self.panicking_steps(ty) > crate::lower::iterators::callbacks_in(it));
+        // Or of one stepping an iterator whose steps its JS never shows,
+        // the crate's own or a `dyn`'s, that may panic (rd763, rd765).
+        let hidden = iter_ty.is_some_and(|ty| {
+            self.panicking_steps(ty) > crate::lower::iterators::callbacks_in(it) || self.unseen_steps_may_panic(ty)
+        });
         if !crate::lower::iterators::chain_may_throw(it) && !hidden {
             return Ok(None);
         }
@@ -301,9 +305,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether stepping an iterator of `iter_ty` may panic by what it runs,
     /// as its type shows where its JS is still a variable: a closure or a
     /// function of its type's, each but one of the crate's functions that
-    /// never unwinds (ADR 0902) or a constructor (#423).
+    /// never unwinds (ADR 0902) or a constructor (#423); or an iterator its
+    /// type holds whose steps no JS shows, `unseen_steps_may_panic`'s.
     pub(in crate::lower::mir) fn steps_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
-        self.panicking_steps(iter_ty) > 0
+        self.panicking_steps(iter_ty) > 0 || self.unseen_steps_may_panic(iter_ty)
+    }
+
+    /// Whether an iterator `iter_ty` holds, itself or a source std's
+    /// adapters step, its revealed type's, may panic as it's stepped where
+    /// no JS of its shows it: the crate's own, or a library's, whose impl
+    /// of `Iterator` or `DoubleEndedIterator` writes a method that may
+    /// unwind, any but the crate's that never do (ADR 0902), a `fuse()`'s
+    /// `next` say, which runs its `next`; or a `dyn` one's, anyone's
+    /// (rd763, rd765, rd768).
+    fn unseen_steps_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
+        let recognition = self.recognition();
+        let traits = [
+            Some(std_item(self.tcx, StdItem::Iterator)),
+            recognition.double_ended_iterator(),
+        ];
+        let may_unwind = |ty: Ty<'tcx>| {
+            (traits.iter().flatten())
+                .filter_map(|&tr| recognition.user_impl(ty::TraitRef::new(self.tcx, tr, [ty])))
+                .any(|imp| {
+                    self.tcx.associated_item_def_ids(imp).iter().any(|&method| {
+                        matches!(self.tcx.def_kind(method), rustc_hir::def::DefKind::AssocFn)
+                            && !self.krate.never_unwinding.contains(&method)
+                    })
+                })
+        };
+        (self.reveal(iter_ty).walk().filter_map(|part| part.as_type())).any(|part| match part.kind() {
+            ty::Dynamic(..) => true,
+            ty::Adt(..) => recognition.is_user_iterator(part) && may_unwind(part),
+            _ => false,
+        })
     }
 
     /// How many of the closures and functions of `iter_ty`'s, its stages',
@@ -685,11 +720,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             IterMethod::TryForEach => (Expr::undefined(), self.unary_folded(arg())),
             _ => (arg(), arg()),
         };
-        // Into another `Try`, of an accumulator, a `B`, with a destructor
-        // that a stage's panic may strand, its drop, as `fold`'s (#423).
-        // Of `try_fold` and `try_rfold`, `(&mut self, B, F)`.
-        let unwind = match (arg_tys, &tried, method) {
-            ([receiver, acc, _], Some(_), IterMethod::TryFold | IterMethod::TryRFold) => {
+        // Of an accumulator, a `B`, with a destructor that a stage's panic
+        // may strand, its drop, as `fold`'s (#423), into any `Try`, an
+        // `Option` or a `Result` too, whose helper drops what its last
+        // `Some` or `Ok` held (rd767). Of `try_fold` and `try_rfold`,
+        // `(&mut self, B, F)`.
+        let unwind = match (arg_tys, method) {
+            ([receiver, acc, _], IterMethod::TryFold | IterMethod::TryRFold) => {
                 self.stranded_drop(&it, *receiver, *acc, span)?
             }
             _ => None,
