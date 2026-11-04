@@ -67,8 +67,12 @@ function main() {
       $dropEach(dDrop_drop),
       dDrop_drop,
     );
-    const result = $lastDropping(iter, dDrop_drop);
-    iter.return();
+    let result;
+    try {
+      result = $lastDropping(iter, dDrop_drop);
+    } finally {
+      iter.return();
+    }
     function map(d) {
       const result = d[0] + 0;
       dDrop_drop(d);

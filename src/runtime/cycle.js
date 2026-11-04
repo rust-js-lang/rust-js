@@ -20,11 +20,13 @@ function $cycleOf(iterator, clone, next, boxed = false, drop) {
 
 // A `Cycle` of what it started with, `orig`, and what it steps, `iter`,
 // both kept on it for its `Debug`, its size hint and a clone, where it is,
-// which it carries (ADR 0544).
+// which it carries (ADR 0544). A `$Steps`, whose `take` closes it though a
+// clone throws, a panic, as Rust drops a `Take` that holds it as it
+// unwinds (#708).
 function $cycleFrom(orig, iter, clone, next, boxed, drop) {
   let closed = false;
-  const cycled = Iterator.from({
-    next() {
+  const cycled = new $Steps(
+    () => {
       if (closed) return { done: true, value: undefined };
       let item = next(cycled.iter);
       if (item === undefined) {
@@ -36,15 +38,14 @@ function $cycleFrom(orig, iter, clone, next, boxed, drop) {
       }
       return { done: false, value: boxed ? $someValue(item) : item };
     },
-    return() {
+    () => {
       if (!closed) {
         closed = true;
         drop?.(cycled.orig);
         drop?.(cycled.iter);
       }
-      return { done: true, value: undefined };
     },
-  });
+  );
   cycled.orig = orig;
   cycled.iter = iter;
   // Rust's: none of an empty one, else without end.

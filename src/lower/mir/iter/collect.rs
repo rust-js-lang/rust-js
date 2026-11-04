@@ -388,24 +388,58 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as its type shows where its JS is still a variable: a closure or a
     /// function of its type's, each but one of the crate's functions that
     /// never unwinds (ADR 0902) or a constructor (#423); or an iterator its
-    /// type holds whose steps no JS shows, `unseen_steps_may_panic`'s; or a
-    /// std adapter that drops items it passes over, whose drop may panic,
-    /// `passed_drops_may_panic`'s.
+    /// type holds whose steps no JS shows, `unseen_steps_may_panic`'s; or
+    /// what a std iterator does itself as it's stepped, a drop or a clone
+    /// that may panic, `std_work_may_panic`'s.
     pub(in crate::lower::mir) fn steps_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
-        self.panicking_steps(iter_ty) > 0
-            || self.unseen_steps_may_panic(iter_ty)
-            || self.passed_drops_may_panic(iter_ty)
+        self.panicking_steps(iter_ty) > 0 || self.unseen_steps_may_panic(iter_ty) || self.std_work_may_panic(iter_ty)
     }
 
-    /// Whether an adapter of std's that `iter_ty` holds, its revealed type's,
-    /// drops items it passes over as it's stepped, a `skip`'s, a
-    /// `step_by`'s, a `skip_while`'s or a `take`'s, of items whose drop
-    /// may panic, `drop_may_panic`'s.
-    fn passed_drops_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
+    /// Whether an iterator of std's that `iter_ty` holds, its revealed
+    /// type's, does what may panic itself as it's stepped, as recognition's
+    /// `stepping_work` catalogs it: drops items, of a `skip()`, a `filter()`
+    /// or a `zip()`, or a part it has exhausted, a `chain()`'s side or a
+    /// `flat_map()`'s inner iterator, whose drop may panic
+    /// (`drop_may_panic`); or clones values, of a `cloned()` or a
+    /// `cycle()`, whose clone may (`clone_may_panic`) (#707–#711).
+    fn std_work_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
+        use crate::lower::recognition::SteppingWork;
         (self.reveal(iter_ty).walk().filter_map(|part| part.as_type()))
-            .filter_map(|part| self.recognition().passes_over_items(part))
-            .filter_map(|source| self.iterator_item(source))
-            .any(|item| self.drop_may_panic(item))
+            .flat_map(|part| self.recognition().stepping_work(part))
+            .any(|work| match work {
+                SteppingWork::DropsItemsOf(source) => {
+                    self.iterator_item(source).is_some_and(|item| self.drop_may_panic(item))
+                }
+                SteppingWork::DropsExhausted(part) => self.drop_may_panic(part),
+                SteppingWork::Clones(value) => self.clone_may_panic(value),
+            })
+    }
+
+    /// Whether std's clone of a value of `ty` may panic: a `Copy` value's
+    /// never does; the crate's type's is its `Clone`'s, which may unwind
+    /// but where its `clone` never does (ADR 0902); a library's, a
+    /// `Vec`'s or an `Option`'s, its type arguments' clones, as a tuple's
+    /// and an array's are its parts', and a closure's its captures'; a type
+    /// parameter's, a `dyn`'s or an opaque type's is anyone's (#708).
+    fn clone_may_panic(&self, ty: Ty<'tcx>) -> bool {
+        if self.is_copy(ty) {
+            return false;
+        }
+        match ty.kind() {
+            ty::Param(_) | ty::Dynamic(..) | ty::Alias(..) => true,
+            ty::Adt(adt, _) if adt.did().is_local() => {
+                let Some(clone) = self.tcx.lang_items().clone_trait() else {
+                    return true;
+                };
+                (self.recognition().user_impl(ty::TraitRef::new(self.tcx, clone, [ty])))
+                    .is_some_and(|imp| self.impl_may_unwind(imp))
+            }
+            ty::Adt(_, args) => args.types().any(|arg| self.clone_may_panic(arg)),
+            ty::Tuple(parts) => parts.iter().any(|part| self.clone_may_panic(part)),
+            ty::Array(item, _) | ty::Slice(item) => self.clone_may_panic(*item),
+            ty::Closure(_, args) => (args.as_closure().upvar_tys().iter()).any(|upvar| self.clone_may_panic(upvar)),
+            _ => false,
+        }
     }
 
     /// Whether an iterator `iter_ty` holds, itself or a source std's
@@ -424,18 +458,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let may_unwind = |ty: Ty<'tcx>| {
             (traits.iter().flatten())
                 .filter_map(|&tr| recognition.user_impl(ty::TraitRef::new(self.tcx, tr, [ty])))
-                .any(|imp| {
-                    self.tcx.associated_item_def_ids(imp).iter().any(|&method| {
-                        matches!(self.tcx.def_kind(method), rustc_hir::def::DefKind::AssocFn)
-                            && !self.krate.never_unwinding.contains(&method)
-                    })
-                })
+                .any(|imp| self.impl_may_unwind(imp))
         };
         (self.reveal(iter_ty).walk().filter_map(|part| part.as_type())).any(|part| match part.kind() {
             // A type parameter's, whose steps are anyone's, as a `dyn`'s are.
             ty::Dynamic(..) | ty::Param(_) => true,
             ty::Adt(..) => recognition.is_user_iterator(part) && may_unwind(part),
             _ => false,
+        })
+    }
+
+    /// Whether a method the impl `imp` writes may unwind: any but one of
+    /// the crate's that never does (ADR 0902).
+    fn impl_may_unwind(&self, imp: DefId) -> bool {
+        self.tcx.associated_item_def_ids(imp).iter().any(|&method| {
+            matches!(self.tcx.def_kind(method), rustc_hir::def::DefKind::AssocFn)
+                && !self.krate.never_unwinding.contains(&method)
         })
     }
 
@@ -458,10 +496,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `$foldToArray`'s arguments, `it` folded into a `Vec` of `item`s:
-    /// of items with a destructor, from a type that runs a closure or a
-    /// `fn` as it's stepped, which may panic, their drop, which what it
-    /// collected is dropped by as std's unwinds, and whether what's left
-    /// is first (#423).
+    /// of items with a destructor, from a type whose steps may panic, as
+    /// `steps_may_panic` says, their drop, which what it collected is
+    /// dropped by as std's unwinds, and whether what's left is first (#423,
+    /// #707).
     fn folded_unwinding(
         &mut self,
         it: Expr,
@@ -470,11 +508,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         iter_ty: Ty<'tcx>,
         span: Span,
     ) -> R<Vec<Expr>> {
-        let runs_code = iter_ty
-            .walk()
-            .any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn()));
         let drop = match item {
-            Some(item) if runs_code && self.drops(item) != crate::lower::drops::Drops::Nothing => {
+            Some(item) if self.steps_may_panic(iter_ty) && self.drops(item) != crate::lower::drops::Drops::Nothing => {
                 self.drop_function(item, span)?
             }
             _ => None,

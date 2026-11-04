@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "cycle-js-iterator",
+    breaks: "a `cycle()` of the crate's iterator is JS's iterator, whose `take` is done with it once its clone throws, a panic, so neither what it keeps nor what it steps is dropped as the panic unwinds (#708)",
+    file: "src/runtime/cycle.js",
+    find: "  const cycled = new $Steps(\n",
+    replace: "  const cycled = ((next, close) => Iterator.from({ next, return: () => (close(), { done: true }) }))(\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
+  },
+  {
     name: "cycle-of-none-gives-one",
     breaks: "`cycle()` of an iterator with nothing left gives an item, where Rust's gives none",
     file: "src/runtime/cycle.js",

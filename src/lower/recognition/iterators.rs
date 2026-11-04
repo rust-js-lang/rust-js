@@ -411,21 +411,73 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (self.array_source(source) == Some(false) || self.range_kind(source).is_some() || holds_nothing).then_some(None)
     }
 
-    /// What std's adapter `ty` steps, where it drops items of it that it
-    /// passes over as it's stepped, outside a fold's closure, which still
-    /// holds what it was given: a `skip`'s, a `step_by`'s, a `skip_while`'s
-    /// or a `take`'s. Not a `filter`'s, a `filter_map`'s or a
-    /// `take_while`'s, whose rejected item is dropped inside the closure,
-    /// after the accumulator moved into what it returns, which std leaks
-    /// (rustc's #47949, `$kept`'s).
-    pub(in crate::lower) fn passes_over_items(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-        let ty::Adt(adt, args) = ty.kind() else { return None };
-        matches!(
-            std_path(self.tcx, adt.did()).strip_prefix("std::iter::"),
-            Some("Skip" | "StepBy" | "SkipWhile" | "Take")
-        )
-        .then(|| args.types().next())
-        .flatten()
+    /// What std's iterator `ty` does itself as it's stepped that may run
+    /// the program's code, besides its stages' closures and functions: the
+    /// items it drops of what it steps, a `skip`'s, a `step_by`'s, a
+    /// `skip_while`'s or a `take`'s that it passes over, a `filter`'s or a
+    /// `take_while`'s that its closure rejects, a `zip`'s of either side
+    /// that the other outlasts, the one taken as the other ends or each
+    /// trimmed from the longer's back (#707, #711); the part it drops once
+    /// it's exhausted, a `chain()`'s side, a `fuse()`'s iterator, a
+    /// `cycle()`'s, a `flatten()`'s or a `flat_map()`'s source, function
+    /// and inner iterator, front and back (#709); and the values it clones,
+    /// a `cloned()`'s items, a `repeat()`'s value, a `cycle()`'s iterator
+    /// (#708). The one catalog of it (ADR 1089, amended).
+    pub(in crate::lower) fn stepping_work(&self, ty: Ty<'tcx>) -> Vec<SteppingWork<'tcx>> {
+        use SteppingWork::{Clones, DropsExhausted, DropsItemsOf};
+        let ty::Adt(adt, args) = ty.kind() else {
+            return Vec::new();
+        };
+        let mut types = args.types();
+        let first = types.next();
+        let path = std_path(self.tcx, adt.did());
+        let Some(name) = path.strip_prefix("std::iter::") else {
+            return Vec::new();
+        };
+        let into_iter = |into: Ty<'tcx>| self.iterator_of(into).map(DropsExhausted);
+        match name {
+            "Skip" | "StepBy" | "SkipWhile" | "Take" | "Filter" | "TakeWhile" => {
+                first.map(DropsItemsOf).into_iter().collect()
+            }
+            "Zip" => [first, types.next()].into_iter().flatten().map(DropsItemsOf).collect(),
+            "Chain" => [first, types.next()]
+                .into_iter()
+                .flatten()
+                .map(DropsExhausted)
+                .collect(),
+            "Fuse" => first.map(DropsExhausted).into_iter().collect(),
+            "Cycle" => first
+                .into_iter()
+                .flat_map(|source| [Clones(source), DropsExhausted(source)])
+                .collect(),
+            "Flatten" => {
+                let inner = first.and_then(|source| self.iterator_item(source)).and_then(into_iter);
+                first.map(DropsExhausted).into_iter().chain(inner).collect()
+            }
+            "FlatMap" => {
+                let (inner, function) = (types.next(), types.next());
+                let inner = inner.and_then(into_iter);
+                [first, function]
+                    .into_iter()
+                    .flatten()
+                    .map(DropsExhausted)
+                    .chain(inner)
+                    .collect()
+            }
+            "Cloned" => self.iterator_item(ty).map(Clones).into_iter().collect(),
+            "Repeat" | "RepeatN" => first.map(Clones).into_iter().collect(),
+            _ => Vec::new(),
+        }
+    }
+
+    /// The iterator a value of `into` gives, its `IntoIterator::IntoIter`,
+    /// normalized.
+    fn iterator_of(&self, into: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let into_iter = trait_method(self.tcx, std_item(self.tcx, StdItem::IntoIterator), "IntoIter");
+        let projection = Ty::new_projection(self.tcx, ty::IsRigid::No, into_iter, [into]);
+        (self.tcx)
+            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projection))
+            .ok()
     }
 
     /// The `Iterator` method `name` the impl of the crate's iterator `ty`
@@ -972,6 +1024,18 @@ pub(crate) fn cloned_parts<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Par
         _ => return None,
     };
     Some((parted, args.type_at(0), args.type_at(1)))
+}
+
+/// What std's iterator does itself as it's stepped that may run the
+/// program's code, `stepping_work`'s.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub(in crate::lower) enum SteppingWork<'tcx> {
+    /// It drops items of this iterator, which it steps.
+    DropsItemsOf(Ty<'tcx>),
+    /// It drops this part of its, once it's exhausted.
+    DropsExhausted(Ty<'tcx>),
+    /// It clones a value of this type.
+    Clones(Ty<'tcx>),
 }
 
 /// Which of the adapters made of two parts alone, `cloned_parts`', one is.

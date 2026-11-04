@@ -333,3 +333,79 @@ Rust in both builds. The matrix takes off #649's last 72 cases, its
 `rev.skip` and `rev.step_by` ones. Mutations:
 `iterator-own-nth-back-unsaid` (`runtime/iterator.ts`) and
 `closing-own-nth-back-unsaid` (`runtime/closing.ts`).
+
+## Amendment: what std's iterators do themselves as they're stepped is one catalog's (2026-11-04, #707, #708, #709, #711)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Each changed results, so Rust's behavior is kept.
+
+`steps_may_panic` asked a type's closures and functions, the crate's
+iterators behind std's adapters, and the items a `skip`, `step_by`,
+`skip_while` or `take` passes over. It didn't ask what std's iterators
+run themselves, so without a closure stage a collect a panic stopped was
+`Array.from(..)` or a spread, and what it had collected, or what was left,
+was never dropped:
+
+- a `zip()` drops the item it took from its first side as its second
+  ends, and from its back it trims the longer side, dropping what it
+  trims: `ds.into_iter().zip(0..2).collect::<Vec<_>>()`, of items whose
+  drop panics, left the collected pairs undropped (#707), and
+  `ds.into_iter().zip(es).rev().collect()` what both sides had left (#711);
+- a `chain()` drops a side it has exhausted, a `fuse()` its iterator,
+  a `cycle()` the one it replaces, and a `flatten()` or a `flat_map()` its
+  source, its function and each inner iterator it's done with: a chain of
+  the crate's two iterators whose drop panics left the second undropped
+  (#709);
+- a `cloned()` clones each item, a `repeat()` its value and a `cycle()`
+  its iterator, by the crate's `Clone`, which may panic:
+  `v.iter().cloned().collect::<Vec<_>>()` left the first clone undropped
+  (#708).
+
+**What std's iterator does itself as it's stepped is recognition's
+`stepping_work`**, one catalog of three kinds: the items it drops of
+what it steps (`DropsItemsOf`, a `skip`'s, a `filter`'s rejected item, a
+`take_while`'s first refused, either side of a `zip`), the part it drops
+once it's exhausted (`DropsExhausted`), and the values it clones
+(`Clones`). It replaces `passes_over_items`. `steps_may_panic` asks it of
+each type its revealed type holds (`std_work_may_panic`): an item's or a
+part's `drop_may_panic`, or a value's `clone_may_panic`. A clone of a
+`Copy` value never panics; the crate's type's is its `Clone`'s, which may
+unwind where its `clone` isn't one that never does (ADR 0902); a library
+type's is its type arguments', a tuple's, an array's and a closure's
+their parts'; a type parameter's, a `dyn`'s or an opaque type's is
+anyone's.
+
+An exhausted part is asked whether its drop may panic, not whether it
+still holds anything: a `chain()` of a `Vec`'s `into_iter()` whose items'
+drop may panic is taken to, though an exhausted `IntoIter` holds no items.
+That costs a `try` or a `$collectDropping` only where a drop may panic
+(`last_kept_drop_panics.js`'s `fuse()`), and saves a second catalog of
+what each of std's iterators holds once it's done.
+
+**A collect by a compiled struct's fold is given its items' drop where
+`steps_may_panic` says** (`folded_unwinding`), not where its type holds a
+closure or a function, which was a second answer to the same question:
+the zip of #707 is `$foldToArray(.., drop, true)`.
+
+**`$repeating`, `$repeatingN` and `$cycleFrom` are `$Steps`**, as an
+iterator rust-js makes is (ADR 0669), closed once. JS's `take` of a JS
+iterator whose `next` throws is done with it, and never closes it, so a
+`repeat(d).take(3)` or a `cycle().take(5)` whose clone panicked left the
+value it holds undropped; `$Steps`' `take` closes its source.
+
+`adapters_own_work_that_panics.rs` holds each against native Rust.
+Mutations: `zip-drops-no-items`, `zip-drops-first-side-alone`,
+`chain-drops-no-side`, `flatten-drops-no-inner`, `flat-map-drops-no-inner`,
+`cloned-clones-nothing`,
+`cycle-clones-nothing` and `repeat-clones-nothing`
+(`lower/recognition/iterators.ts`), `exhausted-drop-panic-unseen`,
+`own-clone-never-panics` and `folded-unwinding-by-closures`
+(`lower/mir/iter/collect.ts`), `repeating-closed-twice` and
+`repeating-js-iterator` (`runtime/repeating.ts`) and `cycle-js-iterator`
+(`runtime/cycle.ts`); `passed-drops-panic-unseen`,
+`folded-collect-given-no-drop`, `fold-stage-by-type-unseen`,
+`collect-own-steps-unseen`, `own-iterator-never-unwinding-ignored` and
+`repeating-closed-undropped` name their new text.
+
+#710, the order a fold that takes a `map()` by value drops its closure
+and what its source has left, is no question of what may panic: it's
+left to its own fix.

@@ -460,9 +460,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a compiled std struct's collect of items with a destructor, a `zip`'s, a panic stopping it, leaves what it collected undropped (#423)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            Some(item) if runs_code && self.drops(item) != crate::lower::drops::Drops::Nothing => {",
+    find: "            Some(item) if self.steps_may_panic(iter_ty) && self.drops(item) != crate::lower::drops::Drops::Nothing => {",
     replace:
-      "            Some(item) if false && runs_code && self.drops(item) != crate::lower::drops::Drops::Nothing => {",
+      "            Some(item) if false && self.drops(item) != crate::lower::drops::Drops::Nothing => {",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
@@ -480,8 +480,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `fold` whose stages its JS still holds as a variable is judged one no stage of may panic (#423)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        self.panicking_steps(iter_ty) > 0\n            || self.unseen_steps_may_panic(iter_ty)\n",
-    replace: "        self.unseen_steps_may_panic(iter_ty)\n",
+    find: "        self.panicking_steps(iter_ty) > 0 || self.unseen_steps_may_panic(iter_ty)",
+    replace: "        self.unseen_steps_may_panic(iter_ty)",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
   },
   {
@@ -558,7 +558,7 @@ export const mutations: Mutation[] = [
     name: "own-iterator-never-unwinding-ignored",
     breaks: "each of the crate's iterators behind std's adapters is taken to panic, its methods that never unwind too, so a fold of one that can't, `Calm`'s, is `$foldDropping`, not `reduce` (rd763)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                            && !self.krate.never_unwinding.contains(&method)\n",
+    find: "                && !self.krate.never_unwinding.contains(&method)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_steps_behind_adapters_unwind.rs$"],
     snapshots: true,
@@ -575,8 +575,8 @@ export const mutations: Mutation[] = [
     name: "collect-own-steps-unseen",
     breaks: "a collect of std's adapter over the crate's iterator whose `next` panics is `Array.from(..)`, which drops neither what it collected nor what's left (rd765)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            || self.unseen_steps_may_panic(iter_ty)\n",
-    replace: "\n",
+    find: " || self.unseen_steps_may_panic(iter_ty) ||",
+    replace: " ||",
     tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
   },
   {
@@ -607,9 +607,34 @@ export const mutations: Mutation[] = [
     name: "passed-drops-panic-unseen",
     breaks: "a `skip()` and a `step_by()` of a `Vec`'s items whose drop panics, collected, are `Array.from(..)`: the panic of a drop they pass over leaves what's left undropped",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            || self.passed_drops_may_panic(iter_ty)\n",
-    replace: "",
+    find: " || self.std_work_may_panic(iter_ty)\n",
+    replace: "\n",
     tests: ["test/corpus.test.ts", "-t", "^compiled_adapters_closed_as_a_collect_unwinds.rs$"],
+  },
+  {
+    name: "folded-unwinding-by-closures",
+    breaks: "a collect of std's compiled `zip()` by its fold is given its items' drop only where its type holds a closure, so the panic of the item the zip drops as its other side ends leaves what it collected undropped (#707)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            Some(item) if self.steps_may_panic(iter_ty) && self.drops(item) != crate::lower::drops::Drops::Nothing => {",
+    replace:
+      "            Some(item) if iter_ty.walk().any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn())) && self.drops(item) != crate::lower::drops::Drops::Nothing => {",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
+  },
+  {
+    name: "exhausted-drop-panic-unseen",
+    breaks: "a `chain()` or a `flatten()` of the crate's iterators whose drop panics is taken to step without a panic, so the drop of a part it has exhausted leaves what's left undropped (#709)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                SteppingWork::DropsExhausted(part) => self.drop_may_panic(part),\n",
+    replace: "                SteppingWork::DropsExhausted(_) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
+  },
+  {
+    name: "own-clone-never-panics",
+    breaks: "a clone of the crate's type is taken to never panic, so a `cloned()` whose clone panics leaves what it collected undropped (#708)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                    .is_some_and(|imp| self.impl_may_unwind(imp))\n",
+    replace: "                    .is_some_and(|imp| false && self.impl_may_unwind(imp))\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
   },
   {
     name: "string-collected-by-next",
