@@ -44,10 +44,10 @@ function renamed(kind, names, room) {
       }
       room = BigInt.asIntN(64, room - BigInt($byteLen(name)));
       if (room < 0n) {
-        properties += !properties ? "..." : ", ...";
+        properties += properties === "" ? "..." : ", ...";
         break;
       }
-      properties += (!properties ? "" : ",") + name;
+      properties += (properties === "" ? "" : ",") + name;
     }
     return "{" + properties + "}";
   } else {

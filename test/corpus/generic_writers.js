@@ -19,7 +19,7 @@ function writeTime(w, hours, minutes, label, WWrite) {
   writeTwo(w, hours, WWrite);
   WWrite.writeChar(w, ":");
   writeTwo(w, minutes, WWrite);
-  if (label) {
+  if (label !== "") {
     WWrite.writeStr(w, " ");
     WWrite.writeFmt(w, `[${label}:${String((hours + minutes) & 255).padStart(3)}]`);
   }

@@ -186,7 +186,7 @@ export function shared(times) {
 export function words(s) {
   const owned = s;
   const trimmed = $trim(owned);
-  return [trimmed, !trimmed, trimmed === "hi"];
+  return [trimmed, trimmed === "", trimmed === "hi"];
 }
 
 /**

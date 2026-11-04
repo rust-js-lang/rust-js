@@ -301,6 +301,38 @@ impl Expr {
         }
     }
 
+    /// What this tests the truth of, of text's test that it isn't empty,
+    /// `x !== ""`, and an `Option`'s of text, `x != null && x !== ""`: `x`,
+    /// as text is falsy only where it's empty. Text's emptiness prints as
+    /// Rust says it, `x === ""` (rd732, the user's decision, ADR 0266
+    /// amended); what reads only its truth, a `filter` JS's `||` is (ADR
+    /// 0635), reads it as `x`'s.
+    pub fn text_truth(&self) -> Option<&Expr> {
+        match &self.kind {
+            ExprKind::Binary(Op::Ne, x, empty) if matches!(&empty.kind, ExprKind::Str(s) if s.is_empty()) => Some(x),
+            ExprKind::Binary(Op::And, present, text)
+                if let Some(x) = text.text_truth()
+                    && null_test(present, true).is_some_and(|tested| same_path(tested, x)) =>
+            {
+                Some(x)
+            }
+            _ => None,
+        }
+    }
+
+    /// A conditional of text by its emptiness, `test ? yes : no`, as its
+    /// truth's `||`: `x === "" ? y : x` and `x !== "" ? x : y` are `x || y`,
+    /// `x` where it isn't empty, else `y`, of an `x` that does nothing
+    /// (rd732), as `!x ? y : x` was.
+    pub fn text_or(test: &Expr, yes: &Expr, no: &Expr) -> Option<Expr> {
+        let (x, other) = match (test.text_truth(), test.clone().negated_test().text_truth()) {
+            (Some(x), _) if same_path(x, yes) => (yes, no),
+            (_, Some(x)) if same_path(x, no) => (no, yes),
+            _ => return None,
+        };
+        (!x.has_effects()).then(|| Expr::bin(Op::Or, x.clone(), other.clone()))
+    }
+
     /// This as a test: `!!a` is `a`, in the parts of `&&` and `||` too,
     /// whose value the test only asks the truth of. `x != null && x` is `x`,
     /// of a path, `props.meta`, too, wherever in an `&&` it is: what's

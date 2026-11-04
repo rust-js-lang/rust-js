@@ -175,7 +175,7 @@ function parseOrder(text) {
       .split(",")
       .values()
       .map((s) => $trim(s))
-      .filter(Boolean)
+      .filter((part) => part !== "")
       .map((part) => {
         const splitOnce = $splitOnce(part, "x");
         const result =

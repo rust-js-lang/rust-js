@@ -21,7 +21,7 @@ export function TodoItem({ todo, dispatch }) {
     }
     ended.current = true;
     const title = $trim(draft);
-    if (!title) {
+    if (title === "") {
       dispatch({ TAG: "Destroy", _0: id });
     } else {
       dispatch({ TAG: "Edit", _0: id, _1: title });

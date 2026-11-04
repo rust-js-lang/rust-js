@@ -8,7 +8,7 @@ function untilBlank(words) {
   let i = 0;
   let word;
   while ((word = words[i]) != null) {
-    if (!word) {
+    if (word === "") {
       // A blank ends it.
       break;
     }

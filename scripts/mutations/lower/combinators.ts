@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `filter` of any predicate is `o || undefined`: `filter(|v| !js::truthy(Some(*v)))` keeps what's truthy",
     file: "src/lower/combinators.rs",
-    find: "    matches!(&applied.tested().kind, js::ExprKind::Var(v) if v == HELD_SOME)\n",
+    find: "    matches!(&tested.kind, js::ExprKind::Var(v) if v == HELD_SOME)\n",
     replace: "    applied.mentions_var(HELD_SOME)\n",
     tests: [
       "test/lowering-options.test.ts",
@@ -101,9 +101,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`filter(|v| js::truthy(Some(v.name)))`, a part's truth, is `o || undefined`, the `Option`'s own",
     file: "src/lower/combinators.rs",
-    find: "    matches!(&applied.tested().kind, js::ExprKind::Var(v) if v == HELD_SOME)\n",
+    find: "    matches!(&tested.kind, js::ExprKind::Var(v) if v == HELD_SOME)\n",
     replace:
-      "    matches!(&applied.tested().kind, js::ExprKind::Var(v) if v == HELD_SOME) || matches!(&applied.tested().kind, js::ExprKind::Member(..))\n",
+      "    matches!(&tested.kind, js::ExprKind::Var(v) if v == HELD_SOME) || matches!(&tested.kind, js::ExprKind::Member(..))\n",
     tests: [
       "test/lowering-options.test.ts",
       "-t",
@@ -832,5 +832,14 @@ export const mutations: Mutation[] = [
     find: "        let text = |item: &Ty<'tcx>| self.is_string_like(*item) || self.recognition().is_cow(*item);\n",
     replace: "        let text = |item: &Ty<'tcx>| self.is_string_like(*item);\n",
     tests: ["test/corpus.test.ts", "-t", "^cow_texts_joined.rs$"],
+  },
+  {
+    name: "text-truth-unfolded",
+    breaks:
+      "`is_some_and` of text's test that it isn't empty, `s.is_some_and(|t| !t.is_empty())`, is `s != null && s !== \"\"`, not the truth `!!s` reads (ADR 0298, rd732)",
+    file: "src/lower/combinators.rs",
+    find: "    let tested = applied.text_truth().cloned().unwrap_or_else(|| applied.tested());\n",
+    replace: "    let tested = applied.tested();\n",
+    tests: ["test/lowering-options.test.ts", "-t", "is_some_and of the truth of what it holds"],
   },
 ];

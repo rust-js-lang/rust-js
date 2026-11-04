@@ -14,7 +14,7 @@ const mainConst$1 = "";
 function main() {
   let s = mainConst;
   s += "a";
-  console.log(`${s} ${$byteLen(mainConst$1)} ${!GREETING}`);
+  console.log(`${s} ${$byteLen(mainConst$1)} ${GREETING === ""}`);
   const slot = [1, 2];
   console.log(`(${slot[0]}, ${slot[1]})`);
 }

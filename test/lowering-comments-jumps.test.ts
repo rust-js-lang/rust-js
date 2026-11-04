@@ -339,7 +339,7 @@ pub fn process(tag: u8, row: &str) -> Vec<String> {
   expect(js).toContain("    // Fallthrough\n    case 125 /* \"}\" */:");
   // The `_` arm's own pattern comment after its `default:`, as upstream's
   // `default: /* """ "{" .. */ {` (rd525).
-  expect(js).toContain('    // Fallthrough\n    default: /* """ "{" "[" "0" - "9" */\n      if (__DEV__ && !row) {');
+  expect(js).toContain('    // Fallthrough\n    default: /* """ "{" "[" "0" - "9" */\n      if (__DEV__ && row === "") {');
   (globalThis as { __DEV__?: boolean }).__DEV__ = true;
   const process = lib.process as (tag: number, row: string) => string[];
   expect([process(82, ""), process(114, ""), process(67, ""), process(125, ""), process(48, ""), process(48, "[1]")]).toEqual([

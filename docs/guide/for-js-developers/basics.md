@@ -1242,7 +1242,9 @@ export const scale = level() > 2 ? double : level() > 1 ? (x) => (x + 1) >>> 0 :
 ```
 
 An `if` condition must be a `bool`. There's no truthiness: write
-`!s.is_empty()`, `n != 0`, `opt.is_some()`.
+`!s.is_empty()`, `n != 0`, `opt.is_some()`. A string's `is_empty()` is
+`s === ""`, and `!s.is_empty()` is `s !== ""`, as the Rust says it
+([ADR 0266](../../decisions/0266-text-or.md), amended).
 
 A let chain's value, each branch one value, reads what its `let` binds
 first, only where the tests before it hold, and once, then is one `?:`
@@ -2844,7 +2846,7 @@ pub fn last_named(names: &[String]) -> Option<&String> {
 export function lastNamed(names) {
   for (let i = names.length - 1; i >= 0; i--) {
     const name = names[i];
-    if (name) {
+    if (name !== "") {
       return name;
     }
   }
@@ -2959,7 +2961,7 @@ export function pairs(v) {
   0753](../../decisions/0753-a-branch-of-only-comments-keeps-them.md), amended),
   of a `while let`'s too, whose `Some` is the loop's test, `while ((word =
   words[i]) != null)`, even where the `if` tests the value's truth, `if
-  (!word)` of `word.is_empty()` (#301), or does something before its
+  (word === "")` of `word.is_empty()` (#301), or does something before its
   `break` ([ADR
   0702](../../decisions/0702-a-while-is-its-test-and-its-break-where-written.md),
   [ADR 0684](../../decisions/0684-a-continue-the-program-wrote-is-where-it-wrote-it.md),
@@ -2996,7 +2998,7 @@ pub fn until_tag(words: &[&str], tags: &mut Vec<String>) -> usize {
 export function sentence(words, limit) {
   let i = 0;
   while (i < words.length) {
-    if (!words[i] || i === limit) {
+    if (words[i] === "" || i === limit) {
       // A blank or the limit ends it.
       break;
     }
@@ -3491,8 +3493,9 @@ export function label(text) {
 
 - Only a `filter` by the truth of what it holds is `||`: any other test,
   `filter(|n| *n > 0)`, is a conditional, `n != null && n > 0 ? n : 1`.
-- Text is falsy only where it's empty, so `!t.is_empty()` is its truth.
-  So a `match` of what it keeps is a test of that truth: `match
+- Text is falsy only where it's empty, so a `filter` by `!t.is_empty()`
+  is by its truth, though `t.is_empty()` alone prints `t === ""`. So a
+  `match` of what it keeps is a test of that truth: `match
   NAME.with_borrow(Clone::clone).filter(|n| !n.is_empty()) { Some(n) =>
   format!("<{n}>"), None => .. }` is `name ? `<${name}>` : ..`, of a
   module's variable too where the arm that reads it does nothing

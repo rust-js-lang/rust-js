@@ -53,7 +53,7 @@ export function Todos() {
   const id = useId();
   const left = useMemo(() => todos.filter((t) => !t.done).length, [todos]);
   function add() {
-    if (draft) {
+    if (draft !== "") {
       dispatch({ TAG: "Add", _0: draft });
       setDraft("");
     }
@@ -117,7 +117,7 @@ export function Clock() {
 const Theme = createContext("light");
 const BADGE = memo(Badge);
 /** Any two labels that aren't empty count as the same props. */
-const LooseBadge = memo(Badge, (a, b) => !a.label === !b.label);
+const LooseBadge = memo(Badge, (a, b) => (a.label === "") === (b.label === ""));
 
 export function Badge({ label }) {
   globalThis.rendered(label);

@@ -1471,6 +1471,9 @@ pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<St
     // null ? y : x`, an `Option`'s value or another's, `x ?? y` (ADR 0298).
     let coalesced =
         |set, x: &Expr| !test.has_effects() && js::null_test(&test, set).is_some_and(|t| js::same_path(t, x));
+    if let Some(or) = Expr::text_or(&test, &yes, &no) {
+        return or;
+    }
     match &test.kind {
         ExprKind::Unary(UnaryOp::Not, x) if !x.has_effects() && js::same_path(x, &no) => {
             return Expr::bin(Op::Or, no, yes);

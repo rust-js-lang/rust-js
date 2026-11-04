@@ -469,7 +469,7 @@ test("iterators are array methods, and sorting takes comparators", async () => {
   expect(js).toContain("  w.sort((a, b) => a - b);");
   expect(js).toContain("  w.sort((a, b) => $cmp(key(a), key(b)));");
   // `then_with` is `||`: `Equal` is 0.
-  expect(js).toContain("  w.sort((a, b) => $cmp(!a, !b) || $cmp(a, b));");
+  expect(js).toContain('  w.sort((a, b) => $cmp(a === "", b === "") || $cmp(a, b));');
   // A match of an \`Ordering\` is a switch of its numbers (ADR 0629).
   expect(js).toContain("  switch ($cmp(a, b)) {\n    case -1:\n      return -1;\n");
 });

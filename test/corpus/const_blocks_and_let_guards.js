@@ -26,7 +26,7 @@ function classify(input) {
       const rest = splitOnce[1].slice(1);
       if (rest.endsWith('"')) {
         const inner = rest.slice(0, -1);
-        if (inner) {
+        if (inner !== "") {
           const key = splitOnce[0];
           return `${key} is the string ${inner}`;
         }

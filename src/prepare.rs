@@ -706,21 +706,24 @@ fn fallen_declared(body: &mut Vec<Stmt>) {
 }
 
 /// The fallback `stmt` gives the variable `name`: `c` of `if (!x) { x =
-/// c; }`, by `||`, or of `x = x ?? c`, by `??`.
+/// c; }`, and of text's `if (x === "")` (`Expr::text_truth`, rd732), by
+/// `||`, or of `x = x ?? c`, by `??`.
 fn fallback_of(stmt: &Stmt, name: &str) -> Option<(Op, Expr)> {
     let is = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v == name);
+    let falsy = |test: &Expr| match &test.kind {
+        ExprKind::Unary(UnaryOp::Not, x) => is(x),
+        _ => test.clone().negated_test().text_truth().is_some_and(is),
+    };
     match &stmt.kind {
-        StmtKind::If(test, then, None) if matches!(&test.kind, ExprKind::Unary(UnaryOp::Not, x) if is(x)) => {
-            match then.as_slice() {
-                [
-                    Stmt {
-                        kind: StmtKind::Assign(target, fallback),
-                        ..
-                    },
-                ] if is(target) => Some((Op::Or, fallback.clone())),
-                _ => None,
-            }
-        }
+        StmtKind::If(test, then, None) if falsy(test) => match then.as_slice() {
+            [
+                Stmt {
+                    kind: StmtKind::Assign(target, fallback),
+                    ..
+                },
+            ] if is(target) => Some((Op::Or, fallback.clone())),
+            _ => None,
+        },
         StmtKind::Assign(target, value) if is(target) => match &value.kind {
             ExprKind::Binary(Op::Coalesce, x, fallback) if is(x) => Some((Op::Coalesce, (**fallback).clone())),
             _ => None,
@@ -1002,13 +1005,24 @@ fn expr(e: &mut Expr) {
         };
         return;
     }
-    // `x == null || !x` is `!x`: `null` and `undefined` are falsy (ADR 0313).
+    // `x == null || !x` is `!x`: `null` and `undefined` are falsy (ADR 0313);
+    // of text, `x == null || x === ""`, its truth's too (`text_truth`, rd732).
     if let ExprKind::Binary(js::Op::Or, null_test, not) = &e.kind
         && let Some(x) = js::null_test(null_test, false)
-        && let ExprKind::Unary(js::UnaryOp::Not, y) = &not.kind
-        && js::same_path(x, y)
     {
-        *e = (**not).clone();
+        match &not.kind {
+            ExprKind::Unary(js::UnaryOp::Not, y) if js::same_path(x, y) => *e = (**not).clone(),
+            _ if !x.has_effects()
+                && not
+                    .clone()
+                    .negated_test()
+                    .text_truth()
+                    .is_some_and(|y| js::same_path(x, y)) =>
+            {
+                *e = Expr::unary(js::UnaryOp::Not, x.clone()).or_at(e.span);
+            }
+            _ => {}
+        }
     }
     // `() => (async () => { .. })()`, a closure of an `async` block, is
     // `async () => { .. }`, as react.dev's `loadLinter`: calling either runs
@@ -1143,8 +1157,11 @@ fn expr(e: &mut Expr) {
             expr(c);
             // `a ? a : b` is `a || b`: `a` where it's truthy, else `b`; and
             // `a ? a : undefined`, `a || undefined`, which a fallback after
-            // makes `a || y` (`fallen_to`).
-            if js::same_path(a, b) {
+            // makes `a || y` (`fallen_to`); and of text by its emptiness,
+            // `x !== "" ? x : undefined`, its truth's (`Expr::text_or`).
+            if let Some(or) = Expr::text_or(a, b, c) {
+                *e = Expr { span: e.span, ..or };
+            } else if js::same_path(a, b) {
                 let (then, els) = (
                     std::mem::replace(&mut **b, Expr::undefined()),
                     std::mem::replace(&mut **c, Expr::undefined()),

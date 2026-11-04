@@ -71,7 +71,7 @@ function ofText(keys, seen, last) {
   const out = [];
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
-    if (key && (!seen || last !== key)) {
+    if (key !== "" && (!seen || last !== key)) {
       for (const part of key) {
         out.push(part.codePointAt(0));
       }

@@ -601,7 +601,7 @@ pub fn deferred(key: &'static str) -> impl Fn() {
   expect(js).toContain("export function capped(limit) {\n  if (Internals.count > limit) {\n    return limit;\n  }\n  return Internals.count;\n}");
   expect(js).toContain("export function read() {\n  return Internals.count;\n}");
   // In a closure's body too, a \`|&f|\` pattern's (ADR 0840, amended).
-  expect(js).toContain("  return () => {\n    if (key) {\n      didWarn[key] = true;\n    }\n  };\n");
+  expect(js).toContain("  return () => {\n    if (key !== \"\") {\n      didWarn[key] = true;\n    }\n  };\n");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.read()).toBe(2);
   expect([lib.counted(), lib.read()]).toEqual([4, 3]);

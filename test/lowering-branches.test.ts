@@ -878,8 +878,10 @@ pub fn logs(message: &Message, out: &mut Vec<u32>) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).not.toContain("!= null &&");
-  expect(js).toContain("  if (props.meta) {\n");
+  // A `bool`'s set and true is its truth; text's, its test that it isn't
+  // empty, as the Rust says it (rd732).
+  expect(js).not.toContain("firstLoad != null &&");
+  expect(js).toContain('  if (props.meta != null && props.meta !== "") {\n');
   const lib = await import(join(dir, "mir.js"));
   const pushed: number[] = [];
   lib.starts({ TAG: "Start", firstLoad: true }, pushed);
@@ -940,7 +942,7 @@ test("a guarded binding of an Option's string is its truth", async () => {
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   // MIR's one value, as react.dev's original writes it.
   expect(js).toContain(
-    'export function title(errorCode) {\n  return errorCode ? `Minified React error #${errorCode}` : "Minified Error Decoder";\n}',
+    'export function title(errorCode) {\n  return errorCode != null && errorCode !== ""\n    ? `Minified React error #${errorCode}`\n    : "Minified Error Decoder";\n}',
   );
   const lib = await import(join(dir, "mir.js"));
   expect([lib.title("1"), lib.title(""), lib.title(undefined)]).toEqual(["Minified React error #1", "Minified Error Decoder", "Minified Error Decoder"]);
@@ -1085,7 +1087,7 @@ pub fn flagged(heading: bool, crumb: bool, expanded: bool) -> Option<&'static st
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("    home || !meta.title\n      ? `/images/og-${meta.path}.png`\n");
+  expect(js).toContain("    home || meta.title === \"\"\n      ? `/images/og-${meta.path}.png`\n");
   expect(js).toContain('  return !heading && crumb && !expanded ? "on" : undefined;\n');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.image(true, { title: "t", path: "/a" }), lib.image(false, { title: "t", path: "/a/b" }), lib.flagged(false, true, false)]).toEqual(["/images/og-/a.png", "/images/og/-a-b.png", "on"]);
@@ -1325,7 +1327,7 @@ pub fn kept(all: &[String], complete: bool, done: &[&str]) -> usize {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('return s !== "en" && (t ? !s : u);');
+  expect(js).toContain('return s !== "en" && (t ? s === "" : u);');
   expect(js).toContain('(code) => code !== "en" && (complete ? done.includes(code) : !done.includes(code))');
   expect(js).toContain("  return t ? (x + 1) >>> 0 : (x * 2) >>> 0;\n");
   const lib = await import(join(dir, "mir.js"));

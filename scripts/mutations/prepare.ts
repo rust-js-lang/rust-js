@@ -240,9 +240,9 @@ export const mutations: Mutation[] = [
     name: "null-or-falsy-kept",
     breaks: "`escaped == null || !escaped`, not `!escaped`",
     file: "src/prepare.rs",
-    find: "        && js::same_path(x, y)\n",
-    replace: "        && false\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "Console's loops"],
+    find: "            ExprKind::Unary(js::UnaryOp::Not, y) if js::same_path(x, y) => *e = (**not).clone(),\n",
+    replace: "            ExprKind::Unary(js::UnaryOp::Not, y) if false && js::same_path(x, y) => *e = (**not).clone(),\n",
+    tests: ["test/lowering-options.test.ts", "-t", "a truth test as a callback is Boolean"],
   },
   {
     name: "bitwise-assign-spelled-out",
@@ -297,8 +297,8 @@ export const mutations: Mutation[] = [
     name: "same-test-and-value-conditional",
     breaks: "`code ? code : null`, not `code || null`",
     file: "src/prepare.rs",
-    find: "            if js::same_path(a, b) {\n",
-    replace: "            if false && js::same_path(a, b) {\n",
+    find: "            } else if js::same_path(a, b) {\n",
+    replace: "            } else if false && js::same_path(a, b) {\n",
     tests: ["test/lowering-options.test.ts", "-t", "nullable field's None is null|a filter by truth then a fallback is JS"]
   },
   {
@@ -442,8 +442,8 @@ export const mutations: Mutation[] = [
     name: "fallen-declared-any-test",
     breaks: "a fallback where the test isn't the value's truth, `f === 0` or `name === \"x\"`, is `||` of it",
     file: "src/prepare.rs",
-    find: "        StmtKind::If(test, then, None) if matches!(&test.kind, ExprKind::Unary(UnaryOp::Not, x) if is(x)) => {\n",
-    replace: "        StmtKind::If(_, then, None) => {\n",
+    find: "        StmtKind::If(test, then, None) if falsy(test) => match then.as_slice() {\n",
+    replace: "        StmtKind::If(_, then, None) => match then.as_slice() {\n",
     tests: ["test/lowering-options.test.ts", "-t", "a let then its fallback"],
   },
   {
@@ -746,5 +746,33 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_field_forwarders.rs$"],
     snapshots: true,
+  },
+  {
+    name: "text-truth-conditional-unfolded",
+    breaks:
+      "text kept where it isn't empty, `(!w.is_empty()).then_some(w)`, is `w !== \"\" ? w : undefined`, not JS's `w || undefined` (rd732)",
+    file: "src/prepare.rs",
+    find: "            if let Some(or) = Expr::text_or(a, b, c) {\n",
+    replace: "            if let Some(or) = None::<Expr> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_while_drops.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "text-fallback-unfolded",
+    breaks:
+      "a `let` of text then its fallback where it's empty, `let mut name = error.name; if name.is_empty() { name = \"Error\" }`, is `let name = ..; if (name === \"\") { .. }`, not `const name = error.name || \"Error\";` (ADR 0651, rd732)",
+    file: "src/prepare.rs",
+    find: "        _ => test.clone().negated_test().text_truth().is_some_and(is),\n",
+    replace: "        _ => false,\n",
+    tests: ["test/lowering-options.test.ts", "-t", "a let then its fallback where it's falsy is one"],
+  },
+  {
+    name: "null-or-empty-text-unfolded",
+    breaks:
+      "an `Option` of text that's `None` or empty, `escaped.is_none_or(|e| e.is_empty())`, is `escaped == null || escaped === \"\"`, not `!escaped` (ADR 0313, rd732)",
+    file: "src/prepare.rs",
+    find: "                    .is_some_and(|y| js::same_path(x, y)) =>\n",
+    replace: "                    .is_some_and(|_| false) =>\n",
+    tests: ["test/lowering-loops.test.ts", "-t", "Console's loops, spreads and calls"],
   },
 ];

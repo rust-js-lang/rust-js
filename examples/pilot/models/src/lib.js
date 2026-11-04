@@ -129,7 +129,7 @@ export function validate(contact) {
     });
   }
   const name = $trim(contact.name);
-  if (!name) {
+  if (name === "") {
     fail("name", "a name is required");
   } else if (Array.from(name).length > MAX_NAME) {
     fail("name", `a name is at most ${MAX_NAME} characters`);
@@ -150,7 +150,10 @@ export function isEmail(text) {
     const user = splitOnce[0];
     const domain = splitOnce[1];
     return (
-      !!(user && !domain.includes("@") && domain.includes(".") && !domain.startsWith(".")) &&
+      user !== "" &&
+      !domain.includes("@") &&
+      domain.includes(".") &&
+      !domain.startsWith(".") &&
       !domain.endsWith(".")
     );
   } else {
@@ -162,7 +165,7 @@ export function isEmail(text) {
 export function matches(contact, query) {
   query = $trim(query).toLowerCase();
   return (
-    !query ||
+    query === "" ||
     contact.name.toLowerCase().includes(query) ||
     contact.email.toLowerCase().includes(query)
   );

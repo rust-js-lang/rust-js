@@ -22,6 +22,8 @@ function main() {
   console.log(`${$backtraceStatus(off) === "Disabled"} ${$backtraceShown(off, false)}`);
 
   const forced = $backtrace();
-  console.log(`${$backtraceStatus(forced) === "Captured"} ${!$backtraceShown(forced, false)}`);
+  console.log(
+    `${$backtraceStatus(forced) === "Captured"} ${$backtraceShown(forced, false) === ""}`,
+  );
 }
 //# sourceMappingURL=case.js.map

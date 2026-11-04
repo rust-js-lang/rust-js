@@ -28,7 +28,7 @@ function formatWithDisplay_fmt(formatWith, options, IIterator) {
       f += disp.impl.fmt(disp.value, options);
     });
     $given(iter, IIterator, true).forEach((elt) => {
-      if (formatWith.sep) {
+      if (formatWith.sep !== "") {
         f += formatWith.sep;
       }
       format(elt, (disp) => {

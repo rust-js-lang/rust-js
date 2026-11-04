@@ -168,9 +168,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => Expr::call(Expr::member(v, "sort"), vec![compare]),
                 }
             }
-            // Text is falsy only where it's empty, `!text` (ADR 0266): an empty
-            // array is truthy.
-            Std::IsEmpty if self.is_string_like(tys[0].peel_refs()) => Expr::unary(js::UnaryOp::Not, arg()),
+            // Text's emptiness is its comparison with `""`, `text === ""`, as
+            // upstream writes it, `value !== ''` of its negation (rd732, the
+            // user's decision, ADR 0266 amended).
+            Std::IsEmpty if self.is_string_like(tys[0].peel_refs()) => Expr::bin(Op::Eq, arg(), Expr::str("")),
             Std::IsEmpty => Expr::bin(Op::Eq, Expr::member(arg(), "length"), Expr::num(0)),
             // What it's given does what it does, of a capacity too (ADR 0315).
             Std::VecNew | Std::Nothing => {

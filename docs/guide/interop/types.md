@@ -2979,7 +2979,7 @@ pub fn same_source(prev: &dyn Fn(&str), next: &dyn Fn(&str)) -> bool {
 export function described(value) {
   if (typeof value === "function") {
     const functionName = value.name;
-    return !functionName ? "() => {}" : functionName + "() {}";
+    return functionName === "" ? "() => {}" : functionName + "() {}";
   } else {
     return "";
   }

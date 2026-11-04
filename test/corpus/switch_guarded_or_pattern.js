@@ -113,7 +113,7 @@ function sources(names, tag) {
           note("img");
           continue;
         }
-        if (name !== "href" && !tag) {
+        if (name !== "href" && tag === "") {
           note("empty");
           continue;
         }

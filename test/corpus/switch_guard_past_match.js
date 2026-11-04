@@ -40,7 +40,7 @@ function name(tag, ty, flags, log) {
       break;
     case LEGACY_HIDDEN:
       if (on(log, "hidden", legacyHidden)) {
-        if (!ty) {
+        if (ty === "") {
           return "LegacyHidden";
         }
       }

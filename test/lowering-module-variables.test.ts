@@ -387,7 +387,7 @@ pub fn mark() {
   // Read through its module's namespace, as its path names it, live
   // (rd114a, ADR 1018).
   expect(readsJs).toContain('import * as Dep from "../dep/lib.js";\n');
-  expect(readsJs).toContain("  return Dep.hasBadMapPolyfill && !!Dep.name;\n");
+  expect(readsJs).toContain("  return Dep.hasBadMapPolyfill && Dep.name !== \"\";\n");
   const { bad } = await import(join(dir, "reads", "lib.js"));
   const { mark } = await import(join(dir, "dep", "lib.js"));
   expect(bad()).toBe(false);

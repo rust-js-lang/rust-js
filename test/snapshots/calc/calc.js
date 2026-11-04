@@ -153,7 +153,7 @@ export function wordFreq(text) {
   const m = new Map();
   for (const w of $splitBy(text, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c))
     .values()
-    .filter(Boolean)) {
+    .filter((w) => w !== "")) {
     const key = w.toLowerCase();
     const current = $orInsert(m, key, 0);
     m.set(key, (current + 1) >>> 0);

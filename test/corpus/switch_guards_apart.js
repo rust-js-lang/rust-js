@@ -38,12 +38,12 @@ function described(tag, owned, flags, log) {
     // falls through
     case FUNCTION:
     case MEMO:
-      if (!owned && !info) {
+      if (!owned && info === "") {
         info += "function";
       }
       break;
     case FORWARD_REF:
-      if (!owned && on(log, "empty", !info)) {
+      if (!owned && on(log, "empty", info === "")) {
         info += "forwardRef";
       }
       break;

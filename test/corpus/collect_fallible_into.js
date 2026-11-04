@@ -27,7 +27,7 @@ function parseKv(s) {
     s
       .split(";")
       .values()
-      .filter(Boolean)
+      .filter((p) => p !== "")
       .map((pair) => {
         const option = $splitOnce(pair, "=");
         const result =

@@ -51,7 +51,7 @@ function bigBranch(n) {
 
 function textBranch(s) {
   if (s != null) {
-    return !s ? "empty" : "text";
+    return s === "" ? "empty" : "text";
   }
   return "none";
 }

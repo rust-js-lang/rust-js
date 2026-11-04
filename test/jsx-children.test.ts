@@ -116,7 +116,7 @@ pub fn Pick(href: &'static str) -> JSX::Element {
   const { dir, args } = compile(source);
   run(args);
   const output = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(output).toContain("{authorLink ? <a href={authorLink}>{author}</a> : author}");
+  expect(output).toContain("{authorLink !== \"\" ? <a href={authorLink}>{author}</a> : author}");
   expect(output).not.toMatch(/\blet \w+;/);
   expect(output).toContain('{href.startsWith("https://") ? (');
   const result = await import(join(dir, "lib.jsx"));
@@ -462,13 +462,15 @@ pub fn positive(n: Option<i32>) -> i32 {
   expect(jsx).not.toContain("const className");
   // Text kept where it isn't empty, or a default, is `||` (ADR 0266).
   expect(jsx).toContain('return name || "Error";');
-  // Text that isn't empty is JS's truthy text: `code ? .. : ..`, as
-  // react.dev's errors page titles itself (ADR 0266).
-  expect(jsx).toContain("const shown = code ? `Error #${code}` : \"Errors\";");
-  expect(jsx).toContain("export function empty(text) {\n  return !text;\n}");
-  expect(jsx).toContain("  return a && text ? 1 : 0;");
+  // Text that isn't empty is its comparison with `""`, as the Rust says it,
+  // `code != null && code !== ""`, where react.dev's errors page writes
+  // `code ? .. : ..`: an accepted difference (rd732, the user's decision,
+  // ADR 0266 amended).
+  expect(jsx).toContain('const shown = code != null && code !== "" ? `Error #${code}` : "Errors";');
+  expect(jsx).toContain('export function empty(text) {\n  return text === "";\n}');
+  expect(jsx).toContain("  return a && text !== \"\" ? 1 : 0;");
   // Of `as_deref()`, the option itself, matched where it is (ADR 0211).
-  expect(jsx).toContain("const named = code ? `Error #${code}` : \"Errors\";");
+  expect(jsx).toContain('const named = code != null && code !== "" ? `Error #${code}` : "Errors";');
   // A filter of another test, or a default, is that test.
   expect(jsx).toContain("return n != null && n > 0 ? n : 1;");
   const { Example, title } = await import(join(dir, "lib.jsx"));

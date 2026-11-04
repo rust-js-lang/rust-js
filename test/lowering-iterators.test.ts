@@ -272,12 +272,12 @@ pub fn pick(c: bool, n: u32) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('  return group\n    .split(",")\n    .map((g) => $trim(g))\n    .filter(Boolean);\n');
+  expect(js).toContain('  return group\n    .split(",")\n    .map((g) => $trim(g))\n    .filter((g) => g !== "");\n');
   expect(js).toContain('  const parts = group.split(",");\n  if (parts.length === 0) {\n    return;\n  }\n  return \`\${parts[0]} and ');
   expect(js).toContain('  return s.split(",").toReversed().slice(0, 2);\n');
   expect(js).toContain("v[0]");
   // A \`return\` the program wrote stays one, the smaller branch first.
-  expect(js).toContain("  if (!group) {\n    return;\n  }\n  return $trim(");
+  expect(js).toContain("  if (group === \"\") {\n    return;\n  }\n  return $trim(");
   expect(js).toContain("  if (c) {\n    return (n + 1) >>> 0;\n  } else {\n    return (n * 2) >>> 0;\n  }\n");
   expect(js).not.toContain("$index");
   const lib = await import(join(dir, "mir.js"));

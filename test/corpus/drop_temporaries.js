@@ -39,7 +39,7 @@ function main() {
   const first = value[0];
   console.log(`drop ${value[0]}`);
   const value$1 = make("c");
-  const empty = !Noisy.name(value$1);
+  const empty = Noisy.name(value$1) === "";
   console.log(`drop ${value$1[0]}`);
   console.log(`${first} ${empty}`);
   const kept = make("d");

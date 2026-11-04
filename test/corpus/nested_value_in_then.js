@@ -50,7 +50,7 @@ function both(a, b, c) {
 function pushed(name, indent, out) {
   out.push([
     indent,
-    !name ? (indent < 3 ? "-".repeat(indent) : name.toUpperCase()) : name.repeat(2),
+    name === "" ? (indent < 3 ? "-".repeat(indent) : name.toUpperCase()) : name.repeat(2),
   ]);
 }
 

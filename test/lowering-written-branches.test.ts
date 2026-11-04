@@ -275,8 +275,12 @@ test("a value or what it falls back to is ||", async () => {
         }
         + ">";
 }
+
+pub fn shown<'a>(v: Option<&'a js::Unknown>, d: Option<&'a js::Unknown>) -> Option<&'a js::Unknown> { if !js::truthy(v) { d } else { v } }
 `);
   expect(js).toContain('insertedEntry[1] = "Promise<" + (insertedEntry[1] || "Object") + ">";');
+  // Of a JS value's truth too, `!v ? d : v` (ADR 0744).
+  expect(js).toContain("  return v || d;\n");
   const properties: [string, string][] = [["a", ""], ["b", "x"]];
   (lib.wrapped as (p: [string, string][], i: number) => void)(properties, 0);
   (lib.wrapped as (p: [string, string][], i: number) => void)(properties, 1);

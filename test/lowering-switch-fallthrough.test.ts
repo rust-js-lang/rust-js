@@ -273,12 +273,12 @@ pub fn owner_stack(tag: u8, owned: bool, view_transitions: bool) -> String {
       }
     // falls through
     case FUNCTION_COMPONENT:
-      if (!owned && !info) {
+      if (!owned && info === "") {
         info += "function";
       }
       break;
     case FORWARD_REF:
-      if (!owned && !info) {
+      if (!owned && info === "") {
         info += "forwardRef";
       }
       break;

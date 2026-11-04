@@ -262,4 +262,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a caught value nothing reads that may throw"],
   },
+  {
+    name: "option-text-truth-unread",
+    breaks:
+      "an `Option` of text kept where it isn't empty, `code.filter(|c| !c.is_empty())`, is `code != null && code !== \"\" ? code : null`, not `code || null` (rd732)",
+    file: "src/js/expr_walk.rs",
+    find: "                if let Some(x) = text.text_truth()\n",
+    replace: "                if let Some(x) = text.text_truth().filter(|_| false)\n",
+    tests: ["test/lowering-options.test.ts", "-t", "nullable field's None is null"],
+  },
 ];

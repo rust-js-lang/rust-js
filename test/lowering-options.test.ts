@@ -861,13 +861,18 @@ pub fn words(text: &str) -> Vec<String> {
 pub fn less(xs: &[u32]) -> Vec<u32> {
     xs.iter().filter_map(|x| x.checked_sub(1)).collect()
 }
+pub fn on(xs: &[Option<bool>]) -> usize { xs.iter().filter(|x| x.is_some_and(|b| b)).count() }
+pub fn off(o: Option<bool>) -> bool { o.is_none_or(|b| !b) }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return xs.map((x) => (x > 1 ? { n: x } : undefined)).filter((item) => item != null);");
   expect(js).not.toContain("(g) => !!g");
-  expect(js).toContain(".filter(Boolean);");
+  expect(js).toContain('.filter((g) => g !== "");'); // text's, as Rust says it (rd732)
   expect(js).toContain(".filter((item) => item != null)");
+  // An `Option<bool>`'s truth as a callback is `Boolean`; `o == null || !o` is `!o` (ADR 0313).
+  expect(js).toContain(".filter(Boolean)");
+  expect(js).toContain("  return !o;\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.items([1, 2]), lib.words("a, ,b"), lib.less([0, 2])]).toEqual([[{ n: 2 }], ["a", "b"], [1]]);
 });
@@ -1012,7 +1017,7 @@ pub fn later(code: Option<&str>) -> Props {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("return { message: code ? code.toUpperCase() : null };");
+  expect(js).toContain('return { message: code != null && code !== "" ? code.toUpperCase() : null };');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.props("a"), lib.props(""), lib.props(undefined)]).toEqual([{ message: "A" }, { message: null }, { message: null }]);
   expect([lib.later("xa"), lib.later("a"), lib.later(""), lib.later(undefined)]).toEqual([{ message: "a" }, { message: null }, { message: null }, { message: null }]);
@@ -1471,7 +1476,7 @@ pub fn either(o: Option<String>) -> String {
   return name + ": " + message;
 }`);
   expect(js).toContain('  let label = s || "none";\n  label += "!";\n');
-  expect(js).toContain("  let s = t;\n  if (!s) {\n    s = `${s}?`;\n  }\n");
+  expect(js).toContain('  let s = t;\n  if (s === "") {\n    s = `${s}?`;\n  }\n');
   expect(js).toContain("  let f = x;\n  if (f === 0) {\n    f = 1;\n  }\n");
   expect(js).toContain('  let name = t;\n  if (name === "x") {\n');
   expect(js).toContain("  const v = o ?? 3;\n");

@@ -21,7 +21,7 @@ function found(key) {
 function preload(log, href, as, open) {
   log.push(`preload ${href} ${as}`);
   const owner = document(open);
-  if (owner != null && href && as) {
+  if (owner != null && href !== "" && as !== "") {
     const key = href + String(owner);
     if (!log.includes(key)) {
       log.push(key);
@@ -46,8 +46,8 @@ function preload(log, href, as, open) {
 
 // The same chain, two links, its body's `if` of two early returns.
 function shown(log, href, as) {
-  const owner = document(!!href);
-  if (owner != null && as) {
+  const owner = document(href !== "");
+  if (owner != null && as !== "") {
     if (found(href) == null) {
       if (as === "style") {
         // stylesheet

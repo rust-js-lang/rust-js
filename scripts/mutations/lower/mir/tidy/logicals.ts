@@ -895,4 +895,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^match_arm_comments_kept.rs$"],
     snapshots: true,
   },
+  {
+    name: "text-empty-conditional-unfolded",
+    breaks:
+      "text's value or a default by its emptiness, `if t.is_empty() { \"none\" } else { t }`, is `type === \"\" ? \"none\" : type`, not JS's `type || \"none\"` (rd732)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "    if let Some(or) = Expr::text_or(&test, &yes, &no) {\n",
+    replace: "    if let Some(or) = None::<Expr> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_read_in_its_fallback.rs$"],
+    snapshots: true,
+  },
 ];

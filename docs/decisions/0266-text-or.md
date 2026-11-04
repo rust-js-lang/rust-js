@@ -3,7 +3,8 @@
 Status: Accepted. Extends [0030](0030-option.md) and
 [0062](0062-combinators.md). Amended by
 [0635](0635-a-filter-by-truth-then-a-fallback-is-or.md): preparation
-writes the `||`, of every fallback.
+writes the `||`, of every fallback. Amended: a string's `is_empty()` is
+`text === ""` (rd732, the user's decision).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -79,3 +80,39 @@ const title = meta.title || route?.title || "";
   too. Tidy's fold of `(x ? x : undefined) ?? y` went: preparation writes
   `x ? x : undefined` as `x || undefined`. (Amended: tidy folded it only
   where the conditional was read in place.)
+
+## Amendment: text's emptiness is its comparison with `""` (rd732, 2026-11-04, the user's decision)
+
+The first rule of "Since", a string's `is_empty()` printing `!text`, made
+React DOM's setProp `const canSetTextContent = tag !== 'body' && (tag !==
+'textarea' || !!value);` once a `const` of a truth kept its `!!` (#578),
+where upstream writes `value !== ''`. The user decided: **a string's
+`is_empty()` is `text === ""`, and `!s.is_empty()` is `text !== ""`,
+everywhere, in a test too**, `if (name === "")`, `code != null && code !==
+""`, which says what the Rust says. An array's is still `length === 0`.
+
+What reads only text's truth is the same as before. A `filter` that
+keeps text where it isn't empty, then another or a default, is still
+JS's `||`, `meta.title || route?.title || ""` (ADR 0635, 0651): the
+`filter`'s predicate `t !== ""` is the truth of its argument
+(`Expr::text_truth`, the one place that says `x !== ""` of text is `x`'s
+truth, which `tests_its_truth` asks). So are a conditional of text by its
+emptiness, `x === "" ? d : x` and `x !== "" ? x : d`, which are `x || d`
+(tidy's `conditional`, and preparation's `a ? a : b`), the MIME type's
+`blob.type || "application/octet-stream"`, and a `then_some`'s `(w) => w
+|| undefined`. A `filter` of an iterator by it, which `Boolean` named, is
+now `filter((p) => p !== "")`, as Rust says it.
+
+Two react.dev sites differ from upstream, accepted by the user's decision:
+its errors page's `Some(code) if !code.is_empty()`, upstream's `code ?
+.. : ..` and `if (errorCode)`, is `code != null && code !== "" ? .. :
+..`; and a text filter, upstream's `.filter(Boolean)`, is `.filter((g) =>
+g !== "")` (`lowering-matches`, `jsx-children`, `lowering-iterators`).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Text is `""` exactly
+where it's empty, and falsy only there. Held by the corpus (34 snapshots
+moved, each run against native Rust), the guide's basics.md, and the
+mutations `text-empty-by-length` (kept), `text-truth-unfolded`
+(`lower/combinators.ts`), `text-empty-conditional-unfolded`
+(`lower/mir/tidy/logicals.ts`) and `text-truth-conditional-unfolded`
+(`prepare.ts`).

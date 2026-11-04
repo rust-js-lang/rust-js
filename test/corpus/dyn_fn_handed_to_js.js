@@ -14,7 +14,7 @@ const Noisy = {
 
 /** The label, which mustn't be empty. */
 function checked(label) {
-  if (!label) {
+  if (label === "") {
     throw new Error("no label");
   }
   return label;
@@ -47,7 +47,7 @@ function enqueueTask(task, host) {
       };
     }
   }
-  if (!host) {
+  if (host === "") {
     $dispose(task);
     throw new Error("no host");
   }

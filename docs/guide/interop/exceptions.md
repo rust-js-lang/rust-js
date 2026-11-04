@@ -114,7 +114,7 @@ function parseErrorDebug_fmt(parseError) {
 }
 
 export function parse(text) {
-  if (!text) {
+  if (text === "") {
     return { TAG: "Err", _0: "Empty" };
   }
   const result = $parseInt(text, 0, 4294967295);

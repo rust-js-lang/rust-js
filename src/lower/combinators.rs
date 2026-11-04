@@ -979,11 +979,13 @@ fn compared_with(p: &Expr) -> Option<Expr> {
 }
 
 /// Whether `p`, a `filter`'s predicate, is the truth of its argument itself,
-/// `!!$some`, `js::truthy`'s of it, or a `bool`'s own: as JS's `||` tests
-/// what it's given (ADR 0635).
+/// `!!$some`, `js::truthy`'s of it, a `bool`'s own, or text's that it isn't
+/// empty, `$some !== ""` (`Expr::text_truth`): as JS's `||` tests what it's
+/// given (ADR 0635).
 fn tests_its_truth(p: &Expr) -> bool {
     let applied = crate::lower::calls::apply(p.clone(), vec![Expr::var(HELD_SOME)]);
-    matches!(&applied.tested().kind, js::ExprKind::Var(v) if v == HELD_SOME)
+    let tested = applied.text_truth().cloned().unwrap_or_else(|| applied.tested());
+    matches!(&tested.kind, js::ExprKind::Var(v) if v == HELD_SOME)
 }
 
 /// The argument `compared_with` and `tests_its_truth` give a predicate: a

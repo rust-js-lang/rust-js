@@ -43,7 +43,7 @@ function name(tag, ty, flags, log) {
       if ($byteLen(ty) > 3) {
         return ty;
       }
-      if (!ty) {
+      if (ty === "") {
         return "empty";
       }
       break;

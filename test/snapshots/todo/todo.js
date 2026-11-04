@@ -112,7 +112,7 @@ export function main() {
   input.addEventListener("keydown", (e) => {
     let title = input.value;
     title = $trim(title);
-    if (e.key === "Enter" && title) {
+    if (e.key === "Enter" && title !== "") {
       add($borrowMut(state), title);
       input.value = "";
       render(state, view);

@@ -89,7 +89,7 @@ function newFile(answer, existing, log) {
     return;
   }
   const path = $trim(answer);
-  if (!path) {
+  if (path === "") {
     return;
   }
   if (!path.endsWith(".rs")) {

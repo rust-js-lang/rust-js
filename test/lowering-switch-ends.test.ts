@@ -160,7 +160,7 @@ pub fn scanned(value: Option<&Unknown>, log: &mut Vec<String>) {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // Its match of two arms, an `if` and its `else`, as upstream's (ADR 0745).
-  expect(js).toContain('        if (typeof name === "string" && name) {\n          desc = name + "() {}";\n        } else {\n          desc = "() => {}";\n        }\n        break;\n');
+  expect(js).toContain('        if (typeof name === "string" && name !== "") {\n          desc = name + "() {}";\n        } else {\n          desc = "() => {}";\n        }\n        break;\n');
   expect(js.slice(0, js.indexOf("function scanned"))).not.toMatch(/\bbb\d+/);
   const lib = await import(join(dir, "lib.js"));
   const log: string[] = [];

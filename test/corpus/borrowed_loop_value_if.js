@@ -19,7 +19,7 @@ function attribute(node) {
 }
 
 function blank(href) {
-  return href != null && !href;
+  return href === "";
 }
 
 function find(cache, href) {

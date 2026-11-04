@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function isSheet(name) {
-  return !!name;
+  return name !== "";
 }
 
 function guardedFirst(items) {

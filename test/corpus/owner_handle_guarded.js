@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function createRequest(name, onReady) {
-  if (!name) {
+  if (name === "") {
     throw new Error("no name");
   }
   return {

@@ -95,7 +95,7 @@ function ownChecked(named) {
 
 function checked(name) {
   console.log(`checked ${name}`);
-  return !!name;
+  return name !== "";
 }
 
 /**

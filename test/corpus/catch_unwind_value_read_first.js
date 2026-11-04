@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function wordAt(text, at) {
-  if (!text) {
+  if (text === "") {
     throw new Error("no text");
   }
   return text.split(" ")[at];

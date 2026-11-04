@@ -64,7 +64,7 @@ function unwinds() {
       const local = "unwound local";
       try {
         try {
-          if (h[0]) {
+          if (h[0] !== "") {
             throw new Error(`boom ${h[0]}`);
           }
           console.log("not reached");
@@ -85,7 +85,7 @@ function unwindsBare() {
     (() => {
       const h = held;
       try {
-        if (h[0]) {
+        if (h[0] !== "") {
           throw new Error(`bare ${h[0]}`);
         }
       } finally {

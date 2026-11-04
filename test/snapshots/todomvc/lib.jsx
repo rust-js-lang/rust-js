@@ -37,7 +37,7 @@ export function App() {
   const completed = (todos.length - active) >>> 0;
   function add(e) {
     const title = $trim(draft);
-    if (e.key === "Enter" && title) {
+    if (e.key === "Enter" && title !== "") {
       dispatch({ TAG: "Add", _0: title });
       setDraft("");
     }

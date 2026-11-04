@@ -666,7 +666,7 @@ test("a value returned after a loop, the function returning early before it, is 
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain(`export function parse(search) {
-  if (!search) {
+  if (search === "") {
     return [];
   }
   const args = [];

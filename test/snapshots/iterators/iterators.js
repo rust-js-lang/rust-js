@@ -56,7 +56,7 @@ export function middle(v) {
 }
 
 export function nonEmpty(words) {
-  return words.reduce((count, w) => (!w ? count : (count + 1) >>> 0), 0);
+  return words.reduce((count, w) => (w === "" ? count : (count + 1) >>> 0), 0);
 }
 
 export function shouted(words) {
@@ -104,7 +104,7 @@ export function sortedWords(words) {
 /** Two keys: `then_with`. */
 export function byLengthThenName(words) {
   const w = words.slice();
-  w.sort((a, b) => $cmp(!a, !b) || $cmp(a, b));
+  w.sort((a, b) => $cmp(a === "", b === "") || $cmp(a, b));
   return w;
 }
 

@@ -360,7 +360,7 @@ export function TodoList() {
   function add(e) {
     e.preventDefault();
     const title = $trim(draft);
-    if (title) {
+    if (title !== "") {
       dispatch({ TAG: "Add", _0: title });
       setDraft("");
     }

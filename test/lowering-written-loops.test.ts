@@ -514,7 +514,7 @@ pub fn blanks(words: &[&str]) -> usize {
   expect(js).toContain("  while (i < n) {\n    if (c && d) {\n      break;\n    }\n    i++;\n  }\n");
   expect(js).toContain("  while (i < n) {\n    if (c || d) {\n      break;\n    }\n    i++;\n  }\n");
   expect(js).toContain("  while (i < n) {\n    if (c) {\n      break;\n    }\n    if (d) {\n      break;\n    }\n    i++;\n  }\n");
-  expect(js).toContain("  while (i < words.length) {\n    if (words[i]) {\n      break;\n    }\n    i++;\n  }\n");
+  expect(js).toContain('  while (i < words.length) {\n    if (words[i] !== "") {\n      break;\n    }\n    i++;\n  }\n');
   const lib = await import(join(dir, "lib.js"));
   const flags = [
     [false, false],

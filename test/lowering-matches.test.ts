@@ -716,7 +716,7 @@ pub fn doubled(k: Kind) -> u8 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('export function titled(errorCode) {\n  if (errorCode) {\n    return `#${errorCode}`;\n  }\n  return "none";\n}');
+  expect(js).toContain('export function titled(errorCode) {\n  if (errorCode != null && errorCode !== "") {\n    return `#${errorCode}`;\n  }\n  return "none";\n}');
   expect(js).toContain("  return k._0;\n");
   expect(js).toContain("    return (k.level * 2) & 255;\n");
   expect(js).not.toContain("const level");

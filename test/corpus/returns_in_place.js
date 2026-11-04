@@ -18,7 +18,7 @@ function errorDebug_fmt(error) {
 }
 
 function parse(s) {
-  if (!s) {
+  if (s === "") {
     return { TAG: "Err", _0: "Empty" };
   }
   const result = $parseInt(s, -2147483648, 2147483647);
