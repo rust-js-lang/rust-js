@@ -1,6 +1,6 @@
 # 0861. A function's own nullable parameter is `null` where it's given or set `None`
 
-Status: Accepted. Amended (2026-11-04): a parameter is `null` or a value where it's found so; a forwarding namespace method's calls are its function's (#601). Amended (2026-10-29): its map by what's its argument in JS is stored as given. Amended (2026-11-02): a parameter each call gives `null` or a value is tested `!== null` (rd613). Extends [0275](0275-nullable-writes-null.md)'s
+Status: Accepted. Amended (2026-11-04): a nullable thread-local nothing reads apart stores what it's given as it is (#665). Amended (2026-11-04): a parameter is `null` or a value where it's found so; a forwarding namespace method's calls are its function's (#601). Amended (2026-10-29): its map by what's its argument in JS is stored as given. Amended (2026-11-02): a parameter each call gives `null` or a value is tested `!== null` (rd613). Extends [0275](0275-nullable-writes-null.md)'s
 `#[rust_js::nullable(name)]`, a binding's parameter, to a function of the
 crate's own, and [0772](0772-a-nullable-cell-field-writes-null.md) and
 [0841](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)'s
@@ -785,3 +785,104 @@ a function that tests `!== null`, so Rust's behavior.
   method is no candidate, so `again` names no function it can't queue,
   and none other is a body lowering skips; `lowered_again` stays what
   `again` returns.
+
+## Amendment: a nullable thread-local nothing reads apart stores what it's given as it is (2026-11-04, #665)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. Where no read of a
+place can tell `null` from `undefined`, which one it holds changes nothing
+the program sees, so JS's form is used: the value as it's given.
+
+#601's amendment made a function's own nullable parameter `null` or a
+value only where each of the crate's calls gives it so. One a call may
+give `undefined` is stored `?? null`, and React's port gained ten of them
+where upstream stores the value as it is. React's ReactFiberHotReloading:
+
+```rust
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static RESOLVE_FAMILY: Cell<Option<&'static RefreshHandler>> = const { Cell::new(None) };
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(handler))]
+pub fn set_refresh_handler(handler: Option<&'static RefreshHandler>) {
+    if __DEV__ {
+        RESOLVE_FAMILY.set(handler);
+    }
+}
+```
+
+printed `resolveFamily = handler ?? null;`, where upstream writes
+`resolveFamily = handler;`. Every read of `resolveFamily` tests it, `if
+(resolveFamily == null)`, or reads its value, so its `?? null` changed
+nothing.
+
+`?? null` is needed only where a read can tell the two apart: a `===
+null` test, a store as it is into another nullable place, a nullable
+function's return, what a binding or JS is given, what a function of the
+crate's is given. Each is a read of a nullable place, which takes it as
+`null` or a value (`Known::Defined`, `stored_given`'s `Nulled`, ADR 0949).
+
+**A `#[rust_js::nullable]` thread-local nothing reads apart stores what
+it's given as it is, its `None` `null`**: `resolveFamily = handler;`, and
+`resolveFamily = null;` of `RESOLVE_FAMILY.set(None)`, and each branch of
+a test so, `handler != null && !debug ? handler : null`
+(`Storage::written_alike`). `NulledParams::reads_alike` says which
+(`analysis/nulled_params/read_alike.rs`), where every read of it is seen
+and each reads them alike:
+
+- **Each read is seen**: it's private to its module, and only its module
+  uses it, by code that isn't generic, so its module's JS doesn't export
+  it, and no consumer compiles a body that reads it. Each use is a call of
+  its `get`, `set`, `take`, `replace` or `with_borrow(Clone::clone)`, as
+  the THIR shows every use of it, and MIR shows each of those calls. A
+  lend, `with_borrow_mut(f)` or a `with_borrow` of a closure, whose `f` may
+  do anything, or the key handed on, `is_set(&KEY)`, and it isn't one.
+- **Each read is used alike**: what each `get`, `take`, `replace` or clone
+  gives is only tested, `== null` (a `match`, an `if let`, `is_some()`,
+  `is_none()`), its `Some`'s value read, unwrapped, given a fallback
+  (`unwrap_or`, `unwrap_or_else`, `map_or`, `is_some_and`, `ok_or`), set
+  back into the same thread-local, `KEY.set(previous)`, or moved, copied,
+  borrowed shared, mapped, cloned or `as_ref()`'d into what's only used so.
+  Anything else, a call of the crate's function among them, a field it's
+  kept in, a return, or a comparison, and it isn't one.
+
+What's told apart keeps `?? null`, as before. What the program reads is
+the same either way: each such read's facts still say `null` or a value,
+and no use of it asks.
+
+The other nine of the ten React sites aren't such: ReactCurrentFiber's
+`current` is exported; ReactFlightHooks' `thenableState` is returned by
+the nullable `getTrackedThenablesAfterRendering`; ChangeEventPlugin's and
+SelectEventPlugin's `activeElementInst` are given to functions of the
+crate's; ReactDOMEventReplaying's `blockedOn`, ReactCapturedValue's `stack`
+and ReactFlightReplyServer's `chunk.reason` are fields, which a struct's
+JS reader may test `=== null`; and ReactFlightDOMClientEdge's
+`serverModuleMap ?? null` is given to react-client's `createResponse`,
+which gives it on to `new ResponseInstance(..)`, a JS class whose function
+`js::new` doesn't say. Each can be cleared in the port, by making what
+its callers give `null` or a value, or upstream's field `nullable`.
+
+Eight `?? null`s the port printed before #601 go too, each now upstream's:
+FallbackCompositionState's `root = nativeEventTarget;`,
+ReactFiberCommitWork's five `hostParent = ..stateNode;`, ReactFiberWorkLoop's
+`pendingRecoverableErrors = recoverableErrors;`, and ReactFlightServer's
+`importStringRequest = __DEV__ && debug ? undefined : request;`, where
+upstream writes `null`: MIR writes that `None` to a temporary each branch
+sets, which tidy makes the test after the store is lowered, so its
+`undefined` stays (correct, as nothing reads it apart).
+
+- Held by corpus `nullable_local_read_alike` (one tested, unwrapped and
+  given a fallback, one cloned, tested and set back, each stored as given;
+  one kept in a nullable field tested `=== null`, one returned by a
+  nullable function, one compared, each kept `?? null`; `find`'s `None`
+  given, against native Rust), and `test/lowering-nullable-reads.test.ts`'s
+  "a nullable thread-local nothing reads apart stores what it's given as it
+  is" (React's `resolveFamily`, set `undefined` from JS; and kept `?? null`
+  of one exported, read by another module, by generic code, lent, read by
+  a `with_borrow` closure given to a binding, handed on, read in another's
+  initializer, set into another, given to a binding and given to a
+  function of the crate's, run in JS). Mutations in
+  `lower/analysis/nulled_params/read_alike.ts`, and
+  `alike-store-coalesced` (`lower/std_types/cell.ts`),
+  `alike-none-written-undefined` (`js/make.ts`) and `alike-set-unsaid`
+  (`lower/mir/local_facts.ts`).

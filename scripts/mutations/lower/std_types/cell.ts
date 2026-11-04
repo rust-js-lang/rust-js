@@ -885,4 +885,12 @@ export const mutations: Mutation[] = [
     replace: "            Std::CellGetMut => match self.mut_ref_form(generic_args.type_at(0)) == crate::lower::MutRefForm::Box {\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_from_mut_generic.rs$"],
   },
+  {
+    name: "alike-store-coalesced",
+    breaks: "a nullable thread-local nothing reads apart stores what it's given `?? null`, React's `resolveFamily = handler ?? null;` where upstream writes `resolveFamily = handler;` (#665)",
+    file: "src/lower/std_types/cell.rs",
+    find: "            _ if null_for_none && call.read_alike => js::Storage::NullForNone.written_alike(value),\n",
+    replace: "",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local nothing reads apart"],
+  },
 ];

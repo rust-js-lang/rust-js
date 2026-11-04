@@ -38,6 +38,10 @@ pub(super) struct Call<'c, 'tcx> {
     /// is `#[rust_js::nullable]`, its `None` stored `null` (ADR 0586,
     /// amended).
     pub(super) null_for_none: bool,
+    /// Of one, whether nothing reads it apart, `null` from `undefined`, so
+    /// what's given is stored as it is, its `None` `null`
+    /// (`NulledParams::reads_alike`, #665).
+    pub(super) read_alike: bool,
     /// Whether nothing reads what the call gives, a temporary only dropped,
     /// where its drop does nothing: `x.f.replace(v);`'s old value, which
     /// is then no read, as `*x.f.borrow_mut() = v`'s isn't (rd418, ADR
@@ -47,14 +51,15 @@ pub(super) struct Call<'c, 'tcx> {
 }
 
 /// What MIR says of a call's arguments that their values don't, as `Call`
-/// carries it: `nulled`, `quiet`, `momentary` and `null_for_none`; and
-/// of what it gives, `unread`.
+/// carries it: `nulled`, `quiet`, `momentary`, `null_for_none` and
+/// `read_alike`; and of what it gives, `unread`.
 #[derive(Clone, Copy, Default)]
 pub(super) struct Given<'c> {
     pub(super) nulled: &'c [bool],
     pub(super) quiet: bool,
     pub(super) momentary: bool,
     pub(super) null_for_none: bool,
+    pub(super) read_alike: bool,
     pub(super) unread: bool,
 }
 
@@ -72,6 +77,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             quiet,
             momentary,
             null_for_none,
+            read_alike,
             unread,
         } = given;
         Call {
@@ -82,6 +88,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             quiet,
             momentary,
             null_for_none,
+            read_alike,
             unread,
             span,
         }

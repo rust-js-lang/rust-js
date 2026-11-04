@@ -133,8 +133,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // stores (ADR 0791), what MIR says so is marked so (ADR 0841).
         let given_nulled = call.nulled.get(1) == Some(&true);
         let null_for_none = call.null_for_none;
+        // A nullable thread-local's nothing reads apart, what's given as it
+        // is, its `None` `null` (#665).
         let written = |cell: &Expr, value: Expr| match cell.kind {
+            js::ExprKind::Handle(_, storage) if call.read_alike => storage.written_alike(value),
             js::ExprKind::Handle(_, storage) => storage.written(value, given_nulled),
+            _ if null_for_none && call.read_alike => js::Storage::NullForNone.written_alike(value),
             // A nullable thread-local's, its `None` `null` (ADR 0586, amended).
             _ if null_for_none => js::Storage::NullForNone.written(value, given_nulled),
             // A JS-made struct's field read among them, a getter's that may

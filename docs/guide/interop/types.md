@@ -1174,6 +1174,13 @@ export function ratio(a, b) {
   `return searchTarget;`, and so is a `let` of `None` a nullable function
   returns, set only to `Some`s, which starts `null`, `let
   maybeStrictRoot = null;` (ADR 0861, amended).
+  One private to its module, each read of which there only tests it,
+  reads its `Some`'s value, unwraps it, gives it a fallback or sets it
+  back, stores what it's given as it is, React's `resolveFamily =
+  handler;`: no read tells `null` from `undefined`. One exported, read by
+  another module or by generic code, lent to a closure, or whose read is
+  kept in a field, returned, compared or given to a function, stores
+  `handler ?? null` (ADR 0861, amended, #665).
   Such a read, and a nullable function's call, is never `undefined`, but
   it may still be `None`: an `Option` made of it where it's tested,
   `keep.then(|| CURRENT.get()).flatten().is_some()`, tests it, `(keep ?

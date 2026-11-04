@@ -14,6 +14,7 @@ mod imports;
 mod make;
 pub mod result;
 mod stmt_walk;
+mod storage;
 pub mod undefined_arguments;
 pub mod undefined_keys;
 mod walk;

@@ -10,11 +10,10 @@ use crate::lower::std_types::once::OnceOp;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What MIR says of the call being lowered's arguments, past their
-    /// values: which `Option`s are `null` already (`nulled`), whether the
-    /// cell it's given is a place no borrow of which can meet another
-    /// (`QuietCells`, ADR 0863, amended), and whether it's a nullable
-    /// thread-local's, its `None` `null` (ADR 0586, amended); and whether
-    /// nothing reads what it gives (`result_unread`).
+    /// values: which `Option`s are `null` already (`nulled`), whether its
+    /// cell is one no borrow of which can meet another (`QuietCells`, ADR
+    /// 0863, amended), a nullable thread-local's, its `None` `null` (ADR 0586,
+    /// amended), read alike (#665); and if nothing reads what it gives.
     pub(super) fn call_given<'n>(&self, state: &State<'_, 'tcx>, nulled: &'n [bool]) -> crate::lower::calls::Given<'n> {
         let cells = state.facts.quiet_cells();
         crate::lower::calls::Given {
@@ -22,6 +21,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             quiet: cells.calls.contains(&state.at),
             momentary: cells.momentary.contains(&state.at),
             null_for_none: cells.nullable.contains(&state.at) || cells.nullable_lent.contains(&state.at),
+            read_alike: cells.alike.contains(&state.at),
             unread: self.result_unread(state),
         }
     }

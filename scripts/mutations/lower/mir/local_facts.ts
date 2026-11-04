@@ -264,4 +264,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
     snapshots: true,
   },
+  {
+    name: "alike-set-unsaid",
+    breaks: "a nullable thread-local nothing reads apart isn't said so where it's set, so it stores what it's given `?? null` (#665)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                            quiet.alike.insert(block);\n",
+    replace: "",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local nothing reads apart"],
+  },
 ];

@@ -125,6 +125,10 @@ pub(super) struct QuietCells {
     /// Each call that writes a `#[rust_js::nullable]` thread-local's cell,
     /// whose `None` is `null` (ADR 0586, amended).
     pub(super) nullable: HashSet<BasicBlock>,
+    /// Of those, each of one nothing reads apart, `null` from `undefined`
+    /// (`NulledParams::reads_alike`, #665): what it's given is stored as it
+    /// is, its `None` `null`.
+    pub(super) alike: HashSet<BasicBlock>,
     /// Each `with` or `with_borrow_mut` that lends a `#[rust_js::nullable]`
     /// thread-local's cell, or what it holds, to what it runs, which may
     /// write it: what's written through the lend stores `null` for `None`
@@ -728,6 +732,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     if crate::lower::bindings::nullable_local(tcx, key) {
                         quiet.nullable.insert(block);
+                        if self.krate.nulled_params.reads_alike(key) {
+                            quiet.alike.insert(block);
+                        }
                     }
                 }
                 Some(

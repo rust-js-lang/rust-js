@@ -22,8 +22,14 @@
 //! `getEventTarget`, `target.parentNode` or `target`, which a call gives
 //! such a parameter as it is. Lowering finds it, and a body lowered
 //! before it was found that asked is lowered again (`again`).
+//! And which of the crate's `#[rust_js::nullable]` thread-locals nothing
+//! reads apart, `null` from `undefined` (`reads_alike`, #665), which a
+//! write stores as it's given: `?? null` only where a read can tell.
+
+mod read_alike;
 
 use crate::lower::Body;
+use crate::lower::recognition::Recognition;
 use crate::lower::refusal::{Refused, refuse};
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, BasicBlock, visit::Visitor};
@@ -51,6 +57,9 @@ pub(in crate::lower) struct NulledParams {
     forwarded: HashMap<DefId, DefId>,
     /// The functions found to return `null` or a value (`returns_nulled`).
     returns: RefCell<Returns>,
+    /// The crate's nullable thread-locals nothing reads apart, `null` from
+    /// `undefined` (`reads_alike`, #665).
+    alike: HashSet<DefId>,
 }
 
 /// What lowering saw of the calls of the crate's functions with nullable
@@ -85,12 +94,15 @@ impl NulledParams {
     /// method of `forwarded` is its function, whose candidate it is not:
     /// its body, that function's JS, calls nothing, and a call or use of it
     /// is the function's (#601).
+    /// And of `everywhere`, `bodies` and the initializers, the nullable
+    /// thread-locals nothing reads apart (`read_alike::found`, #665).
     pub(in crate::lower) fn scan<'tcx>(
-        tcx: TyCtxt<'tcx>,
-        bodies: &[&Body<'tcx>],
+        recognition: &Recognition<'_, 'tcx>,
+        (bodies, everywhere): (&[&Body<'tcx>], &[&Body<'tcx>]),
         forwarded: &HashMap<DefId, DefId>,
         foreign: &dyn Fn(DefId) -> bool,
     ) -> NulledParams {
+        let tcx = recognition.tcx;
         let mut candidates = HashMap::new();
         for body in bodies {
             let id = body.def_id;
@@ -143,7 +155,15 @@ impl NulledParams {
             nulled: Default::default(),
             forwarded: forwarded.clone(),
             returns: Default::default(),
+            alike: read_alike::found(recognition, everywhere),
         }
+    }
+
+    /// Whether `key`, a `#[rust_js::nullable]` thread-local's, is one
+    /// nothing reads apart, `null` from `undefined` (`read_alike`, #665): a
+    /// write of it stores what it's given as it is, its `None` `null`.
+    pub(in crate::lower) fn reads_alike(&self, key: DefId) -> bool {
+        self.alike.contains(&key)
     }
 
     /// Of `callee`, the function a call of it is, and how many of the

@@ -359,13 +359,23 @@ pub fn lower_crate<'tcx>(
     let reads_arguments = super::analysis::arguments::reads_arguments(tcx, (&with_closures, initializers), &foreign);
     let (forwarded, prototypes) =
         reached::forwarded(tcx, &bodies, (given, &js_given), (&caller_locations, &fns), &foreign);
-    // A namespace's method that's its function is that function (#601).
-    let nulled_params = NulledParams::scan(tcx, &with_closures, &forwarded, &|id| foreign.has_nulled_params(id));
+    let named_anywhere: Vec<&Body<'tcx>> = with_closures.iter().copied().chain(initializers).collect();
+    // A namespace's method that's its function is that function (#601); a
+    // nullable thread-local's every read is in the crate's bodies, its
+    // initializers' too (#665).
+    let recognition = super::recognition::Recognition {
+        tcx,
+        typing_env: ty::TypingEnv::fully_monomorphized(),
+        trait_impls: &trait_impls,
+        foreign: &foreign,
+    };
+    let nulled_params = NulledParams::scan(&recognition, (&with_closures, &named_anywhere), &forwarded, &|id| {
+        foreign.has_nulled_params(id)
+    });
     failed |= !super::classes::exported_by_property(tcx, &fns, &forwarded);
     // A function that only passes its parameters on to a function at one
     // instantiation, which its module re-exports where its JS is that call
     // alone (rd575, ADR 1064).
-    let named_anywhere: Vec<&Body<'tcx>> = with_closures.iter().copied().chain(initializers).collect();
     let forwarders = forwarders::found(
         tcx,
         (&bodies, &named_anywhere),
