@@ -85,9 +85,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// unwinds (#422): one that takes each item, `for_each`'s, `fold`'s,
     /// `count`'s or `last`'s, of what closing drops (`closes_to_drop`).
     /// Not of one lent, its lender's; nor of a type parameter's, its own
-    /// drop after, which MIR writes, unwinding too; nor a `collect()`,
-    /// which runs nothing of its own as it steps, its adapters' closing
-    /// their source already. The one answer of who drops a consumed
+    /// drop after, which MIR writes, unwinding too; nor a `collect()` of
+    /// an adapter, which runs nothing of its own as it steps, its adapters'
+    /// closing their source already. A `collect()` of the crate's iterator
+    /// itself closes it, so a panic in its `next` drops it before what it
+    /// collected, as std's collect frame holds it inside the one that holds
+    /// its `Vec` (#655). The one answer of who drops a consumed
     /// iterator: what its closing drops, nothing drops after it
     /// (`dropped_after`), or the crate's iterator with a `Drop` was
     /// dropped twice (#637).
@@ -101,7 +104,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         dropping
             && !method.is_some_and(IterMethod::holds_its_source)
             && !lent
-            && method != Some(IterMethod::Collect)
+            && (method != Some(IterMethod::Collect) || self.is_user_iterator(iter_ty))
             && !crate::lower::recognition::known_by_bounds(iter_ty)
             && self.closes_to_drop(iter_ty)
     }

@@ -1199,3 +1199,34 @@ array's `rev().rev()`, which is still the array's items. Mutations:
 `rev-of-rev-of-own-steps-dropped` (`lower/mir/iter/backs.ts`) and
 `rev-rfold-by-back` (`runtime/rev.ts`); `rev-of-rev-kept` names the
 collapse as it now reads.
+
+## Amendment: a `collect()` of the crate's iterator closes it (2026-11-04, #655)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+`Own(0, 3).collect::<Vec<_>>()` of the crate's iterator with a `Drop`,
+whose `next` panics at its third step, natively prints `drop own`, then
+`drop 1`, `drop 2`. Std's collect frame holds the iterator inside the one
+that holds the `Vec`, so it drops first as the panic unwinds. The JS
+dropped what it collected first, by `$collectDropping`, then the
+iterator, in a `finally` after it (`dropped_after`). `consumer_closes`
+said no `collect()` closes what it's given, as an adapter's closing closes
+its source already. A collect of the crate's iterator itself now closes
+it, `$closing`: what's left is dropped first where std collects otherwise
+than in place (`rest_dropped_first`), and nothing drops it after. A `Vec`
+and a `BTreeSet` collect so, in both builds.
+
+`collect_of_own_iterator_drops_it_first.rs` holds both, and a collect that
+ends, against native Rust; `consumed_own_iterator_dropped_once.rs`'s
+collect is one `$collectDropping($closing(..))` now, from nested `finally`s.
+Mutation: `own-collect-unclosed` (`lower/mir/iter/closing.ts`).
+
+Still open in #655:
+- Generic code's collect, `generic own Every | <adapters> | vec | next`
+  (72 case-builds). Whether std collects in place is decided as it
+  monomorphizes, so the order of the rest and what was collected is the
+  type parameter's. Generic code's JS doesn't know it.
+- `peekable().enumerate().count()`, whose `Enumerate::count` is
+  `Peekable::count` in std. That one keeps the peeked item until its frame
+  unwinds.

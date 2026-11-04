@@ -130,21 +130,18 @@ function main() {
     );
   });
   run("collect", () => {
-    const iter = it(50);
-    let result;
-    try {
-      try {
-        result = $collectDropping($iterator(iter, itIterator_next), dDrop_drop, true);
-      } finally {
+    const collect = $collectDropping(
+      $closing($iterator(it(50), itIterator_next), (it) => {
         console.log("drop it");
-      }
-    } finally {
-      for (const item of iter.items) {
-        dDrop_drop(item);
-      }
-    }
-    console.log(`${result.length}`);
-    for (const item of result) {
+        for (const item of it.of.items) {
+          dDrop_drop(item);
+        }
+      }),
+      dDrop_drop,
+      true,
+    );
+    console.log(`${collect.length}`);
+    for (const item of collect) {
       dDrop_drop(item);
     }
   });
