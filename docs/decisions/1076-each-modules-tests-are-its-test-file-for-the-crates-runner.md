@@ -6,7 +6,10 @@ and is one beside each module's JS that has tests, not one `<output>.test.js`.
 Amends [0916](0916-rust-js-test-runs-a-crates-tests-as-js.md): `rust-js test`
 runs the runner the crate names, Node's by default, not bun, and builds the
 crate's integration tests too. Amends [0027](0027-real-browser-tests.md): its
-runners are given a build's manifests.
+runners are given a build's manifests. Amended (2026-11-04, #597, the
+user's decision): a test build compiles the package's library as `rust-js
+build` does, not as a library, and its integration tests are held to what it
+decided; see "Amendment: a program's tests run the JS it ships" below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, a command and a file
 layout: what each test does is what the JS rust-js writes for it does, under
@@ -88,8 +91,9 @@ none, is Node's. There's no flag besides it, nor any other name for it.
 - **Integration tests**, `tests/quadruples.rs`, are crates of their own:
   `rust-js test` builds them, `cargo check --profile test --lib --test
   <each>`, its root `quadruples.js`, named as its file is, its tests
-  `quadruples.test.js` by the same rule. The package's library is a library
-  then, its contract what they use.
+  `quadruples.test.js` by the same rule. The package's library is compiled
+  as `rust-js build` compiles it, a program where no crate of its workspace
+  uses it, and writes a contract they use (amended, #597, below).
 
 No `lib.test.js` entry is written: a root's `lib.test.js` is its own tests'.
 Private items the tests reach, `use super::*`, are exported, as before.
@@ -148,3 +152,68 @@ refuses another's, saying so.
   refused, as `RUST_JS_TESTS` naming a test file is.
 - Under Node and Vitest, a promise a test leaves rejected fails the run, not
   that test: Node names the test that left it.
+
+## Amendment: a program's tests run the JS it ships (2026-11-04, #597)
+
+The user's decision. Porting alien-signals' library tests found that a test
+build, which compiled the package's library `--library`, refused what `rust-js
+build` builds: a library guesses what any consumer gives it (ADRs 0163,
+0521), so `computed<F>`'s getter boxed into a `dyn Fn` made every `dyn Fn`
+drop, its `Rc<ReactiveNode>` counted, and eleven refusals followed. Where
+library mode compiles, the tests run other JS than the build ships.
+
+**A test build compiles a program as `rust-js build` does**, its JS byte for
+byte, and **writes a contract too**, `--tested`, which the cargo wrapper
+passes to an app, a crate `RUST_JS_APPS` lists, where `rust-js test` sets
+`RUST_JS_TEST_BUILD` (`tooling/cargo.js`'s `cargoEnv`), recorded in its
+dep-info as `RUST_JS_APPS` is. Its analysis is a program's (`pipeline.rs`:
+`library` is `export_library && !program`); its contract says what it
+decided as one. **Its integration tests, crates of their own that use it, are
+held to each decision, refused at compile time where they'd break one**:
+
+- **A value whose drop runs given to its type parameter**: its contract's
+  `Drop` and `NoDrop` marks, as a library's; a consumer that gives more
+  compiles its own instance (ADR 0914) or is refused (ADR 0190).
+- **A closure holding what drops made one of its `dyn Fn`s**:
+  `makes_dropping_fn_dyns`, refused (ADR 0626), as `tp::node(move ||
+  loud.0.get())` is.
+- **A count of an `Rc` it counts none of**: `counted_rcs`, refused (ADRs
+  0844, 0852).
+- **A `dyn` of its own trait of what drops**, where none of its implementors
+  drops, so its code drops nothing of one (ADR 0320): its contract's
+  `dyns_drop_nothing`, the coercion refused (`analysis.rs`, `closures::
+  dropping_dyn_of`), the rule `drops::own_dyns_drop_nothing`, one for both.
+- **A trait's constant read of a type parameter** that its dictionaries lack,
+  carrying only what its own generic code reads (ADR 0106): its contract's
+  `dictionary_consts`, the read refused, naming `<Ty as Trait>::C`, which
+  rustc evaluates.
+- **A borrow of a `RefCell` it borrows unchecked, held while its code runs**:
+  `ref_cells.unchecked`, refused (ADR 0863).
+
+A library's contract has no `dictionary_consts` and no `dyns_drop_nothing`:
+its dictionaries carry every constant and its `dyn`s drop what they hold.
+`rust-js build` is unchanged; ADR 0360's rule, a crate another of the
+workspace uses is a library, holds for test builds too: an integration test is
+no member of the workspace.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N where the test keeps the
+program's decisions, its answer the shipped JS's; D, a compile error, where it
+would break one, as native Rust's answer would then differ.
+
+**Alternatives.** (A) Keep library mode: a library shaped as alien-signals is
+refused, and its tests run other JS. (A') Decide every library by its own code
+and hold its consumers to it: every library's JS changes, React's crates too;
+not for this change. (C) Integration tests as `#[cfg(test)] mod tests` of the
+library: not what a Rust crate writes, `tests/*.rs`.
+
+**What holds it.** `test/rust-js-test-programs.test.ts`: the test build's
+library JS is `rust-js build`'s, byte for byte, an `Rc` the value itself, and
+each refusal above.
+Mutations in `scripts/mutations/cargo.ts` (`cargo-tested-program-a-library`,
+`cargo-tested-program-writes-no-contract`), `lower/pipeline.ts`
+(`program-guesses-as-a-library`, `program-dictionary-consts-unsaid`,
+`program-dyns-drop-nothing-unsaid`), `lower/analysis/programs.ts`
+(`tested-program-const-read-unrefused`, `tested-program-dropping-dyn-unrefused`)
+and `lower/library.ts` (`library-dictionary-const-lacked`,
+`program-dyn-trait-keys-unread`). alien-signals' `tests/effect.rs`,
+`effect_scope.rs` and `trigger.rs`, upstream's 21 tests, run under Vitest.

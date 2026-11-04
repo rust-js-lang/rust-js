@@ -238,6 +238,35 @@ test file and the runner:
 node --test out/shapes.test.js
 ```
 
+### Integration tests run the JS you ship
+
+An app's library, the crate no other of its workspace uses, is compiled for
+its tests as `rust-js build` compiles it, its JS byte for byte, so
+`tests/*.rs` test the JS you ship ([ADR 1076](../../decisions/1076-each-modules-tests-are-its-test-file-for-the-crates-runner.md),
+amended). rust-js compiled it as a program: from what its own code does,
+it decided what drops, which `Rc`s count and which `RefCell` borrows are
+checked. An integration test is a crate of its own that uses it, and is
+refused at compile time where it would break one of those decisions, as
+native Rust's answer would then differ from the JS's:
+
+- giving one of its functions a closure that holds a value whose drop runs,
+  which it boxes into a `dyn Fn` that drops nothing;
+- making a `dyn` of its own trait of such a value, where none of its own
+  implementors drops;
+- counting an `Rc` it counts none of, `Rc::strong_count`;
+- reading a trait's constant of a type parameter, `T::SIDES`, which its
+  dictionaries carry only where its own generic code reads it: read it of the
+  type, `<Square as Shape>::SIDES`;
+- holding a borrow of a `RefCell` it borrows unchecked while its code runs.
+
+```text
+error: rust-js: this `dyn app::Named` holds a `Loud`, whose drop runs code, but `app`, a program compiled as `rust-js build` compiles it, drops nothing of a `dyn app::Named`, as none of its own implementors drops (ADR 1076)
+  --> tests/held.rs:23:31
+```
+
+A value of its type parameter that drops is fine: the test compiles its own
+copy of that function.
+
 ### A DOM
 
 A test of the DOM needs one, which is the runner's own setup, as for any

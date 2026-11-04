@@ -267,8 +267,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `dyn` of the crate's trait drops something wherever a type may, though none of its implementors drops anything, so its `Rc`, and its owner's, are counted, `{ value, strong, weak }`",
     file: "src/lower/drops/types.rs",
-    find: "            if implementor.has_non_region_param() || !matches!(self.drops_in(implementor, walk), Drops::Nothing) {\n",
-    replace: "            if true {\n",
+    find: "        !implementor.has_non_region_param() && !drops(implementor)\n",
+    replace: "        false\n",
     tests: [
       "test/lowering.test.ts",
       "-t",

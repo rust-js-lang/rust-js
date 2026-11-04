@@ -111,6 +111,9 @@ static RUSTC_TOOLS: OnceLock<for<'tcx> fn(TyCtxt<'tcx>, ()) -> RegisteredTools> 
 struct RustJs {
     dependencies: library::Dependencies,
     export_library: bool,
+    /// `--tested`: a program that writes a contract too, which its
+    /// integration tests read (ADR 1076, amended, #597).
+    program: bool,
     /// `--emit=metadata` among rustc's flags: rustc goes on to write the
     /// crate's metadata, for the crates that use it (ADR 0100).
     metadata: bool,
@@ -249,13 +252,13 @@ impl Callbacks for RustJs {
         // Whether the crate is a program is `RUST_JS_APPS`'s, which Cargo
         // reads of the dep-info, as of an `env!`: another value is another
         // build (ADR 0360).
+        // And whether a program writes its tests' contract, `rust-js test`'s
+        // (ADR 1076, amended).
         if self.cargo {
-            let value = std::env::var(cargo::APPS).ok().map(|value| Symbol::intern(&value));
-            compiler
-                .sess
-                .env_depinfo
-                .lock()
-                .insert((Symbol::intern(cargo::APPS), value));
+            for var in [cargo::APPS, cargo::TEST_BUILD] {
+                let value = std::env::var(var).ok().map(|value| Symbol::intern(&value));
+                compiler.sess.env_depinfo.lock().insert((Symbol::intern(var), value));
+            }
         }
         Syntax.after_crate_root_parsing(compiler, krate)
     }
@@ -304,6 +307,7 @@ impl Callbacks for RustJs {
             }
             let built = lower::Built {
                 library: self.export_library,
+                program: self.program,
                 std_bodies: self.std_bodies,
                 panics_abort: self.panics_abort,
                 tidy_until: self.tidy_until.as_deref(),
@@ -540,7 +544,8 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         input,
         output,
         cargo,
-        library: export_library,
+        library,
+        tested,
         dependencies: dependency_paths,
         declarations,
         manifest,
@@ -562,7 +567,8 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     plan.std_bodies = std_bodies;
     let mut callbacks = RustJs {
         dependencies,
-        export_library,
+        export_library: library || tested,
+        program: tested,
         metadata: metadata.is_some(),
         lowered: None,
         std_coverage,

@@ -25,8 +25,11 @@ const execute = promisify(execFile);
  * @param {string} compiler
  * @param {string | undefined} react
  * @param {{ apps: string[], crates: string[], dependencies?: { dir: string }[] }} build
+ * @param {{ tests?: boolean }} [options] `rust-js test`'s build: each app
+ * writes a contract too, `RUST_JS_TEST_BUILD`, its integration tests'
+ * (ADR 1076, amended).
  * @returns {NodeJS.ProcessEnv} */
-export function cargoEnv(compiler, react, { apps, crates, dependencies = [] }) {
+export function cargoEnv(compiler, react, { apps, crates, dependencies = [] }, { tests = false } = {}) {
   const env = {
     ...process.env,
     RUSTC_WRAPPER: resolve(compiler),
@@ -38,6 +41,8 @@ export function cargoEnv(compiler, react, { apps, crates, dependencies = [] }) {
   };
   if (react) env.RUST_JS_REACT = react;
   else delete env.RUST_JS_REACT;
+  if (tests) env.RUST_JS_TEST_BUILD = "1";
+  else delete env.RUST_JS_TEST_BUILD;
   return env;
 }
 
@@ -170,9 +175,10 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   if (noDefaultFeatures) args.push("--no-default-features");
   if (offline) args.push("--offline");
   const build = await cargoBuild({ manifestPath: manifest, toolchain, offline });
-  // Of a test build, each package's library is one: its integration tests
-  // use it, as a crate of their own, by its contract (ADR 1076).
-  const env = { ...cargoEnv(compiler, react, tests ? { ...build, apps: [] } : build), ...(targetDir ? { CARGO_TARGET_DIR: targetDir } : {}) };
+  // Of a test build, each package's library is what `rust-js build` makes
+  // of it, so its tests run the JS it ships: its integration tests use it
+  // as a crate of their own, held to what it decided (ADR 1076, amended).
+  const env = { ...cargoEnv(compiler, react, build, { tests }), ...(targetDir ? { CARGO_TARGET_DIR: targetDir } : {}) };
   const { stdout, stderr } = await execute("cargo", args, { cwd: dirname(manifest), env, maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
     const messages = String(error.stdout ?? "").split("\n").filter(Boolean).map(line => JSON.parse(line));
     // A package's crate is quiet: what it warns of is its author's, which

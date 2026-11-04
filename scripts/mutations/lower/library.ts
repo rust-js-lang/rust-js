@@ -671,4 +671,20 @@ export const mutations: Mutation[] = [
     replace: "        Some(super::classes::Member::Namespace) if false => super::classes::property(tcx, id),\n",
     tests: ["test/method-forwarding.test.ts", "-t", "another crate calls a library's forwarding method"],
   },
+  {
+    name: "library-dictionary-const-lacked",
+    breaks: "a library's dictionaries, which carry every constant, are taken to lack those its code reads nowhere, and a consumer's generic read of one is refused (#597)",
+    file: "src/lower/library.rs",
+    find: "                && (library.dictionary_consts.as_ref()).is_some_and(|consts| !consts.contains(&konst_key));\n",
+    replace: "                && (library.dictionary_consts.as_ref()).is_none_or(|consts| !consts.contains(&konst_key));\n",
+    tests: ["test/crates.test.ts", "test/rust-js-test-programs.test.ts"],
+  },
+  {
+    name: "program-dyn-trait-keys-unread",
+    breaks: "a program's traits whose `dyn`s drop nothing are never found, so a test's `dyn` of one, of what drops, is never dropped (#597)",
+    file: "src/lower/library.rs",
+    find: "        library.dyns_drop_nothing.contains(&key(self.tcx, tr)).then_some(())?;\n",
+    replace: "        None::<()>?;\n",
+    tests: ["test/rust-js-test-programs.test.ts", "-t", "makes a dyn of the program's trait"],
+  },
 ];

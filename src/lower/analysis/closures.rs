@@ -399,6 +399,25 @@ pub(super) fn any_dyns_drop<'tcx>(
             .any(|from| drops(from) || params_may_drop && from.has_non_region_param())
 }
 
+/// The first of `all_bodies`' coercions to a `dyn` of the trait `tr`, of
+/// what `drops`, or of a type parameter's value where `params_may_drop`:
+/// where a program its tests use drops nothing of one (#597), what it would
+/// drop nothing of.
+pub(super) fn dropping_dyn_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    all_bodies: &[&Body<'tcx>],
+    (tr, params_may_drop): (DefId, bool),
+    drops: impl Fn(Ty<'tcx>) -> bool,
+) -> Option<(Span, Ty<'tcx>)> {
+    (all_bodies.iter()).find_map(|body| {
+        dyn_sources(tcx, &body.thir, move |predicates| {
+            predicates.principal_def_id() == Some(tr)
+        })
+        .find(|&(_, from)| drops(from) || params_may_drop && from.has_non_region_param())
+        .map(|(at, from)| (body.thir[at].span, from))
+    })
+}
+
 /// Each closure `all_bodies` make a `dyn Fn` of only to hand it to JS: what
 /// a drop of a `dyn Fn` of the crate's may drop beside what `drop_runs`
 /// says, which `dropping_fn_dyn` leaves them out of (`may_run`). Each other

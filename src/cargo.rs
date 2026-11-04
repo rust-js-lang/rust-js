@@ -40,6 +40,11 @@ pub const CLIPPY: &str = "RUST_JS_CLIPPY";
 /// workspace (ADR 0360, amended).
 pub const APPS: &str = "RUST_JS_APPS";
 
+/// Set by `rust-js test`: its programs, `RUST_JS_APPS`' crates, are
+/// compiled as `rust-js build` compiles them, and write a contract for
+/// their integration tests, which use them (ADR 1076, amended, #597).
+pub const TEST_BUILD: &str = "RUST_JS_TEST_BUILD";
+
 /// The crates rust-js compiles, the app's own, by their directories, as the
 /// tooling says: each of Cargo's packages of a path, its workspace's, a path
 /// dependency, or a crate an npm package has, but a binding crate (ADR 0414).
@@ -363,8 +368,13 @@ fn compile(flags: &[String]) -> Result<Vec<String>, String> {
     // What `RUST_JS_APPS` is, rust-js records for Cargo, which builds it
     // again where it changes: the workspace's, it's the same whichever of
     // its packages is built, and a crate built for one is fresh for another.
-    if !tests && !is_app()? {
-        ours.push("--library".into());
+    // A test build's program writes a contract too, `--tested`, which its
+    // integration tests read (ADR 1076, amended).
+    match (tests, is_app()?) {
+        (true, _) => {}
+        (false, false) => ours.push("--library".into()),
+        (false, true) if std::env::var_os(TEST_BUILD).is_some() => ours.push("--tested".into()),
+        (false, true) => {}
     }
     for manifest in dependencies(flags)? {
         ours.push("--dependency".into());

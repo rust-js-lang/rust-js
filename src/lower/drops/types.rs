@@ -659,14 +659,41 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         else {
             return Drops::Runs;
         };
-        for implementation in tcx.all_impls(principal) {
-            let implementor = tcx.type_of(implementation).instantiate_identity().skip_normalization();
-            if implementor.has_non_region_param() || !matches!(self.drops_in(implementor, walk), Drops::Nothing) {
-                return Drops::Runs;
-            }
+        match own_dyns_drop_nothing(tcx, principal, |implementor| {
+            !matches!(self.drops_in(implementor, walk), Drops::Nothing)
+        }) {
+            true => Drops::Nothing,
+            false => Drops::Runs,
         }
-        Drops::Nothing
     }
+}
+
+/// The crate's own traits a `dyn` may be of whose `dyn`s drop nothing,
+/// which a program's contract lists for its tests (#597).
+pub(in crate::lower) fn own_traits_dropping_nothing<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    mut drops: impl FnMut(Ty<'tcx>) -> bool,
+) -> Vec<DefId> {
+    (tcx.hir_crate_items(()).definitions())
+        .map(|id| id.to_def_id())
+        .filter(|&id| tcx.def_kind(id) == rustc_hir::def::DefKind::Trait && tcx.is_dyn_compatible(id))
+        .filter(|&id| own_dyns_drop_nothing(tcx, id, &mut drops))
+        .collect()
+}
+
+/// Whether a `dyn` of the crate's own trait `principal` drops nothing, as a
+/// program has it: none of its implementors is generic, and none `drops`
+/// (ADR 0320). A program compiled for its tests says which in its contract,
+/// where a consumer's implementor that drops is refused (#597).
+pub(in crate::lower) fn own_dyns_drop_nothing<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    principal: DefId,
+    mut drops: impl FnMut(Ty<'tcx>) -> bool,
+) -> bool {
+    tcx.all_impls(principal).all(|implementation| {
+        let implementor = tcx.type_of(implementation).instantiate_identity().skip_normalization();
+        !implementor.has_non_region_param() && !drops(implementor)
+    })
 }
 
 /// What's unsupported, and of what type, unless it's a closure's, which

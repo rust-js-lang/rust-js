@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a library lowers only the codecs it uses itself, so its consumers can't read its types",
     file: "src/lower/pipeline.rs",
-    find: "                    (used.contains(&id) || (export_library && super::library::reachable(tcx, id))) && queued.insert(id)\n",
+    find: "                    (used.contains(&id) || (library && super::library::reachable(tcx, id))) && queued.insert(id)\n",
     replace: "                    used.contains(&id) && queued.insert(id)\n",
     tests: [
       "test/crates.test.ts",
@@ -765,5 +765,29 @@ export const mutations: Mutation[] = [
     find: "                        && super::bindings::nullable_local_cell(tcx, key.to_def_id())\n",
     replace: "                        && false\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
+  },
+  {
+    name: "program-guesses-as-a-library",
+    breaks: "a program compiled for its tests guesses what any consumer gives it, as a library does, so its tests run other JS than `rust-js build` ships (ADR 1076, amended, #597)",
+    file: "src/lower/pipeline.rs",
+    find: "    let library = export_library && !program;\n",
+    replace: "    let library = export_library;\n",
+    tests: ["test/rust-js-test-programs.test.ts", "-t", "as rust-js build does"],
+  },
+  {
+    name: "program-dictionary-consts-unsaid",
+    breaks: "a program's contract says its dictionaries carry no constant, so a test that reads one its own generic code reads, of a type parameter, is refused (#597)",
+    file: "src/lower/pipeline.rs",
+    find: "    let tested = program.then(|| (&generic_consts, own_traits()));\n",
+    replace: "    let no_consts = HashSet::new();\n    let tested = program.then(|| (&no_consts, own_traits()));\n",
+    tests: ["test/rust-js-test-programs.test.ts", "-t", "as rust-js build does"],
+  },
+  {
+    name: "program-dyns-drop-nothing-unsaid",
+    breaks: "a program's contract says none of its traits' `dyn`s drops nothing, so a test's `dyn` of one, of what drops, is never dropped (#597)",
+    file: "src/lower/pipeline.rs",
+    find: "    let tested = program.then(|| (&generic_consts, own_traits()));\n",
+    replace: "    let tested = program.then(|| (&generic_consts, Vec::new()));\n",
+    tests: ["test/rust-js-test-programs.test.ts", "-t", "makes a dyn of the program's trait"],
   },
 ];

@@ -16,6 +16,7 @@ mod debug;
 mod drops;
 mod fmt_failures;
 mod fn_pointers;
+mod generic_consts;
 pub(super) use fn_pointers::{Called, FnPointers, Holder};
 mod held_adapters;
 mod iterator_steps;
@@ -31,6 +32,7 @@ pub(super) mod nulled_params;
 pub(super) mod only_called;
 pub(super) mod owned_by_return;
 mod plain_locals;
+mod programs;
 mod rc_counts;
 mod resolvers;
 mod scopes;
@@ -61,6 +63,7 @@ pub(super) use closures::{ClosureFacts, borrowed_fixed_bindings, clone_shares, t
 pub(super) use debug::{FormatCall, format_calls};
 use debug::{uses_debug_hex, uses_format_options, uses_pretty_debug};
 use drops::drop_params;
+use generic_consts::generic_consts;
 pub(super) use mutation::{clone_bounded, clones_itself, copies_itself, copy_bounded};
 use mutation::{cloned_params, copied_params, mutated_types, unboxed_params};
 pub(super) use mutation::{clones_by_itself, copies_by_callers};
@@ -992,6 +995,13 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         closures::refuse_dropping_fn_dyn(tcx, name, made.filter(|_| !library_drops), &self_handles);
         return None;
     }
+    // A program its tests use whose `dyn`s of its own trait drop nothing
+    // (ADR 1076, amended, #597).
+    if programs::refuses_dropping_dyn(tcx, all_bodies, (&foreign, params_may_drop), |ty| {
+        super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty)
+    }) {
+        return None;
+    }
     // Whether a value with a destructor is made a `dyn Any`, which then
     // drops it (ADR 0691): what unwound, of a panic or of JS, drops nothing.
     // One that drops only by a `dyn Any` it holds doesn't, so one pass does.
@@ -1314,6 +1324,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     });
     let asks_capacity = asks_capacity(tcx, all_bodies);
     let generic_consts = generic_consts(tcx, all_bodies);
+    // A program its tests use whose dictionaries lack a constant (#597).
+    programs::refuse_lacked_consts(tcx, &foreign, &generic_consts);
     // `@rust-js/std`'s writers take whether they're pretty: its consumers
     // are every program, any of which may ask `{:#?}` of a `Peekable`.
     let pretty_debug = std_bodies || uses_pretty_debug(tcx, all_bodies);
@@ -1379,55 +1391,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         module_paths,
         null_fields,
     })
-}
-
-/// The trait constants generic code reads, `S::SIDES` (ADR 0106): a
-/// dictionary has only these, as rustc evaluates only the constants a
-/// program uses, and a default no impl uses may not evaluate.
-fn generic_consts(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> HashSet<DefId> {
-    let generic = |def_id: DefId, args: ty::GenericArgsRef<'_>| {
-        (tcx.trait_of_assoc(def_id).is_some() && args.has_non_region_param()).then_some(def_id)
-    };
-    let mut consts = HashSet::new();
-    // A trait's default, `const A: u8 = Self::B`, reads only where it's
-    // lowered, a library's dictionary, which has every constant: here its
-    // `Self::B` would ask the program's of a default it never reads, which
-    // may not evaluate, `B = Self::A` (rustc's defaults-cyclic-pass).
-    for body in all_bodies.iter().filter(|body| {
-        !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. }) && tcx.trait_of_assoc(body.def_id).is_some())
-    }) {
-        consts.extend(body.thir.exprs.iter().filter_map(|expr| match expr.kind {
-            ExprKind::NamedConst { def_id, args, .. } => generic(def_id, args),
-            _ => None,
-        }));
-        // A library's body the crate compiles, of its MIR alone (ADR 0914):
-        // `Self::CAPACITY` of arrayvec's `ArrayVecImpl::push`, which the
-        // impl's dictionary the crate compiles beside it must have (ADR
-        // 0176, amended).
-        if body.root().is_none()
-            && let Some(mir) = &body.mir
-        {
-            struct Named<'a, 'tcx>(
-                &'a dyn Fn(DefId, ty::GenericArgsRef<'tcx>) -> Option<DefId>,
-                &'a mut HashSet<DefId>,
-            );
-            impl<'tcx> rustc_middle::mir::visit::Visitor<'tcx> for Named<'_, 'tcx> {
-                fn visit_const_operand(
-                    &mut self,
-                    constant: &rustc_middle::mir::ConstOperand<'tcx>,
-                    _: rustc_middle::mir::Location,
-                ) {
-                    if let rustc_middle::mir::Const::Unevaluated(uv, _) = constant.const_
-                        && uv.promoted.is_none()
-                    {
-                        self.1.extend((self.0)(uv.def, uv.args));
-                    }
-                }
-            }
-            rustc_middle::mir::visit::Visitor::visit_body(&mut Named(&generic, &mut consts), &mir.body);
-        }
-    }
-    consts
 }
 
 /// The `Vec` types something takes `&mut` of: `push`, `sort`, `v[i] = x`

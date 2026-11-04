@@ -5,7 +5,11 @@ Status: Accepted. Amends [0100](0100-separate-crates.md) and
 [0914](0914-a-librarys-generic-function-is-its-programs.md): a library's
 generic function is its program's. Amended by
 [1068](1068-a-workspace-built-whole.md): the programs are the workspace's,
-`RUST_JS_APPS`, whichever packages are built.
+`RUST_JS_APPS`, whichever packages are built. Amended by
+[1076](1076-each-modules-tests-are-its-test-file-for-the-crates-runner.md)
+(#597): `rust-js test`'s build compiles a program as `rust-js build` does,
+writing a contract too, `--tested`, its integration tests held to what it
+decided; `RUST_JS_TEST_BUILD` is recorded for Cargo as `RUST_JS_APPS` is.
 
 ## Context
 

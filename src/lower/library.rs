@@ -81,6 +81,10 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) makes_dropping_anys: bool,
     /// Whether it makes a `dyn Fn` of what drops (ADR 0626, amended).
     pub(super) makes_dropping_fn_dyns: bool,
+    /// A program's, `--tested`'s (#597): the trait constants its
+    /// dictionaries carry, its generic code's, a library's every one; and its
+    /// own traits whose `dyn`s drop nothing, none of a library's.
+    pub(super) program: Option<(&'a HashSet<DefId>, Vec<DefId>)>,
     /// What the `Rc`s it counts point at (ADR 0852).
     pub(super) counted: &'a super::analysis::Counted<'tcx>,
     /// What it changes in place, which its JS copies (ADR 0914, amended).
@@ -154,6 +158,13 @@ fn type_params(tcx: TyCtxt<'_>, id: DefId, contracts: &Contracts<'_, '_>) -> Vec
         param.stepped.sort();
     }
     params
+}
+
+/// The keys of `ids`, sorted, as a contract lists them.
+fn sorted_keys<'a>(tcx: TyCtxt<'_>, ids: impl Iterator<Item = &'a DefId>) -> Vec<String> {
+    let mut keys: Vec<String> = ids.map(|&id| key(tcx, id)).collect();
+    keys.sort();
+    keys
 }
 
 /// Is `id` the crate's own, or std's compiled into `@rust-js/std` (ADR
@@ -251,6 +262,7 @@ pub(super) fn exports<'tcx>(
         writers_take_options,
         makes_dropping_anys,
         makes_dropping_fn_dyns,
+        program,
         counted,
         changed,
         ref_cells: _,
@@ -387,6 +399,10 @@ pub(super) fn exports<'tcx>(
         writers_take_options: *writers_take_options,
         makes_dropping_anys: *makes_dropping_anys,
         makes_dropping_fn_dyns: *makes_dropping_fn_dyns,
+        dictionary_consts: program.as_ref().map(|(consts, _)| sorted_keys(tcx, consts.iter())),
+        dyns_drop_nothing: program
+            .as_ref()
+            .map_or(Vec::new(), |(_, traits)| sorted_keys(tcx, traits.iter())),
         held,
         reexported,
         counted_rcs: {
@@ -1042,6 +1058,40 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// May any of the libraries' items?
     pub(super) fn any_fails(&self) -> bool {
         self.all().any(|item| item.calling.has(ItemFact::Fails))
+    }
+
+    /// The program, compiled for its tests (`--tested`), whose dictionary
+    /// of an impl of the trait of `konst`, a trait's constant, lacks it, as
+    /// its own generic code reads it nowhere (ADR 0106): a crate that reads
+    /// it of a type parameter may be given that dictionary, and is refused
+    /// (#597). The program's name, and the impl's type.
+    pub(super) fn lacks_dictionary_const(&self, konst: DefId) -> Option<(&'a str, rustc_middle::ty::Ty<'tcx>)> {
+        let tr = self.tcx.trait_of_assoc(konst)?;
+        let konst_key = key(self.tcx, konst);
+        self.tcx.all_impls(tr).find_map(|imp| {
+            let library = self.library(imp.krate)?;
+            let lacks = library.impls.contains(&key(self.tcx, imp))
+                && (library.dictionary_consts.as_ref()).is_some_and(|consts| !consts.contains(&konst_key));
+            let name = library_name(self.tcx, imp.krate);
+            let (name, _) = self.dependencies.libraries.get_key_value(name.as_str())?;
+            lacks.then(|| {
+                (
+                    name.as_str(),
+                    self.tcx.type_of(imp).instantiate_identity().skip_normalization(),
+                )
+            })
+        })
+    }
+
+    /// The program, compiled for its tests, whose `dyn`s of its own trait
+    /// `tr` drop nothing (#597): one a crate makes of what drops it would
+    /// drop nothing of.
+    pub(super) fn drops_no_dyn_of(&self, tr: DefId) -> Option<&'a str> {
+        let library = self.library(tr.krate)?;
+        library.dyns_drop_nothing.contains(&key(self.tcx, tr)).then_some(())?;
+        let name = library_name(self.tcx, tr.krate);
+        let (name, _) = self.dependencies.libraries.get_key_value(name.as_str())?;
+        Some(name.as_str())
     }
 
     /// Is `id` a library's trait impl, one its consumers call?

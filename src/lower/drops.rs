@@ -34,6 +34,7 @@ mod parts;
 mod ref_cells;
 mod scopes;
 mod types;
+pub(super) use types::own_traits_dropping_nothing;
 mod uses;
 
 pub(super) use self::uses::*;

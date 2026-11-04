@@ -44,6 +44,10 @@ pub(crate) struct Build {
     pub cargo: bool,
     /// `--library`: the crate is published as a library.
     pub library: bool,
+    /// `--tested`: the crate is a program, compiled as `rust-js build`
+    /// compiles it, whose contract its integration tests read, each held to
+    /// what it decided (ADR 1076, amended, #597).
+    pub tested: bool,
     /// `--dependency <manifest.json>`, each a library the crate uses.
     pub dependencies: Vec<PathBuf>,
     /// `--declarations`: a `.d.ts` beside each module's JS, which Cargo's
@@ -105,6 +109,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     let mut ours = ours.to_vec();
     let cargo = flag(&mut ours, "--cargo");
     let library = flag(&mut ours, "--library");
+    let tested = flag(&mut ours, "--tested");
     let declarations = flag(&mut ours, "--declarations");
     let std_bodies = flag(&mut ours, "--std-bodies");
     let std_iterators = flag(&mut ours, "--std-iterators");
@@ -131,6 +136,9 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     if library && manifest.is_none() {
         return Err("--library requires --manifest".into());
     }
+    if tested && (library || manifest.is_none()) {
+        return Err("--tested requires --manifest, and is a program's, not a --library's".into());
+    }
     if std_bodies && !library {
         return Err("--std-bodies requires --library".into());
     }
@@ -140,6 +148,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         test,
         cargo,
         library,
+        tested,
         dependencies,
         declarations,
         manifest,

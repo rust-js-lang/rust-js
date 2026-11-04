@@ -1,5 +1,6 @@
 //! Orchestrate analyzed crate facts, function emission, reachability and symbolic module assembly.
 
+mod built;
 mod contexts;
 mod copies;
 mod crate_imports;
@@ -10,6 +11,7 @@ mod load_cycles;
 mod packages;
 mod reached;
 
+pub use self::built::Built;
 use self::holes::{Holes, fill_hole, fill_holes};
 use self::load_cycles::{ModuleJs, module_imports};
 use self::reached::written_where_reached;
@@ -60,22 +62,6 @@ struct Pass {
     prototypes: super::classes::Prototypes,
 }
 
-/// How the crate is built, as its command asks.
-pub struct Built<'a> {
-    /// For others to use, a library (ADR 0100).
-    pub library: bool,
-    /// Given std's bodies to lower (ADR 0561).
-    pub std_bodies: bool,
-    /// Asked to abort on a panic, `-C panic=abort`, which rust-js unwinds
-    /// (ADR 0090): unwinding is refused of it (ADR 0660).
-    pub panics_abort: bool,
-    /// `--tidy-until <stage/pass>`: tidy stops after that pass (ADR 0659).
-    pub tidy_until: Option<&'a str>,
-    /// What the JS modules its bindings import load of the crate's modules
-    /// (ADR 0031, amended).
-    pub js_modules: &'a dyn crate::program::JsModules,
-}
-
 /// What lowering the crate gave: its JS, none where it failed; or the
 /// library functions it must compile itself first, which the crate's calls
 /// give more than they take (ADR 0914), each with the module it's placed in;
@@ -105,11 +91,14 @@ pub fn lower_crate<'tcx>(
 ) -> Lowered {
     let Built {
         library: export_library,
+        program,
         std_bodies,
         panics_abort,
         tidy_until,
         js_modules,
     } = built;
+    // A program decides by its own code, whatever contract it writes (#597).
+    let library = export_library && !program;
     let sources = super::sources::CapturedSources::new(tcx);
     let AnalyzedCrate {
         bodies,
@@ -174,7 +163,7 @@ pub fn lower_crate<'tcx>(
         all_bodies,
         initializers,
         dependencies,
-        (export_library, std_bodies),
+        (library, std_bodies),
         (instances, made_where_used),
     ) {
         Some(analyzed) => analyzed,
@@ -197,7 +186,7 @@ pub fn lower_crate<'tcx>(
     // A derived serde impl's codec is one rust-js writes of its type's
     // attributes, which no consumer sees to write: a library exports each
     // its consumers can reach (ADRs 0077, 0100).
-    if export_library {
+    if library {
         called_from_elsewhere.extend(codecs.iter().copied().filter(|&id| super::library::reachable(tcx, id)));
     }
     let foreign = super::library::Foreign::new(tcx, dependencies, instances);
@@ -219,7 +208,7 @@ pub fn lower_crate<'tcx>(
     // compiled here first, before anything is lowered (ADR 0914).
     let analyzed = super::instances::Analyzed {
         trait_impls: &trait_impls,
-        drops: (export_library, &closure_facts, &counted),
+        drops: (library, &closure_facts, &counted),
         drop_params: &drop_params,
         given,
         bodies: bodies.iter().copied().chain(closures.values().copied()).collect(),
@@ -458,7 +447,7 @@ pub fn lower_crate<'tcx>(
     let crate_facts = CrateFacts {
         flattened: &flattened,
         foreign: &foreign,
-        library: export_library,
+        library,
         compiled_once: exports_reachable,
         asked: Default::default(),
         copying: &copying,
@@ -567,7 +556,7 @@ pub fn lower_crate<'tcx>(
             let round: Vec<_> = codecs
                 .iter()
                 .filter(|&&id| {
-                    (used.contains(&id) || (export_library && super::library::reachable(tcx, id))) && queued.insert(id)
+                    (used.contains(&id) || (library && super::library::reachable(tcx, id))) && queued.insert(id)
                 })
                 .map(|&id| (id, None, None))
                 .collect();
@@ -1440,21 +1429,19 @@ pub fn lower_crate<'tcx>(
     }
     // What the library does with its `RefCell`s, which its consumers agree
     // with (ADR 0863).
-    let ref_cell_facts = || {
-        let recognition = super::recognition::Recognition {
-            tcx,
-            typing_env: ty::TypingEnv::fully_monomorphized(),
-            trait_impls: &trait_impls,
-            foreign: &foreign,
-        };
-        let no_ref_cells = super::drops::RefCells::default();
-        ref_cells
-            .get()
-            .unwrap_or(&no_ref_cells)
-            .facts(&recognition, &cell_borrows, &|t| {
-                super::drops::drop_runs(recognition, (export_library, &closure_facts), &counted, t)
-            })
+    let recognition = super::recognition::Recognition {
+        tcx,
+        typing_env: ty::TypingEnv::fully_monomorphized(),
+        trait_impls: &trait_impls,
+        foreign: &foreign,
     };
+    let drop_runs = |t| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, t);
+    let ref_cell_facts = || {
+        let no_ref_cells = super::drops::RefCells::default();
+        (ref_cells.get().unwrap_or(&no_ref_cells)).facts(&recognition, &cell_borrows, &drop_runs)
+    };
+    let own_traits = || super::drops::own_traits_dropping_nothing(tcx, &drop_runs);
+    let tested = program.then(|| (&generic_consts, own_traits()));
     let exported = super::library::exported_names(&lowered);
     Lowered::Crate(tcx.dcx().has_errors().is_none().then(|| {
         Box::new(Unlinked {
@@ -1474,6 +1461,7 @@ pub fn lower_crate<'tcx>(
                         writers_take_options,
                         makes_dropping_anys: closure_facts.any_dyns_drop,
                         makes_dropping_fn_dyns: closure_facts.fn_dyns_drop,
+                        program: tested,
                         counted: &counted,
                         changed,
                         ref_cells: ref_cell_facts(),

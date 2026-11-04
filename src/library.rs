@@ -287,6 +287,19 @@ pub struct Library {
     /// hold one. A library a compiler wrote before is taken to.
     #[serde(default = "made_before")]
     pub makes_dropping_fn_dyns: bool,
+    /// A program's, `--tested`'s: the keys of the trait constants its
+    /// dictionaries carry, those its own generic code reads, as `rust-js
+    /// build` writes them (ADRs 0106, 1076, amended, #597). A consumer that
+    /// reads another of a trait it has an impl of is refused. None of a
+    /// library's, whose dictionaries carry every one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dictionary_consts: Option<Vec<String>>,
+    /// A program's, `--tested`'s: the keys of its own traits whose `dyn`s
+    /// drop nothing, each implementor its own, none dropping (ADR 0320): a
+    /// consumer that makes one of what drops is refused (#597). None of a
+    /// library's, whose every `dyn` of its own trait drops what it holds.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub dyns_drop_nothing: Vec<String>,
     /// The bindings its modules hold (ADR 0633). A library a compiler
     /// wrote before held none a consumer read through it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -505,6 +518,11 @@ pub struct Exports {
     pub makes_dropping_anys: bool,
     /// Whether it makes a `dyn Fn` of what drops (ADR 0626, amended).
     pub makes_dropping_fn_dyns: bool,
+    /// A program's dictionaries' constants, by key; None of a library's,
+    /// which carry every one (#597).
+    pub dictionary_consts: Option<HashSet<String>>,
+    /// A program's own traits whose `dyn`s drop nothing, by key (#597).
+    pub dyns_drop_nothing: HashSet<String>,
     /// What the `Rc`s it counts point at (ADR 0852).
     pub counted_rcs: Vec<RcShape>,
     /// The parameters' tuples of its `function::with_this` functions that
@@ -599,6 +617,8 @@ impl Dependencies {
                 keeps_capacity: library.keeps_capacity,
                 makes_dropping_anys: library.makes_dropping_anys,
                 makes_dropping_fn_dyns: library.makes_dropping_fn_dyns,
+                dictionary_consts: library.dictionary_consts.map(|keys| keys.into_iter().collect()),
+                dyns_drop_nothing: library.dyns_drop_nothing.into_iter().collect(),
                 writers_take_options: library.writers_take_options,
                 identities: library.identities.into_iter().collect(),
                 keyed: library.keyed.into_iter().collect(),
@@ -760,6 +780,8 @@ impl Dependencies {
             keeps_capacity: library.keeps_capacity,
             makes_dropping_anys: library.makes_dropping_anys,
             makes_dropping_fn_dyns: library.makes_dropping_fn_dyns,
+            dictionary_consts: library.dictionary_consts.map(|keys| keys.into_iter().collect()),
+            dyns_drop_nothing: library.dyns_drop_nothing.into_iter().collect(),
             writers_take_options: library.writers_take_options,
             identities: library.identities.into_iter().collect(),
             keyed: library.keyed.into_iter().collect(),
