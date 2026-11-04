@@ -1586,3 +1586,33 @@ Corpus case: `reversed_vec_rest_through_zip_and_enumerate.rs`, against
 native Rust in both builds. Mutations: `step-by-of-trusted-zip-filtered`
 (`lower/combinators/adapters.ts`), `enumerate-advance-by-unforwarded`
 (`runtime/back_steps.ts`).
+
+## Amendment: an `enumerate()`'s `count` is its source's, a held `Peekable`'s too (2026-11-04, #655, #652)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+Std's `Enumerate::count` is its source's `count`. Of a `peekable()` that
+peeked, that's `Peekable::count`, `Some(Some(_)) => 1 + self.iter.count()`:
+the item it peeked at is the match's temporary, dropped after its source's
+`count` ends, or as it unwinds, after what that `count`'s frame drops. An
+`enumerate()` of a held, compiled `Peekable` was a JS `map` of it, so
+`$count` stepped it item by item and dropped what it peeked at first, with
+no panic as well as where its source's `next` panicked. It's `$enumerate`
+of it now wherever its source's `count` is std's compiled one
+(`counts_by_compiled_count`), whose `count` is its source's.
+
+Not yet of a source exact-sized and double-ended, a `Vec`'s `peekable()`:
+a `rev()` made in place of its enumeration is stepped by
+`as_double_ended`, which makes `$enumerate` of the map form's source made
+knowing its back and length, and refuses `$enumerate` of a compiled struct
+not made knowing them (`enumerate_of_a_fuse_from_back.rs`). That case is
+#712. #655's other cases, generic code's collects, were #672's.
+
+`enumerate_count_is_its_sources.rs` checks a peeked `peekable()` of the
+crate's iterator that ends, one whose `next` panics and one that peeked at
+nothing, against native Rust in both builds. Mutations:
+`enumerate-compiled-count-unseen` and
+`enumerate-reversible-compiled-count-taken` (`lower/mir/iter/backs.ts`);
+`enumerate-of-a-slice-nth-mapped` and `enumerate-of-own-count-mapped` name
+their lines as they now read.

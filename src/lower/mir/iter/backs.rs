@@ -212,9 +212,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     || self.recognition().reaches_its_own(output, OwnStep::Nth, Reach::Sure)
                     // Or one whose `nth` drops what it passes as one slice,
                     // a reversed `Vec`'s, its source's (#277); or whose
-                    // `count` is the crate's own, its source's (#505).
+                    // `count` is the crate's own, its source's (#505); or
+                    // std's compiled one (#655).
                     || self.recognition().nths_a_slice(output)
-                    || self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure) =>
+                    || self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure)
+                    || self.counts_by_compiled_count(iter_ty) =>
             {
                 // Of the crate's, what it can be made to know.
                 let back = self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);
@@ -423,6 +425,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .then(|| self.given_js_iterator(value, iter_ty, false, false))
                     .flatten()
             })
+    }
+
+    /// Whether an `enumerate()` of an iterator of type `iter_ty` counts by
+    /// its source's `count`, std's compiled one, as `Enumerate::count` does:
+    /// a held `Peekable`'s keeps what it peeked at till its source's `count`
+    /// ends, or unwinds, then drops it (#655). Not of one exact-sized and
+    /// double-ended, whose enumeration a `rev()` made in place may step from
+    /// its back, which `as_double_ended` makes of its map form.
+    fn counts_by_compiled_count(&self, iter_ty: Ty<'tcx>) -> bool {
+        let source = self.reveal(iter_ty);
+        let traits = [
+            self.recognition().double_ended_iterator(),
+            self.recognition().exact_size_iterator(),
+        ];
+        let reversible = traits
+            .into_iter()
+            .all(|tr| tr.is_some_and(|tr| self.recognition().implements_trait(source.peel_refs(), tr)));
+        !reversible && self.compiled_step(source, std_item(self.tcx, StdItem::Iterator), "count")
     }
 
     pub(super) fn has_a_back(&self, iter_ty: Ty<'tcx>) -> bool {

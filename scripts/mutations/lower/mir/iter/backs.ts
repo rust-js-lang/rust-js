@@ -20,8 +20,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `enumerate()` of a reversed `Vec` is a JS `map`, whose `nth` steps each item back to front, not the source's one slice (#277)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    || self.recognition().nths_a_slice(output)\n                    || self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure) =>\n",
-    replace: "                    || false\n                    || self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure) =>\n",
+    find: "                    || self.recognition().nths_a_slice(output)\n",
+    replace: "                    || false\n",
     tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
   },
   {
@@ -552,9 +552,27 @@ export const mutations: Mutation[] = [
     name: "enumerate-of-own-count-mapped",
     breaks: "an `enumerate()` of the crate's iterator with its own `count` is a map of it, whose `count` steps it (#505)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    || self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure) =>",
-    replace: " =>",
+    find: "                    || self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure)\n                    || self.counts_by_compiled_count(iter_ty) =>",
+    replace: "                    || self.counts_by_compiled_count(iter_ty) =>",
     tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
+  },
+  {
+    name: "enumerate-compiled-count-unseen",
+    breaks:
+      "an `enumerate()` of a held, peeked `peekable()` is a map of it, whose `count` gives what it peeked at first, where std's `Enumerate::count` is `Peekable::count`, which drops it after its source's `count` ends or unwinds (#655)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "        !reversible && self.compiled_step(source, std_item(self.tcx, StdItem::Iterator), \"count\")\n",
+    replace: "        !reversible && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_count_is_its_sources.rs$"],
+  },
+  {
+    name: "enumerate-reversible-compiled-count-taken",
+    breaks:
+      "an `enumerate()` of std's compiled `Fuse` that's exact-sized and double-ended is `$enumerate` of it, made knowing neither, which a `rev()` made in place can't step from its back: refused (#655)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "        !reversible && self.compiled_step(",
+    replace: "        self.compiled_step(",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_fuse_from_back.rs$"],
   },
   {
     name: "rfold-receiver-unclosed",
