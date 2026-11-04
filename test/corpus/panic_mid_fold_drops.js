@@ -6,6 +6,7 @@ import {
   $cmp,
   $dropEach,
   $enumerate,
+  $filterDropping,
   $filterEnds,
   $flatMap,
   $foldDropping,
@@ -85,19 +86,12 @@ function main() {
     }
   });
   run("fold filter", () => {
-    const keep = (d) => boom(d, 12);
     const x = $foldDropping(
-      $closing($iter(ds({ start: 10, end: 14 })), $dropEach(dDrop_drop)).filter((item) => {
-        let kept = false;
-        try {
-          kept = keep(item);
-        } finally {
-          if (!kept) {
-            dDrop_drop(item);
-          }
-        }
-        return kept;
-      }),
+      $filterDropping(
+        $closing($iter(ds({ start: 10, end: 14 })), $dropEach(dDrop_drop)),
+        (d) => boom(d, 12),
+        dDrop_drop,
+      ),
       [],
       push,
       $dropEach(dDrop_drop),
@@ -108,19 +102,12 @@ function main() {
     }
   });
   run("fold take_while", () => {
-    const keep = (d) => boom(d, 22);
     const x = $foldDropping(
-      $lazyTakeWhile($closing($iter(ds({ start: 20, end: 24 })), $dropEach(dDrop_drop)), (item) => {
-        let kept = false;
-        try {
-          kept = keep(item);
-        } finally {
-          if (!kept) {
-            dDrop_drop(item);
-          }
-        }
-        return kept;
-      }),
+      $lazyTakeWhile(
+        $closing($iter(ds({ start: 20, end: 24 })), $dropEach(dDrop_drop)),
+        (d) => boom(d, 22),
+        dDrop_drop,
+      ),
       [],
       push,
       $dropEach(dDrop_drop),
@@ -382,21 +369,11 @@ function main() {
     }
   });
   run("last", () => {
-    const keep = (d) => boom(d, 142);
     const x = $lastDropping(
       $lazyTakeWhile(
         $closing($iter(ds({ start: 140, end: 144 })), $dropEach(dDrop_drop)),
-        (item) => {
-          let kept = false;
-          try {
-            kept = keep(item);
-          } finally {
-            if (!kept) {
-              dDrop_drop(item);
-            }
-          }
-          return kept;
-        },
+        (d) => boom(d, 142),
+        dDrop_drop,
       ),
       dDrop_drop,
     );
@@ -561,21 +538,11 @@ function main() {
     }
   });
   run("rev take_while", () => {
-    const keep = (d) => boom(d, 61);
     const x = $foldDropping(
       $lazyTakeWhile(
         $rev($closing($iter(ds({ start: 60, end: 64 })), $dropEach(dDrop_drop))),
-        (item) => {
-          let kept = false;
-          try {
-            kept = keep(item);
-          } finally {
-            if (!kept) {
-              dDrop_drop(item);
-            }
-          }
-          return kept;
-        },
+        (d) => boom(d, 61),
+        dDrop_drop,
       ),
       [],
       push,
@@ -916,7 +883,7 @@ function main() {
     const x = $foldDropping(
       $rev($closing($iter(ds({ start: 30, end: 34 })), $dropEach(dDrop_drop)))
         .map((d) => {
-          let d$53$live = true;
+          let d$57$live = true;
           try {
             boom(d, 32);
           } catch (error) {
@@ -927,10 +894,10 @@ function main() {
           if (d[0] === 31) {
             result = undefined;
           } else {
-            d$53$live = false;
+            d$57$live = false;
             result = d;
           }
-          if (d$53$live) {
+          if (d$57$live) {
             dDrop_drop(d);
           }
           return result;

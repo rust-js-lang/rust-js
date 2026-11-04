@@ -504,16 +504,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {
-    name: "mir-skip-while-skipped-undropped",
-    breaks:
-      "MIR's `skip_while` of items with a destructor leaves those it skips undropped",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                    exprs.insert(0, this.dropping_discarded(test, item, discard_when, span, out)?);\n",
-    replace:
-      "                    let _ = (item, discard_when);\n                    exprs.insert(0, test);\n",
-    tests: ["test/corpus.test.ts", "-t", "drop_skipped_items"],
-  },
-  {
     name: "mir-pretty-dyn-debug-plain",
     breaks: "MIR's `{:#?}` of a `&dyn Debug` made elsewhere shows it plain",
     file: "src/lower/mir/std_calls.rs",
@@ -647,14 +637,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls.rs",
     find: "                        Ok(match this.closing_drop(ty, span)? {\n",
     replace: "                        Ok(match None::<Expr> {\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
-  },
-  {
-    name: "take-while-rejected-undropped",
-    breaks: "the item `take_while` stops at isn't dropped",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                    && matches!(comb, IterComb::SkipWhile | IterComb::TakeWhile)\n",
-    replace: "                    && comb == IterComb::SkipWhile\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
   {

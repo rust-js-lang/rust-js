@@ -1068,3 +1068,87 @@ its other side as a step throws.
 mutations `chain-count-unconsumed`, `chain-last-unconsumed`,
 `last-sides-b-unclosed` and `last-sides-a-last-leaked` are caught, and
 #653's `last-holding-unclosed` is caught by it too.
+
+## Amendment: what a stage discards is dropped past its fold closure's result, which a panic of that drop leaks (2026-11-04, #651, #625)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+Std's `filter_fold` and `filter_try_fold` closures, `move |acc, item| if
+predicate(&item) { fold(acc, item) } else { acc }`, and `take_while`'s
+`check`, drop the item they discard at the closure's end, after its tail
+has moved `acc` into what it gives. A panic of that drop leaks `acc`, as
+rustc leaks a value moved into a return when a later drop in its frame
+panics (rust-lang/rust#47949): `vec![D(1)..D(7)].into_iter().filter(|d|
+d.0 % 2 == 1).fold(Acc(0), ..)`, where D(4)'s drop panics, drops 1..7
+and never the accumulator. The JS dropped it ("drop acc 4"). It dropped
+the discarded item inside the predicate's arrow, which `$Steps`' fold ran
+under `$staged`, so its `unwind` ran too (m6's matrix, 32 case-builds of
+`zip.filter` and `rev vec | filter.rev`, under `fold`, `rfold` and
+`try_fold`). Where the closure still holds `acc`, as the predicate itself
+panics, both are dropped, the item first, as before. So is a
+`skip_while`'s skipped item, which std drops inside `find`'s closure while
+its `fold` holds `init` as a local.
+
+- **`$kept(keep, drop, x, i, a, unwind)` (`runtime/steps.js`) is the one
+  answer** of whether a fold's accumulator is dropped as a discarded item's
+  drop unwinds. It asks `keep`; where that throws, it drops `x`, then `a` by
+  `unwind`; it drops an `x` it doesn't keep after, outside `unwind`.
+  `$Steps`' `filter`, `$filterEnds` and `$lazyTakeWhile` ask it from their
+  `next`, which passes no `unwind`, and from their folds.
+- **The runtime's filter drops what it discards, given the drop,** never
+  the predicate. A filter of items with a destructor is
+  `$filterDropping(it, keep, drop)`, `$Steps`' own `filter` of any JS
+  iterator. It was `.filter((item) => { if (keep(item)) return true;
+  drop(item); return false; })`. On a JS iterator's own helper, a
+  `v.iter().map(|&n| D(n))`'s `values().map(..)`, that was
+  `Iterator.prototype.filter`. That runs the drop inside the step a
+  consumer takes, so no consumer can tell the drop's panic, which leaks
+  what it holds, from the predicate's, which drops it. The behavior
+  requires the runtime's filter. It reads as one call where the arrow was
+  seven lines. A `take_while`'s is `$lazyTakeWhile(it, keep, drop)`.
+  `knowing.rs` makes a `$filterDropping` stepped from its back
+  `$filterEnds(it, keep, drop)`, as it made a `.filter(p)`.
+- **A filter folds by its source's `fold` and `try_fold`, from either
+  end**, as std's `Filter` does. `$Steps`' `filter` had only `fold`, so its
+  `try_fold` stepped by its `next`, under the base `try_fold`'s `unwind`.
+  `$filterEnds` had only `rfold` and `try_rfold`, so a filter stepped from
+  its back, of the crate's iterator, never called its own `fold`:
+  `own.enumerate().filter(..).fold(..)` and generic code's `filter().fold()`
+  (#625, and #621's filter cases). From its back it folds by its source's
+  own or std's default of its back, `$foldBack` and `$tryRfoldOf`. That is
+  a compiled `Zip`'s, which has no `rfold`, and whose filter was stepped by
+  `next_back` before.
+
+`discarded_drop_leaks_the_accumulator.rs` holds a filter's `fold`, `rfold`
+and `try_fold`, a zip's filter, a mapped slice's, a generic one's,
+`take_while`'s `fold` and `try_fold`, a filter's `count`, a panicking
+predicate and a `skip_while`'s skipped item against native Rust.
+`filter_folds_by_its_sources_fold.rs` holds the crate's own `fold` through
+`enumerate().filter()` and `filter().enumerate()`, and a zip's filter
+folded from its back. Generic code's filter is the iterator matrix's: 367
+of its listed case-builds run as native Rust does now, 26 of #651, 81 of
+#625 and 260 of #621, and none it didn't list differs.
+
+Not covered here:
+- A `collect()` in place of such a filter or `take_while`, whose sink,
+  std's `InPlaceDrop`, is the accumulator the panic leaks. Native leaks
+  what it collected; the JS drops it (#681).
+- A filter under `rev()` that steps from its back, which has no back
+  (#646).
+
+Snapshots: 15 corpus cases' JS reads `$filterDropping(..)` or
+`$lazyTakeWhile(it, keep, drop)`, about 240 lines fewer, so the readability
+baseline's `$iter`, whose count is as it was, is 75.1 of 10,000 lines, from
+74.9. A `take_while`
+collected of items whose drop never unwinds is `Array.from` now: the
+arrow's drop call was read as one that may throw.
+
+Mutations: `kept-discard-drop-unwinds`, `kept-throw-drops-acc-first`,
+`kept-throw-keeps-item`, `filter-try-fold-by-next` and
+`filter-dropping-native` (`runtime/steps.ts`); `filter-ends-fold-by-next`,
+`filter-ends-try-fold-by-next` and `filter-ends-rfold-of-backs-by-back`
+(`runtime/back_steps.ts`). Fourteen mutations of the text they replace
+name the new text, each as it meant: `back-filter-throw-keeps-item` is now
+`kept-throw-keeps-item`, and `discarded-throw-keeps-item` is a
+`skip_while`'s alone.

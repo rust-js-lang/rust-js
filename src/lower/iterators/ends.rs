@@ -4,57 +4,64 @@
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// `test`, a stage's predicate, as one that drops the `item` it
-    /// discards: one `filter` doesn't keep, or one `skip_while` skips. Of a
-    /// test that may throw, a panic, the item it was asked of too, which
-    /// std's stage holds as it unwinds, first (#423).
+    /// What a `skip_while`, `skips`, or a `take_while` of `item`s with a
+    /// destructor is given, `exprs`, its test first: a `skip_while`'s test
+    /// that drops what it skips, `dropping_skipped`'s; a `take_while`'s test
+    /// and the drop of the item it stops at, which `$lazyTakeWhile` runs
+    /// past the fold closure's result, as `$kept` says (#651).
     pub(in crate::lower) fn dropping_discarded(
         &mut self,
-        test: Expr,
+        skips: bool,
         item: ty::Ty<'tcx>,
-        discard_when: bool,
+        exprs: &mut Vec<Expr>,
         span: Span,
         out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
+    ) -> R<()> {
+        if !skips {
+            exprs.extend(self.std_drop_function(item, span)?);
+            return Ok(());
+        }
+        let test = exprs.remove(0);
+        let test = self.dropping_skipped(test, item, span, out)?;
+        exprs.insert(0, test);
+        Ok(())
+    }
+
+    /// `test`, a `skip_while`'s predicate, as one that drops the `item` it
+    /// skips, as std's `SkipWhile` drops it inside its `find`, whose frame
+    /// holds no accumulator. Of a test that may throw, a panic, the item it
+    /// was asked of too, which std's stage holds as it unwinds, first
+    /// (#423). A `filter`'s and a `take_while`'s are the runtime's, which
+    /// drop what they discard past the fold closure's result (`$kept`,
+    /// #651).
+    fn dropping_skipped(&mut self, test: Expr, item: ty::Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         let throws = crate::lower::iterators::may_throw(&test);
         let test = if matches!(test.kind, js::ExprKind::Var(_)) {
             test
         } else {
-            self.spill(if discard_when { "skip" } else { "keep" }, test, out)
+            self.spill("skip", test, out)
         };
         let js_span = self.js_span(span);
         let mut drop = Vec::new();
         self.drop_value(Expr::var("item"), item, span, &mut drop)?;
         let asked = Expr::call(test, vec![Expr::var("item")]);
-        // `let kept = false; try { kept = keep(item); } finally { if (!kept)
-        // drop(item); } return kept;`, or `skipped`, first `true`.
+        // `let skipped = true; try { skipped = skip(item); } finally { if
+        // (skipped) drop(item); } return skipped;`.
         if throws {
-            let answer = if discard_when { "skipped" } else { "kept" };
-            let dropped = match discard_when {
-                true => Expr::var(answer),
-                false => Expr::unary(js::UnaryOp::Not, Expr::var(answer)),
-            };
             let body = vec![
-                StmtKind::Let(answer.into(), Some(Expr::bool(discard_when))).at(js_span),
+                StmtKind::Let("skipped".into(), Some(Expr::bool(true))).at(js_span),
                 StmtKind::Try(
-                    vec![StmtKind::Assign(Expr::var(answer), asked).at(js_span)],
-                    vec![StmtKind::If(dropped, drop, None).at(js_span)],
+                    vec![StmtKind::Assign(Expr::var("skipped"), asked).at(js_span)],
+                    vec![StmtKind::If(Expr::var("skipped"), drop, None).at(js_span)],
                 )
                 .at(js_span),
-                StmtKind::Return(Some(Expr::var(answer))).at(js_span),
+                StmtKind::Return(Some(Expr::var("skipped"))).at(js_span),
             ];
             return Ok(Expr::arrow(vec!["item".into()], body));
         }
         let answer = |b: bool| StmtKind::Return(Some(Expr::bool(b))).at(js_span);
-        let body = if discard_when {
-            drop.push(answer(true));
-            vec![StmtKind::If(asked, drop, None).at(js_span), answer(false)]
-        } else {
-            let mut rest = vec![StmtKind::If(asked, vec![answer(true)], None).at(js_span)];
-            rest.extend(drop);
-            rest.push(answer(false));
-            rest
-        };
+        drop.push(answer(true));
+        let body = vec![StmtKind::If(asked, drop, None).at(js_span), answer(false)];
         Ok(Expr::arrow(vec!["item".into()], body))
     }
     /// `max()` or `min()` of `items`, an iterator of `item`s, or an array:

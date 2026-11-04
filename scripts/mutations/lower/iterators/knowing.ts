@@ -176,9 +176,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a filter made where it's stepped from its back, `xs.iter().filter(p).rfold(..)`, is refused",
     file: "src/lower/iterators/knowing.rs",
-    find: '            && method == "filter"\n            && let [p] = args.as_slice()\n',
-    replace:
-      '            && method == "filtered"\n            && let [p] = args.as_slice()\n',
+    find: '                (js::ExprKind::Member(source_value, method), [p]) if method == "filter" => {\n',
+    replace: '                (js::ExprKind::Member(source_value, method), [p]) if method == "filtered" => {\n',
     tests: [
       "test/corpus.test.ts",
       "-t",

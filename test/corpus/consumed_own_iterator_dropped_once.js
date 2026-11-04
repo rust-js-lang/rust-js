@@ -4,6 +4,7 @@ import {
   $catchUnwind,
   $closing,
   $collectDropping,
+  $filterDropping,
   $findDropping,
   $iterator,
   $lastDropping,
@@ -399,25 +400,20 @@ function more() {
     });
   });
   run("count of filter", () => {
-    const keep = (d) => d[0] > 170;
     console.log(
-      `${$closing($iterator(it(170), itIterator_next), (it) => {
-        console.log("drop it");
-        for (const item of it.of.items) {
-          dDrop_drop(item);
-        }
-      })
-        .filter((item) => {
-          if (keep(item)) {
-            return true;
+      `${$filterDropping(
+        $closing($iterator(it(170), itIterator_next), (it) => {
+          console.log("drop it");
+          for (const item of it.of.items) {
+            dDrop_drop(item);
           }
-          dDrop_drop(item);
-          return false;
-        })
-        .reduce((n, item) => {
-          dDrop_drop(item);
-          return n + 1;
-        }, 0)}`,
+        }),
+        (d) => d[0] > 170,
+        dDrop_drop,
+      ).reduce((n, item) => {
+        dDrop_drop(item);
+        return n + 1;
+      }, 0)}`,
     );
   });
 }

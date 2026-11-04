@@ -313,14 +313,11 @@ function main() {
     value$13.return();
     throw error;
   }
-  const keep = (loud) => loud[0] > 80;
-  const takeWhile = $lazyTakeWhile($skipping(value$13, tmp$9, loudDrop_drop), (item) => {
-    if (keep(item)) {
-      return true;
-    }
-    loudDrop_drop(item);
-    return false;
-  });
+  const takeWhile = $lazyTakeWhile(
+    $skipping(value$13, tmp$9, loudDrop_drop),
+    (loud) => loud[0] > 80,
+    loudDrop_drop,
+  );
   let tmp$10;
   try {
     tmp$10 = id(2);
@@ -346,14 +343,11 @@ function main() {
     value$14.return();
     throw error;
   }
-  const keep$1 = (loud) => loud[0] < 90;
-  const value$15 = $lazyTakeWhile($skipping(value$14, tmp$11, loudDrop_drop), (item) => {
-    if (keep$1(item)) {
-      return true;
-    }
-    loudDrop_drop(item);
-    return false;
-  });
+  const value$15 = $lazyTakeWhile(
+    $skipping(value$14, tmp$11, loudDrop_drop),
+    (loud) => loud[0] < 90,
+    loudDrop_drop,
+  );
   let tmp$12;
   try {
     tmp$12 = id(2);
@@ -379,15 +373,12 @@ function main() {
     value$16.return();
     throw error;
   }
-  const keep$2 = (loud) => loud[0] < 98;
   const last = $lastDropping(
-    $lazyTakeWhile($skipping(value$16, tmp$13, loudDrop_drop), (item) => {
-      if (keep$2(item)) {
-        return true;
-      }
-      loudDrop_drop(item);
-      return false;
-    }),
+    $lazyTakeWhile(
+      $skipping(value$16, tmp$13, loudDrop_drop),
+      (loud) => loud[0] < 98,
+      loudDrop_drop,
+    ),
     loudDrop_drop,
   );
   function map$4(loud) {

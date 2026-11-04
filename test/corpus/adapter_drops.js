@@ -5,6 +5,7 @@ import {
   $checked,
   $closing,
   $dropEach,
+  $filterDropping,
   $held,
   $intoIter,
   $iter,
@@ -247,15 +248,12 @@ function main() {
   });
   mapped.return();
 
-  const keep = (l) => l[0] % 2 === 1;
   const kept = $held(
-    $closing($iter(louds(60, 4)), $dropEach(loudDrop_drop)).filter((item) => {
-      if (keep(item)) {
-        return true;
-      }
-      loudDrop_drop(item);
-      return false;
-    }),
+    $filterDropping(
+      $closing($iter(louds(60, 4)), $dropEach(loudDrop_drop)),
+      (l) => l[0] % 2 === 1,
+      loudDrop_drop,
+    ),
   );
   let kept$live;
   try {
@@ -315,15 +313,12 @@ function main() {
     skipping.return();
   }
 
-  const keep$1 = (l) => l[0] < 91;
   const taking = $held(
-    $lazyTakeWhile($closing($iter(louds(90, 4)), $dropEach(loudDrop_drop)), (item) => {
-      if (keep$1(item)) {
-        return true;
-      }
-      loudDrop_drop(item);
-      return false;
-    }),
+    $lazyTakeWhile(
+      $closing($iter(louds(90, 4)), $dropEach(loudDrop_drop)),
+      (l) => l[0] < 91,
+      loudDrop_drop,
+    ),
   );
   let ended;
   let taking$live;

@@ -137,7 +137,6 @@ function main() {
     }
   });
   run("own filter rev", () => {
-    const keep = (d) => boom(d, 11);
     const x = $foldDropping(
       $rev(
         $filterEnds(
@@ -153,17 +152,8 @@ function main() {
             undefined,
             countDoubleEndedIterator_rfold,
           ),
-          (item) => {
-            let kept = false;
-            try {
-              kept = keep(item);
-            } finally {
-              if (!kept) {
-                dDrop_drop(item);
-              }
-            }
-            return kept;
-          },
+          (d) => boom(d, 11),
+          dDrop_drop,
         ),
       ),
       [],

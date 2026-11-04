@@ -1001,10 +1001,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if let Some(item) = dropping
                         && matches!(comb, IterComb::SkipWhile | IterComb::TakeWhile)
                     {
-                        let test = exprs.remove(0);
                         this.flush(state, out)?;
-                        let discard_when = comb == IterComb::SkipWhile;
-                        exprs.insert(0, this.dropping_discarded(test, item, discard_when, span, out)?);
+                        this.dropping_discarded(comb == IterComb::SkipWhile, item, &mut exprs, span, out)?;
                     }
                     let made = this.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, span, out)?;
                     // A flatten the crate steps from its back, made knowing it

@@ -6,6 +6,7 @@ import {
   $collectDropping,
   $debugStr,
   $dropEach,
+  $filterDropping,
   $iter,
   $lazySkipWhile,
 } from "@rust-js/runtime";
@@ -20,16 +21,12 @@ function noisyDrop_drop(noisy) {
 
 function main() {
   const v = [["a"], ["bb"], ["c"], ["dd"]];
-  const keep = (n) => $byteLen(n[0]) > 1;
-  const long = $collectDropping(
-    $closing($iter(v), $dropEach(noisyDrop_drop)).filter((item) => {
-      if (keep(item)) {
-        return true;
-      }
-      noisyDrop_drop(item);
-      return false;
-    }),
-    noisyDrop_drop,
+  const long = Array.from(
+    $filterDropping(
+      $closing($iter(v), $dropEach(noisyDrop_drop)),
+      (n) => $byteLen(n[0]) > 1,
+      noisyDrop_drop,
+    ),
   );
   console.log(`kept ${long.length}`);
 
@@ -77,20 +74,15 @@ function main() {
           );
           console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
 
-          const keep = (n) => n[0] !== "p2";
           const checked = $collectDropping(
-            $closing($iter([["p1"], ["p2"], ["p3"]]), $dropEach(noisyDrop_drop))
-              .filter((item) => {
-                if (keep(item)) {
-                  return true;
-                }
-                noisyDrop_drop(item);
-                return false;
-              })
-              .map((n) => {
-                console.log(`map ${n[0]}`);
-                return n;
-              }),
+            $filterDropping(
+              $closing($iter([["p1"], ["p2"], ["p3"]]), $dropEach(noisyDrop_drop)),
+              (n) => n[0] !== "p2",
+              noisyDrop_drop,
+            ).map((n) => {
+              console.log(`map ${n[0]}`);
+              return n;
+            }),
             noisyDrop_drop,
           );
           console.log(`checked ${checked.length}`);

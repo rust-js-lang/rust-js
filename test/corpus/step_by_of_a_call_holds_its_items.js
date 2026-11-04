@@ -25,16 +25,10 @@ function step() {
 }
 
 function main() {
-  const keep = (n) => n[0] < 36;
   const takeWhile = $lazyTakeWhile(
     $rev($closing($iter([[34], [35], [36]]), $dropEach(noisyDrop_drop))),
-    (item) => {
-      if (keep(item)) {
-        return true;
-      }
-      noisyDrop_drop(item);
-      return false;
-    },
+    (n) => n[0] < 36,
+    noisyDrop_drop,
   );
   const step$1 = $step(step());
   const stepBy = $held(
@@ -58,16 +52,10 @@ function main() {
   } finally {
     stepBy.return();
   }
-  const keep$1 = (n) => n[0] < 1;
   const value = $lazyTakeWhile(
     $closing($iter([[1], [2], [3]]), $dropEach(noisyDrop_drop)),
-    (item) => {
-      if (keep$1(item)) {
-        return true;
-      }
-      noisyDrop_drop(item);
-      return false;
-    },
+    (n) => n[0] < 1,
+    noisyDrop_drop,
   );
   const step$2 = $step(step());
   const value$1 = $held(

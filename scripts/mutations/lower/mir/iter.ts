@@ -172,8 +172,8 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's `filter` of items with a destructor leaves those it discards undropped",
     file: "src/lower/mir/iter.rs",
-    find: "                    Some(item) => self.dropping_discarded(test, item, false, span, made)?,\n",
-    replace: "                    Some(_) => test,\n",
+    find: "                    Some(drop) => Expr::call_helper(\"$filterDropping\", vec![it, test, drop]),\n",
+    replace: "                    Some(_) => method(\"filter\", it, vec![test]),\n",
     tests: ["test/corpus.test.ts", "-t", "collect_drops"],
   },
   {

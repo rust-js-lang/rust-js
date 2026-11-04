@@ -13,6 +13,7 @@ import {
   $collectResults,
   $dropEach,
   $extend,
+  $filterDropping,
   $findDropping,
   $foldOf,
   $foldToArray,
@@ -155,19 +156,12 @@ function main() {
     console.log(`${x}`);
   });
   run("take_while", () => {
-    const keep = (d) => !boom(d, 42) || true;
     const x = $collectDropping(
-      $lazyTakeWhile($closing($iter(ds({ start: 40, end: 44 })), $dropEach(dDrop_drop)), (item) => {
-        let kept = false;
-        try {
-          kept = keep(item);
-        } finally {
-          if (!kept) {
-            dDrop_drop(item);
-          }
-        }
-        return kept;
-      }),
+      $lazyTakeWhile(
+        $closing($iter(ds({ start: 40, end: 44 })), $dropEach(dDrop_drop)),
+        (d) => !boom(d, 42) || true,
+        dDrop_drop,
+      ),
       dDrop_drop,
     );
     console.log(`${x.length}`);
@@ -247,21 +241,11 @@ function main() {
     }
   });
   run("last at its end", () => {
-    const keep = (d) => boom(d, 162) || true;
     const x = $lastDropping(
       $lazyTakeWhile(
         $closing($iter(ds({ start: 160, end: 163 })), $dropEach(dDrop_drop)),
-        (item) => {
-          let kept = false;
-          try {
-            kept = keep(item);
-          } finally {
-            if (!kept) {
-              dDrop_drop(item);
-            }
-          }
-          return kept;
-        },
+        (d) => boom(d, 162) || true,
+        dDrop_drop,
       ),
       dDrop_drop,
     );
@@ -271,32 +255,25 @@ function main() {
     }
   });
   run("filter by a fn", () => {
-    const x = ds({ start: 0, end: 5 }).filter((item) => {
-      if (small(item)) {
-        return true;
-      }
-      dDrop_drop(item);
-      return false;
-    });
+    const x = Array.from(
+      $filterDropping(
+        $closing($iter(ds({ start: 0, end: 5 })), $dropEach(dDrop_drop)),
+        small,
+        dDrop_drop,
+      ),
+    );
     console.log(`${x.length}`);
     for (const item of x) {
       dDrop_drop(item);
     }
   });
   run("filter", () => {
-    const keep = (d) => boom(d, 92) || true;
     const x = $collectDropping(
-      $closing($iter(ds({ start: 90, end: 94 })), $dropEach(dDrop_drop)).filter((item) => {
-        let kept = false;
-        try {
-          kept = keep(item);
-        } finally {
-          if (!kept) {
-            dDrop_drop(item);
-          }
-        }
-        return kept;
-      }),
+      $filterDropping(
+        $closing($iter(ds({ start: 90, end: 94 })), $dropEach(dDrop_drop)),
+        (d) => boom(d, 92) || true,
+        dDrop_drop,
+      ),
       dDrop_drop,
     );
     console.log(`${x.length}`);
@@ -416,23 +393,14 @@ function main() {
     }
   });
   run("count", () => {
-    const keep = (d) => boom(d, 152) || true;
-    const x = $closing($iter(ds({ start: 150, end: 154 })), $dropEach(dDrop_drop))
-      .filter((item) => {
-        let kept = false;
-        try {
-          kept = keep(item);
-        } finally {
-          if (!kept) {
-            dDrop_drop(item);
-          }
-        }
-        return kept;
-      })
-      .reduce((n, item) => {
-        dDrop_drop(item);
-        return n + 1;
-      }, 0);
+    const x = $filterDropping(
+      $closing($iter(ds({ start: 150, end: 154 })), $dropEach(dDrop_drop)),
+      (d) => boom(d, 152) || true,
+      dDrop_drop,
+    ).reduce((n, item) => {
+      dDrop_drop(item);
+      return n + 1;
+    }, 0);
     console.log(`${x}`);
   });
   run("sum", () => {
@@ -835,7 +803,7 @@ function main() {
     const x = $collectDropping(
       $closing($iter(ds({ start: 70, end: 74 })), $dropEach(dDrop_drop))
         .map((d) => {
-          let d$69$live = true;
+          let d$74$live = true;
           try {
             boom(d, 72);
           } catch (error) {
@@ -846,10 +814,10 @@ function main() {
           if (d[0] === 71) {
             result = undefined;
           } else {
-            d$69$live = false;
+            d$74$live = false;
             result = [d, 1n];
           }
-          if (d$69$live) {
+          if (d$74$live) {
             dDrop_drop(d);
           }
           return result;
@@ -1063,32 +1031,23 @@ function main() {
     console.log(`${out}`);
   });
   run("set via filter", () => {
-    function keep(d) {
-      if (d[0] === 41) {
-        throw new Error("41");
-      } else {
-        return true;
-      }
-    }
     const out = $mapFrom(
       new Set(),
-      $closing($iter(ds({ start: 40, end: 43 })), $dropEach(dDrop_drop))
-        .filter((item) => {
-          let kept = false;
-          try {
-            kept = keep(item);
-          } finally {
-            if (!kept) {
-              dDrop_drop(item);
-            }
+      $filterDropping(
+        $closing($iter(ds({ start: 40, end: 43 })), $dropEach(dDrop_drop)),
+        (d) => {
+          if (d[0] === 41) {
+            throw new Error("41");
+          } else {
+            return true;
           }
-          return kept;
-        })
-        .map((d) => {
-          const result = d[0];
-          dDrop_drop(d);
-          return result;
-        }),
+        },
+        dDrop_drop,
+      ).map((d) => {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      }),
       true,
     );
     console.log(`${out.size}`);

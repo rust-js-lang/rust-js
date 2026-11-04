@@ -43,17 +43,12 @@ function main() {
   iter.return();
   console.log(`counted ${counted}`);
 
-  const keep = (l) => l[0] < 5;
-  const taken = $collectDropping(
-    $lazyTakeWhile($closing($iter(deque([2, 3, 9, 4])), $dropEach(loudDrop_drop)), (item) => {
-      if (keep(item)) {
-        return true;
-      }
-      loudDrop_drop(item);
-      return false;
-    }),
-    loudDrop_drop,
-    true,
+  const taken = Array.from(
+    $lazyTakeWhile(
+      $closing($iter(deque([2, 3, 9, 4])), $dropEach(loudDrop_drop)),
+      (l) => l[0] < 5,
+      loudDrop_drop,
+    ),
   );
   console.log(`taken ${taken.length}`);
   for (const item of taken) {

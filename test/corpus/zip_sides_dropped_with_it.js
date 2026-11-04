@@ -4,6 +4,7 @@ import {
   $closing,
   $collectDropping,
   $dropEach,
+  $filterDropping,
   $held,
   $iter,
   $lazyMapWhile,
@@ -66,17 +67,7 @@ function endedByASide() {
   }
   let takeWhile;
   try {
-    takeWhile = $lazyTakeWhile($closing(tmp$1, $dropEach(loudDrop_drop)), (item) => {
-      let kept = false;
-      try {
-        kept = odd(item);
-      } finally {
-        if (!kept) {
-          loudDrop_drop(item);
-        }
-      }
-      return kept;
-    });
+    takeWhile = $lazyTakeWhile($closing(tmp$1, $dropEach(loudDrop_drop)), odd, loudDrop_drop);
   } catch (error) {
     map.return();
     throw error;
@@ -223,17 +214,7 @@ function endedByASide() {
   }
   let filter;
   try {
-    filter = $closing(tmp$11, $dropEach(loudDrop_drop)).filter((item) => {
-      let kept = false;
-      try {
-        kept = odd(item);
-      } finally {
-        if (!kept) {
-          loudDrop_drop(item);
-        }
-      }
-      return kept;
-    });
+    filter = $filterDropping($closing(tmp$11, $dropEach(loudDrop_drop)), odd, loudDrop_drop);
   } catch (error) {
     tmp$10.return();
     throw error;
@@ -291,17 +272,7 @@ function endedByASide() {
   }
   let tmp$16;
   try {
-    tmp$16 = $lazyTakeWhile($closing(tmp$15, $dropEach(loudDrop_drop)), (item) => {
-      let kept = false;
-      try {
-        kept = odd(item);
-      } finally {
-        if (!kept) {
-          loudDrop_drop(item);
-        }
-      }
-      return kept;
-    });
+    tmp$16 = $lazyTakeWhile($closing(tmp$15, $dropEach(loudDrop_drop)), odd, loudDrop_drop);
   } catch (error) {
     tmp$14.return();
     throw error;
@@ -341,17 +312,7 @@ function heldToItsEnd() {
   }
   let filter;
   try {
-    filter = $closing(tmp, $dropEach(loudDrop_drop)).filter((item) => {
-      let kept = false;
-      try {
-        kept = odd(item);
-      } finally {
-        if (!kept) {
-          loudDrop_drop(item);
-        }
-      }
-      return kept;
-    });
+    filter = $filterDropping($closing(tmp, $dropEach(loudDrop_drop)), odd, loudDrop_drop);
   } catch (error) {
     for (const item of b) {
       loudDrop_drop(item);
@@ -368,17 +329,7 @@ function heldToItsEnd() {
   }
   let tmp$2;
   try {
-    tmp$2 = $closing(tmp$1, $dropEach(loudDrop_drop)).filter((item) => {
-      let kept = false;
-      try {
-        kept = odd(item);
-      } finally {
-        if (!kept) {
-          loudDrop_drop(item);
-        }
-      }
-      return kept;
-    });
+    tmp$2 = $filterDropping($closing(tmp$1, $dropEach(loudDrop_drop)), odd, loudDrop_drop);
   } catch (error) {
     filter.return();
     throw error;

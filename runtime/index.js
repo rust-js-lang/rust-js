@@ -1579,24 +1579,26 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     mapped.hint = () => $sizeHint(this);
     return mapped;
   }
-  filter(keep) {
+  // Of items with a destructor, each it doesn't keep dropped by `drop`,
+  // `$kept`'s, as std's `Filter` drops it (ADR 0098, #651).
+  filter(keep, drop) {
     let i = 0;
     // Each step, std's `Filter::next`, its source's `find`, a `try_fold`.
     const kept = new $Steps(
       () => {
         let item;
-        const found = this.tryFold(false, (_, x) => keep(x, i++) && ((item = x), true), (found) => found);
+        const found = this.tryFold(false, (_, x) => $kept(keep, drop, x, i++) && ((item = x), true), (found) => found);
         return found ? { done: false, value: item } : { done: true, value: undefined };
       },
       () => this.return(),
     );
     kept.from = [this];
-    // Std's `Filter::fold`, its source's of each kept.
+    // Std's `Filter::fold` and `try_fold`, its source's of each kept.
     $forward(
       kept,
       this,
-      { fold: "fold" },
-      (g, unwind) => (a, x) => ((unwind === undefined ? keep(x, i++) : $staged(keep, x, i++, a, unwind)) ? g(a, x) : a),
+      { fold: "fold", tryFold: "tryFold" },
+      (g, unwind) => (a, x) => ($kept(keep, drop, x, i++, a, unwind) ? g(a, x) : a),
     );
     return kept;
   }
@@ -1841,6 +1843,17 @@ export function $stepsOf(items) {
   return items instanceof $Steps ? items : items[Symbol.iterator]();
 }
 
+// `it.filter(keep)` of items with a destructor, each it doesn't keep
+// dropped by `drop`: `$Steps`' own `filter`, which drops it past the fold
+// closure's result, as `$kept` says, of a JS iterator too, whose own
+// `filter` would drop it inside `keep`, so a consumer stepping it couldn't
+// tell that drop's panic, which leaks what it holds, from `keep`'s, which
+// drops it (#651).
+export function $filterDropping(it, keep, drop) {
+  const steps = it instanceof $Steps ? it : new $Steps(() => it.next(), () => it.return?.());
+  return steps.filter(keep, drop);
+}
+
 // `f(x, i)`, what a stage runs of an item inside a fold that holds `a`:
 // where it throws, a panic, `a` dropped by `unwind`, the consumer's, as
 // std's adapter's fold closure drops the accumulator it was given as it
@@ -1852,6 +1865,29 @@ export function $staged(f, x, i, a, unwind) {
     unwind(a);
     throw error;
   }
+}
+
+// Whether a stage that discards what it doesn't keep, a `filter` or a
+// `take_while`, keeps `x`, the `i`th, by `keep`, inside a fold that holds
+// `a`, std's `filter_fold`, `filter_try_fold` and `take_while`'s `check`
+// closures; or outside one, given no `unwind`, its `next`. Where `keep`
+// throws, a panic, `x` is dropped, then `a`, by `unwind`, as the closure's
+// frame drops both as it unwinds (#423). What it doesn't keep is dropped
+// after, by `drop`, outside `unwind`, as the closure drops it at its end,
+// once it has moved `a` into what it gives: a panic of that drop leaks
+// `a`, as rustc's does (rust-lang/rust#47949, #651). The one answer of
+// whether what a fold holds is dropped as a discarded item's drop unwinds.
+export function $kept(keep, drop, x, i, a, unwind) {
+  let kept;
+  try {
+    kept = keep(x, i);
+  } catch (error) {
+    drop?.(x);
+    unwind?.(a);
+    throw error;
+  }
+  if (!kept) drop?.(x);
+  return kept;
 }
 
 // What an adapter's fold runs, `run`, consuming `it`: closed though it
@@ -3258,23 +3294,12 @@ export function $stepByEnds(it, step) {
 // as it's reached (ADR 0526), and each it doesn't dropped by `drop`, of
 // items with a destructor (ADR 0871). Closing it closes its source (ADR 0465, #225).
 export function $filterEnds(it, p, drop) {
-  // Where `p` throws, a panic, the item it was asked of dropped, as std's
-  // `Filter` holds it as it unwinds (#423).
-  const ask =
-    drop === undefined
-      ? p
-      : (x) => {
-          try {
-            return p(x);
-          } catch (error) {
-            drop(x);
-            throw error;
-          }
-        };
+  // Each item `p` keeps, the one it was asked of dropped where it throws,
+  // a panic, as std's `Filter` holds it as it unwinds (#423), and each it
+  // doesn't by `drop`: `$kept`'s.
   const kept = (step) => () => {
     for (let at = step(); !at.done; at = step()) {
-      if (ask(at.value)) return at;
-      drop?.(at.value);
+      if ($kept(p, drop, at.value)) return at;
     }
     return { done: true, value: undefined };
   };
@@ -3288,17 +3313,27 @@ export function $filterEnds(it, p, drop) {
   if (it.tryRfold !== undefined) {
     filter.back = () => {
       let hit;
-      const hits = it.tryRfold(false, (_, x) => (ask(x) ? ((hit = x), true) : (drop?.(x), false)), (hits) => hits);
+      const hits = it.tryRfold(false, (_, x) => $kept(p, drop, x) && ((hit = x), true), (hits) => hits);
       return hits ? { done: false, value: hit } : { done: true, value: undefined };
     };
   }
-  // Std's `Filter::rfold` and `try_rfold`, its source's of each kept (#220).
-  // Where `p` throws, a panic, the accumulator dropped by `unwind` (#423).
-  const folding = (f, unwind) => {
-    const asked = unwind === undefined ? (x) => ask(x) : (x, a) => $staged(ask, x, undefined, a, unwind);
-    return (a, x) => (asked(x, a) ? f(a, x) : (drop?.(x), a));
-  };
-  $forward(filter, it, { rfold: "rfold", tryRfold: "tryRfold" }, folding);
+  // Std's `Filter::fold`, `try_fold`, `rfold` and `try_rfold`, its source's
+  // of each kept (#220, #625), the accumulator held as `$kept` says (#423,
+  // #651); from the back, its source's own or std's default of its back,
+  // a compiled `Zip`'s say, `$foldBack`'s and `$tryRfoldOf`'s.
+  const folding = (f, unwind) => (a, x) => ($kept(p, drop, x, undefined, a, unwind) ? f(a, x) : a);
+  const back = it.back !== undefined;
+  $forward(
+    filter,
+    it,
+    {
+      fold: "fold",
+      tryFold: "tryFold",
+      rfold: back ? (init, f, unwind) => $foldBack(it, init, folding(f, unwind), unwind) : undefined,
+      tryRfold: back ? (init, f, broke, unwind) => $tryRfoldOf(it, init, folding(f, unwind), broke, unwind) : undefined,
+    },
+    folding,
+  );
   filter.from = [it];
   return filter;
 }
@@ -12687,15 +12722,17 @@ export function $rev(it) {
 // ends it for good, as Rust's flag does, and a `None` of its source ends
 // what's stepped now, as Rust's passes it on. What it steps is closed as
 // it's closed, where Rust drops it, not where it ends.
-// Its `try_fold`, its source's, stopped where `keep` doesn't hold.
-export function $lazyTakeWhile(items, keep) {
+// Its `try_fold`, its source's, stopped where `keep` doesn't hold. Of
+// items with a destructor, the one it stops at dropped by `drop`, as std's
+// `TakeWhile` drops it, `$kept`'s (#651).
+export function $lazyTakeWhile(items, keep, drop) {
   const source = $stepsOf(items);
   let ended = false;
   const taking = new $Steps(
     () => {
       if (ended) return { done: true, value: undefined };
       const step = source.next();
-      if (step.done || keep(step.value)) return step;
+      if (step.done || $kept(keep, drop, step.value)) return step;
       ended = true;
       return { done: true, value: undefined };
     },
@@ -12703,13 +12740,13 @@ export function $lazyTakeWhile(items, keep) {
   );
   taking.from = [source];
   // Where `keep` throws, a panic, the accumulator dropped by `unwind`
-  // (#423).
+  // (#423), and where the drop of the one it stops at does, not, as
+  // `$kept` says (#651).
   const tryFold = (init, f, broke, unwind) => {
     if (ended) return init;
-    const kept = unwind === undefined ? (x) => keep(x) : (x, a) => $staged(keep, x, undefined, a, unwind);
     const folded = $lent(source).tryFold(
       init,
-      (a, x) => (kept(x, a) ? f(a, x) : ((ended = true), a)),
+      (a, x) => ($kept(keep, drop, x, undefined, a, unwind) ? f(a, x) : ((ended = true), a)),
       (a) => ended || broke(a),
       unwind,
     );

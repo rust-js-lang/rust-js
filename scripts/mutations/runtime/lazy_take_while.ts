@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "take-while-fold-unguarded",
     breaks: "a `take_while` whose predicate panics inside a fold leaves the accumulator undropped (#423)",
     file: "src/runtime/lazy_take_while.js",
-    find: "    const kept = unwind === undefined ?",
-    replace: "    const kept = true ?",
+    find: "      (a, x) => ($kept(keep, drop, x, undefined, a, unwind) ? f(a, x) : ((ended = true), a)),",
+    replace: "      (a, x) => ($kept(keep, drop, x, undefined, a) ? f(a, x) : ((ended = true), a)),",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
   },
   {

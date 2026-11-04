@@ -3,15 +3,17 @@
 // ends it for good, as Rust's flag does, and a `None` of its source ends
 // what's stepped now, as Rust's passes it on. What it steps is closed as
 // it's closed, where Rust drops it, not where it ends.
-// Its `try_fold`, its source's, stopped where `keep` doesn't hold.
-function $lazyTakeWhile(items, keep) {
+// Its `try_fold`, its source's, stopped where `keep` doesn't hold. Of
+// items with a destructor, the one it stops at dropped by `drop`, as std's
+// `TakeWhile` drops it, `$kept`'s (#651).
+function $lazyTakeWhile(items, keep, drop) {
   const source = $stepsOf(items);
   let ended = false;
   const taking = new $Steps(
     () => {
       if (ended) return { done: true, value: undefined };
       const step = source.next();
-      if (step.done || keep(step.value)) return step;
+      if (step.done || $kept(keep, drop, step.value)) return step;
       ended = true;
       return { done: true, value: undefined };
     },
@@ -19,13 +21,13 @@ function $lazyTakeWhile(items, keep) {
   );
   taking.from = [source];
   // Where `keep` throws, a panic, the accumulator dropped by `unwind`
-  // (#423).
+  // (#423), and where the drop of the one it stops at does, not, as
+  // `$kept` says (#651).
   const tryFold = (init, f, broke, unwind) => {
     if (ended) return init;
-    const kept = unwind === undefined ? (x) => keep(x) : (x, a) => $staged(keep, x, undefined, a, unwind);
     const folded = $lent(source).tryFold(
       init,
-      (a, x) => (kept(x, a) ? f(a, x) : ((ended = true), a)),
+      (a, x) => ($kept(keep, drop, x, undefined, a, unwind) ? f(a, x) : ((ended = true), a)),
       (a) => ended || broke(a),
       unwind,
     );

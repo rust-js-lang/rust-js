@@ -337,7 +337,6 @@ function main() {
     }
   });
   run("map rev take_while", () => {
-    const keep = () => true;
     const x = $foldDropping(
       $lazyTakeWhile(
         $rev(
@@ -351,13 +350,8 @@ function main() {
             return d;
           }),
         ),
-        (item) => {
-          if (keep(item)) {
-            return true;
-          }
-          dDrop_drop(item);
-          return false;
-        },
+        () => true,
+        dDrop_drop,
       ),
       [],
       push,
@@ -400,15 +394,8 @@ function main() {
         return d;
       },
     );
-    const keep = () => true;
     const x = $foldDropping(
-      $lazyTakeWhile($rev(held), (item) => {
-        if (keep(item)) {
-          return true;
-        }
-        dDrop_drop(item);
-        return false;
-      }),
+      $lazyTakeWhile($rev(held), () => true, dDrop_drop),
       [],
       push,
       $dropEach(dDrop_drop),

@@ -5,6 +5,7 @@ import {
   $count,
   $drain,
   $dropEach,
+  $filterDropping,
   $held,
   $iter,
   $lazyChain,
@@ -232,15 +233,12 @@ function main() {
       } finally {
         value$2.return();
       }
-      const keep = (l) => l[0] > 0;
       const iter = $skipping(
-        $closing($iter(louds(54, 3)), $dropEach(loudDrop_drop)).filter((item) => {
-          if (keep(item)) {
-            return true;
-          }
-          loudDrop_drop(item);
-          return false;
-        }),
+        $filterDropping(
+          $closing($iter(louds(54, 3)), $dropEach(loudDrop_drop)),
+          (l) => l[0] > 0,
+          loudDrop_drop,
+        ),
         2,
         loudDrop_drop,
       );

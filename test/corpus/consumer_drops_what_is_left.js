@@ -7,6 +7,7 @@ import {
   $collectDropping,
   $dropEach,
   $exactLen,
+  $filterDropping,
   $foldOf,
   $held,
   $iter,
@@ -18,7 +19,6 @@ import {
   $lazyTakeWhile,
   $lazyZip,
   $lent,
-  $mapFrom,
   $max,
   $next,
   $reduce,
@@ -143,22 +143,16 @@ function consume(n) {
     }),
   );
   console.log(`max ${max == null ? "None" : `Some(${max})`}`);
-  const keep = (l) => l[0] > 99;
   const sum = $reduce(
-    $closing($iter(three()), $dropEach(loudDrop_drop))
-      .take(n)
-      .filter((item) => {
-        if (keep(item)) {
-          return true;
-        }
-        loudDrop_drop(item);
-        return false;
-      })
-      .map((l) => {
-        const result = l[0];
-        loudDrop_drop(l);
-        return result;
-      }),
+    $filterDropping(
+      $closing($iter(three()), $dropEach(loudDrop_drop)).take(n),
+      (l) => l[0] > 99,
+      loudDrop_drop,
+    ).map((l) => {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    }),
     (a, b) => (a + b) >>> 0,
   );
   console.log(`sum ${sum == null ? "None" : `Some(${sum})`}`);
@@ -172,15 +166,12 @@ function consume(n) {
     return result;
   }, 0);
   console.log(`folded ${folded}`);
-  const keep$1 = (l) => l[0] < 99;
   const order = $iterCmp(
-    $lazyTakeWhile($closing($iter(three()), $dropEach(loudDrop_drop)).take(n), (item) => {
-      if (keep$1(item)) {
-        return true;
-      }
-      loudDrop_drop(item);
-      return false;
-    }).map((l) => {
+    $lazyTakeWhile(
+      $closing($iter(three()), $dropEach(loudDrop_drop)).take(n),
+      (l) => l[0] < 99,
+      loudDrop_drop,
+    ).map((l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
@@ -189,24 +180,16 @@ function consume(n) {
     $cmp,
   );
   console.log(`order ${["Less", "Equal", "Greater"][order + 1]}`);
-  const keep$2 = (l) => l[0] > 99;
-  const set = $mapFrom(
-    new Set(),
-    $closing($iter(three()), $dropEach(loudDrop_drop))
-      .take(n)
-      .filter((item) => {
-        if (keep$2(item)) {
-          return true;
-        }
-        loudDrop_drop(item);
-        return false;
-      })
-      .map((l) => {
-        const result = l[0];
-        loudDrop_drop(l);
-        return result;
-      }),
-    true,
+  const set = new Set(
+    $filterDropping(
+      $closing($iter(three()), $dropEach(loudDrop_drop)).take(n),
+      (l) => l[0] > 99,
+      loudDrop_drop,
+    ).map((l) => {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    }),
   );
   console.log(`set ${set.size}`);
   const value$3 = $iter(three());
@@ -440,21 +423,12 @@ function held(n) {
     let taken$1$live = true;
     if (n > 0) {
       taken$1$live = false;
-      const keep = (l) => l[0] > 99;
       const value = $reduce(
-        taken
-          .filter((item) => {
-            if (keep(item)) {
-              return true;
-            }
-            loudDrop_drop(item);
-            return false;
-          })
-          .map((l) => {
-            const result = l[0];
-            loudDrop_drop(l);
-            return result;
-          }),
+        $filterDropping(taken, (l) => l[0] > 99, loudDrop_drop).map((l) => {
+          const result = l[0];
+          loudDrop_drop(l);
+          return result;
+        }),
         (a, b) => (a + b) >>> 0,
       );
       console.log(`held sum ${value == null ? "None" : `Some(${value})`}`);

@@ -533,16 +533,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let source_value = self.as_exact_size(source_value, source.peel_refs(), true, span)?;
             return Ok(Expr::call_helper("$stepByEnds", vec![source_value, step.clone()]));
         }
-        // A filter made here, `src.filter(p)`: its source's items `p` keeps,
-        // from either end, as Rust's `Filter` steps them (ADR 0526).
+        // A filter made here, `src.filter(p)`, or of items with a
+        // destructor `$filterDropping(src, p, drop)` (#651): its source's
+        // items `p` keeps, from either end, as Rust's `Filter` steps them
+        // (ADR 0526), each it doesn't dropped by `drop`.
         if let Some(source) = crate::lower::recognition::filtered_source(self.tcx, ty)
             && let js::ExprKind::Call(callee, args) = &value.kind
-            && let js::ExprKind::Member(source_value, method) = &callee.kind
-            && method == "filter"
-            && let [p] = args.as_slice()
         {
-            let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
-            return Ok(Expr::call_helper("$filterEnds", vec![source_value, p.clone()]));
+            let filtered = match (&callee.kind, args.as_slice()) {
+                (js::ExprKind::Member(source_value, method), [p]) if method == "filter" => {
+                    Some(((**source_value).clone(), vec![p.clone()]))
+                }
+                (_, [source_value, p, drop]) if callee.helper_name() == Some("$filterDropping") => {
+                    Some((source_value.clone(), vec![p.clone(), drop.clone()]))
+                }
+                _ => None,
+            };
+            if let Some((source_value, given)) = filtered {
+                let source_value = self.as_double_ended(source_value, source.peel_refs(), span)?;
+                return Ok(Expr::call_helper("$filterEnds", [vec![source_value], given].concat()));
+            }
         }
         Err(self.unsupported(
             span,

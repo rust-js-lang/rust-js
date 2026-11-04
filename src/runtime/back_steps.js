@@ -341,23 +341,12 @@ function $stepByEnds(it, step) {
 // as it's reached (ADR 0526), and each it doesn't dropped by `drop`, of
 // items with a destructor (ADR 0871). Closing it closes its source (ADR 0465, #225).
 function $filterEnds(it, p, drop) {
-  // Where `p` throws, a panic, the item it was asked of dropped, as std's
-  // `Filter` holds it as it unwinds (#423).
-  const ask =
-    drop === undefined
-      ? p
-      : (x) => {
-          try {
-            return p(x);
-          } catch (error) {
-            drop(x);
-            throw error;
-          }
-        };
+  // Each item `p` keeps, the one it was asked of dropped where it throws,
+  // a panic, as std's `Filter` holds it as it unwinds (#423), and each it
+  // doesn't by `drop`: `$kept`'s.
   const kept = (step) => () => {
     for (let at = step(); !at.done; at = step()) {
-      if (ask(at.value)) return at;
-      drop?.(at.value);
+      if ($kept(p, drop, at.value)) return at;
     }
     return { done: true, value: undefined };
   };
@@ -371,17 +360,27 @@ function $filterEnds(it, p, drop) {
   if (it.tryRfold !== undefined) {
     filter.back = () => {
       let hit;
-      const hits = it.tryRfold(false, (_, x) => (ask(x) ? ((hit = x), true) : (drop?.(x), false)), (hits) => hits);
+      const hits = it.tryRfold(false, (_, x) => $kept(p, drop, x) && ((hit = x), true), (hits) => hits);
       return hits ? { done: false, value: hit } : { done: true, value: undefined };
     };
   }
-  // Std's `Filter::rfold` and `try_rfold`, its source's of each kept (#220).
-  // Where `p` throws, a panic, the accumulator dropped by `unwind` (#423).
-  const folding = (f, unwind) => {
-    const asked = unwind === undefined ? (x) => ask(x) : (x, a) => $staged(ask, x, undefined, a, unwind);
-    return (a, x) => (asked(x, a) ? f(a, x) : (drop?.(x), a));
-  };
-  $forward(filter, it, { rfold: "rfold", tryRfold: "tryRfold" }, folding);
+  // Std's `Filter::fold`, `try_fold`, `rfold` and `try_rfold`, its source's
+  // of each kept (#220, #625), the accumulator held as `$kept` says (#423,
+  // #651); from the back, its source's own or std's default of its back,
+  // a compiled `Zip`'s say, `$foldBack`'s and `$tryRfoldOf`'s.
+  const folding = (f, unwind) => (a, x) => ($kept(p, drop, x, undefined, a, unwind) ? f(a, x) : a);
+  const back = it.back !== undefined;
+  $forward(
+    filter,
+    it,
+    {
+      fold: "fold",
+      tryFold: "tryFold",
+      rfold: back ? (init, f, unwind) => $foldBack(it, init, folding(f, unwind), unwind) : undefined,
+      tryRfold: back ? (init, f, broke, unwind) => $tryRfoldOf(it, init, folding(f, unwind), broke, unwind) : undefined,
+    },
+    folding,
+  );
   filter.from = [it];
   return filter;
 }
