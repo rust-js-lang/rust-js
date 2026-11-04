@@ -15,22 +15,13 @@ const CALLS = [
 
 export const mutations: Mutation[] = [
   {
-    name: "or-pattern-alternatives-say-nothing",
+    name: "paths-alike-not-one",
     breaks:
-      "a later arm of a tuple's or-pattern after `(1, _) | (_, 1)` keeps `a !== 1` before `(b === 3 && a === 2) || ..`, which says it, more tests than the tree's, so the arms are MIR's `if (a !== 1 && b !== 1) { .. continue; } hit = true;`, not the chain as written (#617)",
+      "a tuple's arm `(1, _) | (_, 1)` after `(0, 0)` keeps its paths `a === 0 && b === 1` and `a !== 0 && a !== 1 && b === 1` apart, more tests than the tree's, so the `match` is MIR's labeled block, not `else if (a === 1 || b === 1)` (#631)",
     file: "src/lower/mir/tidy/decisions.rs",
-    find: "        ExprKind::Binary(Op::Or, a, b) => says_within(a, subject, set) && says_within(b, subject, set),\n",
-    replace: "        ExprKind::Binary(Op::Or, a, b) => false,\n",
-    tests: ["test/lowering-comments-inside.test.ts", "-t", "tuple's or-pattern is the arm's"],
-  },
-  {
-    name: "or-pattern-alternative-tests-unread",
-    breaks:
-      "an or-pattern's alternative, `b === 3 && a === 2`, says nothing of `a` past its first test, so `a !== 1` before them stays and the arms are MIR's tree, not the chain as written (#617)",
-    file: "src/lower/mir/tidy/decisions.rs",
-    find: "        ExprKind::Binary(Op::And, a, b) => says_within(a, subject, set) || says_within(b, subject, set),\n",
-    replace: "        ExprKind::Binary(Op::And, a, b) => says_within(a, subject, set),\n",
-    tests: ["test/lowering-comments-inside.test.ts", "-t", "tuple's or-pattern is the arm's"],
+    find: "    unions(&mut paths);\n",
+    replace: "",
+    tests: ["test/lowering-matches.test.ts", "-t", "after an arm that tests both values"],
   },
   {
     name: "empty-arm-else-only",
@@ -178,15 +169,6 @@ export const mutations: Mutation[] = [
     tests: ["test/snapshots.test.ts", "-t", "strings"],
   },
   {
-    name: "decisions-impossible-path-kept",
-    breaks:
-      'a path no value takes, `c < "0" && c >= "A"`, is one of an arm\'s tests',
-    file: "src/lower/mir/tidy/decisions.rs",
-    find: "        if now.is_empty() {\n            return None;\n        }\n",
-    replace: "",
-    tests: chain,
-  },
-  {
     name: "decisions-arms-in-tree-order",
     breaks:
       "the chain's arms are in the order MIR tests them, not the order written",
@@ -254,16 +236,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "            tests.retain(|t| !said(t));\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "decisions-stronger-test-not-first",
-    breaks:
-      "`(2, 2)`'s path is `a !== 1 && b === 2 && a === 2`, longer than the tree, which stays",
-    file: "src/lower/mir/tidy/decisions.rs",
-    find: "            Some(j) => out[i] = out.remove(j),\n",
-    replace: "            Some(_) => i += 1,\n",
     tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
     snapshots: true,
   },

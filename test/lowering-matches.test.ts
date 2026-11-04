@@ -1039,6 +1039,43 @@ pub fn run() -> f64 {
   expect((await import(join(dir, "mir.js"))).run()).toBe(2.5);
 });
 
+// A tuple's match whose first arm tests both values, `(0, 0) => ..`, then
+// an or-pattern's, `(1, _) | (_, 1) => ..`: that arm's paths, `a === 0 &&
+// b === 1`, `a === 1` and `a !== 0 && a !== 1 && b === 1`, are `a === 1 ||
+// b === 1`, the first and last one path, `a !== 1 && b === 1`, whose `a
+// !== 1` the second's failing says; and the later or-pattern's path past
+// `a === 0` none, as none of its alternatives holds there. The chain as
+// written, not MIR's labeled block (#631, ADR 0364, amended).
+test("a tuple's or-pattern after an arm that tests both values is an else if", async () => {
+  const dir = fixture("absorbed-or-pattern-paths");
+  writeFileSync(join(dir, "lib.rs"), `pub fn assigned(a: u32, b: u32, log: &mut Vec<u32>) {
+    let value = match (a, b) {
+        (0, 0) => {
+            log.push(0);
+            1
+        }
+        (1, _) | (_, 1) => 2,
+        (2, 3) | (3, 2) => {
+            log.push(a);
+            7
+        }
+        _ => a + b,
+    };
+    log.push(value);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toMatch(/\bbb\d+:/);
+  expect(js).toContain(
+    "  if (a === 0 && b === 0) {\n    log.push(0);\n    value = 1;\n  } else if (a === 1 || b === 1) {\n    value = 2;\n  } else if (",
+  );
+  const assigned = (await import(join(dir, "lib.js"))).assigned as (a: number, b: number, log: number[]) => void;
+  const log: number[] = [];
+  for (const [a, b] of [[0, 0], [0, 1], [1, 4], [4, 1], [2, 3], [3, 2], [0, 3], [2, 2], [4, 4]]) assigned(a, b, log);
+  expect(log).toEqual([0, 1, 2, 2, 2, 2, 7, 3, 7, 3, 4, 8]);
+});
+
 // A match MIR tests as a tree, an arm reached from more than one of its
 // leaves, `'0'..='9' | '.'`: an `if` chain of the arms, each tested where
 // it's written, not a labeled block each leaf breaks out of.

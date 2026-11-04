@@ -17,10 +17,12 @@ use super::{ends, first_written, made_where, names_break};
 
 mod calls;
 mod defaults;
+mod paths;
 mod presence;
 
 use calls::Model;
 pub(super) use defaults::default_values;
+use paths::{simplified, unions};
 pub(super) use presence::presence_said;
 
 /// More leaves than a match a person writes has: a tree of tests that
@@ -497,6 +499,7 @@ fn factored(mut paths: Vec<Vec<Expr>>) -> Expr {
     for path in &mut paths {
         path.truncate(path.len() - last);
     }
+    unions(&mut paths);
     alternatives(&mut paths);
     let either = any(paths.into_iter().map(all).collect());
     match before.is_empty() && after.is_empty() {
@@ -938,87 +941,6 @@ fn atoms(e: &Expr) -> usize {
         ExprKind::Binary(Op::And | Op::Or, a, b) => atoms(a) + atoms(b),
         ExprKind::Unary(UnaryOp::Not, a) => atoms(a),
         _ => 1,
-    }
-}
-
-/// `tests`, each read where it's made, without what those before it in a
-/// run of tests of one value already say: `None` where no value passes
-/// them all.
-fn simplified(tests: &[Expr]) -> Option<Vec<Expr>> {
-    let mut flat = Vec::new();
-    for test in tests {
-        conjuncts(test.clone(), &mut flat);
-    }
-    let mut out = Vec::new();
-    // What holds of each value tested, so far.
-    let mut known: Vec<(Expr, Set)> = Vec::new();
-    let mut i = 0;
-    while i < flat.len() {
-        let Some((subject, first)) = atom(&flat[i]) else {
-            out.push(flat[i].clone());
-            i += 1;
-            continue;
-        };
-        // The run of tests of this value, read one after another.
-        let mut run = first.clone();
-        let mut sets = vec![first];
-        let mut j = i + 1;
-        while let Some((next, set)) = flat.get(j).and_then(atom)
-            && same_subject(&next, &subject)
-            && set.kind == run.kind
-        {
-            run = run.intersect(&set);
-            sets.push(set);
-            j += 1;
-        }
-        let at = known
-            .iter()
-            .position(|(s, set)| same_subject(s, &subject) && set.kind == run.kind);
-        let before = at.map_or_else(|| Set::all(run.kind), |at| known[at].1.clone());
-        let now = before.intersect(&run);
-        if now.is_empty() {
-            return None;
-        }
-        // As one of the run's own tests says it, or as it reads best.
-        match (i..j).find(|&k| before.intersect(&sets[k - i]) == now) {
-            Some(k) => out.push(flat[k].clone()),
-            None => out.push(Expr {
-                span: flat[j - 1].span,
-                ..render(&subject, &now)
-            }),
-        }
-        match at {
-            Some(at) => known[at].1 = now,
-            None => known.push((subject, now)),
-        }
-        i = j;
-    }
-    // A test of a value a later one of it says more than, `a !== 1` before
-    // `a === 2`: that one, in its place, so each test is still read only
-    // where it was, and the path's tests read `a === 2 && b === 2`; or an
-    // or-pattern's alternatives each of which does, `a !== 1` before `(b
-    // === 3 && a === 2) || (b === 2 && a === 3)` (#617).
-    let mut i = 0;
-    while i < out.len() {
-        let stronger =
-            atom(&out[i]).and_then(|(subject, set)| (i + 1..out.len()).find(|&j| says_within(&out[j], &subject, &set)));
-        match stronger {
-            Some(j) => out[i] = out.remove(j),
-            None => i += 1,
-        }
-    }
-    Some(out)
-}
-
-/// Whether `e` says of `subject` no more than `set` holds: a test of it
-/// within `set`, `a === 2` of `a !== 1`'s, of an `&&` one of its tests, of
-/// an `||` each of its alternatives, `(b === 3 && a === 2) || (b === 2 &&
-/// a === 3)` (`simplified`, #617).
-fn says_within(e: &Expr, subject: &Expr, set: &Set) -> bool {
-    match &e.kind {
-        ExprKind::Binary(Op::And, a, b) => says_within(a, subject, set) || says_within(b, subject, set),
-        ExprKind::Binary(Op::Or, a, b) => says_within(a, subject, set) && says_within(b, subject, set),
-        _ => atom(e).is_some_and(|(s, later)| same_subject(&s, subject) && later.within(set)),
     }
 }
 

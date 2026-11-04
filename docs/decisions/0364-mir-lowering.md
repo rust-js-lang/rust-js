@@ -16,7 +16,7 @@ Amended: a value a block gives last is given first only where nothing can
 tell (issue #219, below); an `|` of two values' tests is a chain of its
 arms; no arm holds a copy of what follows the `match` (kj-switch); a
 chain's arm needs no more than that the arms before it failed (#221); a
-tree of a `switch`'s guard is the `switch`'s (rd619); a test of a value an or-pattern's alternatives after it each say is theirs (#617). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
+tree of a `switch`'s guard is the `switch`'s (rd619); a test of a value an or-pattern's alternatives after it each say is theirs (#617); paths alike but for one value's test are one, and a path no alternative of whose or-pattern holds is none (#631). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -788,7 +788,86 @@ the mutations `or-pattern-alternatives-say-nothing` and
 Left: a first arm before them that tests both, `(0, 0) => .., (1, _) |
 (_, 1) => .., (2, 3) | (3, 2) => ..`, whose paths to the `|` arm, `a ===
 0 && b === 1`, `a === 1`, `a !== 0 && a !== 1 && b === 1`, the chain
-can't read as `a === 1 || b === 1`, keeps MIR's labeled block. Each
+can't read as `a === 1 || b === 1`, keeps MIR's labeled block (until
+#631, below). Each
 alternative's tests are in the order MIR makes them, `b === 3 && a ===
 2`, not `a === 2 && b === 3` as written, where an earlier arm's
 alternative tests `b` first.
+
+## Amendment: paths alike but for one value's test are one (#631, 2026-11-04)
+
+`(0, 0) => .., (1, _) | (_, 1) => .., (2, 3) | (3, 2) => .., _ => ..`
+kept MIR's labeled block, its chain 18 tests to the tree's 8:
+
+```js
+let value = 2;
+bb14: {
+  if (a === 0 && b === 0) {
+    log.push(0);
+    value = 1;
+    break bb14;
+  }
+  if (a === 1) {
+    break bb14;
+  }
+  if (b !== 1) {
+    if ((b === 3 && a === 2) || (b === 2 && a === 3)) {
+```
+
+The tree reaches the `|` arm three ways, `a === 0 && b === 1`, `a === 1`
+and `a !== 0 && a !== 1 && b === 1`; and the later or-pattern's arm two,
+`a === 0 && X` and `X && b !== 1`, X its alternatives' `(b === 3 && a ===
+2) || (b === 2 && a === 3)`, which the tree tests past `a === 0` too. Three
+rules of an arm's paths, each the same pure tests' truth
+(`decisions/paths.rs`):
+
+1. **Paths alike but for what each tests of one value are one**, that
+   value's test of either's values, in its place (`unions`): `a === 0 &&
+   b === 1` and `a !== 0 && a !== 1 && b === 1` are `a !== 1 && b ===
+   1`, as `(x && s && y) || (x && t && y)` is `x && (s || t) && y`; then
+   `a === 1`'s failing says its `a !== 1` (`alternatives`), `a === 1 ||
+   b === 1`. Each test is still read where it was, and none is read that
+   wasn't. Only of paths that test more than that value: a value's tests
+   alone are its alternatives as written, `c === "." || (c >= "0" && c <=
+   "9")` read in value order otherwise.
+2. **A path whose or-pattern none of the alternatives of can hold, of
+   what the path says of a value, is none** (`excludes`, in
+   `simplified`): `a === 0 && X`, each alternative testing `a` of 2 or 3.
+   Only where each alternative is false: `a === 2 && X` stays, the first
+   holding.
+3. **A test the alternatives before it each say goes**, `X && b !== 1`'s
+   `b !== 1`, as one after it that says it takes its place (#617).
+
+```js
+let value;
+if (a === 0 && b === 0) {
+  log.push(0);
+  value = 1;
+} else if (a === 1 || b === 1) {
+  value = 2;
+} else if ((b === 3 && a === 2) || (b === 2 && a === 3)) {
+```
+
+The tests are what the tree reads, each a pure read of the scrutinee's
+parts, made once before the tree, `const value = logged(log, a);`, so
+none of the rules moves a call or a read that can throw: a value's test
+stays where its path read it, and a path that goes is one no input takes.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Held by
+`test/corpus/or_pattern_paths_absorbed.rs` against native Rust, each of
+a tuple's, a call's tuple's, a slice's, an `Option`'s and an enum's
+`match` of every input of 0..5, and `test/lowering-matches.test.ts`'s "a
+tuple's or-pattern after an arm that tests both values is an else if",
+run; the mutations `paths-alike-not-one` (`lower/mir/tidy/decisions.ts`),
+`paths-alike-but-for-two-values-one`, `or-pattern-excluding-path-kept`,
+`or-pattern-excluding-one-alternative` and `or-pattern-said-atom-kept`
+(`lower/mir/tidy/decisions/paths.ts`), the second and fourth wrong
+answers native Rust catches. `simplified` and the rules of paths moved to
+`decisions/paths.rs` with them, `decisions.rs` past the file cap.
+
+Left: a match of three values, `(0, 0, 0) => .., (1, _, _) | (_, 1, _) |
+(_, _, 1) => .., (2, 2, _) | (_, 2, 2) => ..`, whose `_` the inner block's
+chain holds, its `|` arm taken for the `else`; and of an `Option`'s or an
+enum's, `(None, _) | (_, 1)`, whose `Some` test is the tree's first: each
+still MIR's order of arms, `if (a === 1) { return 2; } if (b !== 1 && c
+!== 1) { .. } return 2;`.
