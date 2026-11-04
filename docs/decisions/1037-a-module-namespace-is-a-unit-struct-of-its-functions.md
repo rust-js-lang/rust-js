@@ -673,9 +673,9 @@ re-export's at its statement, where its `use`'s are
 re-export's own, as before, its blank lines kept.
 
 A free function that only passes its parameters on to another module's
-stays a function where it has a comment (ADR 1064), which this doesn't
-change; a namespace's method has no form of its own to keep, its
-property being the function (#566, #585).
+stayed a function where it had a comment (ADR 1064); the user decided
+it's the re-export too, its comments before it, as a method's are (ADR
+1064, amended, 2026-11-04).
 
 What holds it: `test/method-forwarding.test.ts`, "a namespace's
 forwarding method keeps its comments before the function it is" (a doc

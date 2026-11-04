@@ -148,7 +148,7 @@ Otherwise it's a function, as before.
   parameters on to another module's is its re-export": the crate's, by its
   `#[rust_js::name]` too, imported by another module from it; and kept:
   one its module calls, a default, one renamed by its module's `pub use`,
-  `#[inline(never)]`, one with a comment, its own module's, a method's, a
+  `#[inline(never)]`, its own module's, a method's, a
   binding's, a copy's, one that reads `arguments`.
 - Mutations in `scripts/mutations/lower/passed_on.ts` (`forwarder-*`,
   `forwarded-call-*`), `pipeline/forwarders.ts` (`forwarders-*`,
@@ -157,3 +157,50 @@ Otherwise it's a function, as before.
   (`forwarded-imports-kept`), `reexports.ts`
   (`forwarded-functions-each-a-statement`) and `pipeline.ts`
   (`type-reexport-an-import`, of the re-exports' names now).
+
+## Amendment: one with comments is the re-export too, its comments before it (the user's decision, 2026-11-04)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. Comments don't
+run; the function is the re-export as one with none is (case 45 of the
+semantics, as before).
+
+A forwarder with a comment in its body stayed a function, "which a
+re-export has no place for". rd758 (#612) gave a namespace's method
+re-exported in its place one, its comments before the re-export's
+statement (ADR 1037, amended), so the two forms of one rule differed by
+whether the forwarder was a method. The user decided they're one:
+
+```rust
+/// Helped.
+// Above.
+pub fn commented(n: f64) -> f64 {
+    // Passed on.
+    inner::helper(n) // As it is.
+}
+```
+
+```js
+/** Helped. */
+// Above.
+// Passed on.
+// As it is.
+export { helper as commented } from "./inner.js";
+```
+
+**A forwarder with comments, above it, its doc, in its body and after
+code on its line, is the re-export as one with none is, its comments
+before the re-export's statement, where its `use`'s are, in the order
+written.** `passed_on::forwarded_call` no longer reads the Rust's text;
+`pipeline::reached::taken_into` says where each forwarder re-exported
+in its place is written and the re-export that holds its name, as of a
+namespace's method, in `js::Module::taken_into`, and `to_oxc`'s
+`comments_of` places them (ADR 0610, amended, #535). In a run of
+several, each one's comments are before the statement, the first's above
+it as its own, then the rest's.
+
+What holds it: `test/lowering-forwarding.test.ts`, "a function that only
+passes its parameters on to another module's is its re-export", whose
+commented forwarder is now the re-export, its doc, a comment above it,
+in its body and after code on its line before it, run. Mutation
+`forwarder-comments-untaken` (`lower/pipeline.ts`);
+`forwarded-call-commented` is gone with the rule it held.

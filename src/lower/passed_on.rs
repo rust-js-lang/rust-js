@@ -370,16 +370,12 @@ pub(in crate::lower) fn forwarder<'tcx>(
 /// serverManifest) { return decodeAction$1(body, serverManifest); }`, and
 /// of what gives nothing, `statement`, `ping(n);` too. Any conversion its
 /// call needs, a box, a dictionary, a `Some`'s or a result's, is JS of its
-/// own, and it stays a function; so does one its `written` Rust has a
-/// comment in, which a re-export has no place for, one kept out of line
-/// (ADR 0649), and one its module doesn't export (rd575, ADR 1064).
-pub(in crate::lower) fn forwarded_call<'f>(
-    function: &'f js::Function,
-    statement: bool,
-    written: Option<&str>,
-) -> Option<&'f Expr> {
-    let commented = written.is_none_or(|text| text.contains("//") || text.contains("/*"));
-    if !function.export || function.noinline || commented {
+/// own, and it stays a function; so does one kept out of line (ADR 0649),
+/// and one its module doesn't export (rd575, ADR 1064). One with comments
+/// is the re-export too, its comments before it (`reached::taken_into`,
+/// ADR 1064, amended, the user's decision of 2026-11-04).
+pub(in crate::lower) fn forwarded_call(function: &js::Function, statement: bool) -> Option<&Expr> {
+    if !function.export || function.noinline {
         return None;
     }
     js::passes_on(&function.params, &function.body, statement).filter(|callee| callee.is_named())

@@ -740,21 +740,12 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
   },
   {
-    name: "forwarded-call-commented",
-    breaks:
-      "a function that only passes its parameters on, with a comment in its body, is re-exported, its comment left where no statement is (rd575)",
-    file: "src/lower/passed_on.rs",
-    find: "    let commented = written.is_none_or(|text| text.contains(\"//\") || text.contains(\"/*\"));\n",
-    replace: "    let commented = written.is_none();\n",
-    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
-  },
-  {
     name: "forwarded-call-out-of-line",
     breaks:
       "a function kept out of line, `#[inline(never)]`, is re-exported, losing its `@noinline` (rd575, ADR 0649)",
     file: "src/lower/passed_on.rs",
-    find: "    if !function.export || function.noinline || commented {\n",
-    replace: "    if !function.export || commented {\n",
+    find: "    if !function.export || function.noinline {\n",
+    replace: "    if !function.export {\n",
     tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
   },
   {

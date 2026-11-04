@@ -2278,9 +2278,11 @@ export function decodeAction(body: string, serverManifest: ServerManifest): numb
   and result's types are the callee's at what it gives it.
 - **Its JS is the call alone**, of the function's own JS, which takes
   no more than it's given. One whose call needs JS of its own, a box, a
-  dictionary or a drop, a `Some(..)` of what it's given, another
-  statement, or a comment, stays a function; so does one its own module
-  calls, its default, a generic one, and one kept out of line.
+  dictionary or a drop, a `Some(..)` of what it's given, or another
+  statement, stays a function; so does one its own module calls, its
+  default, a generic one, and one kept out of line. Its comments, above
+  it, its doc and in its body, are before the re-export
+  ([ADR 1064, amended](../../decisions/1064-a-function-that-only-passes-its-parameters-on-is-its-re-export.md#amendment-one-with-comments-is-the-re-export-too-its-comments-before-it-the-users-decision-2026-11-04)).
 - **A JS caller gets the function itself**, `===` it, its `name` and
   `length` the function's ([semantics](../semantics.md), 45).
 

@@ -307,10 +307,12 @@ pub fn go(n: u32) -> u32 {
 // declared as written (rd575, ADR 1064). One its own module calls, which
 // has no name there for a re-export, stays a function; so do a module's
 // default, one its module re-exports by another name, one kept out of
-// line, one with a comment in it, one of its own module's function, a
-// method's or a binding's, and one whose function's JS would take more
-// than its callers give it: what JS gives past its parameters, a drop
-// left out or JS's `arguments`, or a copy that boxes what it's given.
+// line, one of its own module's function, a method's or a binding's, and
+// one whose function's JS would take more than its callers give it: what
+// JS gives past its parameters, a drop left out or JS's `arguments`, or a
+// copy that boxes what it's given. One with comments is the re-export
+// too, its comments, above it, its doc and in its body, before it (ADR
+// 1064, amended, the user's decision of 2026-11-04).
 test("a function that only passes its parameters on to another module's is its re-export", async () => {
   const dir = fixture("reexported-forwarders");
   writeFileSync(join(dir, "lib.rs"), `mod bound;
@@ -347,9 +349,11 @@ pub fn apart(n: f64) -> f64 {
     inner::helper(n)
 }
 
+/// Helped.
+// Above.
 pub fn commented(n: f64) -> f64 {
     // Passed on.
-    inner::helper(n)
+    inner::helper(n) // As it is.
 }
 
 pub fn defaulted(n: f64) -> f64 {
@@ -438,12 +442,15 @@ pub fn some<T>(x: Option<T>) -> bool {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('export { helper, helper as triple } from "./inner.js";\n');
   expect(js).toContain('export { plusOne } from "./caller.js";\n');
-  for (const kept of ["calledHere(n)", "twice(n)", "apart(n)", "commented(n)", "twin(n)", "count(counter)", "halved(n)", "held(n)", "counted(first)", "nested(x)"]) {
+  expect(js).toContain(
+    '\n\n/** Helped. */\n// Above.\n// Passed on.\n// As it is.\nexport { helper as commented } from "./inner.js";\n',
+  );
+  for (const kept of ["calledHere(n)", "twice(n)", "apart(n)", "twin(n)", "count(counter)", "halved(n)", "held(n)", "counted(first)", "nested(x)"]) {
     expect(js).toContain(`export function ${kept} {`);
   }
   expect(js).toContain("function renamed(n) {");
   expect(js).toContain("function defaulted(n) {");
-  expect(js).not.toMatch(/function (helper|tripled|triple|plusOne)\b/);
+  expect(js).not.toMatch(/function (helper|tripled|triple|plusOne|commented)\b/);
   expect(readFileSync(join(dir, "caller.js"), "utf8")).toContain('import { helper } from "./lib.js";\n');
   const dts = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(dts).toContain("export function helper(n: number): number;");

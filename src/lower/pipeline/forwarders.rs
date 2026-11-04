@@ -98,7 +98,6 @@ fn in_place<'tcx>(
     ),
     default_export: Option<DefId>,
     aliased: &[(DefId, (String, String))],
-    text: &str,
 ) -> (HashMap<DefId, DefId>, HashSet<String>) {
     let (mut confirmed, mut reads) = (HashMap::new(), HashSet::new());
     for (&function, &target) in forwarders {
@@ -113,9 +112,7 @@ fn in_place<'tcx>(
             continue;
         };
         let output = tcx.fn_sig(function).skip_binder().output().skip_binder();
-        let span = functions[at].span;
-        let written = text.get(span.lo as usize..span.hi as usize);
-        let Some(callee) = super::super::passed_on::forwarded_call(&functions[at], output.is_unit(), written) else {
+        let Some(callee) = super::super::passed_on::forwarded_call(&functions[at], output.is_unit()) else {
             continue;
         };
         callee.visit_vars(&mut |name| {
@@ -155,7 +152,6 @@ pub(super) fn reexported<'tcx>(
         &super::super::sources::CapturedSources,
     ),
 ) -> InPlace {
-    let text = &sources.output.text;
     let (confirmed, reads) = in_place(
         tcx,
         (module, functions),
@@ -163,7 +159,6 @@ pub(super) fn reexported<'tcx>(
         (fns, foreign, paths),
         default_export,
         aliased,
-        text,
     );
     let named = super::super::reexports::forwarded_functions(tcx, module, &confirmed, (fns, foreign), paths, sources);
     InPlace {

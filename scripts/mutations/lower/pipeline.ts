@@ -772,4 +772,13 @@ export const mutations: Mutation[] = [
     replace: "    let tested = program.then(|| (&generic_consts, Vec::new()));\n",
     tests: ["test/rust-js-test-programs.test.ts", "-t", "makes a dyn of the program's trait"],
   },
+  {
+    name: "forwarder-comments-untaken",
+    breaks:
+      "a function re-exported in its place loses the comments in its body, `// Passed on.`, which are the re-export's (ADR 1064, amended, the user's decision of 2026-11-04)",
+    file: "src/lower/pipeline.rs",
+    find: "                reached::taken_into(tcx, (module, &lowered), (&[&forwarded, &forwarders], &fns), &sources);\n",
+    replace: "                reached::taken_into(tcx, (module, &lowered), (&[&forwarded], &fns), &sources);\n",
+    tests: ["test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+  },
 ];

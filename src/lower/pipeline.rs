@@ -1236,7 +1236,8 @@ pub fn lower_crate<'tcx>(
                 types_only: false,
                 reexports_alone: module == CRATE_MOD_ID && super::reexports::reexports_alone(tcx, module),
             };
-            lowered.taken_into = reached::methods_taken_into(tcx, (module, &lowered), (&forwarded, &fns), &sources);
+            lowered.taken_into =
+                reached::taken_into(tcx, (module, &lowered), (&[&forwarded, &forwarders], &fns), &sources);
             // Each re-export among the imports (rd620).
             super::reexports::place(tcx, &mut lowered.reexports, &uses, (&fns, &foreign, &paths), &written);
             // A class's prototype its load replaces, set right after its

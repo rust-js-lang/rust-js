@@ -189,20 +189,21 @@ pub(super) fn forwarded<'tcx>(
     (namespaces, prototypes)
 }
 
-/// Of `module`'s namespace methods that are functions (`forwarded`, #566,
-/// rd292b), where each is written and what's printed of it, as
-/// `js::Module::taken_into` says them: its own module's function's JS, of
-/// `lowered`'s items, or the re-export of another's, that holds the
-/// method's name where it's written. The method has no JS of its own,
-/// so its comments, above it, its doc and in its body, are before that
-/// (rd758).
-pub(super) fn methods_taken_into(
+/// Of `module`'s functions and namespace methods that are functions, `of`
+/// (ADR 1064, `forwarders`; ADR 1037, #566, rd292b, `forwarded`), where
+/// each is written and what's printed of it, as `js::Module::taken_into`
+/// says them: its own module's function's JS, of `lowered`'s items, or
+/// the re-export of another's, that holds its name where it's written. It
+/// has no JS of its own, so its comments, above it, its doc and in its
+/// body, are before that (rd758; ADR 1064, amended, the user's decision
+/// of 2026-11-04).
+pub(super) fn taken_into(
     tcx: TyCtxt<'_>,
     (module, lowered): (LocalModId, &crate::program::LoweredModule),
-    (forwarded, fns): (&HashMap<DefId, DefId>, &HashMap<DefId, super::super::FnInfo>),
+    (of, fns): (&[&HashMap<DefId, DefId>], &HashMap<DefId, super::super::FnInfo>),
     sources: &super::super::sources::CapturedSources,
 ) -> Vec<(crate::js::Span, crate::js::Span)> {
-    let mut taken: Vec<_> = (forwarded.iter())
+    let mut taken: Vec<_> = (of.iter().flat_map(|map| map.iter()))
         .filter(|&(method, _)| fns.get(method).is_some_and(|f| f.module == module))
         .filter_map(|(&method, target)| {
             let written = sources.span(tcx.hir_span_with_body(tcx.local_def_id_to_hir_id(method.as_local()?)));
