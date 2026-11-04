@@ -332,8 +332,10 @@ import { Children } from "../../react/src/ReactClient.js";
   file.
 - **Re-exports alone**: `export { .. } from` and `export * from` of the
   crate's modules. An entry with code of its own imports nothing by the
-  package's name. An item its module only re-exports of another is
-  imported by its own module's file.
+  package's name. What the entry's module re-exports of another is the
+  entry's too: `createElement`, ReactClient's `pub use` of
+  `jsx/ReactJSXElement`'s, is `import { createElement } from "react"`
+  through the root, and the root's `pub use` of it writes no JS.
 - **The default entry**: of `exports["."]`'s conditions, the `import` or
   `default` one, or both where they name one file; what another condition,
   `react-server`'s, gives is the host's to choose

@@ -135,7 +135,7 @@ pub fn read(dir: &Path, modules: &[Module<'_>], parse: impl Fn(&str) -> Result<E
     let Some(name) = json["name"].as_str() else {
         return Ok(read);
     };
-    let exports = root_exports(dir, name, &json, modules, parse, &mut read)?;
+    let exports = through(root_exports(dir, name, &json, modules, parse, &mut read)?, modules);
     let dir = crate::paths::absolute(dir)?;
     read.package = Some(Package {
         name: name.to_string(),
@@ -200,6 +200,34 @@ fn root_exports(
             reexported(crate::paths::parent_dir(&file), &parsed, modules)
         }
     })
+}
+
+/// What `exports`, the root's entry's re-exports, re-exports through each
+/// module's own: of a module's re-export of another's, React's
+/// ReactClient.rs `pub use crate::react_jsx_element::create_element`, the
+/// other's item too, by the entry's name for it, through each module that
+/// re-exports it in turn, as JS binds an `export { .. } from` to its
+/// item's home (rd755, ADR 1008, amended): a consumer naming that item
+/// through the library's root imports it by the package's name, and a
+/// root re-exporting it of its home is the entry's already.
+fn through(
+    mut exports: BTreeMap<(Vec<String>, String), String>,
+    modules: &[Module<'_>],
+) -> BTreeMap<(Vec<String>, String), String> {
+    let mut next: Vec<((Vec<String>, String), String)> = exports.clone().into_iter().collect();
+    while let Some(((path, export), entry)) = next.pop() {
+        let Some(module) = modules.iter().find(|module| module.path == path.as_slice()) else {
+            continue;
+        };
+        for (from, name, alias) in &module.reexports {
+            let key = (from.clone(), name.clone());
+            if alias == &export && !exports.contains_key(&key) {
+                exports.insert(key.clone(), entry.clone());
+                next.push((key, entry.clone()));
+            }
+        }
+    }
+    exports
 }
 
 /// Each of `modules` whose JS a subpath of the package in `dir`, its

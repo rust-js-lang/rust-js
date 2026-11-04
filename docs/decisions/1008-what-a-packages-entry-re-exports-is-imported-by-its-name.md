@@ -190,3 +190,38 @@ test (no `kids/src/lib.js`; one written where the entry runs code of its
 own, and with a `pub type`) and mutations `entry-root-written`
 (`output.rs`), `entry-root-unmatched` (`packages.rs`) and
 `reexports-alone-of-anything` (`lower/reexports.rs`).
+
+## Amendment: an entry's re-export is of the item its module re-exports
+
+rd755 (2026-11-04). Case: none; JS binds an `export { .. } from` to its
+item's home, so the name the entry gives and the item's home export are
+one binding.
+
+React's `index.js` re-exports `createElement` from `./src/ReactClient`,
+whose `ReactClient.rs` re-exports it of `jsx/ReactJSXElement.rs`. What the
+entry re-exports was read of the module it names alone, `(react_client,
+createElement)`, while a consumer's item is keyed by its home,
+`react_jsx_element`: `use react_isomorphic::create_element;` was imported
+from `react/src/jsx/ReactJSXElement`, where upstream writes
+`require('react')`, and a root `pub use react_client::create_element;`,
+printed `export {createElement} from './src/jsx/ReactJSXElement.js'`,
+didn't match the entry and wrote `packages/react/react.js`, a second
+entry, where `CHILDREN`, ReactClient's own, wrote none. This supersedes
+the Decision's "one that module re-exports of another is imported by its
+own module's file".
+**What the entry re-exports of a module is also what that module's `pub
+use`s re-export, by the entry's name for it, through each module that
+re-exports it in turn** (`packages::through`, of the lowered modules'
+re-exports, ADR 0240's, the compiler's own facts, never the JS): the
+package's `exports` in the library contract say `(react_jsx_element,
+createElement) -> createElement` too. A consumer's `rooted_of` and the
+root's `entry_is_root` read them unchanged: the consumer imports it by
+the package's name where its Rust names it through the root, by its
+module's file where a module's path names it; the root re-exporting it
+of its home is the entry's already and writes no JS. A name the entry
+re-exports directly keeps its entry. The contract is a compiler's, whose
+identity a consumer checks (ADR 0100), so a library written before is
+rebuilt. Held by `test/libraries.test.ts`' "through its module's
+re-export" test (one hop and two, no `kids/src/lib.js`, native Rust's
+answer) and mutations `package-entry-through-unread`,
+`package-entry-through-any-name` and `package-entry-through-one-hop`.

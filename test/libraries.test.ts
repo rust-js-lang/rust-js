@@ -328,6 +328,57 @@ pub fn count() -> u32 {
   expect(js()).toContain('import { bump, hook } from "@acme/kids";\n');
 }, 600_000);
 
+// An entry's re-export of a module's own `pub use`, React's `index.js`
+// `export {createElement} from './src/ReactClient'`, whose ReactClient.rs
+// re-exports it of `jsx/ReactJSXElement.rs`, is of the item the `pub use`
+// names: a consumer naming it through the library's root imports it by
+// the package's name, `require('react').createElement`, as it does one of
+// the entry's module's own, through each module that re-exports it in
+// turn; and a root re-exporting it alone writes no JS of its own, its
+// re-export of the item's home the entry's already (rd755, ADR 1008,
+// amended).
+test("an item a package's entry re-exports through its module's re-export is imported by the package's name", () => {
+  const dir = fixture("package-entry-through");
+  writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["kids", "dom"]\nresolver = "3"\n');
+  for (const [name, more] of [["kids", ""], ["dom", '\n[dependencies]\nkids = { path = "../kids" }\n']]) {
+    mkdirSync(join(dir, name, "src"), { recursive: true });
+    writeFileSync(join(dir, name, "Cargo.toml"), `[package]\nname = "${name}"\nversion = "0.1.0"\nedition = "2024"\n${more}`);
+  }
+  const kids = join(dir, "kids");
+  writeFileSync(join(kids, "package.json"), JSON.stringify({ name: "@acme/kids", type: "module", main: "index.js" }));
+  writeFileSync(join(kids, "src", "lib.rs"), "mod inner;\npub mod mid;\npub mod outer;\n\npub use mid::made;\npub use outer::twice;\n");
+  writeFileSync(join(kids, "src", "inner.rs"), "pub fn made() -> u32 {\n    7\n}\n\npub fn twice(n: u32) -> u32 {\n    n * 2\n}\n");
+  writeFileSync(join(kids, "src", "mid.rs"), "pub use crate::inner::{made, twice};\n");
+  writeFileSync(join(kids, "src", "outer.rs"), "pub use crate::mid::twice;\n");
+  writeFileSync(join(kids, "index.js"), "export {made} from './src/mid.js';\nexport {twice} from './src/outer.js';\n");
+  writeFileSync(join(dir, "dom", "src", "by_module.rs"), "pub fn one_more() -> u32 {\n    kids::mid::made() + 1\n}\n");
+  writeFileSync(join(dir, "dom", "src", "lib.rs"), "pub mod by_module;\n\npub fn run() -> u32 {\n    kids::twice(kids::made()) + by_module::one_more()\n}\n");
+  mkdirSync(join(dir, "node_modules", "@acme"), { recursive: true });
+  symlinkSync(kids, join(dir, "node_modules", "@acme", "kids"), "dir");
+  mkdirSync(join(dir, "node_modules", "@rust-js"));
+  symlinkSync(join(root, "runtime"), join(dir, "node_modules", "@rust-js", "runtime"), "dir");
+  const native = join(dir, "native");
+  mkdirSync(native);
+  run(["rustc", "--edition=2024", "--crate-type=rlib", "--crate-name", "kids", join(kids, "src", "lib.rs"), "-o", join(native, "libkids.rlib")]);
+  run(["rustc", "--edition=2024", "--crate-type=rlib", "--crate-name", "dom", join(dir, "dom", "src", "lib.rs"), "-o", join(native, "libdom.rlib"), "--extern", `kids=${join(native, "libkids.rlib")}`]);
+  writeFileSync(join(native, "main.rs"), "fn main() {\n    println!(\"{}\", dom::run());\n}\n");
+  run(["rustc", "--edition=2024", join(native, "main.rs"), "-o", join(native, "program"), "--extern", `dom=${join(native, "libdom.rlib")}`, "-L", `dependency=${native}`]);
+  const nativeRun = run([join(native, "program")]).trim();
+  expect(nativeRun).toBe("22");
+  const built = build(join(dir, "dom"));
+  expect(built.stderr).toBe("");
+  const js = readFileSync(join(dir, "dom", "src", "lib.js"), "utf8");
+  // By the package's name, through the root; by its module's file, in a
+  // module whose Rust names it through that module.
+  expect(js).toContain('import { made, twice } from "@acme/kids";\n');
+  expect(js).not.toContain("inner.js");
+  const byModule = readFileSync(join(dir, "dom", "src", "by_module.js"), "utf8");
+  expect(byModule).toContain('import { made } from "../../kids/src/mid.js";\n');
+  expect(existsSync(join(kids, "src", "lib.js"))).toBe(false);
+  const ran = run([node ?? "node", "--input-type=module", "--eval", `console.log((await import(${JSON.stringify(join(dir, "dom", "src", "lib.js"))})).run());`]).trim();
+  expect(ran).toBe(nativeRun);
+}, 600_000);
+
 // A workspace package's module, React's `shared/ReactFeatureFlags`, is
 // imported by the package's name and its subpath, without its extension,
 // where the package's `exports` resolves that subpath to the module's JS,

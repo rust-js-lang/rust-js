@@ -46,6 +46,33 @@ export const mutations: Mutation[] = [
     tests: test,
   },
   {
+    name: "package-entry-through-unread",
+    breaks:
+      "an entry's re-export of a module's own `pub use`, React's `createElement` of ReactClient, is read of that module alone, so a consumer imports the item by its home's file and a root re-exporting it writes a second entry (rd755, ADR 1008, amended)",
+    file: "src/packages.rs",
+    find: "    let exports = through(root_exports(dir, name, &json, modules, parse, &mut read)?, modules);\n",
+    replace: "    let exports = root_exports(dir, name, &json, modules, parse, &mut read)?;\n",
+    tests: test,
+  },
+  {
+    name: "package-entry-through-any-name",
+    breaks:
+      "of a module the entry re-exports from, each of its `pub use`s is taken as the entry's name, whichever it gives, so a consumer imports another item by it (rd755, ADR 1008, amended)",
+    file: "src/packages.rs",
+    find: "            if alias == &export && !exports.contains_key(&key) {\n",
+    replace: "            if !exports.contains_key(&key) {\n",
+    tests: test,
+  },
+  {
+    name: "package-entry-through-one-hop",
+    breaks:
+      "an entry's re-export is followed through one module's `pub use` alone, not each that re-exports it in turn, so an item two modules re-export is imported by its home's file (rd755, ADR 1008, amended)",
+    file: "src/packages.rs",
+    find: "                next.push((key, entry.clone()));\n",
+    replace: "",
+    tests: test,
+  },
+  {
     name: "package-subpath-any-target",
     breaks: "a module is imported by its package's subpath where `exports` resolves it to another file than its JS, `./lib/*`'s, which Node then doesn't find (ADR 0770, amended)",
     file: "src/packages.rs",
