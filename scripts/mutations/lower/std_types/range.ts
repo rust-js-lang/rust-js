@@ -386,4 +386,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^loop_start_read_in_place.rs$"],
     snapshots: true,
   },
+  {
+    name: "range-is-empty-by-js-order",
+    breaks:
+      "a range's `is_empty()` is JS's `!(start < end)` of any bounds, which of two arrays compares their text, `!([10] < [9])` false where `Ticket(10)..Ticket(9)` is empty, of two objects is never true, and of strings by UTF-16 unit, `\"\\uffff\" >= \"\\u{10000}\"`",
+    file: "src/lower/std_types/range.rs",
+    find: "                let ordered = self.bounds_ordered(method, start.clone(), end.clone(), index, span, out)?;\n",
+    replace:
+      "                let _ = (method, index);\n                let op = if kind == RangeKind::Inclusive { Op::Le } else { Op::Lt };\n                let ordered = Expr::bin(op, start.clone(), end.clone());\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_is_empty_ordered.rs$"],
+  },
+  {
+    name: "range-is-empty-inclusive-by-lt",
+    breaks: "an inclusive range's `is_empty()` asks its bounds' `lt`, so `Loud(2)..=Loud(2)` is empty, where std's asks `le`",
+    file: "src/lower/std_types/range.rs",
+    find: '                let method = if kind == RangeKind::Inclusive { "le" } else { "lt" };\n',
+    replace: '                let method = "lt";\n',
+    tests: ["test/corpus.test.ts", "-t", "^range_is_empty_ordered.rs$"],
+  },
 ];

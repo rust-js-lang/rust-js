@@ -4,7 +4,7 @@
 
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use crate::lower::display::{Pretty, join};
-use crate::lower::recognition::IterMethod;
+use crate::lower::recognition::{IterMethod, trait_method};
 use crate::lower::representation::Num;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
@@ -79,7 +79,7 @@ pub(in crate::lower) enum RangeOp {
     Bound(&'static str),
     /// A `RangeInclusive`'s `into_inner()`: `[r.start, r.end]`.
     IntoInner,
-    /// `is_empty()`: `!(r.start < r.end)`.
+    /// `is_empty()`: `!(r.start < r.end)`, by its bounds' `PartialOrd`.
     IsEmpty,
     /// `len()`: `Math.max(0, r.end - r.start)`.
     Len,
@@ -562,9 +562,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let parts = self.range_parts(range, kind, out);
         Ok(match (op, parts.as_slice()) {
+            // `!(start < end)`, of `a..=b` `!(start <= end)`, as std's.
             (RangeOp::IsEmpty, [start, end]) => {
-                let op = if kind == RangeKind::Inclusive { Op::Le } else { Op::Lt };
-                Expr::unary(UnaryOp::Not, Expr::bin(op, start.clone(), end.clone()))
+                let method = if kind == RangeKind::Inclusive { "le" } else { "lt" };
+                let index = index.expect("a bound's type");
+                let ordered = self.bounds_ordered(method, start.clone(), end.clone(), index, span, out)?;
+                Expr::unary(UnaryOp::Not, ordered)
             }
             // What's left of the numbers, both bounds; of BigInts, an error.
             (RangeOp::SizeHint, [start, end]) if index.and_then(Num::of).is_some_and(|n| !n.big()) => {
@@ -573,6 +576,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Err(self.unsupported(span, &format!("this method of a `{range_ty}`"))),
         })
+    }
+
+    /// Whether a range's bound `a` is before `b`, `method` `lt`, or not after
+    /// it, `le`, as its bounds' `PartialOrd`, of type `index`, says: the
+    /// ordering owner's `a < b`, JS's own `<` of numbers, by code point of
+    /// `char`s and strings (ADR 0183), a derived order's field by field, a
+    /// hand-written `lt` or `partial_cmp`, a type parameter's by its
+    /// dictionary. Never JS's `<` of two arrays, which compares their text,
+    /// `"10" < "9"`, or of two objects, which is never true.
+    fn bounds_ordered(
+        &mut self,
+        method: &str,
+        a: Expr,
+        b: Expr,
+        index: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let method = trait_method(self.tcx, self.partial_ord_trait(), method);
+        let args = self.tcx.mk_args(&[index.into(), index.into()]);
+        let ordered = self.trait_call(method, args, vec![a, b], span, out)?;
+        ordered.ok_or_else(|| self.unsupported(span, &format!("the order of a range's `{index}` bounds")))
     }
 }
 

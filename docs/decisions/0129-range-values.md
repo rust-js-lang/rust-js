@@ -272,3 +272,22 @@ of one, before and after stepping it, one given where `T: Default` goes,
 iteration, `len()`, `contains`, a slice of it, a derived `Default` holding
 ranges, `unwrap_or_default`) and the mutation `range-default-refused`
 (`lower/std_impls/defaults.ts`).
+
+## Amendment: `is_empty()` asks its bounds' `PartialOrd` (2026-11-04)
+
+A range's `is_empty()` was JS's `!(r.start < r.end)` of any bounds: of a
+range of structs, tuples or arrays, JS's `<` of two arrays compares their
+text, so `(Ticket(10)..Ticket(9)).is_empty()` was `!([10] < [9])`,
+`false`, where Rust's is `true`; of two objects it's never true, so
+`Point { x: 1, .. }..Point { x: 2, .. }` was empty; of strings and `char`s
+it compared UTF-16 units, so `'\u{ffff}'..'\u{10000}'` was empty; and a
+hand-written `lt` or `partial_cmp` wasn't asked. Results change, so
+Rust's behavior is kept (ADR 0262): **`is_empty()` is `!(start < end)`,
+of `a..=b` `!(start <= end)`, each its bounds' `PartialOrd::lt` or `le`,
+the ordering owner's `trait_call` (`bounds_ordered`): JS's own `<` of
+numbers, as before, `!(r.start < r.end)`, `$cmp(a, b) < 0` of text (ADR
+0183), a derived order field by field, a hand-written `lt` or
+`partial_cmp`, and a type parameter's dictionary's.** Found by
+`range_defaults.rs` (#639), held by `range_is_empty_ordered.rs` against
+native Rust and the mutations `range-is-empty-by-js-order` and
+`range-is-empty-inclusive-by-lt` (`lower/std_types/range.ts`).
