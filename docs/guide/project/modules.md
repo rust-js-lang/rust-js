@@ -430,7 +430,10 @@ module exports it as, a name its `pub use` gives it too,
 that has it; a module of globs alone is a file of its own
 ([ADR 0874, amended](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md#amendment-a-globs-names-are-its-modules-592)).
 A glob whose names are every one its module's file exports is `export *
-from "./m.js"`, as upstream writes it; one that leaves any out, a
+from "./m.js"`, as upstream writes it, a library's module's too, by what
+its manifest says the file exports
+([amended, rd801](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md#amendment-a-glob-of-a-librarys-module-of-every-name-its-file-exports-is-export--from-rd801-629));
+one that leaves any out, a
 private item the module exports for a module of its own, or a name a
 private `use` shadows, keeps its list
 ([ADR 0874, amended](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md#amendment-a-glob-of-every-export-is-export--from-593)). One that has JS but can't be re-exported yet,

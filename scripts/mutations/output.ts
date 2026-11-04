@@ -426,8 +426,8 @@ export const mutations: Mutation[] = [
     name: "glob-every-never",
     breaks: "a glob of every name its module's file exports lists them, `export { TWO, one } from`, where upstream writes `export * from` (#593)",
     file: "src/output.rs",
-    find: "    reexport.glob\n        && exported\n",
-    replace: "    false\n        && exported\n",
+    find: "    reexport.glob && all.is_some_and(|all| all.iter().map(String::as_str).eq(names.iter().copied()))\n",
+    replace: "    false && all.is_some_and(|all| all.iter().map(String::as_str).eq(names.iter().copied()))\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of every name its module's file exports is export \\* from"],
   },
   {
@@ -435,8 +435,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a glob of some of its module's file's names is `export * from`, which re-exports a private item that module exports for another, `helper`, and a name a private `use` shadows, `five` (#593, a wrong answer)",
     file: "src/output.rs",
-    find: "            .is_some_and(|all| all.iter().map(String::as_str).eq(names.iter().copied()))\n",
-    replace: "            .is_some()\n",
+    find: "    reexport.glob && all.is_some_and(|all| all.iter().map(String::as_str).eq(names.iter().copied()))\n",
+    replace: "    reexport.glob && all.is_some()\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of every name its module's file exports is export \\* from"],
   },
   {
@@ -446,5 +446,13 @@ export const mutations: Mutation[] = [
     find: "            if let js::ExprKind::Import(import) | js::ExprKind::Specifier(import) = &mut e.kind {",
     replace: "            if let js::ExprKind::Specifier(js::ImportFrom::Specifier(_)) = &e.kind {\n            } else if let js::ExprKind::Import(import) | js::ExprKind::Specifier(import) = &mut e.kind {",
     tests: ["test/require.test.ts", "-t", "below the root"],
+  },
+  {
+    name: "library-glob-listed",
+    breaks: "a glob of a library's module of every name its file exports lists them, `export {bindToConsole} from 'react-client/src/ReactClientConsoleConfigPlain'`, where upstream writes `export * from` (#629)",
+    file: "src/output.rs",
+    find: "        js::ImportFrom::Specifier(_) => reexport.file_exports.as_ref(),\n",
+    replace: "        js::ImportFrom::Specifier(_) => None,\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "a glob of a library's module of every name its file exports is export \\* from"],
   },
 ];

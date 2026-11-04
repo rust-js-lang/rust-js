@@ -703,6 +703,13 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         self.dependencies.libraries.get(library_name(self.tcx, krate).as_str())
     }
 
+    /// What the library JS file `from` exports but `default`, by the
+    /// specifier the crate imports it by, as its library's manifest says
+    /// (#629): of none of a library's, none.
+    pub(super) fn file_exports(&self, from: &str) -> Option<&'a std::collections::BTreeSet<String>> {
+        (self.dependencies.libraries.values()).find_map(|library| library.files.get(from))
+    }
+
     /// Does the library `krate` change a value of `ty` in place, so that
     /// its JS copies one where Rust does (ADR 0914, amended)? Not one whose
     /// contract says none, or of a compiler that wrote no such fact.

@@ -127,6 +127,9 @@ pub struct Reexport {
     /// Whether it's a glob's, `pub use m::*;`, each name it gives (rd153):
     /// `export * from` where they're what `m`'s file exports (#593).
     pub glob: bool,
+    /// Of a glob of a library's module, what its file exports but
+    /// `default`, as the library's manifest says (#629).
+    pub file_exports: Option<std::collections::BTreeSet<String>>,
 }
 
 pub struct LoweredImport {

@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a function re-exported in its JS is re-exported in its declarations too, of the function's own type parameters, not declared at its instantiation (rd575)",
     file: "src/lower/pipeline/forwarders.rs",
-    find: "        declared: super::super::reexports::assembled(found.clone(), sources),\n",
-    replace: "        declared: super::super::reexports::assembled(found.iter().cloned().chain(named.iter().cloned()).collect(), sources),\n",
+    find: "        declared: super::super::reexports::assembled(found.clone(), sources, foreign),\n",
+    replace: "        declared: super::super::reexports::assembled(found.iter().cloned().chain(named.iter().cloned()).collect(), sources, foreign),\n",
     tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
   },
 ];

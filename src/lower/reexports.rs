@@ -353,7 +353,11 @@ fn statement_of(item: &hir::Item<'_>) -> rustc_span::Span {
 /// (`reexports`, `forwarded_functions`): in the order they're written, a
 /// statement's names from one module one statement, in their order, and a
 /// run of them from one module, nothing but attributes between, one too.
-pub(super) fn assembled(mut found: Vec<Named>, sources: &super::sources::CapturedSources) -> Vec<Reexport> {
+pub(super) fn assembled(
+    mut found: Vec<Named>,
+    sources: &super::sources::CapturedSources,
+    foreign: &super::library::Foreign<'_, '_>,
+) -> Vec<Reexport> {
     // In the order they're written; a statement's names from one module
     // one `export { .. } from` of it, in their order.
     found.sort_by_key(|((at, _), ..)| at.lo());
@@ -384,6 +388,12 @@ pub(super) fn assembled(mut found: Vec<Named>, sources: &super::sources::Capture
                     true => js::Span::NONE,
                     false => sources.span(at),
                 };
+                // A library's module's file's names, which its glob may be
+                // each of (#629).
+                let file_exports = match (&from, glob(written)) {
+                    (js::ImportFrom::Specifier(from), true) => foreign.file_exports(from).cloned(),
+                    _ => None,
+                };
                 reexports.push((
                     at,
                     Reexport {
@@ -393,6 +403,7 @@ pub(super) fn assembled(mut found: Vec<Named>, sources: &super::sources::Capture
                         span,
                         at: span,
                         glob: glob(written),
+                        file_exports,
                     },
                 ));
             }

@@ -572,6 +572,10 @@ pub struct Exports {
     /// its name there, and whether it's its default (ADR 0210, amended).
     /// Not of a library written without declarations.
     pub types: HashMap<String, (String, String, bool)>,
+    /// What each of its modules' JS files exports but `default`, as its
+    /// manifest says, by the specifier a consumer imports it by: what a
+    /// glob of the module is `export * from` of (#629).
+    pub files: HashMap<String, std::collections::BTreeSet<String>>,
 }
 
 #[derive(Default)]
@@ -691,6 +695,17 @@ impl Dependencies {
                     _ => Ok((specifier(module)?, export)),
                 }
             };
+            for module in manifest.modules.iter().filter(|module| !module.types_only) {
+                let names = module
+                    .exports
+                    .iter()
+                    .filter(|name| *name != "default")
+                    .cloned()
+                    .collect();
+                if let Ok(from) = specifier(&module.module) {
+                    exports.files.insert(from, names);
+                }
+            }
             for item in library.items {
                 let export = item.exported_as();
                 let rooted = rooted_of(&item.module, &export);

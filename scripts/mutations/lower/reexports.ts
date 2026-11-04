@@ -474,4 +474,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/cargo-in-source.test.ts", "-t", "export \\* of a module placed outside"],
   },
+  {
+    name: "library-glob-file-unasked",
+    breaks: "a glob of a library's module carries nothing of what its file exports, so one of every name lists them, not `export * from` (#629)",
+    file: "src/lower/reexports.rs",
+    find: "                    (js::ImportFrom::Specifier(from), true) => foreign.file_exports(from).cloned(),\n",
+    replace: "                    (js::ImportFrom::Specifier(_), true) => None,\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "a glob of a library's module of every name its file exports is export \\* from"],
+  },
 ];

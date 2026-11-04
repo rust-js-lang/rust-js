@@ -1,6 +1,6 @@
 # 0874. A module's `pub use`s are re-exported as written, or refused
 
-Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below; a glob's names, each, rd153; through a module that re-exports it, whatever it is, rd338; a private `use` through one imports from it, rd650; a `pub use` list's comments are its names', rd338; a glob's names are its module's, #592; a library's item through its module that re-exports it, rd704; a glob of every export is `export * from`, #593; a `pub use` of what the module imports exports its binding, rd705). Amends [0240](0240-reexports.md), whose re-exports were
+Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below; a glob's names, each, rd153; through a module that re-exports it, whatever it is, rd338; a private `use` through one imports from it, rd650; a `pub use` list's comments are its names', rd338; a glob's names are its module's, #592; a library's item through its module that re-exports it, rd704; a glob of every export is `export * from`, #593; a `pub use` of what the module imports exports its binding, rd705; a glob of a library's module of every name is `export * from`, rd801). Amends [0240](0240-reexports.md), whose re-exports were
 one statement for each module, ordered by its path, of the crate's
 functions and bindings alone, and refused a JS module's namespace; and
 [0596](0596-a-pub-use-of-a-modules-own-item-exports-it.md), whose private
@@ -628,3 +628,26 @@ a list of which one is read, and a `pub use` alone, run),
 `imported-reexport-from`, `partly-imported-reexport-local` and
 `local-export-own-block` (`to_oxc/header.ts`, `format.ts`).
 
+## Amendment: a glob of a library's module of every name its file exports is `export * from` (rd801, #629)
+
+React's markup Flight client config globs two of react-client's modules,
+`pub use react_client::react_client_console_config_plain::*;`, which
+printed `export {bindToConsole} from
+'react-client/src/ReactClientConsoleConfigPlain'`, where upstream writes
+`export * from` for each, as #593 prints a glob of the crate's own
+module. **A glob of a library's module whose names are each its file's
+exports but `default` is `export * from` it**: what the file exports is
+what the library's manifest says of its module (`manifest::Module::exports`,
+`library::Exports::files`), carried with the glob
+(`program::Reexport::file_exports`) to the one decision of #593,
+`output::every_export`. One that leaves any out, a name the module's own
+item shadows, keeps its list. Case N of ADR
+[0262](0262-when-rust-and-js-disagree.md), as #593's: the same names,
+`export *` giving no default, as the glob gives none.
+
+Held by `test/glob-reexports.test.ts`'s "a glob of a library's module of
+every name its file exports is export * from" (a module with a default,
+and one of whose names the module's own item shadows, run); mutations
+`library-glob-listed` (`output.ts`), `library-file-exports-unsaid`,
+`library-file-exports-with-default` (`library.ts`),
+`library-glob-file-unasked` (`lower/reexports.ts`).

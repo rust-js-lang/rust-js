@@ -174,6 +174,80 @@ pub fn total() -> u32 {
   expect((await import(join(dir, "out", "lib.js"))).total()).toBe(21);
 });
 
+// React's markup Flight client config, `pub use
+// react_client::react_client_console_config_plain::*;`, printed `export
+// {bindToConsole} from 'react-client/src/ReactClientConsoleConfigPlain'`,
+// where upstream writes `export * from` (rd801, #629): a glob of a
+// library's module whose names are each its file's exports is `export *
+// from`, as #593 prints the crate's own, by what the library's manifest
+// says its file exports but its default, which a glob never gives; one of
+// some of them, a name the module's own item shadows, or of its default by
+// its Rust name, which `export *` leaves out, lists them.
+test("a glob of a library's module of every name its file exports is export * from", async () => {
+  const dir = fixture("glob-library-every");
+  writeFileSync(join(dir, "dep.rs"), `pub mod console {
+    pub fn bind_to_console(n: f64) -> f64 {
+        n + 1.0
+    }
+
+    pub const BADGE: f64 = 2.0;
+
+    fn fallback(n: f64) -> f64 {
+        n
+    }
+
+    js::export_default!(fallback);
+}
+
+pub mod entry {
+    pub fn start(n: f64) -> f64 {
+        n * 7.0
+    }
+
+    js::export_default!(start);
+}
+
+pub mod debug {
+    pub fn check_eval(n: f64) -> f64 {
+        n * 3.0
+    }
+
+    pub fn other(n: f64) -> f64 {
+        n * 5.0
+    }
+}
+`);
+  run([compiler, join(dir, "dep.rs"), "-o", join(dir, "dep", "lib.js"), "--library", "--manifest", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(dir, "libdep.rmeta")}`, ...js]);
+  writeFileSync(join(dir, "app.rs"), `pub mod config {
+    pub use dep::console::*;
+}
+
+pub mod started {
+    pub use dep::entry::*;
+}
+
+pub mod some {
+    pub use dep::debug::*;
+
+    pub fn other(n: f64) -> f64 {
+        n
+    }
+}
+`);
+  const p = runSync([compiler, join(dir, "app.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js], root, 60_000);
+  expect([p.code, p.stderr]).toEqual([0, ""]);
+  const read = (file: string) => readFileSync(join(dir, "app", file), "utf8");
+  expect(read("config.js")).toContain('export * from "../dep/console.js";\n');
+  expect(read("some.js")).toContain('export { checkEval } from "../dep/debug.js";\n');
+  // Its default, which `export *` leaves out, the glob's `start`.
+  expect(read("started.js")).toContain('export { default as start } from "../dep/entry.js";\n');
+  const config = await import(join(dir, "app", "config.js"));
+  expect([Object.keys(config).sort(), config.bindToConsole(1), config.BADGE]).toEqual([["BADGE", "bindToConsole"], 2, 2]);
+  expect(Object.keys(await import(join(dir, "app", "some.js"))).sort()).toEqual(["checkEval", "other"]);
+});
+
 // #592: of a library's module, a glob re-exports each name from the file
 // that has it, by its own name; one the module renames, `pub use
 // super::create_event_handle as unstable_create_event_handle`, has a name

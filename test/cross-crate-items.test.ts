@@ -381,7 +381,8 @@ pub use dep::assign::assign;
 // 'react-reconciler/src/ReactFiberConfigWithNoPersistence'`: a `pub use
 // m::*;` re-exports each name it gives the module, as rustc resolves it,
 // from where it's declared, past what the module's own items shadow, its
-// types nothing, a private item not at all (rd153).
+// types nothing, a private item not at all (rd153); every name its file
+// exports, as here, `export * from`, as upstream writes it (rd801).
 test("a pub use of every name of a module re-exports each it gives", async () => {
   const dir = fixture("cross-crate-glob-reexports");
   compiled(dir, `pub fn version() -> u32 {
@@ -427,7 +428,7 @@ pub fn persists(_: Option<ChildSet>) -> bool {
 }
 `);
   const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
-  expect(app).toContain('export {\n  SUPPORTS_PERSISTENCE,\n  cloneInstance,\n  replaceContainerChildren,\n} from "../dep/no_persistence.js";\n');
+  expect(app).toContain('export * from "../dep/no_persistence.js";\n');
   expect(app).toContain('export { helper } from "./own.js";\n');
   const module = await import(join(dir, "app", "lib.js"));
   expect([module.SUPPORTS_PERSISTENCE, module.cloneInstance(), module.replaceContainerChildren(), module.helper(), module.shadowed()]).toEqual([false, 7, 8, 2, 4]);

@@ -997,16 +997,15 @@ fn entry_is_root(package: &crate::packages::Package, module: &program::LoweredMo
 /// own items and `use`s shadow: a private item `m` exports for a module
 /// of its own, which the glob doesn't see, or a name a private `use` here
 /// shadows, is one of `m`'s that isn't the glob's, and the names stay
-/// listed.
+/// listed. Of a library's module, what its manifest says its file
+/// exports (#629).
 fn every_export(reexport: &program::Reexport, exported: &HashMap<Vec<String>, BTreeSet<String>>) -> bool {
-    let js::ImportFrom::Module(from) = &reexport.from else {
-        return false;
+    let all = match &reexport.from {
+        js::ImportFrom::Module(from) => exported.get(from),
+        js::ImportFrom::Specifier(_) => reexport.file_exports.as_ref(),
     };
     let names: BTreeSet<&str> = reexport.named.iter().map(|(_, alias)| alias.as_str()).collect();
-    reexport.glob
-        && exported
-            .get(from)
-            .is_some_and(|all| all.iter().map(String::as_str).eq(names.iter().copied()))
+    reexport.glob && all.is_some_and(|all| all.iter().map(String::as_str).eq(names.iter().copied()))
 }
 
 /// What `module` exports, by name, as it's printed: its exported functions,

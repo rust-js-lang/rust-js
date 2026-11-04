@@ -131,4 +131,20 @@ export const mutations: Mutation[] = [
     replace: "                associated: (library.associated.into_iter())\n                    .filter(|_| false)\n                    .map(|associated| (associated.key, associated.facts))\n",
     tests: ["test/crates.test.ts", "-t", "item_size_of_instance"],
   },
+  {
+    name: "library-file-exports-unsaid",
+    breaks: "what a library's module's file exports isn't read from its manifest, so a glob of every name of it lists them, not `export * from` (#629)",
+    file: "src/library.rs",
+    find: "                    exports.files.insert(from, names);\n",
+    replace: "                    let _: (String, std::collections::BTreeSet<String>) = (from, names);\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "a glob of a library's module of every name its file exports is export \\* from"],
+  },
+  {
+    name: "library-file-exports-with-default",
+    breaks: "a library's module's file's default is counted among the names a glob of it must give, which a glob never does, so a glob of every name but the default of a module that has one, react-client's `console` config, lists them, where `export * from` gives each, and the default no more than the glob does (#629)",
+    file: "src/library.rs",
+    find: "                    .iter()\n                    .filter(|name| *name != \"default\")\n                    .cloned()\n",
+    replace: "                    .iter()\n                    .cloned()\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "a glob of a library's module of every name its file exports is export \\* from"],
+  },
 ];

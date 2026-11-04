@@ -162,8 +162,8 @@ pub(super) fn reexported<'tcx>(
     );
     let named = super::super::reexports::forwarded_functions(tcx, module, &confirmed, (fns, foreign), paths, sources);
     InPlace {
-        declared: super::super::reexports::assembled(found.clone(), sources),
-        reexports: super::super::reexports::assembled(found.into_iter().chain(named).collect(), sources),
+        declared: super::super::reexports::assembled(found.clone(), sources, foreign),
+        reexports: super::super::reexports::assembled(found.into_iter().chain(named).collect(), sources, foreign),
         reads,
     }
 }
