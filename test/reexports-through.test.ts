@@ -183,3 +183,45 @@ pub fn render() -> u32 {
   expect(app).toContain('import { log as logError } from "../dep/error_logger.js";\n');
   expect((await import(join(dir, "app", "lib.js"))).render()).toBe(17);
 });
+
+// React's SchedulerNative reads `use crate as scheduler;`'s
+// `scheduler::UNSTABLE_USER_BLOCKING_PRIORITY`, the root's `pub use
+// scheduler_priorities::USER_BLOCKING_PRIORITY as ..`, and its functions
+// through it: upstream's `Scheduler.unstable_UserBlockingPriority`, as
+// `Scheduler.unstable_scheduleCallback`. A constant read through a module
+// that re-exports it was imported from its definer, `import {
+// UserBlockingPriority } from '../SchedulerPriorities.js'`, where a
+// function so read is the module's (rd137): a `const` or a `static` is
+// too, by the name the module re-exports it as (rd800, #628).
+test("a constant read through a module that re-exports it is that module's", async () => {
+  const dir = fixture("constant-through-reexporter");
+  writeFileSync(join(dir, "lib.rs"), `pub mod native;
+pub mod priorities;
+
+#[cfg_attr(rust_js, rust_js::name = "unstable_UserBlockingPriority")]
+pub use priorities::USER_BLOCKING_PRIORITY as UNSTABLE_USER_BLOCKING_PRIORITY;
+
+pub fn schedule(n: u32) -> u32 {
+    n + 1
+}
+`);
+  writeFileSync(join(dir, "priorities.rs"), "pub const USER_BLOCKING_PRIORITY: u32 = 2;\n");
+  writeFileSync(join(dir, "native.rs"), `use crate as scheduler;
+
+pub fn blocking() -> u32 {
+    scheduler::UNSTABLE_USER_BLOCKING_PRIORITY
+}
+
+pub fn scheduled(n: u32) -> u32 {
+    scheduler::schedule(n) * 2
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "out", "lib.js")]);
+  const native = readFileSync(join(dir, "out", "native.js"), "utf8");
+  expect(native).toContain('import * as Lib from "./lib.js";\n');
+  expect(native).toContain("return Lib.unstable_UserBlockingPriority;\n");
+  expect(native).not.toContain("priorities.js");
+  const lib = await import(join(dir, "out", "native.js"));
+  expect([lib.blocking(), lib.scheduled(1)]).toEqual([2, 4]);
+});
+

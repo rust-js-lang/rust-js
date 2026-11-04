@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "        .filter(|&(id, _)| named(id) && false)\n",
     tests: ["test/namespaces.test.ts", "-t", "use renames it"],
   },
+  {
+    name: "reexported-constant-from-its-definer",
+    breaks: "a `const` read through a module that re-exports it, SchedulerNative's `scheduler::UNSTABLE_USER_BLOCKING_PRIORITY`, is imported from its definer, `import { UserBlockingPriority } from '../SchedulerPriorities.js'`, not read off that module's namespace, `Scheduler.unstable_UserBlockingPriority` (rd800, #628)",
+    file: "src/lower/analysis/namespaces.rs",
+    find: "        function.is_local()\n            && (crate::lower::reexports::reexporting_use(\n",
+    replace: "        function.is_local()\n            && tcx.def_kind(function) == DefKind::Fn\n            && (crate::lower::reexports::reexporting_use(\n",
+    tests: ["test/reexports-through.test.ts", "-t", "a constant read through a module that re-exports it"],
+  },
 ];

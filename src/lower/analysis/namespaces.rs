@@ -163,15 +163,16 @@ fn through(
         return None;
     };
     let listed = function.is_local() || foreign.item(function).is_some_and(|item| item.member.is_none());
-    // Its own, or a function of the crate's another module has that this
-    // one's file re-exports, `pub use crate::props::register_simple as
-    // register_events;`, by the name it's re-exported as (rd137).
+    // Its own, or a function, `const` or `static` of the crate's another
+    // module has that this one's file re-exports, `pub use
+    // crate::props::register_simple as register_events;`, by the name it's
+    // re-exported as (rd137; a `const`'s, SchedulerNative's
+    // `scheduler::UNSTABLE_USER_BLOCKING_PRIORITY`, rd800).
     let reexports = |named: DefId| {
         let (Some(named), Some(last)) = (named.as_local(), path.segments.last()) else {
             return false;
         };
         function.is_local()
-            && tcx.def_kind(function) == DefKind::Fn
             && (crate::lower::reexports::reexporting_use(
                 tcx,
                 LocalModId::new_unchecked(named),

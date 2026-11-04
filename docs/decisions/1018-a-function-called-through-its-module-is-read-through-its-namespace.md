@@ -1,6 +1,6 @@
 # 1018. A function called through its module is read through its namespace
 
-Status: Accepted (the user's decision, rd114). Amended (2026-10-29): a
+Status: Accepted (the user's decision, rd114). Amended (2026-11-04): a `const` or `static` a module re-exports, through that module (rd800). Amended (2026-10-29): a
 function given as a value through its namespace is the namespace's
 member, `Dep.noop`, not an arrow of its call. Amended by
 [1081](1081-a-function-reads-its-own-this-by-js-this.md): a free function
@@ -280,3 +280,24 @@ read through its namespace" (`Plugins.doubled`, `Plugins.twice`, and a
 "a function read through a module that re-exports it imports that module";
 mutations `reexported-path-*`, `reexporter-*`, `namespace-through-reexport`.
 
+## Amendment: a `const` or `static` a module re-exports, through that module (rd800, #628)
+
+React's SchedulerNative reads `use crate as scheduler;`'s functions off
+the root's namespace, `Scheduler.unstable_scheduleCallback`, and its five
+priorities through it too, `scheduler::UNSTABLE_USER_BLOCKING_PRIORITY`,
+the root's `pub use scheduler_priorities::USER_BLOCKING_PRIORITY as ..`.
+rd137's rule, a function a module re-exports read through that module, was
+of functions alone, so each priority was imported from its definer,
+`import {UserBlockingPriority} from '../SchedulerPriorities.js'`, where
+upstream writes `Scheduler.unstable_UserBlockingPriority`. **A `const` or
+a `static` of the crate's that a module re-exports, read through that
+module's path, is read off its namespace by the name it re-exports it
+as**, as a function is, and as a module's own `fiber::CURRENT` is
+(rd114a); one that may hold a function a call runs is still read by its
+name (`holds_a_callable`). Case N of ADR
+[0262](0262-when-rust-and-js-disagree.md): the namespace's binding is the
+definer's, live.
+
+Held by `test/reexports-through.test.ts`'s "a constant read through a
+module that re-exports it is that module's"; mutation
+`reexported-constant-from-its-definer` (`lower/analysis/namespaces.ts`).
