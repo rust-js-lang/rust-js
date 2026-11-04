@@ -125,6 +125,15 @@ pub(in crate::lower) fn stepped_ends(
     Expr::call(Expr::helper("$iterator"), list)
 }
 
+/// Whether `e` is a range's numbers, `$iterator({ start, end }, $rangeNext,
+/// ..)`, however it's stepped and whatever it's given beside: one std's
+/// steps give what its defaults do, which a `Rev` hides nothing of.
+pub(in crate::lower) fn is_range_stepped(e: &Expr) -> bool {
+    matches!(&e.kind, js::ExprKind::Call(callee, args)
+        if callee.helper_name() == Some("$iterator")
+            && args.get(1).and_then(Expr::helper_name).is_some_and(|next| next.starts_with("$range")))
+}
+
 /// What a JS iterator `stepped_ends` made steps, `value` of `$iterator(value,
 /// next, ..)`. A map's source made a JS iterator before it's asked its back,
 /// `$iterator(range, $rangeNext)`, is stepped again from what it steps, not

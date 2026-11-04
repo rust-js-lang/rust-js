@@ -458,14 +458,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-/// Whether `e` is a range's numbers, `$iterator({ start, end }, $rangeNext,
-/// ..)`, however it's stepped: one std's steps give what its defaults do.
-fn stepped_range_any(e: &Expr) -> bool {
-    matches!(&e.kind, js::ExprKind::Call(callee, args)
-        if callee.helper_name() == Some("$iterator")
-            && args.get(1).and_then(Expr::helper_name).is_some_and(|next| next.starts_with("$range")))
-}
-
 /// `$iter(v).map(f).filter(p)`, a lazy chain over an array's items whose
 /// callbacks read no index, made of the items reversed:
 /// `$iter(v.toReversed()).map(f).filter(p)`. Rust's `Map` and `Filter`
@@ -489,7 +481,7 @@ pub(in crate::lower::mir) fn reversed_in_place(e: &mut Expr) {
         && inner_callee.helper_name() == Some("$rev")
         && let [it] = inner_args.as_slice()
         && (crate::lower::iterators::is_stepped_items(it)
-            || stepped_range_any(it)
+            || crate::lower::iterators::is_range_stepped(it)
             || crate::lower::iterators::closed_parts(it)
                 .is_some_and(|(source, _)| crate::lower::iterators::is_stepped_items(source)))
     {
