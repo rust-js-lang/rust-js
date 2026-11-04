@@ -72,6 +72,9 @@ function createClosingRequest(name, onAllReady, held) {
   return request;
 }
 
+// A matcher of the crate's, which a `dyn` may be any of: one compares by a
+// derived `PartialEq`, whose body rust-js doesn't read.
+
 const $exactMatcher = new WeakMap();
 
 function exactMatcher(TPartialEq, dropT) {

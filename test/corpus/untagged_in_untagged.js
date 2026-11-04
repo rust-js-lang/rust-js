@@ -6,6 +6,12 @@ export function entry() {
   main();
 }
 
+// A container, told by its `rootID`, whose `children` an instance's test
+// reads too: that tells nothing apart here, so an item is an object no
+// container is, or a number (rd291's rule, of each of the inner's kinds).
+
+// A number or a word, as a key is, beside a list of either.
+
 function describe(child) {
   if (Array.isArray(child)) {
     return child.map(describe).join(",");

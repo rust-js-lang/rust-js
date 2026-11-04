@@ -25,6 +25,8 @@ function ptDebug_fmt(pt) {
   return `Pt { x: ${pt.x}, y: ${pt.y} }`;
 }
 
+// A list linked by raw pointers.
+
 function sum(at) {
   let total = 0;
   while (at !== null) {
@@ -48,6 +50,8 @@ function ownDerefMut_derefMut(own) {
     },
   };
 }
+
+// Only pointed to, never changed: its copy is a copy still.
 
 function same(a, b) {
   return a === b;

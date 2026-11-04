@@ -30,6 +30,7 @@ import {
 } from "@bjorn3/browser_wasi_shim";
 import { $rsplitOnce, $stripPrefix, $try, $unwrap } from "@rust-js/runtime";
 
+// The rest of the WASI shim (@bjorn3/browser_wasi_shim), for `compile`.
 export function ms(t) {
   return `${t.toFixed(0)} ms`;
 }
@@ -157,6 +158,8 @@ export async function loadExample(name, paths) {
   }
   return texts;
 }
+
+// ── Running rust-js ─────────────────────────────────────────────────────
 
 /** A directory holding one entry. */
 function dir(name, entry) {

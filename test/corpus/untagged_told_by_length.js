@@ -55,9 +55,13 @@ function key(node) {
   return key;
 }
 
+// Tuples, through an `Rc`, the array it points at.
+
 function sum(pair) {
   return pair.length === 2 ? pair[1] : pair[1] + pair[2];
 }
+
+// Beside what isn't an array: each told as an array of its length.
 
 function area(shape) {
   if (typeof shape === "string") {
@@ -72,9 +76,13 @@ function area(shape) {
   return shape.reduce((a, b) => a + b, -0);
 }
 
+// A 2-tuple beside a struct's object, which no array is.
+
 function name(entry) {
   return Array.isArray(entry) ? entry[0] : entry.name;
 }
+
+// A `#[repr(transparent)]` struct is its field, a number here, no array.
 
 function keyText(key) {
   return typeof key === "string" ? key : `#${$displayF64(key)}`;

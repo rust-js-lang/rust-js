@@ -81,6 +81,8 @@ function main() {
   console.log(`[${areas.join(", ")}]`);
 }
 
+// Another trait the square is, another vtable.
+
 const squareNamed = { label: squareNamed_label };
 function squareNamed_label(square) {
   return "square";

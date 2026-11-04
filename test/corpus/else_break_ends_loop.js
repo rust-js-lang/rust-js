@@ -46,6 +46,9 @@ function firstLong(words) {
   }
 }
 
+// A `while let`'s own test isn't a written `else`, whose rest would be
+// its branch: React's propagateContextChanges' walk up to a sibling.
+
 function walk(root, log) {
   let fiber = root.child;
   while (fiber != null) {

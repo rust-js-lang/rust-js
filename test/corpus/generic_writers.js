@@ -39,6 +39,8 @@ function timeDisplay_fmt(time) {
   return f;
 }
 
+// A writer of the crate's own, that counts what it's given.
+
 const $counterWrite_writeStr = (arg0, arg1) => counterWrite_writeStr(arg0.value, arg1);
 
 export const counterWrite = {

@@ -14,6 +14,8 @@ function total(values, VBorrowI32Slice) {
   return VBorrowI32Slice.borrow(values).reduce((a, b) => (a + b) | 0, 0);
 }
 
+// A blanket impl over every `K: Borrow<Q>`, as the `equivalent` crate's is.
+
 const $qEquivalentK = new WeakMap();
 
 function qEquivalentK(QPartialEq, KBorrowQ) {
@@ -42,6 +44,8 @@ export const tagBorrowStr = { borrow: tagBorrowStr_borrow };
 function tagBorrowStr_borrow(tag) {
   return tag.name;
 }
+
+// Ordered by what its key borrows as: std's `sort` calls the crate's `Ord`.
 
 const $labelledPartialEq = new WeakMap();
 

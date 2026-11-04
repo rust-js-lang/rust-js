@@ -6,6 +6,8 @@ export function entry() {
   main();
 }
 
+// Ordered backwards, by a `partial_cmp` of its own.
+
 export const countdownPartialOrd = {
   PartialEq: () => ({ eq: $eq }),
   partialCmp: countdownPartialOrd_partialCmp,
@@ -13,6 +15,8 @@ export const countdownPartialOrd = {
 function countdownPartialOrd_partialCmp(countdown, other) {
   return $cmp(other[0], countdown[0]);
 }
+
+// Ordered by a `lt` and `le` of its own, which std's `<` and `<=` call.
 
 export const loudPartialOrd = {
   PartialEq: () => ({ eq: $eq }),

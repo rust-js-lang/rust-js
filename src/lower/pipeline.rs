@@ -1094,7 +1094,12 @@ pub fn lower_crate<'tcx>(
             let through = |id| imported_through.get(&(module, id)).map(|through| through.module);
             let uses = super::analysis::UsesWritten::of(tcx, module, (&foreign, &held), &through);
             let written = |at: Option<rustc_span::Span>| at.map_or(js::Span::NONE, |at| sources.span(at));
-            let bindings_written: Vec<js::Span> = uses.bindings().map(|at| written(Some(at))).collect();
+            // What it writes of no JS where it's written: its bindings, and
+            // its types' and traits' declarations (#643).
+            let unprinted: Vec<(js::Span, bool)> = (uses.bindings().map(|at| (at, true)))
+                .chain(super::sources::declarations(tcx, module).map(|at| (at, false)))
+                .map(|(at, binding)| (written(Some(at)), binding))
+                .collect();
             // One `import` per JS module, of what this file uses from it, and
             // of what it imports for what that does when loaded (ADR 0110).
             let used = |export: &Export| pass.package_uses.contains(&(module, export.clone()));
@@ -1197,7 +1202,7 @@ pub fn lower_crate<'tcx>(
                 path: paths[&module].clone(),
                 file: module_file(tcx, module).name.clone().into_local_path(),
                 code: sources.module_code(tcx, module),
-                bindings: bindings_written,
+                unprinted,
                 directives,
                 packages,
                 imports: Vec::new(),

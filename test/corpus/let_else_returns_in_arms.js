@@ -151,6 +151,12 @@ function writtenAfterAGuard(a, b, out) {
   out.push(s);
 }
 
+// A `match` whose `_` arm returns, its comment above the `return`, before
+// what drops: its guard first, as written, `if (target == null ||
+// target.state !== state) { // ..\n return; }`, not the rest in `if (target
+// != null && ..) { .. }` under the comment. React DOM's
+// FormActionEventPlugin's extractEvents.
+
 function extractEvents(event, target, state, queue) {
   if (event !== "submit") {
     return;

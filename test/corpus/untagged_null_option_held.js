@@ -24,6 +24,8 @@ function entryDebug_fmt(entry) {
   return "Loaded";
 }
 
+// One whose payload a clone copies, a `Vec`'s.
+
 // One whose payload a clone copies and nothing drops, an object's.
 function pointDebug_fmt(point) {
   return `Point { x: ${$debugF64(point.x)} }`;
@@ -35,6 +37,12 @@ function shapeDebug_fmt(shape) {
   }
   return "Nowhere";
 }
+
+// One that's `undefined` too, whose `Some(Missing)` no `undefined` could
+// tell from `None`.
+
+// One that's neither, whose `Option` is the value or `undefined`
+// anywhere, tested `!= null` as any `Option` is.
 
 const cache = new Map();
 

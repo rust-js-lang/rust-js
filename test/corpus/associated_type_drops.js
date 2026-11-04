@@ -26,6 +26,8 @@ function quietZone_show(offset) {
   return `quiet ${offset}`;
 }
 
+// As chrono's `DateTime<Tz>` holds a `Tz::Offset`.
+
 function stamp(zone, at, name, ZZone) {
   return { at, offset: ZZone.offset(zone, name) };
 }
@@ -73,6 +75,8 @@ function describe(zone, ZZone) {
     ZZone.$dropOffset?.(first);
   }
 }
+
+// Through a `dyn`, whose type names the item's.
 
 const loudSource = { make: loudSource_make, $dropItem: noisyDrop_drop };
 function loudSource_make(loud) {

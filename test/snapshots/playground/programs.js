@@ -9,6 +9,8 @@
 // The frame has an opaque origin and allows scripts only. Programs can report
 // results through postMessage, but cannot access the editor's DOM or storage.
 
+// A replacer and `matchAll`, typed for the patterns here: a JS replacer is
+// given the match, then each group, so its type is its pattern's (js::RegExp).
 /**
  * [Sucrase](https://github.com/alangpierce/sucrase): the JSX rust-js writes,
  * as the JS the frame can run, which has no bundler.

@@ -87,6 +87,9 @@ function byteFilled_filled(byte, N) {
   return new Array(N).fill(byte[0]);
 }
 
+// An associated type bound by `Iterator` an impl gives a range, or an
+// iterator of the crate's, for: a JS iterator in generic code.
+
 const uptoSource = { numbers: (arg0) => $iterator(uptoSource_numbers(arg0), $rangeNext) };
 function uptoSource_numbers(upto) {
   return { start: 0, end: upto[0] };

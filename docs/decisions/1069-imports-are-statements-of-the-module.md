@@ -330,3 +330,41 @@ Held by `test/lowering-comments-items.test.ts`'s "a comment above a binding
 of no JS is right above the code it's before" and "a binding's comments
 are above the import it makes"; mutations `binding-comments-apart-between`
 and `binding-comments-apart-after` (`to_oxc.ts`).
+
+## Amendment: a type's declaration is an item of no JS too (#643)
+
+A comment above a binding of no JS, a struct right after it, then the code
+it's before, was lost: React DOM's ReactDOMRootFB has the struct first, but
+a port written `// Provided by www`, the binding, `pub struct
+ReactFiberErrorDialog { .. }`, then the `thread_local!`, printed no comment.
+The binding is blanked as an item of no JS (rd752), but the struct's body,
+`}`, ended what the comment could be before (`comments_of`'s `only_starts`),
+as any struct, enum or trait between a comment and the next code did.
+
+**A type's declaration, a struct, an enum, a union, a trait or a type
+alias, is an item of no JS where it's written, as a binding is**
+(`lower/sources.rs`'s `declarations`, with the bindings
+`js::Module::unprinted`): what's above it is before the next code, and its
+doc comment is nowhere, a type alias's as before. One whose JS starts in it
+or in its attributes, a class's struct, a derive's impl, is no such item:
+its doc comment is its JS's still. The blank lines around a binding tell
+nothing (#634); a type's keep ADR 0444's rule, a blank line after its
+comments where the Rust has one, as a type alias's do. No comment is
+dropped.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, none.
+
+What changes: 51 corpus cases and the `queues` and `playground` snapshots
+gain the comments above their structs, enums and traits that were lost,
+each before the code after it, `// Equal whatever its case.` above the
+`PartialEq` impl's `namePartialEq`.
+
+Held by `test/lowering-comments-items.test.ts`'s "a comment above a binding
+and a type of no JS is above the next code"; mutations
+`type-declarations-printed` (`lower/pipeline.ts`) and
+`type-doc-of-a-derive-dropped` (`to_oxc/starts.ts`). A binding whose import
+is placed at it is such an item too, its import's start in it, so the
+check that asked `commented_at` of it is gone and its mutation,
+`binding-import-doc-dropped`, equivalent, with it; `comment-across-code`,
+whose struct's doc comment is nowhere before it reaches that guard now, is
+held by a match arm's comment (`test/lowering-comments.test.ts`).

@@ -4,6 +4,8 @@ export function entry() {
   main();
 }
 
+// Nine drops: long enough for a function.
+
 function many(base) {
   return {
     a: [base],

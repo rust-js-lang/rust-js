@@ -19,6 +19,10 @@ function moved(p) {
   return p;
 }
 
+// A generic function's clone of a type changed in place elsewhere, as
+// `Tagged<Meters>` and `Holder<Numbers>` are below: its fields are known,
+// but which of its types it's given isn't.
+
 function duplicate(t, TClone) {
   return { ...t, unit: t.unit };
 }

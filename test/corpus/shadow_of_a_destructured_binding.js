@@ -6,6 +6,8 @@ export function entry() {
   main();
 }
 
+// Each variant's value is its array, an untagged enum's.
+
 function run(f) {
   return f();
 }

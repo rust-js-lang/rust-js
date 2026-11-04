@@ -28,6 +28,12 @@ function looseOrd_cmp(loose, other) {
   return $cmp(loose[0], other[0]);
 }
 
+// Of 8 bytes, `Freeze` but not `Copy`: std's general small sort, `sort8_stable`.
+
+// Of 32 bytes: the general small sort of `sort4_stable`s.
+
+// Not `Freeze`: the fallback, insertion sort.
+
 function order(items) {
   return items.map((p) => String(p[1])).join(",");
 }

@@ -6,6 +6,8 @@ export function entry() {
   main();
 }
 
+// Equal whatever its case.
+
 export const namePartialEq = { eq: namePartialEq_eq };
 function namePartialEq_eq(name, other) {
   return name[0].toLowerCase() === other[0].toLowerCase();
@@ -51,6 +53,8 @@ function main() {
   console.log(`${$eq(one, two)}`);
   two.counts.set("pear", 1);
   console.log(`${$eq(one, two)}`);
+
+  // A map of values with their own `==`, in a struct: each by its own.
   const left = { names: new Map(names) };
   const right = { names: new Map(shouted) };
   console.log(`${$mapEq(left.names, right.names, (x, y) => namePartialEq_eq(x, y))}`);

@@ -134,6 +134,8 @@ function listyDebug_fmt(listy, options) {
     : `[${["0"].concat(Array.from(listy[0], (entry) => String(entry))).join(", ")}]`;
 }
 
+// What `write!` writes is the same either way.
+
 export const rawDebug = { fmt: rawDebug_fmt };
 function rawDebug_fmt(raw, options) {
   return `[${raw[0]} [${[raw[0]].join(", ")}]]`;

@@ -6,6 +6,9 @@ export function entry() {
   main();
 }
 
+// `pub`, so it stays an object whose fields are cells, no function's scope
+// (ADR 1043).
+
 function shown(canvas, size) {
   return `${canvas} at ${$displayF64(size)}`;
 }

@@ -27,6 +27,9 @@ function pointDebug_fmt(point) {
   return `Point { x: ${point.x} }`;
 }
 
+// Its capacity, a trait's constant of each `CAP`: `Self::CAPACITY` in
+// generic code is the impl's, `CAP`.
+
 const $stackCapacity = new Map();
 
 function stackCapacity(CAP, dropT) {

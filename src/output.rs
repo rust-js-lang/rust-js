@@ -223,7 +223,7 @@ impl OutputPlan {
                 aliases: module.aliases,
                 code: module.code,
                 taken_into: module.taken_into,
-                bindings: module.bindings,
+                unprinted: module.unprinted,
             };
 
             let mut runtime: Vec<&'static str> = module.runtime.iter().map(|helper| helper.source()).collect();
@@ -267,7 +267,7 @@ impl OutputPlan {
                 aliases: Vec::new(),
                 code: js::Span::NONE,
                 taken_into: Vec::new(),
-                bindings: Vec::new(),
+                unprinted: Vec::new(),
             };
             let runtime = self.register(&mut js_module, (home, None), &tests);
             laid.push(self.lay(

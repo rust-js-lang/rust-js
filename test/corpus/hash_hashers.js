@@ -14,6 +14,9 @@ export function entry() {
   main();
 }
 
+// What it's given, a write at a time: `write_u64` its own, so std's
+// `write_i64` writes through it.
+
 export const tallyHasher = $hasher({
   finish: tallyHasher_finish,
   write: (arg0, arg1) => tallyHasher_write(arg0.value, arg1),
@@ -30,6 +33,8 @@ function tallyHasher_write(tally, bytes) {
 function tallyHasher_writeU64(tally, n) {
   tally[0].push(`u64 ${n}`);
 }
+
+// FNV-1a, as hashers written by hand are.
 
 export const fnvDefault = { default: fnvDefault_default };
 function fnvDefault_default() {

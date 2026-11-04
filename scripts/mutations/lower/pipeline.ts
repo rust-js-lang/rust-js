@@ -781,4 +781,12 @@ export const mutations: Mutation[] = [
     replace: "                reached::taken_into(tcx, (module, &lowered), (&[&forwarded], &fns), &sources);\n",
     tests: ["test/lowering-forwarding.test.ts", "-t", "is its re-export"],
   },
+  {
+    name: "type-declarations-printed",
+    breaks: "a comment above a binding of no JS and a struct after it, before the code, is lost, the struct's body ending what it's before (#643)",
+    file: "src/lower/pipeline.rs",
+    find: "                .chain(super::sources::declarations(tcx, module).map(|at| (at, false)))\n",
+    replace: "",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "a comment above a binding and a type of no JS"],
+  },
 ];

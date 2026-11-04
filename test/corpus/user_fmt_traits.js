@@ -96,6 +96,9 @@ function bitsBinary_fmt(bits, options) {
   return $formatted((options?.alternate ? "0b" : "") + (bits[0] & 255).toString(2), options, true);
 }
 
+// What strum's `Display` derive writes: `format_args!`'s text, which a
+// `Formatter`'s width doesn't pad.
+
 export const circleDisplay = { fmt: circleDisplay_fmt };
 function circleDisplay_fmt(circle, options) {
   return `circle of ${circle[0]}`;

@@ -52,6 +52,8 @@ function v2Neg_neg(v2) {
   return { x: -v2.x, y: -v2.y };
 }
 
+// Of another right side, and another output.
+
 export const metersMulF64 = { mul: metersMulF64_mul };
 function metersMulF64_mul(meters, k) {
   return [meters[0] * k];

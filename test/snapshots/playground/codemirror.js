@@ -10,6 +10,8 @@ import { rust } from "@codemirror/lang-rust";
 import { javascript } from "@codemirror/lang-javascript";
 import { Compartment, EditorState } from "@codemirror/state";
 
+// CodeMirror's configurations: JS objects that only CodeMirror reads.
+
 // Made once: as the module loads, or what runs the crate's code where it's
 // first used (ADR 0037, amended). One theme compartment serves
 // both editors: it only names the slot a view reconfigures.

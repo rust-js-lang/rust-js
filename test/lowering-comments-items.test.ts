@@ -1210,3 +1210,61 @@ pub fn shown() -> bool {
 const ReactFiberErrorDialogWWW = require("./dialog.js");
 `);
 });
+
+// A comment above a binding of no JS, a struct right after it, before the
+// code it's before: the struct's body, `}`, ended what the comment could be
+// before, so `// Provided by www` was lost. A type's declaration, a struct,
+// an enum, a union, a trait or a type alias, is an item of no JS where it's
+// written, as a binding is: what's above it is before the next code, the
+// blank lines after a type's as a type alias's are, and its doc comment is
+// nowhere, a class's struct's its constructor's still (#643).
+test("a comment above a binding and a type of no JS is above the next code", async () => {
+  const dir = fixture("comment-above-a-binding-and-a-struct");
+  writeFileSync(join(dir, "dialog.js"), "module.exports = { show: true };\n");
+  writeFileSync(join(dir, "lib.rs"), `pub fn first() -> u32 {
+    1
+}
+
+// Provided by www
+#[cfg_attr(rust_js, rust_js::link_name = "get ./dialog.js#*")]
+#[cfg_attr(rust_js, rust_js::require)]
+fn dialog() -> &'static Dialog {
+    unreachable!()
+}
+
+/// What www provides.
+pub struct Dialog {
+    pub show: bool,
+}
+
+thread_local! {
+    static DIALOG: &'static Dialog = dialog();
+}
+
+// Of the lanes.
+/// A lane's kinds.
+#[derive(Clone, Copy)]
+pub enum Kind {
+    Sync,
+    Idle,
+}
+
+pub fn shown() -> bool {
+    DIALOG.with(|dialog| dialog.show)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export function first() {
+  return 1;
+}
+
+// Provided by www
+const DIALOG = require("./dialog.js");
+
+// Of the lanes.
+
+export function shown() {`);
+  expect(js).not.toContain("What www provides");
+  expect(js).not.toContain("A lane's kinds");
+});

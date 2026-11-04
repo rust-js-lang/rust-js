@@ -8,6 +8,9 @@ function pointDebug_fmt(point) {
   return `Point { x: ${point.x}, y: ${point.y} }`;
 }
 
+// Each variant's value is its payload: a struct's object, an array or a
+// number.
+
 // A line's `length` and an array's: `shape.length`, untested.
 function lengthOf(shape) {
   if (typeof shape === "object" && !Array.isArray(shape)) {
@@ -29,10 +32,14 @@ function size(shape) {
   return shape;
 }
 
+// A tagged enum's: each payload is its `_0`.
+
 function sum(t) {
   const p = t._0;
   return (p.x + p.y) | 0;
 }
+
+// Fields at other places aren't alike.
 
 function placedX(p) {
   return p.TAG === "Front" ? p._0.x : p._1.x;
@@ -72,6 +79,8 @@ function guarded(t) {
 function either(o, fallback) {
   return fallback + 1;
 }
+
+// Variants whose drops differ: each tested, each dropped as Rust does.
 
 function held(h) {
   const result = 1;

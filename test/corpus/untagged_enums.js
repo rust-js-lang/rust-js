@@ -45,7 +45,13 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
+// One whose payload has a destructor, run as the variant's.
+
 const START = 3;
+
+// What's left of it, once a part's moved out, is dropped as the variant's.
+
+// A name compared as its own `==` says, whatever its case.
 
 export const namePartialEq = { eq: namePartialEq_eq };
 function namePartialEq_eq(name, other) {

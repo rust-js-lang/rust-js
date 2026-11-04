@@ -84,6 +84,10 @@ function settings(text) {
   return { TAG: "Err", _0: { value: result._0, impl: $parseErrorDyn("ParseFloatError") } };
 }
 
+// Given where an `E: Error` goes, as thiserror's `#[error(transparent)]`
+// gives one to its blanket `AsDynError`: std's `Error` of it, its message
+// and `Debug`, and no source.
+
 const $tAsDyn = new WeakMap();
 
 function tAsDyn(TError) {
@@ -97,6 +101,9 @@ function describe(e, EError) {
   const value = EError.source(e) != null;
   return `${EError.Display().fmt(e)} | ${EError.Debug().fmt(e)} | ${value}`;
 }
+
+// An error trait of the crate's bounded by marker traits too, as error
+// reporters bound theirs: its dictionary gives `Error`'s, not `Send`'s.
 
 const $eReport = new WeakMap();
 

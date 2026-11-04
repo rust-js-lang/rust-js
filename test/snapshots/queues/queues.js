@@ -136,6 +136,8 @@ export const taskPartialOrd = {
   partialCmp: taskPartialOrd_partialCmp,
 };
 
+// Ordered by priority alone: which of two equal ones comes out first shows
+// whether the heap moves its items as Rust's does.
 export const taskOrd = { PartialOrd: () => taskPartialOrd, cmp: taskOrd_cmp };
 function taskPartialOrd_partialCmp(task, other) {
   return taskOrd_cmp(task, other);

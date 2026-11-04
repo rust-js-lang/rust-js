@@ -28,6 +28,7 @@ const Ops = {
     ["neg", (x) => -x | 0],
   ],
 };
+// A generic impl's, of its parameters, is its dictionary's (ADR 0176).
 const $wrapTrait = new WeakMap();
 
 function wrapTrait(TDefault, TIntoU32) {

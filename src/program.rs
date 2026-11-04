@@ -63,8 +63,9 @@ pub struct LoweredModule {
     /// Where its code is in the arena: its file, or an inline `mod`'s item
     /// (ADR 0621).
     pub code: js::Span,
-    /// Where each binding it declares is written (`js::Module::bindings`).
-    pub bindings: Vec<js::Span>,
+    /// Where each binding and type it declares is written, and whether
+    /// it's a binding (`js::Module::unprinted`).
+    pub unprinted: Vec<(js::Span, bool)>,
     /// Its directives, `"use client"` (ADR 0192).
     pub directives: Vec<String>,
     /// What it imports from JS modules (ADR 0028), with the modules' names

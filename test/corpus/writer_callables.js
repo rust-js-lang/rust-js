@@ -105,6 +105,8 @@ function titleDisplay_fmt(title, options) {
   return transform(title[0], capitalize, (options) => " ", options);
 }
 
+// A closure that captures what it writes, and one that writes more than once.
+
 export const numberedDisplay = { fmt: numberedDisplay_fmt };
 function numberedDisplay_fmt(numbered, options) {
   let n = numbered[1];
@@ -117,6 +119,8 @@ function numberedDisplay_fmt(numbered, options) {
   }
   return transform(numbered[0], numbered$1, (options) => ", ", options);
 }
+
+// A closure that pads to the width its `Formatter` was given.
 
 export const columnsDisplay = { fmt: columnsDisplay_fmt };
 function columnsDisplay_fmt(columns, options) {

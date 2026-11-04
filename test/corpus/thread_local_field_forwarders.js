@@ -34,6 +34,8 @@ function adder(by) {
   return { add: (a, b) => ((Math.imul(a, by) >>> 0) + b) >>> 0 };
 }
 
+// A value whose cell is read besides through the function.
+
 const counted = {
   calls: 0,
   add: adder(100).add,

@@ -51,6 +51,10 @@ function total(p, PPoolIndex) {
   return (first + PPoolIndex.len(p)) >>> 0;
 }
 
+// A type of the crate's own, borrowed as part of what it holds: generic
+// code's `p.borrow()` of a `P: BorrowMut<[usize]>` is its `BorrowMut`
+// dictionary's `Borrow` entry, the crate's impl.
+
 export const tailBorrowUsizeSlice = { borrow: tailBorrowUsizeSlice_borrow };
 function tailBorrowUsizeSlice_borrow(tail) {
   return $slice(tail.items, 1);

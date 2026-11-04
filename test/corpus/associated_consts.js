@@ -24,10 +24,15 @@ function total(shapes, SShape) {
   return Math.imul(shapes.length, SShape.SIDES) >>> 0;
 }
 
+// A generic impl's, of a constant that doesn't need its parameter.
+
 const wrapShape = { SIDES: 0, NAME: "shape", area: wrapShape_area };
 function wrapShape_area(wrap) {
   return 0;
 }
+
+// One of a type changed in place is a new value at each use, as a type's
+// own constant is: the dictionary's is a getter, `get ZERO() { .. }`.
 
 export const counterDebug = { fmt: counterDebug_fmt };
 

@@ -65,6 +65,8 @@ const Pass = {
     return out;
   },
 };
+// A JS iterator where it's given only itself; as it is where it's in what's
+// given.
 function first(i) {
   const w = [i];
   return $next(w[0]);
@@ -73,6 +75,8 @@ function second(w, IIterator) {
   IIterator.next(w[0]);
   return IIterator.next(w[0]);
 }
+// Bound by a trait `Iterator` is a supertrait of, and given only itself: a
+// JS iterator, whose dictionary is no `Iterator`'s.
 export const intoIterKeyed = {};
 function sumKeyed(f, FKeyed) {
   return Iterator.from(f).reduce((a, b) => (a + b) | 0, 0);

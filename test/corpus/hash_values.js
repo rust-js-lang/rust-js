@@ -69,10 +69,14 @@ function wideHash_hash(wide, state, HHasher) {
   }
 }
 
+// Hashes its name as `==` would compare it: case aside.
+
 export const nameHash = { hash: nameHash_hash, hashSlice: $hashSlice(nameHash_hash) };
 function nameHash_hash(name, state, HHasher) {
   HHasher.writeStr(state, name[0].toLowerCase());
 }
+
+// A slice of them hashes as one count, as its own `hash_slice` says.
 
 export const tokenHash = { hash: tokenHash_hash, hashSlice: tokenHash_hashSlice };
 function tokenHash_hash(token, state, HHasher) {

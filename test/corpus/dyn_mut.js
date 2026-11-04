@@ -42,6 +42,9 @@ function i32Counter_get(self) {
   return self;
 }
 
+// A `&mut dyn Sub` as a `&mut dyn Counter` is a pair on the first's
+// `value`: found by probing, where the upcast wrote a copy.
+
 const i32Sub = { Counter: () => i32Counter, name: i32Sub_name };
 function i32Sub_name(self) {
   return `i${self}`;

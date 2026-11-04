@@ -163,6 +163,9 @@ function main() {
   drops();
 }
 
+// What it holds is dropped with the struct, once it's set; a refused `set`
+// gives its value back to drop.
+
 function drops() {
   const held = {
     name: "held",

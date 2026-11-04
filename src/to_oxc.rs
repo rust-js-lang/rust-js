@@ -788,7 +788,7 @@ fn comments_of(
         // A doc comment of an item with no JS, a `pub type`'s, is that
         // item's, which its declaration has, nowhere in the JS (ADR 0444,
         // amended).
-        let of_no_js = |c: &crate::program::Comment| starts::of_no_js(module, (&sources.text, file), c, commented_at);
+        let of_no_js = |c: &crate::program::Comment| starts::of_no_js(module, (&sources.text, file), c, &starts);
         let own_line: Vec<&crate::program::Comment> = (file.comments.iter())
             .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !of_no_js(c) && !of_module(c))
             .collect();

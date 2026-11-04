@@ -56,6 +56,8 @@ function scaled(values, K) {
   return values.map((v) => Math.imul(v, K) >>> 0);
 }
 
+// An impl's: its dictionary is given it, one for each value, `ringShow(2)`.
+
 const $ringShow = new Map();
 
 function ringShow(CAP) {
@@ -73,6 +75,8 @@ export function ringDisplay(CAP) {
 function ringDisplay_fmt(ring, CAP) {
   return `ring of ${Ring.capacity(ring, CAP)}`;
 }
+
+// Of two, a `Map` of `Map`s.
 
 const $gridShow = new Map();
 

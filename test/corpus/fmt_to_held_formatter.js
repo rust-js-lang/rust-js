@@ -6,6 +6,8 @@ export function entry() {
   main();
 }
 
+// anyhow's `Quoted`: a writer over a `Formatter` it holds.
+
 const $quotedWrite_writeStr = (arg0, arg1) => quotedWrite_writeStr(arg0.value, arg1);
 
 export const quotedWrite = {

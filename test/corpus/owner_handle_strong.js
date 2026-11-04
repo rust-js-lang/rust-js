@@ -6,6 +6,9 @@ export function entry() {
   main();
 }
 
+// What a root calls before it's returned, before its caller can set the
+// cell.
+
 function createContainer(name, callback, early) {
   const root = {
     name,

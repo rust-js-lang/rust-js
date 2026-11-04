@@ -144,8 +144,8 @@ pub struct Module {
     /// before the function, its doc too, and in it are before the
     /// declaration, a re-export's statement where its `use`'s are.
     pub taken_into: Vec<(Span, Span)>,
-    /// Each of its bindings' whole item, of no JS where written (rd752).
-    pub bindings: Vec<Span>,
+    /// Each binding's (`true`) and type's item, of no JS where written (#643).
+    pub unprinted: Vec<(Span, bool)>,
 }
 
 /// A module's item.

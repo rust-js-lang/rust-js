@@ -42,6 +42,9 @@ function shown(s, SSource, SItemDebug) {
     .join(", ")}]`;
 }
 
+// A bound the trait declares on it: the trait's dictionary has the
+// associated type's, as it has a supertrait's; a marker's, `Send`, has none.
+
 const countLabeled = { LabelDisplay: () => ({ fmt: String }), label: countLabeled_label };
 function countLabeled_label(count) {
   return count.n;

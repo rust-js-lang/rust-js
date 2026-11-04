@@ -140,11 +140,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "comment-across-code",
-    breaks: "a comment before code with no JS, a type's, is written before the next function",
+    breaks: "a comment before code that has no start of its own is written past it, at the next start, a match arm's at the arm after (since #643 a type's declaration is an item of no JS, and its doc comment nowhere, so the struct's case no longer holds it)",
     file: "src/to_oxc.rs",
     find: "                let only_starts = lets\n                    .iter()\n                    .all(|s| s.starts_with(\"let \") || type_alias(s) || use_item(s))\n                    && !rest.contains([';', '}'])\n                    && !openings::whole_arm(rest)\n                    && opens;\n",
     replace: "                let only_starts = true;\n",
-    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/lowering-comments.test.ts", "-t", "a match arm's comment of many lines is its value's, none lost"],
   },
   {
     name: "comment-first-printed-own",

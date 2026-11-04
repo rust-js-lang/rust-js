@@ -27,6 +27,9 @@ function eat(c, CConsume) {
   return CConsume.consume(c);
 }
 
+// With no dictionaries, the impl's own is made for each drop it's given,
+// or for none.
+
 const $wrapTake = new WeakMap();
 
 function wrapTake(dropT) {
@@ -47,6 +50,8 @@ function wrapTake_take(wrap, dropT) {
 function taken(c, CTake) {
   return CTake.take(c);
 }
+
+// Through a `&mut`, a method replaces what's there, and drops it.
 
 const $wrapReset = new WeakMap();
 

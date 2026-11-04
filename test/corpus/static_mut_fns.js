@@ -16,6 +16,8 @@ let CURRENT = double;
 export let HANDLER = { run: double, name: "double" };
 const TABLE = [double, square];
 
+// One whose value is changed in place, which a `static`'s couldn't be.
+
 let REGISTRY = { names: [], fallback: double };
 
 function main() {

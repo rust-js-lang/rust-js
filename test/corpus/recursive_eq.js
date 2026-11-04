@@ -43,6 +43,8 @@ function hirKindDebug_fmt(hirKind) {
   return `Capture { sub: ${hirDebug_fmt(hirKind.sub)}, name: ${hirKind.name == null ? "None" : `Some(${$debugStr(hirKind.name)})`} }`;
 }
 
+// One inside the other, each inside itself through the other.
+
 function class$(items) {
   return {
     kind: { TAG: "Class", _0: [items.slice()] },

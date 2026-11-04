@@ -28,6 +28,10 @@ function twice(f, n) {
   return f != null ? f(f(n)) : undefined;
 }
 
+// A trait's method is called through its dictionary, by callers no walk
+// sees, so its type parameters may be given anything: its `F`, bound by
+// `FnOnce`, is still the function.
+
 const plainRunner = { run: plainRunner_run };
 function plainRunner_run(plain, f) {
   if (f != null) {

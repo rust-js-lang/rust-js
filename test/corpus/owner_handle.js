@@ -18,6 +18,9 @@ function requestInstance(name, onAllReady, onShellReady) {
   };
 }
 
+// What a request completes before it's returned, before its caller can
+// set the cell.
+
 function createRequest(name, onAllReady, onShellReady, early) {
   const request = requestInstance(name, onAllReady, onShellReady);
   switch (early) {

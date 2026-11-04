@@ -37,6 +37,9 @@ function anyScaled_scaled(any, K) {
   return Math.imul(any[0], K) >>> 0;
 }
 
+// A const parameter and a type bound of a method's own, both given by its
+// caller through the dictionary.
+
 const dotsPad = { pad: dotsPad_pad };
 function dotsPad_pad(dots, value, N, TDisplay) {
   return ".".repeat(N) + TDisplay.fmt(value);

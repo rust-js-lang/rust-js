@@ -9,6 +9,9 @@ export function entry() {
   main();
 }
 
+// Of a type only a caller knows, the function of the function given its
+// dictionaries.
+
 function same(a, b, TPartialEq, TClone) {
   const cloneTree = (tree) =>
     tree.TAG === "Leaf"

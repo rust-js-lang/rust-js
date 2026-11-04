@@ -52,6 +52,14 @@ function count(x, XTakeT) {
   return n;
 }
 
+// Supertraits: one generic trait twice, each its own key in the dictionary,
+// `LabelU32` and `LabelString`, named as the trait declares them, so a
+// generic one's, `Pair<A, B>: Label<A> + Label<B>`, are `LabelA` and `LabelB`
+// for its impl and its caller alike; one with the trait's own parameter,
+// `Wrap<T>: Convert<T>`, just `Convert`; and a higher-ranked
+// one, `for<'a> Greet<&'a str>`, one dictionary, its lifetime erased. Found
+// by rustc's tests: the two keys collided, and the higher-ranked one crashed.
+
 const metersLabelU32 = { label: metersLabelU32_label };
 function metersLabelU32_label(meters) {
   return $f64ToInt(meters[0], 0, 4294967295);

@@ -446,3 +446,19 @@ pub(super) struct Commented {
     pub(super) arms: Vec<(js::Span, js::Span)>,
     pub(super) continues: Vec<js::Span>,
 }
+
+/// Where each of `module`'s type declarations is, the whole item: a struct,
+/// an enum, a union, a trait or a type alias, which writes no JS where it's
+/// written but where a statement of its own starts in it, a class's (#643).
+pub(super) fn declarations(tcx: TyCtxt<'_>, module: rustc_span::def_id::LocalModId) -> impl Iterator<Item = Span> + '_ {
+    use rustc_hir::def::DefKind;
+    (tcx.hir_module_free_items(module))
+        .map(|item| item.owner_id.def_id)
+        .filter(move |&id| {
+            matches!(
+                tcx.def_kind(id),
+                DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::Trait | DefKind::TyAlias
+            )
+        })
+        .map(move |id| tcx.source_span(id))
+}

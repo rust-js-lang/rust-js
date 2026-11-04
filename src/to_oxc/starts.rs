@@ -226,46 +226,48 @@ pub(super) fn declared_class(n: &js::Namespace) -> Option<(js::Span, js::Span)> 
 /// Whether `c` is a doc comment of an item with no JS where it's written,
 /// past the comments after it in `file`, which is that item's, its
 /// declaration's, nowhere in the JS: a type alias's (ADR 0444, amended), or
-/// a binding's, past its attributes, but one its import is placed at, in
-/// `placed` (`header::commented_at`), whose comments are that import's
-/// (rd752).
+/// a binding's or a type's, past its attributes, in which, or in whose
+/// attributes, none of `starts` is: a class's struct, a derive's impl, or a
+/// binding its import is placed at, whose start `header::commented_at`
+/// gives, its comments that import's (rd752, #643).
 pub(super) fn of_no_js(
     module: &Module,
     (text, file): (&str, &crate::program::Source),
     c: &crate::program::Comment,
-    placed: &header::Places,
+    starts: &[u32],
 ) -> bool {
     let mut after = c.hi as usize;
     loop {
         let skipped = after + (text[after..].len() - text[after..].trim_start().len());
         match file.comments.iter().find(|o| o.lo as usize == skipped) {
             Some(o) => after = o.hi as usize,
-            None => break c.doc && of_no_js_at(module, text, skipped, placed),
+            None => break c.doc && of_no_js_at(module, text, skipped, starts),
         }
     }
 }
 
 /// Whether what's at `at` in `text` is an item with no JS where it's
 /// written, `of_no_js`'s.
-fn of_no_js_at(module: &Module, text: &str, at: usize, placed: &header::Places) -> bool {
-    let bound = (module.bindings.iter())
-        .filter(|binding| binding.lo as usize >= at)
-        .min_by_key(|binding| binding.lo)
-        .is_some_and(|binding| {
-            let attributes = text[at..binding.lo as usize].trim();
+fn of_no_js_at(module: &Module, text: &str, at: usize, starts: &[u32]) -> bool {
+    let bound = (module.unprinted.iter().map(|&(item, _)| item))
+        .filter(|item| item.lo as usize >= at)
+        .min_by_key(|item| item.lo)
+        .is_some_and(|item| {
+            let attributes = text[at..item.lo as usize].trim();
             (attributes.is_empty() || attributes.starts_with("#["))
                 && !attributes.contains(['{', '}', ';'])
-                && !placed.contains_key(&binding.lo)
+                && !starts.iter().any(|&start| at as u32 <= start && start < item.hi)
         });
     openings::type_alias(&text[at..]) || bound
 }
 
 /// `between`, the text from `lo` to `hi`, with each binding's declaration
-/// in it blanked, an item with no JS of its own where it's written, as a
-/// type alias is: what's above it is before the next that has (rd752).
+/// and each type's in it blanked, an item with no JS of its own where it's
+/// written, as a type alias is: what's above it is before the next that has
+/// (rd752, #643).
 pub(super) fn past_bindings(module: &Module, between: &mut String, (lo, hi): (u32, u32)) {
-    for binding in (module.bindings.iter()).filter(|binding| binding.lo >= lo && binding.hi <= hi) {
-        let (from, to) = ((binding.lo - lo) as usize, (binding.hi - lo) as usize);
+    for &(item, _) in (module.unprinted.iter()).filter(|(item, _)| item.lo >= lo && item.hi <= hi) {
+        let (from, to) = ((item.lo - lo) as usize, (item.hi - lo) as usize);
         between.replace_range(from..to, &" ".repeat(to - from));
     }
 }
@@ -276,5 +278,5 @@ pub(super) fn past_bindings(module: &Module, between: &mut String, (lo, hi): (u3
 /// they're before, as ReactDOMRootFB writes `// Provided by www` right
 /// above its `const` (#634, rd752).
 pub(super) fn bound_between(module: &Module, (lo, hi): (u32, u32)) -> bool {
-    (module.bindings.iter()).any(|binding| binding.lo >= lo && binding.hi <= hi)
+    (module.unprinted.iter()).any(|&(binding, bound)| bound && binding.lo >= lo && binding.hi <= hi)
 }
