@@ -78,7 +78,7 @@ every variant of a read case logs the same reads of what JS made.**
   (`TIDY_STAGES=programs`, `FUZZ_START`, `FUZZ_SEEDS`): one that differs is
   reduced, as `fuzz.test.ts` reduces one, to the smallest program the same
   variant still gets wrong, `target/fuzz/seed-<n>.stages.rs`. Unset, it
-  runs nine corpus cases.
+  runs ten corpus cases.
 - **The read oracle, `test/getter-reads.test.ts`**, of read cases,
   `test/getter-reads/<name>.rs`: libraries of the js crate's bindings, each
   `//@ call: <export> <JSON arguments>` a call of what it exports.
@@ -99,7 +99,7 @@ every variant of a read case logs the same reads of what JS made.**
   generated programs at every variant (`programs`, six machines of a
   hundred); the read cases in the nightly's suite (`nightly` in
   `scripts/shard.ts`). Per push, only where tidy, preparation or the
-  oracles change (`readability-passes.yml`): the nine cases, the read
+  oracles change (`readability-passes.yml`): the ten cases, the read
   cases and the first six seeds; and `check:fast` runs the first two when
   tidy or preparation changed (the user's rule for a new net, 2026-11-02:
   nightly in full, per push only a cheap, path-filtered sample).
@@ -110,8 +110,10 @@ every prepare variant and the least, and 60 generated programs (seeds
 case's least variant throws, `value_cell_set_after_its_call.rs`: a value
 cell's rewrite leaves `const _10 = [_11, _14$1];` of the clones it took
 away, which a later stage, or preparation's `unread constants`, removes
-(#641). It's listed in the test's `leastDiffers`, a list that only
-shrinks.
+(#641). It was listed in the test's `leastDiffers`, a list that only
+shrinks, until a tuple of the clones went with them ([ADR 0317,
+amended](0317-once-cells.md#amendment-a-tuple-of-a-value-cells-clones-641));
+the list is empty, and the case is one of the few the suite runs.
 
 ## Consequences
 

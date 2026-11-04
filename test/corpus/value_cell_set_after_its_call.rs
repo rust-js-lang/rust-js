@@ -4,7 +4,9 @@
 // variable of the maker's, read after the cell is set, so none can read it
 // before, and the cell is the variable the call's value is given to,
 // which each reads (ADR 0317, amended). The executor may call what it's
-// given at once, `settle`, which is no reader.
+// given at once, `settle`, which is no reader. A tuple of the clones alone
+// goes with them; one of a clone beside what isn't, as Flight's `(chunk,
+// resolved)`, holds `undefined` in the clone's place (#641).
 
 use std::cell::Cell;
 use std::rc::Rc;
@@ -37,6 +39,26 @@ fn wrap(name: &'static str) -> &'static str {
     handle
 }
 
+// A clone of the cell beside a clone of what isn't, as Flight's `let
+// (chunk, resolved) = (Rc::clone(self), Rc::clone(&wrapper))`.
+fn mixed(name: &'static str, count: Rc<Cell<u32>>) -> &'static str {
+    let mut resolve: Option<Rc<dyn Fn(u32)>> = None;
+    let wrapper: Rc<Cell<Option<&'static str>>> = Rc::default();
+    let handle = make(name, |settle| {
+        settle("mixed");
+        let (counted, resolved) = (Rc::clone(&count), Rc::clone(&wrapper));
+        resolve = Some(Rc::new(move |n| {
+            counted.set(counted.get() + n);
+            println!("{} resolved with {n}", resolved.get().unwrap());
+        }));
+    });
+    wrapper.set(Some(handle));
+    if let Some(resolve) = resolve {
+        resolve(3);
+    }
+    handle
+}
+
 // Its only read after, where it's given back: still its variable, which
 // the reader reads.
 fn returned(name: &'static str) -> (&'static str, Option<Rc<dyn Fn()>>) {
@@ -52,6 +74,8 @@ fn returned(name: &'static str) -> (&'static str, Option<Rc<dyn Fn()>>) {
 
 fn main() {
     println!("{}", wrap("a"));
+    let count = Rc::new(Cell::new(4));
+    println!("{} {}", mixed("c", Rc::clone(&count)), count.get());
     let (handle, kept) = returned("b");
     println!("{handle}");
     if let Some(kept) = kept {

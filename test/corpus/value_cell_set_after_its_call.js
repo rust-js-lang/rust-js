@@ -32,6 +32,23 @@ function wrap(name) {
   return handle;
 }
 
+// A clone of the cell beside a clone of what isn't, as Flight's `let
+// (chunk, resolved) = (Rc::clone(self), Rc::clone(&wrapper))`.
+function mixed(name, count) {
+  let resolve;
+  const handle = make(name, (settle) => {
+    settle("mixed");
+    resolve = (n) => {
+      count.value = (count.value + n) >>> 0;
+      console.log(`${handle} resolved with ${n}`);
+    };
+  });
+  if (resolve != null) {
+    resolve(3);
+  }
+  return handle;
+}
+
 // Its only read after, where it's given back: still its variable, which
 // the reader reads.
 function returned(name) {
@@ -46,6 +63,8 @@ function returned(name) {
 
 function main() {
   console.log(`${wrap("a")}`);
+  const count = { value: 4 };
+  console.log(`${mixed("c", count)} ${count.value}`);
   const [handle, kept] = returned("b");
   console.log(`${handle}`);
   if (kept != null) {

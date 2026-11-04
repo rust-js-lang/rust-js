@@ -782,4 +782,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^call_argument_comments_across_lines.rs$"],
     snapshots: true,
   },
+  {
+    name: "tuple-field-of-no-value-read",
+    breaks:
+      "a tuple's field of no value, a value cell's clone no JS makes, is read, `[count, _14$1]`, a temporary nothing declares (#641)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                && matches!(operand, Operand::Move(p) if p.projection.is_empty() && state.facts.unwritten(p.local))\n",
+    replace: "                && matches!(operand, Operand::Move(p) if p.projection.is_empty() && state.facts.unwritten(p.local) && false)\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "^value_cell_set_after_its_call after"],
+  },
 ];

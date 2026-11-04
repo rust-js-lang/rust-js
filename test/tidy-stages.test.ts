@@ -49,6 +49,10 @@ const few = [
   "escape_iterators.rs",
   "interpreter.rs",
   "labeled_blocks.rs",
+  // A value cell's clones, no JS, in a tuple: of them alone, none; beside
+  // what isn't one, `undefined` in their place, never an undeclared
+  // temporary's read (#641).
+  "value_cell_set_after_its_call.rs",
 ];
 const which = process.env.TIDY_STAGES;
 if (which !== undefined && which !== "corpus" && which !== "programs") {
@@ -108,12 +112,7 @@ function variants(fired: string[]): Variant[] {
 // The cases whose least variant doesn't run as native Rust does, each
 // with its issue: a list that only shrinks. Each case's JS as built is
 // right; its least variant runs what a later pass takes away.
-const leastDiffers: Record<string, string> = {
-  // A value cell's rewrite leaves a dead tuple of the clones it took away,
-  // `const _10 = [_11, _14$1];`, which tidy's later stages, and
-  // preparation's `unread constants`, remove (#641).
-  "value_cell_set_after_its_call.rs": "#641",
-};
+const leastDiffers: Record<string, string> = {};
 
 /** A compile's JS, its map's line left out: what's run, and kept by. */
 const code = (js: string) => readFileSync(js, "utf8").replace(/^\/\/# sourceMappingURL=.*$/m, "");

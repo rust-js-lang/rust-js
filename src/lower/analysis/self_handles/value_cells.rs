@@ -247,7 +247,7 @@ pub(super) fn value_made<'tcx>(
         matches!(uses.def(lent).and_then(|at| assign_at(body, at)),
             Some((_, Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, p))) if p.projection.is_empty())
     };
-    let (clones, readers) = made_in(tcx, of.get(&executor)?, capture, &lends_local)?;
+    let (clones, unwritten, readers) = made_in(tcx, of.get(&executor)?, capture, &lends_local)?;
     // Nothing runs between the call and the cell's setting but its steps,
     // so no reader can read it before; nor is it set again.
     let TerminatorKind::Call {
@@ -283,6 +283,7 @@ pub(super) fn value_made<'tcx>(
         upgrades: Vec::new(),
         called: None,
         unwrapped: Vec::new(),
+        unwritten: unwritten.into_iter().map(|local| (executor, local)).collect(),
     })
 }
 
@@ -290,13 +291,17 @@ pub(super) fn value_made<'tcx>(
 /// clones of it, no JS, and each reader it makes of one, with which of its
 /// captures that is, each moved, as it is, in an `Rc` or a `Some`, into
 /// the place one of its captures, a `&mut` of its maker's local
-/// (`lends_local`), lends, and nothing else of that capture used.
+/// (`lends_local`), lends, and nothing else of that capture used. A tuple
+/// of clones alone, `(Rc::clone(&wrapper), Rc::clone(&wrapper))`, is no JS
+/// with them; of one beside what isn't, `(Rc::clone(self),
+/// Rc::clone(&wrapper))`, each clone it holds is a local of no value, the
+/// tuple's `undefined` there, as no JS reads it (#641).
 fn made_in<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &mir::Body<'tcx>,
     capture: usize,
     lends_local: &dyn Fn(usize) -> bool,
-) -> Option<(HashSet<Location>, Readers)> {
+) -> Option<(HashSet<Location>, HashSet<Local>, Readers)> {
     let env = Local::from_usize(1);
     let uses = Uses::of(body);
     // A capture's field, and what's past it.
@@ -334,8 +339,10 @@ fn made_in<'tcx>(
             }
         }
     }
-    // Each clone, captured by one reader.
+    // Each clone, captured by one reader; and each tuple holding one, how
+    // many fields it has, and the clones it holds.
     let mut made: Vec<(DefId, usize, Local)> = Vec::new();
+    let mut tuples: HashMap<Location, (usize, Vec<Local>)> = HashMap::new();
     let mut i = 0;
     while i < lent.len() {
         let borrow = lent[i];
@@ -390,6 +397,7 @@ fn made_in<'tcx>(
                 match **kind {
                     AggregateKind::Closure(reader, _) => captured = Some((reader, index, place.local)),
                     AggregateKind::Tuple => {
+                        tuples.entry(at).or_insert((fields.len(), Vec::new())).1.push(held);
                         let tuple = place.local;
                         let mut out = None;
                         for &at in uses.uses(tuple) {
@@ -484,8 +492,18 @@ fn made_in<'tcx>(
             return None;
         }
     }
+    let mut unwritten = HashSet::new();
+    for (at, (fields, held)) in tuples {
+        match held.len() == fields {
+            true => {
+                clones.insert(at);
+            }
+            false => unwritten.extend(held),
+        }
+    }
     Some((
         clones,
+        unwritten,
         made.into_iter().map(|(reader, index, _)| (reader, index)).collect(),
     ))
 }

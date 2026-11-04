@@ -55,6 +55,33 @@ export const mutations: Mutation[] = [
     tests: guards,
   },
   {
+    name: "value-cell-tuple-of-clones-kept",
+    breaks:
+      "a tuple of a value cell's clones alone stays when they go, `const _10 = [_11, _14$1];`, reading temporaries nothing declares, which throws where tidy stops after its first stage (#641)",
+    file,
+    find: "            true => {\n                clones.insert(at);\n            }\n",
+    replace: "            true => {}\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "^value_cell_set_after_its_call after"],
+  },
+  {
+    name: "value-cell-tuple-field-read",
+    breaks:
+      "a tuple of a value cell's clone beside what isn't one reads the clone, which no JS declares, `[count, _14$1]`, a `ReferenceError` where tidy stops after its first stage (#641)",
+    file,
+    find: "            false => unwritten.extend(held),\n",
+    replace: "            false => {}\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "^value_cell_set_after_its_call after"],
+  },
+  {
+    name: "value-cell-tuple-beside-dropped",
+    breaks:
+      "a tuple of a value cell's clone beside what isn't one goes with the clone, so what it holds besides, `counted`, is read of a tuple nothing declares (#641)",
+    file,
+    find: "        match held.len() == fields {\n",
+    replace: "        match held.len() <= fields {\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "^value_cell_set_after_its_call after"],
+  },
+  {
     name: "value-cell-variable-changed",
     breaks:
       "a cell whose variable is changed through a `&mut` after the set is its variable all the same, so the reader reads `changed`, where Rust's cell holds what was set",

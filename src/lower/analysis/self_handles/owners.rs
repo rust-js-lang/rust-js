@@ -78,6 +78,9 @@ pub(crate) struct OwnerHandle<'tcx> {
     /// Of each closure, each read whose `unwrap` of the upgrade is the
     /// variable where none runs before the cell is set (`direct`).
     pub(super) unwrapped: Vec<(DefId, Unwrapped)>,
+    /// Of a value cell's executor, each clone of it a tuple holds beside
+    /// what isn't one: a local of no value (`value_cells`, #641).
+    pub(super) unwritten: Vec<(DefId, Local)>,
 }
 
 /// A closure's `unwrap` of its owner's upgrade, `cell.get().and_then(
@@ -402,6 +405,7 @@ pub(super) fn owner_made<'tcx>(
         upgrades,
         called,
         unwrapped,
+        unwritten: Vec::new(),
     })
 }
 

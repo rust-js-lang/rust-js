@@ -76,6 +76,9 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// namespace only the calls that name it read, which leave their `self`
     /// out (`classes::unread_namespaces`, rd310).
     unlowered: HashSet<mir::Location>,
+    /// The locals of no value, clones of a value cell a tuple holds beside
+    /// what isn't one, the tuple's `undefined` there (`self_handles`, #641).
+    unwritten: HashSet<Local>,
     /// Of a closure that reads its handle on itself: each block whose
     /// `unwrap` gives its own `Rc`, the local it gives it to, and its own
     /// name, which that local is; of one that reads its owner's, each
@@ -248,6 +251,11 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
         self.unlowered.contains(&at)
     }
 
+    /// Whether `local` is of no value, which a tuple holds as `undefined`.
+    pub(super) fn unwritten(&self, local: Local) -> bool {
+        self.unwritten.contains(&local)
+    }
+
     /// Of a block whose call gives the closure's own `Rc`, the local it's
     /// given to and the closure's own name; or its owner's, and the
     /// variable that is.
@@ -416,6 +424,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             captures,
             quiet_cells: self.mir_quiet_cells(body, &mir.promoted),
             unlowered,
+            unwritten: handles.unwritten(def_id),
             own,
             declares: handles.declared(def_id),
             wholes: self.mir_wholes((body, &mir.promoted), locals),

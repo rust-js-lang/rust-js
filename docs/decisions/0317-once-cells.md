@@ -71,6 +71,7 @@ setting it must check it's unset.**
 - [Below](#amendment-a-callback-a-public-field-holds-isnt-the-returns-alone-rd553): A callback a public field holds isn't the return's alone (rd553)
 - [Below](#amendment-callbacks-made-in-an-executor-read-its-calls-value-rd621): Callbacks made in an executor read its call's value (rd621)
 - [Below](#amendment-a-cell-of-the-calls-rc-itself-is-its-let-577): A cell of the call's `Rc` itself is its `let` (#577)
+- [Below](#amendment-a-tuple-of-a-value-cells-clones-641): A tuple of a value cell's clones (#641)
 
 ## Amendment: callbacks' handle on what owns them is its `let`
 
@@ -681,3 +682,29 @@ one, never reached again, and the closures only read.
   `owner-handle-strong-traced` and `owner-handle-strong-owned`
   (`self_handles/owners.rs`).
 
+## Amendment: a tuple of a value cell's clones (#641)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. A value cell's
+clones are no JS, but a tuple that held them, `let (resolved, rejected) =
+(Rc::clone(&wrapper), Rc::clone(&wrapper))`, was written, `const _10 =
+[_11, _14$1];`, reading temporaries nothing declares. Tidy's later
+stages, and preparation's `unread constants`, took it away, so no build's
+JS was wrong; but stopped after tidy's first stage, the closure threw a
+`ReferenceError` (found by ADR 1086's least variant). Flight's own,
+`(Rc::clone(self), Rc::clone(&wrapper))`, holds a clone of what isn't the
+cell beside, which a later field's read needs, `[chunk, _14$1]`.
+
+Now `value_cells::made_in` says each tuple's: one of the cell's clones
+alone is no JS with them; one of a clone beside what isn't writes
+`undefined` in the clone's place, `[count, undefined]`, as each clone it
+holds is a local of no value (`SelfHandles::unwritten`, read by
+`LocalFacts::unwritten` where `mir_aggregate` writes a tuple). Its field
+is moved out only into what's no JS, so nothing reads the `undefined`.
+The finished JS is unchanged.
+
+Held by corpus `value_cell_set_after_its_call` (`wrap`, and `mixed`,
+Flight's shape), in `test/tidy-stages.test.ts`'s few cases, whose
+`leastDiffers` list is empty now; mutations
+`value-cell-tuple-of-clones-kept`, `value-cell-tuple-field-read`,
+`value-cell-tuple-beside-dropped` (`self_handles/value_cells.ts`) and
+`tuple-field-of-no-value-read` (`mir/rvalues.ts`).

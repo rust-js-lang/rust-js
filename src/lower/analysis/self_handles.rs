@@ -246,6 +246,16 @@ impl<'tcx> SelfHandles<'tcx> {
             .collect()
     }
 
+    /// The locals of `body` of no value, which a tuple holds where the
+    /// clone of a value cell it's given is no JS (`value_cells`, #641).
+    pub(crate) fn unwritten(&self, body: DefId) -> HashSet<Local> {
+        (self.owners.iter())
+            .flat_map(|o| &o.unwritten)
+            .filter(|&&(of, _)| of == body)
+            .map(|&(_, local)| local)
+            .collect()
+    }
+
     /// What `body` writes nothing of: its handles' cells' making and
     /// setting, and its reads of its own.
     pub(crate) fn unlowered(&self, body: DefId) -> HashSet<Location> {

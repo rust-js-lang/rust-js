@@ -874,10 +874,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => None,
         };
+        // A tuple's field of no value, a value cell's clone no JS makes,
+        // `undefined` (#641).
+        let unwritten = |operand: &Operand<'tcx>| {
+            matches!(kind, AggregateKind::Tuple)
+                && matches!(operand, Operand::Move(p) if p.projection.is_empty() && state.facts.unwritten(p.local))
+        };
         let declared: Vec<usize> = (0..operands.len()).collect();
-        let read: &[usize] = order.as_deref().unwrap_or(&declared);
+        let read: Vec<usize> = (order.as_deref().unwrap_or(&declared).iter().copied())
+            .filter(|&i| !unwritten(&operands[FieldIdx::from_usize(i)]))
+            .collect();
         let in_order: Vec<&Operand<'tcx>> = read.iter().map(|&i| &operands[FieldIdx::from_usize(i)]).collect();
-        let mut taken: Vec<Option<Value<'tcx>>> = (0..operands.len()).map(|_| None).collect();
+        let mut taken: Vec<Option<Value<'tcx>>> = (operands.iter())
+            .map(|operand| unwritten(operand).then(|| Value::Expr(Expr::undefined())))
+            .collect();
         for (&i, value) in read.iter().zip(self.take_operands(state, &in_order, out)?) {
             taken[i] = Some(value);
         }
