@@ -1175,9 +1175,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // std's own iterator, of whatever items, `option::IntoIter<I::Item>`.
         let std_iterator = matches!(output.kind(), ty::Adt(adt, _) if crate::lower::recognition::is_std_crate(self.tcx, adt.did()))
             && self.iterator_item(output).is_some();
+        // A `&mut` std gives to an iterator in a place, `&mut items[1]` of a
+        // `Vec<Range<i32>>`'s, is what `mut_ref_form` says: the place, not a JS
+        // iterator of it, which `r.next()` would step apart from the item
+        // (#638); of one that's the value itself, a std iterator's, that value.
+        let lent_place = matches!(*output.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if !self.mut_ref_form(inner).is_the_value());
         match value {
             Value::Expr(e)
                 if (self.implements_iterator(output) || std_iterator)
+                    && !lent_place
                     && !matches!(output.kind(), ty::Param(_))
                     && !output.is_box()
                     && self.range_kind(output).is_none()

@@ -60,6 +60,21 @@ impl MutRefForm {
         }
     }
 
+    /// The `&mut` is the value it points at, changed only by calling or
+    /// stepping it: a JS function or a JS iterator, which what's given one
+    /// may make one of; of any other form the place, never a new value made
+    /// of it (#638).
+    pub(in crate::lower) fn is_the_value(self) -> bool {
+        match self {
+            MutRefForm::Itself => true,
+            MutRefForm::Box
+            | MutRefForm::GenericBox
+            | MutRefForm::Object
+            | MutRefForm::Guard
+            | MutRefForm::GivenAsItIs => false,
+        }
+    }
+
     /// A write of the whole through the `&mut` changes what it points at in
     /// place, `$assign`: the one answer of `*r = v` and of `mem::replace`
     /// and the like, `$take` (ADRs 0147, 0411, 0553).

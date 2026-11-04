@@ -35,8 +35,6 @@ const wrong: Record<string, string> = {
   // What's moved out of a flattened state lent through its guard is the
   // class itself: `replace`, `take`, `swap` and `Cell::from_mut(..).replace`.
   flattened_state__field: "#636",
-  // A `&mut` to a `Range` that's a `Vec`'s item is a new JS iterator of it.
-  iterator__item: "#638",
 };
 
 test("the sample, the refusals and the wrong answers are the matrix's programs", () => {

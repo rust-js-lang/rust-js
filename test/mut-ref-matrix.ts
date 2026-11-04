@@ -356,12 +356,14 @@ fn main() {
 
 /** What each push runs of the matrix, where its owner changes: the forms
  * that meet most, a box, a generic box, an object and a flattened state's
- * box, each held where #614's family went wrong. */
+ * box, each held where #614's family went wrong; and each the matrix found
+ * wrong, its fix's regression test (#638). */
 export const sample = [
   "number__generic_fn",
   "struct__closure_capture",
   "enum_with_unit__result_payload",
   "flattened_state__field",
   "iterator__parameter",
+  "iterator__item",
   "vec__trait_default",
 ];

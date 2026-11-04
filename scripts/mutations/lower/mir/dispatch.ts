@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "lent-iterator-place-made-a-js-iterator",
+    breaks:
+      "a `&mut` to a `Range` that's a `Vec`'s item, `&mut items[1]`, is a new JS iterator of it, `Iterator.from($index(items, 1))`, which `r.next()` steps apart from the item (#638)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "                    && !lent_place\n",
+    replace: "",
+    tests: ["test/mut-ref-matrix.test.ts", "-t", "of iterator, held as item"],
+  },
+  {
     name: "nested-flatten-unread",
     breaks: "`flatten()` of a nested field is `$someValue(..)` of its box, not `entry.value` (#470)",
     file: "src/lower/mir/dispatch.rs",

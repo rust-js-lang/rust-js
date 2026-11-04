@@ -1,6 +1,6 @@
 # 1086. A `&mut`'s JS form is `MutRefForm`'s
 
-Status: Accepted (2026-11-04, steps 1 and 2 of 3). Amends
+Status: Accepted (2026-11-04, steps 1 and 2 of 3; step 3 begun). Amends
 [0099](0099-mut-references.md) and [0454](0454-a-mut-given-as-a-type-parameter.md):
 what a `&mut` to a type is, a box, a generic code's box, the object, a
 guard's object, a value given as it is or the value itself, is one answer,
@@ -144,7 +144,7 @@ every operation (changed in place, a whole write, a field write,
 `mem::replace`, `take` and `swap`, `Cell::from_mut(..).replace`, and a panic
 after the write, caught). The type parameter is each generic holder's
 pointee, instantiated with each of the others. `test/mut-ref-matrix.test.ts`
-runs each beside native Rust: six in the nightly's suite and in `check:fast`
+runs each beside native Rust: seven in the nightly's suite and in `check:fast`
 where a `&mut`'s form or an operation on one changes, all 72 in the
 nightly's `mut-refs` job. What it refuses is listed in `refused`, and what
 it gets wrong in `wrong` by its issue, each list only shrinking; an
@@ -157,3 +157,19 @@ itself; #638, a `&mut` to a `Range` that's a `Vec`'s item is a new JS
 iterator of it, `Iterator.from($index(items, 1))`; and #639, `Default` of a
 `Range` refused (P2), since lifted (c47767a32), so the iterator's programs
 take one too. The other 70 run as native Rust does.
+
+## Step 3, begun: the matrix's wrong answers (2026-11-04)
+
+- **#638, a `&mut` std gives to an iterator in a place is that place.**
+  `std_value_as` (`mir/dispatch.rs`) made a JS iterator,
+  `Iterator.from(..)`, of any std call's value whose type implements
+  `Iterator`, and a `&mut I` does: `&mut items[1]` of a
+  `Vec<Range<i32>>` was a new iterator of the item, which `r.next()`,
+  `mem::replace` and `swap` changed apart from it. It asks the form now:
+  a `&mut` is made a JS iterator only where it's the value itself,
+  `MutRefForm::Itself` (`is_the_value`, which matches every form), a std
+  iterator's; of a range, `Object`, it's the place, as a `&mut` to one
+  held any other way already was. Case (ADR 0262): results change, so
+  Rust's. Mutation `lent-iterator-place-made-a-js-iterator`
+  (`mir/dispatch.ts`), caught by the matrix's `iterator__item`, now in
+  its sample.
