@@ -802,8 +802,38 @@ pub fn changed(mut previous: u32) -> u32 {
     previous += 1;
     work(previous)
 }
+
+// Its binding read twice, so held: the copy of the field it reads as
+// is that variable, never a const of itself, which throws.
+struct RestoreTwice {
+    prototype: u32,
+    prev_props: Option<u32>,
+}
+
+impl Drop for RestoreTwice {
+    fn drop(&mut self) {
+        match self.prev_props {
+            Some(prev_props) => {
+                define(self.prototype, prev_props);
+                define(self.prototype, prev_props + 1);
+            }
+            None => delete(self.prototype),
+        }
+    }
+}
+
+pub fn props_twice(prototype: u32) -> u32 {
+    let prev_props = if prototype > 5 { Some(prototype * 2) } else { None };
+    let _restore_twice = RestoreTwice {
+        prototype,
+        prev_props,
+    };
+    work(prototype)
+}
 `);
   expect(js).not.toContain("_restoreProps");
+  expect(js).not.toContain("const prevProps = prevProps");
+  expect(js).toContain("      globalThis.define(prototype, prevProps);\n      globalThis.define(prototype, (prevProps + 1) >>> 0);\n");
   expect(js).toContain(`  try {
     const lines = globalThis.lines();
     for (let s = 0; s < lines.length; s++) {
@@ -841,6 +871,7 @@ pub fn changed(mut previous: u32) -> u32 {
   expect(() => lib.props(9)).toThrow("nine");
   expect(lib.changed(3)).toBe(44);
   expect(lib.doubled(5)).toBe(45);
+  expect(lib.propsTwice(7)).toBe(47);
   expect(calls).toEqual([
     ["restored", 40, 41],
     ["restored", 40, undefined],
@@ -849,6 +880,8 @@ pub fn changed(mut previous: u32) -> u32 {
     ["define", 9, 18],
     ["restored", 3, 3],
     ["restored", 10, undefined],
+    ["define", 7, 14],
+    ["define", 7, 15],
   ]);
   for (const name of ["work", "lines", "restored", "define", "del"]) delete g[name];
 });
