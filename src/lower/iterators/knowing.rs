@@ -2,6 +2,7 @@
 //! steps a std or a user iterator's struct takes.
 
 use super::*;
+use crate::lower::recognition::{OwnStep, Reach};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`'s reversal, a `rev()` made in place of `source` (ADR 0987).
@@ -1185,11 +1186,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // And its `rfold` and `nth_back`, std's compiled ones: its `rfold`
             // where it reaches the `rfold` of the crate's own, which std passes
-            // on, as a `Fuse` does (#224, `rfolds_its_own`); of another, the
+            // on, as a `Fuse` does (#224, `reaches_its_own`); of another, the
             // same as by `next_back`.
             let double_ended = self.recognition().double_ended_iterator();
             let rfold = match double_ended {
-                Some(back) if self.recognition().rfolds_its_own(ty) => self.compiled_fold(ty, (back, "rfold"), span)?,
+                Some(back) if self.recognition().reaches_its_own(ty, OwnStep::Rfold, Reach::Sure) => {
+                    self.compiled_fold(ty, (back, "rfold"), span)?
+                }
                 _ => None,
             };
             let nth_back = match double_ended {

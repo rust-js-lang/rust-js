@@ -4,6 +4,7 @@
 //! by `next` drops each in turn (#234, #668, #670).
 
 use super::*;
+use crate::lower::recognition::OwnStep;
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Whether `ty`'s `nth` drops what it passes over as one slice: a `Rev`
@@ -66,15 +67,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(reversed) = self.reversed_source(ty) {
             return self.nth_back_rfolded_sources(reversed);
         }
-        (self.folded_sources(ty))
-            .flat_map(|source| self.nth_back_folded_sources(source))
+        (self.asked_sources(ty, OwnStep::Fold).into_iter())
+            .filter(|&(_, asked)| asked == OwnStep::Fold)
+            .flat_map(|(source, _)| self.nth_back_folded_sources(source))
             .collect()
     }
 
     /// What std's `rfold` of a `ty`, a double-ended iterator, asks an
     /// `nth_back` of: a `take`'s source, past what it won't give; and those
-    /// of each adapter's whose `rfold` is its source's, as `rfolds_its_own`
-    /// follows them.
+    /// of each adapter's whose `rfold` is its source's.
     fn nth_back_rfolded_sources(&self, ty: Ty<'tcx>) -> Vec<Ty<'tcx>> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, args) = ty.kind() else {

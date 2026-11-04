@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`last()` of std's struct, a zip's, steps it by `next()`, not by its `fold` as std's default `last` does: its closure runs once more (#380)",
     file: "src/lower/mir/iter/closing.rs",
-    find: "|| self.compiled_struct_at(iter_ty, span) || unwinds_holding)",
-    replace: "|| false && self.compiled_struct_at(iter_ty, span) || unwinds_holding)",
+    find: "                || self.compiled_struct_at(iter_ty, span)\n                || unwinds_holding)\n",
+    replace: "                || false && self.compiled_struct_at(iter_ty, span)\n                || unwinds_holding)\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_fold_steps_the_shorter.rs$"],
   },
   {
@@ -264,8 +264,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`last()` of items with a destructor through a `chain` of the crate's iterators with their own `last` is the chain's own `last`, which drops neither side's `a` where `b` has one (#494)",
     file: "src/lower/mir/iter/closing.rs",
-    find: "        if drops_none\n            && (self.recognition().lasts_its_own(iter_ty) || self.compiled_struct_at(iter_ty, span) || unwinds_holding)\n",
-    replace: "        if self.recognition().lasts_its_own(iter_ty)\n            || drops_none && (self.compiled_struct_at(iter_ty, span) || unwinds_holding)\n",
+    find: "        if drops_none\n            && (self.recognition().reaches_its_own(iter_ty, OwnStep::Last, Reach::Sure)\n                || self.compiled_struct_at(iter_ty, span)\n                || unwinds_holding)\n",
+    replace: "        if self.recognition().reaches_its_own(iter_ty, OwnStep::Last, Reach::Sure)\n            || drops_none && (self.compiled_struct_at(iter_ty, span) || unwinds_holding)\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
   },
   {

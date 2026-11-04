@@ -150,3 +150,42 @@ Corpus cases: `rfold_and_rev_close_what_they_step.rs`,
 `enumerate-own-count-unsaid` and `closing-count-drop-unpassed` (runtime).
 `hidden-stage-unseen` and `callbacks-uncounted` are gone with the JS count
 they guarded; a hidden stage is the type's, `fold-stage-by-type-unseen`'s.
+
+## Amendment: which own step an adapter reaches is one catalog's (2026-11-04)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The JS is the same
+byte for byte.
+
+`folds_its_own`, `rfolds_its_own`, `try_rfolds_its_own`, `nths_its_own`,
+`nth_backs_its_own`, `lasts_its_own`, `counts_its_own` and
+`may_fold_its_own` are gone. Each kept its own list of std's adapters and
+its own answer for a type parameter and a `&mut`. They're now one query,
+`reaches_its_own(ty, step, reach)` (`recognition/own_steps.rs`), over one
+enum, `OwnStep`:
+
+- `OwnStep::asked_of(adapter)` is std's table of what each adapter asks of
+  what it holds as it takes each step: each source, and the step it asks.
+- `through_a_mut_ref` says which steps std's `&mut I` passes on: `nth` and
+  `nth_back`.
+- `Reach` is a type parameter's answer. `Sure` says no but of the steps
+  whose helper asks the iterator itself, `nth`, `last` and `count`; `May`
+  says yes.
+
+The table is the old predicates' answers, with one addition: a
+`peekable()`'s `rfold`, its source's. `test/architecture.test.ts` ("which
+own step an adapter reaches is the OwnStep catalog's alone") rejects a
+per-step predicate. The 37 mutations of the old predicates mutate the
+catalog's entries, each as it meant.
+
+Left for later:
+
+- **#649.** A peekable or fuse of a type parameter, reversed, reaches its
+  own `rfold` only where `$knowing` is given the compiled `rfold`, `May`'s
+  answer. But the compiled body then drops the parameter again where its
+  dictionary has no `rfold`
+  (`if (IDoubleEndedIterator.rfold === undefined) dropI(iter)`), and
+  generic code's dictionary can't know. The fix is a runtime answer of
+  whether a dictionary's step took the iterator: the value's `ownRfold`
+  where the entry is std's helper. It changes `@rust-js/std`'s compiled
+  bodies.
+- **`$iterator`'s options object, and the JS step table `$given` reads.**

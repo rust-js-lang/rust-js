@@ -2,6 +2,7 @@
 //! source keeps of its back.
 
 use super::*;
+use crate::lower::recognition::{OwnStep, Reach};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `rev()` of what holds what has a destructor, closed to drop it:
@@ -208,12 +209,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(IterMethod::Enumerate)
                 if self.knows_its_back(output)
                     || self.knows_its_length(output)
-                    || self.recognition().nths_its_own(output)
+                    || self.recognition().reaches_its_own(output, OwnStep::Nth, Reach::Sure)
                     // Or one whose `nth` drops what it passes as one slice,
                     // a reversed `Vec`'s, its source's (#277); or whose
                     // `count` is the crate's own, its source's (#505).
                     || self.recognition().nths_a_slice(output)
-                    || self.recognition().counts_its_own(output) =>
+                    || self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure) =>
             {
                 // Of the crate's, what it can be made to know.
                 let back = self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);

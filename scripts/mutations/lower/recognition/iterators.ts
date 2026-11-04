@@ -577,24 +577,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^chunks_from_their_back.rs$"],
   },
   {
-    name: "folds-its-own-not-through-chain",
-    breaks:
-      "`last()` of a `chain` of the crate's iterator steps it by `next`, not by each side's own `fold`",
-    file: "src/lower/recognition/iterators.rs",
-    find: '                    Some("Chain") => 2,\n',
-    replace: '                    Some("Chain") => 0,\n',
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
-  },
-  {
-    name: "folds-its-own-never",
-    breaks:
-      "`collect` into a string or a hash map, and `last()`, of the crate's iterator step it by `next`, not by its own `fold`",
-    file: "src/lower/recognition/iterators.rs",
-    find: '            return !ty.is_ref() && self.own_iterator_method(ty, "fold").is_some();\n',
-    replace: "            return false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
-  },
-  {
     name: "folds-what-it-consumes-not-sum",
     breaks: "`sum()` of an iterator whose own fold drops it drops it again",
     file: "src/lower/recognition/iterators.rs",
@@ -612,65 +594,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "nths-its-own-never",
-    breaks: "nth of an adapter reaches the crate's own nth",
-    file: "src/lower/recognition/iterators.rs",
-    find: '            return self.own_iterator_method(ty, "nth").is_some();',
-    replace: "            return false;",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
-  },
-  {
-    name: "nths-its-own-no-take",
-    breaks: "take's nth is its source's",
-    file: "src/lower/recognition/iterators.rs",
-    find: '            Some("Skip" | "Take" | "StepBy" | "Enumerate" | "Fuse" | "Peekable")',
-    replace:
-      '            Some("Skip" | "StepBy" | "Enumerate" | "Fuse" | "Peekable")',
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
-  },
-  {
-    name: "nths-its-own-no-mut-ref",
-    breaks: "&mut I's nth is I's",
-    file: "src/lower/recognition/iterators.rs",
-    find: "            return self.nths_its_own(*inner);",
-    replace: "            return false;",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
-  },
-  {
-    name: "folds-by-own-nth-never",
-    breaks: "a skip's fold asks its source's nth",
-    file: "src/lower/recognition/iterators.rs",
-    find: '                "std::iter::Skip" | "std::iter::StepBy"\n',
-    replace: '                "std::iter::Never"\n',
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
-  },
-  {
-    name: "folds-by-own-nth-not-through-map",
-    breaks: "a map's fold is its source's",
-    file: "src/lower/recognition/iterators.rs",
-    find: "            sources.extend(self.nth_folded_sources(source));\n",
-    replace: "            let _ = source;\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
-  },
-  {
-    name: "nths-its-own-no-enumerate",
-    breaks: "enumerate's nth is its source's",
-    file: "src/lower/recognition/iterators.rs",
-    find: 'Some("Skip" | "Take" | "StepBy" | "Enumerate" | "Fuse" | "Peekable")',
-    replace: 'Some("Skip" | "Take" | "StepBy" | "Fuse" | "Peekable")',
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
-  },
-  {
-    name: "nths-its-own-no-fuse",
-    breaks:
-      "`fuse().nth(k)` of the crate's iterator with its own `nth` is `.drop(k).take(1)`, not `$nth(it, k)`",
-    file: "src/lower/recognition/iterators.rs",
-    find: 'Some("Skip" | "Take" | "StepBy" | "Enumerate" | "Fuse" | "Peekable")',
-    replace: 'Some("Skip" | "Take" | "StepBy" | "Enumerate" | "Peekable")',
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^own_last_and_nth_passed_on.rs$"],
-  },
-  {
     name: "deque-into-iter-unowned",
     breaks:
       "a `VecDeque`'s `into_iter()` doesn't own its items: behind `fuse()` its drop reads std's `inner`, which throws, and what `take_while` leaves is never dropped (#203)",
@@ -678,138 +601,6 @@ export const mutations: Mutation[] = [
     find: '                    | "std::collections::vec_deque::IntoIter"\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^deque_into_iter_drops.rs$"],
-  },
-  {
-    name: "take-folds-unseen",
-    breaks:
-      "`last()` of a `Take` isn't by its fold, so a `Skip` inside asks the crate's own `nth(n)`, not `nth(n - 1)` (#213)",
-    file: "src/lower/recognition/iterators.rs",
-    find: '                        | "Cloned" | "Fuse" | "Peekable" | "FlatMap" | "Flatten" | "Take" | "TakeWhile" | "Scan"\n                        | "MapWhile",\n',
-    replace:
-      '                        | "Cloned" | "Fuse" | "Peekable" | "FlatMap" | "Flatten" | "TakeWhile" | "Scan"\n                        | "MapWhile",\n',
-    tests: ["test/corpus.test.ts", "-t", "^skip_take_own_nth.rs$"],
-  },
-  {
-    name: "take-while-folds-unseen",
-    breaks:
-      "`last()` of a `take_while` isn't by its fold, so a `skip` inside asks the crate's own `nth(n)`, not `nth(n - 1)` (#214)",
-    file: "src/lower/recognition/iterators.rs",
-    find: '                        | "Cloned" | "Fuse" | "Peekable" | "FlatMap" | "Flatten" | "Take" | "TakeWhile" | "Scan"\n                        | "MapWhile",\n',
-    replace:
-      '                        | "Cloned" | "Fuse" | "Peekable" | "FlatMap" | "Flatten" | "Take" | "Scan"\n                        | "MapWhile",\n',
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
-  },
-  {
-    name: "chain-nths-unseen",
-    breaks:
-      "a `chain`'s `nth` isn't said to reach its second side's own, so `chain(c()).step_by(2)` is a filter of indices that asks none (#214)",
-    file: "src/lower/recognition/iterators.rs",
-    find: "            return args.types().nth(1).is_some_and(|second| self.nths_its_own(second));\n",
-    replace: "            return false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
-  },
-  {
-    name: "scan-folds-unseen",
-    breaks:
-      "`last()` of a `scan` or a `map_while` isn't by its fold, so a `step_by` inside asks the crate's own `nth(0)` first (#216)",
-    file: "src/lower/recognition/iterators.rs",
-    find: '                        | "Cloned" | "Fuse" | "Peekable" | "FlatMap" | "Flatten" | "Take" | "TakeWhile" | "Scan"\n                        | "MapWhile",\n',
-    replace:
-      '                        | "Cloned" | "Fuse" | "Peekable" | "FlatMap" | "Flatten" | "Take" | "TakeWhile",\n',
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
-  },
-  {
-    name: "folds-its-own-not-reversed",
-    breaks:
-      "`rev().last()` of the crate's iterator steps it by `next_back`, not its own `rfold` (#217)",
-    file: "src/lower/recognition/iterators.rs",
-    find: "            return self.rfolds_its_own(reversed);\n",
-    replace: "            return false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
-  },
-  {
-    name: "folds-its-own-reversed-through-mut-ref",
-    breaks:
-      "a `rev()` of a `&mut` of the crate's iterator is read as folding by its own `rfold`, `$folded(..)` of what has none (#217)",
-    file: "src/lower/recognition/iterators.rs",
-    find: '            return !ty.is_ref() && self.own_back_method(ty, "rfold").is_some();\n',
-    replace:
-      '            return self.own_back_method(ty, "rfold").is_some();\n',
-    tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "nths-its-own-not-reversed",
-    breaks:
-      "`rev().nth(n)` of the crate's iterator reads as a JS iterator's `drop(n)`, not its own `nth_back`, `$nth` (#217)",
-    file: "src/lower/recognition/iterators.rs",
-    find: "            return self.nth_backs_its_own(reversed);\n",
-    replace: "            return false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "reversed-user-iterator-any-adapter",
-    breaks:
-      "an adapter of the crate's iterator, not only its `rev()`, folds by its `rfold` (#217)",
-    file: "src/lower/recognition/iterators.rs",
-    find: '        (std_path(self.tcx, adt.did()) == "std::iter::Rev").then(|| args.types().next())?\n',
-    replace: "        args.types().next()\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(adapters_own_nth_fold|own_fold_through_adapters|rev_own_back_methods).rs$",
-    ],
-  },
-  {
-    name: "rfolds-its-own-never",
-    breaks:
-      "`last()` of a `rev()` of a map of the crate's iterator steps it by `next_back`, not its own `rfold` (#220)",
-    file: "src/lower/recognition/iterators.rs",
-    find: '            return !ty.is_ref() && self.own_back_method(ty, "rfold").is_some();\n',
-    replace: "            return false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
-  },
-  {
-    name: "rfolds-its-own-no-take",
-    breaks:
-      "a `take`'s `rfold` isn't said to trim by its source's own `nth_back` (#220)",
-    file: "src/lower/recognition/iterators.rs",
-    find: "                .is_some_and(|source| self.rfolds_its_own(source) || self.nth_backs_its_own(source)),\n",
-    replace:
-      "                .is_some_and(|source| self.rfolds_its_own(source)),\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "rfolds-its-own-no-skip",
-    breaks:
-      "a `skip`'s `rfold`, its `try_rfold`, isn't said to reach a `take`'s trim by the crate's `nth_back` (#220)",
-    file: "src/lower/recognition/iterators.rs",
-    find: "            // A `skip`'s, its `try_rfold`, its source's.\n            Some(\"Skip\") => args\n",
-    replace:
-      "            // A `skip`'s, its `try_rfold`, its source's.\n            Some(\"Never\") => args\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
-  },
-  {
-    name: "nth-backs-its-own-never",
-    breaks:
-      "`rev().nth(n)` of an adapter of the crate's iterator isn't its own `nth_back` (#220)",
-    file: "src/lower/recognition/iterators.rs",
-    find: '            return self.own_back_method(ty, "nth_back").is_some();\n',
-    replace: "            return false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "rfolds-its-own-no-fuse",
-    breaks:
-      "a `fuse()`'s `rfold` isn't said to be its source's, so `rev().last()` of one doesn't fold by the crate's own (#224)",
-    file: "src/lower/recognition/iterators.rs",
-    find: '            Some("Map" | "Filter" | "Enumerate" | "Fuse") => {\n                args.types().next().is_some_and(|source| self.rfolds_its_own(source))\n',
-    replace:
-      '            Some("Map" | "Filter" | "Enumerate") => {\n                args.types().next().is_some_and(|source| self.rfolds_its_own(source))\n',
-    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {
     name: "held-compiled-no-adapter",
@@ -868,18 +659,6 @@ export const mutations: Mutation[] = [
     find: "            ) && std_path(self.tcx, adt.did()) == \"std::vec::IntoIter\")\n",
     replace: "            ) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "nths-its-own-not-generic",
-    breaks: "generic code's dictionary of its iterator gives std's compiled `Fuse` no `nth`, so a fuse's `nth` never asks the type's own (#496)",
-    file: "src/lower/recognition/iterators.rs",
-    find: "        let ty::Adt(adt, args) = ty.kind() else {\n            return matches!(ty.kind(), ty::Param(_));\n        };\n        // A chain's, its second side's",
-    replace: "        let ty::Adt(adt, args) = ty.kind() else {\n            return false;\n        };\n        // A chain's, its second side's",
-    tests: ["test/corpus.test.ts", "-t", "^generic_own_last.rs$"],
-    // The runtime asks the value's own `nth` either way, so it's how the
-    // JS reads that's checked: `$nthSome(it, 1)`, not a `drop(1).take(1)`
-    // collected (the Nightly of 3c71ee8f9).
     snapshots: true,
   },
 ];

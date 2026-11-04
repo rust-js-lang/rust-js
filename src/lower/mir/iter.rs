@@ -13,6 +13,7 @@ mod collect;
 pub(in crate::lower::mir) mod sources;
 
 use self::sources::*;
+use crate::lower::recognition::{OwnStep, Reach};
 
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Mutability, Ty, TypeVisitableExt};
@@ -443,8 +444,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // and drops it, so nothing's dropped after (#162). Not of an adapter
         // that holds a function with a destructor, which it doesn't drop.
         let own = match self.recognition().rfolds_what_it_consumes(def_id) {
-            true => self.recognition().rfolds_its_own(receiver),
-            false => self.recognition().folds_its_own(receiver),
+            true => self
+                .recognition()
+                .reaches_its_own(receiver, OwnStep::Rfold, Reach::Sure),
+            false => self.recognition().reaches_its_own(receiver, OwnStep::Fold, Reach::Sure),
         };
         if self.consumes_by_fold(def_id, output) && own {
             if (self.recognition().held_function(receiver))

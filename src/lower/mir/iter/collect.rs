@@ -2,6 +2,7 @@
 //! position found, a fold.
 
 use super::*;
+use crate::lower::recognition::{OwnStep, Reach};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `it.sum()`, or `product()`, `sum`, into an `output` of `item`s: of a
@@ -156,7 +157,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.iterator_item(source)
                 .is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing)
         };
-        match recognition.may_fold_its_own(iter_ty)
+        match recognition.reaches_its_own(iter_ty, OwnStep::Fold, Reach::May)
             || recognition.folds_by_its_own_nth(iter_ty)
             || self.steps_lent_inclusive(iter_ty)
             || recognition.nth_folded_sources(iter_ty).into_iter().any(drops)

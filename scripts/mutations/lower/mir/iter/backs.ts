@@ -20,8 +20,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `enumerate()` of a reversed `Vec` is a JS `map`, whose `nth` steps each item back to front, not the source's one slice (#277)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    || self.recognition().nths_a_slice(output)\n                    || self.recognition().counts_its_own(output) =>\n",
-    replace: "                    || false\n                    || self.recognition().counts_its_own(output) =>\n",
+    find: "                    || self.recognition().nths_a_slice(output)\n                    || self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure) =>\n",
+    replace: "                    || false\n                    || self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
   },
   {
@@ -334,7 +334,7 @@ export const mutations: Mutation[] = [
     name: "enumerate-of-own-nth-mapped",
     breaks: "an enumerate of what reaches the crate's own nth is $enumerate",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    || self.recognition().nths_its_own(output)\n",
+    find: "                    || self.recognition().reaches_its_own(output, OwnStep::Nth, Reach::Sure)\n",
     replace: "                    || false\n",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
@@ -552,7 +552,7 @@ export const mutations: Mutation[] = [
     name: "enumerate-of-own-count-mapped",
     breaks: "an `enumerate()` of the crate's iterator with its own `count` is a map of it, whose `count` steps it (#505)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    || self.recognition().counts_its_own(output) =>",
+    find: "                    || self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure) =>",
     replace: " =>",
     tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
   },

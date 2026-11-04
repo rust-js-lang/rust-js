@@ -1,6 +1,7 @@
 // The iterator rules of the architecture, split from architecture.test.ts at
 // its cap (a test file is at most 1500 lines): who gives an iterator's steps,
-// and who answers whether stepping it may panic (ADR 1089).
+// which own step an adapter reaches, and who answers whether stepping it may
+// panic (ADR 1089).
 import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -24,6 +25,16 @@ test("an iterator's steps are given by $forward alone", () => {
     .filter((file) => file.endsWith(".js") && file !== "src/runtime/forward.js")
     .filter((file) => read(file).split("\n").some((line) => !line.trimStart().startsWith("//") && given.test(line)));
   expect(giving).toEqual([]);
+});
+
+// Which of the crate's own steps std's adapters reach is one catalog's,
+// `OwnStep::asked_of`, and one query's, `reaches_its_own` (ADR 1089): a
+// predicate per step, each with its own list of adapters, treated a type
+// parameter and a `&mut` each its own way (#496, #505, #521).
+test("which own step an adapter reaches is the OwnStep catalog's alone", () => {
+  const lowering = ["src/lower.rs", ...files("src/lower")].map(read).join("\n");
+  expect(lowering).not.toMatch(/fn (counts|lasts|folds|nths|rfolds|try_rfolds|nth_backs|may_fold)_its_own\b/);
+  expect(read("src/lower/recognition/own_steps.rs")).toContain("fn asked_of(self, adapter: &str)");
 });
 
 // Whether stepping an iterator may panic, which decides what a fold's

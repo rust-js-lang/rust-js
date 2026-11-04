@@ -8,6 +8,7 @@ mod json;
 mod lengths;
 mod methods;
 mod own_steps;
+pub(in crate::lower) use own_steps::{OwnStep, Reach};
 mod owners;
 pub(super) mod registry;
 mod serde;

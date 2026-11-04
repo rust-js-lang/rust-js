@@ -2,6 +2,7 @@
 //! drops, and the last value.
 
 use super::*;
+use crate::lower::recognition::{OwnStep, Reach};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What's stepped as it is: `by_ref()` of the crate's iterator, a `&mut`
@@ -350,7 +351,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let unwinds_holding =
             self.drops(iter_ty) != crate::lower::drops::Drops::Nothing && self.steps_may_panic(iter_ty);
         if drops_none
-            && (self.recognition().lasts_its_own(iter_ty) || self.compiled_struct_at(iter_ty, span) || unwinds_holding)
+            && (self.recognition().reaches_its_own(iter_ty, OwnStep::Last, Reach::Sure)
+                || self.compiled_struct_at(iter_ty, span)
+                || unwinds_holding)
         {
             let boxed = item.is_some_and(|item| self.boxed_payload(item));
             return Ok(Expr::call_helper(if boxed { "$lastSome" } else { "$last" }, vec![it]));

@@ -2,6 +2,7 @@
 //! extension's, a cycled one's.
 
 use super::*;
+use crate::lower::recognition::{OwnStep, Reach};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`, of `ty`, a type parameter given as it is, as a JS iterator
@@ -260,19 +261,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let boxed = self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item));
                 // Std's struct whose `fold` std compiles folds by that, its
                 // meaning, whatever its sources are (ADR 0912).
-                let folds = recognition.folds_its_own(ty)
+                let folds = recognition.reaches_its_own(ty, OwnStep::Fold, Reach::Sure)
                     || recognition.folds_by_its_own_nth(ty)
                     || (crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
                         && self.compiled_fold_of(ty, (iterator, "fold"))?.is_some());
                 (
                     folds.then(|| Expr::helper("$foldOf")),
                     recognition
-                        .nths_its_own(ty)
+                        .reaches_its_own(ty, OwnStep::Nth, Reach::Sure)
                         .then(|| Expr::helper(if boxed { "$nthSome" } else { "$nth" })),
                     recognition
-                        .lasts_its_own(ty)
+                        .reaches_its_own(ty, OwnStep::Last, Reach::Sure)
                         .then(|| Expr::helper(if boxed { "$lastSome" } else { "$last" })),
-                    recognition.counts_its_own(ty).then(|| Expr::helper("$count")),
+                    recognition
+                        .reaches_its_own(ty, OwnStep::Count, Reach::Sure)
+                        .then(|| Expr::helper("$count")),
                 )
             }
         };

@@ -2,6 +2,7 @@
 //! closed inner iterator, and `iter_comb`, which lowers an adapter.
 
 use super::*;
+use crate::lower::recognition::{OwnStep, Reach};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The helper of items a closure takes `&mut`: of objects, `objects`;
@@ -402,7 +403,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // which tidy makes `$lazyRange(a, b, n)` where it's made
                 // there (#231).
                 if !self.recognition().is_fused_iterator(receiver_ty.peel_refs())
-                    || self.recognition().nths_its_own(receiver_ty)
+                    || self.recognition().reaches_its_own(receiver_ty, OwnStep::Nth, Reach::Sure)
                     || self.steps_a_range(receiver_ty.peel_refs())
                     // And of a `Vec`'s reversed, whose `nth` drops what it
                     // passes over as one slice (#234), or of one whose first
@@ -412,7 +413,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // And of one whose `fold` is the crate's own, which a
                     // filter's fold would call, where std's `StepBy` folds by
                     // its source's `next` and `nth` (#671).
-                    || self.recognition().folds_its_own(receiver_ty)
+                    || self.recognition().reaches_its_own(receiver_ty, OwnStep::Fold, Reach::Sure)
                     // And of a `Vec`'s, whose `nth` drops them as one slice
                     // in order, of items whose drop may panic, past which
                     // the slice's goes on (#668).
@@ -490,7 +491,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of one whose `nth` reaches the crate's own, its `nth`, as
             // `next()` is `$next(it)` (#182); its `Some` boxed where the item
             // looks like `None` (ADR 0051).
-            IterComb::Nth if self.recognition().nths_its_own(receiver_ty) => {
+            IterComb::Nth
+                if self
+                    .recognition()
+                    .reaches_its_own(receiver_ty, OwnStep::Nth, Reach::Sure) =>
+            {
                 let boxed = item_ty().is_some_and(|item| self.boxed_payload(item));
                 Expr::call_helper(if boxed { "$nthSome" } else { "$nth" }, vec![items, next()])
             }

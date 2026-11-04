@@ -326,8 +326,8 @@ export const mutations: Mutation[] = [
     name: "nth-own-by-drop",
     breaks: "nth of what reaches the crate's own nth is its nth",
     file: "src/lower/combinators/adapters.rs",
-    find: "            IterComb::Nth if self.recognition().nths_its_own(receiver_ty) => {",
-    replace: "            IterComb::Nth if false => {",
+    find: "            IterComb::Nth\n                if self\n                    .recognition()\n                    .reaches_its_own(receiver_ty, OwnStep::Nth, Reach::Sure) =>\n",
+    replace: "            IterComb::Nth if false =>\n",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
   {
@@ -343,7 +343,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`step_by` of a fused source whose `nth` reaches the crate's own is a filter of indices, which asks it none, where std's asks `nth` (#214)",
     file: "src/lower/combinators/adapters.rs",
-    find: "                    || self.recognition().nths_its_own(receiver_ty)\n",
+    find: "                    || self.recognition().reaches_its_own(receiver_ty, OwnStep::Nth, Reach::Sure)\n",
     replace: "                    || false\n",
     tests: ["test/corpus.test.ts", "-t", "^(own_nth_through_adapters|own_fold_and_count_where_adapters_call_them).rs$"],
   },
@@ -441,7 +441,7 @@ export const mutations: Mutation[] = [
     name: "step-by-of-own-fold-filtered",
     breaks: "a `step_by()` of a `fuse()` of the crate's iterator with its own `fold` is a filter by index, whose fold calls it, where std's `StepBy` steps it by `next` and `nth` (#671)",
     file: "src/lower/combinators/adapters.rs",
-    find: "                    || self.recognition().folds_its_own(receiver_ty)\n",
+    find: "                    || self.recognition().reaches_its_own(receiver_ty, OwnStep::Fold, Reach::Sure)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_count_where_adapters_call_them.rs$"],
   },
