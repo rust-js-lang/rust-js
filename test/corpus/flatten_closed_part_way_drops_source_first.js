@@ -7,6 +7,7 @@ import {
   $collectDropping,
   $dropEach,
   $dropItems,
+  $filterDropping,
   $flatMap,
   $flattenEnds,
   $foldBack,
@@ -49,16 +50,13 @@ function mapped() {
   console.log("mapped end");
 }
 function flatMapped() {
-  const keep = (d) => d[0] > 0;
   const it = $held(
     $flatMap(
-      $closing($iter([[3], [4]]), $dropEach(dDrop_drop)).filter((item) => {
-        if (keep(item)) {
-          return true;
-        }
-        dDrop_drop(item);
-        return false;
-      }),
+      $filterDropping(
+        $closing($iter([[3], [4]]), $dropEach(dDrop_drop)),
+        (d) => d[0] > 0,
+        dDrop_drop,
+      ),
       (x) => $closing($iter([[(x[0] + 10) >>> 0], x]), $dropEach(dDrop_drop)),
     ),
   );
