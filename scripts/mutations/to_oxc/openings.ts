@@ -37,11 +37,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "type-alias-is-code",
-    breaks: "a comment before a `pub type`, which writes no JS, is lost, ReactFiberConfigWithNoHydration's `// Hydration (when unsupported)` (ADR 0444, amended)",
+    breaks:
+      "a comment above an impl's associated type, `type Item = u32;`, which writes no JS and isn't one of its module's free items (`declarations`, #643), is lost, not before the method after it (ADR 0444, amended)",
     file: "src/to_oxc/openings.rs",
     find: "    item_after_visibility(statement).starts_with(\"type \")\n",
     replace: "    false\n",
-    tests: ["test/lowering-comments-items.test.ts", "-t", "an item with no JS"],
+    tests: ["test/lowering-comments-items.test.ts", "-t", "an associated type"],
   },
   {
     name: "type-use-is-code",

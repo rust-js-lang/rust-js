@@ -35,6 +35,33 @@ pub const SUPPORTS_HYDRATION: bool = false;
   expect(lib.SUPPORTS_HYDRATION).toBe(false);
 });
 
+// An impl's associated type, `type Item = u32;`, is an item with no JS too,
+// but not one of its module's free items, which `lower/sources.rs`'s
+// `declarations` gives (#643), so `openings::type_alias` is what sees it:
+// the comment above it is before the method after it, where it was lost.
+test("a comment above an associated type, an item with no JS, is before the next method", async () => {
+  const { js, lib } = await compiled("comment-before-an-associated-type", `pub struct Counter {
+    pub n: u32,
+}
+
+impl Iterator for Counter {
+    // The count so far.
+    type Item = u32;
+
+    fn next(&mut self) -> Option<u32> {
+        self.n += 1;
+        Some(self.n)
+    }
+}
+
+pub fn total() -> u32 {
+    Counter { n: 0 }.take(3).sum()
+}
+`);
+  expect(js).toContain("// The count so far.\n\nfunction counterIterator_next(counter) {");
+  expect((lib.total as () => number)()).toBe(6);
+});
+
 // React's getAttributeAlias, `new Map([['acceptCharset', 'accept-charset'],
 // // HTML and SVG attributes, .. ['crossOrigin', 'crossorigin'], ..])`: a
 // comment between an array's items is before the item after it, as it's

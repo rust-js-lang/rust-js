@@ -105,7 +105,8 @@ fn alternative(text: &str) -> bool {
 /// Whether `statement`, one of `leading_statements`, is a type alias, `pub
 /// type ActivityInstance = Unknown`, its attributes first: an item with no
 /// JS, so what's before it is before the next item that has (ADR 0444,
-/// amended).
+/// amended). A module's is in `Module::unprinted` too (#643); an impl's
+/// associated type, `type Item = u32;`, is only this.
 pub(super) fn type_alias(statement: &str) -> bool {
     item_after_visibility(statement).starts_with("type ")
 }
