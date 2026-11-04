@@ -34,6 +34,7 @@ pub(super) use effects::{
     keeps_in_collection, reads_only_its_parameters, reject_unkept_collections, reject_unread_parameters, runs_nothing,
     runs_only_given,
 };
+pub(in crate::lower) use flattened::is_flattened_state_field;
 pub(super) use flattened::{Flattened, Keyed, flattened, flattened_state, keyed_test};
 pub(super) use forms::{Asked, JsForm, js_form};
 pub(super) use given_before::reject_made_in_place;

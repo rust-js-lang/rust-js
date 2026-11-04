@@ -127,14 +127,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "made-cell-value-kept",
-    breaks: "a cell made into a field is `{ value: 1 }.value`, where it's `1`",
-    file: "src/js/make.rs",
-    find: "                && name == HELD\n",
-    replace: "                && name == \"never\"\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "cell in a field is the property"],
-  },
-  {
     "name": "text-truth-chained",
     "breaks": "`s ? s.toUpperCase() : undefined` of text's truth is `s?.toUpperCase()`, `\"\"` where Rust gives `None`",
     "file": "src/js/make.rs",
@@ -242,12 +234,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^integer_families.rs$"],
   },
   {
-    name: "member-of-read-pair-kept",
-    breaks: "a field of a `dyn` field's pair stays `{ value: f.inner, impl: f.impl }.impl`",
+    name: "member-of-made-object-kept",
+    breaks:
+      "a field of an object made here whose other fields do nothing stays, a `dyn` field's pair's `{ value: f.inner, impl: f.impl }.impl`, a `try_borrow`'s `{ TAG: \"Ok\", _0: state }.TAG` (#687)",
     file: "src/js/make.rs",
-    find: "                || is_read_pair(props))\n",
-    replace: ")\n",
-    tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
+    find: "                .all(|p| matches!(p, Prop::Field(name, value) if *name == property || !value.has_effects()))\n",
+    replace: "                .all(|p| matches!(p, Prop::Field(_, value) if value.is_constant()))\n",
+    tests: ["test/corpus.test.ts", "-t", "^(unsized_struct_dyn|flattened_state_tried).rs$"],
     snapshots: true,
   },
   {

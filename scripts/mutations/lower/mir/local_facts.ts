@@ -48,8 +48,8 @@ export const mutations: Mutation[] = [
     breaks:
       "no call of a struct's quiet field is found, so each is checked by its type's borrows elsewhere (ADR 0863, amended)",
     file: "src/lower/mir/local_facts.rs",
-    find: "                    quiet.calls.insert(block);\n                    if matches!(known, Std::Borrow { .. })",
-    replace: "                    if matches!(known, Std::Borrow { .. })",
+    find: "                    quiet.calls.insert(block);\n                    if matches!(known, Std::Borrow { .. } | Std::TryBorrow { .. })",
+    replace: "                    if matches!(known, Std::Borrow { .. } | Std::TryBorrow { .. })",
     tests: [
       "test/lowering-field-cells.test.ts",
       "-t",
@@ -271,5 +271,33 @@ export const mutations: Mutation[] = [
     find: "                            quiet.alike.insert(block);\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local nothing reads apart"],
+  },
+  {
+    name: "swapped-flattened-unseen",
+    breaks:
+      "no `swap` of a flattened state is found, so it's `$refCellSwap`, whose `[a.value, b.value] = [b.value, a.value]` rebinds the handle's object (#687)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                    quiet.flattened.insert(block, swapped);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell_swapped.rs$"],
+  },
+  {
+    name: "swapped-flattened-reborrow-unfollowed",
+    breaks:
+      "a flattened state given to a `swap` reborrowed, `&*r` of `r = &task.state`, isn't found, so `other.swap(&task.state)` is `$refCellSwap` of the handle (#687)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                    while let Some(Some(Rvalue::Ref(_, _, lent))) = assigned.get(&local)\n",
+    replace: "                    while false\n                        && let Some(Some(Rvalue::Ref(_, _, lent))) = assigned.get(&local)\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell_swapped.rs$"],
+  },
+  {
+    name: "tried-guard-of-a-quiet-field-released",
+    breaks:
+      "a quiet field's `try_borrow` guard, which counted nothing, is released where it's dropped, `$unborrow(state)` of a flattened state's handle (#687)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                    if matches!(known, Std::Borrow { .. } | Std::TryBorrow { .. }) && destination.projection.is_empty()\n",
+    replace: "                    if matches!(known, Std::Borrow { .. }) && destination.projection.is_empty()\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_tried.rs$"],
+    snapshots: true,
   },
 ];

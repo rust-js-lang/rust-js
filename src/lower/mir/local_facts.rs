@@ -137,6 +137,9 @@ pub(super) struct QuietCells {
     /// write it: what's written through the lend stores `null` for `None`
     /// too (#541).
     pub(super) nullable_lent: HashSet<BasicBlock>,
+    /// Each `swap` of a `RefCell` that's a class's flattened state, its
+    /// object's keys (ADR 1044): which of its two cells is one (#687).
+    pub(super) flattened: HashMap<BasicBlock, [bool; 2]>,
 }
 
 impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
@@ -715,6 +718,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 quiet.nullable_lent.insert(block);
             }
+            // A flattened state swapped, either cell (#687).
+            if let Some(Std::CellSwap) = self.recognition().classify(def_id, generic_args)
+                && let [a, b] = &args[..]
+            {
+                // Through a reborrow, `&*r` of `r = &x.state`, the field.
+                let reborrowed = |operand: &Operand<'tcx>| {
+                    let mut local = operand.place().filter(|place| place.projection.is_empty())?.local;
+                    while let Some(Some(Rvalue::Ref(_, _, lent))) = assigned.get(&local)
+                        && lent.projection.as_slice() == [PlaceElem::Deref]
+                    {
+                        local = lent.local;
+                    }
+                    Some(local)
+                };
+                let flattened = |operand: &Operand<'tcx>| {
+                    let Some(local) = reborrowed(operand) else { return false };
+                    lent_field(&Operand::Copy(Place::from(local)))
+                        .is_some_and(|field| crate::lower::bindings::is_flattened_state_field(tcx, field))
+                };
+                let swapped = [flattened(&a.node), flattened(&b.node)];
+                if swapped.contains(&true) {
+                    quiet.flattened.insert(block, swapped);
+                }
+            }
             match self.recognition().classify(def_id, generic_args) {
                 Some(Std::Drop) => drops.push((block, first.node.place())),
                 // A `with_borrow` of one of this module's, given what it
@@ -746,15 +773,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                     }
                 }
+                // A `try_borrow`'s `Ok` of its guard too (#687).
                 Some(
                     known @ (Std::Borrow { lock: false, .. }
+                    | Std::TryBorrow { lock: false, .. }
                     | Std::CellReplace
                     | Std::CellTake
                     | Std::CellGetMut
                     | Std::CellReplaceWith),
                 ) if lent_field(&first.node).is_some_and(|field| self.quiet_field(field.did)) => {
                     quiet.calls.insert(block);
-                    if matches!(known, Std::Borrow { .. }) && destination.projection.is_empty() {
+                    if matches!(known, Std::Borrow { .. } | Std::TryBorrow { .. }) && destination.projection.is_empty()
+                    {
                         quiet.guards.insert(destination.local);
                     }
                 }
@@ -785,13 +815,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => {}
             }
         }
-        // A guard moved to a variable, `let v = x.f.borrow(); .. drop(v);`.
+        // A guard moved to a variable, `let v = x.f.borrow(); .. drop(v);`,
+        // or out of a `try_borrow`'s `Ok`, `Ok(v) => ..` (#687).
         loop {
             let more: Vec<Local> = (assigned.iter())
                 .filter(|&(local, rvalue)| {
                     !quiet.guards.contains(local)
                         && matches!(rvalue, Some(Rvalue::Use(Operand::Move(from), _))
-                            if from.projection.is_empty() && quiet.guards.contains(&from.local))
+                            if matches!(from.projection.as_slice(), [] | [PlaceElem::Downcast(..), PlaceElem::Field(..)])
+                                && quiet.guards.contains(&from.local))
                 })
                 .map(|(&local, _)| local)
                 .collect();

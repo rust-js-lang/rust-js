@@ -105,7 +105,7 @@ function main() {
         { TAG: "Included", _0: ((range$2.exhausted ?? range$2).start << 24) >> 24 },
         range$2.exhausted !== undefined || range$2.start > 127 || range$2.end < -128
           ? { TAG: "Excluded", _0: ((range$2.exhausted ?? range$2).start << 24) >> 24 }
-          : { TAG: "Included", _0: { start: fresh.start, end: fresh.end }.end },
+          : { TAG: "Included", _0: fresh.end },
       ).length
     } ${fresh.start === ((r.exhausted ?? r).start << 24) >> 24 && fresh.end === ((r.exhausted ?? r).end << 24) >> 24 && !(r.exhausted !== undefined || r.start > 127 || r.end < -128)}`,
   );

@@ -396,8 +396,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a borrow of another class's cell while a guard is held, `to.items.borrow_mut()` while `from.items` is walked, is taken as meeting it, counted (rd482)",
     file: "src/lower/drops/facts.rs",
-    find: "                    && theirs.class.is_some() =>\n",
-    replace: "                    && theirs.class.is_some()\n                    && false =>\n",
+    find: "                    && theirs.class.is_some()\n                    && let Some(called)",
+    replace: "                    && theirs.class.is_some()\n                    && false\n                    && let Some(called)",
     tests: ["test/corpus.test.ts", "-t", "^held_borrow_of_own_cell.rs$"],
     snapshots: true,
   },
@@ -477,5 +477,23 @@ export const mutations: Mutation[] = [
     find: "        if !self.seen || ended(self.ids, self.ended, expr) {\n",
     replace: "        if !self.seen {\n",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values they hold"],
+  },
+  {
+    name: "tried-never-momentary",
+    breaks:
+      "a `try_borrow`'s guard is never momentary, its `Result` no guard, so a flattened state's is refused as borrowed where another borrow may meet it (#687)",
+    file: "src/lower/drops/facts.rs",
+    find: "        let tried = matches!(ty.kind(), ty::Adt(_, args)\n",
+    replace: "        let tried = false && matches!(ty.kind(), ty::Adt(_, args)\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_tried.rs$"],
+  },
+  {
+    name: "replaced-with-never-momentary",
+    breaks:
+      "a `replace_with` whose function can't ask of its borrow is never momentary, so a flattened state's is refused as borrowed where another borrow may meet it (#687)",
+    file: "src/lower/drops/facts.rs",
+    find: "        self.replaced_with(id);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_replaced_with.rs$"],
   },
 ];

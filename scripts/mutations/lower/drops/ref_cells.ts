@@ -594,4 +594,49 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^refcell_generic_variant_field.rs$"],
     snapshots: true,
   },
+  {
+    name: "into-inner-lends-its-cell",
+    breaks:
+      "a field's cell moved into its own `into_inner` lends it, so a flattened state's is refused as lent (#687)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                | Std::CellReplaceWith\n                | Std::CellGet\n",
+    replace: "                | Std::CellReplaceWith\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_into_inner.rs$"],
+  },
+  {
+    name: "flattened-swap-counted",
+    breaks:
+      "a flattened state's `swap` is counted, as two cells that may be one, so its field is refused as one some borrow of which may meet another (#687)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                    receiver.is_some_and(refcell) && !args.iter().any(|&cell| flattened_state_lent(tcx, thir, cell))\n",
+    replace: "                    receiver.is_some_and(refcell)\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell_swapped.rs$"],
+  },
+  {
+    name: "flattened-swap-lends-the-other",
+    breaks:
+      "the other cell a flattened state's `swap` is given, `&b.state`, is lent, so it's refused as a flattened state lent (#687)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                    borrowed_there.extend(args.iter().map(|&cell| through_borrows(thir, cell)));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell_swapped.rs$"],
+  },
+  {
+    name: "replace-with-always-counted",
+    breaks:
+      "a `RefCell`'s `replace_with` is counted whatever its function runs, so a flattened state's is refused as borrowed where another borrow may meet it (#687)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                Some(Std::CellReplaceWith) => receiver.is_some_and(refcell) && !facts.momentary.contains(&fun),\n",
+    replace: "                Some(Std::CellReplaceWith) => receiver.is_some_and(refcell),\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_replaced_with.rs$"],
+  },
+  {
+    name: "try-borrow-always-counted",
+    breaks:
+      "a `try_borrow` is counted wherever its guard is held, so a flattened state's is refused as borrowed where another borrow may meet it (#687)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                Some(Std::Borrow { lock: false, .. } | Std::TryBorrow { lock: false, .. }) => {\n",
+    replace: "                Some(Std::TryBorrow { lock: false, .. }) => receiver.is_some_and(refcell),\n                Some(Std::Borrow { lock: false, .. }) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_tried.rs$"],
+  },
 ];

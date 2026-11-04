@@ -154,8 +154,10 @@ pub fn read(chunk: &ReactPromise) -> Option<&'static Unknown> {
 // `&mut` its guard lends or a function it's lent to is given, is a copy of
 // its variant's keys alone, apart from the chunk: never a key an earlier
 // variant left on the chunk, so it's what a value made in JS is (#658,
-// #659, the user's decision, ADR 1044). Variants of the same keys are one
-// copy, `Pending` and `Initialized`'s `{ status, value, reason }`.
+// #659, the user's decision, ADR 1044); so is its cell's `replace_with`'s,
+// `swap`'s, either way, and `into_inner`'s (#687). Variants of the same
+// keys are one copy, `Pending` and `Initialized`'s `{ status, value,
+// reason }`.
 test("what's moved out of a flattened state whole is a copy of its variant's keys", async () => {
   const { js, lib } = await compiled(
     "flattened-state-moved-out",
@@ -213,12 +215,36 @@ pub fn cell_swapped(chunk: &ReactPromise) -> ChunkState {
     std::cell::Cell::from_mut(&mut *state).swap(std::cell::Cell::from_mut(&mut other));
     other
 }
+
+pub fn replaced_with(chunk: &ReactPromise) -> ChunkState {
+    chunk.state.replace_with(|_| ChunkState::Pending { value: None, reason: None })
+}
+
+pub fn ref_cell_swapped(chunk: &ReactPromise) -> ChunkState {
+    let other = RefCell::new(ChunkState::Pending { value: None, reason: None });
+    chunk.state.swap(&other);
+    other.into_inner()
+}
+
+pub fn chunks_swapped(chunk: &ReactPromise) -> ChunkState {
+    let other = create_pending_chunk();
+    other.state.swap(&chunk.state);
+    other.state.into_inner()
+}
+
+pub fn into_inner(chunk: ReactPromise) -> ChunkState {
+    chunk.state.into_inner()
+}
 `,
   );
   expect(js).toContain(`chunk.status === "pending" || chunk.status === "fulfilled"
       ? { status: chunk.status, value: chunk.value, reason: chunk.reason }
       : { status: chunk.status, reason: chunk.reason }`);
-  for (const name of ["finished", "replaced", "taken", "swapped", "fromMut", "cellSwapped"]) {
+  const names = ["finished", "replaced", "taken", "swapped", "fromMut", "cellSwapped"];
+  // #687: the cell's own `replace_with`, `swap` with a `RefCell` and with
+  // another chunk's state, and `into_inner`, which leaves the chunk's keys.
+  names.push("replacedWith", "refCellSwapped", "chunksSwapped", "intoInner");
+  for (const name of names) {
     const take = lib[name];
     // An errored chunk that was pending, whose `value` is still on it.
     const chunk = lib.createPendingChunk();
@@ -228,7 +254,7 @@ pub fn cell_swapped(chunk: &ReactPromise) -> ChunkState {
     expect(errored, name).not.toBe(chunk);
     expect(errored, name).toEqual({ status: "rejected", reason: "bad" });
     expect(Object.keys(errored), name).toEqual(["status", "reason"]);
-    expect(chunk.status, name).toBe(name === "taken" ? "rejected" : "pending");
+    expect(chunk.status, name).toBe(name === "taken" || name === "intoInner" ? "rejected" : "pending");
     // A fulfilled one, its copy `Pending`'s keys too.
     lib.fulfill(chunk, 7);
     const fulfilled = take(chunk);
@@ -237,20 +263,23 @@ pub fn cell_swapped(chunk: &ReactPromise) -> ChunkState {
   }
 });
 
-// What would give the state whole or swap it, which is no object of its
-// own, is refused, and so is one lent or borrowed where another borrow may
-// meet it, which its object can't count.
+// A flattened state lent, or borrowed where another borrow may meet it,
+// which its object can't count, is refused: a `replace_with` whose function
+// borrows it too (#687).
 test("a flattened state given whole, lent or held is refused", () => {
   expect(
     refused(
-      "flattened-state-swap",
+      "flattened-state-replaced-with-reentered",
       `${state}
-pub fn swapped(chunk: &ReactPromise, other: &RefCell<ChunkState>) {
-    chunk.state.swap(other);
+pub fn replaced(chunk: &ReactPromise) -> ChunkState {
+    chunk.state.replace_with(|_| match &*chunk.state.borrow() {
+        ChunkState::Pending { .. } => ChunkState::Errored { reason: None },
+        _ => ChunkState::Pending { value: None, reason: None },
+    })
 }
 `,
     ),
-  ).toContain("a flattened state's value given whole or swapped");
+  ).toContain("a flattened state lent, or borrowed where another borrow of it may be");
   expect(
     refused(
       "flattened-state-lent",

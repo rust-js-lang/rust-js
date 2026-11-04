@@ -795,14 +795,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "an array taken"],
   },
   {
-    name: "flattened-replace-allowed",
-    breaks: "a flattened state's `swap` is lowered as any cell's, `$refCellSwap`, whose copy apart of its class's object carries the class's other keys, where it's refused (rd380)",
-    file: "src/lower/std_types/cell.rs",
-    find: "            && matches!(\n                known,\n                Std::CellReplaceWith\n",
-    replace: "            && false\n            && matches!(\n                known,\n                Std::CellReplaceWith\n",
-    tests: ["test/classes-flattened-state.test.ts", "-t", "refused"],
-  },
-  {
     name: "nulled-cell-write-of-a-getter-coalesced",
     breaks: "a JS-made struct's field read MIR says is `null` or a value, given a nullable cell through its handle held, is written `?? null` (rd628)",
     file: "src/lower/std_types/cell.rs",
@@ -919,5 +911,69 @@ export const mutations: Mutation[] = [
     find: "            Std::CellSwap if self.is_flattened_state(generic_args.type_at(0)) => {\n",
     replace: "            Std::CellSwap if self.is_flattened_state(generic_args.type_at(0)) && false => {\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "a copy of its variant's keys"],
+  },
+  {
+    name: "flattened-got-mut-unheld",
+    breaks:
+      "a flattened state's `get_mut` is its handle as it is, which a whole write through it reads as its place, `task = { status: \"halted\" }`, rebinding the variable, not setting each key (#687)",
+    file: "src/lower/std_types/cell.rs",
+    find: "            Std::CellGetMut | Std::CellFromMut if flattened => {\n",
+    replace: "            Std::CellGetMut | Std::CellFromMut if flattened && false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_got_mut.rs$"],
+  },
+  {
+    name: "flattened-replaced-with-old-the-object",
+    breaks:
+      "what a flattened state's cell's `replace_with` gives back is its class's object, which the write of what its function made then changes, not a copy of its variant's keys (#687)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                let next = self.spill(\"next\", made, out);\n                let old = match call.unread {\n                    true => Expr::undefined(),\n                    false => {\n                        let copied = self.moved_out(object.clone(), item);\n",
+    replace: "                let next = self.spill(\"next\", made, out);\n                let old = match call.unread {\n                    true => Expr::undefined(),\n                    false => {\n                        let copied = object.clone();\n",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "a copy of its variant's keys"],
+  },
+  {
+    name: "flattened-replaced-with-as-any-cells",
+    breaks:
+      "a flattened state's cell's `replace_with` is `$replaceWith` of its handle, whose `value` is its class's object, given back as what it held, which the write then changes (#687)",
+    file: "src/lower/std_types/cell.rs",
+    find: "            Std::CellReplaceWith if let Some((object, storage)) = in_place => {\n",
+    replace: "            Std::CellReplaceWith if let Some((object, storage)) = in_place.filter(|_| false) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_replaced_with.rs$"],
+  },
+  {
+    name: "flattened-ref-cell-swapped-as-any-cells",
+    breaks:
+      "a `RefCell`'s `swap` of a flattened state is `$refCellSwap`, whose `[a.value, b.value] = [b.value, a.value]` rebinds the handle's object and copies nothing (#687)",
+    file: "src/lower/std_types/cell.rs",
+    find: "            Std::CellSwap if call.flattened.contains(&true) => {\n",
+    replace: "            Std::CellSwap if call.flattened.contains(&true) && false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell_swapped.rs$"],
+  },
+  {
+    name: "flattened-swapped-with-itself-unchecked",
+    breaks:
+      "a flattened state swapped with itself, through two references to one class, doesn't panic, as Rust's second `borrow_mut` does (#687)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                if let (Some(a), Some(b)) = (a.object(), b.object()) {\n",
+    replace: "                if let (Some(a), Some(b), false) = (a.object(), b.object(), true) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell_swapped_itself.rs$"],
+  },
+  {
+    name: "flattened-swapped-plain-cell-unchecked",
+    breaks:
+      "a plain `RefCell` of a flattened state swapped with one while it's borrowed doesn't panic, as Rust's `borrow_mut` does, where its borrows are counted (#687)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                                    if checked && !matches!(cell.kind, js::ExprKind::Handle(..)) {\n",
+    replace: "                                    if false && checked && !matches!(cell.kind, js::ExprKind::Handle(..)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell_swapped_borrowed.rs$"],
+  },
+  {
+    name: "flattened-tried-unheld",
+    breaks:
+      "a flattened state's `try_borrow_mut` is `Ok` of its handle as it is, which a whole write through it reads as its place, rebinding the variable, not setting each key (#687)",
+    file: "src/lower/std_types/cell.rs",
+    find: "            Std::TryBorrow { lock: false, .. } if flattened => {\n",
+    replace: "            Std::TryBorrow { lock: false, .. } if flattened && false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_tried.rs$"],
+    snapshots: true,
   },
 ];

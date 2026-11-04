@@ -5,7 +5,6 @@ import {
   $BTreeSet,
   $at,
   $binarySearchBy,
-  $borrow,
   $cmp,
   $debugStr,
   $index,
@@ -145,6 +144,6 @@ function main() {
   console.log(`[${before.join(", ")}] [${after.join(", ")}] [${log.join(", ")}]`);
   const name = { value: "old" };
   const previous = $replaceWith(name, (s) => `${s.value}er`, true);
-  console.log(`${previous} ${$borrow(name).value}`);
+  console.log(`${previous} ${name.value}`);
 }
 //# sourceMappingURL=case.js.map

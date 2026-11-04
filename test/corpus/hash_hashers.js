@@ -100,24 +100,7 @@ function throughDyn(hasher, n) {
       tmp = value;
     },
   };
-  ({
-    finish: (object) => object.impl.finish(object.value),
-    write: (object, arg1) => object.value.impl.write(object.value, arg1),
-    writeU8: (object, arg1) => object.value.impl.writeU8(object.value, arg1),
-    writeU16: (object, arg1) => object.value.impl.writeU16(object.value, arg1),
-    writeU32: (object, arg1) => object.value.impl.writeU32(object.value, arg1),
-    writeU64: (object, arg1) => object.value.impl.writeU64(object.value, arg1),
-    writeU128: (object, arg1) => object.value.impl.writeU128(object.value, arg1),
-    writeUsize: (object, arg1) => object.value.impl.writeUsize(object.value, arg1),
-    writeI8: (object, arg1) => object.value.impl.writeI8(object.value, arg1),
-    writeI16: (object, arg1) => object.value.impl.writeI16(object.value, arg1),
-    writeI32: (object, arg1) => object.value.impl.writeI32(object.value, arg1),
-    writeI64: (object, arg1) => object.value.impl.writeI64(object.value, arg1),
-    writeI128: (object, arg1) => object.value.impl.writeI128(object.value, arg1),
-    writeIsize: (object, arg1) => object.value.impl.writeIsize(object.value, arg1),
-    writeLengthPrefix: (object, arg1) => object.value.impl.writeLengthPrefix(object.value, arg1),
-    writeStr: (object, arg1) => object.value.impl.writeStr(object.value, arg1),
-  }).writeU16(value, n);
+  value.value.impl.writeU16(value.value, n);
 }
 
 function main() {

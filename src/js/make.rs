@@ -582,23 +582,25 @@ impl Expr {
 
     pub fn member(object: Expr, property: impl Into<String>) -> Expr {
         let property = property.into();
-        // `{ x: 0, y: 0 }.y`, a constant's field (`V::ZERO.y`), is `0`; and a
-        // `dyn`'s pair made of what does nothing, `{ value: f.last, impl:
-        // f.impl }.impl`, a shared reference nothing assigns through (ADR 0409).
+        // A field of an object made here whose other fields do nothing is
+        // what it's made of: a cell's, `{ value: x }.value`, `x`; `{ x: 0,
+        // y: 0 }.y`, a constant's field
+        // (`V::ZERO.y`), is `0`; a `dyn`'s pair made of what does nothing,
+        // `{ value: f.last, impl: f.impl }.impl`, a shared reference nothing
+        // assigns through (ADR 0409), `f.impl`; and a `try_borrow`'s `Ok`,
+        // `{ TAG: "Ok", _0: state }.TAG`, `"Ok"` (#687).
         if let ExprKind::Object(props, ..) = &object.kind
-            && (props
-                .iter()
-                .all(|p| matches!(p, Prop::Field(_, value) if value.is_constant()))
-                || is_read_pair(props))
+            && (props.iter())
+                .all(|p| matches!(p, Prop::Field(name, value) if *name == property || !value.has_effects()))
             && let Some(Prop::Field(_, value)) = props
                 .iter()
                 .find(|p| matches!(p, Prop::Field(name, _) if *name == property))
         {
             return value.clone();
         }
-        // A handle's `value` is the place it's on (ADR 0099), and a cell
-        // made here, `{ value: x }`, holds `x`: a cell in a field is the
-        // property itself (ADR 0288).
+        // A handle's `value` is the place it's on (ADR 0099); a cell made
+        // here, `{ value: x }`, holds `x`, a field of an object made here
+        // above: a cell in a field is the property itself (ADR 0288).
         if property == HELD {
             // Read or written as the place: a write's storage is its
             // writer's to keep, `cell_call`'s (ADR 0772).
@@ -628,12 +630,6 @@ impl Expr {
                 ] = args.as_slice()
             {
                 return Expr::call_helper("$someValue", vec![(**place).clone()]);
-            }
-            if let ExprKind::Object(props, ..) = &object.kind
-                && let [Prop::Field(name, value)] = props.as_slice()
-                && name == HELD
-            {
-                return value.clone();
             }
         }
         Expr::new(ExprKind::Member(Box::new(object), property))

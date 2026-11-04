@@ -557,9 +557,9 @@ fn written_as_stored(body: &mut Vec<Stmt>, storage_of: &dyn Fn(&Expr) -> Option<
 pub(super) fn handles_in_place(body: &mut Vec<Stmt>) {
     // A flattened state written whole through its handle, each of its keys
     // set on the object it's in (ADR 1044), before the handle is its place.
+    // Each a name of its own, as two such writes may be in one list (#687).
     let mut taken = std::collections::HashSet::new();
     js::names_in(body, &mut taken);
-    let fresh = crate::names::fresh_in(&mut taken, "state");
     // A closure's write too (#482).
     js::each_block_mut(body, &mut |stmts| {
         let mut out = Vec::with_capacity(stmts.len());
@@ -572,6 +572,7 @@ pub(super) fn handles_in_place(body: &mut Vec<Stmt>) {
                     place,
                     value.clone(),
                     &mut |value, out| {
+                        let fresh = crate::names::fresh_in(&mut taken, "state");
                         out.push(StmtKind::Const(fresh.clone(), value).at(stmt.span));
                         Expr::var(&fresh)
                     },

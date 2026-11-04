@@ -233,10 +233,11 @@ pub(super) fn in_thread_local(tcx: TyCtxt<'_>, d: LocalDefId) -> Option<LocalDef
 /// and a struct with one made anywhere but as JSX's props, or a flattened
 /// field's value there, which JSX holds flat. False if there was one.
 pub(super) fn reject_flatten_misuse<'tcx>(
-    tcx: TyCtxt<'tcx>,
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     flattened: &bindings::Flattened,
 ) -> bool {
+    let tcx = recognition.tcx;
     let mut valid = true;
     let mut refuse = |span: Span, what: String| {
         refuse(tcx, span, Refused::Feature(&what));
@@ -408,6 +409,37 @@ pub(super) fn reject_flatten_misuse<'tcx>(
                 _ => None,
             })
             .collect();
+        // A flattened state's cell given whole to its own `get_mut`, through
+        // the `&mut` rustc holds alone, or `into_inner`, which moves it: the
+        // handle on its object's keys, whose `&mut` is the handle and whose
+        // value moved out a copy of its variant's (#687, ADR 1044, amended).
+        // Of the body's own typing environment, as its calls are generic.
+        let recognition = crate::lower::recognition::Recognition {
+            typing_env: ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(body.def_id)),
+            ..*recognition
+        };
+        let own_calls: HashSet<ExprId> = (thir.exprs.iter())
+            .filter_map(|expr| {
+                let ExprKind::Call { fun, ref args, .. } = expr.kind else {
+                    return None;
+                };
+                let mut cell = strip(thir, *args.first()?);
+                if let ExprKind::Borrow {
+                    borrow_kind: BorrowKind::Mut { .. },
+                    arg,
+                } = thir[cell].kind
+                {
+                    cell = strip(thir, arg);
+                }
+                bindings::flattened_state(tcx, thir[cell].ty)?;
+                let (id, generic_args) = crate::lower::fn_def(thir[fun].ty)?;
+                matches!(
+                    recognition.classify(id, generic_args),
+                    Some(crate::lower::Std::CellGetMut | crate::lower::Std::CellGet)
+                )
+                .then_some(cell)
+            })
+            .collect();
         // A keyed enum's field is its parent's keys where it's matched, a
         // place a `match` or a `let` tests, or written whole (#504).
         let keyed = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if flattened.keyed.contains(&adt.did()));
@@ -467,6 +499,7 @@ pub(super) fn reject_flatten_misuse<'tcx>(
                         && !read_through.contains(&e)
                         && !lent.contains(&e)
                         && !bases.contains(&e)
+                        && !own_calls.contains(&e)
                         && !(keyed(expr.ty) && placed.contains(&e)) =>
                 {
                     refuse(

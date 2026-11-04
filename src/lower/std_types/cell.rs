@@ -55,6 +55,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Of a flattened state's cell, the next of `values`, its handle on its
+    /// class's object (ADR 1044): the object, read once, and the storage
+    /// that sets its keys, taken from `values`. `None`, `values` as they
+    /// were, of any other cell.
+    fn in_place_object(
+        &mut self,
+        values: &mut std::vec::IntoIter<Expr>,
+        out: &mut Vec<Stmt>,
+    ) -> Option<(Expr, js::Storage)> {
+        let cell = values.as_slice().first()?;
+        if !matches!(cell.kind, js::ExprKind::Handle(_, js::Storage::InPlace(_))) {
+            return None;
+        }
+        let js::ExprKind::Handle(object, storage) = values.next()?.kind else {
+            unreachable!("a flattened state's handle")
+        };
+        let object = match object.reads_same() && !object.has_effects() {
+            true => *object,
+            false => self.spill("object", *object, out),
+        };
+        Some((object, storage))
+    }
+
     /// What changes a place: `Cell`s, atomics, thread-locals, and `mem::drop` and `forget` (ADRs 0025, 0074, 0098): `None` if `known` is another.
     pub(in crate::lower) fn cell_call(
         &mut self,
@@ -91,31 +114,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // own or its type's (`representation::held`).
         let unchecked =
             call.quiet || (values.as_slice().first()).is_some_and(|cell| matches!(cell.kind, js::ExprKind::Handle(..)));
-        // A flattened state's cell is its object's own keys (ADR 1044):
-        // borrowed, read and written through a borrow, and what's moved out
-        // of it, `replace`'s, a copy of its variant's keys (#659); what would
-        // give its value whole or swap it, which is no object of its own,
-        // refused.
-        if (values.as_slice().first())
-            .is_some_and(|cell| matches!(cell.kind, js::ExprKind::Handle(_, js::Storage::InPlace(_))))
-            && matches!(
-                known,
-                Std::CellReplaceWith
-                    | Std::CellSwap
-                    | Std::CellGetMut
-                    | Std::CellFromMut
-                    | Std::CellItems
-                    | Std::CellUpdate
-                    | Std::CellSet
-                    | Std::CellGet
-                    | Std::TryBorrow { .. }
-            )
-        {
-            return Err(self.unsupported(
-                span,
-                "a flattened state's value given whole or swapped, `swap`, `replace_with`, `get_mut` or `into_inner`: it's its object's own keys; write it through a borrow, `*chunk.state.borrow_mut() = ..`, or move it out with `replace`",
-            ));
-        }
+        // A flattened state's cell is its object's own keys (ADR 1044), a
+        // handle on them: borrowed, read and written through a borrow; what's
+        // moved out of it, `replace`'s, `replace_with`'s and `swap`'s, a copy
+        // of its variant's keys (#659, #687); and lent, `get_mut`'s,
+        // `try_borrow`'s and `Cell::from_mut`'s, the handle, held as a
+        // guard's is.
+        let flattened = (values.as_slice().first())
+            .is_some_and(|cell| matches!(cell.kind, js::ExprKind::Handle(_, js::Storage::InPlace(_))));
+        // A flattened state's replaced by what a function makes of it,
+        // `replace_with`'s: its class's object.
+        let in_place = match known {
+            Std::CellReplaceWith => self.in_place_object(values, out),
+            _ => None,
+        };
         let mut arg = || values.next().expect("rustc checked the arguments");
         let js_span = self.js_span(span);
         // What a `Cell` is written, as its storage, the handle on it, says
@@ -243,6 +255,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Expr::undefined()
             }
+            // Of a flattened state's, its handle on its class's object (ADR
+            // 1044): what `f` makes of a `&mut` to it, the handle, through
+            // which it may write, then what it held, a copy of its variant's
+            // keys (`moved_out`), and each key of what `f` made set there, as
+            // std's `mem::replace` of that `&mut` (#687). Never counted: no
+            // borrow `f` makes can meet it (`counted_in`).
+            Std::CellReplaceWith if let Some((object, storage)) = in_place => {
+                let item = generic_args.type_at(0);
+                let made = apply(arg(), vec![Expr::stored_handle(object.clone(), storage)]);
+                let next = self.spill("next", made, out);
+                let old = match call.unread {
+                    true => Expr::undefined(),
+                    false => {
+                        let copied = self.moved_out(object.clone(), item);
+                        self.spill("old", copied, out)
+                    }
+                };
+                let sets = storage.written_in_place(
+                    &object,
+                    next,
+                    &mut |value, out| self.spill("state", value, out),
+                    js_span,
+                );
+                out.extend(sets.expect("a flattened state's storage"));
+                old
+            }
             // What it held, and the new value in its place: `v`, its type's
             // default, or what `f` makes of it, given a `&mut` to it: the
             // object itself, or the cell's `{ value }`, which is a box (ADR 0074).
@@ -367,6 +405,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `&mut` to what it holds: the object itself, or for a number or
             // text the cell, the `{ value }` box a `&mut` to one is (ADR 0074).
             Std::CellGetMut if self.is_value_cell(tys[0].peel_refs()) => arg(),
+            // Of a flattened state's, its handle on its class's object, held
+            // as a guard's is, so a whole write through it sets each key
+            // there (`read_handles`, ADR 1044, #687); and so is
+            // `Cell::from_mut`'s of one, `Cell::from_mut(&mut
+            // *chunk.state.borrow_mut())`.
+            Std::CellGetMut | Std::CellFromMut if flattened => {
+                let handle = arg();
+                self.spill("state", handle, out)
+            }
             // Of what a `&mut` to is a cell (`is_cell_pointee`), a number's,
             // a text's or a type parameter's, generic code's box (ADR 0454),
             // the cell itself, which that `&mut` is (#614).
@@ -384,6 +431,75 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             // A cell of each item, a handle on it (ADR 0152).
             Std::CellItems => Expr::call(Expr::helper("$mutItems"), vec![cell_contents(arg())]),
+            // A `RefCell`'s of a flattened state, either, its handle on its
+            // class's object (ADR 1044), or one a variable holds, as MIR
+            // says (`Call::flattened`): each borrowed, a counted one checked,
+            // two flattened ones told apart by their objects, as Rust's
+            // second `borrow_mut` panics of one swapped with itself; then
+            // each moved out, a copy of its variant's keys (`moved_out`), and
+            // written with the other's (#687).
+            Std::CellSwap if call.flattened.contains(&true) => {
+                let item = generic_args.type_at(0);
+                let checked = !self.quiet_ref_cell(tys[0].peel_refs(), false);
+                let mut sides = Vec::new();
+                for flattened in call.flattened {
+                    let cell = arg();
+                    sides.push(match (cell.kind, flattened) {
+                        (js::ExprKind::Handle(object, storage @ js::Storage::InPlace(_)), _) => {
+                            let object = match object.reads_same() && !object.has_effects() {
+                                true => *object,
+                                false => self.spill("object", *object, out),
+                            };
+                            Swapped::InPlace(object, storage)
+                        }
+                        (kind, flattened) => {
+                            let cell = Expr { kind, ..cell };
+                            let cell = match cell.reads_same() && !cell.has_effects() {
+                                true => cell,
+                                false => self.spill("cell", cell, out),
+                            };
+                            match flattened {
+                                true => Swapped::Held(cell),
+                                false => {
+                                    if checked && !matches!(cell.kind, js::ExprKind::Handle(..)) {
+                                        let check = Expr::call(Expr::helper("$borrowMut"), vec![cell.clone()]);
+                                        out.push(StmtKind::Expr(check).at(js_span));
+                                    }
+                                    Swapped::Cell(cell)
+                                }
+                            }
+                        }
+                    });
+                }
+                let [a, b] = <[Swapped; 2]>::try_from(sides).ok().expect("a swap's two cells");
+                if let (Some(a), Some(b)) = (a.object(), b.object()) {
+                    let itself = Expr::bin(Op::Eq, a, b);
+                    let panic = StmtKind::Throw(Expr::panic(Expr::str("RefCell already borrowed"))).at(js_span);
+                    out.push(StmtKind::If(itself, vec![panic], None).at(js_span));
+                }
+                let read = |cx: &Self, side: &Swapped| match side {
+                    Swapped::InPlace(object, _) => cx.moved_out(object.clone(), item),
+                    Swapped::Held(handle) => cx.moved_out(Expr::held(handle.clone()), item),
+                    Swapped::Cell(cell) => Expr::held(cell.clone()),
+                };
+                let write = |cx: &mut Self, side: &Swapped, value: Expr, out: &mut Vec<Stmt>| match side {
+                    Swapped::InPlace(object, storage) => {
+                        let spill = &mut |value, out: &mut Vec<Stmt>| cx.spill("state", value, out);
+                        let sets = storage.written_in_place(object, value, spill, js_span);
+                        out.extend(sets.expect("a flattened state's storage"));
+                    }
+                    Swapped::Held(handle) => out.push(StmtKind::Assign(Expr::held(handle.clone()), value).at(js_span)),
+                    Swapped::Cell(cell) => {
+                        out.push(StmtKind::Assign(Expr::held(cell.clone()), written(cell, value)).at(js_span));
+                    }
+                };
+                let a_moved = read(self, &a);
+                let t = self.spill("t", a_moved, out);
+                let b_moved = read(self, &b);
+                write(self, &a, b_moved, out);
+                write(self, &b, t, out);
+                Expr::undefined()
+            }
             Std::CellSwap if self.is_std_type(tys[0].peel_refs(), StdItem::RefCell) => {
                 let mut given = vec![arg(), arg()];
                 // Of objects, their contents swapped in place (ADR 0863).
@@ -453,6 +569,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let guard = Expr::call(Expr::helper(name), given);
                 if lock { result::ok(guard) } else { guard }
+            }
+            // Of one no borrow of which can meet another, as a borrow of it
+            // is: its guard, `Ok`, as no other can be held (#687); a
+            // flattened state's, its handle on its class's object, held as
+            // a guard's is, so a whole write through it sets each key
+            // (`read_handles`).
+            Std::TryBorrow { lock: false, .. } if flattened => {
+                let handle = arg();
+                result::ok(self.spill("state", handle, out))
+            }
+            Std::TryBorrow { lock: false, .. } if unchecked || self.quiet_ref_cell(tys[0].peel_refs(), false) => {
+                let cell = arg();
+                result::ok(self.uncounted(cell))
             }
             Std::TryBorrow { mutable, lock } => {
                 let mut given = vec![arg()];
@@ -1084,5 +1213,28 @@ fn cell_contents(cell: Expr) -> Expr {
             args[0].clone()
         }
         _ => Expr::held(cell),
+    }
+}
+
+/// A cell a `RefCell`'s `swap` of a flattened state is given (#687).
+enum Swapped {
+    /// A flattened state's handle on its class's object, each of whose
+    /// keys a write sets (ADR 1044).
+    InPlace(Expr, js::Storage),
+    /// A flattened state's handle a variable holds, whose `value` is the
+    /// object, written through its setter, each key (`read_handles`).
+    Held(Expr),
+    /// Any other `RefCell`, `{ value }`.
+    Cell(Expr),
+}
+
+impl Swapped {
+    /// A flattened state's object, which tells it from another.
+    fn object(&self) -> Option<Expr> {
+        match self {
+            Swapped::InPlace(object, _) => Some(object.clone()),
+            Swapped::Held(handle) => Some(Expr::held(handle.clone())),
+            Swapped::Cell(_) => None,
+        }
     }
 }

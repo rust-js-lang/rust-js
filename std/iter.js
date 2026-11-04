@@ -1747,7 +1747,7 @@ export function fuseFuseImplIFusedIterator_next(
   dropIItem,
 ) {
   if (fuse.iter != null) {
-    return IIterator.next({ TAG: "Continue", _0: $someValue(fuse.iter) }._0);
+    return IIterator.next($someValue(fuse.iter));
   }
 }
 
@@ -1792,12 +1792,7 @@ export function fuseFuseImplIFusedIterator_nth(
   dropIItem,
 ) {
   if (fuse.iter != null) {
-    return $nthDropping(
-      $lent($given({ TAG: "Continue", _0: $someValue(fuse.iter) }._0, IIterator, true)),
-      n,
-      dropIItem,
-      true,
-    );
+    return $nthDropping($lent($given($someValue(fuse.iter), IIterator, true)), n, dropIItem, true);
   }
 }
 
@@ -1822,7 +1817,7 @@ export function fuseFuseImplIFusedIterator_nextBack(
   dropIItem,
 ) {
   if (fuse.iter != null) {
-    return IDoubleEndedIterator.next_back({ TAG: "Continue", _0: $someValue(fuse.iter) }._0);
+    return IDoubleEndedIterator.next_back($someValue(fuse.iter));
   }
 }
 
@@ -1858,12 +1853,7 @@ export function fuseFuseImplIFusedIterator_nthBack(
 ) {
   if (fuse.iter != null) {
     return $nthBack(
-      $given(
-        { TAG: "Continue", _0: $someValue(fuse.iter) }._0,
-        IIterator,
-        true,
-        IDoubleEndedIterator,
-      ),
+      $given($someValue(fuse.iter), IIterator, true, IDoubleEndedIterator),
       n,
       $some,
       dropIItem,
@@ -2082,7 +2072,7 @@ export function revDebug_fmt(rev, options, TDebug) {
 export function enumerateIterator_next(enumerate, IIterator = { next: $next }, dropI, dropIItem) {
   const next = IIterator.next(enumerate.iter);
   if (next != null) {
-    const a = { TAG: "Continue", _0: $someValue(next) }._0;
+    const a = $someValue(next);
     const i = enumerate.count$;
     enumerate.count$ = (enumerate.count$ + 1) >>> 0;
     return [i, a];
@@ -2118,7 +2108,7 @@ export function enumerateIterator_sizeHint(
 export function enumerateIterator_nth(enumerate, n, IIterator = { next: $next }, dropI, dropIItem) {
   const nth = $nthDropping($lent($given(enumerate.iter, IIterator, true)), n, dropIItem, true);
   if (nth != null) {
-    const a = { TAG: "Continue", _0: $someValue(nth) }._0;
+    const a = $someValue(nth);
     const i = (enumerate.count$ + n) >>> 0;
     enumerate.count$ = (i + 1) >>> 0;
     return [i, a];
@@ -2229,7 +2219,7 @@ export function enumerateDoubleEndedIterator_nextBack(
 ) {
   const nextBack = IDoubleEndedIterator.next_back(enumerate.iter);
   if (nextBack != null) {
-    const a = { TAG: "Continue", _0: $someValue(nextBack) }._0;
+    const a = $someValue(nextBack);
     let len;
     try {
       len = IExactSizeIterator.len(enumerate.iter);
@@ -2257,7 +2247,7 @@ export function enumerateDoubleEndedIterator_nthBack(
     dropIItem,
   );
   if (nthBack != null) {
-    const a = { TAG: "Continue", _0: $someValue(nthBack) }._0;
+    const a = $someValue(nthBack);
     let len;
     try {
       len = IExactSizeIterator.len(enumerate.iter);
@@ -3450,7 +3440,7 @@ export function takeWhileIterator_next(
   }
   const next = IIterator.next(takeWhile.iter);
   if (next != null) {
-    const x = { TAG: "Continue", _0: $someValue(next) }._0;
+    const x = $someValue(next);
     let tmp;
     try {
       tmp = takeWhile.predicate(x);
@@ -3841,7 +3831,7 @@ export function mapWhileIterator_next(
 ) {
   const next = IIterator.next(mapWhile.iter);
   if (next != null) {
-    return mapWhile.predicate({ TAG: "Continue", _0: $someValue(next) }._0);
+    return mapWhile.predicate($someValue(next));
   }
 }
 
@@ -3972,7 +3962,7 @@ export function scanIterator_next(
           scan.state = value;
         },
       },
-      { TAG: "Continue", _0: $someValue(next) }._0,
+      $someValue(next),
     );
   }
 }
@@ -5411,7 +5401,7 @@ export function skipIterator_nth(skip, n, IIterator = { next: $next }, dropI, dr
     if (nth == null) {
       return;
     }
-    dropIItem?.({ TAG: "Continue", _0: $someValue(nth) }._0);
+    dropIItem?.($someValue(nth));
   }
   return $nthDropping($lent($given(skip.iter, IIterator, true)), n, dropIItem, true);
 }
@@ -5481,7 +5471,7 @@ export function skipIterator_last(skip, IIterator = { next: $next }, dropI, drop
       skip.return();
       return result;
     }
-    const value = { TAG: "Continue", _0: $someValue(nth) }._0;
+    const value = $someValue(nth);
     try {
       dropIItem?.(value);
     } catch (error) {
@@ -6590,7 +6580,7 @@ export function chainIterator_next(
   }
   function fallback() {
     if (chain.b != null) {
-      return BIterator.next({ TAG: "Continue", _0: $someValue(chain.b) }._0);
+      return BIterator.next($someValue(chain.b));
     }
   }
   return andThenOrClear ?? fallback();
@@ -6881,12 +6871,7 @@ export function chainIterator_nth(
     }
   }
   if (chain.b != null) {
-    return $nthDropping(
-      $lent($given({ TAG: "Continue", _0: $someValue(chain.b) }._0, BIterator, true)),
-      n,
-      dropAItem,
-      true,
-    );
+    return $nthDropping($lent($given($someValue(chain.b), BIterator, true)), n, dropAItem, true);
   }
 }
 
@@ -6975,7 +6960,7 @@ export function chainDoubleEndedIterator_nextBack(
   }
   function fallback() {
     if (chain.a != null) {
-      return ADoubleEndedIterator.next_back({ TAG: "Continue", _0: $someValue(chain.a) }._0);
+      return ADoubleEndedIterator.next_back($someValue(chain.a));
     }
   }
   return andThenOrClear ?? fallback();
@@ -7020,12 +7005,7 @@ export function chainDoubleEndedIterator_nthBack(
   }
   if (chain.a != null) {
     return $nthBack(
-      $given(
-        { TAG: "Continue", _0: $someValue(chain.a) }._0,
-        AIterator,
-        true,
-        ADoubleEndedIterator,
-      ),
+      $given($someValue(chain.a), AIterator, true, ADoubleEndedIterator),
       n,
       $some,
       dropAItem,
@@ -9098,7 +9078,7 @@ export function fuseFuseImplIFusedIterator_tryRfold(
 
 export function andThenOrClear(opt, f, dropT, dropU, dropFnOnce) {
   if (opt.value != null) {
-    const x = f({ TAG: "Continue", _0: $someMut(opt) }._0);
+    const x = f($someMut(opt));
     if (x == null) {
       try {
         if (opt.value != null) {
@@ -9266,23 +9246,19 @@ export function flattenCompatIUIterator_sizeHint(
   }
   lower = Math.min(tmp + lo, 4294967295);
   if (fhi != null) {
-    const value = { TAG: "Continue", _0: fhi }._0;
     if (bhi != null) {
-      const value$1 = { TAG: "Continue", _0: bhi }._0;
-      if (!$overflowing((value + value$1) >>> 0, value + value$1, 0, 4294967295)[1]) {
-        const value$2 = { TAG: "Continue", _0: (value + value$1) >>> 0 }._0;
+      if (!$overflowing((fhi + bhi) >>> 0, fhi + bhi, 0, 4294967295)[1]) {
+        const value = (fhi + bhi) >>> 0;
         if (upper != null) {
-          const b = { TAG: "Continue", _0: upper }._0;
           const [_78, _79] = $overflowing(
-            Math.imul(IItemConstSize, b) >>> 0,
-            IItemConstSize * b,
+            Math.imul(IItemConstSize, upper) >>> 0,
+            IItemConstSize * upper,
             0,
             4294967295,
           );
           if (!_79) {
-            const value = { TAG: "Continue", _0: _78 }._0;
-            upper = !$overflowing((value$2 + value) >>> 0, value$2 + value, 0, 4294967295)[1]
-              ? { TAG: "Continue", _0: (value$2 + value) >>> 0 }._0
+            upper = !$overflowing((value + _78) >>> 0, value + _78, 0, 4294967295)[1]
+              ? (value + _78) >>> 0
               : undefined;
           } else {
             upper = undefined;
@@ -10257,7 +10233,7 @@ export function stepByStepByImplI_specNth(
     if (next == null) {
       return;
     }
-    const first = { TAG: "Continue", _0: $someValue(next) }._0;
+    const first = $someValue(next);
     if (n === 0) {
       return $some(first);
     }
@@ -10276,7 +10252,7 @@ export function stepByStepByImplI_specNth(
     if (nth == null) {
       return;
     }
-    dropIItem?.({ TAG: "Continue", _0: $someValue(nth) }._0);
+    dropIItem?.($someValue(nth));
   } else {
     n = (n + 1) >>> 0;
   }
@@ -10312,7 +10288,7 @@ export function stepByStepByImplI_specNth(
     if (value == null) {
       return;
     }
-    dropIItem?.({ TAG: "Continue", _0: $someValue(value) }._0);
+    dropIItem?.($someValue(value));
   }
 }
 
@@ -10646,7 +10622,7 @@ export function stepByStepByBackImplI_specTryRfold(
 
 export function andThenOrClear$1(opt, f, dropT, dropU, dropFnOnce) {
   if (opt.value != null) {
-    const x = f({ TAG: "Continue", _0: $someMut(opt) }._0);
+    const x = f($someMut(opt));
     if (x == null) {
       try {
         if (opt.value != null) {
@@ -10679,7 +10655,7 @@ export function zipZipImplAB_next(
 ) {
   const value = AIterator.next(zip.a);
   if (value != null) {
-    const value$1 = { TAG: "Continue", _0: $someValue(value) }._0;
+    const value$1 = $someValue(value);
     let tmp;
     try {
       tmp = BIterator.next(zip.b);
@@ -10688,7 +10664,7 @@ export function zipZipImplAB_next(
       throw error;
     }
     if (tmp != null) {
-      return [value$1, { TAG: "Continue", _0: $someValue(tmp) }._0];
+      return [value$1, $someValue(tmp)];
     }
     const result = undefined;
     dropAItem?.(value$1);
@@ -10731,7 +10707,7 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
 ) {
   const value = AIterator.next(zip.a);
   if (value != null) {
-    const value$1 = { TAG: "Continue", _0: $someValue(value) }._0;
+    const value$1 = $someValue(value);
     let tmp;
     try {
       tmp = BIterator.next(zip.b);
@@ -10740,7 +10716,7 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
       throw error;
     }
     if (tmp != null) {
-      return [value$1, { TAG: "Continue", _0: $someValue(tmp) }._0];
+      return [value$1, $someValue(tmp)];
     }
     const result = undefined;
     dropAItem?.(value$1);
@@ -11601,7 +11577,7 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
 
 export function andThenOrClear$2(opt, f, dropT, dropU, dropFnOnce) {
   if (opt.value != null) {
-    const x = f({ TAG: "Continue", _0: $someMut(opt) }._0);
+    const x = f($someMut(opt));
     if (x == null) {
       try {
         if (opt.value != null) {

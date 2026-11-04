@@ -1430,9 +1430,15 @@ What's moved out of it whole, its cell's `replace` or `mem::replace`,
 `take`, `swap` or `Cell::from_mut(..).replace` of a `&mut` to it, is a
 copy of the keys its variant has, chosen by its tag, so it never has a
 key an earlier variant left on the chunk, as a value made in JS hasn't
-(#658, #659). Its cell's `swap`, `get_mut` and `replace_with` are
-refused, and so is the cell lent, `&chunk.state`, or borrowed where
-another borrow of it may be, as its object counts no borrows
+(#658, #659); so is its cell's `into_inner`, and what its `replace_with`
+and `swap` move out. A `replace_with`'s function is given the chunk's
+`&mut`, which writes its keys; a `swap` of two chunks' states first
+panics where they're one chunk, as Rust's second borrow does; and
+`get_mut`, `try_borrow` and `try_borrow_mut` give the chunk's `&mut` or
+borrow, `Ok` of it, as no other borrow can be held (#687). The cell lent,
+`&chunk.state`, or borrowed where another borrow of it may be, a
+`replace_with` whose function borrows it too, is refused, as its object
+counts no borrows
 ([ADR 1044](../../decisions/1044-a-flattened-state-is-its-classs-own-keys.md)).
 Its declaration, `--declarations`', has each key as the class's
 property: the tag any variant's, and each other key what any variant

@@ -203,14 +203,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A whole cell moved out of a field that's the property it
             // holds (`property_cell`): a cell of its own, of what it held,
-            // which the field written again doesn't change.
+            // which the field written again doesn't change, a flattened
+            // state's a copy of its variant's keys (`moved_out_of_cell`).
             Operand::Copy(place) | Operand::Move(place) if self.whole_property_cell(state, *place) => {
                 let span = state.body.local_decls[place.local].source_info.span;
                 let read = self.mir_place(state, *place, span, out)?;
-                Ok(Value::Expr(Expr::object(vec![js::Prop::Field(
-                    js::HELD.into(),
-                    Expr::held(read),
-                )])))
+                let item = match place.ty(state.body, self.tcx).ty.kind() {
+                    ty::Adt(_, args) => args.type_at(0),
+                    _ => unreachable!("a cell"),
+                };
+                let read = match read.kind {
+                    js::ExprKind::Handle(object, js::Storage::InPlace(_)) => {
+                        let object = match object.reads_same() && !object.has_effects() {
+                            true => *object,
+                            false => self.spill("object", *object, out),
+                        };
+                        self.moved_out_of_cell(object, item)
+                    }
+                    _ => Expr::held(read),
+                };
+                Ok(Value::Expr(Expr::object(vec![js::Prop::Field(js::HELD.into(), read)])))
             }
             // A `&mut` of a number a closure captured as the place it is,
             // read whole into a local, as rustc's optimized MIR copies it

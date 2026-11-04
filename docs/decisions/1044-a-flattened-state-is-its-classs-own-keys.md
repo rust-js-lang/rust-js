@@ -5,7 +5,9 @@ Status: Accepted (the user's decisions, rd380, 2026-11-01). Amended
 its refusal points at the borrow. Amended: its declaration has its keys.
 Amended (#482): a closure's write through a borrow it captures is the
 keys too. Amended (2026-11-04, #658, #659, the user's decision): what's
-moved out of it whole is a copy of its variant's keys. Extended by [1071](1071-a-flattened-enum-is-told-by-its-keys.md):
+moved out of it whole is a copy of its variant's keys. Amended (#687):
+its cell's `swap`, `get_mut`, `replace_with`, `into_inner` and
+`try_borrow` compile. Extended by [1071](1071-a-flattened-enum-is-told-by-its-keys.md):
 an enum of no tag, told by its keys, its owner `bindings::flattened`. Extends
 [0204](0204-flattened-props.md), whose flattened field was a struct of
 named fields or a JS object, to a `RefCell` of a discriminated union
@@ -95,12 +97,13 @@ first declared (`bindings::flattened_state`).
   or borrowed while code that may borrow it runs, is refused at the field;
   `js::throw` runs none of the crate's code (`#[rust_js::runs_nothing]`),
   so a `match` that throws a state's reason holds its borrow quietly.
-- **What gives the value whole or swaps it is refused**: its cell's
+- **What gives the value whole or swaps it was refused**: its cell's
   `swap`, `get_mut`, `replace_with`, `into_inner`, `try_borrow`, as the
-  value is no object of its own; write it through a borrow. What's moved
-  out of it whole, its cell's `replace` and `mem::replace`, `take`, `swap`
-  and `Cell::from_mut(..).replace` of a `&mut` to it, is a copy of its
-  variant's keys (the amendment of 2026-11-04 below). A flattened cell of
+  value is no object of its own. What's moved out of it whole, its cell's
+  `replace` and `mem::replace`, `take`, `swap` and
+  `Cell::from_mut(..).replace` of a `&mut` to it, is a copy of its
+  variant's keys (the amendment of 2026-11-04 below), and so is each of
+  those five's (#687, below). A flattened cell of
   anything else, a struct of std's, is refused at its declaration, where
   a `RefCell` of a struct passed as one of named fields.
 - `Clone`, `PartialEq`, `PartialOrd` and `Hash` read it whole only where
@@ -429,3 +432,88 @@ program now lends the state to a function too. Mutations
 `flattened-cell-replaced-old-the-object` and `flattened-cell-swapped-apart`
 (`std_types/cell.ts`), and `handle-on-a-state-handles-value-kept`
 (`mir/tidy/values.ts`).
+
+## Amended (#687): its cell's `swap`, `get_mut`, `replace_with`, `into_inner` and `try_borrow` compile
+
+A refusal, P2 (#687). The cell's own calls that give its value whole or
+swap it were refused with this ADR's message, as the value is no object
+of its own; #658/#659's copy of its variant's keys made a move out of it
+right, and each of these is that move out, or the handle a borrow is.
+Each is built on what's there:
+
+- **`into_inner` moves it out**: a cell moved whole out of a field that
+  holds its value is a cell of what it held (`whole_property_cell`), a
+  flattened state's a copy of its variant's keys (`mut_ref.rs`'s
+  `moved_out_of_cell`), as the class's object may be written again. The
+  field given to its own `into_inner`, or to `get_mut` through the `&mut`
+  rustc holds alone, isn't read whole (`validation.rs`), nor lent
+  (`ref_cells.rs`'s `borrows_its_cell`).
+- **`get_mut` lends the place**: its handle on the class's object, which
+  a `&mut` to the state is (#478), held as a guard's is, a `const` tidy's
+  `read_handles` reads as the object and whose whole writes set each key;
+  so is `Cell::from_mut`'s of the guard's `&mut`. Lent on, it's `{ value:
+  task }`, written back key by key, as a guard's `&mut` is.
+- **`replace_with(f)` moves it out**: `f` is given the handle, through
+  which it writes the keys, then what it held is a copy of its variant's
+  keys (`moved_out`) and each key of what `f` made is set, as std's
+  `mem::replace` of the `&mut` it lends. Its borrow, held while `f` runs,
+  is momentary where nothing `f` runs can ask of it (`drops/facts.rs`'s
+  `replaced_with`, by `CellBorrows::bounds_ask`, which takes a body that
+  may borrow anything, or what rust-js can't see, as asking), so it's
+  never counted; one whose `f` may borrow the cell stays refused at the
+  borrow, as a borrow another may meet.
+- **`swap` is two moves out**: each side a copy of its variant's keys,
+  each written with the other's; a plain `RefCell` of the state, a
+  parameter's or a variable's, read and written as its `value`, checked
+  where its borrows are counted. Two flattened states are told apart by
+  their objects, `if (a === b) throw new Error("RefCell already
+  borrowed")`, as Rust's second `borrow_mut` panics of one swapped with
+  itself, so a swap of one counts nothing and lends neither cell
+  (`flattened_state_lent`). Which of the two cells are flattened states
+  is MIR's, `QuietCells::flattened`, carried by `Call::flattened`, as
+  either may be held in a variable by then.
+- **`try_borrow` is the guard**: a `try_borrow`'s guard is momentary where
+  a borrow's would be (`momentary` of its `Result`), not counted always,
+  so of a cell no borrow of which can meet another it's `Ok` of the
+  guard, as no other can be held; a flattened state's, its handle, held
+  as `get_mut`'s is. Its `Ok` read at once is its parts, `{ TAG: "Ok",
+  _0: state }.TAG` `"Ok"` (`Expr::member`, of an object made here whose
+  other fields do nothing), so `try_borrow_mut().is_ok()` is `true`.
+
+A wrong answer on `main` (P0), which `try_borrow` and `replace_with`
+counting their cell always had hidden for theirs: a guard of one cell
+held across another's `replace_with` whose function borrows the first,
+`let held = b.borrow(); a.replace_with(|n| { b.borrow_mut().push('!');
+*n + 1 })`, was quiet, as a cell's own call ran nothing but its borrow
+(`Called::Cell`), so `b` was uncounted and the JS wrote it where Rust
+panics. **A cell's own call runs what its bounds say too**,
+`replace_with`'s function, a `take`'s `Default`
+(`CellBorrows::cell_call_asks`, which `call_asks` and tidy's `Quiet` ask,
+and `call_asks_seen`), a body no summary says asking, so that guard is
+counted. And tidy's whole write through a handle, of a value it
+names, names each its own, `state`, `state$1`, as two such writes may be
+in one list.
+
+Not in this: the cell's own `take` of a `Default` of the crate's stays
+refused, as the borrow analysis reads that `Default` as run while the cell
+is borrowed, though std runs it first; a follow-up.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior: each value moved out is apart from the object, and a
+swap of a state with itself panics as Rust's does.
+
+Held by corpus `flattened_state_cell_swapped` (two classes' states, a
+state and a plain cell, a parameter's and a variable's, either way
+round), `flattened_state_cell_swapped_itself` (run-fail),
+`flattened_state_got_mut`, `flattened_state_into_inner`,
+`flattened_state_replaced_with` (its `held_across` a guard of another
+cell its function's `try_borrow_mut` sees), `flattened_state_tried`,
+`flattened_state_cell_swapped_borrowed` (run-fail, a plain cell borrowed
+while it's swapped) and `replace_with_held_across` (run-fail, the P0),
+against native Rust; and `test/classes-flattened-state.test.ts`'s copies, whose
+`replace_with`, `swap` of a plain cell and of another chunk's state, and
+`into_inner` each have their variant's keys alone, and the refusal of a
+`replace_with` whose function borrows the state. Mutations in
+`std_types/cell.ts`, `drops/facts.ts`, `drops/ref_cells.ts`,
+`mir/local_facts.ts`, `mir/operands.ts`, `analysis/cell_borrows.ts`,
+`analysis/validation.ts`, `mir/tidy/values.ts` and `js/make.ts`.

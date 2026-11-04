@@ -3,15 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "untagged-from-runs-code",
-    breaks:
-      "a `From` into an untagged enum is taken to run code rust-js can't see, so a borrow held across webapi's `BlobPart::from(chunk)` is counted, `$borrow(buffer, true)` and a `try`/`finally` (rd535)",
-    file: "src/lower/analysis/cell_borrows.rs",
-    find: "        || crate::lower::untagged::is_untagged_from(tcx, id)\n",
-    replace: "",
-    tests: ["test/webapi-objects.test.ts", "-t", "From into an untagged"],
-  },
-  {
     name: "cell-key-never-same",
     breaks:
       "a thread-local's borrow is never its own, so `LOG`'s second borrow in its own closure isn't counted and doesn't throw",
@@ -69,19 +60,6 @@ export const mutations: Mutation[] = [
     find: "            Some(Some(summary)) => summary.asks(tcx, &self.closed, held),\n",
     replace: "            Some(Some(_)) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "thread_local_borrow_inside"],
-  },
-  {
-    name: "jsx-builders-ask",
-    breaks:
-      "making an element counts as code that may ask, so a field's `RefCell` lent to a prop is a counted cell",
-    file: "src/lower/analysis/cell_borrows.rs",
-    find: "            JsForm::Jsx(_)\n                | JsForm::Prop(_)",
-    replace: "            JsForm::Text\n                | JsForm::Prop(_)",
-    tests: [
-      "test/jsx-evaluation-order.test.ts",
-      "-t",
-      "borrowed for a prop is its value",
-    ],
   },
   {
     name: "refcell-write-borrows-nothing",
@@ -198,9 +176,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a borrow held while a library's code runs is taken to run only what rust-js sees, so a consumer holds one of a cell the library borrows unchecked (ADR 0863)",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "            Called::Any => self.anything_asks(tcx, held),\n        }\n    }\n\n    /// Whether `cell`'s own impls",
-    replace:
-      "            Called::Any => false,\n        }\n    }\n\n    /// Whether `cell`'s own impls",
+    find: "            Called::Any => self.anything_asks(tcx, held),\n        }\n    }\n\n    /// Whether a cell's own call",
+    replace: "            Called::Any => false,\n        }\n    }\n\n    /// Whether a cell's own call",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
   {
@@ -212,47 +189,6 @@ export const mutations: Mutation[] = [
     replace:
       "        if false && recognition.is_borrowed_cell(cell) {\n            given.cells.push(Borrow {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_eq_while_mut.rs$"],
-  },
-  {
-    name: "binding-runs-nothing-ignored",
-    breaks:
-      "a binding marked `#[rust_js::runs_nothing]` may run anything, so a borrow held across it is counted, `$borrow(log.quiet)` (ADR 0867)",
-    file: "src/lower/analysis/cell_borrows.rs",
-    find: "        ) || runs_nothing(tcx, id))\n",
-    replace: "        ))\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "unless it runs nothing"],
-  },
-  {
-    name: "binding-runs-nothing-everywhere",
-    breaks:
-      "every binding runs nothing, so a borrow held while JS calls the crate back isn't counted and doesn't panic `already borrowed` (ADR 0867)",
-    file: "src/lower/analysis/cell_borrows.rs",
-    find: "        ) || runs_nothing(tcx, id))\n",
-    replace: "        ) || true)\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "unless it runs nothing"],
-  },
-  {
-    name: "is-defined-runs-code",
-    breaks:
-      "`js::is_defined`'s `typeof` may run anything, so React's `aggregateErrors` makes `thrownErrors` a counted cell (ADR 0867)",
-    file: "src/lower/analysis/cell_borrows.rs",
-    find: "                | JsForm::StrictEquals\n                | JsForm::Asks(_)\n",
-    replace: "                | JsForm::StrictEquals\n",
-    tests: ["test/js-errors.test.ts", "-t", "AggregateError"],
-  },
-  {
-    name: "js-object-deref-runs-code",
-    breaks:
-      "an `&AggregateError`'s `Deref` to `&JsError` may run anything, so `thrownErrors` is a counted cell (ADR 0867)",
-    file: "src/lower/analysis/cell_borrows.rs",
-    find: "        || is_js_object_deref(tcx, tcx.parent(id))\n",
-    replace: "",
-    tests: [
-      "test/js-builtins.test.ts",
-      "test/js-errors.test.ts",
-      "-t",
-      "AggregateError|a Map is a WeakMap",
-    ],
   },
   {
     name: "std-impls-walk-every-part",
@@ -365,51 +301,6 @@ export const mutations: Mutation[] = [
     replace: "            false => Called::Any,\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_vec_element_places.rs$"],
     snapshots: true,
-  },
-  {
-    name: "runs-only-given-ignored",
-    breaks:
-      "a binding that runs only what it's given, `console.error(..)` of text, may run anything, so a borrow held across it is counted, `$borrowMut(root.expirationTimes, true)`",
-    file: "src/lower/analysis/cell_borrows.rs",
-    find: "    binding_runs_nothing(recognition.tcx, def_id) || given_what_runs_nothing(recognition, def_id, args)\n",
-    replace: "    binding_runs_nothing(recognition.tcx, def_id)\n",
-    tests: ["test/lowering-cell-borrows.test.ts"],
-  },
-  {
-    name: "resolve-runs-anything",
-    breaks:
-      "a promise's resolve given text may run anything, so react-markup's `resolve(buffer.borrow().clone())` counts the borrow, `$borrow(buffer, true)`, refused where a library borrows a `RefCell<String>` unchecked (rd654)",
-    file: "src/lower/analysis/cell_borrows.rs",
-    find: "        && super::resolvers::is_resolve(tcx, thir, *callee)\n",
-    replace: "        && super::resolvers::is_resolve(tcx, thir, *callee) && false\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "promise's resolve is given text"],
-  },
-  {
-    name: "any-dyn-fn-a-resolve",
-    breaks:
-      "any `&dyn Fn(String)` a function is given is taken for a promise's resolve, so a borrow held across it isn't counted and never panics `already borrowed` where it borrows the cell (rd654)",
-    file: "src/lower/analysis/cell_borrows.rs",
-    find: "        && super::resolvers::is_resolve(tcx, thir, *callee)\n",
-    replace: "        && (super::resolvers::is_resolve(tcx, thir, *callee) || true)\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "promise's resolve is given text"],
-  },
-  {
-    name: "resolve-given-objects-runs-nothing",
-    breaks:
-      "a promise's resolve given the crate's object, whose `then` JS reads there and then, runs nothing, so a borrow held across it isn't counted (rd654)",
-    file: "src/lower/analysis/cell_borrows.rs",
-    find: "        && (args.type_at(1).tuple_fields().iter()).all(|input| value_runs_nothing(recognition, input))\n",
-    replace: "        && (args.type_at(1).tuple_fields().iter()).all(|_| true)\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "promise's resolve is given text"],
-  },
-  {
-    name: "given-objects-run-nothing",
-    breaks:
-      "an object given to `console.error(..)`, whose `toString` may borrow the cell, runs nothing, so a borrow held across it isn't counted and never panics `already borrowed`",
-    file: "src/lower/analysis/cell_borrows.rs",
-    find: "            value_runs_nothing(recognition, items.type_at(0))\n        }\n        _ => false,\n",
-    replace: "            value_runs_nothing(recognition, items.type_at(0))\n        }\n        _ => true,\n",
-    tests: ["test/lowering-cell-borrows.test.ts"],
   },
   {
     name: "fn-pointer-call-runs-anything",
@@ -525,19 +416,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "null-binding-runs-code",
-    breaks:
-      "`js::null()` made while a borrow of a field is held is taken to run code that may borrow it, so React's update clone's `gesture` is a checked `$fieldCell` everywhere",
-    file: "src/lower/analysis/cell_borrows.rs",
-    find: "                | JsForm::Null\n",
-    replace: "",
-    tests: [
-      "test/lowering-cell-borrows.test.ts",
-      "-t",
-      "js::null.. made while a borrow",
-    ],
-  },
-  {
     name: "own-key-cell-a-fields",
     breaks:
       'a thread-local only its key reaches, set while a field of its cell\'s type is borrowed, may be that field, so every such field is a checked cell, `$borrow($fieldCell(fiber, "parent"), true)` (ADR 0960, amended)',
@@ -563,19 +441,6 @@ export const mutations: Mutation[] = [
       "test/lowering-cell-borrows.test.ts",
       "-t",
       "std's function given to std's",
-    ],
-  },
-  {
-    name: "with-this-runs-its-closure",
-    breaks:
-      "`function::with_this(closure)` is said to run its closure, so a `pub` thread-local made of a factory of constructors whose constructor calls a fn pointer, React's `export const SyntheticEvent = createSyntheticEvent(EventInterface)`, is refused",
-    file: "src/lower/analysis/cell_borrows.rs",
-    find: "                | JsForm::WithThis\n",
-    replace: "",
-    tests: [
-      "test/js-constructors.test.ts",
-      "-t",
-      "a pub thread-local is made of a factory of constructors",
     ],
   },
   {
@@ -662,4 +527,22 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "type of a type parameter"],
   },
 
+  {
+    name: "bounds-ask-of-anything-nothing",
+    breaks:
+      "a function a `replace_with` runs that may borrow anything, which no summary says, is taken to ask nothing of a borrow held while it runs, so a guard of a cell it borrows is quiet and `try_borrow_mut` sees no borrow (#687)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "                _ => true,\n            })\n    }\n",
+    replace: "                _ => false,\n            })\n    }\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_replaced_with.rs$"],
+  },
+  {
+    name: "cell-call-runs-nothing-of-its-bounds",
+    breaks:
+      "a cell's own call, `replace_with`, runs nothing but its borrow, so a guard of another cell held across it whose function borrows that cell is quiet, and the JS writes the cell where Rust's `borrow_mut` panics, or its `try_borrow_mut` sees no borrow (#687)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        asks(recognition.tcx, &self.closed, theirs, held) || self.bounds_ask(recognition, called, held, drops)\n",
+    replace: "        asks(recognition.tcx, &self.closed, theirs, held)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(flattened_state_replaced_with|replace_with_held_across).rs$"],
+  },
 ];

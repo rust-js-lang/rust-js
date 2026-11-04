@@ -212,3 +212,8 @@ take one too. The other 70 run as native Rust does.
   results change, so Rust's. The matrix's `flattened_state__field` runs
   every operation, through the guard and lent to a function; its
   `heldRefused` is gone.
+- **#687, the flattened state's cell's own moves out.** Its `into_inner`,
+  `replace_with` and `swap` copy its variant's keys by the same owner's
+  `moved_out`, and a cell of one moved whole out of its field by
+  `moved_out_of_cell`; its `get_mut` and `try_borrow` lend the handle a
+  `&mut` to it is (ADR 1044's amendment).

@@ -527,6 +527,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     borrowed_there.insert(cell_lent(thir, lent));
                 }
+                // A flattened state's `swap` borrows the other cell too, and
+                // lends it nowhere (#687).
+                if let ExprKind::Call { fun, ref args, .. } = expr.kind
+                    && crate::lower::fn_def(thir[fun].ty)
+                        .is_some_and(|(id, args)| recognition.classify(id, args) == Some(crate::lower::Std::CellSwap))
+                    && args.iter().any(|&cell| flattened_state_lent(tcx, thir, cell))
+                {
+                    borrowed_there.extend(args.iter().map(|&cell| through_borrows(thir, cell)));
+                }
             }
             let derive = (tcx.trait_impl_of_assoc(body.def_id))
                 .is_some_and(|imp| crate::lower::recognition::known_derive(tcx, imp));
@@ -912,9 +921,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The `RefCell` types a body borrows counted (ADR 0863): a guard held
     /// while code that may borrow its cell runs, not one of `facts`'
-    /// momentary ones (ADR 0328); a `try_borrow`'s, whose guard may be kept;
-    /// a `swap`'s, which borrows two that may be one; a `replace_with`'s,
-    /// held while its function runs, and a `take`'s, while the crate's
+    /// momentary ones (ADR 0328), a `try_borrow`'s too (#687); a `swap`'s,
+    /// which borrows two that may be one, but a flattened state's; a
+    /// `replace_with`'s, held while its function runs where that may ask
+    /// (#687), and a `take`'s, while the crate's
     /// `Default` does; a thread-local's `with_borrow`, held while what it's
     /// given runs, where that may borrow it (ADR 0580); and a borrow given
     /// as a function, `map(RefCell::borrow)`, whose guard its callee keeps.
@@ -961,7 +971,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => false,
             };
             let held = match kind {
-                Some(Std::Borrow { lock: false, .. }) => {
+                // A `try_borrow`'s too, its guard held as a borrow's (#687).
+                Some(Std::Borrow { lock: false, .. } | Std::TryBorrow { lock: false, .. }) => {
                     !facts.momentary.contains(&fun) && !facts.let_held.contains(&fun)
                 }
                 Some(Std::LocalBorrow { .. }) => {
@@ -971,9 +982,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     });
                     !quiet
                 }
-                Some(Std::TryBorrow { lock: false, .. } | Std::CellSwap | Std::CellReplaceWith) => {
-                    receiver.is_some_and(refcell)
+                // Of two that may be one, but a flattened state's, told
+                // from the other by its object (#687).
+                Some(Std::CellSwap) => {
+                    receiver.is_some_and(refcell) && !args.iter().any(|&cell| flattened_state_lent(tcx, thir, cell))
                 }
+                // Held while its function runs, where that may ask (#687).
+                Some(Std::CellReplaceWith) => receiver.is_some_and(refcell) && !facts.momentary.contains(&fun),
                 Some(Std::CellTake) => {
                     receiver.is_some_and(refcell)
                         && !generic_args
@@ -1244,6 +1259,32 @@ fn cell_lent(thir: &rustc_middle::thir::Thir<'_>, lent: rustc_middle::thir::Expr
     }
 }
 
+/// Whether `lent`, a cell given to a call, `&x.state`, is a class's
+/// flattened state (`bindings::is_flattened_state_field`), whose `swap`
+/// counts no borrow and lends neither cell (#687).
+fn flattened_state_lent(
+    tcx: TyCtxt<'_>,
+    thir: &rustc_middle::thir::Thir<'_>,
+    lent: rustc_middle::thir::ExprId,
+) -> bool {
+    field_of(thir, through_borrows(thir, lent))
+        .is_some_and(|field| crate::lower::bindings::is_flattened_state_field(tcx, field))
+}
+
+/// What `lent` lends, through each borrow and deref of it: `b.state` of
+/// `&*&b.state`, a `swap`'s other cell, reborrowed.
+fn through_borrows(
+    thir: &rustc_middle::thir::Thir<'_>,
+    lent: rustc_middle::thir::ExprId,
+) -> rustc_middle::thir::ExprId {
+    use crate::lower::body_queries::strip;
+    let mut lent = strip(thir, lent);
+    while let ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } = thir[lent].kind {
+        lent = strip(thir, arg);
+    }
+    lent
+}
+
 /// The fields `call`, a call that may give one in place, may give
 /// (`classes::fields_given`, rd304).
 fn fields_given<'tcx>(
@@ -1281,8 +1322,9 @@ fn field_of<'tcx>(
 
 /// Whether a call of `id` is one of a `RefCell`'s that borrows it, or
 /// holds it only while it swaps what it holds, whose borrow `counted_in`
-/// counts where it may meet another: what a field's use may be and the
-/// field still have no reference to it elsewhere (ADR 0863, amended).
+/// counts where it may meet another, or takes it whole, `into_inner`,
+/// which rustc lets no borrow outlive: what a field's use may be and the
+/// field still have no reference to it elsewhere (ADR 0863, amended; #687).
 fn borrows_its_cell<'tcx>(
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     id: DefId,
@@ -1298,6 +1340,7 @@ fn borrows_its_cell<'tcx>(
                 | Std::CellTake
                 | Std::CellGetMut
                 | Std::CellReplaceWith
+                | Std::CellGet
         )
     )
 }

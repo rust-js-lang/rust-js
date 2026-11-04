@@ -434,12 +434,43 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
         }
     }
 
+    /// A `RefCell`'s `replace_with(f)`, `call`, which holds its borrow while
+    /// `f` runs: momentary where nothing `f` runs can ask of it (#687), as a
+    /// guard's held only while nothing can ask is (ADR 0328).
+    fn replaced_with(&mut self, call: ExprId) {
+        let recognition = &self.cx.recognition;
+        let ExprKind::Call { fun, .. } = self.thir[call].kind else {
+            return;
+        };
+        let Some((id, generic_args)) = fn_def(self.thir[fun].ty) else {
+            return;
+        };
+        if recognition.classify(id, generic_args) != Some(Std::CellReplaceWith) {
+            return;
+        }
+        let Some(cell) = self
+            .borrows
+            .borrowed_in(recognition, (self.body_owner, self.thir), call)
+        else {
+            return;
+        };
+        let drops = |ty| self.cx.drops_but_guards(ty);
+        if !self.borrows.bounds_ask(recognition, (id, generic_args), cell, &drops) {
+            self.facts.momentary.insert(fun);
+        }
+    }
+
     /// A guard made here, `c.borrow_mut()` say, that's held only while
     /// nothing can ask whether its cell is borrowed: its borrow is checked,
     /// and not counted (ADR 0328).
     fn momentary(&mut self, e: ExprId) {
         let recognition = &self.cx.recognition;
-        if !recognition.is_guard(self.thir[e].ty) {
+        let ty = self.thir[e].ty;
+        // Or a `try_borrow`'s `Result` of one, `match c.try_borrow() { Ok(v)
+        // => .., Err(_) => .. }`, its guard held as a borrow's is (#687).
+        let tried = matches!(ty.kind(), ty::Adt(_, args)
+            if recognition.is_std_type(ty, StdItem::Result) && args.types().next().is_some_and(|ok| recognition.is_guard(ok)));
+        if !recognition.is_guard(ty) && !tried {
             return;
         }
         // The borrow: `c.borrow()`, or `m.lock()` of `m.lock().unwrap()`.
@@ -450,6 +481,15 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                 return;
             };
             match fn_def(self.thir[fun].ty).and_then(|(id, args)| recognition.classify(id, args)) {
+                Some(Std::TryBorrow { lock: false, .. }) if tried => {
+                    match self
+                        .borrows
+                        .borrowed_in(recognition, (self.body_owner, self.thir), call)
+                    {
+                        Some(cell) => break (fun, cell),
+                        None => return,
+                    }
+                }
                 Some(Std::Borrow { .. }) => {
                     match self
                         .borrows
@@ -1161,13 +1201,16 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
                 false
             }
             // A borrow of a cell of a class of its own, by its flow, that
-            // can't be `own`'s (rd482).
+            // can't be `own`'s (rd482), and what the call runs by its bounds
+            // while it's held, `replace_with`'s function (#687).
             ExprKind::Call { fun, .. }
                 if fun != self.own
                     && let Some(theirs) = borrow(self)
-                    && theirs.class.is_some() =>
+                    && theirs.class.is_some()
+                    && let Some(called) = fn_def(self.thir[fun].ty) =>
             {
-                self.borrows.borrow_asks(self.cx.recognition.tcx, theirs, self.cell)
+                let drops = |ty| self.drops(ty);
+                (self.borrows).cell_call_asks(&self.cx.recognition, called, theirs, self.cell, &drops)
             }
             ExprKind::Call { fun, ref args, .. } if fun != self.own => self.call_asks(fun, args),
             ExprKind::InlineAsm(_) | ExprKind::Yield { .. } | ExprKind::Become { .. } => true,
@@ -1320,6 +1363,7 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'q, 'a, 'tcx> {
             }
             _ => {}
         }
+        self.replaced_with(id);
         self.closure_checked(expr);
         // What a closure takes, which rustc's walk doesn't reach: a capture by
         // value moves it in.

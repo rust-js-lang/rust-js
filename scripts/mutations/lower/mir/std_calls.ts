@@ -79,31 +79,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "as_deref_counted"],
   },
   {
-    name: "mir-format-width-dropped",
-    breaks: "`{:5?}` from MIR pads nothing",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                        None => spec.width.map(|w| Expr::int(w.into())),\n",
-    replace: "                        None => None,\n",
-    tests: ["test/corpus.test.ts", "-t", "debug_options"],
-  },
-  {
-    name: "mir-format-precision-dropped",
-    breaks: "`{:.1?}` from MIR shows every digit",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                        None => spec.precision.map(|p| Expr::int(p.into())),\n",
-    replace: "                        None => None,\n",
-    tests: ["test/corpus.test.ts", "-t", "debug_options"],
-  },
-  {
-    name: "mir-format-width-argument-dropped",
-    breaks: "`{:>w$}` from MIR pads nothing",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                    let width = match spec.width_from {\n                        Some(from) => Some(item(from).ok_or_else(bad)?.2),\n",
-    replace:
-      "                    let width = match spec.width_from {\n                        Some(_) => None,\n",
-    tests: ["test/corpus.test.ts", "-t", "format_width_arguments"],
-  },
-  {
     name: "mir-to-int-unchecked-uncast",
     breaks:
       "`x.to_int_unchecked()` under MIR reaches `number_call`, which has none",
@@ -211,20 +186,6 @@ export const mutations: Mutation[] = [
     replace:
       "            Std::TypeName { .. } if false => lower(move |this, state, values, out| {\n",
     tests: ["test/corpus.test.ts", "-t", "type_facts"],
-  },
-  {
-    name: "mir-format-pieces-unwritten",
-    breaks:
-      "a format string's pieces, `concat!`'s, are each formatted, but only the first is written",
-    file: "src/lower/mir/std_calls.rs",
-    find: "            .map(|(template, lines)| Ok((self.formatted_parts(items, template, &mut arguments, span)?, *lines)))\n",
-    replace:
-      "            .take(1)\n            .map(|(template, lines)| Ok((self.formatted_parts(items, template, &mut arguments, span)?, *lines)))\n",
-    tests: [
-      "test/lowering-strings.test.ts",
-      "-t",
-      "a format string of a concat! is its pieces joined by",
-    ],
   },
   {
     name: "mir-chars-as-str-refused",
@@ -504,14 +465,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {
-    name: "mir-pretty-dyn-debug-plain",
-    breaks: "MIR's `{:#?}` of a `&dyn Debug` made elsewhere shows it plain",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                    if spec.alternate && kind == Std::FmtDebug && self.is_dyn_debug(ty) {\n",
-    replace: "                    if false {\n",
-    tests: ["test/lowering.test.ts", "-t", "MIR refuses .....? of a kept"],
-  },
-  {
     name: "mir-json-text-pretty-lost",
     breaks: "MIR's `serde_json::to_string_pretty` writes it compact",
     file: "src/lower/mir/std_calls.rs",
@@ -563,15 +516,6 @@ export const mutations: Mutation[] = [
     find: "                if this.formats_out_of_order(&items, &template, span)? {\n",
     replace:
       "                if false && this.formats_out_of_order(&items, &template, span)? {\n",
-    tests: ["test/corpus.test.ts", "-t", "^format_arguments_first.rs$"],
-  },
-  {
-    name: "formatting-runs-nothing",
-    breaks:
-      "a `Debug` of the crate's isn't taken to run code, so an argument after it is made after it runs",
-    file: "src/lower/mir/std_calls.rs",
-    find: "            formatted |= part.runs_program_code();\n",
-    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^format_arguments_first.rs$"],
   },
   {
@@ -835,19 +779,6 @@ export const mutations: Mutation[] = [
     replace: "                let read = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^once_cell_known_empty.rs$"],
     snapshots: true,
-  },
-  {
-    name: "format-argument-unplaced",
-    breaks:
-      "a format argument written across lines isn't told so, so its value is on the template's line however long (ADR 0641, amended)",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                    (value, code.is_some_and(|code| code.contains('\\n')))\n",
-    replace: "                    (value, code.is_some_and(|_| false))\n",
-    tests: [
-      "test/lowering-strings.test.ts",
-      "-t",
-      "a format argument written across lines",
-    ],
   },
   {
     name: "chain-array-argument-unstepped",

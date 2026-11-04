@@ -7,17 +7,23 @@
 //! `TASK_QUEUE`'s is taken, or the heap's `push` runs.
 
 use super::cell_flow::CellClass;
+use super::resolvers;
 use crate::lower::Body;
-use crate::lower::bindings::{JsForm, is_binding, js_form, runs_nothing, runs_only_given};
+use crate::lower::bindings::is_binding;
 use crate::lower::body_queries::strip;
 use crate::lower::fn_def;
-use crate::lower::recognition::{Recognition, Std, StdItem, is_js_object_deref};
+use crate::lower::recognition::{Recognition, Std, StdItem};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::{ExprId, ExprKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
 use std::collections::{HashMap, HashSet};
+
+mod runs_nothing;
+pub(in crate::lower) use runs_nothing::{
+    binding_call_runs_nothing, binding_runs_nothing, call_runs_nothing, resolve_runs_nothing,
+};
 
 /// A cell a borrow is of: a thread-local's, by its key, or any of a type.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -254,11 +260,6 @@ impl<'tcx> CellBorrows<'tcx> {
         }
     }
 
-    /// Whether `theirs`, a borrow, may meet `held`, held (`asks`).
-    pub(in crate::lower) fn borrow_asks(&self, tcx: TyCtxt<'tcx>, theirs: Borrow<'tcx>, held: Borrow<'tcx>) -> bool {
-        asks(tcx, &self.closed, theirs, held)
-    }
-
     /// Whether calling `def_id`, of `args`, may ask of `held` by code
     /// rust-js sees (`seen`): what `call_asks` says, but of what it can't
     /// see, nothing. What a guard held after the call's arguments asks of
@@ -275,7 +276,15 @@ impl<'tcx> CellBorrows<'tcx> {
         let itself = |ty| self.clones_itself(recognition, owner, ty);
         match called(recognition, def_id, args, receiver, &itself) {
             Called::Nothing | Called::Any => false,
-            Called::Cell(theirs) => asks(tcx, &self.closed, theirs, held),
+            // A cell's own call, and what it runs by its bounds while it
+            // holds its borrow, `replace_with`'s function (#687).
+            Called::Cell(theirs) => {
+                asks(tcx, &self.closed, theirs, held) || {
+                    let given = std_given(recognition, &self.impls, def_id, args);
+                    given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))
+                        || (given.bodies.iter()).any(|&(body, args)| self.seen_asks(tcx, body, args, held))
+                }
+            }
             Called::Body(body, args) => self.seen_asks(tcx, body, Some(args), held),
             Called::Bodies(bodies) => {
                 (bodies.into_iter()).any(|(body, args)| self.seen_asks(tcx, body, Some(args), held))
@@ -365,7 +374,7 @@ impl<'tcx> CellBorrows<'tcx> {
         let itself = |ty| self.clones_itself(recognition, owner, ty);
         match called(recognition, def_id, args, receiver, &itself) {
             Called::Nothing => false,
-            Called::Cell(theirs) => asks(tcx, &self.closed, theirs, held),
+            Called::Cell(theirs) => self.cell_call_asks(recognition, (def_id, args), theirs, held, drops),
             Called::Body(body, args) => self.runs_asks(tcx, body, Some(args), held, drops),
             Called::Bodies(bodies) => {
                 (bodies.into_iter()).any(|(body, args)| self.runs_asks(tcx, body, Some(args), held, drops))
@@ -378,6 +387,46 @@ impl<'tcx> CellBorrows<'tcx> {
             }
             Called::Any => self.anything_asks(tcx, held),
         }
+    }
+
+    /// Whether a cell's own call, of `def_id` and `args`, its borrow
+    /// `theirs`, may ask of `held`: its borrow, and what it runs by its
+    /// bounds while it holds it, `replace_with`'s function, a `take`'s
+    /// `Default` (`bounds_ask`, #687).
+    pub(in crate::lower) fn cell_call_asks(
+        &self,
+        recognition: &Recognition<'_, 'tcx>,
+        called: (DefId, ty::GenericArgsRef<'tcx>),
+        theirs: Borrow<'tcx>,
+        held: Borrow<'tcx>,
+        drops: &dyn Fn(Ty<'tcx>) -> bool,
+    ) -> bool {
+        asks(recognition.tcx, &self.closed, theirs, held) || self.bounds_ask(recognition, called, held, drops)
+    }
+
+    /// Whether what std's `def_id`, called of `args`, runs by its bounds
+    /// (`std_given`) may ask of `held`, where it's held while that runs: a
+    /// `RefCell`'s `replace_with(f)`'s, what `f` runs, a `take`'s, its
+    /// `Default` (#687). Of a body that may borrow anything, which no
+    /// summary says, or what rust-js can't see, it may: what runs while a
+    /// borrow is held is the crate's own, which may reach the cell.
+    pub(in crate::lower) fn bounds_ask(
+        &self,
+        recognition: &Recognition<'_, 'tcx>,
+        (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
+        held: Borrow<'tcx>,
+        drops: &dyn Fn(Ty<'tcx>) -> bool,
+    ) -> bool {
+        let tcx = recognition.tcx;
+        let given = std_given(recognition, &self.impls, def_id, args);
+        given.any
+            || given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))
+            || (given.bodies.iter()).any(|&(body, args)| match self.of.get(&body) {
+                Some(Some(theirs)) => {
+                    instantiated(tcx, theirs, args, drops).is_none_or(|theirs| theirs.asks(tcx, &self.closed, held))
+                }
+                _ => true,
+            })
     }
 
     /// Whether `cell`'s own impls may ask of it (ADR 0863): a `RefCell<T>`'s
@@ -683,126 +732,6 @@ enum Called<'tcx> {
     Std(DefId, ty::GenericArgsRef<'tcx>),
     /// What rust-js can't see.
     Any,
-}
-
-/// Whether a binding runs no code of the crate's: what makes a JSX element
-/// or an object, or casts a value, a component given called when React
-/// renders it; a read of a property, `node.sortIndex`, `in` or
-/// `instanceof`, but by a JS getter that calls back into Rust; whether the
-/// host has a global, `typeof X !== "undefined"`; JS's `null`, `js::null()`;
-/// a function made of a closure, `function::with_this`, which runs it only
-/// where it's called, a call of a `dyn Fn` (ADR 1009); and one that says it
-/// runs nothing, `#[rust_js::runs_nothing]` (ADR 0867).
-pub(in crate::lower) fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    is_binding(tcx, id)
-        && (matches!(
-            js_form(tcx, id),
-            JsForm::Jsx(_)
-                | JsForm::Prop(_)
-                | JsForm::Object(_)
-                | JsForm::This
-                | JsForm::Get(_)
-                | JsForm::GetIndex
-                | JsForm::In
-                | JsForm::InstanceOf(_)
-                | JsForm::InstanceOfGiven
-                | JsForm::Truthy
-                | JsForm::StrictEquals
-                | JsForm::Asks(_)
-                | JsForm::WithThis
-                | JsForm::TypeofObject
-                | JsForm::Null
-                | JsForm::Or
-                | JsForm::Method
-        ) || runs_nothing(tcx, id))
-}
-
-/// Whether a call of `id` runs no code of anyone's but its own, not even
-/// what it's given: a binding's that runs nothing (`binding_runs_nothing`),
-/// or a JS object type's `Deref` to the class it extends, which is the
-/// object itself, `AggregateError`'s to `Error`; or a `From` into an
-/// untagged enum, the value it's given, webapi's `BlobPart::from(chunk)`
-/// (rd535). The one answer a borrow
-/// held across it and a thread-local made as its module loads ask
-/// (`may_run::may_run`, ADR 1006, amended).
-pub(in crate::lower) fn call_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    binding_runs_nothing(tcx, id)
-        || is_js_object_deref(tcx, tcx.parent(id))
-        || crate::lower::untagged::is_untagged_from(tcx, id)
-}
-
-/// Whether `def_id`, a binding that runs no code but its own and what it's
-/// given, `#[rust_js::runs_only_given]` (ADR 0898), is given, of `args`,
-/// only what runs nothing as JS reads it (`value_runs_nothing`).
-fn given_what_runs_nothing<'tcx>(
-    recognition: &Recognition<'_, 'tcx>,
-    def_id: DefId,
-    args: ty::GenericArgsRef<'tcx>,
-) -> bool {
-    let tcx = recognition.tcx;
-    if !is_binding(tcx, def_id) || !runs_only_given(tcx, def_id) {
-        return false;
-    }
-    let sig = tcx.fn_sig(def_id).instantiate(tcx, args).skip_normalization();
-    (sig.skip_binder().inputs().iter()).all(|&input| value_runs_nothing(recognition, input))
-}
-
-/// Whether JS reads a value of `ty` with no code of anyone's: a number, a
-/// `bool`, a `char`, text, and `Option`s, tuples, arrays, slices and
-/// `Vec`s of them, which `String(x)` and `+x` read so (ADR 0898). Not an
-/// object of the crate's, whose getter or `toString` may be its code, nor
-/// a JS value, which may be a function or a proxy of the crate's.
-fn value_runs_nothing<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> bool {
-    match ty.kind() {
-        ty::Bool | ty::Char | ty::Int(_) | ty::Uint(_) | ty::Float(_) | ty::Str | ty::Never => true,
-        ty::Ref(_, inner, _) | ty::Slice(inner) | ty::Array(inner, _) => value_runs_nothing(recognition, *inner),
-        ty::Tuple(items) => items.iter().all(|item| value_runs_nothing(recognition, item)),
-        ty::Adt(_, _) if recognition.is_lang_adt(ty, LangItem::String) => true,
-        ty::Adt(_, items)
-            if recognition.is_lang_adt(ty, LangItem::Option) || recognition.is_std_type(ty, StdItem::Vec) =>
-        {
-            value_runs_nothing(recognition, items.type_at(0))
-        }
-        _ => false,
-    }
-}
-
-/// Whether a call of `def_id` of `args`, a `dyn Fn`'s `call`, given
-/// `call_args` in `thir`, calls a promise's resolve function, which JS gave
-/// its executor (`resolvers::is_resolve`), given only what runs nothing as
-/// JS reads it (`value_runs_nothing`): it fulfils the promise, which only
-/// queues its reactions, and runs nothing, so a borrow held across it
-/// meets no other (rd654, ADR 0898, amended).
-pub(in crate::lower) fn resolve_runs_nothing<'tcx>(
-    recognition: &Recognition<'_, 'tcx>,
-    thir: &Thir<'tcx>,
-    (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
-    call_args: &[ExprId],
-) -> bool {
-    let tcx = recognition.tcx;
-    let fn_trait = tcx
-        .trait_of_assoc(def_id)
-        .is_some_and(|of| tcx.fn_trait_kind_from_def_id(of).is_some());
-    let (true, [callee, _]) = (fn_trait, call_args) else {
-        return false;
-    };
-    matches!(args.type_at(0).peel_refs().kind(), ty::Dynamic(..))
-        && (args.type_at(1).tuple_fields().iter()).all(|input| value_runs_nothing(recognition, input))
-        && super::resolvers::is_resolve(tcx, thir, *callee)
-}
-
-/// Whether a call of `def_id`, a binding, of `args`, runs none of the
-/// crate's code: one that runs nothing (`binding_runs_nothing`), or only
-/// what it's given, given only what runs nothing
-/// (`given_what_runs_nothing`). So a borrow held across it meets no other,
-/// and it sets none of the crate's variables, which lowering marks its
-/// call so (`Known::RunsNothing`, ADR 0277, amended).
-pub(in crate::lower) fn binding_call_runs_nothing<'tcx>(
-    recognition: &Recognition<'_, 'tcx>,
-    def_id: DefId,
-    args: ty::GenericArgsRef<'tcx>,
-) -> bool {
-    binding_runs_nothing(recognition.tcx, def_id) || given_what_runs_nothing(recognition, def_id, args)
 }
 
 /// What calling `def_id`, of `args`, runs; `receiver` its first argument,

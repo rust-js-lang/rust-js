@@ -12,6 +12,15 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 use std::collections::{HashMap, HashSet};
 
+/// Whether `field` is a class's flattened state, `#[rust_js::flatten]` of a
+/// `RefCell` of a discriminated union (`flattened_state`, ADR 1044): its
+/// object's keys, which tell it from another by the object they're on, so
+/// its `swap` counts no borrow (#687).
+pub(in crate::lower) fn is_flattened_state_field(tcx: TyCtxt<'_>, field: &ty::FieldDef) -> bool {
+    is_flatten(tcx, field)
+        && flattened_state(tcx, tcx.type_of(field.did).instantiate_identity().skip_normalization()).is_some()
+}
+
 /// Of `ty`, a flattened field's type, the state it holds where it's a
 /// `RefCell` of a discriminated union, `#[rust_js::tag = "status"]`, each
 /// variant of named fields or none (rd380, ADR 1044): its tag and each

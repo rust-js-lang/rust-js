@@ -329,4 +329,13 @@ export const mutations: Mutation[] = [
     replace: "                    let _ = constant;\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "flattened-cell-moved-out-the-object",
+    breaks:
+      "a flattened state's cell moved out of its field whole, `into_inner`'s, holds its class's object, which carries an earlier variant's keys and the class's own, not a copy of its variant's (#687)",
+    file: "src/lower/mir/operands.rs",
+    find: "                        self.moved_out_of_cell(object, item)\n",
+    replace: "                        object\n",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "a copy of its variant's keys"],
+  },
 ];

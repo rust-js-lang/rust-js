@@ -47,12 +47,15 @@ pub(super) struct Call<'c, 'tcx> {
     /// is then no read, as `*x.f.borrow_mut() = v`'s isn't (rd418, ADR
     /// 1022, amended).
     pub(super) unread: bool,
+    /// Of a `RefCell`'s `swap`, which of its two cells is a class's
+    /// flattened state, its object's keys (ADR 1044, #687).
+    pub(super) flattened: [bool; 2],
     pub(super) span: Span,
 }
 
 /// What MIR says of a call's arguments that their values don't, as `Call`
-/// carries it: `nulled`, `quiet`, `momentary`, `null_for_none` and
-/// `read_alike`; and of what it gives, `unread`.
+/// carries it: `nulled`, `quiet`, `momentary`, `null_for_none`,
+/// `read_alike` and `flattened`; and of what it gives, `unread`.
 #[derive(Clone, Copy, Default)]
 pub(super) struct Given<'c> {
     pub(super) nulled: &'c [bool],
@@ -61,6 +64,7 @@ pub(super) struct Given<'c> {
     pub(super) null_for_none: bool,
     pub(super) read_alike: bool,
     pub(super) unread: bool,
+    pub(super) flattened: [bool; 2],
 }
 
 impl<'c, 'tcx> Call<'c, 'tcx> {
@@ -79,6 +83,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             null_for_none,
             read_alike,
             unread,
+            flattened,
         } = given;
         Call {
             def_id,
@@ -90,6 +95,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             null_for_none,
             read_alike,
             unread,
+            flattened,
             span,
         }
     }

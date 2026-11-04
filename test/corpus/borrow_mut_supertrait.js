@@ -11,15 +11,12 @@ export const vecPoolIndex = {
     return { borrowMut: (value) => value, Borrow: () => ({ borrow: (value) => value }) };
   },
   len(self) {
-    return { borrow: (value) => value }.borrow(self).length;
+    return self.length;
   },
   first(self) {
-    const value = {
-      borrowMut: (value) => value,
-      Borrow: () => ({ borrow: (value) => value }),
-    }.borrowMut(self).value;
+    const value = self.value;
     value[0] = (value[$at(value, 0)] + 1) >>> 0;
-    return $index({ borrow: (value) => value }.borrow(self.value), 0);
+    return $index(self.value, 0);
   },
 };
 
@@ -31,15 +28,12 @@ export function _usize__K_PoolIndex(K) {
       return { borrowMut: (value) => value, Borrow: () => ({ borrow: (value) => value }) };
     },
     len(self) {
-      return { borrow: (value) => value }.borrow(self).length;
+      return self.length;
     },
     first(self) {
-      const value = {
-        borrowMut: (value) => value,
-        Borrow: () => ({ borrow: (value) => value }),
-      }.borrowMut(self).value;
+      const value = self.value;
       value[0] = (value[$at(value, 0)] + 1) >>> 0;
-      return $index({ borrow: (value) => value }.borrow(self.value), 0);
+      return $index(self.value, 0);
     },
   }));
 }

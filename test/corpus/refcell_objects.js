@@ -35,26 +35,22 @@ function add(totals, name, n) {
 
 function main() {
   const shared = [1, 2];
-  $borrowMut(shared).push(3);
-  const old = $take($borrowMut(shared), [9]);
-  const borrow = $borrow(shared);
-  const value = $borrow(shared);
-  console.log(`[${old.join(", ")}] [${borrow.join(", ")}] [${value.join(", ")}]`);
-  const taken = $borrowMut(shared).splice(0);
-  const value$1 = $borrow(shared);
-  console.log(`[${taken.join(", ")}] ${value$1.length === 0} ${shared === shared}`);
-  $borrowMut(shared).push(4, 5);
+  shared.push(3);
+  const old = $take(shared, [9]);
+  console.log(`[${old.join(", ")}] [${shared.join(", ")}] [${shared.join(", ")}]`);
+  const taken = shared.splice(0);
+  console.log(`[${taken.join(", ")}] ${shared.length === 0} ${shared === shared}`);
+  shared.push(4, 5);
   const before = $replaceWith(shared, (v) => v.map((n) => (n * 2) | 0), false, true);
-  const value$2 = $borrow(shared);
-  console.log(`[${before.join(", ")}] [${value$2.join(", ")}]`);
+  console.log(`[${before.join(", ")}] [${shared.join(", ")}]`);
 
   const left = new Map([["a", 1]]);
   const right = new Map([["b", 2]]);
   $refCellSwap(left, right, true);
   const get = $borrow(left).get("b");
-  const value$3 = $borrow(right).get("a");
+  const value = $borrow(right).get("a");
   console.log(
-    `${get == null ? "None" : `Some(${get})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+    `${get == null ? "None" : `Some(${get})`} ${value == null ? "None" : `Some(${value})`}`,
   );
 
   const seen = new Set();
@@ -71,9 +67,9 @@ function main() {
   add(totals, "b", 3n);
   const copy = $withBorrow(totals, (value) => ({ ...value, names: value.names.slice() }), true);
   $borrowMut(totals).names.length = 0;
-  const value$4 = $eq(totals, copy, true);
+  const value$1 = $eq(totals, copy, true);
   console.log(
-    `RefCell { value: ${$showBorrowed(totals, (value) => totalsDebug_fmt(value), true)} } RefCell { value: ${$showBorrowed(copy, (value) => totalsDebug_fmt(value), true)} } ${value$4}`,
+    `RefCell { value: ${$showBorrowed(totals, (value) => totalsDebug_fmt(value), true)} } RefCell { value: ${$showBorrowed(copy, (value) => totalsDebug_fmt(value), true)} } ${value$1}`,
   );
   $assign($borrowMut(totals), {
     sum: 1n,

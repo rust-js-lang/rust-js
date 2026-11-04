@@ -394,4 +394,13 @@ export const mutations: Mutation[] = [
     replace: "                        && !placed.contains(&e) =>\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "moved out"],
   },
+  {
+    name: "own-cell-calls-read-whole",
+    breaks:
+      "a flattened state's cell given to its own `get_mut` or `into_inner` is refused as flattened props read whole (#687)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                        && !own_calls.contains(&e)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_got_mut.rs$"],
+  },
 ];

@@ -643,7 +643,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     if !reject_unsupported(tcx, &foreign, &markers)
         || !reject_static_references(tcx, &all_bodies)
         || !reject_namespace_value_reads(tcx, &all_bodies)
-        || !reject_flatten_misuse(tcx, &all_bodies, &flattened)
         || !reject_rest_misuse(tcx)
         || !reject_parameter_name_misuse(tcx)
     {
@@ -684,7 +683,11 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         trait_impls: &trait_impls,
         foreign: &foreign,
     };
-    if !super::classes::reject_misuse(&classes_recognition, &all_bodies) {
+    // A flattened field's misuse, which asks what its cell's own calls are
+    // (ADR 1044, amended).
+    if !reject_flatten_misuse(&classes_recognition, &all_bodies, &flattened)
+        || !super::classes::reject_misuse(&classes_recognition, &all_bodies)
+    {
         return None;
     }
     if !super::classes::reject_constructors_as_values(tcx, &all_bodies) {

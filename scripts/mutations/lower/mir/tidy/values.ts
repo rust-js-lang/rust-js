@@ -436,4 +436,13 @@ export const mutations: Mutation[] = [
     replace: "            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v) && v.is_empty())\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_handed_on.rs$"],
   },
+  {
+    name: "in-place-spills-share-a-name",
+    breaks:
+      "two whole writes through a flattened state's handle in one list each spill what they write as `state`, declared twice (#687)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "                        let fresh = crate::names::fresh_in(&mut taken, \"state\");\n",
+    replace: "                        let fresh = String::from(\"state\");\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell_swapped.rs$"],
+  },
 ];

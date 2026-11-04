@@ -187,6 +187,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// What's moved out whole of a cell that holds its value, `old` its
+    /// read, `into_inner`'s or a field's cell moved: of a flattened state,
+    /// whose cell is its class's object's keys, a copy of its variant's
+    /// (`state_copied`), which the object written again doesn't change
+    /// (#687); of any other, `old`, the value it held, which no write
+    /// changes in place.
+    pub(in crate::lower) fn moved_out_of_cell(&self, old: Expr, item: Ty<'tcx>) -> Expr {
+        match item.kind() {
+            ty::Adt(adt, _) if self.is_flattened_state(item) => self.state_copied(old, item, *adt),
+            _ => old,
+        }
+    }
+
     /// A copy of a flattened state's keys, `of` the object they're on, that
     /// its variant has, chosen by its tag, as a value of it made in JS has
     /// them: `of.status === "pending" ? { status: of.status, tries: of.tries
