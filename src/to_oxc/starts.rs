@@ -269,3 +269,12 @@ pub(super) fn past_bindings(module: &Module, between: &mut String, (lo, hi): (u3
         between.replace_range(from..to, &" ".repeat(to - from));
     }
 }
+
+/// Whether a binding's declaration of no JS where it's written is between
+/// `lo` and `hi`: the blank lines around it, rustfmt's between items, tell
+/// nothing of the JS, so the comments above it are right above the code
+/// they're before, as ReactDOMRootFB writes `// Provided by www` right
+/// above its `const` (#634, rd752).
+pub(super) fn bound_between(module: &Module, (lo, hi): (u32, u32)) -> bool {
+    (module.bindings.iter()).any(|binding| binding.lo >= lo && binding.hi <= hi)
+}

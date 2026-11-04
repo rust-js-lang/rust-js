@@ -1155,6 +1155,7 @@ fn comments_of(
                 // took, `return c ? a : b`'s: before the keyword.
                 if (blank_before(if_keyword(&comment).unwrap_or(comment.lo)) || (i == 0 && set_apart.contains(&at)))
                     && !(part || taken || (i == 0 && declared_at.contains_key(&at)))
+                    && !(i > 0 && starts::bound_between(module, (own[i - 1].hi, comment.lo)))
                 {
                     pieces.push(blank(&text));
                 }
@@ -1183,7 +1184,7 @@ fn comments_of(
             let first_on_line = !statement_starts.iter().any(|&s| s >= line_start && s < at);
             if part || taken || declared_at.contains_key(&at) {
             } else if (own.is_empty() && ((first_on_line && blank_before(written)) || set_apart.contains(&at)))
-                || (!own.is_empty() && last <= at && {
+                || (!own.is_empty() && last <= at && !starts::bound_between(module, (last, at)) && {
                     // A line of nothing between: not a closure's opening's.
                     let gap: Vec<&str> = sources.text[last as usize..at as usize].split('\n').collect();
                     gap.len() > 2 && gap[1..gap.len() - 1].iter().any(|line| line.trim().is_empty())

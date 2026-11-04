@@ -1157,13 +1157,56 @@ const flags = flagsUntyped;
 import d, { a, b } from "./m.js";
 
 // Its default.
-
 // Of the same module, imported above.
-
 // The host's own.
-
 export function both() {`);
   expect(js).not.toContain("Its second");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.both(), lib.sum()]).toEqual([true, 9]);
+});
+
+// React DOM's ReactDOMRootFB writes `// Provided by www` right above `const
+// ReactFiberErrorDialogWWW = require('ReactFiberErrorDialog');`. Its port
+// writes the comment above the `require` binding, a function item with no
+// JS where it's written, and the thread-local the `const` is after it, a
+// blank line between the two items, as rustfmt keeps them: the JS had that
+// blank line between the comment and the `const`. The blank lines around a
+// binding of no JS tell nothing of the JS, so its comments are right above
+// the code they're before, and a blank line before them stays (#634).
+test("a comment above a binding of no JS is right above the code it's before", async () => {
+  const dir = fixture("comment-above-a-required-binding");
+  writeFileSync(join(dir, "dialog.js"), "module.exports = { show: true };\n");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Dialog {
+    pub show: bool,
+}
+
+pub fn first() -> u32 {
+    1
+}
+
+// Provided by www
+#[cfg_attr(rust_js, rust_js::link_name = "get ./dialog.js#*")]
+#[cfg_attr(rust_js, rust_js::require)]
+fn dialog() -> &'static Dialog {
+    unreachable!()
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::name = "ReactFiberErrorDialogWWW")]
+    static DIALOG: &'static Dialog = dialog();
+}
+
+pub fn shown() -> bool {
+    DIALOG.with(|dialog| dialog.show)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export function first() {
+  return 1;
+}
+
+// Provided by www
+const ReactFiberErrorDialogWWW = require("./dialog.js");
+`);
 });

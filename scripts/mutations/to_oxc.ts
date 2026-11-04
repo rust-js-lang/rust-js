@@ -802,4 +802,20 @@ export const mutations: Mutation[] = [
     tests: ["test/snapshots.test.ts", "-t", "imports"],
     snapshots: true,
   },
+  {
+    name: "binding-comments-apart-between",
+    breaks: "the comments above two bindings of no JS, before one item, are apart by the blank lines between the function items (#634)",
+    file: "src/to_oxc.rs",
+    find: "                    && !(i > 0 && starts::bound_between(module, (own[i - 1].hi, comment.lo)))\n",
+    replace: "",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "a binding's comments are above the import it makes"],
+  },
+  {
+    name: "binding-comments-apart-after",
+    breaks: "a comment above a binding of no JS is a blank line above the code it's before, rustfmt's between the items (#634)",
+    file: "src/to_oxc.rs",
+    find: " && !starts::bound_between(module, (last, at)) && {\n",
+    replace: " && {\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "a comment above a binding of no JS is right above"],
+  },
 ];

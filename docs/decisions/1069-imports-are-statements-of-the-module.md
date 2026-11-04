@@ -302,3 +302,31 @@ module directives' collection moved to `lower/bindings.rs`'s
 `module_directives`, beside `directives_of`, and a doc comment's of no JS
 to `to_oxc/starts.rs`, so `lower/pipeline.rs` and `to_oxc.rs` stay within
 the compiler's file cap; their mutations moved with them.
+
+## Amendment: a comment above a binding of no JS is right above its code (#634, the user's decision)
+
+React DOM's ReactDOMRootFB writes `// Provided by www` right above `const
+ReactFiberErrorDialogWWW = require('ReactFiberErrorDialog');`. Its port
+writes the comment above the `require` binding, a function item with no
+JS where it's written, and the thread-local the `const` is after it, a
+blank line between the two items as rustfmt keeps them: the amendment
+above placed the comment before the next item that has JS, and the blank
+line between the binding and the thread-local was printed between the
+comment and the `const`.
+
+**The user's decision (2026-11-04): a binding's comment is right above the
+item its JS goes into**: the blank lines around a binding of no JS, item
+boundaries only, tell nothing of the JS, neither between the comments
+above two such bindings nor between the last and the code
+(`to_oxc/starts.rs`'s `bound_between`, asked by `comments_of`). A blank
+line before the first comment, after the code above, stays. TodoMVC's
+`JSON.parse` binding's comment is right above `load`'s JSDoc, and the
+`imports` snapshot's two bindings' comments are one block.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, none: a blank line
+runs nothing.
+
+Held by `test/lowering-comments-items.test.ts`'s "a comment above a binding
+of no JS is right above the code it's before" and "a binding's comments
+are above the import it makes"; mutations `binding-comments-apart-between`
+and `binding-comments-apart-after` (`to_oxc.ts`).

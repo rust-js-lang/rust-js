@@ -1019,9 +1019,11 @@ where it's declared, `// Intentionally using * ..` above `import * as
 dynamicFlagsUntyped from "ReactNativeInternalFeatureFlags";`, and the code
 right after the binding is right after the import; one above a binding
 of no JS where it's written, a global's or one whose import is placed at
-another, is before the next item that has JS, as one above a type alias
-is, its doc comment nowhere
-([ADR 1069](../../decisions/1069-imports-are-statements-of-the-module.md), amended, rd752).
+another, is right above the next item that has JS, as one above a type
+alias is, `// Provided by www` above `const ReactFiberErrorDialogWWW =
+require(..)`, the blank lines around the binding telling nothing; its doc
+comment is nowhere
+([ADR 1069](../../decisions/1069-imports-are-statements-of-the-module.md), amended, rd752, #634).
 
 A doc comment's JSDoc keeps its lines: `///` lines are `/** one */`, or
 `/**\n * a\n * b\n */` of more, and a `/** */` block is as written, so

@@ -10,7 +10,6 @@ import { join, posix } from "node:path";
 import { URL as URL$1 } from "node:url";
 // A file of our own, beside the root's JS: its default export, and a
 // path through the whole module.
-
 // Another module's export named as an import of this one, `greet` beside
 // `./greet.js`'s default, is imported apart from it.
 import { greet as greet$1 } from "./inner/wave.js";
