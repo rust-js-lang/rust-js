@@ -705,7 +705,10 @@ pub fn pick(c: bool, a: u32, b: u32) -> u32 {
 // may change it: there it's read again, upstream's `fiber._debugTask.run(
 // ..)`, no `const debugTask` (ADR 0866, amended). Where the body runs code
 // first, or reads it twice, the binding stays, as Rust's value is the one
-// the test read.
+// the test read. Each binding is named as the field, `debug_task`, so it's
+// one `read_again` is asked of: one the program names otherwise, `task`,
+// keeps its `const` whatever runs (rd706), and these cases, named so,
+// checked nothing of `read_again` (the Nightly of 3c71ee8f9).
 test("a let chain's binding of a field the test read is read again where the body reads it first", async () => {
   const dir = fixture("chain-binding-read-again");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
@@ -732,10 +735,10 @@ pub fn run_in_task(fiber: Option<Rc<Fiber>>, callback: impl FnOnce(u32) -> u32, 
 /// Code runs before the binding's read, which may change the field.
 pub fn cleared_first(fiber: Option<&Fiber>, callback: impl Fn(u32) -> u32) -> u32 {
     if let Some(fiber) = fiber
-        && let Some(task) = fiber.debug_task.get()
+        && let Some(debug_task) = fiber.debug_task.get()
     {
         fiber.debug_task.set(None);
-        return task.run(move || callback(1));
+        return debug_task.run(move || callback(1));
     }
     2
 }
@@ -743,9 +746,9 @@ pub fn cleared_first(fiber: Option<&Fiber>, callback: impl Fn(u32) -> u32) -> u3
 /// Read twice: the second read is after the first's code ran.
 pub fn twice(fiber: Option<&Fiber>, callback: impl Fn(u32) -> u32) -> u32 {
     if let Some(fiber) = fiber
-        && let Some(task) = fiber.debug_task.get()
+        && let Some(debug_task) = fiber.debug_task.get()
     {
-        return task.run(|| callback(1)) + task.run(|| callback(2));
+        return debug_task.run(|| callback(1)) + debug_task.run(|| callback(2));
     }
     3
 }
@@ -758,9 +761,9 @@ fn probe(fiber: &Fiber) -> bool {
 /// Code runs before the binding's read, in the statement that reads it.
 pub fn probed_before(fiber: Option<&Fiber>, callback: impl Fn(u32) -> u32) -> u32 {
     if let Some(fiber) = fiber
-        && let Some(task) = fiber.debug_task.get()
+        && let Some(debug_task) = fiber.debug_task.get()
     {
-        return u32::from(probe(fiber)) + task.run(|| callback(1));
+        return u32::from(probe(fiber)) + debug_task.run(|| callback(1));
     }
     5
 }
@@ -768,10 +771,10 @@ pub fn probed_before(fiber: Option<&Fiber>, callback: impl Fn(u32) -> u32) -> u3
 /// The test runs code after it reads the field.
 pub fn probed(fiber: Option<&Fiber>, callback: impl Fn(u32) -> u32) -> u32 {
     if let Some(fiber) = fiber
-        && let Some(task) = fiber.debug_task.get()
+        && let Some(debug_task) = fiber.debug_task.get()
         && probe(fiber)
     {
-        return task.run(|| callback(1));
+        return debug_task.run(|| callback(1));
     }
     4
 }
@@ -779,8 +782,10 @@ pub fn probed(fiber: Option<&Fiber>, callback: impl Fn(u32) -> u32) -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  if (fiber !== null && fiber._debugTask != null) {\n    return fiber._debugTask.run(() => callback(arg0));\n  }\n");
-  expect(js.match(/const task = fiber\._debugTask;/g)).toHaveLength(4);
-  expect(js).not.toContain("const debugTask");
+  expect(js.match(/const debugTask = fiber\._debugTask;/g)).toHaveLength(4);
+  expect(js).toContain("    const debugTask = fiber._debugTask;\n    fiber._debugTask = null;\n    return debugTask.run(");
+  expect(js).toContain("    return (debugTask.run(() => callback(1)) + debugTask.run(() => callback(2))) >>> 0;\n");
+  expect(js).toContain("    return ((probe(fiber) ? 1 : 0) + debugTask.run(() => callback(1))) >>> 0;\n");
   const lib = await import(join(dir, "lib.js"));
   const task = { run: (f: () => number) => f() + 100 };
   expect([lib.runInTask({ _debugTask: task } as never, (n: number) => n * 2, 4 as never), lib.runInTask(null as never, (n: number) => n * 2, 4 as never), lib.runInTask({} as never, (n: number) => n * 2, 5 as never)]).toEqual([108, 8, 10]);
