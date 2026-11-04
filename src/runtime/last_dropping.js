@@ -30,8 +30,14 @@ function $lastDropping(it, drop, boxed) {
   }
   let last;
   let seen = false;
+  // The one kept is given up before it's dropped as the next replaces it:
+  // a drop that panics is its own, not dropped again as the panic unwinds,
+  // as std's `last` drops its `Option` once (#648).
   const keep = (item) => {
-    if (seen) drop?.(last);
+    if (seen) {
+      seen = false;
+      drop?.(last);
+    }
     last = item;
     seen = true;
   };
