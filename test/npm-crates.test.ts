@@ -20,10 +20,10 @@ function files(dir: string): string[] {
     .sort();
 }
 
-test("builtins, webapi, react and next are npm packages of their crates, which an app's Cargo finds in node_modules", () => {
+test("builtins, webapi, react, node, next and react-native are npm packages of their crates, which an app's Cargo finds in node_modules", () => {
   const out = fixture("npm-crates");
   run([process.execPath, "scripts/package-npm-crates.ts", out], 600_000, { RUSTC_BOOTSTRAP: "" });
-  expect(readdirSync(out).sort()).toEqual(["builtins.tgz", "next.tgz", "node.tgz", "react.tgz", "webapi.tgz"]);
+  expect(readdirSync(out).sort()).toEqual(["builtins.tgz", "next.tgz", "node.tgz", "react-native.tgz", "react.tgz", "webapi.tgz"]);
 
   const unpacked = (name: string) => {
     const dir = join(fixture(`npm-crate-${name}`));
@@ -41,6 +41,8 @@ test("builtins, webapi, react and next are npm packages of their crates, which a
     ["node", crates],
     // Next.js's, the library it binds, and React's and Node.js's crates, which it uses.
     ["next", { "@rust-js/builtins": crates["@rust-js/builtins"], "@rust-js/node": `~${cargo("node").package.version}`, "@rust-js/react": `~${cargo("react").package.version}`, next: ">=16.0.0" }],
+    // React Native's host globals, of the js crate's types alone.
+    ["react-native", { "@rust-js/builtins": crates["@rust-js/builtins"] }],
   ] as const) {
     const dir = unpacked(name);
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
