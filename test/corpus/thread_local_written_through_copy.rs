@@ -7,12 +7,12 @@
 // An initializer whose value is a field as it is reads only the field:
 // `PENDING`, a clone of the `Rc` `REGISTRY` holds, written through after,
 // is made as its module loads, as React Flight's
-// `TaintRegistryPendingRequests` is.
+// `TaintRegistryPendingRequests` is. Each case is of types of its own, so
+// no other's may be one place with it.
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-// Each case's own types, so that no other's may be one place with it.
 struct S {
     n: Cell<u32>,
 }

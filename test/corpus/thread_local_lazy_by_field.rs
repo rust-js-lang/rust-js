@@ -10,7 +10,8 @@
 // `Object.assign`, a reference copied out of the thread-local. And a field
 // that shares what it points to with another, `Shared`'s two `Rc`s of one
 // cell, or `Links`' two references a `Cell`'s `get` gives out, is written by
-// a write through the other.
+// a write through the other. `Shared` and `Links` are of types of their
+// own, so no other thread-local's place may be one with theirs.
 use std::cell::Cell;
 use std::rc::Rc;
 
@@ -38,8 +39,6 @@ fn assign(target: &Internals, patch: &Patch) {
     target.registry.set(patch.registry);
 }
 
-// `Shared` and `Links` of their own types, so no other thread-local's
-// place may be one with theirs.
 struct Shared {
     first: Rc<Cell<u16>>,
     second: Rc<Cell<u16>>,
