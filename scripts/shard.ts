@@ -60,12 +60,15 @@ export const browsers = ["browser", "next", "playground", "pilot", "vite", "weba
  * qualification runs too; and the ratchets, React's releases and the
  * harness's own checks. Each is CPU a push's corpus waits on, guards no
  * mutation or a few, and failed none of the 80 red checks before it was
- * moved: a mutation that names one still runs it. */
+ * moved: a mutation that names one still runs it. And the iterator
+ * matrix's sample, which a push that changes the iterators runs on its own
+ * (iterator-matrix.yml, ADR 1090). */
 export const nightly = [
   "tidy-stages",
   "getter-reads",
   "iterator-forms",
   "mut-ref-matrix",
+  "iterator-matrix",
   "fuzz",
   "packages",
   "create",

@@ -205,7 +205,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0179 `filter` and `map_or` drop what they don't keep](0179-option-filter-map-or-drops.md)
 - [0180 Generic code that writes to any writer is given a `fmt::Write` dictionary](0180-generic-writers.md)
 - [0181 A clone of std's iterator over an array is what's left of the array](0181-iterator-clones.md)
-- [0182 Boundary matrices: each operation on the values where implementations go wrong](0182-boundary-matrices.md)
+- [0182 Boundary matrices: each operation on the values where implementations go wrong](0182-boundary-matrices.md) *(extended by 1090: iterators' steps, drops and unwinding, a generated matrix)*
 - [0183 Strings and `char`s order by code point, and `trim` removes Unicode's White_Space](0183-code-point-order-and-trim.md) *(extended by 0945: a sort by their `encode_utf16()`s is JS's `sort()`)*
 - [0184 `ok_or_else` keeps its value, a branch's operand is dropped in its branch, and `by_ref()` of the crate's iterator](0184-bitflags-gaps.md)
 - [0185 A library's trait's defaults are its functions over `Self`](0185-library-trait-defaults.md) *(amended by 0914: a consumer compiles a library's trait's default its impl calls)*
@@ -733,7 +733,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0909 A type parameter's value is any value: `js::any_of`](0909-a-type-parameters-value-is-any-value.md) *(amended, rd645: of what may be `undefined` or `null` as it is)*
 - [0910 An object or an array is one value: `kind.object()`](0910-an-object-or-an-array-is-one-value-kind-object.md) *(amended: an `Option` made where it's tested is its test before its branches are one value; a closure's own of the value's name is no other where it reads none of the `Option`, rd514; amended, #539: of a value that's there, `Known::Present`, not one only never `undefined`)*
 - [0911 A binding's class is the global class TypeScript names](0911-a-bindings-class-is-the-global-typescript-names.md)
-- [0908 One meaning per iterator, checked by a build of std's structs alone](0908-one-meaning-per-iterator.md) *(extended by 0912: std's struct folds by its compiled `fold`; a `&mut I` steps by what std passes on)*
+- [0908 One meaning per iterator, checked by a build of std's structs alone](0908-one-meaning-per-iterator.md) *(extended by 0912: std's struct folds by its compiled `fold`; a `&mut I` steps by what std passes on; extended by 1090: the iterator matrix runs both builds against native Rust)*
 - [0912 Std's struct folds by its own compiled `fold`, and a `&mut I` steps by what std's impl for it passes on](0912-a-std-struct-folds-by-its-own-compiled-fold.md) *(extended by 0913: std's generic `Try` compiles, held `Skip` and `Take` are std's)*
 - [0913 Std's generic `R: Try` is a dictionary, so a held `Skip` or `Take` is std's, and std's adapters fold and try as std's do](0913-std-s-generic-try-is-a-dictionary.md)
 - [0914 A library's generic function is its program's; a consumer that gives it more compiles its own](0914-a-librarys-generic-function-is-its-programs.md) *(amended: its trait impls and copies are its program's too, a consumer compiling what it asks more of; amended: a consumer gives an export the copy functions its contract says it takes; amended: a `Clone` bound, and a program's `Rc` of a type parameter's value, are what its callers give; amended: a binding's result copies nothing; amended: a box its optimized MIR reads through a pointer is the value it holds; amended: a binding's static is JS's, read by an instance; amended: a `()` given is the export's where nothing boxes it, a copy setting its library's variable refused; amended: a copy of what the library changes too is its library's, rd606; amended: an operator of a library's type is called through the dictionary it exports, #468; amended: a struct of no fields its optimized MIR names as a constant is made, #474; amended: a library's constructor given as a function is made in place, #476; amended: what a consumer compiles of a library is written where its code reaches it, #483)*
@@ -1027,6 +1027,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1030 What only the nightly runs](1030-what-only-the-nightly-runs.md)
 - [1031 Mutations are built many to a build](1031-mutations-are-built-many-to-a-build.md) *(amended: a site is its function's body, and each mutation's build lexes)*
 - [1067 Regression nets the nightly casts](1067-regression-nets-the-nightly-casts.md) *(amended: each crate at an exact release, its row's)*
+- [1090 An iterator conformance matrix, against native Rust in both builds](1090-an-iterator-conformance-matrix.md)
 - [1032 An `if` whose branches are alike is its branch](1032-an-if-whose-branches-are-alike-is-its-branch.md)
 
 **Architecture boundaries**

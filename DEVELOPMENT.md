@@ -83,6 +83,7 @@ branch's one running, and no branch's run touches another's.
 | Each corpus case after each of tidy's stages and without each of preparation's rewrites that changed it, `test/tidy-stages.test.ts` (ADR 1087) | its nine cases, in `check:fast` when tidy or preparation changes: 90 s on the Mac, its runs kept | its nine cases, the read cases and six generated programs, **Readability passes** workflow, of a push that changes tidy or preparation | its nine cases in the suite; every case, on 6 machines |
 | The day's 600 generated programs through the same, `TIDY_STAGES=programs` | | | yes (`programs`, 6 machines of 100) |
 | What JS made, read as often as Rust reads it in every variant, `test/getter-reads.test.ts` (ADR 1087) | in `check:fast` when tidy or preparation changes: 16 s on the Mac | with the stages' sample | in the suite |
+| The iterator conformance matrix, `test/iterator-matrix.test.ts` (ADR 1090): every source, chain, consumer and panic site in both builds against native Rust | `bun test test/iterator-matrix.test.ts` (8 batches) when a change touches iterators; `ITERATOR_MATRIX=all RUST_JS_CASES=i/n` for all of them | **Iterator matrix** workflow, of a push that changes `src/runtime/`, `src/lower/iterators/` or `src/lower/mir/iter/`: the day's 8 batches | every case, on 6 machines (`matrix`) |
 | Release qualification | | | yes |
 | react.dev port: its JS against what it committed, `bun run port measure`; its build's 823 pages, `bun run port compare` | yes: the port is private | | |
 | React's port, react-in-rust at `ports/react-in-rust.pin`: `cargo check` of it, `bun scripts/react-in-rust.ts check` | when a change touches a binding | **React port** workflow, of a push that changes `builtins/`, `webapi/`, `node/` or `react/` | |
@@ -401,6 +402,7 @@ checked:
 | `test/architecture.test.ts`'s "each runtime helper is asked for, or needed by another" | 0.8 s alone; past bun's 5 s beside `check:fast`'s other jobs, failing runs that passed with it alone, until its timeout was raised to 30 s; it reads every source and each helper's JS on each run | The sources read once for the file, shared by its tests, not again per test |
 | `check:fast`'s corpus parts while other agents' worktrees build and test | Each part is killed at `checkFast.ts`'s 290 s, failing the run with no case failed: every job starts at once, its parts as many as the Mac's cores, beside the other agents' jobs (load 14–20 on the 12-core M3 Max, 2026-11-03). The same corpus passes run by hand in six parts, three at a time, all 1,518 cases (alien-signals run 4), so an agent runs the corpus apart and loses the timings `check:fast` keeps | Parts sized to the cores the machine's load leaves free, not all of them, or a part's timeout scaled by the load it started under; the corpus's cases' usual times kept, so a part killed says which case was slow |
 | `test/runtime-package.test.ts`'s "room asked of a length, a resize's, a collect's or a hash table's, ends where wasm32's std ends it" | 2.5 s alone on the M3 Max (2026-11-02); killed at bun's 5 s in a loaded `check:fast --all`, its Node run reserving 117 MB | A timeout that fits it, as the snapshot tests declare |
+| The iterator matrix in full on the Mac, `ITERATOR_MATRIX=all` (ADR 1090) | 2,970 s in 4 parts at a load of 15–60 (2026-11-04), about 3.3 CPU-hours: 1,700 programs of 60 cases, each built natively and twice by the debug compiler, its compile the most of it | The release compiler for its builds, or a compile of a batch's two builds in one rust-js process; the nightly runs it on six machines |
 | `test/lowering-functions.test.ts`'s "a long function is lowered block by block" | 3 s alone on the M3 Max, 54 billion instructions for 3,000 `v.push(..)`s (24 billion for 1,500), the same at b80aedb1e and 707d7eea0 (2026-11-04); on CI 9 s, then 17 s, then past its 30 s timeout beside the test job's other files, so its timeout is 60 s | A lowering of a long straight-line body that costs less per statement: profile where its 18 million instructions a statement go |
 
 ## Working on `main`
@@ -508,7 +510,9 @@ mutation on 16 machines where a branch's check runs only its own, 600
 generated programs, new ones each night, from the day's number, and every
 corpus case after each of tidy's stages and without each of preparation's
 rewrites on 6 machines, and the 600 programs so on 6 more (ADRs 0659,
-1087). It's a
+1087), and every case of the iterator matrix on 6 machines of 4 parts
+(`matrix`, ADR 1090, 2,970 s on the Mac in 4 parts at a load of 15–60,
+2026-11-04). It's a
 group of its own, so it neither cancels nor waits for a push's check.
 `bun run ci:status` shows its latest run first; GitHub mails a failure to
 whoever last changed the schedule. Of a public repository, its machines
@@ -548,6 +552,20 @@ the nightly runs every corpus case and the night's 600 programs so. On the
 Mac, the nine cases took 90 s with their runs kept, six programs 150 s and
 the read cases 16 s (2026-11-04, a debug build, the load near 13). Started
 by hand too: `gh workflow run readability-passes.yml`.
+
+### `iterator-matrix.yml`, the iterator matrix's sample, of a push that changes the iterators
+
+8 of the iterator matrix's 1,700 batches (ADR 1090), the day's number
+saying which (`ITERATOR_MATRIX_SEED`), in 4 parts on one machine, of a
+push to `main` whose `paths` are the iterators' runtime helpers and
+lowering: `src/runtime/`, `src/lower/iterators/`, `src/lower/mir/iter/`
+and their module files. It runs beside the push's check, not in it; the
+nightly's `matrix` runs every batch. A case that differs from native Rust,
+and isn't in `test/iterator-matrix-known.txt`, fails it; one listed that
+passes fails it until `bun test/iterator-matrix.ts take-off` takes it off.
+Its 8 batches took 21 s on the Mac in 4 parts (2026-11-04), after the build.
+`ITERATOR_MATRIX=#<issue>` runs the batches that hold one issue's known
+cases, 27 to 908 of the 1,700, for its fixer, then `take-off`. Started by hand too: `gh workflow run iterator-matrix.yml`.
 
 ### `react-in-rust.yml`, the React port, of a push that changes a binding
 

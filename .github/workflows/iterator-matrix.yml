@@ -1,0 +1,64 @@
+name: Iterator matrix
+
+# A sample of the iterator conformance matrix (ADR 1090), of a push to
+# `main` that changes the runtime's helpers or how iterators are lowered:
+# whole batches of its cases, the day saying which, each compiled in both
+# builds and run against native Rust. The nightly runs every case
+# (nightly.yml's `matrix`); this is the push's early warning, run beside its
+# check, not in it.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/runtime/**'
+      - 'src/lower/iterators/**'
+      - 'src/lower/iterators.rs'
+      - 'src/lower/mir/iter/**'
+      - 'src/lower/mir/iter.rs'
+      - 'test/iterator-matrix.ts'
+      - 'test/iterator-matrix.test.ts'
+      - 'test/iterator-matrix-known.txt'
+      - '.github/workflows/iterator-matrix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: iterator-matrix-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sample:
+    name: iterator matrix sample
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      # The day's batches, a part on each of the machine's cores.
+      - name: Run the day's sample
+        env:
+          RUST_JS_COMPILER: target/release/rust-js
+        run: |
+          seed=$(( $(date +%s) / 86400 ))
+          echo "ITERATOR_MATRIX_SEED=$seed"
+          pids=()
+          for part in 1 2 3 4; do
+            ITERATOR_MATRIX_SEED=$seed RUST_JS_CASES=$part/4 bun test --timeout=600000 test/iterator-matrix.test.ts > "matrix-$part.log" 2>&1 &
+            pids+=($!)
+          done
+          failed=0
+          for i in 0 1 2 3; do
+            wait "${pids[$i]}" || failed=1
+            cat "matrix-$((i + 1)).log"
+          done
+          exit $failed
