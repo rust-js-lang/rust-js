@@ -904,3 +904,80 @@ rd762–rd768: `$mapEnds` and `$enumerate` folds that skip the crate's own
 `fold` or its `unwind`, a fold or collect of std's compiled structs over a
 panicking `next` that is given no drop, and generic code that drops a
 `fuse()` twice as it unwinds.
+
+## Amendment: what may panic behind std's adapters, and who drops what as it unwinds (2026-11-04, rd762–rd769)
+
+Probing #615 found eight wrong answers (P0s #621–#627, and rd769), each of
+the crate's iterator whose `next` panics behind an adapter, under
+`catch_unwind`. Results change, so Rust's behavior is kept (ADR 0262).
+Each has the same root: what may throw as an iterator is stepped, and who
+drops what as it unwinds.
+
+- **What may throw is `steps_may_panic`'s one answer**
+  (`lower/mir/iter/collect.rs`). It's what `stranded_drop` (a `fold`'s and
+  a `try_fold`'s `unwind`), `unwinding_collect` (a collect's
+  `$collectDropping`) and `consumed_call` (an iterator consumed, dropped
+  though the call throws) ask. It counted the closures and functions of
+  the type, and a collect's JS showed the rest. Neither saw what std's
+  compiled struct steps, a `Fuse`'s, a `Skip`'s or a `StepBy`'s, or a
+  `copied()`: the crate's own `next`. So `own.fuse().fold(Vec::new(),
+  push)` was `.reduce(push, [])` and leaked 10 and 11 (rd763, #622);
+  `made().copied().fold(..)` leaked likewise (rd768, #627); and
+  `own.fuse().collect::<Vec<_>>()` was `Array.from(..)`, dropping only 42
+  of what native drops: 42, `Own`, 43, 40, 41 (rd765, #624). Now it also
+  asks `unseen_steps_may_panic`: an iterator the revealed type holds whose
+  impl of `Iterator` or `DoubleEndedIterator`, the crate's or a
+  library's, writes a method that may unwind (any but the crate's that
+  never do, ADR 0902), or a `dyn` one. A collect takes such a step as a
+  stage it hides, as a stage a variable holds was. And `panicking_steps`
+  counts the closures of the revealed type, so a stage an `impl FnMut`
+  is, a closure a function made, is one too.
+- **Each runtime fold passes `unwind` on, every one.** `$enumerate`'s
+  `fold`, `try_fold`, `rfold` and `try_rfold` didn't, so
+  `made().enumerate().fold(Vec::new(), ..)` leaked what it had folded
+  (rd767, #626). An audit of every runtime adapter found the same in
+  `$tryRfoldOf`, `$chainEnds`' `rfold` and `try_rfold`, the lazy chain's
+  `try_fold`, `$skipping`'s `try_fold`, `try_rfold` and `rfold`, and
+  `$taking`'s `rfold` and `try_rfold`. A `try_fold` into an `Option` or a
+  `Result` gets its accumulator's drop now too, as one into another `Try`
+  did, and `$tryFoldSome` and `$tryFoldOk` drop what the last `Some` or
+  `Ok` held.
+- **`$mapEnds` folds by its source's `fold` and `try_fold`**, as `$Steps`'
+  `map` does. It had only `rfold` and `try_rfold`, so a generic `fold` of
+  the crate's iterator's `map(..)`, one that knows its length, never
+  called its own `fold` (rd762, #621; rd766, #625).
+- **Std's compiled struct is taken once its `fold`, `count` or `last` ends,
+  though it throws** (ADR 0912). Taken only where one returned, a generic
+  caller's close after one that panicked dropped what it had dropped
+  already: `fold_any(own.fuse())` printed "drop own" twice (rd764, #623).
+  It isn't taken before the call: a compiled body closes its own struct
+  as it unwinds, `Zip`'s spec fold's `zip.return()`.
+- **A `skip(n)` whose first step, its source's `nth(n - 1)`, panics drops
+  `init`, then itself**, as std's `Skip::fold(self, init, ..)` does: its
+  `fold` and `try_fold` give that step `init`'s drop, `$staged`'s, and its
+  `fold` and `count`, which take it, close it, `$consumed` (rd769).
+
+`adapters_over_own_next_that_panics.rs`, `own_steps_behind_adapters_unwind.rs`
+and `try_folds_of_stages_unwind.rs` hold the shapes against native Rust:
+`map`, `fuse`, `skip`, `step_by`, `take`, `chain`, `zip`, `peekable`, `rev`,
+`enumerate` and `copied`, folded, collected and counted, generic and not,
+of the crate's iterators, an `impl Iterator` and a `Box<dyn Iterator>`, and
+`try_fold` into an `Option` with `?`. A `chain`, a `take` or a `skip` of the
+crate's iterator, or of a closure's `map`, stepped from its back is refused,
+as before. A consumed collect's JS now closes its iterator in a `finally`
+after `$collectDropping`, which closes it too; the second close does
+nothing (`$closed`), and is a readability gap to remove.
+
+Mutations: `map-ends-fold-not-its-sources`, `enumerate-fold-unwind-lost`,
+`enumerate-rfold-unwind-lost` and `enumerate-try-fold-unwind-lost`
+(`runtime/back_steps.ts`), `std-iterator-taken-after-its-fold`
+(`runtime/std_iterator.ts`), `skip-first-step-init-undropped` and
+`skip-fold-first-step-unclosed` (`runtime/skipping.ts`),
+`try-fold-some-unwind-lost` (`runtime/try_fold_some.ts`),
+`try-fold-ok-unwind-lost` (`runtime/try_fold_ok.ts`),
+`chain-try-fold-unwind-lost` (`runtime/lazy_chain.ts`), and
+`own-iterator-steps-unseen`, `own-iterator-never-unwinding-ignored`,
+`dyn-iterator-steps-unseen`, `collect-own-steps-unseen`,
+`try-fold-option-unwind-ungiven` and `opaque-stage-unseen`
+(`lower/mir/iter/collect.ts`). `fold-stage-by-type-unseen` now leaves the
+unseen steps' answer in place.

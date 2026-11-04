@@ -122,4 +122,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
   },
+  {
+    name: "chain-try-fold-unwind-lost",
+    breaks: "a chain's `try_fold` gives its sides no `unwind`, so a `try_fold` into an `Option` never drops the accumulator a panicking stage strands (rd767)",
+    file: "src/runtime/lazy_chain.js",
+    find: "    folded = $lent(second).tryFold(folded, f, broke, unwind);\n",
+    replace: "    folded = $lent(second).tryFold(folded, f, broke);\n",
+    tests: ["test/corpus.test.ts", "-t", "^try_folds_of_stages_unwind.rs$"],
+  },
 ];

@@ -15,15 +15,25 @@ function drainingIterator_next(draining) {
 function main() {
   const v = [1, 2, 3];
   const iter = { items: v, at: 0 };
-  const taken = Array.from($iterator(iter, drainingIterator_next));
-  console.log(`dropped after ${iter.at}`);
-  iter.items.length = 0;
+  let result;
+  try {
+    result = Array.from($iterator(iter, drainingIterator_next));
+  } finally {
+    console.log(`dropped after ${iter.at}`);
+    iter.items.length = 0;
+  }
+  const taken = result;
   console.log(`[${taken.join(", ")}] [${v.join(", ")}]`);
   const w = [4, 5];
   const iter$1 = { items: w, at: 0 };
-  const n = $iterator(iter$1, drainingIterator_next).reduce((n) => n + 1, 0);
-  console.log(`dropped after ${iter$1.at}`);
-  iter$1.items.length = 0;
+  let result$1;
+  try {
+    result$1 = $iterator(iter$1, drainingIterator_next).reduce((n) => n + 1, 0);
+  } finally {
+    console.log(`dropped after ${iter$1.at}`);
+    iter$1.items.length = 0;
+  }
+  const n = result$1;
   console.log(`${n} [${w.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

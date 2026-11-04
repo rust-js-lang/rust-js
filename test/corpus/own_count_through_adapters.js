@@ -186,8 +186,12 @@ function main() {
     },
     dDrop_drop,
   );
-  const result = $count(iter, dDrop_drop);
-  iter.return();
+  let result;
+  try {
+    result = $count(iter, dDrop_drop);
+  } finally {
+    iter.return();
+  }
   console.log(`${result}`);
   const value = [ds()];
   let tmp;

@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "  return new $Steps(() => it.next()).tryFold($some(init)",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
   },
+  {
+    name: "try-fold-some-unwind-lost",
+    breaks: "a `try_fold` into an `Option` gives what it folds no `unwind`, so the accumulator a panicking step strands is never dropped (rd767)",
+    file: "src/runtime/try_fold_some.js",
+    find: "    unwind && ((made) => unwind($someValue(made))),\n",
+    replace: "    undefined,\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_steps_behind_adapters_unwind.rs$"],
+  },
 ];

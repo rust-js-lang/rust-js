@@ -420,7 +420,7 @@ function main() {
     `${odd == null ? "None" : `Some(${odd})`} ${fusedOdd == null ? "None" : `Some(${fusedOdd})`}`,
   );
   console.log(
-    `[${Array.from(
+    `[${$collectDropping(
       $rev(
         $mapEnds(
           $closing(

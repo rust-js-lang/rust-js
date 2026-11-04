@@ -27,12 +27,16 @@ function $stdIterator(struct, steps) {
   };
   // What std's own compiled methods take whole, `fold`, `count` and `last`, as
   // Rust's move it, dropping what it held there: closing it after drops
-  // nothing again (ADR 0912). Taken as the call starts, as Rust moves it
-  // in: one that panics drops what it took as it unwinds, so a close after
-  // it, a generic caller's, drops nothing twice (rd764).
+  // nothing again (ADR 0912). Taken once the call ends, though it throws:
+  // one that panics drops what it took as it unwinds, so a close after it,
+  // a generic caller's, drops nothing twice (rd764); not before, as a
+  // compiled body may close it itself, `Take`'s `fold`.
   const taking = (method, run) => {
-    if (steps.takes?.includes(method)) it.$closed = true;
-    return run();
+    try {
+      return run();
+    } finally {
+      if (steps.takes?.includes(method)) it.$closed = true;
+    }
   };
   // Given `unwind`, the compiled fold's accumulator's drop, where a stage's
   // panic strands it (#424).

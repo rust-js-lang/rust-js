@@ -170,4 +170,20 @@ export const mutations: Mutation[] = [
     replace: "  if (iter.ownNth) {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
   },
+  {
+    name: "skip-first-step-init-undropped",
+    breaks: "a `skip(n)`'s fold whose first step, its source's `nth(n - 1)`, panics never drops `init` (rd769)",
+    file: "src/runtime/skipping.js",
+    find: "      : $staged(() => skipping.iter.nth(k - 1, drop), undefined, undefined, init, unwind);\n",
+    replace: "      : skipping.iter.nth(k - 1, drop);\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
+  },
+  {
+    name: "skip-fold-first-step-unclosed",
+    breaks: "a `skip(n)`'s fold whose first step panics leaves what it steps unclosed, so the crate's iterator it took is never dropped (rd769)",
+    file: "src/runtime/skipping.js",
+    find: "        const step = $consumed(skipping, () => skipped(k, init, unwind));\n        if (step.done) {\n          skipping.return();\n          return init;\n",
+    replace: "        const step = skipped(k, init, unwind);\n        if (step.done) {\n          skipping.return();\n          return init;\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
+  },
 ];

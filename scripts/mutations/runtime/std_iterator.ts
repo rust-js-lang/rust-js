@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet(_drops)?.rs$"],
   },
+  {
+    name: "std-iterator-taken-after-its-fold",
+    breaks: "std's compiled struct is marked taken only where its compiled `fold` returns, so a generic caller's close after one that panicked drops the crate's iterator again (rd764)",
+    file: "src/runtime/std_iterator.js",
+    find: "    try {\n      return run();\n    } finally {\n      if (steps.takes?.includes(method)) it.$closed = true;\n    }\n",
+    replace: "    const made = run();\n    if (steps.takes?.includes(method)) it.$closed = true;\n    return made;\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
+  },
 ];

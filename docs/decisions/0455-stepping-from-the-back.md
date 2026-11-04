@@ -54,3 +54,16 @@ either's `Either` steps the map it wraps. A map made in place of an
 array's items, `v.iter().map(f)`, is made one where it's stepped from its
 back. `by_ref()` of one that knows its back is itself, its back kept: a
 `$iter` or a `$iterator`, which closing doesn't end, not lent.
+
+## Amendment: a map that knows its back folds by its source's fold (2026-11-04, rd762, rd766)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept. `$mapEnds` had std's `Map::rfold` and
+`try_rfold`, its source's, but no `fold` or `try_fold`, so it folded by its
+`next`: a generic `fold` of the crate's iterator's `map(..)`, given an
+`ExactSizeIterator`, never called the crate's own `fold` (#621, #625). It
+has them now, its source's, each passing the accumulator's drop on, as
+`$Steps`' `map` does. Held by `adapters_over_own_next_that_panics.rs`,
+`own_steps_behind_adapters_unwind.rs` and the mutation
+`map-ends-fold-not-its-sources`; ADR 0465's amendment of the same date has
+the rest.

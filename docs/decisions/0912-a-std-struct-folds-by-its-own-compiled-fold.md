@@ -127,3 +127,21 @@ matrices of #492-#496 and #505 now run in iterator-forms' `few`. Mutations:
 `generic-own-steps-unasked` (`lower/mir/iter.ts`), `compiled-last-not-taken`
 (`knowing.ts`), `std-iterator-last-not-taking` (`std_iterator.ts`) and
 `given-boxed-steps-not-own` (`iterator.ts`).
+
+## Amendment: taken once the call ends, though it throws (2026-11-04, rd764)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+`$stdIterator` marked its struct `$closed` only where a compiled `fold`,
+`count` or `last` returned. One that panicked had dropped what it took as
+it unwound, the crate's own `fold` that a `Fuse`'s gave it, so a generic
+caller's `finally { if (!iter.ownFold) dropI?.(iter) }` dropped it again:
+`fold_any(own.fuse())` printed "drop own" twice (#623). Now it's marked
+in a `finally`, once the call ends, normally or by a throw, as Rust's
+`self` is the method's either way. It isn't marked before the call: a
+compiled body closes its own struct as it unwinds, `Zip`'s spec fold's
+`zip.return()`, which a mark made first would skip. Held by
+`adapters_over_own_next_that_panics.rs` and the mutation
+`std-iterator-taken-after-its-fold`; ADR 0465's amendment of the same date
+has the rest.

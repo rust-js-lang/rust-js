@@ -209,8 +209,12 @@ function main() {
     },
     dDrop_drop,
   );
-  const result = $lastDropping(iter, dDrop_drop);
-  iter.return();
+  let result;
+  try {
+    result = $lastDropping(iter, dDrop_drop);
+  } finally {
+    iter.return();
+  }
   show("fuse", result);
   const iter$1 = iterator_peekable(
     [ds()],
@@ -222,8 +226,12 @@ function main() {
     },
     dDrop_drop,
   );
-  const result$1 = $lastDropping(iter$1, dDrop_drop);
-  iter$1.return();
+  let result$1;
+  try {
+    result$1 = $lastDropping(iter$1, dDrop_drop);
+  } finally {
+    iter$1.return();
+  }
   show("peekable", result$1);
   const peeked = $held(
     iterator_peekable(
@@ -244,8 +252,12 @@ function main() {
     throw error;
   }
   const iter$2 = peeked;
-  const result$2 = $lastDropping(iter$2, dDrop_drop);
-  iter$2.return();
+  let result$2;
+  try {
+    result$2 = $lastDropping(iter$2, dDrop_drop);
+  } finally {
+    iter$2.return();
+  }
   show("peeked", result$2);
   show(
     "chain",
@@ -431,8 +443,12 @@ function main() {
     },
     dDrop_drop,
   );
-  const result$3 = $lastDropping(iter$3, dDrop_drop);
-  iter$3.return();
+  let result$3;
+  try {
+    result$3 = $lastDropping(iter$3, dDrop_drop);
+  } finally {
+    iter$3.return();
+  }
   show("fuse held", result$3);
   const iter$4 = iterator_peekable(
     [ds(), "p"],
@@ -445,8 +461,12 @@ function main() {
     },
     dDrop_drop,
   );
-  const result$4 = $lastDropping(iter$4, dDrop_drop);
-  iter$4.return();
+  let result$4;
+  try {
+    result$4 = $lastDropping(iter$4, dDrop_drop);
+  } finally {
+    iter$4.return();
+  }
   show("peekable held", result$4);
   const value = Array.from(
     $folded(

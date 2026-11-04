@@ -343,10 +343,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// How many of the closures and functions of `iter_ty`'s, its stages',
     /// may panic: each but one of the crate's that never unwinds (ADR 0902)
-    /// or a constructor.
+    /// or a constructor. Of its revealed type, so a stage an `impl FnMut`
+    /// is, a closure a function made, is one too (rd767).
     fn panicking_steps(&self, iter_ty: Ty<'tcx>) -> usize {
         let mut seen = std::collections::HashSet::new();
-        (iter_ty.walk().filter_map(|part| part.as_type()))
+        (self.reveal(iter_ty).walk().filter_map(|part| part.as_type()))
             .filter(|part| match *part.kind() {
                 ty::Closure(def_id, _) | ty::FnDef(def_id, _) => {
                     seen.insert(def_id)
