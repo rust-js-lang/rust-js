@@ -2,7 +2,9 @@
 // `into_iter()`, mapped by a closure that panics, collected into a
 // `String`, a `HashSet` or a `HashMap`, or its `last()` taken: what the
 // source has left is dropped as the panic unwinds, as Rust drops the
-// iterator the collect holds (#653).
+// iterator the collect holds (#653). And a `skip()` and a `step_by()`, which
+// drop the items they pass over, collected into a `Vec`, where an item's
+// drop panics: what's left is dropped too.
 use std::collections::{HashMap, HashSet};
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
@@ -11,6 +13,17 @@ struct D(u32);
 impl Drop for D {
     fn drop(&mut self) {
         println!("drop {}", self.0);
+    }
+}
+
+struct Boom(u32);
+
+impl Drop for Boom {
+    fn drop(&mut self) {
+        println!("drop boom {}", self.0);
+        if self.0 == 3 {
+            panic!("boom");
+        }
     }
 }
 
@@ -93,4 +106,15 @@ fn main() {
         log.push(s);
     }));
     println!("fuse string no panic {} {:?}", r.is_err(), log);
+    let r = catch_unwind(|| {
+        let v: Vec<Boom> = (1..=6)
+            .map(Boom)
+            .collect::<Vec<_>>()
+            .into_iter()
+            .skip(1)
+            .step_by(2)
+            .collect();
+        v.len()
+    });
+    println!("skip step_by vec {}", r.is_err());
 }

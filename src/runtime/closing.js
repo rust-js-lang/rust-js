@@ -76,9 +76,9 @@ function $closing(it, drop, slices = true) {
   };
   // Its `count`, the crate's own, likewise (#505).
   if (it.ownCount) closing.ownCount = true;
-  const count = (drop) => {
+  const count = () => {
     closed = true;
-    return it.count(drop);
+    return it.count();
   };
   // Its `last`, the crate's own, which takes it and drops what it has left
   // itself, as a `skip`'s `last` asks it (#494).

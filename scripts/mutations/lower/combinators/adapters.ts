@@ -337,7 +337,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators/adapters.rs",
     find: "                    || self.recognition().nths_its_own(receiver_ty)\n",
     replace: "                    || false\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(own_nth_through_adapters|own_fold_and_count_where_adapters_call_them).rs$"],
   },
   {
     name: "step-by-range-filtered",

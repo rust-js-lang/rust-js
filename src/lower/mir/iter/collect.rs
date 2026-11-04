@@ -306,9 +306,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as its type shows where its JS is still a variable: a closure or a
     /// function of its type's, each but one of the crate's functions that
     /// never unwinds (ADR 0902) or a constructor (#423); or an iterator its
-    /// type holds whose steps no JS shows, `unseen_steps_may_panic`'s.
+    /// type holds whose steps no JS shows, `unseen_steps_may_panic`'s; or a
+    /// std adapter that drops items it passes over, whose drop may panic,
+    /// `passed_drops_may_panic`'s.
     pub(in crate::lower::mir) fn steps_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
-        self.panicking_steps(iter_ty) > 0 || self.unseen_steps_may_panic(iter_ty)
+        self.panicking_steps(iter_ty) > 0
+            || self.unseen_steps_may_panic(iter_ty)
+            || self.passed_drops_may_panic(iter_ty)
+    }
+
+    /// Whether an adapter of std's that `iter_ty` holds, its revealed type's,
+    /// drops items it passes over as it's stepped, a `skip`'s, a
+    /// `step_by`'s, a `filter`'s, a `filter_map`'s, a `skip_while`'s, a
+    /// `take_while`'s or a `take`'s, of items whose drop may panic: a type
+    /// parameter's, anyone's, or one whose own `Drop`, or a part's, isn't
+    /// one of the crate's that never unwind (ADR 0902).
+    fn passed_drops_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
+        let drop_may_panic = |item: Ty<'tcx>| {
+            (item.walk().filter_map(|part| part.as_type())).any(|part| match part.kind() {
+                ty::Param(_) => true,
+                ty::Adt(adt, _) => (self.tcx.adt_destructor(adt.did()))
+                    .is_some_and(|destructor| !self.krate.never_unwinding.contains(&destructor.did)),
+                _ => false,
+            })
+        };
+        (self.reveal(iter_ty).walk().filter_map(|part| part.as_type()))
+            .filter_map(|part| self.recognition().passes_over_items(part))
+            .filter_map(|source| self.iterator_item(source))
+            .any(|item| self.drops(item) != crate::lower::drops::Drops::Nothing && drop_may_panic(item))
     }
 
     /// Whether an iterator `iter_ty` holds, itself or a source std's
@@ -316,8 +341,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// no JS of its shows it: the crate's own, or a library's, whose impl
     /// of `Iterator` or `DoubleEndedIterator` writes a method that may
     /// unwind, any but the crate's that never do (ADR 0902), a `fuse()`'s
-    /// `next` say, which runs its `next`; or a `dyn` one's, anyone's
-    /// (rd763, rd765, rd768).
+    /// `next` say, which runs its `next`; or a `dyn` one's or a type
+    /// parameter's, anyone's (rd763, rd765, rd768).
     fn unseen_steps_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
         let recognition = self.recognition();
         let traits = [
@@ -335,7 +360,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 })
         };
         (self.reveal(iter_ty).walk().filter_map(|part| part.as_type())).any(|part| match part.kind() {
-            ty::Dynamic(..) => true,
+            // A type parameter's, whose steps are anyone's, as a `dyn`'s are.
+            ty::Dynamic(..) | ty::Param(_) => true,
             ty::Adt(..) => recognition.is_user_iterator(part) && may_unwind(part),
             _ => false,
         })

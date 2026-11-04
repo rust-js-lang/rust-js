@@ -603,4 +603,12 @@ export const mutations: Mutation[] = [
     replace: "        let holds = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^compiled_adapters_closed_as_a_collect_unwinds.rs$"],
   },
+  {
+    name: "passed-drops-panic-unseen",
+    breaks: "a `skip()` and a `step_by()` of a `Vec`'s items whose drop panics, collected, are `Array.from(..)`: the panic of a drop they pass over leaves what's left undropped",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            || self.passed_drops_may_panic(iter_ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^compiled_adapters_closed_as_a_collect_unwinds.rs$"],
+  },
 ];

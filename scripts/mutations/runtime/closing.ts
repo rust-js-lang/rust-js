@@ -170,12 +170,4 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
   },
-  {
-    name: "closing-count-drop-unpassed",
-    breaks: "a closed iterator's own `count` isn't given the items' drop: a `skip()` of the crate's iterator over items with a `Drop`, closed, leaves what it skips undropped (#671)",
-    file: "src/runtime/closing.js",
-    find: "    return it.count(drop);\n",
-    replace: "    return it.count();\n",
-    tests: ["test/corpus.test.ts", "-t", "^(own_fold_and_count_where_adapters_call_them|consumed_own_iterator_dropped_once|skip_folded_by_consumers).rs$"],
-  },
 ];

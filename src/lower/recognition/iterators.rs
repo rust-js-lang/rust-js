@@ -443,6 +443,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (self.array_source(source) == Some(false) || self.range_kind(source).is_some() || holds_nothing).then_some(None)
     }
 
+    /// What std's adapter `ty` steps, where it drops items of it that it
+    /// passes over as it's stepped: a `skip`'s, a `step_by`'s, a `filter`'s,
+    /// a `filter_map`'s, a `skip_while`'s, a `take_while`'s or a `take`'s.
+    pub(in crate::lower) fn passes_over_items(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let ty::Adt(adt, args) = ty.kind() else { return None };
+        matches!(
+            std_path(self.tcx, adt.did()).strip_prefix("std::iter::"),
+            Some("Skip" | "StepBy" | "Filter" | "FilterMap" | "SkipWhile" | "TakeWhile" | "Take")
+        )
+        .then(|| args.types().next())
+        .flatten()
+    }
+
     /// The `Iterator` method `name` the impl of the crate's iterator `ty`
     /// writes, where it writes one.
     pub(in crate::lower) fn own_iterator_method(&self, ty: Ty<'tcx>, name: &str) -> Option<DefId> {
