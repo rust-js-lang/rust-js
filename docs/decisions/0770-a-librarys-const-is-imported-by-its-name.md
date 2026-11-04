@@ -209,3 +209,25 @@ and `own-subpath-ordered-by-text`), is replaced by
 [1063](1063-imports-are-in-the-order-of-their-uses.md): every import is
 where its `use` is, a subpath's too, and those keys are gone. The
 specifiers this ADR chooses are as they were.
+
+## Amendment: a subpath with its extension, where `exports` keeps it (rd713)
+
+react-markup's crate root mounts the markup Flight client config in
+react-client's directory, `#[path =
+"../react-client/src/forks/ReactFlightClientConfig.markup.rs"]`, and that
+module re-exports react-markup's `ReactMarkupLegacyClientStreamConfig`.
+Upstream writes `'react-markup/src/ReactMarkupLegacyClientStreamConfig.js'`;
+rust-js wrote `'../../../react-markup/src/..'`, climbing out of
+react-client's package into react-markup's. The module is in another
+package, and Node finds `react-markup` from it, so the rule above applies,
+but react-markup's `exports` is `"./src/*": "./src/*"`, which resolves the
+subpath with its extension, and `packages::subpath` asked only for the one
+without it, `./src/ReactMarkupLegacyClientStreamConfig`, which that
+pattern resolves to no file. **A package's subpath to a file is its path
+there without its extension where `exports` resolves that to the file,
+else with it**, as Node resolves each. Case N of ADR 0262: the same file,
+which Node finds by that specifier. Held by `test/libraries.test.ts`'s two
+subpath tests (`"./*": "./*"` and `"./src/*": "./src/*"` each import by the
+subpath with its extension, run in Node); mutation
+`package-subpath-extension-untried` (`packages.ts`); guide
+project/dependencies.md.

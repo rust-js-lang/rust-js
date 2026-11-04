@@ -223,16 +223,24 @@ fn subpaths(dir: &Path, exports: &serde_json::Value, modules: &[Module<'_>]) -> 
 }
 
 /// The subpath of the package in `dir`, `file`'s path there without its
-/// extension, that `exports` resolves to `file`, as `subpaths` says.
+/// extension or with it, that `exports` resolves to `file`, as `subpaths`
+/// says.
 fn subpath(dir: &Path, exports: &serde_json::Value, file: &Path) -> Option<String> {
     let serde_json::Value::Object(map) = exports else {
         return None;
     };
-    let bare = file.strip_prefix(dir).ok()?.with_extension("");
-    let bare = bare.to_str()?.replace(std::path::MAIN_SEPARATOR, "/");
-    let target = subpath_target(map, &format!("./{bare}"))?;
-    let target = crate::paths::absolute(&dir.join(target.strip_prefix("./")?)).ok()?;
-    (target == file).then_some(bare)
+    let named = file.strip_prefix(dir).ok()?;
+    // Its name without its extension, `shared/ReactVersion` of `"./*":
+    // "./*.js"`; else with it, `react-markup/src/..Config.js` of `"./src/*":
+    // "./src/*"`, as upstream names it (rd713).
+    [named.with_extension(""), named.to_path_buf()]
+        .into_iter()
+        .find_map(|subpath| {
+            let subpath = subpath.to_str()?.replace(std::path::MAIN_SEPARATOR, "/");
+            let target = subpath_target(map, &format!("./{subpath}"))?;
+            let target = crate::paths::absolute(&dir.join(target.strip_prefix("./")?)).ok()?;
+            (target == file).then_some(subpath)
+        })
 }
 
 /// The package a file is of, as Node scopes it: the directory of the

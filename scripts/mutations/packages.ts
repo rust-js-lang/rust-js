@@ -47,11 +47,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "package-subpath-any-target",
-    breaks: "a module is imported by its package's subpath where `exports` resolves it to another file than its JS, `./src/*`'s `./src/flags`, which Node then doesn't find (ADR 0770, amended)",
+    breaks: "a module is imported by its package's subpath where `exports` resolves it to another file than its JS, `./lib/*`'s, which Node then doesn't find (ADR 0770, amended)",
     file: "src/packages.rs",
-    find: "    (target == file).then_some(bare)\n",
-    replace: "    Some(bare)\n",
+    find: "            (target == file).then_some(subpath)\n",
+    replace: "            Some(subpath)\n",
     tests: subpaths,
+  },
+  {
+    name: "package-subpath-extension-untried",
+    breaks: "a module of a package whose `exports` keeps the extension, react-markup's `\"./src/*\": \"./src/*\"`, is imported by its file, `'../../../react-markup/src/..'`, not its subpath with the extension as upstream writes it (rd713)",
+    file: "src/packages.rs",
+    find: "    [named.with_extension(\"\"), named.to_path_buf()]\n",
+    replace: "    [named.with_extension(\"\")]\n",
+    tests: ["test/libraries.test.ts", "-t", "subpath"],
   },
   {
     name: "package-subpath-pattern-shortest",

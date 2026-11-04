@@ -423,11 +423,13 @@ pub fn run() -> String {
   expect(js()).toContain('from "shared/src/flags";\n');
   expect(imported()).toEqual(byFile);
   writeFileSync(join(dir, "dom", "src", "lib.rs"), rust);
-  // A longer pattern's, `./src/*`'s, of the file without its extension,
-  // which Node then doesn't find.
+  // A longer pattern's, `./src/*`'s, that keeps the extension, which Node
+  // finds the file by with it, react-markup's (rd713): `node_modules.js`
+  // is no `node_modules` segment.
   manifest({ "./*": "./*.js", "./src/*": "./src/*" });
   expect(built().stderr).toBe("");
-  imports(flags, symbols);
+  expect(js()).toContain('import { ENABLE_SCOPE_API, level } from "shared/src/flags.js";\nimport { one } from "shared/src/node_modules.js";\nimport { name } from "shared/src/symbols.js";\n');
+  expect(ran()).toBe(nativeRun);
   // Exports of the root alone, and a package Node finds no copy of.
   manifest({ ".": "./src/lib.js" });
   expect(built().stderr).toBe("");
@@ -533,8 +535,16 @@ fn a() -> u32 {
   expect(imported()).toEqual(["shared/fragment", "./zeta.js", "../../a.js"]);
   expect(readFileSync(join(dir, "shared", "fragment.js"), "utf8")).toContain('from "dom/src/level";\n');
   expect(ran()).toBe(nativeRun);
-  // A pattern of another file, which Node then doesn't find: by its file.
+  // A pattern that keeps the subpath's extension, react-markup's
+  // `"./src/*": "./src/*"`: by its subpath with the extension,
+  // `'react-markup/src/ReactMarkupLegacyClientStreamConfig.js'` as upstream
+  // writes it, from react-client's directory (rd713).
   manifest({ "./*": "./*" });
+  expect(built().stderr).toBe("");
+  expect(imported()).toEqual(["shared/fragment.js", "./zeta.js", "../../a.js"]);
+  expect(ran()).toBe(nativeRun);
+  // A pattern of another file, which Node then doesn't find: by its file.
+  manifest({ "./*": "./lib/*" });
   expect(built().stderr).toBe("");
   expect(imported()).toEqual(byFile);
 }, 600_000);
