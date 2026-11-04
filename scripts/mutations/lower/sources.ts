@@ -140,8 +140,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a guarded arm that does nothing, its comment above it, holds them in its body, so the guard's `case` no longer falls to the next (#508, rd619)",
     file: "src/lower/sources.rs",
-    find: "                    if arm.guard.is_some()\n",
-    replace: "                    if false\n",
+    find: "                    if arm.guard.is_some() || arm.body.span.from_expansion() {\n",
+    replace: "                    if arm.body.span.from_expansion() {\n",
     tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "a guarded arm whose constants the next arm names falls through to its case"],
   },
   {
@@ -152,5 +152,25 @@ export const mutations: Mutation[] = [
     find: "                                TokenKind::OpenBrace if past && i == 0 => {}\n",
     replace: "",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment above a loop.s Ok arm of nothing"],
+  },
+  {
+    name: "commented-continue-arms-unfound",
+    breaks:
+      "a comment above an arm that's only a `continue`, `// Skipped.\\n 1 => continue,`, isn't found, so tidy inverts its `if` and the comment prints above the `switch` or the `for` (#610)",
+    file: "src/lower/sources.rs",
+    find: "                        rustc_hir::ExprKind::Continue(_) => self.continues.push(at),\n",
+    replace: "                        rustc_hir::ExprKind::Continue(_) => {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "commented-continue-arms-of-no-comment",
+    breaks:
+      "an arm that's only a `continue` with no comment above it is taken for one with, and keeps its `continue`, `if (k === 3) { continue; }`, not the `if` of the rest (#610, the user's decision)",
+    file: "src/lower/sources.rs",
+    find: "                    if only(&between, true).is_none_or(|c| c == 0) || at.is_none() || arm_at.is_none() {\n",
+    replace: "                    if at.is_none() || arm_at.is_none() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
+    snapshots: true,
   },
 ];

@@ -155,23 +155,28 @@ pub(super) fn tail_if_comments(
     tails.found
 }
 
-/// Of each arm of `body`'s `match`es past its first that does nothing,
-/// `{}`, with comments above it, `// Fine.\n Ok(()) => {}`: where its
-/// block is, and where it ends, its `}`, which those comments are printed
-/// before, the arm's own, as if written in it (ADR 0753, amended, #508).
-/// Not the first arm's: the `if` MIR makes of a `match` is where its first
-/// arm is, and a comment above that arm is above the `if`.
+/// Of each arm of `body`'s `match`es with comments above it, what they
+/// say of: of one past its first that does nothing, `{}`, `// Fine.\n
+/// Ok(()) => {}`, where its block is, and where it ends, its `}`, which
+/// those comments are printed before, the arm's own, as if written in it
+/// (ADR 0753, amended, #508); not the first arm's: the `if` MIR makes of a
+/// `match` is where its first arm is, and a comment above that arm is
+/// above the `if`. And of one that's only a `continue`, `// Skipped.\n 1
+/// => continue,`, where that `continue` is, which tidy keeps where it's
+/// written, those comments before it, as of an arm whose block holds them
+/// (#610, the user's decision).
 pub(super) fn commented_arms(
     tcx: TyCtxt<'_>,
     sources: &CapturedSources,
     body: rustc_span::def_id::DefId,
-) -> Vec<(js::Span, js::Span)> {
+) -> (Vec<(js::Span, js::Span)>, Vec<js::Span>) {
     use rustc_hir::intravisit::{self, Visitor};
     use rustc_lexer::TokenKind;
     struct Arms<'a, 'tcx> {
         tcx: TyCtxt<'tcx>,
         sources: &'a CapturedSources,
         found: Vec<(js::Span, js::Span)>,
+        continues: Vec<js::Span>,
     }
     impl<'tcx> Visitor<'tcx> for Arms<'_, 'tcx> {
         type NestedFilter = rustc_middle::hir::nested_filter::OnlyBodies;
@@ -183,30 +188,20 @@ pub(super) fn commented_arms(
                 && !e.span.from_expansion()
             {
                 for (i, arm) in arms.iter().enumerate() {
+                    // Not a guarded one's, whose `case` they're above
+                    // (rd619).
+                    if arm.guard.is_some() || arm.body.span.from_expansion() {
+                        continue;
+                    }
                     // What's before it: the arm before, or the `match`'s
                     // scrutinee, and its `{`.
                     let before = i.checked_sub(1).map_or(scrutinee.span, |i| arms[i].span);
-                    // Not a guarded one's, whose `case` they're above
-                    // (rd619).
-                    let rustc_hir::ExprKind::Block(block, None) = arm.body.kind else {
-                        continue;
-                    };
-                    if arm.guard.is_some()
-                        || !block.stmts.is_empty()
-                        || block.expr.is_some()
-                        || block.span.from_expansion()
-                    {
-                        continue;
-                    }
                     let map = self.tcx.sess.source_map();
-                    let (Ok(inside), Ok(between)) = (
-                        map.span_to_snippet(block.span),
-                        map.span_to_snippet(before.between(arm.span)),
-                    ) else {
+                    let Ok(between) = map.span_to_snippet(before.between(arm.span)) else {
                         continue;
                     };
-                    // Nothing in its `{}`, and only comments, past the
-                    // arm before's `,` or the `match`'s `{`, above it.
+                    // Only comments, past the arm before's `,` or the
+                    // `match`'s `{`, above it; and nothing in its `{}`.
                     let only = |text: &str, past: bool| {
                         let mut comments = 0;
                         for token in rustc_lexer::tokenize(text, rustc_lexer::FrontmatterAllowed::No) {
@@ -224,22 +219,28 @@ pub(super) fn commented_arms(
                         }
                         Some(comments)
                     };
-                    let Some(inner) = inside.strip_prefix('{').and_then(|t| t.strip_suffix('}')) else {
+                    let (at, arm_at) = (self.sources.span(arm.body.span), self.sources.span(arm.span));
+                    if only(&between, true).is_none_or(|c| c == 0) || at.is_none() || arm_at.is_none() {
                         continue;
-                    };
-                    let (at, arm_at) = (self.sources.span(block.span), self.sources.span(arm.span));
-                    if only(inner, false) == Some(0)
-                        && only(&between, true).is_some_and(|c| c > 0)
-                        && !at.is_none()
-                        && !arm_at.is_none()
-                    {
-                        self.found.push((
-                            at,
-                            js::Span {
-                                lo: arm_at.lo,
-                                hi: arm_at.lo + 1,
-                            },
-                        ));
+                    }
+                    match arm.body.kind {
+                        rustc_hir::ExprKind::Continue(_) => self.continues.push(at),
+                        rustc_hir::ExprKind::Block(block, None)
+                            if block.stmts.is_empty()
+                                && block.expr.is_none()
+                                && let Ok(inside) = map.span_to_snippet(block.span)
+                                && let Some(inner) = inside.strip_prefix('{').and_then(|t| t.strip_suffix('}'))
+                                && only(inner, false) == Some(0) =>
+                        {
+                            self.found.push((
+                                at,
+                                js::Span {
+                                    lo: arm_at.lo,
+                                    hi: arm_at.lo + 1,
+                                },
+                            ));
+                        }
+                        _ => {}
                     }
                 }
             }
@@ -247,18 +248,19 @@ pub(super) fn commented_arms(
         }
     }
     let Some(local) = body.as_local() else {
-        return Vec::new();
+        return (Vec::new(), Vec::new());
     };
     let Some(owned) = tcx.hir_maybe_body_owned_by(local) else {
-        return Vec::new();
+        return (Vec::new(), Vec::new());
     };
     let mut arms = Arms {
         tcx,
         sources,
         found: Vec::new(),
+        continues: Vec::new(),
     };
     arms.visit_expr(owned.value);
-    arms.found
+    (arms.found, arms.continues)
 }
 
 /// Where what a function gives at its end is, `None` of `// Don't return
@@ -425,9 +427,11 @@ fn comments(text: &str, start: u32) -> Vec<Comment> {
 impl<'tcx> super::FnCx<'_, 'tcx> {
     /// What `body` says of what does nothing, its sources this crate's.
     pub(super) fn commented(&self, body: rustc_span::def_id::DefId) -> Commented {
+        let (arms, continues) = commented_arms(self.tcx, self.krate.sources, body);
         Commented {
             jumps: tail_if_comments(self.tcx, self.krate.sources, body),
-            arms: commented_arms(self.tcx, self.krate.sources, body),
+            arms,
+            continues,
         }
     }
 }
@@ -435,8 +439,10 @@ impl<'tcx> super::FnCx<'_, 'tcx> {
 /// What a body says of what does nothing: each `if` its block ends with
 /// before comments (`tail_if_comments`, rd219, #428), and its structure's
 /// jumps with comments before them, found as it's made (rd109); and each
-/// arm that does nothing with comments above it (`commented_arms`, #508).
+/// arm that does nothing with comments above it (`commented_arms`, #508),
+/// and each `continue` that's an arm with comments above it (#610).
 pub(super) struct Commented {
     pub(super) jumps: Vec<(js::Span, js::Span)>,
     pub(super) arms: Vec<(js::Span, js::Span)>,
+    pub(super) continues: Vec<js::Span>,
 }

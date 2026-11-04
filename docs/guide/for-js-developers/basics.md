@@ -1879,6 +1879,14 @@ export function timeout(level) {
 }
 ```
 
+So is one before an arm that's only a `continue`, `// Skipped.\n 1 =>
+continue,`: `case 1:\n // Skipped.\n continue;`, as React DOM writes
+`case 'ref':\n // Noop\n continue;`, and of an `if`, `if (k === 3) { //
+Skipped.\n continue; }`, the `continue` kept where it's written. An arm of
+`continue` with no comment above it is the `if` of the rest, `if (k !==
+3) { .. }`
+([ADR 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md#amendment-a-comment-above-an-arm-thats-a-continue-alone-2026-11-04-the-users-decision-610)).
+
 One before an arm that does nothing is before its `case`
 ([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md), amended):
 

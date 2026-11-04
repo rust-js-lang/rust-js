@@ -148,15 +148,17 @@ pub(in crate::lower::mir::tidy) fn continues_written(
     stmts: &mut [Stmt],
     guards: &[(js::Span, js::Span)],
     arms: &[(js::Span, js::Span, js::Span)],
-    rests: &HashMap<String, u32>,
+    (rests, commented): (&HashMap<String, u32>, &[js::Span]),
 ) {
     /// A block's `break`s, `block`, each of which goes on to `jump`, and
-    /// the arms of a `continue` whose `match` is before something it holds.
+    /// the arms of a `continue` whose `match` is before something it holds;
+    /// and the `continue`s of arms with comments above them (#610).
     struct Of<'w> {
         block: &'w str,
         jump: &'w Stmt,
         guards: &'w [(js::Span, js::Span)],
         arms: Vec<(js::Span, js::Span)>,
+        commented: &'w [js::Span],
     }
     // `stmts`' `break`s of the block, the `then` of an `if` tested where
     // `tested` is.
@@ -188,8 +190,19 @@ pub(in crate::lower::mir::tidy) fn continues_written(
                         replaced(otherwise, of, None);
                     }
                 }
-                StmtKind::If(_, then, otherwise) => {
-                    replaced(then, of, (!span.is_none()).then_some(span.lo));
+                StmtKind::If(test, then, otherwise) => {
+                    // Where the `if` is; or, of an arm with comments above
+                    // it, a `continue` alone MIR tests where the `match` is,
+                    // where its test is, its pattern (#610).
+                    let commented = |at: js::Span| {
+                        (of.arms.iter())
+                            .any(|&(arm, written)| arm.lo <= at.lo && at.lo < arm.hi && of.commented.contains(&written))
+                    };
+                    let at = match !test.span.is_none() && commented(test.span) {
+                        true => test.span,
+                        false => span,
+                    };
+                    replaced(then, of, (!at.is_none()).then_some(at.lo));
                     if let Some(otherwise) = otherwise {
                         replaced(otherwise, of, None);
                     }
@@ -213,6 +226,7 @@ pub(in crate::lower::mir::tidy) fn continues_written(
                     })
                     .map(|&(_, arm, written)| (arm, written))
                     .collect(),
+                commented,
             };
             replaced(body, &of, None);
         }
@@ -229,18 +243,69 @@ pub(in crate::lower::mir::tidy) fn continues_written(
 /// the program wrote: `if (k === 3) { continue; }` stays so, not `if (k
 /// !== 3) { .. }`, as an `if` of one is (`continued`); and is an arm's
 /// code, which `decisions` places an `else if` at, as of any other arm.
-pub(in crate::lower::mir::tidy) fn arm_continues_placed(stmts: &mut [Stmt], arms: &[(js::Span, js::Span, js::Span)]) {
+/// An arm that's a `continue` alone, `3 => continue,`, only where comments
+/// are above it, `commented`'s, which are before it there, `if (k === 3) {
+/// // c\n continue; }`, as of the arm's block (#610, the user's decision):
+/// one with none is the `if` of the rest, `if (k !== 3) { .. }`, as before.
+/// MIR tests such an arm where the `match` is, `if (k === 3) { continue; }`
+/// at `match k`, as it does `Some(n) => *n, // c\n None => continue,`'s `if
+/// (x == null) { continue; }`: where it's the `match`'s only arm that
+/// continues and the `if` does nothing else, that arm's, `if (x == null) {
+/// // c\n continue; } log.push(x);`. (A `match` of more is MIR's block of
+/// a `continue` their `break`s go to, `continues_written`'s.)
+pub(in crate::lower::mir::tidy) fn arm_continues_placed(
+    stmts: &mut [Stmt],
+    arms: &[(js::Span, js::Span, js::Span)],
+    commented: &[js::Span],
+) {
+    // Of a `match` that continues by one arm alone, the others going on,
+    // that arm's `continue`: one the program placed, of a block, or with
+    // comments above it.
+    let alone = |matched: js::Span| {
+        let mut of = arms.iter().filter(|&&(m, ..)| m == matched);
+        match (of.next(), of.next()) {
+            (Some(&(_, arm, written)), None) if written.hi < arm.hi || commented.contains(&written) => Some(written),
+            _ => None,
+        }
+    };
     for stmt in stmts.iter_mut() {
         let span = stmt.span;
-        if let StmtKind::If(test, then, _) = &mut stmt.kind
-            && let Some(jump) = then.last_mut()
+        let StmtKind::If(test, then, otherwise) = &mut stmt.kind else {
+            continue;
+        };
+        // A last arm's, `_ => continue,`, the `else` of the `if` of one
+        // before it, `if (k === 3) { .. } else { continue; }`.
+        if let Some([jump]) = otherwise.as_deref_mut()
             && matches!(jump.kind, StmtKind::Continue(_))
             && jump.span.is_none()
-            && let Some(&(_, _, written)) = arms.iter().find(|&&(_, arm, written)| {
-                !arm.is_none() && (test.span.lo == arm.lo || span.lo == arm.lo) && written.hi < arm.hi
-            })
+            && !span.is_none()
+            && !test.span.is_none()
+            && let Some(&(matched, arm, _)) =
+                (arms.iter()).find(|&&(matched, ..)| matched.lo <= span.lo && span.hi <= matched.hi)
+            && test.span.hi <= arm.lo
+            && let Some(written) = alone(matched)
         {
             jump.span = written;
+        }
+        let single = then.len() == 1;
+        if let Some(jump) = then.last_mut()
+            && matches!(jump.kind, StmtKind::Continue(_))
+            && jump.span.is_none()
+        {
+            let own = arms.iter().find(|&&(_, arm, written)| {
+                !arm.is_none() && (test.span.lo == arm.lo || span.lo == arm.lo) && written.hi < arm.hi
+            });
+            // Or where MIR tests it at the `match` itself, `Some(n) => *n,
+            // // c\n None => continue,`'s `if (x == null) { continue; }`.
+            let at_match = (arms.iter()).find(|&&(matched, ..)| !matched.is_none() && span.lo == matched.lo);
+            if let Some(&(_, _, written)) = own {
+                jump.span = written;
+            } else if let Some(&(matched, ..)) = at_match
+                && single
+                && let Some(written) = alone(matched)
+            {
+                jump.span = written;
+            }
         }
     }
 }
@@ -516,14 +581,18 @@ pub(in crate::lower::mir::tidy) fn written_at(test: &Expr) -> js::Span {
 /// last, where `jumps into branches` made the rest its `else`, `if (c) {
 /// a; continue; } b` (ADR 0745). A loop's label those were the last jumps
 /// to goes with them.
-pub(in crate::lower::mir::tidy) fn tail_continues(stmts: &mut [Stmt], written: &crate::lower::mir::hints::Written) {
+pub(in crate::lower::mir::tidy) fn tail_continues(
+    stmts: &mut [Stmt],
+    written: &crate::lower::mir::hints::Written,
+    commented: &[js::Span],
+) {
     for stmt in stmts.iter_mut() {
         if let StmtKind::While { label, body, .. }
         | StmtKind::ForOf { label, body, .. }
         | StmtKind::For { label, body, .. } = &mut stmt.kind
         {
             let named = label.as_deref().is_some_and(|l| js::names_jump(body, l));
-            ends_going_on(body, label, written);
+            ends_going_on(body, label, written, commented);
             if named && label.as_deref().is_some_and(|l| !js::names_jump(body, l)) {
                 *label = None;
             }
@@ -533,8 +602,16 @@ pub(in crate::lower::mir::tidy) fn tail_continues(stmts: &mut [Stmt], written: &
 
 /// A `continue` where the body of loop `looped` ends anyway, in the
 /// branches that end it: none. Of an `else` that's only one, `if (c) {
-/// ..; return; } else { continue; }`, no `else` (ADR 0684).
-fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, written: &crate::lower::mir::hints::Written) {
+/// ..; return; } else { continue; }`, no `else` (ADR 0684). But an
+/// `else` that's the `continue` of an arm with comments above it,
+/// `commented`'s, `_ => continue,`, keeps it, as written, the comments
+/// before it (#610, the user's decision).
+fn ends_going_on(
+    stmts: &mut Vec<Stmt>,
+    looped: &Option<String>,
+    written: &crate::lower::mir::hints::Written,
+    commented: &[js::Span],
+) {
     let continues = &written.continues;
     // The `if` of a `continue` the program wrote, what goes on after it its
     // `else`: that after it, as written, its `continue` kept.
@@ -553,7 +630,7 @@ fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, written: &crate
     {
         let rest = otherwise.take().expect("matched");
         stmts.extend(rest);
-        return ends_going_on(stmts, looped, written);
+        return ends_going_on(stmts, looped, written, commented);
     }
     let more = stmts.len() > 1;
     match stmts.last_mut().map(|s| &mut s.kind) {
@@ -561,12 +638,13 @@ fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, written: &crate
             stmts.pop();
         }
         Some(StmtKind::If(_, then, otherwise)) => {
-            ends_going_on(then, looped, written);
+            ends_going_on(then, looped, written, commented);
             if let Some(branch) = otherwise {
-                if matches!(branch.as_slice(), [Stmt { kind: StmtKind::Continue(l), .. }] if going_on(l)) {
+                if matches!(branch.as_slice(), [Stmt { kind: StmtKind::Continue(l), span }] if going_on(l) && !commented.contains(span))
+                {
                     *otherwise = None;
                 } else {
-                    ends_going_on(branch, looped, written);
+                    ends_going_on(branch, looped, written, commented);
                 }
             }
         }

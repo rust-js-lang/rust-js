@@ -143,10 +143,12 @@ pub(super) struct Hints<'h> {
     /// it's done (`stages::Stage::again`): set by its passes, taken by
     /// `tidy`.
     pub(super) again: &'h std::cell::Cell<bool>,
-    /// Each `break` or `continue` the program wrote with comments before it
-    /// that a branch jumps by, where what the branch does last is and where
-    /// the jump is (rd109, `commented_jumps`).
-    pub(super) commented_jumps: &'h [(js::Span, js::Span)],
+    /// What the body says of what does nothing (`sources::Commented`): each
+    /// `break` or `continue` the program wrote with comments before it that
+    /// a branch jumps by, where what the branch does last is and where the
+    /// jump is (rd109, `commented_jumps`); and each `continue` that's an
+    /// arm with comments above it, `// Skipped.\n 1 => continue,` (#610).
+    pub(super) commented: &'h crate::lower::sources::Commented,
 }
 
 /// `body`, tidied, by what `hints` say of it: each stage's passes in turn
@@ -582,7 +584,7 @@ fn changing(body: &mut Vec<Stmt>) -> HashSet<String> {
 }
 
 /// Of each `break` or `continue` the program wrote with comments before it,
-/// `i += 3; // Skip it.\n continue;` (`Hints::commented_jumps`), the
+/// `i += 3; // Skip it.\n continue;` (`Hints::commented`'s `jumps`), the
 /// comments where it's written, after what's before it, `i += 3;`: there
 /// where tidy took the jump, the branch's end, as a block's that ends in
 /// comments (ADR 0753); before the jump where it's kept, which they're

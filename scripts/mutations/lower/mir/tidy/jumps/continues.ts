@@ -661,7 +661,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an arm that does nothing but `continue`, `\"C\" => continue`, isn't known by the `if` of its pattern, so its `match` is an `if` chain, not a `switch` (#518)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                    replaced(then, of, (!span.is_none()).then_some(span.lo));\n",
+    find: "                    replaced(then, of, (!at.is_none()).then_some(at.lo));\n",
     replace: "                    replaced(then, of, None);\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_arms_continue.rs$"],
     snapshots: true,
@@ -701,8 +701,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment before the `continue` an arm is, `1 => { // Skipped. continue; }`, prints above the `switch`, as MIR's test of the arm goes to the loop's start with no place of its own (#574)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            jump.span = written;\n",
-    replace: "            _ = written;\n",
+    find: "            if let Some(&(_, _, written)) = own {\n                jump.span = written;\n",
+    replace: "            if let Some(&(_, _, written)) = own {\n                _ = written;\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_before_an_arms_only_continue.rs$"],
     snapshots: true,
   },
@@ -724,6 +724,56 @@ export const mutations: Mutation[] = [
     find: "                !arm.is_none() && (test.span.lo == arm.lo || span.lo == arm.lo) && written.hi < arm.hi\n",
     replace: "                !arm.is_none() && (test.span.lo == arm.lo || span.lo == arm.lo) && written.hi <= arm.hi\n",
     tests: ["test/corpus.test.ts", "-t", "^(default_value_exits|tried_loop_jumps).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "continue-at-the-match-unplaced",
+    breaks:
+      "an arm MIR tests where the `match` is, `Some(n) => *n, // c\\n None => continue,`, is the `if` of the rest, its comment above the `for` (#610)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                && single\n",
+    replace: "                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "continue-at-the-match-uncommented",
+    breaks:
+      "a bare `None => continue,` with no comment above it, MIR's test at the `match`, keeps its `continue`, `if (x == null) { continue; }`, where an uncommented arm is the `if` of the rest (#610, the user's decision)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "            (Some(&(_, arm, written)), None) if written.hi < arm.hi || commented.contains(&written) => Some(written),\n",
+    replace: "            (Some(&(_, _, written)), None) => Some(written),\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "last-arm-continue-unplaced",
+    breaks:
+      "a commented last arm `_ => continue,`, the `else` of the `if` of the arm before, keeps no place, so its comment prints above the `for` (#610)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "            && test.span.hi <= arm.lo\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "commented-tail-continue-taken",
+    breaks:
+      "a commented last arm's `continue` that ends the loop's turn, `} else { // c\\n continue; }`, is taken as one that only ends it, its comment above the `for` (#610, the user's decision)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "if going_on(l) && !commented.contains(span))\n",
+    replace: "if going_on(l) && !commented.contains(span) || matches!(branch.as_slice(), [Stmt { kind: StmtKind::Continue(_), .. }]))\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "shared-continue-arm-at-the-match",
+    breaks:
+      "of a `match` whose arms of `continue` MIR joins, `// One is skipped.\\n 1 => continue, .. // Three is skipped.\\n 3 => continue,`, each `break` to the `continue` is placed where the `if` is, the `match`, so both comments print above the `switch`, not each in its case (#610)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                    let at = match !test.span.is_none() && commented(test.span) {\n",
+    replace: "                    let at = match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
     snapshots: true,
   },
 ];

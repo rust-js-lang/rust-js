@@ -1449,7 +1449,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 suggested: &self.temporaries_names(mir_body, &state),
                 named: &state.locals.named(),
                 again: &std::cell::Cell::new(false),
-                commented_jumps: &state.commented.jumps,
+                commented: &state.commented,
             },
         );
         let params = params.into_inner();

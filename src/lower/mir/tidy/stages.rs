@@ -777,7 +777,7 @@ pub(super) const STAGES: &[Stage] = &[
             // what was after a loop inside it, too, which `while heads` put
             // after it, its label with it (ADR 0702, amended).
             pass("tail continues", |b, h| {
-                js::statement_lists(b, &mut |s| tail_continues(s, h.written))
+                js::statement_lists(b, &mut |s| tail_continues(s, h.written, &h.commented.continues))
             }),
             pass("let else first", |b, h| {
                 // A unit function's `let … else`s and `if`s that return
@@ -889,7 +889,7 @@ pub(super) const STAGES: &[Stage] = &[
             // program wrote is its own already, `returns past blocks`'
             // (ADR 0905, amended).
             pass("tail continues", |b, h| {
-                js::statement_lists(b, &mut |s| tail_continues(s, h.written))
+                js::statement_lists(b, &mut |s| tail_continues(s, h.written, &h.commented.continues))
             }),
             // A `switch` that ends a function of no value: the `return;`s MIR
             // made in its cases, its `break;`s (ADR 0905, amended).
@@ -1043,7 +1043,7 @@ pub(super) const STAGES: &[Stage] = &[
             }),
             // The comments before a `break` or `continue` the program wrote,
             // after what's before it, where the jumps are settled (rd109).
-            pass("commented jumps", |b, h| super::commented_jumps(b, h.commented_jumps)),
+            pass("commented jumps", |b, h| super::commented_jumps(b, &h.commented.jumps)),
             // An `if`'s `then` that ends with the jump made after it, MIR's:
             // going on to it, `if (x != null) { .. } break;`.
             pass("jumps made next", |b, _| {
@@ -1117,14 +1117,21 @@ const JUMPS: &[Pass] = &[
     // An arm that's only a `continue`: the `continue`, where it's
     // written (#574).
     pass("arm continues", |b, h| {
-        js::statement_lists(b, &mut |s| arm_continues_placed(s, &h.written.arm_continues))
+        js::statement_lists(b, &mut |s| {
+            arm_continues_placed(s, &h.written.arm_continues, &h.commented.continues)
+        })
     }),
     // A `continue` of a loop around the program wrote, MIR's jump past a
     // block to it: where it wrote it (ADR 0702, amended).
     pass("continues written", |b, h| {
         let rests = turn_rests(b);
         js::statement_lists(b, &mut |s| {
-            continues_written(s, &h.written.continues, &h.written.arm_continues, &rests)
+            continues_written(
+                s,
+                &h.written.continues,
+                &h.written.arm_continues,
+                (&rests, &h.commented.continues),
+            )
         })
     }),
     pass("joined ands", |b, _| js::statement_lists(b, &mut |s| joined_ands(s))),

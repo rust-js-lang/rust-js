@@ -1200,3 +1200,52 @@ continue; } else {`; so does a `continue` of a loop inside the arm.
 Held by corpus `comment_before_an_arms_only_continue`, and the mutations
 `arm-only-continue-unplaced`, `arm-only-continue-of-any-if` and
 `arm-only-continue-of-a-bare-arm`.
+
+## Amendment: a comment above an arm that's a `continue` alone (2026-11-04, the user's decision, #610)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+An arm that's a `continue` alone with comments above it, `// Skipped.\n 1
+=> continue,`, printed them above the `switch`, above the `if` tidy
+inverted, `// c\n if (k !== 3) { .. }`, or above the `for`. The user's
+decision (2026-11-04, option B): **a commented arm that's a `continue`
+alone keeps its `continue` where it's written**, as the arm of a block
+does already: `case 1:\n // Skipped.\n continue;`, as React DOM's
+`case 'ref':\n // Noop\n continue;` is written
+(packages/react-dom-bindings/src/client/ReactDOMComponent.js:2513-2515);
+`if (k === 3) { // c\n continue; }`; `if (x == null) { // None is
+skipped.\n continue; } log.push(x);`. One with no comment above it is the
+`if` of the rest, as before: the comments, not the arm, are what has
+no place otherwise.
+
+Which arms are commented is the sources' to say (`sources::commented_arms`,
+which finds an arm of nothing with comments above it, #508): each arm
+whose body is a `continue`, past only comments since the arm before or
+the `match`'s `{`, and not guarded; tidy's `Hints::commented`
+carries them to `arm_continues_placed`. And an arm MIR tests where the
+`match` is, not where its pattern is, `Some(n) => *n, None => continue`'s
+`if (x == null) { continue; }` at `match x`: where it's the only arm of the
+`match` that continues and the `if` does nothing else, the `continue` is
+that arm's, a block's, `None => { // c\n continue; }`, as well. (That it's the only one is held by no program: MIR makes the
+arms of more one block their `break`s go to, which `continues_written`
+reads, below; it says which arm the `continue` is of, never another's.) Of a
+`match` whose arms of `continue` MIR joins, each a `break` to the
+`continue` after their block (`continues_written`), a commented arm's is
+placed where its test is, its pattern, where the `if` is at the `match`:
+`case 1:\n // One is skipped.\n continue; .. case 3:\n // Three is
+skipped.\n continue;`.
+
+A last arm of no test of its own, `3 => log.push(3), // c\n _ =>
+continue,`, is the `else` of the `if` MIR made of the arm before, whose
+branch holds a copy of what follows the `match`, so the `else` ends the
+turn: its `continue` is kept there too, where `tail continues` takes one
+that only ends the turn (ADR 0684), `if (k === 3) { log.push(3);
+log.push(400); } else { // c\n continue; }`.
+
+Held by corpus `comment_before_a_bare_continue_arm` against native Rust,
+and the mutations
+`continue-at-the-match-unplaced`,
+`continue-at-the-match-uncommented`, `last-arm-continue-unplaced`,
+`commented-tail-continue-taken`, `shared-continue-arm-at-the-match`
+(`mir/tidy/jumps/continues.ts`),
+`commented-continue-arms-unfound` and
+`commented-continue-arms-of-no-comment` (`lower/sources.ts`).

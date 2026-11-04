@@ -962,7 +962,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `continue` left where a `for`'s turn ends anyway, React's `if (i !== j) { ..; continue; }`, is kept (ADR 0961)",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            // (ADR 0905, amended).\n            pass("tail continues", |b, h| {\n                js::statement_lists(b, &mut |s| tail_continues(s, h.written))\n            }),\n',
+    find: '            // (ADR 0905, amended).\n            pass("tail continues", |b, h| {\n                js::statement_lists(b, &mut |s| tail_continues(s, h.written, &h.commented.continues))\n            }),\n',
     replace: "            // (ADR 0905, amended).\n",
     tests: [
       "test/corpus.test.ts",
@@ -976,7 +976,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `continue` the program didn't write, left at a loop body's end by a block returned in place, stays",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("tail continues", |b, h| {\n                js::statement_lists(b, &mut |s| tail_continues(s, h.written))\n            }),\n            pass("let else first"',
+    find: '            pass("tail continues", |b, h| {\n                js::statement_lists(b, &mut |s| tail_continues(s, h.written, &h.commented.continues))\n            }),\n            pass("let else first"',
     replace: '            pass("let else first"',
     tests: [
       "test/corpus.test.ts",
