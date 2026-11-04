@@ -6,7 +6,7 @@
 
 use rustc_hir as hir;
 use rustc_hir::def::{DefKind, Res};
-use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
+use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Symbol;
 use rustc_span::def_id::DefId;
 use serde_json::{Value, json};
@@ -52,9 +52,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 if let Res::Def(DefKind::TyAlias, did) = path.res {
                     if let Some(value) = self.alias_named(written, path, did) {
                         let ty = rustc_hir_analysis::lower_ty(self.tcx, written);
-                        if !ty.has_escaping_bound_vars() {
-                            named.push((self.tcx.erase_and_anonymize_regions(ty), value));
-                        }
+                        named.push((self.tcx.erase_and_anonymize_regions(ty), value));
                         return;
                     }
                     // One not named, a private alias of the crate's, is what

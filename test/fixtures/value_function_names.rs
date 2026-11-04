@@ -50,3 +50,10 @@ fn scaled(value: f64, factor: f64) -> f64 {
 }
 
 pub static SCALE: fn(f64, f64) -> f64 = scaled;
+
+/// What a visit asks of each value.
+pub type Visit<'a, T> = dyn Fn(&T) -> bool + 'a;
+
+pub fn visit<T>(value: &T, f: &Visit<'_, T>) -> bool {
+    f(value)
+}

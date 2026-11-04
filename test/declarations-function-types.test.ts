@@ -207,6 +207,7 @@ test("declarations name a function type's parameter apart from a word JS keeps",
 // alias written in it, inside a private alias's `dyn Fn(PriorityLevel, ..)`
 // too, by its name: SchedulerNative's `unstable_scheduleCallback` (#630).
 test("a static's function type is named as the functions its value may be", () => {
+  buildReact();
   const dir = fixture("declarations-value-function-names");
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
   writeFileSync(join(dir, "lib.rs"), readFileSync(join(import.meta.dir, "fixtures/value_function_names.rs"), "utf8"));
@@ -218,6 +219,8 @@ test("a static's function type is named as the functions its value may be", () =
   );
   expect(declarations).toContain("export const getCurrentPriorityLevel: () => PriorityLevel;");
   expect(declarations).toContain("export const SCALE: (value: number, factor: number) => number;");
+  // A `pub` alias of a lifetime the function's `'_` gives, by its name.
+  expect(declarations).toContain("export function visit<T>(value: T, f: Visit<T>): boolean;");
   writeFileSync(
     join(dir, "use.ts"),
     `import { getCurrentPriorityLevel, SCALE, SCHEDULE_CALLBACK } from "./lib.js";

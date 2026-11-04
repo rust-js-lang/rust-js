@@ -156,4 +156,12 @@ export const mutations: Mutation[] = [
     replace: "            for ty in args.constraints.iter().filter_map(|constraint| constraint.ty()).filter(|_| false) {\n",
     tests: ["test/declarations-function-types.test.ts", "-t", "the functions its value may be"],
   },
+  {
+    name: "late-lifetime-alias-unnamed",
+    breaks: "an alias of a lifetime a function's `'_` gives, `f: &Visit<'_, T>`, whose lowered type is of the function's binder, is declared expanded, `(t: T) => boolean`, not `Visit<T>` (#630)",
+    file: "src/lower/declarations/aliases.rs",
+    find: "                        named.push((self.tcx.erase_and_anonymize_regions(ty), value));\n                        return;\n",
+    replace: "                        if !rustc_middle::ty::TypeVisitableExt::has_escaping_bound_vars(&ty) {\n                            named.push((self.tcx.erase_and_anonymize_regions(ty), value));\n                        }\n                        return;\n",
+    tests: ["test/declarations-function-types.test.ts", "-t", "the functions its value may be"],
+  },
 ];

@@ -220,6 +220,10 @@ type is named as the functions its value may be" (its program
 `test/fixtures/value_function_names.rs`, SchedulerNative's form: a host
 binding's `js::cast` or the crate's function, a private alias of a `dyn
 Fn` of another module's `PriorityLevel`, a `dyn Fn() -> PriorityLevel`, a
-plain static's fn pointer), `tsc` checking a caller and its run giving
+plain static's fn pointer, and a `pub` alias of a lifetime a function's `'_`
+gives, `f: &Visit<'_, T>`, still `Visit<T>`: its lowered type is of the
+function's binder, which a first version of this change took for one it
+couldn't compare and left expanded, React's `ReactFiberTreeReflection`'s
+`fn: Visit<A, B, C>`), `tsc` checking a caller and its run giving
 what the crate's functions give, and its first test's `given`. Mutations
 in `lower/declarations/aliases.ts` and `lower/declarations/functions.ts`.
