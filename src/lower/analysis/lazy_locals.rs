@@ -13,13 +13,18 @@
 //! first (`load_cycles::out_of_order`): one that runs what rust-js can't
 //! follow, reads itself, or runs a module in an import cycle with its own,
 //! made where it's first used, the crate lowered again so
-//! (`made_where_used`), or refused.
+//! (`made_where_used`), or refused. What a thread-local's `with` lends is
+//! told apart by its struct's fields (`Place`, #616): React Flight's `const {
+//! TaintRegistryObjects, .. } = ReactSharedInternals;` reads fields of the
+//! server internals that nothing writes after the load, where functions set
+//! its dispatchers'.
 
 use std::collections::{HashMap, HashSet};
 
+use rustc_abi::FieldIdx;
 use rustc_hir as hir;
 use rustc_middle::mir::TerminatorKind;
-use rustc_middle::thir::ExprKind;
+use rustc_middle::thir::{ExprId, ExprKind, PatKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::{DefId, LocalDefId};
 
@@ -105,14 +110,58 @@ pub(super) fn lazy_locals<'tcx>(
 /// change, a `static mut` or a `static` of interior mutability (`changes`),
 /// and whether it prints or panics, which Rust orders.
 struct Touched {
-    /// What it reads or writes, each by its name.
-    reads: Vec<DefId>,
+    /// What it reads or writes.
+    reads: Vec<Place>,
     /// What it may write: a thread-local it `set`s, `take`s, `replace`s or
     /// lends, by `with_borrow_mut` or `with`, or hands on; a `static mut` it
     /// writes or takes a pointer to; any `static` of interior mutability.
-    writes: Vec<DefId>,
+    /// Of a `with`, the fields its closure reads of what it lends, each
+    /// written, as a cell may be (`fields_lent`).
+    writes: Vec<Place>,
     /// Whether it prints, or calls what never returns, a `panic!`'s.
     ordered: Option<Ordered>,
+}
+
+/// A place of the crate's state, by its name: the whole of it, or, of a
+/// thread-local, one field of the struct it holds, through the references
+/// it holds, as its `with` lends it, `registry` of `INTERNALS.with(|i|
+/// i.registry.get())` (#616); and whether what that field points to may be
+/// read or written too (`through`): not of a `Cell`'s `set`, nor its `get`
+/// or `replace` of what points to nothing that may change, which read or
+/// write the field alone.
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+struct Place {
+    state: DefId,
+    field: Option<FieldIdx>,
+    through: bool,
+}
+
+impl Place {
+    fn whole(state: DefId) -> Self {
+        Place {
+            state,
+            field: None,
+            through: true,
+        }
+    }
+}
+
+/// How a `with`'s closure uses a field of what it's lent (`fields_lent`):
+/// whether it writes it, whether it gives out what it holds, a `Cell`'s
+/// `get` or `replace`, and whether it lends it, to any other call or
+/// place, which may read and write it and what it points to.
+#[derive(Clone, Copy, Default)]
+struct FieldUse {
+    writes: bool,
+    gives: bool,
+    lends: bool,
+}
+
+/// A field of what a struct's field holds: its type, and what it may point
+/// to that may change, which another field may point to too (`pointees`).
+struct FieldOf<'tcx> {
+    ty: Ty<'tcx>,
+    pointees: Option<HashSet<Ty<'tcx>>>,
 }
 
 /// What a body does that Rust orders, where it's run.
@@ -125,19 +174,23 @@ enum Ordered {
     Panics,
 }
 
-/// Each body's `Touched`, by its id, and the bodies in the crate's order.
-struct Touches {
+/// Each body's `Touched`, by its id, and the bodies in the crate's order;
+/// and each field a `with` lends, by its state and field.
+struct Touches<'tcx> {
     order: Vec<DefId>,
     of: HashMap<DefId, Touched>,
+    fields: HashMap<(DefId, FieldIdx), FieldOf<'tcx>>,
 }
 
-impl Touches {
-    fn of<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> Self {
+impl<'tcx> Touches<'tcx> {
+    fn of(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> Self {
         let mut state: HashMap<DefId, bool> = HashMap::new();
         let mut changing = |id: DefId| *state.entry(id).or_insert_with(|| changes(tcx, id));
+        let by_id: HashMap<DefId, &Body<'tcx>> = bodies.iter().map(|body| (body.def_id, *body)).collect();
         let mut found = Touches {
             order: bodies.iter().map(|body| body.def_id).collect(),
             of: HashMap::new(),
+            fields: HashMap::new(),
         };
         for body in bodies {
             let thir = &body.thir;
@@ -161,16 +214,58 @@ impl Touches {
                     read_only.insert(strip(thir, arg));
                 }
             }
+            // Each thread-local a `with` lends its closure, and the fields of
+            // its struct the closure reads alone, where it reads no more.
+            let mut lent: HashMap<ExprId, Vec<(FieldIdx, Ty<'tcx>, FieldUse)>> = HashMap::new();
+            for expr in thir.exprs.iter() {
+                if let ExprKind::Call { fun, ref args, .. } = expr.kind
+                    && let Some((id, _)) = crate::lower::fn_def(thir[fun].ty)
+                    && is_local_with(tcx, id)
+                    && let [key, f] = args[..]
+                    && let ExprKind::Borrow { arg: key, .. } = thir[strip(thir, key)].kind
+                    && let ExprKind::Closure(ref closure) = thir[strip(thir, f)].kind
+                    && let Some(closure) = by_id.get(&closure.closure_id.to_def_id())
+                    && let Some(fields) = fields_lent(tcx, &closure.thir)
+                {
+                    lent.insert(strip(thir, key), fields);
+                }
+            }
             for (at, expr) in thir.exprs.iter_enumerated() {
                 let written = match expr.kind {
                     ExprKind::NamedConst { def_id, .. } | ExprKind::StaticRef { def_id, .. }
                         if def_id.is_local() && changing(def_id) =>
                     {
-                        touched.reads.push(def_id);
-                        // A `static mut` is written where it's assigned,
-                        // below; anything else that isn't only read may be.
-                        if !read_only.contains(&at) && !tcx.is_mutable_static(def_id) {
-                            touched.writes.push(def_id);
+                        let Some(fields) = lent.get(&at) else {
+                            touched.reads.push(Place::whole(def_id));
+                            // A `static mut` is written where it's assigned,
+                            // below; anything else that isn't only read may be.
+                            if !read_only.contains(&at) && !tcx.is_mutable_static(def_id) {
+                                touched.writes.push(Place::whole(def_id));
+                            }
+                            continue;
+                        };
+                        // Lent to a closure that reads none of it, it's read,
+                        // made if it wasn't.
+                        if fields.is_empty() {
+                            touched.reads.push(Place::whole(def_id));
+                        }
+                        for &(field, ty, used) in fields {
+                            let of = (found.fields.entry((def_id, field))).or_insert_with(|| FieldOf {
+                                ty: tcx.erase_and_anonymize_regions(ty),
+                                pointees: pointees(tcx, ty),
+                            });
+                            // What it gives out may be written through later.
+                            let points = of.pointees.as_ref().is_none_or(|pointees| !pointees.is_empty());
+                            let through = used.lends || (used.gives && points);
+                            let place = Place {
+                                state: def_id,
+                                field: Some(field),
+                                through,
+                            };
+                            touched.reads.push(place);
+                            if used.writes || through {
+                                touched.writes.push(place);
+                            }
                         }
                         continue;
                     }
@@ -186,7 +281,7 @@ impl Touches {
                     && def_id.is_local()
                     && changing(def_id)
                 {
-                    touched.writes.push(def_id);
+                    touched.writes.push(Place::whole(def_id));
                 }
             }
             if let Some(mir) = &body.mir {
@@ -206,6 +301,171 @@ impl Touches {
         }
         found
     }
+
+    /// Whether `a` and `b` may be one place: of one state, the whole of it
+    /// either, or one field; or two fields one of which may point to the
+    /// other, or to what the other points to, where what they point to is
+    /// read or written, `Rc`s of one cell.
+    fn overlap(&self, a: Place, b: Place) -> bool {
+        let (Some(f), Some(g)) = (a.field, b.field) else {
+            return a.state == b.state;
+        };
+        if a.state != b.state || f == g {
+            return a.state == b.state;
+        }
+        let (f, g) = (&self.fields[&(a.state, f)], &self.fields[&(b.state, g)]);
+        // Whether what `from` points to may be `to`, or what `to` points to,
+        // where that's read or written, `to_through`.
+        let reaches = |from: &FieldOf<'tcx>, to: &FieldOf<'tcx>, to_through: bool| match &from.pointees {
+            None => true,
+            Some(from) => {
+                from.contains(&to.ty)
+                    || (to_through
+                        && match &to.pointees {
+                            None => !from.is_empty(),
+                            Some(to) => !from.is_disjoint(to),
+                        })
+            }
+        };
+        (a.through && reaches(f, g, b.through)) || (b.through && reaches(g, f, a.through))
+    }
+}
+
+/// Of `thir`, the body of a closure a thread-local's `with` is given, the
+/// fields it reads of the struct it's lent, each with its type and how it's
+/// used, where it reads nothing else of it: each use of its parameter,
+/// `|internals|` or `|&internals|`, is a field of what it points to,
+/// `internals.registry`, through its references alone. `None` where one
+/// isn't, which may change any field: the struct lent whole, to a function,
+/// a method, a binding or a closure that captures it, or a reference to it
+/// copied out (#616).
+fn fields_lent<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Option<Vec<(FieldIdx, Ty<'tcx>, FieldUse)>> {
+    use crate::lower::recognition::{CellMethod, cell_own_method};
+    // Its own parameter, after the closure's environment, which has no pattern.
+    let [param] = &(thir.params.iter())
+        .filter_map(|param| param.pat.as_deref())
+        .collect::<Vec<_>>()[..]
+    else {
+        return None;
+    };
+    let named = match &param.kind {
+        PatKind::Deref { subpattern, .. } => &subpattern.kind,
+        kind => kind,
+    };
+    let PatKind::Binding {
+        var, subpattern: None, ..
+    } = *named
+    else {
+        return None;
+    };
+    // Each place a `Cell`'s `get`, `set` or `replace` is given, and how
+    // it's used: read or written, and whether what it held is given out.
+    let celled: HashMap<ExprId, FieldUse> = (thir.exprs.iter())
+        .filter_map(|expr| {
+            let ExprKind::Call { fun, ref args, .. } = expr.kind else {
+                return None;
+            };
+            let writes = match cell_own_method(tcx, crate::lower::fn_def(thir[fun].ty)?.0)? {
+                CellMethod::Get => false,
+                CellMethod::Writes => true,
+                _ => return None,
+            };
+            let ExprKind::Borrow { arg, .. } = thir[strip(thir, *args.first()?)].kind else {
+                return None;
+            };
+            let used = FieldUse {
+                writes,
+                gives: !expr.ty.is_unit(),
+                lends: false,
+            };
+            Some((strip(thir, arg), used))
+        })
+        .collect();
+    let mut fields: Vec<(FieldIdx, Ty<'tcx>, FieldUse)> = Vec::new();
+    let mut read_through = HashSet::new();
+    for (at, expr) in thir.exprs.iter_enumerated() {
+        let ExprKind::Field { lhs, name, .. } = expr.kind else {
+            continue;
+        };
+        let mut base = strip(thir, lhs);
+        while let ExprKind::Deref { arg } = thir[base].kind {
+            base = strip(thir, arg);
+        }
+        if !matches!(thir[base].kind, ExprKind::VarRef { id } if id == var) {
+            continue;
+        }
+        // A struct's or a tuple's fields are apart; a union's aren't.
+        let apart = match thir[lhs].ty.kind() {
+            ty::Adt(adt, _) => adt.is_struct(),
+            ty::Tuple(_) => true,
+            _ => false,
+        };
+        if !apart {
+            return None;
+        }
+        read_through.insert(base);
+        let lent = FieldUse {
+            writes: true,
+            gives: true,
+            lends: true,
+        };
+        let used = celled.get(&at).copied().unwrap_or(lent);
+        match fields.iter_mut().find(|(field, _, _)| *field == name) {
+            Some((_, _, was)) => {
+                was.writes |= used.writes;
+                was.gives |= used.gives;
+                was.lends |= used.lends;
+            }
+            None => fields.push((name, expr.ty, used)),
+        }
+    }
+    let other_use = (thir.exprs.iter_enumerated())
+        .any(|(at, expr)| matches!(expr.kind, ExprKind::VarRef { id } if id == var) && !read_through.contains(&at));
+    (!other_use).then_some(fields)
+}
+
+/// What a value of `ty` may point to that may change, which another value
+/// may point to too: each type it reaches through a reference, an `Rc`, an
+/// `Arc` or a `Weak` that isn't `Freeze`, through the fields of structs and
+/// enums and the type arguments of std's. `None` where it may point to
+/// anything: a raw pointer, which may be cast, a `dyn` or a closure, whose
+/// captures its type doesn't name, or a type rustc doesn't say.
+fn pointees<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<HashSet<Ty<'tcx>>> {
+    use crate::lower::recognition::{is_std_crate, rc_pointee, weak_pointee};
+    let typing_env = ty::TypingEnv::fully_monomorphized();
+    let mut found = HashSet::new();
+    let mut todo = vec![(ty, false)];
+    let mut seen = HashSet::new();
+    while let Some((ty, behind)) = todo.pop() {
+        let ty = tcx.erase_and_anonymize_regions(ty);
+        if !seen.insert((ty, behind)) {
+            continue;
+        }
+        if behind && !ty.is_freeze(tcx, typing_env) {
+            found.insert(ty);
+        }
+        if let Some(pointee) = rc_pointee(tcx, ty).or_else(|| weak_pointee(tcx, ty)) {
+            todo.push((pointee, true));
+            continue;
+        }
+        if crate::lower::pointers::raw_pointee(tcx, ty).is_some() {
+            return None;
+        }
+        match *ty.kind() {
+            ty::Dynamic(..) | ty::Closure(..) | ty::Param(..) | ty::Alias(..) => return None,
+            ty::Ref(_, pointee, _) => todo.push((pointee, true)),
+            // A marker holds nothing: a JS object's, `WeakMap`'s.
+            ty::Adt(adt, _) if adt.is_phantom_data() => {}
+            ty::Adt(adt, args) if is_std_crate(tcx, adt.did()) => todo.extend(args.types().map(|ty| (ty, behind))),
+            ty::Adt(adt, args) => {
+                todo.extend((adt.all_fields()).map(|field| (field.ty(tcx, args).skip_normalization(), behind)));
+            }
+            ty::Array(item, _) | ty::Slice(item) => todo.push((item, behind)),
+            ty::Tuple(items) => todo.extend(items.iter().map(|ty| (ty, behind))),
+            _ => {}
+        }
+    }
+    Some(found)
 }
 
 /// Whether `id`, a thread-local's key or a `static`, is state that may
@@ -356,29 +616,43 @@ fn run_in_place<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<DefId> {
 }
 
 /// What the bodies that may run outside the modules' load touch: each
-/// state they may write, by the first that does, and each they read or
-/// write, by the first that does.
+/// place of state they may write, by the first that does, and each they
+/// read or write, by the first that does, by its state.
 struct Outside {
-    writes: HashMap<DefId, DefId>,
-    touches: HashMap<DefId, DefId>,
+    writes: HashMap<DefId, Vec<(Place, DefId)>>,
+    touches: HashMap<DefId, Vec<(Place, DefId)>>,
 }
 
 impl Outside {
-    fn of(touches: &Touches, loading: &HashSet<DefId>) -> Self {
+    fn of(touches: &Touches<'_>, loading: &HashSet<DefId>) -> Self {
         let mut outside = Outside {
             writes: HashMap::new(),
             touches: HashMap::new(),
         };
+        let add = |to: &mut HashMap<DefId, Vec<(Place, DefId)>>, place: Place, by: DefId| {
+            let places = to.entry(place.state).or_default();
+            if !places.iter().any(|&(was, _)| was == place) {
+                places.push((place, by));
+            }
+        };
         for id in touches.order.iter().filter(|id| !loading.contains(id)) {
             let touched = &touches.of[id];
-            for &state in &touched.writes {
-                outside.writes.entry(state).or_insert(*id);
+            for &place in &touched.writes {
+                add(&mut outside.writes, place, *id);
             }
-            for &state in touched.reads.iter().chain(&touched.writes) {
-                outside.touches.entry(state).or_insert(*id);
+            for &place in touched.reads.iter().chain(&touched.writes) {
+                add(&mut outside.touches, place, *id);
             }
         }
         outside
+    }
+
+    /// The first body of `of`'s, `writes` or `touches`, that touches a place
+    /// that may be `place`.
+    fn by(touches: &Touches<'_>, of: &HashMap<DefId, Vec<(Place, DefId)>>, place: Place) -> Option<DefId> {
+        (of.get(&place.state)?.iter())
+            .find(|&&(other, _)| touches.overlap(place, other))
+            .map(|&(_, by)| by)
     }
 }
 
@@ -400,7 +674,7 @@ enum Shows {
 /// panics; state it reads that what may run outside the load, `outside`,
 /// writes; or state it writes that that touches (the user's decision,
 /// #554).
-fn shows(touches: &Touches, outside: &Outside, init: DefId, reached: &[DefId]) -> Option<Shows> {
+fn shows(touches: &Touches<'_>, outside: &Outside, init: DefId, reached: &[DefId]) -> Option<Shows> {
     let ran = || {
         std::iter::once(&init)
             .chain(reached)
@@ -409,15 +683,16 @@ fn shows(touches: &Touches, outside: &Outside, init: DefId, reached: &[DefId]) -
     if let Some((id, ordered)) = ran().find_map(|(id, touched)| Some((id, touched.ordered?))) {
         return Some(Shows::Ordered(id, ordered));
     }
-    let read = ran().flat_map(|(_, touched)| touched.reads.iter());
-    if let Some((&state, &by)) = read.clone().find_map(|state| Some((state, outside.writes.get(state)?))) {
+    let mut read = ran().flat_map(|(_, touched)| touched.reads.iter());
+    if let Some((state, by)) =
+        read.find_map(|&place| Some((place.state, Outside::by(touches, &outside.writes, place)?)))
+    {
         return Some(Shows::Reads(state, by));
     }
-    let written = ran().flat_map(|(_, touched)| touched.writes.iter());
+    let mut written = ran().flat_map(|(_, touched)| touched.writes.iter());
     written
-        .clone()
-        .find_map(|state| Some((state, outside.touches.get(state)?)))
-        .map(|(&state, &by)| Shows::Writes(state, by))
+        .find_map(|&place| Some((place.state, Outside::by(touches, &outside.touches, place)?)))
+        .map(|(state, by)| Shows::Writes(state, by))
 }
 
 /// A `pub` thread-local whose initializer would show it's made as its

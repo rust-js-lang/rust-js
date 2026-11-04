@@ -535,7 +535,12 @@ of `static LAZY: RefCell<Option<u32>> = RefCell::new(made());` where
 that runs or reads code of a module in an import cycle with its own, which
 may not have loaded yet, one that reads itself, or one that calls a `dyn
 Fn`, a fn pointer that may be any function, or what a type parameter is
-given. It's `const source = $local(() => [..])`, read by its call,
+given. What a thread-local's `with` lends a closure that reads
+only its struct's fields is told apart by field: React Flight's `const {
+TaintRegistryObjects, .. } = ReactSharedInternals;` reads cells nothing
+sets after the load, though functions set its dispatchers'. The struct
+lent whole, to a function, a method or a binding, or a reference to it
+copied out, may change every field. It's `const source = $local(() => [..])`, read by its call,
 `source()`, so what its initializer prints and a panic in it are where
 Rust has them: after what the call that first uses it is given,
 `COUNT.replace(made(9))` making 9 first, and made again at its next use

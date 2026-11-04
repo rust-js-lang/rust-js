@@ -6,6 +6,7 @@ and a clone of a closure runs none of it. Amended (rd621): `may_run` is
 its own rule, and a drop runs the destructors its fields and `dyn`s hold.
 Amended (#554, the user's decision, 2026-11-04): one whose making as its
 module loads would show is made where it's first used, a `pub` one refused.
+Amended (#616): what a `with` lends is told apart by its struct's fields.
 Amends [0037](0037-thread-locals.md), whose amendment refusing a `pub`
 thread-local made where it's first used it replaces.
 
@@ -485,7 +486,8 @@ apart by its field: React Flight's `const TaintRegistryObjects =
 $local(() => ReactSharedInternals.TaintRegistryObjects)`, and its three
 siblings, read a `Cell` of the server internals, whose other cells, the
 dispatcher's, functions set after the load, so they're made where they're
-first used, where upstream destructures them as its module loads.
+first used, where upstream destructures them as its module loads (told
+apart since #616, the amendment below).
 
 The ports, built on this (2026-11-04): React's (react-in-rust 06d6b3f9),
 whose only thread-locals made where they're first used now are those four,
@@ -545,3 +547,76 @@ as `run.mjs` makes its `Loud` before it calls `early()`, which the
 `const made = new Plugin("early")` it printed before reversed (case C).
 Its class before what its module makes of it as it loads is held by a
 second, `SHOUTED`, `Plugin::shout("hi")`, `const SHOUTED` after the class.
+
+## Amendment: what a `with` lends is told apart by its fields (#616)
+
+The amendment above took any use of a thread-local, but a read, for a write
+of all of it. React Flight's four private `TaintRegistry*` thread-locals
+each read one `Cell` of the server internals, which nothing writes after
+the load, but Flight's `performWork` and `createRequest` set the
+dispatchers' cells, `internals.h.set(..)`, so all four were `$local(() =>
+ReactSharedInternals.TaintRegistryObjects)`, where upstream writes `const {
+TaintRegistryObjects, .. } = ReactSharedInternals;` (the user accepted the
+`$local` form for now, 2026-11-04, and asked for this).
+
+**A thread-local's `with` given a closure that reads only fields of the
+struct it lends, `INTERNALS.with(|internals| internals.registry.get())`,
+reads and writes those fields alone** (`lazy_locals::fields_lent`, its
+`Place`s): each use of the closure's parameter, `|internals|` or
+`|&internals|`, is a field of what it points to, through its references
+alone. An initializer that reads field X is made as its module loads where
+nothing that may run after the load writes X, or the state whole; one
+whose field is written then, `DISPATCHER` of `main`'s
+`internals.dispatcher.set(5)`, is made where it's first used, as before.
+
+- **Any other use of what it's lent writes every field**, as before: the
+  struct handed to a function, a method, a binding (`Object.assign(target,
+  ..)`), or another crate's function, which may write any field; a
+  closure that captures it, which rustc's capture truncates to the struct
+  at a shared reference's deref; a reference to it copied out, `*held`; a
+  field of a union, whose fields aren't apart; and a `with` given anything
+  but a closure. A thread-local's own `get`, `set`, `with_borrow` and
+  `with_borrow_mut` are of the whole of it, as before.
+- **A field may point to what another holds or points to**: two fields'
+  `Rc`s of one cell, or references to one, or a reference to the struct
+  itself. So a field read or written with what it points to is one place
+  with another field where what one may point to (`pointees`: each type
+  not `Freeze` it reaches through a reference, an `Rc`, an `Arc` or a
+  `Weak`, through structs' fields and std's type arguments) is the other's
+  type or meets what the other may point to; a raw pointer, a `dyn`, a
+  closure, or a type rustc doesn't say may point to anything.
+- **What it points to is read or written by any use but a `Cell`'s**: a
+  `Cell`'s `set` writes the field alone; its `get` and `replace` read it
+  alone where what they give out points to nothing that may change, a JS
+  object's `PhantomData` among them, React's `Option<&'static WeakMap<..>>`
+  and its dispatchers'. One that gives out what points to such state, a
+  `Cell<Option<&'static Cell<u32>>>`'s `get`, reads and writes what it
+  points to, as what's given out may be written through.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C where a field read is
+written after the load, results changed: made where it's first used, as
+Rust makes it. N where nothing writes the fields it reads, nor the state
+whole: what's read is the same at the load as at its first use.
+
+Not told apart, as before: a `static`'s fields, and a field of a field.
+Writes through a reference copied out of the state by a read, a `Cell`
+thread-local's `get` of a `&'static`, or held by another thread-local made
+of it, aren't seen as writes of the state, of its fields or of the whole
+of it alike: a gap of their own, a wrong answer reported with #616, which
+this amendment neither opens nor closes: `static READ: u32 =
+PTR.get().unwrap().n.get()` is made as its module loads though `main`
+writes `PTR.get().unwrap().n` first.
+
+The ports, built on this: React's ReactFlightServer destructures the four
+again, `const { TaintRegistryObjects, TaintRegistryValues,
+TaintRegistryByteLengths, TaintRegistryPendingRequests } =
+ReactSharedInternals;`, upstream's.
+
+- Corpus `thread_local_lazy_by_field`, against native Rust: `REGISTRY`,
+  of a field nothing writes after the load, made as its module loads;
+  `DISPATCHER`, of one `main` sets, where it's first used; and one of each
+  way a field is written whole or through another, each where it's first
+  used: a function given the struct, its method, a binding's
+  `Object.assign`, a closure that captures it, a reference copied out,
+  `Rc`s of one cell, and references to one given out by `get`.
+- Mutations `field-*` in `scripts/mutations/lower/analysis/lazy_locals.ts`.

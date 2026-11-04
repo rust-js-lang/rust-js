@@ -2,6 +2,7 @@
 import type { Mutation } from "../../../mutations";
 
 const observable = ["test/corpus.test.ts", "-t", "^thread_local_lazy_where_observable.rs$"];
+const byField = ["test/corpus.test.ts", "-t", "^thread_local_lazy_by_field.rs$"];
 
 export const mutations: Mutation[] = [
   {
@@ -27,8 +28,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a thread-local whose initializer reads `LEN`, which `main` sets before its first use, is made as its module loads of what `LEN` held then: `None` where Rust gives `Some(5)` (#554)",
     file: "src/lower/analysis/lazy_locals.rs",
-    find: "            for &state in &touched.writes {\n                outside.writes.entry(state).or_insert(*id);\n",
-    replace: "            for &state in touched.writes.iter().filter(|_| false) {\n                outside.writes.entry(state).or_insert(*id);\n",
+    find: "            for &place in &touched.writes {\n                add(&mut outside.writes, place, *id);\n",
+    replace: "            for &place in touched.writes.iter().filter(|_| false) {\n                add(&mut outside.writes, place, *id);\n",
     tests: observable,
   },
   {
@@ -36,8 +37,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a thread-local whose initializer bumps `COUNT`, which `main` reads before its first use, is made as its module loads, so `main` reads 1 where Rust reads 0 (#554)",
     file: "src/lower/analysis/lazy_locals.rs",
-    find: "        .find_map(|state| Some((state, outside.touches.get(state)?)))\n",
-    replace: "        .find_map(|state| Some((state, outside.touches.get(state).filter(|_| false)?)))\n",
+    find: "        .find_map(|&place| Some((place.state, Outside::by(touches, &outside.touches, place)?)))\n",
+    replace: "        .find_map(|&place| Some((place.state, Outside::by(touches, &outside.touches, place).filter(|_| false)?)))\n",
     tests: observable,
   },
   {
@@ -148,5 +149,60 @@ export const mutations: Mutation[] = [
     find: "            .filter(|(_, key)| !crate::lower::classes::is_value_namespace(tcx, key.to_def_id()))\n",
     replace: "            .filter(|(_, key)| true || !crate::lower::classes::is_value_namespace(tcx, key.to_def_id()))\n",
     tests: ["test/namespace-values.test.ts", "-t", "fields are its module's exports"],
+  },
+  {
+    name: "field-reads-whole",
+    breaks:
+      "what a `with`'s closure reads of a thread-local's struct isn't told apart by its fields, so `REGISTRY`, which reads `registry`, which nothing writes after the load, is made where it's first used for `main`'s write of `dispatcher`, `$local(..)` where React Flight's upstream destructures `TaintRegistryObjects` as its module loads (#616)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "                        let Some(fields) = lent.get(&at) else {\n",
+    replace: "                        let Some(fields) = lent.get(&at).filter(|_| false) else {\n",
+    tests: byField,
+    snapshots: true,
+  },
+  {
+    name: "field-lent-whole-unseen",
+    breaks:
+      "a `with`'s closure that hands the struct it's lent whole to a function, `bump(whole)`, is taken to read none of its fields, so `WHOLE_REGISTRY` is made of its 2 as its module loads, where Rust reads the 12 `bump` set (#616)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "    (!other_use).then_some(fields)\n",
+    replace: "    (other_use || true).then_some(fields)\n",
+    tests: byField,
+  },
+  {
+    name: "field-same-apart",
+    breaks:
+      "two places of one field are taken apart, so `main`'s write of `dispatcher` isn't seen and `DISPATCHER` is made of its 1 as its module loads, where Rust reads 5 (#616)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "        if a.state != b.state || f == g {\n",
+    replace: "        if a.state != b.state || (f == g && false) {\n",
+    tests: byField,
+  },
+  {
+    name: "field-sets-unwritten",
+    breaks:
+      "a `Cell`'s `set` of a field isn't a write of it, so `main`'s `dispatcher.set(5)` isn't seen and `DISPATCHER` is made of its 1 as its module loads (#616)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "                            if used.writes || through {\n",
+    replace: "                            if through {\n",
+    tests: byField,
+  },
+  {
+    name: "field-pointees-apart",
+    breaks:
+      "two fields are always apart, so `Shared`'s `second`, an `Rc` of the cell `first` holds too, is written without `FIRST` seeing it, made of 1 as its module loads, where Rust reads 4 (#616)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "        (a.through && reaches(f, g, b.through)) || (b.through && reaches(g, f, a.through))\n",
+    replace: "        false && ((a.through && reaches(f, g, b.through)) || (b.through && reaches(g, f, a.through)))\n",
+    tests: byField,
+  },
+  {
+    name: "field-given-out-unseen",
+    breaks:
+      "what a `Cell`'s `get` of a field gives out is taken to be read alone, so `Links`' `second.get()`, a reference to the cell `first` holds too, written through, isn't seen, and `LINKED` is made of 1 as its module loads, where Rust reads 8 (#616)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "                            let through = used.lends || (used.gives && points);\n",
+    replace: "                            let through = used.lends || (used.gives && points && false);\n",
+    tests: byField,
   },
 ];
