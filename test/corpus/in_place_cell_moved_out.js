@@ -59,8 +59,8 @@ function main() {
 
   const a = [[1]];
   const b = [[2]];
-  const a$1 = { value: $apart(a) };
-  const b$1 = { value: $apart(b) };
+  const a$1 = { value: a };
+  const b$1 = { value: b };
   swapOut(a$1, b$1, holderGet);
   $assign(a, a$1.value);
   $assign(b, b$1.value);

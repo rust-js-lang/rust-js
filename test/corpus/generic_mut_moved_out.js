@@ -34,7 +34,7 @@ function exchange(a, b) {
 function main() {
   const stack = { items: [1] };
   const value = [2];
-  const slot$1 = { value: $apart(stack) };
+  const slot$1 = { value: stack };
   let old;
   try {
     old = put(slot$1, { items: value });
@@ -46,8 +46,8 @@ function main() {
 
   const a = [1];
   const b = [2, 3];
-  const a$1 = { value: $apart(a) };
-  const b$1 = { value: $apart(b) };
+  const a$1 = { value: a };
+  const b$1 = { value: b };
   exchange(a$1, b$1);
   $assign(a, a$1.value);
   $assign(b, b$1.value);
@@ -58,7 +58,7 @@ function main() {
   const slot = [0, [0]];
   for (let n = 1; n < 4; n++) {
     const value = [n];
-    const slot$1 = { value: $apart(slot) };
+    const slot$1 = { value: slot };
     let tmp;
     try {
       tmp = put(slot$1, [n, value]);
@@ -72,7 +72,7 @@ function main() {
   );
 
   const full = { items: [7, 8] };
-  const self = { value: $apart(full) };
+  const self = { value: full };
   const drained = stackDrain.drainOut(self);
   $assign(full, self.value);
   full.items.push(9);

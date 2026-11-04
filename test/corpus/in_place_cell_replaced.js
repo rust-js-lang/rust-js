@@ -74,7 +74,7 @@ function main() {
 
   v = [1, 2];
   const value$1 = [5];
-  const r = { value: $apart(v) };
+  const r = { value: v };
   try {
     old = replaceIn(r, value$1);
   } finally {
@@ -83,30 +83,30 @@ function main() {
   console.log(`[${old.join(", ")}] [${v.join(", ")}]`);
 
   v = [1, 2];
-  const r$1 = { value: $apart(v) };
+  const r$1 = { value: v };
   old = takeIn(r$1, { default: () => [] });
   $assign(v, r$1.value);
   console.log(`[${old.join(", ")}] [${v.join(", ")}]`);
 
   a = [1, 2];
   b = [3, 4];
-  const a$1 = { value: $apart(a) };
-  const b$1 = { value: $apart(b) };
+  const a$1 = { value: a };
+  const b$1 = { value: b };
   swapIn(a$1, b$1);
   $assign(a, a$1.value);
   $assign(b, b$1.value);
   console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
 
   p = { x: 1, y: 2 };
-  const r$2 = { value: $apart(p) };
+  const r$2 = { value: p };
   old = replaceIn(r$2, { x: 7, y: 8 });
   $assign(p, r$2.value);
   console.log(`${pointDebug_fmt(old)} ${pointDebug_fmt(p)}`);
 
   p = { x: 1, y: 2 };
   const q = { x: 5, y: 6 };
-  const a$2 = { value: $apart(p) };
-  const b$2 = { value: $apart(q) };
+  const a$2 = { value: p };
+  const b$2 = { value: q };
   swapIn(a$2, b$2);
   $assign(p, a$2.value);
   $assign(q, b$2.value);

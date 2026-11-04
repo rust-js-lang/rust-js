@@ -4,7 +4,8 @@ Status: Accepted; amended by [0566](0566-fuse-is-stds.md), which lifts the
 refusal of a closure's parameter below: a function given for an `F:
 Fn(&mut T)` takes generic code's box apart; and (2026-11-03) what's moved
 out of an in-place cell is a copy apart (#527), and a `&mut` of an object
-given for longer than the call is one (#528). Extends [0099](0099-mut-references.md) and
+given for longer than the call is one (#528); and (2026-11-04) generic
+code's box of an object holds the object itself (#606). Extends [0099](0099-mut-references.md) and
 [0180](0180-generic-writers.md). Decided with the user.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): the same writes, to
@@ -271,3 +272,29 @@ code takes or gives). Its field holds generic code's box where its
 caller would hold the object, rule 2's own case (the `PhantomData`
 amendment above). Revisit it once #527's `moved_out` owner (above) has
 settled.
+
+## Amendment: generic code's box of an object holds the object (#606)
+
+The #527 amendment kept the copy an object's box held where it's given,
+`{ value: $apart(stack) }` (`may_move_out`), beside the copy `moved_out`
+makes where generic code moves the value out, "for what generic code moves
+out other than through these calls". Two owners of one rule, and the
+Nightly of 3c71ee8f9 found the first's mutation, `moved-out-of-box-unseen`,
+surviving: with no copy where it's given, every corpus case ran as native
+Rust does, and only six files' JS changed, each losing a `$apart`.
+
+Safe Rust moves a `T` out of a `&mut T` only through std's calls, which
+are `moved_out`'s: `mem::replace`, `mem::take`, `mem::swap` and `Cell`'s
+`replace` and `take`, through any reference the `&mut` reaches generic
+code by. `test/corpus/generic_mut_moved_out_other_ways.rs`, new, runs the
+other ways against native Rust: through a struct that holds the `&mut`, a
+closure that captures it, `mem::take`, `mem::swap` with a local, into a
+`Vec` it's given, and through a trait's impl of a concrete type, of a
+struct and of a `Vec`. Each prints what Rust does with the box holding the
+object itself.
+
+So **the box holds the object, `{ value: stack }`**, and `moved_out` is the
+one copy. `may_move_out` and its mutation are gone. Found beside it, and
+filed as #614 (P0): `Cell::from_mut` of a type parameter's `&mut T` makes
+an in-place cell of generic code's box, where the box is that cell. The
+same JS before and after this change.

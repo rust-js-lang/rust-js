@@ -258,16 +258,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^transparent_transmute.rs$"],
   },
   {
-    name: "moved-out-of-box-unseen",
-    breaks:
-      "a generic `&mut T` of an object is boxed as the object itself, so what the callee moves out of it, `mem::replace`'s old value, is changed by the write-back after",
-    file: "src/lower/mut_refs.rs",
-    find: "    holds(sig.output()) || others.into_iter().any(holds)",
-    replace:
-      "    false && (holds(sig.output()) || others.into_iter().any(holds))",
-    tests: ["test/corpus.test.ts", "-t", "^generic_mut_moved_out.rs$"],
-  },
-  {
     name: "moved-out-shared",
     breaks:
       "`Cell::from_mut(&mut v).replace(vec![3])` gives `[3]`: what's moved out of an in-place cell is the object its write changes after, not a copy apart (#527)",
