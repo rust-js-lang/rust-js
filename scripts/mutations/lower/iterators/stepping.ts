@@ -309,8 +309,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `collect` into a `Result` of a `Vec` std does otherwise than in place, a panic stopping it, drops what it collected before what's left (#423)",
     file: "src/lower/iterators/stepping.rs",
-    find: "        let rest_first = rest_first && drop.is_some();",
-    replace: "        let rest_first = false;",
+    find: "            (Some(_), Some(value)) => self.rest_dropped_first(collection, iter_ty, value, span)?,",
+    replace: "            (Some(_), Some(_)) => None,",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {

@@ -1410,3 +1410,102 @@ a `next` against native Rust in both builds. Mutation:
 `zip-panicking-side-leaks-a` (`runtime/lazy_zip.ts`). The matrix's zip
 is `.zip(10..13u32)`, whose side never panics, so none of its cases
 reached this.
+
+## Amendment: generic code's collect asks what std collects in place, its caller's (2026-11-04, #672, the user's decision)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+Generic code's `src.map(f).collect::<Vec<_>>()` of items with a
+destructor, a panic stopping it, dropped what it collected before what was
+left in every case (#672, 327 cases of the iterator matrix in both
+builds). The answer, `collects_in_place`, was asked only of types rustc
+knows whole: of a type parameter's iterator it was none, and no
+`restFirst` was given. But std picks its collect in place by the type the
+caller gives: `fn of<I>(src: I)`'s `src.map(f).collect()` over a `Vec`'s
+`IntoIter` is collected in its buffer, what it collected dropped first,
+and over the crate's own iterator, or a `chain`, otherwise, what's left
+first. Generic code is one JS function, so it can't say.
+
+**`recognition::in_place_source` answers what an iterator may be collected
+in, in place, by the impls of `InPlaceIterable` and `SourceIter` of each
+adapter it holds**, which ask them of what it holds, `Map<I, F>`'s of `I`:
+- **`Never`**, where an adapter is never either, a `Fuse`, a `Peekable`, a
+  `Rev`, a `StepBy`, a `Flatten`, a `Chain`, for any type it's given
+  (`may_collect_in_place`): what's left first, `true`, as of a whole type.
+  263 of the matrix's cases.
+- **`Items(T)`**, the buffer of a `vec::IntoIter` or a `BinaryHeap`'s of
+  `T`s, compared with the `Vec`'s items by `fits_in_place`, alloc's
+  `in_place_collectible`.
+- **`Of(I)`**, where the adapters keep a type parameter's iterator, or an
+  associated type's: **its caller's fact, `IInPlace`**
+  ([0145](0145-type-facts.md)), as `IFused` is
+  ([0543](0543-a-held-peekable-keeps-what-it-peeked-at.md)). A caller gives
+  the items' `[size, align]` of the buffer its type is collected in, or
+  `undefined`; generic code's own adapters pass it on, `passed(j)`'s
+  `mapped(j.map(g))`. The collect compares it with its items' layout,
+  their `TSize` and `TAlign` where they're a type parameter's, and collects
+  as std does either way, as #670's `ITrustedLen` picks a fold: in place
+  by its fold, `$foldToArray`, whose accumulator a discard's panicking drop
+  leaks (#681); otherwise by `next`, what's left first,
+  `$collectDropping(it, drop, true)`. Into a `BinaryHeap`, a `VecDeque` or a
+  `Result` of a `Vec`, its `restFirst` is `!$collectsInPlace(..)`:
+
+```js
+function mapped(src, IInPlace, dropI) {
+  ...
+  result = $collectsInPlace(IInPlace, 4, 4)
+    ? $foldToArray(iter, dDrop_drop)
+    : $collectDropping(iter, dDrop_drop, true);
+}
+mapped($iter(ds()), [4, 4], ...);       // a `Vec<D>`'s `IntoIter`
+mapped($iterator([0], ownIterator_next), undefined, ...);
+```
+
+The user chose the fact over carrying the answer on the iterator's value
+(2026-11-04): std's answer is the source's items' layout against the
+`Vec`'s, not only whether the source owns a buffer, and a caller's own
+adapters over it, `v.into_iter().map(f)` given as `I`, keep it, so the
+value would carry the layout through every adapter that keeps it, the
+runtime's, the rewrites' and std's compiled structs alike, and the
+collect still compare it with its items'. The fact is asked where the
+lowering asks it (`type_facts::in_place_asked`, of the same
+`in_place_source`): a collect, `collect()` or `from_iter`, into a `Vec`,
+or a `Result` or an `Option` of one, of items whose drop runs, their own
+or a type parameter's given. Of a trait's default, `fn sorted(self) ->
+Vec<Self::Item> { self.collect() }`, it's asked of each impl that copies
+it, in its terms, as its drops are: `impl<I: Iterator> Sorted for I`'s
+dictionary takes `IInPlace`, `IItemSize` and `IItemAlign` beside `dropI`,
+where a library's consumers may give any `I`. Of the corpus' cases, two
+snapshots change: `cycled_iterators`' `two(iter, IInPlace, IItemSize,
+IItemAlign, ...)`, and a `true` where std never collects in place, there
+and in `take_destructors`; and the library builds of
+`extension_trait_params` and `generic_unstable_sorts`, whose blanket
+impls' dictionaries take the facts. React's port's JS doesn't change. A
+collect whose adapters don't tell it is refused.
+
+`generic_collect_drops_rest_first` holds each against native Rust in both
+builds: never in place, `fuse`, `peekable`, `chain`; a `map` over a
+`Vec`'s, the crate's own and a chain; an `enumerate` of bigger items and of
+pairs that fit; a type parameter's items; passed on through generic code;
+into a `Result`; a `filter` whose discard's drop panics, in place and not. All 327 of #672's matrix cases are taken off, and 220 of
+other issues' of the same shape (#624, #640, #649, #650, #653, #655, #670,
+#677); those issues' batches found 346 more running as native Rust, a
+`count`'s, a `last`'s and a `String`'s, fixed by c9c71537e and before, taken
+off with them.
+Mutations: `rest-first-never` (moved), `in-place-of-a-parameter-unasked`,
+`never-in-place-not-first`, `in-place-default-in-trait-terms`,
+`in-place-by-caller-by-next`, `in-place-by-caller-fold-unasked`
+(`lower/mir/iter/collect.ts`), `fallible-rest-first-dropped` (moved,
+`lower/iterators/stepping.ts`), `fused-may-collect-in-place`,
+`in-place-source-unkept` (`lower/recognition/specialization.ts`),
+`in-place-unasked`, `in-place-items-layout-unasked`,
+`in-place-default-unlifted` (`lower/analysis/type_facts.ts`),
+`in-place-items-given-none` (`lower/std_types/number/generic.ts`),
+`collects-in-place-any-size` and `collects-in-place-never`
+(`runtime/collects_in_place.ts`). Readability: the new case's collects
+into a `Result` and of a type parameter's items name their `try`'s
+temporary `result$1` beside the value they return, `result`, as every
+such collect does, and `cycled_iterators`' `two` names its `iter$1` in
+both of the collect's branches (renamed `x$1` 579.9 to 580 in 10,000
+lines before the baseline took this stack's other new cases).

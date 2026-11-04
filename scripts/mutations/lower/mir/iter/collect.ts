@@ -412,8 +412,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a collect std does otherwise than in place, `chain`'s, a panic stopping it, drops what it collected before what's left (#423)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        let rest_first = drop.is_some() && item.is_some_and(|item| self.rest_dropped_first(output, iter_ty, item));",
-    replace: "        let rest_first = false;",
+    find: "            (Some(_), Some(item)) => self.rest_dropped_first(output, iter_ty, item, span)?,",
+    replace: "            (Some(_), Some(_)) => None,",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
@@ -624,8 +624,8 @@ export const mutations: Mutation[] = [
     name: "in-place-collect-by-next",
     breaks: "a collect std makes in place, of a `filter` whose discarded item's drop panics, steps it by `next`, so it drops what it collected, which std leaks (#681)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        if self.in_place {\n",
-    replace: "        if false && self.in_place {\n",
+    find: "            InPlace::Yes => Expr::call_helper(\"$foldToArray\", args),\n",
+    replace: "            InPlace::Yes => Expr::call_helper(\"$collectDropping\", args),\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_leaks_what_a_discard_strands.rs$"],
   },
   {
@@ -643,5 +643,50 @@ export const mutations: Mutation[] = [
     find: "                return Ok(Expr::cond(trusted, by_fold, by_next));\n",
     replace: "                return Ok(Expr::cond(Expr::bool(false), by_fold, by_next));\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
+  },
+  {
+    name: "in-place-of-a-parameter-unasked",
+    breaks:
+      "generic code reads no `IInPlace` of its caller, `undefined`, so its `src.map(f).collect()` of a `Vec`'s `IntoIter`, which std collects in place, a panic stopping it, drops what's left before what it collected (#672)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                self.type_fact_value(iter_ty, TypeFact::InPlace, span)?\n",
+    replace: "                Expr::undefined()\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
+  },
+  {
+    name: "never-in-place-not-first",
+    breaks:
+      "generic code's `src.map(f).fuse().collect()`, which std never collects in place, a panic stopping it, drops what it collected before what's left (#672)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            Some(false) => return Ok(first),\n",
+    replace: "            Some(false) => return Ok(None),\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
+  },
+  {
+    name: "in-place-default-in-trait-terms",
+    breaks:
+      "a trait's default copied into its blanket impl, compiled as a library, asks what std collects `self` in of `Self`, not the impl's `I` its dictionary is given, so it's refused (#672)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        (self.impl_type(iter_ty), self.impl_type(item), typing_env)\n",
+    replace: "        (iter_ty, item, typing_env)\n",
+    tests: ["test/corpus.test.ts", "-t", "^extension_trait_params.rs$"],
+  },
+  {
+    name: "in-place-by-caller-by-next",
+    breaks:
+      "generic code's `src.filter(p).collect()` of a `Vec`'s `IntoIter`, which std collects in place by its fold, whose discarded item's drop panics, steps it by `next`, so it drops what it collected, which std leaks (#672, #681)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                    None => InPlace::IfCaller(self.caller_in_place(iter_ty, item, span)?),\n",
+    replace: "                    None => InPlace::No,\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
+  },
+  {
+    name: "in-place-by-caller-fold-unasked",
+    breaks:
+      "generic code's collect of a `Vec`'s `IntoIter` that std collects in place, its caller says, steps it by `next`, so a discarded item's drop that panics drops what it collected, which std leaks (#672, #681)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                let by_fold = Expr::call_helper(\"$foldToArray\", args.clone());\n",
+    replace: "                let by_fold = Expr::call_helper(\"$collectDropping\", args.clone());\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
   },
 ];

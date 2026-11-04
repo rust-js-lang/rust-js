@@ -123,22 +123,51 @@ pub(crate) fn held_facts<'tcx>(
     of: Ty<'tcx>,
     fact: TypeFact,
 ) -> Vec<(Ty<'tcx>, TypeFact)> {
+    // What an iterator's buffer std may collect in place is: what its
+    // adapters keep's, `I`'s of a `Map<I, F>`, or a source's items' layout
+    // (#672).
+    if fact == TypeFact::InPlace {
+        return match in_place_source(tcx, typing_env, of) {
+            Some(InPlaceSource::Of(held)) => vec![(held, fact)],
+            // Of a layout only a caller knows, a `vec::IntoIter<T>`'s.
+            Some(InPlaceSource::Items(item)) if fits_in_place(tcx, typing_env, item, item).is_none() => {
+                vec![(item, TypeFact::Size), (item, TypeFact::Align)]
+            }
+            Some(InPlaceSource::Items(_) | InPlaceSource::Never) => Vec::new(),
+            None => vec![(of, fact)],
+        };
+    }
     let Some(fact_trait) = fact_trait(tcx, fact) else {
         return vec![(of, fact)];
     };
+    (held_bounds(tcx, typing_env, of, fact_trait).into_iter())
+        .map(|held| (held, fact))
+        .collect()
+}
+
+/// The types whose `trait_id` is `of`'s, `held_facts`' of a trait: `of`,
+/// where rustc can say it of `of` or can't tell it by them; or, where std's
+/// one impl of the trait for its type constructor asks that trait of its
+/// parameters, what `of` holds there, each's.
+fn held_bounds<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    of: Ty<'tcx>,
+    trait_id: DefId,
+) -> Vec<Ty<'tcx>> {
     let held = match *of.kind() {
         ty::Ref(_, pointee, mutability) => Some((Err(mutability), vec![pointee])),
         ty::Adt(adt, args) => Some((Ok(adt.did()), args.types().collect())),
         _ => None,
     };
     let Some((head, held)) = held else {
-        return vec![(of, fact)];
+        return vec![of];
     };
-    if trait_holds_in(tcx, typing_env, of, fact_trait).is_some() {
-        return vec![(of, fact)];
+    if trait_holds_in(tcx, typing_env, of, trait_id).is_some() {
+        return vec![of];
     }
     // Its impl's self type's parameters, in order, each a parameter.
-    let impls: Vec<(DefId, Vec<Ty<'tcx>>)> = (tcx.all_impls(fact_trait))
+    let impls: Vec<(DefId, Vec<Ty<'tcx>>)> = (tcx.all_impls(trait_id))
         .filter_map(|imp| {
             let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
             match *self_ty.kind() {
@@ -149,25 +178,25 @@ pub(crate) fn held_facts<'tcx>(
         })
         .collect();
     let [(imp, params)] = &impls[..] else {
-        return vec![(of, fact)];
+        return vec![of];
     };
     if !params.iter().all(|param| matches!(param.kind(), ty::Param(_))) {
-        return vec![(of, fact)];
+        return vec![of];
     }
-    let mut facts = Vec::new();
+    let mut bounds = Vec::new();
     for (clause, _) in tcx.clauses_of(*imp).instantiate_identity(tcx) {
         let Some(bound) = clause.skip_normalization().as_trait_clause() else {
             continue;
         };
-        if bound.def_id() != fact_trait {
+        if bound.def_id() != trait_id {
             continue;
         }
         let Some(at) = params.iter().position(|&param| param == bound.self_ty().skip_binder()) else {
-            return vec![(of, fact)];
+            return vec![of];
         };
-        facts.extend(held_facts(tcx, typing_env, held[at], fact));
+        bounds.extend(held_bounds(tcx, typing_env, held[at], trait_id));
     }
-    facts
+    bounds
 }
 
 /// Whether `method`'s body never returns, its every path a panic.
@@ -235,49 +264,142 @@ pub(crate) fn fact_trait(tcx: TyCtxt<'_>, fact: TypeFact) -> Option<DefId> {
     }
 }
 
-/// Whether std collects `iter`, an iterator, into a `Vec` of `dest`s in
-/// place, in the buffer of the `vec::IntoIter` or `BinaryHeap`'s it steps:
-/// through adapters that keep it, each `InPlaceIterable` and `SourceIter` of
-/// one that's `AsVecIntoIter`, its items as aligned as `dest`s and no
-/// smaller, neither zero-sized, as alloc's `in_place_collectible` asks of
-/// one item a step. Where a panic stops it, what it collected is dropped
-/// before what's left, its guard the fold's; otherwise what's left first,
-/// the fold's own, then the `Vec` (#423). Of types rustc knows whole.
-pub(crate) fn collects_in_place<'tcx>(tcx: TyCtxt<'tcx>, iter: Ty<'tcx>, dest: Ty<'tcx>) -> bool {
-    let typing_env = ty::TypingEnv::fully_monomorphized();
-    let (Some(in_place), Some(source_iter), Some(as_vec)) = (
-        registry::by_path(tcx, StdCrate::Core, &["iter", "InPlaceIterable"]),
-        registry::by_path(tcx, StdCrate::Core, &["iter", "SourceIter"]),
-        alloc_trait(tcx, "AsVecIntoIter"),
-    ) else {
-        return false;
+/// What std's `collect()` of an iterator into a `Vec` may collect it in,
+/// in place, the buffer of the `vec::IntoIter` or `BinaryHeap`'s it steps:
+/// through adapters that keep it, each `InPlaceIterable` and `SourceIter`
+/// of one that's `AsVecIntoIter`. Where a panic stops a collect in place,
+/// what it collected is dropped before what's left, its guard the fold's;
+/// otherwise what's left first, the fold's own, then the `Vec` (#423).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum InPlaceSource<'tcx> {
+    /// None: an adapter in it is never `InPlaceIterable` or a `SourceIter`,
+    /// a `Fuse` or a `Chain`, or what it steps is no `AsVecIntoIter`.
+    Never,
+    /// The buffer of a source of these items.
+    Items(Ty<'tcx>),
+    /// What a type parameter's iterator, or an associated type's, may be
+    /// collected in, which the adapters over it keep: its caller's,
+    /// `IInPlace` (#672).
+    Of(Ty<'tcx>),
+}
+
+/// `iter`'s `InPlaceSource`, in `typing_env`: `None` where the adapters'
+/// impls can't tell it, as each asks the traits of one it holds.
+pub(crate) fn in_place_source<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    iter: Ty<'tcx>,
+) -> Option<InPlaceSource<'tcx>> {
+    let [in_place, source_iter] = in_place_traits(tcx)?;
+    let as_vec = alloc_trait(tcx, "AsVecIntoIter")?;
+    if !may_collect_in_place(tcx, typing_env, iter) {
+        return Some(InPlaceSource::Never);
+    }
+    // What the adapters keep in place, the one each's impl asks both of.
+    let [held] = held_bounds(tcx, typing_env, iter, in_place)[..] else {
+        return None;
     };
-    let holds = |ty: Ty<'tcx>, tr: DefId| {
-        let tr = tcx.erase_and_anonymize_regions(ty::TraitRef::new(tcx, tr, [ty]));
-        tcx.codegen_select_candidate(typing_env.as_query_input(tr)).is_ok()
-    };
+    if held_bounds(tcx, typing_env, iter, source_iter) != [held] {
+        return None;
+    }
+    if known_by_bounds(held) {
+        return Some(InPlaceSource::Of(held));
+    }
+    let holds = |ty: Ty<'tcx>, trait_id: DefId| trait_holds_in(tcx, typing_env, ty, trait_id);
+    if holds(held, in_place) != Some(true) || holds(held, source_iter) != Some(true) {
+        return None;
+    }
     let projected = |assoc: DefId, of: Ty<'tcx>| {
         let ty = Ty::new_projection(tcx, ty::IsRigid::No, assoc, [of]);
         tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
             .ok()
     };
-    if !holds(iter, in_place) || !holds(iter, source_iter) {
-        return false;
+    let source = projected(trait_method(tcx, source_iter, "Source"), held)?;
+    match holds(source, as_vec)? {
+        true => Some(InPlaceSource::Items(projected(
+            trait_method(tcx, as_vec, "Item"),
+            source,
+        )?)),
+        false => Some(InPlaceSource::Never),
     }
-    let Some(source) = projected(trait_method(tcx, source_iter, "Source"), iter) else {
-        return false;
+}
+
+/// A call of `callee` with `args` that collects an iterator into a `Vec`,
+/// or a `Result` or an `Option` of one, `collect()` or `from_iter`: the
+/// iterator's type, and the type of the items it collects, each `Ok`'s or
+/// `Some`'s (#672). Another collection's too, which the caller tells apart.
+pub(crate) fn collected_items<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    callee: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+    let iterator = std_item(tcx, StdItem::Iterator);
+    let projected = |trait_id: DefId, name: &str, of: Ty<'tcx>| {
+        let ty = Ty::new_projection(tcx, ty::IsRigid::No, trait_method(tcx, trait_id, name), [of]);
+        tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
+            .unwrap_or(ty)
     };
-    if !holds(source, as_vec) {
-        return false;
+    let (iter, output) = if callee == trait_method(tcx, iterator, "collect") {
+        (args.type_at(0), args.type_at(1))
+    } else if tcx.trait_of_assoc(callee) == Some(std_item(tcx, StdItem::FromIterator))
+        && tcx.item_name(callee).as_str() == "from_iter"
+    {
+        let into_iter = std_item(tcx, StdItem::IntoIterator);
+        (projected(into_iter, "IntoIter", args.type_at(1)), args.type_at(0))
+    } else {
+        return None;
+    };
+    let item = projected(iterator, "Item", iter);
+    let fallible = matches!(output.kind(), ty::Adt(adt, _)
+        if [sym::Result, sym::Option].into_iter().any(|name| tcx.is_diagnostic_item(name, adt.did())));
+    match (fallible, item.kind()) {
+        (true, ty::Adt(_, item_args)) => Some((iter, item_args.types().next()?)),
+        (true, _) => None,
+        (false, _) => Some((iter, item)),
     }
-    let Some(src) = projected(trait_method(tcx, as_vec, "Item"), source) else {
-        return false;
-    };
+}
+
+/// Whether a buffer of `src`s is collected into as one of `dest`s, as
+/// alloc's `in_place_collectible` asks of one item a step: its items as
+/// aligned as `dest`s and no smaller, neither zero-sized. `None` where
+/// either's layout is a caller's.
+pub(crate) fn fits_in_place<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    src: Ty<'tcx>,
+    dest: Ty<'tcx>,
+) -> Option<bool> {
     let layout = |ty: Ty<'tcx>| tcx.layout_of(typing_env.as_query_input(ty)).ok();
-    let (Some(src), Some(dest)) = (layout(src), layout(dest)) else {
+    let (src, dest) = (layout(src)?, layout(dest)?);
+    Some(!src.is_zst() && !dest.is_zst() && src.align.abi == dest.align.abi && src.size >= dest.size)
+}
+
+/// Whether std may collect `iter`, of a type holding a type parameter, in
+/// place, for some type its parameters are given:
+/// not where an adapter in it is never `InPlaceIterable` or never a
+/// `SourceIter`, a `Fuse`, a `Peekable` or a `Chain`, as each impl of
+/// those of an adapter asks them of what it holds, `Map<I, F>`'s of `I`
+/// (#672). Of a type parameter, or an associated type's, its caller's,
+/// which may be.
+pub(crate) fn may_collect_in_place<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, iter: Ty<'tcx>) -> bool {
+    let Some(traits) = in_place_traits(tcx) else {
         return false;
     };
-    !src.is_zst() && !dest.is_zst() && src.align.abi == dest.align.abi && src.size >= dest.size
+    traits.into_iter().all(|trait_id| {
+        held_bounds(tcx, typing_env, iter, trait_id)
+            .into_iter()
+            .all(|held| known_by_bounds(held) || trait_holds_in(tcx, typing_env, held, trait_id) != Some(false))
+    })
+}
+
+/// std's `InPlaceIterable` and `SourceIter`, the traits of an iterator its
+/// collect into a `Vec` may collect in place.
+fn in_place_traits(tcx: TyCtxt<'_>) -> Option<[DefId; 2]> {
+    Some([
+        registry::by_path(tcx, StdCrate::Core, &["iter", "InPlaceIterable"])?,
+        registry::by_path(tcx, StdCrate::Core, &["iter", "SourceIter"])?,
+    ])
 }
 
 /// One of alloc's own traits, crate-private, by its name.

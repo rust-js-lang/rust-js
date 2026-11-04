@@ -37,6 +37,7 @@ pub(super) fn type_fact_params<'tcx>(
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     given: Given<'_>,
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    drops: ItemDrops<'_, 'tcx>,
 ) -> HashMap<DefId, Vec<(u32, TypeFact)>> {
     let iterator = std_item(tcx, StdItem::Iterator);
     // What `std_iterator_steps` steps a compiled std iterator's struct by.
@@ -81,6 +82,9 @@ pub(super) fn type_fact_params<'tcx>(
                         }
                     }
                 }
+                asking
+                    .asked
+                    .extend(in_place_asks(tcx, foreign, typing_env, drops, caller, (callee, args)));
                 asking.of_call(tcx, foreign, given, fns, typing_env, caller, callee, args);
             }
             continue;
@@ -215,6 +219,9 @@ pub(super) fn type_fact_params<'tcx>(
                 asking.asked.insert((caller, index, TypeFact::Sort));
                 continue;
             }
+            asking
+                .asked
+                .extend(in_place_asks(tcx, foreign, typing_env, drops, caller, (callee, args)));
             asking.of_call(tcx, foreign, given, fns, typing_env, caller, callee, args);
         }
     }
@@ -347,6 +354,111 @@ pub(super) fn type_fact_params<'tcx>(
         facts.dedup();
     }
     params
+}
+
+/// Whether dropping a value of a type runs code where a function is,
+/// `analysis::runs_where`'s, and the drops each function is given, by its
+/// slots (ADR 0421): what a collect's items drop, which the lowering's
+/// drops answer the same.
+#[derive(Clone, Copy)]
+pub(super) struct ItemDrops<'a, 'tcx> {
+    pub(super) runs: &'a dyn Fn(ty::Ty<'tcx>, DefId) -> bool,
+    pub(super) taken: &'a HashMap<DefId, Vec<u32>>,
+}
+
+impl<'tcx> ItemDrops<'_, 'tcx> {
+    /// Whether a `ty` `caller` holds has a drop it runs: its own, or one of a
+    /// type parameter's, or an associated type's, it's given.
+    fn drop(
+        &self,
+        tcx: TyCtxt<'tcx>,
+        foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+        caller: DefId,
+        ty: ty::Ty<'tcx>,
+    ) -> bool {
+        let taken = self.taken.get(&caller).map_or(&[][..], Vec::as_slice);
+        (self.runs)(ty, caller)
+            || (ty.walk().filter_map(|part| part.as_type()))
+                .any(|part| slot_of(tcx, foreign, caller, part).is_some_and(|slot| taken.contains(&slot)))
+    }
+}
+
+/// `in_place_asked` of `caller`'s call: of a trait's default, of each of
+/// the crate's impls that copies it, in its terms, of its own type
+/// parameters, `I` of `impl<I: Iterator> Sorted for I`, which its
+/// dictionary is given, as the copied default reads them (ADR 0049).
+fn in_place_asks<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    drops: ItemDrops<'_, 'tcx>,
+    caller: DefId,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Vec<(DefId, u32, TypeFact)> {
+    let default_of = tcx
+        .trait_of_assoc(caller)
+        .filter(|_| tcx.defaultness(caller).has_value());
+    let Some(trait_id) = default_of else {
+        return (in_place_asked(tcx, foreign, typing_env, drops, caller, (callee, args)).into_iter())
+            .map(|(index, fact)| (caller, index, fact))
+            .collect();
+    };
+    let parents = tcx.generics_of(caller).parent_count;
+    let own = ty::GenericArgs::identity_for_item(tcx, caller);
+    let mut asked = Vec::new();
+    for &imp in tcx.all_local_trait_impls(()).get(&trait_id).into_iter().flatten() {
+        let imp = imp.to_def_id();
+        if tcx.impl_item_implementor_ids(imp).contains_key(&caller) {
+            continue;
+        }
+        // The default's own arguments after the impl's for its trait's.
+        let trait_args = tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization().args;
+        let in_impl = tcx.mk_args_from_iter(trait_args.iter().chain(own.iter().skip(parents)));
+        let args = ty::EarlyBinder::bind(tcx, args)
+            .instantiate(tcx, in_impl)
+            .skip_normalization();
+        let impl_env = ty::TypingEnv::post_analysis(tcx, imp);
+        for (index, fact) in in_place_asked(tcx, foreign, impl_env, drops, imp, (callee, args)) {
+            asked.push((imp, index, fact));
+        }
+    }
+    asked
+}
+
+/// What a collect into a `Vec`, `collect()` or `from_iter`, of `caller`'s
+/// asks, of items with a destructor a panic may leave: what std may collect
+/// its iterator in, in place, where the adapters keep a type parameter's
+/// iterator, `IInPlace`, and the items' layout where it's a type
+/// parameter's, `TSize` and `TAlign`, by which a panic drops what it
+/// collected first or what's left (#672). As the lowering's
+/// `rest_dropped_first` asks, both of `recognition::in_place_source`.
+fn in_place_asked<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    drops: ItemDrops<'_, 'tcx>,
+    caller: DefId,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Vec<(u32, TypeFact)> {
+    use crate::lower::recognition::{InPlaceSource, collected_items, fits_in_place, held_facts, in_place_source};
+    let Some((iter, dest)) = collected_items(tcx, typing_env, callee, args) else {
+        return Vec::new();
+    };
+    if !drops.drop(tcx, foreign, caller, dest) {
+        return Vec::new();
+    }
+    match in_place_source(tcx, typing_env, iter) {
+        Some(InPlaceSource::Of(_)) => {}
+        Some(InPlaceSource::Items(src)) if fits_in_place(tcx, typing_env, src, dest).is_none() => {}
+        _ => return Vec::new(),
+    }
+    let mut asked = held_facts(tcx, typing_env, iter, TypeFact::InPlace);
+    if fits_in_place(tcx, typing_env, dest, dest).is_none() {
+        asked.extend([(dest, TypeFact::Size), (dest, TypeFact::Align)]);
+    }
+    (asked.into_iter())
+        .filter_map(|(of, fact)| slot_of(tcx, foreign, caller, of).map(|slot| (slot, fact)))
+        .collect()
 }
 
 /// What the bodies ask, as they're read.

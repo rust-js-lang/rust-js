@@ -210,4 +210,13 @@ export const mutations: Mutation[] = [
     replace: "        (false, true) => n,\n",
     tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
   },
+  {
+    name: "in-place-items-given-none",
+    breaks:
+      "a caller gives generic code of a `Vec`'s `IntoIter` no buffer std collects it in, in place, `undefined`, so a panic stopping its collect drops what's left first (#672)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "                Some(InPlaceSource::Items(item)) => Ok(Expr::array(vec![\n",
+    replace: "                Some(InPlaceSource::Items(item)) if false => Ok(Expr::array(vec![\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
+  },
 ];

@@ -199,3 +199,13 @@ again, and `tooling/manifest.js` checks the new field.
   `uncarried-associated-read` (`lower/analysis/type_facts.ts`),
   `associated-facts-unexported` (`lower/library.ts`) and
   `associated-facts-unread` (`library.ts`).
+
+## Amendment (2026-11-04): what std collects an iterator in, in place (#672)
+
+A fact of an iterator, `InPlace`, `IInPlace`: the `[size, align]` of the
+items of the buffer std's `collect()` into a `Vec` may collect it in, in
+place, or `undefined`, by which a collect a panic stops drops what it
+collected or what's left first. Asked of the type parameter whose
+iterator the adapters keep, and given by its caller, of the same
+`recognition::in_place_source`; of a type that holds one, `Map<J, F>`'s,
+`J`'s ([0465](0465-dropping-an-adapter-is-closing-it.md), amended).

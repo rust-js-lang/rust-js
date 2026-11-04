@@ -330,4 +330,31 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
   },
+  {
+    name: "in-place-unasked",
+    breaks:
+      "generic code's `src.map(f).collect()` of items with a destructor asks its caller nothing of `I`, so it's refused, \"the buffer std collects an iterator in place in of a type parameter\" (#672)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "    let mut asked = held_facts(tcx, typing_env, iter, TypeFact::InPlace);\n",
+    replace: "    let mut asked = Vec::new();\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
+  },
+  {
+    name: "in-place-items-layout-unasked",
+    breaks:
+      "generic code's collect into a `Vec<T>` asks its caller no `TSize` or `TAlign`, so it's refused, \"`size_of` of a type parameter\" (#672)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        asked.extend([(dest, TypeFact::Size), (dest, TypeFact::Align)]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
+  },
+  {
+    name: "in-place-default-unlifted",
+    breaks:
+      "a trait's default that collects `self` into a `Vec`, `sorted(self)`, compiled as a library, asks its blanket impl's dictionary nothing of `I`, so it's refused, \"the buffer std collects an iterator in place in of a type parameter\" (#672)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            asked.push((imp, index, fact));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^extension_trait_params.rs$"],
+  },
 ];

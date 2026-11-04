@@ -355,6 +355,7 @@ helpers! {
     CharPattern,
     CollectResults,
     CollectOptions,
+    CollectsInPlace,
     CmpIn,
     CmpItems,
     ThenCmp,
@@ -385,6 +386,8 @@ fn declared(source: &str) -> impl Iterator<Item = &str> {
 /// `$f64Max(a, b)`: a call of one does what its arguments do, and nothing
 /// else.
 const PURE: &[&str] = &[
+    // Whether std collects in place, of a source's layout given (#672).
+    "$collectsInPlace",
     // A struct's `RefCell` field's one cell, made where it's first asked
     // (ADR 0863, amended).
     "$fieldCell",
@@ -734,6 +737,7 @@ impl Helper {
             Helper::CharPattern => include_str!("runtime/char_pattern.js"),
             Helper::CollectResults => include_str!("runtime/collect_results.js"),
             Helper::CollectOptions => include_str!("runtime/collect_options.js"),
+            Helper::CollectsInPlace => include_str!("runtime/collects_in_place.js"),
             // `partial_cmp` of `f64`s: `None` if either is `NaN`.
             Helper::PartialCmp => include_str!("runtime/partial_cmp.js"),
             // A fieldless enum's variants, in the order they're declared.

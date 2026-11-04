@@ -889,7 +889,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             let of = drop_slot(self.tcx, self.krate.foreign, id, index);
-            if self.given.type_facts.iter().chain(&facts).any(|&(at, _, _)| at == of) {
+            if self
+                .given
+                .type_facts
+                .iter()
+                .chain(&facts)
+                .any(|&(at, given, _)| at == of && given == fact)
+            {
                 return Err(self.unsupported(span, "a trait default's type parameter's fact here"));
             }
             let name = self.fresh(&format!("{}{}", drop_word(self.tcx, of), fact.word()));

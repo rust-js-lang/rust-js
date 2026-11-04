@@ -3,8 +3,10 @@
 import {
   $closing,
   $collectDropping,
+  $collectsInPlace,
   $cycleOf,
   $debugStr,
+  $foldToArray,
   $iter,
   $iterator,
   $next,
@@ -56,16 +58,18 @@ function counterIterator_next(counter) {
 function firsts(iter, n, IIterator, IClone, dropI, dropIItem) {
   const iter$1 = $cycleOf(iter, IClone.clone, IIterator.next, true, dropI).take(n);
   try {
-    return $collectDropping(iter$1, dropIItem);
+    return $collectDropping(iter$1, dropIItem, true);
   } finally {
     iter$1.return();
   }
 }
 
-function two(iter, dropI, dropIItem) {
+function two(iter, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
   const iter$1 = $closing(Iterator.from(iter), dropI).take(2);
   try {
-    return $collectDropping(iter$1, dropIItem);
+    return $collectsInPlace(IInPlace, IItemSize, IItemAlign)
+      ? $foldToArray(iter$1, dropIItem)
+      : $collectDropping(iter$1, dropIItem, true);
   } finally {
     iter$1.return();
   }
@@ -148,7 +152,7 @@ function main() {
   console.log("made");
   unstepped.return();
   console.log(
-    `[${two($iterator({ n: 5, tag: [4] }, counterIterator_next), (it) => {
+    `[${two($iterator({ n: 5, tag: [4] }, counterIterator_next), undefined, 1, 1, (it) => {
       loudDrop_drop(it.of.tag);
     }).join(", ")}]`,
   );

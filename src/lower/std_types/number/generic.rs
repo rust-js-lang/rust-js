@@ -264,6 +264,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if fact == TypeFact::NeedsDrop {
             return Ok(Expr::bool(of.needs_drop(self.tcx, self.typing_env)));
         }
+        // What std may collect an iterator in, in place: its source's items'
+        // `[size, align]`, or `undefined`; of what its adapters keep of a
+        // type parameter's, its caller's, `IInPlace` (#672).
+        if fact == TypeFact::InPlace {
+            use crate::lower::recognition::InPlaceSource;
+            return match crate::lower::recognition::in_place_source(self.tcx, self.typing_env, of) {
+                Some(InPlaceSource::Never) => Ok(Expr::undefined()),
+                Some(InPlaceSource::Items(item)) => Ok(Expr::array(vec![
+                    self.type_fact_value(item, TypeFact::Size, span)?,
+                    self.type_fact_value(item, TypeFact::Align, span)?,
+                ])),
+                Some(InPlaceSource::Of(held)) if held != of => self.type_fact_value(held, fact, span),
+                _ => Err(self.unsupported(span, &format!("{what} of `{of}`, which no caller gives"))),
+            };
+        }
         // The class of a map keyed by it, as one made where its type's known
         // is (ADR 0466).
         if let Some((set, sorted)) = fact.map_kind() {

@@ -461,8 +461,11 @@ declared, and a note stands where it would be:
 A type parameter with no bound takes none, unless the function asks a fact
 of it: `size_of::<T>()`, `align_of::<T>()`, `type_name::<T>()`, its
 `TypeId` (a `T: 'static` made a `dyn Any` or compared by `TypeId::of`),
-`needs_drop::<T>()`, the class of a map keyed by it, or an unstable sort of
-its items. Then it takes that fact after its arguments, `size(TSize)`, which
+`needs_drop::<T>()`, the class of a map keyed by it, an unstable sort of
+its items, or, of an iterator collected into a `Vec` of items with a
+destructor, whether std collects it in place, `IInPlace`, which picks what a
+panic drops first ([ADR 0465](../../decisions/0465-dropping-an-adapter-is-closing-it.md),
+amended). Then it takes that fact after its arguments, `size(TSize)`, which
 only a Rust caller knows ([ADR 0145](../../decisions/0145-type-facts.md)).
 
 ## `dyn Trait` is a value and its dictionary

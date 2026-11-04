@@ -75,4 +75,22 @@ export const mutations: Mutation[] = [
     replace: "&& src.align.abi == dest.align.abi",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
+  {
+    name: "fused-may-collect-in-place",
+    breaks:
+      "generic code's `src.map(f).fuse().collect()` is taken to be one std may collect in place, where no `Fuse` is `InPlaceIterable`, so it's refused or drops what it collected first (#672)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "known_by_bounds(held) || trait_holds_in(tcx, typing_env, held, trait_id) != Some(false))",
+    replace: "known_by_bounds(held) || true)",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
+  },
+  {
+    name: "in-place-source-unkept",
+    breaks:
+      "generic code's collect of `src.map(f)` is taken to be of no source std collects in place, so over a `Vec`'s `IntoIter` a panic drops what's left first (#672)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "        return Some(InPlaceSource::Of(held));\n",
+    replace: "        return Some(InPlaceSource::Never);\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
+  },
 ];

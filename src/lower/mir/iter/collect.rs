@@ -251,24 +251,83 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.collected_into(it, output, item, Some(collected), span)
     }
 
-    /// Whether std collects an iterator of `iter_ty`, into a `Vec` of
-    /// `item`s, in place, `recognition::collects_in_place`'s, where rustc
-    /// knows both whole (#423).
+    /// Whether std collects an iterator of `iter_ty` into a `Vec` of
+    /// `item`s in place, where it's known here (`recognition::in_place_source`,
+    /// `fits_in_place`), of a copied default in its impl's terms (ADR 0049):
+    /// `None` where it's a caller's, or the adapters don't tell (#423, #672).
     fn collects_in_place(&self, iter_ty: Option<Ty<'tcx>>, item: Option<Ty<'tcx>>) -> Option<bool> {
+        use crate::lower::recognition::{InPlaceSource, fits_in_place, in_place_source};
         let (iter_ty, item) = iter_ty.zip(item)?;
-        let whole = |ty: Ty<'tcx>| !ty.has_param() && !ty.has_aliases();
-        (whole(iter_ty) && whole(item)).then(|| crate::lower::recognition::collects_in_place(self.tcx, iter_ty, item))
+        let (iter_ty, item, typing_env) = self.collected_in_impl(iter_ty, item);
+        match in_place_source(self.tcx, typing_env, iter_ty)? {
+            InPlaceSource::Never => Some(false),
+            InPlaceSource::Items(src) => fits_in_place(self.tcx, typing_env, src, item),
+            InPlaceSource::Of(_) => None,
+        }
     }
 
-    /// Whether what's left of a collect's iterator, of `iter_ty`, is
-    /// dropped before what it collected into `output` of `item`s, where a
-    /// panic stops it: of a hash map or set, or a `LinkedList`, which std
-    /// extends as each comes; of another, which it collects as a `Vec`,
-    /// where it doesn't collect it in place (#423).
-    fn rest_dropped_first(&self, output: Ty<'tcx>, iter_ty: Option<Ty<'tcx>>, item: Ty<'tcx>) -> bool {
-        (self.is_map(output) && !self.is_sorted(output))
-            || self.is_std_type(output, StdItem::LinkedList)
-            || self.collects_in_place(iter_ty, Some(item)) == Some(false)
+    /// A collect's iterator type and items, and where they're asked: of a
+    /// copied default, in its impl's terms, whose dictionary is given what
+    /// its own type parameters are (ADR 0049).
+    fn collected_in_impl(&self, iter_ty: Ty<'tcx>, item: Ty<'tcx>) -> (Ty<'tcx>, Ty<'tcx>, ty::TypingEnv<'tcx>) {
+        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);
+        (self.impl_type(iter_ty), self.impl_type(item), typing_env)
+    }
+
+    /// The `restFirst` of a collect into `output` of `item`s, of an iterator
+    /// of `iter_ty`, where what's left of it is dropped before what it
+    /// collected as a panic stops it, `None` where it isn't: of a hash map
+    /// or set, or a `LinkedList`, which std extends as each comes, `true`;
+    /// of another, which it collects as a `Vec`, where std doesn't collect
+    /// it in place (`recognition::in_place_source`), `true` where that's
+    /// known here (#423); or where its source is a type parameter's
+    /// iterator, its caller's `IInPlace`, `!$collectsInPlace(IInPlace,
+    /// size, align)` of the items' layout (#672).
+    pub(in crate::lower) fn rest_dropped_first(
+        &mut self,
+        output: Ty<'tcx>,
+        iter_ty: Option<Ty<'tcx>>,
+        item: Ty<'tcx>,
+        span: Span,
+    ) -> R<Option<Expr>> {
+        let first = Some(Expr::bool(true));
+        if (self.is_map(output) && !self.is_sorted(output)) || self.is_std_type(output, StdItem::LinkedList) {
+            return Ok(first);
+        }
+        let Some(iter_ty) = iter_ty else {
+            return Ok(None);
+        };
+        match self.collects_in_place(Some(iter_ty), Some(item)) {
+            Some(true) => return Ok(None),
+            Some(false) => return Ok(first),
+            None => {}
+        }
+        let in_place = self.caller_in_place(iter_ty, item, span)?;
+        Ok(Some(Expr::unary(crate::js::UnaryOp::Not, in_place)))
+    }
+
+    /// Whether std collects an iterator of `iter_ty` into a `Vec` of
+    /// `item`s in place where it's its caller's answer (`collects_in_place`'s
+    /// `None`): `$collectsInPlace(IInPlace, size, align)`, its fact of what
+    /// the adapters keep, or of a source's items' layout, `[TSize, TAlign]`,
+    /// against the items' (#672). Refused where the adapters don't tell.
+    fn caller_in_place(&mut self, iter_ty: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Expr> {
+        use crate::lower::recognition::{InPlaceSource, TypeFact, in_place_source};
+        let (iter_ty, item, typing_env) = self.collected_in_impl(iter_ty, item);
+        let source = match in_place_source(self.tcx, typing_env, iter_ty) {
+            Some(InPlaceSource::Of(_) | InPlaceSource::Items(_)) => {
+                self.type_fact_value(iter_ty, TypeFact::InPlace, span)?
+            }
+            _ => {
+                return Err(self.unsupported(
+                    span,
+                    &format!("collecting a `{iter_ty}`, whose adapters don't say whether std collects it in place"),
+                ));
+            }
+        };
+        let size = self.type_fact_value(item, TypeFact::Size, span)?;
+        let align = self.type_fact_value(item, TypeFact::Align, span)?;
+        Ok(Expr::call_helper("$collectsInPlace", vec![source, size, align]))
     }
 
     /// Of a collect into `output` of `item`s a panic may stop, of an
@@ -301,13 +360,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if drop.is_none() && !holds {
             return Ok(None);
         }
-        let rest_first = drop.is_some() && item.is_some_and(|item| self.rest_dropped_first(output, iter_ty, item));
+        let rest_first = match (&drop, item) {
+            (Some(_), Some(item)) => self.rest_dropped_first(output, iter_ty, item, span)?,
+            _ => None,
+        };
         // Into a `Vec` std collects in place: by its fold, whose sink is
         // what it collected, the accumulator `$kept` leaks as std's does
-        // (#681).
-        let in_place = drop.is_some()
-            && self.is_std_type(output, StdItem::Vec)
-            && self.collects_in_place(iter_ty, item) == Some(true);
+        // (#681); where that's its caller's answer, as it says (#672).
+        let in_place = match (&drop, iter_ty, item) {
+            (Some(_), Some(iter_ty), Some(item)) if self.is_std_type(output, StdItem::Vec) => {
+                match self.collects_in_place(Some(iter_ty), Some(item)) {
+                    Some(true) => InPlace::Yes,
+                    Some(false) => InPlace::No,
+                    None => InPlace::IfCaller(self.caller_in_place(iter_ty, item, span)?),
+                }
+            }
+            _ => InPlace::No,
+        };
         Ok(Some(UnwindingCollect {
             drop,
             rest_first,
@@ -413,9 +482,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut args = vec![it];
         if let (Some(drop), Some(item)) = (drop, item) {
             args.push(drop);
-            if self.rest_dropped_first(output, Some(iter_ty), item) {
-                args.push(Expr::bool(true));
-            }
+            args.extend(self.rest_dropped_first(output, Some(iter_ty), item, span)?);
         }
         Ok(args)
     }
@@ -574,15 +641,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             // What's left first, where std collects it otherwise than in
             // place, of values with a destructor (#423).
-            let ty::Adt(_, args) = output.kind() else {
-                unreachable!("a `Result` or an `Option`")
-            };
-            let value = item.and_then(|item| match item.kind() {
-                ty::Adt(_, args) => args.types().next(),
-                _ => None,
-            });
-            let rest_first = value.is_some_and(|value| self.rest_dropped_first(args.type_at(0), iter_ty, value));
-            self.collect_fallible(it, output, item, rest_first, span)?
+            self.collect_fallible(it, output, item, iter_ty, span)?
         } else if self.is_map(output) {
             let set = self.is_set(output);
             // A panic that may stop it: a B-tree's, which std collects as a
@@ -793,33 +852,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// or leaks where std's does (#681).
 struct UnwindingCollect {
     drop: Option<Expr>,
-    rest_first: bool,
-    in_place: bool,
+    rest_first: Option<Expr>,
+    in_place: InPlace,
+}
+
+/// Whether std collects a collect into a `Vec` in place: known here, or as
+/// its caller's answer, `$collectsInPlace(IInPlace, size, align)`, says
+/// (#681, #672).
+enum InPlace {
+    No,
+    Yes,
+    IfCaller(Expr),
 }
 
 impl UnwindingCollect {
     /// `it` collected so, an array: `$collectDropping(it, drop)`; in place,
     /// `$foldToArray(it, drop)`, by its fold, as std's in-place collect is
-    /// its `try_fold` into the source's buffer.
+    /// its `try_fold` into the source's buffer; where that's its caller's
+    /// answer, as it says, `$collectsInPlace(..) ? $foldToArray(it, drop) :
+    /// $collectDropping(it, drop, true)`, as `ITrustedLen` picks a fold
+    /// (#672, #670).
     fn collected(self, it: Expr) -> Expr {
         let mut args = vec![it];
         args.extend(self.drop);
-        if self.in_place {
-            return Expr::call_helper("$foldToArray", args);
+        match self.in_place {
+            InPlace::Yes => Expr::call_helper("$foldToArray", args),
+            InPlace::IfCaller(in_place) => {
+                let by_fold = Expr::call_helper("$foldToArray", args.clone());
+                args.push(Expr::bool(true));
+                Expr::cond(in_place, by_fold, Expr::call_helper("$collectDropping", args))
+            }
+            InPlace::No => {
+                args.extend(self.rest_first);
+                Expr::call_helper("$collectDropping", args)
+            }
         }
-        if self.rest_first {
-            args.push(Expr::bool(true));
-        }
-        Expr::call_helper("$collectDropping", args)
     }
 
     /// `it` collected so by its fold, an array: `$foldToArray(it, drop)`.
     fn folded(self, it: Expr) -> Expr {
         let mut args = vec![it];
         args.extend(self.drop);
-        if self.rest_first {
-            args.push(Expr::bool(true));
-        }
+        args.extend(self.rest_first);
         Expr::call_helper("$foldToArray", args)
     }
 }

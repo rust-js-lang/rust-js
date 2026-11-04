@@ -714,11 +714,16 @@ pub(crate) enum TypeFact {
     RandomAccess,
     RandomAccessNoCoerce,
     TrustedLen,
+    /// Of an iterator, the size and alignment of the items of the buffer
+    /// std's `collect()` into a `Vec` may collect it in, in place, `[size,
+    /// align]`, or none, `undefined`: what a collect a panic stops drops
+    /// first (#672).
+    InPlace,
 }
 
 impl TypeFact {
     /// Every fact: the one list of them.
-    pub(crate) const ALL: [TypeFact; 16] = [
+    pub(crate) const ALL: [TypeFact; 17] = [
         TypeFact::Size,
         TypeFact::Align,
         TypeFact::Name,
@@ -735,6 +740,7 @@ impl TypeFact {
         TypeFact::RandomAccess,
         TypeFact::RandomAccessNoCoerce,
         TypeFact::TrustedLen,
+        TypeFact::InPlace,
     ];
 
     /// What it is, as an error or a note says it: `size_of`, `the
@@ -754,6 +760,7 @@ impl TypeFact {
             TypeFact::RandomAccess => "whether it's a `TrustedRandomAccess`",
             TypeFact::RandomAccessNoCoerce => "whether it's a `TrustedRandomAccessNoCoerce`",
             TypeFact::TrustedLen => "whether it's a `TrustedLen`",
+            TypeFact::InPlace => "the buffer std collects an iterator in place in",
         }
     }
 
@@ -781,6 +788,7 @@ impl TypeFact {
             TypeFact::RandomAccess => "RandomAccess",
             TypeFact::RandomAccessNoCoerce => "RandomAccessNoCoerce",
             TypeFact::TrustedLen => "TrustedLen",
+            TypeFact::InPlace => "InPlace",
         }
     }
 

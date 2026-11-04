@@ -27,7 +27,7 @@ function splitFirst(iter, k, dropI, dropIItem) {
   $held(iter);
   let first;
   try {
-    first = $collectDropping($lent(Iterator.from(iter)).take(k), dropIItem);
+    first = $collectDropping($lent(Iterator.from(iter)).take(k), dropIItem, true);
   } catch (error) {
     dropI?.(iter);
     throw error;
