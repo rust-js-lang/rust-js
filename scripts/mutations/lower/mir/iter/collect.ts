@@ -565,11 +565,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "own-iterator-never-unwinding-ignored",
-    breaks: "each of the crate's iterators behind std's adapters is taken to panic, its methods that never unwind too, so a fold of one that can't is `$foldDropping` (rd763)",
+    breaks: "each of the crate's iterators behind std's adapters is taken to panic, its methods that never unwind too, so a fold of one that can't, `Calm`'s, is `$foldDropping`, not `reduce` (rd763)",
     file: "src/lower/mir/iter/collect.rs",
     find: "                            && !self.krate.never_unwinding.contains(&method)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_steps_behind_adapters_unwind.rs$"],
+    snapshots: true,
   },
   {
     name: "dyn-iterator-steps-unseen",

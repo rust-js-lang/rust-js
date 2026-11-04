@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "taking-rfold-untrimmed",
     breaks: "a `take`'s `rfold` folds its source untrimmed, not after its `nth_back` past what it won't give (#220)",
     file: "src/runtime/taking.js",
-    find: "      const folded = taking.n === 0 || !trimmed() ? init : $foldBack(taking.iter, init, f);\n",
-    replace: "      const folded = taking.n === 0 ? init : $foldBack(taking.iter, init, f);\n",
+    find: "      const folded = taking.n === 0 || !trimmed() ? init : $foldBack(taking.iter, init, f, unwind);\n",
+    replace: "      const folded = taking.n === 0 ? init : $foldBack(taking.iter, init, f, unwind);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {

@@ -979,5 +979,7 @@ Mutations: `map-ends-fold-not-its-sources`, `enumerate-fold-unwind-lost`,
 `own-iterator-steps-unseen`, `own-iterator-never-unwinding-ignored`,
 `dyn-iterator-steps-unseen`, `collect-own-steps-unseen`,
 `try-fold-option-unwind-ungiven` and `opaque-stage-unseen`
-(`lower/mir/iter/collect.ts`). `fold-stage-by-type-unseen` now leaves the
-unseen steps' answer in place.
+(`lower/mir/iter/collect.ts`), the last checking `Calm`'s fold, whose
+steps never unwind, stays `reduce` (`snapshots`). `fold-stage-by-type-unseen`
+now leaves the unseen steps' answer in place, and 20 mutations of the
+adapters these forward through name their new text, each as it meant.

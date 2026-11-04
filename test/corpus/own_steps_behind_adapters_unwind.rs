@@ -74,6 +74,25 @@ impl Iterator for Plain {
     }
 }
 
+// Its steps never panic: a fold of it behind std's adapters drops nothing
+// as it unwinds, so it's `reduce`.
+struct Calm {
+    left: bool,
+}
+
+impl Iterator for Calm {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<u32> {
+        if self.left {
+            self.left = false;
+            Some(7)
+        } else {
+            None
+        }
+    }
+}
+
 fn push(mut acc: Vec<D>, n: u32) -> Vec<D> {
     acc.push(D(n));
     acc
@@ -157,6 +176,9 @@ fn main() {
     });
     run("plain skip collect", || {
         Plain { n: 0, at: 3 }.skip(1).map(D).collect::<Vec<_>>().len()
+    });
+    run("calm fuse fold", || {
+        Calm { left: true }.fuse().fold(Vec::new(), push).len()
     });
     run("plain try_fold option", || {
         Plain { n: 0, at: 3 }

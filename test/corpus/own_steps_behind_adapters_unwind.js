@@ -87,6 +87,13 @@ function plainIterator_next(plain) {
   return plain.n < 6 ? plain.n : undefined;
 }
 
+function calmIterator_next(calm) {
+  if (calm.left) {
+    calm.left = false;
+    return 7;
+  }
+}
+
 function push(acc, n) {
   try {
     acc.push([n]);
@@ -434,6 +441,13 @@ function main() {
       dDrop_drop(item);
     }
     return collect.length;
+  });
+  run("calm fuse fold", () => {
+    const fold = iterator_fuse({ left: true }, { next: calmIterator_next }, false).reduce(push, []);
+    for (const item of fold) {
+      dDrop_drop(item);
+    }
+    return fold.length;
   });
   run("plain try_fold option", () => {
     const option = $tryFoldSome(

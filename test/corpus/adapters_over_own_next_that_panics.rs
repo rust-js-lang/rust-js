@@ -5,8 +5,9 @@
 // and what's left are dropped as std unwinds (rd763, rd765); a `map`
 // that knows its length folds by its source's `fold` (rd762); an
 // `enumerate()` gives its source the accumulator's drop (rd767); a
-// generic fold of a `fuse()` drops it once (rd764); and a `skip(n)` whose
-// first step panics drops `init`, then itself (rd769).
+// generic fold of a `fuse()` drops it once (rd764); a `skip(n)` whose
+// first step panics drops `init`, then itself (rd769); and its own `rfold`,
+// through an `enumerate()` too, is given the accumulator's drop (rd767).
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 struct D(u32);
@@ -60,6 +61,15 @@ impl DoubleEndedIterator for Own {
             panic!("boom back");
         }
         next
+    }
+
+    fn rfold<B, F: FnMut(B, D) -> B>(mut self, init: B, mut f: F) -> B {
+        println!("own rfold");
+        let mut acc = init;
+        while let Some(d) = self.next_back() {
+            acc = f(acc, d);
+        }
+        acc
     }
 }
 

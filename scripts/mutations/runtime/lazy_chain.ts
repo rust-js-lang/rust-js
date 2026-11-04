@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "chain-try-fold-by-next",
     breaks: "a chain's tryFold is a's then b's",
     file: "src/runtime/lazy_chain.js",
-    find: "  chained.tryFold = (init, f, broke) => {",
-    replace: "  chained.tryFoldUnused = (init, f, broke) => {",
+    find: "  chained.tryFold = (init, f, broke, unwind) => {",
+    replace: "  chained.tryFoldUnused = (init, f, broke, unwind) => {",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
   },
   {

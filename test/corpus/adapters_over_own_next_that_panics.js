@@ -126,6 +126,60 @@ function ownDoubleEndedIterator_nextBack(own) {
   return next;
 }
 
+function ownDoubleEndedIterator_rfold(own, init, f, dropB, dropF) {
+  console.log("own rfold");
+  let acc$live = true;
+  let acc = init;
+  let result;
+  try {
+    try {
+      try {
+        let nextBack;
+        while (true) {
+          try {
+            nextBack = ownDoubleEndedIterator_nextBack(own);
+          } catch (error) {
+            if (acc$live) {
+              dropB?.(acc);
+            }
+            throw error;
+          }
+          if (nextBack != null) {
+            const d = nextBack;
+            acc$live = false;
+            const value = f(acc, d);
+            acc$live = true;
+            acc = value;
+            continue;
+          }
+          try {
+            if (nextBack != null) {
+              dDrop_drop(nextBack);
+            }
+          } catch (error) {
+            if (acc$live) {
+              dropB?.(acc);
+            }
+            throw error;
+          }
+          break;
+        }
+        acc$live = false;
+        result = acc;
+      } finally {
+        dropF?.(f);
+      }
+    } finally {
+      console.log("drop own");
+    }
+  } finally {
+    for (const item of own.items) {
+      dDrop_drop(item);
+    }
+  }
+  return result;
+}
+
 function own(r, at) {
   return {
     items: $iter(Array.from($iterator(r, $rangeNext).map((value) => [value]))),
@@ -200,6 +254,9 @@ function main() {
             (it) => $exactLen(ownIterator_sizeHint(it)),
             ownIterator_sizeHint,
             ownIterator_fold,
+            undefined,
+            undefined,
+            ownDoubleEndedIterator_rfold,
           ),
           (it) => {
             console.log("drop own");
@@ -231,6 +288,9 @@ function main() {
             (it) => $exactLen(ownIterator_sizeHint(it)),
             ownIterator_sizeHint,
             ownIterator_fold,
+            undefined,
+            undefined,
+            ownDoubleEndedIterator_rfold,
           ),
           (it) => {
             console.log("drop own");
@@ -347,6 +407,9 @@ function main() {
             undefined,
             ownIterator_sizeHint,
             ownIterator_fold,
+            undefined,
+            undefined,
+            ownDoubleEndedIterator_rfold,
           ),
           (it) => {
             console.log("drop own");
@@ -379,6 +442,9 @@ function main() {
             undefined,
             ownIterator_sizeHint,
             ownIterator_fold,
+            undefined,
+            undefined,
+            ownDoubleEndedIterator_rfold,
           ),
           (it) => {
             console.log("drop own");
@@ -411,6 +477,9 @@ function main() {
             undefined,
             ownIterator_sizeHint,
             ownIterator_fold,
+            undefined,
+            undefined,
+            ownDoubleEndedIterator_rfold,
           ),
           (it) => {
             console.log("drop own");
@@ -437,6 +506,9 @@ function main() {
             undefined,
             ownIterator_sizeHint,
             ownIterator_fold,
+            undefined,
+            undefined,
+            ownDoubleEndedIterator_rfold,
           ),
           (it) => {
             console.log("drop own");
@@ -468,6 +540,9 @@ function main() {
           undefined,
           ownIterator_sizeHint,
           ownIterator_fold,
+          undefined,
+          undefined,
+          ownDoubleEndedIterator_rfold,
         ),
         (it) => {
           console.log("drop own");
@@ -508,6 +583,9 @@ function main() {
             undefined,
             ownIterator_sizeHint,
             ownIterator_fold,
+            undefined,
+            undefined,
+            ownDoubleEndedIterator_rfold,
           ),
           (it) => {
             console.log("drop own");
@@ -525,6 +603,9 @@ function main() {
             undefined,
             ownIterator_sizeHint,
             ownIterator_fold,
+            undefined,
+            undefined,
+            ownDoubleEndedIterator_rfold,
           ),
           (it) => {
             console.log("drop own");
@@ -566,6 +647,9 @@ function main() {
             undefined,
             ownIterator_sizeHint,
             ownIterator_fold,
+            undefined,
+            undefined,
+            ownDoubleEndedIterator_rfold,
           ),
           (it) => {
             console.log("drop own");
@@ -583,6 +667,9 @@ function main() {
             undefined,
             ownIterator_sizeHint,
             ownIterator_fold,
+            undefined,
+            undefined,
+            ownDoubleEndedIterator_rfold,
           ),
           (it) => {
             console.log("drop own");
@@ -647,6 +734,7 @@ function main() {
           undefined,
           undefined,
           ownIterator_sizeHint,
+          ownDoubleEndedIterator_rfold,
         ),
         (it) => {
           console.log("drop own");
@@ -676,6 +764,9 @@ function main() {
             (it) => $exactLen(ownIterator_sizeHint(it)),
             ownIterator_sizeHint,
             ownIterator_fold,
+            undefined,
+            undefined,
+            ownDoubleEndedIterator_rfold,
           ),
           (it) => {
             console.log("drop own");
@@ -779,6 +870,9 @@ function main() {
             undefined,
             ownIterator_sizeHint,
             ownIterator_fold,
+            undefined,
+            undefined,
+            ownDoubleEndedIterator_rfold,
           ),
           (it) => {
             console.log("drop own");
@@ -821,6 +915,9 @@ function main() {
             undefined,
             ownIterator_sizeHint,
             ownIterator_fold,
+            undefined,
+            undefined,
+            ownDoubleEndedIterator_rfold,
           ),
           (it) => {
             console.log("drop own");
@@ -838,6 +935,9 @@ function main() {
             undefined,
             ownIterator_sizeHint,
             ownIterator_fold,
+            undefined,
+            undefined,
+            ownDoubleEndedIterator_rfold,
           ),
           (it) => {
             console.log("drop own");
@@ -889,6 +989,9 @@ function main() {
           undefined,
           ownIterator_sizeHint,
           ownIterator_fold,
+          undefined,
+          undefined,
+          ownDoubleEndedIterator_rfold,
         ),
         (it) => {
           console.log("drop own");
@@ -915,6 +1018,7 @@ function main() {
           undefined,
           undefined,
           ownIterator_sizeHint,
+          ownDoubleEndedIterator_rfold,
         ),
         (it) => {
           console.log("drop own");
@@ -943,6 +1047,9 @@ function main() {
             (it) => $exactLen(ownIterator_sizeHint(it)),
             ownIterator_sizeHint,
             ownIterator_fold,
+            undefined,
+            undefined,
+            ownDoubleEndedIterator_rfold,
           ),
           (it) => {
             console.log("drop own");
@@ -973,6 +1080,9 @@ function main() {
             undefined,
             ownIterator_sizeHint,
             ownIterator_fold,
+            undefined,
+            undefined,
+            ownDoubleEndedIterator_rfold,
           ),
           (it) => {
             console.log("drop own");
