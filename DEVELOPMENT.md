@@ -473,6 +473,25 @@ the workflow's 2 machines; `--shards=4` splits it across four.
   crates' paths differ; copy none, as it's tens of GB ([slow spots](#slow-spots-still-to-fix)).
 - **A red run is the change's.** Fix it at once, on `main`, and say what
   broke, with the failing job's log.
+- **Never run a runtime mutation and `check:fast` at once in one
+  checkout.** A mutation of a runtime helper (`src/runtime/*.js`, its
+  entries in `scripts/mutations/runtime/`) runs its tests with the
+  checkout's `runtime/index.js` rewritten to its mutant's runtime, and
+  puts the original back after (`withRuntime` in `scripts/mutations.ts`).
+  A `check:fast` in the same checkout meanwhile runs its corpus parts
+  against the mutant's runtime, and fails with "x is not a function"
+  where nothing is wrong, most often of a change that adds runtime
+  mutations. Run one after the other, or the other in another worktree,
+  which is a checkout of its own.
+- **`runtime/index.js` and `std/iter.js` are generated, and committed.**
+  `bun run runtime` writes `runtime/index.js`; `bun run std` writes
+  `std/iter.js`, its `std/iter.js.map` and `std/manifest.json`; each
+  builds the compiler first. A change to a runtime helper, or to the
+  lowering std's compiled bodies depend on, runs both, rebuilds (`bun run
+  build`, which builds std's manifest in), and commits what they wrote
+  with it: `test/runtime-package.test.ts` and `test/std-package.test.ts`
+  hold them to what the compiler writes. Left stale, every iterator
+  matrix run fails with "does not provide an export".
 
 ## Workflows
 
