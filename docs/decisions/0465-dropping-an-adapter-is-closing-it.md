@@ -1250,3 +1250,15 @@ of them, `$skipping`, knew its back already and is as it was.
 `enumerate_of_take_from_back_refused.rs` holds the refusal, and the guide's
 limitations list it. Mutation: `enumerate-of-take-from-back-unknowing`
 (`lower/mir/iter/backs.ts`).
+
+## Amendment: a `skip()`'s `rfold` is closed as it unwinds (2026-11-04, #621)
+
+With `$rev`'s `try_rfold` its source's `try_fold`, a `skip()` of a `rev()`
+folds from its back by it, not by stepping its back. Its `rfold`, its
+`try_rfold`, closed only where it returned, so a panic in the fold's
+closure left a reversed `Vec`'s rest undropped:
+`ds.into_iter().rev().skip(1).enumerate().rfold(..)` never dropped 4 and 5
+(matrix: `rev vec | skip.enumerate | rfold | consumer` and `| drop`). It's
+`$consumed` now, as `rfold(self)` drops the `Skip`. Held by
+`skip_rfold_closes_as_it_unwinds.rs` against native Rust; mutation
+`skip-rfold-unclosed` (`runtime/skipping.ts`).

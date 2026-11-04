@@ -194,4 +194,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_count_where_adapters_call_them.rs$"],
   },
+  {
+    name: "skip-rfold-unclosed",
+    breaks: "a `skip()` folded from its back whose fold's closure panics leaves what it holds undropped, a reversed `Vec`'s rest (#621)",
+    file: "src/runtime/skipping.js",
+    find: "    const folded = $consumed(skipping, () => skipping.tryRfold(init, f, () => false, unwind));\n",
+    replace: "    const folded = skipping.tryRfold(init, f, () => false, unwind);\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_rfold_closes_as_it_unwinds.rs$"],
+  },
 ];

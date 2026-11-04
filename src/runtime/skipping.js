@@ -150,9 +150,11 @@ function $skipping(iter, n, drop) {
     if (left === 0) return init;
     return skipping.iter.tryRfold(init, (a, x) => (left--, f(a, x)), (a) => left === 0 || broke(a), unwind);
   };
-  // Consumed, its source done with after (#225).
+  // Consumed, its source done with after (#225), and though it throws, a
+  // panic, as `rfold(self)` drops the `Skip` as it unwinds: a `$rev`'s
+  // source's `try_fold` drops nothing of what's left as it throws.
   const rfold = (init, f, unwind) => {
-    const folded = skipping.tryRfold(init, f, () => false, unwind);
+    const folded = $consumed(skipping, () => skipping.tryRfold(init, f, () => false, unwind));
     $closed(skipping.iter);
     return folded;
   };
