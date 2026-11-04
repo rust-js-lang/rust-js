@@ -52,6 +52,9 @@ function $closing(it, drop, slices = true) {
   // a `step_by` over it asks it (#261), given the items' drop, which std's
   // default `nth` of the crate's iterator drops what it passes by (#494).
   if (it.ownNth) closing.ownNth = true;
+  // And its `nth_back`, likewise, which a `rev()` over it says is its own
+  // `nth` (#649).
+  if (it.ownNthBack) closing.ownNthBack = true;
   // Closed though `f` throws, a panic, as Rust's `fold` drops what's left
   // of what it took as it unwinds (#422); done with, not closed, where its
   // fold is its own, `own`, which took it and drops it as it unwinds (#423).

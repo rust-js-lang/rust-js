@@ -307,3 +307,29 @@ both builds. In the matrix, #621's 14 cases, 123 of #649's and 20 of
 #650's run as Rust does. Mutations: `flatten-ends-fold-unforwarded` and
 `flatten-ends-rfold-unforwarded` (`runtime/back_steps.ts`);
 `rfolds-not-through-peekable` names its line as it now reads.
+
+## Amendment: the crate's own `nth_back` says it's its own, so a `rev()` of it is (2026-11-04, #649)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+Std's `Rev::nth` is its source's `nth_back`, and a `skip` and a `step_by`
+step what they hold by `nth`. `$iterator`, generic code's JS iterator of a
+value it was given, said `ownFold`, `ownNth`, `ownLast`, `ownRfold` and
+`ownCount` of the crate's own steps, but never `ownNthBack`, and
+`$closing` didn't carry it on. So a `rev()` of it never said its `nth`
+was its own, and `src.rev().skip(2)` and `src.rev().step_by(2)` in
+generic code stepped it by `next_back`, never calling the crate's own
+`nth_back`. `$iterator` now says each of its own steps by one loop over
+them, `$ownStep`'s names, and `$closing` carries `ownNthBack` as it
+carries `ownNth`. A type parameter's `Reach::Sure` still says no of
+`nth_back`, whose helper doesn't ask the value; the answer is the
+value's, at run time.
+
+`generic_rev_nths_its_own_back.rs` checks a `skip`'s collect and `last`
+and a `step_by`'s collect and `count` of a reversed type parameter, the
+crate's iterator that writes `nth_back` and a `Vec`'s, against native
+Rust in both builds. The matrix takes off #649's last 72 cases, its
+`rev.skip` and `rev.step_by` ones. Mutations:
+`iterator-own-nth-back-unsaid` (`runtime/iterator.ts`) and
+`closing-own-nth-back-unsaid` (`runtime/closing.ts`).

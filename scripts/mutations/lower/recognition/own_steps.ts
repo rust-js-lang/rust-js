@@ -296,8 +296,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `fuse()`'s `rfold` isn't said to be its source's, so `rev().last()` of one doesn't fold by the crate's own (#224)",
     file: "src/lower/recognition/own_steps.rs",
-    find: "            (Rfold, \"Map\" | \"Filter\" | \"Enumerate\" | \"Fuse\" | \"Peekable\") => own,\n",
-    replace: "            (Rfold, \"Map\" | \"Filter\" | \"Enumerate\" | \"Peekable\") => own,\n",
+    find: "            (Rfold, \"Map\" | \"Filter\" | \"Enumerate\" | \"Fuse\" | \"Peekable\" | \"FlatMap\" | \"Flatten\") => own,\n",
+    replace: "            (Rfold, \"Map\" | \"Filter\" | \"Enumerate\" | \"Peekable\" | \"FlatMap\" | \"Flatten\") => own,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {

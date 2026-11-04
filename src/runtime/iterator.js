@@ -54,13 +54,13 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
     nthBack: nthBack && ((k) => step(nthBack(iterator, k))),
     count: count && (() => count(iterator)),
   });
-  // `ownNth` and `ownLast` say they're the crate's own, which drop what
-  // they pass themselves, where std's defaults of a `$Steps` don't.
-  if (fold !== undefined) it.ownFold = true;
-  if (nth !== undefined) it.ownNth = true;
-  if (last !== undefined) it.ownLast = true;
-  if (rfold !== undefined) it.ownRfold = true;
-  if (count !== undefined) it.ownCount = true;
+  // `ownNth`, `ownNthBack` and the like say each is the crate's own, which
+  // drops what it passes itself, or takes it, where std's defaults of a
+  // `$Steps` don't: so a `rev()` of it says its `nth` is its own, its
+  // `nth_back`, as a `skip` or a `step_by` over that asks it (#649).
+  for (const [name, own] of Object.entries({ fold, nth, last, rfold, nthBack, count })) {
+    if (own !== undefined) it[$ownStep(name)] = true;
+  }
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0525,
   // amended).

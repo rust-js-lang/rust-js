@@ -596,13 +596,13 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
     nthBack: nthBack && ((k) => step(nthBack(iterator, k))),
     count: count && (() => count(iterator)),
   });
-  // `ownNth` and `ownLast` say they're the crate's own, which drop what
-  // they pass themselves, where std's defaults of a `$Steps` don't.
-  if (fold !== undefined) it.ownFold = true;
-  if (nth !== undefined) it.ownNth = true;
-  if (last !== undefined) it.ownLast = true;
-  if (rfold !== undefined) it.ownRfold = true;
-  if (count !== undefined) it.ownCount = true;
+  // `ownNth`, `ownNthBack` and the like say each is the crate's own, which
+  // drops what it passes itself, or takes it, where std's defaults of a
+  // `$Steps` don't: so a `rev()` of it says its `nth` is its own, its
+  // `nth_back`, as a `skip` or a `step_by` over that asks it (#649).
+  for (const [name, own] of Object.entries({ fold, nth, last, rfold, nthBack, count })) {
+    if (own !== undefined) it[$ownStep(name)] = true;
+  }
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0525,
   // amended).
@@ -2482,6 +2482,9 @@ export function $closing(it, drop, slices = true) {
   // a `step_by` over it asks it (#261), given the items' drop, which std's
   // default `nth` of the crate's iterator drops what it passes by (#494).
   if (it.ownNth) closing.ownNth = true;
+  // And its `nth_back`, likewise, which a `rev()` over it says is its own
+  // `nth` (#649).
+  if (it.ownNthBack) closing.ownNthBack = true;
   // Closed though `f` throws, a panic, as Rust's `fold` drops what's left
   // of what it took as it unwinds (#422); done with, not closed, where its
   // fold is its own, `own`, which took it and drops it as it unwinds (#423).

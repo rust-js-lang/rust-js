@@ -194,4 +194,12 @@ export const mutations: Mutation[] = [
     replace: "      const step = it.back();\n      closed = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_last_takes_its_back.rs$"],
   },
+  {
+    name: "closing-own-nth-back-unsaid",
+    breaks: "a closed source of the crate's with its own `nth_back` doesn't say it's its own, so a `rev().skip(n)` over it steps it by `next_back`, never calling it (#649)",
+    file: "src/runtime/closing.js",
+    find: "  if (it.ownNthBack) closing.ownNthBack = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_rev_nths_its_own_back.rs$"],
+  },
 ];

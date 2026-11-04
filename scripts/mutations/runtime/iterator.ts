@@ -222,4 +222,12 @@ export const mutations: Mutation[] = [
     replace: "  return name === undefined || it.$steps?.takes?.includes(name) === true;\n",
     tests: ["test/corpus.test.ts", "-t", "^own_steps_a_type_parameter_may_reach.rs$"],
   },
+  {
+    name: "iterator-own-nth-back-unsaid",
+    breaks: "the crate's iterator with its own `nth_back` doesn't say it's its own, so generic code's `rev().skip(n)` and `rev().step_by(n)` step it by `next_back`, never calling it (#649)",
+    file: "src/runtime/iterator.js",
+    find: "  for (const [name, own] of Object.entries({ fold, nth, last, rfold, nthBack, count })) {\n",
+    replace: "  for (const [name, own] of Object.entries({ fold, nth, last, rfold, count })) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_rev_nths_its_own_back.rs$"],
+  },
 ];
