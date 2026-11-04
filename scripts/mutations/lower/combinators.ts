@@ -576,9 +576,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`extend` copies every item into an array before it pushes any, `Array.from(items)`, where it pushes each as it's stepped",
     file: "src/lower/combinators.rs",
-    find: '            return self.pushed_each(collection, list, copied, span, out);\n        }\n        Ok(Expr::call_helper("$extend", vec![collection, items]))\n',
+    find: '            return Ok(Expr::call_helper("$extend", vec![collection, items, Expr::bool(true)]));\n        }\n        Ok(Expr::call_helper("$extend", vec![collection, items]))\n',
     replace:
-      '            return self.pushed_each(collection, list, copied, span, out);\n        }\n        Ok(Expr::call_helper("$extend", vec![collection, Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items])]))\n',
+      '            return Ok(Expr::call_helper("$extend", vec![collection, items, Expr::bool(true)]));\n        }\n        Ok(Expr::call_helper("$extend", vec![collection, Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items])]))\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
     snapshots: true,
   },
@@ -840,5 +840,13 @@ export const mutations: Mutation[] = [
     find: "    let tested = applied.text_truth().cloned().unwrap_or_else(|| applied.tested());\n",
     replace: "    let tested = applied.tested();\n",
     tests: ["test/lowering-options.test.ts", "-t", "is_some_and of the truth of what it holds"],
+  },
+  {
+    name: "extend-trusted-by-next",
+    breaks: "an `extend` of a `TrustedLen` iterator that folds a held function isn't by its fold (#710)",
+    file: "src/lower/combinators.rs",
+    find: "            return Ok(Expr::call_helper(\"$extend\", vec![collection, items, Expr::bool(true)]));\n",
+    replace: "            return Ok(Expr::call_helper(\"$extend\", vec![collection, items]));\n",
+    tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
 ];

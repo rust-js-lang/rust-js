@@ -263,19 +263,27 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `take_while`'s, `skip_while`'s, `map_while`'s, `inspect`'s and
     /// `flat_map`'s, whose `F` is after what it flattens, `FlatMap<I, U, F>`.
     pub(crate) fn held_function(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        self.held(ty).map(|(function, _)| function)
+    }
+
+    /// Where std's fold of an adapter that holds a function,
+    /// `held_function`'s, drops it, as each writes its `fold` (#710).
+    pub(crate) fn held_function_folded(&self, ty: Ty<'tcx>) -> Option<HeldFolded> {
+        self.held(ty).map(|(_, folded)| folded)
+    }
+
+    /// `held_function`'s and `held_function_folded`'s one catalog.
+    fn held(&self, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, HeldFolded)> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, args) = ty.kind() else { return None };
-        match std_path(self.tcx, adt.did()).as_str() {
-            "std::iter::Map"
-            | "std::iter::Filter"
-            | "std::iter::FilterMap"
-            | "std::iter::TakeWhile"
-            | "std::iter::SkipWhile"
-            | "std::iter::MapWhile"
-            | "std::iter::Inspect" => Some(args.type_at(1)),
-            "std::iter::FlatMap" => Some(args.type_at(2)),
-            _ => None,
-        }
+        let folded = match std_path(self.tcx, adt.did()).as_str() {
+            "std::iter::Map" => HeldFolded::After,
+            "std::iter::Filter" | "std::iter::FilterMap" | "std::iter::Inspect" => HeldFolded::Before,
+            "std::iter::TakeWhile" | "std::iter::SkipWhile" | "std::iter::MapWhile" => HeldFolded::Kept,
+            "std::iter::FlatMap" => return Some((args.type_at(2), HeldFolded::Alone)),
+            _ => return None,
+        };
+        Some((args.type_at(1), folded))
     }
 
     /// The test an `extract_if()`'s iterator holds, of a `Vec`'s, a list's,
@@ -733,6 +741,35 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
 /// Is `id` core's `Sum` or `Product`, of `sum()` and `product()`, which
 /// have no diagnostic items?
+/// Where std's fold of an adapter holding a function drops it, as each
+/// adapter writes its `fold` (#710): a `map`'s moved into the fold it asks
+/// of its source, after what drops with the `f` it's given, as
+/// `map_fold(f, g)` drops `g` first, `After`; a `filter`'s, a
+/// `filter_map`'s and an `inspect`'s before it, `Before`; a `flat_map`'s
+/// moved alone, the `f` it's given dropped after, as `FlattenCompat::fold`
+/// folds its `Map` by `&mut`, `Alone`; a `take_while`'s, a `map_while`'s and
+/// a `skip_while`'s kept, whose fold is its `try_fold` by `&mut self`,
+/// dropped with it after its source, `Kept`.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum HeldFolded {
+    After,
+    Before,
+    Alone,
+    Kept,
+}
+
+impl HeldFolded {
+    /// `$holding`'s `moved`, which says so at run time; none of one kept.
+    pub(crate) fn moved(self) -> Option<&'static str> {
+        match self {
+            HeldFolded::After => Some("after"),
+            HeldFolded::Before => Some("before"),
+            HeldFolded::Alone => Some("alone"),
+            HeldFolded::Kept => None,
+        }
+    }
+}
+
 pub(crate) fn is_sum_or_product(tcx: TyCtxt<'_>, id: DefId) -> bool {
     accumulation(tcx, id).is_some()
 }

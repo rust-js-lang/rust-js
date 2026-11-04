@@ -289,8 +289,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `map(f)` of a function with a destructor isn't made closing, so its function is never dropped",
     file: "src/lower/mir/iter.rs",
-    find: '        Ok(Expr::call_helper(\n            "$closing",\n            vec![adapter, Expr::arrow(vec!["it".into()], body)],\n        ))\n',
-    replace: "        let _ = body;\n        Ok(adapter)\n",
+    find: '        Ok(Expr::call_helper("$holding", args))\n',
+    replace: "        Ok(args.swap_remove(0))\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -650,5 +650,13 @@ export const mutations: Mutation[] = [
     find: "            return self.reversed_knowing(reversed, output, span).map(Some);\n",
     replace: "            return Ok(Some(reversed));\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
+  },
+  {
+    name: "holding-unmoved",
+    breaks: "an adapter holding a function is made with no `moved`, so a fold drops its function after what it steps (#710)",
+    file: "src/lower/mir/iter.rs",
+    find: "        args.extend(moved.map(Expr::str));\n",
+    replace: "        let _ = moved;\n",
+    tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
 ];

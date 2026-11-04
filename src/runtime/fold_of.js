@@ -11,8 +11,11 @@ function $foldOf(it, init, f, unwind) {
 // passes it on to each stage; else stepped by `next`, where a step's throw
 // drops what's folded, then what's left is closed, as std's adapter's fold
 // closure drops the accumulator it holds, then its fold what it took
-// (#423). Of an array, or given no `unwind`, its `reduce`.
-function $foldDropping(it, init, f, unwind) {
+// (#423). Of an array, or given no `unwind`, its `reduce`. Given `ends`,
+// what drops with `f`, its own fold's to drop before what it has left,
+// which its caller closes it after (#710).
+function $foldDropping(it, init, f, unwind, ends) {
+  if (typeof it.fold === "function" && ends !== undefined && !Array.isArray(it)) return it.fold(init, f, unwind, ends);
   if (unwind === undefined || Array.isArray(it)) return it.reduce(f, init);
   if (typeof it.fold === "function") return it.fold(init, f, unwind);
   let folded = init;
@@ -55,6 +58,8 @@ function $foldToArray(it, drop, restFirst = false) {
   const items = [];
   const unwind = restFirst || drop === undefined ? undefined : () => $dropItems(items, drop);
   try {
+    // In place, std's `try_fold` by `&mut`, which moves no adapter's
+    // function into it, so it drops after what's left (`false`, #710).
     return it.fold(
       items,
       (items, x) => {
@@ -62,6 +67,7 @@ function $foldToArray(it, drop, restFirst = false) {
         return items;
       },
       unwind,
+      unwind === undefined ? undefined : false,
     );
   } catch (error) {
     // In place, what it collected is dropped by the fold's `unwind` alone,

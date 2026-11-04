@@ -938,7 +938,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         false => made,
                     };
                     match held {
-                        Some(held) => this.closing_function(made, held, span)?,
+                        Some(held) => this.closing_function(made, output, held, span)?,
                         None => made,
                     }
                 }))

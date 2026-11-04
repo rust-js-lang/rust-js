@@ -8,8 +8,8 @@ import {
   iterator_fuse,
 } from "@rust-js/std/iter.js";
 import {
-  $closing,
   $held,
+  $holding,
   $iter,
   $knowing,
   $mapEnds,
@@ -59,10 +59,13 @@ function main() {
     return (x + k[0]) >>> 0;
   }
   const value = ends(
-    $closing($mapEnds(copied, f), (it) => {
-      it.return();
-      console.log(`drop ${m[0]}`);
-    }),
+    $holding(
+      $mapEnds(copied, f),
+      () => {
+        console.log(`drop ${m[0]}`);
+      },
+      "after",
+    ),
     (map) => {
       map.return();
     },
@@ -90,10 +93,13 @@ function main() {
   }
   console.log(
     `${lens(
-      $closing($mapEnds(tmp, f$1), (it) => {
-        it.return();
-        console.log(`drop ${n[0]}`);
-      }),
+      $holding(
+        $mapEnds(tmp, f$1),
+        () => {
+          console.log(`drop ${n[0]}`);
+        },
+        "after",
+      ),
       (map) => {
         map.return();
       },
@@ -116,7 +122,7 @@ function main() {
     return (x + k[0]) >>> 0;
   }
   const value$1 = ends(
-    $closing(
+    $holding(
       $mapEnds(
         $knowing(
           fuse,
@@ -146,10 +152,10 @@ function main() {
         ),
         f$2,
       ),
-      (it) => {
-        it.return();
+      () => {
         console.log(`drop ${o[0]}`);
       },
+      "after",
     ),
     (map) => {
       map.return();

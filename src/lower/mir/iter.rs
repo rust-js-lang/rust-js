@@ -257,26 +257,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(adapter) = self.mir_iter_method(def_id, (trait_id, arg_tys), values, output, span, made)? else {
             return Ok(None);
         };
-        self.closing_function(adapter, (f, function), span).map(Some)
+        self.closing_function(adapter, output, (f, function), span).map(Some)
     }
 
-    /// `adapter`, which holds `f`, a function of type `function` with a
-    /// destructor, closed to drop it: `$closing(adapter, (it) => {
-    /// it.return(); .. })`, its source closed, then its function dropped, as
-    /// Rust drops an adapter's fields (ADRs 0485, 0991).
+    /// `adapter`, of type `ty`, which holds `f`, a function of type
+    /// `function` with a destructor, closed to drop it: `$holding(adapter,
+    /// () => drop(f))`, its source closed, then its function dropped, as
+    /// Rust drops an adapter's fields (ADRs 0485, 0991); folded, where std's
+    /// fold of it drops it, `held_function_folded`'s `moved` (#710).
     pub(in crate::lower::mir) fn closing_function(
         &mut self,
         adapter: Expr,
+        ty: Ty<'tcx>,
         (f, function): (Expr, Ty<'tcx>),
         span: Span,
     ) -> R<Expr> {
-        let it = Expr::var("it");
-        let mut body = vec![StmtKind::Expr(Expr::call(Expr::member(it, "return"), Vec::new())).at(js::Span::NONE)];
+        let mut body = Vec::new();
         self.drop_value(f, function, span, &mut body)?;
-        Ok(Expr::call_helper(
-            "$closing",
-            vec![adapter, Expr::arrow(vec!["it".into()], body)],
-        ))
+        let mut args = vec![adapter, Expr::arrow(Vec::new(), body)];
+        let moved =
+            (self.recognition().held_function_folded(ty)).and_then(crate::lower::recognition::HeldFolded::moved);
+        args.extend(moved.map(Expr::str));
+        Ok(Expr::call_helper("$holding", args))
     }
 
     /// `mir_iter_method`'s call of `values`, `held` first, an iterator a

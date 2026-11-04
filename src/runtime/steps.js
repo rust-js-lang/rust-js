@@ -41,8 +41,11 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
   }
   // Std's `fold`: `f` of each item, given what it gave. Consuming it, it
   // closes it, as Rust's `fold` drops what it takes at its end: what a held
-  // source has left, one a variable moved here held (#206).
-  fold(init, f, unwind) {
+  // source has left, one a variable moved here held (#206). Given `ends`,
+  // what drops with `f`, an adapter's function its fold moved into it
+  // (`$holding`'s), that first, as `fold(self, init, f)` drops `f` before
+  // what's left of `self` (#710).
+  fold(init, f, unwind, ends) {
     let folded = init;
     // Closed though `f` throws, a panic, as Rust's `fold` drops what it
     // took, what's left of it, as it unwinds (#422); where a step throws, a
@@ -52,10 +55,10 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     try {
       for (let step = next(); !step.done; step = next()) folded = f(folded, step.value);
     } catch (error) {
-      this.return();
+      $closedAfter(ends, () => this.return());
       throw error;
     }
-    this.return();
+    $closedAfter(ends, () => this.return());
     return folded;
   }
   // Stepped by JS's own, `Array.from(it)`, `collect()`'s, `for..of` or a
@@ -233,14 +236,23 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       },
     );
     flat.from = [this];
-    const fold = (init, g, unwind) => {
+    // Its source's by `&mut` of what drops with `g`, `ends`, which it drops
+    // after, as std's `FlattenCompat::fold` folds its source by `&mut fold`;
+    // `own`, its function, `$holding`'s, moved into its source's, as its
+    // `Map` is (#710).
+    const fold = (init, g, unwind, ends, own) => {
       let folded = init;
-      if (inner !== undefined) folded = $foldDropping(inner, folded, g, unwind);
-      inner = undefined;
-      if (ended) return folded;
-      ended = true;
-      const made = unwind === undefined ? (x) => f(x, i++) : (x, a) => $staged(f, x, i++, a, unwind);
-      return this.fold(folded, (a, x) => $foldDropping(Iterator.from(made(x, a)), a, g, unwind), unwind);
+      try {
+        if (inner !== undefined) folded = $foldDropping(inner, folded, g, unwind);
+        inner = undefined;
+        if (ended) return folded;
+        ended = true;
+        const made = unwind === undefined ? (x) => f(x, i++) : (x, a) => $staged(f, x, i++, a, unwind);
+        const passed = ends === false ? false : own;
+        return this.fold(folded, (a, x) => $foldDropping(Iterator.from(made(x, a)), a, g, unwind), unwind, passed);
+      } finally {
+        if (ends) ends();
+      }
     };
     // Its `try_fold`, std's: the rest of the one it's in, then its source's
     // of each one's, the one it stops in kept for its next step.
@@ -311,9 +323,11 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     // asked again there, or stopped there by its limit, not by what it
     // gave, which its caller still steps, its source done with, as its
     // `next` closes it (ADR 0570, #225, #242).
-    const tryFold = (init, g, broke, unwind) => {
+    // Not closed at its limit, `kept`, by its fold, which closes it after
+    // what drops with its `f` (#710).
+    const tryFoldOf = (init, g, broke, unwind, kept) => {
       if (n === 0) {
-        if (!taken.held) this.return();
+        if (!taken.held && !kept) this.return();
         return init;
       }
       let full = false;
@@ -328,15 +342,16 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
         (a) => (stopped = broke(a)) || full,
         unwind,
       );
-      if (full && !stopped && !taken.held) this.return();
+      if (full && !stopped && !taken.held && !kept) this.return();
       return folded;
     };
+    const tryFold = (init, g, broke, unwind) => tryFoldOf(init, g, broke, unwind, false);
     // Its `fold`, std's: its `try_fold`, never stopped, so a `Skip`'s
     // inside asks its source's `nth(n - 1)`, then its source dropped with it
-    // (#213).
-    const fold = (init, g, unwind) => {
-      const folded = $consumed(this, () => taken.tryFold(init, g, () => false, unwind));
-      this.return();
+    // (#213), after what drops with `g`, `ends` (#710).
+    const fold = (init, g, unwind, ends) => {
+      const folded = $consumed(this, () => tryFoldOf(init, g, () => false, unwind, true), ends);
+      $closedAfter(ends, () => this.return());
       return folded;
     };
     // Its `advance_by(m)` and `count`, std's: its source advanced, by as
@@ -376,16 +391,16 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     skipped.from = [this];
     // Its `fold`, then closed where its `nth(n - 1)` found none, as
     // `fold(self)` drops what it has left at its end (#242).
-    const fold = (init, g, unwind) => {
+    const fold = (init, g, unwind, ends) => {
       if (n > 0) {
         const k = n;
         n = 0;
         if (this.nth(k - 1).done) {
-          this.return();
+          $closedAfter(ends, () => this.return());
           return init;
         }
       }
-      return this.fold(init, g, unwind);
+      return this.fold(init, g, unwind, ends);
     };
     const tryFold = (init, g, broke, unwind) => {
       if (n > 0) {
@@ -493,11 +508,25 @@ function $kept(keep, drop, x, i, a, unwind) {
 // What an adapter's fold runs, `run`, consuming `it`: closed though it
 // throws, a panic, as Rust's `fold(self)` drops what it took as it unwinds
 // (#422, #423).
-function $consumed(it, run) {
+function $consumed(it, run, ends) {
   try {
     return run();
   } catch (error) {
-    it.return();
+    $closedAfter(ends, () => it.return());
     throw error;
+  }
+}
+
+// `close()` after `ends`, what drops with a fold's `f`, where it's given:
+// as `fold(self, init, f)` drops `f`, then what's left of `self`, at its end
+// and as it unwinds, the second though the first throws, a destructor's
+// panic (#710). `ends` `false`, of a fold std takes by `&mut`, an in-place
+// collect's `try_fold`, none.
+function $closedAfter(ends, close) {
+  if (!ends) return close();
+  try {
+    ends();
+  } finally {
+    close();
   }
 }

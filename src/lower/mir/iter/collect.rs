@@ -613,7 +613,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `extend_trusted` collects it, a zip's `SpecFold` (#380), and
             // of one stepping a lent inclusive range, which that leaves
             // exhausted at its last (#414).
-            let folded = (self.compiled_struct_at(iter_ty, span) || self.steps_lent_inclusive(iter_ty))
+            // And of one whose fold moves a function an adapter holds with
+            // a destructor, which drops before what's left, where std doesn't
+            // collect it in place, by `try_fold`, which doesn't move it (#710).
+            let folded = (self.compiled_struct_at(iter_ty, span)
+                || self.steps_lent_inclusive(iter_ty)
+                || self.folds_held_function(iter_ty) && self.collects_in_place(Some(iter_ty), item) == Some(false))
                 && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
             // Of std's struct that folds by a type parameter's `nth_back`, a
             // `take(n).rev()`'s of one, which asks another than its `next`

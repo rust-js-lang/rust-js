@@ -34,10 +34,11 @@ function $lazyTakeWhile(items, keep, drop) {
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, never stopped, so its source is
-  // folded as std folds it, then dropped with it (#214).
-  const fold = (init, f, unwind) => {
-    const folded = $consumed(taking, () => taking.tryFold(init, f, () => false, unwind));
-    taking.return();
+  // folded as std folds it, then dropped with it (#214), after what drops
+  // with `f`, `ends` (#710).
+  const fold = (init, f, unwind, ends) => {
+    const folded = $consumed(taking, () => taking.tryFold(init, f, () => false, unwind), ends);
+    $closedAfter(ends, () => taking.return());
     return folded;
   };
   $forward(taking, source, { tryFold, fold });
@@ -77,10 +78,10 @@ function $lazyMapWhile(items, f, present) {
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, then dropped with what it steps
-  // (#214).
-  const fold = (init, g, unwind) => {
-    const folded = $consumed(mapping, () => mapping.tryFold(init, g, () => false, unwind));
-    mapping.return();
+  // (#214), after what drops with `g`, `ends` (#710).
+  const fold = (init, g, unwind, ends) => {
+    const folded = $consumed(mapping, () => mapping.tryFold(init, g, () => false, unwind), ends);
+    $closedAfter(ends, () => mapping.return());
     return folded;
   };
   $forward(mapping, source, { tryFold, fold });

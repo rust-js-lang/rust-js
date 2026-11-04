@@ -1093,6 +1093,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return self.pushed_each(collection, list, copied, span, out);
         }
+        // Of a `TrustedLen` iterator whose fold moves a function an adapter
+        // holds with a destructor, by its fold, `$extend(v, it, true)`, as
+        // std's `extend_trusted` steps it, so the function drops before what
+        // it hasn't given (#710).
+        let iter_ty = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, iterable);
+        if self.folds_held_function(iter_ty)
+            && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)
+        {
+            return Ok(Expr::call_helper("$extend", vec![collection, items, Expr::bool(true)]));
+        }
         Ok(Expr::call_helper("$extend", vec![collection, items]))
     }
 

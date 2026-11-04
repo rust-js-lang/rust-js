@@ -123,6 +123,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.closes_to_drop(iter_ty)
     }
 
+    /// Whether std's fold of a `ty` may reach an adapter that holds a
+    /// function with a destructor its fold moves into the fold it asks of
+    /// what it steps (`held_function_folded`), which drops it before what's
+    /// left there (#710): through what each adapter's fold asks of what it
+    /// holds (`OwnStep::asked_of`). Where it may, what consumes it as std
+    /// does by fold is folded, never stepped by `next` or a filter's fold,
+    /// whose function would drop after what's left.
+    pub(in crate::lower) fn folds_held_function(&self, ty: Ty<'tcx>) -> bool {
+        let recognition = self.recognition();
+        let moved = recognition
+            .held_function_folded(ty)
+            .and_then(crate::lower::recognition::HeldFolded::moved)
+            .is_some();
+        (moved && (recognition.held_function(ty)).is_some_and(|f| self.drops(f) != crate::lower::drops::Drops::Nothing))
+            || (recognition.asked_sources(ty, OwnStep::Fold).into_iter())
+                .any(|(source, step)| step == OwnStep::Fold && self.folds_held_function(source))
+    }
+
     /// `it`, a JS iterator of a `ty` an adapter is given to hold, closed to
     /// drop what it hasn't given, `$closing(it, drop)`, where `closing_drop`
     /// says (ADRs 0422, 0465); else itself.

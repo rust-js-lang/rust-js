@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "fold-to-array-collected-last",
     breaks: "a collect in place of std's struct, a `map`'s, a stage panicking, drops what's left before what it collected, where std's `InPlaceDrop` drops what it collected first (#423)",
     file: "src/runtime/fold_of.js",
-    find: "      unwind,\n    );\n",
-    replace: "      undefined,\n    );\n",
+    find: "      unwind,\n      unwind === undefined ? undefined : false,\n    );\n",
+    replace: "      undefined,\n      unwind === undefined ? undefined : false,\n    );\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^panic_mid_iteration_drops with"],
   },
   {

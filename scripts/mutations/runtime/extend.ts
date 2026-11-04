@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "    throw error;\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_iteration_drops.rs$"],
   },
+  {
+    name: "extend-by-next",
+    breaks: "an `extend` of a `TrustedLen` iterator steps it by `next`, so a `map`'s function drops after what it left, where `extend_trusted` folds it (#710)",
+    file: "src/runtime/extend.js",
+    find: "  if (byFold && typeof items.fold === \"function\") {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
+  },
 ];

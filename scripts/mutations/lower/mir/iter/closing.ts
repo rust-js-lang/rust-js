@@ -334,4 +334,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nth_passes_a_slice_or_each.rs$"],
   },
+  {
+    name: "folds-held-function-never",
+    breaks: "no fold is seen to move a held function, so a `step_by` over one is a filter, whose fold drops it before what's left, and a `TrustedLen` collect steps it by `next` (#710)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        (moved && (recognition.held_function(ty)).is_some_and(|f| self.drops(f) != crate::lower::drops::Drops::Nothing))\n",
+    replace: "        (false && moved && (recognition.held_function(ty)).is_some_and(|f| self.drops(f) != crate::lower::drops::Drops::Nothing))\n",
+    tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
+  },
 ];

@@ -72,19 +72,20 @@ function $skipping(iter, n, drop) {
     unwind === undefined
       ? skipping.iter.nth(k - 1, drop)
       : $staged(() => skipping.iter.nth(k - 1, drop), undefined, undefined, init, unwind);
-  const fold = (init, f, unwind) => {
+  // What drops with `f`, `ends`, before what's left (#710).
+  const fold = (init, f, unwind, ends) => {
     if (skipping.n > 0) {
       const k = skipping.n;
       skipping.n = 0;
-      const step = $consumed(skipping, () => skipped(k, init, unwind));
+      const step = $consumed(skipping, () => skipped(k, init, unwind), ends);
       if (step.done) {
-        skipping.return();
+        $closedAfter(ends, () => skipping.return());
         return init;
       }
       drop?.(step.value);
     }
-    const folded = skipping.iter.fold(init, f, unwind);
-    skipping.return();
+    const folded = skipping.iter.fold(init, f, unwind, ends);
+    $closedAfter(ends, () => skipping.return());
     return folded;
   };
   // And its `try_fold`, the same first step, then its source's.

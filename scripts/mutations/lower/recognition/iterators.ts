@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `flat_map()`'s function with a destructor isn't seen to be held by it, and is never dropped (ADR 0991)",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::iter::FlatMap" => Some(args.type_at(2)),\n',
+    find: '            "std::iter::FlatMap" => return Some((args.type_at(2), HeldFolded::Alone)),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapter_functions_dropped.rs$"],
   },
@@ -713,8 +713,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Inspect` whose closure took what has a destructor is refused, not dropped after its source as a `Map`'s is",
     file: "src/lower/recognition/iterators.rs",
-    find: '            | "std::iter::MapWhile"\n            | "std::iter::Inspect" => Some(args.type_at(1)),\n',
-    replace: '            | "std::iter::MapWhile" => Some(args.type_at(1)),\n',
+    find: '            "std::iter::Filter" | "std::iter::FilterMap" | "std::iter::Inspect" => HeldFolded::Before,\n',
+    replace: '            "std::iter::Filter" | "std::iter::FilterMap" => HeldFolded::Before,\n',
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -752,5 +752,37 @@ export const mutations: Mutation[] = [
     replace: "            ) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
     snapshots: true,
+  },
+  {
+    name: "map-folded-before",
+    breaks: "a `map`'s function, folded inside another's, drops before what drops with the fold's `f` (#710)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            \"std::iter::Map\" => HeldFolded::After,\n",
+    replace: "            \"std::iter::Map\" => HeldFolded::Before,\n",
+    tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
+  },
+  {
+    name: "filter-folded-after",
+    breaks: "a `filter`'s function, folded, drops after the function of the `map` over it (#710)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            \"std::iter::Filter\" | \"std::iter::FilterMap\" | \"std::iter::Inspect\" => HeldFolded::Before,\n",
+    replace: "            \"std::iter::Filter\" | \"std::iter::FilterMap\" | \"std::iter::Inspect\" => HeldFolded::After,\n",
+    tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
+  },
+  {
+    name: "flat-map-folded-after",
+    breaks: "a `flat_map`'s function is folded as a `map`'s, with what drops with its `f`, after its source (#710)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            \"std::iter::FlatMap\" => return Some((args.type_at(2), HeldFolded::Alone)),\n",
+    replace: "            \"std::iter::FlatMap\" => return Some((args.type_at(2), HeldFolded::After)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
+  },
+  {
+    name: "take-while-folded",
+    breaks: "a `take_while`'s predicate is moved by its fold, so it drops before what's left, where std's `try_fold` keeps it (#710)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            \"std::iter::TakeWhile\" | \"std::iter::SkipWhile\" | \"std::iter::MapWhile\" => HeldFolded::Kept,\n",
+    replace: "            \"std::iter::TakeWhile\" | \"std::iter::SkipWhile\" | \"std::iter::MapWhile\" => HeldFolded::After,\n",
+    tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
 ];

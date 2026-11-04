@@ -26,7 +26,7 @@ test("the committed @rust-js/runtime is the compiler's helpers, each exported on
 // The helpers the compiler takes for a JS iterator as they're made, and
 // writes no `Iterator.from` around, are `$iterator`, `$intoIter` (ADR
 // 0475), `$cycleOf` (ADR 0491), `$repeating` and
-// `$repeatingN` (ADR 0513), `$rev` (ADR 0516), `$closing` (ADR 0518),
+// `$repeatingN` (ADR 0513), `$rev` (ADR 0516), `$closing` (ADR 0518), `$holding` (#710),
 // `$mapEnds` (ADR 0455), `$filterEnds` (ADR 0526), `$filterDropping` (#651),
 // `$enumerate` (ADR 0528), `$taking` and `$skipping` (ADR 0542),
 // `$memchrIter` (ADR 0529), `$stdIterator`, a
@@ -34,7 +34,7 @@ test("the committed @rust-js/runtime is the compiler's helpers, each exported on
 // holds where it's closed (ADR 0465), `$flatMap`, closed by what takes it
 // (#426), and each of the runtime's generators
 // (ADR 0472): the compiler's list, held to the runtime.
-test("the compiler's iterator helpers are $iterator, $given, $intoIter, $cycleOf, $repeating, $repeatingN, $rev, $closing, $mapEnds, $filterEnds, $filterDropping, $enumerate, $taking, $skipping, $memchrIter, $stdIterator, $successors, $lazyScan, $lazyMapWhile, $lazyTakeWhile, $lazySkipWhile, $lazyChain, $lazyZip, $trustedZip, $stepBy, $flattenEnds, $flatMap, $lazyRange and the runtime's generators", () => {
+test("the compiler's iterator helpers are $iterator, $given, $intoIter, $cycleOf, $repeating, $repeatingN, $rev, $closing, $holding, $mapEnds, $filterEnds, $filterDropping, $enumerate, $taking, $skipping, $memchrIter, $stdIterator, $successors, $lazyScan, $lazyMapWhile, $lazyTakeWhile, $lazySkipWhile, $lazyChain, $lazyZip, $trustedZip, $stepBy, $flattenEnds, $flatMap, $lazyRange and the runtime's generators", () => {
   const printed = run([compiler, "--runtime-module"]);
   const generators = [...printed.matchAll(/^export function\* (\$[\w$]+)/gm)].map((m) => m[1]);
   const source = readFileSync(join(root, "src", "lower", "iterators.rs"), "utf8");
@@ -60,6 +60,7 @@ test("the compiler's iterator helpers are $iterator, $given, $intoIter, $cycleOf
       "$repeatingN",
       "$rev",
       "$closing",
+      "$holding",
       "$mapEnds",
       "$filterEnds",
       "$filterDropping",

@@ -414,6 +414,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // filter's fold would call, where std's `StepBy` folds by
                     // its source's `next` and `nth` (#671).
                     || self.recognition().reaches_its_own(receiver_ty, OwnStep::Fold, Reach::Sure)
+                    // And of one whose fold moves a function an adapter holds
+                    // with a destructor, which a filter's fold would drop
+                    // before what's left, where std's `StepBy` steps it by
+                    // `nth`, so it drops after (#710).
+                    || self.folds_held_function(receiver_ty.peel_refs())
                     // Or of a zip of two `TrustedLen` sides, of items with a
                     // destructor: its fold, std's `SpecFold`, stops where the
                     // shorter ends, where its `next` takes an item more of its

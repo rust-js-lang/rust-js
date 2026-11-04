@@ -62,25 +62,31 @@ function $closing(it, drop, slices = true) {
   // Closed though `f` throws, a panic, as Rust's `fold` drops what's left
   // of what it took as it unwinds (#422); done with, not closed, where its
   // fold is its own, `own`, which took it and drops it as it unwinds (#423).
-  const unwound = (fold, own) => {
+  // What drops with `f`, `ends`, first, as `fold(self, init, f)` drops `f`
+  // before what's left of `self` (#710).
+  const unwound = (fold, own, ends) => {
     try {
       return fold();
     } catch (error) {
       if (own) closed = true;
-      close();
+      $closedAfter(ends, close);
       throw error;
     }
   };
   // Given `unwind`, what drops an accumulator a stage's panic strands, it
   // passes it on, so a step of the crate's own iterator that panics drops
-  // a `last`'s kept item before what's left (#423, #426).
-  const fold = (init, f, unwind) => {
+  // a `last`'s kept item before what's left (#423, #426); and `ends`, what
+  // drops with `f`, which its iterator's fold drops before what it has
+  // left, or it does before it's closed (#710).
+  const fold = (init, f, unwind, ends) => {
     const folded = unwound(
-      () => (it.fold !== undefined ? it.fold(init, f, unwind) : $foldDropping(it, init, (a, x) => f(a, x), unwind)),
+      () =>
+        it.fold !== undefined ? it.fold(init, f, unwind, ends) : $foldDropping(it, init, (a, x) => f(a, x), unwind, ends),
       it.ownFold,
+      ends,
     );
     if (it.ownFold) closed = true;
-    close();
+    $closedAfter(ends, close);
     return folded;
   };
   // Its `count`, the crate's own, likewise (#505).
@@ -107,10 +113,10 @@ function $closing(it, drop, slices = true) {
   };
   // Its `nth_back` and `rfold`, its iterator's, the crate's own where it
   // writes them, done with after its `rfold` as after its `fold` (#220).
-  const rfold = (init, f, unwind) => {
-    const folded = unwound(() => it.rfold(init, f, unwind), it.ownRfold);
+  const rfold = (init, f, unwind, ends) => {
+    const folded = unwound(() => it.rfold(init, f, unwind, ends), it.ownRfold, ends);
     if (it.ownRfold) closed = true;
-    close();
+    $closedAfter(ends, close);
     return folded;
   };
   // Its `try_fold`, its iterator's, done with where it isn't stopped.
@@ -134,6 +140,69 @@ function $closing(it, drop, slices = true) {
     tryFold,
   });
   return closing;
+}
+
+// An adapter that holds a function with a destructor, `map(f)`'s, closed to
+// drop it, `drop`, once: what it steps closed, then its function dropped,
+// as Rust drops an adapter's fields (ADRs 0485, 0991). Folded by value, its
+// function dropped where std's fold drops it, `moved`, each as std's
+// adapter writes its fold (#710): of a `map`'s, moved into the fold it asks
+// of what it steps, after what drops with the `f` it's given, `"after"`, as
+// `map_fold(f, g)` drops `g` first; of a `filter`'s, a `filter_map`'s and an
+// `inspect`'s, before it, `"before"`; of a `flat_map`'s, alone, its `f`'s
+// dropped after its fold, `"alone"`, as `FlattenCompat::fold` folds its
+// `Map` by `&mut`; else kept, a `take_while`'s, a `map_while`'s or a
+// `skip_while`'s, whose fold is its `try_fold`, dropped with it after what it
+// steps. Folded by `&mut`, `ends` `false`, an in-place collect's
+// `try_fold`, kept too.
+function $holding(it, drop, moved) {
+  let dropped = false;
+  const own = () => {
+    if (!dropped) {
+      dropped = true;
+      drop();
+    }
+  };
+  const holding = $closing(it, (it) => {
+    it.return();
+    own();
+  });
+  if (moved === undefined) return holding;
+  const once = (ends) => {
+    let done = false;
+    return () => {
+      if (!done) {
+        done = true;
+        ends?.();
+      }
+    };
+  };
+  // Its function and what drops with `f`, `ends`, in the order its fold
+  // drops them, given to what it steps to drop as its fold ends; dropped
+  // here as it's closed where that didn't, once.
+  const moving = (by) => (init, f, unwind, ends) => {
+    if (ends === false) return by(init, f, unwind, false);
+    const outer = once(ends);
+    if (moved === "alone") return by(init, f, unwind, outer, own);
+    const both = moved === "before" ? () => $closedAfter(own, outer) : () => $closedAfter(outer, own);
+    return by(init, f, unwind, once(both));
+  };
+  const fold = holding.fold;
+  holding.fold = moving((init, f, unwind, ends, alone) => {
+    if (alone === undefined || it.fold === undefined) return fold(init, f, unwind, ends);
+    // A `flat_map`'s: its fold drops `ends` after its source's, which it
+    // gives its function to drop.
+    try {
+      return it.fold(init, f, unwind, ends, alone);
+    } finally {
+      $closedAfter(ends, () => holding.return());
+    }
+  });
+  if (holding.rfold !== undefined) {
+    const rfold = holding.rfold;
+    holding.rfold = moving((init, f, unwind, ends) => rfold(init, f, unwind, ends));
+  }
+  return holding;
 }
 
 // `it`, the array's items a `Vec`'s `IntoIter` owns, advanced by `m` from

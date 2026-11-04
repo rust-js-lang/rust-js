@@ -74,3 +74,22 @@ test("whether an iterator's steps may panic is steps_may_panic's alone", () => {
   const lowering = ["src/lower.rs", ...files("src/lower")].map(read).join("\n");
   expect(lowering).not.toMatch(/fn (chain_may_throw|closes_a_source|callbacks_in)\b/);
 });
+
+// An adapter that holds a function with a destructor is `$holding(adapter,
+// drop, moved)` alone, which `closing_function` makes, so its function drops
+// where std's fold drops it (#710): `$closing(adapter, (it) => { it.return();
+// drop f })`, the form it replaced, dropped it after what a `take` left
+// wherever a fold by value moved it. No lowering writes that arrow, and no
+// JS the tests pin nor the guide holds it.
+test("an adapter that holds a function is $holding alone", () => {
+  const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
+  const making = lowering.filter((file) => read(file).includes('"$holding"'));
+  expect(making).toEqual(["src/lower/iterators.rs", "src/lower/mir/iter.rs"]);
+  expect(read("src/lower/mir/iter.rs")).toContain('Ok(Expr::call_helper("$holding", args))');
+  expect(lowering.filter((file) => read(file).includes('Expr::arrow(vec!["it".into()]'))).toEqual([]);
+  const old = /\(it\) => \{\s*it\.return\(\);/;
+  expect(old.test("$closing(take.map(f), (it) => {\n    it.return();\n    drop(g);\n  })")).toBe(true);
+  // Not the decisions, which keep what was decided before.
+  const pinned = [...files("test").filter((file) => file.endsWith(".js")), ...files("docs/guide")];
+  expect(pinned.filter((file) => old.test(read(file)))).toEqual([]);
+});

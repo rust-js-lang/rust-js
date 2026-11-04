@@ -811,6 +811,12 @@ offset)).collect()` is `v.map((n) => [(n + offset) & 255])`, and one whose
 closure indexes, divides or asserts drops what it collected as the panic
 unwinds, `$collectDropping(..)`; a closure of a generic function counts
 as one that may, as the function does (#701).
+A closure an adapter holds that holds a value with a destructor drops
+where Rust drops it: with the adapter, after what it steps,
+`$holding(take.map(f), () => { guardDrop(g); }, "after")`; folded by value, a
+`sum()`'s, a `count()`'s, an `extend`'s or a collect's, before what a
+`take` left, as std's fold moves it into its source's
+([0991](../decisions/0991-every-adapter-holding-a-function-drops-it.md), #710).
 A part whose destructor panics leaves the parts after it still dropped,
 as Rust's drop glue goes on: a struct's fields after its own `drop` and
 each other, a tuple's and a variant's, `try { boomDrop_drop(pair.first);

@@ -59,4 +59,12 @@ export const mutations: Mutation[] = [
     replace: "      } finally {\n        inner = undefined;\n      }\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_closed_part_way_drops_source_first.rs$"],
   },
+  {
+    name: "flat-map-own-unpassed",
+    breaks: "a `flat_map`'s own function isn't given to its source's fold, so it drops after the source's rest (#710)",
+    file: "src/runtime/flat_map.js",
+    find: "      const passed = ends === false ? false : own;\n",
+    replace: "      const passed = undefined;\n",
+    tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
+  },
 ];

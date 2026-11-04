@@ -714,4 +714,12 @@ export const mutations: Mutation[] = [
     replace: "                let by_fold = Expr::call_helper(\"$collectDropping\", args.clone());\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
   },
+  {
+    name: "collect-trusted-by-next",
+    breaks: "a `TrustedLen` collect into a `Vec` of one that folds a held function steps it by `next`, so the function drops after what it left (#710)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                || self.folds_held_function(iter_ty) && self.collects_in_place(Some(iter_ty), item) == Some(false))\n",
+    replace: "                || false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
+  },
 ];
