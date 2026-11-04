@@ -66,7 +66,9 @@ test("a function of its this is kept as a listener, the function itself", async 
 });
 
 // Twenty-four refused compiles, 3.1-3.9 s on CI and on the Mac under load,
-// past bun's 5 s once the Mac's load is near 11: twice that, and some.
+// past bun's 5 s once the Mac's load is near 11; 7-11 s at a load of 20,
+// and past 10 s in a nightly's mutation shard, its run inconclusive (#606):
+// a minute, as this file's other compiles have.
 test("event methods keep target types and retained callback lifetimes", () => {
   const dir = fixture("event-errors");
   const source = join(dir, "lib.rs");
@@ -115,7 +117,7 @@ pub fn wire(button: &HTMLButtonElement) { ${body} }
     expect(p.exitCode).not.toBe(0);
     expect(p.stderr.toString()).toContain(diagnostic);
   }
-}, 10_000);
+}, 60_000);
 
 test("event listeners dispatch and remove by identity in Chromium", async () => {
   const js = compileEvents();

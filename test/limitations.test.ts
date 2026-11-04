@@ -3,22 +3,16 @@
 // compiles, a limitation lifted, fails this, and says to take its line out.
 
 import { expect, test } from "bun:test";
-import { readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildCompiler, compiler, fixture, root } from "./support";
-
-/** Each `- item: \`example\`` line of the page, its item and its example. */
-function examples(): { item: string; example: string }[] {
-  const page = readFileSync(join(root, "docs/guide/limitations.md"), "utf8");
-  return [...page.matchAll(/^- (.+?): `([^`]+)`$/gm)].map((m) => ({ item: m[1], example: m[2] }));
-}
+import { buildCompiler, compiler, fixture, limitations } from "./support";
 
 test("the limitations page has examples to check", () => {
-  expect(examples().length).toBeGreaterThan(20);
+  expect(limitations().length).toBeGreaterThan(20);
 });
 
-for (const { item, example } of examples()) {
-  test(`refused, as docs/guide/limitations.md says: ${item}`, () => {
+for (const { item, example, title } of limitations()) {
+  test(title, () => {
     buildCompiler();
     const dir = fixture("limitation");
     writeFileSync(join(dir, "main.rs"), `#![allow(unused)]\nfn main() {\n${example}\n}\n`);

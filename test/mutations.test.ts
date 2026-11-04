@@ -8,7 +8,7 @@ import { join } from "node:path";
 
 import { judge, lists, mutate, mutations, site, syncTree, unmatched, unparsed } from "../scripts/mutations";
 import type { Exit } from "./child";
-import { fixture, root } from "./support";
+import { fixture, limitations, root } from "./support";
 
 test("every mutation applies to the compiler as it is, once", () => {
   expect(mutations.length).toBeGreaterThan(0);
@@ -47,15 +47,21 @@ test("a mutation's build that wouldn't lex says where", () => {
 });
 
 // The tests a mutation names are there: a `-t` of the corpus names one of
-// its cases, of the diagnostics one of theirs. Two removed tests left a
-// shard of main's check each running nothing, 2026-10-28.
-test("every mutation's corpus and diagnostics tests are there", () => {
+// its cases, of the diagnostics one of theirs, of the limitations one of
+// the guide's items. Two removed tests left a shard of main's check each
+// running nothing, 2026-10-28, and an item reworded another, 2026-11-04's
+// nightly (#606).
+test("every mutation's corpus, diagnostics and limitations tests are there", () => {
   const cases = [...new Bun.Glob("*.rs").scanSync(join(root, "test/corpus"))];
   const diagnostics = [
     ...readFileSync(join(root, "test/diagnostics.test.ts"), "utf8").matchAll(/^ {2}\[\s*(["'])(.+?)\1,|test\(\s*(["'])(.+?)\3/gm),
   ].map((m) => m[2] ?? m[4]);
-  const named = (file: string) =>
-    file === "test/corpus.test.ts" ? cases : file === "test/diagnostics.test.ts" ? diagnostics : undefined;
+  const named = (file: string): string[] | undefined =>
+    ({
+      "test/corpus.test.ts": cases,
+      "test/diagnostics.test.ts": diagnostics,
+      "test/limitations.test.ts": limitations().map((l) => l.title),
+    })[file];
   const missing = mutations.filter((m) => {
     const at = m.tests.indexOf("-t");
     const names = named(m.tests[0]);

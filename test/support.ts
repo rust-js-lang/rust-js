@@ -512,3 +512,15 @@ export function plainCheckWarnings(stderr: string): string[] {
     .filter((line) => /^(warning|error)\b/.test(line) && !/\(lib\) generated \d+ warnings?/.test(line))
     .filter((line) => !unseen.test(line));
 }
+
+/** Each `- item: \`example\`` line of docs/guide/limitations.md, its item,
+ * its example and the name of limitations.test.ts's test that compiles it,
+ * which a mutation's `-t` may name. */
+export function limitations(): { item: string; example: string; title: string }[] {
+  const page = readFileSync(join(root, "docs/guide/limitations.md"), "utf8");
+  return [...page.matchAll(/^- (.+?): `([^`]+)`$/gm)].map((m) => ({
+    item: m[1],
+    example: m[2],
+    title: `refused, as docs/guide/limitations.md says: ${m[1]}`,
+  }));
+}
