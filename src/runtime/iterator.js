@@ -105,6 +105,10 @@ function $given(value, iterator, boxed = false, back, len) {
   // value's too, which the JS iterator would unbox: generic code's of items
   // that may look like `None`, whose value may be JS's own, an array's, with
   // no `nth` to ask (#522).
+  // A `Vec`'s, whose dictionary says its `advance_by` drops what it passes
+  // as one slice, `$advanceSlice`: given those steps, `$slicing`'s, which
+  // what steps it asks of it (#703, #704).
+  if (iterator.advanceBy === $advanceSlice) $slicing(value);
   const own = (dictionary) =>
     Object.entries(dictionary).every(([name, step]) => name === "getUnchecked" || $askedStep(step, boxed) === name);
   if (own(iterator) && len === undefined && (back === undefined || own(back))) {
@@ -125,6 +129,19 @@ function $given(value, iterator, boxed = false, back, len) {
     back?.tryRfold,
     iterator.count,
   );
+  // Its own steps that drop what they pass as one slice, a `Vec`'s
+  // `$slicing` gave it, where its dictionary has none of its own: so a
+  // JS iterator made of it, given its length, passes them over as it does
+  // (#703, #704).
+  if (Object.hasOwn(value, "advanceBackBy") && value.items !== undefined) {
+    $forward(it, value, {
+      advanceBy: "advanceBy",
+      advanceBackBy: "advanceBackBy",
+      nth: iterator.nth === undefined ? "nth" : undefined,
+      nthBack: back?.nthBack === undefined ? "nthBack" : undefined,
+    });
+    it.dropItem = value.dropItem;
+  }
   // Made of the value, which `$givenClone` clones.
   it.given = true;
   return it;
@@ -144,6 +161,7 @@ function $askedStep(step, boxed = false) {
   if (step === $nth || (boxed && step === $nthSome)) return "nth";
   if (step === $last || (boxed && step === $lastSome)) return "last";
   if (step === $count) return "count";
+  if (step === $advanceSlice) return "advanceBy";
   return undefined;
 }
 

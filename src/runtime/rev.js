@@ -35,7 +35,7 @@ function $rev(it) {
     advanceBy: (m, drop) => {
       // One that drops what it passes over itself, a `Vec`'s, as one slice
       // (#250).
-      if (it.advanceBackBy !== undefined) return it.advanceBackBy(m);
+      if (it.advanceBackBy !== undefined) return it.advanceBackBy(m, drop);
       for (; m > 0; m--) {
         const step = it.back();
         if (step.done) break;

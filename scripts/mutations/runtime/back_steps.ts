@@ -278,8 +278,8 @@ export const mutations: Mutation[] = [
     name: "nth-back-own-unasked",
     breaks: "`nth_back` of what reaches the crate's own `nth_back` steps it by `next_back` (#220)",
     file: "src/runtime/back_steps.js",
-    find: "  if (it.nthBack !== undefined) {\n    const step = it.nthBack(n);\n",
-    replace: "  if (false) {\n    const step = it.nthBack(n);\n",
+    find: "  if (it.nthBack !== undefined) {\n    const step = it.nthBack(n, drop);\n",
+    replace: "  if (false) {\n    const step = it.nthBack(n, drop);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {
@@ -331,12 +331,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^rev_of_closed_items.rs$"],
   },
   {
-    name: "nth-back-slice-from-back",
-    breaks: "a `Vec`'s `nth_back(k)` drops the `k` it passes back to front, where std drops them as one slice (#234)",
+    name: "nth-back-slices-by-shape",
+    breaks:
+      "`nth_back(k)` of an array's items drops the `k` it passes as one slice whatever owns them, so generic code's of a `Drain` or a B-tree's `IntoIter` drops 5, 6, 7 where std's drops 7, 6 (#704)",
     file: "src/runtime/back_steps.js",
-    find: "    $dropItems(passed, drop);\n    if (k < n) return undefined;",
-    replace: "    $dropItems(passed.reverse(), drop);\n    if (k < n) return undefined;",
-    tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
+    find: "  for (let step = it.back(); !step.done; step = it.back()) {\n    if (n-- === 0) return found(step.value);\n",
+    replace:
+      "  if (drop !== undefined && it.items !== undefined) {\n    const k = Math.min(n, it.len());\n    $dropItems(it.items.slice(it.end - k, it.end), drop);\n    it.end -= k;\n    n -= k;\n  }\n  for (let step = it.back(); !step.done; step = it.back()) {\n    if (n-- === 0) return found(step.value);\n",
+    tests: ["test/corpus.test.ts", "-t", "^nth_passes_a_slice_or_each.rs$"],
   },
   {
     name: "step-by-own-nth-unasked",

@@ -6,22 +6,13 @@
 // past, and dropped, `drop`, where items have a destructor, or `undefined`,
 // `None`; of items that could look like `None`, its `Some`, `$some`, given
 // as `found` (ADR 0051). Its own `nth_back`, where it reaches the crate's
-// (#220).
-function $nthBack(it, n, found = (item) => item, drop, slices = true) {
+// (#220), or that drops what it passes over itself, a `Vec`'s `IntoIter`'s
+// as one slice, front to back, as std's `advance_back_by` does
+// (`$slicing`, #234); else std's default, each dropped as it's passed, a
+// `Drain`'s and a B-tree's (#704).
+function $nthBack(it, n, found = (item) => item, drop) {
   if (it.nthBack !== undefined) {
-    const step = it.nthBack(n);
-    return step.done ? undefined : found(step.value);
-  }
-  // Of an array's items it owns, a `Vec`'s `IntoIter`'s, what it passes
-  // over dropped as one slice, front to back, as std's `advance_back_by`
-  // drops them; not of one that drops each, `slices` false (#234).
-  if (slices && drop !== undefined && it.items !== undefined) {
-    const k = Math.min(n, it.len());
-    const passed = it.items.slice(it.end - k, it.end);
-    it.end -= k;
-    $dropItems(passed, drop);
-    if (k < n) return undefined;
-    const step = it.back();
+    const step = it.nthBack(n, drop);
     return step.done ? undefined : found(step.value);
   }
   for (let step = it.back(); !step.done; step = it.back()) {
@@ -32,19 +23,13 @@ function $nthBack(it, n, found = (item) => item, drop, slices = true) {
 }
 
 // `it.advance_back_by(m)`, as std's own bodies call it, given as `$nthBack`
-// is: its own, `advanceBackBy`; of an array's items it owns, what it passes
-// over dropped as one slice, front to back (#234); else each `next_back`,
-// given to `drop`. `Ok(())`, or `Err` of how many there weren't (ADR 0920).
-function $advanceBackBy(it, m, _found, drop, slices = true) {
+// is: its own, `advanceBackBy`, a `Vec`'s as one slice (`$slicing`, #234);
+// else each `next_back`, given to `drop`, a `Drain`'s (#704). `Ok(())`, or
+// `Err` of how many there weren't (ADR 0920).
+function $advanceBackBy(it, m, _found, drop) {
   let left = m;
   if (it.advanceBackBy !== undefined) {
     left = it.advanceBackBy(m, drop);
-  } else if (slices && drop !== undefined && it.items !== undefined) {
-    const k = Math.min(m, it.len());
-    const passed = it.items.slice(it.end - k, it.end);
-    it.end -= k;
-    $dropItems(passed, drop);
-    left = m - k;
   } else {
     for (; left > 0; left--) {
       const step = it.back();

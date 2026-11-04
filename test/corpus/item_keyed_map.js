@@ -2,6 +2,7 @@
 
 import {
   $KeyMap,
+  $advanceSlice,
   $dropEach,
   $dropItems,
   $eq,
@@ -112,12 +113,11 @@ function main() {
   );
   const value$1 = points.get([0, 1]);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`} ${points.size}`);
-  const louds = tCounting({ next: $next }, $dropEach(loudDrop_drop), loudDrop_drop).counts(
-    $iter([[1], [1]]),
-    loudHash,
-    { eq: $eq },
-    $KeyMap,
-  );
+  const louds = tCounting(
+    { next: $next, advanceBy: $advanceSlice },
+    $dropEach(loudDrop_drop),
+    loudDrop_drop,
+  ).counts($iter([[1], [1]]), loudHash, { eq: $eq }, $KeyMap);
   const loud = [1];
   try {
     try {

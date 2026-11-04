@@ -82,7 +82,7 @@ function tTotals(TIterator, dropT) {
       }
     },
     doubled(self) {
-      const iter = $closing($given(self, TIterator), dropT).map((x) => (x * 2) & 255);
+      const iter = $closing($given(self, TIterator), dropT, false).map((x) => (x * 2) & 255);
       try {
         return $collectDropping(iter);
       } finally {

@@ -35,7 +35,7 @@ function ownDoubleEndedIterator_nextBack(own) {
 
 function any(it, dropI) {
   const chain = $held(
-    $lazyChain($rev($closing(it, dropI)), $closing($iter([[6]]), $dropEach(dDrop_drop))),
+    $lazyChain($rev($closing(it, dropI, false)), $closing($iter([[6]]), $dropEach(dDrop_drop))),
   );
   try {
     return $lent(chain).some((d) => {

@@ -2,6 +2,7 @@
 
 import { iterator_zip, zipDoubleEndedIterator_nextBack } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $closing,
   $collectDropping,
   $cycleOf,
@@ -127,7 +128,7 @@ function main() {
     const iter = iterator_zip(
       $iter(ds()),
       { start: 0, end: 2 },
-      { next: $next },
+      { next: $next, advanceBy: $advanceSlice },
       { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeNext }) },
       false,
       false,
@@ -164,8 +165,11 @@ function main() {
           iterator_zip(
             $iter(ds()),
             [[20], [21]],
-            { next: $next },
-            { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+            { next: $next, advanceBy: $advanceSlice },
+            {
+              intoIter: (items) => $iter(items),
+              IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+            },
             false,
             false,
             true,
@@ -181,10 +185,10 @@ function main() {
           (iterator) =>
             zipDoubleEndedIterator_nextBack(
               iterator,
-              { next: $next },
+              { next: $next, advanceBy: $advanceSlice },
               { next_back: $nextBack },
               intoIterExactSizeIterator,
-              { next: $next },
+              { next: $next, advanceBy: $advanceSlice },
               { next_back: $nextBack },
               intoIterExactSizeIterator,
               false,
@@ -235,8 +239,11 @@ function main() {
           iterator_zip(
             value,
             tmp,
-            { next: $next },
-            { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+            { next: $next, advanceBy: $advanceSlice },
+            {
+              intoIter: (items) => $iter(items),
+              IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+            },
             false,
             false,
             true,
@@ -252,10 +259,10 @@ function main() {
           (iterator) =>
             zipDoubleEndedIterator_nextBack(
               iterator,
-              { next: $next },
+              { next: $next, advanceBy: $advanceSlice },
               { next_back: $nextBack },
               intoIterExactSizeIterator,
-              { next: $next },
+              { next: $next, advanceBy: $advanceSlice },
               { next_back: $nextBack },
               intoIterExactSizeIterator,
               false,

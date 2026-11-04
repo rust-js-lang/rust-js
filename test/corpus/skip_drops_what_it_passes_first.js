@@ -20,7 +20,7 @@ function dDrop_drop(d) {
 }
 
 function second(items, dropI) {
-  const skip = $held($skipping($closing(Iterator.from(items), dropI), 2, dDrop_drop));
+  const skip = $held($skipping($closing(Iterator.from(items), dropI, false), 2, dDrop_drop));
   try {
     const next = $next(skip);
     function map(d) {

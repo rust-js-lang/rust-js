@@ -64,6 +64,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         name: &str,
         span: Span,
     ) -> R<Expr> {
+        // What `nth` and `advance_by` pass over, a `Vec`'s as one slice, by
+        // `$slicing`, and a `skip`'s of one lent, which closes nothing of it,
+        // where a `Drain`'s drops each (#703).
+        let it = match method {
+            Some(IterMethod::Nth | IterMethod::AdvanceBy) => self.slicing(it, iter_ty, false, span)?,
+            Some(IterMethod::Skip) if lent => self.slicing(it, iter_ty, false, span)?,
+            _ => it,
+        };
         if method.is_some_and(IterMethod::holds_its_source) {
             return match lent {
                 true => Ok(it),
@@ -130,17 +138,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Vec`'s `IntoIter` does; of one that owns them and drops each as it's
     /// passed, a `Drain`'s or a B-tree's, `$closing(it, drop, false)` (#234).
     pub(in crate::lower) fn closed_by(&self, it: Expr, drop: Expr, ty: Ty<'tcx>) -> Expr {
+        // Not of a drop written here, an arrow, which isn't one of each item,
+        // `$dropEach`'s, by which `$closing` steps a slice.
+        let each = !matches!(drop.kind, js::ExprKind::Arrow(..));
         let mut args = vec![it, drop];
-        if self.passes_each_owned(ty) {
+        if each && self.passes_each_owned(ty) {
             args.push(Expr::bool(false));
         }
         Expr::call_helper("$closing", args)
     }
 
-    /// Whether `ty` owns an array's items and drops each it passes over
-    /// from its back as it's passed, not as one slice (#234).
-    pub(in crate::lower) fn passes_each_owned(&self, ty: Ty<'tcx>) -> bool {
-        self.array_source(ty.peel_refs()) == Some(true) && !self.recognition().drops_passed_as_slice(ty)
+    /// Whether a `ty`'s value may own an array's items it drops each of as
+    /// it's passed over from its back, not as one slice (#234): a `Drain`'s
+    /// or a B-tree's, or a type parameter's, which `$closing` doesn't take
+    /// for a `Vec`'s by what it is, but asks its value, which its caller
+    /// gave its slice's steps where it is one (`$slicing`, #704).
+    fn passes_each_owned(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        (self.array_source(ty) == Some(true) || self.is_unknown(ty)) && !self.recognition().drops_passed_as_slice(ty)
+    }
+
+    /// `it`, the JS iterator of a `ty`, given its own steps that drop what
+    /// they pass over as one slice, `$slicing(it, drop)`, where `ty` drops
+    /// them so (`drops_passed_as_slice`), its items have a destructor, and
+    /// where it's given can't tell it from a `Drain`, whose JS iterator is
+    /// an array's too, but drops each: a type parameter's value, std's
+    /// compiled adapter's, or a step's whose helper sees only the JS
+    /// iterator (#703, #704). From its front only a drop that panics tells
+    /// the two apart, as a slice's drop goes on past it; from its `back`,
+    /// the order they drop in does. Else `it` itself.
+    pub(in crate::lower) fn slicing(&mut self, it: Expr, ty: Ty<'tcx>, back: bool, span: Span) -> R<Expr> {
+        let Some(item) = self.slice_seen(ty, back).filter(|_| !is_slicing(&it)) else {
+            return Ok(it);
+        };
+        let Some(drop) = self.std_drop_function(item, span)? else {
+            return Ok(it);
+        };
+        // Of one lent, `by_ref()`'s, what it lends, whose steps it passes on.
+        let lends = crate::lower::iterators::unlent(&it);
+        if !std::ptr::eq(lends, &it) {
+            let sliced = Expr::call_helper("$slicing", vec![lends.clone(), drop]);
+            return Ok(self.lent_iterator(sliced));
+        }
+        Ok(Expr::call_helper("$slicing", vec![it, drop]))
     }
 
     /// What closes a `ty` an adapter holds, its own drop: of one that owns
@@ -441,4 +481,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         Err(self.unsupported(span, &format!("`{name}` of items with a destructor, from its MIR")))
     }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Of a `ty` that drops what it passes over as one slice
+    /// (`drops_passed_as_slice`), where that's seen, its item: of one whose
+    /// drop may panic, past which the slice's goes on; stepped from its
+    /// `back`, of one with any drop, whose order shows. What `slicing`
+    /// gives a value by, and its `Iterator` dictionary says (#703, #704).
+    pub(in crate::lower) fn slice_seen(&self, ty: Ty<'tcx>, back: bool) -> Option<Ty<'tcx>> {
+        if !self.recognition().drops_passed_as_slice(ty) {
+            return None;
+        }
+        let item = self.iterator_item(self.reveal(ty.peel_refs()))?;
+        (self.drop_may_panic(item) || back && self.drops(item) != crate::lower::drops::Drops::Nothing).then_some(item)
+    }
+}
+
+/// Whether `e` is `$slicing(it, drop)`, given its slice's steps already.
+fn is_slicing(e: &Expr) -> bool {
+    matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$slicing"))
 }

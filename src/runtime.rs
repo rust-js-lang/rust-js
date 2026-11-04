@@ -448,6 +448,8 @@ const NEVER_THROW: &[&str] = &[
     "$rangeInclusiveNextBack",
     "$print",
     "$eprint",
+    // It gives an array's iterator its own steps, and returns it (#703).
+    "$slicing",
 ];
 
 /// Whether `name` is a helper whose call throws only where its arguments

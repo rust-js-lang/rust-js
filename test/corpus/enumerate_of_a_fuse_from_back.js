@@ -9,6 +9,7 @@ import {
   iterator_fuse,
 } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $collectDropping,
   $dropEach,
   $enumerate,
@@ -49,7 +50,7 @@ function main() {
         $knowing(
           iterator_fuse(
             $iter(louds(4)),
-            { next: $next },
+            { next: $next, advanceBy: $advanceSlice },
             true,
             $dropEach(loudDrop_drop),
             loudDrop_drop,
@@ -74,7 +75,7 @@ function main() {
               iterator,
               init,
               f,
-              { next: $next },
+              { next: $next, advanceBy: $advanceSlice },
               { next_back: $nextBack },
               $dropEach(loudDrop_drop),
               unwind,
@@ -85,7 +86,7 @@ function main() {
             fuseDoubleEndedIterator_nthBack(
               iterator,
               k,
-              { next: $next },
+              { next: $next, advanceBy: $advanceSlice },
               { next_back: $nextBack },
               true,
               $dropEach(loudDrop_drop),
@@ -96,7 +97,7 @@ function main() {
               iterator,
               init,
               f,
-              { next: $next },
+              { next: $next, advanceBy: $advanceSlice },
               { next_back: $nextBack },
               $tryOf(broke),
               true,
@@ -136,7 +137,7 @@ function main() {
         $knowing(
           iterator_fuse(
             $iter(louds(3)),
-            { next: $next },
+            { next: $next, advanceBy: $advanceSlice },
             true,
             $dropEach(loudDrop_drop),
             loudDrop_drop,
@@ -161,7 +162,7 @@ function main() {
               iterator,
               init,
               f,
-              { next: $next },
+              { next: $next, advanceBy: $advanceSlice },
               { next_back: $nextBack },
               $dropEach(loudDrop_drop),
               unwind,
@@ -172,7 +173,7 @@ function main() {
             fuseDoubleEndedIterator_nthBack(
               iterator,
               k,
-              { next: $next },
+              { next: $next, advanceBy: $advanceSlice },
               { next_back: $nextBack },
               true,
               $dropEach(loudDrop_drop),
@@ -183,7 +184,7 @@ function main() {
               iterator,
               init,
               f,
-              { next: $next },
+              { next: $next, advanceBy: $advanceSlice },
               { next_back: $nextBack },
               $tryOf(broke),
               true,

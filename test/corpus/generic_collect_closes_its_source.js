@@ -30,8 +30,8 @@ function everyIterator_next(every) {
 
 function collected(src, IInPlace, dropI) {
   const v = $collectsInPlace(IInPlace, 4, 4)
-    ? $foldToArray($closing(Iterator.from(src), dropI), dDrop_drop)
-    : $collectDropping($closing(Iterator.from(src), dropI), dDrop_drop, true);
+    ? $foldToArray($closing(Iterator.from(src), dropI, false), dDrop_drop)
+    : $collectDropping($closing(Iterator.from(src), dropI, false), dDrop_drop, true);
   console.log(`collected ${v.length}`);
   for (const item of v) {
     dDrop_drop(item);
@@ -40,7 +40,7 @@ function collected(src, IInPlace, dropI) {
 }
 
 function tried(src, IInPlace, dropI) {
-  const iter = $closing(Iterator.from(src), dropI).map((value) => value);
+  const iter = $closing(Iterator.from(src), dropI, false).map((value) => value);
   let result;
   try {
     result = $collectOptions(iter, false, undefined, dDrop_drop, !$collectsInPlace(IInPlace, 4, 4));

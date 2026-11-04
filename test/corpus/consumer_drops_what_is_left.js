@@ -2,6 +2,7 @@
 
 import { iterator_peekable, iterator_take } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $closing,
   $cmp,
   $collectDropping,
@@ -219,7 +220,7 @@ function consume(n) {
       iterator_take(
         $iter(three()),
         limit(),
-        { next: $next },
+        { next: $next, advanceBy: $advanceSlice },
         $dropEach(loudDrop_drop),
         loudDrop_drop,
       ),

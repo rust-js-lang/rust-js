@@ -17,12 +17,11 @@ function $advanceBy(it, m, drop) {
 
 // A `Rev`'s `advance_by`, std's: its source's `advance_back_by`, by its
 // dictionaries, `iterator` and `back`: its own, which drops what it passes
-// itself, a `Vec`'s as one slice; else each `next_back`, given to `drop`.
+// itself, a `Vec`'s as one slice (`$slicing`); else each `next_back`, given
+// to `drop`, a `Drain`'s and a B-tree's (#704).
 function $revAdvanceBy(rev, m, drop, iterator, back) {
   const it = back === undefined ? rev.iter : $given(rev.iter, iterator, true, back);
-  if (Object.hasOwn(it, "advanceBackBy")) return it.advanceBackBy(m);
-  // An array's items it owns, a `Vec`'s, dropped as one slice.
-  if (it.items !== undefined && drop !== undefined) return $advanceSlice(it, m, drop, true);
+  if (Object.hasOwn(it, "advanceBackBy")) return it.advanceBackBy(m, drop);
   for (; m > 0; m--) {
     const step = it.back();
     if (step.done) break;

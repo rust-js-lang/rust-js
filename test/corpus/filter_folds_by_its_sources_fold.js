@@ -2,6 +2,7 @@
 
 import { iterator_zip, zipDoubleEndedIterator_nextBack } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $closing,
   $dropEach,
   $enumerate,
@@ -163,7 +164,7 @@ function main() {
         iterator_zip(
           $iter(ds),
           { start: 10, end: 15 },
-          { next: $next },
+          { next: $next, advanceBy: $advanceSlice },
           { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeNext }) },
           false,
           false,
@@ -178,7 +179,7 @@ function main() {
         (iterator) =>
           zipDoubleEndedIterator_nextBack(
             iterator,
-            { next: $next },
+            { next: $next, advanceBy: $advanceSlice },
             { next_back: $nextBack },
             { len: (iterator) => iterator.len() },
             { next: $rangeNext },

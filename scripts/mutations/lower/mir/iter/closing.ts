@@ -243,12 +243,11 @@ export const mutations: Mutation[] = [
   {
     name: "drain-passed-as-slice",
     breaks:
-      "a `Drain`'s `nth_back(k)` drops the `k` it passes as one slice, front to back, where std's drops each as it's passed (#234)",
+      "a `Drain`'s `nth_back(k)` drops the `k` it passes as one slice, front to back, where std's drops each as it's passed, generic code's `rev().nth(k)` of one too (#234, #704)",
     file: "src/lower/mir/iter/closing.rs",
-    find: "        self.array_source(ty.peel_refs()) == Some(true) && !self.recognition().drops_passed_as_slice(ty)\n",
-    replace:
-      "        false && self.array_source(ty.peel_refs()) == Some(true) && !self.recognition().drops_passed_as_slice(ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
+    find: "        (self.array_source(ty) == Some(true) || self.is_unknown(ty)) && !self.recognition().drops_passed_as_slice(ty)\n",
+    replace: "        self.array_source(ty) == Some(true) && !self.recognition().drops_passed_as_slice(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(nth_passes_a_slice_or_each|vec_skipped_from_back_drops).rs$"],
   },
   {
     name: "consumer-source-unclosed",
@@ -310,5 +309,29 @@ export const mutations: Mutation[] = [
     find: "                    self.is_user_iterator(iter_ty) || crate::lower::recognition::known_by_bounds(iter_ty)\n",
     replace: "                    self.is_user_iterator(iter_ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_closes_its_source.rs$"],
+  },
+  {
+    name: "slicing-of-each-dropper",
+    breaks: "a `Drain`'s or a B-tree's `IntoIter` is given a `Vec`'s steps, so generic code's `nth_back(k)` of it drops what it passes as one slice, 5, 6, 7, where std's drops each, 7, 6 (#704)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        if !self.recognition().drops_passed_as_slice(ty) {\n            return None;\n",
+    replace: "        if self.array_source(self.reveal(ty.peel_refs())) != Some(true) {\n            return None;\n",
+    tests: ["test/corpus.test.ts", "-t", "^nth_passes_a_slice_or_each.rs$"],
+  },
+  {
+    name: "slicing-front-unasked",
+    breaks: "a `Vec`'s `IntoIter` whose items' drop may panic isn't given its slice's steps where only its front is stepped, so its `nth` stops dropping at the panic, where std's slice drops the rest (#703)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        (self.drop_may_panic(item) || back && self.drops(item) != crate::lower::drops::Drops::Nothing).then_some(item)\n",
+    replace: "        (back && self.drops(item) != crate::lower::drops::Drops::Nothing).then_some(item)\n",
+    tests: ["test/corpus.test.ts", "-t", "^nth_passes_a_slice_or_each.rs$"],
+  },
+  {
+    name: "nth-of-a-vec-unsliced",
+    breaks: "a held `Vec`'s `IntoIter`'s own `nth(k)` drops what it passes one at a time, stopping at a panicking drop, where std's slice drops the rest (#703)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "            Some(IterMethod::Nth | IterMethod::AdvanceBy) => self.slicing(it, iter_ty, false, span)?,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^nth_passes_a_slice_or_each.rs$"],
   },
 ];

@@ -22,6 +22,7 @@ import {
   $retainMap,
   $retainMut,
   $send,
+  $slicing,
   $sortedEntries,
   $truncate,
   $unwrapOk,
@@ -306,14 +307,26 @@ function main() {
       { TAG: "Quiet", _0: [31] },
     ]);
     try {
-      const nthBack = $nthBack(it, 2, undefined, (item) => {
-        if (item.TAG === "Quiet") {
-          loudDrop_drop(item._0);
-        }
-        if (item.TAG === "Loud") {
-          boomDrop_drop(item._0);
-        }
-      });
+      const nthBack = $nthBack(
+        $slicing(it, (item) => {
+          if (item.TAG === "Quiet") {
+            loudDrop_drop(item._0);
+          }
+          if (item.TAG === "Loud") {
+            boomDrop_drop(item._0);
+          }
+        }),
+        2,
+        undefined,
+        (item) => {
+          if (item.TAG === "Quiet") {
+            loudDrop_drop(item._0);
+          }
+          if (item.TAG === "Loud") {
+            boomDrop_drop(item._0);
+          }
+        },
+      );
       function map(item) {
         let result;
         try {

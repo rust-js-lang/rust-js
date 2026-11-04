@@ -2,6 +2,7 @@
 
 import { iterator_rev, iterator_zip } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $closing,
   $count,
   $dropEach,
@@ -39,7 +40,7 @@ function main() {
     iterator_zip(
       iterator_rev(
         $iter(ds()),
-        { next: $next },
+        { next: $next, advanceBy: $advanceSlice },
         { next_back: $nextBack },
         $dropEach(dDrop_drop),
         dDrop_drop,
@@ -73,7 +74,7 @@ function main() {
     iterator_zip(
       iterator_rev(
         $iter(ds()),
-        { next: $next },
+        { next: $next, advanceBy: $advanceSlice },
         { next_back: $nextBack },
         $dropEach(dDrop_drop),
         dDrop_drop,
@@ -107,7 +108,7 @@ function main() {
       iterator_zip(
         iterator_rev(
           $iter(ds()),
-          { next: $next },
+          { next: $next, advanceBy: $advanceSlice },
           { next_back: $nextBack },
           $dropEach(dDrop_drop),
           dDrop_drop,
@@ -150,7 +151,7 @@ function main() {
         iterator_zip(
           iterator_rev(
             $iter(ds()),
-            { next: $next },
+            { next: $next, advanceBy: $advanceSlice },
             { next_back: $nextBack },
             $dropEach(dDrop_drop),
             dDrop_drop,

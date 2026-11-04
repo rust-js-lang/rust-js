@@ -7,6 +7,7 @@ import {
   peekableDoubleEndedIterator_nextBack,
 } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $dropEach,
   $exactLen,
   $foldOf,
@@ -29,7 +30,12 @@ function loudDrop_drop(loud) {
 }
 function more() {
   const it = $held(
-    iterator_peekable($iter([[1], [2]]), { next: $next }, $dropEach(loudDrop_drop), loudDrop_drop),
+    iterator_peekable(
+      $iter([[1], [2]]),
+      { next: $next, advanceBy: $advanceSlice },
+      $dropEach(loudDrop_drop),
+      loudDrop_drop,
+    ),
   );
   try {
     console.log(`len ${$exactLen($sizeHint(it))}`);
@@ -43,7 +49,7 @@ function main() {
   let it = $held(
     iterator_peekable(
       $iter([[1], [2], [3]]),
-      { next: $next },
+      { next: $next, advanceBy: $advanceSlice },
       $dropEach(loudDrop_drop),
       loudDrop_drop,
     ),
@@ -57,7 +63,7 @@ function main() {
   it = $held(
     iterator_peekable(
       $iter([[4], [5], [6]]),
-      { next: $next },
+      { next: $next, advanceBy: $advanceSlice },
       $dropEach(loudDrop_drop),
       loudDrop_drop,
     ),
@@ -99,7 +105,7 @@ function main() {
     const back = $held(
       iterator_peekable(
         $iter([[20], [21]]),
-        { next: $next },
+        { next: $next, advanceBy: $advanceSlice },
         $dropEach(loudDrop_drop),
         loudDrop_drop,
       ),

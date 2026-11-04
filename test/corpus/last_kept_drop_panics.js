@@ -2,12 +2,14 @@
 
 import { iterator_fuse } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $catchUnwind,
   $closing,
   $dropEach,
   $iter,
   $lastDropping,
   $next,
+  $slicing,
   $some,
   $someValue,
 } from "@rust-js/runtime";
@@ -62,7 +64,7 @@ function main() {
   run("fused", () => {
     const iter = iterator_fuse(
       $iter([[1], [2], [3]]),
-      { next: $next },
+      { next: $next, advanceBy: $advanceSlice },
       true,
       $dropEach(dDrop_drop),
       dDrop_drop,
@@ -80,7 +82,7 @@ function main() {
     }
     return result != null ? map(result) : undefined;
   });
-  run("generic", () => last($iter([[1], [2], [3]]), $dropEach(dDrop_drop)));
+  run("generic", () => last($slicing($iter([[1], [2], [3]]), dDrop_drop), $dropEach(dDrop_drop)));
   run("generic enumerated", () =>
     last(
       $closing($iter([[1], [2], [3]]), $dropEach(dDrop_drop))
@@ -91,6 +93,6 @@ function main() {
       },
     ),
   );
-  run("last kept", () => last($iter([[3], [1]]), $dropEach(dDrop_drop)));
+  run("last kept", () => last($slicing($iter([[3], [1]]), dDrop_drop), $dropEach(dDrop_drop)));
 }
 //# sourceMappingURL=case.js.map

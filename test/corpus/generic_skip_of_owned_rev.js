@@ -23,7 +23,7 @@ function noisyDrop_drop(noisy) {
 }
 
 function skipped(it, dropI) {
-  const iter = $skipping($closing(Iterator.from(it), dropI), 2, noisyDrop_drop).map((n) => {
+  const iter = $skipping($closing(Iterator.from(it), dropI, false), 2, noisyDrop_drop).map((n) => {
     const result = n[0];
     noisyDrop_drop(n);
     return result;
@@ -52,7 +52,7 @@ function nthOf(it, dropI) {
 
 function chainedNth(a, b, dropI) {
   const chain = $held(
-    $lazyChain($closing(Iterator.from(a), dropI), $closing(Iterator.from(b), dropI)),
+    $lazyChain($closing(Iterator.from(a), dropI, false), $closing(Iterator.from(b), dropI, false)),
   );
   try {
     const nth = $nthDropping($lent(chain), 3, noisyDrop_drop, false);

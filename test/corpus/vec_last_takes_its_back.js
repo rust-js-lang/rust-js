@@ -329,7 +329,7 @@ function main() {
   run("heap nth_back", () => {
     const value = $iter($heapFrom([[10], [20], [30], [40], [50]], (a, b) => $cmp(a[0], b[0])));
     try {
-      const nthBack = $nthBack(value, 2, undefined, dDrop_drop, false);
+      const nthBack = $nthBack(value, 2, undefined, dDrop_drop);
       function map(d) {
         const result = d[0] + 0;
         dDrop_drop(d);

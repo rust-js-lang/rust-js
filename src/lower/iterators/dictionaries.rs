@@ -308,6 +308,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             props.push(js::Prop::Field("getUnchecked".into(), reader));
         }
+        // A `Vec`'s, whose `advance_by` and `advance_back_by` drop what they
+        // pass as one slice, `$advanceSlice`, which `$given` gives the value
+        // (`$slicing`), where generic code given it as it is can't tell it
+        // from a `Drain`'s, whose JS iterator is an array's too (#703, #704).
+        if self.slice_seen(ty, true).is_some() {
+            let advance_by = crate::lower::bindings::trait_method_name(self.tcx, iterator, "advance_by");
+            props.push(js::Prop::Field(advance_by, Expr::helper("$advanceSlice")));
+        }
         Ok(Expr::object(props))
     }
 
@@ -335,12 +343,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The `Iterator` dictionary of a `&mut I`, of `I`'s, `of`: what std's
-    /// impl for it passes on to its `I`, its `next`, `size_hint` and `nth`;
+    /// impl for it passes on to its `I`, its `next`, `size_hint`, `nth` and
+    /// `advance_by`, a `Vec`'s its slice's (#703);
     /// not its `fold`, which is `I`'s `try_fold`, nor its `last`, std's of
     /// `next`, as a JS iterator lent is (`$lent`, ADR 0912).
     pub(in crate::lower) fn mut_ref_iterator_dictionary(&self, of: Expr) -> Expr {
         let iterator = std_item(self.tcx, StdItem::Iterator);
-        let passed: Vec<String> = ["next", "size_hint", "nth"]
+        let passed: Vec<String> = ["next", "size_hint", "nth", "advance_by"]
             .map(|name| crate::lower::bindings::trait_method_name(self.tcx, iterator, name))
             .into();
         entries_passed_on(of, passed)

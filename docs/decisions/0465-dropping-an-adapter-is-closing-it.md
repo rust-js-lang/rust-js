@@ -1663,3 +1663,91 @@ and std, are taken off, and the 244 batches of generic collects find no
 unlisted failure, 49 more case-builds of #650, #653 and #677 among them
 running as native Rust. Mutation `parameter-collect-unclosed`
 (`lower/mir/iter/closing.ts`).
+
+## Amendment: a `Vec`'s value is given its slice's steps where its type is lost (2026-11-04, #668, #651, #703, #704)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, the
+order items drop in and what a panic leaves, so Rust's behavior is kept.
+
+Std's `vec::IntoIter`, `array::IntoIter` and `VecDeque`'s specialize
+`advance_by` and `advance_back_by`: what they pass is dropped as one
+slice, front to back, whose drop goes on past a panicking item. A
+`Drain`'s, a B-tree's and a `BinaryHeap`'s `IntoIter` keep std's
+defaults, each dropped as it's passed, a panic stopping them (#648). Their JS is one value, an array's
+`$iter`, so the runtime told them apart by its shape: from the back,
+`$nthBack`, `$advanceBackBy` and `$revAdvanceBy` dropped a slice of any
+`$iter` (`slices` true by default), and from the front none did. Typed
+code passed `false` for a `Drain` (`passes_each_owned`), but where the
+type was lost, a type parameter's value and std's compiled adapters, the
+default answered: generic code's `nth_back(k)` and `rev().nth(k)` of a
+`Drain` or a B-tree's `IntoIter` dropped 5, 6, 7 where std drops 7, 6
+(#704), and a `Vec`'s `nth`, its own held one, a `by_ref().skip(k)`'s,
+generic code's, and std's compiled `StepBy::nth`'s and `Skip::nth`'s,
+stopped dropping at a panic, where std's slice drops the rest before the
+panic unwinds (#703, #668's build of std's structs alone, #651's two).
+
+**The value says it, given its steps by what knows its type.**
+`$slicing(it, drop)` gives a `$iter` its own `advance_by` and
+`advance_back_by`, `$advanceSlice`'s, and std's default `nth` and
+`nth_back` of them, `ownNth`, so an adapter over it asks them, as a
+`$closing` of one does. Every helper asks the value's own step, and else
+steps each: the shape default and the `slices` flags of `$nthBack` and
+`$advanceBackBy` are gone. Whether it's seen is `slice_seen`'s
+(`mir/iter/closing.rs`), of a type `recognition::drops_passed_as_slice`
+says, whose items' drop shows it: from the front only one that may panic
+(`drop_may_panic`), from the back any drop, whose order shows. Generic
+code is given an iterator two ways, and each says it its way:
+
+- **As a JS iterator** (ADR 0061), an argument for a type parameter not
+  given as it is (`given_iterators`): `$slicing(value, drop)`.
+- **As it is, with its dictionary** (ADR 0411), a struct's field, std's
+  compiled adapter's source: its `Iterator` dictionary says
+  `advanceBy: $advanceSlice` (`iterator_dictionary`), passed on through a
+  `&mut` (`mut_ref_iterator_dictionary`), and `$given` gives the value
+  `$slicing`'s steps, so std's compiled `StepBy::nth`, `Skip::nth` and
+  `Rev::advance_by` reach them by `$lent` and `$advanceByOf`, and a JS
+  iterator `$given` makes of it, given its length, forwards them.
+- **Where its type is known**, `nth`, `advance_by` and a lent `skip`'s
+  source (`dropping_source`), `nth_back` and `advance_back_by`
+  (`back_step`), whose helpers see only the JS iterator: `$slicing`.
+
+`$closing(it, drop)` keeps its own answer, typed code's, where it closes
+what it owns, as 116 of the corpus's closings do; of a type parameter's
+value it's told `false`, and asks the value, as `$given`'s `$closing`s
+of a drop written there, an arrow, need not be.
+
+`nth_passes_a_slice_or_each.rs` holds a `Vec`'s, an array's and a
+`VecDeque`'s `nth`, `skip(k).next()` and `nth_back` held past a panic,
+directly and in generic code, and a `BinaryHeap`'s, a `Drain`'s and a
+B-tree's `nth`, `nth_back` and `rev().nth()`, and a struct's generic
+methods of a `Vec`'s and a `Drain`'s, one passing it on to generic code
+that asks its length, against native Rust in both builds;
+`nth_passed_drops_unwind.rs` leaves `iterator-forms.test.ts`'s `differs`.
+The matrix took off #668's 6 of the build of std's structs, #651's 2,
+3 of #677's 8, 20 of #650's 81 plain ones and 3 of #653's 59. The readability
+baseline's `$iter` is 83.3 of 10,000 lines, from 83.0: the new corpus
+cases' arrays' iterators, and a `$slicing($iter(v), drop)` where a `Vec`'s
+of items with a destructor is given generic code.
+Mutations: `slicing-unsaid`, `nth-back-slices-by-shape`,
+`given-slicing-hidden`,
+`given-slicing-unasked` (runtime), `slicing-undictionaried`
+(`lower/iterators/dictionaries.ts`),
+`slicing-of-each-dropper`, `slicing-front-unasked`
+(`lower/mir/iter/closing.ts`), `generic-code-given-no-slicing`
+(`lower/iterators/stepping.ts`), `nth-of-a-vec-unsliced`
+(`lower/mir/iter/closing.ts`), `nth-back-of-a-vec-unsliced`
+(`lower/mir/iter/backs.ts`); `drain-passed-as-slice` asks it of generic code too;
+`nth-back-slice-from-back` is gone with the shape default it mutated.
+
+**A `step_by()` of a `flatten()` is std's `StepBy`, stepped by `nth`**
+(#668's plain build). Of items with a destructor it was a filter by
+index, whose fold folds the flatten's own, `FlattenCompat::fold`, which
+closes each inner iterator as the consumer's panic unwinds through it:
+of `[[11, 1], [12, 2], ..]`, 2 dropped before the source's rest, 3, 4, 5.
+Std's `StepBy::fold` steps it by `nth`, so what the inner iterator
+hasn't given stays in the `Flatten`, dropped after its source, as its
+fields drop. Such a `step_by()` is `$stepBy` now
+(`combinators/adapters.rs`). `step_by_of_a_flatten_unwinds.rs` holds a
+fold, a `flat_map()`'s, a reversed source's collect into a `String` and a
+set's, against native Rust in both builds; the matrix's 8 are taken off.
+Mutation: `step-by-of-a-flatten-filtered` (`lower/combinators/adapters.ts`).

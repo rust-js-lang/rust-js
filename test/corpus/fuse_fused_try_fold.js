@@ -2,6 +2,7 @@
 
 import { iterator_fuse, iterator_rev, iterator_take } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $dropEach,
   $findDropping,
   $foldOf,
@@ -43,7 +44,13 @@ function main() {
   }
   const fuse = $held(
     iterator_fuse(
-      iterator_take(value, tmp, { next: $next }, $dropEach(loudDrop_drop), loudDrop_drop),
+      iterator_take(
+        value,
+        tmp,
+        { next: $next, advanceBy: $advanceSlice },
+        $dropEach(loudDrop_drop),
+        loudDrop_drop,
+      ),
       { next: $next, fold: $foldOf },
       true,
       (take) => {
@@ -74,7 +81,13 @@ function main() {
   }
   const value$2 = $held(
     iterator_fuse(
-      iterator_take(value$1, tmp$1, { next: $next }, $dropEach(loudDrop_drop), loudDrop_drop),
+      iterator_take(
+        value$1,
+        tmp$1,
+        { next: $next, advanceBy: $advanceSlice },
+        $dropEach(loudDrop_drop),
+        loudDrop_drop,
+      ),
       { next: $next, fold: $foldOf },
       true,
       (take) => {
@@ -94,7 +107,7 @@ function main() {
   }
   const value$3 = iterator_rev(
     $iter(louds(30, 1)),
-    { next: $next },
+    { next: $next, advanceBy: $advanceSlice },
     { next_back: $nextBack },
     $dropEach(loudDrop_drop),
     loudDrop_drop,
@@ -140,7 +153,7 @@ function main() {
   console.log(`${first == null ? "None" : `Some(${first})`}`);
   const value$5 = iterator_rev(
     $iter(louds(40, 1)),
-    { next: $next },
+    { next: $next, advanceBy: $advanceSlice },
     { next_back: $nextBack },
     $dropEach(loudDrop_drop),
     loudDrop_drop,

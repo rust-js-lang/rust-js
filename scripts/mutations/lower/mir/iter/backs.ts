@@ -614,4 +614,12 @@ export const mutations: Mutation[] = [
     replace: "                    None if false\n                        && (crate::lower::recognition::counted_source(self.tcx, iter_ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_of_take_from_back_refused.rs$"],
   },
+  {
+    name: "nth-back-of-a-vec-unsliced",
+    breaks: "a `Vec`'s own `nth_back(k)` drops what it passes from its back, 7, 6, 5, where std drops it as one slice, 5, 6, 7 (#234)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            IterMethod::NthBack | IterMethod::AdvanceBackBy => self.slicing(it, iter_ty, true, span)?,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(nth_passes_a_slice_or_each|vec_skipped_from_back_drops).rs$"],
+  },
 ];

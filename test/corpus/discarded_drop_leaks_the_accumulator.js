@@ -2,6 +2,7 @@
 
 import { iterator_zip } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $closing,
   $dropEach,
   $filterDropping,
@@ -15,6 +16,7 @@ import {
   $next,
   $range,
   $rangeNext,
+  $slicing,
   $tryFoldOk,
 } from "@rust-js/runtime";
 
@@ -58,7 +60,7 @@ function tryAdd(acc, d) {
 }
 
 function sumOdd(items, dropI) {
-  const iter = $filterDropping($closing(Iterator.from(items), dropI), odd, dDrop_drop);
+  const iter = $filterDropping($closing(Iterator.from(items), dropI, false), odd, dDrop_drop);
   let result$1;
   try {
     result$1 = $foldDropping(iter, [0], add, accDrop_drop);
@@ -136,7 +138,7 @@ function main() {
         iterator_zip(
           $iter(ds()),
           { start: 0, end: 7 },
-          { next: $next },
+          { next: $next, advanceBy: $advanceSlice },
           { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeNext }) },
           false,
           false,
@@ -192,7 +194,9 @@ function main() {
     accDrop_drop(fold);
     return result;
   });
-  run("generic filter fold", 4, () => sumOdd($iter(ds()), $dropEach(dDrop_drop)));
+  run("generic filter fold", 4, () =>
+    sumOdd($slicing($iter(ds()), dDrop_drop), $dropEach(dDrop_drop)),
+  );
   run("take_while fold", 4, () => {
     const fold = $foldDropping(
       $lazyTakeWhile($closing($iter(ds()), $dropEach(dDrop_drop)), (d) => d[0] < 4, dDrop_drop),

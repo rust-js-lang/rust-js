@@ -4,6 +4,7 @@ import { iterator_map, iterator_zip } from "@rust-js/std/iter.js";
 import {
   $BTreeMap,
   $KeySet,
+  $advanceSlice,
   $btreeSet,
   $catchUnwind,
   $closing,
@@ -589,7 +590,7 @@ function main() {
           dDrop_drop(d);
         }
       },
-      { next: $next },
+      { next: $next, advanceBy: $advanceSlice },
       $dropEach(dDrop_drop),
       dDrop_drop,
       undefined,
@@ -606,7 +607,10 @@ function main() {
       value,
       tmp,
       { next: $next, fold: $foldOf },
-      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+      {
+        intoIter: (items) => $iter(items),
+        IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+      },
       false,
       false,
       true,
@@ -944,7 +948,7 @@ function main() {
           dDrop_drop(d);
         }
       },
-      { next: $next },
+      { next: $next, advanceBy: $advanceSlice },
       $dropEach(dDrop_drop),
       undefined,
       undefined,
@@ -973,7 +977,7 @@ function main() {
           dDrop_drop(d);
           return result;
         },
-        { next: $next },
+        { next: $next, advanceBy: $advanceSlice },
         $dropEach(dDrop_drop),
         undefined,
         undefined,

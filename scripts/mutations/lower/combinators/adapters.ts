@@ -461,4 +461,12 @@ export const mutations: Mutation[] = [
     replace: "                        && false\n",
     tests: ["test/corpus.test.ts", "-t", "^nth_passed_drops_unwind.rs$"],
   },
+  {
+    name: "step-by-of-a-flatten-filtered",
+    breaks: "a `step_by()` of a `flatten()` of items with a destructor is a filter by index, whose fold folds the flatten's own, so a consumer's panic drops what the inner iterator hasn't given before the source's rest, where std's `StepBy` steps it by `nth` and leaves it in the `Flatten`, dropped after (#668)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                    || crate::lower::recognition::flattened_source(self.tcx, self.reveal(receiver_ty.peel_refs()))\n",
+    replace: "                    || false && crate::lower::recognition::flattened_source(self.tcx, self.reveal(receiver_ty.peel_refs()))\n",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_of_a_flatten_unwinds.rs$"],
+  },
 ];

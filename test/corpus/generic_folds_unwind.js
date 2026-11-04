@@ -6,6 +6,7 @@ import {
   mapDoubleEndedIterator_tryRfold,
 } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $catchUnwind,
   $closing,
   $controlFlowTry,
@@ -417,7 +418,7 @@ function main() {
         }
         return d;
       },
-      { next: $next },
+      { next: $next, advanceBy: $advanceSlice },
       $dropEach(dDrop_drop),
       dDrop_drop,
       undefined,
@@ -427,7 +428,7 @@ function main() {
       held,
       [],
       push,
-      { next: $next },
+      { next: $next, advanceBy: $advanceSlice },
       { next_back: $nextBack },
       dDrop_drop,
       $dropEach(dDrop_drop),
@@ -454,7 +455,7 @@ function main() {
           }
           return d;
         },
-        { next: $next },
+        { next: $next, advanceBy: $advanceSlice },
         $dropEach(dDrop_drop),
         dDrop_drop,
         undefined,
@@ -476,7 +477,7 @@ function main() {
           }
           return { TAG: "Continue", _0: acc };
         },
-        { next: $next },
+        { next: $next, advanceBy: $advanceSlice },
         { next_back: $nextBack },
         $controlFlowTry,
         dDrop_drop,

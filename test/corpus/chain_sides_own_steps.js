@@ -7,6 +7,7 @@ import {
   iterator_take,
 } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $closing,
   $collectDropping,
   $count,
@@ -292,7 +293,7 @@ function main() {
   // A chain's `nth` past a `fuse()`'s items, which it drops (#285).
   const fuse = iterator_fuse(
     $iter(louds(50, 3)),
-    { next: $next },
+    { next: $next, advanceBy: $advanceSlice },
     true,
     $dropEach(loudDrop_drop),
     loudDrop_drop,
@@ -332,7 +333,7 @@ function main() {
   const value$19 = iterator_fuse(
     iterator_rev(
       $iter(louds(55, 3)),
-      { next: $next },
+      { next: $next, advanceBy: $advanceSlice },
       { next_back: $nextBack },
       $dropEach(loudDrop_drop),
       loudDrop_drop,
@@ -378,7 +379,7 @@ function main() {
   // `nth` is given (#285).
   const value$22 = iterator_fuse(
     $iter(louds(68, 3)),
-    { next: $next },
+    { next: $next, advanceBy: $advanceSlice },
     true,
     $dropEach(loudDrop_drop),
     loudDrop_drop,
@@ -399,7 +400,13 @@ function main() {
   }
   let tmp$15;
   try {
-    tmp$15 = iterator_fuse(tmp$14, { next: $next }, true, $dropEach(loudDrop_drop), loudDrop_drop);
+    tmp$15 = iterator_fuse(
+      tmp$14,
+      { next: $next, advanceBy: $advanceSlice },
+      true,
+      $dropEach(loudDrop_drop),
+      loudDrop_drop,
+    );
   } catch (error) {
     value$22.return();
     throw error;
@@ -430,7 +437,7 @@ function main() {
   // A `skip`'s `last` past a `fuse()`'s items, which it drops (#285).
   const value$25 = iterator_fuse(
     $iter(louds(60, 2)),
-    { next: $next },
+    { next: $next, advanceBy: $advanceSlice },
     true,
     $dropEach(loudDrop_drop),
     loudDrop_drop,
@@ -499,7 +506,7 @@ function main() {
     iterator_take(
       iterator_rev(
         $iter(louds(73, 2)),
-        { next: $next },
+        { next: $next, advanceBy: $advanceSlice },
         { next_back: $nextBack },
         $dropEach(loudDrop_drop),
         loudDrop_drop,
@@ -523,7 +530,7 @@ function main() {
     iterator_take(
       iterator_rev(
         $iter(louds(75, 2)),
-        { next: $next },
+        { next: $next, advanceBy: $advanceSlice },
         { next_back: $nextBack },
         $dropEach(loudDrop_drop),
         loudDrop_drop,

@@ -31,17 +31,21 @@ function $closing(it, drop, slices = true) {
   // that drops each as it's passed, `slices` false, a `Drain`'s (#234).
   // And from its front, its `advance_by` and `nth`, what they pass over
   // dropped as one slice too, by itself, as a `chain`'s `nth` asks it
-  // (#250); how many there weren't.
+  // (#250); how many there weren't. Of one given its own, `$slicing`'s,
+  // which generic code's caller gives it, those (#703, #704).
   // A `Vec`'s `IntoIter`, whose `last` is its own (#648).
-  const intoIter = slices && it.items !== undefined && it.nthBack === undefined && drop !== undefined;
-  const slice = intoIter && drop.each !== undefined;
-  const advanceBackBy = (m) => $advanceSlice(it, m, drop.each, true);
-  const advanceBy = (m) => $advanceSlice(it, m, drop.each);
+  const own = Object.hasOwn(it, "advanceBackBy");
+  const intoIter = own || (slices && it.items !== undefined && it.nthBack === undefined && drop !== undefined);
+  const slice = own || (intoIter && drop.each !== undefined);
+  const advanceBackBy = own ? (m) => it.advanceBackBy(m, drop?.each) : (m) => $advanceSlice(it, m, drop.each, true);
+  const advanceBy = own ? (m) => it.advanceBy(m, drop?.each) : (m) => $advanceSlice(it, m, drop.each);
+  const sliceNth = (k) => done(advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());
+  const sliceNthBack = (k) => done(advanceBackBy(k) > 0 ? { done: true, value: undefined } : it.back());
   if (slice) {
     closing.ownNthBack = true;
     closing.ownNth = true;
     // Each item's own drop, which what it gives on is dropped by (#261).
-    closing.dropItem = drop.each;
+    closing.dropItem = drop?.each ?? it.dropItem;
   }
   closing.back = () => it.back();
   // Its length, its iterator's, where it knows it: what an `enumerate`
@@ -119,18 +123,9 @@ function $closing(it, drop, slices = true) {
     advanceBackBy: slice ? advanceBackBy : undefined,
     // Its `advance_by`, its iterator's own, a compiled std struct's (#286).
     advanceBy: slice ? advanceBy : Object.hasOwn(it, "advanceBy") ? "advanceBy" : undefined,
-    nth:
-      it.nth !== undefined
-        ? (k, dropItem) => done(it.nth(k, dropItem))
-        : slice
-          ? (k) => done(advanceBy(k) > 0 ? { done: true, value: undefined } : it.next())
-          : undefined,
-    nthBack:
-      it.nthBack !== undefined
-        ? (k) => done(it.nthBack(k))
-        : slice
-          ? (k) => done(advanceBackBy(k) > 0 ? { done: true, value: undefined } : it.back())
-          : undefined,
+    // Of one given its own, by its slice's with this one's drop.
+    nth: own ? sliceNth : it.nth !== undefined ? (k, dropItem) => done(it.nth(k, dropItem)) : slice ? sliceNth : undefined,
+    nthBack: own ? sliceNthBack : it.nthBack !== undefined ? (k) => done(it.nthBack(k)) : slice ? sliceNthBack : undefined,
     fold,
     count: it.ownCount ? count : undefined,
     last: it.ownLast || intoIter ? last : undefined,
@@ -146,11 +141,38 @@ function $closing(it, drop, slices = true) {
 // front to back, by `each`, as std's `advance_by` and `advance_back_by` drop
 // them, the rest of it after one throws, a destructor's panic, as Rust's
 // drop of a slice goes on; how many there weren't (#234, #250, #286, #670).
+// Of items with nothing to drop, `each` none, none dropped.
 function $advanceSlice(it, m, each, back = false) {
   const n = Math.min(m, it.len());
   const passed = back ? it.items.slice(it.end - n, it.end) : it.items.slice(it.at, it.at + n);
   if (back) it.end -= n;
   else it.at += n;
-  $dropItems(passed, each);
+  if (each !== undefined) $dropItems(passed, each);
   return m - n;
+}
+
+// `it`, a `$iter` of the items a `Vec`'s, an array's or a `VecDeque`'s
+// `IntoIter` owns, given its own `advance_by` and `advance_back_by`,
+// std's for it: what they pass over dropped as one slice, front to back,
+// by the `drop` each is given, or the items' own, `drop`, the rest of the
+// slice after one throws; and its `nth` and `nth_back`, std's defaults of
+// them, so its own, which drop what they pass themselves (`ownNth`), as
+// an adapter over it asks. Its caller, which knows its type, gives it so
+// where it's given to what doesn't: generic code, std's compiled
+// adapters, a step whose helper sees only the JS iterator. A `Drain`'s, a
+// B-tree's and a `BinaryHeap`'s aren't: theirs are std's defaults, each
+// dropped as it's passed, a panic stopping them (#703, #704).
+function $slicing(it, drop) {
+  // Given them already, or a JS iterator of its own, one closed, whose are.
+  if (it.items === undefined || Object.hasOwn(it, "advanceBackBy")) return it;
+  $forward(it, it, {
+    advanceBy: (m, each = drop) => $advanceSlice(it, m, each),
+    advanceBackBy: (m, each = drop) => $advanceSlice(it, m, each, true),
+    nth: (k, each = drop) => (it.advanceBy(k, each) > 0 ? { done: true, value: undefined } : it.next()),
+    nthBack: (k, each = drop) => (it.advanceBackBy(k, each) > 0 ? { done: true, value: undefined } : it.back()),
+  });
+  it.ownNth = true;
+  it.ownNthBack = true;
+  it.dropItem = drop;
+  return it;
 }

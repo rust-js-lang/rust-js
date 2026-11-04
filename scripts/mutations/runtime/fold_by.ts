@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     name: "rev-advance-by-stepped",
     breaks: "a compiled `Rev`'s `advance_by` of a `Vec`'s items steps each from the back, not its `advance_back_by`'s one slice, front to back (#286)",
     file: "src/runtime/fold_by.js",
-    find: "  if (it.items !== undefined && drop !== undefined) return $advanceSlice(it, m, drop, true);\n",
+    find: "  if (Object.hasOwn(it, \"advanceBackBy\")) return it.advanceBackBy(m, drop);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },

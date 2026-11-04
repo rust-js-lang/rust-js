@@ -2,6 +2,7 @@
 
 import { iterator_peekable } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $count,
   $dropEach,
   $foldOf,
@@ -47,7 +48,11 @@ function consumed(it, dropI) {
 }
 
 function main() {
-  const iter = peeked($iter([[1], [2]]), { next: $next }, $dropEach(dDrop_drop));
+  const iter = peeked(
+    $iter([[1], [2]]),
+    { next: $next, advanceBy: $advanceSlice },
+    $dropEach(dDrop_drop),
+  );
   const result = $count(iter, dDrop_drop);
   iter.return();
   console.log(`${result}`);
@@ -56,7 +61,13 @@ function main() {
       console.log(`counter dropped at ${it.of[0]}`);
     })}`,
   );
-  const p = $held(peeked($iter([[3], [4], [5]]), { next: $next }, $dropEach(dDrop_drop)));
+  const p = $held(
+    peeked(
+      $iter([[3], [4], [5]]),
+      { next: $next, advanceBy: $advanceSlice },
+      $dropEach(dDrop_drop),
+    ),
+  );
   try {
     const d = $peek(p);
     console.log(`${d?.[0] ?? 0}`);

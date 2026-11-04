@@ -65,7 +65,7 @@ function firsts(iter, n, IIterator, IClone, dropI, dropIItem) {
 }
 
 function two(iter, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
-  const iter$1 = $closing(Iterator.from(iter), dropI).take(2);
+  const iter$1 = $closing(Iterator.from(iter), dropI, false).take(2);
   try {
     return $collectsInPlace(IInPlace, IItemSize, IItemAlign)
       ? $foldToArray(iter$1, dropIItem)

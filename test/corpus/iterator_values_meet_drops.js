@@ -6,7 +6,16 @@ import {
   iterator_take,
   revExactSizeIterator_len,
 } from "@rust-js/std/iter.js";
-import { $assign, $dropEach, $held, $iter, $next, $nextBack, $take } from "@rust-js/runtime";
+import {
+  $advanceSlice,
+  $assign,
+  $dropEach,
+  $held,
+  $iter,
+  $next,
+  $nextBack,
+  $take,
+} from "@rust-js/runtime";
 
 export function entry() {
   main();
@@ -39,7 +48,7 @@ function main() {
   const value = iterator_map(
     $iter(items),
     seen,
-    { next: $next },
+    { next: $next, advanceBy: $advanceSlice },
     $dropEach(loudDrop_drop),
     loudDrop_drop,
     undefined,
@@ -52,7 +61,7 @@ function main() {
     iterator_map(
       $iter([[4], [5]]),
       seen,
-      { next: $next },
+      { next: $next, advanceBy: $advanceSlice },
       $dropEach(loudDrop_drop),
       loudDrop_drop,
       undefined,
@@ -68,7 +77,7 @@ function main() {
           iterator_map(
             $iter([[6], [7]]),
             seen,
-            { next: $next },
+            { next: $next, advanceBy: $advanceSlice },
             $dropEach(loudDrop_drop),
             loudDrop_drop,
             undefined,
@@ -96,7 +105,7 @@ function main() {
     let back = $held(
       iterator_rev(
         $iter([[10], [11], [12]]),
-        { next: $next },
+        { next: $next, advanceBy: $advanceSlice },
         { next_back: $nextBack },
         $dropEach(loudDrop_drop),
         loudDrop_drop,
@@ -115,7 +124,7 @@ function main() {
         back,
         iterator_rev(
           $iter([[13], [14]]),
-          { next: $next },
+          { next: $next, advanceBy: $advanceSlice },
           { next_back: $nextBack },
           $dropEach(loudDrop_drop),
           loudDrop_drop,
@@ -144,7 +153,7 @@ function main() {
     back = $held(
       iterator_rev(
         $iter([[20], [21], [22]]),
-        { next: $next },
+        { next: $next, advanceBy: $advanceSlice },
         { next_back: $nextBack },
         $dropEach(loudDrop_drop),
         loudDrop_drop,
@@ -163,7 +172,7 @@ function main() {
         back,
         iterator_rev(
           $iter([[23], [24]]),
-          { next: $next },
+          { next: $next, advanceBy: $advanceSlice },
           { next_back: $nextBack },
           $dropEach(loudDrop_drop),
           loudDrop_drop,
@@ -184,7 +193,7 @@ function main() {
         iterator_map(
           $iter([[25], [26]]),
           seen,
-          { next: $next },
+          { next: $next, advanceBy: $advanceSlice },
           $dropEach(loudDrop_drop),
           loudDrop_drop,
           undefined,
@@ -205,7 +214,7 @@ function main() {
           iterator_map(
             $iter([[27], [28]]),
             seen,
-            { next: $next },
+            { next: $next, advanceBy: $advanceSlice },
             $dropEach(loudDrop_drop),
             loudDrop_drop,
             undefined,
@@ -227,7 +236,7 @@ function main() {
           iterator_take(
             $iter([[29], [30]]),
             2,
-            { next: $next },
+            { next: $next, advanceBy: $advanceSlice },
             $dropEach(loudDrop_drop),
             loudDrop_drop,
           ),
@@ -241,7 +250,7 @@ function main() {
             iterator_take(
               $iter([[31]]),
               1,
-              { next: $next },
+              { next: $next, advanceBy: $advanceSlice },
               $dropEach(loudDrop_drop),
               loudDrop_drop,
             ),

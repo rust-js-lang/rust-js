@@ -7,6 +7,7 @@ import {
   iterator_rev,
 } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $dropEach,
   $foldOf,
   $held,
@@ -51,8 +52,11 @@ function main() {
     iterator_chain(
       value,
       tmp,
-      { next: $next },
-      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+      { next: $next, advanceBy: $advanceSlice },
+      {
+        intoIter: (items) => $iter(items),
+        IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+      },
       $dropEach(loudDrop_drop),
       $dropEach(loudDrop_drop),
       loudDrop_drop,
@@ -78,7 +82,7 @@ function main() {
     iterator_peekable(
       iterator_rev(
         $iter(louds(30, 2)),
-        { next: $next },
+        { next: $next, advanceBy: $advanceSlice },
         { next_back: $nextBack },
         $dropEach(loudDrop_drop),
         loudDrop_drop,
@@ -117,7 +121,7 @@ function main() {
       iterator_fuse(
         iterator_rev(
           $iter(louds(40, 2)),
-          { next: $next },
+          { next: $next, advanceBy: $advanceSlice },
           { next_back: $nextBack },
           $dropEach(loudDrop_drop),
           loudDrop_drop,

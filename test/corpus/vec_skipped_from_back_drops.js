@@ -16,6 +16,7 @@ import {
   $range,
   $rev,
   $skipping,
+  $slicing,
   $stepBy,
 } from "@rust-js/runtime";
 
@@ -63,7 +64,7 @@ function main() {
   }
   const it = $iter(louds(8, 4));
   try {
-    const nthBack = $nthBack(it, 2, undefined, loudDrop_drop);
+    const nthBack = $nthBack($slicing(it, loudDrop_drop), 2, undefined, loudDrop_drop);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
@@ -144,7 +145,7 @@ function main() {
     try {
       const drain = $iter($drain(drained, 0));
       try {
-        const value = $nthBack(drain, 2, undefined, loudDrop_drop, false);
+        const value = $nthBack(drain, 2, undefined, loudDrop_drop);
         function map(l) {
           const result = l[0];
           loudDrop_drop(l);

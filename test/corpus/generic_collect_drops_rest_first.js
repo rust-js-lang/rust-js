@@ -20,6 +20,7 @@ import {
   $next,
   $nth,
   $roomForHint,
+  $slicing,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -117,7 +118,7 @@ function chained(src, dropI) {
   BOOM = 3;
   const v = $collectDropping(
     $lazyChain(
-      $closing(Iterator.from(src), dropI).map((x) => {
+      $closing(Iterator.from(src), dropI, false).map((x) => {
         const result = [(x[0] + 100) >>> 0];
         dDrop_drop(x);
         return result;
@@ -133,7 +134,7 @@ function chained(src, dropI) {
 
 function mapped(src, IInPlace, dropI) {
   BOOM = 3;
-  const iter = $closing(Iterator.from(src), dropI).map((x) => {
+  const iter = $closing(Iterator.from(src), dropI, false).map((x) => {
     const result = [(x[0] + 100) >>> 0];
     dDrop_drop(x);
     return result;
@@ -153,7 +154,7 @@ function mapped(src, IInPlace, dropI) {
 
 function counted(src, IInPlace, dropI) {
   BOOM = 3;
-  const iter = $closing(Iterator.from(src), dropI)
+  const iter = $closing(Iterator.from(src), dropI, false)
     .map((x) => {
       const result = [(x[0] + 100) >>> 0];
       dDrop_drop(x);
@@ -186,7 +187,7 @@ function counted(src, IInPlace, dropI) {
 function kept(src, TSize, TAlign, IInPlace, dropT, dropI) {
   CALLS = 0;
   const iter = $filterDropping(
-    $closing(Iterator.from(src), dropI),
+    $closing(Iterator.from(src), dropI, false),
     () => {
       const previous = CALLS;
       CALLS = (previous + 1) >>> 0;
@@ -215,7 +216,7 @@ function kept(src, TSize, TAlign, IInPlace, dropT, dropI) {
 
 function passed(src, JInPlace, dropJ) {
   return mapped(
-    $closing(Iterator.from(src), dropJ).map((x) => {
+    $closing(Iterator.from(src), dropJ, false).map((x) => {
       const result = [(x[0] + 10) >>> 0];
       dDrop_drop(x);
       return result;
@@ -229,7 +230,7 @@ function passed(src, JInPlace, dropJ) {
 
 function tried(src, IInPlace, dropI) {
   BOOM = 3;
-  const iter = $closing(Iterator.from(src), dropI).map((x) => {
+  const iter = $closing(Iterator.from(src), dropI, false).map((x) => {
     const value = [(x[0] + 100) >>> 0];
     dDrop_drop(x);
     return { TAG: "Ok", _0: value };
@@ -251,7 +252,11 @@ function tried(src, IInPlace, dropI) {
 
 function discarded(src, IInPlace, dropI) {
   BOOM = 3;
-  const iter = $filterDropping($closing(Iterator.from(src), dropI), (d) => d[0] !== 3, dDrop_drop);
+  const iter = $filterDropping(
+    $closing(Iterator.from(src), dropI, false),
+    (d) => d[0] !== 3,
+    dDrop_drop,
+  );
   let result;
   try {
     result = $collectsInPlace(IInPlace, 4, 4)
@@ -268,15 +273,19 @@ function discarded(src, IInPlace, dropI) {
 function main() {
   console.log("map.fuse");
   console.log(
-    `${$catchUnwind(() => fused($iter(ds()), true, $dropEach(dDrop_drop))).TAG === "Err"}`,
+    `${$catchUnwind(() => fused($slicing($iter(ds()), dDrop_drop), true, $dropEach(dDrop_drop))).TAG === "Err"}`,
   );
   console.log("map.peekable");
-  console.log(`${$catchUnwind(() => peeked($iter(ds()), $dropEach(dDrop_drop))).TAG === "Err"}`);
+  console.log(
+    `${$catchUnwind(() => peeked($slicing($iter(ds()), dDrop_drop), $dropEach(dDrop_drop))).TAG === "Err"}`,
+  );
   console.log("map.chain");
-  console.log(`${$catchUnwind(() => chained($iter(ds()), $dropEach(dDrop_drop))).TAG === "Err"}`);
+  console.log(
+    `${$catchUnwind(() => chained($slicing($iter(ds()), dDrop_drop), $dropEach(dDrop_drop))).TAG === "Err"}`,
+  );
   console.log("map of a Vec, in place");
   console.log(
-    `${$catchUnwind(() => mapped($iter(ds()), [4, 4], $dropEach(dDrop_drop))).TAG === "Err"}`,
+    `${$catchUnwind(() => mapped($slicing($iter(ds()), dDrop_drop), [4, 4], $dropEach(dDrop_drop))).TAG === "Err"}`,
   );
   console.log("map of the crate's own");
   console.log(
@@ -307,7 +316,7 @@ function main() {
   );
   console.log("enumerate of a Vec's, bigger");
   console.log(
-    `${$catchUnwind(() => counted($iter(ds()), [4, 4], $dropEach(dDrop_drop))).TAG === "Err"}`,
+    `${$catchUnwind(() => counted($slicing($iter(ds()), dDrop_drop), [4, 4], $dropEach(dDrop_drop))).TAG === "Err"}`,
   );
   const pairs = () =>
     $iter([
@@ -330,7 +339,7 @@ function main() {
   );
   console.log("a type parameter's, in place");
   console.log(
-    `${$catchUnwind(() => kept($iter(ds()), 4, 4, [4, 4], dDrop_drop, $dropEach(dDrop_drop))).TAG === "Err"}`,
+    `${$catchUnwind(() => kept($slicing($iter(ds()), dDrop_drop), 4, 4, [4, 4], dDrop_drop, $dropEach(dDrop_drop))).TAG === "Err"}`,
   );
   console.log("a type parameter's, of the crate's own");
   console.log(
@@ -344,7 +353,7 @@ function main() {
   );
   console.log("passed on, in place");
   console.log(
-    `${$catchUnwind(() => passed($iter(ds()), [4, 4], $dropEach(dDrop_drop))).TAG === "Err"}`,
+    `${$catchUnwind(() => passed($slicing($iter(ds()), dDrop_drop), [4, 4], $dropEach(dDrop_drop))).TAG === "Err"}`,
   );
   console.log("passed on, of the crate's own");
   console.log(
@@ -358,7 +367,7 @@ function main() {
   );
   console.log("into a Result, in place");
   console.log(
-    `${$catchUnwind(() => tried($iter(ds()), [4, 4], $dropEach(dDrop_drop)).TAG === "Ok").TAG === "Err"}`,
+    `${$catchUnwind(() => tried($slicing($iter(ds()), dDrop_drop), [4, 4], $dropEach(dDrop_drop)).TAG === "Ok").TAG === "Err"}`,
   );
   console.log("into a Result, of the crate's own");
   console.log(
@@ -373,7 +382,7 @@ function main() {
   );
   console.log("a discard's drop, in place");
   console.log(
-    `${$catchUnwind(() => discarded($iter(ds()), [4, 4], $dropEach(dDrop_drop))).TAG === "Err"}`,
+    `${$catchUnwind(() => discarded($slicing($iter(ds()), dDrop_drop), [4, 4], $dropEach(dDrop_drop))).TAG === "Err"}`,
   );
   console.log("a discard's drop, of the crate's own");
   console.log(

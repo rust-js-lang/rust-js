@@ -2,6 +2,7 @@
 
 import { iterator_fuse, iterator_peekable, iterator_zip } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $catchUnwind,
   $closing,
   $collectDropping,
@@ -41,18 +42,22 @@ function ds(base) {
 function main() {
   let r = $catchUnwind(() => {
     const s = $foldToArray(
-      iterator_fuse($iter(ds(0)), { next: $next }, true, $dropEach(dDrop_drop), dDrop_drop).map(
-        (d) => {
-          try {
-            if (d[0] === 2) {
-              throw new Error("map");
-            }
-            return String.fromCharCode((97 + (d[0] & 255)) & 255);
-          } finally {
-            dDrop_drop(d);
+      iterator_fuse(
+        $iter(ds(0)),
+        { next: $next, advanceBy: $advanceSlice },
+        true,
+        $dropEach(dDrop_drop),
+        dDrop_drop,
+      ).map((d) => {
+        try {
+          if (d[0] === 2) {
+            throw new Error("map");
           }
-        },
-      ),
+          return String.fromCharCode((97 + (d[0] & 255)) & 255);
+        } finally {
+          dDrop_drop(d);
+        }
+      }),
     ).join("");
     return s;
   });
@@ -60,18 +65,21 @@ function main() {
   r = $catchUnwind(() => {
     const s = $mapFrom(
       new Set(),
-      iterator_peekable($iter(ds(10)), { next: $next }, $dropEach(dDrop_drop), dDrop_drop).map(
-        (d) => {
-          try {
-            if (d[0] === 12) {
-              throw new Error("map");
-            }
-            return d[0];
-          } finally {
-            dDrop_drop(d);
+      iterator_peekable(
+        $iter(ds(10)),
+        { next: $next, advanceBy: $advanceSlice },
+        $dropEach(dDrop_drop),
+        dDrop_drop,
+      ).map((d) => {
+        try {
+          if (d[0] === 12) {
+            throw new Error("map");
           }
-        },
-      ),
+          return d[0];
+        } finally {
+          dDrop_drop(d);
+        }
+      }),
       true,
     );
     return s.size;
@@ -124,8 +132,11 @@ function main() {
       iterator_zip(
         value,
         tmp,
-        { next: $next },
-        { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+        { next: $next, advanceBy: $advanceSlice },
+        {
+          intoIter: (items) => $iter(items),
+          IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+        },
         false,
         false,
         true,
@@ -158,7 +169,13 @@ function main() {
   });
   console.log(`zip string ${r.TAG === "Err"}`);
   r = $catchUnwind(() =>
-    iterator_fuse($iter(ds(60)), { next: $next }, true, $dropEach(dDrop_drop), dDrop_drop)
+    iterator_fuse(
+      $iter(ds(60)),
+      { next: $next, advanceBy: $advanceSlice },
+      true,
+      $dropEach(dDrop_drop),
+      dDrop_drop,
+    )
       .map((d) => {
         try {
           if (d[0] === 62) {
@@ -174,33 +191,40 @@ function main() {
   console.log(`fuse count ${r.TAG === "Err"}`);
   r = $catchUnwind(() =>
     $last(
-      iterator_peekable($iter(ds(70)), { next: $next }, $dropEach(dDrop_drop), dDrop_drop).map(
-        (d) => {
-          try {
-            if (d[0] === 72) {
-              throw new Error("map");
-            }
-            return d[0];
-          } finally {
-            dDrop_drop(d);
+      iterator_peekable(
+        $iter(ds(70)),
+        { next: $next, advanceBy: $advanceSlice },
+        $dropEach(dDrop_drop),
+        dDrop_drop,
+      ).map((d) => {
+        try {
+          if (d[0] === 72) {
+            throw new Error("map");
           }
-        },
-      ),
+          return d[0];
+        } finally {
+          dDrop_drop(d);
+        }
+      }),
     ),
   );
   console.log(`peekable last ${r.TAG === "Err"}`);
   const log = [];
   r = $catchUnwind(() => {
     const s = $foldToArray(
-      iterator_fuse($iter(ds(80)), { next: $next }, true, $dropEach(dDrop_drop), dDrop_drop).map(
-        (d) => {
-          try {
-            return String.fromCharCode((97 + ((d[0] & 255) % 26)) & 255);
-          } finally {
-            dDrop_drop(d);
-          }
-        },
-      ),
+      iterator_fuse(
+        $iter(ds(80)),
+        { next: $next, advanceBy: $advanceSlice },
+        true,
+        $dropEach(dDrop_drop),
+        dDrop_drop,
+      ).map((d) => {
+        try {
+          return String.fromCharCode((97 + ((d[0] & 255) % 26)) & 255);
+        } finally {
+          dDrop_drop(d);
+        }
+      }),
     ).join("");
     log.push(s);
   });

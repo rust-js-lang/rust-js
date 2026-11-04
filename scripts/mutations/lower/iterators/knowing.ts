@@ -748,4 +748,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flatten_closed_part_way_drops_source_first.rs$"],
   },
+  {
+    name: "peekable-default-len-unhinted",
+    breaks: "a `Peekable`'s `len`, std's default of its `size_hint`, isn't given its struct, whose hint is `$peekableHint`, so a `skip()` of it stepped from its back reads a length it doesn't have and throws (#706)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        (exact && self.hinted_by_its_struct(ty)).then(|| {\n",
+    replace: "        (exact && self.compiled_step(ty, std_item(self.tcx, StdItem::Iterator), \"size_hint\")).then(|| {\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_of_a_peekable_from_back.rs$"],
+  },
 ];

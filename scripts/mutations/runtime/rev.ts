@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     name: "rev-advance-by-each",
     breaks: "a reversed `Vec`'s `advance_by`, a `chain`'s `nth`, drops what it passes one at a time from the back, not as its source's one slice (#250)",
     file: "src/runtime/rev.js",
-    find: "    if (it.advanceBackBy !== undefined) return it.advanceBackBy(m);\n",
+    find: "      if (it.advanceBackBy !== undefined) return it.advanceBackBy(m, drop);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },

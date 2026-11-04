@@ -2,6 +2,7 @@
 
 import { iterator_chain, iterator_fuse, iterator_take, iterator_zip } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $checked,
   $closing,
   $dropEach,
@@ -137,8 +138,8 @@ function equal(a, b, IItemPartialEqJItem, dropJ, dropIItem, dropIIntoIter, dropJ
   }
   try {
     return $iterEq(
-      $closing(iter, dropIIntoIter),
-      $closing(Iterator.from(b), dropJ),
+      $closing(iter, dropIIntoIter, false),
+      $closing(Iterator.from(b), dropJ, false),
       (a, b) => IItemPartialEqJItem.eq(a, b),
       dropIItem,
       dropJItem,
@@ -153,9 +154,13 @@ function louds(base, n) {
 }
 
 function main() {
-  const vecIntoIterator = {
+  const vecIntoIterator$1 = {
     intoIter: (items) => $iter(items),
     IntoIterIterator: () => ({ next: $next }),
+  };
+  const vecIntoIterator = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
   };
   const value = $iter(louds(10, 3));
   let tmp;
@@ -393,7 +398,7 @@ function main() {
   const fused = $held(
     iterator_fuse(
       $iter(louds(120, 2)),
-      { next: $next },
+      { next: $next, advanceBy: $advanceSlice },
       true,
       $dropEach(loudDrop_drop),
       loudDrop_drop,
@@ -1488,8 +1493,8 @@ function main() {
     plain = zip(
       value$4,
       value$5,
-      vecIntoIterator,
-      vecIntoIterator,
+      vecIntoIterator$1,
+      vecIntoIterator$1,
       false,
       true,
       true,

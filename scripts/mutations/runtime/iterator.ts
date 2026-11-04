@@ -230,4 +230,20 @@ export const mutations: Mutation[] = [
     replace: "  for (const [name, own] of Object.entries({ fold, nth, last, rfold, count })) {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_rev_nths_its_own_back.rs$"],
   },
+  {
+    name: "given-slicing-hidden",
+    breaks: "a `Vec`'s `IntoIter` given generic code its length asks is made a JS iterator that hides its slice's steps, so its `nth` there drops each, stopping at a panic (#703)",
+    file: "src/runtime/iterator.js",
+    find: "  if (Object.hasOwn(value, \"advanceBackBy\") && value.items !== undefined) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^nth_passes_a_slice_or_each.rs$"],
+  },
+  {
+    name: "given-slicing-unasked",
+    breaks: "`$given` doesn't give a `Vec`'s value the slice's steps its dictionary says, so a struct's generic method's `nth` of it stops dropping at a panic (#703)",
+    file: "src/runtime/iterator.js",
+    find: "  if (iterator.advanceBy === $advanceSlice) $slicing(value);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^nth_passes_a_slice_or_each.rs$"],
+  },
 ];

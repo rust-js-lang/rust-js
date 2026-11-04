@@ -97,6 +97,13 @@ const few = [
   // A reversed `Vec`'s `take(n).count()`, what it passes dropped as one
   // slice, past a panic too (#670).
   "rev_take_count_drops_a_slice.rs",
+  // What a `Vec`'s `nth` and `nth_back` pass, one slice, and a `Drain`'s
+  // and a B-tree's, each, given generic code and std's compiled `StepBy`
+  // and `Skip` (#668, #703, #704).
+  "nth_passed_drops_unwind.rs",
+  "nth_passes_a_slice_or_each.rs",
+  // A `skip()` of a `Peekable` stepped from its back, by its length (#706).
+  "skip_of_a_peekable_from_back.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);
@@ -108,8 +115,6 @@ const chosen = which === "corpus" ? caseShard(cases) : few;
 const differs: Record<string, string> = {
   "vec_last_takes_its_back.rs":
     "a compiled `Skip`'s and `Chain`'s `last` ask a bare `$iter` of a `Vec`'s items for its `last`, which folds it, as what the compiled-iterator protocol gives a `Vec`'s `IntoIter` lacks its own `last`, std's `next_back()` (#648)",
-  "nth_passed_drops_unwind.rs":
-    "std's compiled `StepBy` and `Skip` ask a `Vec`'s `nth` by `$nthDropping`, each passed dropped in turn, so a panicking drop stops it where std's `advance_by` drops the rest of its slice before the panic unwinds (#668)",
 };
 
 test("the cases a run of a few names are the corpus's, and each listed difference is one", () => {

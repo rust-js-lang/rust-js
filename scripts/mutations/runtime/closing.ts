@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "closing-nth-by-next",
     breaks: "a closing's nth is its iterator's",
     file: "src/runtime/closing.js",
-    find: "      it.nth !== undefined\n        ? (k, dropItem) => done(it.nth(k, dropItem))",
-    replace: "      false\n        ? (k, dropItem) => done(it.nth(k, dropItem))",
+    find: "    nth: own ? sliceNth : it.nth !== undefined ? (k, dropItem) => done(it.nth(k, dropItem))",
+    replace: "    nth: own ? sliceNth : false ? (k, dropItem) => done(it.nth(k, dropItem))",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
   },
   {
@@ -110,8 +110,8 @@ export const mutations: Mutation[] = [
     name: "closing-slice-from-back",
     breaks: "a `Vec`'s `IntoIter` passed over from its back drops what it passes back to front, where std drops it as one slice, front to back (#234)",
     file: "src/runtime/closing.js",
-    find: "  $dropItems(passed, each);\n",
-    replace: "  $dropItems(back ? passed.reverse() : passed, each);\n",
+    find: "  if (each !== undefined) $dropItems(passed, each);\n",
+    replace: "  if (each !== undefined) $dropItems(back ? passed.reverse() : passed, each);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
   {
@@ -158,8 +158,8 @@ export const mutations: Mutation[] = [
     name: "closing-nth-drop-unpassed",
     breaks: "what holds the crate's iterator asks its `nth` without the items' drop, so std's default `nth` of it, by a `skip`'s `fold`, drops none it passes (#494)",
     file: "src/runtime/closing.js",
-    find: "        ? (k, dropItem) => done(it.nth(k, dropItem))",
-    replace: "        ? (k) => done(it.nth(k))",
+    find: " ? (k, dropItem) => done(it.nth(k, dropItem)) :",
+    replace: " ? (k) => done(it.nth(k)) :",
     tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
   },
   {
@@ -174,8 +174,8 @@ export const mutations: Mutation[] = [
     name: "advance-slice-stops-at-a-panic",
     breaks: "a `Vec`'s slice passed over by `advance_by` or `advance_back_by` stops dropping at an item whose drop panics, and what's after it in the slice is never dropped (#670)",
     file: "src/runtime/closing.js",
-    find: "  $dropItems(passed, each);\n",
-    replace: "  for (const item of passed) each(item);\n",
+    find: "  if (each !== undefined) $dropItems(passed, each);\n",
+    replace: "  if (each !== undefined) for (const item of passed) each(item);\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_take_count_drops_a_slice.rs$"],
   },
   {
@@ -201,5 +201,13 @@ export const mutations: Mutation[] = [
     find: "  if (it.ownNthBack) closing.ownNthBack = true;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_rev_nths_its_own_back.rs$"],
+  },
+  {
+    name: "slicing-unsaid",
+    breaks: "a `Vec`'s `IntoIter` given generic code or stepped by `nth` isn't given its own `advance_by`, so a panicking drop among what it passes stops it, where std's slice drops the rest (#703)",
+    file: "src/runtime/closing.js",
+    find: "  if (it.items === undefined || Object.hasOwn(it, \"advanceBackBy\")) return it;\n",
+    replace: "  return it;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(nth_passes_a_slice_or_each|nth_passed_drops_unwind).rs$"],
   },
 ];

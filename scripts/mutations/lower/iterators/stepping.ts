@@ -362,4 +362,12 @@ export const mutations: Mutation[] = [
     replace: "                    true => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
   },
+  {
+    name: "generic-code-given-no-slicing",
+    breaks: "a `Vec`'s `IntoIter` given generic code, or std's compiled `StepBy`, isn't given its slice's steps, so its `nth` there drops each, stopping at a panic, and its `nth_back` drops each from the back (#668, #703)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "                *value = self.slicing(held, given, back, span)?;\n",
+    replace: "                *value = held;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(nth_passes_a_slice_or_each|nth_passed_drops_unwind).rs$"],
+  },
 ];

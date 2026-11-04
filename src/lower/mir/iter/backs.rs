@@ -359,6 +359,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             given.extend(unwind);
             return Ok(Some(Expr::call_helper("$foldBack", given)));
         }
+        // What `nth_back` and `advance_back_by` pass over, a `Vec`'s as one
+        // slice, front to back, given that step by `$slicing`, where a
+        // `Drain`'s drops each (#234, #704).
+        let it = match method {
+            IterMethod::NthBack | IterMethod::AdvanceBackBy => self.slicing(it, iter_ty, true, span)?,
+            _ => it,
+        };
         let mut given = vec![it];
         given.extend(values);
         if boxed || drop.is_some() {
@@ -367,15 +374,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => Expr::undefined(),
             });
         }
-        // Of one that owns an array's items and drops each it passes
-        // over, not as one slice as a `Vec`'s does, `false` (#234).
-        let each = matches!(method, IterMethod::NthBack | IterMethod::AdvanceBackBy)
-            && drop.is_some()
-            && self.passes_each_owned(iter_ty);
         given.extend(drop);
-        if each {
-            given.push(Expr::bool(false));
-        }
         let helper = match method {
             IterMethod::NthBack => "$nthBack",
             IterMethod::AdvanceBackBy => "$advanceBackBy",

@@ -27,6 +27,7 @@ import {
   $nth,
   $peek,
   $rev,
+  $slicing,
   $took,
   $tryOf,
 } from "@rust-js/runtime";
@@ -423,7 +424,9 @@ function main() {
       },
     )}`,
   );
-  console.log(`${peekedReversed($iter([[1], [2], [3]]), $dropEach(dDrop_drop))}`);
+  console.log(
+    `${peekedReversed($slicing($iter([[1], [2], [3]]), dDrop_drop), $dropEach(dDrop_drop))}`,
+  );
   const it = $held(
     iterator_peekable([0, 3], { next: stepsIterator_next }, stepsDrop_drop, dDrop_drop),
   );

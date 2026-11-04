@@ -428,6 +428,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // the slice's goes on (#668).
                     || (self.iterator_item(receiver_ty.peel_refs())).is_some_and(|item| self.drop_may_panic(item))
                         && self.recognition().nths_a_slice_in_order(receiver_ty)
+                    // And of a `flatten()`'s or a `flat_map()`'s of items with
+                    // a destructor: std's `StepBy` steps it by `nth`, so what
+                    // its inner iterator hasn't given stays in it, dropped
+                    // after its source as a panic unwinds, where a filter's
+                    // fold of its fold drops it first (#668).
+                    || crate::lower::recognition::flattened_source(self.tcx, self.reveal(receiver_ty.peel_refs()))
+                        .is_some()
+                        && (self.iterator_item(receiver_ty.peel_refs()))
+                            .is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing)
                 {
                     let mut list = vec![items, n];
                     list.extend(self.item_drop_of(receiver_ty, span)?);

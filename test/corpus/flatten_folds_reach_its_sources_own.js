@@ -142,7 +142,7 @@ function pair(d) {
 /** Generic code's flatten of what it's given, folded from its back. */
 function rfolded(it, dropI) {
   return $foldBack(
-    $flattenEnds($mapEnds($closing(it, dropI), pair), (item) =>
+    $flattenEnds($mapEnds($closing(it, dropI, false), pair), (item) =>
       $closing($iter(item), $dropEach(dDrop_drop)),
     ),
     0,

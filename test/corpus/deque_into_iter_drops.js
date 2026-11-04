@@ -2,6 +2,7 @@
 
 import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $closing,
   $cmp,
   $count,
@@ -29,7 +30,7 @@ function deque(items) {
 function main() {
   const iter = iterator_fuse(
     $iter(deque([0, 1])),
-    { next: $next },
+    { next: $next, advanceBy: $advanceSlice },
     true,
     $dropEach(loudDrop_drop),
     loudDrop_drop,
@@ -53,7 +54,7 @@ function main() {
   const peeked = $held(
     iterator_peekable(
       $iter(deque([5, 6, 7])),
-      { next: $next },
+      { next: $next, advanceBy: $advanceSlice },
       $dropEach(loudDrop_drop),
       loudDrop_drop,
     ),

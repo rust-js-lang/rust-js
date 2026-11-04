@@ -2,6 +2,7 @@
 
 import { iterator_fuse, iterator_inspect, iterator_peekable } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $catchUnwind,
   $dropEach,
   $foldDropping,
@@ -41,7 +42,7 @@ function main() {
       iterator_inspect(
         $iter(ds({ start: 50, end: 54 })),
         (d) => boom(d, 52),
-        { next: $next },
+        { next: $next, advanceBy: $advanceSlice },
         $dropEach(dDrop_drop),
         undefined,
         dDrop_drop,
@@ -86,7 +87,7 @@ function main() {
       iterator_inspect(
         $iter(ds({ start: 60, end: 64 })),
         (d) => boom(d, 62),
-        { next: $next },
+        { next: $next, advanceBy: $advanceSlice },
         $dropEach(dDrop_drop),
         undefined,
         dDrop_drop,

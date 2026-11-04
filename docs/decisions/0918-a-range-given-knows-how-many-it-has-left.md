@@ -71,3 +71,22 @@ against native Rust and the mutations `range-hint-chars-unknown` and
 `steps-left-through-surrogates` (`runtime/range_len.ts`). `docs/readability.txt`'s
 renamed share went from 649.1 to 649.9 in 10,000 lines, blessed: the
 test's own printed values, `value$n`, several a line.
+
+## Amendment: a `Peekable`'s default `len` is its struct's hint too (2026-11-04, #706)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. The JS threw where
+Rust gives an answer, so Rust's behavior is kept.
+
+A struct's default `len` was given only where std compiles its
+`size_hint`. A `Peekable`'s isn't: its body reaches memory, so its struct
+is given `$peekableHint` where it's made. Its `len` was none, and a
+`skip()` of it stepped from its back, `peekable().skip(1).rev()`
+collected, `for_each`ed or folded, read a length it didn't have:
+`skipping.iter.len is not a function`. Whether the struct has a hint is
+now one answer, `hinted_by_its_struct` (`iterators/knowing.rs`), which
+`std_iterator_steps` gives it by and `default_len` asks.
+
+`skip_of_a_peekable_from_back.rs` holds a `Vec`'s and the crate's
+iterator's, its `take(2)`'s, peeked and not, collected, `for_each`ed,
+`rfold`ed and stepped by `nth`, against native Rust in both builds.
+Mutation: `peekable-default-len-unhinted` (`lower/iterators/knowing.ts`).

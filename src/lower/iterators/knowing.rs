@@ -738,7 +738,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => Some(self.user_next(ty, iterator, "size_hint", span)?.0),
             // A peekable's, of what it steps by its dictionary where it's
             // given one, which has that impl's own `size_hint`.
-            false if self.is_peekable(ty) => {
+            false if self.hinted_by_its_struct(ty) => {
                 let source = match ty.peel_refs().kind() {
                     ty::Adt(_, args) => args.type_at(0),
                     _ => unreachable!("a `Peekable`"),
@@ -865,18 +865,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::object(props))
     }
 
+    /// Whether std's struct `ty` is given its `size_hint` where it's made
+    /// (`std_iterator_steps`): the compiled impl's, or a `Peekable`'s
+    /// rewrite, `$peekableHint`, of one whose body reaches memory. The one
+    /// answer, which its default `len` asks too (#706).
+    fn hinted_by_its_struct(&self, ty: ty::Ty<'tcx>) -> bool {
+        self.compiled_step(ty, std_item(self.tcx, StdItem::Iterator), "size_hint") || self.is_peekable(ty)
+    }
+
     /// `ExactSizeIterator::len` of std's struct `ty` whose `len` is std's
-    /// default, `Skip`'s: its exact `size_hint`, which std compiles,
-    /// `(iterator) => $exactLen($sizeHint(iterator))` (ADR 0918). `None` of
-    /// one that's no `ExactSizeIterator` here, `exact_size`, or whose hint
-    /// isn't compiled.
+    /// default, `Skip`'s or `Peekable`'s: its exact `size_hint`, its
+    /// struct's (`hinted_by_its_struct`), `(iterator) =>
+    /// $exactLen($sizeHint(iterator))` (ADR 0918). `None` of one that's no
+    /// `ExactSizeIterator` here, `exact_size`, or whose struct has no hint:
+    /// a `Peekable`'s was refused that, so a `skip()` of one stepped from
+    /// its back read a length it didn't have (#706).
     pub(in crate::lower) fn default_len(&self, ty: ty::Ty<'tcx>, exact_size: DefId) -> Option<Expr> {
         let tr = (self.tcx).erase_and_anonymize_regions(ty::TraitRef::new(self.tcx, exact_size, [ty]));
         let exact = self
             .tcx
             .codegen_select_candidate(self.typing_env.as_query_input(tr))
             .is_ok();
-        (exact && self.compiled_step(ty, std_item(self.tcx, StdItem::Iterator), "size_hint")).then(|| {
+        (exact && self.hinted_by_its_struct(ty)).then(|| {
             let hint = Expr::call_helper("$sizeHint", vec![Expr::var("iterator")]);
             Expr::arrow(
                 vec!["iterator".into()],

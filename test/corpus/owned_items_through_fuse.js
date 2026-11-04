@@ -14,6 +14,7 @@ import {
   revDoubleEndedIterator_tryRfold,
 } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $closing,
   $dropEach,
   $enumerate,
@@ -28,6 +29,7 @@ import {
   $nthDropping,
   $rev,
   $roomFor,
+  $slicing,
   $tryOf,
 } from "@rust-js/runtime";
 
@@ -44,7 +46,7 @@ function louds(n) {
 }
 function firsts(it, dropI) {
   const map = $held(
-    $closing(Iterator.from(it), dropI).map((l) => {
+    $closing(Iterator.from(it), dropI, false).map((l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
@@ -58,7 +60,7 @@ function firsts(it, dropI) {
 }
 function backs(it, dropI) {
   const map = $held(
-    $mapEnds($rev($enumerate($closing(it, dropI))), ([i, l]) => {
+    $mapEnds($rev($enumerate($closing(it, dropI, false))), ([i, l]) => {
       const result = [i, l[0]];
       loudDrop_drop(l);
       return result;
@@ -72,7 +74,13 @@ function backs(it, dropI) {
 }
 function main() {
   const f = $held(
-    iterator_fuse($iter(louds(4)), { next: $next }, true, $dropEach(loudDrop_drop), loudDrop_drop),
+    iterator_fuse(
+      $iter(louds(4)),
+      { next: $next, advanceBy: $advanceSlice },
+      true,
+      $dropEach(loudDrop_drop),
+      loudDrop_drop,
+    ),
   );
   try {
     const next = $next(f);
@@ -99,7 +107,7 @@ function main() {
       $knowing(
         iterator_fuse(
           $iter(louds(3)),
-          { next: $next },
+          { next: $next, advanceBy: $advanceSlice },
           true,
           $dropEach(loudDrop_drop),
           loudDrop_drop,
@@ -124,7 +132,7 @@ function main() {
             iterator,
             init,
             f,
-            { next: $next },
+            { next: $next, advanceBy: $advanceSlice },
             { next_back: $nextBack },
             $dropEach(loudDrop_drop),
             unwind,
@@ -135,7 +143,7 @@ function main() {
           fuseDoubleEndedIterator_nthBack(
             iterator,
             k,
-            { next: $next },
+            { next: $next, advanceBy: $advanceSlice },
             { next_back: $nextBack },
             true,
             $dropEach(loudDrop_drop),
@@ -146,7 +154,7 @@ function main() {
             iterator,
             init,
             f,
-            { next: $next },
+            { next: $next, advanceBy: $advanceSlice },
             { next_back: $nextBack },
             $tryOf(broke),
             true,
@@ -173,7 +181,7 @@ function main() {
   const value$1 = $held(
     iterator_fuse(
       $iter(louds(3)),
-      { next: $next },
+      { next: $next, advanceBy: $advanceSlice },
       true,
       $dropEach(loudDrop_drop),
       loudDrop_drop,
@@ -192,13 +200,13 @@ function main() {
   console.log(`${c == null ? "None" : `Some(${c})`}`);
   const value$2 = firsts($iter(louds(3)), $dropEach(loudDrop_drop));
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const value$3 = backs($iter($iter(louds(3))), $dropEach(loudDrop_drop));
+  const value$3 = backs($slicing($iter($iter(louds(3))), loudDrop_drop), $dropEach(loudDrop_drop));
   console.log(`${value$3 == null ? "None" : `Some((${value$3[0]}, ${value$3[1]}))`}`);
   const held = $held(
     iterator_fuse(
       iterator_rev(
         $iter(louds(5)),
-        { next: $next },
+        { next: $next, advanceBy: $advanceSlice },
         { next_back: $nextBack },
         $dropEach(loudDrop_drop),
         loudDrop_drop,
@@ -226,7 +234,7 @@ function main() {
         next_back: (iterator) =>
           revDoubleEndedIterator_nextBack(
             iterator,
-            { next: $next },
+            { next: $next, advanceBy: $advanceSlice },
             $dropEach(loudDrop_drop),
             loudDrop_drop,
           ),
@@ -235,7 +243,7 @@ function main() {
             iterator,
             init,
             f,
-            { next: $next },
+            { next: $next, advanceBy: $advanceSlice },
             $dropEach(loudDrop_drop),
             unwind,
             undefined,
@@ -245,7 +253,7 @@ function main() {
           revDoubleEndedIterator_nthBack(
             iterator,
             k,
-            { next: $next },
+            { next: $next, advanceBy: $advanceSlice },
             $dropEach(loudDrop_drop),
             loudDrop_drop,
           ),
@@ -254,7 +262,7 @@ function main() {
             iterator,
             init,
             f,
-            { next: $next },
+            { next: $next, advanceBy: $advanceSlice },
             $tryOf(broke),
             $dropEach(loudDrop_drop),
             unwind,

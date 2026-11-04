@@ -8,6 +8,7 @@ import {
   $iter,
   $lent,
   $nthBack,
+  $slicing,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -25,7 +26,7 @@ function noisy(ns) {
 function main() {
   let it = $iter(noisy([1, 2, 3]));
   try {
-    const nthBack = $nthBack(it, 1, undefined, noisyDrop_drop);
+    const nthBack = $nthBack($slicing(it, noisyDrop_drop), 1, undefined, noisyDrop_drop);
     function map(n) {
       const result = n[0];
       noisyDrop_drop(n);

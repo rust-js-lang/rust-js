@@ -262,6 +262,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let held = std::mem::replace(value, Expr::undefined());
                 *value = self.iterable_items(held, given, span, out)?;
             }
+            // A `Vec`'s, given its steps that drop what they pass as one
+            // slice, where generic code can't tell it from a `Drain`'s
+            // (`slicing`, #703, #704); one given as it is is told by its
+            // dictionary (`iterator_dictionary`).
+            if let ty::Param(param) = input.kind()
+                && !given_as_it_is(self.tcx, callee, *param)
+            {
+                let back = self.double_ended_param(callee, input);
+                let held = std::mem::replace(value, Expr::undefined());
+                *value = self.slicing(held, given, back, span)?;
+            }
         }
         Ok(())
     }

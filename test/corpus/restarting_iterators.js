@@ -2,6 +2,7 @@
 
 import { iterator_fuse, iterator_peekable, iterator_zip } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $collectDropping,
   $dropEach,
   $fromFn,
@@ -175,7 +176,10 @@ function main() {
       f(),
       louds,
       { next: flakyIterator_next },
-      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+      {
+        intoIter: (items) => $iter(items),
+        IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+      },
       false,
       false,
       false,

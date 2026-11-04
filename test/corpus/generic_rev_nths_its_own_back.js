@@ -9,6 +9,7 @@ import {
   $lastDropping,
   $rev,
   $skipping,
+  $slicing,
   $stepBy,
 } from "@rust-js/runtime";
 
@@ -48,7 +49,7 @@ function backsDoubleEndedIterator_nthBack(backs, n) {
 }
 
 function skipped(it, dropI) {
-  const iter = $skipping($rev($closing(it, dropI)), 2, dDrop_drop).map((d) => {
+  const iter = $skipping($rev($closing(it, dropI, false)), 2, dDrop_drop).map((d) => {
     const result = d[0];
     dDrop_drop(d);
     return result;
@@ -61,7 +62,7 @@ function skipped(it, dropI) {
 }
 
 function skippedLast(it, dropI) {
-  const iter = $skipping($rev($closing(it, dropI)), 1, dDrop_drop);
+  const iter = $skipping($rev($closing(it, dropI, false)), 1, dDrop_drop);
   let result;
   try {
     result = $lastDropping(iter, dDrop_drop);
@@ -77,7 +78,7 @@ function skippedLast(it, dropI) {
 }
 
 function stepped(it, dropI) {
-  const iter = $stepBy($rev($closing(it, dropI)), 2, dDrop_drop).map((d) => {
+  const iter = $stepBy($rev($closing(it, dropI, false)), 2, dDrop_drop).map((d) => {
     const result = d[0];
     dDrop_drop(d);
     return result;
@@ -90,7 +91,7 @@ function stepped(it, dropI) {
 }
 
 function steppedCount(it, dropI) {
-  const iter = $stepBy($rev($closing(it, dropI)), 2, dDrop_drop);
+  const iter = $stepBy($rev($closing(it, dropI, false)), 2, dDrop_drop);
   try {
     return iter.reduce((n, item) => {
       dDrop_drop(item);
@@ -184,8 +185,12 @@ function main() {
 
   // A `Vec`'s, which writes none of its own.
   const ds = () => [[1], [2], [3], [4], [5]];
-  console.log(`skipped [${skipped($iter(ds()), $dropEach(dDrop_drop)).join(", ")}]`);
-  console.log(`stepped [${stepped($iter(ds()), $dropEach(dDrop_drop)).join(", ")}]`);
+  console.log(
+    `skipped [${skipped($slicing($iter(ds()), dDrop_drop), $dropEach(dDrop_drop)).join(", ")}]`,
+  );
+  console.log(
+    `stepped [${stepped($slicing($iter(ds()), dDrop_drop), $dropEach(dDrop_drop)).join(", ")}]`,
+  );
 
   // Not generic: the crate's own, as before.
   const direct = $collectDropping(

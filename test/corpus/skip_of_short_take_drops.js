@@ -2,6 +2,7 @@
 
 import { iterator_fuse, iterator_rev } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $count,
   $dropEach,
   $enumerate,
@@ -31,7 +32,13 @@ function ds() {
 function main() {
   const skip = $held(
     $skipping(
-      iterator_fuse($iter(ds()), { next: $next }, true, $dropEach(dDrop_drop), dDrop_drop).take(2),
+      iterator_fuse(
+        $iter(ds()),
+        { next: $next, advanceBy: $advanceSlice },
+        true,
+        $dropEach(dDrop_drop),
+        dDrop_drop,
+      ).take(2),
       1,
       dDrop_drop,
     ),
@@ -49,11 +56,30 @@ function main() {
     skip.return();
   }
   console.log(
-    `count ${$count($skipping(iterator_fuse($iter(ds()), { next: $next }, true, $dropEach(dDrop_drop), dDrop_drop).take(1), 3, dDrop_drop), dDrop_drop)}`,
+    `count ${$count(
+      $skipping(
+        iterator_fuse(
+          $iter(ds()),
+          { next: $next, advanceBy: $advanceSlice },
+          true,
+          $dropEach(dDrop_drop),
+          dDrop_drop,
+        ).take(1),
+        3,
+        dDrop_drop,
+      ),
+      dDrop_drop,
+    )}`,
   );
   console.log(
     `fold ${$skipping(
-      iterator_fuse($iter(ds()), { next: $next }, true, $dropEach(dDrop_drop), dDrop_drop).take(1),
+      iterator_fuse(
+        $iter(ds()),
+        { next: $next, advanceBy: $advanceSlice },
+        true,
+        $dropEach(dDrop_drop),
+        dDrop_drop,
+      ).take(1),
       3,
       dDrop_drop,
     ).reduce((a, d) => {
@@ -64,7 +90,13 @@ function main() {
   );
   const d = $lastDropping(
     $skipping(
-      iterator_fuse($iter(ds()), { next: $next }, true, $dropEach(dDrop_drop), dDrop_drop).take(1),
+      iterator_fuse(
+        $iter(ds()),
+        { next: $next, advanceBy: $advanceSlice },
+        true,
+        $dropEach(dDrop_drop),
+        dDrop_drop,
+      ).take(1),
       3,
       dDrop_drop,
     ),
@@ -79,7 +111,13 @@ function main() {
   console.log(`last ${value == null ? "None" : `Some(${value})`}`);
   const value$1 = $held(
     $skipping(
-      iterator_fuse($iter(ds()), { next: $next }, true, $dropEach(dDrop_drop), dDrop_drop).take(1),
+      iterator_fuse(
+        $iter(ds()),
+        { next: $next, advanceBy: $advanceSlice },
+        true,
+        $dropEach(dDrop_drop),
+        dDrop_drop,
+      ).take(1),
       3,
       dDrop_drop,
     ),
@@ -100,7 +138,7 @@ function main() {
       iterator_fuse(
         iterator_rev(
           $iter(ds()),
-          { next: $next },
+          { next: $next, advanceBy: $advanceSlice },
           { next_back: $nextBack },
           $dropEach(dDrop_drop),
           dDrop_drop,
@@ -135,7 +173,13 @@ function main() {
   }
   const value$2 = $held(
     $skipping(
-      iterator_fuse($iter(ds()), { next: $next }, true, $dropEach(dDrop_drop), dDrop_drop).take(3),
+      iterator_fuse(
+        $iter(ds()),
+        { next: $next, advanceBy: $advanceSlice },
+        true,
+        $dropEach(dDrop_drop),
+        dDrop_drop,
+      ).take(3),
       1,
       dDrop_drop,
     ),

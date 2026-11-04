@@ -51,7 +51,7 @@ function heldIterator_nth(held, n) {
 }
 
 function anyAbove(it, n, dropI) {
-  const map = $held($closing(Iterator.from(it), dropI).map((x) => (x + 1) | 0));
+  const map = $held($closing(Iterator.from(it), dropI, false).map((x) => (x + 1) | 0));
   try {
     return $lent(map).some((x) => x > n);
   } finally {

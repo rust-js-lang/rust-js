@@ -93,15 +93,11 @@ function main() {
   const value$4 = $iter(Array.from(byNumber()));
   const value$5 = limit();
   const entries = $collectDropping(
-    $closing(
-      value$4,
-      (intoIter) => {
-        $dropItems(intoIter, (item) => {
-          loudDrop_drop(item[1]);
-        });
-      },
-      false,
-    )
+    $closing(value$4, (intoIter) => {
+      $dropItems(intoIter, (item) => {
+        loudDrop_drop(item[1]);
+      });
+    })
       .take(value$5)
       .map(([, l]) => mapped(l)),
   );

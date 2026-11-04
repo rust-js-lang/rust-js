@@ -329,4 +329,12 @@ export const mutations: Mutation[] = [
     replace: '                    .then(|| Expr::helper("$foldBack"))\n                    .filter(|_| false),\n',
     tests: ["test/corpus.test.ts", "-t", "^own_steps_a_type_parameter_may_reach.rs$"],
   },
+  {
+    name: "slicing-undictionaried",
+    breaks: "a `Vec`'s `Iterator` dictionary doesn't say its `advance_by` drops a slice, so generic code given it as it is, a struct's field, drops what its `nth_back` passes from the back, 7, 6, 5, where std's slice drops 5, 6, 7 (#704)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "        if self.slice_seen(ty, true).is_some() {\n",
+    replace: "        if false && self.slice_seen(ty, true).is_some() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^nth_passes_a_slice_or_each.rs$"],
+  },
 ];
