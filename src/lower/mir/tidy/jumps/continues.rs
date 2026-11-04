@@ -249,24 +249,25 @@ pub(in crate::lower::mir::tidy) fn continues_written(
 /// one with none is the `if` of the rest, `if (k !== 3) { .. }`, as before.
 /// MIR tests such an arm where the `match` is, `if (k === 3) { continue; }`
 /// at `match k`, as it does `Some(n) => *n, // c\n None => continue,`'s `if
-/// (x == null) { continue; }`: where it's the `match`'s only arm that
-/// continues and the `if` does nothing else, that arm's, `if (x == null) {
-/// // c\n continue; } log.push(x);`. (A `match` of more is MIR's block of
-/// a `continue` their `break`s go to, `continues_written`'s.)
+/// (x == null) { continue; }`: where the `if` does nothing else, that
+/// arm's, `if (x == null) { // c\n continue; } log.push(x);`. A `match` of
+/// more arms that continue is MIR's block of a `continue` their `break`s go
+/// to, `continues_written`'s, so the `match`'s arm is its only one (no
+/// output of the corpus, nor of probes of two such arms, differs when it's
+/// asked, #666).
 pub(in crate::lower::mir::tidy) fn arm_continues_placed(
     stmts: &mut [Stmt],
     arms: &[(js::Span, js::Span, js::Span)],
     commented: &[js::Span],
 ) {
-    // Of a `match` that continues by one arm alone, the others going on,
-    // that arm's `continue`: one the program placed, of a block, or with
+    // Of a `match` that continues by an arm, the others going on, that
+    // arm's `continue`: one the program placed, of a block, or with
     // comments above it.
     let alone = |matched: js::Span| {
-        let mut of = arms.iter().filter(|&&(m, ..)| m == matched);
-        match (of.next(), of.next()) {
-            (Some(&(_, arm, written)), None) if written.hi < arm.hi || commented.contains(&written) => Some(written),
-            _ => None,
-        }
+        (arms.iter())
+            .find(|&&(m, ..)| m == matched)
+            .filter(|&&(_, arm, written)| written.hi < arm.hi || commented.contains(&written))
+            .map(|&(.., written)| written)
     };
     for stmt in stmts.iter_mut() {
         let span = stmt.span;

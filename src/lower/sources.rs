@@ -164,7 +164,9 @@ pub(super) fn tail_if_comments(
 /// above the `if`. And of one that's only a `continue`, `// Skipped.\n 1
 /// => continue,`, where that `continue` is, which tidy keeps where it's
 /// written, those comments before it, as of an arm whose block holds them
-/// (#610, the user's decision).
+/// (#610, the user's decision); and of a block that's only a `continue`,
+/// `_ => { // c\n continue; }`, its comments above the arm or in the block
+/// before it, as a bare one's (#666).
 pub(super) fn commented_arms(
     tcx: TyCtxt<'_>,
     sources: &CapturedSources,
@@ -220,13 +222,45 @@ pub(super) fn commented_arms(
                         Some(comments)
                     };
                     let (at, arm_at) = (self.sources.span(arm.body.span), self.sources.span(arm.span));
-                    if only(&between, true).is_none_or(|c| c == 0) || at.is_none() || arm_at.is_none() {
+                    let Some(above) = only(&between, true) else {
+                        continue;
+                    };
+                    if at.is_none() || arm_at.is_none() {
                         continue;
                     }
+                    // A block's `continue` alone, `{ // c\n continue; }`:
+                    // where it is, of comments above the arm or before it
+                    // in its block, nothing else before it there (#666).
+                    let alone = |block: &rustc_hir::Block<'_>| {
+                        let jump = match (block.stmts, block.expr) {
+                            ([], Some(e)) => e,
+                            (
+                                [
+                                    rustc_hir::Stmt {
+                                        kind: rustc_hir::StmtKind::Semi(e),
+                                        ..
+                                    },
+                                ],
+                                None,
+                            ) => e,
+                            _ => return None,
+                        };
+                        if !matches!(jump.kind, rustc_hir::ExprKind::Continue(_)) || jump.span.from_expansion() {
+                            return None;
+                        }
+                        let before = map.span_to_snippet(block.span.with_hi(jump.span.lo())).ok()?;
+                        let inside = only(before.strip_prefix('{')?, false)?;
+                        let at = self.sources.span(jump.span);
+                        (above + inside > 0 && !at.is_none()).then_some(at)
+                    };
                     match arm.body.kind {
-                        rustc_hir::ExprKind::Continue(_) => self.continues.push(at),
+                        rustc_hir::ExprKind::Continue(_) if above > 0 => self.continues.push(at),
+                        rustc_hir::ExprKind::Block(block, None) if let Some(jump) = alone(block) => {
+                            self.continues.push(jump)
+                        }
                         rustc_hir::ExprKind::Block(block, None)
-                            if block.stmts.is_empty()
+                            if above > 0
+                                && block.stmts.is_empty()
                                 && block.expr.is_none()
                                 && let Ok(inside) = map.span_to_snippet(block.span)
                                 && let Some(inner) = inside.strip_prefix('{').and_then(|t| t.strip_suffix('}'))

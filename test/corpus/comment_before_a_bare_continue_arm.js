@@ -109,6 +109,40 @@ export function blocked(xs, log) {
   }
 }
 
+export function lastBlock(xs, log) {
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i];
+    if (x != null) {
+      log.push(x);
+      log.push(600);
+    } else {
+      // Nothing is skipped.
+      continue;
+    }
+  }
+}
+
+export function aboveBlock(reason, log) {
+  for (let k = 0; k < reason; k++) {
+    if (k === 3) {
+      log.push(3);
+      log.push(700);
+    } else {
+      // Others are skipped, a block's.
+      continue;
+    }
+  }
+}
+
+export function uncommentedBlock(reason, log) {
+  for (let k = 0; k < reason; k++) {
+    if (k === 3) {
+      log.push(3);
+      log.push(800);
+    }
+  }
+}
+
 export function chars(text) {
   let out = "";
   for (const c of text) {
@@ -136,6 +170,9 @@ function main() {
   later(5, log);
   options([1, undefined, 3], log);
   blocked([undefined, 5], log);
+  lastBlock([4, undefined, 6], log);
+  aboveBlock(5, log);
+  uncommentedBlock(5, log);
   console.log(`[${log.join(", ")}]`);
   console.log(`${chars("a b!")}`);
 }

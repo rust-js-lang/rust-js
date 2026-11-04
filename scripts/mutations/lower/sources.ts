@@ -158,8 +158,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment above an arm that's only a `continue`, `// Skipped.\\n 1 => continue,`, isn't found, so tidy inverts its `if` and the comment prints above the `switch` or the `for` (#610)",
     file: "src/lower/sources.rs",
-    find: "                        rustc_hir::ExprKind::Continue(_) => self.continues.push(at),\n",
-    replace: "                        rustc_hir::ExprKind::Continue(_) => {}\n",
+    find: "                        rustc_hir::ExprKind::Continue(_) if above > 0 => self.continues.push(at),\n",
+    replace: "                        rustc_hir::ExprKind::Continue(_) if above > 0 => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
     snapshots: true,
   },
@@ -168,8 +168,59 @@ export const mutations: Mutation[] = [
     breaks:
       "an arm that's only a `continue` with no comment above it is taken for one with, and keeps its `continue`, `if (k === 3) { continue; }`, not the `if` of the rest (#610, the user's decision)",
     file: "src/lower/sources.rs",
-    find: "                    if only(&between, true).is_none_or(|c| c == 0) || at.is_none() || arm_at.is_none() {\n",
-    replace: "                    if at.is_none() || arm_at.is_none() {\n",
+    find: "                        rustc_hir::ExprKind::Continue(_) if above > 0 => self.continues.push(at),\n",
+    replace: "                        rustc_hir::ExprKind::Continue(_) => self.continues.push(at),\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "arms-of-nothing-of-no-comment",
+    breaks:
+      "an arm that does nothing, `{}`, with no comment above it is taken for one with, a marker printed where its `}` is (#508)",
+    file: "src/lower/sources.rs",
+    find: "                            if above > 0\n                                && block.stmts.is_empty()\n",
+    replace: "                            if block.stmts.is_empty()\n",
+    tests: ["test/corpus.test.ts"],
+    snapshots: true,
+  },
+  {
+    name: "commented-continue-blocks-unfound",
+    breaks:
+      "a last arm that's a block of only a `continue`, its comment in it, `_ => { // c\\n continue; }`, isn't found, so `tail continues` takes its `else` and the comment prints above the `for` (#666)",
+    file: "src/lower/sources.rs",
+    find: "                        rustc_hir::ExprKind::Block(block, None) if let Some(jump) = alone(block) => {\n",
+    replace:
+      "                        rustc_hir::ExprKind::Block(block, None) if let Some(jump) = alone(block).filter(|_| false) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "commented-continue-blocks-of-no-comment",
+    breaks:
+      "a last arm that's a block of only a `continue` and no comment, `_ => { continue; }`, is taken for one with, and keeps its `} else { continue; }`, which ends the turn anyway (#666)",
+    file: "src/lower/sources.rs",
+    find: "                        (above + inside > 0 && !at.is_none()).then_some(at)\n",
+    replace: "                        (!at.is_none()).then_some(at)\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "commented-continue-blocks-above-only",
+    breaks:
+      "a block arm of only a `continue` whose comment is in its block, not above the arm, isn't found, `_ => { // c\\n continue; }`'s `else` taken (#666)",
+    file: "src/lower/sources.rs",
+    find: "                        (above + inside > 0 && !at.is_none()).then_some(at)\n",
+    replace: "                        (above > 0 && !at.is_none()).then_some(at)\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "commented-continue-blocks-in-only",
+    breaks:
+      "a block arm of only a `continue` whose comment is above the arm, `// c\\n _ => { continue; }`, isn't found, its `else` taken and the comment above the `for` (#666)",
+    file: "src/lower/sources.rs",
+    find: "                        (above + inside > 0 && !at.is_none()).then_some(at)\n",
+    replace: "                        (inside > 0 && !at.is_none()).then_some(at)\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
     snapshots: true,
   },

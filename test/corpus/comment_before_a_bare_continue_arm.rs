@@ -6,8 +6,9 @@
 // pattern, `if (k === 3) { // c\n continue; }`; and of one MIR tests where
 // the `match` is, `None => continue` after `Some(n) => *n`, `if (x == null)
 // { // c\n continue; }`, its block's too; and of a last `_`, the `else` of
-// the arm before's `if`, `} else { // c\n continue; }`. One with no
-// comment is the `if` of the rest, as before.
+// the arm before's `if`, `} else { // c\n continue; }`, as of a last arm
+// that's a block of only a `continue`, its comment in the block or above
+// the arm (#666). One with no comment is the `if` of the rest, as before.
 pub fn switched(reason: i32, log: &mut Vec<i32>) {
     for k in 0..reason {
         match k {
@@ -102,6 +103,44 @@ pub fn blocked(xs: &[Option<i32>], log: &mut Vec<i32>) {
     }
 }
 
+pub fn last_block(xs: &[Option<i32>], log: &mut Vec<i32>) {
+    for x in xs {
+        match x {
+            Some(n) => log.push(*n),
+            _ => {
+                // Nothing is skipped.
+                continue;
+            }
+        }
+        log.push(600);
+    }
+}
+
+pub fn above_block(reason: i32, log: &mut Vec<i32>) {
+    for k in 0..reason {
+        match k {
+            3 => log.push(3),
+            // Others are skipped, a block's.
+            _ => {
+                continue;
+            }
+        }
+        log.push(700);
+    }
+}
+
+pub fn uncommented_block(reason: i32, log: &mut Vec<i32>) {
+    for k in 0..reason {
+        match k {
+            3 => log.push(3),
+            _ => {
+                continue;
+            }
+        }
+        log.push(800);
+    }
+}
+
 pub fn chars(text: &str) -> String {
     let mut out = String::new();
     for c in text.chars() {
@@ -126,6 +165,9 @@ fn main() {
     later(5, &mut log);
     options(&[Some(1), None, Some(3)], &mut log);
     blocked(&[None, Some(5)], &mut log);
+    last_block(&[Some(4), None, Some(6)], &mut log);
+    above_block(5, &mut log);
+    uncommented_block(5, &mut log);
     println!("{log:?}");
     println!("{}", chars("a b!"));
 }

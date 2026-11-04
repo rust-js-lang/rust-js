@@ -1249,3 +1249,33 @@ and the mutations
 (`mir/tidy/jumps/continues.ts`),
 `commented-continue-arms-unfound` and
 `commented-continue-arms-of-no-comment` (`lower/sources.ts`).
+
+## Amendment: a block of only a commented `continue` (#666)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only. A
+last arm that's a block of only a `continue`, `_ => { // c\n continue;
+}`, printed its comment above the `for`: its `continue` wasn't among
+`commented_arms`' continues, so `tail continues` took the `else` that
+ended the turn, as it takes one with no comment. Now `commented_arms`
+finds it too: a block whose only statement, or value, is a `continue`,
+with comments above the arm or in the block before it, nothing else
+there. Its `continue` is kept where it's written as a bare arm's is, `}
+else { // c\n continue; }`. One with no comment is the `if` of the rest,
+its `else` gone, as before.
+
+`arm_continues_placed`'s check that a `match`'s continuing arm is its only
+one is gone. It was held by no program, as the amendment above said: the
+whole corpus compiled with and without it prints the same, and so do
+probes of two arms of `continue` in one `match` (a guarded one beside
+`None => continue`, one after a statement, a block's, two last arms). MIR
+makes such arms one block their `break`s go to, `continues_written`'s,
+so the `if` it tests at the `match` is one arm's.
+
+Held by corpus `comment_before_a_bare_continue_arm` (`last_block`,
+`above_block`, `uncommented_block`) against native Rust, and the
+mutations `commented-continue-blocks-unfound`,
+`commented-continue-blocks-of-no-comment`,
+`commented-continue-blocks-above-only`,
+`commented-continue-blocks-in-only` and `arms-of-nothing-of-no-comment`
+(`lower/sources.ts`); `continue-at-the-match-uncommented`'s find moved
+(`mir/tidy/jumps/continues.ts`).

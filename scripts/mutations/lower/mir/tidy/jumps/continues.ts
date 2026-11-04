@@ -731,8 +731,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a bare `None => continue,` with no comment above it, MIR's test at the `match`, keeps its `continue`, `if (x == null) { continue; }`, where an uncommented arm is the `if` of the rest (#610, the user's decision)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            (Some(&(_, arm, written)), None) if written.hi < arm.hi || commented.contains(&written) => Some(written),\n",
-    replace: "            (Some(&(_, _, written)), None) => Some(written),\n",
+    find: "            .filter(|&&(_, arm, written)| written.hi < arm.hi || commented.contains(&written))\n",
+    replace: "            .filter(|_| true)\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
     snapshots: true,
   },
