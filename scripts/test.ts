@@ -1,7 +1,7 @@
 // The whole suite, `bun run test`: every file in parallel, but the ones
 // that run a browser, beside a dev server, Vite's, Next.js's, the
-// playground's and the pilot's, or on a page of its own, webapi-events',
-// after the rest, on their own. Together
+// playground's and the pilot's, or on a page of its own, webapi-events'
+// (scripts/shard.ts's `browsers`), after the rest, on their own. Together
 // with the corpus's compiles they starve each other, and a page or a Fast
 // Refresh waits past its test's timeout: each passes alone, and with only
 // each other. `bun run test --shard=2/4` runs a quarter of each, as CI
@@ -13,7 +13,7 @@ import { join } from "node:path";
 
 import { stopGroup } from "../test/child";
 import { pruneKept } from "../test/kept";
-import { caseParts, caseShardParts, nightly, shardArg, shardTimings } from "./shard";
+import { browsers, caseParts, caseShardParts, nightly, shardArg, shardTimings } from "./shard";
 
 const root = join(import.meta.dir, "..");
 
@@ -34,7 +34,6 @@ while true; do
   sleep 60
 done`], { stdout: "inherit", stderr: "inherit" });
 
-const browsers = ["browser", "next", "playground", "pilot", "vite", "webapi-events"].map((name) => `test/${name}.test.ts`);
 const atNight = process.argv.includes("--nightly");
 const shard = process.argv.slice(2).filter((arg) => arg.startsWith("--shard="));
 // The corpus, in parts, each a process of its own, as `check:fast` runs it

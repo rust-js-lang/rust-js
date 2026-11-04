@@ -6,13 +6,13 @@
 // change touched after each push (DEVELOPMENT.md).
 //
 //   bun run check:fast                 the change's checks
-//   bun run check:fast --all           every suite it can touch
+//   bun run check:fast --all           every test file a push's suite runs, but the browsers'
 //   bun run check:fast test/x.test.ts  and these files
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
 import { pruneKept } from "../test/kept";
-import { caseParts } from "./shard";
+import { browsers, caseParts, nightly } from "./shard";
 import { elapsed, timed } from "./timing";
 
 const root = join(import.meta.dir, "..");
@@ -77,12 +77,24 @@ const inParts = (name: string, file: string) =>
     // differs are built as one (ADR 0360).
     { RUST_JS_CASES: `${i + 1}/${parts}`, RUST_JS_LIBRARIES: "differing" },
   ]);
-const jobs: [string, string[], Record<string, string>][] = [
-  ["fmt", ["bun", "run", "fmt:check"], {}],
-  ["typecheck", ["bun", "run", "typecheck"], {}],
-  ["clippy", ["cargo", "clippy", "--locked", "--quiet", "--", "-D", "warnings"], {}],
+type Job = [string, string[], Record<string, string>];
+// The suites a change can touch, as it touches them; or, with `--all`,
+// every test file a push's suite runs (scripts/test.ts) but the corpus,
+// in its parts above, and the browsers' (`browsers`), which starve beside
+// the corpus's compiles and are CI's: one run of them all at once, as
+// the suite runs them, 195 files in about two minutes on the M3 Max. A
+// list of the suites a change to `src/` can break was a second catalog of
+// the test files, and `main` went red three times in a day from files it
+// left out, rest-parameters' and cross-crate-items' (#607). The nightly's
+// own files are left as the push's suite leaves them; tidy's stages, one
+// of them, run where tidy changes (ADR 0659).
+const everyFile: Job = [
+  "every other test file",
+  ["bun", "test", "--parallel", ...["test/corpus.test.ts", ...browsers, ...nightly].map((file) => `--path-ignore-patterns=${file}`)],
+  {},
+];
+const suites: Job[] = [
   ["architecture, mutation lists", ["bun", "test", "test/architecture.test.ts", "test/mutations.test.ts"], {}],
-  ...inParts("corpus", "test/corpus.test.ts"),
   // What checks the JS bodies are lowered to.
   // Each a file of a concept's (ADR 0572), `test/lowering` all of lowering's.
   ...(
@@ -93,7 +105,6 @@ const jobs: [string, string[], Record<string, string>][] = [
     ] as const
   ).map(([name, files]): [string, string[], Record<string, string>] => [name, ["bun", "test", ...files], {}]),
   ...(jsx ? [["JSX", ["bun", "test", "test/jsx"], {}] as [string, string[], Record<string, string>]] : []),
-  ...(tidy ? [["tidy's stages", ["bun", "test", "test/tidy-stages.test.ts"], {}] as [string, string[], Record<string, string>]] : []),
   // What pins the JS written, the names it gives and what it refuses; and
   // the guide's examples compiled, std's package, the runtime package's
   // helpers and the readability ratchet, each of which a lowering or a
@@ -109,6 +120,14 @@ const jobs: [string, string[], Record<string, string>][] = [
         (name): [string, string[], Record<string, string>] => [name, ["bun", "test", `test/${name}.test.ts`], {}],
       )
     : []),
+];
+const jobs: Job[] = [
+  ["fmt", ["bun", "run", "fmt:check"], {}],
+  ["typecheck", ["bun", "run", "typecheck"], {}],
+  ["clippy", ["cargo", "clippy", "--locked", "--quiet", "--", "-D", "warnings"], {}],
+  ...inParts("corpus", "test/corpus.test.ts"),
+  ...(all ? [everyFile] : suites),
+  ...(tidy ? [["tidy's stages", ["bun", "test", "test/tidy-stages.test.ts"], {}] as Job] : []),
   ...(added.length > 0
     ? [["mutations the change adds", ["bun", "scripts/mutations.ts", ...new Set(added)], {}] as [string, string[], Record<string, string>]]
     : []),

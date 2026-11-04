@@ -69,7 +69,7 @@ branch's one running, and no branch's run touches another's.
 | The new test, seen to fail, then pass | yes, on the Mac: it's the point | in the suite | in the suite |
 | Its module's focused tests, `bun test test/<file>.test.ts -t <name>` | yes, on the Mac | in the suite | in the suite |
 | The new mutations, `bun scripts/mutations.ts <name>` | yes, on the Mac | the changed ones | all of them, on 16 machines |
-| `bun run check:fast`: lint, the corpus, the lowering, compiler and bindings suites, the snapshots, JSX and diagnostics a change touches, its new mutations, at once | yes, before each commit | | |
+| `bun run check:fast`: lint, the corpus, the lowering, compiler and bindings suites, the snapshots, JSX and diagnostics a change touches, its new mutations, at once; `--all`, every test file a push's suite runs but the browsers' | yes, before each commit; `--all` before a push | | |
 | `bun run ci:status`: main's latest run | yes, before each commit: a red one is fixed first | | |
 | `bun run nightly`: every job the nightly runs, here, each in parts on all the cores (`scripts/nightly.ts`); `bun run nightly stages forms` runs some | yes, before a change the nightly would find, or to prove a night green | | |
 | Reading the generated JS and snapshot diffs | yes | the bless patch, read before it's committed | |
@@ -198,7 +198,7 @@ On the M3 Max, with the scan off:
 | Eight mutations, four at a time | 11 s |
 | The react.dev port, built | 30 s |
 | `bun run check:fast`, of a change to the lowering | 40 s |
-| `bun run check:fast --all`, JSX, snapshots and diagnostics too | 40 s |
+| `bun run check:fast --all`, every test file a push's suite runs but the browsers' (195 files and the corpus) | 2 min 36 s (load 12–16, 2026-11-04) |
 | `bun run port measure`, react.dev compiled against its committed JS | 7 s |
 | `bun run port compare`, its build and 823 pages | 7–15 s |
 
@@ -228,7 +228,16 @@ What keeps them there:
   `src/` or the runtime, and with them the guide's examples, std's package
   and the readability ratchet, which a lowering change turned `main` red
   with when only CI ran them; the mutations, those the change adds or
-  changes; CI runs the rest. Each job
+  changes; CI runs the rest. **`--all` runs every test file a push's suite
+  runs** (`scripts/test.ts`) in place of that list, one `bun test
+  --parallel` of them beside the corpus's parts, but the browsers'
+  (`scripts/shard.ts`'s `browsers`), which starve beside the corpus and
+  are CI's, and the nightly's own (`nightly`), tidy's stages run where tidy
+  changes: the list of suites a `src/` change could break left out
+  rest-parameters' and cross-crate-items', and `main` went red three
+  times in a day (#607). Its 195 files take 2 min 35 s beside the corpus
+  under another agent's load (2026-11-04), 2 min 36 s in all, where the
+  list took 2 min 41 s. Each job
   is given the compiler it built, `RUST_JS_COMPILER`: one that builds its
   own links it again, and races the others.
 - **The node bindings are built before the jobs**, by support.ts's

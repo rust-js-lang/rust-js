@@ -44,6 +44,16 @@ export function shardArg(args: string[]): { index: number; count: number } | und
  * each file in it. */
 export const shardTimings = "target/shard-timings";
 
+/** The files that run a browser, beside a dev server, Vite's, Next.js's,
+ * the playground's and the pilot's, or on a page of its own,
+ * webapi-events': `bun run test` runs them after the rest, on their own,
+ * as with the corpus's compiles they starve each other, and a page or a
+ * Fast Refresh waits past its test's timeout; `check:fast --all` leaves
+ * them to CI. */
+export const browsers = ["browser", "next", "playground", "pilot", "vite", "webapi-events"].map(
+  (name) => `test/${name}.test.ts`,
+);
+
 /** What only the nightly's suite runs, `bun run test --nightly`, not each
  * push's (ADR 1030): what the nightly runs in full anyway, tidy's stages,
  * the iterator forms and generated programs; the release's packaging, which
