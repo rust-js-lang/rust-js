@@ -4,6 +4,7 @@ import { iterator_peekable, iterator_take } from "@rust-js/std/iter.js";
 import {
   $closing,
   $cmp,
+  $collectDropping,
   $dropEach,
   $exactLen,
   $foldOf,
@@ -210,7 +211,7 @@ function consume(n) {
   console.log(`set ${set.size}`);
   const value$3 = $iter(three());
   const value$4 = limit();
-  const kept = Array.from(
+  const kept = $collectDropping(
     $closing(value$3, $dropEach(loudDrop_drop))
       .take(value$4)
       .filter((item, i) => {
@@ -361,11 +362,32 @@ function consume(n) {
     }
     console.log("after");
     console.log(
-      `[${[
-        ...$stepBy(
+      `[${$collectDropping(
+        $lazyChain(
+          $stepBy(
+            $closing(
+              $iterator(
+                counter(3),
+                countIterator_next,
+                false,
+                undefined,
+                undefined,
+                countIterator_sizeHint,
+                undefined,
+                countIterator_nth,
+                undefined,
+                undefined,
+                countDoubleEndedIterator_nthBack,
+              ),
+              (it) => {
+                console.log(`drop count ${it.of.at} ${it.of.end}`);
+              },
+            ),
+            2,
+          ),
           $closing(
             $iterator(
-              counter(3),
+              counter(2),
               countIterator_next,
               false,
               undefined,
@@ -381,27 +403,8 @@ function consume(n) {
               console.log(`drop count ${it.of.at} ${it.of.end}`);
             },
           ),
-          2,
         ),
-        ...$closing(
-          $iterator(
-            counter(2),
-            countIterator_next,
-            false,
-            undefined,
-            undefined,
-            countIterator_sizeHint,
-            undefined,
-            countIterator_nth,
-            undefined,
-            undefined,
-            countDoubleEndedIterator_nthBack,
-          ),
-          (it) => {
-            console.log(`drop count ${it.of.at} ${it.of.end}`);
-          },
-        ),
-      ].join(", ")}]`,
+      ).join(", ")}]`,
     );
     held(n);
   } finally {

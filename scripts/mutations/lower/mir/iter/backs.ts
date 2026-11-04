@@ -279,7 +279,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`rev()` of a lazy map of a range is refused, not stepped from its back",
     file: "src/lower/mir/iter/backs.rs",
-    find: '            None => {\n                return Ok(Expr::call_helper(\n                    "$rev",\n                    vec![self.as_double_ended(receiver, iter_ty, span)?],\n                ));\n            }',
+    find: "            None => {\n                let it = self.as_double_ended(receiver, iter_ty, span)?;\n                return Ok(Expr::call_helper(\"$rev\", vec![self.closing(it, iter_ty, span)?]));\n            }",
     replace:
       '            None => {\n                return Err(self.unsupported(span, "`rev` of a lazy iterator, from its MIR"));\n            }',
     tests: ["test/corpus.test.ts", "-t", "^range_mapped_by_a_function.rs$"],
@@ -527,7 +527,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `rfold` of an accumulator with a destructor, a stage panicking part-way, leaves the accumulator undropped (#423)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                Some(&acc) => self.stranded_drop(&it, iter_ty, acc, span)?,\n",
+    find: "                Some(&acc) => self.stranded_drop(iter_ty, acc, span)?,\n",
     replace: "                Some(_) => None,\n",
     tests: [
       "test/corpus.test.ts",
@@ -556,5 +556,29 @@ export const mutations: Mutation[] = [
     find: "                    || self.recognition().counts_its_own(output) =>",
     replace: " =>",
     tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
+  },
+  {
+    name: "rfold-receiver-unclosed",
+    breaks: "what `rfold` takes isn't closed: a panic in its closure leaves a `Vec`'s rest and the crate's double-ended iterator undropped (#650)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            let it = match self.consumer_closes(Some(method), iter_ty, lent, dropping) {\n",
+    replace: "            let it = match false && self.consumer_closes(Some(method), iter_ty, lent, dropping) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^rfold_and_rev_close_what_they_step.rs$"],
+  },
+  {
+    name: "generic-rev-unclosed",
+    breaks: "a generic `rev()` of a type parameter isn't closed: the crate's iterator it reverses is never dropped (#650)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                return Ok(Expr::call_helper(\"$rev\", vec![self.closing(it, iter_ty, span)?]));\n",
+    replace: "                return Ok(Expr::call_helper(\"$rev\", vec![it]));\n",
+    tests: ["test/corpus.test.ts", "-t", "^rfold_and_rev_close_what_they_step.rs$"],
+  },
+  {
+    name: "copy-of-skip-backless",
+    breaks: "a `copied()` of a slice's `skip(n)` or `take(n)`, stepped from its back, is JS's own `drop` or `take`, which has no back: `it.back is not a function` (#646)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            Some(IterMethod::Copied | IterMethod::Cloned)\n                if self.is_its_source(output)\n",
+    replace: "            Some(IterMethod::Copied | IterMethod::Cloned)\n                if false && self.is_its_source(output)\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_skip_take_and_filter_stepped_from_back.rs$"],
   },
 ];

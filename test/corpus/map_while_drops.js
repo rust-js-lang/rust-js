@@ -2,6 +2,7 @@
 
 import {
   $closing,
+  $collectDropping,
   $debugStr,
   $dropEach,
   $iter,
@@ -48,7 +49,7 @@ function mapped() {
   );
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
   const louds = [[1], [2], [0], [3]];
-  const kept = Array.from(
+  const kept = $collectDropping(
     $lazyMapWhile(
       $closing($iter(louds), $dropEach(loudDrop_drop)),
       (l) => {

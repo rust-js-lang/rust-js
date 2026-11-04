@@ -256,4 +256,12 @@ export const mutations: Mutation[] = [
     replace: "                } => Some((fun, (fn_span, &**args))),\n",
     tests: ["test/corpus.test.ts", "-t", "^held_filter_map_reversed.rs$"],
   },
+  {
+    name: "filter-of-a-rev-backless",
+    breaks: "a `filter()` of a reversed `Vec`'s items with a `Drop`, `rev()`ed again and held, is JS's own `filter`, which has no back (#646)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "        .map(|source| unreversed(source.peel_refs()))\n",
+    replace: "        .map(|source| source.peel_refs())\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_skip_take_and_filter_stepped_from_back.rs$"],
+  },
 ];

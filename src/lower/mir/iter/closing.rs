@@ -339,8 +339,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `last`, its compiled `fold`'s, a zip's `SpecFold` (#380). Of items
         // with a destructor, `$lastDropping`, which asks the crate's own
         // `last` too, and drops a chain's `a` where `b` has one (#494).
+        // And of one that holds what has a destructor, whose steps may
+        // panic, by its `last`, std's default of its `fold`, which closes it
+        // as a panic unwinds, where a JS array made of it would leave it
+        // (#653).
         let drops_none = item.is_none_or(|item| self.drops(item) == crate::lower::drops::Drops::Nothing);
-        if drops_none && (self.recognition().lasts_its_own(iter_ty) || self.compiled_struct_at(iter_ty, span)) {
+        let unwinds_holding =
+            self.drops(iter_ty) != crate::lower::drops::Drops::Nothing && self.steps_may_panic(iter_ty);
+        if drops_none
+            && (self.recognition().lasts_its_own(iter_ty) || self.compiled_struct_at(iter_ty, span) || unwinds_holding)
+        {
             let boxed = item.is_some_and(|item| self.boxed_payload(item));
             return Ok(Expr::call_helper(if boxed { "$lastSome" } else { "$last" }, vec![it]));
         }

@@ -2,6 +2,7 @@
 
 import {
   $closing,
+  $collectDropping,
   $dropEach,
   $held,
   $iter,
@@ -28,7 +29,7 @@ function skipped(it, dropI) {
     return result;
   });
   try {
-    return Array.from(iter);
+    return $collectDropping(iter);
   } finally {
     iter.return();
   }

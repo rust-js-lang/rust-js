@@ -12,6 +12,7 @@ import {
   iterator_fuse,
 } from "@rust-js/std/iter.js";
 import {
+  $collectDropping,
   $dropEach,
   $enumerate,
   $foldOf,
@@ -171,7 +172,7 @@ function main() {
     console.log(
       `${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`} ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`,
     );
-    const r = Array.from(
+    const r = $collectDropping(
       $rev(
         $enumerate(
           $knowing(

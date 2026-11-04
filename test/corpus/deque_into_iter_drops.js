@@ -24,7 +24,11 @@ function loudDrop_drop(loud) {
 }
 
 function deque(items) {
-  return items.map((n) => [n]);
+  return $collectDropping(
+    items.values().map((n) => [n]),
+    loudDrop_drop,
+    true,
+  );
 }
 
 function main() {

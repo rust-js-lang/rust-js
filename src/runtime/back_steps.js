@@ -443,6 +443,9 @@ function $enumerate(iter) {
   // by which a `take` past its end drops what its source's `nth` gives
   // back (#492).
   if (iter.ownNth) enumerated.ownNth = true;
+  // Its `count`, `countItems`, its source's, the crate's own where it
+  // writes one, which a `skip` of it asks (#671).
+  if (iter.ownCount) enumerated.ownCount = true;
   const nth = (k, drop) => {
     const step = enumerated.iter.nth(k, drop && ((x) => drop([0, x])));
     if (step.done) return step;

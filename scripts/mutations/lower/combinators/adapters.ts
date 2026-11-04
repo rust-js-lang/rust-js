@@ -429,4 +429,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^any_of_one_value_is_includes.rs$"],
     snapshots: true,
   },
+  {
+    name: "step-by-of-own-fold-filtered",
+    breaks: "a `step_by()` of a `fuse()` of the crate's iterator with its own `fold` is a filter by index, whose fold calls it, where std's `StepBy` steps it by `next` and `nth` (#671)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                    || self.recognition().folds_its_own(receiver_ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_count_where_adapters_call_them.rs$"],
+  },
 ];

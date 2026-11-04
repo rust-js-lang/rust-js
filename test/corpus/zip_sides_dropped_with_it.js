@@ -2,6 +2,7 @@
 
 import {
   $closing,
+  $collectDropping,
   $dropEach,
   $held,
   $iter,
@@ -91,7 +92,7 @@ function endedByASide() {
     map.return();
     throw error;
   }
-  let got = Array.from($lazyZip(map, tmp$2));
+  let got = $collectDropping($lazyZip(map, tmp$2));
   console.log(`take_while [${got.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 
   const [a$1, b$1] = sides();
@@ -137,7 +138,7 @@ function endedByASide() {
     tmp$4.return();
     throw error;
   }
-  got = Array.from($lazyZip(tmp$4, scan));
+  got = $collectDropping($lazyZip(tmp$4, scan));
   console.log(`scan [${got.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 
   const [a$2, b$2] = sides();
@@ -187,7 +188,7 @@ function endedByASide() {
     tmp$7.return();
     throw error;
   }
-  got = Array.from($lazyZip(tmp$7, mapWhile));
+  got = $collectDropping($lazyZip(tmp$7, mapWhile));
   console.log(`map_while [${got.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 
   const [a$3, b$3] = sides();
@@ -255,7 +256,7 @@ function endedByASide() {
     tmp$10.return();
     throw error;
   }
-  got = Array.from($lazyZip(tmp$10, tmp$12));
+  got = $collectDropping($lazyZip(tmp$10, tmp$12));
   console.log(`take [${got.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 
   const [a$4, b$4] = sides();
@@ -323,7 +324,7 @@ function endedByASide() {
     tmp$14.return();
     throw error;
   }
-  got = Array.from($lazyZip(tmp$14, tmp$17));
+  got = $collectDropping($lazyZip(tmp$14, tmp$17));
   console.log(`skip [${got.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 }
 

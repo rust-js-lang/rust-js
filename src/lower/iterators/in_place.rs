@@ -156,52 +156,6 @@ pub(in crate::lower) fn may_throw(f: &Expr) -> bool {
     }
 }
 
-/// Whether stepping a chain, `it`, may throw by what its stages are given:
-/// an arrow that may, `may_throw`'s, or of a chain given a stage, its own
-/// (#422).
-pub(in crate::lower) fn chain_may_throw(it: &Expr) -> bool {
-    let js::ExprKind::Call(callee, args) = &it.kind else {
-        return false;
-    };
-    let own = matches!(&callee.kind, js::ExprKind::Member(object, _) if chain_may_throw(object));
-    own || args.iter().any(|arg| match &arg.kind {
-        js::ExprKind::Arrow(..) => may_throw(arg),
-        js::ExprKind::Call(..) => chain_may_throw(arg),
-        _ => false,
-    })
-}
-
-/// How many callbacks a chain, `it`, gives its stages, as its JS shows them:
-/// each function it's given, an arrow or a function's name (#423).
-pub(in crate::lower) fn callbacks_in(it: &Expr) -> usize {
-    let js::ExprKind::Call(callee, args) = &it.kind else {
-        return 0;
-    };
-    let own = match &callee.kind {
-        js::ExprKind::Member(object, _) => callbacks_in(object),
-        _ => 0,
-    };
-    own + (args.iter())
-        .map(|arg| match &arg.kind {
-            js::ExprKind::Arrow(..) => 1,
-            js::ExprKind::Var(_) if arg.facts.has(js::Known::Item) => 1,
-            js::ExprKind::Call(..) => callbacks_in(arg),
-            _ => 0,
-        })
-        .sum::<usize>()
-}
-
-/// Whether a chain, `it`, steps an owning source closed to drop what it
-/// hasn't given, `$closing(..)`.
-pub(in crate::lower) fn closes_a_source(it: &Expr) -> bool {
-    let js::ExprKind::Call(callee, args) = &it.kind else {
-        return false;
-    };
-    callee.helper_name() == Some("$closing")
-        || matches!(&callee.kind, js::ExprKind::Member(object, _) if closes_a_source(object))
-        || args.iter().any(closes_a_source)
-}
-
 /// Whether calling `f` may do what can be seen, or throw: anything but an
 /// arrow whose statements only make and give back what does nothing.
 pub(in crate::lower) fn does(f: &Expr) -> bool {

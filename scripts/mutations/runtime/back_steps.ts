@@ -475,4 +475,12 @@ export const mutations: Mutation[] = [
     replace: "    $lent(enumerated.iter).tryFold(init, (a, x) => f(a, [enumerated.count++, x]), broke);\n",
     tests: ["test/corpus.test.ts", "-t", "^try_folds_of_stages_unwind.rs$"],
   },
+  {
+    name: "enumerate-own-count-unsaid",
+    breaks: "an `enumerate()` doesn't say its `count` is the crate's own, so a `skip()` of it counts by stepping, never calling it (#671)",
+    file: "src/runtime/back_steps.js",
+    find: "  if (iter.ownCount) enumerated.ownCount = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_count_where_adapters_call_them.rs$"],
+  },
 ];

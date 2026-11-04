@@ -403,7 +403,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `collect` into a `Vec` a closure's panic may stop is `Array.from`, which drops neither what it collected nor what's left (#422)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        if !crate::lower::iterators::chain_may_throw(it) && !hidden {\n            return Ok(None);\n        }\n",
+    find: "        if !iter_ty.is_some_and(|ty| self.steps_may_panic(ty)) {\n            return Ok(None);\n        }\n",
     replace: "        return Ok(None);\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_iteration_drops.rs$"],
   },
@@ -440,7 +440,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `collect` into a `String` a panic may stop leaves what's left of its owning source undropped (#423)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        } else if self.is_lang_adt(output, LangItem::String) {\n            let items = match self.unwinding_collect(&it, output, item, iter_ty, span)? {",
+    find: "        } else if self.is_lang_adt(output, LangItem::String) {\n            let items = match self.unwinding_collect(output, item, iter_ty, span)? {",
     replace:
       "        } else if self.is_lang_adt(output, LangItem::String) {\n            let items = match None::<UnwindingCollect> {",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
@@ -450,7 +450,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `collect` into a `BinaryHeap` a panic may stop drops nothing it took (#423)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        Ok(if self.is_std_type(output, StdItem::BinaryHeap) {\n            let items = match self.unwinding_collect(&it, output, item, iter_ty, span)? {",
+    find: "        Ok(if self.is_std_type(output, StdItem::BinaryHeap) {\n            let items = match self.unwinding_collect(output, item, iter_ty, span)? {",
     replace:
       "        Ok(if self.is_std_type(output, StdItem::BinaryHeap) {\n            let items = match None::<UnwindingCollect> {",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
@@ -489,22 +489,13 @@ export const mutations: Mutation[] = [
     breaks:
       "a fold of a type parameter's iterator, std's `Fuse::fold`'s of what it fuses, is given no drop of its accumulator (#424)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "chain_may_throw(it) || receiver.has_param() || self.steps_may_panic(receiver);",
-    replace: "chain_may_throw(it) || self.steps_may_panic(receiver);",
+    find: "let may_throw = receiver.has_param() || self.steps_may_panic(receiver);",
+    replace: "let may_throw = self.steps_may_panic(receiver);",
     tests: [
       "test/std-package.test.ts",
       "-t",
       "the committed @rust-js/std is std",
     ],
-  },
-  {
-    name: "hidden-stage-unseen",
-    breaks:
-      "a collect of a chain whose stage a variable holds, `inspect(..).zip(..)`'s, is judged one no stage of may panic, so a panic leaves what it took undropped (#423)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "        if !crate::lower::iterators::chain_may_throw(it) && !hidden {\n",
-    replace: "        if !crate::lower::iterators::chain_may_throw(it) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
     name: "folded-collect-after-unwinding",
@@ -522,7 +513,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `try_fold` into a `ControlFlow` of an accumulator with a destructor, a stage panicking part-way, leaves the accumulator undropped (#423)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                self.stranded_drop(&it, *receiver, *acc, span)?\n",
+    find: "                self.stranded_drop(*receiver, *acc, span)?\n",
     replace: "                let _ = (receiver, acc);\n                None\n",
     tests: [
       "test/corpus.test.ts",
@@ -584,8 +575,8 @@ export const mutations: Mutation[] = [
     name: "collect-own-steps-unseen",
     breaks: "a collect of std's adapter over the crate's iterator whose `next` panics is `Array.from(..)`, which drops neither what it collected nor what's left (rd765)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            self.panicking_steps(ty) > crate::lower::iterators::callbacks_in(it) || self.unseen_steps_may_panic(ty)\n",
-    replace: "            self.panicking_steps(ty) > crate::lower::iterators::callbacks_in(it)\n",
+    find: "        self.panicking_steps(iter_ty) > 0 || self.unseen_steps_may_panic(iter_ty)\n",
+    replace: "        self.panicking_steps(iter_ty) > 0\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
   },
   {
@@ -603,5 +594,13 @@ export const mutations: Mutation[] = [
     find: "        (self.reveal(iter_ty).walk().filter_map(|part| part.as_type()))\n            .filter(|part| match *part.kind() {\n",
     replace: "        (iter_ty.walk().filter_map(|part| part.as_type()))\n            .filter(|part| match *part.kind() {\n",
     tests: ["test/corpus.test.ts", "-t", "^try_folds_of_stages_unwind.rs$"],
+  },
+  {
+    name: "collect-holding-unclosed",
+    breaks: "a collect of std's compiled `fuse()` of a `Vec`'s items, mapped by a closure that panics, is `Array.from(..)`, which never closes what the source has left (#653)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        let holds = iter_ty.is_some_and(|ty| self.drops(ty) != crate::lower::drops::Drops::Nothing);\n",
+    replace: "        let holds = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^compiled_adapters_closed_as_a_collect_unwinds.rs$"],
   },
 ];

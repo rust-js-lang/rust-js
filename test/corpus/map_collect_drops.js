@@ -6,6 +6,7 @@ import {
   $KeySet,
   $btreeSet,
   $cmp,
+  $collectDropping,
   $extendMap,
   $iter,
   $lazyRange,
@@ -57,10 +58,16 @@ function main() {
       );
       const c = $treeFrom(
         new $BTreeMap(),
-        $lazyRange(0, 4).map((i) => {
-          console.log(`make ${i}`);
-          return [i % 2, [(10 + i) & 255]];
-        }),
+        $collectDropping(
+          $lazyRange(0, 4).map((i) => {
+            console.log(`make ${i}`);
+            return [i % 2, [(10 + i) & 255]];
+          }),
+          (value) => {
+            loudDrop_drop(value[1]);
+          },
+          true,
+        ),
         false,
         $cmp,
         loudDrop_drop,

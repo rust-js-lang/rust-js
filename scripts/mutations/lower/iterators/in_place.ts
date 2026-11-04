@@ -93,16 +93,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "callbacks-uncounted",
-    breaks:
-      "a chain's callbacks its JS shows are counted none, so a collect of every chain with a closure that may panic is taken to hide one, `$collectDropping` where `Array.from` was (#423)",
-    file: "src/lower/iterators/in_place.rs",
-    find: "            js::ExprKind::Arrow(..) => 1,\n",
-    replace: "            js::ExprKind::Arrow(..) => 0,\n",
-    tests: ["test/corpus.test.ts", "-t", "^map_collect_drops.rs$"],
-    snapshots: true,
-  },
-  {
     name: "helper-drop-unseen",
     breaks:
       "a helper stepping all is taken to be given no drop of its items, so a `$iter` of a borrowed `Vec` it's given is made the array, which it takes as its own and drops what's left of as a panic stops it (#423)",

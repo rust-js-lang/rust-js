@@ -2380,9 +2380,9 @@ export function $closing(it, drop, slices = true) {
   };
   // Its `count`, the crate's own, likewise (#505).
   if (it.ownCount) closing.ownCount = true;
-  const count = () => {
+  const count = (drop) => {
     closed = true;
-    return it.count();
+    return it.count(drop);
   };
   // Its `last`, the crate's own, which takes it and drops what it has left
   // itself, as a `skip`'s `last` asks it (#494).
@@ -2613,6 +2613,9 @@ export function $skipping(iter, n, drop) {
     rfold: iter.tryRfold !== undefined ? rfold : undefined,
   });
   if (iter.ownNth) skipping.ownNth = true;
+  // Its `count` its source's, the crate's own where it writes one, which
+  // a `skip` of it asks in turn (#671).
+  if (iter.ownCount) skipping.ownCount = true;
   return skipping;
 }
 
@@ -3293,6 +3296,9 @@ export function $enumerate(iter) {
   // by which a `take` past its end drops what its source's `nth` gives
   // back (#492).
   if (iter.ownNth) enumerated.ownNth = true;
+  // Its `count`, `countItems`, its source's, the crate's own where it
+  // writes one, which a `skip` of it asks (#671).
+  if (iter.ownCount) enumerated.ownCount = true;
   const nth = (k, drop) => {
     const step = enumerated.iter.nth(k, drop && ((x) => drop([0, x])));
     if (step.done) return step;

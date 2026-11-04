@@ -19,6 +19,7 @@ import {
   $iter,
   $iterator,
   $knowing,
+  $last,
   $lent,
   $mapEnds,
   $nextBack,
@@ -469,7 +470,7 @@ function main() {
       2,
     ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
-  const last = Array.from(
+  const last = $last(
     $closing(
       $iterator(
         count(),
@@ -490,7 +491,7 @@ function main() {
     )
       .take(5)
       .filter((x) => x % 2 === 1),
-  ).at(-1);
+  );
   console.log(`${last == null ? "None" : `Some(${last})`}`);
   console.log(
     `${$rev(

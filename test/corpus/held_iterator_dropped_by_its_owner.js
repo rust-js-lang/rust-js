@@ -2,6 +2,7 @@
 
 import {
   $closing,
+  $collectDropping,
   $dropEach,
   $held,
   $iter,
@@ -10,6 +11,7 @@ import {
   $lazyScan,
   $lazyTakeWhile,
   $lent,
+  $mapFrom,
   $next,
   $nthDropping,
   $rev,
@@ -153,7 +155,7 @@ function main() {
     console.log(`${tmp == null ? "None" : `Some(${tmp})`}`);
     if (total > 0) {
       some$live = false;
-      const rest = Array.from(
+      const rest = $collectDropping(
         some.map((d) => {
           const result = d[0];
           dDrop_drop(d);
@@ -165,46 +167,42 @@ function main() {
     // Collected by JS's own `new Set(..)`, which closes nothing at its end:
     // each source closed as it's done, or as an adapter over it ends.
     try {
-      const firsts = new Set(
-        $closing($iter(ds(60)), $dropEach(dDrop_drop))
-          .take(1)
-          .map((d) => {
-            const result = d[0];
-            dDrop_drop(d);
-            return result;
-          }),
-      );
-      const backs = new Set(
-        $rev($closing($iter(ds(70)), $dropEach(dDrop_drop))).map((d) => {
+      const value = $closing($iter(ds(60)), $dropEach(dDrop_drop))
+        .take(1)
+        .map((d) => {
           const result = d[0];
           dDrop_drop(d);
           return result;
-        }),
-      );
+        });
+      const firsts = $mapFrom(new Set(), value, true);
+      const value$1 = $rev($closing($iter(ds(70)), $dropEach(dDrop_drop))).map((d) => {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      });
+      const backs = $mapFrom(new Set(), value$1, true);
       const keep = (d) => d[0] > 0;
-      const kept = new Set(
-        $closing($iter(ds(100)), $dropEach(dDrop_drop))
-          .take(2)
-          .filter((item) => {
-            if (keep(item)) {
-              return true;
-            }
-            dDrop_drop(item);
-            return false;
-          })
-          .map((d) => {
-            const result = d[0];
-            dDrop_drop(d);
-            return result;
-          }),
-      );
-      const scanned = new Set(
-        $lazyScan($closing($iter(ds(110)), $dropEach(dDrop_drop)), 0, (_, d) => {
-          const result = d[0] < 111 ? d[0] : undefined;
+      const value$2 = $closing($iter(ds(100)), $dropEach(dDrop_drop))
+        .take(2)
+        .filter((item) => {
+          if (keep(item)) {
+            return true;
+          }
+          dDrop_drop(item);
+          return false;
+        })
+        .map((d) => {
+          const result = d[0];
           dDrop_drop(d);
           return result;
-        }),
-      );
+        });
+      const kept = $mapFrom(new Set(), value$2, true);
+      const scan = $lazyScan($closing($iter(ds(110)), $dropEach(dDrop_drop)), 0, (_, d) => {
+        const result = d[0] < 111 ? d[0] : undefined;
+        dDrop_drop(d);
+        return result;
+      });
+      const scanned = $mapFrom(new Set(), scan, true);
       const sizes = [firsts.size, backs.size, kept.size, scanned.size];
       console.log(`[${sizes.join(", ")}] end`);
     } finally {

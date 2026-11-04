@@ -4,6 +4,7 @@ import { iterator_map } from "@rust-js/std/iter.js";
 import {
   $clone,
   $cloning,
+  $collectDropping,
   $cycle,
   $cycleOf,
   $iter,
@@ -127,7 +128,7 @@ function main() {
   // The item it made is dropped as it unwinds.
   const endless$1 = { start: 0 };
   check("skip endless owned", () => {
-    const collect = Array.from(
+    const collect = $collectDropping(
       $roomForHint(
         $iterator(endless$1, $rangeFromStep(-2147483648, 2147483647))
           .drop(1)
@@ -137,6 +138,8 @@ function main() {
         true,
         noisyDrop_drop,
       ),
+      noisyDrop_drop,
+      true,
     );
     for (const item of collect) {
       noisyDrop_drop(item);

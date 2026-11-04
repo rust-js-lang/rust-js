@@ -10,6 +10,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $closing,
+  $collectDropping,
   $count,
   $foldOf,
   $given,
@@ -182,7 +183,7 @@ function main() {
     peeked.return();
     throw error;
   }
-  console.log(`[${Array.from(peeked.map((x) => (x * 2) >>> 0)).join(", ")}]`);
+  console.log(`[${$collectDropping(peeked.map((x) => (x * 2) >>> 0)).join(", ")}]`);
   console.log(
     `${iterator_peekable(
       ["m", 0],
@@ -220,7 +221,7 @@ function main() {
     `[${Array.from(iterator_peekable(["q", 0], { next: plainIterator_next }, plainDrop_drop).take(1)).join(", ")}]`,
   );
   console.log(
-    `[${Array.from(iterator_fuse(["r", 0], { next: plainIterator_next }, false, plainDrop_drop).map((x) => (x + 1) >>> 0)).join(", ")}]`,
+    `[${$collectDropping(iterator_fuse(["r", 0], { next: plainIterator_next }, false, plainDrop_drop).map((x) => (x + 1) >>> 0)).join(", ")}]`,
   );
   const stepped = $held(iterator_peekable(["s", 0], { next: plainIterator_next }, plainDrop_drop));
   try {
@@ -229,7 +230,7 @@ function main() {
     stepped.return();
     throw error;
   }
-  console.log(`[${Array.from(stepped.map((x) => (x * 2) >>> 0)).join(", ")}]`);
+  console.log(`[${$collectDropping(stepped.map((x) => (x * 2) >>> 0)).join(", ")}]`);
   // A held map's and inspect's fold, std's: their source's, the crate's
   // own, through a peekable (#264).
   console.log(

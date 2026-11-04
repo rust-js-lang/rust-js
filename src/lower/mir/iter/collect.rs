@@ -268,34 +268,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.collects_in_place(iter_ty, Some(item)) == Some(false)
     }
 
-    /// Of a collect into `output` of `item`s a panic may stop, `it` a
-    /// chain whose stages may throw, from an owning source or of items with
-    /// a destructor: how what it holds is dropped as std's unwinds (#422,
-    /// #423). `None` where it holds nothing a panic would leave.
+    /// Of a collect into `output` of `item`s a panic may stop, of an
+    /// iterator of type `iter_ty` whose steps may panic, that holds what has
+    /// a destructor or gives items with one: how what it holds is dropped
+    /// as std's unwinds (#422, #423). `None` where it holds nothing a panic
+    /// would leave.
     fn unwinding_collect(
         &mut self,
-        it: &Expr,
         output: Ty<'tcx>,
         item: Option<Ty<'tcx>>,
         iter_ty: Option<Ty<'tcx>>,
         span: Span,
     ) -> R<Option<UnwindingCollect>> {
-        // Or of a chain whose JS hides a stage its type has, a variable
-        // holding it: more of its closures that may panic than its JS shows
-        // callbacks, each taken to throw, as nothing shows it can't (#423).
-        // Or of one stepping an iterator whose steps its JS never shows,
-        // the crate's own or a `dyn`'s, that may panic (rd763, rd765).
-        let hidden = iter_ty.is_some_and(|ty| {
-            self.panicking_steps(ty) > crate::lower::iterators::callbacks_in(it) || self.unseen_steps_may_panic(ty)
-        });
-        if !crate::lower::iterators::chain_may_throw(it) && !hidden {
+        // Of an iterator whose steps may panic, as its type says: a stage of
+        // its, a variable's too, or an iterator it holds whose steps no JS
+        // shows, the crate's own or a `dyn`'s (#423, rd763, rd765); never
+        // read from its JS (#653).
+        if !iter_ty.is_some_and(|ty| self.steps_may_panic(ty)) {
             return Ok(None);
         }
         let drop = match item {
             Some(item) if self.drops(item) != crate::lower::drops::Drops::Nothing => self.drop_function(item, span)?,
             _ => None,
         };
-        if drop.is_none() && !crate::lower::iterators::closes_a_source(it) {
+        // Or of an iterator that holds what has a destructor, its type's
+        // answer: its closing drops it as the panic leaves it, a
+        // `$closing`'s or std's compiled struct's (#653).
+        let holds = iter_ty.is_some_and(|ty| self.drops(ty) != crate::lower::drops::Drops::Nothing);
+        if drop.is_none() && !holds {
             return Ok(None);
         }
         let rest_first = drop.is_some() && item.is_some_and(|item| self.rest_dropped_first(output, iter_ty, item));
@@ -423,7 +423,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::call(Expr::member(dictionary, from_iter), vec![it]));
         }
         Ok(if self.is_std_type(output, StdItem::BinaryHeap) {
-            let items = match self.unwinding_collect(&it, output, item, iter_ty, span)? {
+            let items = match self.unwinding_collect(output, item, iter_ty, span)? {
                 Some(unwinding) => unwinding.collected(it),
                 None => items(it),
             };
@@ -496,7 +496,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let args = self.folded_unwinding(it, output, item, iter_ty, span)?;
                     Expr::call_helper("$foldToArray", args)
                 }
-                None if let Some(unwinding) = self.unwinding_collect(&it, output, item, Some(iter_ty), span)? => {
+                None if let Some(unwinding) = self.unwinding_collect(output, item, Some(iter_ty), span)? => {
                     unwinding.collected(it)
                 }
                 None => match self.collected_items(&it, iter_ty) {
@@ -505,7 +505,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 },
             }
         } else if self.is_lang_adt(output, LangItem::String) {
-            let items = match self.unwinding_collect(&it, output, item, iter_ty, span)? {
+            let items = match self.unwinding_collect(output, item, iter_ty, span)? {
                 Some(unwinding) => unwinding.collected(it),
                 None => items(it),
             };
@@ -536,7 +536,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A panic that may stop it: a B-tree's, which std collects as a
             // `Vec` first, collected so; another's, which extends a new one,
             // `$mapFrom`, what's left then what it holds dropped (#423).
-            let unwinding = self.unwinding_collect(&it, output, item, iter_ty, span)?;
+            let unwinding = self.unwinding_collect(output, item, iter_ty, span)?;
             let (it, unwinds) = match unwinding {
                 Some(unwinding) if self.is_sorted(output) => (unwinding.collected(it), false),
                 unwinding => (it, unwinding.is_some()),
@@ -613,20 +613,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call_helper("$rposition", vec![items, found]))
     }
 
-    /// What drops a fold's accumulator, an `acc`, that a stage of `it`, of
-    /// type `receiver`, strands where it throws, a panic, as std's adapter's
-    /// fold closure drops it (#423): `it`'s stages may throw, or of a type
-    /// parameter's, whose steps are anyone's (#424), and it has a
-    /// destructor. `$foldDropping`'s and `$foldBack`'s `unwind`.
-    pub(super) fn stranded_drop(
-        &mut self,
-        it: &Expr,
-        receiver: Ty<'tcx>,
-        acc: Ty<'tcx>,
-        span: Span,
-    ) -> R<Option<Expr>> {
-        let may_throw =
-            crate::lower::iterators::chain_may_throw(it) || receiver.has_param() || self.steps_may_panic(receiver);
+    /// What drops a fold's accumulator, an `acc`, that a stage of an
+    /// iterator of type `receiver` strands where it throws, a panic, as std's
+    /// adapter's fold closure drops it (#423): its steps may panic, as its
+    /// type says (`steps_may_panic`), or of a type parameter's, whose steps
+    /// are anyone's (#424), and it has a destructor. `$foldDropping`'s and
+    /// `$foldBack`'s `unwind`.
+    pub(super) fn stranded_drop(&mut self, receiver: Ty<'tcx>, acc: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let may_throw = receiver.has_param() || self.steps_may_panic(receiver);
         match may_throw && self.drops(acc) != crate::lower::drops::Drops::Nothing {
             true => self.drop_function(acc, span),
             false => Ok(None),
@@ -651,7 +645,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => item,
         };
         let unwind = match (acc, arg_tys.first()) {
-            (Some(acc), Some(&receiver)) => self.stranded_drop(&it, receiver, acc, span)?,
+            (Some(acc), Some(&receiver)) => self.stranded_drop(receiver, acc, span)?,
             _ => None,
         };
         let Some(init) = init else {
@@ -728,7 +722,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `(&mut self, B, F)`.
         let unwind = match (arg_tys, method) {
             ([receiver, acc, _], IterMethod::TryFold | IterMethod::TryRFold) => {
-                self.stranded_drop(&it, *receiver, *acc, span)?
+                self.stranded_drop(*receiver, *acc, span)?
             }
             _ => None,
         };

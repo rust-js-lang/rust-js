@@ -1031,3 +1031,10 @@ and `consumer-closes-unrevealed` (`lower/mir/iter.ts`), `consumer-closes-lent`
 `rfold` and `try_fold` that close it, are given by `$forward`
 ([1089](1089-an-iterators-steps-are-passed-on-by-one-combinator.md)), as
 every adapter's are; each closes what it closed before.
+
+## Amendment: what may panic is the type's answer alone (2026-11-04, ADR 1089, #653)
+
+`chain_may_throw` and `closes_a_source`, which the amendment of
+2026-10-30 (#422) named, are gone: a collect's and a fold's unwinding ask
+`steps_may_panic`, and what the iterator's type holds that has a
+destructor ([1089](1089-an-iterators-steps-are-passed-on-by-one-combinator.md)).

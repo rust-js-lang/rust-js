@@ -2,6 +2,7 @@
 
 import { iterator_fuse, iterator_peekable, iterator_zip } from "@rust-js/std/iter.js";
 import {
+  $collectDropping,
   $dropEach,
   $fromFn,
   $held,
@@ -207,7 +208,7 @@ function main() {
     zipped.return();
     throw error;
   }
-  const second = Array.from(
+  const second = $collectDropping(
     zipped.map(([x, loud]) => {
       const result = (x + loud[0]) >>> 0;
       loudDrop_drop(loud);

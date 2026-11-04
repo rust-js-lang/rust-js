@@ -186,4 +186,12 @@ export const mutations: Mutation[] = [
     replace: "      const step = skipped(k, init, unwind);\n      if (step.done) {\n        skipping.return();\n        return init;\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
   },
+  {
+    name: "skip-own-count-unsaid",
+    breaks: "a `skip()` doesn't say its `count` is the crate's own, so a `skip()` of it counts by stepping, never calling it (#671)",
+    file: "src/runtime/skipping.js",
+    find: "  if (iter.ownCount) skipping.ownCount = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_count_where_adapters_call_them.rs$"],
+  },
 ];

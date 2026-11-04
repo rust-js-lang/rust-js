@@ -4,7 +4,6 @@ import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $closing,
   $cmp,
-  $folded,
   $held,
   $iterator,
   $last,
@@ -468,24 +467,22 @@ function main() {
     iter$4.return();
   }
   show("peekable held", result$4);
-  const value = Array.from(
-    $folded(
-      $closing(
-        $iterator(
-          [[1, 2, 3], "s"],
-          foldsIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          foldsIterator_fold,
-        ),
-        (it) => {
-          foldsDrop_drop(it.of);
-        },
-      ).drop(1),
-    ),
-  ).at(-1);
+  const value = $last(
+    $closing(
+      $iterator(
+        [[1, 2, 3], "s"],
+        foldsIterator_next,
+        false,
+        undefined,
+        undefined,
+        undefined,
+        foldsIterator_fold,
+      ),
+      (it) => {
+        foldsDrop_drop(it.of);
+      },
+    ).drop(1),
+  );
   console.log(`folds ${value == null ? "None" : `Some(${value})`}`);
   const value$1 = $last(
     iterator_fuse(

@@ -399,6 +399,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // step asks a `Skip`'s `nth` of one (#294).
                     || self.recognition().nths_a_slice(receiver_ty)
                     || self.recognition().steps_past_a_slice(receiver_ty)
+                    // And of one whose `fold` is the crate's own, which a
+                    // filter's fold would call, where std's `StepBy` folds by
+                    // its source's `next` and `nth` (#671).
+                    || self.recognition().folds_its_own(receiver_ty)
                 {
                     let mut list = vec![items, n];
                     list.extend(self.item_drop_of(receiver_ty, span)?);

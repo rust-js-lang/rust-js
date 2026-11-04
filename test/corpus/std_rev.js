@@ -12,6 +12,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $closing,
+  $collectDropping,
   $dropEach,
   $foldToArray,
   $held,
@@ -144,7 +145,7 @@ function main() {
   // destructor: made knowing its back where it's made.
   const mapped = $mapEnds($closing($iter([[4], [5]]), $dropEach(loudDrop_drop)), (l) => l);
   console.log(
-    `[${Array.from(
+    `[${$collectDropping(
       $mapEnds($rev(mapped), (l) => {
         const result = l[0];
         loudDrop_drop(l);

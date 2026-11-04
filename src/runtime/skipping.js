@@ -167,5 +167,8 @@ function $skipping(iter, n, drop) {
     rfold: iter.tryRfold !== undefined ? rfold : undefined,
   });
   if (iter.ownNth) skipping.ownNth = true;
+  // Its `count` its source's, the crate's own where it writes one, which
+  // a `skip` of it asks in turn (#671).
+  if (iter.ownCount) skipping.ownCount = true;
   return skipping;
 }

@@ -13,6 +13,7 @@ import {
   $extendMap,
   $iter,
   $lazyRange,
+  $mapFrom,
   $range,
   $skipping,
   $sortedEntries,
@@ -47,7 +48,7 @@ function limit() {
 }
 
 function byNumber() {
-  return $extendMap(
+  return $mapFrom(
     new Map(),
     $lazyRange(0, 3).map((i) => [i, [i]]),
     false,
@@ -56,7 +57,7 @@ function byNumber() {
 }
 
 function byLoud() {
-  return $extendMap(
+  return $mapFrom(
     new $KeyMap(),
     $lazyRange(0, 3).map((i) => [[i], i]),
     false,
@@ -76,7 +77,7 @@ function mapped(l) {
 function main() {
   const value = $iter(Array.from(byNumber().values()));
   const value$1 = limit();
-  const values = Array.from(
+  const values = $collectDropping(
     $closing(
       value,
       (intoValues) => {
@@ -91,7 +92,7 @@ function main() {
   console.log(`values [${values.join(", ")}] ${arg}`);
   const value$2 = $iter(Array.from(byLoud().keys()));
   const value$3 = limit();
-  const keys = Array.from(
+  const keys = $collectDropping(
     $closing(
       value$2,
       (intoKeys) => {
@@ -106,7 +107,7 @@ function main() {
   console.log(`keys [${keys.join(", ")}] ${arg$1}`);
   const value$4 = $iter(Array.from(byNumber()));
   const value$5 = limit();
-  const entries = Array.from(
+  const entries = $collectDropping(
     $closing(
       value$4,
       (intoIter) => {
@@ -130,7 +131,7 @@ function main() {
   );
   const value$6 = $iter(Array.from(set));
   const value$7 = limit();
-  const items = Array.from(
+  const items = $collectDropping(
     $closing(
       value$6,
       (intoIter) => {
@@ -146,14 +147,20 @@ function main() {
 
   let tree = $treeFrom(
     new $BTreeMap(),
-    $lazyRange(0, 3).map((i) => [i, [i]]),
+    $collectDropping(
+      $lazyRange(0, 3).map((i) => [i, [i]]),
+      (value) => {
+        loudDrop_drop(value[1]);
+      },
+      true,
+    ),
     false,
     $cmp,
     loudDrop_drop,
   );
   const value$8 = $iter($sortedEntries(tree, $cmp).map((entry) => entry[1]));
   const value$9 = limit();
-  const treeValues = Array.from(
+  const treeValues = $collectDropping(
     $closing(
       value$8,
       (intoValues) => {
@@ -176,7 +183,7 @@ function main() {
   );
   const value$10 = $iter($sortedKeys(treeSet, (a, b) => $cmp(a[0], b[0])));
   const value$11 = limit();
-  const treeItems = Array.from(
+  const treeItems = $collectDropping(
     $closing(
       value$10,
       (intoIter) => {
@@ -192,7 +199,7 @@ function main() {
   const deque = $range(0, 3).map((value) => [value]);
   const value$12 = $iter(deque);
   const value$13 = limit();
-  const dequeItems = Array.from(
+  const dequeItems = $collectDropping(
     $closing(value$12, (intoIter) => {
       $dropItems(intoIter, loudDrop_drop);
     })
@@ -204,7 +211,7 @@ function main() {
   let list = Array.from({ length: 3 }, (_, value) => [value]);
   const value$14 = $iter(list);
   const value$15 = limit();
-  const listItems = Array.from(
+  const listItems = $collectDropping(
     $closing(value$14, (intoIter) => {
       $dropItems(intoIter, loudDrop_drop);
     })
@@ -216,7 +223,7 @@ function main() {
 
   const value$16 = $iter(Array.from(byNumber().values()));
   const value$17 = limit();
-  const skipped = Array.from(
+  const skipped = $collectDropping(
     $skipping(
       $closing(
         value$16,
@@ -248,14 +255,20 @@ function main() {
   console.log(`keys skipped [${skippedKeys.join(", ")}] ${arg$9}`);
   tree = $treeFrom(
     new $BTreeMap(),
-    $lazyRange(0, 3).map((i) => [i, [i]]),
+    $collectDropping(
+      $lazyRange(0, 3).map((i) => [i, [i]]),
+      (value) => {
+        loudDrop_drop(value[1]);
+      },
+      true,
+    ),
     false,
     $cmp,
     loudDrop_drop,
   );
   const value$18 = $iter($sortedEntries(tree, $cmp).map((entry) => entry[1]));
   const value$19 = limit();
-  const treeSkipped = Array.from(
+  const treeSkipped = $collectDropping(
     $skipping(
       $closing(
         value$18,
@@ -273,7 +286,7 @@ function main() {
   list = Array.from({ length: 3 }, (_, value) => [value]);
   const value$20 = $iter(list);
   const value$21 = limit();
-  const listSkipped = Array.from(
+  const listSkipped = $collectDropping(
     $skipping(
       $closing(value$20, (intoIter) => {
         $dropItems(intoIter, loudDrop_drop);

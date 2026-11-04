@@ -255,6 +255,22 @@ test("an iterator's steps are given by $forward alone", () => {
   expect(giving).toEqual([]);
 });
 
+// Whether stepping an iterator may panic, which decides what a fold's
+// `unwind` and a collect's `$collectDropping` drop, is `steps_may_panic`'s
+// alone, of the iterator's type (ADR 1089): its JS's arrows, `chain_may_throw`,
+// and its `$closing`s, `closes_a_source`, answered it too, and disagreed
+// with the type where a compiled `fuse()` closed nothing of a `Vec`'s rest
+// (#653). Neither gate is given the JS it gates.
+test("whether an iterator's steps may panic is steps_may_panic's alone", () => {
+  const collect = read("src/lower/mir/iter/collect.rs");
+  for (const gate of ["unwinding_collect", "stranded_drop"]) {
+    const signature = collect.slice(collect.indexOf(`fn ${gate}(`), collect.indexOf(") ->", collect.indexOf(`fn ${gate}(`)));
+    expect(signature, gate).not.toContain("Expr");
+  }
+  const lowering = ["src/lower.rs", ...files("src/lower")].map(read).join("\n");
+  expect(lowering).not.toMatch(/fn (chain_may_throw|closes_a_source|callbacks_in)\b/);
+});
+
 // A helper is written as the runtime's, `Expr::helper("$cmp")`, which
 // checks the runtime has it and is asked for by being written (ADR 0103),
 // not as a variable of its name, `Expr::var("$cmp")`, which checks nothing.

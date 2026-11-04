@@ -8,6 +8,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $closing,
+  $collectDropping,
   $count,
   $dropEach,
   $foldOf,
@@ -197,7 +198,7 @@ function main() {
   }
   const nested = $lazyChain(value$11, $closing($iter(tmp$7), $dropEach(loudDrop_drop)));
   console.log(
-    `[${Array.from(
+    `[${$collectDropping(
       $skipping(nested, 3, loudDrop_drop).map((l) => {
         const result = l[0];
         loudDrop_drop(l);

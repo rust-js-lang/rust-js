@@ -70,11 +70,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // chain: what steps it from its back, as Rust's `Rev` does, its
             // closures run as `next_back` runs them (ADR 0535), never its
             // items from the front reversed (#382).
+            // Closed to drop what it holds, a type parameter's by its drop,
+            // as `Rev` drops it (ADR 0516, #650).
             None => {
-                return Ok(Expr::call_helper(
-                    "$rev",
-                    vec![self.as_double_ended(receiver, iter_ty, span)?],
-                ));
+                let it = self.as_double_ended(receiver, iter_ty, span)?;
+                return Ok(Expr::call_helper("$rev", vec![self.closing(it, iter_ty, span)?]));
             }
         };
         let items = crate::lower::iterators::reversed(items);
@@ -163,6 +163,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // iterator of it, which would be stepped as a range again.
             Some(IterMethod::ByRef) if self.range_kind(iter_ty).is_some() => receiver.clone(),
             Some(IterMethod::ByRef) if self.knows_its_back(iter_ty) => {
+                self.as_double_ended(receiver.clone(), iter_ty, span)?
+            }
+            // A copy that's its source, of numbers, stepped from its back:
+            // its source made knowing its back, a `skip`'s or a `take`'s of a
+            // slice's items, which JS's own `drop` and `take` don't (#646).
+            Some(IterMethod::Copied | IterMethod::Cloned)
+                if self.is_its_source(output)
+                    && self.knows_its_back(output)
+                    && !self.has_a_back(iter_ty)
+                    && self.recognition().is_iter_adapter(iter_ty) =>
+            {
                 self.as_double_ended(receiver.clone(), iter_ty, span)?
             }
             // A map of one that knows its length, too (ADR 0456).
@@ -314,8 +325,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // what it's given, as `fold`'s is (#423).
         if method == IterMethod::RFold {
             let unwind = match arg_tys.get(1) {
-                Some(&acc) => self.stranded_drop(&it, iter_ty, acc, span)?,
+                Some(&acc) => self.stranded_drop(iter_ty, acc, span)?,
                 None => None,
+            };
+            // `rfold(self)` takes it: closed where its consumer's closing
+            // drops it, at its end and as a panic unwinds, `consumer_closes`'
+            // one answer, as `fold`'s is (#637, #650).
+            let lent = arg_tys.first().is_some_and(|ty| ty.is_mutable_ptr());
+            let dropping = (self.iterator_item(iter_ty))
+                .is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing);
+            let it = match self.consumer_closes(Some(method), iter_ty, lent, dropping) {
+                true => self.closing(it, iter_ty, span)?,
+                false => it,
             };
             let mut given = vec![it];
             given.extend(values);

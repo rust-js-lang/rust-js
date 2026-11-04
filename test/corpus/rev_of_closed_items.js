@@ -2,6 +2,7 @@
 
 import {
   $closing,
+  $collectDropping,
   $dropEach,
   $filterEnds,
   $held,
@@ -26,7 +27,7 @@ function louds(n) {
 }
 
 function main() {
-  const odd = Array.from(
+  const odd = $collectDropping(
     $rev(
       $filterEnds(
         $closing($iter(louds(3)), $dropEach(loudDrop_drop)),
@@ -34,6 +35,8 @@ function main() {
         loudDrop_drop,
       ),
     ),
+    loudDrop_drop,
+    true,
   );
   console.log(`odd ${odd.length}`);
   for (const item of odd) {
@@ -88,7 +91,7 @@ function main() {
   }
   console.log(`first ${first != null ? map(first) : 9}`);
 
-  const doubled = Array.from(
+  const doubled = $collectDropping(
     $rev(
       $mapEnds($closing($iter(louds(3)), $dropEach(loudDrop_drop)), (l) => {
         const result = (l[0] * 2) >>> 0;

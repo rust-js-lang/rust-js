@@ -91,3 +91,62 @@ renames, and a table would separate each from its comment.
   `$forward` declaration, each as it meant; `forward-arguments-dropped`,
   `forward-own-unsaid` and `forward-step-it-lacks`
   (`runtime/forward.ts`) guard the combinator.
+
+## Amendment: what may panic is the type's answer, and what a step takes is closed as std's is (2026-11-04, #646, #650, #653, #671)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Each changed results, so Rust's behavior is kept.
+
+- **What may panic as an iterator is stepped is `steps_may_panic`'s alone**
+  (`mir/iter/collect.rs`), the iterator's revealed type's answer. A
+  collect's unwinding (`unwinding_collect`) and a fold's `unwind`
+  (`stranded_drop`) also read the JS: `chain_may_throw` said an arrow may
+  throw, and `closes_a_source` said a source is `$closing(..)`. A `fuse()`,
+  `peekable()`, `chain()` or `zip()` of a `Vec`'s `into_iter()`, mapped by a
+  closure that panics and collected into a `String`, a `HashSet` or a
+  `HashMap`, showed no `$closing`. Std's compiled struct holds the `$iter`
+  and drops it as it's closed, so the collect was `Array.from(..)`, and what
+  the source had left was never dropped (#653, 4,672 of the matrix's case-builds).
+  Now a collect of an iterator whose steps may panic, and whose type holds
+  what has a destructor, is `$collectDropping`. A `last()` of one is `$last`,
+  std's default of its `fold`, which closes it as it unwinds.
+  `chain_may_throw`, `closes_a_source` and `callbacks_in` are gone.
+  `test/architecture.test.ts` ("whether an iterator's steps may panic is
+  steps_may_panic's alone") keeps both gates from being given the JS.
+- **`rfold(self)` closes what it takes**, as `fold` does. `back_step` asks
+  `consumer_closes`, so a `Vec`'s rest and the crate's double-ended iterator
+  with a `Drop` are dropped at its end and as its closure's panic unwinds. A
+  generic `rev()` of a type parameter is closed by the parameter's drop, as
+  `Rev` drops what it holds (#650).
+- **A copy that's its source, stepped from its back, makes its source
+  knowing its back**: `nums.iter().skip(1).copied().rfold(..)` was
+  `$foldBack(nums.values().drop(1), ..)`, JS's `drop`, which has no back;
+  now `$skipping(..)` or `$taking(..)`. A filter of a reversed `Vec`'s
+  items with a `Drop`, `rev()`ed again and held, is made knowing its back
+  as one of the items is (`back_stepped.rs`'s `dropping_items`, #646). A
+  `cloned()` of a `skip()` stepped from its back is refused, as before.
+- **The crate's own `fold` and `count` are called where std's adapters call
+  them** (#671). A `step_by()` of a source whose `fold` is the crate's own
+  is `$stepBy`, which steps it by `next` and `nth` as std's `StepBy` does,
+  not a filter by index, whose fold called it. A `skip()` and an
+  `enumerate()` say their `count` is their source's own (`ownCount`), so a
+  `skip()` of either calls it. A closed iterator's own `count` is given the
+  items' drop.
+
+The readability baseline's `$iter` is 75.0 of 10,000 lines, from 74.9. Each
+added one is a `Vec`'s items closed under a collect whose closure may panic,
+`$collectDropping($closing($iter(v), ..).map(f))`, where the eager
+`v.map(f)` dropped nothing the panic left.
+
+Corpus cases: `rfold_and_rev_close_what_they_step.rs`,
+`compiled_adapters_closed_as_a_collect_unwinds.rs`,
+`copied_skip_take_and_filter_stepped_from_back.rs` and
+`own_fold_and_count_where_adapters_call_them.rs`. Mutations:
+`rfold-receiver-unclosed`, `generic-rev-unclosed` and `copy-of-skip-backless`
+(`lower/mir/iter/backs.ts`), `filter-of-a-rev-backless`
+(`lower/analysis/back_stepped.ts`), `collect-holding-unclosed`
+(`lower/mir/iter/collect.ts`), `last-holding-unclosed`
+(`lower/mir/iter/closing.ts`), `step-by-of-own-fold-filtered`
+(`lower/combinators/adapters.ts`), `skip-own-count-unsaid`,
+`enumerate-own-count-unsaid` and `closing-count-drop-unpassed` (runtime).
+`hidden-stage-unseen` and `callbacks-uncounted` are gone with the JS count
+they guarded; a hidden stage is the type's, `fold-stage-by-type-unseen`'s.

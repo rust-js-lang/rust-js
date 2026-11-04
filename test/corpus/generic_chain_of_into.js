@@ -7,6 +7,7 @@ import {
   iterator_chain,
 } from "@rust-js/std/iter.js";
 import {
+  $collectDropping,
   $findBack,
   $iter,
   $knowing,
@@ -53,7 +54,7 @@ function main() {
     console.log(`drop ${value._tag[0]}`);
     throw error;
   }
-  const counted = Array.from(
+  const counted = $collectDropping(
     $roomForHint(
       chain(
         value,

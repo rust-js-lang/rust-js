@@ -2,6 +2,7 @@
 
 import {
   $closing,
+  $collectDropping,
   $held,
   $iter,
   $lazyMapWhile,
@@ -104,7 +105,7 @@ function main() {
   });
   let result$1;
   try {
-    result$1 = Array.from(iter$1);
+    result$1 = $collectDropping(iter$1);
   } finally {
     iter$1.return();
   }
@@ -135,7 +136,7 @@ function main() {
   );
   let result$2;
   try {
-    result$2 = Array.from(iter$2);
+    result$2 = $collectDropping(iter$2);
   } finally {
     iter$2.return();
   }
@@ -163,7 +164,7 @@ function main() {
   });
   let result$3;
   try {
-    result$3 = Array.from(iter$3);
+    result$3 = $collectDropping(iter$3);
   } finally {
     iter$3.return();
   }

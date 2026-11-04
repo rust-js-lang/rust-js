@@ -68,11 +68,13 @@ function main() {
         console.log(`none ${none.length} ${fragments.length}`);
 
         try {
-          const names = [["m1"], ["m2"]].map((n) => {
-            const result = n[0];
-            noisyDrop_drop(n);
-            return result;
-          });
+          const names = $collectDropping(
+            $closing($iter([["m1"], ["m2"]]), $dropEach(noisyDrop_drop)).map((n) => {
+              const result = n[0];
+              noisyDrop_drop(n);
+              return result;
+            }),
+          );
           console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
 
           const keep = (n) => n[0] !== "p2";

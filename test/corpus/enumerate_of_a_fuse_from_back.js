@@ -8,6 +8,7 @@ import {
   iterator_fuse,
 } from "@rust-js/std/iter.js";
 import {
+  $collectDropping,
   $dropEach,
   $enumerate,
   $held,
@@ -117,7 +118,7 @@ function main() {
     rev.return();
   }
   console.log(`${e == null ? "None" : `Some((${e[0]}, ${e[1]}))`}`);
-  const back = Array.from(
+  const back = $collectDropping(
     $rev(
       $enumerate(
         $knowing(

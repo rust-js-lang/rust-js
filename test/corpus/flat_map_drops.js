@@ -49,7 +49,7 @@ function innerLeft() {
 }
 function sourceLeft() {
   const v = [[1], [2], [3]];
-  const firsts = Array.from(
+  const firsts = $collectDropping(
     $closing($iter(v), $dropEach(loudDrop_drop))
       .flatMap((l) => {
         const result = [l[0], (l[0] + 10) & 255];
@@ -60,7 +60,7 @@ function sourceLeft() {
   );
   console.log(`[${firsts.join(", ")}]`);
   const nested = [[[20], [21]], [[22]], [[23]]];
-  const flat = $collectDropping(
+  const flat = Array.from(
     $flatMap(
       $closing($iter(nested), (intoIter) => {
         for (const item of intoIter) {
@@ -71,8 +71,6 @@ function sourceLeft() {
       }),
       (item) => $closing($iter(item), $dropEach(loudDrop_drop)),
     ).take(2),
-    loudDrop_drop,
-    true,
   );
   console.log(`flat ${flat.length}`);
   for (const item of flat) {
@@ -124,7 +122,7 @@ function options() {
       }
     })
     .filter((item) => item != null);
-  const opts = $collectDropping(
+  const opts = Array.from(
     $closing($iter([[60], undefined, [61]]), (intoIter) => {
       for (const item of intoIter) {
         if (item != null) {
@@ -134,8 +132,6 @@ function options() {
     })
       .filter((item) => item != null)
       .take(1),
-    loudDrop_drop,
-    true,
   );
   try {
     console.log(`[${big.join(", ")}] ${opts.length}`);
