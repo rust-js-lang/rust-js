@@ -102,8 +102,8 @@ fn index_loop(stmt: &Stmt, mentions: &mut HashMap<String, usize>) -> Option<Vec<
     });
     if values == 0
         || js::mentions_in(body, &handle) != values
-        || bindings::assigns(body, array_name)
-        || other_name.as_ref().is_some_and(|b| bindings::assigns(body, b))
+        || js::Writes::sets(body, array_name)
+        || other_name.as_ref().is_some_and(|b| js::Writes::sets(body, b))
     {
         return None;
     }

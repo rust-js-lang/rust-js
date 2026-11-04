@@ -195,7 +195,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     // moved past it, `element.getAttribute("href")`, could see, or it see.
     let past = (rest[..at].iter())
         .all(|s| matches!(&s.kind, StmtKind::Const(_, v) if passes(v) && !(acts && v.has_effects())))
-        || (unchanged_by_calls && reads.iter().all(|v| !assigns(&rest[..at], v)));
+        || (unchanged_by_calls && reads.iter().all(|v| !js::Writes::sets(&rest[..at], v)));
     if !past {
         return None;
     }

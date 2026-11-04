@@ -54,7 +54,7 @@ fn stepped(declared: &Stmt, looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> {
         || !cond.mentions_var(name)
         || js::mentions_in(after, name) > 0
         || js::continues(rest, label.as_deref())
-        || sets(rest, name)
+        || js::Writes::sets(rest, name)
         || in_function(body, name)
         || function_names(cond, name)
         || step
@@ -80,18 +80,6 @@ fn reads_declared(value: &Expr, stmts: &[Stmt]) -> bool {
     let mut declared = false;
     value.visit_vars(&mut |v| declared |= js::declares(stmts, v));
     declared
-}
-
-/// Whether `stmts` set `name`, or may: `name = ..`, `name += ..`, a handle
-/// on it (`js::Writes`), or in an expression, `(name = ..)`, `name++`,
-/// however deep.
-fn sets(stmts: &[Stmt], name: &str) -> bool {
-    let mut set = js::Writes::of(stmts).may_replace(name);
-    js::each_expr(stmts, &mut |e| {
-        set |= matches!(&e.kind, ExprKind::Assigned(t, _) | ExprKind::Stepped(_, t)
-            if matches!(&t.kind, ExprKind::Var(v) if v == name));
-    });
-    set
 }
 
 /// Whether a function in `stmts`, declared or a value, names `name`.

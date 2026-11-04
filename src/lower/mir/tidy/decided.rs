@@ -220,7 +220,7 @@ fn disturbs(e: &Expr, test: &Expr) -> bool {
 fn disturbs_any(stmts: &[Stmt], test: &Expr) -> bool {
     let mut vars = Vec::new();
     test.visit_vars(&mut |v| vars.push(v.to_string()));
-    if vars.iter().any(|v| assigns(stmts, v)) {
+    if vars.iter().any(|v| js::Writes::sets(stmts, v)) {
         return true;
     }
     if test.reads_only_vars() {

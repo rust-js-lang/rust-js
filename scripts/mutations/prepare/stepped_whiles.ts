@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     name: "stepped-while-set-before",
     breaks: "a `while` whose body sets its variable before its last statement, `if (at === 9) { at = 4; }`, is a `for` (ADR 0974)",
     file: "src/prepare/stepped_whiles.rs",
-    find: "        || sets(rest, name)\n",
+    find: "        || js::Writes::sets(rest, name)\n",
     replace: "",
     tests: corpus,
     snapshots: true,

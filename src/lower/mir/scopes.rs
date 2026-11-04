@@ -231,14 +231,7 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
             });
         }
     });
-    let assigned = |name: &str| {
-        declared.contains(name)
-            || handled.contains(name)
-            || statements().any(|stmt| {
-                matches!(&stmt.kind, StmtKind::Assign(target, _) | StmtKind::Compound(_, target, _)
-                    if matches!(&target.kind, js::ExprKind::Var(n) if n == name))
-            })
-    };
+    let assigned = |name: &str| declared.contains(name) || handled.contains(name) || js::Writes::sets(out, name);
     let param_names: Vec<&str> = params.iter().flat_map(|p| p.names()).collect();
     let mut names: HashMap<String, String> = HashMap::new();
     let mut lets = Vec::new();

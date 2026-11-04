@@ -1,7 +1,7 @@
 //! Tidy's shadows: a `let` that shadows a binding the program names, read
 //! no more after it, is that binding (ADRs 0609, 0650).
 
-use super::bindings::{assigns, captured};
+use super::bindings::captured;
 use super::*;
 
 /// `const stack$1 = e;`, a `let` that shadows a binding of its own block,
@@ -255,13 +255,13 @@ fn set_after_last_read(stmts: &[Stmt], shadow: &str, old: &str, mut set: bool) -
     let mut any = set;
     for (k, stmt) in stmts.iter().enumerate() {
         if js::mentions_in(&stmts[k..], old) == 0 {
-            let rest = set || assigns(&stmts[k..], shadow);
+            let rest = set || js::Writes::sets(&stmts[k..], shadow);
             return Some((rest, any || rest));
         }
         if set && js::mentions_in(std::slice::from_ref(stmt), old) > 0 {
             return None;
         }
-        if !assigns(std::slice::from_ref(stmt), shadow) {
+        if !js::Writes::sets(std::slice::from_ref(stmt), shadow) {
             continue;
         }
         // A branch that leaves goes on nowhere after it.

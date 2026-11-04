@@ -571,7 +571,8 @@ pub(super) fn tuple_reads(
         let span = stmts[i].span;
         let after = &stmts[i + 1..];
         let acts = |item: &Expr| {
-            !inert(item) && !matches!(&item.kind, ExprKind::Var(v) if !assigns(after, v) && !set_elsewhere.contains(v))
+            !inert(item)
+                && !matches!(&item.kind, ExprKind::Var(v) if !js::Writes::sets(after, v) && !set_elsewhere.contains(v))
         };
         let last = items.iter().rposition(acts);
         let fixed = |item: &Expr| {

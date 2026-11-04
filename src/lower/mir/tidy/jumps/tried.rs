@@ -39,7 +39,7 @@ pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &str) -> Option<
                 if let ExprKind::Var(bound) = &target.kind
                     && parts.is_empty() =>
             {
-                (bound, value, assigns(&body[1..], bound))
+                (bound, value, js::Writes::sets(&body[1..], bound))
             }
             _ => break,
         };
@@ -58,7 +58,12 @@ pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &str) -> Option<
         // drop guard's `let item; try { item = $next(iter); } ..` (#444's
         // names): the `for`'s own, `let` where the body sets it.
         [] if !is_temporary(item) => {
-            return Some((js::Pattern::Name(item.to_string()), assigns(body, item), 0, aliases));
+            return Some((
+                js::Pattern::Name(item.to_string()),
+                js::Writes::sets(body, item),
+                0,
+                aliases,
+            ));
         }
         [(Ok(None), bound, _)] => js::Pattern::Name(bound.clone()),
         _ if !parts.is_empty() && parts.iter().all(|(p, ..)| matches!(p, Ok(Some(_)))) => {

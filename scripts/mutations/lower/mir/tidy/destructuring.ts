@@ -226,17 +226,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable a guard sets after the tuple is made is read as the guard left it",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "if !assigns(after, v) && !set_elsewhere.contains(v))",
+    find: "if !js::Writes::sets(after, v) && !set_elsewhere.contains(v))",
     replace: "if !set_elsewhere.contains(v))",
-    tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
-  },
-  {
-    name: "tuple-part-set-by-closure",
-    breaks:
-      "a variable a closure sets after the tuple is made is read as the closure left it",
-    file: "src/lower/mir/tidy/destructuring.rs",
-    find: "if !assigns(after, v) && !set_elsewhere.contains(v))",
-    replace: "if !assigns(after, v))",
     tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
   },
   {

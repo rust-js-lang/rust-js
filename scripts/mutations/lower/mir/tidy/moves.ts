@@ -253,7 +253,7 @@ export const mutations: Mutation[] = [
     breaks:
       'what does nothing, of variables no statement between assigns, `version === "Canary"`, stays held before a loop',
     file: "src/lower/mir/tidy/moves.rs",
-    find: "\n        || (unchanged_by_calls && reads.iter().all(|v| !assigns(&rest[..at], v)));",
+    find: "\n        || (unchanged_by_calls && reads.iter().all(|v| !js::Writes::sets(&rest[..at], v)));",
     replace: ";",
     tests: [
       "test/jsx-children.test.ts",

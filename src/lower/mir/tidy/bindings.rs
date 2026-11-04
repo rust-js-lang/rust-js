@@ -82,20 +82,7 @@ pub(super) fn only_read(stmts: &[Stmt], name: &str) -> bool {
         }
         _ => {}
     });
-    all == read && !assigns(&stmts, name)
-}
-
-/// Whether `stmts` assign `name`.
-pub(super) fn assigns(stmts: &[Stmt], name: &str) -> bool {
-    let mut stmts = stmts.to_vec();
-    let mut assigned = false;
-    js::statement_lists(&mut stmts, &mut |list| {
-        assigned |= list.iter().any(|s| {
-            matches!(&s.kind, StmtKind::Assign(target, _)
-            if matches!(&target.kind, ExprKind::Var(v) if v == name))
-        });
-    });
-    assigned
+    all == read && !js::Writes::sets(&stmts, name)
 }
 
 /// An arrow's parameter its function's names made unique, `(value$1) =>

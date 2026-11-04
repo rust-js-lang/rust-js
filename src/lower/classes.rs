@@ -1424,13 +1424,7 @@ fn instance_as_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
     }) else {
         return Ok(());
     };
-    let mut set_again = false;
-    js::each_list(body, &mut |list| {
-        set_again |= list.iter().any(
-            |stmt| matches!(&stmt.kind, StmtKind::Assign(Expr { kind: ExprKind::Var(v), .. }, _) if *v == instance),
-        );
-    });
-    if set_again {
+    if js::Writes::sets(body, &instance) {
         return Err("a constructor whose instance is set again, not changed in place");
     }
     let made = body.remove(at);

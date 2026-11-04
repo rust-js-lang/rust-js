@@ -221,12 +221,11 @@ test("a rewrite of preparation's that fired nowhere leaves a case's JS as it is"
     const each = new Set(readFileSync(fired, "utf8").split("\n").filter(Boolean));
     const unfired = (only ?? preparePasses()).filter((pass) => !each.has(pass));
     if (only === undefined) expect(unfired.length).toBeGreaterThan(10);
-    const changed = unfired.filter((pass) => {
-      const without = compileJs(file, dir, "2024", false, {}, ["--prepare-without", pass]);
-      if (!("js" in without)) throw new Error(without.error);
-      return code(without.js) !== full;
-    });
-    expect([name, changed]).toEqual([name, []]);
+    // All of them left out at once, as each that changed nothing leaves
+    // every later one the same tree: one compile, not one each.
+    const without = compileJs(file, dir, "2024", false, {}, unfired.flatMap((pass) => ["--prepare-without", pass]));
+    if (!("js" in without)) throw new Error(without.error);
+    expect([name, code(without.js) === full]).toEqual([name, true]);
   }
 }, 300_000);
 

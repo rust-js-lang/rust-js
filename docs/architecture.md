@@ -317,6 +317,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Dictionary cache names | `names.rs` | `dictionary_cache` |
 | String offsets in JS units | `mir/offsets.rs`; `std_types/text.rs` | `in_units`, `call_in_units`, `step`, `cut`, `seed`; `found`, `sliced_in_units` |
 | A shadow that is the binding it shadows | `mir/tidy/shadows.rs` | `shadowed` |
+| What a JS tree writes of its variables, a binding replaced, an object changed, a handle made, each in a closure too (ADR 0670); and whether, and how often, it sets one, `x++` and a handle among the ways (ADR 1088, #523), which no other module searches a tree for (`test/architecture.test.ts`) | `js/writes.rs` | `Writes`, `sets`, `count`, `may_replace`, `by_closures` |
 | What a body's `let`s and patterns bind, by name, for tidy (`tidy::LetNames`): the `let`s the program wrote, `let mut`'s, one that ends a borrow or holds a frozen one, a drop guard's, and an `if let`'s or let chain's binding named as the field its scrutinee reads, by Rust names, which alone a chain's binding read again in its place may be (ADR 0866, amended, rd226, rd706) | `mir/patterns/let_names.rs` | `let_names` |
 | A jump MIR shared after an `if` chain, given to each arm that goes on (ADR 0745, amended) | `mir/tidy/jumps/continues.rs` | `jumps_into_branches` |
 | Where a variable is JS's `this`, a `with_this` closure's and a class's method's `self`, read through a `const` in a function made in its body, and whether a body reads its own `this` (ADR 0972) | `js/stmt_walk.rs` | `read_as_this`, `reads_this` |

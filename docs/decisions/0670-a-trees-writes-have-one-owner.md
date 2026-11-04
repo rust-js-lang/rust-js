@@ -62,3 +62,11 @@ own lists are walked once now, where the one `each_expr` that finds every
 closure, however deep, finds it; tidy's `rebinds` asked closures the same
 way and does the same. Held by unit tests of 64 closures nested, which
 would never finish walked the other way.
+
+## Extended by 1088: whether a tree sets a variable
+
+[ADR 1088](1088-whether-a-tree-sets-a-variable-is-writes-alone.md):
+`Writes::sets(stmts, name)` and `Writes::count(stmts, name)` say whether,
+and how often, a tree sets a variable's binding, `x++` and a handle
+among the ways, and every pass asks them; tidy's `assigns` and applied
+arrows' `sets`, each a narrower answer of its own, are gone.

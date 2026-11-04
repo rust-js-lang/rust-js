@@ -549,9 +549,9 @@ fn in_place(
     // a first set the body's own statement, which no closure made before
     // it could see, else the call stays.
     if let Some((param, _)) = parameter
-        && sets(&body, param)
+        && Writes::sets(&body, param)
     {
-        let first = body.iter().position(|s| sets(std::slice::from_ref(s), param))?;
+        let first = body.iter().position(|s| Writes::sets(std::slice::from_ref(s), param))?;
         let StmtKind::Assign(target, value) = &body[first].kind else {
             return None;
         };
@@ -576,7 +576,7 @@ fn in_place(
             .expect("a name nothing mentions");
         let mut after = body.split_off(first + 1);
         renamed(&mut after, param, &to);
-        let again = sets(&after, &to);
+        let again = Writes::sets(&after, &to);
         body[first].kind = match again {
             true => StmtKind::Let(to, Some(value)),
             false => StmtKind::Const(to, value),
@@ -722,24 +722,6 @@ fn through_handles(body: &mut Vec<Stmt>) {
             };
         }
     });
-}
-
-/// Whether `stmts` set `name`, `name = ..` or `name += ..`, in any block,
-/// a closure's too.
-fn sets(stmts: &[Stmt], name: &str) -> bool {
-    let mut set = false;
-    each_list(stmts, &mut |list| {
-        set |= list.iter().any(|s| {
-            matches!(&s.kind, StmtKind::Assign(t, _) | StmtKind::Compound(_, t, _)
-                if matches!(&t.kind, ExprKind::Var(v) if v == name))
-        });
-    });
-    each_expr(stmts, &mut |e| match &e.kind {
-        ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => set |= sets(body, name),
-        ExprKind::Function(function) => set |= sets(&function.body, name),
-        _ => {}
-    });
-    set
 }
 
 /// Where a `try`'s statement of a value is, made of `value`, where the
