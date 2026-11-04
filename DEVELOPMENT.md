@@ -80,7 +80,9 @@ branch's one running, and no branch's run touches another's.
 | rustc's test suite and its lists | | **rustc** jobs, 6 shards | |
 | The Vite example's build | | **examples** job | |
 | Generated programs (fuzz) | | | yes, and the suite's 12 seeds |
-| Each corpus case after each of tidy's stages, `test/tidy-stages.test.ts` | its six cases, in `check:fast` when tidy changes | | its six cases in the suite; every case, on 6 machines |
+| Each corpus case after each of tidy's stages and without each of preparation's rewrites that changed it, `test/tidy-stages.test.ts` (ADR 1087) | its nine cases, in `check:fast` when tidy or preparation changes: 90 s on the Mac, its runs kept | its nine cases, the read cases and six generated programs, **Readability passes** workflow, of a push that changes tidy or preparation | its nine cases in the suite; every case, on 6 machines |
+| The day's 600 generated programs through the same, `TIDY_STAGES=programs` | | | yes (`programs`, 6 machines of 100) |
+| What JS made, read as often as Rust reads it in every variant, `test/getter-reads.test.ts` (ADR 1087) | in `check:fast` when tidy or preparation changes: 16 s on the Mac | with the stages' sample | in the suite |
 | Release qualification | | | yes |
 | react.dev port: its JS against what it committed, `bun run port measure`; its build's 823 pages, `bun run port compare` | yes: the port is private | | |
 | React's port, react-in-rust at `ports/react-in-rust.pin`: `cargo check` of it, `bun scripts/react-in-rust.ts check` | when a change touches a binding | **React port** workflow, of a push that changes `builtins/`, `webapi/`, `node/` or `react/` | |
@@ -503,7 +505,9 @@ Every test there is: `check.yml`'s jobs, its suite in 2 shards with the
 files only the nightly runs (`--nightly`, ADR 1030), and every
 mutation on 16 machines where a branch's check runs only its own, 600
 generated programs, new ones each night, from the day's number, and every
-corpus case after each of tidy's stages on 6 machines (ADR 0659). It's a
+corpus case after each of tidy's stages and without each of preparation's
+rewrites on 6 machines, and the 600 programs so on 6 more (ADRs 0659,
+1087). It's a
 group of its own, so it neither cancels nor waits for a push's check.
 `bun run ci:status` shows its latest run first; GitHub mails a failure to
 whoever last changed the schedule. Of a public repository, its machines
@@ -531,6 +535,18 @@ artifact. An intended change to React's JS is accepted by moving the pin to
 the port's commit that regenerated it. A red night of `main` opens an
 issue, `Nightly red: <date>`, or comments on that day's (`issue` job), so
 the issue watch gives it an owner.
+
+### `readability-passes.yml`, the readability oracles, of a push that changes tidy or preparation
+
+`test/tidy-stages.test.ts`'s nine cases, `test/getter-reads.test.ts`'s read
+cases and the first six generated programs (`TIDY_STAGES=programs`), each
+after every one of tidy's stages and without each of preparation's
+rewrites that changed it (ADR 1087), of a push whose `paths` are
+`src/prepare*`, `src/lower/mir/tidy*` or the oracles' own files. A sample:
+the nightly runs every corpus case and the night's 600 programs so. On the
+Mac, the nine cases took 90 s with their runs kept, six programs 150 s and
+the read cases 16 s (2026-11-04, a debug build, the load near 13). Started
+by hand too: `gh workflow run readability-passes.yml`.
 
 ### `react-in-rust.yml`, the React port, of a push that changes a binding
 

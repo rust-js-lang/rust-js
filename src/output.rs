@@ -28,6 +28,10 @@ pub struct OutputPlan {
     /// `@rust-js/std`'s build, whose manifest is committed beside its JS:
     /// its paths relative to it (ADR 0561).
     pub std_bodies: bool,
+    /// Preparation's rewrites each module is prepared with,
+    /// `--prepare-without`'s, and where `--prepare-fired` writes which of
+    /// them changed something, a test hook (ADR 1087).
+    pub prepare: (crate::prepare::Passes, Option<PathBuf>),
     /// The JS files the plan has, once planned, which a crate's checks read.
     pub written: Vec<PathBuf>,
     /// What the build read besides the crate, once planned: the app's
@@ -61,6 +65,8 @@ struct Laid {
     file: PathBuf,
     destination: PathBuf,
     printed: to_oxc::Output,
+    /// Which of preparation's rewrites changed it, where they're recorded.
+    fired: crate::prepare::Fired,
 }
 
 impl OutputPlan {
@@ -298,6 +304,20 @@ impl OutputPlan {
         for (destination, (_, text)) in declared_destinations.into_iter().zip(&declared) {
             files.push((destination, text.as_str()));
         }
+        // Which of preparation's rewrites changed a module, a line each,
+        // where it's asked (ADR 1087).
+        if let (_, Some(path)) = &self.prepare {
+            let fired = (laid.iter()).fold(crate::prepare::Fired::default(), |fired, laid| fired.and(laid.fired));
+            artifacts.push(Artifact {
+                path: absolute(path)?,
+                bytes: fired
+                    .names()
+                    .iter()
+                    .map(|name| format!("{name}\n"))
+                    .collect::<String>()
+                    .into_bytes(),
+            });
+        }
         let prettier = crate::prettier::laid_out(&self.settings, &files)?;
         let (js_texts, types_texts) = prettier.texts.split_at(laid.len());
         for (laid, text) in laid.into_iter().zip(js_texts) {
@@ -372,7 +392,7 @@ impl OutputPlan {
                 *import = js::ImportFrom::Specifier(specifier);
             }
         });
-        crate::prepare::module(&mut js_module);
+        let fired = crate::prepare::module(&mut js_module, self.prepare.0);
         // What only an earlier phase resolves, left: a compiler's
         // mistake, refused, not printed.
         if let Some(what) = js_module.unprintable() {
@@ -414,6 +434,7 @@ impl OutputPlan {
             file,
             destination,
             printed,
+            fired,
         })
     }
 
@@ -638,6 +659,7 @@ impl OutputPlan {
             dep_info: None,
             settings: crate::settings::Settings::default(),
             std_bodies: false,
+            prepare: Default::default(),
             written: Vec::new(),
             read: Vec::new(),
             bound: Vec::new(),

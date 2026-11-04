@@ -4,6 +4,7 @@
 //! only lays out the result.
 
 use crate::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind, UnaryOp};
+pub use passes::{Fired, PASSES, Pass, Passes};
 use std::collections::HashSet;
 
 mod assigned_breaks;
@@ -13,6 +14,7 @@ mod forwarding;
 mod initializers;
 mod labels;
 mod objects;
+mod passes;
 mod reclaim;
 mod shadows;
 mod stepped_whiles;
@@ -24,14 +26,28 @@ mod typeofs;
 /// chosen around it.
 mod scopes;
 
-pub fn module(module: &mut js::Module) {
-    module.each_expr_mut(&mut Expr::unbound_variable_read); // `(0, f)` is `f` (rd579).
-    module.each_expr_mut(&mut Expr::own_method_call); // `f.call(o, ..)` of `o.f` is `o.f(..)` (rd334).
-    initializers::declared_at_top(module);
-    initializers::assigned_in_place(&mut module.items);
-    forwarding::functions(module);
-    forwarding::fields(module);
-    forwarding::members(module);
+/// `module` made readable, leaving out what `passes` leaves out (ADR
+/// 1087): which of its rewrites fired, where `passes` records them.
+pub fn module(module: &mut js::Module, passes: Passes) -> Fired {
+    passes::with(passes, || prepared_module(module))
+}
+
+fn prepared_module(module: &mut js::Module) {
+    // `(0, f)` is `f` (rd579).
+    passes::run(Pass::UnboundReads, module, |module| {
+        module.each_expr_mut(&mut Expr::unbound_variable_read)
+    });
+    // `f.call(o, ..)` of `o.f` is `o.f(..)` (rd334).
+    passes::run(Pass::OwnMethodCalls, module, |module| {
+        module.each_expr_mut(&mut Expr::own_method_call)
+    });
+    passes::run(Pass::InitializersAtTop, module, initializers::declared_at_top);
+    passes::run(Pass::InitializersInPlace, module, |module| {
+        initializers::assigned_in_place(&mut module.items)
+    });
+    passes::run(Pass::ForwardedFunctions, module, forwarding::functions);
+    passes::run(Pass::ForwardedFields, module, forwarding::fields);
+    passes::run(Pass::ForwardedMembers, module, forwarding::members);
     for function in module.items.iter_mut().flat_map(js::Item::functions_mut) {
         prepared(function);
     }
@@ -42,18 +58,27 @@ pub fn module(module: &mut js::Module) {
             js::Item::Namespace(_) | js::Item::Function(_) => {}
         }
     }
-    js::each_item_block_mut(&mut module.items, &mut |stmts| labels::loops(stmts));
-    js::each_item_slotted_block_mut(&mut module.items, &mut |stmts, slot| unelsed(stmts, slot));
-    js::each_item_block_mut(&mut module.items, &mut tested_assignments);
-    js::each_item_block_mut(&mut module.items, &mut |stmts| assigned_breaks::assigned_breaks(stmts));
-    reclaim::module(module);
-    compound(module);
-    js::each_item_block_mut(&mut module.items, &mut stepped_whiles::stepped_whiles);
-    stepped_whiles::counters(module);
-    read_together(module);
-    js::each_item_block_mut(&mut module.items, &mut |stmts| declared_functions(stmts));
-    declared_module_functions(&mut module.items);
-    js::each_item_block_mut(&mut module.items, &mut |stmts| do_whiles::do_whiles(stmts)); // Last (ADR 0978).
+    let each_block = |pass, module: &mut js::Module, f: &mut dyn FnMut(&mut Vec<Stmt>)| {
+        passes::run(pass, module, |module| js::each_item_block_mut(&mut module.items, f));
+    };
+    each_block(Pass::UnusedLabels, module, &mut |stmts| labels::loops(stmts));
+    passes::run(Pass::ElsesAfterExits, module, |module| {
+        js::each_item_slotted_block_mut(&mut module.items, &mut |stmts, slot| unelsed(stmts, slot))
+    });
+    each_block(Pass::TestedAssignments, module, &mut tested_assignments);
+    each_block(Pass::AssignedBreaks, module, &mut |stmts| {
+        assigned_breaks::assigned_breaks(stmts)
+    });
+    passes::run(Pass::NamesReclaimed, module, reclaim::module);
+    passes::run(Pass::CompoundAssignments, module, compound);
+    each_block(Pass::SteppedWhiles, module, &mut stepped_whiles::stepped_whiles);
+    passes::run(Pass::Counters, module, stepped_whiles::counters);
+    passes::run(Pass::ReadTogether, module, read_together);
+    each_block(Pass::DeclaredFunctions, module, &mut |stmts| declared_functions(stmts));
+    passes::run(Pass::DeclaredModuleFunctions, module, |module| {
+        declared_module_functions(&mut module.items)
+    });
+    each_block(Pass::DoWhiles, module, &mut |stmts| do_whiles::do_whiles(stmts)); // Last (ADR 0978).
 }
 
 /// A module's `const` of a function made as a value, a thread-local's
@@ -479,9 +504,11 @@ fn checked_item(checked: &Expr, other: &Expr) -> bool {
 /// A function made readable.
 fn prepared(function: &mut js::Function) {
     function_body(&mut function.params, &mut function.body);
-    shadows::function(function);
-    unread(&mut function.body);
-    js::each_block_mut(&mut function.body, &mut |stmts| imported(stmts));
+    passes::run(Pass::Shadows, function, shadows::function);
+    passes::run(Pass::UnreadConstants, &mut function.body, unread);
+    passes::run(Pass::DynamicImports, &mut function.body, |body| {
+        js::each_block_mut(body, &mut |stmts| imported(stmts))
+    });
 }
 
 /// `const run = await import(spec).then((m) => m.run)` is `const { run } =
@@ -558,6 +585,7 @@ fn left_out(body: &mut [Stmt]) {
             pattern: js::Pattern::Object(fields, _),
             ..
         } = &mut body[i].kind
+            && passes::applies(Pass::LeftOutFields)
         {
             fields[k].1 = js::Pattern::Name("_".to_string());
         }
@@ -577,7 +605,9 @@ fn left_out_params(params: &mut [js::Pattern], body: &[Stmt]) {
         if declares_underscore(body) || params.iter().any(|p| p.names().contains(&"_")) {
             continue;
         }
-        if let js::Pattern::Object(fields, _) = &mut params[i] {
+        if let js::Pattern::Object(fields, _) = &mut params[i]
+            && passes::applies(Pass::LeftOutFields)
+        {
             fields[k].1 = js::Pattern::Name("_".to_string());
         }
     }
@@ -613,10 +643,11 @@ fn function_body(params: &mut [js::Pattern], body: &mut Vec<Stmt>) {
     this_handles::this_read_apart(body);
     block(body, true);
     left_out_params(params, body);
-    catches::tail_tries(body);
+    passes::run(Pass::TailTries, body, |body| catches::tail_tries(body));
     if body
         .last()
         .is_some_and(|stmt| matches!(stmt.kind, StmtKind::Return(None)))
+        && passes::applies(Pass::LastReturns)
     {
         body.pop();
     }
@@ -624,17 +655,20 @@ fn function_body(params: &mut [js::Pattern], body: &mut Vec<Stmt>) {
 
 /// Of `body`, which `ends` a function, its end a return, or doesn't.
 fn block(body: &mut Vec<Stmt>, ends: bool) {
-    catches::try_catches(body, ends);
-    js::tried_set_where_made(body);
+    passes::run(Pass::TryCatches, body, |body| catches::try_catches(body, ends));
+    passes::run(Pass::TriedSets, body, |body| js::tried_set_where_made(body));
     left_out(body);
     for stmt in body.iter_mut() {
-        catches::unfolded_first_arm(stmt);
-        if let Some(coalesced) = coalescing(stmt) {
+        passes::run(Pass::FirstArms, stmt, catches::unfolded_first_arm);
+        if let Some(coalesced) = coalescing(stmt)
+            && passes::applies(Pass::Coalescing)
+        {
             stmt.kind = coalesced;
         }
         // `else {}`, of nothing but Rust's comments, is no `else`.
         if let StmtKind::If(_, _, els) = &mut stmt.kind
             && els.as_ref().is_some_and(Vec::is_empty)
+            && passes::applies(Pass::EmptyElses)
         {
             *els = None;
         }
@@ -644,6 +678,7 @@ fn block(body: &mut Vec<Stmt>, ends: bool) {
         // (ADR 0299).
         if let StmtKind::Let(_, value) | StmtKind::Return(value) = &mut stmt.kind
             && value.as_ref().is_some_and(|v| matches!(v.kind, ExprKind::Undefined))
+            && passes::applies(Pass::UndefinedLeftOut)
         {
             *value = None;
         }
@@ -663,7 +698,7 @@ fn block(body: &mut Vec<Stmt>, ends: bool) {
             StmtKind::If(e, a, b) => {
                 // Its test as a test, `!!x` the `x` it tests, its `if`'s facts kept (rg3).
                 let of_if = e.facts.of_statement();
-                *e = e.tested();
+                passes::rewrite(Pass::Tests, e, Expr::tested);
                 expr(e);
                 e.facts = e.facts.and(of_if);
                 block(a, false);
@@ -673,7 +708,7 @@ fn block(body: &mut Vec<Stmt>, ends: bool) {
             }
             StmtKind::While { cond, body, .. } | StmtKind::DoWhile { cond, body, .. } => {
                 // Its test as a test, as an `if`'s.
-                *cond = cond.tested();
+                passes::rewrite(Pass::Tests, cond, Expr::tested);
                 expr(cond);
                 block(body, false);
             }
@@ -728,8 +763,8 @@ fn block(body: &mut Vec<Stmt>, ends: bool) {
             | StmtKind::Comments => {}
         }
     }
-    fallen_held(body);
-    fallen_declared(body);
+    passes::run(Pass::FallbacksHeld, body, |body| fallen_held(body));
+    passes::run(Pass::FallbacksDeclared, body, fallen_declared);
 }
 
 /// `let name = error.name; if (!name) { name = "Error"; }` is `const name =
@@ -994,8 +1029,8 @@ fn method(prop: &Prop, beside: bool) -> Option<Prop> {
 
 fn expr(e: &mut Expr) {
     // A global's `typeof` an earlier test of one `&&` says (ADR 0964).
-    typeofs::implied(e);
-    e.number_joined(); // `s + String(n)` is `s + n` (rd537).
+    passes::run(Pass::TypeofsImplied, e, typeofs::implied);
+    passes::run(Pass::NumbersJoined, e, Expr::number_joined); // `s + String(n)` is `s + n` (rd537).
     // A `&mut`'s handle on a place (ADR 0099), and a `dyn`'s of one with its
     // dictionary, as JS writes it: `{ get value() { return n; }, set
     // value(value) { n = value; } }`, its parameter a name the place
@@ -1054,6 +1089,7 @@ fn expr(e: &mut Expr) {
         && let ExprKind::Unary(js::UnaryOp::Not, not) = &value.kind
         && let ExprKind::Unary(js::UnaryOp::Not, tested) = &not.kind
         && matches!(&tested.kind, ExprKind::Var(name) if name == param)
+        && passes::applies(Pass::BooleanCallbacks)
     {
         *e = Expr {
             facts: js::Facts::NONE,
@@ -1068,13 +1104,16 @@ fn expr(e: &mut Expr) {
         && let Some(x) = js::null_test(null_test, false)
     {
         match &not.kind {
-            ExprKind::Unary(js::UnaryOp::Not, y) if js::same_path(x, y) => *e = (**not).clone(),
+            ExprKind::Unary(js::UnaryOp::Not, y) if js::same_path(x, y) && passes::applies(Pass::NullOrFalsy) => {
+                *e = (**not).clone()
+            }
             _ if !x.has_effects()
                 && not
                     .clone()
                     .negated_test()
                     .text_truth()
-                    .is_some_and(|y| js::same_path(x, y)) =>
+                    .is_some_and(|y| js::same_path(x, y))
+                && passes::applies(Pass::NullOrFalsy) =>
             {
                 *e = Expr::unary(js::UnaryOp::Not, x.clone()).or_at(e.span);
             }
@@ -1095,6 +1134,7 @@ fn expr(e: &mut Expr) {
         && args.is_empty()
         && let ExprKind::AsyncArrow(own, block) = &mut callee.kind
         && own.is_empty()
+        && passes::applies(Pass::AsyncClosures)
     {
         e.kind = ExprKind::AsyncArrow(std::mem::take(params), std::mem::take(block));
     }
@@ -1136,7 +1176,8 @@ fn expr(e: &mut Expr) {
             // An attribute that's `undefined`, a `None` say, is none, as JSX
             // leaves it out.
             jsx.props.retain(|p| {
-                !matches!(p, Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Method(_, value) if matches!(value.kind, ExprKind::Undefined))
+                !(matches!(p, Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Method(_, value) if matches!(value.kind, ExprKind::Undefined))
+                    && passes::applies(Pass::UndefinedAttributes))
             });
             for prop in &mut jsx.props {
                 match prop {
@@ -1146,7 +1187,7 @@ fn expr(e: &mut Expr) {
                         // A component may read what its callback returns, which
                         // lowering says of one whose call gives `undefined`.
                         if element && js::is_handler_name(name) {
-                            js::returning_its_call(value);
+                            passes::run(Pass::HandlerReturns, value, js::returning_its_call);
                         }
                         expr(value);
                     }
@@ -1164,7 +1205,7 @@ fn expr(e: &mut Expr) {
         }
         // What `!` turns it reads as a test, wherever it is.
         ExprKind::Unary(js::UnaryOp::Not, a) => {
-            **a = a.tested();
+            passes::rewrite(Pass::Tests, &mut **a, Expr::tested);
             expr(a);
         }
         ExprKind::Member(a, _)
@@ -1181,14 +1222,18 @@ fn expr(e: &mut Expr) {
         ExprKind::Binary(js::Op::Coalesce, a, b) => {
             expr(a);
             expr(b);
-            if let Some(chain) = fallen_to(a, b) {
+            if let Some(chain) = fallen_to(a, b)
+                && passes::applies(Pass::FallenChains)
+            {
                 *e = Expr { span: e.span, ..chain };
             }
         }
         ExprKind::Binary(js::Op::Or, a, b) => {
             expr(a);
             expr(b);
-            if let Some(truth) = kept_by_truth(a) {
+            if let Some(truth) = kept_by_truth(a)
+                && passes::applies(Pass::KeptTruths)
+            {
                 **a = Expr { span: a.span, ..truth };
             }
         }
@@ -1200,7 +1245,7 @@ fn expr(e: &mut Expr) {
         // into it: \`${x}\` (ADR 0066).
         ExprKind::Template(_, values, _) => {
             values.iter_mut().for_each(expr);
-            e.splice_templates();
+            passes::run(Pass::TemplatesSpliced, e, Expr::splice_templates);
         }
         ExprKind::OptionalCall(f, args) => {
             expr(f);
@@ -1208,7 +1253,7 @@ fn expr(e: &mut Expr) {
         }
         ExprKind::Cond(a, b, c) => {
             // Its test as a test, `!!x` the `x` it tests.
-            **a = a.tested();
+            passes::rewrite(Pass::Tests, &mut **a, Expr::tested);
             expr(a);
             expr(b);
             expr(c);
@@ -1216,9 +1261,11 @@ fn expr(e: &mut Expr) {
             // `a ? a : undefined`, `a || undefined`, which a fallback after
             // makes `a || y` (`fallen_to`); and of text by its emptiness,
             // `x !== "" ? x : undefined`, its truth's (`Expr::text_or`).
-            if let Some(or) = Expr::text_or(a, b, c) {
+            if let Some(or) = Expr::text_or(a, b, c)
+                && passes::applies(Pass::ConditionalsAsLogicals)
+            {
                 *e = Expr { span: e.span, ..or };
-            } else if js::same_path(a, b) {
+            } else if js::same_path(a, b) && passes::applies(Pass::ConditionalsAsLogicals) {
                 let (then, els) = (
                     std::mem::replace(&mut **b, Expr::undefined()),
                     std::mem::replace(&mut **c, Expr::undefined()),
@@ -1231,7 +1278,7 @@ fn expr(e: &mut Expr) {
             // upstream's `module && module[requireString]` is of `if
             // js::truthy(module) { js::get(module, key) } else { module }`.
             // Of what reads the same each time, which `&&` reads once.
-            } else if js::same_path(a, c) && a.reads_same() {
+            } else if js::same_path(a, c) && a.reads_same() && passes::applies(Pass::ConditionalsAsLogicals) {
                 let (test, then) = (
                     std::mem::replace(&mut **a, Expr::undefined()),
                     std::mem::replace(&mut **b, Expr::undefined()),
@@ -1246,15 +1293,19 @@ fn expr(e: &mut Expr) {
             expr(f);
             args.iter_mut().for_each(expr);
             // Its last `undefined`s that are no argument (ADR 0313, amended).
-            js::undefined_arguments::left_out(args);
-            if let Some(object) = objects::entries_written_out(e) {
+            passes::run(Pass::UndefinedArguments, args, js::undefined_arguments::left_out);
+            if let Some(object) = objects::entries_written_out(e)
+                && passes::applies(Pass::EntriesWrittenOut)
+            {
                 *e = object;
             }
         }
         ExprKind::Array(items) | ExprKind::Sequence(items) => items.iter_mut().for_each(expr),
         ExprKind::Object(props, layout) => {
             // A field that's `undefined` is no key, `{ code }` (ADR 0280).
-            js::undefined_keys::left_out(props, layout);
+            passes::run(Pass::UndefinedKeys, props, |props| {
+                js::undefined_keys::left_out(props, layout)
+            });
             for prop in props.iter_mut() {
                 match prop {
                     Prop::Field(_, value)
@@ -1272,7 +1323,9 @@ fn expr(e: &mut Expr) {
             // Where one field is a method, each is (ADR 0882, amended).
             let beside = props.iter().any(|prop| method(prop, false).is_some());
             for prop in props.iter_mut() {
-                if let Some(method) = method(prop, beside) {
+                if let Some(method) = method(prop, beside)
+                    && passes::applies(Pass::Methods)
+                {
                     *prop = method;
                 }
             }
@@ -1301,6 +1354,7 @@ fn expr(e: &mut Expr) {
     // shouldConstruct writes it (ADR 0953).
     if let ExprKind::Binary(op @ (js::Op::And | js::Op::Or), a, b) = &e.kind
         && let (Some(a), Some(b)) = (truth_of(a), truth_of(b))
+        && passes::applies(Pass::TruthsJoined)
     {
         let joined = Expr::bin(*op, a.clone(), b.clone());
         *e = Expr {

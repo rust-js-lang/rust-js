@@ -39,8 +39,8 @@ export const mutations: Mutation[] = [
     name: "spread-written-out-kept",
     breaks: "React's `UIEventInterface` is `{ ...EventInterface, ...{ view: 0, detail: 0 } }`, where upstream writes `{...EventInterface, view: 0, detail: 0}` (ADR 0967, amended)",
     file: "src/prepare/objects.rs",
-    find: "    if !props.iter().any(written_out) {\n",
-    replace: "    if true || !props.iter().any(written_out) {\n",
+    find: "    if !props.iter().any(written_out) || !super::passes::applies(super::Pass::SpreadsWrittenOut) {\n",
+    replace: "    if true || !props.iter().any(written_out) || !super::passes::applies(super::Pass::SpreadsWrittenOut) {\n",
     tests: ["test/js-collections.test.ts", "-t", "a Dict spread before more of it"],
   },
 ];

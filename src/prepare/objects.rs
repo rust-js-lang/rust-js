@@ -68,7 +68,7 @@ pub(super) fn spread_written_out(props: &mut Vec<Prop>, layout: &mut ObjectLayou
             .all(|p| matches!(p, Prop::Field(..) | Prop::Method(..) | Prop::Spread(_))),
         _ => false,
     };
-    if !props.iter().any(written_out) {
+    if !props.iter().any(written_out) || !super::passes::applies(super::Pass::SpreadsWrittenOut) {
         return;
     }
     let mut flat = Vec::with_capacity(props.len());

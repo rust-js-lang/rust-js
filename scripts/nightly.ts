@@ -42,13 +42,22 @@ export const jobs: Record<string, Part[]> = {
   // The suite with the files only the nightly runs (ADR 1030): itself all
   // the cores, its corpus in parts and its pages after.
   test: [{ id: "test", cmd: ["bun", "scripts/test.ts", "--nightly"], env: compiler, after: ["build"], cores, timeout: 40 * minutes }],
-  // Each corpus case after each of tidy's stages (ADR 0659).
+  // Each corpus case after each of tidy's stages and without each of
+  // preparation's rewrites (ADRs 0659, 1087).
   stages: parts("stages", cores, (i) => ({
     cmd: ["bun", "test", "--timeout=600000", "test/tidy-stages.test.ts"],
     env: { ...compiler, TIDY_STAGES: "corpus", RUST_JS_CASES: `${i}/${cores}` },
     after: ["build"],
     cores: 1,
     timeout: 30 * minutes,
+  })),
+  // The day's generated programs through the same (ADR 1087).
+  programs: parts("programs", 6, (i) => ({
+    cmd: ["bun", "test", "--timeout=900000", "test/tidy-stages.test.ts"],
+    env: { ...compiler, TIDY_STAGES: "programs", FUZZ_START: String(fuzzStart + (i - 1) * 100), FUZZ_SEEDS: "100" },
+    after: ["build"],
+    cores: 1,
+    timeout: 40 * minutes,
   })),
   // Each corpus case with std's iterator structs alone (ADR 0908).
   forms: parts("forms", 4, (i) => ({

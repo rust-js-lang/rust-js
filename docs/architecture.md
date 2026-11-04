@@ -230,7 +230,12 @@ Its `held_receivers` calls a field's function through its object where the
 field is `js::Known::Lasting`, which `mir/places.rs` says of a field of what
 a lasting reference is to (`LocalFacts::lasting`, [ADR 1034](decisions/1034-a-fields-function-called-after-statements-keeps-its-object.md)). Type-specific
 rewrites remain with their type's owner; downstream `src/prepare.rs` works
-only on the completed JS tree. The printer owns spelling and layout, including
+only on the completed JS tree, its rewrites each named in
+`prepare/passes.rs`'s `PASSES`, which `--prepare-without <pass>` leaves out
+and `--prepare-fired <file>` reports; `test/tidy-stages.test.ts` runs every
+variant of tidy's stages and preparation's rewrites against native Rust,
+and `test/getter-reads.test.ts` compares what each reads of JS-made values
+([ADR 1087](decisions/1087-each-readability-rewrite-is-checked-on-and-off.md)). The printer owns spelling and layout, including
 expression forms determined while converting to oxc; Rust decisions stay upstream.
 
 ### Semantic owners

@@ -3,9 +3,10 @@ name: Nightly
 # Every test there is, of `main`, each night at 02:00 UTC+7: check.yml's
 # jobs, the suite with the files only it runs (ADR 1030), the examples, the WASM compiler, rustc's tests, with
 # every mutation where a branch's check runs only its own, a batch of
-# generated programs, new ones each night (ADR 0092), and each case of the
-# corpus after each of tidy's stages (ADR 0659) and with std's iterator
-# structs alone (ADR 0908), the crates of crates.io's corpus against
+# generated programs, new ones each night (ADR 0092), each case of the
+# corpus and each of those programs after each of tidy's stages (ADR 0659)
+# and without each of preparation's rewrites (ADR 1087), each case with
+# std's iterator structs alone (ADR 0908), the crates of crates.io's corpus against
 # docs/crate-corpus.md, and React's port against the JS it committed. Of a
 # public repository, GitHub's machines cost nothing. A red night opens an
 # issue, `Nightly red: <date>`, which the issue watch gives an owner;
@@ -47,9 +48,11 @@ jobs:
       fuzz_seeds: '600'
       fuzz_start: ${{ needs.seeds.outputs.start }}
 
-  # Tidy's stages on the whole corpus (ADR 0659): each case's JS as tidy
-  # leaves it after each stage runs as native Rust does, a sixth of the
-  # cases on each of six machines; the nightly's suite runs a few of them.
+  # Tidy's stages and preparation's rewrites on the whole corpus (ADRs
+  # 0659, 1087): each case's JS as tidy leaves it after each stage, and as
+  # preparation leaves it without each rewrite that changed it, runs as
+  # native Rust does, a sixth of the cases on each of six machines; the
+  # nightly's suite runs a few of them.
   stages:
     name: tidy stages (${{ matrix.part }}/6)
     runs-on: ubuntu-latest
@@ -77,6 +80,46 @@ jobs:
           RUST_JS_CASES: ${{ matrix.part }}/6
           RUST_JS_COMPILER: target/release/rust-js
         run: bun test --timeout=300000 test/tidy-stages.test.ts
+
+  # The night's generated programs through the same (ADR 1087): each of
+  # the day's 600, whose JS runs as native Rust's, after each of tidy's
+  # stages and without each of preparation's rewrites that changed it, a
+  # hundred on each of six machines; one that differs is reduced, in
+  # `target/fuzz/seed-<n>.stages.rs`.
+  programs:
+    name: program stages (${{ matrix.part }}/6)
+    needs: seeds
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3, 4, 5, 6]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run part ${{ matrix.part }} of 6
+        env:
+          TIDY_STAGES: programs
+          START: ${{ needs.seeds.outputs.start }}
+          PART: ${{ matrix.part }}
+          RUST_JS_COMPILER: target/release/rust-js
+        run: FUZZ_START=$(( START + (PART - 1) * 100 )) FUZZ_SEEDS=100 bun test --timeout=900000 test/tidy-stages.test.ts
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: program-stages-${{ matrix.part }}
+          path: target/fuzz/
+          if-no-files-found: ignore
+          retention-days: 14
 
   # One meaning per iterator (ADR 0908): each case built with std's
   # iterator structs alone, none rewritten in place, runs as native Rust
@@ -179,7 +222,7 @@ jobs:
   # again that day, commented on, naming each failed job with its link: the
   # issue watch gives it an owner that day, and no one polls for it.
   issue:
-    needs: [check, seeds, fuzz, stages, forms, crates, port]
+    needs: [check, seeds, fuzz, stages, programs, forms, crates, port]
     if: always() && github.ref == 'refs/heads/main' && contains(needs.*.result, 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 10

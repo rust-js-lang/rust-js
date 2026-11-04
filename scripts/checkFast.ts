@@ -25,8 +25,10 @@ const changed = [...git(["diff", "--name-only", "HEAD"]), ...git(["ls-files", "-
 // What the snapshots and the diagnostics read: the compiler and the runtime.
 const shared = all || changed.some((file) => file.startsWith("src/") || file.startsWith("runtime/"));
 const jsx = all || changed.some((file) => /^src\/(lower\/jsx|jsx_syntax)|^react\//.test(file));
-// A change to tidy is checked after each of its stages (ADR 0659).
-const tidy = all || changed.some((file) => /^src\/lower\/mir\/tidy/.test(file));
+// A change to tidy or preparation is checked after each of tidy's stages
+// and without each of preparation's rewrites, and by the read cases (ADRs
+// 0659, 1087).
+const tidy = all || changed.some((file) => /^src\/(lower\/mir\/tidy|prepare)/.test(file));
 
 // The mutations the change adds or changes: each `name` its lists' diff adds.
 const diff = Bun.spawnSync(["git", "diff", "HEAD", "--", "scripts/mutations"], { cwd: root }).stdout.toString();
@@ -127,7 +129,7 @@ const jobs: Job[] = [
   ["clippy", ["cargo", "clippy", "--locked", "--quiet", "--", "-D", "warnings"], {}],
   ...inParts("corpus", "test/corpus.test.ts"),
   ...(all ? [everyFile] : suites),
-  ...(tidy ? [["tidy's stages", ["bun", "test", "test/tidy-stages.test.ts"], {}] as Job] : []),
+  ...(tidy ? [["readability passes", ["bun", "test", "test/tidy-stages.test.ts", "test/getter-reads.test.ts"], {}] as Job] : []),
   ...(added.length > 0
     ? [["mutations the change adds", ["bun", "scripts/mutations.ts", ...new Set(added)], {}] as [string, string[], Record<string, string>]]
     : []),

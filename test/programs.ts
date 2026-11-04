@@ -145,7 +145,11 @@ export function compileJs(
   const wrapper = join(dir, "lib.rs");
   writeFileSync(wrapper, `include!(${rustString(file)});\npub fn entry() {\n    main()\n}\n`);
   // As a library, as a crate another uses is (ADR 0100): in a folder of its own.
-  const name = flags.length === 0 ? "case" : `case-${flags.join("-").replaceAll(/[^A-Za-z0-9-]+/g, "_")}`;
+  // Of many, `--prepare-without` each of preparation's rewrites, a
+  // name of a file's length, its end their hash.
+  const named = flags.join("-").replaceAll(/[^A-Za-z0-9-]+/g, "_");
+  const short = named.length <= 120 ? named : `${named.slice(0, 80)}-${Bun.hash(named).toString(36)}`;
+  const name = flags.length === 0 ? "case" : `case-${short}`;
   const js = library ? join(dir, "library", `${name}.js`) : join(dir, `${name}.js`);
   const mode = library ? ["--library", "--manifest", join(dir, "library", `${name}.manifest.json`)] : [];
   const p = runSync([compiler, wrapper, "-o", js, ...mode, ...flags, "--", `--edition=${edition}`, "-Awarnings", remapRoot], root, compileTimeout, env);

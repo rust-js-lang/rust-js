@@ -1,0 +1,61 @@
+name: Readability passes
+
+# The readability passes' oracles (ADRs 0659, 1087), of a push to `main`
+# that changes tidy or preparation, or the oracles themselves: a few corpus
+# cases and generated programs after each of tidy's stages and without each
+# of preparation's rewrites that changed them, against native Rust, and the
+# read cases' logs of what JS made, each the same however the JS is made
+# readable. A sample, cheap and only where a pass changed (the user's rule
+# for a new net, 2026-11-02): the nightly runs every corpus case and the
+# night's 600 programs through them.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/prepare.rs'
+      - 'src/prepare/**'
+      - 'src/lower/mir/tidy.rs'
+      - 'src/lower/mir/tidy/**'
+      - 'test/tidy-stages.test.ts'
+      - 'test/getter-reads.test.ts'
+      - 'test/getter-reads-run.ts'
+      - 'test/getter-reads/**'
+      - '.github/workflows/readability-passes.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: readability-passes-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sample:
+    name: readability passes' sample
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      # Each variant's JS runs under Node, whose TypeScript runner needs 22.18 or later.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: The few cases and the read cases
+        env:
+          RUST_JS_COMPILER: target/release/rust-js
+        run: bun test --timeout=600000 test/tidy-stages.test.ts test/getter-reads.test.ts
+      # The first seeds, which `fuzz.test.ts`'s own run compiles.
+      - name: A few generated programs
+        env:
+          RUST_JS_COMPILER: target/release/rust-js
+          TIDY_STAGES: programs
+          FUZZ_START: '1'
+          FUZZ_SEEDS: '6'
+        run: bun test --timeout=900000 test/tidy-stages.test.ts -t 'generated program'

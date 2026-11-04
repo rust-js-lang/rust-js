@@ -63,6 +63,7 @@ export const browsers = ["browser", "next", "playground", "pilot", "vite", "weba
  * moved: a mutation that names one still runs it. */
 export const nightly = [
   "tidy-stages",
+  "getter-reads",
   "iterator-forms",
   "fuzz",
   "packages",

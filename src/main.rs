@@ -420,6 +420,12 @@ fn run() -> ExitCode {
             }
             return ExitCode::SUCCESS;
         }
+        Ok(command::Command::PreparePasses) => {
+            for (_, name) in prepare::PASSES {
+                println!("{name}");
+            }
+            return ExitCode::SUCCESS;
+        }
         Ok(command::Command::RuntimeModule) => {
             print!("{}", runtime::package_module());
             return ExitCode::SUCCESS;
@@ -552,6 +558,8 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         std_coverage,
         std_bodies,
         tidy_until,
+        prepare_without,
+        prepare_fired,
         std_iterators,
         ..
     } = build;
@@ -565,6 +573,8 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     plan.metadata = metadata.clone();
     plan.settings = settings;
     plan.std_bodies = std_bodies;
+    let recording = prepare_fired.is_some();
+    plan.prepare = (prepare::Passes::without(&prepare_without, recording), prepare_fired);
     let mut callbacks = RustJs {
         dependencies,
         export_library: library || tested,

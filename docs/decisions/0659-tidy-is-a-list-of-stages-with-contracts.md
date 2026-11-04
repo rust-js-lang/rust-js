@@ -521,3 +521,12 @@ theirs: what its passes emptied, gone, its test kept where it does
 anything. Held by the corpus case `empty_if_let_in_a_loop.rs`, run
 against native Rust, and the mutation `in-place-empty-if-kept`, restored
 with it as its test. Case: N.
+
+## Extended by 1087: preparation's rewrites, and generated programs
+
+[ADR 1087](1087-each-readability-rewrite-is-checked-on-and-off.md) names
+each of preparation's rewrites, `--prepare-without <pass>` leaving one out,
+and runs the same differential of them: each corpus case and generated
+program after each of tidy's stages, without each of preparation's
+rewrites that changed it, and at the least of both, against native Rust;
+and a read oracle of what JS made, which native Rust can't see.

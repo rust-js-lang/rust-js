@@ -649,6 +649,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-or-patterns.test.ts", "-t", "inside a chain reads it once"],
   },
   {
+    name: "getter-read-a-path-oracle",
+    breaks: "a let chain's binding of a getter's value is written into each test of it, read once for each, which the getter-read oracle's counting proxy logs where the least JS reads it once (#485, ADR 1087)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "    read_of_a_path(e) && e.reads_same()\n",
+    replace: "    read_of_a_path(e)\n",
+    tests: ["test/getter-reads.test.ts", "-t", "getter_tests"],
+  },
+  {
     name: "negated-and-untruthed",
     breaks:
       "a value's test negated is the value, not its truth: `!o ? false : f()` is `o && f()`, `undefined` where `o` is, not `false`, and `!o ? false : true` is `o`, the object, not `true`",

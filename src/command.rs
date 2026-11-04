@@ -25,6 +25,9 @@ pub(crate) enum Command {
     /// `--tidy-passes`: each of tidy's passes, a line each, in the order
     /// they run, what `--tidy-until` may name (ADR 0659).
     TidyPasses,
+    /// `--prepare-passes`: each of preparation's rewrites, a line each, what
+    /// `--prepare-without` may name (ADR 1087).
+    PreparePasses,
 }
 
 /// A crate's checks: its root, whose `Cargo.toml` names them, and the JS
@@ -65,6 +68,13 @@ pub(crate) struct Build {
     /// runs, `finish`'s naming and taking apart its parameters among them,
     /// so what's printed is what that pass made.
     pub tidy_until: Option<String>,
+    /// `--prepare-without <pass>`, any number: each module prepared with
+    /// every rewrite but these, to see that each changes nothing a program
+    /// does (ADR 1087).
+    pub prepare_without: Vec<crate::prepare::Pass>,
+    /// `--prepare-fired <file>`: where to write which of preparation's
+    /// rewrites changed something, a line each (ADR 1087).
+    pub prepare_fired: Option<PathBuf>,
     /// `--std-iterators`: every iterator adapter std compiles is its struct,
     /// none rewritten to the JS chain the recognizers make in place. A test
     /// hook, not a way to build: the differential job compares it with the
@@ -83,6 +93,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         Some("--version-json") if args.len() == 1 => return Ok(Command::VersionJson),
         Some("--version") if args.len() == 1 => return Ok(Command::Version),
         Some("--tidy-passes") if args.len() == 1 => return Ok(Command::TidyPasses),
+        Some("--prepare-passes") if args.len() == 1 => return Ok(Command::PreparePasses),
         Some("--rustc") => return Ok(Command::Rustc(args[1..].to_vec())),
         Some("--checks") => {
             let [input, files @ ..] = &args[1..] else {
@@ -127,6 +138,16 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
             "--tidy-until: no pass `{pass}`; `rust-js --tidy-passes` lists them"
         ));
     }
+    let mut prepare_without = Vec::new();
+    while let Some(name) = valued(&mut ours, "--prepare-without", "a rewrite of preparation's")? {
+        let Some(pass) = crate::prepare::Pass::named(&name) else {
+            return Err(format!(
+                "--prepare-without: no rewrite `{name}`; `rust-js --prepare-passes` lists them"
+            ));
+        };
+        prepare_without.push(pass);
+    }
+    let prepare_fired = valued(&mut ours, "--prepare-fired", "a path")?.map(PathBuf::from);
     let test = ours.first().is_some_and(|a| a == "--test");
     let (input, output) = match &ours[usize::from(test)..] {
         [input] => (PathBuf::from(input), PathBuf::from(input).with_extension("js")),
@@ -155,6 +176,8 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         std_coverage,
         std_bodies,
         tidy_until,
+        prepare_without,
+        prepare_fired,
         std_iterators,
         rustc: rustc.to_vec(),
     }))
