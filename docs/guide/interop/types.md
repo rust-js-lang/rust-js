@@ -1124,9 +1124,7 @@ export function ratio(a, b) {
   The crate's function's parameter is `null` where a call gives it `None`
   and where its body sets it so, `children = None`'s `children = null`,
   and what a call gives it otherwise is as it is; its `.d.ts` is `T |
-  null`, never left out, and its body takes it so, given on or stored as
-  it is, `captureCommitPhaseError(current, nearestMountedAncestor)`,
-  `searchTarget = target`
+  null`, never left out
   ([ADR 0861](../../decisions/0861-a-functions-own-nullable-parameter-is-set-null.md), amended).
   Where each of the crate's calls gives it `null` or a value (`None`,
   `Some(..)`, a nullable parameter or field passed on, or a `let` of
@@ -1147,9 +1145,13 @@ export function ratio(a, b) {
   `previousMeasurements = null;`, rd632, rd647)
   and nothing uses the function but to call it, or to `function::bind`
   each of its parameters, `completeRoot.bind(null, root, ..)`, its body
-  tests it `!== null`, `if
-  (moduleLoading !== null)`; one call that gives what may be `undefined`,
-  or a use of the function as a value, and it's `!= null`. Another crate's
+  takes it so: tested `!== null`, `if (moduleLoading !== null)`, and
+  given on or stored as it is, `captureCommitPhaseError(current,
+  nearestMountedAncestor)`, `searchTarget = target`. One call that gives
+  what may be `undefined`, or a use of the function as a value, and it's
+  `!= null`, and given on or stored `null` for `None`, `searchTarget =
+  target ?? null` (#601). A namespace's method that's the function is
+  that function here too: a call of it is one of the function. Another crate's
   call of such a function gives `?? null` where what it gives may be
   `undefined`, and another crate's use of it as a value is an error (ADR
   0861, amended).

@@ -1850,7 +1850,7 @@ export function updateContainer(n) {
   call of it by name is the function's, by the name a module imports it
   by, `closeFlight(response)` of `use client::close as close_flight`;
   it says the same `#[rust_js::nullable(..)]` of its parameters as the
-  function, or it's an error
+  function, whose they are, its library's contract too, or it's an error
   ([ADR 1037, amended](../../decisions/1037-a-module-namespace-is-a-unit-struct-of-its-functions.md#amendment-of-its-own-modules-function-too-one-named-apart-is-refused-566-585)).
   Either's comments, above it, its doc and in its body, are before what
   it is: the function, after the function's own, or the re-export, each

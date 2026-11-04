@@ -510,7 +510,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.krate.nulled_params.may_have(callee.0) {
             let caller = (self.item, (state.body.source.def_id(), state.at));
             let given_on: Vec<Option<usize>> = operands.iter().map(|o| self.given_on_param(state, o)).collect();
-            self.krate.nulled_params.record(caller, callee.0, &nulled, &given_on);
+            let declared: Vec<bool> = (nulled.iter().zip(&given_on))
+                .map(|(&n, on)| n || on.is_some())
+                .collect();
+            self.krate.nulled_params.record(caller, callee.0, &declared, &given_on);
         }
         self.record_bound(state, callee, operands);
         let mut values = self.take_operands(state, operands, out)?;

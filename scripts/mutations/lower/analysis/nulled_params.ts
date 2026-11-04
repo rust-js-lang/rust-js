@@ -115,4 +115,40 @@ export const mutations: Mutation[] = [
     replace: "        !again.is_empty()\n",
     tests: ["test/method-forwarding.test.ts", "-t", "a namespace's forwarding method says its function's nullable parameters"],
   },
+  {
+    name: "forwarded-method-a-candidate",
+    breaks:
+      "a namespace's method that's its function is a candidate of its own, so a call of it that gives what may be `undefined` is the method's, and the function, its own calls none, tests `!== null` of what it gives on (#601)",
+    file: "src/lower/analysis/nulled_params.rs",
+    find: "            if let Some(params) = candidate(tcx, id).filter(|_| !forwarded.contains_key(&id)) {\n",
+    replace: "            if let Some(params) = candidate(tcx, id) {\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a forwarding namespace method's calls are its function's"],
+  },
+  {
+    name: "forwarded-body-a-call",
+    breaks:
+      "a namespace's method that's its function, whose body lowering never sees, is a call of the function, which is then never `null` or a value: whether the library has the method changes its function's JS and contract (#601)",
+    file: "src/lower/analysis/nulled_params.rs",
+    find: "            if forwarded.contains_key(&body.def_id) {\n                continue;\n            }\n",
+    replace: "",
+    tests: ["test/cross-crate-items.test.ts", "-t", "say one contract"],
+  },
+  {
+    name: "forwarded-call-not-the-functions",
+    breaks:
+      "a call of a namespace's method that's its function isn't recorded as the function's, so the function's call there is never seen and it's never `null` or a value, `!= null` (#601)",
+    file: "src/lower/analysis/nulled_params.rs",
+    find: "            Some(&function) => (function, 1),\n",
+    replace: "            Some(_) => (callee, 0),\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a forwarding namespace method's calls are its function's"],
+  },
+  {
+    name: "forwarded-contract-unsaid",
+    breaks:
+      "a library's contract says nothing of a namespace's method that's its function, so another crate's call through the namespace's value gives `undefined` where the function tests `!== null` (#601)",
+    file: "src/lower/analysis/nulled_params.rs",
+    find: "        nulled.iter().copied().chain(methods).collect()\n",
+    replace: "        nulled.iter().copied().chain(methods.filter(|_| false)).collect()\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "say one contract"],
+  },
 ];

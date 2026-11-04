@@ -1060,4 +1060,13 @@ export const mutations: Mutation[] = [
     replace: "                if destination.projection.is_empty())\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_replace_dropped.rs$"],
   },
+  {
+    name: "given-on-recorded-as-found",
+    breaks:
+      "a call that gives on the caller's own nullable parameter, not yet found `null` or a value, is recorded as giving what may be `undefined`, so no parameter given one is ever found so (rd624, ADR 0861, amended)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            self.krate.nulled_params.record(caller, callee.0, &declared, &given_on);\n",
+    replace: "            self.krate.nulled_params.record(caller, callee.0, &nulled, &given_on);\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "each call gives null or a value"],
+  },
 ];

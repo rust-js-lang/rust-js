@@ -197,8 +197,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// optional nullable field holds, read, which another such takes as it
     /// is (ADR 0810, amended), or what may be `undefined`. Not a
     /// `WrittenNone`, which `written_none` tells.
+    /// The function's own nullable parameter, given on, is `null` or a value
+    /// only where each call of the function gives it so (`NulledParams`,
+    /// `is_nulled`): a call of the crate's gives what it's given as it is,
+    /// `undefined` too (ADR 0861), so a place that stores `null` for
+    /// `None`, and another crate's function that tests it `!== null`, is
+    /// given `?? null` until it's found so, and lowered again once it is.
+    /// A call of the crate's function with such a parameter is told it as
+    /// it's given on (`given_on_param`, rd624).
     pub(super) fn stored_given(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> Given {
-        self.stored_from(state, operand).0
+        match self.stored_from(state, operand) {
+            (Given::Nulled, Some(param))
+                if !(self.krate.nulled_params).is_nulled(state.body.source.def_id(), param) =>
+            {
+                Given::Unknown
+            }
+            (given, _) => given,
+        }
     }
 
     /// The field a call of `func` with `args` reads whole, a `Cell` field's
@@ -225,7 +240,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.stored_from(state, operand).1
     }
 
-    /// `stored_given`, and the own nullable parameter it's of, given on.
+    /// `stored_given` as each call gave the function's own nullable
+    /// parameters what's `null` or a value, and the one it's of, given on.
     fn stored_from(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> (Given, Option<usize>) {
         self.stored_in(state, operand, &mut Vec::new())
     }

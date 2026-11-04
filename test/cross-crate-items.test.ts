@@ -1394,6 +1394,15 @@ pub struct Holder<'a> {
 pub fn held(holder: &Holder) -> String {
     dep::prepare(holder.loading, "e.js")
 }
+
+#[cfg_attr(rust_js, rust_js::nullable(module_loading))]
+pub fn relayed(module_loading: Option<&ModuleLoading>) -> String {
+    dep::prepare(module_loading, "f.js")
+}
+
+pub fn relays(module_loading: Option<&ModuleLoading>) -> String {
+    relayed(module_loading)
+}
 `);
   expect(JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library.items[0].nulled_params).toEqual([0]);
   expect(dep).toContain("  if (moduleLoading !== null) {\n");
@@ -1401,9 +1410,13 @@ pub fn held(holder: &Holder) -> String {
   expect(app).toContain('  return Dep.prepare(moduleLoading, "b.js") + Dep.prepare(null, "c.js");\n');
   // A nullable field's, `null` or a value already, as it is.
   expect(app).toContain('  return Dep.prepare(holder.loading, "e.js");\n');
-  const { given, passedOn } = await import(join(dir, "app", "lib.js"));
+  // An own nullable parameter a call of the crate's gives what may be
+  // `undefined`, `relays`'s, isn't `null` or a value: given `?? null`.
+  expect(app).toContain('  return Dep.prepare(moduleLoading ?? null, "f.js");\n');
+  const { given, passedOn, relays } = await import(join(dir, "app", "lib.js"));
   expect([given(undefined), given(null), given({ prefix: "p/" })]).toEqual(["", "", "p/a.js"]);
   expect([passedOn(null), passedOn({ prefix: "p/" })]).toEqual(["", "p/b.js"]);
+  expect([relays(undefined), relays(null), relays({ prefix: "p/" })]).toEqual(["", "", "p/f.js"]);
   writeFileSync(join(dir, "valued.rs"), `use dep::ModuleLoading;
 
 pub fn each(loadings: &[Option<&ModuleLoading>]) -> Vec<String> {
@@ -1421,4 +1434,78 @@ pub fn as_value() -> fn(Option<&ModuleLoading>, &str) -> String {
   expect(p.exitCode).not.toBe(0);
   expect(stderr).toContain("whose nullable parameter is `null` at each of its calls, given as a value");
   expect(stderr.match(/given as a value/g)).toHaveLength(1);
+});
+
+// #601 (ADR 0861, amended): a namespace's method that's the function it
+// passes its parameters on to is that function, so whether the library has
+// one changes neither the function's JS nor its contract, which the
+// method's says too, each past its `self`. React's unbundled Flight client
+// gives `serverConsumerManifest.serverModuleMap`, a nullable field of
+// upstream's `null | ServerManifest`, `type ServerManifest = void` (rd645),
+// so `undefined` where it's a `Some`, on to react-client's createResponse,
+// which its contract says is `null` or a value: `?? null`, built with the
+// method or without it.
+test("a library's function and the namespace's method that's it say one contract", async () => {
+  const dir = fixture("cross-crate-forwarded-nulled");
+  const dep = `use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::nullable(bundler_config, server_reference_config))]
+pub fn create_response(
+    bundler_config: Option<&'static Unknown>,
+    server_reference_config: Option<&'static Unknown>,
+) -> bool {
+    bundler_config.is_some() && server_reference_config.is_none()
+}
+`;
+  const method = `
+#[cfg_attr(rust_js, rust_js::namespace)]
+pub struct Client;
+
+unsafe impl js::Defined for Client {}
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+impl Client {
+    #[cfg_attr(rust_js, rust_js::nullable(bundler_config, server_reference_config))]
+    pub fn create_response(
+        &self,
+        bundler_config: Option<&'static Unknown>,
+        server_reference_config: Option<&'static Unknown>,
+    ) -> bool {
+        create_response(bundler_config, server_reference_config)
+    }
+}
+`;
+  const app = `use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ServerManifest {
+    #[cfg_attr(rust_js, rust_js::undefined)]
+    Undefined,
+}
+
+pub struct ServerConsumerManifest {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub module_loading: Option<&'static Unknown>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub server_module_map: Option<&'static ServerManifest>,
+}
+
+pub fn create(manifest: &'static ServerConsumerManifest) -> bool {
+    dep::create_response(manifest.module_loading, js::any_of(manifest.server_module_map))
+}
+`;
+  const nulled = () => {
+    const items = JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library.items;
+    return Object.fromEntries(items.map((item: { rust_path: string; nulled_params?: number[] }) => [item.rust_path, item.nulled_params]));
+  };
+  const alone = compiled(dir, dep, app);
+  expect(nulled()).toEqual({ "dep::create_response": [0, 1] });
+  const forwarded = compiled(dir, dep + method, app);
+  expect(nulled()).toEqual({ "dep::create_response": [0, 1], "dep::Client::create_response": [1, 2] });
+  expect(forwarded.app).toBe(alone.app);
+  expect(alone.dep).toContain("  return bundlerConfig !== null && serverReferenceConfig === null;\n");
+  expect(forwarded.dep).toContain("  return bundlerConfig !== null && serverReferenceConfig === null;\n");
+  expect(alone.app).toContain("  return Dep.createResponse(manifest.moduleLoading, manifest.serverModuleMap ?? null);\n");
+  const { create } = await import(join(dir, "app", "lib.js"));
+  expect([create({ moduleLoading: {}, serverModuleMap: undefined }), create({ moduleLoading: {}, serverModuleMap: null })]).toEqual([true, true]);
 });

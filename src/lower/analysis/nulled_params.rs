@@ -6,11 +6,17 @@
 //! which may be `undefined`, so one is only where each call of it the crate
 //! makes gives it `null` or a value (`stored_given`'s `Nulled`), as its
 //! lowering says (`NulledCalls`), and nothing uses the function but to call
-//! it. Another crate's call of one gives `?? null` where what it gives may
-//! be `undefined`, as its contract says (`Calling::nulled_params`); its use
-//! as a value is refused.
+//! it. Its body takes it as `null` or a value only then (`is_nulled`):
+//! tested `!== null`, and stored and given on as it is (#601). Another
+//! crate's call of one gives `?? null` where what it gives may be
+//! `undefined`, as its contract says (`Calling::nulled_params`); its use as
+//! a value is refused.
 //! A `function::bind` of one with each of its parameters bound is a call of
 //! it, given what's bound (rd632).
+//! A namespace's method that's the function it passes its parameters on to
+//! (`reached::forwarded`, #566) is that function: its body's call of it is
+//! no call, and a call of it is one of the function, given each parameter
+//! past its `self`; its contract says the function's (#601).
 //! And which of the crate's functions return `null` or a value at each of
 //! their returns, never `undefined` (`returns_nulled`, rd632): React DOM's
 //! `getEventTarget`, `target.parentNode` or `target`, which a call gives
@@ -40,6 +46,9 @@ pub(in crate::lower) struct NulledParams {
     seen: RefCell<NulledCalls>,
     /// The parameters found so, once every body's calls are seen (`again`).
     nulled: RefCell<HashSet<(DefId, usize)>>,
+    /// Each namespace's method that's the function it passes its parameters
+    /// on to, and that function (`reached::forwarded`).
+    forwarded: HashMap<DefId, DefId>,
     /// The functions found to return `null` or a value (`returns_nulled`).
     returns: RefCell<Returns>,
 }
@@ -72,22 +81,27 @@ impl NulledParams {
     /// The candidates of `bodies`, the crate's and its closures', and where
     /// each is called or used; each use as a value of another crate's
     /// function that has such a parameter, refused, as its calls are
-    /// `null` or a value only where each gives it so (`foreign`'s).
+    /// `null` or a value only where each gives it so (`foreign`'s). Each
+    /// method of `forwarded` is its function, whose candidate it is not:
+    /// its body, that function's JS, calls nothing, and a call or use of it
+    /// is the function's (#601).
     pub(in crate::lower) fn scan<'tcx>(
         tcx: TyCtxt<'tcx>,
         bodies: &[&Body<'tcx>],
+        forwarded: &HashMap<DefId, DefId>,
         foreign: &dyn Fn(DefId) -> bool,
     ) -> NulledParams {
         let mut candidates = HashMap::new();
         for body in bodies {
             let id = body.def_id;
-            if let Some(params) = candidate(tcx, id) {
+            if let Some(params) = candidate(tcx, id).filter(|_| !forwarded.contains_key(&id)) {
                 candidates.insert(id, params);
             }
         }
         let mut found = Found {
             tcx,
             candidates: &candidates,
+            forwarded,
             foreign,
             caller: None,
             calls: HashMap::new(),
@@ -96,6 +110,9 @@ impl NulledParams {
         };
         for body in bodies {
             let Some(mir) = &body.mir else { continue };
+            if forwarded.contains_key(&body.def_id) {
+                continue;
+            }
             found.caller = Some(body.def_id);
             found.visit_body(&mir.body);
             for promoted in &mir.promoted {
@@ -124,7 +141,18 @@ impl NulledParams {
             as_values,
             seen: Default::default(),
             nulled: Default::default(),
+            forwarded: forwarded.clone(),
             returns: Default::default(),
+        }
+    }
+
+    /// Of `callee`, the function a call of it is, and how many of the
+    /// call's arguments come before that function's: of a namespace's
+    /// method that's its function, the function, its `self` past (#601).
+    fn called(&self, callee: DefId) -> (DefId, usize) {
+        match self.forwarded.get(&callee) {
+            Some(&function) => (function, 1),
+            None => (callee, 0),
         }
     }
 
@@ -135,6 +163,8 @@ impl NulledParams {
     /// is so only where that one is, which `nulled` tells once every call
     /// is seen (rd624); of a caller that may have none, a closure's, as
     /// declared.
+    /// A call of a namespace's method that's its function is the
+    /// function's, given each argument past its `self` (#601).
     pub(in crate::lower) fn record(
         &self,
         (item, (caller, at)): (DefId, (DefId, BasicBlock)),
@@ -142,6 +172,11 @@ impl NulledParams {
         nulled: &[bool],
         given_on: &[Option<usize>],
     ) {
+        let (callee, past) = self.called(callee);
+        let (nulled, given_on) = (
+            nulled.get(past..).unwrap_or_default(),
+            given_on.get(past..).unwrap_or_default(),
+        );
         let mut seen = self.seen.borrow_mut();
         seen.seen.insert((item, (caller, at)));
         for (i, &nulled) in nulled.iter().enumerate() {
@@ -234,15 +269,23 @@ impl NulledParams {
     }
 
     /// The parameters found so, by function and index, which a library's
-    /// contract says.
+    /// contract says: of a namespace's method that's its function, the
+    /// function's, each past its `self` (#601).
     pub(in crate::lower) fn found(&self) -> HashSet<(DefId, usize)> {
-        self.nulled.borrow().clone()
+        let nulled = self.nulled.borrow();
+        let methods = (self.forwarded.iter()).flat_map(|(&method, &function)| {
+            (nulled.iter())
+                .filter(move |&&(of, _)| of == function)
+                .map(move |&(_, i)| (method, i + 1))
+        });
+        nulled.iter().copied().chain(methods).collect()
     }
 
     /// Whether `id`, the crate's, may have such a parameter, whose calls
-    /// lowering then tells (`NulledCalls::record`).
+    /// lowering then tells (`NulledCalls::record`): a candidate, or a
+    /// namespace's method that's one (#601).
     pub(in crate::lower) fn may_have(&self, id: DefId) -> bool {
-        self.candidates.contains_key(&id)
+        self.candidates.contains_key(&self.called(id).0)
     }
 
     /// The parameters, by function and index, `null` or a value at every
@@ -337,6 +380,9 @@ pub(in crate::lower) fn may_return_nulled(tcx: TyCtxt<'_>, id: DefId) -> bool {
 struct Found<'f, 'tcx> {
     tcx: TyCtxt<'tcx>,
     candidates: &'f HashMap<DefId, Vec<usize>>,
+    /// Each namespace's method that's its function, and that function, a
+    /// call or use of the method being one of the function (#601).
+    forwarded: &'f HashMap<DefId, DefId>,
     foreign: &'f dyn Fn(DefId) -> bool,
     caller: Option<DefId>,
     calls: HashMap<(DefId, BasicBlock), DefId>,
@@ -352,7 +398,7 @@ impl<'tcx> Visitor<'tcx> for Found<'_, 'tcx> {
         if let mir::TerminatorKind::Call { func, args, .. } = &terminator.kind
             && let Some((bind, generic_args)) = func.const_fn_def()
             && crate::lower::recognition::is_function_bind(self.tcx, bind)
-            && let Some(id) = bound_all(self.tcx, generic_args)
+            && let Some(id) = bound_all(self.tcx, generic_args).map(|id| self.function(id))
             && self.candidates.contains_key(&id)
             && let Some(caller) = self.caller
         {
@@ -366,6 +412,7 @@ impl<'tcx> Visitor<'tcx> for Found<'_, 'tcx> {
         if let mir::TerminatorKind::Call { func, args, .. } = &terminator.kind
             && let Some((id, _)) = func.const_fn_def()
         {
+            let id = self.function(id);
             if self.candidates.contains_key(&id)
                 && let Some(caller) = self.caller
             {
@@ -383,11 +430,20 @@ impl<'tcx> Visitor<'tcx> for Found<'_, 'tcx> {
         let ty::FnDef(id, _) = *constant.const_.ty().kind() else {
             return;
         };
+        let id = self.function(id);
         if self.candidates.contains_key(&id) {
             self.as_values.insert(id);
         } else if !id.is_local() && (self.foreign)(id) {
             self.refused.push(constant.span);
         }
+    }
+}
+
+impl Found<'_, '_> {
+    /// The function a call or use of `id` is: of a namespace's method
+    /// that's its function, that function (#601).
+    fn function(&self, id: DefId) -> DefId {
+        self.forwarded.get(&id).copied().unwrap_or(id)
     }
 }
 

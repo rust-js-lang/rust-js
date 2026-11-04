@@ -1,6 +1,6 @@
 # 0861. A function's own nullable parameter is `null` where it's given or set `None`
 
-Status: Accepted. Amended (2026-10-29): its map by what's its argument in JS is stored as given. Amended (2026-11-02): a parameter each call gives `null` or a value is tested `!== null` (rd613). Extends [0275](0275-nullable-writes-null.md)'s
+Status: Accepted. Amended (2026-11-04): a parameter is `null` or a value where it's found so; a forwarding namespace method's calls are its function's (#601). Amended (2026-10-29): its map by what's its argument in JS is stored as given. Amended (2026-11-02): a parameter each call gives `null` or a value is tested `!== null` (rd613). Extends [0275](0275-nullable-writes-null.md)'s
 `#[rust_js::nullable(name)]`, a binding's parameter, to a function of the
 crate's own, and [0772](0772-a-nullable-cell-field-writes-null.md) and
 [0841](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)'s
@@ -667,3 +667,111 @@ A function's own nullable parameter lent `&mut`, `clear(&mut x)` or
 `mem::swap(&mut x, &mut other)`, stores `null` for `None` too, `x =
 slot.value ?? null`. So its reads, given on as they are, are `null` or a
 value ([ADR 1078](1078-a-nullable-place-stores-null-however-its-written.md)).
+
+## Amendment: a parameter is `null` or a value where it's found so, and a forwarding namespace method's calls are its function's (2026-11-04, #601)
+
+Two holes in the amendments above, one a wrong answer, the other a
+contract that flipped with code that changed nothing.
+
+**A wrong answer** (P0, the class of rd624's #477). The 2026-10-27
+amendment takes a function's own nullable parameter as `T | null`
+declared, stored in a nullable place or given to another crate's function
+that tests it `!== null` as it is. rd613 then let the crate's own calls
+give what they're given as it is, `undefined` too, and rd624 followed that
+only into a candidate of the crate's. Everywhere else the declaration was
+broken by the crate's own Rust:
+
+```rust
+#[cfg_attr(rust_js, rust_js::nullable(config))]
+fn held(config: Option<&str>) -> bool {
+    let holder = Holder { config }; // a nullable field, tested `=== null`
+    holder.config.is_some()
+}
+
+fn given(config: Option<&str>) -> bool {
+    held(config) // `find`'s `None`, `undefined`
+}
+```
+
+printed `{ config }` and `holder.config !== null`, `true` where native
+Rust prints `false`; a call through a `fn` pointer alike, and
+`Dep.prepare(moduleLoading, ..)` of another crate's function that tests
+`!== null`, which read `undefined.prefix`.
+
+**A function's own nullable parameter is `null` or a value where each
+call of it gives it so, as `NulledParams::is_nulled` finds**, the rule
+its `!== null` tests already follow (`mir/patterns.rs`): `stored_given`
+is `Nulled` of one only there. Until it's found, and of one never found,
+a nullable place, a binding's nullable parameter and another crate's
+function that tests `!== null` are given `?? null`; once it's found, the
+function is lowered again and they're given it as it is. A call of a
+candidate of the crate's is still told it as given on (`given_on_param`,
+rd624), so a chain of them is found as before. What's never called but
+by name, `prepare(moduleLoading, "b.js")` of a function JS calls, is
+found, and is as it was. One used as a value isn't, as a call through
+the value may give `undefined`: the test's `passOnHeld(current,
+nearest)`, held as a `fn` pointer, gives `rustJsCapture(current,
+nearest ?? null)`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior: a `None` the crate's Rust gives `undefined` is `None`
+wherever it's stored.
+
+**A contract that flipped** (#601). React's unbundled Flight client gives
+`serverConsumerManifest.serverModuleMap`, upstream's `null |
+ServerManifest` of `type ServerManifest = void` (rd645), `undefined`
+where it's a `Some`, to react-client's `createResponse`. Whether it
+printed `?? null` changed from one rust-js commit to the next (707d7eea0
+with it, 865c9f112 without, 3c71ee8f9 with, df8617406 without), though
+nothing in those commits decides it. What decided it was react-client:
+the port's forwarding namespace method, `ReactFlightClient::create_response`
+(#566, #596), which the porter's tree had in some of those builds and not
+in others, as it was written for ReactNoopFlightClient (#596 was filed
+from it at 865c9f112), calls `create_response`. Lowering never
+lowers that body, so the call was never seen, so `create_response`'s
+parameters were never found `null` or a value, and its contract said
+none: no `?? null`. Without the method, nothing calls it, every call is
+seen, its contract says `[0, 1, 2]`, and the consumer gives `?? null`.
+The method's own contract said `[1, 2, 3]`, its body never lowered, a
+second authority for one JS function. Reproduced on df8617406 with
+react-in-rust b16721be, whose committed unbundled clients its porter had
+built with the method: `?? null`, react-client's contract `[0, 1, 2]`,
+the same on each rebuild.
+
+**A namespace's method that's the function it passes its parameters on
+to (`reached::forwarded`) is that function** (`NulledParams::scan`): its
+body is no call of it, a call or a use of the method is one of the
+function, given each argument past its `self`, and the method's contract
+says the function's parameters, each one past. So `create_response`'s
+contract is `[0, 1, 2]` and the method's `[1, 2, 3]`, whether the method
+is there or not, and unbundled's clients give
+`serverConsumerManifest.serverModuleMap ?? null`: rd700's form, which the
+user accepted (2026-11-03), where upstream's
+`ReactFlightDOMClientEdge.js:100` and `ReactFlightDOMClientNode.js:104`
+give `serverModuleMap` as it is. It's needed by the contract, not by
+React: createResponse gives the value on to `ResponseInstance`, which
+stores `serverReferenceConfig ?? null` itself. Proving it unneeded would
+take a fact of what a body does with a parameter found `null` or a value,
+which its facts (`Known::NoneNull`) carry to every read; none is kept.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for React, whose
+`ResponseInstance` reads `null` and `undefined` alike; results change for
+a function that tests `!== null`, so Rust's behavior.
+
+- Held by corpus `nullable_param_stored` (a call that gives `find`'s
+  `None`, a `fn` pointer's call and one found, against native Rust);
+  `test/lowering-nullable-reads.test.ts`'s "a nullable parameter, a
+  nullable thread-local's clone and a let of None returned are as they
+  are" (`passOnHeld`'s `?? null`, called through its value with
+  `undefined`) and "a forwarding namespace method's calls are its
+  function's" (`!== null` of `checked(None)` through the method, `!= null`
+  of what JS gave); `test/cross-crate-items.test.ts`'s "a library's
+  nullable parameter its calls give null is given null by its consumer"
+  (`relays(undefined)`, run) and "a library's function and the namespace's
+  method that's it say one contract" (the library with and without the
+  method, the consumer's JS the same, `?? null`, run). Mutations
+  `own-nullable-param-taken-as-found` (`mir/nulled.ts`),
+  `given-on-recorded-as-found` (`mir/dispatch.ts`),
+  `forwarded-method-a-candidate`, `forwarded-body-a-call`,
+  `forwarded-call-not-the-functions` and `forwarded-contract-unsaid`
+  (`analysis/nulled_params.ts`).

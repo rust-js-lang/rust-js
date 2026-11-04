@@ -357,9 +357,10 @@ pub fn lower_crate<'tcx>(
     // What reads `js::arguments()`, each call of which gives every argument (rd332).
     let with_closures: Vec<&Body<'tcx>> = bodies.iter().copied().chain(closures.values().copied()).collect();
     let reads_arguments = super::analysis::arguments::reads_arguments(tcx, (&with_closures, initializers), &foreign);
-    let nulled_params = NulledParams::scan(tcx, &with_closures, &|id| foreign.has_nulled_params(id));
     let (forwarded, prototypes) =
         reached::forwarded(tcx, &bodies, (given, &js_given), (&caller_locations, &fns), &foreign);
+    // A namespace's method that's its function is that function (#601).
+    let nulled_params = NulledParams::scan(tcx, &with_closures, &forwarded, &|id| foreign.has_nulled_params(id));
     failed |= !super::classes::exported_by_property(tcx, &fns, &forwarded);
     // A function that only passes its parameters on to a function at one
     // instantiation, which its module re-exports where its JS is that call

@@ -247,8 +247,10 @@ pub fn find_strict_root(fiber: &Rc<Fiber>) -> Option<Rc<Fiber>> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function passOn(current, nearest) {\n  rustJsCapture(current, nearest);\n}");
-  // One used as a value, whose callers JS's calls may be: as declared.
-  expect(js).toContain("export function passOnHeld(current, nearest) {\n  rustJsCapture(current, nearest);\n}");
+  // One used as a value, which a call through the value, a `fn` pointer's
+  // too, may give `undefined`: `null` for `None` where it's given on, as
+  // it isn't found `null` or a value at each call (`is_nulled`).
+  expect(js).toContain("export function passOnHeld(current, nearest) {\n  rustJsCapture(current, nearest ?? null);\n}");
   expect(js).toContain("export function pushSearchTarget(target) {\n  searchTarget = target;\n}");
   expect(js).toContain("export function popSearchTarget() {\n  return searchTarget;\n}");
   expect(js).toContain("  let maybeStrictRoot = null;\n");
@@ -261,7 +263,8 @@ pub fn find_strict_root(fiber: &Rc<Fiber>) -> Option<Rc<Fiber>> {
   const child = { tag: 1, return: root };
   lib.passOn(child as never, null as never);
   lib.passOn(child as never, root as never);
-  expect(given).toEqual([null, root]);
+  lib.held()(child as never, undefined as never);
+  expect(given).toEqual([null, root, null]);
   expect(lib.popSearchTarget()).toBe(null);
   lib.pushSearchTarget(child as never);
   expect(lib.popSearchTarget()).toBe(child);
@@ -559,17 +562,16 @@ pub fn loose(module_loading: Option<&ModuleLoading>) -> bool {
   expect([lib.loose(undefined), lib.loose(null), lib.loose({ prefix: "" })]).toEqual([false, false, true]);
 });
 
-// rd613: a call lowering never sees, a namespace's method that only passes
-// its parameter on, which is the function it forwards to (rd292b), leaves
-// that function's nullable parameter `!= null`. The method says the
-// function's `#[rust_js::nullable(..)]` (#596, the user's decision,
-// 2026-11-04), so its callers give it `null`, `checked(null)` of
-// `checked(None)`.
-test("a nullable parameter a forwarding namespace method gives on is tested against undefined too", async () => {
+// #601 (ADR 0861, amended): a namespace's method that only passes its
+// parameters on is the function it forwards to (rd292b, #566), whose
+// `#[rust_js::nullable(..)]` it says (#596): its body's call is no call of
+// the function, and a call of it is one of the function, given what's past
+// its `self`. So the function is `null` or a value where each call of
+// either gives it so, `checked(null)` of `checked(None)`, whether the method
+// is there or not; given what may be `undefined`, `!= null`.
+test("a forwarding namespace method's calls are its function's", async () => {
   const dir = fixture("nullable-param-forwarded");
-  writeFileSync(
-    join(dir, "lib.rs"),
-    `pub struct ModuleLoading {
+  const source = (calls: string) => `pub struct ModuleLoading {
     pub prefix: String,
 }
 
@@ -600,15 +602,20 @@ pub mod forwarding {
     }
 }
 
-pub fn uses() -> bool {
-    forwarding::Reconciler.checked(None)
-}
-`,
-  );
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  expect(readFileSync(join(dir, "work_loop.js"), "utf8")).toContain("  return moduleLoading != null;\n");
+${calls}
+`;
+  const compile = (calls: string) => {
+    writeFileSync(join(dir, "lib.rs"), source(calls));
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+    return readFileSync(join(dir, "work_loop.js"), "utf8");
+  };
+  expect(compile("pub fn uses() -> bool {\n    forwarding::Reconciler.checked(None)\n}")).toContain("  return moduleLoading !== null;\n");
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("  return checked(null);\n");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.uses()).toBe(false);
+  // Given what JS gave, which may be `undefined`, through the method.
+  const given = "pub fn given(module_loading: Option<&ModuleLoading>) -> bool {\n    forwarding::Reconciler.checked(module_loading)\n}";
+  expect(compile(given)).toContain("  return moduleLoading != null;\n");
 });
 
 // rd623: a `let` that starts `js::null()` and is set only to a place just

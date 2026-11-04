@@ -456,4 +456,13 @@ export const mutations: Mutation[] = [
       "Vec of Options holds null",
     ],
   },
+  {
+    name: "own-nullable-param-taken-as-found",
+    breaks:
+      "a function's own nullable parameter is stored as it is whether or not each call gives it `null` or a value, so a `None` a call gives `undefined` is stored `undefined` in a nullable field tested `=== null`, a `Some` (ADR 0861, amended)",
+    file: "src/lower/mir/nulled.rs",
+    find: "                if !(self.krate.nulled_params).is_nulled(state.body.source.def_id(), param) =>\n",
+    replace: "                if false && !(self.krate.nulled_params).is_nulled(state.body.source.def_id(), param) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_param_stored.rs$"],
+  },
 ];
