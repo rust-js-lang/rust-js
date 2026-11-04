@@ -1,6 +1,6 @@
 # 0444. A comment is in the JS where its code is, and so is a blank line
 
-Status: Accepted. Amended (2026-11-04): a comment above a later or-pattern arm keeps its `else if` (#608); one above a later arm of a returned `match` is above that arm's `if` (#609). Amended (2026-11-04): a comment in or above a later match arm keeps its `else if` (#595). Amended (2026-11-03): a comment after a drop guard's `let` is after its `finally`'s statement. Amended (2026-11-03): an index loop's item is before its body's comments. Amended (2026-11-01): a `// SAFETY:` comment is left out of the JS, the user's decision. Amended (2026-10-29): a comment above a `use` is above the import it makes; an inner doc comment is JS's plain one. Amended (2026-10-28): a field's doc comment is its struct's one literal's. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
+Status: Accepted. Amended (2026-11-04): a comment above a later arm of a tuple's or-pattern is that arm's, its `else if`'s or its guard `if`'s (#617). Amended (2026-11-04): a comment above a later or-pattern arm keeps its `else if` (#608); one above a later arm of a returned `match` is above that arm's `if` (#609). Amended (2026-11-04): a comment in or above a later match arm keeps its `else if` (#595). Amended (2026-11-03): a comment after a drop guard's `let` is after its `finally`'s statement. Amended (2026-11-03): an index loop's item is before its body's comments. Amended (2026-11-01): a `// SAFETY:` comment is left out of the JS, the user's decision. Amended (2026-10-29): a comment above a `use` is above the import it makes; an inner doc comment is JS's plain one. Amended (2026-10-28): a field's doc comment is its struct's one literal's. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
 an object is across lines where its struct literal is. Extends [0383](0383-a-files-leading-comments-are-its-jss.md),
 whose rules for what JS can hold are now every comment's, and
 [0018](0018-print-with-oxc.md). Its amendment, a branch's comment keeps it a statement, is
@@ -1060,7 +1060,7 @@ above the `if`, in an `else`'s block:
 
 A tuple's alternatives, `(2, 3) | (3, 2) =>`, start inside their tuples,
 which this doesn't read past; a comment above such a later arm is still
-between its test's operands.
+between its test's operands (until #617, below).
 
 **A later arm of a `match` whose arms each return**, `(Some(a), _) => a,\n
 // c\n (None, Some(b)) => { .. }`, is a guard `if` (ADR 0370) once
@@ -1093,3 +1093,60 @@ returned match is above its if", each run, and the mutations
 `written-chain-test-at-the-last-arm`, `written-chain-switch-test-moved`
 (`lower/mir/tidy/branches.ts`) and
 `or-pattern-alternative-unread` (`to_oxc/openings.ts`).
+
+## Amendment: a later arm of a tuple's or-pattern (2026-11-04, #617)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+
+A comment above a later arm of a tuple's or-pattern, `// c\n (2, 3) | (3,
+2) => {`, was between its test's operands, its tests' starts inside the
+tuples, `2, ` and `3) | (`, none an alternative the amendment above goes
+on past, `"src" | `:
+
+```js
+if (
+  (b === 3 &&
+    // c
+    a === 2) ||
+  (b === 2 && a === 3)
+) {
+```
+
+And a returned `match`'s later arm, a guard `if` (ADR 0370), `decisions`
+placed where its block's first statement is, as an `else if` it was
+(ADR 0364), so past its opening, `(2, 3) => {`, the next start isn't an
+`else if`'s block's, and #595's rule stopped at the test's first operand.
+
+1. **An arm's test goes on past each of a tuple's or a slice's patterns
+   too**, a value, then only what's between patterns on its line, `,`,
+   `(`, `)`, `[`, `]`, `|` and `_` (`openings::alternative`), to its last
+   one's `=>`. Not a call's arguments, `f(a, b),\n 2 => {`, whose `,`
+   ends a line.
+2. **An `if` placed where its block's first statement is, of any arm,
+   opens the arm's block as an `else if`'s does** (`arms::else_if_starts`'
+   `firsts`): the comment is at that start, before the `if` oxc prints
+   there, the guard `if`'s, and first in an `else if`'s block (rule 1 of
+   #595).
+
+```js
+} else if ((b === 3 && a === 2) || (b === 2 && a === 3)) {
+  // c
+  seen.push(true);
+```
+
+```js
+if (a === 1 || b === 1) {
+  return 1;
+}
+// c
+if ((b === 3 && a === 2) || (b === 2 && a === 3)) {
+```
+
+The arms in the order written, not MIR's `if (a !== 1 && b !== 1) { ..
+continue; }` of the arms after the first, are ADR 0364's (amended, #617).
+
+Held by `test/lowering-comments-inside.test.ts`'s "a comment above a later
+arm of a tuple's or-pattern is the arm's", run, the corpus case
+`tuple_or_pattern_arm_comments.rs` against native Rust, and the mutations
+`tuple-alternative-unread` (`to_oxc/openings.ts`) and
+`guard-if-at-its-first-unread` (`to_oxc/arms.ts`).

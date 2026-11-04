@@ -15,6 +15,24 @@ const CALLS = [
 
 export const mutations: Mutation[] = [
   {
+    name: "or-pattern-alternatives-say-nothing",
+    breaks:
+      "a later arm of a tuple's or-pattern after `(1, _) | (_, 1)` keeps `a !== 1` before `(b === 3 && a === 2) || ..`, which says it, more tests than the tree's, so the arms are MIR's `if (a !== 1 && b !== 1) { .. continue; } hit = true;`, not the chain as written (#617)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "        ExprKind::Binary(Op::Or, a, b) => says_within(a, subject, set) && says_within(b, subject, set),\n",
+    replace: "        ExprKind::Binary(Op::Or, a, b) => false,\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "tuple's or-pattern is the arm's"],
+  },
+  {
+    name: "or-pattern-alternative-tests-unread",
+    breaks:
+      "an or-pattern's alternative, `b === 3 && a === 2`, says nothing of `a` past its first test, so `a !== 1` before them stays and the arms are MIR's tree, not the chain as written (#617)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "        ExprKind::Binary(Op::And, a, b) => says_within(a, subject, set) || says_within(b, subject, set),\n",
+    replace: "        ExprKind::Binary(Op::And, a, b) => says_within(a, subject, set),\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "tuple's or-pattern is the arm's"],
+  },
+  {
     name: "empty-arm-else-only",
     breaks:
       "a match's arm that does nothing between guarded arms, `\"C\" => {}`, is the chain's `else` or none, so `kinds` keeps MIR's `bb39:` block (bb39)",

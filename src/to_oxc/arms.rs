@@ -144,7 +144,7 @@ pub(super) fn arm_starts(module: &Module) -> std::collections::HashMap<u32, Arm>
 
 /// What `else_if_starts` finds: where each `if` that's an `else`'s only
 /// statement starts, by where it ends, and where the first statement of
-/// each one's block starts.
+/// each one's block starts, and of each `if` placed there (#617).
 pub(super) struct ElseIfs {
     pub(super) starts: std::collections::HashMap<u32, u32>,
     pub(super) firsts: std::collections::HashSet<u32>,
@@ -154,13 +154,22 @@ pub(super) struct ElseIfs {
 /// ends: what's printed `else if` where no comment is before it in the
 /// block (ADR 0444, amended); and where its block's first statement
 /// starts, which a comment above its `match` arm, `// c\n (2, 2) => {`,
-/// is before, past the arm's opening (#595).
+/// is before, past the arm's opening (#595); and of an `if` placed where
+/// its block's first statement is, a returned chain's guard `if` of a
+/// later arm, that start, the `if`'s, which the comment is above (#617).
 pub(super) fn else_if_starts(module: &Module) -> ElseIfs {
     let mut starts = std::collections::HashMap::new();
     let mut firsts = std::collections::HashSet::new();
     let mut of = |mut stmts: Vec<js::Stmt>| {
         js::each_block_mut(&mut stmts, &mut |block| {
             for stmt in block.iter() {
+                if let StmtKind::If(_, then, _) = &stmt.kind
+                    && let Some(first) = then.iter().find(|s| !s.span.is_none())
+                    && !stmt.span.is_none()
+                    && first.span.lo == stmt.span.lo
+                {
+                    firsts.insert(first.span.lo);
+                }
                 if let StmtKind::If(_, _, Some(els)) = &stmt.kind
                     && let [only] = els.as_slice()
                     && let StmtKind::If(_, then, _) = &only.kind

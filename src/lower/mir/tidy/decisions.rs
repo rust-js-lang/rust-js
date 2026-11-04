@@ -995,19 +995,31 @@ fn simplified(tests: &[Expr]) -> Option<Vec<Expr>> {
     }
     // A test of a value a later one of it says more than, `a !== 1` before
     // `a === 2`: that one, in its place, so each test is still read only
-    // where it was, and the path's tests read `a === 2 && b === 2`.
+    // where it was, and the path's tests read `a === 2 && b === 2`; or an
+    // or-pattern's alternatives each of which does, `a !== 1` before `(b
+    // === 3 && a === 2) || (b === 2 && a === 3)` (#617).
     let mut i = 0;
     while i < out.len() {
-        let stronger = atom(&out[i]).and_then(|(subject, set)| {
-            (i + 1..out.len())
-                .find(|&j| atom(&out[j]).is_some_and(|(s, later)| same_subject(&s, &subject) && later.within(&set)))
-        });
+        let stronger = atom(&out[i])
+            .and_then(|(subject, set)| (i + 1..out.len()).find(|&j| says_within(&out[j], &subject, &set)));
         match stronger {
             Some(j) => out[i] = out.remove(j),
             None => i += 1,
         }
     }
     Some(out)
+}
+
+/// Whether `e` says of `subject` no more than `set` holds: a test of it
+/// within `set`, `a === 2` of `a !== 1`'s, of an `&&` one of its tests, of
+/// an `||` each of its alternatives, `(b === 3 && a === 2) || (b === 2 &&
+/// a === 3)` (`simplified`, #617).
+fn says_within(e: &Expr, subject: &Expr, set: &Set) -> bool {
+    match &e.kind {
+        ExprKind::Binary(Op::And, a, b) => says_within(a, subject, set) || says_within(b, subject, set),
+        ExprKind::Binary(Op::Or, a, b) => says_within(a, subject, set) && says_within(b, subject, set),
+        _ => atom(e).is_some_and(|(s, later)| same_subject(&s, subject) && later.within(set)),
+    }
 }
 
 /// Whether `e` is a value, never `null` nor `undefined`: one written,

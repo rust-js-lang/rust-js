@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "guard-if-at-its-first-unread",
+    breaks:
+      "a comment above a later arm a returned chain's guard `if` is, `// c\\n (2, 3) => {`, is between its test's operands, `b === 3 &&\\n // c\\n a === 2`, not above the `if`, which is placed where its block's first statement is (#617)",
+    file: "src/to_oxc/arms.rs",
+    find: "                    && first.span.lo == stmt.span.lo\n",
+    replace: "                    && first.span.lo == stmt.span.lo\n                    && false\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "tuple's or-pattern is the arm's"],
+  },
+  {
     name: "concat-piece-no-start",
     breaks: "a `concat!`'s piece is no start a comment is before, so the comment goes after the strings (ADR 0641)",
     file: "src/to_oxc/arms.rs",

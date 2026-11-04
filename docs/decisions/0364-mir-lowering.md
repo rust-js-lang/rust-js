@@ -16,7 +16,7 @@ Amended: a value a block gives last is given first only where nothing can
 tell (issue #219, below); an `|` of two values' tests is a chain of its
 arms; no arm holds a copy of what follows the `match` (kj-switch); a
 chain's arm needs no more than that the arms before it failed (#221); a
-tree of a `switch`'s guard is the `switch`'s (rd619). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
+tree of a `switch`'s guard is the `switch`'s (rd619); a test of a value an or-pattern's alternatives after it each say is theirs (#617). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -732,3 +732,63 @@ as; the mutations `computed-default-kept-labeled`,
 `computed-default-of-an-empty-arm`, `computed-default-given-first`
 (`lower/mir/tidy/decisions.ts`) and `first-arm-doing-more-half-folded`,
 `function-value-chained` (`lower/mir/tidy/branches.ts`).
+
+## Amendment: a test an or-pattern's alternatives each say (#617, 2026-11-04)
+
+`(1, _) | (_, 1) => hit = true, (2, 3) | (3, 2) => { .. }, _ => hit =
+false`'s tree tests `a === 1`, then `b === 1`, then the later or-pattern's
+alternatives, `(b === 3 && a === 2) || (b === 2 && a === 3)`, one test of
+the tree. The later arm's path, `a !== 1 && b !== 1 && (..)`, kept `a !==
+1`: `simplified` reads a test of a value a later test of it says more
+than as that one, `a !== 1 && a === 2` as `a === 2`, but no later test
+here is one of `a`. The chain had a test more than the tree, so MIR's tree
+stayed, the arms after the first first:
+
+```js
+if (a !== 1 && b !== 1) {
+  if ((b === 3 && a === 2) || (b === 2 && a === 3)) {
+    seen.push(true);
+    continue;
+  }
+  hit = false;
+  continue;
+}
+hit = true;
+```
+
+**A test of a value is said by a later `||` each of whose alternatives
+says more of it** (`says_within`): `a === 2` and `a === 3` are each
+within `a !== 1`, so the `||` takes its place, as a later test of it
+would, each read where it was; and so does `b !== 1`, and the chain is
+the tree's six tests:
+
+```js
+if (a === 1 || b === 1) {
+  hit = true;
+} else if ((b === 3 && a === 2) || (b === 2 && a === 3)) {
+  seen.push(true);
+} else {
+  hit = false;
+}
+```
+
+Not by leaving out every earlier arm's one test's failing, which #221
+keeps (`a === 1 | ..`): that made `b'a' => break`'s `switch` a `while`
+test and nested a `let`'s arms otherwise (`match_breaks_its_loop`,
+`let_else_returns_in_arms`).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. `a !== 1` holds
+wherever the `||` does; each test is pure, so the same arm is taken.
+Held by `test/corpus/tuple_or_pattern_arm_comments.rs` against native
+Rust, every pair of 0..5, and `test/lowering-comments-inside.test.ts`'s
+"a comment above a later arm of a tuple's or-pattern is the arm's", run;
+the mutations `or-pattern-alternatives-say-nothing` and
+`or-pattern-alternative-tests-unread` (`lower/mir/tidy/decisions.ts`).
+
+Left: a first arm before them that tests both, `(0, 0) => .., (1, _) |
+(_, 1) => .., (2, 3) | (3, 2) => ..`, whose paths to the `|` arm, `a ===
+0 && b === 1`, `a === 1`, `a !== 0 && a !== 1 && b === 1`, the chain
+can't read as `a === 1 || b === 1`, keeps MIR's labeled block. Each
+alternative's tests are in the order MIR makes them, `b === 3 && a ===
+2`, not `a === 2 && b === 3` as written, where an earlier arm's
+alternative tests `b` first.

@@ -991,6 +991,69 @@ test("a comment above a later arm of a returned match is above its if", async ()
   expect([pick(3, 4), pick(undefined, 4), pick(undefined, undefined), pick(3)]).toEqual([3, 10, 0, 3]);
 });
 
+// A later arm of a tuple's or-pattern, `// c\n (2, 3) | (3, 2) => {`, its
+// alternatives' starts inside their tuples: its comment is first in its
+// `else if`'s block, or above its guard `if`, past them all, not between
+// its test's operands; and the arms are a chain as written, `if (a === 1 ||
+// b === 1)` first, not MIR's `if (a !== 1 && b !== 1) { .. continue; }` of
+// the arms after it (#617, ADR 0444, amended; ADR 0364, amended).
+test("a comment above a later arm of a tuple's or-pattern is the arm's", async () => {
+  const { js, lib } = await compiled("comment-above-a-tuple-or-arm", `pub fn looped(pairs: &[(u32, u32)]) -> Vec<bool> {
+    let mut seen = Vec::new();
+    let mut hit = false;
+    for &(a, b) in pairs {
+        seen.push(hit);
+        match (a, b) {
+            (1, _) | (_, 1) => hit = true,
+            // Two and three.
+            (2, 3) | (3, 2) => {
+                seen.push(true);
+            }
+            _ => hit = false,
+        }
+    }
+    seen.push(hit);
+    seen
+}
+
+pub fn returned(a: u32, b: u32) -> u32 {
+    match (a, b) {
+        (1, _) | (_, 1) => 1,
+        // Two and three.
+        (2, 3) | (3, 2) => {
+            let c = a * b;
+            c + 1
+        }
+        _ => 0,
+    }
+}
+
+pub fn single(a: u32, b: u32) -> u32 {
+    match (a, b) {
+        (1, _) | (_, 1) => 1,
+        // Two, three.
+        (2, 3) => {
+            let c = a * b;
+            c + 1
+        }
+        _ => 0,
+    }
+}
+`);
+  const test = "(b === 3 && a === 2) || (b === 2 && a === 3)";
+  expect(js).toContain(
+    `    if (a === 1 || b === 1) {\n      hit = true;\n    } else if (${test}) {\n      // Two and three.\n      seen.push(true);\n    } else {\n      hit = false;\n    }\n`,
+  );
+  expect(js).toContain(`  if (a === 1 || b === 1) {\n    return 1;\n  }\n  // Two and three.\n  if (${test}) {\n`);
+  expect(js).toContain("  if (a === 1 || b === 1) {\n    return 1;\n  }\n  // Two, three.\n  if (a === 2 && b === 3) {\n");
+  const pairs = [[1, 5], [2, 3], [3, 2], [2, 2], [5, 1], [3, 3]];
+  expect((lib.looped as (p: number[][]) => boolean[])(pairs)).toEqual([false, true, true, true, true, true, false, true, false]);
+  const returned = lib.returned as (a: number, b: number) => number;
+  const single = lib.single as (a: number, b: number) => number;
+  expect(pairs.map(([a, b]) => returned(a, b))).toEqual([1, 7, 7, 0, 1, 0]);
+  expect(pairs.map(([a, b]) => single(a, b))).toEqual([1, 7, 0, 0, 1, 0]);
+});
+
 // A loop over a slice counts its indices (ADR 1042), its item bound first,
 // `const x = xs[i];`: that's the loop's, where it's written, so a comment
 // above the body's first statement, or above a `match`'s first arm that

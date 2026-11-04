@@ -96,10 +96,16 @@ fn arm_test(text: &str, opens_block: bool, comments_only: impl Fn(usize) -> bool
 
 /// Whether `text`, from a start to the next, is one of an or-pattern's
 /// alternatives before another, `"src" | ` of `"src" | "href" => {`, a
-/// line of its own as rustfmt writes a long one, `"style"\n | `: what a
-/// match arm's test goes on past to its last (`arm_test_starts`, #608).
+/// line of its own as rustfmt writes a long one, `"style"\n | `; or one of
+/// a tuple's or a slice's patterns before the next, inside them, a value
+/// and then only what's between patterns on its line, `2, ` and `3) | (`
+/// of `(2, 3) | (3, 2) => {`: what a match arm's test goes on past to its
+/// last (`arm_test_starts`, #608, #617).
 fn alternative(text: &str) -> bool {
-    (text.trim_end().strip_suffix('|')).is_some_and(|before| !before.contains([';', '{', '}', '=', '|']))
+    let or = (text.trim_end().strip_suffix('|')).is_some_and(|before| !before.contains([';', '{', '}', '=', '|']));
+    let value = text.find(|c: char| c.is_whitespace() || ",()[]|".contains(c));
+    let inside = value.is_some_and(|end| text[end..].chars().all(|c| " ,()[]|_".contains(c)));
+    or || inside
 }
 
 /// Whether `statement`, one of `leading_statements`, is a type alias, `pub
