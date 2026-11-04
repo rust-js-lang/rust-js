@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "flattened-moved-out-through-its-guard",
+    breaks:
+      "`mem::replace(&mut *state, ..)` of a flattened state's guard gives back its class's object, `const old = task;`, which the write then changes, where it's refused (#636)",
+    file: "src/lower/mir/entries.rs",
+    find: "            Value::Ref(e) | Value::Expr(e) | Value::Place(e) => self.through_flattened(e, pointee),\n",
+    replace: "            Value::Ref(_) | Value::Expr(_) | Value::Place(_) => false,\n",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "refused"],
+  },
+  {
     name: "mir-swap-one-way",
     breaks:
       "`mem::swap(&mut a, &mut b)` of two places writes `b` into `a`, and leaves `b`",

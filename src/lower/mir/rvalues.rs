@@ -52,6 +52,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether `place`, of type `ty`, is a flattened state (ADR 1044), or a
+    /// `&mut` to one, reached through its handle, `Storage::InPlace`'s, or
+    /// what holds one (`Made::flattened`): its object's own keys, no object
+    /// of its own, so what's moved out of it whole is the object, which a
+    /// write then changes (#636). Not a field of one, `value` of `Done {
+    /// value }`, whose JS reads as a handle's `value` does.
+    pub(in crate::lower) fn through_flattened(&self, place: &Expr, ty: Ty<'tcx>) -> bool {
+        matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if self.krate.flattened.states.contains(&adt.did()))
+            && self.holds_flattened(place)
+    }
+
+    /// Whether `e` is a flattened state's handle, or reached through one or
+    /// through what holds one, its guard's `value` (`through_flattened`).
+    pub(super) fn holds_flattened(&self, e: &Expr) -> bool {
+        match &e.kind {
+            js::ExprKind::Handle(_, js::Storage::InPlace(_)) => true,
+            js::ExprKind::Var(name) => self.locals.mir.made.flattened.contains(name),
+            js::ExprKind::Member(of, key) if key == js::HELD => self.holds_flattened(of),
+            js::ExprKind::Handle(of, _) => self.holds_flattened(of),
+            _ => false,
+        }
+    }
+
     pub(super) fn mir_rvalue(
         &mut self,
         state: &mut State<'_, 'tcx>,

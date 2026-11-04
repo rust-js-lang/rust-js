@@ -9,6 +9,12 @@ use crate::lower::recognition::{Std, StdItem};
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
 
+/// Why a flattened state's value isn't given or taken whole (ADR 1044):
+/// it's its object's own keys, no object of its own, so what's moved out
+/// would be the object, which the write then changes (#636). The one
+/// refusal of its cell's calls and of `mem`'s through a `&mut` to it.
+pub(in crate::lower) const FLATTENED_TAKEN_WHOLE: &str = "a flattened state's value given or taken whole, `replace`, `take`, `swap`, `get_mut` or `into_inner`, of its cell or a `&mut` to it: it's its object's own keys; write it through a borrow, `*chunk.state.borrow_mut() = ..`";
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What `guard`, a `Ref`, a `RefMut` or a lock's guard of type `ty`,
     /// derefs to: its cell's `value`, or of a `&mut` to a number or text, the
@@ -93,9 +99,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             call.quiet || (values.as_slice().first()).is_some_and(|cell| matches!(cell.kind, js::ExprKind::Handle(..)));
         // A flattened state's cell is its object's own keys (ADR 1044):
         // borrowed, read and written through a borrow; what would give or
-        // take its value whole, which is no object of its own, refused.
-        if (values.as_slice().first())
-            .is_some_and(|cell| matches!(cell.kind, js::ExprKind::Handle(_, js::Storage::InPlace(_))))
+        // take its value whole, which is no object of its own, refused, of
+        // the cell or of a `&mut` its guard lends, `Cell::from_mut(&mut
+        // *state)` (#636).
+        let flattened = (values.as_slice().first()).is_some_and(|cell| {
+            matches!(cell.kind, js::ExprKind::Handle(_, js::Storage::InPlace(_)))
+                || tys.first().is_some_and(|&ty| self.through_flattened(cell, ty))
+        });
+        if flattened
             && matches!(
                 known,
                 Std::CellReplace
@@ -111,10 +122,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::TryBorrow { .. }
             )
         {
-            return Err(self.unsupported(
-                span,
-                "a flattened state's value given or taken whole, `replace`, `take`, `swap`, `get_mut` or `into_inner`: it's its object's own keys; write it through a borrow, `*chunk.state.borrow_mut() = ..`",
-            ));
+            return Err(self.unsupported(span, FLATTENED_TAKEN_WHOLE));
         }
         let mut arg = || values.next().expect("rustc checked the arguments");
         let js_span = self.js_span(span);

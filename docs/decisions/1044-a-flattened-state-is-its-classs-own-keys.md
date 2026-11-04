@@ -96,7 +96,10 @@ first declared (`bindings::flattened_state`).
   so a `match` that throws a state's reason holds its borrow quietly.
 - **What gives or takes the value whole is refused**: `replace`, `take`,
   `swap`, `get_mut`, `replace_with`, `try_borrow`, as the value is no
-  object of its own; write it through a borrow. A flattened cell of
+  object of its own; write it through a borrow. And `mem::replace`,
+  `take`, `swap` and `Cell::from_mut` of a `&mut` its guard lends
+  (#636, [1086](1086-a-mut-refs-js-form-is-mut-ref-forms.md)'s step 3), of
+  which `const old = task;` was the object a write then changed. A flattened cell of
   anything else, a struct of std's, is refused at its declaration, where
   a `RefCell` of a struct passed as one of named fields.
 - `Clone`, `PartialEq`, `PartialOrd` and `Hash` read it whole only where

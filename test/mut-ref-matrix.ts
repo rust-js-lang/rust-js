@@ -16,6 +16,9 @@ type Pointee = {
   field?: (place: string) => string;
   /** A field holder of its own: a flattened state's, its class's field. */
   held?: (op: string) => string;
+  /** The operations rust-js refuses of it held its own way, `held`'s,
+   * each with why, so the list only shrinks: each is left out there. */
+  heldRefused?: Record<string, string>;
   /** The operations rust-js refuses of it, each with why, so the list
    * only shrinks: each is left out of its programs. */
   refused?: Record<string, string>;
@@ -144,6 +147,11 @@ impl Task {
         ${op}
     }
     println!("{:?} {}", task.state.borrow(), task.name);`,
+    // What's moved out of it whole would be its class's object, its own
+    // keys, which the write then changes (#636): refused, its copy #659.
+    heldRefused: Object.fromEntries(
+      ["replace", "take", "swap", "cell_replace"].map((operation) => [operation, "a flattened state taken whole through its guard, #659"]),
+    ),
   },
   iterator: {
     ty: "std::ops::Range<i32>",
@@ -333,7 +341,10 @@ export function programs(): Record<string, string> {
         // changed by its trait; it has no field to write.
         const alt = h.generic ? "Change::other()" : p.alt;
         const changed = h.generic ? (place: string) => `${place.replace(/^\(\*(\w+)\)$/, "$1")}.change();` : p.change;
-        const left = (h.generic && operation === "field_write") || operation in (p.refused ?? {});
+        const left =
+          (h.generic && operation === "field_write") ||
+          operation in (p.refused ?? {}) ||
+          (holder === "field" && operation in (p.heldRefused ?? {}));
         const body = left ? undefined : op("r", alt, changed, p.field);
         if (body === undefined) continue;
         const made = h.program(p, operation, body);
@@ -357,7 +368,7 @@ fn main() {
 /** What each push runs of the matrix, where its owner changes: the forms
  * that meet most, a box, a generic box, an object and a flattened state's
  * box, each held where #614's family went wrong; and each the matrix found
- * wrong, its fix's regression test (#638). */
+ * wrong, its fix's regression test (#636, #638). */
 export const sample = [
   "number__generic_fn",
   "struct__closure_capture",

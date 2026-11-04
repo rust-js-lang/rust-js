@@ -588,6 +588,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => Place::from(local),
             false => place,
         };
+        // A flattened state's handle held, a guard of it, `let mut state =
+        // task.state.borrow_mut()`: what's moved out through it is refused
+        // (`through_flattened`, #636).
+        if place.projection.is_empty()
+            && let Value::Expr(e) | Value::Place(e) = &value
+            && matches!(e.kind, js::ExprKind::Handle(..) | js::ExprKind::Var(_))
+            && self.holds_flattened(e)
+        {
+            let name = state.locals.names[local].clone();
+            self.locals.mir.made.flattened.insert(name);
+        }
         // A reference reassigned, `x = z`, that a `&mut` named where it's
         // used is through, `x.value` of `&mut *x` made before: what `x` is
         // now, held, so it's still the place it was.

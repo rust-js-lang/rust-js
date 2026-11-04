@@ -261,6 +261,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     *place && matches!((&capture.kind, &e.kind), (js::ExprKind::Var(a), js::ExprKind::Var(b)) if a == b)
                 })
         };
+        // A flattened state, lent through its guard: its object's own keys,
+        // so what's moved out would be the object, which the write then
+        // changes (#636); refused, as its cell's own `replace` is (ADR 1044).
+        let values: Vec<Value<'tcx>> = values.collect();
+        if (values.iter().take(borrowed)).any(|value| match value {
+            Value::Ref(e) | Value::Expr(e) | Value::Place(e) => self.through_flattened(e, pointee),
+            _ => false,
+        }) {
+            return Err(self.unsupported(span, crate::lower::std_types::cell::FLATTENED_TAKEN_WHOLE));
+        }
+        let values = values.into_iter();
         let mut given = Vec::new();
         // Whether the first is a place rust-js made, a variable of the
         // body's or a field of the crate's struct, not a cell's value read

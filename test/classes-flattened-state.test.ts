@@ -163,6 +163,33 @@ pub fn replaced(chunk: &ReactPromise) -> bool {
 `,
     ),
   ).toContain("a flattened state's value given or taken whole");
+  // #636: so is one through a `&mut` its guard lends, whose value moved out
+  // was the class's object, which the write then changed.
+  const through = {
+    replace: "let old = std::mem::replace(&mut *state, ChunkState::Errored { reason: None });",
+    take: "let old = std::mem::take(&mut *state);",
+    swap: "let mut old = ChunkState::Errored { reason: None };\n    std::mem::swap(&mut old, &mut *state);",
+    from_mut: "let old = std::cell::Cell::from_mut(&mut *state).replace(ChunkState::Errored { reason: None });",
+  };
+  for (const [name, taken] of Object.entries(through)) {
+    const stderr = refused(
+      `flattened-state-${name}-through-its-guard`,
+      `${state}
+impl Default for ChunkState {
+    fn default() -> Self {
+        ChunkState::Errored { reason: None }
+    }
+}
+
+pub fn taken(chunk: &ReactPromise) -> bool {
+    let mut state = chunk.state.borrow_mut();
+    ${taken}
+    matches!(old, ChunkState::Pending { .. })
+}
+`,
+    );
+    expect(stderr, name).toContain("a flattened state's value given or taken whole");
+  }
   expect(
     refused(
       "flattened-state-lent",

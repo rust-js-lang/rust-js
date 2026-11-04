@@ -149,7 +149,8 @@ where a `&mut`'s form or an operation on one changes, all 72 in the
 nightly's `mut-refs` job. What it refuses is listed in `refused`, and what
 it gets wrong in `wrong` by its issue, each list only shrinking; an
 operation a pointee refuses is left out of its programs with why
-(`refused`).
+(`refused`), or of the holder of its own (`heldRefused`), a flattened
+state's.
 
 Its first run of all 72 found two wrong answers and a refusal: #636,
 what's moved out of a flattened state lent through its guard is the class
@@ -173,3 +174,31 @@ take one too. The other 70 run as native Rust does.
   Rust's. Mutation `lent-iterator-place-made-a-js-iterator`
   (`mir/dispatch.ts`), caught by the matrix's `iterator__item`, now in
   its sample.
+- **#636, what's moved out of a flattened state through its guard is
+  refused.** `let mut state = task.state.borrow_mut()` holds the
+  flattened handle, `Storage::InPlace` (ADR 1044), in a local tidy
+  inlines later, so `mem::replace(&mut *state, ..)` reached
+  `mir_swap_or_replace` as `state.value`, whose read is the class's
+  object: `const old = task;`, which the write then changed; `take`,
+  `swap` and `Cell::from_mut(..).replace` alike. `mir_store` records
+  each local that holds such a handle (`Made::flattened`), and
+  `through_flattened` (`mir/rvalues.rs`) asks it of a place of a
+  flattened state's type; `mem`'s three and the cell's own calls,
+  `Cell::from_mut` of a `&mut` the guard lends among them, refuse it
+  with one message, `std_types/cell.rs`' `FLATTENED_TAKEN_WHOLE`. Case
+  (ADR 0262): Rust's behavior can't be kept yet, so a compile error,
+  consistent with ADR 1044's refusal of the cell's own `replace`. The
+  matrix's `flattened_state__field` leaves the four out (`heldRefused`);
+  `test/classes-flattened-state.test.ts` holds the refusals. Mutations
+  `flattened-moved-out-through-its-guard` (`mir/entries.ts`) and
+  `flattened-guard-unrecorded` (`mir/assign.ts`).
+
+  Rejected for now: a move out that copies the state's keys, `{ status:
+  task.status, tries: task.tries, .. }`, the flattened handle's own
+  `MutRefForm` operation. It needs a decision of its own: a write of one
+  variant over another keeps the earlier one's keys (ADR 1044), so a copy
+  of every key carries stale ones JS can see, and a copy of the variant's
+  keys alone is told by its tag. Filed as #659 (P2). The same value lent to
+  a function that moves it out, `fn f(s: &mut Status) -> Status {
+  mem::replace(s, ..) }`, gives back the object too, which its callee
+  can't see is one: #658 (P0), which that copy would fix as well.

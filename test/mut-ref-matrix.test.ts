@@ -31,11 +31,7 @@ const refused: Record<string, string> = {};
 
 /** The programs that run and differ from native Rust, each a wrong answer
  * filed P0, by its issue. One that agrees is taken off with its fix. */
-const wrong: Record<string, string> = {
-  // What's moved out of a flattened state lent through its guard is the
-  // class itself: `replace`, `take`, `swap` and `Cell::from_mut(..).replace`.
-  flattened_state__field: "#636",
-};
+const wrong: Record<string, string> = {};
 
 test("the sample, the refusals and the wrong answers are the matrix's programs", () => {
   for (const name of [...sample, ...Object.keys(refused), ...Object.keys(wrong)]) expect(Object.keys(all)).toContain(name);

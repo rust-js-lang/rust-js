@@ -457,9 +457,10 @@ pub(super) struct Made {
     pub(super) fixed: HashSet<String>,
     /// Of what holds a `&mut`'s handle on a nullable place, the place (#541).
     pub(super) handles: HashMap<String, Expr>,
+    /// Of what holds a flattened state's handle, a guard's, `Storage::InPlace` (ADR 1044, #636).
+    pub(super) flattened: HashSet<String>,
 }
 
-/// What's known of a body's locals.
 /// What lowering a body from its MIR found of its variables, which goes
 /// with them where a body inside it is lowered (`Locals`): each read and
 /// written here alone, and asked of by the rest, `alike_local`.
@@ -639,8 +640,7 @@ impl Locals {
     }
 }
 
-/// Whether `local`, a parameter, is one the program names nothing and reads
-/// nowhere, `_: Ref`: JS's `_`.
+/// Whether `local`, a parameter, is one the program names nothing and reads nowhere, `_: Ref`: JS's `_`.
 fn unnamed(locals: &Locals, local: Local) -> bool {
     !locals.user[local] && locals.reads[local] == 0 && !locals.borrowed[local]
 }
