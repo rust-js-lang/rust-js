@@ -11021,9 +11021,19 @@ export function $stdIterator(struct, steps) {
     if (back !== undefined) it.back = () => step(back(it));
     if (len !== undefined) it.len = () => len(it);
     // Its compiled `rfold` and `nth_back`, and `try_rfold`, which `rfind`
-    // asks (ADR 0930).
+    // asks (ADR 0930). Its `rfold` takes it whole, as its `fold` does, once
+    // the call ends, though it throws: a close after one that panicked
+    // drops nothing twice (#649).
     $forward(it, steps, {
-      rfold: rfold && ((init, f, unwind) => rfold(it, init, f, unwind)),
+      rfold:
+        rfold &&
+        ((init, f, unwind) => {
+          try {
+            return rfold(it, init, f, unwind);
+          } finally {
+            it.$closed = true;
+          }
+        }),
       nthBack: nthBack && ((k) => step(nthBack(it, k))),
       tryRfold: tryRfold && ((init, f, broke, unwind) => tryRfold(it, init, f, broke, unwind)),
     });

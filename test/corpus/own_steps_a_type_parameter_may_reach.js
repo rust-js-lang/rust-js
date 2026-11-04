@@ -10,6 +10,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $byteLen,
+  $catchUnwind,
   $count,
   $dropEach,
   $foldBack,
@@ -284,6 +285,29 @@ function fusedTotal(it, IFused) {
   return result;
 }
 
+function breaksDrop_drop(breaks) {
+  console.log("drop breaks");
+}
+
+function breaksIterator_next(breaks) {
+  function value() {
+    breaks[0] = (breaks[0] + 1) >>> 0;
+    return [breaks[0]];
+  }
+  return breaks[0] < breaks[1] ? value() : undefined;
+}
+
+function breaksDoubleEndedIterator_nextBack(breaks) {
+  if (breaks[1] === 2) {
+    throw new Error("next_back");
+  }
+  function value() {
+    breaks[1] = (breaks[1] - 1) >>> 0;
+    return [(breaks[1] + 1) >>> 0];
+  }
+  return breaks[0] < breaks[1] ? value() : undefined;
+}
+
 function counterIterator_next(counter) {
   function value() {
     counter[0] = (counter[0] + 1) >>> 0;
@@ -328,6 +352,21 @@ function heldMappedTotal(it, dropI) {
       map.return();
     },
   );
+}
+
+function totalOf(it, dropI) {
+  const iter = it;
+  try {
+    return Iterator.from(iter).reduce((total, d) => {
+      const result = (total + d[0]) >>> 0;
+      dDrop_drop(d);
+      return result;
+    }, 0);
+  } finally {
+    if (!iter.ownFold) {
+      dropI?.(iter);
+    }
+  }
 }
 
 function main() {
@@ -443,6 +482,68 @@ function main() {
       return result;
     }, 0)}`,
   );
+  // Std's `rfold`, generic code's `fold` of a `rev()`, whose source's
+  // `next_back` panics drops what it held as it unwinds, once.
+  const folded = $catchUnwind(() => {
+    const it = $held(
+      iterator_peekable([0, 4], { next: breaksIterator_next }, breaksDrop_drop, dDrop_drop),
+    );
+    let d;
+    try {
+      d = $peek(it);
+    } catch (error) {
+      it.return();
+      throw error;
+    }
+    const value = d?.[0];
+    console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
+    return totalOf(
+      $rev(
+        $knowing(
+          it,
+          (iterator) =>
+            peekableDoubleEndedIterator_nextBack(
+              iterator,
+              { next_back: breaksDoubleEndedIterator_nextBack },
+              breaksDrop_drop,
+              dDrop_drop,
+            ),
+          undefined,
+          (iterator, init, f, unwind) =>
+            peekableDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: breaksIterator_next },
+              { next_back: breaksDoubleEndedIterator_nextBack },
+              breaksDrop_drop,
+              unwind,
+              undefined,
+              dDrop_drop,
+            ),
+          undefined,
+          (iterator, init, f, broke, unwind) =>
+            peekableDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: breaksIterator_next },
+              { next_back: breaksDoubleEndedIterator_nextBack },
+              $tryOf(broke),
+              breaksDrop_drop,
+              unwind,
+              undefined,
+              undefined,
+              dDrop_drop,
+            ),
+        ),
+      ),
+      (rev) => {
+        rev.return();
+      },
+    );
+  });
+  console.log(`panicked ${folded.TAG === "Err"}`);
   const names = ["a", "bb", "ccc"];
   console.log(
     `${heldTotal($iterator([0], counterIterator_next), (it) => {

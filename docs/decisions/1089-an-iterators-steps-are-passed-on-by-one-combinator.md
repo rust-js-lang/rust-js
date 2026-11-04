@@ -210,19 +210,24 @@ the answer is asked of the value at run time:
 - **A compiled struct stepped from its back is given std's compiled
   `rfold` whatever it holds**, as its `fold` is (ADR 0912): std's
   `Peekable::rfold` drops its source before it folds what it peeked at,
-  where `$foldBack` of its `next_back` dropped it after.
+  where `$foldBack` of its `next_back` dropped it after. Like its `fold`,
+  it takes the struct once the call ends, though it throws (`$closed`), so
+  generic code's close after one whose source's `next_back` panicked drops
+  nothing twice.
 
 `own_steps_a_type_parameter_may_reach.rs` holds the shapes against native
 Rust: a `map().fuse().fold(..)` and a `peekable().rev().fold(..)` in
 generic code of the crate's iterator that writes its `fold` and `rfold`,
 one that writes neither, and a `Vec`'s; a peekable's `rev()` that isn't
-generic; and a `sum()` through a held struct's dictionary of a value
-generic code was given, and of its `map()`.
+generic, and one generic code folds whose source's `next_back` panics;
+and a `sum()` through a held struct's dictionary of a value generic code
+was given, and of its `map()`.
 Mutations: `type-parameter-fold-unsaid` and `type-parameter-rfold-unsaid`
 (`lower/iterators/dictionaries.ts`), `knowing-rfold-only-its-owns`
 (`lower/iterators/knowing.ts`), `dictionary-step-took-unasked`
 (`lower/mir/iter.ts`), `took-helper-trusted` and `took-own-unasked`
-(`runtime/iterator.ts`); `own-steps-not-the-value`, `given-count-not-own`,
+(`runtime/iterator.ts`) and `std-iterator-unrfolded`
+(`runtime/std_iterator.ts`); `own-steps-not-the-value`, `given-count-not-own`,
 `given-boxed-steps-not-own` and `knowing-rfold-unasked` name their new
 text, and `std-struct-fold-undictionaried` a compiled struct's JS, as a
 type parameter's `fold` is `Reach::May`'s now.

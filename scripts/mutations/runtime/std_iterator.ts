@@ -106,4 +106,13 @@ export const mutations: Mutation[] = [
     replace: "    const made = run();\n    if (steps.takes?.includes(method)) it.$closed = true;\n    return made;\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
   },
+  {
+    name: "std-iterator-unrfolded",
+    breaks:
+      "std's compiled struct isn't taken once its compiled `rfold` ends: a `peekable()`'s `rev().fold(..)` whose closure panics drops its source and what it peeked at as std's `rfold` unwinds, then again as it's closed (#649)",
+    file: "src/runtime/std_iterator.js",
+    find: "            return rfold(it, init, f, unwind);\n          } finally {\n            it.$closed = true;\n",
+    replace: "            return rfold(it, init, f, unwind);\n          } finally {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_steps_a_type_parameter_may_reach.rs$"],
+  },
 ];

@@ -3,7 +3,8 @@
 // `rfold` its value's own may be, the crate's, called through a `map()`, a
 // `fuse()` or a `peekable()` of it, and dropped once, by that step where it
 // took it, else after it (#621, #623, #649). A compiled `Peekable`'s `rfold`
-// is std's, which drops its source before what it peeked at.
+// is std's, which drops its source before what it peeked at, and once as a
+// panic in its closure unwinds.
 struct D(u32);
 
 impl Drop for D {
@@ -102,6 +103,37 @@ fn fused_total<I: Iterator<Item = u32>>(it: I) -> u32 {
     total.0
 }
 
+/// One whose `next_back` panics at its third item from the back.
+struct Breaks(u32, u32);
+
+impl Drop for Breaks {
+    fn drop(&mut self) {
+        println!("drop breaks");
+    }
+}
+
+impl Iterator for Breaks {
+    type Item = D;
+    fn next(&mut self) -> Option<D> {
+        (self.0 < self.1).then(|| {
+            self.0 += 1;
+            D(self.0)
+        })
+    }
+}
+
+impl DoubleEndedIterator for Breaks {
+    fn next_back(&mut self) -> Option<D> {
+        if self.1 == 2 {
+            panic!("next_back");
+        }
+        (self.0 < self.1).then(|| {
+            self.1 -= 1;
+            D(self.1 + 1)
+        })
+    }
+}
+
 /// One that counts, with a destructor and no `fold` of its own.
 struct Counter(u32);
 
@@ -140,6 +172,10 @@ fn held_mapped_total<I: Iterator<Item = u32>>(it: I) -> u32 {
     Holder { it: it.map(|n| n + 1) }.total()
 }
 
+fn total_of<I: Iterator<Item = D>>(it: I) -> u32 {
+    it.fold(0, |total, d| total + d.0)
+}
+
 fn main() {
     println!("{}", mapped_fused(Folds(0, 2)));
     println!("{}", mapped_fused(Steps(0, 2)));
@@ -150,6 +186,14 @@ fn main() {
     let mut it = Steps(0, 3).peekable();
     println!("peeked {:?}", it.peek().map(|d| d.0));
     println!("{}", it.rev().fold(0, |sum, d| sum + d.0));
+    // Std's `rfold`, generic code's `fold` of a `rev()`, whose source's
+    // `next_back` panics drops what it held as it unwinds, once.
+    let folded = std::panic::catch_unwind(|| {
+        let mut it = Breaks(0, 4).peekable();
+        println!("peeked {:?}", it.peek().map(|d| d.0));
+        total_of(it.rev())
+    });
+    println!("panicked {}", folded.is_err());
     let names = ["a", "bb", "ccc"];
     println!("{}", held_total(Counter(0)));
     println!("{}", held_mapped_total(Counter(0)));
