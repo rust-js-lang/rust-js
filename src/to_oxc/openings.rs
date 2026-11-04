@@ -2,6 +2,8 @@
 //! its own, so a comment before it is the statement's: whole statements,
 //! and a block's opening, an `unsafe`'s, a macro's or a `match`'s.
 
+use std::collections::HashSet;
+
 /// The whole statements `code` starts with, each trimmed, each ending in a
 /// `;` outside its brackets, and what's after them: the next's start, or
 /// from where a bracket closes one it didn't open, its block's `}`. A
@@ -51,18 +53,53 @@ pub(super) fn whole_arm(code: &str) -> bool {
     false
 }
 
+/// How many of `starts`, from the first after a comment, a match arm's
+/// test is, whose comments are its body's (`arm_test`): its last start,
+/// past an or-pattern's alternatives before it, `"src" | `, but not a
+/// `switch`'s case's values, `case_values`, each its comment's (rd139);
+/// of an arm whose block `firsts` starts (`arms::ElseIfs`), past its
+/// opening where `comments_only` says only comments are (#608).
+pub(super) fn arm_test_starts(
+    text: &str,
+    starts: &[u32],
+    (case_values, firsts): (&HashSet<u32>, &HashSet<u32>),
+    comments_only: impl Fn(u32, u32) -> bool,
+) -> Option<usize> {
+    let piece = |w: &[u32]| text.get(w[0] as usize..w[1] as usize);
+    let last = (starts.windows(2))
+        .take_while(|w| !case_values.contains(&w[1]) && piece(w).is_some_and(alternative))
+        .count();
+    let [test, after, ..] = starts[last..] else {
+        return None;
+    };
+    let pattern = text.get(test as usize..after as usize)?;
+    let opens_block = firsts.contains(&after);
+    arm_test(pattern, opens_block, |open| {
+        comments_only(test + open as u32 + 1, after)
+    })
+    .then_some(last + 1)
+}
+
 /// Whether `text`, from a start to the next, is only a match arm's test,
 /// `IMMEDIATE_PRIORITY =>`, whose comments are its body's (ADR 0590); and
 /// where the next start is first in an `else if`'s block, `opens_block`,
 /// of an arm that opens it, `(2, 2) => {`, its test to its `{`, past which
 /// only comments are, as `comments_only` says of where the `{` is: a
 /// comment above the arm is that statement's, not the test's (#595).
-pub(super) fn arm_test(text: &str, opens_block: bool, comments_only: impl Fn(usize) -> bool) -> bool {
+fn arm_test(text: &str, opens_block: bool, comments_only: impl Fn(usize) -> bool) -> bool {
     let pattern = match text.find('{') {
         Some(open) if opens_block && comments_only(open) => text[..open].trim_end(),
         _ => text,
     };
     pattern.trim_end().ends_with("=>") && !pattern.contains([';', '{', '}', '\n'])
+}
+
+/// Whether `text`, from a start to the next, is one of an or-pattern's
+/// alternatives before another, `"src" | ` of `"src" | "href" => {`, a
+/// line of its own as rustfmt writes a long one, `"style"\n | `: what a
+/// match arm's test goes on past to its last (`arm_test_starts`, #608).
+fn alternative(text: &str) -> bool {
+    (text.trim_end().strip_suffix('|')).is_some_and(|before| !before.contains([';', '{', '}', '=', '|']))
 }
 
 /// Whether `statement`, one of `leading_statements`, is a type alias, `pub

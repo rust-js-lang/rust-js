@@ -3,6 +3,42 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "or-pattern-arm-after-the-rest",
+    breaks:
+      'a later or-pattern arm, `"src" | "href" => {`, is the `else` of MIR\'s test of the arms after it, `} else {\\n // Santized URLs\\n if (name !== "src" && name !== "href") { .. } else { .. }`, not an `else if` as written (#608)',
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "            _ if !stmt.span.is_none() && patterns.iter().any(|p| p.lo <= stmt.span.lo && stmt.span.hi <= p.hi) => {\n",
+    replace: "            _ if false => {\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "or-pattern arm keeps"],
+  },
+  {
+    name: "written-chain-test-at-a-later-arm",
+    breaks:
+      "a returned `match`'s first guard `if`, turned to its arm's order, keeps MIR's test placed at the next arm's pattern, so a comment above that arm is above the function's first `if` (#609)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        if let Some(arm) = written_arm(stmt.span, &otherwise, patterns).filter(|_| !switch) {\n",
+    replace: "        if let Some(arm) = written_arm(stmt.span, &otherwise, patterns).filter(|_| false) {\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "returned match is above"],
+  },
+  {
+    name: "written-chain-switch-test-moved",
+    breaks:
+      "a `switch`'s arm's test `written_chains` turns is placed at the arm before it, which the `switch` then reads it as, React's `typeof` switch an `if` chain",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        if let Some(arm) = written_arm(stmt.span, &otherwise, patterns).filter(|_| !switch) {\n",
+    replace: "        if let Some(arm) = written_arm(stmt.span, &otherwise, patterns).filter(|_| switch || !switch) {\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "a guarded arm of a typeof switch tested first is its case"],
+  },
+  {
+    name: "written-chain-test-at-the-last-arm",
+    breaks:
+      "a returned `match`'s first guard `if` is placed at the last arm's pattern, past its own code, so a comment above its own arm is above the next arm's `if` (#609)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        .filter(|p| at.lo <= p.lo && p.lo <= first)\n",
+    replace: "        .filter(|p| at.lo <= p.lo && first > 0)\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "returned match is above"],
+  },
+  {
     name: "alike-branches-of-a-call-assigned",
     breaks:
       "an assigned `if` of alike values whose test calls is `level = mark(n) ? 5 : 5;`, not as written",

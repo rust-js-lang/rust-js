@@ -599,8 +599,10 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| early_returns(s, &h.written.elses))
             }),
             // A chain's arms, as statements, in the order written.
-            pass("written chains", |b, _| {
-                js::statement_lists(b, &mut |s| written_chains(s))
+            pass("written chains", |b, h| {
+                js::statement_lists(b, &mut |s| {
+                    written_chains(s, (&h.written.patterns, &h.written.switches))
+                })
             }),
             // A chain of `js::strict_equals` tests of one subject, before
             // its last two ways are a returned `?:` (ADR 0958).

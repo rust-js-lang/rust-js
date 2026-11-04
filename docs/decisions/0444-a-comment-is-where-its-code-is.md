@@ -1,6 +1,6 @@
 # 0444. A comment is in the JS where its code is, and so is a blank line
 
-Status: Accepted. Amended (2026-11-04): a comment in or above a later match arm keeps its `else if` (#595). Amended (2026-11-03): a comment after a drop guard's `let` is after its `finally`'s statement. Amended (2026-11-03): an index loop's item is before its body's comments. Amended (2026-11-01): a `// SAFETY:` comment is left out of the JS, the user's decision. Amended (2026-10-29): a comment above a `use` is above the import it makes; an inner doc comment is JS's plain one. Amended (2026-10-28): a field's doc comment is its struct's one literal's. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
+Status: Accepted. Amended (2026-11-04): a comment above a later or-pattern arm keeps its `else if` (#608); one above a later arm of a returned `match` is above that arm's `if` (#609). Amended (2026-11-04): a comment in or above a later match arm keeps its `else if` (#595). Amended (2026-11-03): a comment after a drop guard's `let` is after its `finally`'s statement. Amended (2026-11-03): an index loop's item is before its body's comments. Amended (2026-11-01): a `// SAFETY:` comment is left out of the JS, the user's decision. Amended (2026-10-29): a comment above a `use` is above the import it makes; an inner doc comment is JS's plain one. Amended (2026-10-28): a field's doc comment is its struct's one literal's. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
 an object is across lines where its struct literal is. Extends [0383](0383-a-files-leading-comments-are-its-jss.md),
 whose rules for what JS can hold are now every comment's, and
 [0018](0018-print-with-oxc.md). Its amendment, a branch's comment keeps it a statement, is
@@ -1021,3 +1021,75 @@ a later arm of a match's chain keeps its else if", run, and the mutations
 `else-if-at-its-first-commented`, `else-if-at-its-first-of-any-start`
 (`to_oxc/statements.ts`) and `else-if-arm-opening-unread` (`to_oxc/openings.ts`).
 The guide's basics page shows it (`sorted`).
+
+## Amendment: an or-pattern's arm, and a returned match's (2026-11-04, #608, #609)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments and the
+order arms are written in; what runs is the same.
+
+Two arms the amendment above left out nested their comment or moved it.
+
+**A later arm of an or-pattern**, React's writeStyleResourceAttribute's
+`// Santized URLs\n "src" | "href" => {`, MIR tests `name !== "src" &&
+name !== "href"` of, with the arms after it first, so its `if` was
+`if (t) { rest } else { arm }`, the arms out of order, and the comment
+above the `if`, in an `else`'s block:
+
+```js
+} else {
+  // Santized URLs
+  if (name !== "src" && name !== "href") {
+```
+
+1. **An `if` placed at an arm's pattern whose `else` is written before
+   its `then` is turned**, `if (!t) { arm } else { rest }`, as
+   `written_chains` turns one whose `then` is a chain (`tidy/branches.rs`):
+   the arms as written, where one test decides between them.
+2. **An arm's test goes on past an or-pattern's alternatives**, `"src" |
+   ` (`openings::alternative`), to its last one's `=>`, where rule 2 of the
+   amendment above asks of it (`openings::arm_test_starts`): the comment is
+   the first statement's of the `else if`'s block, written above the arm
+   or first in it. A `switch`'s case's values aren't gone past, each its
+   comment's (rd139).
+
+```js
+} else if (name === "src" || name === "href") {
+  // Santized URLs
+  out.push("url");
+```
+
+A tuple's alternatives, `(2, 3) | (3, 2) =>`, start inside their tuples,
+which this doesn't read past; a comment above such a later arm is still
+between its test's operands.
+
+**A later arm of a `match` whose arms each return**, `(Some(a), _) => a,\n
+// c\n (None, Some(b)) => { .. }`, is a guard `if` (ADR 0370) once
+`written_chains` turns MIR's `if (x == null) { .. } else { return a; }`.
+MIR placed that test where the arm it tests for is, the next one, so the
+first `if` was placed after the comment above that arm, and the comment was
+printed above it, the function's first statement. **The test `written_chains`
+turns is its new `then`'s arm's**, so it's placed at that arm's pattern,
+the last of `Written::patterns` from where the `if` is placed to that arm's
+code (`written_arm`): an explicit fact of where the arm is, which
+`source_spans` places the `if` at, and the comment is above the next
+arm's `if`. A `switch`'s test stays where MIR placed it, which the
+`switch` reads its arm from (ADR 0668).
+
+```js
+export function pick(x, y) {
+  // Only the first.
+  if (x != null) {
+    const a = x;
+    return a;
+  }
+  // Only the second.
+  if (y != null) {
+```
+
+Held by `test/lowering-comments-inside.test.ts`'s "a comment above a later
+or-pattern arm keeps its else if" and "a comment above a later arm of a
+returned match is above its if", each run, and the mutations
+`or-pattern-arm-after-the-rest`, `written-chain-test-at-a-later-arm`,
+`written-chain-test-at-the-last-arm`, `written-chain-switch-test-moved`
+(`lower/mir/tidy/branches.ts`) and
+`or-pattern-alternative-unread` (`to_oxc/openings.ts`).

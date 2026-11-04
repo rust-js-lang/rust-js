@@ -610,8 +610,16 @@ pub(super) fn chained_checks(stmts: &mut [Stmt], thens: &[(js::Span, js::Span)])
 
 /// `if (t) { if (..) .. } else { y }`, `y` written before the chain in
 /// the `then`: `if (!t) { y } else if (..) ..`, a match's arms as written,
-/// which MIR tests `!== "a"` of with the rest first.
-pub(super) fn written_chains(stmts: &mut [Stmt]) {
+/// which MIR tests `!== "a"` of with the rest first; and `if (t) { a }
+/// else { y }` of an `if` placed at an arm's pattern, `y` written before
+/// `a`: an or-pattern's arm, `"src" | "href" => {`, which MIR tests `name
+/// !== "src" && name !== "href"` of with the arms after it first (#608).
+/// `!t` is then `y`'s arm's test, placed at its pattern, of `patterns`
+/// (`Written::patterns`): MIR placed `t` at the arm it tests for, a later
+/// one, whose comment, `// c\n (None, Some(b)) => {`, was the first `if`'s,
+/// at the function's top once a `return` ends `y` (#609). Not a `switch`'s
+/// test, of `switches`, which it reads where MIR placed it (ADR 0668).
+pub(super) fn written_chains(stmts: &mut [Stmt], (patterns, switches): (&[js::Span], &[Switch])) {
     for stmt in stmts {
         let StmtKind::If(_, then, Some(otherwise)) = &stmt.kind else {
             continue;
@@ -633,17 +641,38 @@ pub(super) fn written_chains(stmts: &mut [Stmt]) {
                     ..
                 },
             ] => first_written(arm),
+            // Or the arms after the one whose pattern the `if` tests (#608).
+            _ if !stmt.span.is_none() && patterns.iter().any(|p| p.lo <= stmt.span.lo && stmt.span.hi <= p.hi) => {
+                first_written(then)
+            }
             _ => None,
         };
         let earlier = matches!((first_written(otherwise), arm), (Some(o), Some(t)) if o < t);
-        if !chain(then) || chain(otherwise) || !earlier {
+        if chain(otherwise) || !earlier {
             continue;
         }
         let StmtKind::If(test, then, Some(otherwise)) = std::mem::replace(&mut stmt.kind, StmtKind::Break(None)) else {
             unreachable!("matched")
         };
-        stmt.kind = StmtKind::If(test.negated_test(), otherwise, Some(then));
+        // Not of a `switch`'s arm, whose tests it reads where they are.
+        let switch = switched(&test, stmt.span, switches);
+        let mut test = test.negated_test();
+        if let Some(arm) = written_arm(stmt.span, &otherwise, patterns).filter(|_| !switch) {
+            test.span = arm;
+        }
+        stmt.kind = StmtKind::If(test, otherwise, Some(then));
     }
+}
+
+/// Where the pattern of the arm `code` is written, of `patterns`, of the
+/// `if` placed at `at`, where its `match` tests or at an arm's pattern:
+/// the last one from there up to that arm's first statement
+/// (`written_chains`).
+fn written_arm(at: js::Span, code: &[Stmt], patterns: &[js::Span]) -> Option<js::Span> {
+    let first = first_written(code).filter(|_| !at.is_none())?;
+    (patterns.iter().copied())
+        .filter(|p| at.lo <= p.lo && p.lo <= first)
+        .max_by_key(|p| p.lo)
 }
 
 /// `t && <div className={t ? e : undefined} />`: `e`, where `t` holds, of a

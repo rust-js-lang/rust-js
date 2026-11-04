@@ -875,6 +875,122 @@ pub fn valued(pairs: &[(u32, u32)]) -> Vec<bool> {
   }
 });
 
+// React's writeStyleResourceAttribute: a later arm of an or-pattern, `"src"
+// | "href" => {`, which MIR tests `name !== "src" && name !== "href"` of
+// with the arms after it first, is an `else if` in the order written, a
+// comment above it or in it first in its block, past its alternatives
+// (#608, ADR 0444, amended).
+test("a comment above a later or-pattern arm keeps its else if", async () => {
+  const { js, lib } = await compiled("comment-above-an-or-arm", `pub fn above(name: &str, out: &mut Vec<String>) {
+    let mut attribute_name = name.to_lowercase();
+    let value = match name {
+        "style" | "ref" => {
+            return;
+        }
+        "className" => {
+            attribute_name = "class".to_owned();
+            name.to_owned()
+        }
+        // Booleans
+        "hidden" => {
+            if out.is_empty() {
+                return;
+            }
+            String::new()
+        }
+        // Santized URLs
+        "src" | "href" => {
+            out.push("url".to_owned());
+            name.to_uppercase()
+        }
+        _ => {
+            if name.starts_with("on") {
+                return;
+            }
+            name.to_owned()
+        }
+    };
+    out.push(attribute_name);
+    out.push(value);
+}
+
+pub fn inside(name: &str, out: &mut Vec<String>) {
+    let value = match name {
+        "style" | "ref" => {
+            return;
+        }
+        "hidden" => {
+            if out.is_empty() {
+                return;
+            }
+            String::new()
+        }
+        "src" | "href" => {
+            // Santized URLs
+            out.push("url".to_owned());
+            name.to_uppercase()
+        }
+        _ => {
+            if name.starts_with("on") {
+                return;
+            }
+            name.to_owned()
+        }
+    };
+    out.push(value);
+}
+`);
+  const arm = '    value = "";\n  } else if (name === "src" || name === "href") {\n    // Santized URLs\n    out.push("url");\n    value = name.toUpperCase();\n  } else';
+  expect(js).toContain(`${arm} if (name.startsWith("on")) {\n    return;\n  } else {\n    value = name;\n  }\n`);
+  expect(js).toContain(`${arm} {\n    if (name.startsWith("on")) {\n      return;\n    }\n    value = name;\n  }\n`);
+  const run = (f: string, name: string, out: string[]) => {
+    (lib[f] as (name: string, out: string[]) => void)(name, out);
+    return out;
+  };
+  expect(["style", "className", "hidden", "src", "href", "onclick", "title"].map((n) => run("above", n, ["x"]))).toEqual([
+    ["x"],
+    ["x", "class", "className"],
+    ["x", "hidden", ""],
+    ["x", "url", "src", "SRC"],
+    ["x", "url", "href", "HREF"],
+    ["x"],
+    ["x", "title", "title"],
+  ]);
+  expect(run("above", "hidden", [])).toEqual([]);
+  expect(["ref", "hidden", "src", "onclick", "alt"].map((n) => run("inside", n, ["x"]))).toEqual([
+    ["x"],
+    ["x", ""],
+    ["x", "url", "SRC"],
+    ["x"],
+    ["x", "alt"],
+  ]);
+});
+
+// A `match` whose arms each return are guard `if`s (ADR 0370), MIR's chain
+// turned to the order its arms are written (`written_chains`): the first
+// `if`'s test is its arm's, where its pattern is, so a comment above the
+// next arm is above that arm's `if`, not the function's first (#609).
+test("a comment above a later arm of a returned match is above its if", async () => {
+  const { js, lib } = await compiled("comment-above-a-guard-arm", `pub fn pick(x: Option<u32>, y: Option<u32>) -> u32 {
+    match (x, y) {
+        // Only the first.
+        (Some(a), _) => a,
+        // Only the second.
+        (None, Some(b)) => {
+            let c = b + 1;
+            c * 2
+        }
+        _ => 0,
+    }
+}
+`);
+  expect(js).toContain(
+    "export function pick(x, y) {\n  // Only the first.\n  if (x != null) {\n    const a = x;\n    return a;\n  }\n  // Only the second.\n  if (y != null) {\n",
+  );
+  const pick = lib.pick as (x?: number, y?: number) => number;
+  expect([pick(3, 4), pick(undefined, 4), pick(undefined, undefined), pick(3)]).toEqual([3, 10, 0, 3]);
+});
+
 // A loop over a slice counts its indices (ADR 1042), its item bound first,
 // `const x = xs[i];`: that's the loop's, where it's written, so a comment
 // above the body's first statement, or above a `match`'s first arm that

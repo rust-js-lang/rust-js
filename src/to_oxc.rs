@@ -510,6 +510,7 @@ fn comments_of(
     // And each value of a case of more than one, which a comment between
     // an arm's patterns is before (rd139), or above the arm (rd143).
     let pattern_starts = cases::pattern_starts(module, &sources.text);
+    let case_values: std::collections::HashSet<u32> = pattern_starts.iter().copied().collect();
     // And a call's argument, and an object literal's field, whose comments
     // oxc writes before it, on lines of their own (ADR 0708).
     let parts = arguments::part_starts(module);
@@ -861,17 +862,19 @@ fn comments_of(
                             })
                         })
                 };
-                // And of an arm that opens an `else if`'s block (#595).
+                // And of an arm that opens an `else if`'s block (#595), or-patterns' too (#608).
                 let mut next = starts.partition_point(|&s| s < c.hi);
-                while let [at, after, ..] = starts[next.min(starts.len())..]
+                while let Some(&at) = starts.get(next)
                     && only_comments(c.hi, at)
                     && case_starts.binary_search(&at).is_err()
-                    && let Some(text) = sources.text.get(at as usize..after as usize)
-                    && openings::arm_test(text, else_ifs.firsts.contains(&after), |open| {
-                        only_comments(at + open as u32 + 1, after)
-                    })
+                    && let Some(test) = openings::arm_test_starts(
+                        &sources.text,
+                        &starts[next..],
+                        (&case_values, &else_ifs.firsts),
+                        only_comments,
+                    )
                 {
-                    next += 1;
+                    next += test;
                 }
                 // Past each start it's none of, each rule asked again of the
                 // next, so one past an operand isn't then a call's part it's

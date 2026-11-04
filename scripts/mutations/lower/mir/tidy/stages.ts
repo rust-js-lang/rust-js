@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
     breaks:
       'a match\'s arms as statements from MIR keep their first arm last, `if (message.TAG !== "resize") { .. } else { .. }`',
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("written chains", |b, _| {\n                js::statement_lists(b, &mut |s| written_chains(s))\n            }),\n',
+    find: '            pass("written chains", |b, h| {\n                js::statement_lists(b, &mut |s| {\n                    written_chains(s, (&h.written.patterns, &h.written.switches))\n                })\n            }),\n',
     replace: "",
     tests: [
       "test/corpus.test.ts",

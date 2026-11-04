@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "or-pattern-alternative-unread",
+    breaks:
+      'a comment above a later or-pattern arm, `// Santized URLs\\n "src" | "href" => {`, is before its `if`, `} else {\\n // Santized URLs\\n if (name === "src" || name === "href") {`, not first in the `else if`\'s block (#608)',
+    file: "src/to_oxc/openings.rs",
+    find: "    (text.trim_end().strip_suffix('|')).is_some_and(|before| !before.contains([';', '{', '}', '=', '|']))\n",
+    replace: "    (text.trim_end().strip_suffix('|')).is_some_and(|before| !before.contains([';', '{', '}', '=', '|'])) && false\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "or-pattern arm keeps"],
+  },
+  {
     name: "arm-comment-on-its-test",
     breaks: "a comment before a match arm is before the `if` its test is, or lost on an `else if`",
     file: "src/to_oxc/openings.rs",
