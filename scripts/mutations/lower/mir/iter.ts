@@ -168,15 +168,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-iterators.test.ts", "-t", "next_back of a map"],
   },
   {
-    name: "mir-filter-discarded-undropped",
-    breaks:
-      "MIR's `filter` of items with a destructor leaves those it discards undropped",
-    file: "src/lower/mir/iter.rs",
-    find: "                    Some(drop) => Expr::call_helper(\"$filterDropping\", vec![it, test, drop]),\n",
-    replace: "                    Some(_) => method(\"filter\", it, vec![test]),\n",
-    tests: ["test/corpus.test.ts", "-t", "collect_drops"],
-  },
-  {
     name: "mir-len-closure-type-shown",
     breaks:
       "MIR's refused `len()` names its closures' types, where they're written",

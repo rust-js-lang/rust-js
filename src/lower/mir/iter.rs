@@ -706,18 +706,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 f => method("map", it, vec![f]),
             },
             // Of items with a destructor: each it doesn't keep dropped as it
-            // discards it (ADR 0098), by the runtime's `filter`, never JS's
-            // own, which drops it inside the test (`$kept`, #651).
+            // discards it (ADR 0098), `filtered`'s.
             Some(IterMethod::Filter) => {
                 let test = self.unary_callback(arg(), own);
-                match dropping
-                    .map(|item| self.std_drop_function(item, span))
-                    .transpose()?
-                    .flatten()
-                {
-                    Some(drop) => Expr::call_helper("$filterDropping", vec![it, test, drop]),
-                    None => method("filter", it, vec![test]),
-                }
+                self.filtered(it, test, dropping, span)?
             }
             Some(IterMethod::Take) => method("take", it, vec![arg()]),
             // Of items with a destructor, each it skips dropped as it's

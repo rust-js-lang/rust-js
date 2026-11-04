@@ -799,7 +799,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 242], // A `to_owned()`'s answer, `to_owned_of` (#316).
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 556], // `concat()` of text, `concatenated`'s (#495); a `Result`'s `as_mut` by its form (ADR 1086).
   ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 23], // A consumed iterator's call, `consumed_call` (#424).
-  ["src/lower/mir/iter.rs", "    fn mir_iter_method(", 258], // `len()` of one made in place, `len_in_place` (ADR 0986), its counted chain's too. Its receiver's type revealed, an `impl Iterator`'s (ADR 0985). `next_back()` of what's made here, `next_back_made_here` (#395). `advance_by` in std's bodies, `advanced_by` (ADR 0913).
+  ["src/lower/mir/iter.rs", "    fn mir_iter_method(", 254], // `len()` of one made in place, `len_in_place` (ADR 0986), its counted chain's too. Its receiver's type revealed, an `impl Iterator`'s (ADR 0985). `next_back()` of what's made here, `next_back_made_here` (#395). `advance_by` in std's bodies, `advanced_by` (ADR 0913).
 ];
 test("the dispatchers of what's called don't grow", () => {
   const length = (file: string, signature: string) => {

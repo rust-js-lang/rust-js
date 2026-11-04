@@ -140,4 +140,13 @@ export const mutations: Mutation[] = [
     replace: "            let _ = item;\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
+  {
+    name: "mir-filter-discarded-undropped",
+    breaks:
+      "MIR's `filter` of items with a destructor leaves those it discards undropped",
+    file: "src/lower/iterators/ends.rs",
+    find: "            Some(drop) => Expr::call_helper(\"$filterDropping\", vec![it, test, drop]),\n",
+    replace: "            Some(_) => Expr::call(Expr::member(it, \"filter\"), vec![test]),\n",
+    tests: ["test/corpus.test.ts", "-t", "collect_drops"],
+  },
 ];

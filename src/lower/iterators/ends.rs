@@ -4,6 +4,28 @@
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `it.filter(test)`; of items with a destructor, `dropping`, each it
+    /// doesn't keep dropped by the runtime's `filter`, which drops it past a
+    /// fold closure's result, as `$kept` says, never JS's own, which drops
+    /// it inside the test, where no consumer can tell its panic from the
+    /// test's: `$filterDropping(it, test, drop)` (#651).
+    pub(in crate::lower) fn filtered(
+        &mut self,
+        it: Expr,
+        test: Expr,
+        dropping: Option<ty::Ty<'tcx>>,
+        span: Span,
+    ) -> R<Expr> {
+        let drop = match dropping {
+            Some(item) => self.std_drop_function(item, span)?,
+            None => None,
+        };
+        Ok(match drop {
+            Some(drop) => Expr::call_helper("$filterDropping", vec![it, test, drop]),
+            None => Expr::call(Expr::member(it, "filter"), vec![test]),
+        })
+    }
+
     /// What a `skip_while`, `skips`, or a `take_while` of `item`s with a
     /// destructor is given, `exprs`, its test first: a `skip_while`'s test
     /// that drops what it skips, `dropping_skipped`'s; a `take_while`'s test
