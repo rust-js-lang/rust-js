@@ -965,6 +965,7 @@ mod tests {
             [
                 "temporaries named",
                 "flags named",
+                "condition lets",
                 "shadows",
                 "given last",
                 "filled lazily",
@@ -977,10 +978,11 @@ mod tests {
                 "commented jumps",
                 "jumps made next",
                 "named texts",
-                "stepped slices"
+                "stepped slices",
+                "written loop labels"
             ]
         );
-        assert!(names.last().is_some_and(|n| n == "finish/stepped slices"));
+        assert!(names.last().is_some_and(|n| n == "finish/written loop labels"));
     }
 
     fn present(x: &str) -> Expr {
