@@ -47,35 +47,89 @@ for (const { file, code } of await given()) {
 process.stdout.write(JSON.stringify({ texts, configs: [...configs] }));
 "#;
 
-/// Each directory's Prettier, as `LAY_OUT` imports it where the crate is:
-/// the manifest of the package it resolves to, or `null` where none is.
-const FIND: &str = r#"import { findPackageJSON } from "node:module";
-import { join } from "node:path";
+/// Each directory's Prettier, as `LAY_OUT` imports it where the crate is,
+/// and the plugins its configs name for the crate's files, each where
+/// Prettier 3 loads it from (its `loadPlugin`, where the crate is: a `file:`
+/// URL, a path, a file of that name there, or a package found from there): the
+/// manifest of each one's package, or `null` where there's none. A file's
+/// config is asked of each module's JS beside its Rust, `.js` and `.jsx`
+/// alike, as rust-js writes one of them; an `overrides` entry of either is
+/// its plugins.
+const FIND: &str = r#"import { existsSync, readdirSync } from "node:fs";
+import { createRequire, findPackageJSON } from "node:module";
+import { isAbsolute, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-const found = [];
-for (const dir of await given()) {
+const manifest = (specifier, base) => {
   try {
-    found.push(findPackageJSON("prettier", pathToFileURL(join(dir, "lib.js"))) ?? null);
+    return findPackageJSON(specifier, base) ?? null;
   } catch (error) {
     if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
-    found.push(null);
+    return null;
   }
+};
+// The crate's Rust, outside its builds and what it installed.
+const sources = (dir, found = []) => {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith(".") || entry.name === "node_modules" || entry.name === "target") continue;
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) sources(path, found);
+    else if (entry.name.endsWith(".rs")) found.push(path);
+  }
+  return found;
+};
+const found = [];
+for (const dir of await given()) {
+  const here = pathToFileURL(join(dir, "noop.js"));
+  const prettier = manifest("prettier", here);
+  const plugins = new Set();
+  if (prettier) {
+    const module = await import(pathToFileURL(createRequire(here).resolve("prettier")).href);
+    const api = typeof module.resolveConfig === "function" ? module : module.default;
+    for (const source of sources(dir)) {
+      for (const file of [source.replace(/\.rs$/, ".js"), source.replace(/\.rs$/, ".jsx")]) {
+        const options = await api.resolveConfig(file, { editorconfig: true });
+        for (const plugin of options?.plugins ?? []) if (typeof plugin === "string" || plugin instanceof URL) plugins.add(String(plugin));
+      }
+    }
+  }
+  const named = [...plugins].sort().map((name) => {
+    const at = name.startsWith("file:") ? new URL(name)
+      : isAbsolute(name) ? pathToFileURL(name)
+      : existsSync(resolve(dir, name)) ? pathToFileURL(resolve(dir, name)) : null;
+    return { name, manifest: at ? manifest(at) : manifest(name, here) };
+  });
+  found.push({ prettier, plugins: named });
 }
 process.stdout.write(JSON.stringify(found));
 "#;
 
+/// A directory's Prettier, as `FIND` finds it.
+#[derive(Deserialize)]
+struct Found {
+    prettier: Option<PathBuf>,
+    plugins: Vec<Plugin>,
+}
+
+/// A plugin a config names, and its package's manifest, if it has one.
+#[derive(Deserialize)]
+struct Plugin {
+    name: String,
+    manifest: Option<PathBuf>,
+}
+
 /// Which Prettier lays out the JS of the crates in `dirs`, as Cargo is told
-/// it beside the compiler's build (ADR 1003, amended; #684): a hash of each
-/// one's installed package manifest, its version with it, found as the
-/// layout's session finds it. Its configs are in each crate's dep-info; an
-/// upgrade of it at the same path, as old as the cache, is no change to
+/// it beside the compiler's build (ADR 1003, amended; #684, #692): a hash of
+/// each one's installed package manifest, its version with it, found as the
+/// layout's session finds it, and of each plugin's its configs name for the
+/// crate's files. Its configs are in each crate's dep-info; an upgrade of
+/// it or of a plugin at the same path, as old as the cache, is no change to
 /// any file Cargo dates, so it's said by what it is. `None` where no crate
 /// has one, whose JS is rust-js's own layout.
 pub fn identity(dirs: &[PathBuf]) -> Result<Option<String>, String> {
     let failed = |why: String| format!("the app's Prettier, which `{}` looks for, {why}", node_session::node());
     let given: Vec<serde_json::Value> = dirs.iter().map(|dir| serde_json::json!(dir)).collect();
     let here = std::env::current_dir().map_err(|e| failed(format!("from no directory: {e}")))?;
-    let found: Vec<Option<PathBuf>> = node_session::run(&here, FIND, &given).map_err(|failure| {
+    let found: Vec<Found> = node_session::run(&here, FIND, &given).map_err(|failure| {
         failed(match failure {
             Failure::CantRun(e) => format!("can't be run: {e}"),
             Failure::Failed(e) => format!("failed: {e}"),
@@ -90,18 +144,24 @@ pub fn identity(dirs: &[PathBuf]) -> Result<Option<String>, String> {
             dirs.len()
         )));
     }
-    if found.iter().all(Option::is_none) {
+    if found.iter().all(|found| found.prettier.is_none()) {
         return Ok(None);
     }
+    let read = |manifest: &Option<PathBuf>| match manifest {
+        Some(manifest) => std::fs::read(manifest).map_err(|e| failed(format!("{}: {e}", manifest.display()))),
+        None => Ok(Vec::new()),
+    };
     let mut bytes = Vec::new();
-    for (dir, manifest) in dirs.iter().zip(&found) {
-        let read = match manifest {
-            Some(manifest) => std::fs::read(manifest).map_err(|e| failed(format!("{}: {e}", manifest.display())))?,
-            None => Vec::new(),
-        };
-        for part in [dir.as_os_str().as_encoded_bytes(), &read] {
-            bytes.extend((part.len() as u64).to_le_bytes());
-            bytes.extend(part);
+    let mut add = |part: &[u8]| {
+        bytes.extend((part.len() as u64).to_le_bytes());
+        bytes.extend(part);
+    };
+    for (dir, found) in dirs.iter().zip(&found) {
+        add(dir.as_os_str().as_encoded_bytes());
+        add(&read(&found.prettier)?);
+        for plugin in &found.plugins {
+            add(plugin.name.as_bytes());
+            add(&read(&plugin.manifest)?);
         }
     }
     Ok(Some(crate::manifest::fingerprint(&bytes)))
