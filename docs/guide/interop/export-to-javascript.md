@@ -2316,8 +2316,14 @@ export { delete$ as delete };
 ([ADR 1077](../../decisions/1077-a-function-js-cant-call-as-declared-isnt-declared.md),
 the user's decision). What it takes, after its arguments, is a fact of a
 type parameter, `size<T>()`'s `size(TSize)` or a `T: 'static` made a `dyn
-Any`'s `TId`, or a bound's dictionary, `shown<T: Display>`'s `TDisplay`. A
-note stands where its declaration would be:
+Any`'s `TId`, or a bound's dictionary of a trait that isn't declared,
+`shown<T: Display>`'s `TDisplay`. A `pub` trait of the crate's whose
+dictionaries hold its methods alone is declared as their type, `interface
+Shape<Self>`, each impl's dictionary as a `const` of it, `circleShape:
+Shape<Circle>`, and a function of it with its dictionary after its
+arguments, `totalArea<S>(shapes: S[], SShape: Shape<S>)`
+([objects](objects.md#generic-code-takes-a-dictionary)). A note stands
+where any other's declaration would be:
 
 ```ts
 // `size` isn't declared: its JS takes `T`'s size_of after its arguments, which a JS caller can't give (ADR 1077).

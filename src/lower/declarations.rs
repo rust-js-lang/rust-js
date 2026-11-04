@@ -27,6 +27,7 @@ mod aliases;
 mod cells;
 mod classes;
 mod comments;
+mod dictionaries;
 mod functions;
 mod imports;
 mod namespaces;
@@ -128,6 +129,12 @@ pub(super) fn module<'tcx>(
             }
             continue;
         }
+        // An impl's dictionary its module exports, of a trait declared as
+        // the type of its dictionaries (#550).
+        if let Some(dictionary) = out.impl_dictionary(def_id) {
+            items.push(dictionary);
+            continue;
+        }
         let held = held_default == Some(def_id);
         if !(held || tcx.visibility(def_id).is_public()) || is_mark(tcx, def_id) || named_default == Some(def_id) {
             continue;
@@ -161,6 +168,7 @@ pub(super) fn module<'tcx>(
             DefKind::Enum => Some(out.enumeration(def_id)),
             DefKind::Union => Some(out.union_type(def_id)),
             DefKind::TyAlias => Some(out.alias(def_id)),
+            DefKind::Trait => out.trait_interface(def_id),
             DefKind::Const { .. } | DefKind::Static { .. } if tcx.item_name(def_id).as_str() != "_" => {
                 Some(out.constant(def_id))
             }
@@ -461,7 +469,7 @@ struct Declarations<'a, 'tcx> {
     filled: Option<HashMap<DefId, Vec<Option<String>>>>,
     /// What each generic function asks of its type parameters, `TSize`
     /// (ADR 0145), and what its bounds' dictionaries are made of: what its
-    /// JS takes after its parameters (`ungiven`).
+    /// JS takes after its parameters (`evidence`).
     type_facts: &'a TypeFacts,
     bounds_given: super::traits::Given<'a>,
     /// The notes of the members the declaration just made left out

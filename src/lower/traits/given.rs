@@ -243,12 +243,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     name
                 }
                 Slot::Bound(tr) => {
-                    let name = match crate::lower::serde::serde_trait(self.tcx, tr.def_id) {
-                        Some(true) => format!("write{}", tr.self_ty()),
-                        Some(false) => format!("read{}", tr.self_ty()),
-                        None => format!("{}{}", evidence_word(self.tcx, tr.self_ty()), trait_word(self.tcx, tr)),
-                    };
-                    let name = self.fresh(&js_word(&name));
+                    let name = self.fresh(&bound_word(self.tcx, tr));
                     self.given.evidence.push((tr, Expr::var(&name)));
                     // A std body's default, where a call gives none (ADR 0995).
                     if let Some(default) = self.default_dictionary(id, tr.def_id) {

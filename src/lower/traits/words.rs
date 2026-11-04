@@ -221,6 +221,20 @@ pub(super) fn trait_word_with_refs<'tcx>(tcx: TyCtxt<'tcx>, tr: ty::TraitRef<'tc
     name
 }
 
+/// The name a bound's dictionary is given after a function's arguments,
+/// before it's named apart: `SShape`, `IIterator`, `XConvertF64` of two
+/// impls of one trait, and of serde's, the writer or the reader of its type,
+/// `writeT` and `readT` (ADR 0081). The one word of its parameter and of
+/// its declaration's (#550).
+pub(in crate::lower) fn bound_word<'tcx>(tcx: TyCtxt<'tcx>, tr: ty::TraitRef<'tcx>) -> String {
+    let name = match crate::lower::serde::serde_trait(tcx, tr.def_id) {
+        Some(true) => format!("write{}", tr.self_ty()),
+        Some(false) => format!("read{}", tr.self_ty()),
+        None => format!("{}{}", evidence_word(tcx, tr.self_ty()), trait_word(tcx, tr)),
+    };
+    js_word(&name)
+}
+
 /// A type's name as part of a JS name: what isn't a letter or a digit is
 /// `_`, so `Vec<T>` is `Vec_T_`.
 pub(super) fn js_word(text: &str) -> String {

@@ -167,10 +167,122 @@ test("a namespace's, an object's and a class's member whose JS takes a fact is a
   expect(declarations).not.toContain("isU32<");
   expect(declarations).not.toContain("static shown");
   expect(declarations).toContain("    area(): number;");
+  // A trait of classes is its classes' prototypes' methods, no dictionary
+  // of it declared (rd283, #550).
+  expect(declarations).toContain("    sides(): number;");
+  expect(declarations).not.toContain("Sided<");
+  expect(js).not.toContain("widgetSided");
+  expect(declarations).not.toContain("widgetSided");
   // Each class's note after it, before what follows.
   const isU32 = declarations.indexOf(note("Widget.isU32", "`T`'s the `TypeId`"));
   const shown = declarations.indexOf(note("Widget.shown", "`T`'s `Display` dictionary"));
   expect(isU32).toBeGreaterThan(declarations.indexOf("export declare class Widget"));
   expect(shown).toBeGreaterThan(isU32);
   expect(declarations.indexOf("export function total")).toBeGreaterThan(shown);
+});
+
+// A crate's `pub` trait is the type of its dictionaries, each dictionary
+// of an impl its module exports a `const` of it, and a bound's dictionary
+// of it a function takes is declared, so the function is too (#550, ADR
+// 1077, amended). TypeScript calls it with a crate's dictionary or one of
+// its own, and gets what Rust would.
+test("a trait is the type of its dictionaries, which a function's declaration takes", () => {
+  const dir = fixture("declarations-dictionaries");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(import.meta.dir, "fixtures/declared_dictionaries.rs"), "utf8"));
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const shape = readFileSync(join(dir, "shape.d.ts"), "utf8");
+  expect(shape).toContain(`export interface Shape<Self> {
+    /** Its area. */
+    area(self: Self): number;
+    describe(self: Self): string;
+}`);
+  expect(shape).toContain("export const circleShape: Shape<Circle>;");
+  expect(shape).toContain("export const rectShape: Shape<Rect>;");
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain('import type { Shape } from "./shape.js";');
+  expect(declarations).toContain(`export interface Named<Self> {
+    make(name: string): Self;
+    name(self: Self): string;
+}`);
+  expect(declarations).toContain("export const tagNamed: Named<Tag>;");
+  expect(declarations).toContain("export const tagShape: Shape<Tag>;");
+  expect(declarations).toContain("export function totalArea<S>(shapes: S[], SShape: Shape<S>): number;");
+  // A trailing `Option` before a dictionary is given, `null` for `None`.
+  expect(declarations).toContain(
+    "export function described<S>(shape: S, prefix: string | null | undefined, SShape: Shape<S>): string;",
+  );
+  expect(declarations).toContain(
+    "export function renamed<N>(named: N, to: string, NNamed: Named<N>, NShape: Shape<N>): string;",
+  );
+  // A trait whose dictionary holds what else, or takes a `&mut`, isn't
+  // declared, nor is a function of it; a generic impl's dictionary isn't.
+  const note = (name: string, what: string) =>
+    `// \`${name}\` isn't declared: its JS takes ${what} after its arguments, which a JS caller can't give (ADR 1077).`;
+  expect(declarations).toContain(note("bumped", "`C`'s `Counter` dictionary"));
+  expect(declarations).toContain(note("sides", "`S`'s `Sided` dictionary"));
+  expect(declarations).toContain(note("labels", "`L`'s `Labeled` dictionary"));
+  expect(declarations).toContain(note("checked", "`C`'s `Checked` dictionary"));
+  expect(declarations).toContain(note("shows", "`S`'s `Shows` dictionary"));
+  expect(declarations).toContain(note("names", "`N`'s `Names` dictionary"));
+  expect(declarations).toContain(note("shown", "`T`'s `Display` dictionary"));
+  for (const name of ["Counter", "Sided", "Labeled", "Checked", "Shows", "Names", "wrapperShape"]) {
+    expect(declarations).not.toContain(name + "<");
+    expect(declarations).not.toContain(`export const ${name}`);
+  }
+  writeFileSync(
+    join(dir, "use.ts"),
+    `import { circleShape, rectShape, type Shape } from "./shape.js";
+import { described, renamed, tagNamed, tagShape, totalArea } from "./lib.js";
+
+interface Square {
+  side: number;
+}
+const squareShape: Shape<Square> = { area: (s) => s.side * s.side, describe: (s) => \`a square of side \${s.side}\` };
+console.log(
+  JSON.stringify([
+    totalArea([{ radius: 1 }, { radius: 2 }], circleShape),
+    totalArea([{ width: 2, height: 3 }], rectShape),
+    totalArea([{ side: 3 }], squareShape),
+    described({ width: 1, height: 2 }, "it's ", rectShape),
+    described({ radius: 1 }, null, circleShape),
+    described({ side: 2 }, undefined, squareShape),
+    renamed({ text: "a" }, "b", tagNamed, tagShape),
+  ]),
+);
+`,
+  );
+  writeFileSync(
+    join(dir, "wrong.ts"),
+    `import { circleShape, rectShape } from "./shape.js";
+import { totalArea } from "./lib.js";
+import { bumped } from "./lib.js";
+import { wrapperShape } from "./lib.js";
+export const mixed = totalArea([{ radius: 1 }], rectShape);
+export const missing = totalArea([{ radius: 1 }]);
+export const ok = totalArea([{ radius: 1 }], circleShape);
+`,
+  );
+  writeFileSync(
+    join(dir, "tsconfig.json"),
+    JSON.stringify({
+      compilerOptions: { module: "esnext", moduleResolution: "bundler", strict: true, noEmit: true, skipLibCheck: false, allowJs: true, typeRoots: [join(root, "node_modules/@types")] },
+      files: ["use.ts", "wrong.ts"],
+    }),
+  );
+  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
+  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  expect(errors.filter((line) => line.startsWith("use.ts"))).toEqual([]);
+  expect(errors.map((line) => line.replace(/: error.*/, ""))).toEqual(["wrong.ts(3,10)", "wrong.ts(4,10)", "wrong.ts(5,35)", "wrong.ts(6,24)"]);
+  // What it gives is what Rust's calls give.
+  const ran = run([process.execPath, join(dir, "use.ts")]);
+  expect(JSON.parse(ran)).toEqual([
+    15.707963267948966,
+    6,
+    9,
+    "it's a 1x2 rectangle",
+    "a shape of area 3.141592653589793",
+    "a square of side 2",
+    "a b 0",
+  ]);
 });

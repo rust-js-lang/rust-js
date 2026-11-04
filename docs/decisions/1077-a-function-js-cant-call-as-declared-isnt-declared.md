@@ -2,7 +2,8 @@
 
 Status: Accepted (#549, the user's decision, 2026-11-03, option B);
 amended (#559): a namespace's function, an object's and a class's member
-too. Amends
+too; amended (#550): a crate's trait is declared as the type of its
+dictionaries, and a function of one is declared with it. Amends
 [0196](0196-typescript-declarations.md), whose `.d.ts` declared every
 `pub` function, and the guide's "A type parameter with no bound takes
 none" ([0145](0145-type-facts.md)'s facts take one).
@@ -105,8 +106,8 @@ the same table.
   a function JS calls: one of a concrete type, `js::any_of`/`js::cast` for
   a value of any type ([0909](0909-a-type-parameters-value-is-any-value.md)),
   or no `pub` for one only Rust calls.
-- A function of a bound comes back into the `.d.ts` once its trait's
-  dictionaries are declared (#550).
+- A function of a bound comes back into the `.d.ts` where its trait's
+  dictionaries are declared (#550, amended below).
 - A `#[track_caller]` function's `location` and a const parameter's `N`
   are evidence too. They're out of this decision: a JS caller that leaves
   `location` out gets a panic of no location, and `N` is a number a caller
@@ -137,3 +138,85 @@ one: a class implements no trait whose methods have type parameters (ADR
 note" (its program `test/fixtures/ungiven_members.rs`), and the mutations
 `ungiven-namespace-function-declared`, `ungiven-object-method-declared`,
 `ungiven-class-member-declared` and `ungiven-notes-at-the-end`.
+
+## Amended (#550): a trait is the type of its dictionaries
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. Nothing a program
+does changes: its JS is as before, and its `.d.ts` declares what that JS
+is, so a TypeScript caller can give what a Rust caller gives.
+
+The JS exports each impl's dictionary of a `pub` trait, `export const
+circleShape = { area, describe }` (ADRs 0049, 0592), and a generic
+function takes it after its arguments, `totalArea(shapes, SShape)`. The
+`.d.ts` declared neither, so every function of a bound was a note.
+
+**A `pub` trait of the crate's whose dictionaries hold its methods alone
+is declared as their type, each dictionary its module exports as a `const`
+of it, and a bound's dictionary of it as a parameter:**
+
+```ts
+export interface Shape<Self> {
+    area(self: Self): number;
+    describe(self: Self): string;
+}
+export const circleShape: Shape<Circle>;
+export function totalArea<S>(shapes: S[], SShape: Shape<S>): number;
+```
+
+- **What a dictionary holds is `traits::method_dictionary`'s answer**,
+  beside `held_supertraits` and `item_bounds`, which say what else
+  `lower_dictionary` puts in one: each method, by `fn_name`, its value
+  first, as the trait's signature says, `Self` the interface's parameter;
+  a `$drop`, read `?.` where a `dyn` is dropped, needs no declaring. It's
+  `None`, and the trait isn't declared, where a dictionary holds or a
+  method takes what its signature doesn't say: a supertrait's dictionary;
+  an associated type, its bounds' dictionaries, an `async fn`'s future;
+  a constant, which is in it only where generic code reads it (ADR 0100);
+  a method's own type parameters' evidence, or its caller's location (ADR
+  0427, its declaration's `#[track_caller]` or an impl's); a `&mut`
+  anywhere in a method's signature, which may be a box or a handle (ADR
+  0099); a `where` of a method's own, which an impl's type may not meet,
+  so its dictionary leaves the method out. Nor is a trait of type
+  parameters of its own, each impl's dictionary for its arguments, a
+  marker, which has none, a trait of classes, whose methods are its
+  classes' prototypes' and which has none either (rd283), or a library's.
+- **An impl's dictionary is declared where it takes nothing**, an impl of
+  no type or const parameters, its module's `const` (ADR 0592), by its
+  name (`FnInfo`'s); the trait is `pub`, so its module exports it. A
+  generic impl's, `wrapperShape(TDisplay)`, a function of its own bounds'
+  dictionaries, isn't declared yet, nor is a std trait's: `Display`'s is
+  the runtime's own.
+- **A function's evidence is `Declarations::evidence`'s**, in
+  `evidence_slots`' order: each bound's dictionary of a declared trait,
+  `Shape<S>`, imported from the trait's module, named as its JS names it,
+  `bound_word`'s, the one word of both; or, where one isn't declared or a
+  fact is asked, the first a JS caller can't give, which `leave_out`
+  notes as before. A trait's method takes none of its own trait's: its
+  dictionary's type declares it. After a dictionary, a trailing `Option`
+  isn't optional, `prefix: string | null | undefined`: a caller gives it
+  so its dictionary is in its place. (A rest parameter takes no evidence:
+  lowering refuses one, ADR 0664.)
+- **A dictionary TypeScript writes is one generic code calls**, `{ area:
+  (s) => s.side ** 2, describe: (s) => "a square" }`, as it calls an
+  impl's: each entry is called as the trait's method is, of what its
+  signature says.
+
+Rejected: **declaring each trait with what its dictionaries may hold
+besides**, a supertrait's as a getter of its own interface, a constant as
+a property: a constant is in a dictionary only where generic code reads
+it, so the interface would say what one may not have, and a std
+supertrait's dictionary has no declaration. These traits stay notes until
+a need shows; each is a rule of `method_dictionary`'s to extend.
+
+Held by `test/declarations-ungiven.test.ts`'s "a trait is the type of its
+dictionaries, which a function's declaration takes" (its program
+`test/fixtures/declared_dictionaries.rs`): the interfaces, the impls'
+`const`s, another module's trait imported, a `None` before a dictionary,
+two bounds, and a note for each trait that isn't declared, a generic
+impl's dictionary undeclared, and its "a namespace's, an object's and a
+class's member" a trait of classes, none of its dictionary; `tsc` checks a TypeScript caller giving
+the crate's dictionaries and one of its own, refuses a dictionary of
+another type, none and the imports of what isn't declared, and the
+caller's run gives what Rust's calls give. Mutations in
+`lower/traits.ts`, `lower/declarations/functions.ts`,
+`lower/declarations/dictionaries.ts` and `lower/declarations.ts`.

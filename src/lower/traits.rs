@@ -326,6 +326,86 @@ pub(super) fn is_marker(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '
             .all(|(_, tr, _)| !operational(tcx, foreign, tr.def_id) || is_marker(tcx, foreign, tr.def_id))
 }
 
+/// The methods a dictionary of `trait_id`, a trait of the crate's, holds,
+/// each its entry by its name (`bindings::fn_name`), where they're all any
+/// of its dictionaries holds that generic code reads, and each takes what
+/// its signature says as it says it: then a declaration can say what a
+/// dictionary of it is, which a JS caller may give (#550, ADR 1077,
+/// amended). Besides them a dictionary holds only its `$drop`, which a
+/// `dyn` made of it reads if it's there. `None` where a dictionary holds
+/// what else, or a method takes what else (`lower_dictionary`): a
+/// supertrait's dictionary; an associated type, its bounds' dictionaries,
+/// an `async fn`'s future too; a constant, which only one generic code
+/// reads is in it (ADR 0100); a method's own type or const parameters'
+/// evidence, or its caller's location (ADR 0427); a `&mut`, which may be a box (ADR
+/// 0099); or a method of a `where` some impl's type may not meet, which
+/// isn't in that impl's. Nor of a trait of type parameters of its own, each
+/// impl's dictionary for its arguments, nor of one with nothing to give, a
+/// marker's, nor of a trait of classes, each method its classes'
+/// prototypes', which has none (rd283).
+pub(in crate::lower) fn method_dictionary<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &super::library::Foreign<'_, 'tcx>,
+    trait_id: DefId,
+) -> Option<Vec<DefId>> {
+    let lifetime = |param: &ty::GenericParamDef| matches!(param.kind, ty::GenericParamDefKind::Lifetime);
+    let own = &tcx.generics_of(trait_id).own_params;
+    let identity = ty::GenericArgs::identity_for_item(tcx, trait_id);
+    if !trait_id.is_local()
+        || !operational(tcx, foreign, trait_id)
+        || is_marker(tcx, foreign, trait_id)
+        || super::classes::is_class_trait(tcx, trait_id)
+        || !own.iter().all(|param| lifetime(param) || param.index == 0)
+        || !held_supertraits(tcx, foreign, trait_id, identity).is_empty()
+    {
+        return None;
+    }
+    let outlives = |clause: &ty::Clause<'_>| {
+        matches!(
+            clause.kind().skip_binder(),
+            ty::ClauseKind::RegionOutlives(_) | ty::ClauseKind::TypeOutlives(_)
+        )
+    };
+    let mut methods = Vec::new();
+    for item in tcx.associated_items(trait_id).in_definition_order() {
+        let method = item.def_id;
+        if bindings::is_binding(tcx, method) {
+            continue;
+        }
+        // A clause of its own, but a lifetime's: a `where` its impls' types
+        // may not meet, or a type or const parameter of its own, of which
+        // each has one, its `Sized` or `MetaSized`, or its type.
+        if tcx.def_kind(method) != DefKind::AssocFn
+            || !tcx
+                .clauses_of(method)
+                .clauses
+                .iter()
+                .all(|(clause, _)| outlives(clause))
+        {
+            return None;
+        }
+        let sig = tcx
+            .fn_sig(method)
+            .instantiate_identity()
+            .skip_normalization()
+            .skip_binder();
+        let changed = (sig.inputs_and_output.iter())
+            .flat_map(|ty| ty.walk())
+            .filter_map(|arg| arg.as_type())
+            .any(|ty| matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut)));
+        // Of its declaration, or of an impl's own (ADR 0427).
+        let tracked = tracks_caller(tcx, method)
+            || (tcx.all_impls(trait_id))
+                .filter_map(|imp| tcx.impl_item_implementor_ids(imp).get(&method).copied())
+                .any(|own| tracks_caller(tcx, own));
+        if changed || tracked {
+            return None;
+        }
+        methods.push(method);
+    }
+    Some(methods)
+}
+
 /// The bounds of a function's own type parameters, which end its `bounds`:
 /// a trait's generic method's, `T: Display` of `describe<T: Display>`, which
 /// a caller through a dictionary gives where it calls, after its arguments,

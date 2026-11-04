@@ -1268,4 +1268,20 @@ export const mutations: Mutation[] = [
     replace: "            let type_args = args.types().skip(usize::from(of_self && false)).map(|t| self.ts(t)).collect();\n",
     tests: ["test/binding-subclasses.test.ts", "-t", "is its class's getter"],
   },
+  {
+    name: "impl-dictionary-undeclared",
+    breaks: "an impl's dictionary its module exports, `circleShape`, isn't declared, so TypeScript can't import it to give it (#550)",
+    file: "src/lower/declarations.rs",
+    find: "        if let Some(dictionary) = out.impl_dictionary(def_id) {\n",
+    replace: "        if let Some(dictionary) = out.impl_dictionary(def_id).filter(|_| false) {\n",
+    tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
+  },
+  {
+    name: "trait-undeclared",
+    breaks: "a trait isn't declared as the type of its dictionaries, so what names it, `Shape<S>`, names nothing (#550)",
+    file: "src/lower/declarations.rs",
+    find: "            DefKind::Trait => out.trait_interface(def_id),\n",
+    replace: "",
+    tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
+  },
 ];

@@ -232,10 +232,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "ungiven-dictionary-declared",
-    breaks: "a function whose JS takes a bound's dictionary, `shown(value, TDisplay)`, is declared, which throws for a JS caller that gives none (#549)",
+    breaks: "a function whose JS takes a bound's dictionary of a trait that isn't declared, `shown(value, TDisplay)`, is declared, which throws for a JS caller that gives none (#549)",
     file: "src/lower/declarations/functions.rs",
-    find: "            .into_iter()\n            .next()?;\n        Some(format!(\n",
-    replace: "            .into_iter()\n            .next()\n            .filter(|_| false)?;\n        Some(format!(\n",
+    find: "        if let Some(bound) = bounds.iter().find(|bound| !self.declares_dictionary(bound.def_id)) {\n",
+    replace: "        if let Some(bound) = bounds.iter().filter(|_| false).find(|bound| !self.declares_dictionary(bound.def_id)) {\n",
     tests: ["test/declarations-ungiven.test.ts"],
   },
   {
@@ -245,5 +245,29 @@ export const mutations: Mutation[] = [
     find: "                let declared = match getter {\n",
     replace: "                let declared = match false {\n",
     tests: ["test/binding-subclasses.test.ts", "-t", "is its class's getter"],
+  },
+  {
+    name: "dictionary-parameter-undeclared",
+    breaks: "a function's bound's dictionary of a declared trait, `totalArea(shapes, SShape)`'s, isn't declared, so a TypeScript caller gives none and `SShape.area` throws (#550)",
+    file: "src/lower/declarations/functions.rs",
+    find: "            params.push(json!({ \"name\": name, \"optional\": false, \"rest\": false, \"type\": ty }));\n",
+    replace: "",
+    tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
+  },
+  {
+    name: "optional-before-dictionary",
+    breaks: "a trailing `Option` before a dictionary is declared optional, `prefix?: string | null`, so a TypeScript caller that leaves it out gives its dictionary as `prefix` (#550)",
+    file: "src/lower/declarations/functions.rs",
+    find: "            false => sig.inputs().len(),\n",
+    replace: "            false => optional_from(tcx, sig.inputs(), rest, nullable),\n",
+    tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
+  },
+  {
+    name: "trait-method-declared-its-dictionary",
+    breaks: "a declared trait's method is declared taking its own trait's dictionary after its arguments, `area(self: Self, SelfShape: Shape<Self>)`, which its dictionary's entry doesn't (#550)",
+    file: "src/lower/declarations/functions.rs",
+    find: "        let evidence = match own && !super::super::bindings::is_binding(self.tcx, def_id) {\n",
+    replace: "        let evidence = match !super::super::bindings::is_binding(self.tcx, def_id) {\n",
+    tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
   },
 ];

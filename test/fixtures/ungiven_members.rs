@@ -68,6 +68,16 @@ impl Widget {
     }
 }
 
+pub trait Sided {
+    fn sides(&self) -> u32;
+}
+
+impl Sided for Widget {
+    fn sides(&self) -> u32 {
+        4
+    }
+}
+
 pub fn total(sizes: &Sizes, scope: &Scope, widget: &Widget) -> usize {
     sizes.size_of::<u64>() + scope.named::<u8>().len() + usize::from(widget.is_u32::<u32>()) + Widget::shown(1).len()
 }

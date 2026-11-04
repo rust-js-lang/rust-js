@@ -375,10 +375,66 @@ export function circles() {
 }
 ```
 
-A Rust caller gives it, and untyped JS can too, `totalArea([{ radius: 1 }],
-circleShape)`. But the `.d.ts` doesn't declare `totalArea`: it declares no
-trait or dictionary yet (#550), so TypeScript can't name `circleShape`. A
-note stands where the declaration would be ([ADR 1077](../../decisions/1077-a-function-js-cant-call-as-declared-isnt-declared.md)).
+```ts
+// src/shape.d.ts
+export interface Shape<Self> {
+    area(self: Self): number;
+    describe(self: Self): string;
+}
+
+export interface Circle {
+    radius: number;
+}
+
+export interface Rect {
+    width: number;
+    height: number;
+}
+
+export const circleShape: Shape<Circle>;
+
+export const rectShape: Shape<Rect>;
+```
+
+```ts
+import type { Shape } from "./shape.js";
+
+export function totalArea<S>(shapes: S[], SShape: Shape<S>): number;
+
+export function circles(): number;
+```
+
+A Rust caller gives it, and so can JS and TypeScript, `totalArea([{ radius:
+1 }], circleShape)`. The `.d.ts` declares the trait as the type of its
+dictionaries, of the impl's type, `Self`, each method of the value first,
+as the dictionary's function takes it; each dictionary of an impl its
+module exports, as a `const` of it; and the function, with its dictionary
+after its arguments
+([ADR 1077](../../decisions/1077-a-function-js-cant-call-as-declared-isnt-declared.md),
+amended). A TypeScript caller may give a dictionary of its own, `const
+squareShape: Shape<Square> = { area: (s) => s.side ** 2, describe: (s) =>
+"a square" }`, which generic code calls as it calls an impl's.
+
+A trait is declared so where its dictionaries hold its methods alone, each
+taking what its signature says. Not one:
+
+- with a supertrait whose dictionary its own holds, `trait Labeled:
+  Display`, or with an associated type or a constant;
+- with a method of type parameters of its own, `fn show<T: Display>(&self,
+  value: T)`, whose entry takes their dictionaries too; a `#[track_caller]`
+  one, whose entry takes its caller's location; or one of a `&mut`, `fn
+  bump(&mut self)`, which may take a box;
+- of type parameters of its own, `trait Convert<T>`, a trait of classes,
+  whose methods are its classes' prototypes', or a library's.
+
+Nor is a generic impl's dictionary, `impl<T: Display> Shape for
+Wrapper<T>`'s `wrapperShape(TDisplay)`, nor a std trait's: a `Display`
+dictionary is the runtime's own. A function that takes one of those isn't
+declared, and a note stands where it would be:
+
+```ts
+// `labels` isn't declared: its JS takes `L`'s `Labeled` dictionary after its arguments, which a JS caller can't give (ADR 1077).
+```
 
 A type parameter with no bound takes none, unless the function asks a fact
 of it: `size_of::<T>()`, `align_of::<T>()`, `type_name::<T>()`, its

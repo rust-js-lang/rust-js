@@ -233,39 +233,47 @@ impl<'tcx> Declarations<'_, 'tcx> {
         }
     }
 
-    /// What `function`'s JS takes after its own parameters that a JS caller
-    /// can't give (#549, the user's decision, 2026-11-03, ADR 1077): a fact
-    /// of a type parameter, `size(TSize)` (ADR 0145), which only a Rust
-    /// caller knows; or a bound's dictionary, `shown(value, TDisplay)`,
-    /// which no declaration gives a JS caller a value of (#550). What
-    /// `evidence_slots` gives it of the same owners, `facts_asked`' and
-    /// `bounds`'. `None` where it takes nothing more, or only what a JS
-    /// caller leaves out, a drop or a copy's.
-    pub(super) fn ungiven(&self, function: DefId) -> Option<String> {
+    /// What `function`'s JS takes after its own parameters, as its
+    /// declaration declares it, in `evidence_slots`' order, of the same
+    /// owners, `facts_asked`' and `bounds`': each bound's dictionary of a
+    /// trait that's declared, `SShape: Shape<S>` (#550), named as its JS
+    /// names it (`bound_word`). Or what a JS caller can't give, the first
+    /// (#549, the user's decision, 2026-11-03, ADR 1077): a fact of a type
+    /// parameter, `size(TSize)` (ADR 0145), which only a Rust caller knows;
+    /// or a bound's dictionary of another trait, `shown(value, TDisplay)`,
+    /// a std trait's the runtime's own. (A rest parameter is given none, ADR
+    /// 0664.) What a JS caller leaves out, a drop or a copy's, isn't asked.
+    pub(super) fn evidence(&mut self, function: DefId) -> Result<Vec<Value>, String> {
         let generics = self.tcx.generics_of(function);
         if let Some(&(index, fact)) = self.type_facts.get(&function).and_then(|facts| facts.first()) {
             let of = match (index as usize) < generics.count() {
                 true => format!("`{}`'s", generics.param_at(index as usize, self.tcx).name),
                 false => "an associated type's".to_string(),
             };
-            return Some(format!("{of} {}", fact.described()));
+            return Err(format!("{of} {}", fact.described()));
         }
-        let bound = super::super::traits::bounds(self.tcx, self.foreign, self.bounds_given, function)
-            .into_iter()
-            .next()?;
-        Some(format!(
-            "`{}`'s `{}` dictionary",
-            bound.self_ty(),
-            self.tcx.item_name(bound.def_id)
-        ))
+        let mut taken: std::collections::HashSet<String> =
+            self.parameter_names(function).into_iter().flatten().collect();
+        let bounds = super::super::traits::bounds(self.tcx, self.foreign, self.bounds_given, function);
+        if let Some(bound) = bounds.iter().find(|bound| !self.declares_dictionary(bound.def_id)) {
+            let (of, name) = (bound.self_ty(), self.tcx.item_name(bound.def_id));
+            return Err(format!("`{of}`'s `{name}` dictionary"));
+        }
+        let mut params = Vec::new();
+        for bound in bounds {
+            let ty = self.dictionary_type(bound);
+            let name = crate::names::fresh_in(&mut taken, &super::super::traits::bound_word(self.tcx, bound));
+            params.push(json!({ "name": name, "optional": false, "rest": false, "type": ty }));
+        }
+        Ok(params)
     }
 
     /// Whether `function`, which its declaration names `name`, `size` or a
-    /// member's `Counter.sizeOf`, is left out (`ungiven`): then a note is
+    /// member's `Counter.sizeOf`, is left out (`evidence`): then a note is
     /// where it would be, what it takes and that a JS caller can't give it,
     /// after the declaration it's of (`notes`, #549, #559).
     pub(super) fn leave_out(&mut self, function: DefId, name: &str) -> bool {
-        let Some(ungiven) = self.ungiven(function) else {
+        let Err(ungiven) = self.evidence(function) else {
             return false;
         };
         self.notes.push(json!({
@@ -302,8 +310,20 @@ impl<'tcx> Declarations<'_, 'tcx> {
             (idents.get(i).copied().flatten()).is_some_and(|ident| nullable_params.contains(&ident.name))
                 && is_option(sig.inputs()[i])
         };
-        let optional_from = optional_from(tcx, sig.inputs(), rest, nullable);
-        let params: Vec<Value> = (sig.inputs().iter().enumerate())
+        // What its JS takes after them, of a function a JS caller calls,
+        // not a trait's method's, which its dictionary's type declares, nor a
+        // binding's (`evidence`); after which none may be left out.
+        let own = self.tcx.def_kind(def_id) == rustc_hir::def::DefKind::Fn
+            || (self.tcx.trait_of_assoc(def_id).is_none() && self.tcx.trait_item_of(def_id).is_none());
+        let evidence = match own && !super::super::bindings::is_binding(self.tcx, def_id) {
+            true => self.evidence(def_id).unwrap_or_default(),
+            false => Vec::new(),
+        };
+        let optional_from = match evidence.is_empty() {
+            true => optional_from(tcx, sig.inputs(), rest, nullable),
+            false => sig.inputs().len(),
+        };
+        let mut params: Vec<Value> = (sig.inputs().iter().enumerate())
             .map(|(i, &ty)| {
                 // As its JS spells it, a word JS keeps given apart, `new$`.
                 let name = match idents.get(i).copied().flatten() {
@@ -323,6 +343,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 json!({ "name": name, "optional": i >= optional_from && !rest, "rest": rest, "type": ty })
             })
             .collect();
+        params.extend(evidence);
         let output = sig.output();
         let written = decl.and_then(|decl| match decl.output {
             hir::FnRetTy::Return(written) => Some(written),
