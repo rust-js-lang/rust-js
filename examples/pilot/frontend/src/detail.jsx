@@ -17,15 +17,12 @@ export function ContactPage({ id }) {
       const value = await Api.contact(id, signal);
       if (value.TAG === "Ok") {
         setLoaded({ TAG: "Contact", _0: value._0 });
-      } else {
-        if (value._0 === "Aborted") {
-          return;
-        }
+      } else if (value._0 !== "Aborted") {
         if (value._0.TAG === "Refused" && value._0._0 === 404) {
           setLoaded({ TAG: "Failed", _0: `There's no contact ${id}.` });
-          return;
+        } else {
+          setLoaded({ TAG: "Failed", _0: Failure.message(value._0) });
         }
-        setLoaded({ TAG: "Failed", _0: Failure.message(value._0) });
       }
     })();
     return () => controller.abort();
