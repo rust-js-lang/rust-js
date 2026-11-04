@@ -11,7 +11,8 @@ use super::{Declarations, documented, keyword, type_name};
 
 impl Declarations<'_, '_> {
     /// Each `pub` method of `adt`, a namespace, its module's function,
-    /// declared without its `self`; but one that's the function it passes
+    /// declared without its `self`, as its JS takes none
+    /// (`classes::receiver`); but one that's the function it passes
     /// its parameters on to, which its module re-exports (rd292b).
     pub(super) fn namespace_functions(
         &mut self,
@@ -31,11 +32,6 @@ impl Declarations<'_, '_> {
                 }
                 out.erased = out.erased(method);
                 let mut function = out.function(method);
-                if let Some(params) = function["params"].as_array_mut()
-                    && !params.is_empty()
-                {
-                    params.remove(0);
-                }
                 function["name"] = json!(out.js_name(method));
                 items.push(documented(function, tcx, method));
             }

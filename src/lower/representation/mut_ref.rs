@@ -114,6 +114,9 @@ pub(in crate::lower) struct SignatureForms<'a, 'tcx> {
     /// The trait a `dyn` of the type is a pair of, `{ value, impl }`, its
     /// value and its impl's dictionary: `dynamic_trait`'s answer (ADR 0049).
     pub(in crate::lower) pair_trait: &'a dyn Fn(DefId, Ty<'tcx>) -> Option<DefId>,
+    /// What a function's JS takes and gives, as a JS caller calls it:
+    /// `js_signature`'s answer, every declaration path's (ADR 1091).
+    pub(in crate::lower) signature: &'a dyn Fn(DefId) -> super::super::signatures::JsSignature<'tcx>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {

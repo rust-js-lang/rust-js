@@ -6,33 +6,12 @@
 use std::collections::HashMap;
 
 use rustc_hir as hir;
-use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty, TyCtxt};
-use rustc_span::Ident;
 use rustc_span::def_id::DefId;
 use serde_json::{Value, json};
 
+use super::super::signatures::{Form, JsParam, Origin, js_parameter_name, optional_from};
 use super::{Declarations, documented, keyword};
-
-/// Where a function's parameters, or a function type's, may start being
-/// left out: its trailing `Option`s, before a rest parameter `rest` too,
-/// but one `nullable`, which is `T | null` and given (ADRs 0443, 0664,
-/// 0861). The one rule of both, as a caller leaves a trailing `None` out
-/// of each (ADR 0313, #544).
-pub(super) fn optional_from<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    inputs: &[Ty<'tcx>],
-    rest: Option<usize>,
-    nullable: impl Fn(usize) -> bool,
-) -> usize {
-    let is_option =
-        |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option));
-    let before = &inputs[..rest.unwrap_or(inputs.len())];
-    before.len()
-        - (before.iter().enumerate().rev())
-            .take_while(|&(i, &ty)| is_option(ty) && !nullable(i))
-            .count()
-}
 
 /// The first function type in `ty`, a fn pointer or a `dyn Fn`: the one
 /// a field of `Rc<dyn Fn(..)>` or `Option<fn(..)>` holds.
@@ -125,19 +104,6 @@ fn given_values(tcx: TyCtxt<'_>, item: DefId) -> Vec<Option<DefId>> {
 }
 
 impl<'tcx> Declarations<'_, 'tcx> {
-    /// A parameter's name, `ident`, `function`'s `i`th of type `ty`, as its
-    /// JS spells it, a word JS keeps given apart, `new$`; its JS name's,
-    /// without a `_` of one unused (ADR 0678). Its `self`, named after its
-    /// type, as its body names it, `tick(counter: Counter)` (#507).
-    fn parameter_js_name(&self, function: DefId, ident: Ident, ty: Option<Ty<'tcx>>) -> String {
-        let receiver = (ident.name == rustc_span::kw::SelfLower)
-            .then(|| ty.and_then(|ty| super::super::analysis::receiver_name(self.tcx, ty)))
-            .flatten();
-        let name = receiver.unwrap_or_else(|| ident.name.to_string());
-        let named = super::super::parameter_name(self.tcx, function, &name);
-        crate::names::js_ident(&named)
-    }
-
     /// Each of `function`'s parameters, a fn's or a closure's, by its name
     /// as `function`'s declaration names it; `None` of a pattern or a `_`,
     /// which names none.
@@ -156,7 +122,12 @@ impl<'tcx> Declarations<'_, 'tcx> {
         (self.tcx.fn_arg_idents(function).iter().enumerate())
             .map(|(i, ident)| {
                 let ident = ident.filter(|ident| ident.name != rustc_span::kw::Underscore)?;
-                Some(self.parameter_js_name(function, ident, inputs.map(|inputs| inputs[i])))
+                Some(js_parameter_name(
+                    self.tcx,
+                    function,
+                    ident,
+                    inputs.map(|inputs| inputs[i]),
+                ))
             })
             .collect()
     }
@@ -351,69 +322,18 @@ impl<'tcx> Declarations<'_, 'tcx> {
         }
     }
 
-    /// What `function`'s JS takes after its own parameters, as its
-    /// declaration declares it, in `evidence_slots`' order, of the same
-    /// owners, `takes_location`'s, `const_params`', `facts_asked`' and
-    /// `bounds`': its caller's location, `location: { readonly file: string;
-    /// .. }`, and each const parameter's value, `N: number` (#560); each
-    /// bound's dictionary of a trait that's declared, `SShape: Shape<S>`
-    /// (#550), named as its JS names it (`bound_word`). Or what a JS caller
-    /// can't give, the first (#549, the user's decision, 2026-11-03, ADR
-    /// 1077): a fact of a type parameter, `size(TSize)` (ADR 0145), which
-    /// only a Rust caller knows; or a bound's dictionary of another trait,
-    /// `shown(value, TDisplay)`, a std trait's the runtime's own. (A rest
-    /// parameter is given none, ADR 0664.) What a JS caller leaves out, a
-    /// drop or a copy's, isn't asked.
-    pub(super) fn evidence(&mut self, function: DefId) -> Result<Vec<Value>, String> {
-        let generics = self.tcx.generics_of(function);
-        if let Some(&(index, fact)) = self.type_facts.get(&function).and_then(|facts| facts.first()) {
-            let of = match (index as usize) < generics.count() {
-                true => format!("`{}`'s", generics.param_at(index as usize, self.tcx).name),
-                false => "an associated type's".to_string(),
-            };
-            return Err(format!("{of} {}", fact.described()));
-        }
-        let mut taken: std::collections::HashSet<String> =
-            self.parameter_names(function).into_iter().flatten().collect();
-        let bounds = super::super::traits::bounds(self.tcx, self.foreign, self.bounds_given, function);
-        if let Some(bound) = bounds.iter().find(|bound| !self.declares_dictionary(bound.def_id)) {
-            let (of, name) = (bound.self_ty(), self.tcx.item_name(bound.def_id));
-            return Err(format!("`{of}`'s `{name}` dictionary"));
-        }
-        let mut params = Vec::new();
-        // Its caller's location, which a JS caller gives as a Rust caller
-        // does, where it's called from (ADR 0427, #560).
-        if super::super::std_types::location::takes_location(self.caller_locations, self.foreign, function) {
-            let name = crate::names::fresh_in(&mut taken, "location");
-            let ty = self.ts(self.tcx.caller_location_ty());
-            params.push(json!({ "name": name, "optional": false, "rest": false, "type": ty }));
-        }
-        // Each const parameter's value, `N`, a number a JS caller gives as
-        // it's typed (ADR 0107, #560).
-        for param in super::super::traits::const_params(self.tcx, function) {
-            let name = crate::names::fresh_in(&mut taken, param.name.as_str());
-            let ty = self
-                .tcx
-                .type_of(param.def_id)
-                .instantiate_identity()
-                .skip_normalization();
-            let ty = self.ts(ty);
-            params.push(json!({ "name": name, "optional": false, "rest": false, "type": ty }));
-        }
-        for bound in bounds {
-            let ty = self.dictionary_type(bound);
-            let name = crate::names::fresh_in(&mut taken, &super::super::traits::bound_word(self.tcx, bound));
-            params.push(json!({ "name": name, "optional": false, "rest": false, "type": ty }));
-        }
-        Ok(params)
-    }
-
     /// Whether `function`, which its declaration names `name`, `size` or a
-    /// member's `Counter.sizeOf`, is left out (`evidence`): then a note is
-    /// where it would be, what it takes and that a JS caller can't give it,
-    /// after the declaration it's of (`notes`, #549, #559).
+    /// member's `Counter.sizeOf`, is left out: its JS takes what a JS
+    /// caller can't give after its arguments (`JsSignature::ungiven`), a
+    /// fact of a type parameter, `size(TSize)` (ADR 0145), which only a Rust
+    /// caller knows, or a bound's dictionary of a trait that isn't declared,
+    /// `shown(value, TDisplay)`, a std trait's the runtime's own (#549, the
+    /// user's decision, 2026-11-03, ADR 1077). Then a note is where it would
+    /// be, what it takes and that a JS caller can't give it, after the
+    /// declaration it's of (`notes`, #549, #559).
     pub(super) fn leave_out(&mut self, function: DefId, name: &str) -> bool {
-        let Err(ungiven) = self.evidence(function) else {
+        let signature = (self.representation.signature)(function);
+        let Some(ungiven) = signature.ungiven(self.tcx, function, |t| self.declares_dictionary(t)) else {
             return false;
         };
         self.notes.push(json!({
@@ -424,7 +344,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
     }
 
     /// `function_signature`'s, in `def_id`'s own context: what a `&mut` or
-    /// a `dyn` in it is is its body's (`Representation`, #619, #620).
+    /// a `dyn` in it is is its body's (`SignatureForms`, #619, #620).
     pub(super) fn function(&mut self, def_id: DefId) -> Value {
         let outer = std::mem::replace(&mut self.owner, def_id);
         let function = self.function_signature(def_id);
@@ -432,84 +352,27 @@ impl<'tcx> Declarations<'_, 'tcx> {
         function
     }
 
+    /// `export function Tag(props: TagProps): ReactNode;`: what `def_id`'s
+    /// JS takes and gives, its `JsSignature`, lowering's answer, each part
+    /// typed as the Rust writes it, by the aliases it names (`as_written`).
+    /// No declaration says on its own what a function takes.
     fn function_signature(&mut self, def_id: DefId) -> Value {
-        let sig = self
-            .tcx
-            .fn_sig(def_id)
-            .instantiate_identity()
-            .skip_normalization()
-            .skip_binder();
-        let idents = self.tcx.fn_arg_idents(def_id);
+        let signature = (self.representation.signature)(def_id);
         let decl = (def_id.as_local()).and_then(|local| self.tcx.hir_node_by_def_id(local).fn_decl());
-        // Its trailing `Option`s are optional, `greeting?: string | null`, so a
-        // JS caller leaves them out (ADR 0443).
-        let tcx = self.tcx;
-        let is_option =
-            |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option));
-        // Its last, a slice marked `#[rust_js::rest]`, is a rest parameter,
-        // `...args: T[]`, which those before it may still be left out before
-        // (ADR 0664).
-        let rest = super::super::bindings::takes_rest(self.tcx, def_id).then(|| sig.inputs().len() - 1);
-        // One it names `#[rust_js::nullable(..)]` is `T | null` as declared,
-        // never left out, which each caller gives `null` for `None` and the
-        // body takes as it is (ADR 0861, amended, the user's decision,
-        // 2026-10-27).
-        let nullable_params = super::super::bindings::nullable_params(self.tcx, def_id);
-        let nullable = |i: usize| {
-            (idents.get(i).copied().flatten()).is_some_and(|ident| nullable_params.contains(&ident.name))
-                && is_option(sig.inputs()[i])
-        };
-        // What its JS takes after them, of a function a JS caller calls,
-        // not a trait's method's, which its dictionary's type declares, nor a
-        // binding's (`evidence`); after which none may be left out.
-        let own = self.tcx.def_kind(def_id) == rustc_hir::def::DefKind::Fn
-            || (self.tcx.trait_of_assoc(def_id).is_none() && self.tcx.trait_item_of(def_id).is_none());
-        let evidence = match own && !super::super::bindings::is_binding(self.tcx, def_id) {
-            true => self.evidence(def_id).unwrap_or_default(),
-            false => Vec::new(),
-        };
-        let optional_from = match evidence.is_empty() {
-            true => optional_from(tcx, sig.inputs(), rest, nullable),
-            false => sig.inputs().len(),
-        };
-        let mut params: Vec<Value> = (sig.inputs().iter().enumerate())
-            .map(|(i, &ty)| {
-                // As its JS spells it, a word JS keeps given apart, `new$`.
-                let name = match idents.get(i).copied().flatten() {
-                    Some(ident) => self.parameter_js_name(def_id, ident, Some(ty)),
-                    // A pattern, `TagProps { variant, .. }`: its props'.
-                    None => "props".to_string(),
-                };
-                let written = decl.and_then(|decl| decl.inputs.get(i));
-                let ty = match nullable(i).then(|| self.option(ty)).flatten() {
-                    Some(inner) => {
-                        let inner = self.as_written(written.and_then(|w| self.written_option(w)), |out| out.ts(inner));
-                        json!({ "kind": "union", "types": [inner, keyword("null")] })
-                    }
-                    None => self.as_written(written, |out| out.ts(ty)),
-                };
-                let rest = rest == Some(i);
-                json!({ "name": name, "optional": i >= optional_from && !rest, "rest": rest, "type": ty })
-            })
+        // What a JS caller can't give, which leaves it out (`leave_out`):
+        // nothing it takes after its arguments then.
+        let given = (signature.ungiven(self.tcx, def_id, |t| self.declares_dictionary(t))).is_none();
+        let params: Vec<Value> = (signature.params.iter())
+            .filter(|param| given || matches!(param.origin, Origin::Rust(_)))
+            .filter_map(|param| self.parameter(param, decl))
             .collect();
-        params.extend(evidence);
-        let output = sig.output();
         let written = decl.and_then(|decl| match decl.output {
             hir::FnRetTy::Return(written) => Some(written),
             hir::FnRetTy::DefaultReturn(_) => None,
         });
-        // A nullable result's `None` is `null` where it's made, never
-        // `undefined`, `string | null` (ADRs 0574, 0578).
-        let nullable = (super::super::bindings::nullable_result(self.tcx, def_id))
-            .then(|| self.option(output))
-            .flatten();
-        let returns = match (output.is_unit(), nullable) {
-            (true, _) => keyword("void"),
-            (false, Some(inner)) => {
-                let inner = self.as_written(written.and_then(|w| self.written_option(w)), |out| out.ts(inner));
-                json!({ "kind": "union", "types": [inner, keyword("null")] })
-            }
-            (false, None) => self.as_written(written, |out| out.ts(output)),
+        let returns = match self.form_ts(signature.result, written) {
+            Some((returns, _)) => returns,
+            None => keyword("void"),
         };
         json!({
             "kind": "function",
@@ -519,6 +382,36 @@ impl<'tcx> Declarations<'_, 'tcx> {
             "typeParameters": self.generics(def_id),
             "params": params,
             "returns": returns,
+        })
+    }
+
+    /// `name?: T`: one of what a `JsSignature` takes, typed as the Rust
+    /// writes it, `decl`'s; `None` of one a JS caller doesn't give.
+    fn parameter(&mut self, param: &JsParam<'tcx>, decl: Option<&'tcx hir::FnDecl<'tcx>>) -> Option<Value> {
+        let written = match param.origin {
+            Origin::Rust(i) => decl.and_then(|decl| decl.inputs.get(i)),
+            Origin::Evidence(_) => None,
+        };
+        let (ty, optional) = self.form_ts(param.form, written)?;
+        let rest = matches!(param.form, Form::Rest(_));
+        Some(json!({ "name": param.name, "optional": optional, "rest": rest, "type": ty }))
+    }
+
+    /// What a value of `form` is to TypeScript, written `written`, and
+    /// whether a caller may leave it out; `None` of what a JS caller
+    /// doesn't give, and of a result that's nothing, `void`.
+    fn form_ts(&mut self, form: Form<'tcx>, written: Option<&'tcx hir::Ty<'tcx>>) -> Option<(Value, bool)> {
+        Some(match form {
+            Form::Value { ty, optional } => (self.as_written(written, |out| out.ts(ty)), optional),
+            Form::Rest(ty) => (self.as_written(written, |out| out.ts(ty)), false),
+            // `T | null`: its `None` is `null`, as a caller gives it and the
+            // body makes it (ADRs 0574, 0578, 0861).
+            Form::Nullable(inner) => {
+                let inner = self.as_written(written.and_then(|w| self.written_option(w)), |out| out.ts(inner));
+                (json!({ "kind": "union", "types": [inner, keyword("null")] }), false)
+            }
+            Form::Dictionary(bound) => (self.dictionary_type(bound), false),
+            Form::Unknowable | Form::LeftOut | Form::Void => return None,
         })
     }
 
@@ -561,10 +454,6 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 // A getter, `get type(): string`, where the trait's is one (rd679).
                 let getter = given.and_then(|own| crate::lower::classes::member(self.tcx, own))
                     == Some(crate::lower::classes::Member::Getter);
-                let mut params = function["params"].as_array().cloned().unwrap_or_default();
-                if !params.is_empty() {
-                    params.remove(0);
-                }
                 let declared = match getter {
                     true => json!({ "kind": "getter", "name": name, "returns": function["returns"] }),
                     false => json!({
@@ -572,7 +461,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         "name": name,
                         "static": false,
                         "typeParameters": function["typeParameters"],
-                        "params": params,
+                        "params": function["params"],
                         "returns": function["returns"],
                     }),
                 };

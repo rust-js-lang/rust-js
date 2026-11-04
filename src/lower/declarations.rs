@@ -45,10 +45,6 @@ pub use written::validate_types;
 use written::{Member, Signature};
 pub(super) use written::{Written, written_types};
 
-/// What each generic function asks of its type parameters (ADR 0145), by
-/// index: `type_fact_params`' answer.
-type TypeFacts = HashMap<DefId, Vec<(u32, super::recognition::TypeFact)>>;
-
 /// What a module's `.d.ts` declares, but its header: `None` where it
 /// exports nothing.
 #[allow(clippy::too_many_arguments)]
@@ -71,7 +67,6 @@ pub(super) fn module<'tcx>(
         &[super::bindings::HeldBinding],
         &HashMap<DefId, bool>,
     ),
-    (type_facts, given, caller_locations): (&TypeFacts, super::traits::Given<'_>, &HashSet<DefId>),
     representation: SignatureForms<'_, 'tcx>,
 ) -> Option<Value> {
     let mut out = Declarations {
@@ -97,9 +92,6 @@ pub(super) fn module<'tcx>(
         function_names: Vec::new(),
         filled: None,
         notes: Vec::new(),
-        type_facts,
-        bounds_given: given,
-        caller_locations,
     };
     // What `js::export_default! { .. }` holds, a function or a constant, is
     // the module's default and nothing else, as its JS is, `export default
@@ -476,17 +468,11 @@ struct Declarations<'a, 'tcx> {
     /// Each function-typed field's parameters as every literal of the
     /// crate fills it, made once, when first asked (`filled_names`).
     filled: Option<HashMap<DefId, Vec<Option<String>>>>,
-    /// What each generic function asks of its type parameters, `TSize`
-    /// (ADR 0145), and what its bounds' dictionaries are made of: what its
-    /// JS takes after its parameters (`evidence`).
-    type_facts: &'a TypeFacts,
-    bounds_given: super::traits::Given<'a>,
-    /// The crate's functions that take their caller's location (ADR 0427).
-    caller_locations: &'a HashSet<DefId>,
     /// The notes of the members the declaration just made left out
     /// (`leave_out`), which the module's items take after it.
     notes: Vec<Value>,
-    /// What lowering makes of a `&mut` and a `dyn` in a signature.
+    /// What lowering makes of a function's signature, what it takes and
+    /// gives, and of a `&mut` and a `dyn` in it.
     representation: SignatureForms<'a, 'tcx>,
     /// The item whose signature is declared, whose context `representation`
     /// is asked in: its bounds say what a `&mut` to one is (ADR 0099).
@@ -891,13 +877,12 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 continue;
             }
             let function = self.function(method);
-            let params: Vec<Value> = (function["params"].as_array().into_iter().flatten().skip(1).cloned()).collect();
             let declared = json!({
                 "kind": "method",
                 "name": super::classes::property(self.tcx, method),
                 "optional": false,
                 "typeParameters": function["typeParameters"],
-                "params": params,
+                "params": function["params"],
                 "returns": function["returns"],
             });
             members.push(documented(declared, self.tcx, method));
@@ -909,13 +894,12 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 continue;
             }
             let function = self.function(method);
-            let params: Vec<Value> = (function["params"].as_array().into_iter().flatten().skip(1).cloned()).collect();
             let declared = json!({
                 "kind": "method",
                 "name": name,
                 "optional": false,
                 "typeParameters": function["typeParameters"],
-                "params": params,
+                "params": function["params"],
                 "returns": function["returns"],
             });
             members.push(documented(declared, self.tcx, method));

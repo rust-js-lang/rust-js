@@ -22,6 +22,7 @@ mod forms;
 mod getters;
 mod namespaces;
 mod prototypes;
+mod receivers;
 mod states;
 mod subclasses;
 use constructors::gives_instance;
@@ -34,6 +35,8 @@ use getters::{marked_getter, reads_as_getter, trait_getter, trait_getter_misuse}
 pub(in crate::lower) use namespaces::exported_by_property;
 pub(crate) use namespaces::{names_namespace, taken_apart, unread_namespaces};
 pub(crate) use prototypes::{Prototypes, place_prototypes, with_prototype_members};
+use receivers::body_receiver;
+pub(crate) use receivers::{Receiver, receiver};
 use states::spread_state;
 pub(crate) use states::{flattened_parameter, new_of_state};
 pub(crate) use subclasses::{base_class, js_class, member_naming, subclass_impl_class, superclass};
@@ -1337,7 +1340,8 @@ pub(super) fn receiver_as_this(
 ) -> Result<(), &'static str> {
     // A namespace's method has no `self`: what it calls through it is called
     // by its name (rd292, ADR 1037), and nothing else reads it.
-    if member(tcx, function) == Some(Member::Namespace) {
+    let taken = body_receiver(tcx, function);
+    if taken == Receiver::Absent {
         let Some(Pattern::Name(receiver)) = params.first() else {
             return Err("a method whose `self` is no parameter");
         };
@@ -1351,10 +1355,7 @@ pub(super) fn receiver_as_this(
         params.remove(0);
         return Ok(());
     }
-    if !matches!(
-        member(tcx, function),
-        Some(Member::Method | Member::Getter | Member::Own)
-    ) {
+    if taken != Receiver::This {
         return Ok(());
     }
     let receiver = match params.first() {

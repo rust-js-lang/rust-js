@@ -10,7 +10,7 @@ as its pair, `{ value: unknown; impl: Trait<unknown> }` (the user's
 decision, 2026-11-04). Amends
 [0196](0196-typescript-declarations.md), whose `.d.ts` declared every
 `pub` function, and the guide's "A type parameter with no bound takes
-none" ([0145](0145-type-facts.md)'s facts take one); amended by [1086](1086-a-mut-refs-js-form-is-mut-ref-forms.md): a declared `&mut`'s type is `MutRefForm::ts_type`'s, asked through `SignatureForms`.
+none" ([0145](0145-type-facts.md)'s facts take one); amended by [1086](1086-a-mut-refs-js-form-is-mut-ref-forms.md): a declared `&mut`'s type is `MutRefForm::ts_type`'s, asked through `SignatureForms`; amended by [1091](1091-a-functions-declaration-prints-its-js-signature.md): what a function takes after its arguments, and which of it a JS caller can't give, is its `JsSignature`'s, lowering's `evidence_slots`' list.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): results change. A JS
 caller that follows the declaration gets a value the Rust can't give, so

@@ -3,29 +3,12 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "receiver-declared-self",
-    breaks: "a method's receiver is declared `self`, not its JS name, `counter` (#507)",
-    file: "src/lower/declarations/functions.rs",
-    find: "        let name = receiver.unwrap_or_else(|| ident.name.to_string());\n",
-    replace: "        let name = ident.name.to_string();\n",
-    tests: ["test/impl-constants.test.ts"],
-  },
-  {
-    name: "parameter-declared-underscored",
-    breaks:
-      "a parameter's declaration keeps the `_` its JS name drops, `ref` declared `_ref`",
-    file: "src/lower/declarations/functions.rs",
-    find: "        let named = super::super::parameter_name(self.tcx, function, &name);\n",
-    replace: "        let named = super::super::camel_case(&name);\n",
-    tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
-  },
-  {
     name: "alias-param-unwritten",
     breaks:
       "a function's parameter written as an alias is its expansion, `(instance: HTMLElement | null) => void`, where it's `RefCallback<HTMLElement>`",
     file: "src/lower/declarations/functions.rs",
-    find: "                let written = decl.and_then(|decl| decl.inputs.get(i));\n",
-    replace: "                let written = None;\n",
+    find: "            Origin::Rust(i) => decl.and_then(|decl| decl.inputs.get(i)),\n",
+    replace: "            Origin::Rust(_) => None,\n",
     tests: [
       "test/declarations.test.ts",
       "-t",
@@ -33,35 +16,12 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "declared-param-rust-name",
-    breaks:
-      "a parameter named `new` is declared `new`, which TypeScript doesn't read, where the JS names it `new$`",
-    file: "src/lower/declarations/functions.rs",
-    find: "        crate::names::js_ident(&named)\n    }\n",
-    replace: "        named\n    }\n",
-    tests: ["test/declarations.test.ts", "-t", "as its JS does"],
-  },
-  {
-    name: "trailing-option-param-required",
-    breaks:
-      "a Rust function's trailing `Option` parameter is declared required, `shown(name: string | null | undefined)`, so a TypeScript caller must give it",
-    file: "src/lower/declarations/functions.rs",
-    find: '                json!({ "name": name, "optional": i >= optional_from && !rest, "rest": rest, "type": ty })\n',
-    replace:
-      '                json!({ "name": name, "optional": false, "rest": rest, "type": ty })\n',
-    tests: [
-      "test/declarations.test.ts",
-      "-t",
-      "declarations take JS's null for an Option",
-    ],
-  },
-  {
     name: "written-return-expanded",
     breaks:
       "a function's result written as an alias is what it stands for, `TocItem[][]`, where it's `Toc[]`",
     file: "src/lower/declarations/functions.rs",
-    find: "            (false, None) => self.as_written(written, |out| out.ts(output)),",
-    replace: "            (false, None) => self.ts(output),",
+    find: "        let returns = match self.form_ts(signature.result, written) {\n",
+    replace: "        let returns = match self.form_ts(signature.result, None) {\n",
     tests: [
       "test/declarations.test.ts",
       "-t",
@@ -73,39 +33,12 @@ export const mutations: Mutation[] = [
     breaks:
       "a `.d.ts` declares a rest parameter an array argument, `xs: number[]`, which TypeScript callers give whole",
     file: "src/lower/declarations/functions.rs",
-    find: "                let rest = rest == Some(i);\n",
-    replace: "                let rest = rest == Some(i) && false;\n",
+    find: "        let rest = matches!(param.form, Form::Rest(_));\n",
+    replace: "        let rest = matches!(param.form, Form::Rest(_)) && false;\n",
     tests: [
       "test/rest-parameters.test.ts",
       "-t",
       "rest slice is JS's rest parameter",
-    ],
-  },
-  {
-    name: "nullable-result-declared-undefined",
-    breaks:
-      "a nullable function's result is declared `string | null | undefined`, though its `None` is `null`, never `undefined`",
-    file: "src/lower/declarations/functions.rs",
-    find: "            .then(|| self.option(output))\n",
-    replace:
-      "            .then(|| self.option(output))\n            .filter(|_| false)\n",
-    tests: [
-      "test/declarations.test.ts",
-      "-t",
-      "a nullable function's result is declared T or null",
-    ],
-  },
-  {
-    name: "nullable-param-declared-optional",
-    breaks:
-      "a `#[rust_js::nullable(..)]` parameter is declared `fiber?: Fiber | null | undefined`, though it's taken as `Fiber | null` (ADR 0861, amended)",
-    file: "src/lower/declarations/functions.rs",
-    find: "                let ty = match nullable(i).then(|| self.option(ty)).flatten() {\n",
-    replace: "                let ty = match None {\n",
-    tests: [
-      "test/lowering-module-variables.test.ts",
-      "-t",
-      "nullable thread-local's None",
     ],
   },
   {
@@ -186,16 +119,16 @@ export const mutations: Mutation[] = [
     name: "filled-underscore-named",
     breaks: "a parameter every literal writes `_` is declared `_: number`, where it names none",
     file: "src/lower/declarations/functions.rs",
-    find: "                let ident = ident.filter(|ident| ident.name != rustc_span::kw::Underscore)?;\n                Some(self.parameter_js_name(function, ident, inputs.map(|inputs| inputs[i])))\n",
-    replace: "                let ident = (*ident)?;\n                Some(self.parameter_js_name(function, ident, inputs.map(|inputs| inputs[i])))\n",
+    find: "                let ident = ident.filter(|ident| ident.name != rustc_span::kw::Underscore)?;\n                Some(js_parameter_name(\n",
+    replace: "                let ident = (*ident)?;\n                Some(js_parameter_name(\n",
     tests: ["test/declarations-function-types.test.ts"],
   },
   {
     name: "filled-parameter-name-unmade",
     breaks: "a filled parameter keeps Rust's spelling, `inner_write` and `_sub`, where its JS's is `innerWrite` and `sub`",
     file: "src/lower/declarations/functions.rs",
-    find: "                Some(self.parameter_js_name(function, ident, inputs.map(|inputs| inputs[i])))\n",
-    replace: "                Some(ident.name.to_string())\n",
+    find: "                Some(js_parameter_name(\n                    self.tcx,\n                    function,\n                    ident,\n                    inputs.map(|inputs| inputs[i]),\n                ))\n",
+    replace: "                Some(ident.name.to_string()).filter(|_| inputs.is_some() || i > 0 || true)\n",
     tests: ["test/declarations-function-types.test.ts"],
   },
   {
@@ -215,30 +148,6 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations-function-types.test.ts"],
   },
   {
-    name: "optional-from-of-trailing-all",
-    breaks: "a parameter `Option` before one that isn't is declared optional, `(value?: number | null, value2: number)`, which TypeScript refuses",
-    file: "src/lower/declarations/functions.rs",
-    find: "            .take_while(|&(i, &ty)| is_option(ty) && !nullable(i))\n",
-    replace: "            .filter(|&(i, &ty)| is_option(ty) && !nullable(i))\n",
-    tests: ["test/declarations-function-types.test.ts"],
-  },
-  {
-    name: "ungiven-fact-declared",
-    breaks: "a function whose JS takes a fact of its type parameter, `size(TSize)`, is declared `size<T>(): number`, which gives a JS caller `undefined` (#549)",
-    file: "src/lower/declarations/functions.rs",
-    find: "        if let Some(&(index, fact)) = self.type_facts.get(&function).and_then(|facts| facts.first()) {\n",
-    replace: "        if let Some(&(index, fact)) = self.type_facts.get(&function).and_then(|facts| facts.first()).filter(|_| false) {\n",
-    tests: ["test/declarations-ungiven.test.ts"],
-  },
-  {
-    name: "ungiven-dictionary-declared",
-    breaks: "a function whose JS takes a bound's dictionary of a trait that isn't declared, `shown(value, TDisplay)`, is declared, which throws for a JS caller that gives none (#549)",
-    file: "src/lower/declarations/functions.rs",
-    find: "        if let Some(bound) = bounds.iter().find(|bound| !self.declares_dictionary(bound.def_id)) {\n",
-    replace: "        if let Some(bound) = bounds.iter().filter(|_| false).find(|bound| !self.declares_dictionary(bound.def_id)) {\n",
-    tests: ["test/declarations-ungiven.test.ts"],
-  },
-  {
     name: "subclass-getter-declared-a-method",
     breaks: "a getter of the binding's class a class extends is declared a method, `type(): string`, where its JS is `get type()` (rd679)",
     file: "src/lower/declarations/functions.rs",
@@ -250,41 +159,9 @@ export const mutations: Mutation[] = [
     name: "dictionary-parameter-undeclared",
     breaks: "a function's bound's dictionary of a declared trait, `totalArea(shapes, SShape)`'s, isn't declared, so a TypeScript caller gives none and `SShape.area` throws (#550)",
     file: "src/lower/declarations/functions.rs",
-    find: "            let name = crate::names::fresh_in(&mut taken, &super::super::traits::bound_word(self.tcx, bound));\n            params.push(json!({ \"name\": name, \"optional\": false, \"rest\": false, \"type\": ty }));\n",
-    replace: "            let name = crate::names::fresh_in(&mut taken, &super::super::traits::bound_word(self.tcx, bound));\n",
+    find: "            Form::Dictionary(bound) => (self.dictionary_type(bound), false),\n",
+    replace: "            Form::Dictionary(_) => return None,\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
-  },
-  {
-    name: "optional-before-dictionary",
-    breaks: "a trailing `Option` before a dictionary is declared optional, `prefix?: string | null`, so a TypeScript caller that leaves it out gives its dictionary as `prefix` (#550)",
-    file: "src/lower/declarations/functions.rs",
-    find: "            false => sig.inputs().len(),\n",
-    replace: "            false => optional_from(tcx, sig.inputs(), rest, nullable),\n",
-    tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
-  },
-  {
-    name: "trait-method-declared-its-dictionary",
-    breaks: "a declared trait's method is declared taking its own trait's dictionary after its arguments, `area(self: Self, SelfShape: Shape<Self>)`, which its dictionary's entry doesn't (#550)",
-    file: "src/lower/declarations/functions.rs",
-    find: "        let evidence = match own && !super::super::bindings::is_binding(self.tcx, def_id) {\n",
-    replace: "        let evidence = match !super::super::bindings::is_binding(self.tcx, def_id) {\n",
-    tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
-  },
-  {
-    name: "caller-location-undeclared",
-    breaks: "a `#[track_caller]` function's caller's location, which its JS takes after its arguments, isn't declared, so a TypeScript caller gives none and `checked(0)` throws a `TypeError` where Rust panics naming its caller (#560)",
-    file: "src/lower/declarations/functions.rs",
-    find: "        if super::super::std_types::location::takes_location(self.caller_locations, self.foreign, function) {\n",
-    replace: "        if false && super::super::std_types::location::takes_location(self.caller_locations, self.foreign, function) {\n",
-    tests: ["test/declarations-ungiven.test.ts", "-t", "location and a const"],
-  },
-  {
-    name: "const-value-undeclared",
-    breaks: "a const parameter's value, `zeros(N)`'s, isn't declared, so a TypeScript caller gives none and `zeros()` is `[0]` where `zeros::<3>()` is `[0, 0, 0]` (#560)",
-    file: "src/lower/declarations/functions.rs",
-    find: "        for param in super::super::traits::const_params(self.tcx, function) {\n",
-    replace: "        for param in super::super::traits::const_params(self.tcx, function).into_iter().filter(|_| false) {\n",
-    tests: ["test/declarations-ungiven.test.ts", "-t", "location and a const"],
   },
   {
     name: "function-owner-of-its-item",

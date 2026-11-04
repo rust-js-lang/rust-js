@@ -76,6 +76,7 @@ mod representation;
 mod serde;
 mod shipped;
 mod shortcuts;
+mod signatures;
 mod sources;
 pub mod std_coverage;
 mod std_impls;

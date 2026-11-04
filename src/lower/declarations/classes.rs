@@ -77,17 +77,14 @@ impl Declarations<'_, '_> {
                         json!({ "kind": "getter", "name": self.js_name(item), "returns": self.function(item)["returns"] })
                     }
                     Some(kind @ (Member::Method | Member::Static)) => {
+                        // A method's `self` is its `this` (`classes::receiver`).
                         let function = self.function(item);
-                        let mut params = function["params"].as_array().cloned().unwrap_or_default();
-                        if kind == Member::Method && !params.is_empty() {
-                            params.remove(0);
-                        }
                         json!({
                             "kind": "method",
                             "name": self.js_name(item),
                             "static": kind == Member::Static,
                             "typeParameters": function["typeParameters"],
-                            "params": params,
+                            "params": function["params"],
                             "returns": function["returns"],
                         })
                     }

@@ -1255,6 +1255,26 @@ test("a `&mut`'s JS form is mut_ref_form's alone", () => {
   });
 });
 
+// What a function's JS takes and gives is its `JsSignature`, lowering's
+// (ADR 1091): every declaration path prints it, and none decides on its
+// own which Rust parameters a function takes, what it takes after them or
+// which a caller may leave out. Five paths each said it of their own, and
+// a rule reached two of them (#549, #559, #560).
+test("a declared function's parameters are its JsSignature's alone", () => {
+  const declarations = ["src/lower/declarations.rs", ...files("src/lower/declarations").filter((file) => file.endsWith(".rs"))];
+  const owners = /\b(?:takes_location|takes_caller_location|const_params|own_const_params|traits::bounds|own_bounds|evidence_slots|facts_asked|type_facts|caller_locations|drops_taken|nullable_params|takes_rest|nullable_result|caller_location_ty|receiver_as_this|classes::receiver)\b/;
+  const removed = /\bparams\b[^;]*\.(?:remove|skip|drain|split_off)\(|\["params"\][^;]*\.(?:skip|as_array_mut)\(/;
+  const deciding = declarations.flatMap((file) =>
+    read(file).split("\n")
+      .filter((line) => !line.trim().startsWith("//"))
+      .filter((line) => owners.test(line) || removed.test(line))
+      .map((line) => `${file}: ${line.trim()}`));
+  expect(deciding).toEqual([]);
+  // The one each path prints from.
+  const functions = read("src/lower/declarations/functions.rs");
+  expect(functions.match(/\(self\.representation\.signature\)\(/g)?.length).toBe(2);
+});
+
 // What a module exports an item of its own as, its default, the name its
 // `pub use` gives it, or its name, is `default_exports::exported_as`'s,
 // which a module of its crate, another crate through its library's

@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a class's method's `self` stays a parameter through tidy, so it's no `this`, its `let point` read as another variable",
     file,
-    find: "    if !matches!(\n        member(tcx, function),\n",
-    replace: "    if matches!(\n        member(tcx, function),\n",
+    find: "    if taken != Receiver::This {\n",
+    replace: "    if taken == Receiver::This {\n",
     tests: ["test/corpus.test.ts", "-t", "^class_local_named_as_self.rs$"],
   },
   {
@@ -247,19 +247,6 @@ export const mutations: Mutation[] = [
     find: "    Some(tcx.parent_module_from_def_id(made.as_local()?))\n",
     replace: "    Some(tcx.parent_module_from_def_id(made.as_local().and(adt.as_local())?))\n",
     tests: ["test/classes.test.ts", "-t", "constructor's statements set this"],
-  },
-  {
-    name: "object-self-a-parameter",
-    breaks:
-      "an object's method's `self` is a parameter, `function containsNode(scopeInstance, fiber)`, where its callers give it as `this`, `scope.containsNode(fiber)` (ADR 0943)",
-    file,
-    find: "        Some(Member::Method | Member::Getter | Member::Own)\n",
-    replace: "        Some(Member::Method | Member::Getter)\n",
-    tests: [
-      "test/classes.test.ts",
-      "-t",
-      "an object's methods are its literal's own",
-    ],
   },
   {
     name: "object-method-a-prototypes",
