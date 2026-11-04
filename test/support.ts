@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 import { runSync, stopped } from "./child";
@@ -193,6 +193,34 @@ export function once(claim: string, work: () => unknown, limit = 600_000): void 
 }
 
 let built = false;
+
+/**
+ * The runtime and std the tests' JS imports are this checkout's: a
+ * worktree with no `node_modules` of its own finds a checkout's above it,
+ * `.claude/worktrees/<name>`'s, whose `runtime/index.js` is that checkout's,
+ * so every program would run another commit's runtime. Checked once a run.
+ */
+let packagesOwn = false;
+function ownPackages() {
+  if (packagesOwn) return;
+  const inside = realpathSync(root) + "/";
+  for (const name of ["@rust-js/runtime", "@rust-js/std"]) {
+    let found: string;
+    try {
+      found = realpathSync(Bun.resolveSync(`${name}/package.json`, root));
+    } catch {
+      throw new Error(`${name} isn't installed here: run \`bun install --frozen-lockfile\` in ${root}`);
+    }
+    if (!found.startsWith(inside)) {
+      throw new Error(
+        `${name} resolves to ${found}, outside this checkout, ${root}: its JS would run another checkout's. ` +
+          `Run \`bun install --frozen-lockfile\` in ${root}`,
+      );
+    }
+  }
+  packagesOwn = true;
+}
+
 /**
  * This checkout's compiler, built once for the run, whichever file asks
  * first, however many run side by side (`bun test --parallel`): a build
@@ -204,6 +232,7 @@ let built = false;
  * it started, so no other run, before or after, is the same one.
  */
 export function buildCompiler() {
+  ownPackages();
   if (built || given) return;
   // As a shell builds it, with `.cargo/config.toml`'s `RUSTC_BOOTSTRAP`, not
   // `.env.test`'s for the tests' programs: built with the other, cargo
