@@ -67,6 +67,17 @@ impl<'tcx> Within<'tcx> {
         }
     }
 
+    /// Whether a value of what this says is another on the other side: a
+    /// `&mut` it holds is of a form that isn't generic code's box.
+    pub(in crate::lower) fn changes(&self) -> bool {
+        match self {
+            Within::Mut(form) => !form.is_cell(),
+            Within::Tuple(parts) => parts.iter().any(Within::changes),
+            Within::Some(inner) => inner.changes(),
+            Within::AsItIs(_) => false,
+        }
+    }
+
     /// `value`, of what this says, as the other side takes it: toward the
     /// impl, `to_impl`, each `&mut` that's generic code's box made the
     /// impl's form, as a parameter's own is, `arg1?.value`; back, each the

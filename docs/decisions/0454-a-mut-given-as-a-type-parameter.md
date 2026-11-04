@@ -9,7 +9,8 @@ code's box of an object holds the object itself (#606), and `Cell::from_mut` of
 a type parameter's `&mut T` is that box (#614), and what a bound trait's
 methods are given is walked, a generic function's (#682) and a generic
 impl's (#685), past what its entry adapts within an `Option` or a tuple
-(#686). Extends [0099](0099-mut-references.md) and
+(#686); and a copied default calls through its impl's entry where the entry
+adapts more than a call does (#690). Extends [0099](0099-mut-references.md) and
 [0180](0180-generic-writers.md). Decided with the user; amended by [1086](1086-a-mut-refs-js-form-is-mut-ref-forms.md): a type parameter's box is `MutRefForm::GenericBox`, asked of `mut_ref_form`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): the same writes, to
@@ -452,3 +453,56 @@ export const clicksPick = {
   (`mut_refs.ts`), `entry-nested-mut-unadapted` (`traits/impls.ts`), and
   `declared-nested-mut-left-out` (`traits.ts`). The #682 mutations point
   at the `Vec` refusals.
+
+## Amendment: a copied default calls through its impl's entry where the entry adapts more than a call does (#690)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so it
+keeps Rust's behavior.
+
+A trait's default method is copied into each impl (ADR 0049). Its body
+stays in the trait's terms, where `&mut self` and every `&mut Self` it holds
+are generic code's box. Its calls of its own trait's methods on `Self`
+resolve to the impl's function, so they skipped the dictionary's entry,
+which converts each form. A direct call converts only each argument's own
+`&mut`, as the callee's parameter says (`boxed_args`). It got the rest
+wrong. It read a `-> &mut Self` the impl gave as the object as if it were
+a box: `*r = Self::fresh()` wrote `r.value`, giving native `n: 99` and
+JS `n: 1`. The same happened with `-> Option<&mut Self>`. It also gave the
+impl generic code's box inside an `Option<&mut Self>` argument, so the
+impl's writes went to the box. That was a wrong answer that nothing
+refused.
+
+- **One answer of what an entry adapts**, `EntryForms`, made by
+  `entry_forms` in `traits/impls.rs`. It holds each parameter's boxes
+  taken off, `Self` held in a box, what's within each parameter
+  (`Within`, #686), and the result's own `&mut` and what's within it.
+  The entry is built from it.
+- **A copied default calls through the entry** where the entry converts
+  more than a direct call does (`EntryForms::beyond_a_call`): a `Self`
+  held in a box, a `&mut` within what it takes, or anything it gives
+  back. `through_entry` is that one answer. `impl_method` asks it, so the
+  call's arguments and result are generic code's (`boxed_args`,
+  `generic_result_values`), and so does `trait_call`'s resolved call, so
+  the call is the dictionary's: `const r = clicksTouch.me(self);`, whose
+  `$cellOf` a write of the whole changes in place.
+- Where only each argument's own `&mut` differs, the copied default calls
+  the impl's method itself, as before, `clicksTouch_touch(self.value,
+  other.value)`. A call converts that itself, as it does where the type is
+  known. Routing it through the entry made seven corpus cases box a
+  by-value `self` and copy it back, `const self$1 = { value: self };
+  xCh.set(self$1, 5); self = self$1.value;`, with the same answer but
+  worse JS, so it was rejected.
+- A generic impl's copied default calls its own dictionary,
+  `holderTouch(TTouch).me(self)`, which `$traitImpl` caches.
+- `test/corpus/copied_default_through_its_entry.rs`, against native Rust:
+  a `-> &mut Self` and a `-> Option<&mut Self>` given back and written
+  whole, an `Option<&mut Self>` given a reborrow and then the `&mut`
+  itself, a `&mut Self` given as its own, and, with no `&mut self`, a
+  `&mut Self` and an `Option<&mut Self>` given back. Each runs for a
+  struct's impl, a number's and a generic impl's, called where the type
+  is known and through generic code.
+- Mutations `through-entry-never`, `through-entry-result-cell-unasked`,
+  `through-entry-result-within-unasked` and `through-entry-within-unasked`
+  (`traits/impls.ts`), `through-entry-call-resolved`
+  (`traits/calls.ts`), and `through-entry-args-for-the-impl`
+  (`items.ts`).

@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "through-entry-args-for-the-impl",
+    breaks:
+      "a copied default's call through the entry is given what the impl's method takes, `clicksTouch.me(self.value)`, which the entry takes out of its box again (#690)",
+    file: "src/lower/items.rs",
+    find: "        if self.through_entry(id, generic_args)? {\n",
+    replace: "        if false && self.through_entry(id, generic_args)? {\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_default_through_its_entry.rs$"],
+  },
+  {
     name: "type-constant-read-by-name",
     breaks: "an exported impl constant's use reads its object, `ReactiveFlags.MUTABLE`, where TypeScript's `const enum` and every other impl constant is its value (#498)",
     file: "src/lower/items.rs",

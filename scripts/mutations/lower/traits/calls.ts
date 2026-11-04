@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "through-entry-call-resolved",
+    breaks:
+      "a copied default's call its entry adapts gives generic code's forms to the impl's method itself, `clicksTouch_me(self)` of a box (#690)",
+    file: "src/lower/traits/calls.rs",
+    find: "            && !self.through_entry(id, generic_args)?\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^copied_default_through_its_entry.rs$"],
+  },
+  {
     name: "default-dictionaries-kept",
     breaks:
       "a compiled std function's call writes each default dictionary it takes where it's given none, `{ next: $next }`, at its end (ADR 0995)",

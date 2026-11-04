@@ -2,7 +2,40 @@
 //! bounds', and a trait's default body copied into it.
 
 use super::*;
-use crate::lower::mut_refs::adapted_part;
+use crate::lower::mut_refs::{Within, adapted_part};
+
+/// What an impl's entry makes of what its caller through the dictionary
+/// gives its method and of what the method gives back (`entry_forms`).
+struct EntryForms<'tcx> {
+    /// Of each parameter, how many boxes' `value` it's taken out of.
+    unboxed: Vec<usize>,
+    /// Its `Self` is a `&mut` its caller gives in a box, an impl for `&mut
+    /// Bag`'s (ADRs 0454, 0457), which `unboxed` counts too.
+    self_held: bool,
+    /// Of each parameter, what's within it past its own `&mut` (#686).
+    within: Vec<Option<Within<'tcx>>>,
+    /// The result's own `&mut` is made generic code's box, an in-place
+    /// cell (ADR 0454).
+    result_cell: bool,
+    /// What's within the result past its own `&mut` (#686).
+    result_within: Option<Within<'tcx>>,
+}
+
+impl EntryForms<'_> {
+    /// Whether the entry makes more of what it's given or gives back than a
+    /// call of the method where its type is known does, which takes each
+    /// argument's own `&mut` out of a box its callee doesn't take, as the
+    /// callee's parameter says (`boxed_args`, ADR 0099): its `Self` held in
+    /// a box, a `&mut` within what it takes, `Option<&mut Self>`'s, or what
+    /// it gives back, generic code's box, which a call has as the impl
+    /// gives it (#690).
+    fn beyond_a_call(&self) -> bool {
+        self.self_held
+            || self.within.iter().flatten().any(Within::changes)
+            || self.result_cell
+            || self.result_within.as_ref().is_some_and(Within::changes)
+    }
+}
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A dictionary's `method`, which a std default given as another entry
@@ -391,40 +424,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.fresh(&js_word(&word))
                 })
                 .collect();
-            // What its caller through the dictionary gives in a box for each:
-            // a generic `&mut Self` (ADR 0099), and a `Self` that's a `&mut` to
-            // an object, an impl for `&mut Bag`'s (ADRs 0454, 0457); to a method
-            // that takes a cell for each `&mut` it can't hold as the object,
-            // `&mut u32`'s or `&mut &mut Money`'s: what's in each box more.
-            let self_held = self.held_in_box(tr.self_ty());
+            // What it takes and gives as its caller through the dictionary
+            // has them, made its own (`entry_forms`).
+            let forms = self.entry_forms(item.def_id, (method, instance.args), args, count);
             for (i, value) in values.iter_mut().enumerate() {
-                let given = usize::from(self.param_is_box(item.def_id, i)) + usize::from(i == 0 && self_held);
-                for _ in usize::from(self.param_is_box(method, i))..given {
+                for _ in 0..forms.unboxed[i] {
                     *value = Expr::held(std::mem::replace(value, Expr::undefined()));
                 }
-            }
-            // And a `&mut` within what it takes past its own, `Option<&mut
-            // Self>`'s or `(&mut Self, u32)`'s, generic code's box, made the
-            // impl's own the same way, `other?.value` (#686).
-            let trait_env = self.tcx.param_env(item.def_id);
-            let declared_sig = (self.tcx.fn_sig(item.def_id).instantiate_identity())
-                .skip_normalization()
-                .skip_binder();
-            let impl_sig = (self.tcx.fn_sig(method).instantiate(self.tcx, instance.args))
-                .skip_normalization()
-                .skip_binder();
-            if self.formatter_param(method).is_none() {
-                for (i, value) in values.iter_mut().enumerate() {
-                    let parts = (declared_sig.inputs().get(i), impl_sig.inputs().get(i));
-                    let (Some(&declared), Some(&actual)) = parts else {
-                        continue;
-                    };
-                    let (Some(declared), Some(actual)) = (adapted_part(declared), adapted_part(actual)) else {
-                        continue;
-                    };
-                    if let Some(made) = self.within(declared, trait_env, actual).adapted(value, true) {
-                        *value = made;
-                    }
+                if let Some(made) = (forms.within[i].as_ref()).and_then(|within| within.adapted(value, true)) {
+                    *value = made;
                 }
             }
             // The drops its caller gives for its own type parameters, which it
@@ -513,11 +521,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // 0454), as the caller through the dictionary takes it out. Of an
             // impl's own type parameter, the trait's is generic too, and the
             // method's box is it.
-            let call = match self.boxed_in_call(item.def_id, declared_output, args) {
-                Some(_) => Some(crate::lower::mut_refs::in_place_cell(
+            let call = match forms.result_cell {
+                true => Some(crate::lower::mut_refs::in_place_cell(
                     call.unwrap_or_else(|| Expr::call(callee.clone(), values.clone())),
                 )),
-                None => call,
+                false => call,
             };
             // A `fmt::Result` the trait's signature has as a `Result`, `fn
             // write(&mut self) -> Result<(), Self::Error>`'s of an impl whose
@@ -538,12 +546,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // And a `&mut` within what it gives, `Option<&mut Self>`'s, the
             // impl's made generic code's box (#686).
             let given = self.fresh("given");
-            let given_back = match (adapted_part(declared_output), adapted_part(output)) {
-                (Some(declared), Some(output)) => {
-                    (self.within(declared, trait_env, output)).adapted(&Expr::var(&given), false)
-                }
-                _ => None,
-            };
+            let given_back =
+                (forms.result_within.as_ref()).and_then(|within| within.adapted(&Expr::var(&given), false));
             let made = call.is_none() && given_back.is_none();
             let patterns = params.into_iter().map(|name| match &defaulted {
                 Some((location, at)) if *location == name => js::Pattern::Defaulted(name, at.clone()),
@@ -648,6 +652,102 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Copy the default body into this implementation. Its Rust bindings still
     /// refer to the trait definition; only its evidence is specialized here.
+    /// What an impl's entry of `item`, a trait's method, makes of what its
+    /// caller through the dictionary gives `method`, the impl's, given
+    /// `instance_args`, for the trait's `args`, of its first `count` values,
+    /// and of what `method` gives back (ADRs 0099, 0454, 1086): the one
+    /// answer of what the entry adapts, and of whether a copied default's
+    /// call of it goes through the entry (`through_entry`, #690).
+    fn entry_forms(
+        &self,
+        item: DefId,
+        (method, instance_args): (DefId, ty::GenericArgsRef<'tcx>),
+        args: ty::GenericArgsRef<'tcx>,
+        count: usize,
+    ) -> EntryForms<'tcx> {
+        // What its caller gives in a box for each: a generic `&mut Self` (ADR
+        // 0099), and a `Self` that's a `&mut` to an object, an impl for `&mut
+        // Bag`'s (ADRs 0454, 0457); to a method that takes a cell for each
+        // `&mut` it can't hold as the object, `&mut u32`'s or `&mut &mut
+        // Money`'s: what's in each box more.
+        let tr = ty::TraitRef::from_assoc(self.tcx, self.tcx.parent(item), args);
+        let self_held = self.held_in_box(tr.self_ty());
+        let unboxed = (0..count)
+            .map(|i| {
+                let given = usize::from(self.param_is_box(item, i)) + usize::from(i == 0 && self_held);
+                given.saturating_sub(usize::from(self.param_is_box(method, i)))
+            })
+            .collect();
+        // And a `&mut` within what it takes past its own, `Option<&mut
+        // Self>`'s or `(&mut Self, u32)`'s, generic code's box, made the
+        // impl's own the same way, `other?.value`, and within what it gives,
+        // made generic code's box (#686). Not of a writer's, whose
+        // `Formatter` isn't a JS parameter (ADR 0054).
+        let trait_env = self.tcx.param_env(item);
+        let declared_sig = (self.tcx.fn_sig(item).instantiate_identity())
+            .skip_normalization()
+            .skip_binder();
+        let impl_sig = (self.tcx.fn_sig(method).instantiate(self.tcx, instance_args))
+            .skip_normalization()
+            .skip_binder();
+        let within = |declared: Option<&Ty<'tcx>>, actual: Option<&Ty<'tcx>>| {
+            let (declared, actual) = (adapted_part(*declared?)?, adapted_part(*actual?)?);
+            Some(self.within(declared, trait_env, actual))
+        };
+        let plain = self.formatter_param(method).is_none();
+        let within_params = (0..count)
+            .map(|i| match plain {
+                true => within(declared_sig.inputs().get(i), impl_sig.inputs().get(i)),
+                false => None,
+            })
+            .collect();
+        // A `&mut` generic code has in a box by the trait's signature, `&mut
+        // Self::Target` of a `Vec`, which the method gives as the object.
+        let result_cell = self.boxed_in_call(item, declared_sig.output(), args).is_some();
+        EntryForms {
+            unboxed,
+            self_held,
+            within: within_params,
+            result_cell,
+            result_within: within(Some(&declared_sig.output()), Some(&impl_sig.output())),
+        }
+    }
+
+    /// Whether a call of `id`, a method of a trait of the crate's, given
+    /// `generic_args` in the impl's terms (`in_impl_terms`), in a copied
+    /// default, which resolves to its impl's
+    /// method, goes through the impl's dictionary's entry: where the entry
+    /// makes the impl's forms of a `&mut` what generic code has, which the
+    /// copied default's body does, past what a call of the method adapts
+    /// itself (`EntryForms::beyond_a_call`, #690). The one answer of what
+    /// the call takes, gives and calls.
+    pub(in crate::lower) fn through_entry(&self, id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> R<bool> {
+        if !self.in_copied_default()
+            || !(self.tcx.trait_of_assoc(id)).is_some_and(|trait_id| self.is_rust_trait(trait_id))
+            || !self
+                .tcx
+                .generics_of(id)
+                .own_params
+                .iter()
+                .all(|p| matches!(p.kind, ty::GenericParamDefKind::Lifetime))
+        {
+            return Ok(false);
+        }
+        let Some(instance) = self.resolve_self_instance(id, generic_args)? else {
+            return Ok(false);
+        };
+        if !self.is_rust_fn(instance.def_id()) || self.tcx.trait_of_assoc(instance.def_id()).is_some() {
+            return Ok(false);
+        }
+        let count = (self.tcx.fn_sig(id).instantiate_identity())
+            .skip_normalization()
+            .skip_binder()
+            .inputs()
+            .len();
+        let forms = self.entry_forms(id, (instance.def_id(), instance.args), generic_args, count);
+        Ok(forms.beyond_a_call())
+    }
+
     fn default_method(&mut self, id: DefId, args: ty::GenericArgsRef<'tcx>) -> R<Expr> {
         let span = self.tcx.def_span(id);
         let mut specialized = Vec::new();

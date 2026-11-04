@@ -632,13 +632,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The crate's own impl method a trait method call resolves to, if it
-    /// does: in a copied default, `Self` is the impl's type (ADR 0049).
+    /// does: in a copied default, `Self` is the impl's type (ADR 0049), but
+    /// not one called through its entry there (`through_entry`, #690).
     pub(super) fn impl_method(
         &self,
         id: DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
     ) -> R<Option<(DefId, ty::GenericArgsRef<'tcx>)>> {
         let generic_args = self.in_impl_terms(generic_args);
+        if self.through_entry(id, generic_args)? {
+            return Ok(None);
+        }
         Ok(self
             .resolve_self_instance(id, generic_args)?
             .filter(|instance| {

@@ -509,8 +509,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.eq_by_address(tr.self_ty());
         // A library's function the call resolves to: an impl's method, or
         // a std trait's provided method compiled into `@rust-js/std`, which
-        // is a function over `Self` (ADR 0185, 0561).
+        // is a function over `Self` (ADR 0185, 0561). Not one a copied
+        // default calls through its entry, its dictionary's below (#690).
         if !identity
+            && !self.through_entry(id, generic_args)?
             && let Some(instance) = self.resolve_self_instance(id, generic_args)?
             && self.is_rust_fn(instance.def_id())
             && (self.tcx.trait_of_assoc(instance.def_id()).is_none()

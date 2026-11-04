@@ -3,12 +3,48 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "through-entry-never",
+    breaks:
+      "a copied default calls its impl's method itself where the entry adapts what it gives back or within, `clicksTouch_me(self.value)` read as a box (#690)",
+    file: "src/lower/traits/impls.rs",
+    find: "        Ok(forms.beyond_a_call())\n",
+    replace: "        Ok(false && forms.beyond_a_call())\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_default_through_its_entry.rs$"],
+  },
+  {
+    name: "through-entry-result-cell-unasked",
+    breaks:
+      "a copied default calls its impl's `me(&mut self) -> &mut Self` itself, whose object it reads as generic code's box, `r.value = ..` (#690)",
+    file: "src/lower/traits/impls.rs",
+    find: "            || self.result_cell\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^copied_default_through_its_entry.rs$"],
+  },
+  {
+    name: "through-entry-result-within-unasked",
+    breaks:
+      "a copied default calls its impl's `first_of(..) -> Option<&mut Self>` itself, whose object it reads as generic code's box (#690)",
+    file: "src/lower/traits/impls.rs",
+    find: "            || self.result_within.as_ref().is_some_and(Within::changes)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^copied_default_through_its_entry.rs$"],
+  },
+  {
+    name: "through-entry-within-unasked",
+    breaks:
+      "a copied default gives its impl's `touch_some(Some(other))` generic code's box within the `Option`, whose writes are lost (#690)",
+    file: "src/lower/traits/impls.rs",
+    find: "            || self.within.iter().flatten().any(Within::changes)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^copied_default_through_its_entry.rs$"],
+  },
+  {
     name: "entry-nested-mut-unadapted",
     breaks:
       "a dictionary's entry gives its impl what generic code gives within a parameter as it is, `Option<&mut Self>`'s box, where an object's impl takes the object (#686)",
     file: "src/lower/traits/impls.rs",
-    find: "                        *value = made;\n",
-    replace: "                        let _ = made;\n",
+    find: "                    *value = made;\n",
+    replace: "                    let _ = made;\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_mut_self_through_a_dictionary.rs$"],
   },
   {
@@ -61,7 +97,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an object impl's `&mut self` method in its dictionary is given the box generic code calls it with",
     file: "src/lower/traits/impls.rs",
-    find: "                let given = usize::from(self.param_is_box(item.def_id, i)) + usize::from(i == 0 && self_held);\n",
+    find: "                let given = usize::from(self.param_is_box(item, i)) + usize::from(i == 0 && self_held);\n",
     replace: "                let given = usize::from(i == 0 && self_held);\n",
     tests: ["test/corpus.test.ts", "-t", "generic_mut_ref"],
   },
@@ -436,8 +472,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl's `&mut Vec` given where the trait's signature says a generic `&mut Self::Out`, a box, is the array, and its caller's `.value` of it `undefined`",
     file: "src/lower/traits/impls.rs",
-    find: "            let call = match self.boxed_in_call(item.def_id, declared_output, args) {\n",
-    replace: "            let call = match None::<Ty<'tcx>> {\n",
+    find: "        let result_cell = self.boxed_in_call(item, declared_sig.output(), args).is_some();\n",
+    replace: "        let result_cell = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_assoc_through_dictionary.rs$"],
   },
   {
@@ -472,9 +508,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl for `&mut Money` through a dictionary is given generic code's box of a box, and reads the box as the object",
     file: "src/lower/traits/impls.rs",
-    find: "                let given = usize::from(self.param_is_box(item.def_id, i)) + usize::from(i == 0 && self_held);\n",
+    find: "                let given = usize::from(self.param_is_box(item, i)) + usize::from(i == 0 && self_held);\n",
     replace:
-      "                let given = usize::from(self.param_is_box(item.def_id, i));\n",
+      "                let given = usize::from(self.param_is_box(item, i));\n",
     tests: [
       "test/corpus.test.ts",
       "-t",

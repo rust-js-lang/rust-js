@@ -310,7 +310,12 @@ export function direct() {
   Display for Wrapper<T>`, is a function of them, `wrapperDisplay(TDisplay)`.
   It's exported where the trait is `pub`.
 - **A default method is copied into each impl's dictionary** that doesn't
-  write its own, so a call inside it reaches the impl's own methods.
+  write its own, so a call inside it reaches the impl's own methods. The
+  call goes straight to the impl's function, `clicksTouch_touch(self.value,
+  other.value)`. It goes through the dictionary's entry,
+  `clicksTouch.me(self)`, where that entry converts more than the call
+  does: a `&mut Self` the method gives back, one within an `Option` it
+  takes, or a `Self` held in a box (#690).
 
 ## Generic code takes a dictionary
 
