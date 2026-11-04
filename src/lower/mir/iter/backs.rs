@@ -445,6 +445,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
+/// Whether `e` is a range's numbers, `$iterator({ start, end }, $rangeNext,
+/// ..)`, however it's stepped: one std's steps give what its defaults do.
+fn stepped_range_any(e: &Expr) -> bool {
+    matches!(&e.kind, js::ExprKind::Call(callee, args)
+        if callee.helper_name() == Some("$iterator")
+            && args.get(1).and_then(Expr::helper_name).is_some_and(|next| next.starts_with("$range")))
+}
+
 /// `$iter(v).map(f).filter(p)`, a lazy chain over an array's items whose
 /// callbacks read no index, made of the items reversed:
 /// `$iter(v.toReversed()).map(f).filter(p)`. Rust's `Map` and `Filter`
@@ -455,13 +463,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// `$rev(chain)` of a chain read in place after it was made, a
 /// temporary's: `reversed_inward`'s of it, where it says (#205).
 pub(in crate::lower::mir) fn reversed_in_place(e: &mut Expr) {
-    // A `Rev`'s `rev()`, `$rev($rev(it))`: `it` itself.
+    // A `Rev`'s `rev()`, `$rev($rev(it))`: `it` itself, of an array's
+    // items, closed or not, or a range, whose steps a `Rev` passes on or
+    // that give what std's default does.
+    // Not of another, the crate's or a type parameter's, whose own `last`
+    // or `count` std's `Rev` doesn't pass on: `rev().rev().last()` asks
+    // its `fold` (#621).
     if let js::ExprKind::Call(callee, args) = &e.kind
         && callee.helper_name() == Some("$rev")
         && let [inner] = args.as_slice()
         && let js::ExprKind::Call(inner_callee, inner_args) = &inner.kind
         && inner_callee.helper_name() == Some("$rev")
         && let [it] = inner_args.as_slice()
+        && (crate::lower::iterators::is_stepped_items(it)
+            || stepped_range_any(it)
+            || crate::lower::iterators::closed_parts(it)
+                .is_some_and(|(source, _)| crate::lower::iterators::is_stepped_items(source)))
     {
         *e = Expr {
             span: e.span,

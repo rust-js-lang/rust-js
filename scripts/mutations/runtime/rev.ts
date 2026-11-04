@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "    tryFold: it.tryRfold && ((init, f, broke) => it.tryRfold(init, f, broke)),\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_folds_unwind with"],
   },
+  {
+    name: "rev-rfold-by-back",
+    breaks: "a `rev()` folded from its back steps its source by `next`, never its source's own `fold`, as std's `Rev::rfold` asks (#625)",
+    file: "src/runtime/rev.js",
+    find: "    rfold: \"fold\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rev_of_rev_folds_its_source.rs$"],
+  },
 ];

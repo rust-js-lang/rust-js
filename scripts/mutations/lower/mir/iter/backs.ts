@@ -353,9 +353,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`rev().rev()` of an array's items with a destructor, held, stays `$rev($rev(it))`, not `it` (#205)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "    // A `Rev`'s `rev()`, `$rev($rev(it))`: `it` itself.\n    if let js::ExprKind::Call(callee, args) = &e.kind\n",
-    replace:
-      "    // A `Rev`'s `rev()`, `$rev($rev(it))`: `it` itself.\n    if false && let js::ExprKind::Call(callee, args) = &e.kind\n",
+    find: "    // its `fold` (#621).\n    if let js::ExprKind::Call(callee, args) = &e.kind\n",
+    replace: "    // its `fold` (#621).\n    if false && let js::ExprKind::Call(callee, args) = &e.kind\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_of_closed_items.rs$"],
     snapshots: true,
   },
@@ -580,5 +579,13 @@ export const mutations: Mutation[] = [
     find: "            Some(IterMethod::Copied | IterMethod::Cloned)\n                if self.is_its_source(output)\n",
     replace: "            Some(IterMethod::Copied | IterMethod::Cloned)\n                if false && self.is_its_source(output)\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_skip_take_and_filter_stepped_from_back.rs$"],
+  },
+  {
+    name: "rev-of-rev-of-own-steps-dropped",
+    breaks: "`rev().rev()` of a type parameter's iterator is the iterator itself, so its `last()` asks the crate's own `last`, which std's `Rev` never passes on (#621)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "        && (crate::lower::iterators::is_stepped_items(it)\n",
+    replace: "        && (true\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_of_rev_folds_its_source.rs$"],
   },
 ];

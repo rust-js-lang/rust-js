@@ -12698,6 +12698,11 @@ export function $rev(it) {
     fold: "rfold",
     nth: "nthBack",
     tryFold: "tryRfold",
+    // And from its back, its source's `fold` and `try_fold`, as std's
+    // `Rev::rfold` and `try_rfold` are, so a `rev().rev()` folds by its
+    // source's own (#621).
+    rfold: "fold",
+    tryRfold: "tryFold",
     nthBack: it.ownNth ? "nth" : undefined,
     advanceBackBy: it.ownNth ? "advanceBy" : undefined,
     // Its `advance_by`, its source's `advance_back_by`, std's, of its

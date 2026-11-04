@@ -1173,3 +1173,29 @@ the steps-may-panic gate's.
 
 `take_count_closes_as_it_unwinds.rs` holds both, and a `take` alone,
 against native Rust, beside #647's `take-count-unconsumed` (`runtime/steps.ts`).
+
+against native Rust. Mutation: `take-count-unclosed` (`runtime/steps.ts`).
+
+## Amendment: a `rev()` of a `rev()` is its source only where `Rev` hides nothing (2026-11-04, #621, #625)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+Tidy's `reversed_in_place` made `$rev($rev(it))` `it` of any `it`.
+Std's `Rev` passes on `fold`, `nth`, `try_fold`, `rfold` and the rest, but
+not `last` or `count`. So `rev().rev().last()` of a type parameter given
+the crate's iterator folds it, by its own `fold`, where `it.last()` called
+its own `last` (matrix: `generic own Every | rev.rev | last`). The collapse
+is now made only of an array's items, closed or not, and of a range, where
+std's steps give what its defaults do. Of another it stays
+`$rev($rev(it))`, which steps as std's does now:
+- `$rev` gains `Rev::rfold` and `try_rfold`, its source's `fold` and
+  `try_fold`.
+- An `enumerate().rev().rfold(..)` of the crate's iterator calls its own
+  `fold` too, as native does (#625's last 4 cases).
+
+`rev_of_rev_folds_its_source.rs` holds both against native Rust, with an
+array's `rev().rev()`, which is still the array's items. Mutations:
+`rev-of-rev-of-own-steps-dropped` (`lower/mir/iter/backs.ts`) and
+`rev-rfold-by-back` (`runtime/rev.ts`); `rev-of-rev-kept` names the
+collapse as it now reads.
