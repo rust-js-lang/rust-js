@@ -22,6 +22,7 @@ import {
   $last,
   $lent,
   $mapEnds,
+  $next,
   $nextBack,
   $nth,
   $nthDropping,
@@ -94,6 +95,16 @@ function count() {
 
 function loudDrop_drop(loud) {
   console.log(`drop loud ${loud[0]}`);
+}
+
+function twiceIterator_next(twice) {
+  if (twice.at === 0) {
+    twice.at = 1;
+    return 1;
+  } else if (twice.at === 1) {
+    twice.at = 2;
+    return 2;
+  }
 }
 
 function main() {
@@ -689,7 +700,27 @@ function main() {
     } finally {
       value.return();
     }
-    console.log(`${second == null ? "None" : `Some(${second})`} end`);
+    const twice = Array.from(
+      $closing($iterator({ at: 0 }, twiceIterator_next), (it) => {
+        console.log(`drop twice ${it.of.at}`);
+      }).drop(1),
+    );
+    const stepped = $held(
+      $closing($iterator({ at: 0 }, twiceIterator_next), (it) => {
+        console.log(`drop twice ${it.of.at}`);
+      }).drop(0),
+    );
+    let head;
+    try {
+      head = $next(stepped);
+    } catch (error) {
+      stepped.return();
+      throw error;
+    }
+    const tail = Array.from(stepped);
+    console.log(
+      `${second == null ? "None" : `Some(${second})`} [${twice.join(", ")}] ${head == null ? "None" : `Some(${head})`} [${tail.join(", ")}] end`,
+    );
   } finally {
     countDrop_drop(held);
   }

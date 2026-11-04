@@ -380,12 +380,12 @@ export const mutations: Mutation[] = [
   {
     name: "eager-closing-kept",
     breaks:
-      "a whole chain of `map`s and `filter`s of an owning source keeps its `$closing`, never closed",
+      "a whole chain of `map`s and `filter`s of an owning source keeps its `$closing`, never closed: a `BTreeMap`'s `into_iter().count()` is `$closing($iter(..)).reduce(..)`, not its sorted entries' own `reduce`",
     file: "src/lower/iterators/eager.rs",
     find: '            if callee.helper_name() == Some("$closing")\n                && whole\n',
     replace:
       '            if callee.helper_name() == Some("$closing")\n                && false\n',
-    tests: ["test/corpus.test.ts", "-t", "^collect_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(map_into_iter_drops|drop_guard_name_shared).rs$"],
     snapshots: true,
   },
   {

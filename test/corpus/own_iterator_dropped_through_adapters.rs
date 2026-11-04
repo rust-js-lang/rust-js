@@ -7,6 +7,9 @@
 // from its back closes its source; what `rev()` and an `enumerate()` made
 // knowing its back take is closed to drop it, but not through a `&mut`,
 // whose own folds aren't asked, nor its lent JS iterator stepped as it.
+// One whose steps never panic, collected by JS's own `Array.from`, through
+// a `skip` or held by a variable that steps it first, is dropped as the
+// collect ends.
 struct Count {
     at: i32,
     end: i32,
@@ -79,6 +82,33 @@ impl Drop for Loud {
     }
 }
 
+// Steps of no call nor check, which never panic.
+struct Twice {
+    at: u8,
+}
+
+impl Iterator for Twice {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<u8> {
+        if self.at == 0 {
+            self.at = 1;
+            Some(1)
+        } else if self.at == 1 {
+            self.at = 2;
+            Some(2)
+        } else {
+            None
+        }
+    }
+}
+
+impl Drop for Twice {
+    fn drop(&mut self) {
+        println!("drop twice {}", self.at);
+    }
+}
+
 fn main() {
     println!("{}", count().fuse().map(|x| x * 2).rev().sum::<i32>());
     println!("{}", count().fuse().skip(2).rev().sum::<i32>());
@@ -102,5 +132,9 @@ fn main() {
     println!("{pair:?} {doubled} {left} still held");
     let louds = vec![Loud(1), Loud(2), Loud(3)];
     let second = louds.into_iter().rev().nth(1).map(|l| l.0);
-    println!("{second:?} end");
+    let twice: Vec<u8> = Twice { at: 0 }.skip(1).collect();
+    let mut stepped = Twice { at: 0 }.skip(0);
+    let head = stepped.next();
+    let tail: Vec<u8> = stepped.collect();
+    println!("{second:?} {twice:?} {head:?} {tail:?} end");
 }

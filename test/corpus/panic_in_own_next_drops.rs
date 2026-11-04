@@ -1,7 +1,8 @@
 // A step that panics as `last` or a fold takes what it's given, the crate's
 // own iterator's `next`, a `flat_map`'s closure or a JS iterator helper's: the step's own dropped,
 // then the item `last` kept or the accumulator a fold holds, then what's
-// left, as Rust's frames unwind (#426).
+// left, as Rust's frames unwind (#426). Of one that holds nothing to drop,
+// making each item, the item `last` kept is dropped as its `next` panics.
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 struct D(u32);
@@ -47,6 +48,24 @@ impl Iterator for Questioned {
     }
 }
 
+// It holds nothing with a destructor: each item it gives is made.
+struct Made {
+    at: u32,
+    upto: u32,
+}
+
+impl Iterator for Made {
+    type Item = D;
+
+    fn next(&mut self) -> Option<D> {
+        if self.at == self.upto {
+            panic!("boom");
+        }
+        self.at += 1;
+        Some(D(self.at))
+    }
+}
+
 fn ds(r: std::ops::Range<u32>) -> Vec<D> {
     r.map(D).collect()
 }
@@ -71,6 +90,10 @@ fn main() {
             at: 192,
         }
         .last();
+        println!("{}", x.is_some());
+    });
+    run("made next last", || {
+        let x = Made { at: 210, upto: 213 }.last();
         println!("{}", x.is_some());
     });
     run("own next fold", || {

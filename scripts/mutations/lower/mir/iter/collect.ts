@@ -524,7 +524,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "by-fold-ignores-dropping-nth",
-    breaks: "a collect into a hash map of a `rev().take(3).skip(2)` of items with a destructor steps it by `next`, whose `nth(2)` drops a slice front to back, where std's fold drops each from the back (#494)",
+    breaks: "a collect into a `LinkedList` of a `rev().take(3).skip(2).map(..)` of items with a destructor steps it by `next`, whose `nth(2)` drops a slice front to back, where std's fold drops each from the back (#494)",
     file: "src/lower/mir/iter/collect.rs",
     find: "            || recognition.nth_folded_sources(iter_ty).into_iter().any(drops)\n",
     replace: "",

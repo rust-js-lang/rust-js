@@ -9,8 +9,9 @@
 // through a `skip` or a `chain` reaches the crate's own `last`, and drops
 // `a`'s where `b` has one. And stepped by `next`, a `skip` of a
 // `take_while` asks its `nth`, std's default by `try_fold`, so the inner
-// `skip`'s `nth(n - 1)` (#294).
-use std::collections::{HashMap, HashSet};
+// `skip`'s `nth(n - 1)` (#294). A `LinkedList` collected of what has no
+// destructor, a `skip`'s of what has, is by its fold too.
+use std::collections::{HashMap, HashSet, LinkedList};
 
 struct D(u32);
 
@@ -103,6 +104,8 @@ fn main() {
     drop(m);
     let s: HashSet<u32> = ds().into_iter().rev().take(3).skip(2).map(|d| d.0).collect();
     println!("set {}", s.len());
+    let list: LinkedList<u32> = ds().into_iter().rev().take(3).skip(2).map(|d| d.0).collect();
+    println!("list {list:?}");
     let last = Lasts(ds()).skip(1).last();
     println!("own last {:?}", last.map(|d| d.0));
     let last = Lasts(ds()).chain(Lasts(vec![D(5), D(6)])).skip(1).last();

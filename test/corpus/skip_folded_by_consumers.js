@@ -2,6 +2,7 @@
 
 import {
   $closing,
+  $collectDropping,
   $dropEach,
   $foldToArray,
   $folded,
@@ -282,6 +283,18 @@ function main() {
   });
   const s = $mapFrom(new Set(), $folded(value$2), true);
   console.log(`set ${s.size}`);
+  const list = $collectDropping(
+    $folded(
+      $skipping($rev($closing($iter(ds()), $dropEach(dDrop_drop))).take(3), 2, dDrop_drop).map(
+        (d) => {
+          const result = d[0];
+          dDrop_drop(d);
+          return result;
+        },
+      ),
+    ),
+  );
+  console.log(`list [${list.join(", ")}]`);
   last = $lastDropping(
     $skipping(
       $closing(

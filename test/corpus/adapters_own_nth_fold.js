@@ -44,6 +44,19 @@ function countIterator_fold(count, init, f) {
   return acc;
 }
 
+function nthsIterator_next(nths) {
+  if (nths[0] < 9) {
+    nths[0] = (nths[0] + 1) | 0;
+    return nths[0];
+  }
+}
+
+function nthsIterator_nth(nths, n) {
+  console.log(`own nth ${n}`);
+  nths[0] = Math.min(Math.max(nths[0] + (n | 0), -2147483648), 2147483647);
+  return nthsIterator_next(nths);
+}
+
 function counted() {
   return { at: 0, end: 9 };
 }
@@ -154,6 +167,18 @@ function main() {
       ),
       3,
     ).reduce((n) => n + 1, 0)}`,
+  );
+  console.log(
+    `${$stepBy(
+      $lazyChain(
+        iterator_fuse([0], { next: nthsIterator_next, nth: nthsIterator_nth }, false),
+        iterator_fuse([0], { next: nthsIterator_next, nth: nthsIterator_nth }, false),
+      ),
+      3,
+    ).reduce((n) => n + 1, 0)}`,
+  );
+  console.log(
+    `${$nth($lent($lazyChain($iterator([0], nthsIterator_next, false, undefined, undefined, undefined, undefined, nthsIterator_nth), $iterator([3], nthsIterator_next, false, undefined, undefined, undefined, undefined, nthsIterator_nth))), 11) ?? 0}`,
   );
   const value$3 = Array.from(
     $folded(

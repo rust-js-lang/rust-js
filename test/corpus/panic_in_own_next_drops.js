@@ -48,6 +48,14 @@ function questionedIterator_next(questioned) {
   return d;
 }
 
+function madeIterator_next(made) {
+  if (made.at === made.upto) {
+    throw new Error("boom");
+  }
+  made.at = (made.at + 1) >>> 0;
+  return [made.at];
+}
+
 function ds(r) {
   return Array.from($iterator(r, $rangeNext).map((value) => [value]));
 }
@@ -99,6 +107,13 @@ function main() {
       ),
       dDrop_drop,
     );
+    console.log(`${x != null}`);
+    if (x != null) {
+      dDrop_drop(x);
+    }
+  });
+  run("made next last", () => {
+    const x = $lastDropping($iterator({ at: 210, upto: 213 }, madeIterator_next), dDrop_drop);
     console.log(`${x != null}`);
     if (x != null) {
       dDrop_drop(x);
@@ -168,14 +183,14 @@ function main() {
   run("flatten fold", () => {
     let tmp$1;
     const value = ds({ start: 70, end: 72 });
-    let item$3$live = true;
+    let item$4$live = true;
     let tmp;
     try {
       tmp = ds({ start: 72, end: 74 });
-      item$3$live = false;
+      item$4$live = false;
       tmp$1 = [value, tmp];
     } catch (error) {
-      if (item$3$live) {
+      if (item$4$live) {
         for (const item of value) {
           dDrop_drop(item);
         }
