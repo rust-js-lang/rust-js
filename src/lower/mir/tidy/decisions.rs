@@ -22,7 +22,7 @@ mod presence;
 
 use calls::Model;
 pub(super) use defaults::default_values;
-use paths::{simplified, unions, written_order};
+use paths::{absorbed, failing, said, simplified, unions, written_order};
 pub(super) use presence::presence_said;
 
 /// More leaves than a match a person writes has: a tree of tests that
@@ -43,6 +43,10 @@ pub(super) struct Told<'h> {
     pub bound: &'h HashSet<String>,
     /// Each loop's label (`loop_labels`), a `break` of which leaves it.
     pub loops: &'h HashSet<String>,
+    /// Where each test the program wrote is, an `if`'s condition and an
+    /// `&&` or `||` (`Written::ifs`, `Written::logicals`): a tree of them
+    /// is theirs, as written, not a `match`'s.
+    pub written: &'h [js::Span],
 }
 
 /// The label of each loop in `body`.
@@ -217,6 +221,19 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
     if switched_guard {
         return None;
     }
+    // Whether the tree tests only what a `match`'s patterns name: of one
+    // testing what the program wrote, an `if`'s condition or an `&&`'s,
+    // which the passes after read as written, `return (x === y && ..) ||
+    // ..` (ADR 0613), an or-pattern arm's rules of fewer tests (#673) are
+    // none, its chain as before them; nor of one whose guard calls, whose
+    // paths `Model` reads as the tree tests them.
+    let own = tested.iter().any(|(_, test)| {
+        let mut parts = Vec::new();
+        leaf_tests(test, js::Span::NONE, &mut parts);
+        // Where the `if` is, `if (n === 0)`, or its condition.
+        (parts.iter()).any(|(_, at)| !at.is_none() && (told.written.iter()).any(|w| at.lo < w.hi && w.lo < at.hi))
+    });
+    let patterns = !own && calls.is_empty();
     // A path no value takes, `c < "0" && c >= "A"`, goes.
     let valued = |e: &Expr| valued(e, told.switches);
     // Only of a tree no `switch` takes, a `break` of the loop around it in
@@ -234,7 +251,7 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
     }
     let valued = |e: &Expr| breaking && valued(e);
     let leaves: Vec<(Vec<Expr>, Leaf)> = (leaves.into_iter())
-        .filter_map(|leaf| Some((present_said(simplified(&leaf.tests)?, &valued), leaf)))
+        .filter_map(|leaf| Some((present_said(simplified(&leaf.tests, patterns)?, &valued), leaf)))
         .collect();
     // Leaves that do one thing, one arm.
     let mut arms: Vec<Arm> = Vec::new();
@@ -320,9 +337,12 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
     // takes (a `switch`'s guard's tree is never chained, `switched_guard`,
     // so a turn of a loop it ends is the `switch` of `continue`s, ADR
     // 0636): that arm's test negated, what follows it in the chain inside, `if (name !== "C") { if (name === "D" && keep) { .. } else {
-    // .. } }`.
+    // .. } }`. Where neither is, each other, the longest first: of
+    // `(1, _, _, _) | .. | (_, _, _, 1)`, whose `|` is longest, the `_` after
+    // it, the chain then as written (#673).
     let empty: Vec<usize> = (0..arms.len()).filter(|&i| bodies[i].is_empty()).collect();
-    let longest = (0..arms.len()).max_by_key(|&i| arms[i].tests.iter().flatten().map(atoms).sum::<usize>())?;
+    let length = |i: usize| arms[i].tests.iter().flatten().map(atoms).sum::<usize>();
+    let longest = (0..arms.len()).max_by_key(|&i| length(i))?;
     let arranged = |otherwise: usize, mut arms: Vec<Arm>, mut bodies: Vec<Vec<Stmt>>| -> Option<Vec<Stmt>> {
         // The others in the order they're written: where the test that decides
         // each path to them, its last, or what they do first is.
@@ -368,7 +388,7 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
             }
             if changed
                 && let Some(tests) = (made.iter())
-                    .map(|path| Some(present_said(simplified(path)?, &valued)))
+                    .map(|path| Some(present_said(simplified(path, patterns)?, &valued)))
                     .collect::<Option<Vec<_>>>()
             {
                 arms[i].tests = tests;
@@ -387,21 +407,49 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
             // Of a tree that calls, each path as the tree tests it, which
             // `Model::fewest` reads as few tests as tell.
             let mut paths = match &model {
-                Some(_) => arms[i].made.iter().filter_map(|path| simplified(path)).collect(),
+                Some(_) => arms[i]
+                    .made
+                    .iter()
+                    .filter_map(|path| simplified(path, patterns))
+                    .collect(),
                 None => arms[i].tests.clone(),
             };
             if model.is_none() {
                 paths.iter_mut().for_each(|path| written_order(path));
             }
             let spans: Vec<js::Span> = paths.iter().filter_map(|t| t.last()).map(|t| t.span).collect();
-            paths.sort_by_key(|tests| {
-                let span = tests.last().map(|t| t.span).unwrap_or_default();
-                let holds = spans.iter().any(|s| *s != span && span.lo <= s.lo && s.hi <= span.hi);
-                (holds, tests.last().and_then(written_at).unwrap_or(u32::MAX))
+            // Of alternatives MIR gives one place, the whole `|`'s, a tuple's,
+            // `(1, _, _) | (_, 1, _)`, by the part each tests last, the one it
+            // names (#673).
+            paths.sort_by(|a, b| {
+                let key = |tests: &Vec<Expr>| {
+                    let span = tests.last().map(|t| t.span).unwrap_or_default();
+                    let holds = spans.iter().any(|s| *s != span && span.lo <= s.lo && s.hi <= span.hi);
+                    (holds, tests.last().and_then(written_at).unwrap_or(u32::MAX))
+                };
+                let part = |tests: &Vec<Expr>| tests.last().and_then(paths::part);
+                key(a).cmp(&key(b)).then_with(|| match (part(a), part(b)) {
+                    (Some((x, m)), Some((y, n))) if x == y => m.total_cmp(&n),
+                    _ => Ordering::Equal,
+                })
             });
+            // What the arms before it say failing, `a !== 1`, `b !== 1` and
+            // `c !== 1` of `a === 1 || b === 1 || c === 1`'s: of a path, each
+            // test it says goes, true wherever the chain reads it (#673).
+            let known: Vec<(Expr, Set)> = match patterns {
+                true => (steps.iter()).flat_map(|(_, test)| failing(test)).collect(),
+                false => Vec::new(),
+            };
+            if model.is_none() {
+                for path in &mut paths {
+                    if path.iter().any(|t| !said(&known, t)) {
+                        path.retain(|t| !said(&known, t));
+                    }
+                }
+            }
             let test = match &model {
                 Some(model) => model.fewest(i, &steps, paths)?,
-                None => factored(paths),
+                None => factored(paths, &known, patterns),
             };
             steps.push((i, test));
         }
@@ -455,11 +503,18 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
         }
         Some(chain.unwrap_or_default())
     };
-    let chain = match empty.as_slice() {
-        [only] => arranged(*only, arms.clone(), bodies.clone())
-            .or_else(|| (*only != longest).then(|| arranged(longest, arms, bodies)).flatten()),
-        _ => arranged(longest, arms, bodies),
-    }?;
+    let mut others: Vec<usize> = (0..arms.len())
+        .filter(|&i| i != longest && !empty.contains(&i))
+        .collect();
+    others.sort_by_key(|&i| std::cmp::Reverse(length(i)));
+    let first = match empty.as_slice() {
+        [only] => vec![*only],
+        _ => Vec::new(),
+    };
+    let chain = (first.into_iter())
+        .chain([longest].into_iter().filter(|i| !empty.contains(i) || empty.len() != 1))
+        .chain(others.into_iter().filter(|_| patterns))
+        .find_map(|otherwise| arranged(otherwise, arms.clone(), bodies.clone()))?;
     let mut stmts: Vec<Stmt> = decls.to_vec();
     stmts.extend(chain);
     Some((stmts, takes_rest))
@@ -472,7 +527,7 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
 /// guard MIR tests of each alternative, `(n === 1 || n === 2) && on`, not
 /// `(n === 1 && on) || (n === 2 && on)`, as `A | B if on` is written
 /// (rd136); and each tried as `alternatives` says.
-fn factored(mut paths: Vec<Vec<Expr>>) -> Expr {
+fn factored(mut paths: Vec<Vec<Expr>>, known: &[(Expr, Set)], patterns: bool) -> Expr {
     let shared = match paths.split_first() {
         Some((first, others)) if !others.is_empty() => (0..first.len())
             .take_while(|&t| {
@@ -502,12 +557,14 @@ fn factored(mut paths: Vec<Vec<Expr>>) -> Expr {
     for path in &mut paths {
         path.truncate(path.len() - last);
     }
-    unions(&mut paths);
-    alternatives(&mut paths);
-    let either = any(paths.into_iter().map(all).collect());
-    match before.is_empty() && after.is_empty() {
-        true => either,
-        false => all(before.into_iter().chain([either]).chain(after).collect()),
+    unions(&mut paths, known);
+    alternatives(&mut paths, patterns);
+    // A path of no tests is any value's, `a !== 2 || a === 2` between what
+    // each tests alike: no test there (#673).
+    let either = (!paths.iter().any(Vec::is_empty)).then(|| any(paths.into_iter().map(all).collect()));
+    match (before.is_empty() && after.is_empty(), either) {
+        (true, Some(either)) => either,
+        (_, either) => all(before.into_iter().chain(either).chain(after).collect()),
     }
 }
 
@@ -516,8 +573,10 @@ fn factored(mut paths: Vec<Vec<Expr>>) -> Expr {
 /// out of each after it, `(1, _) | (_, 1)`'s `a === 1 || b === 1`, not `a
 /// === 1 || (a !== 1 && b === 1)`. Tried first, where those before it each
 /// first test its value, and one of them says it fails: the value is read
-/// first then as before, and each test after only where it was.
-fn alternatives(paths: &mut Vec<Vec<Expr>>) {
+/// first then as before, and each test after only where it was. Then, of
+/// each path, a test whose failing says another goes (`absorbed`), and a
+/// path alike one before it is once (#673).
+fn alternatives(paths: &mut Vec<Vec<Expr>>, patterns: bool) {
     for j in 0..paths.len() {
         let [only] = paths[j].as_slice() else { continue };
         let Some((subject, set)) = atom(only) else { continue };
@@ -540,11 +599,17 @@ fn alternatives(paths: &mut Vec<Vec<Expr>>) {
             paths.insert(i, path);
         }
     }
+    // `(x === 2 && y === 2) || (x !== 2 && y === 2 && z === 2)`'s `x !== 2`,
+    // the paths then each the alternative's own, in the order they're tried
+    // (#673).
+    for j in (0..paths.len()).filter(|_| patterns) {
+        absorbed(paths, j);
+    }
     // And of a value's `===` no set says, a symbol's, `s === A || (s !== A
     // && s === B)`'s `s !== A`, as it's written (#412).
     let mut failed: Vec<(Expr, Set)> = Vec::new();
     let mut negated: Vec<Expr> = Vec::new();
-    for tests in paths {
+    for tests in paths.iter_mut() {
         let said = |t: &Expr| {
             atom(t).is_some_and(|(s, set)| {
                 failed
@@ -563,6 +628,17 @@ fn alternatives(paths: &mut Vec<Vec<Expr>>) {
                 }
                 None => {}
             }
+        }
+    }
+    // A path alike another, as one's failing absorbed leaves it, `c === 2 &&
+    // d === 2` twice: once, `p || p` being `p` (#673).
+    let mut j = 1;
+    while patterns && j < paths.len() {
+        let twice = (paths[..j].iter())
+            .any(|p| p.len() == paths[j].len() && p.iter().zip(&paths[j]).all(|(a, b)| a.written_alike(b)));
+        match twice {
+            true => drop(paths.remove(j)),
+            false => j += 1,
         }
     }
 }

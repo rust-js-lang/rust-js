@@ -91,3 +91,76 @@ pub fn sliced(xs: &[u32]) -> u32 {
   expect([...pairs.map((p) => lib.guarded(p)), lib.guarded(undefined)]).toEqual([1, 1, 2, 2, 0, 0, 0, 0]);
   expect([...pairs.map((p) => lib.sliced(p)), lib.sliced([2, 3, 4]), lib.sliced([])]).toEqual([1, 1, 2, 2, 0, 0, 0, 0, 0]);
 });
+
+// A match of three values whose or-pattern names one each, `(1, _, _) |
+// (_, 1, _) | (_, _, 1)`, is the chain as written: a path whose test's
+// failing says another of its arm's needs no test of it, `(a === 2 && b
+// === 2) || (b === 2 && c === 2)`, not `.. || (a !== 2 && b === 2 && c ===
+// 2)`; what the arms before it say failing, `a !== 1`, `b !== 1` and `c !==
+// 1`, an arm after needs no test of; and the `_` is the `else`, not the
+// `|`'s arm, of four values too. A test that guards a read stays, `x !=
+// null` before `x[0]` (#673, ADR 0364, amended).
+test("a match of three values' or-pattern is the chain as written", async () => {
+  const dir = fixture("three-value-or-pattern");
+  writeFileSync(join(dir, "lib.rs"), `pub fn triple(a: u8, b: u8, c: u8) -> u8 {
+    match (a, b, c) {
+        (0, 0, 0) => 1,
+        (1, _, _) | (_, 1, _) | (_, _, 1) => 2,
+        (2, 2, _) | (_, 2, 2) => 3,
+        _ => 4,
+    }
+}
+
+pub fn quad(a: u8, b: u8, c: u8, d: u8) -> u8 {
+    match (a, b, c, d) {
+        (0, 0, 0, 0) => 1,
+        (1, _, _, _) | (_, 1, _, _) | (_, _, 1, _) | (_, _, _, 1) => 2,
+        (2, 2, _, _) | (_, _, 2, 2) => 3,
+        _ => 4,
+    }
+}
+
+pub fn first_two(a: u32, b: u32) -> u32 {
+    match (a, b) {
+        (2, 0) => 1,
+        (1, _) | (_, 1) => 2,
+        (2, 3) | (3, 2) => 3,
+        _ => 4,
+    }
+}
+
+pub fn guarded(x: Option<(u8, u8)>, k: u8) -> u8 {
+    match (x, k) {
+        (None, 5) | (Some((1, _)), 5) => 1,
+        (Some((_, 1)), _) | (None, 1) => 2,
+        (Some((2, 2)), _) | (_, 2) => 3,
+        _ => 4,
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toMatch(/\bbb\d+:/);
+  expect(js).toContain(
+    "  if (a === 0 && b === 0 && c === 0) {\n    return 1;\n  }\n  if (a === 1 || b === 1 || c === 1) {\n    return 2;\n  }\n  if ((a === 2 && b === 2) || (b === 2 && c === 2)) {\n    return 3;\n  }\n  return 4;\n",
+  );
+  expect(js).toContain(
+    "  if (a === 1 || b === 1 || c === 1 || d === 1) {\n    return 2;\n  }\n  if ((a === 2 && b === 2) || (c === 2 && d === 2)) {\n    return 3;\n  }\n  return 4;\n",
+  );
+  expect(js).toContain(
+    "  if (a === 1 || b === 1) {\n    return 2;\n  }\n  if ((a === 2 && b === 3) || (a === 3 && b === 2)) {\n    return 3;\n  }\n  return 4;\n",
+  );
+  const lib = await import(join(dir, "lib.js"));
+  const values = [0, 1, 2, 3];
+  const triples = values.flatMap((a) => values.flatMap((b) => values.map((c) => lib.triple(a, b, c))));
+  // Native Rust's, `triple` of each `(a, b, c)` of `0..4`.
+  const triple = (a: number, b: number, c: number) =>
+    a === 0 && b === 0 && c === 0 ? 1 : a === 1 || b === 1 || c === 1 ? 2 : (a === 2 && b === 2) || (b === 2 && c === 2) ? 3 : 4;
+  expect(triples).toEqual(values.flatMap((a) => values.flatMap((b) => values.map((c) => triple(a, b, c)))));
+  expect([[2, 0], [1, 4], [4, 1], [2, 3], [3, 2], [2, 2], [0, 0]].map(([a, b]) => lib.firstTwo(a, b))).toEqual([1, 2, 2, 3, 3, 4, 4]);
+  expect([lib.quad(0, 0, 0, 0), lib.quad(0, 0, 0, 1), lib.quad(2, 2, 0, 0), lib.quad(0, 0, 2, 2), lib.quad(2, 0, 0, 2)]).toEqual([1, 2, 3, 3, 4]);
+  const options = [undefined, [1, 0], [0, 1], [2, 2], [0, 0]];
+  expect(options.flatMap((x) => [0, 1, 2, 5].map((k) => lib.guarded(x, k)))).toEqual([
+    4, 2, 3, 1, 4, 4, 3, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 3, 4,
+  ]);
+});

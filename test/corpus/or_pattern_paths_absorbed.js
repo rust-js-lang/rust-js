@@ -25,35 +25,26 @@ export function firstTwo(a, b) {
   if (a === 2 && b === 0) {
     return 1;
   }
-  if (a === 1) {
+  if (a === 1 || b === 1) {
     return 2;
   }
-  if (b !== 1) {
-    if ((a === 2 && b === 3) || (a === 3 && b === 2)) {
-      return 3;
-    }
-    return 4;
+  if ((a === 2 && b === 3) || (a === 3 && b === 2)) {
+    return 3;
   }
-  return 2;
+  return 4;
 }
 
 export function triple(a, b, c) {
   if (a === 0 && b === 0 && c === 0) {
     return 1;
   }
-  if (a === 1) {
+  if (a === 1 || b === 1 || c === 1) {
     return 2;
   }
-  if (b !== 1 && c !== 1) {
-    if (a === 2 && b === 2) {
-      return 3;
-    }
-    if (b === 2 && c === 2) {
-      return 3;
-    }
-    return 4;
+  if ((a === 2 && b === 2) || (b === 2 && c === 2)) {
+    return 3;
   }
-  return 2;
+  return 4;
 }
 
 export function optional(x, n) {

@@ -16,7 +16,7 @@ Amended: a value a block gives last is given first only where nothing can
 tell (issue #219, below); an `|` of two values' tests is a chain of its
 arms; no arm holds a copy of what follows the `match` (kj-switch); a
 chain's arm needs no more than that the arms before it failed (#221); a
-tree of a `switch`'s guard is the `switch`'s (rd619); a test of a value an or-pattern's alternatives after it each say is theirs (#617); paths alike but for one value's test are one, and a path no alternative of whose or-pattern holds is none (#631); an alternative's tests of a tuple's parts are in the order written (#632). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
+tree of a `switch`'s guard is the `switch`'s (rd619); a test of a value an or-pattern's alternatives after it each say is theirs (#617); paths alike but for one value's test are one, and a path no alternative of whose or-pattern holds is none (#631); an alternative's tests of a tuple's parts are in the order written (#632); a match of three values is the chain as written, a test whose failing says another path of its arm, or that the arms before it say, is none (#673). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -910,3 +910,113 @@ whose JS it reorders, each against native Rust; the mutations
 `alternatives-in-mir-order` (`lower/mir/tidy/decisions.ts`) and
 `written-order-of-the-alternative-alone`
 (`lower/mir/tidy/decisions/paths.ts`).
+
+## Amendment: a match of three values is the chain as written (#673, 2026-11-04)
+
+`(0, 0, 0) => 1, (1, _, _) | (_, 1, _) | (_, _, 1) => 2, (2, 2, _) | (_,
+2, 2) => 3, _ => 4` kept MIR's order of arms, its inner block's chain
+the `_`'s, the `|` arm the `else`:
+
+```js
+if (a === 0 && b === 0 && c === 0) {
+  return 1;
+}
+if (a === 1) {
+  return 2;
+}
+if (b !== 1 && c !== 1) {
+  if (a === 2 && b === 2) {
+    return 3;
+  }
+  if (b === 2 && c === 2) {
+    return 3;
+  }
+  return 4;
+}
+return 2;
+```
+
+The inner block's chain had 5 tests to its tree's 4, `(a === 2 && b ===
+2) || (a !== 2 && b === 2 && c === 2)`, so it stayed, and the outer
+chain, its `else` the `|` arm, the longest, had 14 to the tree's 6. Of
+an arm's paths and the chain's arms, each the same pure tests' truth
+(`decisions/paths.rs`, `decisions.rs`):
+
+1. **A test of a path whose failing, with the path's other tests, says
+   another path of its arm goes** (`absorbed`): `a !== 2 && b === 2 && c
+   === 2` beside `a === 2 && b === 2` is `b === 2 && c === 2`, as `p ||
+   (!t && q)` is `p || q` where `t && q` says `p`. What it then holds of
+   more, the other path holds of, the same arm. Of the paths before it
+   first, then those after; a path then alike one before it is once, `p
+   || p` being `p`. Not of a test that guards one after it (`guards`):
+   of an object the later test reads a part of, `x != null` of `x[0]`'s,
+   or a part of what holds one, `shape.TAG` of `shape._0[1]`'s, whose
+   failing would read what may throw. A tuple's parts guard none of each
+   other, `a[0]` of `a[1]`'s.
+2. **What the arms before it in the chain say failing, an arm's paths
+   need no test of** (`failing`, `said`): past `a === 1 || b === 1 || c
+   === 1`, `a !== 1`, `b !== 1` and `c !== 1` hold wherever the chain
+   reads the next arm's test; and paths alike but for one value, each a
+   test of it alone, whose union holds of each value it can have there,
+   are no test of it (`unions`): `a === 0 || (a !== 0 && a !== 1)` past
+   `a !== 1`, `a !== 2 || a === 2` of any.
+3. **A path's tests of a value its earlier ones say are none, and a
+   later one saying less is what both say, where the first is**
+   (`simplified`): `b !== 1` after `b === 0`; `c !== 0 && b === 0 && c
+   !== 1`'s `c !== 0 && c !== 1 && b === 0`, its value read there
+   already.
+4. **Alternatives MIR gives one place, the whole `|`'s, are by the part
+   of the tuple each tests last**, the one it names: `a === 1 || b === 1
+   || c === 1`.
+5. **Where the longest arm's chain has more tests than the tree, each
+   other arm is tried as the `else`, the longest first**: of four values,
+   `(1, _, _, _) | .. | (_, _, _, 1)`, the `_`.
+
+#631's third rule, a test the alternatives before it each say, `X && b
+!== 1`'s `b !== 1`, is the second's now, the failing of the arm before
+them saying it: its own reading in `simplified` is gone, and its
+mutation `or-pattern-said-atom-kept`, which no test caught any more.
+
+Only of a tree that tests what a `match`'s patterns name: one testing
+what the program wrote, an `if`'s condition or an `&&` or `||`
+(`Written::ifs`, `Written::logicals`), stays as the rules before gave it,
+for the passes after read those as written, `return (x === y && ..) ||
+..` (ADR 0613), `if (on && ..) { .. } else { .. }`; and not of a tree
+whose guard calls, whose paths `Model` reads as the tree tests them.
+
+```js
+if (a === 0 && b === 0 && c === 0) {
+  return 1;
+}
+if (a === 1 || b === 1 || c === 1) {
+  return 2;
+}
+if ((a === 2 && b === 2) || (b === 2 && c === 2)) {
+  return 3;
+}
+return 4;
+```
+
+Soundness: the tests are what the tree reads, each a pure read of the
+scrutinee's parts, made once before it; a test goes only where it's
+implied, by the path's own tests or the arms the chain has failed, or
+where the values it then lets in take the same arm another way; no rule
+moves a read past what guards it; and a path goes only where another
+alike is kept.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same arm for
+each input. Held by `test/corpus/or_pattern_three_values.rs` against
+native Rust, of three and four values, of `Option`s of tuples whose
+`x != null` guards `x[0]`, of slices of tuples whose `length` guards
+`xs[1][1]`, and of `f64`s with `NaN`; `or_pattern_paths_absorbed.rs`
+re-blessed; `test/lowering-match-paths.test.ts`'s "a match of three
+values' or-pattern is the chain as written", run; and the mutations
+`absorbed-guard-unread`, `absorbed-failing-says-any-test`,
+`absorbed-failing-meets`, `known-of-any-value`, `failing-of-an-and`,
+`merged-of-either`, `run-said-of-any` (`lower/mir/tidy/decisions/paths.ts`)
+and `twice-of-any-alike-length` (`lower/mir/tidy/decisions.ts`), each a
+wrong answer native Rust catches, and `union-of-any-value-alone-kept`,
+`else-the-longest-alone`, `alternatives-by-part-reversed` and
+`written-tests-read-as-patterns`, the JS. Left: a match whose `Option`'s
+or enum's tests MIR makes first, `(None, _) | (_, 1)`, still its order
+of tests (#674).

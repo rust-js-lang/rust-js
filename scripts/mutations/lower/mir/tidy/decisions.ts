@@ -28,7 +28,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a tuple's arm `(1, _) | (_, 1)` after `(0, 0)` keeps its paths `a === 0 && b === 1` and `a !== 0 && a !== 1 && b === 1` apart, more tests than the tree's, so the `match` is MIR's labeled block, not `else if (a === 1 || b === 1)` (#631)",
     file: "src/lower/mir/tidy/decisions.rs",
-    find: "    unions(&mut paths);\n",
+    find: "    unions(&mut paths, known);\n",
     replace: "",
     tests: ["test/lowering-match-paths.test.ts", "-t", "after an arm that tests both values"],
   },
@@ -37,8 +37,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a match's arm that does nothing between guarded arms, `\"C\" => {}`, is the chain's `else` or none, so `kinds` keeps MIR's `bb39:` block (bb39)",
     file: "src/lower/mir/tidy/decisions.rs",
-    find: "            .or_else(|| (*only != longest).then(|| arranged(longest, arms, bodies)).flatten()),\n",
-    replace: "            .or_else(|| None),\n",
+    find: "        .find_map(|otherwise| arranged(otherwise, arms.clone(), bodies.clone()))?;\n",
+    replace: "        .take(if empty.len() == 1 { 1 } else { usize::MAX })\n        .find_map(|otherwise| arranged(otherwise, arms.clone(), bodies.clone()))?;\n",
     tests: [
       "test/lowering-labels.test.ts",
       "-t",
@@ -81,8 +81,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an arm's path whose earlier arm's failure is left out keeps its `!= null`, `symbolFor != null && symbolFor === C`, the labeled block staying (#412)",
     file: "src/lower/mir/tidy/decisions.rs",
-    find: "                .map(|path| Some(present_said(simplified(path)?, &valued)))\n",
-    replace: "                .map(|path| simplified(path))\n",
+    find: "                .map(|path| Some(present_said(simplified(path, patterns)?, &valued)))\n",
+    replace: "                .map(|path| simplified(path, patterns))\n",
     tests: ["test/lowering-switch-symbols.test.ts", "-t", "a value some arms"],
   },
   {
@@ -339,5 +339,41 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^let_match_empty_default.rs$"],
     snapshots: true,
+  },
+  {
+    name: "else-the-longest-alone",
+    breaks:
+      "a match of four values' `|` arm, the longest, is the only arm tried as the chain's `else`, whose chain has more tests than the tree, so its `_` stays in MIR's tree, `if (a === 1) { return 2; } if (b !== 1 && c !== 1 && d !== 1) { .. } return 2;` (#673)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "        .chain(others.into_iter().filter(|_| patterns))\n",
+    replace: "        .chain(others.into_iter().filter(|_| false))\n",
+    tests: ["test/lowering-match-paths.test.ts", "-t", "three values' or-pattern"],
+  },
+  {
+    name: "alternatives-by-part-reversed",
+    breaks:
+      "a three-value or-pattern's alternatives MIR gives one place are by the part each tests last, from the last, `c === 1 || (c !== 1 && b === 1) || ..`, more tests than the tree's, so the match keeps MIR's order of arms (#673)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "                    (Some((x, m)), Some((y, n))) if x == y => m.total_cmp(&n),\n",
+    replace: "                    (Some((x, m)), Some((y, n))) if x == y => n.total_cmp(&m),\n",
+    tests: ["test/lowering-match-paths.test.ts", "-t", "three values' or-pattern"],
+  },
+  {
+    name: "written-tests-read-as-patterns",
+    breaks:
+      "a tree of the `&&` and `||` the program wrote is read as a `match`'s, its tests fewer, so `same`'s `return (x === y && ..) || ..` is `if (x === y && ..) { return true; } return ..` (#673, ADR 0613)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "    let patterns = !own && calls.is_empty();\n",
+    replace: "    let patterns = calls.is_empty();\n",
+    tests: ["test/lowering-branches.test.ts", "-t", "mixed is returned as written"],
+  },
+  {
+    name: "twice-of-any-alike-length",
+    breaks:
+      "a path the same length as one before it is taken for it and goes, though its tests differ, so an or-pattern's alternative is never tested: `(2, 2, _) | (_, 2, 2)`'s `(1, 2, 2)` takes `_`, not native Rust's arm (#673)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "            .any(|p| p.len() == paths[j].len() && p.iter().zip(&paths[j]).all(|(a, b)| a.written_alike(b)));\n",
+    replace: "            .any(|p| p.len() == paths[j].len());\n",
+    tests: ["test/corpus.test.ts", "-t", "^or_pattern_three_values.rs$"],
   },
 ];

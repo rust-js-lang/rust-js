@@ -146,7 +146,9 @@ pub(super) const STAGES: &[Stage] = &[
             pass("decisions", |b, h| {
                 let bound = decisions::bound(b);
                 let loops = decisions::loop_labels(b);
+                let written: Vec<js::Span> = (h.written.ifs.iter()).chain(&h.written.logicals).copied().collect();
                 let told = decisions::Told {
+                    written: &written,
                     guards: &h.written.guards,
                     switches: &h.written.switches,
                     bound: &bound,

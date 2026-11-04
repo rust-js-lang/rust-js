@@ -217,7 +217,7 @@ impl Model<'_> {
             .count();
         let before: Vec<Expr> = paths.first().map(|path| path[..shared].to_vec()).unwrap_or_default();
         let mut rest: Vec<Vec<Expr>> = paths.iter().map(|path| path[shared..].to_vec()).collect();
-        alternatives(&mut rest);
+        alternatives(&mut rest, false);
         paths = rest.into_iter().map(|path| [before.clone(), path].concat()).collect();
         // What each path's tests before say, and what the paths before it
         // and the arms' before them do.
@@ -232,7 +232,7 @@ impl Model<'_> {
             }
         }
         merged(&mut paths);
-        if !self.tells(arm, steps, &factored(paths.clone())) {
+        if !self.tells(arm, steps, &factored(paths.clone(), &[], false)) {
             return None;
         }
         // Each test that can go, with the paths it then says all of, one
@@ -251,27 +251,28 @@ impl Model<'_> {
                 [fewer.clone(), alone]
                     .into_iter()
                     .chain(others)
-                    .find(|candidate| self.tells(arm, steps, &factored(candidate.clone())))
+                    .find(|candidate| self.tells(arm, steps, &factored(candidate.clone(), &[], false)))
             })
             .or_else(|| {
                 // A path the others say all of.
                 (0..paths.len()).filter(|_| paths.len() > 1).find_map(|o| {
                     let mut without = paths.clone();
                     without.remove(o);
-                    self.tells(arm, steps, &factored(without.clone())).then_some(without)
+                    self.tells(arm, steps, &factored(without.clone(), &[], false))
+                        .then_some(without)
                 })
             })
         {
             paths = fewer;
         }
         // Each path's tests of one value read as one, where that tells too.
-        let read: Option<Vec<Vec<Expr>>> = paths.iter().map(|path| simplified(path)).collect();
+        let read: Option<Vec<Vec<Expr>>> = paths.iter().map(|path| simplified(path, false)).collect();
         if let Some(read) = read
-            && self.tells(arm, steps, &factored(read.clone()))
+            && self.tells(arm, steps, &factored(read.clone(), &[], false))
         {
             paths = read;
         }
-        Some(factored(paths))
+        Some(factored(paths, &[], false))
     }
 
     /// Whether `test`, after `prefix` of its path passes, its arm's `paths`
