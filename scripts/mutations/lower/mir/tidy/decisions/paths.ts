@@ -3,13 +3,32 @@ import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "written-order-of-the-alternative-alone",
+    name: "written-order-of-no-part",
     breaks:
-      "a tuple's parts' tests are ordered by where their alternative is alone, all alike, so MIR's `b === 3 && a === 2` stays, not the order of the tuple's parts, `a === 2 && b === 3` (#632)",
+      "a tuple's parts' tests are all of one part, so MIR's `b === 3 && a === 2` stays, not the order of the tuple's parts, `a === 2 && b === 3` (#632)",
     file: "src/lower/mir/tidy/decisions/paths.rs",
-    find: "    let mut keyed: Vec<((u32, f64), Expr)> = (parts.into_iter().map(|(at, _, n)| (at, n)))\n",
-    replace: "    let mut keyed: Vec<((u32, f64), Expr)> = (parts.into_iter().map(|(at, _, n)| (at, n * 0.0)))\n",
+    find: "            .map(|k| (parts[k].as_ref().map_or(0.0, |(_, n)| *n), path[k].clone()))\n",
+    replace: "            .map(|k| (parts[k].as_ref().map_or(0.0, |(_, n)| *n * 0.0), path[k].clone()))\n",
     tests: ["test/lowering-match-paths.test.ts", "-t", "alternatives test a tuple's parts in the order written"],
+  },
+  {
+    name: "written-order-within-a-part-reversed",
+    breaks:
+      "a part's tests are reordered too, `x[0] === 1` read before the `x != null` that guards it, which throws of a `None` (#674)",
+    file: "src/lower/mir/tidy/decisions/paths.rs",
+    find: "        keyed.sort_by(|(a, _), (b, _)| a.total_cmp(b));\n",
+    replace: "        keyed.reverse();\n        keyed.sort_by(|(a, _), (b, _)| a.total_cmp(b));\n",
+    tests: ["test/corpus.test.ts", "-t", "^or_pattern_(three_values|option_order).rs$"],
+  },
+  {
+    name: "part-of-a-holder-unread",
+    breaks:
+      "a test of what a part holds, `xs.length === 1` or `xs[0] === 0` of `_3[0]`'s, is of no part, so `([0], 0)` keeps MIR's `xs.length === 1 && n === 0 && xs[0] === 0` (#674)",
+    file: "src/lower/mir/tidy/decisions/paths.rs",
+    find: "        let root = std::iter::once(place).chain(holders(place)).find(|p| match &p.kind {\n",
+    replace: "        let root = std::iter::once(place).find(|p| match &p.kind {\n",
+    tests: ["test/corpus.test.ts", "-t", "^or_pattern_option_order.rs$"],
+    snapshots: true,
   },
   {
     name: "or-pattern-alternatives-say-nothing",

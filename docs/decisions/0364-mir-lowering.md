@@ -16,7 +16,7 @@ Amended: a value a block gives last is given first only where nothing can
 tell (issue #219, below); an `|` of two values' tests is a chain of its
 arms; no arm holds a copy of what follows the `match` (kj-switch); a
 chain's arm needs no more than that the arms before it failed (#221); a
-tree of a `switch`'s guard is the `switch`'s (rd619); a test of a value an or-pattern's alternatives after it each say is theirs (#617); paths alike but for one value's test are one, and a path no alternative of whose or-pattern holds is none (#631); an alternative's tests of a tuple's parts are in the order written (#632); a match of three values is the chain as written, a test whose failing says another path of its arm, or that the arms before it say, is none (#673). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
+tree of a `switch`'s guard is the `switch`'s (rd619); a test of a value an or-pattern's alternatives after it each say is theirs (#617); paths alike but for one value's test are one, and a path no alternative of whose or-pattern holds is none (#631); an alternative's tests of a tuple's parts are in the order written (#632); a match of three values is the chain as written, a test whose failing says another path of its arm, or that the arms before it say, is none (#673); an or-pattern over `Option`s and enums tests as written, by the tuple's part each test reads, a part's own tests in MIR's order, and a path's `x != null` beside `x === k` goes of any tree no `switch` takes (#674). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -1026,4 +1026,97 @@ wrong answer native Rust catches, and `union-of-any-value-alone-kept`,
 `else-the-longest-alone`, `alternatives-by-part-reversed` and
 `written-tests-read-as-patterns`, the JS. Left: a match whose `Option`'s
 or enum's tests MIR makes first, `(None, _) | (_, 1)`, still its order
-of tests (#674).
+of tests (#674, below).
+
+## Amendment: an or-pattern over `Option`s and enums tests as written (#674, 2026-11-04)
+
+`(Some(0), 0) => 1, (None, _) | (_, 1) => 2, (Some(2), 2) | (Some(3), 3)
+=> 3, _ => 4` kept MIR's tree, which tests `x == null` first:
+
+```js
+if (x == null) {
+  return 2;
+}
+if (n === 0 && x === 0) {
+  return 1;
+}
+if (n !== 1) {
+  if ((x === 2 && n === 2) || (x === 3 && n === 3)) {
+    return 3;
+  }
+  return 4;
+}
+return 2;
+```
+
+The chain had 9 tests to the tree's 8: `(Some(0), 0)`'s path kept its `x
+!= null` beside `x === 0`, since #412's `present_said` held only of a
+tree an arm of which breaks the loop. And #632's written order held only
+of a path all of whose tests are of a tuple's parts themselves, `_3[1]`,
+and not `_3[0] != null`, `_3[0][1]` or `_3[0].length`. Three rules,
+extended:
+
+1. **A path's `x != null` beside its `x === k` goes of any tree no
+   `switch` takes** (`switched`, the one reading `keeps_label` asks too):
+   of a `match` of no constants, a tuple's, as well as of one whose arm
+   breaks the loop. A `match` of constants that's a `switch` keeps it,
+   as #412 says, so its `switch` reads as written.
+2. **What says its value is there is also an `&&` one of whose tests
+   does** (`says`): `(x === 2 && n === 2) || (x === 3 && n === 3)`, the
+   chain the inner block made, says `x != null`.
+3. **A path's tests are by the tuple's part each reads, the part's own
+   tests in MIR's order** (`paths::written_order`, `paths::part`): of each
+   run of tests that each read one part of one tuple MIR made, the part
+   being what the place each reads is, or is held in, `_3[0]` of `_3[0]
+   != null`, `_3[0][1] === 3` and `_3[0].length === 2`. A part's own
+   tests keep their order, so what guards a read stays before it: `x !=
+   null` before `x[0]`, a slice's `length` before `xs[0]`, an enum's
+   `TAG` before its field. A tuple's parts guard none of each other, as
+   #632 says. A test of no one part, such as a call's, stays where MIR
+   reads it, and so do those on either side of it. This replaces #632's
+   key of where each test's alternative is written. Over a tuple's parts
+   alone, it reads alike.
+
+```js
+if (x === 0 && n === 0) {
+  return 1;
+}
+if (x == null || n === 1) {
+  return 2;
+}
+if ((x === 2 && n === 2) || (x === 3 && n === 3)) {
+  return 3;
+}
+return 4;
+```
+
+So `(1.0, _) | (_, 1)` of an `f64` is `x === 1 || n === 1`, `([0], 0)` is
+`xs.length === 1 && xs[0] === 0 && n === 0`, and `Some("rejected") |
+None` of an `Option<&str>` is `status === "rejected" || status == null`,
+each as written. Not of `(Some((0, 0)), 0)` beside `(None, _)`, whose `x
+!= null` guards `x[0]`, nor of an enum's `(Shape::Circle(0), 0)`: their
+chains read more tests than the tree, which stays.
+
+Soundness: no test is read anywhere it wasn't. Rule 1 drops `x != null`
+only beside `x === k` of a `k` that is never `null`, which is false of
+`null`. Rule 2's `&&` holds only where its test does. Rule 3 moves only a
+read of one part past a read of another, which neither calls nor throws.
+800 generated matches of 2 to 4 values (u8s, `Option`s, `Option`s of
+tuples, `f64`s with `NaN`, `Option<&str>`s and slices), each run on every
+input, agree with native Rust.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same pure reads
+decide the same arm. Held by `test/corpus/or_pattern_option_order.rs`
+(new), run against native Rust, and the corpus cases whose JS it
+reorders, re-blessed (`or_pattern_paths_absorbed`,
+`or_pattern_three_values`, `or_pattern_unreachable_alternative`,
+`str_const_patterns`), and the `strings` example's snapshot, whose
+`(Some("ab"), _) => 1, (Some(""), true) => 2, (None, _) => 3` is `top
+=== "ab" ? 1 : top === "" && s.endsWith("/") ? 2 : top == null ? 3 : 4`;
+by the mutations `present-said-of-a-tuple-unseen`
+and `says-of-an-and-unread` (`lower/mir/tidy/decisions.ts`), and
+`part-of-a-holder-unread`, `written-order-of-no-part` (which was
+`written-order-of-the-alternative-alone`) and
+`written-order-within-a-part-reversed` (`lower/mir/tidy/decisions/paths.ts`).
+The last is a wrong answer native Rust catches: `x[0]` read before its
+`x != null`.

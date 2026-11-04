@@ -34,7 +34,7 @@ export function present(a, b, c) {
   if (c === 1) {
     return 1;
   }
-  if (c !== 2 || (b !== 2 && a != null)) {
+  if ((b !== 2 && a != null) || c !== 2) {
     if (a === 2) {
       return 3;
     }

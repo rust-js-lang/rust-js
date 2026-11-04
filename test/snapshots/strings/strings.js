@@ -126,16 +126,7 @@ export function kind(s) {
 export function tagged(s) {
   const option = $splitOnce(s, "/");
   const top = option?.[0];
-  let n = 4;
-  if (top == null) {
-    n = 3;
-  } else if (top === "ab") {
-    n = 1;
-  } else if (s.endsWith("/")) {
-    if (top === "") {
-      n = 2;
-    }
-  }
+  const n = top === "ab" ? 1 : top === "" && s.endsWith("/") ? 2 : top == null ? 3 : 4;
   return [n, top === "a" || top === "src"];
 }
 

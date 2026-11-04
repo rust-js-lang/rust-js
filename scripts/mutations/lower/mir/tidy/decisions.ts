@@ -55,12 +55,32 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-switch-symbols.test.ts", "-t", "a value some arms"],
   },
   {
+    name: "present-said-of-a-tuple-unseen",
+    breaks:
+      "`(Some(0), 0)`'s path keeps `x != null` beside `x === 0`, more tests than the tree, which stays: `if (x == null) { return 2; } if (n === 0 && x === 0) ..` (#674)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "    let no_switch = breaking || !switched(&tested, told);\n",
+    replace: "    let no_switch = breaking;\n",
+    tests: ["test/corpus.test.ts", "-t", "^or_pattern_option_order.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "says-of-an-and-unread",
+    breaks:
+      "an `||` of `&&`s, `(x === 2 && n === 2) || (x === 3 && n === 3)`, says nothing of `x`, so its path's `x != null` stays (#674)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "        ExprKind::Binary(Op::And, a, b) => says(subject, a, valued) || says(subject, b, valued),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^or_pattern_option_order.rs$"],
+    snapshots: true,
+  },
+  {
     name: "present-said-of-any-tree",
     breaks:
       "a tree a `switch` takes, React's resolveThenable's inner `match`, is a chain first, what follows the outer `match` its `default`, `default: throw thenable;` (#412)",
     file: "src/lower/mir/tidy/decisions.rs",
-    find: "    let valued = |e: &Expr| breaking && valued(e);\n",
-    replace: "    let valued = |e: &Expr| valued(e);\n",
+    find: "    let no_switch = breaking || !switched(&tested, told);\n",
+    replace: "    let no_switch = true;\n",
     tests: [
       "test/lowering-switches.test.ts",
       "-t",
@@ -152,11 +172,12 @@ export const mutations: Mutation[] = [
   {
     name: "decisions-longer-tests-kept",
     breaks:
-      "a chain whose tests are longer than the tree's, `value[0] != null` twice, is written",
+      "a chain whose tests are longer than the tree's, `paired`'s `x != null` before `x[0]` in two arms, is written (#674)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "        if tests_made > written && !labeled {\n",
     replace: "        if false {\n",
-    tests: ["test/snapshots.test.ts", "-t", "strings"],
+    tests: ["test/corpus.test.ts", "-t", "^or_pattern_option_order.rs$"],
+    snapshots: true,
   },
   {
     name: "decisions-arms-in-tree-order",

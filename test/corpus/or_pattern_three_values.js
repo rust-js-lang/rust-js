@@ -86,7 +86,7 @@ export function listed(xs, k) {
   if (k !== 1) {
     if (
       (xs.length === 1 && xs[0][0] === 2 && xs[0][1] === 2) ||
-      (xs.length === 2 && k === 2 && xs[1][0] === 2)
+      (xs.length === 2 && xs[1][0] === 2 && k === 2)
     ) {
       return 3;
     }
@@ -99,10 +99,10 @@ export function measured(x, n) {
   if (n === 0) {
     return 1;
   }
-  if (n === 1 || x === 1) {
+  if (x === 1 || n === 1) {
     return 2;
   }
-  if ((n === 2 && x === 2) || n === 3) {
+  if ((x === 2 && n === 2) || n === 3) {
     return 3;
   }
   return 4;
@@ -165,7 +165,7 @@ export function spread(a, b, c, d) {
     return 3;
   }
   if (d !== 2) {
-    if (d === 0 || a === 1 || a === 2) {
+    if (a === 1 || a === 2 || d === 0) {
       return 4;
     }
     return 5;

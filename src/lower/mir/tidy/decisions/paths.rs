@@ -187,30 +187,37 @@ fn says_within(e: &Expr, subject: &Expr, set: &Set) -> bool {
 }
 
 /// `path`'s tests in the order they're written, `a === 2 && b === 3` of
-/// `(2, 3)`, where MIR tests `b` first, after `(_, 1)`'s `b === 1` (#632):
-/// of tests each of a part of one tuple MIR made, `_5[1]`, whose reads
-/// neither call nor throw, so none guards what another reads. A tuple's
-/// patterns are written in the order of its parts, each alternative's
-/// tests placed where it is: by that, then by the part. Otherwise as MIR
-/// reads them, a slice's `length` before the index it guards, `x != null`
-/// before `x.v`, a getter where it ran.
+/// `(2, 3)`, where MIR tests `b` first, after `(_, 1)`'s `b === 1` (#632),
+/// and `x === 0 && n === 0` of `(Some(0), 0)`, `xs.length === 1 && xs[0]
+/// === 0 && n === 0` of `([0], 0)`, where MIR tests `n` before `x`'s or
+/// `xs`'s value (#674): a tuple's patterns are written in the order of its
+/// parts. Of each run of tests that each read one part of one tuple MIR
+/// made, `_5[1]`, `_5[0] != null`, `_5[0][1]` or `_5[0].length`, by the
+/// part, each part's tests in the order MIR reads them, which keeps what
+/// guards a read before it, `x != null` before `x[0]`, a slice's `length`
+/// before the index it guards, an enum's `TAG` before its field: a tuple's
+/// parts guard none of each other, a read of one of the JS array it is
+/// neither calling nor throwing. A test of no one part, a call's or a
+/// getter's, stays where MIR reads it, and those around it on its side.
 pub(super) fn written_order(path: &mut [Expr]) {
-    let part = |t: &Expr| {
-        let (tuple, n) = part(t)?;
-        Some((written_at(t)?, tuple, n))
-    };
-    let Some(parts) = path.iter().map(part).collect::<Option<Vec<_>>>() else {
-        return;
-    };
-    if parts.iter().any(|(_, tuple, _)| *tuple != parts[0].1) {
-        return;
-    }
-    let mut keyed: Vec<((u32, f64), Expr)> = (parts.into_iter().map(|(at, _, n)| (at, n)))
-        .zip(path.iter().cloned())
-        .collect();
-    keyed.sort_by(|(a, _), (b, _)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-    for (slot, (_, test)) in path.iter_mut().zip(keyed) {
-        *slot = test;
+    let parts: Vec<Option<(String, f64)>> = path.iter().map(part).collect();
+    let mut start = 0;
+    while start < path.len() {
+        let Some((tuple, _)) = &parts[start] else {
+            start += 1;
+            continue;
+        };
+        let end = (start..path.len())
+            .find(|&k| parts[k].as_ref().is_none_or(|(t, _)| t != tuple))
+            .unwrap_or(path.len());
+        let mut keyed: Vec<(f64, Expr)> = (start..end)
+            .map(|k| (parts[k].as_ref().map_or(0.0, |(_, n)| *n), path[k].clone()))
+            .collect();
+        keyed.sort_by(|(a, _), (b, _)| a.total_cmp(b));
+        for (slot, (_, test)) in path[start..end].iter_mut().zip(keyed) {
+            *slot = test;
+        }
+        start = end;
     }
 }
 
@@ -320,15 +327,26 @@ fn within_place(outer: &Expr, inner: &Expr) -> bool {
     inner.written_alike(outer) || holders(inner).any(|h| h.written_alike(outer))
 }
 
-/// The tuple MIR made and which of its parts `test` tests, `_5` and `1` of
-/// `_5[1] === 3`.
+/// The tuple MIR made and which of its parts `test` reads, `_5` and `1` of
+/// `_5[1] === 3`, `_5[1] != null`, `_5[1][0] === 3` and `_5[1].length ===
+/// 2`: of a test whose every read is of that one part, `None` of one that
+/// calls, or reads anything else.
 pub(super) fn part(test: &Expr) -> Option<(String, f64)> {
-    let (subject, _) = atom(test)?;
-    let ExprKind::Index(of, at) = &subject.kind else {
-        return None;
+    let of = |place: &Expr| {
+        let root = std::iter::once(place).chain(holders(place)).find(|p| match &p.kind {
+            ExprKind::Index(of, _) => matches!(of.kind, ExprKind::Var(_)),
+            _ => false,
+        })?;
+        let ExprKind::Index(of, at) = &root.kind else {
+            return None;
+        };
+        let (ExprKind::Var(tuple), ExprKind::Num(n)) = (&of.kind, &at.kind) else {
+            return None;
+        };
+        Some((tuple.clone(), *n))
     };
-    let (ExprKind::Var(tuple), ExprKind::Num(n)) = (&of.kind, &at.kind) else {
-        return None;
-    };
-    Some((tuple.clone(), *n))
+    let places = places(test)?;
+    let (first, rest) = places.split_first()?;
+    let part = of(first)?;
+    rest.iter().all(|p| of(p).as_ref() == Some(&part)).then_some(part)
 }

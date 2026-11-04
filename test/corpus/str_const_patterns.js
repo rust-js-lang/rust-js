@@ -43,13 +43,10 @@ function inner(status, other) {
 }
 
 function mixed(status) {
-  if (status == null) {
-    return 2;
-  }
   if (status === INITIALIZED) {
     return 1;
   }
-  if (status === "rejected") {
+  if (status === "rejected" || status == null) {
     return 2;
   }
   return 0;

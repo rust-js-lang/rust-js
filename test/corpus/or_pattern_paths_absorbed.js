@@ -48,19 +48,16 @@ export function triple(a, b, c) {
 }
 
 export function optional(x, n) {
-  if (x == null) {
-    return 2;
-  }
-  if (n === 0 && x === 0) {
+  if (x === 0 && n === 0) {
     return 1;
   }
-  if (n !== 1) {
-    if ((x === 2 && n === 2) || (x === 3 && n === 3)) {
-      return 3;
-    }
-    return 4;
+  if (x == null || n === 1) {
+    return 2;
   }
-  return 2;
+  if ((x === 2 && n === 2) || (x === 3 && n === 3)) {
+    return 3;
+  }
+  return 4;
 }
 
 export function shaped(shape, k) {
@@ -74,8 +71,8 @@ export function shaped(shape, k) {
   }
   if (k !== 1) {
     if (
-      (shape.TAG === "Circle" && k === 2 && shape._0 === 2) ||
-      (shape.TAG === "Rect" && shape._0 === 2 && shape._1 === 2)
+      (shape.TAG === "Rect" && shape._0 === 2 && shape._1 === 2) ||
+      (shape.TAG === "Circle" && shape._0 === 2 && k === 2)
     ) {
       return 3;
     }

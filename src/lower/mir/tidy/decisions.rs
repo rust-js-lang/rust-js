@@ -141,11 +141,6 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>, told: &Told) {
 /// `switch` takes it (`tested`, in no `match` of constants `told`), whose
 /// cases need no label.
 fn keeps_label(arms: &[Arm], bodies: &[Vec<Stmt>], otherwise: usize, tested: &[(&Expr, Expr)], told: &Told) -> bool {
-    let switched = (tested.iter()).any(|(written, _)| {
-        let mut parts = Vec::new();
-        leaf_tests(written, js::Span::NONE, &mut parts);
-        (parts.iter()).any(|(_, at)| !at.is_none() && told.switches.iter().any(|s| within(*at, s.span)))
-    });
     let default = &bodies[otherwise];
     let leaves = |i: usize| {
         arms[i].out && !arms[i].leaves_loop
@@ -154,13 +149,23 @@ fn keeps_label(arms: &[Arm], bodies: &[Vec<Stmt>], otherwise: usize, tested: &[(
                 Some(StmtKind::Return(_) | StmtKind::Throw(_))
             )
     };
-    !switched
+    !switched(tested, told)
         && arms[otherwise].tests.len() > 1
         && arms[otherwise].out
         && bodies.iter().all(|body| !body.is_empty())
         && !(default.len() == 1 && defaults::given_without_block(&default[0]))
         && (0..arms.len()).all(leaves)
         && (0..arms.len()).any(|i| i != otherwise && arms[i].out)
+}
+
+/// Whether a `switch` takes the tree that tests `tested`: a test of it is
+/// in a `match` of constants `told` (`Written::switches`).
+fn switched(tested: &[(&Expr, Expr)], told: &Told) -> bool {
+    (tested.iter()).any(|(written, _)| {
+        let mut parts = Vec::new();
+        leaf_tests(written, js::Span::NONE, &mut parts);
+        (parts.iter()).any(|(_, at)| !at.is_none() && told.switches.iter().any(|s| within(*at, s.span)))
+    })
 }
 
 /// A leaf of the tree: the tests that hold on the way to it, in the order
@@ -236,9 +241,12 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
     let patterns = !own && calls.is_empty();
     // A path no value takes, `c < "0" && c >= "A"`, goes.
     let valued = |e: &Expr| valued(e, told.switches);
-    // Only of a tree no `switch` takes, a `break` of the loop around it in
-    // an arm or what follows, which a case would take for the `switch`'s
-    // (#412): of the others, the `switch` of the value reads as written.
+    // Only of a tree no `switch` takes: of a `match` of constants
+    // (`switched`), one an arm of which, or what follows, breaks the loop
+    // around it, which a case would take for the `switch`'s (#412), the
+    // others' `switch` of the value reading as written; and of a `match` of
+    // no constants, one of a tuple, `(Some(0), 0)`'s `x === 0 && n === 0`
+    // (#674).
     let mut breaking = false;
     let arms_and_after = (leaves.iter()).flat_map(|leaf| leaf.body.iter().copied());
     for s in arms_and_after.chain(after) {
@@ -249,7 +257,8 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
             });
         });
     }
-    let valued = |e: &Expr| breaking && valued(e);
+    let no_switch = breaking || !switched(&tested, told);
+    let valued = |e: &Expr| no_switch && valued(e);
     let leaves: Vec<(Vec<Expr>, Leaf)> = (leaves.into_iter())
         .filter_map(|leaf| Some((present_said(simplified(&leaf.tests, patterns)?, &valued), leaf)))
         .collect();
@@ -1012,13 +1021,15 @@ fn valued(e: &Expr, switches: &[Switch]) -> bool {
 }
 
 /// Whether `e` holds only where `subject` is there: `subject === v` of a
-/// value `v`, or an `||` of such tests.
+/// value `v`, an `&&` one of whose tests does, or an `||` each of whose
+/// alternatives does, `(x === 2 && n === 2) || (x === 3 && n === 3)` (#674).
 fn says(subject: &Expr, e: &Expr, valued: &dyn Fn(&Expr) -> bool) -> bool {
     match &e.kind {
         ExprKind::Binary(Op::Eq, a, b) => {
             (same_subject(a, subject) && valued(b)) || (same_subject(b, subject) && valued(a))
         }
         ExprKind::Binary(Op::Or, a, b) => says(subject, a, valued) && says(subject, b, valued),
+        ExprKind::Binary(Op::And, a, b) => says(subject, a, valued) || says(subject, b, valued),
         _ => false,
     }
 }
