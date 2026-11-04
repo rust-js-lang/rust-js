@@ -334,7 +334,7 @@ fn erasures(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<(u32, DefId)> {
 /// A parameter's name, of its type's: `event` of a `MouseEvent`, `element`
 /// of an `HTMLButtonElement`, its last word's, named apart where JS keeps
 /// it, `function$` of a `ResolveFunction`; `value` of any other.
-fn param_name(ty: &Value) -> String {
+pub(super) fn param_name(ty: &Value) -> String {
     let Some(name) = ty["name"].as_str().filter(|_| ty["kind"] == "reference") else {
         return "value".to_string();
     };
@@ -1128,6 +1128,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
             _ => ty,
         };
         let written = self.written_type(def_id);
+        // Named as the functions it may be name them (#630).
+        let outer = self.fill_value_names(def_id, ty);
         let ty = match variable {
             // A nullable one's `None` is `null`, by the aliases its type is written of (ADR 0586, amended).
             Some(_)
@@ -1144,6 +1146,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
             }
             _ => self.as_written(written, |out| out.ts(ty)),
         };
+        self.function_names.truncate(outer);
         // A symbol a field is named by is a `unique symbol`, what TypeScript
         // takes a computed key of (ADR 1051).
         let ty = match super::bindings::names_a_field(self.tcx, def_id) {
@@ -1166,64 +1169,6 @@ impl<'tcx> Declarations<'_, 'tcx> {
     /// An item's type as the Rust writes it, a `const`'s or an alias's.
     fn written_type(&self, def_id: DefId) -> Option<&'tcx hir::Ty<'tcx>> {
         self.tcx.hir_node_by_def_id(def_id.as_local()?).ty()
-    }
-
-    /// `(event: MouseEvent<Element>) => void`: a function type, each
-    /// parameter named as the Rust names it, `named` (#543), else by its
-    /// type, as a person names one.
-    /// Its last parameter of rest arguments as a value, `&dyn js::Rest<T>`,
-    /// a rest parameter of what each reads as, `...args: unknown[]` (ADR
-    /// 0851). Its trailing `Option`s are optional, `sub?: Node | null`, as
-    /// a function's are (`optional_from`), where a caller of what may
-    /// leave them out does (ADR 0313, #544): not a JS class's constructor.
-    fn function_type(
-        &mut self,
-        inputs: &[Ty<'tcx>],
-        output: Ty<'tcx>,
-        named: &[Option<String>],
-        may_leave_out: bool,
-    ) -> Value {
-        let count = inputs.len();
-        let rest = (inputs.last())
-            .and_then(|&last| super::bindings::rest_items(self.tcx, last))
-            .map(|items| (count - 1, items));
-        let optional_from = match may_leave_out {
-            true => functions::optional_from(self.tcx, inputs, rest.map(|(at, _)| at), |_| false),
-            false => count,
-        };
-        let mut names: Vec<String> = named.iter().flatten().cloned().collect();
-        let params: Vec<Value> = (inputs.iter().enumerate())
-            .map(|(i, &input)| {
-                let given = named.get(i).cloned().flatten();
-                if let Some((at, items)) = rest
-                    && at == i
-                {
-                    let name = given.unwrap_or_else(|| "args".to_string());
-                    return json!({ "name": name, "optional": false, "rest": true, "type": self.ts(items) });
-                }
-                let ty = self.ts(input);
-                let name = given.unwrap_or_else(|| {
-                    let base = param_name(&ty);
-                    let taken = names
-                        .iter()
-                        .filter(|n| n.trim_end_matches(char::is_numeric) == base)
-                        .count();
-                    let name = if taken == 0 {
-                        base
-                    } else {
-                        format!("{base}{}", taken + 1)
-                    };
-                    names.push(name.clone());
-                    name
-                });
-                json!({ "name": name, "optional": i >= optional_from, "rest": false, "type": ty })
-            })
-            .collect();
-        let returns = match output.is_unit() {
-            true => keyword("void"),
-            false => self.ts(output),
-        };
-        json!({ "kind": "function", "typeParameters": [], "params": params, "returns": returns })
     }
 
     /// `ty` as a TypeScript type.

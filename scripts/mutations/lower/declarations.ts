@@ -492,15 +492,6 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations.test.ts", "-t", "by what it takes"],
   },
   {
-    name: "fn-param-names-collide",
-    breaks:
-      "two parameters of one type are both `value`, which TypeScript refuses as a duplicate",
-    file: "src/lower/declarations.rs",
-    find: "                let name = if taken == 0 {\n",
-    replace: "                let name = if true || taken == 0 {\n",
-    tests: ["test/declarations.test.ts", "-t", "by what it takes"],
-  },
-  {
     name: "impl-trait-param-named",
     breaks:
       "an `impl Trait` parameter is declared by rustc's name for it, `impl js::Defined + 'a`, which isn't TypeScript",
@@ -893,8 +884,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable thread-local of an `Option<CallDestroy>`, and a variable's `Cell<Option<ConsoleTask>>`, are declared by what the alias is, `((fiber: Fiber, value: number) => number) | null`, not `CallDestroy | null` (ADR 0586, amended)",
     file: "src/lower/declarations.rs",
-    find: "        let written = self.written_type(def_id);\n        let ty = match variable {\n",
-    replace: "        let written = None;\n        let ty = match variable {\n",
+    find: "        let written = self.written_type(def_id);\n        // Named as the functions it may be name them (#630).\n",
+    replace: "        let written = None;\n        // Named as the functions it may be name them (#630).\n",
     tests: [
       "test/lowering-module-variables.test.ts",
       "-t",
@@ -1149,14 +1140,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-field-cells.test.ts", "-t", "an enum variant's RefCell field"],
   },
   {
-    name: "function-type-trailing-option-required",
-    breaks: "a function type's trailing `Option`, `unlink: (link, sub?)`, is declared required, though a caller leaves it out (#544)",
-    file: "src/lower/declarations.rs",
-    find: "            true => functions::optional_from(self.tcx, inputs, rest.map(|(at, _)| at), |_| false),\n",
-    replace: "            true => count,\n",
-    tests: ["test/declarations-function-types.test.ts"],
-  },
-  {
     name: "class-constructor-optional",
     breaks: "a JS class's constructor's trailing `Option` is declared optional, though rust-js gives it `undefined` and the class is JS's (ADR 0330)",
     file: "src/lower/declarations.rs",
@@ -1202,14 +1185,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/declarations.rs",
     find: "                            self.fill_names(field.did, ty);\n",
     replace: "",
-    tests: ["test/declarations-function-types.test.ts"],
-  },
-  {
-    name: "filled-name-counted-apart",
-    breaks: "a parameter named by its type beside one its literals name alike, `(dep, node, value)`, is numbered as if none were named, the same; a given name is never pushed twice",
-    file: "src/lower/declarations.rs",
-    find: "                    names.push(name.clone());\n                    name\n",
-    replace: "                    name\n",
     tests: ["test/declarations-function-types.test.ts"],
   },
   {
@@ -1307,5 +1282,13 @@ export const mutations: Mutation[] = [
     find: "            ty::Dynamic(..) => self.dyn_value(ty),\n",
     replace: "            ty::Dynamic(..) => json!({ \"kind\": \"function\", \"typeParameters\": [], \"params\": [], \"returns\": keyword(\"any\") }),\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "box is declared"],
+  },
+  {
+    name: "value-names-unfilled",
+    breaks: "a static's `dyn Fn` is named by its parameters' types, `(value: number, value2: string, ..)`, not as the function it is names them (#630)",
+    file: "src/lower/declarations.rs",
+    find: "        let outer = self.fill_value_names(def_id, ty);\n",
+    replace: "        let outer = self.function_names.len();\n",
+    tests: ["test/declarations-function-types.test.ts", "-t", "the functions its value may be"],
   },
 ];

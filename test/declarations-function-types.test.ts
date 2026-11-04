@@ -93,8 +93,9 @@ test("a function type's parameters are named as the Rust names them, and its tra
   // literals fill it, which here name it apart, by its type.
   expect(declarations).toContain("named: (count: number, sum: number) => number;");
   expect(declarations).toContain("unnamed: (value: number) => number;");
-  // Filled with what names none, a parameter of `system`, in one literal.
-  expect(declarations).toContain("given: (value: number) => number;");
+  // Filled with what names none, a parameter of `system`, in one literal,
+  // which says nothing of them, and `doubled(n)` in the other (#630).
+  expect(declarations).toContain("given: (n: number) => number;");
   // A function, `describe(item)`, in one literal; `None` in the other names
   // none, so it's named by its type.
   expect(declarations).toContain("shown?: ((node: Node) => string) | undefined;");
@@ -198,4 +199,44 @@ test("declarations name a function type's parameter apart from a word JS keeps",
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("function$: ResolveFunction");
   expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).not.toContain("function:");
+});
+
+// A static's or a constant's `dyn Fn` or fn pointer is named as the
+// functions its value may be name them, a thread-local's by its `init`, of
+// each branch that gives one, a host's `js::cast` saying nothing; and an
+// alias written in it, inside a private alias's `dyn Fn(PriorityLevel, ..)`
+// too, by its name: SchedulerNative's `unstable_scheduleCallback` (#630).
+test("a static's function type is named as the functions its value may be", () => {
+  const dir = fixture("declarations-value-function-names");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(import.meta.dir, "fixtures/value_function_names.rs"), "utf8"));
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain('import type { PriorityLevel } from "./priorities.js";');
+  expect(declarations).toContain(
+    "export const SCHEDULE_CALLBACK: (priorityLevel: PriorityLevel, label: string, delay?: number | null | undefined) => Task;",
+  );
+  expect(declarations).toContain("export const getCurrentPriorityLevel: () => PriorityLevel;");
+  expect(declarations).toContain("export const SCALE: (value: number, factor: number) => number;");
+  writeFileSync(
+    join(dir, "use.ts"),
+    `import { getCurrentPriorityLevel, SCALE, SCHEDULE_CALLBACK } from "./lib.js";
+import type { PriorityLevel } from "./priorities.js";
+
+const level: PriorityLevel = getCurrentPriorityLevel();
+const task = SCHEDULE_CALLBACK(level, "work");
+console.log(JSON.stringify([task.id, task.priorityLevel, SCHEDULE_CALLBACK(1, "a", 2).id, SCALE(2, 3)]));
+`,
+  );
+  writeFileSync(
+    join(dir, "tsconfig.json"),
+    JSON.stringify({
+      compilerOptions: { module: "esnext", moduleResolution: "bundler", strict: true, noEmit: true, skipLibCheck: false, allowJs: true, typeRoots: [join(root, "node_modules/@types")] },
+      files: ["use.ts"],
+    }),
+  );
+  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
+  expect(checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"))).toEqual([]);
+  // No host installs one here: this crate's, as Rust's.
+  expect(JSON.parse(run([process.execPath, join(dir, "use.ts")]))).toEqual([4, 3, 3, 6]);
 });

@@ -6,7 +6,7 @@
 
 use rustc_hir as hir;
 use rustc_hir::def::{DefKind, Res};
-use rustc_middle::ty::{self, Ty, TyCtxt};
+use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::Symbol;
 use rustc_span::def_id::DefId;
 use serde_json::{Value, json};
@@ -49,17 +49,34 @@ impl<'tcx> Declarations<'_, 'tcx> {
     pub(super) fn aliases_in(&mut self, written: &hir::Ty<'tcx>, named: &mut Vec<(Ty<'tcx>, Value)>) {
         match &written.kind {
             hir::TyKind::Path(hir::QPath::Resolved(None, path)) => {
-                if let Res::Def(DefKind::TyAlias, did) = path.res
-                    && let Some(value) = self.alias_named(written, path, did)
-                {
-                    let ty = rustc_hir_analysis::lower_ty(self.tcx, written);
-                    named.push((self.tcx.erase_and_anonymize_regions(ty), value));
-                    return;
-                }
-                for arg in path.segments.iter().filter_map(|s| s.args).flat_map(|args| args.args) {
-                    if let hir::GenericArg::Type(ty) = arg {
-                        self.aliases_in(ty.as_unambig_ty(), named);
+                if let Res::Def(DefKind::TyAlias, did) = path.res {
+                    if let Some(value) = self.alias_named(written, path, did) {
+                        let ty = rustc_hir_analysis::lower_ty(self.tcx, written);
+                        if !ty.has_escaping_bound_vars() {
+                            named.push((self.tcx.erase_and_anonymize_regions(ty), value));
+                        }
+                        return;
                     }
+                    // One not named, a private alias of the crate's, is what
+                    // it's written as, its own aliases by their names, a
+                    // `type ScheduleCallback = dyn Fn(PriorityLevel, ..)`'s
+                    // `PriorityLevel` (#630). Not one of type parameters of
+                    // its own, whose body is written of them.
+                    if let Some(local) = did.as_local()
+                        && !(self.tcx.generics_of(did).own_params.iter())
+                            .any(|param| !matches!(param.kind, ty::GenericParamDefKind::Lifetime))
+                        && let Some(body) = self.tcx.hir_node_by_def_id(local).ty()
+                    {
+                        self.aliases_in(body, named);
+                    }
+                }
+                self.aliases_in_args(path, named);
+            }
+            // A `dyn Fn(PriorityLevel) -> Task`'s parameters and result as
+            // written (#630); any other trait's arguments.
+            hir::TyKind::TraitObject(bounds, _) => {
+                for bound in *bounds {
+                    self.aliases_in_args(bound.trait_ref.path, named);
                 }
             }
             hir::TyKind::Ref(_, inner) | hir::TyKind::Ptr(inner) => self.aliases_in(inner.ty, named),
@@ -70,6 +87,21 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 }
             }
             _ => {}
+        }
+    }
+
+    /// Each alias written in `path`'s arguments, and in its constraints,
+    /// `Fn(A) -> R`'s `R`.
+    fn aliases_in_args(&mut self, path: &hir::Path<'tcx>, named: &mut Vec<(Ty<'tcx>, Value)>) {
+        for args in path.segments.iter().filter_map(|s| s.args) {
+            for arg in args.args {
+                if let hir::GenericArg::Type(ty) = arg {
+                    self.aliases_in(ty.as_unambig_ty(), named);
+                }
+            }
+            for ty in args.constraints.iter().filter_map(|constraint| constraint.ty()) {
+                self.aliases_in(ty, named);
+            }
         }
     }
 

@@ -89,6 +89,41 @@ fn literal_fillers<'tcx>(
     }
 }
 
+/// The functions and closures a static's or a constant's value, `item`'s,
+/// may be, by what each branch of it gives, `None` of one that's another
+/// value: its initializer's, a thread-local's `init` (ADR 0037), through
+/// its blocks, its `if`s' and `match`es' branches, and a `&` of one.
+fn given_values(tcx: TyCtxt<'_>, item: DefId) -> Vec<Option<DefId>> {
+    let Some(local) = item.as_local() else {
+        return Vec::new();
+    };
+    // A thread-local's value is its `init` function's.
+    let init = (super::super::analysis::is_thread_local(tcx, local))
+        .then(|| {
+            (tcx.hir_crate_items(()).definitions()).find(|&d| {
+                tcx.def_kind(d) == rustc_hir::def::DefKind::Fn && super::super::analysis::init_of(tcx, d) == Some(local)
+            })
+        })
+        .flatten();
+    let owner = init.unwrap_or(local);
+    let Some(body) = tcx.hir_maybe_body_owned_by(owner) else {
+        return Vec::new();
+    };
+    let typeck = tcx.typeck(owner);
+    let mut given = Vec::new();
+    let mut values = vec![body.value];
+    while let Some(value) = values.pop() {
+        match value.kind {
+            hir::ExprKind::Block(block, _) => values.extend(block.expr),
+            hir::ExprKind::If(_, then, otherwise) => values.extend(std::iter::once(then).chain(otherwise)),
+            hir::ExprKind::Match(_, arms, _) => values.extend(arms.iter().map(|arm| arm.body)),
+            hir::ExprKind::AddrOf(_, _, inner) | hir::ExprKind::DropTemps(inner) => values.push(inner),
+            _ => given.push(filler(typeck.expr_ty(value))),
+        }
+    }
+    given
+}
+
 impl<'tcx> Declarations<'_, 'tcx> {
     /// A parameter's name, `ident`, `function`'s `i`th of type `ty`, as its
     /// JS spells it, a word JS keeps given apart, `new$`; its JS name's,
@@ -124,6 +159,64 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 Some(self.parameter_js_name(function, ident, inputs.map(|inputs| inputs[i])))
             })
             .collect()
+    }
+
+    /// `(event: MouseEvent<Element>) => void`: a function type, each
+    /// parameter named as the Rust names it, `named` (#543), else by its
+    /// type, as a person names one.
+    /// Its last parameter of rest arguments as a value, `&dyn js::Rest<T>`,
+    /// a rest parameter of what each reads as, `...args: unknown[]` (ADR
+    /// 0851). Its trailing `Option`s are optional, `sub?: Node | null`, as
+    /// a function's are (`optional_from`), where a caller of what may
+    /// leave them out does (ADR 0313, #544): not a JS class's constructor.
+    pub(super) fn function_type(
+        &mut self,
+        inputs: &[Ty<'tcx>],
+        output: Ty<'tcx>,
+        named: &[Option<String>],
+        may_leave_out: bool,
+    ) -> Value {
+        let count = inputs.len();
+        let rest = (inputs.last())
+            .and_then(|&last| super::super::bindings::rest_items(self.tcx, last))
+            .map(|items| (count - 1, items));
+        let optional_from = match may_leave_out {
+            true => optional_from(self.tcx, inputs, rest.map(|(at, _)| at), |_| false),
+            false => count,
+        };
+        let mut names: Vec<String> = named.iter().flatten().cloned().collect();
+        let params: Vec<Value> = (inputs.iter().enumerate())
+            .map(|(i, &input)| {
+                let given = named.get(i).cloned().flatten();
+                if let Some((at, items)) = rest
+                    && at == i
+                {
+                    let name = given.unwrap_or_else(|| "args".to_string());
+                    return json!({ "name": name, "optional": false, "rest": true, "type": self.ts(items) });
+                }
+                let ty = self.ts(input);
+                let name = given.unwrap_or_else(|| {
+                    let base = super::param_name(&ty);
+                    let taken = names
+                        .iter()
+                        .filter(|n| n.trim_end_matches(char::is_numeric) == base)
+                        .count();
+                    let name = if taken == 0 {
+                        base
+                    } else {
+                        format!("{base}{}", taken + 1)
+                    };
+                    names.push(name.clone());
+                    name
+                });
+                json!({ "name": name, "optional": i >= optional_from, "rest": false, "type": ty })
+            })
+            .collect();
+        let returns = match output.is_unit() {
+            true => keyword("void"),
+            false => self.ts(output),
+        };
+        json!({ "kind": "function", "typeParameters": [], "params": params, "returns": returns })
     }
 
     /// A function type's parameters' names, of those in the type being
@@ -166,27 +259,52 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 literal_fillers(tcx, typeck, expr, &mut fillers);
             });
             let filled = (fillers.into_iter())
-                .map(|(field, given)| {
-                    let mut names: Option<Vec<Option<String>>> = None;
-                    for given in given {
-                        let own = given.map(|given| self.parameter_names(given)).unwrap_or_default();
-                        names = Some(match names {
-                            None => own,
-                            Some(names) => (names.into_iter().enumerate())
-                                .map(|(i, name)| {
-                                    name.filter(|name| own.get(i).cloned().flatten().as_ref() == Some(name))
-                                })
-                                .collect(),
-                        });
-                    }
-                    (field, names.unwrap_or_default())
-                })
+                .map(|(field, given)| (field, self.agreed_names(&given)))
                 .collect();
             self.filled = Some(filled);
         }
         (self.filled.as_ref())
             .and_then(|filled| filled.get(&field).cloned())
             .unwrap_or_default()
+    }
+
+    /// The names the functions and closures `given` name their parameters
+    /// alike, each `None` where two name it otherwise: what's given that's
+    /// no closure or function, a variable or a `js::cast`, says nothing of
+    /// them (#543, #630).
+    fn agreed_names(&self, given: &[Option<DefId>]) -> Vec<Option<String>> {
+        let mut names: Option<Vec<Option<String>>> = None;
+        for &given in given.iter().flatten() {
+            let own = self.parameter_names(given);
+            names = Some(match names {
+                None => own,
+                Some(names) => (names.into_iter().enumerate())
+                    .map(|(i, name)| name.filter(|name| own.get(i).cloned().flatten().as_ref() == Some(name)))
+                    .collect(),
+            });
+        }
+        names.unwrap_or_default()
+    }
+
+    /// The names of the parameters of the function type a static's or a
+    /// constant's value, `item`'s of type `ty`, holds, as the functions it
+    /// may be name them (`given_names`), while its type is declared, until
+    /// `function_names` is truncated: SchedulerNative's `pub static
+    /// UNSTABLE_SCHEDULE_CALLBACK: &'static ScheduleCallback = if .. { ..
+    /// } else { &scheduler::unstable_schedule_callback }`'s
+    /// `(priorityLevel, callback, options)` (#630).
+    /// The names pushed of before, which truncating to gives back.
+    pub(super) fn fill_value_names(&mut self, item: DefId, ty: Ty<'tcx>) -> usize {
+        let outer = self.function_names.len();
+        let Some(function) = first_function_type(self.tcx, ty) else {
+            return outer;
+        };
+        let names = self.agreed_names(&given_values(self.tcx, item));
+        if names.iter().any(Option::is_some) {
+            let function = self.tcx.erase_and_anonymize_regions(function);
+            self.function_names.push((function, names));
+        }
+        outer
     }
 
     /// The names a fn pointer written in `written` gives its parameters,

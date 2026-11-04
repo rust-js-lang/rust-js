@@ -36,8 +36,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an alias written as another type's argument, `Context<Toc>`, is what it stands for, `Context<TocItem[]>`",
     file: "src/lower/declarations/aliases.rs",
-    find: "                        self.aliases_in(ty.as_unambig_ty(), named);",
-    replace: "                        let _ = ty;",
+    find: "                    self.aliases_in(ty.as_unambig_ty(), named);",
+    replace: "                    let _ = ty;",
     tests: [
       "test/declarations.test.ts",
       "-t",
@@ -131,5 +131,29 @@ export const mutations: Mutation[] = [
     find: "            self.written_function_names(written, &mut function_names);\n",
     replace: "",
     tests: ["test/declarations-function-types.test.ts"],
+  },
+  {
+    name: "private-alias-body-unread",
+    breaks: "an alias written in a private alias, `type ScheduleCallback = dyn Fn(PriorityLevel, ..)`'s `PriorityLevel`, is declared expanded, `number` (#630)",
+    file: "src/lower/declarations/aliases.rs",
+    find: "                        self.aliases_in(body, named);\n",
+    replace: "                        let _ = body;\n",
+    tests: ["test/declarations-function-types.test.ts", "-t", "the functions its value may be"],
+  },
+  {
+    name: "dyn-fn-aliases-unread",
+    breaks: "an alias written in a `dyn Fn(..) -> PriorityLevel` is declared expanded, `() => number` (#630)",
+    file: "src/lower/declarations/aliases.rs",
+    find: "                    self.aliases_in_args(bound.trait_ref.path, named);\n",
+    replace: "                    let _ = bound;\n",
+    tests: ["test/declarations-function-types.test.ts", "-t", "the functions its value may be"],
+  },
+  {
+    name: "constraint-aliases-unread",
+    breaks: "an alias written as a `dyn Fn`'s result, `-> PriorityLevel`, is declared expanded, `() => number` (#630)",
+    file: "src/lower/declarations/aliases.rs",
+    find: "            for ty in args.constraints.iter().filter_map(|constraint| constraint.ty()) {\n",
+    replace: "            for ty in args.constraints.iter().filter_map(|constraint| constraint.ty()).filter(|_| false) {\n",
+    tests: ["test/declarations-function-types.test.ts", "-t", "the functions its value may be"],
   },
 ];

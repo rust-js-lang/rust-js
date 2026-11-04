@@ -1,7 +1,10 @@
 # 1075. A function type's parameters are named as the Rust names them, and its trailing `Option`s may be left out
 
 Status: Accepted (#543, #544, 2026-11-03; the user's decision, option A, for
-a `dyn Fn` field's names). Extends [0196](0196-typescript-declarations.md),
+a `dyn Fn` field's names); amended (#630): a static's or a constant's
+function type is named as the functions its value may be, a filler that
+names nothing says nothing, and an alias in a `dyn Fn` or a private alias
+is named. Extends [0196](0196-typescript-declarations.md),
 whose function type named each parameter after its type, and
 [0443](0443-a-value-a-caller-may-leave-out-is-an-option.md), whose
 optional trailing `Option`s were a function's alone.
@@ -155,3 +158,68 @@ its `Option` left out, and a JS class's constructor of a fn pointer.
 Mutations in `lower/declarations/functions.ts`, `lower/declarations.ts`,
 `lower/declarations/aliases.ts` and `lower/parameter_names.ts`, where
 `lower.rs`' parameter naming moved with its mutations.
+
+## Amended (#630): a static's value, what names nothing, and aliases inside
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): None, as above.
+
+React's SchedulerNative declares what it exports as thread-locals of a
+private alias of a `dyn Fn`:
+
+```rust
+type ScheduleCallback = dyn Fn(PriorityLevel, Callback, Option<&Options>) -> Rc<Task>;
+
+thread_local! {
+    pub static UNSTABLE_SCHEDULE_CALLBACK: &'static ScheduleCallback = if js::is_defined(native_runtime_scheduler) {
+        unsafe { js::cast(..) }
+    } else {
+        &scheduler::unstable_schedule_callback
+    };
+}
+```
+
+Its `.d.ts` was `unstable_scheduleCallback: (value: number, callback:
+Callback, value2?: ..) => Task`, where upstream's is `(priorityLevel:
+PriorityLevel, callback: Callback, options?: ..) => Task`, and
+`unstable_getCurrentPriorityLevel: () => number`, of `dyn Fn() ->
+PriorityLevel`.
+
+- **A static's or a constant's function type is named as the functions its
+  value may be name them** (`fill_value_names`, `given_values`), as a
+  field's is by its literals: its initializer's value, a thread-local's
+  `init` function's (`analysis::init_of`, ADR 0037), through its blocks,
+  its `if`s' and `match`es' branches and a `&` of one, each the closure or
+  the function it is before it's coerced. `pub static SCALE: fn(f64, f64)
+  -> f64 = scaled;` is `(value, factor)` of `scaled(value, factor)`.
+- **What's given that names nothing says nothing of the names**, a field's
+  literal's and a static's branch's alike (`agreed_names`, the one rule of
+  both): a host's `js::cast`, a parameter's `Rc<dyn Fn>`, a `None`.
+  Where the functions given name a parameter alike, that's its name; where
+  two name it otherwise, or none is given, it's named after its type, as
+  before. This changes the rule above, "or fills the field with what names
+  nothing": #543's `given` field, filled with `system`'s parameter in one
+  literal and `doubled(n)` in the other, is `(n: number) => number`, where
+  it was `(value: number)`. A parameter's or a cast's function has names of
+  its own no one wrote here, so it can't disagree with the ones written;
+  leaving every name to the types for it named less than the program does.
+- **An alias written inside a `dyn Fn`, its parameters and its result, and
+  inside a private alias of the crate's that isn't declared, is named**
+  (`aliases_in`, `aliases_in_args`), as one in a fn pointer or a generic
+  argument is: `() => PriorityLevel`, `(priorityLevel: PriorityLevel, ..)`.
+  A private alias is read as it's written where it has no type parameters
+  of its own; one that has is expanded, as before, since its body is
+  written of them.
+
+Rejected: **naming a cast by what it's of**, the binding method a
+`js::method` makes of, `unstable_schedule_callback(&self, priority_level,
+callback)`: a cast says the value is another type, so what it's made of
+needn't be that function, and here takes one argument fewer.
+
+Held by `test/declarations-function-types.test.ts`'s "a static's function
+type is named as the functions its value may be" (its program
+`test/fixtures/value_function_names.rs`, SchedulerNative's form: a host
+binding's `js::cast` or the crate's function, a private alias of a `dyn
+Fn` of another module's `PriorityLevel`, a `dyn Fn() -> PriorityLevel`, a
+plain static's fn pointer), `tsc` checking a caller and its run giving
+what the crate's functions give, and its first test's `given`. Mutations
+in `lower/declarations/aliases.ts` and `lower/declarations/functions.ts`.
