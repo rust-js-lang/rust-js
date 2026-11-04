@@ -57,7 +57,7 @@ function, `unwind` found where that step takes it. Such a fold isn't the
 crate's own: the adapter holds its function too, which the crate's `fold`
 that takes the source doesn't drop.
 
-`test/architecture.test.ts` ("an iterator's steps are given by $forward
+`test/architecture-iterators.test.ts` ("an iterator's steps are given by $forward
 alone") fails on any assignment of a step outside `forward.js`.
 
 ## Why
@@ -110,7 +110,7 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): R. Each changed results, so Ru
   what has a destructor, is `$collectDropping`. A `last()` of one is `$last`,
   std's default of its `fold`, which closes it as it unwinds.
   `chain_may_throw`, `closes_a_source` and `callbacks_in` are gone.
-  `test/architecture.test.ts` ("whether an iterator's steps may panic is
+  `test/architecture-iterators.test.ts` ("whether an iterator's steps may panic is
   steps_may_panic's alone") keeps both gates from being given the JS.
 - **`rfold(self)` closes what it takes**, as `fold` does. `back_step` asks
   `consumer_closes`, so a `Vec`'s rest and the crate's double-ended iterator

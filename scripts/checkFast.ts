@@ -100,7 +100,7 @@ const everyFile: Job = [
   {},
 ];
 const suites: Job[] = [
-  ["architecture, mutation lists", ["bun", "test", "test/architecture.test.ts", "test/mutations.test.ts"], {}],
+  ["architecture, mutation lists", ["bun", "test", "test/architecture.test.ts", "test/architecture-iterators.test.ts", "test/mutations.test.ts"], {}],
   // What checks the JS bodies are lowered to.
   // Each a file of a concept's (ADR 0572), `test/lowering` all of lowering's.
   ...(
