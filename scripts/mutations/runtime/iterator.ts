@@ -148,6 +148,14 @@ export const mutations: Mutation[] = [
     tests: ["test/iterator-forms.test.ts", "-t", "^range_inclusive_exhausted with"],
   },
   {
+    name: "dictionary-fold-unwind-lost",
+    breaks: "a fold through the crate's own `fold`, `$iterator`'s, gives it no `unwind`: a `map` of it whose `next` panics drops none of what it folded (#615)",
+    file: "src/runtime/iterator.js",
+    find: "    it.fold = (init, f, unwind) => fold(iterator, init, f, unwind);\n",
+    replace: "    it.fold = (init, f) => fold(iterator, init, f);\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_unwind_given_on.rs$"],
+  },
+  {
     name: "dictionary-rfold-unwind-lost",
     breaks: "an `rfold` through a dictionary's, std's compiled `Map::rfold`, gives it no `unwind`: a stage's panic leaves the accumulator undropped (#423)",
     file: "src/runtime/iterator.js",

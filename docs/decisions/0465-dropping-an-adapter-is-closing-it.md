@@ -869,3 +869,38 @@ crate builds it (1,593 tests) and with std's iterator structs
 Std's compiled frames drop their own accumulators as they unwind. Both
 mutations are removed as equivalent. #615 (P3) asks for a program whose
 drops the forwarded `unwind` changes, or for the forwarding's removal.
+
+## Amendment: the forwarded `unwind` is needed, and its mutations are back (#615)
+
+The #606 amendment found no program that needed the `unwind` that `$foldOf`
+and `$iterator`'s `fold` pass on. There is one: a fold whose accumulator
+the crate's own `fold` holds when its own `next` panics. Rust drops
+`acc` as that frame unwinds, before what's left. In JS the crate's `fold`
+drops it by `dropB?.(acc)`, the drop it's given as its `B`'s. That drop is
+the `unwind` the runtime passes on, so without it the accumulator is never
+dropped. The earlier probes all panicked in a stage, a `flat_map`'s or an
+`inspect`'s closure. `$staged` drops the accumulator there and never asks
+for the fold's drop. Results change, so Rust's behavior is kept (ADR 0262, C):
+- **`$iterator`'s `fold`** is the crate's own `fold` reached through any
+  adapter that passes its `unwind` on: `map(..)`, `inspect(..).copied()`
+  and generic code's `$given` of it. Without the forwarding,
+  `made().map(|n| *n).fold(Vec::new(), push)` drops none of what it
+  pushed.
+- **`$foldOf`** is reached where generic code wraps what it's given in
+  `$iterator`, given its length (a `copied()` of an
+  `I: ExactSizeIterator + Clone`) or its back, so the wrapper's `fold` is
+  the dictionary's. Of std's struct, a `fuse()` or `skip(1)` of the
+  crate's own, `$foldOf` gives the struct's compiled `fold` the drop,
+  which gives it to the crate's own. Without the forwarding,
+  `copied_fold(made().fuse())` drops none of what it pushed.
+
+`own_fold_unwind_given_on.rs` holds both cases against native Rust. The
+mutations `fold-of-unwind-lost` (`runtime/fold_of.ts`) and
+`dictionary-fold-unwind-lost` (`runtime/iterator.ts`) are restored to it,
+and it kills each one. Probing for these cases found other programs whose
+drops or calls differ from native Rust. They predate this change, and
+none of them passes through the two forwardings. They're being fixed as
+rd762–rd768: `$mapEnds` and `$enumerate` folds that skip the crate's own
+`fold` or its `unwind`, a fold or collect of std's compiled structs over a
+panicking `next` that is given no drop, and generic code that drops a
+`fuse()` twice as it unwinds.

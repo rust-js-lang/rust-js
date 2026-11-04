@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "      undefined,\n    );\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^panic_mid_iteration_drops with"],
   },
+  {
+    name: "fold-of-unwind-lost",
+    breaks: "a dictionary's `fold` of std's struct, `$foldOf`, gives it no `unwind`: generic code's fold of a `copied()` of the crate's own behind a `fuse()`, whose `next` panics, drops none of what it folded (#615)",
+    file: "src/runtime/fold_of.js",
+    find: "function $foldOf(it, init, f, unwind) {\n  return it.fold(init, f, unwind);\n",
+    replace: "function $foldOf(it, init, f, unwind) {\n  return it.fold(init, f);\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_unwind_given_on.rs$"],
+  },
 ];
