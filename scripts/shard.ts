@@ -65,6 +65,7 @@ export const nightly = [
   "tidy-stages",
   "getter-reads",
   "iterator-forms",
+  "mut-ref-matrix",
   "fuzz",
   "packages",
   "create",

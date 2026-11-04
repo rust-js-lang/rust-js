@@ -29,6 +29,9 @@ const jsx = all || changed.some((file) => /^src\/(lower\/jsx|jsx_syntax)|^react\
 // and without each of preparation's rewrites, and by the read cases (ADRs
 // 0659, 1087).
 const tidy = all || changed.some((file) => /^src\/(lower\/mir\/tidy|prepare)/.test(file));
+// A change to what a `&mut` is, or to an operation on one, runs the `&mut`
+// matrix's sample against native Rust (ADR 1086).
+const mutRefs = all || changed.some((file) => /^src\/lower\/(representation\/mut_ref|mut_refs|mir\/(assign|entries|places|rvalues|closures)|std_types\/cell)\.rs$/.test(file));
 
 // The mutations the change adds or changes: each `name` its lists' diff adds.
 const diff = Bun.spawnSync(["git", "diff", "HEAD", "--", "scripts/mutations"], { cwd: root }).stdout.toString();
@@ -89,7 +92,8 @@ type Job = [string, string[], Record<string, string>];
 // the test files, and `main` went red three times in a day from files it
 // left out, rest-parameters' and cross-crate-items' (#607). The nightly's
 // own files are left as the push's suite leaves them; tidy's stages, one
-// of them, run where tidy changes (ADR 0659).
+// of them, run where tidy changes (ADR 0659), and the `&mut` matrix's
+// sample where what a `&mut` is changes (ADR 1086).
 const everyFile: Job = [
   "every other test file",
   ["bun", "test", "--parallel", ...["test/corpus.test.ts", ...browsers, ...nightly].map((file) => `--path-ignore-patterns=${file}`)],
@@ -130,6 +134,7 @@ const jobs: Job[] = [
   ...inParts("corpus", "test/corpus.test.ts"),
   ...(all ? [everyFile] : suites),
   ...(tidy ? [["readability passes", ["bun", "test", "test/tidy-stages.test.ts", "test/getter-reads.test.ts"], {}] as Job] : []),
+  ...(mutRefs ? [["the `&mut` matrix's sample", ["bun", "test", "test/mut-ref-matrix.test.ts"], {}] as Job] : []),
   ...(added.length > 0
     ? [["mutations the change adds", ["bun", "scripts/mutations.ts", ...new Set(added)], {}] as [string, string[], Record<string, string>]]
     : []),

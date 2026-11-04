@@ -150,6 +150,29 @@ jobs:
           RUST_JS_COMPILER: target/release/rust-js
         run: bun test --timeout=300000 test/iterator-forms.test.ts
 
+  # The `&mut` matrix (ADR 1086): each pointee of a `&mut`, held each way,
+  # through each operation, runs as native Rust does; each push runs a sample.
+  mut-refs:
+    name: mut-ref matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run every program
+        env:
+          MUT_REF_MATRIX: all
+          RUST_JS_COMPILER: target/release/rust-js
+        run: bun test --timeout=300000 test/mut-ref-matrix.test.ts
+
   # The crates from crates.io the guide says run (docs/crate-corpus.md):
   # each compiled with every crate it uses, its probe run beside native
   # Rust, a crate doing worse than its row says failing the job, as chrono
@@ -222,7 +245,7 @@ jobs:
   # again that day, commented on, naming each failed job with its link: the
   # issue watch gives it an owner that day, and no one polls for it.
   issue:
-    needs: [check, seeds, fuzz, stages, programs, forms, crates, port]
+    needs: [check, seeds, fuzz, stages, programs, forms, mut-refs, crates, port]
     if: always() && github.ref == 'refs/heads/main' && contains(needs.*.result, 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 10

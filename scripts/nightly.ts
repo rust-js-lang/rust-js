@@ -67,6 +67,15 @@ export const jobs: Record<string, Part[]> = {
     cores: 1,
     timeout: 20 * minutes,
   })),
+  // Each `&mut` form through each operation, all 72 programs (ADR 1086).
+  "mut-refs": [{
+    id: "mut-refs",
+    cmd: ["bun", "test", "--timeout=600000", "test/mut-ref-matrix.test.ts"],
+    env: { ...compiler, MUT_REF_MATRIX: "all" },
+    after: ["build"],
+    cores: 1,
+    timeout: 20 * minutes,
+  }],
   // The day's 600 generated programs (ADR 0092).
   fuzz: parts("fuzz", 12, (i) => ({
     cmd: ["bun", "test", "--timeout=600000", "test/fuzz.test.ts"],

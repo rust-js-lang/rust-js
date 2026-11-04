@@ -148,11 +148,12 @@ runs each beside native Rust: six in the nightly's suite and in `check:fast`
 where a `&mut`'s form or an operation on one changes, all 72 in the
 nightly's `mut-refs` job. What it refuses is listed in `refused`, and what
 it gets wrong in `wrong` by its issue, each list only shrinking; an
-operation a pointee refuses is left out of its programs with why, the
-`Default` of a `Range`.
+operation a pointee refuses is left out of its programs with why
+(`refused`).
 
 Its first run of all 72 found two wrong answers and a refusal: #636,
 what's moved out of a flattened state lent through its guard is the class
 itself; #638, a `&mut` to a `Range` that's a `Vec`'s item is a new JS
 iterator of it, `Iterator.from($index(items, 1))`; and #639, `Default` of a
-`Range` refused (P2). The other 70 run as native Rust does.
+`Range` refused (P2), since lifted (c47767a32), so the iterator's programs
+take one too. The other 70 run as native Rust does.
