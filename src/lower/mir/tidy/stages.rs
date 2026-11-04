@@ -1207,6 +1207,7 @@ fn looped_drops_of(body: &mut Vec<Stmt>, hints: &Hints) {
 fn decided_tests_of(body: &mut Vec<Stmt>, hints: &Hints) {
     let changing = changing(body);
     js::statement_lists(body, &mut |s| decided_tests(s, &changing, &hints.written.ifs));
+    bottom_up(body, &mut emptied_ifs);
     // What a branch taken in place of its `if` leaves after its jump,
     // never reached (#270).
     js::statement_lists(body, &mut unreachable_after);

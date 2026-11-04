@@ -212,3 +212,26 @@ are still written once: only a written `then` and what follows it count.
 
 Held by `test/corpus/arm_returns_as_written.rs`, against native Rust;
 mutation `shared-tails-of-a-then-and-after` (`tidy/branches.ts`).
+
+## Amendment: an `if` its decided tests empty goes (#694, #714, 2026-11-04)
+
+A decided test's branch can be empty. Take an or-pattern's alternative
+that no value reaches, `(_, _, 1) | (_, 1, 1)`'s second past the first's
+`c === 1` (#694), or a guard that fails of some of its alternatives,
+`if (v1 !== 2)` inside `if (v1 === 2)` (#714). Taking that branch in the
+test's place left `if (b === 1) {}`, and each `if` around it with
+nothing else in it. The tidy stage's "no empty if" then panicked.
+
+After the decided tests, each list, innermost first, has each `if` with
+an emptied branch written as `branches::emptied_branch`, the one owner
+of an emptied branch, writes it (`decided::emptied_ifs`). An `if (c) {}`
+of a pure `c` goes, and `if (c) {} else { b }` is `if (!c) { b }`. This
+holds wherever the test that decided it is: in the `if` it walks into,
+in the deciding `if`'s own branch, or in a list visited before the list
+inside it. #694 first did this only for an `if` that `decided_in` walks
+into. The JS is the JS of the same `match` without what no value reaches.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Only `if`s that do
+nothing go. Held by `test/corpus/or_pattern_unreachable_alternative.rs`
+and `or_pattern_guard_fails_some.rs`, against native Rust, and mutation
+`decided-branch-left-empty` (`tidy/decided.ts`).

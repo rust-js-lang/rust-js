@@ -95,17 +95,10 @@ fn decided_in(stmts: &mut Vec<Stmt>, from: usize, (test, written): (&Expr, &[js:
                     decided_in(otherwise, 0, (test, written), holds, parts);
                     disturbed |= disturbs_any(otherwise, test);
                 }
-                // A branch whose every `if` was decided away, an or-pattern's
-                // alternative no value reaches, `(_, _, 1) | (_, 1, 1)`'s
-                // second past the first's `c === 1` (#694): as
-                // `emptied_branch` writes it, `if (b === 1) {}` nothing.
-                let emptied = settled(stmts, j);
                 if disturbed {
                     return;
                 }
-                if !emptied {
-                    j += 1;
-                }
+                j += 1;
             }
             StmtKind::Labeled(_, body) => {
                 decided_in(body, 0, (test, written), holds, parts);
@@ -130,7 +123,24 @@ fn decided_in(stmts: &mut Vec<Stmt>, from: usize, (test, written): (&Expr, &[js:
     }
 }
 
-/// The `if` at `stmts[j]`, a branch of which its decided tests emptied, as
+/// Each `if` of `stmts` a branch of which its decided tests emptied, as
+/// `branches::emptied_branch` writes it, `if (b === 1) {}` nothing: an
+/// or-pattern's alternative no value reaches, `(_, _, 1) | (_, 1, 1)`'s
+/// second past the first's `c === 1` (#694), or a guard that fails of
+/// some of its alternatives, `if (v1 !== 2)` inside `if (v1 === 2)`
+/// (#714). Of each list innermost first (`bottom_up`), so an `if` whose
+/// branch held only such `if`s goes too, wherever the test that decided
+/// them is.
+pub(super) fn emptied_ifs(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        if !settled(stmts, i) {
+            i += 1;
+        }
+    }
+}
+
+/// The `if` at `stmts[j]`, if a branch of it is empty, as
 /// `branches::emptied_branch` writes it: whether it went.
 fn settled(stmts: &mut Vec<Stmt>, j: usize) -> bool {
     let StmtKind::If(_, then, otherwise) = &stmts[j].kind else {

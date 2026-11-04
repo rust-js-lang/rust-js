@@ -129,10 +129,10 @@ export const mutations: Mutation[] = [
   {
     name: "decided-branch-left-empty",
     breaks:
-      "an or-pattern's alternative no value reaches, `(_, _, 1) | (_, 1, 1)`, leaves `if (b === 1) {}` once its `c === 1` is decided, and tidy's `values` stage panics, \"no empty if\" (#694)",
+      "an or-pattern's alternative no value reaches, `(_, _, 1) | (_, 1, 1)`, leaves `if (b === 1) {}` once its `c === 1` is decided, and tidy's `values` stage panics, \"no empty if\" (#694); and a guard that fails of some alternatives, `chains`' (#714)",
     file: "src/lower/mir/tidy/decided.rs",
-    find: "                let emptied = settled(stmts, j);\n",
-    replace: "                let emptied = false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^or_pattern_unreachable_alternative.rs$"],
+    find: "        if !settled(stmts, i) {\n            i += 1;\n        }\n",
+    replace: "        i += 1;\n",
+    tests: ["test/corpus.test.ts", "-t", "^or_pattern_(unreachable_alternative|guard_fails_some).rs$"],
   },
 ];
