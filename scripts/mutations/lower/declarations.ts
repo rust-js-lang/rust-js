@@ -1292,4 +1292,20 @@ export const mutations: Mutation[] = [
     replace: "                if false && tcx.is_lang_item(did, LangItem::PanicLocation) {\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "location and a const"],
   },
+  {
+    name: "mut-box-declared-value",
+    breaks: "a `&mut` its JS has as a box is declared as its value, `bump(n: number)`, so a TypeScript caller gives a number, whose `value` its JS can't write (#619)",
+    file: "src/lower/declarations.rs",
+    find: "            ty::Ref(_, inner, ty::Mutability::Mut) if self.is_cell(*inner) => {\n",
+    replace: "            ty::Ref(_, inner, ty::Mutability::Mut) if false && self.is_cell(*inner) => {\n",
+    tests: ["test/declarations-ungiven.test.ts", "-t", "box is declared"],
+  },
+  {
+    name: "dyn-declared-function",
+    breaks: "a `dyn` of a trait that isn't a `Fn`'s is declared a function, `(...args: any[]) => any`, where its JS is a pair, `{ value, impl }` (#620)",
+    file: "src/lower/declarations.rs",
+    find: "            ty::Dynamic(..) => self.dyn_value(ty),\n",
+    replace: "            ty::Dynamic(..) => json!({ \"kind\": \"function\", \"typeParameters\": [], \"params\": [], \"returns\": keyword(\"any\") }),\n",
+    tests: ["test/declarations-ungiven.test.ts", "-t", "box is declared"],
+  },
 ];

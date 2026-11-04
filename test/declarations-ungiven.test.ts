@@ -355,3 +355,159 @@ export const unsized = zeros();
     4,
   ]);
 });
+
+// A `&mut` its JS has as a box, or a handle, whose `value` it reads and
+// writes, is declared as that, `bump(n: { value: number })`, and one to an
+// object as the object (ADRs 0074, 0099); a `dyn` of a declared trait as
+// its pair, `{ value: unknown; impl: Shape<unknown> }` (ADR 0049), of
+// another trait `any`, not a function (#619, #620, ADR 1077, amended).
+test("a `&mut` that's a box is declared as its box, and a `dyn` as its pair", () => {
+  const dir = fixture("declarations-boxes");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(import.meta.dir, "fixtures/declared_boxes.rs"), "utf8"));
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  // Its JS is as before.
+  expect(js).toContain("n.value = (n.value + 1) >>> 0;");
+  expect(js).toContain("return { value: { side }, impl: squareShape };");
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  const held = (ty: string, indent = "") => `{\n${indent}    value: ${ty};\n${indent}}`;
+  expect(declarations).toContain(`export function bump(n: ${held("number")}): void;`);
+  expect(declarations).toContain(`export function set<T>(slot: ${held("T")}, value: T): void;`);
+  expect(declarations).toContain(`export function shout(text: ${held("string")}): void;`);
+  expect(declarations).toContain(`export function fill(slot: ${held("number | null | undefined")}): void;`);
+  // A `&mut` it gives back is a handle on the item.
+  expect(declarations).toContain(`export function largest(items: number[]): ${held("number")};`);
+  // A closure's `&mut` parameter, as generic code gives it; a `&mut` to a
+  // closure is the closure.
+  expect(declarations).toContain(`export function apply(f: (value: ${held("number")}) => void, n: ${held("number")}): void;`);
+  expect(declarations).toContain("export function call<F>(f: F): void;");
+  expect(declarations).toContain(`    raise(level: ${held("Level", "    ")}): void;`);
+  // A `&mut` to an object is the object.
+  expect(declarations).toContain("export function tick(counter: Counter): void;");
+  // A method's own type parameter's bound is its own: a `&mut F` of an
+  // `F: FnMut` is the function.
+  expect(declarations).toContain("    each<F>(counter: Counter, f: F): void;");
+  expect(declarations).toContain("export function grow(items: number[]): void;");
+  const pair = (indent = "") => `{\n${indent}    value: unknown;\n${indent}    impl: Shape<unknown>;\n${indent}}`;
+  expect(declarations).toContain('import type { Shape } from "./shape.js";');
+  expect(declarations).toContain(`export function square(side: number): ${pair()};`);
+  expect(declarations).toContain(`export function areaOf(shape: ${pair()}): number;`);
+  expect(declarations).toContain(`export function total(shapes: ${pair()}[]): number;`);
+  // Of a trait that isn't declared, `any`.
+  expect(declarations).toContain("export function stepper(): any;");
+  expect(declarations).not.toContain("any[]");
+  writeFileSync(
+    join(dir, "use.ts"),
+    `import { squareShape } from "./shape.js";
+import { apply, areaOf, bump, call, Counter, fill, grow, largest, Level, set, shout, square, tick, total } from "./lib.js";
+
+const n = { value: 1 };
+bump(n);
+const slot = { value: "a" };
+set(slot, "b");
+const text = { value: "hi" };
+shout(text);
+const filled: { value: number | null | undefined } = { value: null };
+fill(filled);
+fill(filled);
+const items = [3, 9, 4];
+largest(items).value = 0;
+const m = { value: 5 };
+apply((x) => {
+  x.value *= 2;
+}, m);
+let calls = 0;
+call(() => {
+  calls += 1;
+});
+const level: { value: Level } = { value: "Low" };
+Level.raise(level);
+const counter = { count: 0 };
+tick(counter);
+let seen = 0;
+Counter.each(counter, (count: number) => {
+  seen = count;
+});
+const grown: number[] = [];
+grow(grown);
+grow(grown);
+const made = square(3);
+console.log(
+  JSON.stringify([
+    n.value,
+    slot.value,
+    text.value,
+    filled.value,
+    items,
+    m.value,
+    calls,
+    level.value,
+    counter.count,
+    seen,
+    grown,
+    areaOf(made),
+    made.impl.area(made.value),
+    areaOf({ value: { side: 2 }, impl: squareShape }),
+    total([square(1), { value: { side: 2 }, impl: squareShape }]),
+  ]),
+);
+`,
+  );
+  // What the declarations before said, each refused; and a box where an
+  // object is, refused too.
+  writeFileSync(
+    join(dir, "wrong.ts"),
+    `import { areaOf, bump, grow, largest, Level, set, shout, square, tick } from "./lib.js";
+bump(1);
+set(1, 2);
+shout("x");
+Level.raise("Low");
+export const next = largest([1]) + 1;
+export const called = square(1)();
+export const area = areaOf(() => 1);
+tick({ value: { count: 0 } });
+grow({ value: [] });
+`,
+  );
+  writeFileSync(
+    join(dir, "tsconfig.json"),
+    JSON.stringify({
+      compilerOptions: { module: "esnext", moduleResolution: "bundler", strict: true, noEmit: true, skipLibCheck: false, allowJs: true, typeRoots: [join(root, "node_modules/@types")] },
+      files: ["use.ts", "wrong.ts"],
+    }),
+  );
+  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
+  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  expect(errors.filter((line) => line.startsWith("use.ts"))).toEqual([]);
+  expect(errors.map((line) => line.replace(/: error.*/, ""))).toEqual([
+    "wrong.ts(2,6)",
+    "wrong.ts(3,5)",
+    "wrong.ts(4,7)",
+    "wrong.ts(5,13)",
+    "wrong.ts(6,21)",
+    "wrong.ts(7,23)",
+    "wrong.ts(8,28)",
+    "wrong.ts(9,8)",
+    "wrong.ts(10,8)",
+  ]);
+  // What it gives is what Rust's calls give: `2 b hi! Some(2) [3, 0, 4] 10 1
+  // High 1 1 [0, 1] 9 9 4 5`, the same calls' natively.
+  expect(JSON.parse(run([process.execPath, join(dir, "use.ts")]))).toEqual([
+    2,
+    "b",
+    "hi!",
+    2,
+    [3, 0, 4],
+    10,
+    1,
+    "High",
+    1,
+    1,
+    [0, 1],
+    9,
+    9,
+    4,
+    5,
+  ]);
+});

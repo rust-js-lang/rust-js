@@ -537,6 +537,27 @@ export function mixed() {
 }
 ```
 
+```ts
+import type { Shape } from "./shape.js";
+
+export function largest(shapes: {
+    value: unknown;
+    impl: Shape<unknown>;
+}[]): string;
+
+export function mixed(): string;
+```
+
+Its `.d.ts`, last, declares each `dyn` of a trait declared as the type of
+its dictionaries ([above](#generic-code-takes-a-dictionary)) as that pair,
+of a value of some type, `unknown`, and that type's dictionary,
+`Shape<unknown>`, as TypeScript writes a value of some type,
+`Promise<unknown>`; a TypeScript caller gives `{ value: { radius: 1 },
+impl: circleShape }`. A `dyn` of another trait, one not declared, is
+`any`
+([ADR 1077](../../decisions/1077-a-function-js-cant-call-as-declared-isnt-declared.md),
+amended, #620).
+
 A closure, `Box<dyn Fn(u32) -> u32>`, is a JS function, not a pair. A
 field that's a closure of statements is a method, `then(resolve,
 reject) { .. }`, as JS writes a thenable, and so is each function beside

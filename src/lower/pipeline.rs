@@ -131,7 +131,7 @@ pub fn lower_crate<'tcx>(
         explicit_adapters,
         back_stepped,
         changed_vecs,
-        mut drop_params,
+        drop_params,
         copied,
         clones,
         unboxed,
@@ -710,7 +710,7 @@ pub fn lower_crate<'tcx>(
     // callers need too.
     let lowered = (lowered_items.iter_mut().map(|(id, item)| (*id, item)))
         .chain(lowered_copies.iter_mut().map(|((id, _), item)| (*id, item)));
-    drops_observed.keep(&takes_used_drops, &mut drop_params, lowered);
+    let kept_drop_params = drops_observed.keep(&takes_used_drops, &drop_params, lowered);
     // The copies made alike another left out, each call of one calling that
     // one (ADR 0051, amended).
     let through = (lowered_items
@@ -1337,6 +1337,18 @@ pub fn lower_crate<'tcx>(
                     },
                 );
             }
+            // What a `&mut` and a `dyn` in a signature are, as the item's
+            // body has them: asked of a context of the item (#619, #620).
+            let context = |owner: DefId| {
+                let given = (module, &taken[&module]);
+                contexts::fn_cx(&shared, (owner, None, None), given, HashSet::new(), HashMap::new())
+            };
+            let cell_pointee = |owner: DefId, pointee: ty::Ty<'tcx>| context(owner).is_cell_pointee(pointee);
+            let pair_trait = |owner: DefId, ty: ty::Ty<'tcx>| context(owner).dynamic_trait(ty);
+            let representation = super::declarations::Representation {
+                cell_pointee: &cell_pointee,
+                pair_trait: &pair_trait,
+            };
             lowered.declarations = super::declarations::module(
                 tcx,
                 &foreign,
@@ -1348,6 +1360,7 @@ pub fn lower_crate<'tcx>(
                 (ref_cells, &counted, &null_fields, &flattened),
                 (&fns, module_held, &module_variables),
                 (&type_facts, given, &caller_locations),
+                representation,
             );
             // A `Drop` impl's `drop` of this module no other module calls,
             // which may be its body where its one drop is (ADR 0588).
@@ -1422,7 +1435,7 @@ pub fn lower_crate<'tcx>(
                     tcx,
                     (&fns, &exported),
                     &super::library::Contracts {
-                        drop_params: &drop_params,
+                        drop_params: &kept_drop_params,
                         given,
                         failing: &failing,
                         no_drops: &no_drops,

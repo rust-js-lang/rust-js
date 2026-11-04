@@ -305,7 +305,16 @@ impl<'tcx> Declarations<'_, 'tcx> {
         true
     }
 
+    /// `function_signature`'s, in `def_id`'s own context: what a `&mut` or
+    /// a `dyn` in it is is its body's (`Representation`, #619, #620).
     pub(super) fn function(&mut self, def_id: DefId) -> Value {
+        let outer = std::mem::replace(&mut self.owner, def_id);
+        let function = self.function_signature(def_id);
+        self.owner = outer;
+        function
+    }
+
+    fn function_signature(&mut self, def_id: DefId) -> Value {
         let sig = self
             .tcx
             .fn_sig(def_id)

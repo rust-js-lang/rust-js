@@ -286,4 +286,12 @@ export const mutations: Mutation[] = [
     replace: "        for param in super::super::traits::const_params(self.tcx, function).into_iter().filter(|_| false) {\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "location and a const"],
   },
+  {
+    name: "function-owner-of-its-item",
+    breaks: "a method's `&mut F` of its own `F: FnMut` is asked of its type's context, which has no such bound, and declared a box, `f: { value: F }`, where its JS takes the function (#619)",
+    file: "src/lower/declarations/functions.rs",
+    find: "        let outer = std::mem::replace(&mut self.owner, def_id);\n",
+    replace: "        let outer = self.owner;\n",
+    tests: ["test/declarations-ungiven.test.ts", "-t", "box is declared"],
+  },
 ];

@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "dictionary-trait-unimported",
     breaks: "the type of a dictionary of another module's trait, `Shape<S>`, is named without importing it, which TypeScript can't find (#550)",
     file: "src/lower/declarations/dictionaries.rs",
-    find: "            self.imported(self.files[&home].clone(), tr.def_id, name.clone());\n",
+    find: "            self.imported(self.files[&home].clone(), trait_id, name.clone());\n",
     replace: "            let _ = &name;\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
   },
@@ -33,5 +33,13 @@ export const mutations: Mutation[] = [
     find: "        (home == self.module || self.files.contains_key(&home)) && self.declared_methods(trait_id).is_some()\n",
     replace: "        home == self.module || self.files.contains_key(&home)\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
+  },
+  {
+    name: "pair-dictionary-unimported",
+    breaks: "a `dyn` of another module's trait names `Shape<unknown>`, which its declarations don't import (#620)",
+    file: "src/lower/declarations/dictionaries.rs",
+    find: "        let dictionary = self.dictionary_of(trait_id, keyword(\"unknown\"));\n",
+    replace: "        let dictionary = reference(self.tcx.item_name(trait_id).as_str(), vec![keyword(\"unknown\")]);\n",
+    tests: ["test/declarations-ungiven.test.ts", "-t", "box is declared"],
   },
 ];

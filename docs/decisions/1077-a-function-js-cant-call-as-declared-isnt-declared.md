@@ -4,7 +4,9 @@ Status: Accepted (#549, the user's decision, 2026-11-03, option B);
 amended (#559): a namespace's function, an object's and a class's member
 too; amended (#550): a crate's trait is declared as the type of its
 dictionaries, and a function of one is declared with it; amended (#560):
-a caller's location and a const parameter's value are declared. Amends
+a caller's location and a const parameter's value are declared; amended
+(#619, #620): a `&mut` that's a box is declared as the box, and a `dyn`
+as its pair. Amends
 [0196](0196-typescript-declarations.md), whose `.d.ts` declared every
 `pub` function, and the guide's "A type parameter with no bound takes
 none" ([0145](0145-type-facts.md)'s facts take one).
@@ -279,3 +281,102 @@ dictionary in their order; `tsc` checks a TypeScript caller and refuses
 one that leaves either out; the caller's run gives what Rust's calls
 give, a panic naming the location given. Mutations in
 `lower/declarations/functions.ts` and `lower/declarations.ts`.
+
+## Amended (#619, #620): a `&mut` that's a box, and a `dyn`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change. The JS
+is unchanged; its declaration said what it isn't, and a JS caller that
+followed it got what Rust can't give.
+
+- **A `&mut` declared as its value** (rd760, #619): `bump(n: &mut u32)`
+  was `bump(n: number)` and `set<T>(slot: &mut T, v: T)` `slot: T`, where
+  the JS reads and writes `n.value` (ADRs 0074, 0099). `bump(1)`,
+  `set(1, 2)` and `shout("x")` of a `&mut String` threw `TypeError:
+  Attempted to assign to readonly property` where Rust changes the place;
+  `largest(items): number` gave a handle, and `largest([1, 2]) + 1` was
+  `"[object Object]1"`.
+- **A `dyn` of a trait not a `Fn`'s declared a function** (rd761, #620):
+  `square(side): Box<dyn Shape>` was `(...args: any[]) => any`, where the JS
+  gives `{ value: { side }, impl: squareShape }`; `square(1)()` threw
+  `square(1) is not a function`.
+
+**A `&mut` its JS has as a cell, a box or a handle, is declared as that,
+`{ value: T }`; one to an object is the object. A `dyn` of a trait whose
+dictionaries are declared is its pair, `{ value: unknown; impl:
+Shape<unknown> }`; of any other trait not a `Fn`'s, `any`:**
+
+```ts
+export function bump(n: {
+    value: number;
+}): void;
+export function set<T>(slot: {
+    value: T;
+}, value: T): void;
+export function tick(counter: Counter): void;
+export function square(side: number): {
+    value: unknown;
+    impl: Shape<unknown>;
+};
+export function stepper(): any;
+```
+
+- **Which `&mut` is a cell is lowering's answer, asked**, not made again:
+  `is_cell_pointee` (`representation.rs`), of which `param_is_box`, what a
+  body's parameter is, is the same rule of the function's own bounds;
+  `dynamic_trait` (`traits/dyns.rs`) says which `dyn` is a pair, and of
+  what trait. The pipeline gives the declarations a `Representation`
+  that asks each in a context of the item whose signature is declared,
+  `contexts::fn_cx`'s, as its body is lowered in. A method's own type
+  parameters are the method's, so `function` asks of the function
+  itself: a method's `&mut F` of an `F: FnMut` is the function, a box
+  where it's asked of its type. A `&mut` to a value JS can't change in
+  place, a number, a `String`, an `Option`, an enum without fields, or a
+  counted `Rc`, and to a type parameter that's no `Fn` or iterator, is a
+  cell, as it's a parameter, a result, a closure's parameter, `(value: {
+  value: number }) => void`, or a method's `self`, `raise(level: { value:
+  Level })`; to a struct of fields, a `Vec`, a slice, a closure or a
+  `dyn` pair, it's the object as before.
+- **A pair is of a value of some type**, which no type parameter of the
+  function's names: each `Box<dyn Shape>` of a `Vec` may be another's. Its
+  value is `unknown` and its dictionary `Shape<unknown>`, as TypeScript
+  writes a value of some type, `Promise<unknown>`, `ReadonlyArray<unknown>`;
+  a method's parameter is bivariant, so `{ value: { side: 2 }, impl:
+  squareShape }` is one. The trait is imported from its module, as a
+  bound's dictionary is (#550).
+- **A `dyn` of another trait is `any`**, as what has no type here is (ADR
+  0196): its dictionary isn't declared, a std trait's or one whose
+  dictionaries hold what else (#550), a JS iterator's (`dyn Iterator`).
+  `any` says nothing of it, where the function said what it isn't.
+- **`drops_observed.keep` gives the drop parameters it keeps back**, of
+  what the bodies were lowered with, which is as it was: the declarations,
+  made after, ask a context of the crate's facts, which hold those.
+
+Rejected:
+- **A note, leaving each such function out.** A JS caller can give a box
+  and a pair, and TypeScript can say what each is.
+- **`slot: T | { value: T }`, or a pair of a type parameter of the
+  function's, `areaOf<S>(shape: { value: S; impl: Shape<S> })`.** The
+  first says a value is given where the JS reads its `value`; the second
+  holds every `dyn` of a function to one type, where a `Vec<Box<dyn
+  Shape>>`'s are each of their own, and can't say what a function gives.
+- **Reading which parameters are boxes back from the lowered JS.** It's
+  lowering's decision, asked of its owner; the JS's shape is no API.
+
+Not yet: a type parameter's `Fn` bound is declared as no bound, `call<F>(f:
+F)`, nor are a trait's `&mut self` methods' dictionaries (#550), which
+take a box whatever the impl's type.
+
+Held by `test/declarations-ungiven.test.ts`'s "a `&mut` that's a box is
+declared as its box, and a `dyn` as its pair" (its program
+`test/fixtures/declared_boxes.rs`): each `&mut` of a number, a type
+parameter, a `String`, an `Option`, a result's, a closure's parameter's
+and a fieldless enum's `self` a box, of a struct, a `Vec` and a closure
+the object, a method's `F: FnMut` its own, a `Box<dyn Shape>`, a `&dyn
+Shape` and a `Vec` of them a pair with `Shape` imported, a `dyn` of a
+trait not declared `any`; `tsc` checks a TypeScript caller of each and
+refuses each call the declarations before allowed, `bump(1)`, `set(1, 2)`,
+`shout("x")`, `Level.raise("Low")`, `largest([1]) + 1`, `square(1)()`,
+`areaOf(() => 1)`, and a box given where an object is, `tick({ value: ..
+})`; the caller's run gives what the same calls give natively. Mutations
+in `lower/declarations.ts`, `lower/declarations/dictionaries.ts` and
+`lower/declarations/functions.ts`.

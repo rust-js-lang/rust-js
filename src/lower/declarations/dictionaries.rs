@@ -10,7 +10,7 @@ use rustc_middle::ty;
 use rustc_span::def_id::DefId;
 use serde_json::{Value, json};
 
-use super::{Declarations, documented, reference};
+use super::{Declarations, documented, keyword, reference};
 
 impl<'tcx> Declarations<'_, 'tcx> {
     /// The methods of the dictionaries of `trait_id`, a `pub` trait of the
@@ -100,11 +100,34 @@ impl<'tcx> Declarations<'_, 'tcx> {
     /// dictionaries are declared (`declares_dictionary`): `Shape<S>`,
     /// imported from the trait's module where that's another.
     pub(super) fn dictionary_type(&mut self, tr: ty::TraitRef<'tcx>) -> Value {
-        let home = self.tcx.parent_module_from_def_id(tr.def_id.expect_local());
-        let name = self.tcx.item_name(tr.def_id).to_string();
+        let of = self.ts(tr.self_ty());
+        self.dictionary_of(tr.def_id, of)
+    }
+
+    /// `Shape<of>`: the type of a dictionary of `trait_id`, declared
+    /// (`declares_dictionary`), of a value of `of`, imported from the
+    /// trait's module where that's another.
+    fn dictionary_of(&mut self, trait_id: DefId, of: Value) -> Value {
+        let home = self.tcx.parent_module_from_def_id(trait_id.expect_local());
+        let name = self.tcx.item_name(trait_id).to_string();
         if home != self.module {
-            self.imported(self.files[&home].clone(), tr.def_id, name.clone());
+            self.imported(self.files[&home].clone(), trait_id, name.clone());
         }
-        reference(&name, vec![self.ts(tr.self_ty())])
+        reference(&name, vec![of])
+    }
+
+    /// `{ value: unknown; impl: Shape<unknown> }`: a `dyn` of `trait_id`,
+    /// a trait whose dictionaries are declared, as its JS has it, a pair of
+    /// a value and its impl's dictionary (ADR 0049), in that order. Of a
+    /// value of some type, which no type parameter names: TypeScript's
+    /// `unknown`, as `Promise<unknown>` is a promise of some type (#620).
+    pub(super) fn pair(&mut self, trait_id: DefId) -> Value {
+        let dictionary = self.dictionary_of(trait_id, keyword("unknown"));
+        let property = |name: &str, ty: Value| json!({ "kind": "property", "name": name, "optional": false, "readonly": false, "type": ty });
+        let members = [
+            property(crate::js::HELD, keyword("unknown")),
+            property(crate::js::DICTIONARY, dictionary),
+        ];
+        json!({ "kind": "object", "members": members })
     }
 }

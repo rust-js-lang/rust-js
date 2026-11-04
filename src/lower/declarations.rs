@@ -32,12 +32,15 @@ mod functions;
 mod imports;
 mod namespaces;
 mod parts;
+mod representation;
 mod written;
 
 use classes::exported_class;
 use comments::documented;
 pub(in crate::lower) use comments::jsdoc_of;
 use parts::{flattened_keys, opaque_fn_signature};
+pub(in crate::lower) use representation::Representation;
+use representation::held;
 
 pub use written::validate_types;
 use written::{Member, Signature};
@@ -70,9 +73,12 @@ pub(super) fn module<'tcx>(
         &HashMap<DefId, bool>,
     ),
     (type_facts, given, caller_locations): (&TypeFacts, super::traits::Given<'_>, &HashSet<DefId>),
+    representation: Representation<'_, 'tcx>,
 ) -> Option<Value> {
     let mut out = Declarations {
         tcx,
+        representation,
+        owner: module.to_def_id(),
         foreign,
         module,
         fns,
@@ -119,6 +125,7 @@ pub(super) fn module<'tcx>(
             .filter(|&class| class != def_id && tcx.visibility(class).is_public())
         {
             out.erased = out.erased(class);
+            out.owner = class;
             items.extend(exported_class(tcx, documented(out.class(class), tcx, class), class));
             continue;
         }
@@ -141,6 +148,7 @@ pub(super) fn module<'tcx>(
             continue;
         }
         out.erased = out.erased(def_id);
+        out.owner = def_id;
         // A module's namespace, no type: its module's functions (ADR 1037).
         if super::classes::is_namespace(tcx, def_id) {
             items.extend(out.namespace_functions(def_id, forwarded));
@@ -234,6 +242,7 @@ pub(super) fn module<'tcx>(
         // is its `const`'s, declared above.
         if named_default == Some(def_id) {
             out.erased = out.erased(def_id);
+            out.owner = def_id;
             let mut declared = match tcx.def_kind(def_id) {
                 DefKind::Fn => out.function(def_id),
                 // A class, its constructor (ADR 0761).
@@ -478,6 +487,11 @@ struct Declarations<'a, 'tcx> {
     /// The notes of the members the declaration just made left out
     /// (`leave_out`), which the module's items take after it.
     notes: Vec<Value>,
+    /// What lowering makes of a `&mut` and a `dyn` in a signature.
+    representation: Representation<'a, 'tcx>,
+    /// The item whose signature is declared, whose context `representation`
+    /// is asked in: its bounds say what a `&mut` to one is (ADR 0099).
+    owner: DefId,
 }
 
 impl<'tcx> Declarations<'_, 'tcx> {
@@ -1243,6 +1257,12 @@ impl<'tcx> Declarations<'_, 'tcx> {
         match ty.kind() {
             ty::Bool => keyword("boolean"),
             ty::Char | ty::Str => keyword("string"),
+            // A box or a handle, `bump(n: { value: number })`, as lowering
+            // has it (`is_cell`, #619); one to an object is the object.
+            ty::Ref(_, inner, ty::Mutability::Mut) if self.is_cell(*inner) => {
+                let value = self.ts(*inner);
+                held(value)
+            }
             ty::Ref(_, inner, _) => self.ts(*inner),
             // What a function that never returns returns (ADR 0386).
             ty::Never => keyword("never"),
@@ -1303,9 +1323,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
             ) if let Some((inputs, output)) = opaque_fn_signature(tcx, *alias) => {
                 self.function_type(&inputs, output, &[], true)
             }
+            // Any other `dyn`, its pair or `any` (#620).
+            ty::Dynamic(..) => self.dyn_value(ty),
             // `(...args: any[]) => any`: a closure's own type, which no
-            // signature names, or a `dyn` of another trait.
-            ty::Closure(..) | ty::Dynamic(..) => json!({
+            // signature names.
+            ty::Closure(..) => json!({
                 "kind": "function",
                 "typeParameters": [],
                 "params": [{
@@ -1375,8 +1397,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 // A `Cell` of its own, or one lent, is `{ value }` (ADRs 0023, 0288),
                 // and so is a `RefCell` that isn't what it holds (ADRs 0328, 0863).
                 if is_std_def(tcx, did, StdItem::Cell) || is_std_def(tcx, did, StdItem::RefCell) {
-                    let value = json!({ "kind": "property", "name": "value", "optional": false, "readonly": false, "type": self.ts(args.type_at(0)) });
-                    return json!({ "kind": "object", "members": [value] });
+                    let value = self.ts(args.type_at(0));
+                    return held(value);
                 }
                 if is_rest(tcx, ty) {
                     return reference("Record", vec![keyword("string"), keyword("unknown")]);

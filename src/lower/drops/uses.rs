@@ -134,15 +134,17 @@ impl DropsObserved {
         self.names.extend(other.names);
     }
 
-    /// The drops each function keeps, those it uses or passes on to one
-    /// that keeps it, in `drop_params`; and the lowered functions with only
-    /// those, as parameters and arguments.
+    /// The drops each function keeps of `drop_params`, those it uses or
+    /// passes on to one that keeps it, given back; and the lowered
+    /// functions with only those, as parameters and arguments. What the
+    /// bodies were lowered with, `drop_params`, is as it was.
     pub(in crate::lower) fn keep<'l>(
         self,
         takes_used: &TakesUsed,
-        drop_params: &mut HashMap<DefId, Vec<u32>>,
+        drop_params: &HashMap<DefId, Vec<u32>>,
         items: impl Iterator<Item = (DefId, &'l mut crate::lower::LoweredFn)>,
-    ) {
+    ) -> HashMap<DefId, Vec<u32>> {
+        let mut drop_params = drop_params.clone();
         let mut kept = self.used;
         let mut changed = true;
         while changed {
@@ -171,6 +173,7 @@ impl DropsObserved {
             }
             js::each_expr_mut(&mut item.function.body, &mut |e| keep_arguments(e, &kept));
         }
+        drop_params
     }
 }
 
