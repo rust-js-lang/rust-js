@@ -79,7 +79,7 @@ jobs:
         env:
           TIDY_STAGES: corpus
           RUST_JS_CASES: ${{ matrix.part }}/6
-          RUST_JS_COMPILER: target/release/rust-js
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun test --timeout=300000 test/tidy-stages.test.ts
 
   # The night's generated programs through the same (ADR 1087): each of
@@ -112,7 +112,7 @@ jobs:
           TIDY_STAGES: programs
           START: ${{ needs.seeds.outputs.start }}
           PART: ${{ matrix.part }}
-          RUST_JS_COMPILER: target/release/rust-js
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: FUZZ_START=$(( START + (PART - 1) * 100 )) FUZZ_SEEDS=100 bun test --timeout=900000 test/tidy-stages.test.ts
       - if: failure()
         uses: actions/upload-artifact@v7
@@ -148,7 +148,7 @@ jobs:
         env:
           ITERATOR_FORMS: corpus
           RUST_JS_CASES: ${{ matrix.part }}/2
-          RUST_JS_COMPILER: target/release/rust-js
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun test --timeout=300000 test/iterator-forms.test.ts
 
   # The `&mut` matrix (ADR 1086): each pointee of a `&mut`, held each way,
@@ -171,7 +171,7 @@ jobs:
       - name: Run every program
         env:
           MUT_REF_MATRIX: all
-          RUST_JS_COMPILER: target/release/rust-js
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun test --timeout=300000 test/mut-ref-matrix.test.ts
 
   # The iterator conformance matrix (ADR 1090): every case, each source,
@@ -201,7 +201,7 @@ jobs:
       - name: Run parts of machine ${{ matrix.machine }} of 6
         env:
           ITERATOR_MATRIX: all
-          RUST_JS_COMPILER: target/release/rust-js
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
           MACHINE: ${{ matrix.machine }}
         run: |
           pids=()
@@ -247,7 +247,7 @@ jobs:
       # of the corpus is 427 MB (#511).
       - name: Compile and run each crate's probe
         env:
-          RUST_JS_COMPILER: target/release/rust-js
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun scripts/crate-corpus.ts --check
 
   # React's port (scripts/react-in-rust.ts): react-in-rust at the commit
@@ -280,7 +280,7 @@ jobs:
       - uses: ./.github/actions/build-rust-js
       - name: Compile the port's crates and compare their JS
         env:
-          RUST_JS_COMPILER: target/release/rust-js
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun scripts/react-in-rust.ts regen
       - if: failure()
         uses: actions/upload-artifact@v7

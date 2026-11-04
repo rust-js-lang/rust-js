@@ -47,7 +47,7 @@ jobs:
       # The day's batches, a part on each of the machine's cores.
       - name: Run the day's sample
         env:
-          RUST_JS_COMPILER: target/release/rust-js
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: |
           seed=$(( $(date +%s) / 86400 ))
           echo "ITERATOR_MATRIX_SEED=$seed"
