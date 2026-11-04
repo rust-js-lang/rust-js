@@ -241,6 +241,20 @@ test("each runtime helper is asked for, or needed by another", () => {
   // It reads every source and each helper's JS, 1 s alone: past 5 s beside check:fast's other jobs.
 }, 30_000);
 
+// An iterator's steps beside `next`, its `fold`, `nth` and the others std's
+// adapters specialize, are given by `$forward` alone (ADR 1089): each one
+// passed on by hand forwarded the subset of steps, and of their arguments,
+// it was written with, `$mapEnds` no `fold`, `$enumerate` no `unwind`
+// (#621, #626).
+test("an iterator's steps are given by $forward alone", () => {
+  const given = /\.(fold|tryFold|rfold|tryRfold|nth|nthBack|last|count|countItems|advanceBy|advanceBackBy|advance)\s*=\s*(\([^)]*\)\s*=>|\w+\s*=>|function\b|\()/;
+  expect(given.test("  it.nth = (k) => step(nth(iterator, k));")).toBe(true);
+  const giving = files("src/runtime")
+    .filter((file) => file.endsWith(".js") && file !== "src/runtime/forward.js")
+    .filter((file) => read(file).split("\n").some((line) => !line.trimStart().startsWith("//") && given.test(line)));
+  expect(giving).toEqual([]);
+});
+
 // A helper is written as the runtime's, `Expr::helper("$cmp")`, which
 // checks the runtime has it and is asked for by being written (ADR 0103),
 // not as a variable of its name, `Expr::var("$cmp")`, which checks nothing.

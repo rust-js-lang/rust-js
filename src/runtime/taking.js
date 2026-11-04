@@ -30,7 +30,7 @@ function $taking(iter, n, drop) {
   // And its `nth_back`, `rfold` and `try_rfold`, std's, by its source's
   // `nth_back` past what it won't give, where that reaches the crate's own.
   if (iter.nthBack !== undefined || iter.rfold !== undefined || iter.tryRfold !== undefined) {
-    taking.nthBack = (k) => {
+    const nthBack = (k) => {
       const len = taking.iter.len();
       if (taking.n > k) {
         const past = Math.max(len - taking.n, 0) + k;
@@ -46,13 +46,14 @@ function $taking(iter, n, drop) {
       return !(len > taking.n && $nthBackOf(taking.iter, len - taking.n - 1, drop).done);
     };
     // Consumed, its source done with after (#225).
-    taking.rfold = (init, f, unwind) => {
+    const rfold = (init, f, unwind) => {
       const folded = taking.n === 0 || !trimmed() ? init : $foldBack(taking.iter, init, f, unwind);
       $closed(taking.iter);
       return folded;
     };
-    taking.tryRfold = (init, f, broke, unwind) =>
+    const tryRfold = (init, f, broke, unwind) =>
       taking.n === 0 || !trimmed() ? init : $tryRfoldOf(taking.iter, init, f, broke, unwind);
+    $forward(taking, iter, { nthBack, rfold, tryRfold });
   }
   return taking;
 }

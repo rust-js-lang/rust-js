@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "scan-try-fold-by-next",
     breaks: "scan passes tryFold to its source",
     file: "src/runtime/scan.js",
-    find: "  scanning.tryFold = (init, g, broke, unwind) => {",
-    replace: "  scanning.tryFoldUnused = (init, g, broke, unwind) => {",
+    find: "  $forward(scanning, source, { tryFold, fold });\n",
+    replace: "  $forward(scanning, source, { fold });\n",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
   },
   {

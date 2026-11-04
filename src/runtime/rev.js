@@ -15,30 +15,30 @@ function $rev(it) {
   rev.from = [it];
   rev.len = () => it.len();
   rev.hint = () => $sizeHint(it);
-  // Its `advance_by`, its source's `advance_back_by`, std's, of its
-  // `next_back`, each dropped, `drop`: what its `nth` steps past.
-  rev.advanceBy = (m, drop) => {
-    // One that drops what it passes over itself, a `Vec`'s, as one slice
-    // (#250).
-    if (it.advanceBackBy !== undefined) return it.advanceBackBy(m);
-    for (; m > 0; m--) {
-      const step = it.back();
-      if (step.done) break;
-      drop?.(step.value);
-    }
-    return m;
-  };
-  if (it.rfold !== undefined) rev.fold = (init, f, unwind) => it.rfold(init, f, unwind);
-  if (it.nthBack !== undefined) rev.nth = (k) => it.nthBack(k);
-  // One that drops what it passes over itself, a `Vec`'s `IntoIter`'s, from
-  // either end (#234, #250).
-  if (it.ownNthBack) rev.ownNth = true;
+  // Its `fold`, `nth` and `try_fold`, its source's `rfold`, `nth_back` and
+  // `try_rfold`, as std's `Rev`'s are; its `nth_back` and `advance_back_by`
+  // its source's `nth` and `advance_by` where they drop what they pass over
+  // themselves, a `Vec`'s `IntoIter`'s, from either end (#234, #250).
+  $forward(rev, it, {
+    fold: "rfold",
+    nth: "nthBack",
+    tryFold: "tryRfold",
+    nthBack: it.ownNth ? "nth" : undefined,
+    advanceBackBy: it.ownNth ? "advanceBy" : undefined,
+    // Its `advance_by`, its source's `advance_back_by`, std's, of its
+    // `next_back`, each dropped, `drop`: what its `nth` steps past.
+    advanceBy: (m, drop) => {
+      // One that drops what it passes over itself, a `Vec`'s, as one slice
+      // (#250).
+      if (it.advanceBackBy !== undefined) return it.advanceBackBy(m);
+      for (; m > 0; m--) {
+        const step = it.back();
+        if (step.done) break;
+        drop?.(step.value);
+      }
+      return m;
+    },
+  });
   if (it.dropItem !== undefined) rev.dropItem = it.dropItem;
-  if (it.ownNth) {
-    rev.nthBack = (k) => it.nth(k);
-    rev.advanceBackBy = (m) => it.advanceBy(m);
-    rev.ownNthBack = true;
-  }
-  if (it.tryRfold !== undefined) rev.tryFold = (init, f, broke, unwind) => it.tryRfold(init, f, broke, unwind);
   return rev;
 }

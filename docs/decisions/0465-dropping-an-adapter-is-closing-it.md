@@ -1023,3 +1023,11 @@ Rust: `fold`, `fold` panicking, `for_each`, `for_each` panicking, `count`,
 `by_ref()`'s and a `filter`'s `count`. Mutations: `consumed-closed-dropped-again`
 and `consumer-closes-unrevealed` (`lower/mir/iter.ts`), `consumer-closes-lent`
 (`lower/mir/iter/closing.ts`).
+
+## Amendment: what closing passes on, it passes by `$forward` (2026-11-04, ADR 1089)
+
+`$closing`'s steps, its source's `nth`, `nth_back`, `advance_by`,
+`try_rfold`, the crate's own `count` and `last`, and its own `fold`,
+`rfold` and `try_fold` that close it, are given by `$forward`
+([1089](1089-an-iterators-steps-are-passed-on-by-one-combinator.md)), as
+every adapter's are; each closes what it closed before.

@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "skip-while-fold-unclosed",
     breaks: "a `skip_while` whose predicate panics inside a fold leaves what's left undropped (#423)",
     file: "src/runtime/lazy_skip_while.js",
-    find: "  skipped.fold = (init, f, unwind) =>\n    $consumed(skipped, () => {",
-    replace: "  skipped.fold = (init, f, unwind) =>\n    ((run) => run())(() => {",
+    find: "  const fold = (init, f, unwind) =>\n    $consumed(skipped, () => {",
+    replace: "  const fold = (init, f, unwind) =>\n    ((run) => run())(() => {",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
   },
   {

@@ -20,7 +20,7 @@ function $lazyTakeWhile(items, keep) {
   taking.from = [source];
   // Where `keep` throws, a panic, the accumulator dropped by `unwind`
   // (#423).
-  taking.tryFold = (init, f, broke, unwind) => {
+  const tryFold = (init, f, broke, unwind) => {
     if (ended) return init;
     const kept = unwind === undefined ? (x) => keep(x) : (x, a) => $staged(keep, x, undefined, a, unwind);
     const folded = $lent(source).tryFold(
@@ -33,11 +33,12 @@ function $lazyTakeWhile(items, keep) {
   };
   // Its `fold`, std's: its `try_fold`, never stopped, so its source is
   // folded as std folds it, then dropped with it (#214).
-  taking.fold = (init, f, unwind) => {
+  const fold = (init, f, unwind) => {
     const folded = $consumed(taking, () => taking.tryFold(init, f, () => false, unwind));
     taking.return();
     return folded;
   };
+  $forward(taking, source, { tryFold, fold });
   return taking;
 }
 
@@ -58,7 +59,7 @@ function $lazyMapWhile(items, f, present) {
     () => source.return?.(),
   );
   mapping.from = [source];
-  mapping.tryFold = (init, g, broke, unwind) => {
+  const tryFold = (init, g, broke, unwind) => {
     let stopped = false;
     const folded = $lent(source).tryFold(
       init,
@@ -75,10 +76,11 @@ function $lazyMapWhile(items, f, present) {
   };
   // Its `fold`, std's: its `try_fold`, then dropped with what it steps
   // (#214).
-  mapping.fold = (init, g, unwind) => {
+  const fold = (init, g, unwind) => {
     const folded = $consumed(mapping, () => mapping.tryFold(init, g, () => false, unwind));
     mapping.return();
     return folded;
   };
+  $forward(mapping, source, { tryFold, fold });
   return mapping;
 }

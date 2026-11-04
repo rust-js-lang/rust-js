@@ -561,56 +561,48 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
   const it = new $Steps(() => step(next(iterator)));
   // An inclusive range's own `try_fold`, std's, which what folds it asks,
   // and so its `fold`: they end it as std's do, exhausted at its last (#414).
-  const rangeFold = $rangeFoldOf(next);
-  if (rangeFold !== undefined) {
-    it.tryFold = (init, f, broke) => rangeFold(iterator, init, f, broke);
-    it.fold = (init, f) => rangeFold(iterator, init, f, () => false);
-  }
   // And from its back, by its `next_back`: its `try_rfold`, and so its
   // `rfold`, std's, which end it exhausted at its first, as a held `Rev`'s
   // fold of it does, not past it as `next_back` does (#414).
+  const rangeFold = $rangeFoldOf(next);
   const rangeRfold = nextBack === undefined ? undefined : $rangeFoldOf(nextBack);
-  if (rangeRfold !== undefined) {
-    it.tryRfold = (init, f, broke) => rangeRfold(iterator, init, f, broke);
-    it.rfold = (init, f) => rangeRfold(iterator, init, f, () => false);
-  }
   // The crate's own `fold` and `nth`, where its impl writes them, which
-  // what std routes through them calls (#162).
+  // what std routes through them calls (#162), before a range's.
   // That `fold` takes what it steps and drops it, which `ownFold` says.
   // Given `unwind`, the drop of an accumulator a stage's panic may strand,
   // `$foldDropping`'s: each dictionary's `fold` and `rfold` takes it after
   // its function, as its `B`'s drop, the crate's own's first drop and std's
-  // compiled struct's (#423).
-  if (fold !== undefined) {
-    it.fold = (init, f, unwind) => fold(iterator, init, f, unwind);
-    it.ownFold = true;
-  }
+  // compiled struct's (#423). Its own `last`, which std's `last`, and a
+  // `skip`'s, a chain's, a fuse's and a peekable's, call (#182); its own
+  // `rfold`, which takes what it steps and drops it, as its `fold` does; and
+  // its own `count`, which takes it and drops it itself, as std's adapters
+  // whose `count` is their source's, and generic code's, call it (#505).
+  $forward(it, iterator, {
+    tryFold: rangeFold && ((init, f, broke) => rangeFold(iterator, init, f, broke)),
+    fold:
+      fold === undefined
+        ? rangeFold && ((init, f) => rangeFold(iterator, init, f, () => false))
+        : (init, f, unwind) => fold(iterator, init, f, unwind),
+    tryRfold:
+      tryRfold === undefined
+        ? rangeRfold && ((init, f, broke) => rangeRfold(iterator, init, f, broke))
+        : (init, f, broke, unwind) => tryRfold(iterator, init, f, broke, unwind),
+    rfold:
+      rfold === undefined
+        ? rangeRfold && ((init, f) => rangeRfold(iterator, init, f, () => false))
+        : (init, f, unwind) => rfold(iterator, init, f, unwind),
+    nth: nth && ((k) => step(nth(iterator, k))),
+    last: last && (() => step(last(iterator))),
+    nthBack: nthBack && ((k) => step(nthBack(iterator, k))),
+    count: count && (() => count(iterator)),
+  });
   // `ownNth` and `ownLast` say they're the crate's own, which drop what
   // they pass themselves, where std's defaults of a `$Steps` don't.
-  if (nth !== undefined) {
-    it.nth = (k) => step(nth(iterator, k));
-    it.ownNth = true;
-  }
-  // And its own `last`, which std's `last`, and a `skip`'s, a chain's, a
-  // fuse's and a peekable's, call (#182).
-  if (last !== undefined) {
-    it.last = () => step(last(iterator));
-    it.ownLast = true;
-  }
-  // That `rfold` takes what it steps and drops it, as its `fold` does.
-  if (rfold !== undefined) {
-    it.rfold = (init, f, unwind) => rfold(iterator, init, f, unwind);
-    it.ownRfold = true;
-  }
-  if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(iterator, k));
-  if (tryRfold !== undefined) it.tryRfold = (init, f, broke, unwind) => tryRfold(iterator, init, f, broke, unwind);
-  // And its own `count`, which takes it and drops it itself, as std's
-  // adapters whose `count` is their source's, and generic code's, call it
-  // (#505).
-  if (count !== undefined) {
-    it.count = () => count(iterator);
-    it.ownCount = true;
-  }
+  if (fold !== undefined) it.ownFold = true;
+  if (nth !== undefined) it.ownNth = true;
+  if (last !== undefined) it.ownLast = true;
+  if (rfold !== undefined) it.ownRfold = true;
+  if (count !== undefined) it.ownCount = true;
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0525,
   // amended).
@@ -1577,17 +1569,12 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       () => this.return(),
     );
     mapped.from = [this];
-    // Std's `Map::fold`, its source's of each mapped; where `f` throws, the
-    // accumulator dropped by `unwind`, as its closure drops it (#423).
-    mapped.fold = (init, g, unwind) =>
-      this.fold(init, unwind === undefined ? (a, x) => g(a, f(x, i++)) : (a, x) => g(a, $staged(f, x, i++, a, unwind)), unwind);
-    mapped.tryFold = (init, g, broke, unwind) =>
-      this.tryFold(
-        init,
-        unwind === undefined ? (a, x) => g(a, f(x, i++)) : (a, x) => g(a, $staged(f, x, i++, a, unwind)),
-        broke,
-        unwind,
-      );
+    // Std's `Map::fold` and `try_fold`, its source's of each mapped; where
+    // `f` throws, the accumulator dropped by `unwind`, as its closure drops
+    // it (#423).
+    $forward(mapped, this, { fold: "fold", tryFold: "tryFold" }, (g, unwind) =>
+      unwind === undefined ? (a, x) => g(a, f(x, i++)) : (a, x) => g(a, $staged(f, x, i++, a, unwind)),
+    );
     // Std's `Map::size_hint`, its source's.
     mapped.hint = () => $sizeHint(this);
     return mapped;
@@ -1605,8 +1592,12 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     );
     kept.from = [this];
     // Std's `Filter::fold`, its source's of each kept.
-    kept.fold = (init, g, unwind) =>
-      this.fold(init, (a, x) => ((unwind === undefined ? keep(x, i++) : $staged(keep, x, i++, a, unwind)) ? g(a, x) : a), unwind);
+    $forward(
+      kept,
+      this,
+      { fold: "fold" },
+      (g, unwind) => (a, x) => ((unwind === undefined ? keep(x, i++) : $staged(keep, x, i++, a, unwind)) ? g(a, x) : a),
+    );
     return kept;
   }
   // Std's `FlatMap`: each item of what `f` makes of each of its source's,
@@ -1640,7 +1631,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       },
     );
     flat.from = [this];
-    flat.fold = (init, g, unwind) => {
+    const fold = (init, g, unwind) => {
       let folded = init;
       if (inner !== undefined) folded = $foldDropping(inner, folded, g, unwind);
       inner = undefined;
@@ -1651,7 +1642,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     };
     // Its `try_fold`, std's: the rest of the one it's in, then its source's
     // of each one's, the one it stops in kept for its next step.
-    flat.tryFold = (init, g, broke, unwind) => {
+    const tryFold = (init, g, broke, unwind) => {
       let folded = init;
       if (inner !== undefined) {
         folded = $lent(inner).tryFold(folded, g, broke, unwind);
@@ -1673,6 +1664,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       if (!broke(folded)) ended = true;
       return folded;
     };
+    $forward(flat, this, { fold, tryFold });
     return flat;
   }
   // Std's `Take`: each of its `n` steps steps its source, a `None` too.
@@ -1697,7 +1689,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     }
     // Its `nth(k)`, std's: its source's, where it has more than `k` left;
     // else its source's past what it has left, and done.
-    taken.nth = (k, drop = taken.dropItem) => {
+    const nth = (k, drop = taken.dropItem) => {
       if (n > k) {
         n -= k + 1;
         return this.nth(k, drop);
@@ -1717,7 +1709,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     // asked again there, or stopped there by its limit, not by what it
     // gave, which its caller still steps, its source done with, as its
     // `next` closes it (ADR 0570, #225, #242).
-    taken.tryFold = (init, g, broke, unwind) => {
+    const tryFold = (init, g, broke, unwind) => {
       if (n === 0) {
         if (!taken.held) this.return();
         return init;
@@ -1740,26 +1732,27 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     // Its `fold`, std's: its `try_fold`, never stopped, so a `Skip`'s
     // inside asks its source's `nth(n - 1)`, then its source dropped with it
     // (#213).
-    taken.fold = (init, g, unwind) => {
+    const fold = (init, g, unwind) => {
       const folded = $consumed(this, () => taken.tryFold(init, g, () => false, unwind));
       this.return();
       return folded;
     };
     // Its `advance_by(m)` and `count`, std's: its source advanced, by as
     // many as it has left, which asks no `nth` (#213).
-    taken.advanceBy = (m, drop) => {
+    const advanceBy = (m, drop) => {
       const min = Math.min(n, m);
       const advanced = min - this.advanceBy(min, drop);
       n -= advanced;
       return m - advanced;
     };
-    taken.count = (drop) => {
+    const count = (drop) => {
       const k = n;
       n = 0;
       const counted = k === 0 ? 0 : k - this.advanceBy(k, drop);
       this.return();
       return counted;
     };
+    $forward(taken, this, { nth, tryFold, fold, advanceBy, count });
     return taken;
   }
   // Std's `Skip`: its first step is its source's `nth(n)`, which stops at a
@@ -1779,7 +1772,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     skipped.from = [this];
     // Its `fold`, then closed where its `nth(n - 1)` found none, as
     // `fold(self)` drops what it has left at its end (#242).
-    skipped.fold = (init, g, unwind) => {
+    const fold = (init, g, unwind) => {
       if (n > 0) {
         const k = n;
         n = 0;
@@ -1790,7 +1783,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       }
       return this.fold(init, g, unwind);
     };
-    skipped.tryFold = (init, g, broke, unwind) => {
+    const tryFold = (init, g, broke, unwind) => {
       if (n > 0) {
         const k = n;
         n = 0;
@@ -1798,14 +1791,14 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       }
       return this.tryFold(init, g, broke, unwind);
     };
-    skipped.nth = (k) => {
+    const nth = (k) => {
       const skip = n;
       n = 0;
       return this.nth(skip + k);
     };
     // Its `count`, std's: its source's `nth(n - 1)`, then its source's
     // `count`, the crate's own where it writes one (#505).
-    skipped.count = (drop) => {
+    const count = (drop) => {
       if (n > 0) {
         const k = n;
         n = 0;
@@ -1818,7 +1811,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     };
     // Its `advance_by(m)`, std's: its source advanced past what it skips
     // and `m` more (#213).
-    skipped.advanceBy = (m, drop) => {
+    const advanceBy = (m, drop) => {
       const skip = n;
       const left = this.advanceBy(skip + m, drop);
       const advanced = skip + m - left;
@@ -1826,7 +1819,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       return m - Math.max(advanced - skip, 0);
     };
     // Std's `Skip::last`: its source's `nth(n - 1)`, then its source's `last`.
-    skipped.last = () => {
+    const last = () => {
       if (n > 0) {
         const k = n;
         n = 0;
@@ -1834,6 +1827,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       }
       return this.last();
     };
+    $forward(skipped, this, { fold, tryFold, nth, count, advanceBy, last });
     return skipped;
   }
 }
@@ -2333,15 +2327,14 @@ export function $closing(it, drop, slices = true) {
   // what it passes over dropped as one slice, front to back, as its
   // `advance_back_by` drops them, then its next from the back; not of one
   // that drops each as it's passed, `slices` false, a `Drain`'s (#234).
-  if (slices && it.items !== undefined && it.nthBack === undefined && drop?.each !== undefined) {
-    closing.advanceBackBy = (m) => $advanceSlice(it, m, drop.each, true);
-    closing.nthBack = (k) => done(closing.advanceBackBy(k) > 0 ? { done: true, value: undefined } : it.back());
+  // And from its front, its `advance_by` and `nth`, what they pass over
+  // dropped as one slice too, by itself, as a `chain`'s `nth` asks it
+  // (#250); how many there weren't.
+  const slice = slices && it.items !== undefined && it.nthBack === undefined && drop?.each !== undefined;
+  const advanceBackBy = (m) => $advanceSlice(it, m, drop.each, true);
+  const advanceBy = (m) => $advanceSlice(it, m, drop.each);
+  if (slice) {
     closing.ownNthBack = true;
-    // And from its front, its `advance_by` and `nth`, what they pass over
-    // dropped as one slice too, by itself, as a `chain`'s `nth` asks it
-    // (#250); how many there weren't.
-    closing.advanceBy = (m) => $advanceSlice(it, m, drop.each);
-    closing.nth = (k) => done(closing.advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());
     closing.ownNth = true;
     // Each item's own drop, which what it gives on is dropped by (#261).
     closing.dropItem = drop.each;
@@ -2350,15 +2343,10 @@ export function $closing(it, drop, slices = true) {
   // Its length, its iterator's, where it knows it: what an `enumerate`
   // stepped from its back counts by (#211).
   if (it.len !== undefined) closing.len = () => it.len();
-  // Its `advance_by`, its iterator's own, a compiled std struct's (#286).
-  if (!Object.hasOwn(closing, "advanceBy") && Object.hasOwn(it, "advanceBy")) {
-    closing.advanceBy = (m, drop) => it.advanceBy(m, drop);
-  }
   // Its `nth`, its iterator's, the crate's own where it writes one, or a
   // compiled std struct's, which drops what it passes itself, `ownNth`, as
   // a `step_by` over it asks it (#261), given the items' drop, which std's
   // default `nth` of the crate's iterator drops what it passes by (#494).
-  if (it.nth !== undefined) closing.nth = (k, dropItem) => done(it.nth(k, dropItem));
   if (it.ownNth) closing.ownNth = true;
   // Closed though `f` throws, a panic, as Rust's `fold` drops what's left
   // of what it took as it unwinds (#422); done with, not closed, where its
@@ -2375,7 +2363,7 @@ export function $closing(it, drop, slices = true) {
   // Given `unwind`, what drops an accumulator a stage's panic strands, it
   // passes it on, so a step of the crate's own iterator that panics drops
   // a `last`'s kept item before what's left (#423, #426).
-  closing.fold = (init, f, unwind) => {
+  const fold = (init, f, unwind) => {
     const folded = unwound(
       () => (it.fold !== undefined ? it.fold(init, f, unwind) : $foldDropping(it, init, (a, x) => f(a, x), unwind)),
       it.ownFold,
@@ -2385,39 +2373,55 @@ export function $closing(it, drop, slices = true) {
     return folded;
   };
   // Its `count`, the crate's own, likewise (#505).
-  if (it.ownCount) {
-    closing.count = () => {
-      closed = true;
-      return it.count();
-    };
-    closing.ownCount = true;
-  }
+  if (it.ownCount) closing.ownCount = true;
+  const count = () => {
+    closed = true;
+    return it.count();
+  };
   // Its `last`, the crate's own, which takes it and drops what it has left
   // itself, as a `skip`'s `last` asks it (#494).
-  if (it.ownLast) {
-    closing.last = () => {
-      closed = true;
-      return it.last();
-    };
-    closing.ownLast = true;
-  }
+  if (it.ownLast) closing.ownLast = true;
+  const last = () => {
+    closed = true;
+    return it.last();
+  };
   // Its `nth_back` and `rfold`, its iterator's, the crate's own where it
   // writes them, done with after its `rfold` as after its `fold` (#220).
-  if (it.nthBack !== undefined) closing.nthBack = (k) => done(it.nthBack(k));
-  const rfoldClosing = (init, f, unwind) => {
+  const rfold = (init, f, unwind) => {
     const folded = unwound(() => it.rfold(init, f, unwind), it.ownRfold);
     if (it.ownRfold) closed = true;
     close();
     return folded;
   };
-  if (it.rfold !== undefined) closing.rfold = rfoldClosing;
-  if (it.tryRfold !== undefined) closing.tryRfold = (init, f, broke, unwind) => it.tryRfold(init, f, broke, unwind);
   // Its `try_fold`, its iterator's, done with where it isn't stopped.
-  closing.tryFold = (init, f, broke, unwind) => {
+  const tryFold = (init, f, broke, unwind) => {
     const folded = $lent(it).tryFold(init, f, broke, unwind);
     if (!broke(folded) && !closing.held) close();
     return folded;
   };
+  $forward(closing, it, {
+    advanceBackBy: slice ? advanceBackBy : undefined,
+    // Its `advance_by`, its iterator's own, a compiled std struct's (#286).
+    advanceBy: slice ? advanceBy : Object.hasOwn(it, "advanceBy") ? "advanceBy" : undefined,
+    nth:
+      it.nth !== undefined
+        ? (k, dropItem) => done(it.nth(k, dropItem))
+        : slice
+          ? (k) => done(advanceBy(k) > 0 ? { done: true, value: undefined } : it.next())
+          : undefined,
+    nthBack:
+      it.nthBack !== undefined
+        ? (k) => done(it.nthBack(k))
+        : slice
+          ? (k) => done(advanceBackBy(k) > 0 ? { done: true, value: undefined } : it.back())
+          : undefined,
+    fold,
+    count: it.ownCount ? count : undefined,
+    last: it.ownLast ? last : undefined,
+    rfold: it.rfold !== undefined ? rfold : undefined,
+    tryRfold: "tryRfold",
+    tryFold,
+  });
   return closing;
 }
 
@@ -2472,7 +2476,7 @@ export function $skipping(iter, n, drop) {
   // Std's `Skip::advance_by(m)`: its source's `advance_by(n + m)`, which
   // drops what it passes itself where it can, a reversed `Vec`'s as one
   // slice, else each by the item's drop (#287).
-  skipping.advanceBy = (m, dropItem = drop) => {
+  const advanceBy = (m, dropItem = drop) => {
     const skip = skipping.n;
     const remainder = $advanceByOf(skipping.iter, skip + m, dropItem);
     const advanced = skip + m - remainder;
@@ -2482,21 +2486,19 @@ export function $skipping(iter, n, drop) {
   // Std's `Skip::count`: its source's `nth(n - 1)`, then its `count`, where
   // its source drops what it passes over itself (#261), or counts itself,
   // the crate's own `count` (#505).
-  if (iter.ownNth || iter.ownCount) {
-    skipping.count = (dropItem) => {
-      if (skipping.n > 0) {
-        const k = skipping.n;
-        skipping.n = 0;
-        const step = $consumed(skipping, () => skipping.iter.nth(k - 1, dropItem));
-        if (step.done) {
-          skipping.return();
-          return 0;
-        }
-        dropItem?.(step.value);
+  const count = (dropItem) => {
+    if (skipping.n > 0) {
+      const k = skipping.n;
+      skipping.n = 0;
+      const step = $consumed(skipping, () => skipping.iter.nth(k - 1, dropItem));
+      if (step.done) {
+        skipping.return();
+        return 0;
       }
-      return $count(skipping.iter, dropItem);
-    };
-  }
+      dropItem?.(step.value);
+    }
+    return $count(skipping.iter, dropItem);
+  };
   // Std's `Skip::fold` and `try_fold`: its source's `nth(n - 1)`, where
   // that drops what it passes over itself, then its source's; its `fold`,
   // consuming it, closed at its end (#250). Its `fold` so of a source whose
@@ -2510,36 +2512,32 @@ export function $skipping(iter, n, drop) {
     unwind === undefined
       ? skipping.iter.nth(k - 1, drop)
       : $staged(() => skipping.iter.nth(k - 1, drop), undefined, undefined, init, unwind);
-  if (iter.ownNth || Object.hasOwn(iter, "fold")) {
-    skipping.fold = (init, f, unwind) => {
-      if (skipping.n > 0) {
-        const k = skipping.n;
-        skipping.n = 0;
-        const step = $consumed(skipping, () => skipped(k, init, unwind));
-        if (step.done) {
-          skipping.return();
-          return init;
-        }
-        drop?.(step.value);
+  const fold = (init, f, unwind) => {
+    if (skipping.n > 0) {
+      const k = skipping.n;
+      skipping.n = 0;
+      const step = $consumed(skipping, () => skipped(k, init, unwind));
+      if (step.done) {
+        skipping.return();
+        return init;
       }
-      const folded = skipping.iter.fold(init, f, unwind);
-      skipping.return();
-      return folded;
-    };
-  }
-  if (iter.ownNth) {
-    // And its `try_fold`, the same first step, then its source's.
-    skipping.tryFold = (init, f, broke, unwind) => {
-      if (skipping.n > 0) {
-        const k = skipping.n;
-        skipping.n = 0;
-        const step = skipped(k, init, unwind);
-        if (step.done) return init;
-        drop?.(step.value);
-      }
-      return skipping.iter.tryFold(init, f, broke, unwind);
-    };
-  }
+      drop?.(step.value);
+    }
+    const folded = skipping.iter.fold(init, f, unwind);
+    skipping.return();
+    return folded;
+  };
+  // And its `try_fold`, the same first step, then its source's.
+  const tryFold = (init, f, broke, unwind) => {
+    if (skipping.n > 0) {
+      const k = skipping.n;
+      skipping.n = 0;
+      const step = skipped(k, init, unwind);
+      if (step.done) return init;
+      drop?.(step.value);
+    }
+    return skipping.iter.tryFold(init, f, broke, unwind);
+  };
   // What std's `Skip::last` steps after its `nth(n - 1)?`: its source, what
   // it skips dropped, or `undefined` where that found none (#232).
   skipping.skipped = () => {
@@ -2566,14 +2564,11 @@ export function $skipping(iter, n, drop) {
   // `nth` it asks of its source here, and its count's, fold's, try_fold's
   // and last's, is given the items' drop, which a `take` past its end
   // drops what its source's `nth` gives back by (#492).
-  if (iter.ownNth) {
-    skipping.nth = (k, dropItem = drop) => {
-      const skip = skipping.n;
-      skipping.n = 0;
-      return skipping.iter.nth(skip + k, dropItem);
-    };
-    skipping.ownNth = true;
-  }
+  const nth = (k, dropItem = drop) => {
+    const skip = skipping.n;
+    skipping.n = 0;
+    return skipping.iter.nth(skip + k, dropItem);
+  };
   skipping.hint = () => {
     const [low, high] = $sizeHint(skipping.iter);
     return [Math.max(low - skipping.n, 0), high === undefined ? undefined : Math.max(high - skipping.n, 0)];
@@ -2582,29 +2577,36 @@ export function $skipping(iter, n, drop) {
   skipping.len = () => Math.max(skipping.iter.len() - skipping.n, 0);
   // Std's `Skip::nth_back`: its source's, of what it gives, the crate's own
   // where it reaches it (#220).
-  if (iter.nthBack !== undefined) {
-    skipping.nthBack = (k) => {
-      const len = skipping.len();
-      if (k < len) return skipping.iter.nthBack(k);
-      if (len > 0) skipping.iter.nthBack(len - 1);
-      return { done: true, value: undefined };
-    };
-  }
+  const nthBack = (k) => {
+    const len = skipping.len();
+    if (k < len) return skipping.iter.nthBack(k);
+    if (len > 0) skipping.iter.nthBack(len - 1);
+    return { done: true, value: undefined };
+  };
   // Its `try_rfold` and `rfold`, std's: its source's, stopped after what it
   // gives.
-  if (iter.tryRfold !== undefined) {
-    skipping.tryRfold = (init, f, broke, unwind) => {
-      let left = skipping.len();
-      if (left === 0) return init;
-      return skipping.iter.tryRfold(init, (a, x) => (left--, f(a, x)), (a) => left === 0 || broke(a), unwind);
-    };
-    // Consumed, its source done with after (#225).
-    skipping.rfold = (init, f, unwind) => {
-      const folded = skipping.tryRfold(init, f, () => false, unwind);
-      $closed(skipping.iter);
-      return folded;
-    };
-  }
+  const tryRfold = (init, f, broke, unwind) => {
+    let left = skipping.len();
+    if (left === 0) return init;
+    return skipping.iter.tryRfold(init, (a, x) => (left--, f(a, x)), (a) => left === 0 || broke(a), unwind);
+  };
+  // Consumed, its source done with after (#225).
+  const rfold = (init, f, unwind) => {
+    const folded = skipping.tryRfold(init, f, () => false, unwind);
+    $closed(skipping.iter);
+    return folded;
+  };
+  $forward(skipping, iter, {
+    advanceBy,
+    count: iter.ownNth || iter.ownCount ? count : undefined,
+    fold: iter.ownNth || Object.hasOwn(iter, "fold") ? fold : undefined,
+    tryFold: iter.ownNth ? tryFold : undefined,
+    nth: iter.ownNth ? nth : undefined,
+    nthBack: iter.nthBack !== undefined ? nthBack : undefined,
+    tryRfold: iter.tryRfold !== undefined ? tryRfold : undefined,
+    rfold: iter.tryRfold !== undefined ? rfold : undefined,
+  });
+  if (iter.ownNth) skipping.ownNth = true;
   return skipping;
 }
 
@@ -2640,7 +2642,7 @@ export function $taking(iter, n, drop) {
   // And its `nth_back`, `rfold` and `try_rfold`, std's, by its source's
   // `nth_back` past what it won't give, where that reaches the crate's own.
   if (iter.nthBack !== undefined || iter.rfold !== undefined || iter.tryRfold !== undefined) {
-    taking.nthBack = (k) => {
+    const nthBack = (k) => {
       const len = taking.iter.len();
       if (taking.n > k) {
         const past = Math.max(len - taking.n, 0) + k;
@@ -2656,13 +2658,14 @@ export function $taking(iter, n, drop) {
       return !(len > taking.n && $nthBackOf(taking.iter, len - taking.n - 1, drop).done);
     };
     // Consumed, its source done with after (#225).
-    taking.rfold = (init, f, unwind) => {
+    const rfold = (init, f, unwind) => {
       const folded = taking.n === 0 || !trimmed() ? init : $foldBack(taking.iter, init, f, unwind);
       $closed(taking.iter);
       return folded;
     };
-    taking.tryRfold = (init, f, broke, unwind) =>
+    const tryRfold = (init, f, broke, unwind) =>
       taking.n === 0 || !trimmed() ? init : $tryRfoldOf(taking.iter, init, f, broke, unwind);
+    $forward(taking, iter, { nthBack, rfold, tryRfold });
   }
   return taking;
 }
@@ -3009,14 +3012,7 @@ export function $mapEnds(it, f) {
   // Where `f` throws, a panic, the accumulator dropped by `unwind` (#423).
   const folding = (g, unwind) =>
     unwind === undefined ? (a, x) => g(a, f(x)) : (a, x) => g(a, $staged(f, x, undefined, a, unwind));
-  if (it.fold !== undefined) map.fold = (init, g, unwind) => it.fold(init, folding(g, unwind), unwind);
-  if (it.tryFold !== undefined) {
-    map.tryFold = (init, g, broke, unwind) => it.tryFold(init, folding(g, unwind), broke, unwind);
-  }
-  if (it.rfold !== undefined) map.rfold = (init, g, unwind) => it.rfold(init, folding(g, unwind), unwind);
-  if (it.tryRfold !== undefined) {
-    map.tryRfold = (init, g, broke, unwind) => it.tryRfold(init, folding(g, unwind), broke, unwind);
-  }
+  $forward(map, it, { fold: "fold", tryFold: "tryFold", rfold: "rfold", tryRfold: "tryRfold" }, folding);
   map.from = [it];
   return map;
 }
@@ -3046,38 +3042,37 @@ export function $chainEnds(a, b) {
   // Std's `Chain::rfold` and `try_rfold`, `b`'s then `a`'s, and its
   // `nth_back`, `b` stepped back past `n`, then `a`'s own `nth_back`, where
   // they reach the crate's own (#220).
-  if (a.rfold !== undefined || b.rfold !== undefined) {
-    chain.rfold = (init, f, unwind) => {
-      let folded = init;
-      if (sides.b !== undefined) folded = $foldBack(sides.b, folded, f, unwind);
-      if (sides.a !== undefined) folded = $foldBack(sides.a, folded, f, unwind);
-      return folded;
-    };
-  }
-  if (a.tryRfold !== undefined || b.tryRfold !== undefined) {
-    chain.tryRfold = (init, f, broke, unwind) => {
-      let folded = init;
-      if (sides.b !== undefined) {
-        folded = $tryRfoldOf(sides.b, folded, f, broke, unwind);
-        if (broke(folded)) return folded;
-        sides.b = undefined;
+  const rfold = (init, f, unwind) => {
+    let folded = init;
+    if (sides.b !== undefined) folded = $foldBack(sides.b, folded, f, unwind);
+    if (sides.a !== undefined) folded = $foldBack(sides.a, folded, f, unwind);
+    return folded;
+  };
+  const tryRfold = (init, f, broke, unwind) => {
+    let folded = init;
+    if (sides.b !== undefined) {
+      folded = $tryRfoldOf(sides.b, folded, f, broke, unwind);
+      if (broke(folded)) return folded;
+      sides.b = undefined;
+    }
+    return sides.a === undefined ? folded : $tryRfoldOf(sides.a, folded, f, broke, unwind);
+  };
+  const nthBack = (n) => {
+    if (sides.b !== undefined) {
+      for (; n > 0; n--) if (sides.b.back().done) break;
+      if (n === 0) {
+        const at = sides.b.back();
+        if (!at.done) return at;
       }
-      return sides.a === undefined ? folded : $tryRfoldOf(sides.a, folded, f, broke, unwind);
-    };
-  }
-  if (a.nthBack !== undefined) {
-    chain.nthBack = (n) => {
-      if (sides.b !== undefined) {
-        for (; n > 0; n--) if (sides.b.back().done) break;
-        if (n === 0) {
-          const at = sides.b.back();
-          if (!at.done) return at;
-        }
-        sides.b = undefined;
-      }
-      return sides.a === undefined ? done : sides.a.nthBack(n);
-    };
-  }
+      sides.b = undefined;
+    }
+    return sides.a === undefined ? done : sides.a.nthBack(n);
+  };
+  $forward(chain, a, {
+    rfold: a.rfold !== undefined || b.rfold !== undefined ? rfold : undefined,
+    tryRfold: a.tryRfold !== undefined || b.tryRfold !== undefined ? tryRfold : undefined,
+    nthBack: a.nthBack !== undefined ? nthBack : undefined,
+  });
   chain.from = [a, b];
   return chain;
 }
@@ -3124,7 +3119,7 @@ export function $stepBy(it, step, drop) {
   // Its `nth` its source's, which drops what it passes over itself, a
   // reversed `Vec`'s as one slice (#234).
   if (it.ownNth) stepped.ownNth = true;
-  stepped.nth = (n) => {
+  const nth = (n) => {
     if (stepped.first) {
       stepped.first = false;
       const head = it.next();
@@ -3136,7 +3131,7 @@ export function $stepBy(it, step, drop) {
   };
   // Where a step throws, a stage's panic, what it folded dropped by
   // `unwind` (#423).
-  stepped.tryFold = (init, f, broke, unwind) => {
+  const tryFold = (init, f, broke, unwind) => {
     let folded = init;
     const stepping = (run) => (unwind === undefined ? run() : $staged(run, undefined, undefined, folded, unwind));
     if (stepped.first) {
@@ -3155,11 +3150,12 @@ export function $stepBy(it, step, drop) {
   };
   // Its `fold`, its `try_fold` never stopped, then closed, as `fold(self)`
   // drops what it has left at its end (#242), and though it throws.
-  stepped.fold = (init, f, unwind) => {
+  const fold = (init, f, unwind) => {
     const folded = $consumed(stepped, () => stepped.tryFold(init, f, () => false, unwind));
     stepped.return();
     return folded;
   };
+  $forward(stepped, it, { nth, tryFold, fold });
   stepped.from = [it];
   return stepped;
 }
@@ -3179,7 +3175,7 @@ export function $stepByEnds(it, step) {
   stepped.back = () => stepped.skip(backIndex(), "back");
   // Std's `nth_back(n)`: its source's, past `n` steps and its back's index,
   // one call, the crate's own where it writes one (#245).
-  stepped.nthBack = (n) => stepped.skip(n * step + backIndex(), "back");
+  $forward(stepped, it, { nthBack: (n) => stepped.skip(n * step + backIndex(), "back") });
   return stepped;
 }
 
@@ -3229,10 +3225,7 @@ export function $filterEnds(it, p, drop) {
     const asked = unwind === undefined ? (x) => ask(x) : (x, a) => $staged(ask, x, undefined, a, unwind);
     return (a, x) => (asked(x, a) ? f(a, x) : (drop?.(x), a));
   };
-  if (it.rfold !== undefined) filter.rfold = (init, f, unwind) => it.rfold(init, folding(f, unwind), unwind);
-  if (it.tryRfold !== undefined) {
-    filter.tryRfold = (init, f, broke, unwind) => it.tryRfold(init, folding(f, unwind), broke, unwind);
-  }
+  $forward(filter, it, { rfold: "rfold", tryRfold: "tryRfold" }, folding);
   filter.from = [it];
   return filter;
 }
@@ -3266,36 +3259,27 @@ export function $enumerate(iter) {
   // name, `count` being std's field of how many it's given (ADR 0988); so
   // a reversed `Vec`'s take drops what it counts as one slice, front to
   // back (#493). Given a pair's drop, of the item it counts.
-  enumerated.countItems = (drop) => $count(enumerated.iter, drop && ((x) => drop([0, x])));
+  const countItems = (drop) => $count(enumerated.iter, drop && ((x) => drop([0, x])));
   // Std's `fold` and `try_fold`: its source's, each item counted. Each of
   // its folds gives its source `unwind`, the drop of an accumulator a
   // step's panic strands, as std's passes its closure on (#423, rd767).
-  if (iter.fold !== undefined) {
-    enumerated.fold = (init, f, unwind) =>
-      enumerated.iter.fold(init, (a, x) => f(a, [enumerated.count++, x]), unwind);
-  }
-  enumerated.tryFold = (init, f, broke, unwind) =>
+  const fold = (init, f, unwind) => enumerated.iter.fold(init, (a, x) => f(a, [enumerated.count++, x]), unwind);
+  const tryFold = (init, f, broke, unwind) =>
     $lent(enumerated.iter).tryFold(init, (a, x) => f(a, [enumerated.count++, x]), broke, unwind);
   // Std's `rfold`, `try_rfold` and `nth_back`: its source's, each counted
   // from where it is, the crate's own where they reach it (#220).
-  if (iter.rfold !== undefined) {
-    enumerated.rfold = (init, f, unwind) => {
-      let at = enumerated.count + enumerated.iter.len();
-      return enumerated.iter.rfold(init, (a, x) => f(a, [--at, x]), unwind);
-    };
-  }
-  if (iter.tryRfold !== undefined) {
-    enumerated.tryRfold = (init, f, broke, unwind) => {
-      let at = enumerated.count + enumerated.iter.len();
-      return enumerated.iter.tryRfold(init, (a, x) => f(a, [--at, x]), broke, unwind);
-    };
-  }
-  if (iter.nthBack !== undefined) {
-    enumerated.nthBack = (k) => {
-      const step = enumerated.iter.nthBack(k);
-      return pair(step, enumerated.count + enumerated.iter.len());
-    };
-  }
+  const rfold = (init, f, unwind) => {
+    let at = enumerated.count + enumerated.iter.len();
+    return enumerated.iter.rfold(init, (a, x) => f(a, [--at, x]), unwind);
+  };
+  const tryRfold = (init, f, broke, unwind) => {
+    let at = enumerated.count + enumerated.iter.len();
+    return enumerated.iter.tryRfold(init, (a, x) => f(a, [--at, x]), broke, unwind);
+  };
+  const nthBack = (k) => {
+    const step = enumerated.iter.nthBack(k);
+    return pair(step, enumerated.count + enumerated.iter.len());
+  };
   // Std's `nth(k)`: its source's, counted `k` more, the crate's own where
   // it writes one (#182); its own where its source's is, which drops what
   // it passes itself, a reversed `Vec`'s, as a `step_by` over it asks (#277).
@@ -3303,15 +3287,23 @@ export function $enumerate(iter) {
   // by which a `take` past its end drops what its source's `nth` gives
   // back (#492).
   if (iter.ownNth) enumerated.ownNth = true;
-  if (iter.nth !== undefined) {
-    enumerated.nth = (k, drop) => {
-      const step = enumerated.iter.nth(k, drop && ((x) => drop([0, x])));
-      if (step.done) return step;
-      const at = enumerated.count + k;
-      enumerated.count = at + 1;
-      return { done: false, value: [at, step.value] };
-    };
-  }
+  const nth = (k, drop) => {
+    const step = enumerated.iter.nth(k, drop && ((x) => drop([0, x])));
+    if (step.done) return step;
+    const at = enumerated.count + k;
+    enumerated.count = at + 1;
+    return { done: false, value: [at, step.value] };
+  };
+  // Each but its `count` and `try_fold` where its source has it.
+  $forward(enumerated, iter, {
+    countItems,
+    fold: iter.fold === undefined ? undefined : fold,
+    tryFold,
+    rfold: iter.rfold === undefined ? undefined : rfold,
+    tryRfold: iter.tryRfold === undefined ? undefined : tryRfold,
+    nthBack: iter.nthBack === undefined ? undefined : nthBack,
+    nth: iter.nth === undefined ? undefined : nth,
+  });
   return enumerated;
 }
 
@@ -3566,7 +3558,7 @@ export function $lazyScan(items, init, f, handle = true) {
   );
   // Its `try_fold`, its source's, stopped at a `None`.
   // Where `f` throws, a panic, the accumulator dropped by `unwind` (#423).
-  scanning.tryFold = (init, g, broke, unwind) => {
+  const tryFold = (init, g, broke, unwind) => {
     let stopped = false;
     const folded = $lent(source).tryFold(
       init,
@@ -3583,11 +3575,12 @@ export function $lazyScan(items, init, f, handle = true) {
   };
   // Its `fold`, std's: its `try_fold`, never stopped but by a `None`, then
   // dropped with what it steps (#214).
-  scanning.fold = (init, g, unwind) => {
+  const fold = (init, g, unwind) => {
     const folded = $consumed(scanning, () => scanning.tryFold(init, g, () => false, unwind));
     scanning.return();
     return folded;
   };
+  $forward(scanning, source, { tryFold, fold });
   scanning.from = [source];
   return scanning;
 }
@@ -3750,10 +3743,12 @@ export function $lazyRange(start, end = Infinity, step = 1) {
     at = Number(at) + step;
     return { done: false, value };
   });
-  range.nth = (k) => {
-    if (k > 0 && at < end) at = Number(at) + k * step;
-    return range.next();
-  };
+  $forward(range, undefined, {
+    nth: (k) => {
+      if (k > 0 && at < end) at = Number(at) + k * step;
+      return range.next();
+    },
+  });
   // Its `size_hint`, std's, exact, of how many it has left; of `n..`,
   // `usize::MAX` and none known (ADR 0918).
   range.hint = () => {
@@ -10854,54 +10849,44 @@ export function $stdIterator(struct, steps) {
       if (steps.takes?.includes(method)) it.$closed = true;
     }
   };
-  // Given `unwind`, the compiled fold's accumulator's drop, where a stage's
-  // panic strands it (#424).
-  if (steps.fold !== undefined) {
-    it.fold = (init, f, unwind) => taking("fold", () => steps.fold(it, init, f, unwind));
-  }
-  // Its `try_fold`, std's, where it passes it on to its source's (#214).
-  if (steps.tryFold !== undefined) {
-    it.tryFold = (init, f, broke, unwind) => steps.tryFold(it, init, f, broke, unwind);
-  }
   if (steps.hint !== undefined) {
     it.hint = () => steps.hint(it);
   }
-  // Its `count`, std's, its source's own (#293).
-  if (steps.count !== undefined) {
-    it.count = (drop) => taking("count", () => steps.count(it, drop));
-  }
-  // Its `advance_by`, std's, its source's, which drops what it passes as
-  // its source does, a `Vec`'s as one slice (#286).
-  // Its `advance_by`, std's compiled one, its `Result` how many there
-  // weren't, as `advanceBy` gives it (ADR 0913).
-  if (steps.advance !== undefined) {
-    it.advanceBy = (m) => {
+  // Each its compiled body's, which passes it on as std's does: its `fold`,
+  // given `unwind`, the compiled fold's accumulator's drop, where a stage's
+  // panic strands it (#424); its `try_fold`, where it passes it on to its
+  // source's (#214); its `count`, its source's own (#293); its `advance_by`,
+  // its source's, which drops what it passes as its source does, a `Vec`'s
+  // as one slice (#286), or std's compiled one, its `Result` how many there
+  // weren't, as `advanceBy` gives it (ADR 0913); its `nth` and its `last`,
+  // which pass it on to its source's (#182). Each std's body, which drops
+  // what it passes itself, as `$iterator`'s own do: `ownNth`, `ownLast`.
+  const advance =
+    steps.advance &&
+    ((m) => {
       const advanced = steps.advance(it, m);
       return advanced.TAG === "Ok" ? 0 : advanced._0;
-    };
-  }
-  if (steps.advanceBy !== undefined) {
-    it.advanceBy = (m, drop) => steps.advanceBy(it, m, drop);
-  }
-  // Its `nth`, the compiled one, which passes it on to its source's (#182).
-  // Each std's body, which drops what it passes itself, as `$iterator`'s
-  // own do: `ownNth`, `ownLast`.
-  if (steps.nth !== undefined) {
-    it.nth = (k) => step(steps.nth(it, k));
-    it.ownNth = true;
-  }
-  // And its `last`, the compiled one, its source's (#182).
-  if (steps.last !== undefined) {
-    it.last = () => step(taking("last", () => steps.last(it)));
-    it.ownLast = true;
-  }
+    });
+  $forward(it, steps, {
+    fold: steps.fold && ((init, f, unwind) => taking("fold", () => steps.fold(it, init, f, unwind))),
+    tryFold: steps.tryFold && ((init, f, broke, unwind) => steps.tryFold(it, init, f, broke, unwind)),
+    count: steps.count && ((drop) => taking("count", () => steps.count(it, drop))),
+    advanceBy: steps.advanceBy === undefined ? advance : (m, drop) => steps.advanceBy(it, m, drop),
+    nth: steps.nth && ((k) => step(steps.nth(it, k))),
+    last: steps.last && (() => step(taking("last", () => steps.last(it)))),
+  });
+  if (steps.nth !== undefined) it.ownNth = true;
+  if (steps.last !== undefined) it.ownLast = true;
   it.knowing = (back, len, rfold, nthBack, tryRfold) => {
     if (back !== undefined) it.back = () => step(back(it));
     if (len !== undefined) it.len = () => len(it);
-    if (rfold !== undefined) it.rfold = (init, f, unwind) => rfold(it, init, f, unwind);
-    if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(it, k));
-    // Its compiled `try_rfold`, which `rfind` asks (ADR 0930).
-    if (tryRfold !== undefined) it.tryRfold = (init, f, broke, unwind) => tryRfold(it, init, f, broke, unwind);
+    // Its compiled `rfold` and `nth_back`, and `try_rfold`, which `rfind`
+    // asks (ADR 0930).
+    $forward(it, steps, {
+      rfold: rfold && ((init, f, unwind) => rfold(it, init, f, unwind)),
+      nthBack: nthBack && ((k) => step(nthBack(it, k))),
+      tryRfold: tryRfold && ((init, f, broke, unwind) => tryRfold(it, init, f, broke, unwind)),
+    });
   };
   // Its fields, the struct's, are what a move copies and what a write of
   // the whole replaces; its methods step `it` itself (#537). Moved out
@@ -12274,7 +12259,7 @@ export function $lazyChain(a, b) {
   );
   // Closed though a fold throws, a panic, `b` with what's left of `a`, as
   // std's `Chain::fold` drops itself as it unwinds (#423).
-  chained.fold = (init, f, unwind) =>
+  const fold = (init, f, unwind) =>
     $consumed(chained, () => {
       let folded = init;
       if (first !== undefined) {
@@ -12288,17 +12273,17 @@ export function $lazyChain(a, b) {
     });
   // Std's `Chain::last`: `a`'s `last`, then `b`'s, both asked, `b`'s where
   // it has one.
-  chained.last = () => {
-    const last = (it) => (it.last !== undefined ? it.last() : $lent(it).last());
-    const a = first !== undefined ? last(first) : { done: true, value: undefined };
+  const last = () => {
+    const lastOf = (it) => (it.last !== undefined ? it.last() : $lent(it).last());
+    const a = first !== undefined ? lastOf(first) : { done: true, value: undefined };
     first = undefined;
-    const b = last(second);
+    const b = lastOf(second);
     return b.done ? a : b;
   };
   // Std's `Chain::nth`: `a` advanced, then its next, or what's left of
   // `n` of `b`'s own `nth`, where it has one (#214), what it passes over
   // dropped as `a`'s is (ADR 0925).
-  chained.nth = (n, drop) => {
+  const nth = (n, drop) => {
     if (first !== undefined) {
       // What it passes over dropped, by its own `advance_by` or each by
       // its item's drop (#269), the one given where it has none (#285).
@@ -12316,7 +12301,7 @@ export function $lazyChain(a, b) {
     const dropping = second.dropItem ?? drop;
     return second.nth !== undefined ? second.nth(n, dropping) : $lent(second).nth(n, dropping);
   };
-  chained.tryFold = (init, f, broke, unwind) => {
+  const tryFold = (init, f, broke, unwind) => {
     let folded = init;
     if (first !== undefined) {
       folded = $lent(first).tryFold(folded, f, broke, unwind);
@@ -12330,7 +12315,7 @@ export function $lazyChain(a, b) {
   };
   // Std's `Chain::count`: `a`'s own `count`, then `b`'s, a `Take`'s
   // advancing its source, which drops what it passes as one slice (#283).
-  chained.count = (drop) => {
+  const count = (drop) => {
     let counted = 0;
     if (first !== undefined) {
       counted = $count(first, drop);
@@ -12343,7 +12328,7 @@ export function $lazyChain(a, b) {
   // gives (ADR 0925).
   const advanced = (it, m, drop) =>
     it.advanceBy !== undefined ? it.advanceBy(m, drop) : $Steps.prototype.advanceBy.call($lent(it), m, drop);
-  chained.advanceBy = (m, drop) => {
+  const advanceBy = (m, drop) => {
     if (first !== undefined) {
       m = advanced(first, m, drop);
       if (m === 0) return 0;
@@ -12352,6 +12337,7 @@ export function $lazyChain(a, b) {
     }
     return advanced(second, m, drop);
   };
+  $forward(chained, first, { fold, last, nth, tryFold, count, advanceBy });
   // Its `nth` drops what it passes over itself where each side's does, a
   // `Vec`'s (#250).
   // Its `count`, each side's, the crate's own where one writes it (#505).
@@ -12526,31 +12512,31 @@ export function $rev(it) {
   rev.from = [it];
   rev.len = () => it.len();
   rev.hint = () => $sizeHint(it);
-  // Its `advance_by`, its source's `advance_back_by`, std's, of its
-  // `next_back`, each dropped, `drop`: what its `nth` steps past.
-  rev.advanceBy = (m, drop) => {
-    // One that drops what it passes over itself, a `Vec`'s, as one slice
-    // (#250).
-    if (it.advanceBackBy !== undefined) return it.advanceBackBy(m);
-    for (; m > 0; m--) {
-      const step = it.back();
-      if (step.done) break;
-      drop?.(step.value);
-    }
-    return m;
-  };
-  if (it.rfold !== undefined) rev.fold = (init, f, unwind) => it.rfold(init, f, unwind);
-  if (it.nthBack !== undefined) rev.nth = (k) => it.nthBack(k);
-  // One that drops what it passes over itself, a `Vec`'s `IntoIter`'s, from
-  // either end (#234, #250).
-  if (it.ownNthBack) rev.ownNth = true;
+  // Its `fold`, `nth` and `try_fold`, its source's `rfold`, `nth_back` and
+  // `try_rfold`, as std's `Rev`'s are; its `nth_back` and `advance_back_by`
+  // its source's `nth` and `advance_by` where they drop what they pass over
+  // themselves, a `Vec`'s `IntoIter`'s, from either end (#234, #250).
+  $forward(rev, it, {
+    fold: "rfold",
+    nth: "nthBack",
+    tryFold: "tryRfold",
+    nthBack: it.ownNth ? "nth" : undefined,
+    advanceBackBy: it.ownNth ? "advanceBy" : undefined,
+    // Its `advance_by`, its source's `advance_back_by`, std's, of its
+    // `next_back`, each dropped, `drop`: what its `nth` steps past.
+    advanceBy: (m, drop) => {
+      // One that drops what it passes over itself, a `Vec`'s, as one slice
+      // (#250).
+      if (it.advanceBackBy !== undefined) return it.advanceBackBy(m);
+      for (; m > 0; m--) {
+        const step = it.back();
+        if (step.done) break;
+        drop?.(step.value);
+      }
+      return m;
+    },
+  });
   if (it.dropItem !== undefined) rev.dropItem = it.dropItem;
-  if (it.ownNth) {
-    rev.nthBack = (k) => it.nth(k);
-    rev.advanceBackBy = (m) => it.advanceBy(m);
-    rev.ownNthBack = true;
-  }
-  if (it.tryRfold !== undefined) rev.tryFold = (init, f, broke, unwind) => it.tryRfold(init, f, broke, unwind);
   return rev;
 }
 
@@ -12575,7 +12561,7 @@ export function $lazyTakeWhile(items, keep) {
   taking.from = [source];
   // Where `keep` throws, a panic, the accumulator dropped by `unwind`
   // (#423).
-  taking.tryFold = (init, f, broke, unwind) => {
+  const tryFold = (init, f, broke, unwind) => {
     if (ended) return init;
     const kept = unwind === undefined ? (x) => keep(x) : (x, a) => $staged(keep, x, undefined, a, unwind);
     const folded = $lent(source).tryFold(
@@ -12588,11 +12574,12 @@ export function $lazyTakeWhile(items, keep) {
   };
   // Its `fold`, std's: its `try_fold`, never stopped, so its source is
   // folded as std folds it, then dropped with it (#214).
-  taking.fold = (init, f, unwind) => {
+  const fold = (init, f, unwind) => {
     const folded = $consumed(taking, () => taking.tryFold(init, f, () => false, unwind));
     taking.return();
     return folded;
   };
+  $forward(taking, source, { tryFold, fold });
   return taking;
 }
 
@@ -12613,7 +12600,7 @@ export function $lazyMapWhile(items, f, present) {
     () => source.return?.(),
   );
   mapping.from = [source];
-  mapping.tryFold = (init, g, broke, unwind) => {
+  const tryFold = (init, g, broke, unwind) => {
     let stopped = false;
     const folded = $lent(source).tryFold(
       init,
@@ -12630,11 +12617,12 @@ export function $lazyMapWhile(items, f, present) {
   };
   // Its `fold`, std's: its `try_fold`, then dropped with what it steps
   // (#214).
-  mapping.fold = (init, g, unwind) => {
+  const fold = (init, g, unwind) => {
     const folded = $consumed(mapping, () => mapping.tryFold(init, g, () => false, unwind));
     mapping.return();
     return folded;
   };
+  $forward(mapping, source, { tryFold, fold });
   return mapping;
 }
 
@@ -12669,7 +12657,7 @@ export function $lazySkipWhile(items, skip) {
       throw error;
     }
   };
-  skipped.tryFold = (init, f, broke, unwind) => {
+  const tryFold = (init, f, broke, unwind) => {
     let folded = init;
     if (skipping) {
       const step = first(folded, unwind);
@@ -12683,7 +12671,7 @@ export function $lazySkipWhile(items, skip) {
   // crate's where it writes one (#214); then closed, as `fold(self)` drops
   // what it has left at its end, though its first step found none (#242).
   // Closed though it throws, a panic (#423).
-  skipped.fold = (init, f, unwind) =>
+  const fold = (init, f, unwind) =>
     $consumed(skipped, () => {
       let folded = init;
       if (skipping) {
@@ -12696,6 +12684,7 @@ export function $lazySkipWhile(items, skip) {
       }
       return source.fold !== undefined ? source.fold(folded, f, unwind) : source.reduce(f, folded);
     });
+  $forward(skipped, source, { tryFold, fold });
   skipped.from = [source];
   return skipped;
 }
@@ -13172,24 +13161,23 @@ export function $formatFloat(value, options, show) {
 // it; its `fold`, std's, of `next` (#162), or of `it`'s `tryFold` where `it`
 // is std's adapter of one, or a range, whose `tryFold` it is too.
 export function $lent(it) {
-  const lent = new $Steps(() => it.next());
-  if (it.nth !== undefined) lent.nth = (k, drop) => it.nth(k, drop);
-  if (it.ownNth) lent.ownNth = true;
-  // Its `advance_by`, `it`'s, as std's `&mut I` gives it (ADR 0913).
-  if (Object.hasOwn(it, "advanceBy")) lent.advanceBy = (m, drop) => it.advanceBy(m, drop);
-  // And its `fold` that `tryFold`, as std's `&mut I` folds by its
-  // `I::try_fold`: an inclusive range's ends it exhausted at its last (#414).
-  if (it.tryFold !== undefined) {
-    lent.tryFold = (init, f, broke, unwind) => it.tryFold(init, f, broke, unwind);
-    lent.fold = (init, f, unwind) => it.tryFold(init, f, () => false, unwind);
-  }
-  // And its back and its length, `it`'s, as std's `&mut I` passes on an
-  // `I: DoubleEndedIterator`'s `next_back`, `nth_back` and `try_rfold`
-  // and an `ExactSizeIterator`'s `len`; not its `rfold`, which it folds by
-  // that `try_rfold`, as its dictionary does (ADRs 0928, 0982).
+  // Its `nth`, `it`'s, as std's `&mut I` gives it, the crate's own where
+  // `$iterator` was given it; its `advance_by`, `it`'s own (ADR 0913); its
+  // `fold` that `tryFold`, as std's `&mut I` folds by its `I::try_fold`: an
+  // inclusive range's ends it exhausted at its last (#414). And its back
+  // and its length, `it`'s, as std's `&mut I` passes on an
+  // `I: DoubleEndedIterator`'s `next_back`, `nth_back` and `try_rfold` and
+  // an `ExactSizeIterator`'s `len`; not its `rfold`, which it folds by that
+  // `try_rfold`, as its dictionary does (ADRs 0928, 0982).
+  const lent = $forward(new $Steps(() => it.next()), it, {
+    nth: "nth",
+    advanceBy: Object.hasOwn(it, "advanceBy") ? "advanceBy" : undefined,
+    tryFold: "tryFold",
+    fold: it.tryFold === undefined ? undefined : (init, f, unwind) => it.tryFold(init, f, () => false, unwind),
+    nthBack: "nthBack",
+    tryRfold: "tryRfold",
+  });
   if (it.back !== undefined) lent.back = () => it.back();
-  if (it.nthBack !== undefined) lent.nthBack = (k) => it.nthBack(k);
-  if (it.tryRfold !== undefined) lent.tryRfold = (init, f, broke, unwind) => it.tryRfold(init, f, broke, unwind);
   if (it.len !== undefined) lent.len = () => it.len();
   // Of std's struct, compiled (ADR 0871): its fields `it`'s, read and
   // written through it, so its compiled bodies step `it` where it is, as
@@ -13207,6 +13195,50 @@ export function $lent(it) {
     });
   }
   return lent;
+}
+
+// The steps an iterator rust-js makes has beside `next`, each std's
+// `Iterator` or `DoubleEndedIterator` method an adapter may specialize, as
+// a JS iterator's: `fold(init, f, unwind)`, `tryFold(init, f, broke,
+// unwind)`, `rfold(init, f, unwind)`, `tryRfold(init, f, broke, unwind)`,
+// `nth(k, drop)`, `nthBack(k)`, `last()`, `count(drop)`,
+// `advanceBy(m, drop)` and `advanceBackBy(m, drop)`. A step it lacks is
+// std's default, `$Steps`' (ADR 0669), or, from its back, `back_steps.js`'
+// helpers'.
+//
+// `adapter` given each of the steps `steps` names, the one place one is
+// given (ADR 1089): of a string, `source`'s step of that name, passed on,
+// where `source` has it, with every argument it's given, so an item's drop
+// and an accumulator's `unwind` always go on with it, and its own, the
+// crate's or one that drops what it passes itself (`ownNth`, `ownFold`,
+// ..), where `source`'s is; of a function, the adapter's own, std's
+// specialization of it; of `undefined`, none, so it's std's default.
+// Given `each`, what an adapter does to each item, a `map`'s, a fold passed
+// on is given `each(f, unwind)` for its `f`, the `unwind` it's given; its
+// own it isn't, as the adapter holds more than `source`, its function,
+// which the crate's own `fold` that takes `source` doesn't drop.
+export function $forward(adapter, source, steps, each) {
+  for (const name of Object.keys(steps)) {
+    const by = steps[name];
+    if (typeof by === "function") {
+      adapter[name] = by;
+    } else if (by !== undefined && source[by] !== undefined) {
+      // Where a fold's `unwind` is, after its `f` and, of a `try_fold`,
+      // its `broke`.
+      const unwindAt = { fold: 0, rfold: 0, tryFold: 1, tryRfold: 1 }[by];
+      adapter[name] =
+        each === undefined || unwindAt === undefined
+          ? (...args) => source[by](...args)
+          : (init, f, ...rest) => source[by](init, each(f, rest[unwindAt]), ...rest);
+      if (each === undefined && source[$ownStep(by)]) adapter[$ownStep(name)] = true;
+    }
+  }
+  return adapter;
+}
+
+// The flag that says an iterator's `step` is its own, `ownNth` of `nth`.
+export function $ownStep(step) {
+  return `own${step[0].toUpperCase()}${step.slice(1)}`;
 }
 
 // The items of `it` its `fold` gives, the crate's own its impl writes,
@@ -13235,8 +13267,9 @@ export function $folded(it, firstByNext = false) {
       return list;
     }).values());
   const folded = Iterator.from({ next: () => listed().next() });
-  folded.fold = (init, f, unwind) => (items === undefined ? foldOf(init, f, unwind) : listed().reduce(f, init));
-  return folded;
+  return $forward(folded, it, {
+    fold: (init, f, unwind) => (items === undefined ? foldOf(init, f, unwind) : listed().reduce(f, init)),
+  });
 }
 
 // `advance_by(m)` of `it`, by its dictionary, `iterator`: its own, which

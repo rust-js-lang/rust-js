@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "lazy-range-nth-stepped",
     breaks: "a lazy range has no `nth` of its bounds, so a `step_by` of one given to generic code steps each number and doesn't finish (#231)",
     file: "src/runtime/lazy_range.js",
-    find: "  range.nth = (k) => {\n",
-    replace: "  range.unused = (k) => {\n",
+    find: "    nth: (k) => {\n",
+    replace: "    unused: (k) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^range_steps_anywhere.rs$"],
   },
   {

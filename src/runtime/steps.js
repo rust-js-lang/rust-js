@@ -169,17 +169,12 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       () => this.return(),
     );
     mapped.from = [this];
-    // Std's `Map::fold`, its source's of each mapped; where `f` throws, the
-    // accumulator dropped by `unwind`, as its closure drops it (#423).
-    mapped.fold = (init, g, unwind) =>
-      this.fold(init, unwind === undefined ? (a, x) => g(a, f(x, i++)) : (a, x) => g(a, $staged(f, x, i++, a, unwind)), unwind);
-    mapped.tryFold = (init, g, broke, unwind) =>
-      this.tryFold(
-        init,
-        unwind === undefined ? (a, x) => g(a, f(x, i++)) : (a, x) => g(a, $staged(f, x, i++, a, unwind)),
-        broke,
-        unwind,
-      );
+    // Std's `Map::fold` and `try_fold`, its source's of each mapped; where
+    // `f` throws, the accumulator dropped by `unwind`, as its closure drops
+    // it (#423).
+    $forward(mapped, this, { fold: "fold", tryFold: "tryFold" }, (g, unwind) =>
+      unwind === undefined ? (a, x) => g(a, f(x, i++)) : (a, x) => g(a, $staged(f, x, i++, a, unwind)),
+    );
     // Std's `Map::size_hint`, its source's.
     mapped.hint = () => $sizeHint(this);
     return mapped;
@@ -197,8 +192,12 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     );
     kept.from = [this];
     // Std's `Filter::fold`, its source's of each kept.
-    kept.fold = (init, g, unwind) =>
-      this.fold(init, (a, x) => ((unwind === undefined ? keep(x, i++) : $staged(keep, x, i++, a, unwind)) ? g(a, x) : a), unwind);
+    $forward(
+      kept,
+      this,
+      { fold: "fold" },
+      (g, unwind) => (a, x) => ((unwind === undefined ? keep(x, i++) : $staged(keep, x, i++, a, unwind)) ? g(a, x) : a),
+    );
     return kept;
   }
   // Std's `FlatMap`: each item of what `f` makes of each of its source's,
@@ -232,7 +231,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       },
     );
     flat.from = [this];
-    flat.fold = (init, g, unwind) => {
+    const fold = (init, g, unwind) => {
       let folded = init;
       if (inner !== undefined) folded = $foldDropping(inner, folded, g, unwind);
       inner = undefined;
@@ -243,7 +242,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     };
     // Its `try_fold`, std's: the rest of the one it's in, then its source's
     // of each one's, the one it stops in kept for its next step.
-    flat.tryFold = (init, g, broke, unwind) => {
+    const tryFold = (init, g, broke, unwind) => {
       let folded = init;
       if (inner !== undefined) {
         folded = $lent(inner).tryFold(folded, g, broke, unwind);
@@ -265,6 +264,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       if (!broke(folded)) ended = true;
       return folded;
     };
+    $forward(flat, this, { fold, tryFold });
     return flat;
   }
   // Std's `Take`: each of its `n` steps steps its source, a `None` too.
@@ -289,7 +289,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     }
     // Its `nth(k)`, std's: its source's, where it has more than `k` left;
     // else its source's past what it has left, and done.
-    taken.nth = (k, drop = taken.dropItem) => {
+    const nth = (k, drop = taken.dropItem) => {
       if (n > k) {
         n -= k + 1;
         return this.nth(k, drop);
@@ -309,7 +309,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     // asked again there, or stopped there by its limit, not by what it
     // gave, which its caller still steps, its source done with, as its
     // `next` closes it (ADR 0570, #225, #242).
-    taken.tryFold = (init, g, broke, unwind) => {
+    const tryFold = (init, g, broke, unwind) => {
       if (n === 0) {
         if (!taken.held) this.return();
         return init;
@@ -332,26 +332,27 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     // Its `fold`, std's: its `try_fold`, never stopped, so a `Skip`'s
     // inside asks its source's `nth(n - 1)`, then its source dropped with it
     // (#213).
-    taken.fold = (init, g, unwind) => {
+    const fold = (init, g, unwind) => {
       const folded = $consumed(this, () => taken.tryFold(init, g, () => false, unwind));
       this.return();
       return folded;
     };
     // Its `advance_by(m)` and `count`, std's: its source advanced, by as
     // many as it has left, which asks no `nth` (#213).
-    taken.advanceBy = (m, drop) => {
+    const advanceBy = (m, drop) => {
       const min = Math.min(n, m);
       const advanced = min - this.advanceBy(min, drop);
       n -= advanced;
       return m - advanced;
     };
-    taken.count = (drop) => {
+    const count = (drop) => {
       const k = n;
       n = 0;
       const counted = k === 0 ? 0 : k - this.advanceBy(k, drop);
       this.return();
       return counted;
     };
+    $forward(taken, this, { nth, tryFold, fold, advanceBy, count });
     return taken;
   }
   // Std's `Skip`: its first step is its source's `nth(n)`, which stops at a
@@ -371,7 +372,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     skipped.from = [this];
     // Its `fold`, then closed where its `nth(n - 1)` found none, as
     // `fold(self)` drops what it has left at its end (#242).
-    skipped.fold = (init, g, unwind) => {
+    const fold = (init, g, unwind) => {
       if (n > 0) {
         const k = n;
         n = 0;
@@ -382,7 +383,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       }
       return this.fold(init, g, unwind);
     };
-    skipped.tryFold = (init, g, broke, unwind) => {
+    const tryFold = (init, g, broke, unwind) => {
       if (n > 0) {
         const k = n;
         n = 0;
@@ -390,14 +391,14 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       }
       return this.tryFold(init, g, broke, unwind);
     };
-    skipped.nth = (k) => {
+    const nth = (k) => {
       const skip = n;
       n = 0;
       return this.nth(skip + k);
     };
     // Its `count`, std's: its source's `nth(n - 1)`, then its source's
     // `count`, the crate's own where it writes one (#505).
-    skipped.count = (drop) => {
+    const count = (drop) => {
       if (n > 0) {
         const k = n;
         n = 0;
@@ -410,7 +411,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     };
     // Its `advance_by(m)`, std's: its source advanced past what it skips
     // and `m` more (#213).
-    skipped.advanceBy = (m, drop) => {
+    const advanceBy = (m, drop) => {
       const skip = n;
       const left = this.advanceBy(skip + m, drop);
       const advanced = skip + m - left;
@@ -418,7 +419,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       return m - Math.max(advanced - skip, 0);
     };
     // Std's `Skip::last`: its source's `nth(n - 1)`, then its source's `last`.
-    skipped.last = () => {
+    const last = () => {
       if (n > 0) {
         const k = n;
         n = 0;
@@ -426,6 +427,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       }
       return this.last();
     };
+    $forward(skipped, this, { fold, tryFold, nth, count, advanceBy, last });
     return skipped;
   }
 }

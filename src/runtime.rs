@@ -349,6 +349,7 @@ helpers! {
     Formatted,
     FormatFloat,
     Lent,
+    Forward,
     Folded,
     FoldBy,
     CharPattern,
@@ -726,6 +727,8 @@ impl Helper {
             Helper::Formatted => include_str!("runtime/formatted.js"),
             Helper::FormatFloat => include_str!("runtime/format_float.js"),
             Helper::Lent => include_str!("runtime/lent.js"),
+            // The one place an iterator's steps are given (ADR 1089).
+            Helper::Forward => include_str!("runtime/forward.js"),
             Helper::Folded => include_str!("runtime/folded.js"),
             Helper::FoldBy => include_str!("runtime/fold_by.js"),
             Helper::CharPattern => include_str!("runtime/char_pattern.js"),

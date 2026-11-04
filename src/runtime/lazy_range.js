@@ -10,10 +10,12 @@ function $lazyRange(start, end = Infinity, step = 1) {
     at = Number(at) + step;
     return { done: false, value };
   });
-  range.nth = (k) => {
-    if (k > 0 && at < end) at = Number(at) + k * step;
-    return range.next();
-  };
+  $forward(range, undefined, {
+    nth: (k) => {
+      if (k > 0 && at < end) at = Number(at) + k * step;
+      return range.next();
+    },
+  });
   // Its `size_hint`, std's, exact, of how many it has left; of `n..`,
   // `usize::MAX` and none known (ADR 0918).
   range.hint = () => {

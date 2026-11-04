@@ -441,6 +441,15 @@ helpers through `Expr::helper`. Linking collects helper dependencies, and
 artifact planning selects imports from the prepared tree's actual reads.
 The printer receives those imports; it does not infer them from text.
 
+The runtime's iterators are `$Steps` (`src/runtime/steps.js`), whose
+methods are std's defaults of each step. What an adapter passes on of its
+source's steps, `fold`, `try_fold`, `rfold`, `try_rfold`, `nth`,
+`nth_back`, `last`, `count`, `advance_by` and `advance_back_by`, and what
+it specializes, is given by `$forward` (`src/runtime/forward.js`) alone,
+which passes on every argument a step takes, an item's drop and an
+accumulator's `unwind` ([ADR 1089](decisions/1089-an-iterators-steps-are-passed-on-by-one-combinator.md));
+`test/architecture.test.ts` rejects a step assigned anywhere else.
+
 ## Publication
 
 `src/manifest.rs` is the compiler/host contract; `tooling/manifest.js` validates

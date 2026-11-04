@@ -26,7 +26,7 @@ function $lazyChain(a, b) {
   );
   // Closed though a fold throws, a panic, `b` with what's left of `a`, as
   // std's `Chain::fold` drops itself as it unwinds (#423).
-  chained.fold = (init, f, unwind) =>
+  const fold = (init, f, unwind) =>
     $consumed(chained, () => {
       let folded = init;
       if (first !== undefined) {
@@ -40,17 +40,17 @@ function $lazyChain(a, b) {
     });
   // Std's `Chain::last`: `a`'s `last`, then `b`'s, both asked, `b`'s where
   // it has one.
-  chained.last = () => {
-    const last = (it) => (it.last !== undefined ? it.last() : $lent(it).last());
-    const a = first !== undefined ? last(first) : { done: true, value: undefined };
+  const last = () => {
+    const lastOf = (it) => (it.last !== undefined ? it.last() : $lent(it).last());
+    const a = first !== undefined ? lastOf(first) : { done: true, value: undefined };
     first = undefined;
-    const b = last(second);
+    const b = lastOf(second);
     return b.done ? a : b;
   };
   // Std's `Chain::nth`: `a` advanced, then its next, or what's left of
   // `n` of `b`'s own `nth`, where it has one (#214), what it passes over
   // dropped as `a`'s is (ADR 0925).
-  chained.nth = (n, drop) => {
+  const nth = (n, drop) => {
     if (first !== undefined) {
       // What it passes over dropped, by its own `advance_by` or each by
       // its item's drop (#269), the one given where it has none (#285).
@@ -68,7 +68,7 @@ function $lazyChain(a, b) {
     const dropping = second.dropItem ?? drop;
     return second.nth !== undefined ? second.nth(n, dropping) : $lent(second).nth(n, dropping);
   };
-  chained.tryFold = (init, f, broke, unwind) => {
+  const tryFold = (init, f, broke, unwind) => {
     let folded = init;
     if (first !== undefined) {
       folded = $lent(first).tryFold(folded, f, broke, unwind);
@@ -82,7 +82,7 @@ function $lazyChain(a, b) {
   };
   // Std's `Chain::count`: `a`'s own `count`, then `b`'s, a `Take`'s
   // advancing its source, which drops what it passes as one slice (#283).
-  chained.count = (drop) => {
+  const count = (drop) => {
     let counted = 0;
     if (first !== undefined) {
       counted = $count(first, drop);
@@ -95,7 +95,7 @@ function $lazyChain(a, b) {
   // gives (ADR 0925).
   const advanced = (it, m, drop) =>
     it.advanceBy !== undefined ? it.advanceBy(m, drop) : $Steps.prototype.advanceBy.call($lent(it), m, drop);
-  chained.advanceBy = (m, drop) => {
+  const advanceBy = (m, drop) => {
     if (first !== undefined) {
       m = advanced(first, m, drop);
       if (m === 0) return 0;
@@ -104,6 +104,7 @@ function $lazyChain(a, b) {
     }
     return advanced(second, m, drop);
   };
+  $forward(chained, first, { fold, last, nth, tryFold, count, advanceBy });
   // Its `nth` drops what it passes over itself where each side's does, a
   // `Vec`'s (#250).
   // Its `count`, each side's, the crate's own where one writes it (#505).

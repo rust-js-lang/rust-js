@@ -30,7 +30,7 @@ function $lazySkipWhile(items, skip) {
       throw error;
     }
   };
-  skipped.tryFold = (init, f, broke, unwind) => {
+  const tryFold = (init, f, broke, unwind) => {
     let folded = init;
     if (skipping) {
       const step = first(folded, unwind);
@@ -44,7 +44,7 @@ function $lazySkipWhile(items, skip) {
   // crate's where it writes one (#214); then closed, as `fold(self)` drops
   // what it has left at its end, though its first step found none (#242).
   // Closed though it throws, a panic (#423).
-  skipped.fold = (init, f, unwind) =>
+  const fold = (init, f, unwind) =>
     $consumed(skipped, () => {
       let folded = init;
       if (skipping) {
@@ -57,6 +57,7 @@ function $lazySkipWhile(items, skip) {
       }
       return source.fold !== undefined ? source.fold(folded, f, unwind) : source.reduce(f, folded);
     });
+  $forward(skipped, source, { tryFold, fold });
   skipped.from = [source];
   return skipped;
 }

@@ -24,6 +24,7 @@ function $folded(it, firstByNext = false) {
       return list;
     }).values());
   const folded = Iterator.from({ next: () => listed().next() });
-  folded.fold = (init, f, unwind) => (items === undefined ? foldOf(init, f, unwind) : listed().reduce(f, init));
-  return folded;
+  return $forward(folded, it, {
+    fold: (init, f, unwind) => (items === undefined ? foldOf(init, f, unwind) : listed().reduce(f, init)),
+  });
 }

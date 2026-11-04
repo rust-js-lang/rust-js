@@ -38,54 +38,44 @@ function $stdIterator(struct, steps) {
       if (steps.takes?.includes(method)) it.$closed = true;
     }
   };
-  // Given `unwind`, the compiled fold's accumulator's drop, where a stage's
-  // panic strands it (#424).
-  if (steps.fold !== undefined) {
-    it.fold = (init, f, unwind) => taking("fold", () => steps.fold(it, init, f, unwind));
-  }
-  // Its `try_fold`, std's, where it passes it on to its source's (#214).
-  if (steps.tryFold !== undefined) {
-    it.tryFold = (init, f, broke, unwind) => steps.tryFold(it, init, f, broke, unwind);
-  }
   if (steps.hint !== undefined) {
     it.hint = () => steps.hint(it);
   }
-  // Its `count`, std's, its source's own (#293).
-  if (steps.count !== undefined) {
-    it.count = (drop) => taking("count", () => steps.count(it, drop));
-  }
-  // Its `advance_by`, std's, its source's, which drops what it passes as
-  // its source does, a `Vec`'s as one slice (#286).
-  // Its `advance_by`, std's compiled one, its `Result` how many there
-  // weren't, as `advanceBy` gives it (ADR 0913).
-  if (steps.advance !== undefined) {
-    it.advanceBy = (m) => {
+  // Each its compiled body's, which passes it on as std's does: its `fold`,
+  // given `unwind`, the compiled fold's accumulator's drop, where a stage's
+  // panic strands it (#424); its `try_fold`, where it passes it on to its
+  // source's (#214); its `count`, its source's own (#293); its `advance_by`,
+  // its source's, which drops what it passes as its source does, a `Vec`'s
+  // as one slice (#286), or std's compiled one, its `Result` how many there
+  // weren't, as `advanceBy` gives it (ADR 0913); its `nth` and its `last`,
+  // which pass it on to its source's (#182). Each std's body, which drops
+  // what it passes itself, as `$iterator`'s own do: `ownNth`, `ownLast`.
+  const advance =
+    steps.advance &&
+    ((m) => {
       const advanced = steps.advance(it, m);
       return advanced.TAG === "Ok" ? 0 : advanced._0;
-    };
-  }
-  if (steps.advanceBy !== undefined) {
-    it.advanceBy = (m, drop) => steps.advanceBy(it, m, drop);
-  }
-  // Its `nth`, the compiled one, which passes it on to its source's (#182).
-  // Each std's body, which drops what it passes itself, as `$iterator`'s
-  // own do: `ownNth`, `ownLast`.
-  if (steps.nth !== undefined) {
-    it.nth = (k) => step(steps.nth(it, k));
-    it.ownNth = true;
-  }
-  // And its `last`, the compiled one, its source's (#182).
-  if (steps.last !== undefined) {
-    it.last = () => step(taking("last", () => steps.last(it)));
-    it.ownLast = true;
-  }
+    });
+  $forward(it, steps, {
+    fold: steps.fold && ((init, f, unwind) => taking("fold", () => steps.fold(it, init, f, unwind))),
+    tryFold: steps.tryFold && ((init, f, broke, unwind) => steps.tryFold(it, init, f, broke, unwind)),
+    count: steps.count && ((drop) => taking("count", () => steps.count(it, drop))),
+    advanceBy: steps.advanceBy === undefined ? advance : (m, drop) => steps.advanceBy(it, m, drop),
+    nth: steps.nth && ((k) => step(steps.nth(it, k))),
+    last: steps.last && (() => step(taking("last", () => steps.last(it)))),
+  });
+  if (steps.nth !== undefined) it.ownNth = true;
+  if (steps.last !== undefined) it.ownLast = true;
   it.knowing = (back, len, rfold, nthBack, tryRfold) => {
     if (back !== undefined) it.back = () => step(back(it));
     if (len !== undefined) it.len = () => len(it);
-    if (rfold !== undefined) it.rfold = (init, f, unwind) => rfold(it, init, f, unwind);
-    if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(it, k));
-    // Its compiled `try_rfold`, which `rfind` asks (ADR 0930).
-    if (tryRfold !== undefined) it.tryRfold = (init, f, broke, unwind) => tryRfold(it, init, f, broke, unwind);
+    // Its compiled `rfold` and `nth_back`, and `try_rfold`, which `rfind`
+    // asks (ADR 0930).
+    $forward(it, steps, {
+      rfold: rfold && ((init, f, unwind) => rfold(it, init, f, unwind)),
+      nthBack: nthBack && ((k) => step(nthBack(it, k))),
+      tryRfold: tryRfold && ((init, f, broke, unwind) => tryRfold(it, init, f, broke, unwind)),
+    });
   };
   // Its fields, the struct's, are what a move copies and what a write of
   // the whole replaces; its methods step `it` itself (#537). Moved out

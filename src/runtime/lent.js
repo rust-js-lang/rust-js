@@ -5,24 +5,23 @@
 // it; its `fold`, std's, of `next` (#162), or of `it`'s `tryFold` where `it`
 // is std's adapter of one, or a range, whose `tryFold` it is too.
 function $lent(it) {
-  const lent = new $Steps(() => it.next());
-  if (it.nth !== undefined) lent.nth = (k, drop) => it.nth(k, drop);
-  if (it.ownNth) lent.ownNth = true;
-  // Its `advance_by`, `it`'s, as std's `&mut I` gives it (ADR 0913).
-  if (Object.hasOwn(it, "advanceBy")) lent.advanceBy = (m, drop) => it.advanceBy(m, drop);
-  // And its `fold` that `tryFold`, as std's `&mut I` folds by its
-  // `I::try_fold`: an inclusive range's ends it exhausted at its last (#414).
-  if (it.tryFold !== undefined) {
-    lent.tryFold = (init, f, broke, unwind) => it.tryFold(init, f, broke, unwind);
-    lent.fold = (init, f, unwind) => it.tryFold(init, f, () => false, unwind);
-  }
-  // And its back and its length, `it`'s, as std's `&mut I` passes on an
-  // `I: DoubleEndedIterator`'s `next_back`, `nth_back` and `try_rfold`
-  // and an `ExactSizeIterator`'s `len`; not its `rfold`, which it folds by
-  // that `try_rfold`, as its dictionary does (ADRs 0928, 0982).
+  // Its `nth`, `it`'s, as std's `&mut I` gives it, the crate's own where
+  // `$iterator` was given it; its `advance_by`, `it`'s own (ADR 0913); its
+  // `fold` that `tryFold`, as std's `&mut I` folds by its `I::try_fold`: an
+  // inclusive range's ends it exhausted at its last (#414). And its back
+  // and its length, `it`'s, as std's `&mut I` passes on an
+  // `I: DoubleEndedIterator`'s `next_back`, `nth_back` and `try_rfold` and
+  // an `ExactSizeIterator`'s `len`; not its `rfold`, which it folds by that
+  // `try_rfold`, as its dictionary does (ADRs 0928, 0982).
+  const lent = $forward(new $Steps(() => it.next()), it, {
+    nth: "nth",
+    advanceBy: Object.hasOwn(it, "advanceBy") ? "advanceBy" : undefined,
+    tryFold: "tryFold",
+    fold: it.tryFold === undefined ? undefined : (init, f, unwind) => it.tryFold(init, f, () => false, unwind),
+    nthBack: "nthBack",
+    tryRfold: "tryRfold",
+  });
   if (it.back !== undefined) lent.back = () => it.back();
-  if (it.nthBack !== undefined) lent.nthBack = (k) => it.nthBack(k);
-  if (it.tryRfold !== undefined) lent.tryRfold = (init, f, broke, unwind) => it.tryRfold(init, f, broke, unwind);
   if (it.len !== undefined) lent.len = () => it.len();
   // Of std's struct, compiled (ADR 0871): its fields `it`'s, read and
   // written through it, so its compiled bodies step `it` where it is, as

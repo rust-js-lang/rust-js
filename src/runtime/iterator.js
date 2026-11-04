@@ -19,56 +19,48 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
   const it = new $Steps(() => step(next(iterator)));
   // An inclusive range's own `try_fold`, std's, which what folds it asks,
   // and so its `fold`: they end it as std's do, exhausted at its last (#414).
-  const rangeFold = $rangeFoldOf(next);
-  if (rangeFold !== undefined) {
-    it.tryFold = (init, f, broke) => rangeFold(iterator, init, f, broke);
-    it.fold = (init, f) => rangeFold(iterator, init, f, () => false);
-  }
   // And from its back, by its `next_back`: its `try_rfold`, and so its
   // `rfold`, std's, which end it exhausted at its first, as a held `Rev`'s
   // fold of it does, not past it as `next_back` does (#414).
+  const rangeFold = $rangeFoldOf(next);
   const rangeRfold = nextBack === undefined ? undefined : $rangeFoldOf(nextBack);
-  if (rangeRfold !== undefined) {
-    it.tryRfold = (init, f, broke) => rangeRfold(iterator, init, f, broke);
-    it.rfold = (init, f) => rangeRfold(iterator, init, f, () => false);
-  }
   // The crate's own `fold` and `nth`, where its impl writes them, which
-  // what std routes through them calls (#162).
+  // what std routes through them calls (#162), before a range's.
   // That `fold` takes what it steps and drops it, which `ownFold` says.
   // Given `unwind`, the drop of an accumulator a stage's panic may strand,
   // `$foldDropping`'s: each dictionary's `fold` and `rfold` takes it after
   // its function, as its `B`'s drop, the crate's own's first drop and std's
-  // compiled struct's (#423).
-  if (fold !== undefined) {
-    it.fold = (init, f, unwind) => fold(iterator, init, f, unwind);
-    it.ownFold = true;
-  }
+  // compiled struct's (#423). Its own `last`, which std's `last`, and a
+  // `skip`'s, a chain's, a fuse's and a peekable's, call (#182); its own
+  // `rfold`, which takes what it steps and drops it, as its `fold` does; and
+  // its own `count`, which takes it and drops it itself, as std's adapters
+  // whose `count` is their source's, and generic code's, call it (#505).
+  $forward(it, iterator, {
+    tryFold: rangeFold && ((init, f, broke) => rangeFold(iterator, init, f, broke)),
+    fold:
+      fold === undefined
+        ? rangeFold && ((init, f) => rangeFold(iterator, init, f, () => false))
+        : (init, f, unwind) => fold(iterator, init, f, unwind),
+    tryRfold:
+      tryRfold === undefined
+        ? rangeRfold && ((init, f, broke) => rangeRfold(iterator, init, f, broke))
+        : (init, f, broke, unwind) => tryRfold(iterator, init, f, broke, unwind),
+    rfold:
+      rfold === undefined
+        ? rangeRfold && ((init, f) => rangeRfold(iterator, init, f, () => false))
+        : (init, f, unwind) => rfold(iterator, init, f, unwind),
+    nth: nth && ((k) => step(nth(iterator, k))),
+    last: last && (() => step(last(iterator))),
+    nthBack: nthBack && ((k) => step(nthBack(iterator, k))),
+    count: count && (() => count(iterator)),
+  });
   // `ownNth` and `ownLast` say they're the crate's own, which drop what
   // they pass themselves, where std's defaults of a `$Steps` don't.
-  if (nth !== undefined) {
-    it.nth = (k) => step(nth(iterator, k));
-    it.ownNth = true;
-  }
-  // And its own `last`, which std's `last`, and a `skip`'s, a chain's, a
-  // fuse's and a peekable's, call (#182).
-  if (last !== undefined) {
-    it.last = () => step(last(iterator));
-    it.ownLast = true;
-  }
-  // That `rfold` takes what it steps and drops it, as its `fold` does.
-  if (rfold !== undefined) {
-    it.rfold = (init, f, unwind) => rfold(iterator, init, f, unwind);
-    it.ownRfold = true;
-  }
-  if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(iterator, k));
-  if (tryRfold !== undefined) it.tryRfold = (init, f, broke, unwind) => tryRfold(iterator, init, f, broke, unwind);
-  // And its own `count`, which takes it and drops it itself, as std's
-  // adapters whose `count` is their source's, and generic code's, call it
-  // (#505).
-  if (count !== undefined) {
-    it.count = () => count(iterator);
-    it.ownCount = true;
-  }
+  if (fold !== undefined) it.ownFold = true;
+  if (nth !== undefined) it.ownNth = true;
+  if (last !== undefined) it.ownLast = true;
+  if (rfold !== undefined) it.ownRfold = true;
+  if (count !== undefined) it.ownCount = true;
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0525,
   // amended).

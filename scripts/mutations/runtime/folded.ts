@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "folded-fold-unexposed",
     breaks: "what std routes through `fold` is listed before it's given on: a hash map collected of a `take(2).skip(0)` of the crate's iterator closes its source, dropping what it holds, before the value it replaces (#493, #494)",
     file: "src/runtime/folded.js",
-    find: "  folded.fold = (init, f, unwind) => (items === undefined ? foldOf(init, f, unwind) : listed().reduce(f, init));\n",
-    replace: "",
+    find: "    fold: (init, f, unwind) => (items === undefined",
+    replace: "    unused: (init, f, unwind) => (items === undefined",
     tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
   },
   {

@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "taking-nth-back-unasked",
     breaks: "a `take`'s `nth_back` steps by `next_back`, not its source's `nth_back` (#220)",
     file: "src/runtime/taking.js",
-    find: "    taking.nthBack = (k) => {\n",
-    replace: "    taking.unused = (k) => {\n",
+    find: "    $forward(taking, iter, { nthBack, rfold, tryRfold });\n",
+    replace: "    $forward(taking, iter, { rfold, tryRfold });\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
 ];

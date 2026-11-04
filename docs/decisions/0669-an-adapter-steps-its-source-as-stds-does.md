@@ -65,3 +65,11 @@ are std's adapters, which pass a `None` on. The JS still reads `.map(f)`.**
 has std's `fold` and `nth` too, the crate's own where its impl writes
 them, and its `map`, `filter` and `flatMap`, and `$lazyChain`, fold by
 their source's.
+
+## Amendment: an adapter's steps are given by `$forward` (2026-11-04, ADR 1089)
+
+What each adapter passes on of its source's steps, and what it
+specializes, it declares in one call of `$forward`
+([1089](1089-an-iterators-steps-are-passed-on-by-one-combinator.md)),
+which passes on every argument a step is given; `$Steps`' own `map`,
+`filter`, `flatMap`, `take` and `drop` too.

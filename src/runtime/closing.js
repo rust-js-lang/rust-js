@@ -29,15 +29,14 @@ function $closing(it, drop, slices = true) {
   // what it passes over dropped as one slice, front to back, as its
   // `advance_back_by` drops them, then its next from the back; not of one
   // that drops each as it's passed, `slices` false, a `Drain`'s (#234).
-  if (slices && it.items !== undefined && it.nthBack === undefined && drop?.each !== undefined) {
-    closing.advanceBackBy = (m) => $advanceSlice(it, m, drop.each, true);
-    closing.nthBack = (k) => done(closing.advanceBackBy(k) > 0 ? { done: true, value: undefined } : it.back());
+  // And from its front, its `advance_by` and `nth`, what they pass over
+  // dropped as one slice too, by itself, as a `chain`'s `nth` asks it
+  // (#250); how many there weren't.
+  const slice = slices && it.items !== undefined && it.nthBack === undefined && drop?.each !== undefined;
+  const advanceBackBy = (m) => $advanceSlice(it, m, drop.each, true);
+  const advanceBy = (m) => $advanceSlice(it, m, drop.each);
+  if (slice) {
     closing.ownNthBack = true;
-    // And from its front, its `advance_by` and `nth`, what they pass over
-    // dropped as one slice too, by itself, as a `chain`'s `nth` asks it
-    // (#250); how many there weren't.
-    closing.advanceBy = (m) => $advanceSlice(it, m, drop.each);
-    closing.nth = (k) => done(closing.advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());
     closing.ownNth = true;
     // Each item's own drop, which what it gives on is dropped by (#261).
     closing.dropItem = drop.each;
@@ -46,15 +45,10 @@ function $closing(it, drop, slices = true) {
   // Its length, its iterator's, where it knows it: what an `enumerate`
   // stepped from its back counts by (#211).
   if (it.len !== undefined) closing.len = () => it.len();
-  // Its `advance_by`, its iterator's own, a compiled std struct's (#286).
-  if (!Object.hasOwn(closing, "advanceBy") && Object.hasOwn(it, "advanceBy")) {
-    closing.advanceBy = (m, drop) => it.advanceBy(m, drop);
-  }
   // Its `nth`, its iterator's, the crate's own where it writes one, or a
   // compiled std struct's, which drops what it passes itself, `ownNth`, as
   // a `step_by` over it asks it (#261), given the items' drop, which std's
   // default `nth` of the crate's iterator drops what it passes by (#494).
-  if (it.nth !== undefined) closing.nth = (k, dropItem) => done(it.nth(k, dropItem));
   if (it.ownNth) closing.ownNth = true;
   // Closed though `f` throws, a panic, as Rust's `fold` drops what's left
   // of what it took as it unwinds (#422); done with, not closed, where its
@@ -71,7 +65,7 @@ function $closing(it, drop, slices = true) {
   // Given `unwind`, what drops an accumulator a stage's panic strands, it
   // passes it on, so a step of the crate's own iterator that panics drops
   // a `last`'s kept item before what's left (#423, #426).
-  closing.fold = (init, f, unwind) => {
+  const fold = (init, f, unwind) => {
     const folded = unwound(
       () => (it.fold !== undefined ? it.fold(init, f, unwind) : $foldDropping(it, init, (a, x) => f(a, x), unwind)),
       it.ownFold,
@@ -81,39 +75,55 @@ function $closing(it, drop, slices = true) {
     return folded;
   };
   // Its `count`, the crate's own, likewise (#505).
-  if (it.ownCount) {
-    closing.count = () => {
-      closed = true;
-      return it.count();
-    };
-    closing.ownCount = true;
-  }
+  if (it.ownCount) closing.ownCount = true;
+  const count = () => {
+    closed = true;
+    return it.count();
+  };
   // Its `last`, the crate's own, which takes it and drops what it has left
   // itself, as a `skip`'s `last` asks it (#494).
-  if (it.ownLast) {
-    closing.last = () => {
-      closed = true;
-      return it.last();
-    };
-    closing.ownLast = true;
-  }
+  if (it.ownLast) closing.ownLast = true;
+  const last = () => {
+    closed = true;
+    return it.last();
+  };
   // Its `nth_back` and `rfold`, its iterator's, the crate's own where it
   // writes them, done with after its `rfold` as after its `fold` (#220).
-  if (it.nthBack !== undefined) closing.nthBack = (k) => done(it.nthBack(k));
-  const rfoldClosing = (init, f, unwind) => {
+  const rfold = (init, f, unwind) => {
     const folded = unwound(() => it.rfold(init, f, unwind), it.ownRfold);
     if (it.ownRfold) closed = true;
     close();
     return folded;
   };
-  if (it.rfold !== undefined) closing.rfold = rfoldClosing;
-  if (it.tryRfold !== undefined) closing.tryRfold = (init, f, broke, unwind) => it.tryRfold(init, f, broke, unwind);
   // Its `try_fold`, its iterator's, done with where it isn't stopped.
-  closing.tryFold = (init, f, broke, unwind) => {
+  const tryFold = (init, f, broke, unwind) => {
     const folded = $lent(it).tryFold(init, f, broke, unwind);
     if (!broke(folded) && !closing.held) close();
     return folded;
   };
+  $forward(closing, it, {
+    advanceBackBy: slice ? advanceBackBy : undefined,
+    // Its `advance_by`, its iterator's own, a compiled std struct's (#286).
+    advanceBy: slice ? advanceBy : Object.hasOwn(it, "advanceBy") ? "advanceBy" : undefined,
+    nth:
+      it.nth !== undefined
+        ? (k, dropItem) => done(it.nth(k, dropItem))
+        : slice
+          ? (k) => done(advanceBy(k) > 0 ? { done: true, value: undefined } : it.next())
+          : undefined,
+    nthBack:
+      it.nthBack !== undefined
+        ? (k) => done(it.nthBack(k))
+        : slice
+          ? (k) => done(advanceBackBy(k) > 0 ? { done: true, value: undefined } : it.back())
+          : undefined,
+    fold,
+    count: it.ownCount ? count : undefined,
+    last: it.ownLast ? last : undefined,
+    rfold: it.rfold !== undefined ? rfold : undefined,
+    tryRfold: "tryRfold",
+    tryFold,
+  });
   return closing;
 }
 
