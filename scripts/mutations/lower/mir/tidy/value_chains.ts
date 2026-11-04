@@ -113,6 +113,9 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/value_chains.rs",
     find: "    let written = spans.iter().all(|s| !s.is_none()) && spans.windows(2).all(|pair| pair[0].hi <= pair[1].lo);\n",
     replace: "    let written = spans.iter().all(|s| !s.is_none());\n",
-    tests: ["test/snapshots.test.ts", "-t", "playground"],
+    // The playground's `prepare` held it until it chose its entries otherwise
+    // (446ad7253); the corpus case is its chain, run.
+    tests: ["test/corpus.test.ts", "-t", "^chain_arm_of_a_std_call.rs$"],
+    snapshots: true,
   },
 ];
