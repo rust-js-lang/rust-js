@@ -752,8 +752,9 @@ pub fn used() -> (Option<Rc<String>>, f64, f64, Option<u8>, bool, usize) {
   expect(out).toContain("return (...items) => items[0];");
   // Each given as itself, a tuple's items written out, a slice spread.
   expect(out).toContain('name("b");');
-  expect(out).toContain("sum({ x: 1, y: 0 }, { x: 2.5, y: 0 });");
-  expect(out).toContain("sum(...held);");
+  // In the tuple it's of, each element in place now that the count's
+  // `Option` is read where it's read once (#588).
+  expect(out).toContain("    sum({ x: 1, y: 0 }, { x: 2.5, y: 0 }),\n    sum(...held),\n");
   const dts = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(dts).toContain("export function signal<T>(initialValue: T): (...args: T[]) => T | null | undefined;");
   expect(dts).toContain("export function sumX(): (...args: Point[]) => number;");
