@@ -125,6 +125,11 @@ pub(super) struct QuietCells {
     /// rd218).
     pub(super) momentary: HashSet<BasicBlock>,
     pub(super) guards: HashSet<Local>,
+    /// Of `guards`, those of a borrow that's checked, `momentary`'s:
+    /// `$borrow(c)`, which throws where it's made. The others are of a
+    /// cell no borrow of which is counted, unchecked, the value itself
+    /// (`unchecked_guards`, #700).
+    checked: HashSet<Local>,
     /// Each call that writes a `#[rust_js::nullable]` thread-local's cell,
     /// whose `None` is `null` (ADR 0586, amended).
     pub(super) nullable: HashSet<BasicBlock>,
@@ -140,6 +145,17 @@ pub(super) struct QuietCells {
     /// Each `swap` of a `RefCell` that's a class's flattened state, its
     /// object's keys (ADR 1044): which of its two cells is one (#687).
     pub(super) flattened: HashMap<BasicBlock, [bool; 2]>,
+}
+
+impl QuietCells {
+    /// The guards of a cell no borrow of which is counted, unchecked: the
+    /// value itself, whose drop is none, so the drops' elaboration leaves
+    /// it out, no flag says it and it reads nothing (#700). Not a checked
+    /// one's, `$borrow(c)`, whose drop releases nothing (`drop_place`) but
+    /// whose variable keeps its check where it's made.
+    pub(super) fn unchecked_guards(&self) -> HashSet<Local> {
+        self.guards.difference(&self.checked).copied().collect()
+    }
 }
 
 impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
@@ -378,7 +394,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn local_facts<'m>(
         &self,
         mir: &'m Mir<'tcx>,
-        (locals, drops, captures): (&Locals, Option<drops::Elaboration<'tcx>>, Vec<(Expr, bool)>),
+        (locals, drops, captures, quiet_cells): (
+            &Locals,
+            Option<drops::Elaboration<'tcx>>,
+            Vec<(Expr, bool)>,
+            QuietCells,
+        ),
         ((seed, own, result_held), alternatives): (Seeds, HashMap<BasicBlock, BasicBlock>),
     ) -> R<(LocalFacts<'m, 'tcx>, Vec<(Local, Local)>)> {
         let body = &mir.body;
@@ -425,7 +446,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             payload_tests,
             drops,
             captures,
-            quiet_cells: self.mir_quiet_cells(body, &mir.promoted),
+            quiet_cells,
             unlowered,
             unwritten: handles.unwritten(def_id),
             own,
@@ -630,7 +651,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `x.f.borrow()`, `x.f.replace(v)`, of `&x.f` made once, and the guard
     /// each borrow makes, moved to a variable too, `let v = x.f.borrow();`;
     /// and of a thread-local that's its module's variable, `KEY.set(v)`.
-    fn mir_quiet_cells(
+    pub(super) fn mir_quiet_cells(
         &self,
         body: &mir::Body<'tcx>,
         promoted: &IndexVec<mir::Promoted, mir::Body<'tcx>>,
@@ -811,6 +832,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     quiet.momentary.insert(block);
                     quiet.guards.insert(destination.local);
+                    quiet.checked.insert(destination.local);
                 }
                 _ => {}
             }

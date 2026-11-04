@@ -171,15 +171,12 @@ export const mutations: Mutation[] = [
   {
     name: "quiet-guard-released",
     breaks:
-      "a guard of a struct's field no borrow of which can meet another releases a borrow it never counted, `$unborrow(times)`, in a `try` of its own (ADR 0863, amended)",
+      "a momentary guard, checked and not counted, releases a borrow it never counted, `$unborrow(items)`, in a `try` of its own (ADR 0328, rd218); an unchecked guard's drop the elaboration leaves out (#700)",
     file: "src/lower/mir/drops.rs",
     find: "        if place.projection.is_empty() && state.facts.quiet_cells().guards.contains(&place.local) {\n",
     replace: "        if false {\n",
-    tests: [
-      "test/lowering-field-cells.test.ts",
-      "-t",
-      "whatever else has its type",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^refcell_vec_bounds.rs$"],
+    snapshots: true,
   },
   {
     name: "cleanup-flag-refused",
@@ -303,5 +300,15 @@ export const mutations: Mutation[] = [
     replace:
       "                        true => (self.switch_test(&subject, ty, value, span, None)?, then, targets.otherwise()),\n",
     tests: ["test/crates.test.ts", "-t", "settles its cleanup's drop flags"],
+  },
+  {
+    name: "unchecked-guard-elaborated",
+    breaks:
+      "an unchecked guard's drop, of a cell no borrow of which is counted, is elaborated where its type drops, as another cell of it is counted: a flag says it, so a flattened state's `try_borrow` is declared first, `let _2;`, and its `Ok` kept as an object of the handle, `const value$1 = { TAG: \"Ok\", _0: state }` (#700)",
+    file: "src/lower/mir/drops.rs",
+    find: "            if place.projection.is_empty() && quiet_guards.contains(&place.local) {\n",
+    replace: "            if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_tried.rs$"],
+    snapshots: true,
   },
 ];

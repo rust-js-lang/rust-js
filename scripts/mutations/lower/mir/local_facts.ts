@@ -300,4 +300,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_tried.rs$"],
     snapshots: true,
   },
+  {
+    name: "checked-guard-unchecked",
+    breaks:
+      "a momentary borrow's guard, checked, `$borrow(c)`, is taken as unchecked, the value itself, so the drops' elaboration leaves its drop out and its check moves into its reads, `const items = $borrowMut(queue); items[at] = task;` (#700)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                    quiet.checked.insert(destination.local);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_vec_bounds.rs$"],
+    snapshots: true,
+  },
 ];

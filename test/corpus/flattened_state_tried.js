@@ -21,98 +21,26 @@ export function Task(status, tries, value, name) {
 }
 
 function main() {
-  let task = new Task("pending", 1, undefined, "task");
-  const state = {
-    get value() {
-      return task;
-    },
-    set value(value) {
-      task.status = value.status;
-      task.tries = value.tries;
-      task.value = value.value;
-    },
-  };
-  const tryBorrow = { TAG: "Ok", _0: state };
-  if (tryBorrow.TAG === "Ok") {
-    console.log(`read ${statusDebug_fmt(tryBorrow._0.value)}`);
-  } else {
-    console.log(`read ${tryBorrow._0}`);
+  const task = new Task("pending", 1, undefined, "task");
+  console.log(`read ${statusDebug_fmt(task)}`);
+  if (task.status === "pending") {
+    task.tries = (task.tries + 1) >>> 0;
   }
-  const state$1 = {
-    get value() {
-      return task;
-    },
-    set value(value) {
-      task.status = value.status;
-      task.tries = value.tries;
-      task.value = value.value;
-    },
-  };
-  const tryBorrowMut = { TAG: "Ok", _0: state$1 };
-  if (tryBorrowMut.TAG === "Ok" && tryBorrowMut._0.value.status === "pending") {
-    const value = tryBorrowMut._0.value;
-    value.tries = (value.tries + 1) >>> 0;
-  }
-  console.log(`free ${"Ok" === "Ok"}`);
-  const state$2 = {
-    get value() {
-      return task;
-    },
-    set value(value) {
-      task.status = value.status;
-      task.tries = value.tries;
-      task.value = value.value;
-    },
-  };
-  const value = { TAG: "Ok", _0: state$2 };
-  if (value.TAG === "Ok") {
-    value._0.value = {
-      status: "done",
-      value: "x",
-    };
-  }
-  const state$3 = {
-    get value() {
-      return task;
-    },
-    set value(value) {
-      task.status = value.status;
-      task.tries = value.tries;
-      task.value = value.value;
-    },
-  };
-  const value$1 = { TAG: "Ok", _0: state$3 };
-  if (value$1.TAG === "Ok") {
-    console.log(`${task.name} ${statusDebug_fmt(value$1._0.value)}`);
-  } else {
-    console.log(`${value$1._0}`);
-  }
+  console.log("free true");
+  task.status = "done";
+  task.value = "x";
+  console.log(`${task.name} ${statusDebug_fmt(task)}`);
   // A plain cell of the state, whose borrows are counted: the class's
   // state's guards still count nothing.
   const other = { value: { status: "pending", tries: 0 } };
   const held = $borrow(other, true);
   try {
-    const value = $tryBorrow(other, true);
-    console.log(`other ${value.TAG === "Err"}`);
-    if (value.TAG === "Ok") {
-      $unborrow(value._0);
+    const tryBorrowMut = $tryBorrow(other, true);
+    console.log(`other ${tryBorrowMut.TAG === "Err"}`);
+    if (tryBorrowMut.TAG === "Ok") {
+      $unborrow(tryBorrowMut._0);
     }
-    const state = {
-      get value() {
-        return task;
-      },
-      set value(value) {
-        task.status = value.status;
-        task.tries = value.tries;
-        task.value = value.value;
-      },
-    };
-    const value$1 = { TAG: "Ok", _0: state };
-    if (value$1.TAG === "Ok") {
-      console.log(
-        `${task.name} ${statusDebug_fmt(value$1._0.value)} ${statusDebug_fmt(held.value)}`,
-      );
-    }
+    console.log(`${task.name} ${statusDebug_fmt(task)} ${statusDebug_fmt(held.value)}`);
   } finally {
     $unborrow(held);
   }

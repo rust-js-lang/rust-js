@@ -80,7 +80,8 @@ pub fn detach(fiber: &Fiber) {
   expect(js).toContain('  const borrow = $borrow($fieldCell(cursor, "current"), true);\n');
   expect(js).toContain("export let current;\n");
   expect(js).toContain("  current = fiber;\n");
-  expect(js).toContain("  const return$ = fiber.return;\n");
+  // Its guard the field itself, no drop of its own to hold it (#700).
+  expect(js).toContain("  return fiber.return != null ? fiber.return.tag : 0;\n");
   expect(js).toContain("  fiber.return = null;\n");
   expect(js).not.toContain("$fieldCell(fiber");
   expect(js).not.toContain("$unborrow(times");

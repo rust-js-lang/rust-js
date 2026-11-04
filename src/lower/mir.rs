@@ -1142,7 +1142,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let outer_falsy = std::mem::take(&mut self.locals.mir.falsy);
         let outer_tested = std::mem::take(&mut self.locals.mir.tested);
         let outer_made = std::mem::take(&mut self.locals.mir.made);
-        let drops = self.mir_elaboration(mir_body);
+        let (drops, quiet) = self.mir_elaboration(mir_body, &mir.promoted);
         let patterns = match captures {
             None => self.mir_param_patterns(mir_body),
             Some(_) => Vec::new(),
@@ -1156,7 +1156,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             locals.reads[local] += 2;
         }
         let given = captures.clone().unwrap_or_default();
-        let (facts, held_bindings) = self.local_facts(mir, (&locals, drops, given), (seeds, alternatives.held_as))?;
+        let (facts, held) = self.local_facts(mir, (&locals, drops, given, quiet), (seeds, alternatives.held_as))?;
         let mut state = State {
             body: mir_body,
             facts,
@@ -1191,7 +1191,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             builders: Default::default(),
             built: Default::default(),
         };
-        self.mir_held_guards(&mut state, &held_bindings);
+        self.mir_held_guards(&mut state, &held);
         // A writer's `Formatter`: no parameter, but the string it writes to,
         // `let f = ""`, which it gives back, its `fmt::Result` nothing. A
         // closure's, after its environment.

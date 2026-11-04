@@ -13,17 +13,13 @@ function push(queue, item) {
 // Each of `from`'s items given to `to` while `from`'s are borrowed, by a
 // call of the crate's and by a borrow of `to`'s.
 function drainInto(from, to) {
-  const items = from.items;
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
+  for (const item of from.items) {
     push(to, (item * 10) >>> 0);
   }
 }
 
 function copyInto(from, to) {
-  const items = from.items;
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
+  for (const item of from.items) {
     to.items.push((item + 1) >>> 0);
   }
 }

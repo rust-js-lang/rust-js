@@ -8,7 +8,8 @@ keys too. Amended (2026-11-04, #658, #659, the user's decision): what's
 moved out of it whole is a copy of its variant's keys. Amended (#687):
 its cell's `swap`, `get_mut`, `replace_with`, `into_inner` and
 `try_borrow` compile. Amended (#699): its cell's own `take` compiles,
-its `Default` made first. Extended by [1071](1071-a-flattened-enum-is-told-by-its-keys.md):
+its `Default` made first. Amended (#700): its guard's drop drops nothing,
+beside a counted cell of its type too. Extended by [1071](1071-a-flattened-enum-is-told-by-its-keys.md):
 an enum of no tag, told by its keys, its owner `bindings::flattened`. Extends
 [0204](0204-flattened-props.md), whose flattened field was a struct of
 named fields or a JS object, to a `RefCell` of a discriminated union
@@ -587,3 +588,59 @@ take is its value". Mutations `take-held-while-default-runs`
 (`drops/ref_cells.ts`, for `take-default-trusted`, gone with what it
 mutated), `take-default-made-after` and `take-cell-made-after-default`
 (`std_types/cell.ts`).
+
+## Amended (#700): its guard's drop drops nothing, beside a counted cell of its type too
+
+Readability, P3 (#700). Where no other `RefCell` of the state's type is
+counted, a flattened state's `try_borrow_mut` read as the keys, `if
+(task.status === "pending") { .. }`; beside one that is, each of its
+`try_borrow`s kept its `Ok` as an object of the handle, `const value$1 =
+{ TAG: "Ok", _0: state }; if (value$1.TAG === "Ok") { .. value$1._0.value
+.. }`. A guard of a cell no borrow of which is counted
+(`QuietCells::guards`) releases nothing, and its drop was skipped where
+it's lowered (`drop_place`), but the drops' elaboration
+(`mir_elaboration`) didn't know it: where the guard's type drops, as
+another cell of it is counted, the `Result` holding it, partly moved by
+`Ok(state)`, had a flag, so it was declared first, `let _2;`, which
+neither `Expr::member`'s fold of an object made here nor tidy's
+`read_handles` reaches.
+
+**An unchecked guard's drop is no drop, by the elaboration**
+(`mir/drops.rs`, given `QuietCells::unchecked_guards`, which
+`mir_function` makes before it): never there to drop, so no flag says it
+and it reads nothing. An unchecked guard is one of a cell no borrow of
+which is counted, a quiet field's (a flattened state's) or one whose flow
+says so: the value itself. A checked one, of a momentary borrow of a
+counted cell, `$borrow(c)`, keeps its elaborated drop, which `drop_place`
+still skips as it releases nothing, so its variable keeps its check
+where it's made; leaving its drop out too moved checks into the reads,
+`const items = $borrowMut(queue); items[at] = task;`, a change of its own
+not made here. So the flattened state reads as where no cell of its
+type is counted:
+
+```js
+const task = new Task("pending", 1, undefined, "task");
+console.log(`read ${statusDebug_fmt(task)}`);
+if (task.status === "pending") {
+  task.tries = (task.tries + 1) >>> 0;
+}
+console.log("free true");
+```
+
+and so do other unchecked guards beside a counted cell of their type: a
+quiet field's `for (const item of from.items)`, where its `Vec` was held
+as `const items = from.items;` and indexed, and `fiber.return != null ?
+fiber.return.tag : 0`, where it was `const return$ = fiber.return;`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference: the guard's drop released nothing either way, and it's the
+value itself; only whether it's held in a variable changed.
+
+Held by corpus `flattened_state_tried`, beside a counted plain cell of
+the state, and `held_borrow_of_own_cell`, against native Rust, and their
+snapshots; `test/lowering-field-cells.test.ts`'s "a struct's RefCell field
+holds its value whatever else has its type". Mutations
+`unchecked-guard-elaborated` (`mir/drops.ts`) and
+`checked-guard-unchecked` (`mir/local_facts.ts`); `quiet-guard-released`,
+`drop_place`'s skip, now of a checked guard alone, is held by
+`refcell_vec_bounds`'s snapshot.

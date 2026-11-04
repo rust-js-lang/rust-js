@@ -1370,3 +1370,13 @@ borrows, so a `take`'s borrow is held for a moment, as a `replace`'s is,
 and a `Default` of the crate's is made first, before the borrow is
 checked. It's [ADR 1044's amendment](1044-a-flattened-state-is-its-classs-own-keys.md#amended-699-its-cells-own-take-compiles-its-default-made-first),
 where a flattened state met it.
+
+## Amendment: an unchecked guard's drop is none (#700)
+
+A quiet guard of a cell no borrow of which is counted, unchecked, the
+value itself, has no drop in the drops' elaboration either, so no flag
+says it and its drop reads nothing: where another cell of its type is
+counted, its type drops, and it was declared first as one that does. A
+checked one's, a momentary borrow's, is elaborated still, releasing
+nothing where it's lowered. It's [ADR 1044's amendment](1044-a-flattened-state-is-its-classs-own-keys.md#amended-700-its-guards-drop-drops-nothing-beside-a-counted-cell-of-its-type-too),
+where a flattened state met it.

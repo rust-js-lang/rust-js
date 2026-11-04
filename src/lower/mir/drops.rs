@@ -20,6 +20,7 @@ use rustc_mir_dataflow::{
 use rustc_span::Span;
 
 use super::State;
+use super::local_facts::QuietCells;
 use crate::js::{self, Expr, Stmt, StmtKind};
 use crate::lower::drops::Drops;
 use crate::lower::{FnCx, R};
@@ -197,8 +198,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         dropped || lent
     }
 
-    /// What `body`'s drops drop, `None` if none drops anything JS sees.
-    pub(super) fn mir_elaboration(&self, body: &mir::Body<'tcx>) -> Option<Elaboration<'tcx>> {
+    /// What `body`'s drops drop, `None` if none drops anything JS sees, and
+    /// its calls of cells no borrow of which can meet another
+    /// (`QuietCells`). Not an unchecked guard's, of a cell no borrow of
+    /// which is counted, which is the value itself: never there to drop,
+    /// so no flag says it and it reads nothing, as where no cell of its
+    /// type is counted (`QuietCells::unchecked_guards`, ADR 0863, amended;
+    /// #700).
+    pub(super) fn mir_elaboration(
+        &self,
+        body: &mir::Body<'tcx>,
+        promoted: &IndexVec<mir::Promoted, mir::Body<'tcx>>,
+    ) -> (Option<Elaboration<'tcx>>, QuietCells) {
+        let cells = self.mir_quiet_cells(body, promoted);
+        (self.elaborated(body, &cells.unchecked_guards()), cells)
+    }
+
+    /// `mir_elaboration`'s drops, but those of `quiet_guards`.
+    fn elaborated(&self, body: &mir::Body<'tcx>, quiet_guards: &HashSet<mir::Local>) -> Option<Elaboration<'tcx>> {
         let tcx = self.tcx;
         let drops = |ty| self.drops(ty) != Drops::Nothing;
         let any = body.basic_blocks.iter().any(|data| {
@@ -243,6 +260,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let TerminatorKind::Drop { place, .. } = &data.terminator().kind else {
                 continue;
             };
+            if place.projection.is_empty() && quiet_guards.contains(&place.local) {
+                continue;
+            }
             let path = match move_data.rev_lookup.find(place.as_ref()) {
                 LookupResult::Exact(path) => path,
                 LookupResult::Parent(None) if place.is_indirect() && drops(place.ty(&body.local_decls, tcx).ty) => {
@@ -398,7 +418,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         };
         // A guard of a field's `RefCell` no borrow of which can meet another
-        // counted nothing, so its drop releases nothing (ADR 0863, amended).
+        // counted nothing, so its drop releases nothing (ADR 0863, amended):
+        // a checked one's, whose drop the elaboration keeps, as an unchecked
+        // one's it leaves out (`unchecked_guards`, #700).
         if place.projection.is_empty() && state.facts.quiet_cells().guards.contains(&place.local) {
             return Ok(());
         }
