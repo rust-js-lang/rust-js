@@ -618,6 +618,34 @@ ${calls}
   expect(compile(given)).toContain("  return moduleLoading != null;\n");
 });
 
+// rd613: a call lowering never sees, a trait's default's that no impl of
+// the crate's takes, so no lowering of it records what it gives, leaves the
+// function it calls tested against `undefined` too: a library's consumer
+// may take the default, giving what it's given.
+test("a call lowering never sees leaves a nullable parameter tested against undefined too", async () => {
+  const dir = fixture("nullable-param-unseen");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `pub struct ModuleLoading {
+    pub prefix: String,
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(module_loading))]
+pub fn checked(module_loading: Option<&ModuleLoading>) -> bool {
+    module_loading.is_some()
+}
+
+pub trait Loads {
+    fn loads(&self, module_loading: Option<&ModuleLoading>) -> bool {
+        checked(module_loading)
+    }
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("export function checked(moduleLoading) {\n  return moduleLoading != null;\n}");
+});
+
 // rd623: a `let` that starts `js::null()` and is set only to a place just
 // tested `is_some()` is `null` or a value, so the nullable parameter it's
 // given is tested `!== null` and another crate's call gives it as it is,

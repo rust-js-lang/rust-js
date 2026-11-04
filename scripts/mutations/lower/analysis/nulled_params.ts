@@ -33,11 +33,11 @@ export const mutations: Mutation[] = [
   {
     name: "nulled-param-of-an-unseen-call",
     breaks:
-      "a call lowering never sees, a forwarding namespace method's, which callers give `undefined`, `checked()`, is taken as giving `null` or a value (rd613)",
+      "a call lowering never sees, a trait's default's that no impl takes, is taken as giving `null` or a value, so the function it calls tests `!== null` of what that call may give (rd613)",
     file: "src/lower/analysis/nulled_params.rs",
     find: "                .all(|(site, _)| seen.contains(site))\n",
     replace: "                .all(|_| true)\n",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "forwarding namespace method"],
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a call lowering never sees"],
   },
   {
     name: "nulled-param-of-a-trait-impl",
@@ -107,22 +107,13 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "catch_unwind gives"],
   },
   {
-    name: "nulled-again-of-nothing",
-    breaks:
-      "a forwarding method with a nullable parameter is said lowered again, which has no JS of its own, and the compiler runs out of work and panics (#596)",
-    file: "src/lower/analysis/nulled_params.rs",
-    find: "        lowered_again\n",
-    replace: "        !again.is_empty()\n",
-    tests: ["test/method-forwarding.test.ts", "-t", "a namespace's forwarding method says its function's nullable parameters"],
-  },
-  {
     name: "forwarded-method-a-candidate",
     breaks:
-      "a namespace's method that's its function is a candidate of its own, so a call of it that gives what may be `undefined` is the method's, and the function, its own calls none, tests `!== null` of what it gives on (#601)",
+      "a namespace's method that's its function is a candidate of its own, which no call is of, so its contract says its parameters `null` or a value where the function's calls give it what may be `undefined` (#601)",
     file: "src/lower/analysis/nulled_params.rs",
     find: "            if let Some(params) = candidate(tcx, id).filter(|_| !forwarded.contains_key(&id)) {\n",
     replace: "            if let Some(params) = candidate(tcx, id) {\n",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a forwarding namespace method's calls are its function's"],
+    tests: ["test/method-forwarding.test.ts", "-t", "say one contract"],
   },
   {
     name: "forwarded-body-a-call",

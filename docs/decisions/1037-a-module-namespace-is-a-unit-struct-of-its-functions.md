@@ -613,7 +613,8 @@ otherwise: its own `None` can't be both.
 Held by `test/method-forwarding.test.ts`'s "a namespace's forwarding method
 says its function's nullable parameters" (the call through a value given
 `null`, run; both refusals). Mutations `forwarded-nullable-unasked`
-(lower/pipeline/reached.ts), `nulled-again-of-nothing` (lower/analysis/nulled_params.ts),
+(lower/pipeline/reached.ts), `nulled-again-of-nothing` (lower/analysis/nulled_params.ts,
+gone since #601, where the method is no candidate of ADR 0861's),
 `forwarded-method-uncontracted` (lower/library.ts). And a library's
 contract has such a method, by its property, which its module exports as
 the function it is, so another crate calls it through the namespace's

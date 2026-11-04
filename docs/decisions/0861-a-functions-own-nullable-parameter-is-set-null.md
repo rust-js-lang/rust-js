@@ -775,4 +775,13 @@ a function that tests `!== null`, so Rust's behavior.
   `given-on-recorded-as-found` (`mir/dispatch.ts`),
   `forwarded-method-a-candidate`, `forwarded-body-a-call`,
   `forwarded-call-not-the-functions` and `forwarded-contract-unsaid`
-  (`analysis/nulled_params.ts`).
+  (`analysis/nulled_params.ts`). rd613's `nulled-param-of-an-unseen-call`
+  is held by "a call lowering never sees leaves a nullable parameter
+  tested against undefined too", a trait's default no impl takes, since
+  the forwarding method's call is no call now; and
+  `own-nullable-param-maybe-undefined` (`mir/nulled.ts`) by "each call
+  gives null or a value", as a found parameter's facts keep it as it is
+  without it. #596's `nulled-again-of-nothing` is gone: the forwarding
+  method is no candidate, so `again` names no function it can't queue,
+  and none other is a body lowering skips; `lowered_again` stays what
+  `again` returns.

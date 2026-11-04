@@ -140,15 +140,11 @@ export const mutations: Mutation[] = [
   {
     name: "own-nullable-param-maybe-undefined",
     breaks:
-      "a `#[rust_js::nullable(..)]` parameter given on is `nearest ?? null`, though it's `Fiber | null` as declared (ADR 0861, amended)",
+      "a `#[rust_js::nullable(..)]` parameter given on isn't said given on, so a function each call of which gives it one is never found `null` or a value, `!= null` (ADR 0861, amended, #601)",
     file: "src/lower/mir/nulled.rs",
     find: "        if self.own_nullable_param(state, place) {\n            let param = (place.projection.is_empty() && !self.tcx.is_closure_like(state.body.source.def_id()))\n                .then(|| place.local.as_usize() - 1);\n            return (Given::Nulled, param);\n        }\n",
     replace: "",
-    tests: [
-      "test/lowering-nullable-reads.test.ts",
-      "-t",
-      "a nullable parameter, a nullable thread-local",
-    ],
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "each call gives null or a value"],
   },
   {
     name: "stored-given-of-a-parameter",

@@ -536,6 +536,10 @@ pub fn create(manifest: &'static ServerConsumerManifest) -> bool {
   expect(alone.dep).toContain("  return bundlerConfig !== null && serverReferenceConfig === null;\n");
   expect(forwarded.dep).toContain("  return bundlerConfig !== null && serverReferenceConfig === null;\n");
   expect(alone.app).toContain("  return Dep.createResponse(manifest.moduleLoading, manifest.serverModuleMap ?? null);\n");
+  // A call of the library's own that may give `undefined`: neither says
+  // that parameter, whichever is called.
+  withLibrary(dir, dep + method + "\npub fn loose(config: Option<&'static Unknown>) -> bool {\n    create_response(config, None)\n}\n", app);
+  expect(nulled()).toEqual({ "dep::create_response": [1], "dep::Client::create_response": [2], "dep::loose": undefined });
   const { create } = await import(join(dir, "app", "lib.js"));
   expect([create({ moduleLoading: {}, serverModuleMap: undefined }), create({ moduleLoading: {}, serverModuleMap: null })]).toEqual([true, true]);
 });
