@@ -157,4 +157,12 @@ export const mutations: Mutation[] = [
     replace: "            .is_some_and(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^repr_enum_numbers.rs$"],
   },
+  {
+    name: "local-export-own-block",
+    breaks: "a `pub use`'s `export { hello };` is set apart from its import by a blank line, where the two are one `use`'s and one block of imports and re-exports (rd705)",
+    file: "src/format.rs",
+    find: "                | Statement::ExportAllDeclaration(_)\n                | Statement::ExportNamedDeclaration(_)\n",
+    replace: "                | Statement::ExportAllDeclaration(_)\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "a pub use of what the module imports exports its binding"],
+  },
 ];

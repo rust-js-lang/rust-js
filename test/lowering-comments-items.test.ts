@@ -577,6 +577,89 @@ import { next } from "./lanes.js";
   expect(commit.imports.map((file: string) => file.slice(dir.length + 1)).sort()).toEqual(["lanes.js", "lanes/inner.js"]);
 });
 
+// React's ReactFiberConfigDOM calls `detachDeletedInstance` and re-exports
+// it: upstream imports it in its one `./ReactDOMComponentTree` import and
+// exports the binding, `export {detachDeletedInstance};` (:80), and
+// `export {getClosestInstanceFromNode as getInstanceFromNode};` (:839);
+// Scheduler's `export {ImmediatePriority as unstable_ImmediatePriority,
+// ..}` too. Since rd649 the `pub use` printed an import of its own beside
+// `export {detachDeletedInstance} from`. The module's import of what a
+// `pub use` names is in the import an earlier `use` of that module makes,
+// and a `pub use` each of whose names the module imports exports them,
+// `export { x };`; one some of whose names it doesn't, react/index.experimental's
+// list beside its `import {useOptimistic}`, is still `export {..} from`
+// (rd705, the user's decision).
+test("a pub use of what the module imports exports its binding", async () => {
+  const { js, lib } = await compiled("reexport-of-an-import", `pub mod tree {
+    pub fn closest(n: u32) -> u32 {
+        n + 1
+    }
+
+    pub fn detach(n: u32) -> u32 {
+        n * 2
+    }
+
+    pub fn idle() -> u32 {
+        5
+    }
+
+    pub fn immediate() -> u32 {
+        1
+    }
+
+    pub fn mark(n: u32) -> u32 {
+        n + 10
+    }
+
+    pub fn read(n: u32) -> u32 {
+        n + 100
+    }
+
+    pub fn unread(n: u32) -> u32 {
+        n + 1000
+    }
+}
+
+use crate::tree::{closest, mark};
+
+pub use crate::tree::detach;
+
+pub fn deleted(n: u32) -> u32 {
+    detach(mark(n)) + closest(n) + read(n) + unstable_idle() + unstable_immediate()
+}
+
+pub use crate::tree::closest as get_instance_from_node;
+
+pub use crate::tree::{read, unread};
+
+pub use crate::tree::idle as unstable_idle;
+pub use crate::tree::immediate as unstable_immediate;
+`);
+  expect(js).toContain('import { closest, detach, idle, immediate, mark, read } from "./tree.js";\n');
+  expect(js.match(/^import /gm)?.length).toBe(1);
+  expect(js).toContain("\nexport { detach };\n");
+  expect(js).toContain("\nexport { closest as getInstanceFromNode };\n");
+  expect(js).toContain('\nexport { read, unread } from "./tree.js";\n');
+  expect(js).toContain("\nexport { idle as unstableIdle, immediate as unstableImmediate };\n");
+  const exports = lib as Record<string, (n?: number) => number>;
+  expect([exports.deleted(1), exports.detach(3), exports.getInstanceFromNode(1), exports.read(1), exports.unread(1)]).toEqual([131, 6, 2, 101, 1001]);
+  expect([exports.unstableIdle(), exports.unstableImmediate()]).toEqual([5, 1]);
+  // Its import and its export of one `pub use`, with no other: one block.
+  const alone = await compiled("reexport-of-an-import-alone", `pub mod greet {
+    pub fn hello() -> u32 {
+        1
+    }
+}
+
+pub use greet::hello;
+
+pub fn welcome() -> u32 {
+    hello() + 1
+}
+`);
+  expect(alone.js).toContain('\nimport { hello } from "./greet.js";\nexport { hello };\n\nexport function welcome() {');
+});
+
 // The pilot's modules start with what each is for, `//! Where the app is:
 // ..`, above their `use`s: the file's description, a JSDoc, as upstream's
 // files write theirs, `/** Where the app is: .. */`, and a `/*! .. */` a

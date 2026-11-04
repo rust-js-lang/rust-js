@@ -652,7 +652,11 @@ impl UsesWritten {
     /// and `holds` say: each `use` an import of its own, and a run of them
     /// of one module, nothing but attributes between, one, at its first, as
     /// a run of `pub use`s is one re-export (rd649, ADR 0874); a `pub use`
-    /// where no other `use` does.
+    /// where no other `use` does, but of a module a `use` before it imports
+    /// from, in that `use`'s import, the module's import of that path
+    /// (rd705): ReactFiberConfigDOM's `detachDeletedInstance`, which it
+    /// calls and re-exports, is in its `./ReactDOMComponentTree.js` import,
+    /// that module loading where it did, at that earlier import.
     fn written_at(
         &self,
         (naming, naming_through): (impl Fn(DefId) -> bool, impl Fn(&NamedThrough) -> bool),
@@ -660,6 +664,14 @@ impl UsesWritten {
         holds: impl Fn(&NamedThrough) -> bool,
     ) -> Option<rustc_span::Span> {
         let mut at = self.first(naming, naming_through)?;
+        let reexport = |span: rustc_span::Span| (self.uses.iter()).any(|use_| use_.0 == span && use_.3);
+        if reexport(at)
+            && let Some(before) = (self.uses.iter())
+                .filter(|(span, _, _, reexport)| !reexport && span.lo() < at.lo())
+                .find(|(_, named, holders, _)| named.iter().any(|&id| makes(id)) || holders.iter().any(&holds))
+        {
+            at = before.0;
+        }
         let of = |span: rustc_span::Span| {
             (self.uses.iter()).any(|(at, named, holders, _)| {
                 *at == span && (named.iter().any(|&id| makes(id)) || holders.iter().any(&holds))

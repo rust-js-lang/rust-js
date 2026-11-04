@@ -175,7 +175,8 @@ test("the builder's Cargo builds run the compiler's Rust", async () => {
 // ADR 0101: a module's `links` are where its JS and its declarations name
 // another module's file, by the compiler's parse of what it printed: each
 // relative specifier's bytes, after a directive and in an `export .. from`
-// too, and none of a package's, `@rust-js/runtime`.
+// too, one of what the module doesn't import, `other` (rd705), and none of
+// a package's, `@rust-js/runtime`.
 test("a manifest's links are each relative specifier a module's files print", async () => {
   buildCompiler();
   const dir = fixture("manifest-links");
@@ -186,10 +187,13 @@ test("a manifest's links are each relative specifier a module's files print", as
 pub fn base(n: Option<u32>) -> u32 {
     n.unwrap()
 }
+pub fn other() -> u32 {
+    3
+}
 pub mod child {
     #[cfg_attr(rust_js, rust_js::directive = "use client")]
     const _: () = ();
-    pub use crate::base;
+    pub use crate::{base, other};
     pub fn make() -> crate::Value {
         crate::Value { n: crate::base(Some(1)) }
     }

@@ -964,4 +964,12 @@ export const mutations: Mutation[] = [
     replace: "            .filter_map(|id| Some((tcx.def_span(id), id)))\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a binding's comments are above the import it makes"],
   },
+  {
+    name: "reexport-import-apart",
+    breaks: "what a `pub use` names, which the module reads too, is imported by an import of its own beside the one an earlier `use` of that module makes, ReactFiberConfigDOM's second `./ReactDOMComponentTree.js` import (rd705)",
+    file: "src/lower/analysis/naming.rs",
+    find: "        {\n            at = before.0;\n        }\n",
+    replace: "        {\n            let _ = before;\n        }\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "a pub use of what the module imports exports its binding"],
+  },
 ];

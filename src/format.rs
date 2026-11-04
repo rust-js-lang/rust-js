@@ -486,10 +486,14 @@ fn blank_lines_before(code: &str, told: &[bool]) -> std::collections::HashSet<us
         Statement::ExportDeclaration(export) => matches!(export.declaration, Declaration::FunctionDeclaration(_)),
         _ => false,
     };
+    // And `export { x };` of what the module imports, a re-export (rd705).
     let imported = |statement: &Statement<'_>| {
         matches!(
             statement,
-            Statement::ImportDeclaration(_) | Statement::ExportFromDeclaration(_) | Statement::ExportAllDeclaration(_)
+            Statement::ImportDeclaration(_)
+                | Statement::ExportFromDeclaration(_)
+                | Statement::ExportAllDeclaration(_)
+                | Statement::ExportNamedDeclaration(_)
         )
     };
     let lines = |statement: &Statement<'_>| {

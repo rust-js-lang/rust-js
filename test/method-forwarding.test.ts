@@ -166,7 +166,7 @@ pub fn inside(n: f64) -> f64 {
     "\n/** Closes the response. */\n/** Closes it. */\n// Passed on.\n// As it is.\nexport function close(n) {\n  return n + 1;\n}\n\nexport function open(n) {\n",
   );
   expect(js).toContain(
-    "\n// The batch.\n\n// Above batched.\n// In batched.\n// Above flushed.\n// In flushed.\nimport { batched, flushed } from \"./other.js\";\nexport { batched, flushed } from \"./other.js\";\n",
+    "\n// The batch.\n\n// Above batched.\n// In batched.\n// Above flushed.\n// In flushed.\nimport { batched, flushed } from \"./other.js\";\nexport { batched, flushed };\n",
   );
   const ran = run(["node", "--input-type=module", "--eval", `
     import * as lib from ${JSON.stringify(join(dir, "lib.js"))};

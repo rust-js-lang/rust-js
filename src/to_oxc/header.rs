@@ -125,6 +125,10 @@ enum Says<'m> {
     /// `export * as ns from` (ADR 0240, amended); `export * from`, of
     /// none, a glob's of every name (#593).
     ReexportAll(Option<&'m str>),
+    /// `export { a, b as c };`, a re-export of what the module imports
+    /// from where it re-exports it from, each `(local, alias)` and where
+    /// its `use` writes it (rd705).
+    Export(Vec<(&'m str, &'m str, (js::Span, js::Span))>),
 }
 
 /// One of a module's imports and re-exports, in their order (`entries`):
@@ -175,7 +179,7 @@ impl Entry<'_> {
 /// ReactDOMRootFB's last `pub use` (rd725): where an import nothing names
 /// in the Rust loads changes nothing the module does (ADR 0262's case
 /// "None"), as the runtime's helpers load nothing of the program's.
-pub(super) fn entries(module: &Module) -> Vec<Entry<'_>> {
+pub(super) fn entries<'a>(module: &'a Module) -> Vec<Entry<'a>> {
     let mut named: Vec<(bool, Entry<'_>)> = Vec::new();
     let mut effects = Vec::new();
     fn pairs<'m>(pairs: impl Iterator<Item = &'m (String, String)>) -> Vec<(&'m str, &'m str)> {
@@ -229,17 +233,54 @@ pub(super) fn entries(module: &Module) -> Vec<Entry<'_>> {
             named.push((relative, entry(Says::Namespace(namespace))));
         }
     }
+    // What the module imports, by where from and what's exported there:
+    // its local name, and where its import is placed.
+    let mut imported: HashMap<(&str, &str), (&str, js::Span)> = HashMap::new();
+    for package in &module.packages {
+        let default = package.default.iter().map(|local| ("default", local.as_str()));
+        let named = package
+            .named
+            .iter()
+            .map(|(export, local)| (export.as_str(), local.as_str()));
+        for (export, local) in default.chain(named) {
+            (imported.entry((package.from.as_str(), export))).or_insert((local, package.named_at));
+        }
+    }
+    for import in &module.imports {
+        for (export, local) in &import.named {
+            (imported.entry((import.from.as_str(), export.as_str()))).or_insert((local.as_str(), import.span));
+        }
+    }
     for reexport in &module.reexports {
         let relative = crate::program::is_relative_specifier(&reexport.from);
-        let says = match reexport.named.as_slice() {
+        let written = |i: usize| (reexport.written.get(i).copied()).unwrap_or((js::Span::NONE, js::Span::NONE));
+        // Of what the module imports from where it's re-exported from,
+        // every name, imported at or above the re-export, its local
+        // binding is exported: `import {x} from 'm'` and `export {x};`, as
+        // upstream's ReactFiberConfigDOM writes it, not `export {x} from
+        // 'm'` beside the import, a live binding of the one export either
+        // way (ADR 0262's case "None", rd705). Where the module imports
+        // only some, `export {..} from` beside the import, as upstream's
+        // react/index.experimental writes it (the user's decision); and
+        // where a `use` below it imports one, the export isn't of what
+        // the module has yet, as it reads.
+        let above = |&(local, at): &(&'a str, js::Span)| {
+            (!at.is_none() && !reexport.at.is_none() && at.lo <= reexport.at.lo).then_some(local)
+        };
+        let locals: Option<Vec<&str>> = (reexport.named.iter())
+            .map(|(export, _)| (imported.get(&(reexport.from.as_str(), export.as_str()))).and_then(above))
+            .collect();
+        let says = match (reexport.named.as_slice(), locals) {
             _ if reexport.every => Says::ReexportAll(None),
-            [(namespace, alias)] if namespace == "*" => Says::ReexportAll(Some(alias)),
-            named => Says::Reexport(
+            ([(namespace, alias)], _) if namespace == "*" => Says::ReexportAll(Some(alias)),
+            (named, Some(locals)) => Says::Export(
+                (named.iter().zip(locals).enumerate())
+                    .map(|(i, ((_, alias), local))| (local, alias.as_str(), written(i)))
+                    .collect(),
+            ),
+            (named, None) => Says::Reexport(
                 (named.iter().enumerate())
-                    .map(|(i, (export, alias))| {
-                        let written = (reexport.written.get(i).copied()).unwrap_or((js::Span::NONE, js::Span::NONE));
-                        (export.as_str(), alias.as_str(), written)
-                    })
+                    .map(|(i, (export, alias))| (export.as_str(), alias.as_str(), written(i)))
                     .collect(),
             ),
         };
@@ -264,7 +305,7 @@ pub(super) fn entries(module: &Module) -> Vec<Entry<'_>> {
         commented: js::Span::NONE,
         declared: false,
     });
-    let reexport = |entry: &Entry<'_>| matches!(entry.says, Says::Reexport(_) | Says::ReexportAll(_));
+    let reexport = |entry: &Entry<'_>| matches!(entry.says, Says::Reexport(_) | Says::ReexportAll(_) | Says::Export(_));
     let (unplaced, mut placed): (Vec<_>, Vec<_>) =
         (named.into_iter().map(|(_, entry)| entry)).partition(|entry| entry.placed.is_none() && !reexport(entry));
     let imported = (placed.iter())
@@ -365,7 +406,7 @@ impl<'a> Cx<'a> {
             // Each where its leaf is, which the map places it at, so the
             // comments its `use` writes after it on its line are after it
             // and those before it on lines of their own before it (rd338).
-            Says::Reexport(named) => {
+            Says::Reexport(named) | Says::Export(named) => {
                 let specifiers = named.iter().map(|&(export, alias, (local, exported))| {
                     let named =
                         |at: js::Span, name: &str| ModuleExportName::new_identifier_name(span(at), self.name(name), b);
@@ -374,16 +415,25 @@ impl<'a> Cx<'a> {
                         hi: exported.hi,
                     };
                     let at = if local.is_none() { js::Span::NONE } else { whole };
-                    ExportSpecifier::new(
-                        span(at),
-                        named(local, export),
-                        named(exported, alias),
-                        ImportOrExportKind::Value,
-                        b,
-                    )
+                    // A binding of the module's own, `export { x };`'s, is a
+                    // reference to it.
+                    let own = match entry.says {
+                        Says::Export(_) => {
+                            ModuleExportName::new_identifier_reference(span(local), self.name(export), b)
+                        }
+                        _ => named(local, export),
+                    };
+                    ExportSpecifier::new(span(at), own, named(exported, alias), ImportOrExportKind::Value, b)
                 });
                 let specifiers = ArenaVec::from_iter_in(specifiers, b);
-                Statement::new_export_from_declaration(at, specifiers, from, ImportOrExportKind::Value, None, b)
+                match entry.says {
+                    Says::Export(_) => {
+                        Statement::new_export_named_declaration(at, specifiers, ImportOrExportKind::Value, b)
+                    }
+                    _ => {
+                        Statement::new_export_from_declaration(at, specifiers, from, ImportOrExportKind::Value, None, b)
+                    }
+                }
             }
             Says::ReexportAll(alias) => {
                 Statement::new_export_all_declaration(at, alias.map(name), from, None, ImportOrExportKind::Value, b)

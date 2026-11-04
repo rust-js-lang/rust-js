@@ -1153,8 +1153,9 @@ pub fn read() -> u32 {
   expect(libDts).toContain("export { delete$ as delete };\n");
   const quietJs = readFileSync(join(dir, "dep", "quiet.js"), "utf8");
   expect(quietJs).toContain("\nexport function console() {\n");
-  expect(quietJs).toContain('import { delete as delete$ } from "./lib.js";');
-  expect(quietJs).toContain('export { delete } from "./lib.js";');
+  // What it reads of its `pub use`, imported, and its import exported
+  // (rd705).
+  expect(quietJs).toContain('import { delete as delete$ } from "./lib.js";\nexport { delete$ as delete };\n');
   expect(readFileSync(join(dir, "dep", "quiet.d.ts"), "utf8")).toContain("\nexport function console(): number;\n");
   // JS's importer, written by hand.
   writeFileSync(join(dir, "dep", "importer.js"), `import { delete as del, console as c, say } from "./lib.js";

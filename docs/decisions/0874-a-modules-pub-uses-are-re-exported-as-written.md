@@ -1,6 +1,6 @@
 # 0874. A module's `pub use`s are re-exported as written, or refused
 
-Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below; a glob's names, each, rd153; through a module that re-exports it, whatever it is, rd338; a private `use` through one imports from it, rd650; a `pub use` list's comments are its names', rd338; a glob's names are its module's, #592; a library's item through its module that re-exports it, rd704; a glob of every export is `export * from`, #593). Amends [0240](0240-reexports.md), whose re-exports were
+Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below; a glob's names, each, rd153; through a module that re-exports it, whatever it is, rd338; a private `use` through one imports from it, rd650; a `pub use` list's comments are its names', rd338; a glob's names are its module's, #592; a library's item through its module that re-exports it, rd704; a glob of every export is `export * from`, #593; a `pub use` of what the module imports exports its binding, rd705). Amends [0240](0240-reexports.md), whose re-exports were
 one statement for each module, ordered by its path, of the crate's
 functions and bindings alone, and refused a JS module's namespace; and
 [0596](0596-a-pub-use-of-a-modules-own-item-exports-it.md), whose private
@@ -581,3 +581,50 @@ says nothing of them"; mutations `export-all-unlinked`
 (`to_oxc/expressions.ts`), `namespace-merged-into-a-list`,
 `glob-of-std-within-the-crate-refused` and `public-glob-of-std-unsaid`
 (`lower/reexports.ts`).
+
+## Amendment: a `pub use` of what the module imports exports its binding (rd705, the user's decision, 2026-11-04)
+
+React's ReactFiberConfigDOM calls `detachDeletedInstance` and re-exports
+it. Rust can't name it in both a `use` and a `pub use` (E0252), so the
+port's `use crate::react_dom_component_tree::{.., get_closest_instance_from_node, ..};`
+leaves it out and writes `pub use crate::react_dom_component_tree::detach_deleted_instance;`.
+Since rd649 each `use` is its import where it's written, and a `pub use`
+places the import of what the module reads only where no other `use`
+does: this printed `import {detachDeletedInstance} from
+'./ReactDOMComponentTree.js';` beside `export {detachDeletedInstance} from
+'./ReactDOMComponentTree.js';`, a second import of a module the first
+already loads. Upstream imports it in its one `./ReactDOMComponentTree`
+import (ReactFiberConfigDOM.js:55) and exports the binding, `export
+{detachDeletedInstance};` (:80), and `export {getClosestInstanceFromNode
+as getInstanceFromNode};` (:839); Scheduler's `export {ImmediatePriority
+as unstable_ImmediatePriority, ..};` (Scheduler.js's last statement) too.
+
+**The module's import of what a `pub use` names is in the import an
+earlier `use` of the same module makes** (`UsesWritten::written_at`): that
+module loads where it did, at the earlier import. **And a `pub use` each
+of whose names the module imports from where it re-exports it from is
+`export { x };` of the import's binding, `export { closest as
+getInstanceFromNode };`** (`to_oxc::header`), with the imports as one
+block of them (`format::spaced`), where each import is at or above the
+`pub use`: one a `use` below it makes, `use crate::shapes::area as
+_area_dev;` after `pub use crate::shapes::area;`, would export what the
+module hasn't imported yet as it reads, so it's still `export {..} from`.
+**Where the module imports only some of its names, it's `export {..}
+from` beside the import**, as upstream's
+react/index.experimental.js writes its list (line 10) and `import
+{useOptimistic} from './src/ReactClient';` (line 62) (the user's
+decision).
+
+Case N of ADR [0262](0262-when-rust-and-js-disagree.md): `export {x}`
+of an imported `x` and `export {x} from` are live bindings of the one
+export, the module loaded once either way.
+
+Held by `test/lowering-comments-items.test.ts`'s "a pub use of what the
+module imports exports its binding" (a name, a renamed one, a run of two,
+a list of which one is read, and a `pub use` alone, run),
+`test/modules.test.ts`'s "a module's pub uses are re-exported as written"
+(an import below), the scheduler port's snapshot; mutations
+`reexport-import-apart` (`lower/analysis/naming.ts`),
+`imported-reexport-from`, `partly-imported-reexport-local` and
+`local-export-own-block` (`to_oxc/header.ts`, `format.ts`).
+

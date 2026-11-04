@@ -94,7 +94,7 @@ pub fn page() -> String {
 // src/lib.js
 import { hello } from "./greet.js";
 import * as Format from "./format.js";
-export { hello } from "./greet.js";
+export { hello };
 
 export function welcome(name) {
   return Format.shout(hello(name));
@@ -319,6 +319,13 @@ where it is, in the order written, with the comments before it; a run of
 them from one module with no comment or blank line between, their
 attributes aside, is one `export { .. } from`
 ([ADR 0874](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md)).
+What the module reads of a `pub use` is imported with what a `use` before
+it imports of that module, and a `pub use` each of whose names the module
+reads exports its import, `export { hello };`, as upstream React's
+ReactFiberConfigDOM writes `export {detachDeletedInstance};`; one of which
+the module reads only some names is still `export { .. } from`, its
+import beside it
+([ADR 0874, amended](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md#amendment-a-pub-use-of-what-the-module-imports-exports-its-binding-rd705-the-users-decision-2026-11-04)).
 A comment inside a `pub use`'s list is its name's, after it on its line,
 `act, // DEV-only`, or before it on lines of its own (amended, rd338). One of the module's own
 functions or constants by another name is exported by that name alone:
@@ -371,7 +378,7 @@ pub mod units {
 ```js
 export { px as pixels, BASE } from "./format/units.js";
 import { hello } from "./greet.js";
-export { hello } from "./greet.js";
+export { hello };
 
 function greetAll(names) {
   return names.map(hello);
