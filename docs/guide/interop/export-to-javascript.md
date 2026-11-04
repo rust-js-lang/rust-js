@@ -770,7 +770,8 @@ an ES class too, where upstream writes one: `class Plugin {
 constructor(options) { .. } apply(compiler) { .. } get count() { .. }
 static shout(text) { .. } }`. Marked `#[cfg_attr(rust_js,
 rust_js::class(es, fields))]`, it declares its fields too, where upstream
-does, `class Plugin { chunkName; constructor(options) { .. } }`, in the
+does, `class Plugin { chunkName; constructor(options) { .. } }`, a blank
+line after them (rd731), in the
 order its constructor sets them. Where a declaration would change what
 the constructor does, `fields` is refused, saying why: the program reads
 its prototype, `js::class::<Plugin>().prototype()`, where it may define a
@@ -779,7 +780,8 @@ setter of a field's name; the constructor leaves a field out, an
 class extends a binding's, whose prototype may have an accessor of the
 name. `fields` without `es` is refused too (#568). A class's field named
 `constructor` is refused of either form, as no TypeScript class declares
-one and `this.constructor` hides its prototype's (rd750). Its constants are its prototype's after it,
+one and `this.constructor` hides its prototype's (rd750). Its constants
+are its prototype's after it,
 `Plugin.prototype.limit = 3;`, and its module's default declared as it,
 `export default class Plugin { .. }`. JS sees an ES class: its methods
 aren't enumerable, and a call without `new` throws a `TypeError`. Its
@@ -787,7 +789,52 @@ impl is marked `#[rust_js::class]` alone, as its struct says its form;
 its prototype replaced, which JS doesn't let be written, is refused, and
 so is `class(es)` of a class that extends a binding's, an ES class
 already ([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md),
-amended, rd682).
+amended, rd682). As a webpack plugin is written:
+
+```rust
+/// A webpack plugin, as upstream writes it.
+#[cfg_attr(rust_js, rust_js::class(es, fields))]
+pub struct Plugin {
+    pub chunk_name: String,
+    pub applied: u32,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Plugin {
+    pub fn new(chunk_name: &str) -> Self {
+        Plugin {
+            chunk_name: chunk_name.to_string(),
+            applied: 0,
+        }
+    }
+
+    pub fn apply(&mut self) -> &str {
+        self.applied += 1;
+        &self.chunk_name
+    }
+}
+
+js::export_default!(Plugin);
+```
+
+```js
+/** A webpack plugin, as upstream writes it. */
+export default class Plugin {
+  chunkName;
+  applied;
+
+  constructor(chunkName) {
+    this.chunkName = chunkName;
+    this.applied = 0;
+  }
+
+  apply() {
+    this.applied = (this.applied + 1) >>> 0;
+    return this.chunkName;
+  }
+}
+```
+
 React's `Component`, and its `PureComponent`, whose prototype inherits
 `Component`'s:
 

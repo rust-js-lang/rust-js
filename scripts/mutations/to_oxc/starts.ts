@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "                ends.insert(s.span.lo);\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded Ok test"],
   },
+  {
+    name: "es-class-fields-not-apart",
+    breaks: "an ES class's first member follows its field declarations with no blank line, where upstream's and Prettier's have one (rd731)",
+    file: "src/to_oxc/starts.rs",
+    find: "            starts.insert(first.span.lo);\n",
+    replace: "",
+    tests: ["test/es-classes.test.ts", "-t", "fields are apart from its first member"],
+  },
 ];

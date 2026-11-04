@@ -46,9 +46,19 @@ pub(super) fn noinline_starts(module: &Module) -> std::collections::HashSet<u32>
 /// statements', and of a constant, its value's, as a statement.
 /// Where each statement starts that a blank line is before, as it's set
 /// apart: a function declared away from where it's written, and what's
-/// after it but another such function (`Function::set_apart`, ADR 1043).
+/// after it but another such function (`Function::set_apart`, ADR 1043);
+/// and an ES class's first member after its field declarations, apart
+/// from them as upstream's and Prettier's are (rd731).
 pub(super) fn set_apart_starts(module: &Module) -> std::collections::HashSet<u32> {
     let mut starts = std::collections::HashSet::new();
+    for item in &module.items {
+        if let js::Item::Namespace(n) = item
+            && n.class.as_ref().is_some_and(|class| !class.fields.is_empty())
+            && let Some(first) = n.methods.first().filter(|f| !f.span.is_none())
+        {
+            starts.insert(first.span.lo);
+        }
+    }
     for mut body in bodies(module) {
         js::each_block_mut(&mut body, &mut |stmts| {
             let apart = |stmt: &js::Stmt| matches!(&stmt.kind, StmtKind::Function(f) if f.set_apart);

@@ -877,3 +877,19 @@ asks it of each field it declares. Held by `test/es-classes.test.ts`'s "a
 class's field named constructor is refused, saying what to write", of a
 constructor function and an ES class, and the mutation
 `constructor-field-allowed` (`lower/classes.rs`).
+
+## Amendment: an ES class's fields are apart from its first member (rd731)
+
+Decided by the user, relayed by m6-react (2026-11-04): a blank line
+between an ES class's field declarations and its first member, as
+upstream's ReactFlightWebpackPlugin.js and react-test-renderer's
+`class ReactTestInstance { _fiber;\n\n  _currentFiber() { .. } }` have it and
+Prettier keeps. Its members' blank lines are where the Rust has them
+(ADR 0444), and the struct's fields and its impl's `fn new` are other
+items, the line before `fn new` its impl's `impl Plugin {`, so none was
+printed. **The first member after an ES class's field declarations is
+set apart** (`to_oxc/starts.rs`' `set_apart_starts`), a blank line before
+it, its doc comment after it: `chunkName;\n\n  constructor(options) {`.
+Case: none, the JS's layout. Held by `test/es-classes.test.ts`'s "an ES
+class's fields are apart from its first member" and the mutation
+`es-class-fields-not-apart` (`to_oxc/starts.rs`).

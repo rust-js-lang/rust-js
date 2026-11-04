@@ -309,3 +309,29 @@ impl Built {
     );
   }
 });
+
+// rd731, the user's decision relayed by m6-react: an ES class's field
+// declarations are apart from its first member by a blank line, as
+// upstream's and Prettier's are, though the Rust writes the struct's
+// fields and its `fn new` in other items; its doc comment after it.
+test("an ES class's fields are apart from its first member", () => {
+  const { js } = compiled(
+    "es-class-fields-apart",
+    `#[cfg_attr(rust_js, rust_js::class(es, fields))]
+pub struct Sized {
+    pub label: String,
+    pub size: u32,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Sized {
+    /// Made of its size.
+    pub fn new(size: u32) -> Self {
+        let label = format!("{size}");
+        Sized { label, size }
+    }
+}
+`,
+  );
+  expect(js).toContain("export class Sized {\n  label;\n  size;\n\n  /** Made of its size. */\n  constructor(size) {");
+});
