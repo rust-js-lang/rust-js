@@ -117,6 +117,14 @@ impl Expr {
                 b.visit_held_vars(read);
             }
             ExprKind::Array(items) => items.iter().for_each(|item| item.visit_held_vars(read)),
+            // A call that runs no code but its own (`Known::RunsNothing`)
+            // only holds what it's given: React's `ReactFlightClient({ ..,
+            // checkEvalAvailabilityOnceDev })` runs none of it as it's made
+            // (#604).
+            ExprKind::Call(callee, args) if self.facts.has(crate::js::Known::RunsNothing) => {
+                callee.visit_vars(&mut |v| read(v, false));
+                args.iter().for_each(|arg| arg.visit_held_vars(read));
+            }
             ExprKind::Object(props, ..) => {
                 for prop in props {
                     match prop {

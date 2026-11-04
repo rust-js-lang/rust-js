@@ -271,4 +271,13 @@ export const mutations: Mutation[] = [
     replace: "                if let Some(x) = text.text_truth().filter(|_| false)\n",
     tests: ["test/lowering-options.test.ts", "-t", "nullable field's None is null"],
   },
+  {
+    name: "runs-nothing-call-runs-given",
+    breaks:
+      "a binding's call that runs nothing, `ReactFlightClient({ .., checkEvalAvailabilityOnceDev })`, is taken as running what it's given as its module loads, so it's made after what that reads, not where its Rust has it (#604)",
+    file: "src/js/expr_walk.rs",
+    find: "            ExprKind::Call(callee, args) if self.facts.has(crate::js::Known::RunsNothing) => {\n",
+    replace: "            ExprKind::Call(callee, args) if self.facts.has(crate::js::Known::RunsNothing) && false => {\n",
+    tests: ["test/lowering-constants.test.ts", "-t", "a binding that runs nothing makes"],
+  },
 ];

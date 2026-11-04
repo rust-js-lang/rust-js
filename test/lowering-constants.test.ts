@@ -696,3 +696,60 @@ export const unstable_setDisableYieldValue = Sched.unstable_setDisableYieldValue
   const lib = await import(join(dir, "lib.js"));
   expect([lib.log(3), lib.unstable_setDisableYieldValue(true)]).toEqual([3, true]);
 });
+
+// React's ReactNoopFlightClient: `const {..} = ReactFlightClient({ ..,
+// checkEvalAvailabilityOnceDev });` right after `decoderOptions`, where its
+// Rust has it, before `let hasConfirmedEval = false;`, which that function
+// reads: a binding that runs nothing, `#[rust_js::runs_nothing]`, only
+// holds what it's given, so its call runs none of it as its module loads
+// (#604, ADR 0306, amended). One that may run what it's given is made after
+// what that reads, as JS would read `hasConfirmedEval` before it's made.
+test("a thread-local a binding that runs nothing makes is where its Rust has it", async () => {
+  const dir = fixture("made-by-what-runs-nothing");
+  const source = (factory: string, marked: boolean) => `use std::cell::Cell;
+
+pub struct Client {
+    root: u32,
+}
+
+struct Config {
+    check: fn() -> bool,
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./${factory}#default")]
+#[cfg_attr(rust_js, rust_js::name = "Factory")]${marked ? "\n#[cfg_attr(rust_js, rust_js::runs_nothing)]" : ""}
+fn factory(config: &Config) -> &'static Client {
+    let _ = config;
+    unreachable!()
+}
+
+thread_local! {
+    static CLIENT: &'static Client = factory(&Config { check });
+}
+
+pub fn read() -> u32 {
+    CLIENT.with(|client| client.root)
+}
+
+thread_local! {
+    static CONFIRMED: Cell<bool> = const { Cell::new(false) };
+}
+
+fn check() -> bool {
+    CONFIRMED.replace(true)
+}
+`;
+  writeFileSync(join(dir, "lib.rs"), source("factory.js", true));
+  writeFileSync(join(dir, "factory.js"), "export default function Factory(config) {\n  return { root: 7, check: config.check };\n}\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("\nconst client = Factory({ check });\n\nexport function read() {\n");
+  expect(js.indexOf("const client =")).toBeLessThan(js.indexOf("let confirmed = false;"));
+  expect((await import(join(dir, "lib.js"))).read()).toBe(7);
+  writeFileSync(join(dir, "lib.rs"), source("calling.js", false));
+  writeFileSync(join(dir, "calling.js"), "export default function Factory(config) {\n  return { root: config.check() ? 1 : 8 };\n}\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "may.js"), ...withJs]);
+  const may = readFileSync(join(dir, "may.js"), "utf8");
+  expect(may.indexOf("let confirmed = false;")).toBeLessThan(may.indexOf("const client ="));
+  expect((await import(join(dir, "may.js"))).read()).toBe(8);
+});

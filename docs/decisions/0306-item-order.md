@@ -141,3 +141,45 @@ it reads before it": clz32's port, its JS as upstream's lines, run; and
 `USED` after `SCALE`, run where JS would throw if not. Mutations
 `load-held-run`, `load-holds-not-carried` (`js/stmt_walk.ts`),
 `held-branch-run`, `held-array-item-run` (`js/expr_walk.ts`).
+
+## Amendment: a call that runs nothing only holds what it's given (2026-11-04, #604)
+
+A binding's call that runs no code but its own (`Known::RunsNothing`,
+`#[rust_js::runs_nothing]`, ADR 0867) runs none of what it's given as its
+module loads, so **what it's given is only held**, as an array's items
+are: read, so made before, but not run, nor what it names followed.
+React's ReactNoopFlightClient makes its client of a factory that keeps its
+config for later, whose `checkEvalAvailabilityOnceDev` reads `let
+hasConfirmedEval`, written after the factory's call. Upstream writes the
+call where its Rust has it, right after `decoderOptions`:
+
+```js
+const decoderOptions = {stream: true};
+
+const {createResponse, createStreamState, processBinaryChunk, getRoot, close} =
+  ReactFlightClient({ .., checkEvalAvailabilityOnceDev });
+```
+
+rust-js moved it after `let hasConfirmedEval = false;`, as a call's
+arguments ran (above). Of a factory marked `#[rust_js::runs_nothing]`, it's
+now where its Rust has it. Of one not marked, it's after, as before, and
+must be: a factory that called what it's given as it's made would read
+`hasConfirmedEval` before its `let`, a `ReferenceError` in JS, where Rust,
+which makes the thread-local where it's first used, reads `false`.
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)), as above.
+
+The destructuring of what the factory gives names each method in the
+order the module first calls it, `{createResponse, createStreamState,
+processBinaryChunk, close, getRoot}`, where upstream lists `getRoot,
+close`: an accepted difference, the user's decision of 2026-11-04. The
+Rust calls methods on the client and writes no destructuring, and
+upstream's order is neither the order of use nor the order of
+ReactFlightClient's exports (`getRoot` at its line 489, `close` at 5723),
+so the Rust has no order to take.
+
+Test: `lowering-constants`'s "a thread-local a binding that runs nothing
+makes is where its Rust has it": the marked factory's call before the
+`let` it doesn't run, the unmarked one's after it, each run, the second a
+factory that calls its config as it's made. Mutation
+`runs-nothing-call-runs-given` (`js/expr_walk.ts`).
