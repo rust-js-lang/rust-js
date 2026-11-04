@@ -547,3 +547,117 @@ pub fn twice() -> u32 {
   expect(lib.twice()).toBe(84);
 });
 
+
+// React's ReactFeatureFlags.www, .native-fb and SchedulerFeatureFlags.www
+// export the flags their host gives in one destructuring, `export const {
+// alwaysThrottleRetries, enableObjectFiber, .. } = dynamicFeatureFlags;`.
+// Their ports declare each a `pub` thread-local reading its field off the
+// module's object, which printed one `export const alwaysThrottleRetries =
+// dynamicFeatureFlags.alwaysThrottleRetries;` each. Exported constants side
+// by side, each named as the property it reads of one variable the module
+// never sets, are one destructuring of it, as unexported ones are (ADR
+// 0031's): the same properties read once each, in their order, each name
+// bound right after its read. A comment between two is in the list, before
+// the next; one renamed, one apart from them and one not exported stay
+// their own; the module's default is read by its name (rd751).
+test("exported constants side by side of one object's properties are one destructuring", async () => {
+  const dir = fixture("exports-read-together");
+  writeFileSync(join(dir, "flags.js"), `export const reads = [];
+export const make = () => ({
+  get on() { reads.push("on"); return true; },
+  get off() { reads.push("off"); return false; },
+  get level() { reads.push("level"); return 3; },
+});
+`);
+  writeFileSync(join(dir, "lib.rs"), `/// What the host gives.
+struct Flags {
+    on: bool,
+    off: bool,
+    level: f64,
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./flags.js#make")]
+fn make() -> &'static Flags {
+    unreachable!()
+}
+
+thread_local! {
+    static FLAGS: &'static Flags = make();
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::name = "on")]
+    pub static ON: bool = FLAGS.with(|flags| flags.on);
+    // Off by default.
+    #[cfg_attr(rust_js, rust_js::name = "off")]
+    pub static OFF: bool = FLAGS.with(|flags| flags.off);
+    #[cfg_attr(rust_js, rust_js::name = "level")]
+    pub static LEVEL: f64 = FLAGS.with(|flags| flags.level);
+    static QUIET: bool = FLAGS.with(|flags| flags.off);
+}
+
+pub const STEP: f64 = 1.0;
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::name = "isOn")]
+    pub static IS_ON: bool = FLAGS.with(|flags| flags.on);
+    #[cfg_attr(rust_js, rust_js::name = "off2")]
+    pub static OFF_AGAIN: bool = FLAGS.with(|flags| flags.off);
+}
+
+pub fn quiet() -> bool {
+    QUIET.with(|quiet| *quiet)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`const flags = make();
+
+export const {
+  on,
+  // Off by default.
+  off,
+  level,
+} = flags;
+const QUIET = flags.off;
+
+export const STEP = 1;
+
+export const isOn = flags.on;
+export const off2 = flags.off;
+`);
+  const lib = await import(join(dir, "lib.js"));
+  const host = await import(join(dir, "flags.js"));
+  expect([lib.on, lib.off, lib.level, lib.isOn, lib.off2, lib.quiet()]).toEqual([true, false, 3, true, false, false]);
+  expect(host.reads).toEqual(["on", "off", "level", "off", "on", "off"]);
+  // The module's default, a constant, is exported by its name after it,
+  // `export default OFF;`, which the destructuring binds.
+  writeFileSync(join(dir, "lib.rs"), `struct Flags {
+    on: bool,
+    off: bool,
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./flags.js#make")]
+fn make() -> &'static Flags {
+    unreachable!()
+}
+
+thread_local! {
+    static FLAGS: &'static Flags = make();
+}
+
+thread_local! {
+    static ON: bool = FLAGS.with(|flags| flags.on);
+    static OFF: bool = FLAGS.with(|flags| flags.off);
+}
+
+pub fn on() -> bool {
+    ON.with(|on| *on)
+}
+
+js::export_default!(OFF);
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "defaulted.js"), ...withJs]);
+  const defaulted = await import(join(dir, "defaulted.js"));
+  expect([defaulted.on(), defaulted.default]).toEqual([true, false]);
+});

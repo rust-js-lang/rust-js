@@ -2113,6 +2113,46 @@ export function click() {
   ([ADR 0096](../../decisions/0096-statics.md), amended;
   [Module variables](global-scope.md#a-static-mut)).
 
+Constants side by side that each read a property of one object, exported
+or not, are one destructuring of it, as React's feature flag forks export
+what their host gives, `export const { alwaysThrottleRetries, .. } =
+dynamicFeatureFlags;`: the same properties, read once each, in their
+order. Exported ones are named as the properties they read; one named
+otherwise, or alone, is its own `export const`
+([ADR 0031](../../decisions/0031-consts.md#amendment-exported-constants-of-one-objects-properties-are-one-export-of-its-destructuring-rd751), amended):
+
+```rust
+/// What the host gives.
+struct Flags {
+    on: bool,
+    level: f64,
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./host.js#makeFlags")]
+fn make_flags() -> &'static Flags {
+    unreachable!()
+}
+
+thread_local! {
+    static FLAGS: &'static Flags = make_flags();
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::name = "on")]
+    pub static ON: bool = FLAGS.with(|flags| flags.on);
+    #[cfg_attr(rust_js, rust_js::name = "level")]
+    pub static LEVEL: f64 = FLAGS.with(|flags| flags.level);
+}
+```
+
+```js
+import { makeFlags } from "./host.js";
+
+const flags = makeFlags();
+
+export const { on, level } = flags;
+```
+
 A type's constants, an inherent impl's `pub const`s of a `pub` type, are
 its object's, as its methods are, and each use is its value where it's
 written, as TypeScript's `const enum` compiles: named flags of an `i32`

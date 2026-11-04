@@ -283,55 +283,93 @@ fn tested_assignments(stmts: &mut Vec<Stmt>) {
 }
 
 /// Constants side by side that each read a property of one variable,
-/// `const P = MDXComponents.p;`, none exported nor set: its destructuring,
-/// as JS writes it, `const { Intro, p: P } = MDXComponents;`.
+/// `const P = MDXComponents.p;`, none set: its destructuring, as JS
+/// writes it, `const { Intro, p: P } = MDXComponents;`; of exported ones, each named as the property it reads, one export of
+/// them, `export const { alwaysThrottleRetries, enableObjectFiber } =
+/// dynamicFlags;`, a namespace thread-local's form (rd751, ADR 1037,
+/// amended), each name at its constant, the comments between them in its
+/// list (`to_oxc/closing.rs`'s `exported`). Each property is read once, in
+/// its order, and each name bound right after its read, as each `const`
+/// did, of a variable nothing sets between them: a module's constant read
+/// of state set after it loads is made where it's first used (ADR 1006).
 fn read_together(module: &mut js::Module) {
-    // What a constant reads, the variable and the property, if it's one.
-    fn read(item: &js::Item) -> Option<(&Expr, &str)> {
-        match item {
-            js::Item::Const(constant) if !constant.export && !constant.mutable => match &constant.value.kind {
-                ExprKind::Member(object, property)
-                    if matches!(object.kind, ExprKind::Var(_)) && crate::names::is_identifier(property) =>
-                {
-                    Some((&**object, property.as_str()))
-                }
-                _ => None,
-            },
-            _ => None,
+    // What a constant reads, the variable and the property, if it's one,
+    // and whether it's exported, as the property's name.
+    let read = |item: &js::Item| -> Option<(Expr, String, bool)> {
+        let js::Item::Const(constant) = item else {
+            return None;
+        };
+        let ExprKind::Member(object, property) = &constant.value.kind else {
+            return None;
+        };
+        if !matches!(object.kind, ExprKind::Var(_)) {
+            return None;
         }
-    }
+        let readable = crate::names::is_identifier(property)
+            && !constant.mutable
+            && constant.fields.is_empty()
+            && (!constant.export || constant.name == *property);
+        readable.then(|| ((**object).clone(), property.clone(), constant.export))
+    };
     let same_var = |a: &Expr, b: &Expr| matches!((&a.kind, &b.kind), (ExprKind::Var(a), ExprKind::Var(b)) if a == b);
     let mut items = std::mem::take(&mut module.items).into_iter().peekable();
     while let Some(item) = items.next() {
-        let Some((object, property)) = read(&item).map(|(object, property)| (object.clone(), property.to_string()))
-        else {
+        let Some((object, property, export)) = read(&item) else {
             module.items.push(item);
             continue;
         };
         let js::Item::Const(first) = item else {
             unreachable!("a constant reads")
         };
-        let mut fields = vec![(property, js::Pattern::Name(first.name.clone()), None)];
+        let mut run = vec![(property, first)];
         while let Some(next) = items.peek()
-            && let Some((of, property)) = read(next)
-            && same_var(&object, of)
+            && let Some((of, property, exported)) = read(next)
+            && same_var(&object, &of)
+            && exported == export
         {
-            let property = property.to_string();
             let Some(js::Item::Const(constant)) = items.next() else {
                 unreachable!("a constant reads")
             };
-            fields.push((property, js::Pattern::Name(constant.name), None));
+            run.push((property, constant));
         }
-        module.items.push(match fields.len() {
-            1 => js::Item::Const(first),
-            _ => js::Item::Statements(vec![
+        if run.len() == 1 {
+            let (_, first) = run.pop().expect("one");
+            module.items.push(js::Item::Const(first));
+            continue;
+        }
+        let first_span = run[0].1.span;
+        let span = js::Span {
+            lo: run[0].1.span.lo,
+            hi: run[run.len() - 1].1.span.hi,
+        };
+        module.items.push(match export {
+            false => js::Item::Statements(vec![
                 StmtKind::Destructure {
-                    pattern: js::Pattern::Object(fields, None),
+                    pattern: js::Pattern::Object(
+                        (run.into_iter())
+                            .map(|(property, constant)| (property, js::Pattern::Name(constant.name), None))
+                            .collect(),
+                        None,
+                    ),
                     value: object,
                     mutable: false,
                 }
-                .at(first.span),
+                .at(first_span),
             ]),
+            true => js::Item::Const(js::Const {
+                name: run[0].1.name.clone(),
+                value: object,
+                export: true,
+                mutable: false,
+                fields: js::Fields {
+                    names: run
+                        .into_iter()
+                        .map(|(_, constant)| (constant.name, constant.span))
+                        .collect(),
+                    declared: span,
+                },
+                span,
+            }),
         });
     }
 }

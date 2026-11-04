@@ -492,3 +492,72 @@ f64`, `u32::from`), `test/webapi-objects.test.ts`'s "a webapi constant is
 read by its JS name, as WebIDL's integer" (run, `Node` given), and the
 mutations `const-link-name-unread` (`lower.ts`) and
 `const-link-name-refused` (`lower/bindings.ts`).
+
+## Amendment: exported constants of one object's properties are one export of its destructuring (rd751)
+
+React's ReactFeatureFlags.www exports the flags www's host gives in one
+statement, as do its .native-fb and SchedulerFeatureFlags.www:
+
+```js
+const dynamicFeatureFlags = require('ReactFeatureFlags');
+
+export const {
+  alwaysThrottleRetries,
+  disableLegacyContextForFunctionComponents,
+  ..
+} = dynamicFeatureFlags;
+```
+
+Their ports hold the host's object in a thread-local and declare each flag
+a `pub` thread-local of its field, `pub static ALWAYS_THROTTLE_RETRIES:
+bool = DYNAMIC_FEATURE_FLAGS.with(|flags| flags.always_throttle_retries);`,
+each `#[rust_js::name]`d as upstream's, and printed one `export const
+alwaysThrottleRetries = dynamicFeatureFlags.alwaysThrottleRetries;` each:
+the amendment above destructured constants side by side "none exported",
+as a destructuring had no exported form then.
+
+**Constants side by side, exported or not, each reading a property of one
+variable the module never sets, are one destructuring of it; of exported
+ones, each named as the property it reads, one `export const { a, b } =
+v;`**, a namespace thread-local's form (`js::Const::fields`, ADR 1037,
+amended), each name where its constant is, which the map places it at,
+and the comments on lines of their own between two in its list, before the
+next (`to_oxc/closing.rs`'s `exported`, rd610). One exported is never in a
+run of ones that aren't, nor one named otherwise than its property, which
+a shorthand can't say; one alone stays `export const x = v.x;`. The
+module's default, a constant, is exported by its name after it, `export
+default off;`, which the destructuring binds as the `const` did.
+Preparation makes it (`prepare.rs`'s `read_together`, which holds both
+forms).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, none. Each property
+is read once, in its order, and each name bound right after its read, in
+the destructuring as in the `const`s, so a getter sees what it saw; the
+variable is read once where each `const` read it again, the same object,
+as nothing of the module sets it between them: a constant that reads
+state the module sets after it loads is made where it's first used, not
+as it loads ([ADR 1006](1006-a-pub-thread-local-is-made-as-its-module-loads.md), amended), so
+none of a run reads one; the module's exports are the same names, its
+`.d.ts` unchanged.
+
+The other ways: an attribute or a struct of the flags the module exports
+(a namespace thread-local), which the ports' flags, each one export among
+static ones, are not, and a second way to say an export; or each its own
+`export const`, which is not what upstream writes.
+
+**The user's decision (2026-11-04): a lone exported read stays `export
+const x = v.x;`**, as a lone unexported one stays `const P = T.p;`: one
+rule for a run of any kind, a destructuring only of two or more.
+SchedulerFeatureFlags.www's one flag, `export const enableRequestPaint =
+dynamicFeatureFlags.enableRequestPaint;` where upstream writes `export
+const {enableRequestPaint} = dynamicFeatureFlags;`, is an accepted
+difference of the port.
+
+What changes: React's ReactFeatureFlags.www and .native-fb print
+upstream's destructuring.
+
+Held by `test/lowering-constants.test.ts`'s "exported constants side by
+side of one object's properties are one destructuring", run in JS with
+getters that record each read, and mutations `exported-reads-apart`,
+`exported-renamed-read-together` and
+`exported-and-unexported-read-together` (`prepare.ts`).
