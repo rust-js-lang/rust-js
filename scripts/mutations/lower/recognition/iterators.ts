@@ -3,6 +3,24 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "filter-drops-no-items",
+    breaks:
+      "a `filter()` or a `take_while()` is taken to drop no items as it's stepped, so where its closure can't panic, the panic of the drop of the item it rejects leaves what's left undropped (#701)",
+    file: "src/lower/recognition/iterators.rs",
+    find: '            "Skip" | "StepBy" | "SkipWhile" | "Take" | "Filter" | "TakeWhile" => {\n',
+    replace: '            "Skip" | "StepBy" | "SkipWhile" | "Take" => {\n',
+    tests: ["test/corpus.test.ts", "-t", "^closure_stages_that_never_unwind_past_adapters.rs$"],
+  },
+  {
+    name: "fuse-drops-nothing",
+    breaks:
+      "a `fuse()` is taken to drop nothing as it's stepped, so where its stages can't panic, the panic of the drop of the iterator it has exhausted leaves what it collected undropped (#701)",
+    file: "src/lower/recognition/iterators.rs",
+    find: '            "Fuse" => first.map(DropsExhausted).into_iter().collect(),\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^closure_stages_that_never_unwind_past_adapters.rs$"],
+  },
+  {
     name: "zip-drops-no-items",
     breaks: "a `zip()` is taken to drop no items as it's stepped, so the panic of the drop of the one it took as its other side ended, or of one it trims from the longer side's back, leaves what it collected and what's left undropped (#707, #711)",
     file: "src/lower/recognition/iterators.rs",

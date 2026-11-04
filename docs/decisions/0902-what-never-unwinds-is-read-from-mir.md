@@ -63,3 +63,56 @@ throwing, without asking its parts.
 - Mutations: `assert-steps-on`, `user-display-shown-whole`,
   `never-unwinding-unmarked`, `template-may-throw-whole`,
   `program-code-pending-unflushed`, `shadowed-temporary-renamed`.
+
+## Amendment: a closure never unwinds where its MIR can't panic, as a function doesn't (2026-11-04, #701)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): no difference. What runs,
+and in what order, is the same; a collect only leaves out the closing a
+panic would need.
+
+`never_unwinding` took only functions, so every closure stage counted as
+one that may panic in `steps_may_panic` (ADR 1089), and a collect of items
+with a destructor through a closure that can't panic was
+`$collectDropping($closing($iter(v), ..).map(f), drop)` where `v.map(f)`
+does what Rust does.
+
+- **A closure is a candidate, as a function is**, its MIR's every block
+  read by the same `steps_on`. `steps_may_panic` already asked
+  `never_unwinding` of each closure of an iterator's type; nothing else
+  decides it.
+- **Its captures need nothing of their own.** A closure reads what it
+  captured as its fields, so a call, a drop or an assert of a capture is a
+  block `steps_on` refuses. Dropping the closure itself, its captures, is
+  no step of it: where an adapter drops one as it's stepped, a `chain()`'s
+  exhausted side, that's the adapter's work, which `steps_may_panic` asks
+  recognition's `stepping_work` of (ADR 1089, amended).
+- **A closure of a generic function isn't one**, as the function isn't:
+  its MIR reads the function's type parameters, whose values come through
+  dictionaries, so it's held to the rule its parent is. No JS shows it
+  today: a closure's type holds its function's type parameters, and
+  `steps_may_panic` takes an iterator whose type holds one as one that may
+  panic, so `held`'s collect stays `$collectDropping`; it keeps
+  `never_unwinding` true of what it holds, whoever asks next. A coroutine,
+  an `async` block's, isn't one either: no stage is one.
+- Overflow checks stay off (ADR 0011): `|n| n + offset` never panics,
+  `|n| table[n]` and `|n| 6 / n` may.
+
+What it exposed: a `filter()`'s and a `take_while()`'s drop of the item
+its closure rejects, a `fuse()`'s or a `chain()`'s of the part it has
+exhausted, and a `flat_map()`'s of its inner iterator were counted only
+through their closure. They're `stepping_work`'s now (ADR 1089, amended),
+which landed first, so this changes what may panic only where a closure
+can't.
+
+`closure_stages_that_never_unwind.rs` holds both sides against native
+Rust, `closure_stages_that_never_unwind_past_adapters.rs` the adapters'
+own drops behind closures that can't panic. Mutations:
+`closure-never-candidate` (`lower/analysis/unwinding.ts`),
+`filter-drops-no-items` and `fuse-drops-nothing`
+(`lower/recognition/iterators.ts`); a closure of a generic function taken
+for a candidate is no mutation, as nothing shows it.
+
+One limit stays: `steps_on` refuses each `drop` terminator, a moved-out
+temporary's too, so a function or a closure that builds a value of a type
+with a destructor from another, `Once { held: D(n), left: 1 }`, is taken
+for one that may unwind.

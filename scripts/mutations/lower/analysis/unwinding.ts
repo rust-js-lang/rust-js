@@ -21,4 +21,14 @@ export const mutations: Mutation[] = [
     replace: "    let _ = (ty, recognition);\n    true\n",
     tests: ["test/corpus.test.ts", "-t", "^never_unwinding_calls.rs$"],
   },
+  {
+    name: "closure-never-candidate",
+    breaks:
+      "a closure is never one that never unwinds, so a collect of items with a destructor whose closure stage can't panic is `$collectDropping(v.values().map(f), drop)`, where `v.map(f)` would do (#701)",
+    file: "src/lower/analysis/unwinding.rs",
+    find: "            DefKind::Closure => !tcx.is_coroutine(id),\n",
+    replace: "            DefKind::Closure => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_stages_that_never_unwind.rs$"],
+    snapshots: true,
+  },
 ];

@@ -797,6 +797,12 @@ is a call of the crate's function that can't panic either, one whose
 body only prints and reads, `loudDrop_drop(b); loudDrop_drop(a);`; one
 that may, by an index or a `Display` that panics, keeps its `finally`
 ([0902](../decisions/0902-what-never-unwinds-is-read-from-mir.md)).
+A closure that can't panic is one too, so a collect of items with a
+destructor through it is the array's own: `v.iter().map(|&n| Loud(n +
+offset)).collect()` is `v.map((n) => [(n + offset) & 255])`, and one whose
+closure indexes, divides or asserts drops what it collected as the panic
+unwinds, `$collectDropping(..)`; a closure of a generic function counts
+as one that may, as the function does (#701).
 A part whose destructor panics leaves the parts after it still dropped,
 as Rust's drop glue goes on: a struct's fields after its own `drop` and
 each other, a tuple's and a variant's, `try { boomDrop_drop(pair.first);

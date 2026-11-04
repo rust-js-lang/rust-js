@@ -4,7 +4,6 @@ import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $closing,
   $cmp,
-  $collectDropping,
   $count,
   $dropEach,
   $heapFrom,
@@ -24,11 +23,7 @@ function loudDrop_drop(loud) {
 }
 
 function deque(items) {
-  return $collectDropping(
-    items.values().map((n) => [n]),
-    loudDrop_drop,
-    true,
-  );
+  return items.map((n) => [n]);
 }
 
 function main() {
@@ -43,14 +38,12 @@ function main() {
   iter.return();
   console.log(`counted ${counted}`);
 
-  const taken = $collectDropping(
+  const taken = Array.from(
     $lazyTakeWhile(
       $closing($iter(deque([2, 3, 9, 4])), $dropEach(loudDrop_drop)),
       (l) => l[0] < 5,
       loudDrop_drop,
     ),
-    loudDrop_drop,
-    true,
   );
   console.log(`taken ${taken.length}`);
   for (const item of taken) {
@@ -88,7 +81,7 @@ function main() {
   console.log(`first ${first != null ? map(first) : 0}`);
 
   const skip = (l) => l[0] < 5;
-  const skipped = $collectDropping(
+  const skipped = Array.from(
     $lazySkipWhile($closing($iter(deque([1, 8, 2])), $dropEach(loudDrop_drop)), (item) => {
       if (skip(item)) {
         loudDrop_drop(item);
@@ -96,8 +89,6 @@ function main() {
       }
       return false;
     }),
-    loudDrop_drop,
-    true,
   );
   console.log(`skipped to ${skipped.length}`);
   for (const item of skipped) {

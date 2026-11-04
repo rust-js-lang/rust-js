@@ -1,7 +1,8 @@
-//! Which of the crate's functions never unwind (ADR 0902): each whose MIR
-//! has no way to panic, read once from it, so a call of one throws only
-//! where what it's given does (`Known::NeverThrows`), and a drop after it
-//! needs no `finally`.
+//! Which of the crate's functions and closures never unwind (ADR 0902):
+//! each whose MIR has no way to panic, read once from it, so a call of one
+//! throws only where what it's given does (`Known::NeverThrows`), a drop
+//! after it needs no `finally`, and an iterator whose closure stage it is
+//! steps without a panic (`steps_may_panic`, #701).
 
 use crate::lower::Body;
 use crate::lower::bindings::is_binding;
@@ -13,7 +14,7 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 use std::collections::HashSet;
 
-/// The crate's functions that never unwind: of no type parameters, no
+/// The crate's functions and closures that never unwind: of no type parameters, no
 /// binding nor trait's method a dictionary may call another impl of, each
 /// whose every way on can't panic (`steps_on`), each call of another of
 /// these or of std's that can't. Found from the most, each that may taken
@@ -42,13 +43,21 @@ pub(super) fn never_unwinding<'tcx>(
     }
 }
 
-/// Whether `id` may be one: the crate's own function, of no type
-/// parameters, no binding's.
+/// Whether `id` may be one: the crate's own function or closure, no
+/// binding's, of no type parameters, a closure's those of the function it's
+/// written in (#701). A closure's captures are read in its MIR as its
+/// fields, so a call, a drop or an assert of what it captured is a block
+/// `steps_on` reads. Not a coroutine, an `async` block's, which no stage is.
 fn candidate(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    let parent = tcx.typeck_root_def_id(id);
     id.is_local()
-        && matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn)
+        && match tcx.def_kind(id) {
+            DefKind::Fn | DefKind::AssocFn => true,
+            DefKind::Closure => !tcx.is_coroutine(id),
+            _ => false,
+        }
         && !is_binding(tcx, id)
-        && !tcx.generics_of(id).requires_monomorphization(tcx)
+        && !tcx.generics_of(parent).requires_monomorphization(tcx)
 }
 
 /// Whether each block of `mir` but its cleanup goes on without a panic:

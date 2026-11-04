@@ -54,7 +54,7 @@ function main() {
     try {
       try {
         const skip = () => true;
-        const none = $foldToArray(
+        const none = Array.from(
           $lazySkipWhile($closing($iter(old), $dropEach(noisyDrop_drop)), (item) => {
             if (skip(item)) {
               noisyDrop_drop(item);
@@ -62,7 +62,6 @@ function main() {
             }
             return false;
           }),
-          noisyDrop_drop,
         );
         console.log(`none ${none.length} ${fragments.length}`);
 

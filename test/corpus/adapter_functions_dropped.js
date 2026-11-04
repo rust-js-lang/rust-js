@@ -44,13 +44,8 @@ function main() {
       console.log(`drop ${a[0]}`);
     },
   );
-  let result;
-  try {
-    result = iter.reduce((n) => n + 1, 0);
-  } finally {
-    iter.return();
-  }
-  const seen = result;
+  const seen = iter.reduce((n) => n + 1, 0);
+  iter.return();
   console.log(`${seen} counted`);
   let b$live = true;
   const b = [2];
@@ -103,13 +98,13 @@ function main() {
     it.return();
     console.log(`drop ${c[0]}`);
   });
-  let result$1;
+  let result;
   try {
-    result$1 = $collectDropping(iter$1);
+    result = $collectDropping(iter$1);
   } finally {
     iter$1.return();
   }
-  const flat = result$1;
+  const flat = result;
   console.log(`[${flat.join(", ")}] flattened`);
   let d$live = true;
   const d = [4];
@@ -134,13 +129,13 @@ function main() {
       console.log(`drop ${d[0]}`);
     },
   );
-  let result$2;
+  let result$1;
   try {
-    result$2 = $collectDropping(iter$2);
+    result$1 = $collectDropping(iter$2);
   } finally {
     iter$2.return();
   }
-  const kept = result$2;
+  const kept = result$1;
   console.log(`[${kept.join(", ")}] kept`);
   let e$live = true;
   const e = [5];
@@ -162,13 +157,8 @@ function main() {
     it.return();
     console.log(`drop ${e[0]}`);
   });
-  let result$3;
-  try {
-    result$3 = $collectDropping(iter$3);
-  } finally {
-    iter$3.return();
-  }
-  const small = result$3;
+  const small = Array.from(iter$3);
+  iter$3.return();
   console.log(`[${small.join(", ")}] taken`);
   let f$live = true;
   const f = [6];

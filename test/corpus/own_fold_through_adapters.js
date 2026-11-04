@@ -222,7 +222,7 @@ function main() {
     `[${Array.from(iterator_peekable(["q", 0], { next: plainIterator_next }, plainDrop_drop).take(1)).join(", ")}]`,
   );
   console.log(
-    `[${$collectDropping(iterator_fuse(["r", 0], { next: plainIterator_next }, false, plainDrop_drop).map((x) => (x + 1) >>> 0)).join(", ")}]`,
+    `[${Array.from(iterator_fuse(["r", 0], { next: plainIterator_next }, false, plainDrop_drop).map((x) => (x + 1) >>> 0)).join(", ")}]`,
   );
   const stepped = $held(iterator_peekable(["s", 0], { next: plainIterator_next }, plainDrop_drop));
   try {
@@ -231,7 +231,7 @@ function main() {
     stepped.return();
     throw error;
   }
-  console.log(`[${$collectDropping(stepped.map((x) => (x * 2) >>> 0)).join(", ")}]`);
+  console.log(`[${Array.from(stepped.map((x) => (x * 2) >>> 0)).join(", ")}]`);
   // A held map's and inspect's fold, std's: their source's, the crate's
   // own, through a peekable (#264).
   console.log(
@@ -292,12 +292,8 @@ function main() {
       map.return();
     },
   );
-  let result$1;
-  try {
-    result$1 = iter$1.reduce((a, b) => (a + b) >>> 0, 0);
-  } finally {
-    iter$1.return();
-  }
+  const result$1 = iter$1.reduce((a, b) => (a + b) >>> 0, 0);
+  iter$1.return();
   console.log(`${result$1}`);
   // A held flat map's fold, std's: its source's, through its `map`, the
   // crate's own, each item's array folded in turn (#297).

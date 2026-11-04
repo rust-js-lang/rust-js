@@ -2,7 +2,6 @@
 
 import {
   $closing,
-  $collectDropping,
   $dropEach,
   $findBack,
   $foldBack,
@@ -20,11 +19,7 @@ function noisyDrop_drop(noisy) {
 }
 
 function noisy(ns) {
-  return $collectDropping(
-    ns.values().map((n) => [n]),
-    noisyDrop_drop,
-    true,
-  );
+  return ns.map((n) => [n]);
 }
 
 function main() {
