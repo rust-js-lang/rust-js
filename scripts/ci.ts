@@ -67,10 +67,19 @@ function runMutationsPassed(run: Run): boolean {
   return mutationJobsPassed(jobs);
 }
 
-function gh(args: string[]): string {
-  const p = Bun.spawnSync(["gh", ...args], { cwd: root, stdout: "pipe", stderr: "pipe" });
-  if (p.exitCode !== 0) throw new Error(`gh ${args.join(" ")} failed:\n${p.stderr.toString()}`);
-  return p.stdout.toString();
+/** What `gh` prints. A read is asked again, up to three times, as GitHub's
+ * API at times ends its answer early, `unexpected end of JSON input`, which
+ * failed a nightly's test shard before its suite ran (#606); a write, a
+ * workflow started, is asked once. */
+function gh(args: string[], { write = false } = {}): string {
+  for (let attempt = 1; ; attempt++) {
+    const p = Bun.spawnSync(["gh", ...args], { cwd: root, stdout: "pipe", stderr: "pipe" });
+    if (p.exitCode === 0) return p.stdout.toString();
+    const failed = `gh ${args.join(" ")} failed:\n${p.stderr.toString()}`;
+    if (write || attempt === 3) throw new Error(failed);
+    console.log(`${failed.trimEnd()}\nasking again in ${5 * attempt} s`);
+    Bun.sleepSync(5000 * attempt);
+  }
 }
 
 function runs(of = workflow, limit = 100): Run[] {
@@ -145,7 +154,7 @@ async function check(branch: string, shards: string | undefined, since?: string)
   const machines = mutationShards(count);
   // The suite's machines are the workflow's own, unless `--shards=` says.
   const suite = shards === undefined ? [] : ["-f", `test_shards=${shards}`];
-  gh(["workflow", "run", workflow, `--ref=${branch}`, ...suite, "-f", `since=${base}`, "-f", `mutation_shards=${machines}`]);
+  gh(["workflow", "run", workflow, `--ref=${branch}`, ...suite, "-f", `since=${base}`, "-f", `mutation_shards=${machines}`], { write: true });
   const on = shards === undefined ? "the workflow's machines" : `${shards} machine${shards === "1" ? "" : "s"}`;
   console.log(`started ${workflow} of ${branch} at ${local.slice(0, 10)}, the suite on ${on}, the ${count} mutations of what changed since ${base.slice(0, 10)} on ${machines}: bun run ci:status`);
 }
