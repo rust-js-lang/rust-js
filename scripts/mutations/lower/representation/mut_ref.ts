@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&mut` to a class's flattened state is the class's object, so what it's lent to writing it whole `$assign`s the chunk, deleting its `name` and `reads` (#478)",
     file: "src/lower/representation/mut_ref.rs",
-    find: "|| self.counted_weak(ty).is_some() || flattened;\n",
+    find: "|| self.counted_weak(ty).is_some() || self.is_flattened_state(ty);\n",
     replace: "|| self.counted_weak(ty).is_some();\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_lent_mut.rs$"],
   },
@@ -169,5 +169,50 @@ export const mutations: Mutation[] = [
     find: "            true => held_ts(pointee),\n",
     replace: "            true => pointee,\n",
     tests: ["test/declarations-conformance.test.ts"],
+  },
+  {
+    name: "moved-out-shared",
+    breaks:
+      "`Cell::from_mut(&mut v).replace(vec![3])` gives `[3]`: what's moved out of an in-place cell is the object its write changes after, not a copy apart (#527)",
+    file: "src/lower/representation/mut_ref.rs",
+    find: "            true => Expr::call_helper(\"$apart\", vec![old]),\n            false => old,\n",
+    replace: "            _ => old,\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_cell_(replaced|moved_out).rs$"],
+  },
+  {
+    name: "moved-out-of-object-shared",
+    breaks:
+      "`Cell::from_mut(v).replace(..)` of a known `Vec` or struct gives the new value: only a type parameter's moved out apart (#527)",
+    file: "src/lower/representation/mut_ref.rs",
+    find: "        match self.is_unknown(item) || self.mut_ref_form(item).written_in_place() {\n",
+    replace: "        match self.is_unknown(item) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_cell_replaced.rs$"],
+  },
+  {
+    name: "flattened-moved-out-the-object",
+    breaks:
+      "what's moved out of a flattened state whole, `mem::replace(state, ..)` of one lent `{ value: task }`, is its class's object, `const old = state.value;`, which the copy back then writes over, so `old` reads the new variant (#658)",
+    file: "src/lower/representation/mut_ref.rs",
+    find: "            return self.state_copied(old, item, *adt);\n",
+    replace: "            return old;\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_moved_out.rs$"],
+  },
+  {
+    name: "flattened-copy-of-every-key",
+    breaks:
+      "a flattened state's copy has every variant's keys, so it carries a key an earlier variant left on the object, `{ status: \"rejected\", reason, value }`, which a value made in JS hasn't (the user's decision, ADR 1044)",
+    file: "src/lower/representation/mut_ref.rs",
+    find: "            let keys: Vec<String> = (variant.fields.iter())\n",
+    replace: "            let keys: Vec<String> = (variant.fields.iter().chain(adt.all_fields()))\n",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "a copy of its variant's keys"],
+  },
+  {
+    name: "flattened-copy-untested",
+    breaks:
+      "a flattened state's copy is its first variant's keys whatever its tag, so a `Done` moved out reads `Done { value: undefined }` (#659)",
+    file: "src/lower/representation/mut_ref.rs",
+    find: "            Expr::cond(test, copy(keys), otherwise)\n",
+    replace: "            Expr::cond(test, copy(keys), copy(keys))\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_moved_out.rs$"],
   },
 ];

@@ -12,33 +12,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_closure_writes.rs$"],
   },
   {
-    name: "whole-through-a-handle-unseen",
-    breaks:
-      "a write through a handle on a flattened state's handle, a closure's `&mut` to a `&mut` of it, isn't one of the state, so the state's handle is read at once, `const _5 = chunk;`, and written `_5.value = ..` (#482)",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "        if through.is_empty() {\n            break;\n        }\n",
-    replace: "        if true {\n            break;\n        }\n",
-    tests: ["test/corpus.test.ts", "-t", "^flattened_state_closure_writes.rs$"],
-  },
-  {
-    name: "handle-places-unsubstituted",
-    breaks:
-      "a handle on a flattened state's handle keeps reading the handle's variable, which is gone (#482)",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "        for (_, place, ..) in &mut handles {\n            place.each_mut(substitute);\n        }\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^flattened_state_closure_writes.rs$"],
-  },
-  {
-    name: "handle-root-kept",
-    breaks:
-      "a handle on a flattened state's handle stays a handle object, whose setter, the state's place, assigns the variable, `chunk = value` (#482)",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "matches!(root.kind, ExprKind::Var(_) | ExprKind::This | ExprKind::Handle(..))",
-    replace: "matches!(root.kind, ExprKind::Var(_) | ExprKind::This)",
-    tests: ["test/corpus.test.ts", "-t", "^flattened_state_closure_writes.rs$"],
-  },
-  {
     name: "field-path-not-of-this",
     breaks:
       "no path is read through `this`, so a class's method's read of its own `bool` field isn't known a `bool`: `!!this.open || this.below(x)`",
@@ -327,8 +300,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&Cell` handle on a field of `this` read later is kept, not its place, `const reads = { get value() { .. } }` (#359)",
     file: "src/lower/mir/tidy/values.rs",
-    find: "        let rereads = matches!(root.kind, ExprKind::Var(_) | ExprKind::This | ExprKind::Handle(..));\n",
-    replace: "        let rereads = matches!(root.kind, ExprKind::Var(_) | ExprKind::Handle(..));\n",
+    find: "        let rereads = matches!(root.kind, ExprKind::Var(_) | ExprKind::This);\n",
+    replace: "        let rereads = matches!(root.kind, ExprKind::Var(_));\n",
     tests: ["test/classes.test.ts", "-t", "Cell fields"],
   },
   {
@@ -453,5 +426,14 @@ export const mutations: Mutation[] = [
     replace: "        while let ExprKind::Member(of, _) = &root.kind {\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
     snapshots: true,
+  },
+  {
+    name: "handle-on-a-state-handles-value-kept",
+    breaks:
+      "`Cell::from_mut(&mut *state)` of a flattened state's guard given to a function, or `&mut *state` given to one that gives it back, is a handle on the class's object, `set value(value) { task = value; }`, which assigns the variable, not each key (#659)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v))\n",
+    replace: "            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v) && v.is_empty())\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_handed_on.rs$"],
   },
 ];

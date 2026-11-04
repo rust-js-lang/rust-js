@@ -457,8 +457,6 @@ pub(super) struct Made {
     pub(super) fixed: HashSet<String>,
     /// Of what holds a `&mut`'s handle on a nullable place, the place (#541).
     pub(super) handles: HashMap<String, Expr>,
-    /// Of what holds a flattened state's handle, a guard's, `Storage::InPlace` (ADR 1044, #636).
-    pub(super) flattened: HashSet<String>,
 }
 
 /// What lowering a body from its MIR found of its variables, which goes

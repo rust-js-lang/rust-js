@@ -1,6 +1,7 @@
 # 1086. A `&mut`'s JS form is `MutRefForm`'s
 
-Status: Accepted (2026-11-04, steps 1 and 2 of 3; step 3 begun). Amends
+Status: Accepted (2026-11-04, steps 1 and 2 of 3; step 3 begun, its
+first operation, a move out, `moved_out`). Amends
 [0099](0099-mut-references.md) and [0454](0454-a-mut-given-as-a-type-parameter.md):
 what a `&mut` to a type is, a box, a generic code's box, the object, a
 guard's object, a value given as it is or the value itself, is one answer,
@@ -149,8 +150,8 @@ where a `&mut`'s form or an operation on one changes, all 72 in the
 nightly's `mut-refs` job. What it refuses is listed in `refused`, and what
 it gets wrong in `wrong` by its issue, each list only shrinking; an
 operation a pointee refuses is left out of its programs with why
-(`refused`), or of the holder of its own (`heldRefused`), a flattened
-state's.
+(`refused`). A flattened state's field holder is its own, `held`: the
+class's field through its guard, and lent to a function (#658).
 
 Its first run of all 72 found two wrong answers and a refusal: #636,
 what's moved out of a flattened state lent through its guard is the class
@@ -187,18 +188,27 @@ take one too. The other 70 run as native Rust does.
   `Cell::from_mut` of a `&mut` the guard lends among them, refuse it
   with one message, `std_types/cell.rs`' `FLATTENED_TAKEN_WHOLE`. Case
   (ADR 0262): Rust's behavior can't be kept yet, so a compile error,
-  consistent with ADR 1044's refusal of the cell's own `replace`. The
-  matrix's `flattened_state__field` leaves the four out (`heldRefused`);
-  `test/classes-flattened-state.test.ts` holds the refusals. Mutations
-  `flattened-moved-out-through-its-guard` (`mir/entries.ts`) and
-  `flattened-guard-unrecorded` (`mir/assign.ts`).
-
-  Rejected for now: a move out that copies the state's keys, `{ status:
-  task.status, tries: task.tries, .. }`, the flattened handle's own
-  `MutRefForm` operation. It needs a decision of its own: a write of one
-  variant over another keeps the earlier one's keys (ADR 1044), so a copy
-  of every key carries stale ones JS can see, and a copy of the variant's
-  keys alone is told by its tag. Filed as #659 (P2). The same value lent to
-  a function that moves it out, `fn f(s: &mut Status) -> Status {
-  mem::replace(s, ..) }`, gives back the object too, which its callee
-  can't see is one: #658 (P0), which that copy would fix as well.
+  consistent with ADR 1044's refusal of the cell's own `replace`. Lifted
+  by the next item.
+- **#658, #659, what's moved out of a `&mut` to a flattened state is a
+  copy of its variant's keys.** The same value lent to a function that
+  moves it out, `fn f(s: &mut Status) -> Status { mem::replace(s, ..) }`,
+  gave back the object too (#658, P0). The move out is now the owner's
+  operation: `moved_out` moved from `mut_refs.rs` to
+  `representation/mut_ref.rs`, beside `is_flattened_state`, and gives a
+  flattened state's copy of the keys its variant has, by its tag, the
+  user's decision of 2026-11-04 (ADR 1044's amendment, which says the
+  copy's form), as well as `$apart` of an object or a type parameter.
+  `mir_swap_or_replace` asks it of a flattened state's `&mut` too, and the
+  cell's own `replace` reads its handle's object; #636's refusals,
+  `through_flattened` and `Made::flattened` are gone. A handle on a
+  flattened state's handle's `value`, `&mut *state` handed on, is that
+  handle, whose setter sets each key (tidy's `read_handles`, #678). The
+  lend site isn't
+  changed: every function a flattened state's `&mut` is lent to has it as
+  the flattened enum, and copies where it moves it out; generic code,
+  whose `$apart` would copy the class's object whole, is never lent one,
+  as the borrow is refused where that code may meet it. Case (ADR 0262):
+  results change, so Rust's. The matrix's `flattened_state__field` runs
+  every operation, through the guard and lent to a function; its
+  `heldRefused` is gone.

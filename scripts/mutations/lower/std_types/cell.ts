@@ -796,10 +796,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "flattened-replace-allowed",
-    breaks: "a flattened state's `replace` is lowered as any cell's, which assigns the variable holding its object, a wrong answer, where it's refused (rd380)",
+    breaks: "a flattened state's `swap` is lowered as any cell's, `$refCellSwap`, whose copy apart of its class's object carries the class's other keys, where it's refused (rd380)",
     file: "src/lower/std_types/cell.rs",
-    find: "            && matches!(\n                known,\n                Std::CellReplace\n",
-    replace: "            && false\n            && matches!(\n                known,\n                Std::CellReplace\n",
+    find: "            && matches!(\n                known,\n                Std::CellReplaceWith\n",
+    replace: "            && false\n            && matches!(\n                known,\n                Std::CellReplaceWith\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "refused"],
   },
   {
@@ -892,5 +892,32 @@ export const mutations: Mutation[] = [
     find: "            _ if null_for_none && call.read_alike => js::Storage::NullForNone.written_alike(value),\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local nothing reads apart"],
+  },
+  {
+    name: "flattened-cell-replaced-as-any-cells",
+    breaks:
+      "a flattened state's cell's `replace` writes the variable holding its class's object, `task = { status: \"done\", value }`, not each key on it (#659)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                if let js::ExprKind::Handle(object, storage @ js::Storage::InPlace(_)) = cell.kind {\n",
+    replace: "                if let js::ExprKind::Handle(object, storage @ js::Storage::InPlace(\"never\")) = cell.kind {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_moved_out.rs$"],
+  },
+  {
+    name: "flattened-cell-replaced-old-the-object",
+    breaks:
+      "what a flattened state's cell's `replace` gives back is its class's object, which the write then changes, not a copy of its variant's keys (#659)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                            let copied = self.moved_out(object.clone(), item);\n",
+    replace: "                            let copied = object.clone();\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_moved_out.rs$"],
+  },
+  {
+    name: "flattened-cell-swapped-apart",
+    breaks:
+      "`Cell::from_mut(&mut *state).swap(..)` of a flattened state is `$cellSwap`, whose copy apart of the class's object carries its other keys and an earlier variant's, `name` and `value` on a `rejected` state (#659)",
+    file: "src/lower/std_types/cell.rs",
+    find: "            Std::CellSwap if self.is_flattened_state(generic_args.type_at(0)) => {\n",
+    replace: "            Std::CellSwap if self.is_flattened_state(generic_args.type_at(0)) && false => {\n",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "a copy of its variant's keys"],
   },
 ];

@@ -1425,10 +1425,14 @@ the chunk too, each whole write through it the keys, a closure's that
 captures it too; a `&mut` to the
 state lent to a function, `finish(&mut chunk.state.borrow_mut())`, is a
 cell of it, `{ value: chunk }`, whose value is written back key by key,
-so the class's other fields stay, whatever its variants hold (#478). Its
-`replace`, `take`, `swap` and `get_mut` are refused, and so is the cell
-lent, `&chunk.state`, or borrowed where another borrow of it may be, as
-its object counts no borrows
+so the class's other fields stay, whatever its variants hold (#478).
+What's moved out of it whole, its cell's `replace` or `mem::replace`,
+`take`, `swap` or `Cell::from_mut(..).replace` of a `&mut` to it, is a
+copy of the keys its variant has, chosen by its tag, so it never has a
+key an earlier variant left on the chunk, as a value made in JS hasn't
+(#658, #659). Its cell's `swap`, `get_mut` and `replace_with` are
+refused, and so is the cell lent, `&chunk.state`, or borrowed where
+another borrow of it may be, as its object counts no borrows
 ([ADR 1044](../../decisions/1044-a-flattened-state-is-its-classs-own-keys.md)).
 Its declaration, `--declarations`', has each key as the class's
 property: the tag any variant's, and each other key what any variant
@@ -1485,6 +1489,10 @@ pub fn settle(chunk: &ReactPromise, value: String) -> bool {
     }
     false
 }
+
+pub fn reset(chunk: &ReactPromise) -> ChunkState {
+    chunk.state.replace(ChunkState::Pending { value: None })
+}
 ```
 
 ```js
@@ -1517,6 +1525,13 @@ export function settle(chunk, value) {
     return true;
   }
   return false;
+}
+
+export function reset(chunk) {
+  const old = { status: chunk.status, value: chunk.value };
+  chunk.status = "pending";
+  chunk.value = null;
+  return old;
 }
 ```
 

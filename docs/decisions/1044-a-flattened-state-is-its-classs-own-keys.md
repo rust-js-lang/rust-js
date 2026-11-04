@@ -4,7 +4,8 @@ Status: Accepted (the user's decisions, rd380, 2026-11-01). Amended
 (rd533): a let chain's borrow of it is its object too. Amended (rd432):
 its refusal points at the borrow. Amended: its declaration has its keys.
 Amended (#482): a closure's write through a borrow it captures is the
-keys too. Extended by [1071](1071-a-flattened-enum-is-told-by-its-keys.md):
+keys too. Amended (2026-11-04, #658, #659, the user's decision): what's
+moved out of it whole is a copy of its variant's keys. Extended by [1071](1071-a-flattened-enum-is-told-by-its-keys.md):
 an enum of no tag, told by its keys, its owner `bindings::flattened`. Extends
 [0204](0204-flattened-props.md), whose flattened field was a struct of
 named fields or a JS object, to a `RefCell` of a discriminated union
@@ -94,12 +95,12 @@ first declared (`bindings::flattened_state`).
   or borrowed while code that may borrow it runs, is refused at the field;
   `js::throw` runs none of the crate's code (`#[rust_js::runs_nothing]`),
   so a `match` that throws a state's reason holds its borrow quietly.
-- **What gives or takes the value whole is refused**: `replace`, `take`,
-  `swap`, `get_mut`, `replace_with`, `try_borrow`, as the value is no
-  object of its own; write it through a borrow. And `mem::replace`,
-  `take`, `swap` and `Cell::from_mut` of a `&mut` its guard lends
-  (#636, [1086](1086-a-mut-refs-js-form-is-mut-ref-forms.md)'s step 3), of
-  which `const old = task;` was the object a write then changed. A flattened cell of
+- **What gives the value whole or swaps it is refused**: its cell's
+  `swap`, `get_mut`, `replace_with`, `into_inner`, `try_borrow`, as the
+  value is no object of its own; write it through a borrow. What's moved
+  out of it whole, its cell's `replace` and `mem::replace`, `take`, `swap`
+  and `Cell::from_mut(..).replace` of a `&mut` to it, is a copy of its
+  variant's keys (the amendment of 2026-11-04 below). A flattened cell of
   anything else, a struct of std's, is refused at its declaration, where
   a `RefCell` of a struct passed as one of named fields.
 - `Clone`, `PartialEq`, `PartialOrd` and `Hash` read it whole only where
@@ -305,7 +306,8 @@ first, leaving the state's handle read at once, `const _5 = chunk`.
 `read_handles` and `handles_in_place`), and **a whole write through a
 handle on a state's handle's `value` is the state's** (`written_whole`
 followed through each handle's place, which is made of the state's
-handle then, as the body is): `chunk.status = "fulfilled"; chunk.value =
+handle then, as the body is; since 2026-11-04, the handle on its `value`
+is the state's handle itself, below): `chunk.status = "fulfilled"; chunk.value =
 v;` in the closure, `if (chunk.status === "pending") { .. chunk.status =
 "blocked"; chunk.value = listeners; }`. A handle given on from a closure,
 `|v| finish(state, v)`, is the handle object, whose setter sets each key,
@@ -313,8 +315,117 @@ as before.
 
 Held by the corpus case `flattened_state_closure_writes` (each of the
 three, against native Rust), and the mutations
-`whole-writes-outside-closures`, `whole-through-a-handle-unseen`,
-`handle-places-unsubstituted` and `handle-root-kept`
-(`mir/tidy/values.ts`); `in-place-setter-assigns` (`prepare.ts`), which
+`whole-writes-outside-closures` (`mir/tidy/values.ts`;
+`whole-through-a-handle-unseen`, `handle-places-unsubstituted` and
+`handle-root-kept` went with what they held, below); `in-place-setter-assigns` (`prepare.ts`), which
 survived on `main` once #478 left no corpus case giving the handle away,
 is held by the case's lent closure again.
+
+## Amended (2026-11-04, #658, #659): what's moved out of it whole is a copy of its variant's keys
+
+A wrong answer, P0 (#658), and a refusal, P2 (#659). A `&mut` to the
+state lent to a function is a box of the class's object, `{ value: task
+}` (#478), so a function that moved it out, `fn finish(state: &mut
+Status) -> Status { mem::replace(state, Status::Done { .. }) }` of
+`finish(&mut task.state.borrow_mut())`, gave back `state.value`, the
+object itself, which the copy back then overwrote: Node printed `Done {
+value: "v" }` where Rust prints `Pending { tries: 1 }`. The same move out
+through the guard in one body, `mem::replace(&mut *state, ..)`, `take`,
+`swap` and `Cell::from_mut(&mut *state).replace(..)`, gave `const old =
+task;` the same way, so #636 refused it, and the cell's own `replace` was
+refused for the same reason (rd380).
+
+**What's moved out of it whole is a copy of its variant's keys, chosen
+by its tag** (`mut_ref.rs`'s `moved_out`, ADR
+[1086](1086-a-mut-refs-js-form-is-mut-ref-forms.md)'s owner of a
+`&mut`'s form): the copy is only the keys of the variant the state is
+in, so it never carries a key an earlier variant left on the object, and
+it matches a value made in JS (the user's decision, 2026-11-04). Then
+each key of what's written is set on the object, as before.
+
+```js
+const old =
+  task.status === "pending"
+    ? { status: task.status, tries: task.tries }
+    : task.status === "done"
+      ? { status: task.status, value: task.value }
+      : { status: task.status };
+task.status = "done";
+task.value = "w";
+```
+
+- **One rule, at the move out.** `mir_swap_or_replace` copies of a
+  `&mut` to a flattened state that's not a place of the body's own (a
+  variable of its own holds a value, which a write rebinds), and so does
+  `Cell::from_mut(..).replace`'s `moved_out`; the cell's own `replace` reads
+  its handle's object and sets each key of the new value there
+  (`Storage::written_in_place`). A function the state is lent to copies it
+  where it moves it out, as its `&mut` is to the flattened enum. The lend
+  is unchanged, `{ value: task }`: lent to generic code, a `&mut T`, it's
+  refused already at the borrow, which that code may meet, so no callee
+  that moves it out apart, `$apart`, ever has the object. What the lend
+  gives stays React's `{ value: chunk }`, which no callee copies unless it
+  moves the state out.
+- **A swap is two moves out, never a destructuring.** `mem::swap(&mut
+  *state, &mut h.f)` was JS's `[a, b] = [b, a]` of two places, whose
+  target through the guard's handle is the class's object, `[task, h.f] =
+  [h.f, ..]`, which rebinds the variable; of a flattened state it's `const
+  t = ..copy..; task.status = h.f.status; ..; h.f = t;`.
+- **What's handed on is the guard's handle.** `&mut *state` given to
+  `Cell::from_mut`, whose cell is then given to a function, or to a
+  function that gives the `&mut` back, was a handle on the handle's
+  `value`, whose place is the class's object: `{ get value() { return
+  task; }, set value(value) { task = value; } }`, a write the caller
+  never saw (#678, P0, on `main` before too). A handle on a flattened
+  state's handle's `value` is that handle (`read_handles`), whose setter
+  sets each key. It's the one rule of a handle on the state's handle's
+  `value`: #482's three, a whole write through one followed to the
+  state (`written_whole` through each handle's place), the state's
+  handle put in each such handle's place, and a handle whose place's
+  root is a handle read again, are gone, as the corpus's
+  `flattened_state_closure_writes` runs as before without them. And
+  `Cell::swap` of
+  one, `Cell::from_mut(&mut *state).swap(..)`, is two moves out, each a
+  copy, not `$cellSwap`'s copy apart of the class's object.
+- **Variants of the same keys are one copy**, tested together, `chunk.status
+  === "pending" || chunk.status === "fulfilled" ? { status, value, reason
+  } : ..`, and a state whose variants all have the same keys is one copy,
+  untested. The copy reads the tag from the object, `status:
+  task.status`, so variants that share a copy share its object.
+- **Inline, not a helper.** A helper, `$variantKeys(task, "status", {
+  pending: ["tries"], done: ["value"] })`, is shorter for many variants,
+  but names keys as strings and reads as nothing a person writes; the
+  ternary is what the user's decision wrote, and React's Flight chunks'
+  variants share `value` and `reason`, so theirs are one or two copies.
+- Still refused: the cell's `swap`, whose `$refCellSwap` moves each side
+  apart, `$apart`, which would carry the class's other keys, and
+  `get_mut`, `replace_with`, `into_inner` and `try_borrow`. The cell's
+  own `take` compiles where its borrow can't meet another; `Default`'s,
+  the crate's code, runs while it's borrowed, so it's refused as a borrow
+  another may meet, as before. #636's record of what holds a guard
+  (`Made::flattened`, `through_flattened`) is gone with its refusal.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior: the copy is the value moved out, apart from the object.
+A key the copy leaves out, an earlier variant's, is one no Rust code
+reads, and leaving it out is what a value made in JS has.
+
+Held by corpus `flattened_state_moved_out` (each of the four through the
+guard, each lent to a function that moves it out, the cell's own
+`replace`, and a variable's own state lent the same) and
+`flattened_state_swapped_places` (swapped with a struct's field and a
+`Vec`'s item, through the guard and lent) and `flattened_state_handed_on`
+(`Cell::from_mut`'s cell swapped, taken, set and given to a function, and
+the `&mut` given to a function that gives it back), against native Rust; `test/classes-flattened-state.test.ts`'s "what's moved out of a
+flattened state whole is a copy of its variant's keys", each copy's keys
+alone in JS, after a write of one variant over another; and the `&mut`
+matrix's `flattened_state__field`, whose `heldRefused` is gone and whose
+program now lends the state to a function too. Mutations
+`flattened-moved-out-the-object`, `flattened-copy-of-every-key`,
+`flattened-copy-untested` (`representation/mut_ref.ts`),
+`flattened-moved-out-as-it-is` and `flattened-swap-destructured`
+(`mir/entries.ts`),
+`flattened-cell-replaced-as-any-cells`,
+`flattened-cell-replaced-old-the-object` and `flattened-cell-swapped-apart`
+(`std_types/cell.ts`), and `handle-on-a-state-handles-value-kept`
+(`mir/tidy/values.ts`).

@@ -3,15 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "flattened-guard-unrecorded",
-    breaks:
-      "a local holding a flattened state's guard, `let mut state = task.state.borrow_mut()`, isn't known to, so `mem::take(&mut *state)` and `Cell::from_mut(&mut *state)` give back its class's object, where they're refused (#636)",
-    file: "src/lower/mir/assign.rs",
-    find: "            self.locals.mir.made.flattened.insert(name);\n",
-    replace: "            let _ = name;\n",
-    tests: ["test/classes-flattened-state.test.ts", "-t", "refused"],
-  },
-  {
     name: "nested-field-set-boxed",
     breaks: "a nested field set, `changed.sdp_mid = Some(None)`, holds the box (#470)",
     file: "src/lower/mir/assign.rs",

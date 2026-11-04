@@ -7,6 +7,7 @@
 use super::super::FnCx;
 use super::super::recognition::{StdItem, is_std_def};
 use crate::js::{self, Expr};
+use rustc_abi::VariantIdx;
 use rustc_ast::Mutability;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::def_id::DefId;
@@ -157,6 +158,66 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether `ty` is an enum the crate's classes flatten, a state
+    /// (`bindings::Flattened::states`, ADR 1044): a `&mut` to one is a box,
+    /// whose `value` may be its class's object, lent `{ value: chunk }`, or
+    /// a handle on its keys, its guard's (#478).
+    pub(in crate::lower) fn is_flattened_state(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if self.krate.flattened.states.contains(&adt.did()))
+    }
+
+    /// What's moved out whole of a place of an `item`, `old` its read, where
+    /// a write of the whole follows, `replace`'s, `take`'s and `swap`'s: of a
+    /// flattened state, a copy of its variant's keys (`state_copied`), as
+    /// the place may be its class's object, which the write then changes
+    /// (#658, #659); of an object or a type parameter, a copy apart,
+    /// `$apart(old)`, as the cell may be an in-place one, `Cell::from_mut`'s
+    /// or a dictionary's `&mut Self::Out`, `$cellOf(object)`, whose write
+    /// changes the object its `value` gave in place (#527, ADR 0454,
+    /// amended); of any other, `old`.
+    pub(in crate::lower) fn moved_out(&self, old: Expr, item: Ty<'tcx>) -> Expr {
+        if let ty::Adt(adt, _) = item.kind()
+            && self.is_flattened_state(item)
+        {
+            return self.state_copied(old, item, *adt);
+        }
+        match self.is_unknown(item) || self.mut_ref_form(item).written_in_place() {
+            true => Expr::call_helper("$apart", vec![old]),
+            false => old,
+        }
+    }
+
+    /// A copy of a flattened state's keys, `of` the object they're on, that
+    /// its variant has, chosen by its tag, as a value of it made in JS has
+    /// them: `of.status === "pending" ? { status: of.status, tries: of.tries
+    /// } : { status: of.status, value: of.value }`, never a key an earlier
+    /// variant left on the object (the user's decision, 2026-11-04, ADR
+    /// 1044). Variants of the same keys are one copy, tested together; of
+    /// one copy, no test.
+    fn state_copied(&self, of: Expr, ty: Ty<'tcx>, adt: ty::AdtDef<'tcx>) -> Expr {
+        let tag = super::super::bindings::tag_key(self.tcx, adt.did());
+        let mut copies: Vec<(Vec<String>, Vec<VariantIdx>)> = Vec::new();
+        for (index, variant) in adt.variants().iter_enumerated() {
+            let keys: Vec<String> = (variant.fields.iter())
+                .map(|field| super::super::bindings::field_key(self.tcx, field).text().to_string())
+                .collect();
+            match copies.iter_mut().find(|(those, _)| *those == keys) {
+                Some((_, variants)) => variants.push(index),
+                None => copies.push((keys, vec![index])),
+            }
+        }
+        let copy = |keys: &[String]| {
+            let keys = std::iter::once(&tag).chain(keys);
+            let props = keys.map(|key| js::Prop::Field(key.clone(), Expr::member(of.clone(), key)));
+            Expr::object(props.collect())
+        };
+        let (last, earlier) = copies.split_last().expect("an enum of variants");
+        earlier.iter().rev().fold(copy(&last.0), |otherwise, (keys, variants)| {
+            let test = self.variants_test(of.clone(), ty, adt, variants, &[], false);
+            Expr::cond(test, copy(keys), otherwise)
+        })
+    }
+
     /// Is a `&mut` of a `ty` a handle, `{ value }`, where std gives one to a
     /// closure, `retain_mut`'s, or a guard derefs to one: a cell's, or of a
     /// type only a caller knows, which generic code reads through its
@@ -194,8 +255,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A counted `Rc` or its `Weak`, an object its owners share (ADR 0523), or a
         // flattened state, its class's keys (#478): a `&mut` to one is a cell.
-        let flattened = matches!(ty.kind(), ty::Adt(adt, _) if self.krate.flattened.states.contains(&adt.did()));
-        let shared = self.counted_rc(ty).is_some() || self.counted_weak(ty).is_some() || flattened;
+        let shared = self.counted_rc(ty).is_some() || self.counted_weak(ty).is_some() || self.is_flattened_state(ty);
         // Its own function's types in its own terms, another's in that one's.
         let typing_env = match param_env == self.typing_env.param_env {
             true => self.typing_env,

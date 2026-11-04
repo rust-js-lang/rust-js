@@ -261,17 +261,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     *place && matches!((&capture.kind, &e.kind), (js::ExprKind::Var(a), js::ExprKind::Var(b)) if a == b)
                 })
         };
-        // A flattened state, lent through its guard: its object's own keys,
-        // so what's moved out would be the object, which the write then
-        // changes (#636); refused, as its cell's own `replace` is (ADR 1044).
-        let values: Vec<Value<'tcx>> = values.collect();
-        if (values.iter().take(borrowed)).any(|value| match value {
-            Value::Ref(e) | Value::Expr(e) | Value::Place(e) => self.through_flattened(e, pointee),
-            _ => false,
-        }) {
-            return Err(self.unsupported(span, crate::lower::std_types::cell::FLATTENED_TAKEN_WHOLE));
-        }
-        let values = values.into_iter();
         let mut given = Vec::new();
         // Whether the first is a place rust-js made, a variable of the
         // body's or a field of the crate's struct, not a cell's value read
@@ -374,18 +363,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A swap of two places that read the same where they're read again,
         // an item's or a field's, JS's own, `[a, b] = [b, a]`, as `v.swap(i,
         // j)` is (#369); not of two variables, which a `const` declares
-        // where nothing else assigns them.
+        // where nothing else assigns them, nor of a flattened state, whose
+        // write is each of its keys set on its class's object, through a
+        // handle a destructuring's target would be the object (#659).
         let place = |e: &Expr| !e.has_effects() && !matches!(e.kind, js::ExprKind::Var(_));
+        let destructured = !self.is_flattened_state(pointee);
         // Of a type parameter's, through a reference, a box generic code
-        // has, which may be an in-place cell, `$cellOf`'s: what's moved out
-        // of each, apart from what's written next (`moved_out`, #527). Not
-        // of a place of the body's own, which a write rebinds.
-        let moved =
-            |cx: &Self, i: usize, e: Expr| match cx.is_unknown(pointee) && !cx.borrows_own_place(def_id, span, i) {
-                true => cx.moved_out(e, pointee),
-                false => e,
-            };
+        // has, which may be an in-place cell, `$cellOf`'s, and of a flattened
+        // state's, a box or a handle whose `value` may be its class's object
+        // (#658, #659): what's moved out of each, apart from what's written
+        // next (`moved_out`, #527). Not of a place of the body's own, which
+        // a write rebinds.
+        let moved_apart = self.is_unknown(pointee) || self.is_flattened_state(pointee);
+        let moved = |cx: &Self, i: usize, e: Expr| match moved_apart && !cx.borrows_own_place(def_id, span, i) {
+            true => cx.moved_out(e, pointee),
+            false => e,
+        };
         if let Some(b) = &b_place
+            && destructured
             && place(&a)
             && place(b)
         {

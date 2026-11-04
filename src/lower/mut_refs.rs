@@ -57,20 +57,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// What's moved out of a cell or a box of an `item`, `old`, its `value`
-    /// read where a write of the whole follows, `replace`'s, `take`'s and
-    /// `swap`'s: a copy apart, `$apart(old)`, of an object or a type
-    /// parameter's. The cell may be an in-place one, `Cell::from_mut`'s or a
-    /// dictionary's `&mut Self::Out`, `$cellOf(object)`, whose write changes
-    /// the object its `value` gave in place, so what was moved out would
-    /// become what's written (#527, ADR 0454, amended).
-    pub(in crate::lower) fn moved_out(&self, old: Expr, item: Ty<'tcx>) -> Expr {
-        match self.is_unknown(item) || self.mut_ref_form(item).written_in_place() {
-            true => Expr::call_helper("$apart", vec![old]),
-            false => old,
-        }
-    }
-
     /// `p` of `&mut p`, a reborrow's `&mut *&mut v[0]` too: `v[0]`.
     pub(super) fn mut_borrowed(&self, arg: ExprId) -> Option<ExprId> {
         let ExprKind::Borrow {

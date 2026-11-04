@@ -652,6 +652,26 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::L
             }
         }
     });
+    // A handle on a flattened state's handle's `value`, `&mut *state` given
+    // on, `Cell::from_mut(&mut *state)`'s or a call's that keeps it: that
+    // handle, whose setter sets each key, not one on its place, whose
+    // setter would assign the variable holding the class's object (#678).
+    let states: std::collections::HashSet<String> = (handles.iter())
+        .filter(|(.., storage)| matches!(storage, js::Storage::InPlace(_)))
+        .map(|(name, ..)| name.clone())
+        .collect();
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Handle(place, js::Storage::AsGiven) = &e.kind
+            && let ExprKind::Member(of, key) = &place.kind
+            && key == js::HELD
+            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v))
+        {
+            *e = Expr {
+                span: e.span,
+                ..(**of).clone()
+            };
+        }
+    });
     // Written through, `h.value = 5`, a closure's too (#192): its place
     // where its `value` is, read and written there, never read at once.
     let changed = js::Writes::of(body).changed;
@@ -672,25 +692,6 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::L
             }
         }
     });
-    // Written whole through a handle on its `value`, `state.value = ..` of
-    // `const state = { get value() { return _5.value; } .. }`, a closure's
-    // `&mut` to a `&mut` of one: written whole too (#482).
-    loop {
-        let through: Vec<String> = (handles.iter())
-            .filter(|(name, ..)| written_whole.contains(name))
-            .filter_map(|(_, place, ..)| match &place.kind {
-                ExprKind::Member(of, key) if key == js::HELD => match &of.kind {
-                    ExprKind::Var(inner) if !written_whole.contains(inner) => Some(inner.clone()),
-                    _ => None,
-                },
-                _ => None,
-            })
-            .collect();
-        if through.is_empty() {
-            break;
-        }
-        written_whole.extend(through);
-    }
     // There, it's the handle itself where it's used, made of its place,
     // which reads the same: each whole write through it sets the object's
     // keys there (`handles_in_place`), each read is the object (#478).
@@ -714,10 +715,6 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::L
             }
         };
         js::each_expr_mut(body, substitute);
-        // And in the places of the handles on it, read below.
-        for (_, place, ..) in &mut handles {
-            place.each_mut(substitute);
-        }
     }
     handles
         .retain(|(name, _, _, storage)| !(matches!(storage, js::Storage::InPlace(_)) && written_whole.contains(name)));
@@ -736,7 +733,7 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::L
         while let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &root.kind {
             root = of;
         }
-        let rereads = matches!(root.kind, ExprKind::Var(_) | ExprKind::This | ExprKind::Handle(..));
+        let rereads = matches!(root.kind, ExprKind::Var(_) | ExprKind::This);
         // Read once, where it's read, as Rust's `.get()` reads it, no
         // `const` of it: `return kind.current;` of `Kind::Signal { current }
         // => current.get()`, an arm's binding (#532). Not a `let`'s the

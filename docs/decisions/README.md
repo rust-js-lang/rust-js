@@ -228,7 +228,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0202 An import is named in each file that imports it](0202-imports-named-around-importers.md) *(amended: every import a `use .. as` renames is named so, a library's item and a binding's named export too; amended: a `use`'s name is cased as its item's own; amended: a module's own item renamed twice imports nothing; amended: nor std's that no file imports, #473; amended: a `use`'s name of an item its `#[rust_js::name]` names is cased as that name; by 1037: a module namespace's import too)*
 - [0203 A component's props are as written](0203-component-props-as-written.md) *(amended by 0674: the order is the object's)*
 - [0204 A flattened field's struct is its parent's props](0204-flattened-props.md) *(amended by 0674: found by its name); extended by 1044: a `RefCell` of a discriminated union, its class's own keys; by 1071: an enum told by its keys, or a type parameter given one)*
-- [1044 A flattened state is its class's own keys](1044-a-flattened-state-is-its-classs-own-keys.md) *(amended, rd533: a let chain's borrow of it is its object too; #482: a closure's write through a borrow it captures is the keys too)*
+- [1044 A flattened state is its class's own keys](1044-a-flattened-state-is-its-classs-own-keys.md) *(amended, rd533: a let chain's borrow of it is its object too; #482: a closure's write through a borrow it captures is the keys too; #658, #659: what's moved out of it whole is a copy of its variant's keys)*
 - [1071 A flattened enum is told apart by its keys](1071-a-flattened-enum-is-told-by-its-keys.md)
 - [1045 An or-pattern's alternatives of one JS place are one arm](1045-or-pattern-alternatives-of-one-place-are-one.md)
 - [1048 A function that reads `js::arguments()` is given each argument](1048-a-function-that-reads-arguments-is-given-each.md) *(extended by 1081: `js::this()`, by the same rules)*
@@ -900,7 +900,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0452 `{:?}` of a `PhantomData` of a type parameter shows the name its caller gives](0452-a-phantom-datas-name.md)
 - [0453 `{:?}` of a slice's iterator is what's left of it](0453-a-slice-iterators-debug.md)
 - [0454 A `&mut` given as a type parameter's value is a box](0454-a-mut-given-as-a-type-parameter.md) *(amended: what's moved out of an in-place cell is apart; a `&mut` of an object kept past the call is one; amended: regex-syntax's `ParserI` stays refused until #527's `moved_out` settles, #516, the user's decision)*
-- [1086 A `&mut`'s JS form is `MutRefForm`'s](1086-a-mut-refs-js-form-is-mut-ref-forms.md) *(amends 0099, 0454, 1077; steps 1 and 2 of 3, #614's family; its matrix found #636, #638)*
+- [1086 A `&mut`'s JS form is `MutRefForm`'s](1086-a-mut-refs-js-form-is-mut-ref-forms.md) *(amends 0099, 0454, 1077; steps 1 and 2 of 3, #614's family; its matrix found #636, #638; step 3's move out, #658, #659)*
 - [0455 `nth_back`, `rfold` and `rfind` step from the back](0455-stepping-from-the-back.md)
 - [0456 A generic `ExactSizeIterator` knows its length](0456-a-generic-exact-size-iterator.md) *(amended: `rposition` of what `as_exact_size` makes knowing both)*
 - [0457 An `IntoIterator` bound on a reference is given its dictionary](0457-an-into-iterator-bound-on-a-reference.md)

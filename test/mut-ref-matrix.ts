@@ -14,11 +14,9 @@ type Pointee = {
   alt: string;
   change: (place: string) => string;
   field?: (place: string) => string;
-  /** A field holder of its own: a flattened state's, its class's field. */
-  held?: (op: string) => string;
-  /** The operations rust-js refuses of it held its own way, `held`'s,
-   * each with why, so the list only shrinks: each is left out there. */
-  heldRefused?: Record<string, string>;
+  /** A field holder of its own, `name` the operation's: a flattened
+   * state's, its class's field, through its guard and lent to a function. */
+  held?: (name: string, op: string) => { items: string; main: string };
   /** The operations rust-js refuses of it, each with why, so the list
    * only shrinks: each is left out of its programs. */
   refused?: Record<string, string>;
@@ -140,18 +138,23 @@ impl Task {
     field: (p) => `if let Status::Pending { tries } = &mut ${p} {
         *tries = 7;
     }`,
-    held: (op) => `let task = Task::new(Status::Pending { tries: 1 }, String::from("t"));
+    // Through its guard, and lent to a function whose `&mut` its box is,
+    // `{ value: task }`, the class's object (#658).
+    held: (name, op) => ({
+      items: `fn lent_${name}(r: &mut Status) {
+    ${op}
+}
+`,
+      main: `let task = Task::new(Status::Pending { tries: 1 }, String::from("t"));
     {
         let mut state = task.state.borrow_mut();
         let r = &mut *state;
         ${op}
     }
+    println!("{:?} {}", task.state.borrow(), task.name);
+    lent_${name}(&mut task.state.borrow_mut());
     println!("{:?} {}", task.state.borrow(), task.name);`,
-    // What's moved out of it whole would be its class's object, its own
-    // keys, which the write then changes (#636): refused, its copy #659.
-    heldRefused: Object.fromEntries(
-      ["replace", "take", "swap", "cell_replace"].map((operation) => [operation, "a flattened state taken whole through its guard, #659"]),
-    ),
+    }),
   },
   iterator: {
     ty: "std::ops::Range<i32>",
@@ -225,7 +228,7 @@ const holders: Record<string, Holder> = {
     generic: false,
     program: (p, name, op) =>
       p.held
-        ? { items: "", main: p.held(op) }
+        ? p.held(name, op)
         : {
             items: `#[derive(Debug)]
 struct Holder${camel(name)} {
@@ -341,10 +344,7 @@ export function programs(): Record<string, string> {
         // changed by its trait; it has no field to write.
         const alt = h.generic ? "Change::other()" : p.alt;
         const changed = h.generic ? (place: string) => `${place.replace(/^\(\*(\w+)\)$/, "$1")}.change();` : p.change;
-        const left =
-          (h.generic && operation === "field_write") ||
-          operation in (p.refused ?? {}) ||
-          (holder === "field" && operation in (p.heldRefused ?? {}));
+        const left = (h.generic && operation === "field_write") || operation in (p.refused ?? {});
         const body = left ? undefined : op("r", alt, changed, p.field);
         if (body === undefined) continue;
         const made = h.program(p, operation, body);

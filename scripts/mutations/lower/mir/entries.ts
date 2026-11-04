@@ -3,13 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "flattened-moved-out-through-its-guard",
+    name: "flattened-swap-destructured",
     breaks:
-      "`mem::replace(&mut *state, ..)` of a flattened state's guard gives back its class's object, `const old = task;`, which the write then changes, where it's refused (#636)",
+      "`mem::swap(&mut *state, &mut h.f)` of a flattened state's guard is `[task, h.f] = [h.f, ..]`, which rebinds the variable holding its class's object, not each key on it (#659)",
     file: "src/lower/mir/entries.rs",
-    find: "            Value::Ref(e) | Value::Expr(e) | Value::Place(e) => self.through_flattened(e, pointee),\n",
-    replace: "            Value::Ref(_) | Value::Expr(_) | Value::Place(_) => false,\n",
-    tests: ["test/classes-flattened-state.test.ts", "-t", "refused"],
+    find: "        let destructured = !self.is_flattened_state(pointee);\n",
+    replace: "        let destructured = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_swapped_places.rs$"],
+  },
+  {
+    name: "flattened-moved-out-as-it-is",
+    breaks:
+      "`mem::replace(&mut *state, ..)` of a flattened state's guard gives back its class's object, `const old = task;`, which the write then changes, not a copy of its variant's keys (#659)",
+    file: "src/lower/mir/entries.rs",
+    find: "        let moved_apart = self.is_unknown(pointee) || self.is_flattened_state(pointee);\n",
+    replace: "        let moved_apart = self.is_unknown(pointee);\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_moved_out.rs$"],
   },
   {
     name: "mir-swap-one-way",
@@ -220,8 +229,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`mem::take(&mut self.0)` of a generic struct's field copies the old value, `$apart(holder[0])`, where a write of the field rebinds it and nothing changes the old one (#527)",
     file: "src/lower/mir/entries.rs",
-    find: "cx.is_unknown(pointee) && !cx.borrows_own_place(def_id, span, i)",
-    replace: "cx.is_unknown(pointee)",
+    find: "moved_apart && !cx.borrows_own_place(def_id, span, i)",
+    replace: "moved_apart",
     tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
     snapshots: true,
   },
