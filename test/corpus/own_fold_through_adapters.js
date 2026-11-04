@@ -20,6 +20,7 @@ import {
   $next,
   $nth,
   $peek,
+  $took,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -81,7 +82,7 @@ const Holder = {
     try {
       return $given(iter, IIterator).reduce((a, b) => (a + b) >>> 0, 0);
     } finally {
-      if (IIterator.fold === undefined) {
+      if (!$took(IIterator.fold, iter)) {
         dropI?.(iter);
       }
     }

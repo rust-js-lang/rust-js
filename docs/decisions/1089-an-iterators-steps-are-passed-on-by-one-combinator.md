@@ -177,15 +177,51 @@ own step an adapter reaches is the OwnStep catalog's alone") rejects a
 per-step predicate. The 37 mutations of the old predicates mutate the
 catalog's entries, each as it meant.
 
-Left for later:
+Left for later: `$iterator`'s options object, and the JS step table
+`$given` reads.
 
-- **#649.** A peekable or fuse of a type parameter, reversed, reaches its
-  own `rfold` only where `$knowing` is given the compiled `rfold`, `May`'s
-  answer. But the compiled body then drops the parameter again where its
-  dictionary has no `rfold`
-  (`if (IDoubleEndedIterator.rfold === undefined) dropI(iter)`), and
-  generic code's dictionary can't know. The fix is a runtime answer of
-  whether a dictionary's step took the iterator: the value's `ownRfold`
-  where the entry is std's helper. It changes `@rust-js/std`'s compiled
-  bodies.
-- **`$iterator`'s options object, and the JS step table `$given` reads.**
+## Amendment: a type parameter's own steps are its value's to say (2026-11-04, #621, #623, #637, #649)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Each changed
+results, so Rust's behavior is kept.
+
+A dictionary of a type that holds a type parameter, generic code's
+`Map<I, F>` or `I` itself, said what `Reach::Sure` says: no `fold`, no
+`rfold`. So std's compiled `Fuse`, `Peekable` and `Map` given it folded
+the parameter by `next`, never calling the crate's own `fold` or `rfold`
+its caller's value writes: `src.map(f).fuse().fold(..)` and
+`src.peekable().rev().fold(..)` of the crate's iterator in generic code
+(#621, #649), and a fuse of it dropped twice where the own step ran anyway
+(#623, #637). A dictionary can't say which values a parameter is given, so
+the answer is asked of the value at run time:
+
+- **A type parameter's dictionaries say what `Reach::May` says**: `fold:
+  $foldOf`, `rfold: $foldBack`, each std's helper, which asks the value
+  itself (`iterator_dictionary`, `iterator_extension_dictionary`).
+  `$foldOf` of a value with no `fold`, JS's own helper, folds it as
+  `$foldDropping` does.
+- **Whether a dictionary's step took the value, so generic code drops
+  nothing of it after, is `$took(step, value)`**: none didn't; the crate's
+  own or std's compiled step did; std's helper did where the value's own
+  ran, the crate's (`ownFold`, `ownRfold`, `ownLast`, `ownCount`) or std's
+  compiled struct's (`takes`). It was `IIterator.fold === undefined`, which
+  a helper's presence made false of every value. `@rust-js/std`'s compiled
+  bodies read `if (!$took(IIterator.fold, iter)) dropI?.(iter);`.
+- **The helpers a dictionary may hold are one table, `$askedStep`**, which
+  `$given` reads too: a dictionary of only those is the value's own steps.
+- **A compiled struct stepped from its back is given std's compiled
+  `rfold` whatever it holds**, as its `fold` is (ADR 0912): std's
+  `Peekable::rfold` drops its source before it folds what it peeked at,
+  where `$foldBack` of its `next_back` dropped it after.
+
+`own_steps_a_type_parameter_may_reach.rs` holds the shapes against native
+Rust: a `map().fuse().fold(..)` and a `peekable().rev().fold(..)` in
+generic code of the crate's iterator that writes its `fold` and `rfold`,
+one that writes neither, and a `Vec`'s; a peekable's `rev()` that isn't
+generic; and a `fuse().fold(..)` of a slice's `map()`, JS's helper.
+Mutations: `type-parameter-fold-unsaid` and `type-parameter-rfold-unsaid`
+(`lower/iterators/dictionaries.ts`), `knowing-rfold-only-its-owns`
+(`lower/iterators/knowing.ts`), `dictionary-step-took-unasked`
+(`lower/mir/iter.ts`), `took-helper-trusted` and `took-own-unasked`
+(`runtime/iterator.ts`) and `fold-of-foldless` (`runtime/fold_of.ts`);
+`own-steps-not-the-value` and `fold-of-unwind-lost` name their new text.

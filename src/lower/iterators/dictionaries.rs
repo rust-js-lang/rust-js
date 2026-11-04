@@ -132,12 +132,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         } else if double_ended {
-            // The crate's own `rfold`; of another, none: one a filter of the
-            // crate's iterator holds is folded by its own `rfold` without it
-            // (#224, #382).
+            // The crate's own `rfold`; of another that may reach it, a type
+            // parameter's or std's adapter's over one, `$foldBack`, which asks
+            // the value, so what it gives this to asks the value whether its
+            // own took it (`$took`, #649); of another, none: one a filter of
+            // the crate's iterator holds is folded by its own `rfold` without
+            // it (#224, #382).
             let rfold = match self.is_user_iterator(ty) {
                 true => self.own_methods(ty, false, span)?.rfold,
-                false => None,
+                false => (self.recognition())
+                    .reaches_its_own(ty, OwnStep::Rfold, Reach::May)
+                    .then(|| Expr::helper("$foldBack")),
             };
             // A range's of numbers, of its bounds, std's own (#163), so what
             // steps it from its back by `nth_back`, a held `Rev`'s `nth`
@@ -260,8 +265,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let recognition = self.recognition();
                 let boxed = self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item));
                 // Std's struct whose `fold` std compiles folds by that, its
-                // meaning, whatever its sources are (ADR 0912).
-                let folds = recognition.reaches_its_own(ty, OwnStep::Fold, Reach::Sure)
+                // meaning, whatever its sources are (ADR 0912). Of a type
+                // parameter's, its value's own, which `$foldOf` asks at run
+                // time, `May`'s: generic code's fold of a `map()` or a
+                // `fuse()` of one it was given folds by the crate's own
+                // where its caller's is (#621, #623, #637).
+                let folds = recognition.reaches_its_own(ty, OwnStep::Fold, Reach::May)
                     || recognition.folds_by_its_own_nth(ty)
                     || (crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
                         && self.compiled_fold_of(ty, (iterator, "fold"))?.is_some());

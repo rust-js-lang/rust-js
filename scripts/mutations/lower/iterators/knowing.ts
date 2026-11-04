@@ -494,9 +494,18 @@ export const mutations: Mutation[] = [
     breaks:
       "a compiled struct stepped from its back isn't given std's compiled `rfold`, so `rev()` of a `fuse()` folds the crate's iterator by `next_back`, not by its own `rfold` (#224, ADR 0981)",
     file: "src/lower/iterators/knowing.rs",
-    find: "                Some(back) if self.recognition().reaches_its_own(ty, OwnStep::Rfold, Reach::Sure) => {\n",
-    replace: "                Some(back) if false && self.recognition().reaches_its_own(ty, OwnStep::Rfold, Reach::Sure) => {\n",
+    find: "                Some(back) if std_order || self.recognition().reaches_its_own(ty, OwnStep::Rfold, Reach::May) => {\n",
+    replace: "                Some(back) if false && (std_order || self.recognition().reaches_its_own(ty, OwnStep::Rfold, Reach::May)) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
+  },
+  {
+    name: "knowing-rfold-only-its-owns",
+    breaks:
+      "a compiled `peekable()` of what drops is given std's compiled `rfold` only where it may reach the crate's own, so its `rev().fold(..)` of an iterator that writes none steps it by `next_back` and drops its source after what it peeked at, where std's `Peekable::rfold` drops it before (#649)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            let std_order = self.drops(ty) != crate::lower::drops::Drops::Nothing;\n",
+    replace: "            let std_order = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_steps_a_type_parameter_may_reach.rs$"],
   },
   {
     name: "knowing-fuse-nth-back-unasked",

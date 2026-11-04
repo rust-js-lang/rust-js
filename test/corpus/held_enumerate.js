@@ -64,7 +64,17 @@ function positionsDoubleEndedIterator_nextBack(
         (iterator) =>
           enumerateDoubleEndedIterator_nextBack(iterator, IExactSizeIterator, IDoubleEndedIterator),
         (iterator) => enumerateExactSizeIterator_len(iterator, IExactSizeIterator),
-        undefined,
+        (iterator, init, f, unwind) =>
+          enumerateDoubleEndedIterator_rfold(
+            iterator,
+            init,
+            f,
+            IIterator,
+            IExactSizeIterator,
+            IDoubleEndedIterator,
+            undefined,
+            unwind,
+          ),
         (iterator, k) =>
           enumerateDoubleEndedIterator_nthBack(
             iterator,

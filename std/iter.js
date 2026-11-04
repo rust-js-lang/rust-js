@@ -40,6 +40,7 @@ import {
   $someMut,
   $someValue,
   $stdIterator,
+  $took,
   $traitImpl,
   $tryFoldInto,
   $tryOf,
@@ -135,7 +136,7 @@ export const FlattenCompat = {
         try {
           result = $foldDropping($given(iter, IIterator, true), acc, value$1, dropAcc);
         } finally {
-          if (IIterator.fold === undefined) {
+          if (!$took(IIterator.fold, iter)) {
             dropI?.(iter);
           }
         }
@@ -415,7 +416,7 @@ export const FlattenCompat = {
             dropAcc,
           );
         } finally {
-          if (IDoubleEndedIterator.rfold === undefined) {
+          if (!$took(IDoubleEndedIterator.rfold, iter)) {
             dropI?.(iter);
           }
         }
@@ -830,7 +831,7 @@ export function peekableIterator_last(peekable, IIterator = { next: $next }, dro
     try {
       result$1 = $lastDropping($given(iter, IIterator, true), dropIItem, true);
     } finally {
-      if (IIterator.fold === undefined && IIterator.last === undefined) {
+      if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
         dropI?.(iter);
       }
     }
@@ -914,7 +915,7 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
         try {
           result$1 = $count($given(iter, IIterator, true), dropIItem);
         } finally {
-          if (IIterator.fold === undefined && IIterator.count === undefined) {
+          if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
             dropI?.(iter);
           }
         }
@@ -941,7 +942,7 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
         try {
           result$1 = $count($given(iter, IIterator, true), dropIItem);
         } finally {
-          if (IIterator.fold === undefined && IIterator.count === undefined) {
+          if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
             dropI?.(iter);
           }
         }
@@ -1024,7 +1025,7 @@ export function peekableIterator_fold(
   try {
     result = $foldDropping($given(iter, IIterator, true), init, (a, b) => fold(a, b), dropAcc);
   } finally {
-    if (IIterator.fold === undefined) {
+    if (!$took(IIterator.fold, iter)) {
       dropI?.(iter);
     }
   }
@@ -1177,7 +1178,7 @@ export function peekableDoubleEndedIterator_rfold(
             dropAcc,
           );
         } finally {
-          if (IDoubleEndedIterator.rfold === undefined) {
+          if (!$took(IDoubleEndedIterator.rfold, iter)) {
             dropI?.(iter);
           }
         }
@@ -1197,7 +1198,7 @@ export function peekableDoubleEndedIterator_rfold(
   try {
     result$1 = $foldBack($given(iter, IIterator, true, IDoubleEndedIterator), init, fold, dropAcc);
   } finally {
-    if (IDoubleEndedIterator.rfold === undefined) {
+    if (!$took(IDoubleEndedIterator.rfold, iter)) {
       dropI?.(iter);
     }
   }
@@ -1389,7 +1390,7 @@ export function fuseIterator_fold(
     try {
       result = $foldDropping($given(iter, IIterator, true), acc, (a, b) => fold(a, b), dropAcc);
     } finally {
-      if (IIterator.fold === undefined) {
+      if (!$took(IIterator.fold, iter)) {
         dropI?.(iter);
       }
     }
@@ -1409,7 +1410,7 @@ export function fuseIterator_count(fuse, IIterator = { next: $next }, dropI, dro
     try {
       return $count($given(iter, IIterator, true), dropIItem);
     } finally {
-      if (IIterator.fold === undefined && IIterator.count === undefined) {
+      if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
         dropI?.(iter);
       }
     }
@@ -1651,7 +1652,7 @@ export function fuseDoubleEndedIterator_rfold(
     try {
       result = $foldBack($given(iter, IIterator, true, IDoubleEndedIterator), acc, fold, dropAcc);
     } finally {
-      if (IDoubleEndedIterator.rfold === undefined) {
+      if (!$took(IDoubleEndedIterator.rfold, iter)) {
         dropI?.(iter);
       }
     }
@@ -1762,7 +1763,7 @@ export function fuseIterator_last(fuse, IIterator = { next: $next }, dropI, drop
     try {
       return $lastDropping($given(iter, IIterator, true), dropIItem, true);
     } finally {
-      if (IIterator.fold === undefined && IIterator.last === undefined) {
+      if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
         dropI?.(iter);
       }
     }
@@ -1948,7 +1949,7 @@ export function revIterator_fold(
   try {
     result = $foldBack($given(iter, IIterator, true, IDoubleEndedIterator), init, f, dropAcc);
   } finally {
-    if (IDoubleEndedIterator.rfold === undefined) {
+    if (!$took(IDoubleEndedIterator.rfold, iter)) {
       dropI?.(iter);
     }
   }
@@ -2015,7 +2016,7 @@ export function revDoubleEndedIterator_rfold(
   try {
     result = $foldDropping($given(iter, IIterator, true), init, (a, b) => f(a, b), dropAcc);
   } finally {
-    if (IIterator.fold === undefined) {
+    if (!$took(IIterator.fold, iter)) {
       dropI?.(iter);
     }
   }
@@ -2129,7 +2130,7 @@ export function enumerateIterator_count(enumerate, IIterator = { next: $next }, 
   try {
     return $count($given(iter, IIterator, true), dropIItem);
   } finally {
-    if (IIterator.fold === undefined && IIterator.count === undefined) {
+    if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
       dropI?.(iter);
     }
   }
@@ -2161,7 +2162,7 @@ export function enumerateIterator_fold(
   try {
     result = $foldDropping($given(iter, IIterator, true), init, f, dropAcc);
   } finally {
-    if (IIterator.fold === undefined) {
+    if (!$took(IIterator.fold, iter)) {
       dropI?.(iter);
     }
   }
@@ -2304,7 +2305,7 @@ export function enumerateDoubleEndedIterator_rfold(
   try {
     result$1 = $foldBack($given(iter, IIterator, true, IDoubleEndedIterator), init, value, dropAcc);
   } finally {
-    if (IDoubleEndedIterator.rfold === undefined) {
+    if (!$took(IDoubleEndedIterator.rfold, iter)) {
       dropI?.(iter);
     }
   }
@@ -2451,7 +2452,7 @@ export function mapIterator_fold(
   try {
     result = $foldDropping($given(iter, IIterator, true), init, f, dropAcc);
   } finally {
-    if (IIterator.fold === undefined) {
+    if (!$took(IIterator.fold, iter)) {
       dropI?.(iter);
     }
   }
@@ -2558,7 +2559,7 @@ export function mapDoubleEndedIterator_rfold(
   try {
     result = $foldBack($given(iter, IIterator, true, IDoubleEndedIterator), init, f, dropAcc);
   } finally {
-    if (IDoubleEndedIterator.rfold === undefined) {
+    if (!$took(IDoubleEndedIterator.rfold, iter)) {
       dropI?.(iter);
     }
   }
@@ -2691,7 +2692,7 @@ export function filterIterator_count(filter, IIterator = { next: $next }, dropI,
   try {
     result = $given(iter, IIterator, true).reduce(value, 0);
   } finally {
-    if (IIterator.fold === undefined) {
+    if (!$took(IIterator.fold, iter)) {
       dropI?.(iter);
     }
   }
@@ -2740,7 +2741,7 @@ export function filterIterator_fold(
   try {
     result = $foldDropping($given(iter, IIterator, true), init, f, dropAcc);
   } finally {
-    if (IIterator.fold === undefined) {
+    if (!$took(IIterator.fold, iter)) {
       dropI?.(iter);
     }
   }
@@ -2861,7 +2862,7 @@ export function filterDoubleEndedIterator_rfold(
   try {
     result = $foldBack($given(iter, IIterator, true, IDoubleEndedIterator), init, f, dropAcc);
   } finally {
-    if (IDoubleEndedIterator.rfold === undefined) {
+    if (!$took(IDoubleEndedIterator.rfold, iter)) {
       dropI?.(iter);
     }
   }
@@ -2992,7 +2993,7 @@ export function copiedIterator_fold(
   try {
     result = $foldDropping($given(iter, IIterator, true), init, f$1, dropAcc);
   } finally {
-    if (IIterator.fold === undefined) {
+    if (!$took(IIterator.fold, iter)) {
       dropI?.(iter);
     }
   }
@@ -3047,7 +3048,7 @@ export function copiedIterator_last(copied, IIterator = { next: $next }, TCopy, 
   try {
     result = $lastSome($given(iter, IIterator, true));
   } finally {
-    if (IIterator.fold === undefined && IIterator.last === undefined) {
+    if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
       dropI?.(iter);
     }
   }
@@ -3062,7 +3063,7 @@ export function copiedIterator_count(copied, IIterator = { next: $next }, TCopy,
   try {
     return $count($given(iter, IIterator, true));
   } finally {
-    if (IIterator.fold === undefined && IIterator.count === undefined) {
+    if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
       dropI?.(iter);
     }
   }
@@ -3110,7 +3111,7 @@ export function copiedDoubleEndedIterator_rfold(
   try {
     result = $foldBack($given(iter, IIterator, true, IDoubleEndedIterator), init, f$1, dropAcc);
   } finally {
-    if (IDoubleEndedIterator.rfold === undefined) {
+    if (!$took(IDoubleEndedIterator.rfold, iter)) {
       dropI?.(iter);
     }
   }
@@ -3241,7 +3242,7 @@ export function filterMapIterator_fold(
   try {
     result = $foldDropping($given(iter, IIterator, true), init, f, dropAcc);
   } finally {
-    if (IIterator.fold === undefined) {
+    if (!$took(IIterator.fold, iter)) {
       dropI?.(iter);
     }
   }
@@ -3369,7 +3370,7 @@ export function filterMapDoubleEndedIterator_rfold(
   try {
     result = $foldBack($given(iter, IIterator, true, IDoubleEndedIterator), init, f, dropAcc);
   } finally {
-    if (IDoubleEndedIterator.rfold === undefined) {
+    if (!$took(IDoubleEndedIterator.rfold, iter)) {
       dropI?.(iter);
     }
   }
@@ -3705,7 +3706,7 @@ export function skipWhileIterator_fold(
     try {
       result$1 = $foldDropping($given(iter, IIterator, true), init, (a, b) => fold(a, b), dropAcc);
     } finally {
-      if (IIterator.fold === undefined) {
+      if (!$took(IIterator.fold, iter)) {
         dropI?.(iter);
       }
     }
@@ -4200,7 +4201,7 @@ export function inspectIterator_fold(
   try {
     result = $foldDropping($given(iter, IIterator, true), init, f, dropAcc);
   } finally {
-    if (IIterator.fold === undefined) {
+    if (!$took(IIterator.fold, iter)) {
       dropI?.(iter);
     }
   }
@@ -4294,7 +4295,7 @@ export function inspectDoubleEndedIterator_rfold(
   try {
     result = $foldBack($given(iter, IIterator, true, IDoubleEndedIterator), init, f, dropAcc);
   } finally {
-    if (IDoubleEndedIterator.rfold === undefined) {
+    if (!$took(IDoubleEndedIterator.rfold, iter)) {
       dropI?.(iter);
     }
   }
@@ -5455,7 +5456,7 @@ export function skipIterator_count(skip, IIterator = { next: $next }, dropI, dro
   try {
     return $count($given(iter, IIterator, true), dropIItem);
   } finally {
-    if (IIterator.fold === undefined && IIterator.count === undefined) {
+    if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
       dropI?.(iter);
     }
   }
@@ -5492,7 +5493,7 @@ export function skipIterator_last(skip, IIterator = { next: $next }, dropI, drop
   try {
     return $lastDropping($given(iter, IIterator, true), dropIItem, true);
   } finally {
-    if (IIterator.fold === undefined && IIterator.last === undefined) {
+    if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
       dropI?.(iter);
     }
   }
@@ -5567,7 +5568,7 @@ export function skipIterator_fold(
   try {
     result = $foldDropping($given(iter, IIterator, true), init, (a, b) => fold(a, b), dropAcc);
   } finally {
-    if (IIterator.fold === undefined) {
+    if (!$took(IIterator.fold, iter)) {
       dropI?.(iter);
     }
   }
@@ -6345,7 +6346,7 @@ export function takeIDoubleEndedIterator_rfold(
           dropAcc,
         );
       } finally {
-        if (IDoubleEndedIterator.rfold === undefined) {
+        if (!$took(IDoubleEndedIterator.rfold, iter)) {
           dropI?.(iter);
         }
       }
@@ -6648,7 +6649,7 @@ export function chainIterator_count(
       try {
         result = $count($given(iter, AIterator, true), dropAItem);
       } finally {
-        if (AIterator.fold === undefined && AIterator.count === undefined) {
+        if (!$took(AIterator.fold, iter) && !$took(AIterator.count, iter)) {
           dropA?.(iter);
         }
       }
@@ -6670,7 +6671,7 @@ export function chainIterator_count(
     try {
       result = $count($given(iter, BIterator, true), dropAItem);
     } finally {
-      if (BIterator.fold === undefined && BIterator.count === undefined) {
+      if (!$took(BIterator.fold, iter) && !$took(BIterator.count, iter)) {
         dropB?.(iter);
       }
     }
@@ -6701,7 +6702,7 @@ export function chainIterator_fold(
       try {
         result = $foldDropping($given(iter, AIterator, true), acc, (a, b) => f(a, b), dropAcc);
       } finally {
-        if (AIterator.fold === undefined) {
+        if (!$took(AIterator.fold, iter)) {
           dropA?.(iter);
         }
       }
@@ -6721,7 +6722,7 @@ export function chainIterator_fold(
     try {
       result = $foldDropping($given(iter, BIterator, true), acc, (a, b) => f(a, b), dropAcc);
     } finally {
-      if (BIterator.fold === undefined) {
+      if (!$took(BIterator.fold, iter)) {
         dropB?.(iter);
       }
     }
@@ -6906,7 +6907,7 @@ export function chainIterator_last(
       try {
         result = $lastDropping($given(iter, AIterator, true), dropAItem, true);
       } finally {
-        if (AIterator.fold === undefined && AIterator.last === undefined) {
+        if (!$took(AIterator.fold, iter) && !$took(AIterator.last, iter)) {
           dropA?.(iter);
         }
       }
@@ -6929,7 +6930,7 @@ export function chainIterator_last(
       try {
         result = $lastDropping($given(iter, BIterator, true), dropAItem, true);
       } finally {
-        if (BIterator.fold === undefined && BIterator.last === undefined) {
+        if (!$took(BIterator.fold, iter) && !$took(BIterator.last, iter)) {
           dropB?.(iter);
         }
       }
@@ -7054,7 +7055,7 @@ export function chainDoubleEndedIterator_rfold(
       try {
         result = $foldBack($given(iter, BIterator, true, BDoubleEndedIterator), acc, f, dropAcc);
       } finally {
-        if (BDoubleEndedIterator.rfold === undefined) {
+        if (!$took(BDoubleEndedIterator.rfold, iter)) {
           dropB?.(iter);
         }
       }
@@ -7074,7 +7075,7 @@ export function chainDoubleEndedIterator_rfold(
     try {
       result = $foldBack($given(iter, AIterator, true, ADoubleEndedIterator), acc, f, dropAcc);
     } finally {
-      if (ADoubleEndedIterator.rfold === undefined) {
+      if (!$took(ADoubleEndedIterator.rfold, iter)) {
         dropA?.(iter);
       }
     }
@@ -9346,7 +9347,7 @@ export function flattenCompatIUIterator_fold(
         try {
           return $foldDropping($given(iter, UIterator, true), acc, (a, b) => fold(a, b), dropAcc);
         } finally {
-          if (UIterator.fold === undefined) {
+          if (!$took(UIterator.fold, iter)) {
             dropU?.(iter);
           }
         }
@@ -9435,7 +9436,7 @@ export function flattenCompatIUIterator2_fold(
         try {
           result$1 = $foldDropping($given(iter, IIterator, true), init, value$2, dropAcc);
         } finally {
-          if (IIterator.fold === undefined) {
+          if (!$took(IIterator.fold, iter)) {
             dropI?.(iter);
           }
         }
@@ -9724,7 +9725,7 @@ export function flattenCompatIUIterator2_last(
             },
           );
         } finally {
-          if (IIterator.fold === undefined) {
+          if (!$took(IIterator.fold, iter)) {
             dropI?.(iter);
           }
         }
@@ -9868,7 +9869,7 @@ export function flattenCompatIUDoubleEndedIterator_rfold(
         try {
           return $foldBack($given(iter, UIterator, true, UDoubleEndedIterator), acc, fold, dropAcc);
         } finally {
-          if (UDoubleEndedIterator.rfold === undefined) {
+          if (!$took(UDoubleEndedIterator.rfold, iter)) {
             dropU?.(iter);
           }
         }
@@ -9964,7 +9965,7 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
             dropAcc,
           );
         } finally {
-          if (IDoubleEndedIterator.rfold === undefined) {
+          if (!$took(IDoubleEndedIterator.rfold, iter)) {
             dropI?.(iter);
           }
         }

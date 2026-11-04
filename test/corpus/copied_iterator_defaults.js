@@ -10,6 +10,7 @@ import {
   $next,
   $rangeNext,
   $someValue,
+  $took,
   $traitImpl,
 } from "@rust-js/runtime";
 
@@ -75,7 +76,7 @@ function tTotals(TIterator, dropT) {
       try {
         return $given(iter, TIterator).reduce((a, b) => (a + b) & 255, 0);
       } finally {
-        if (TIterator.fold === undefined) {
+        if (!$took(TIterator.fold, iter)) {
           dropT?.(iter);
         }
       }

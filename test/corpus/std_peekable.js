@@ -8,12 +8,15 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $count,
+  $foldBack,
+  $foldOf,
   $iter,
   $iterator,
   $last,
   $lazyRange,
   $lent,
   $next,
+  $nextBack,
   $nextIf,
   $nth,
   $rangeNext,
@@ -26,7 +29,13 @@ export function entry() {
 }
 
 function firstTwo(it) {
-  const p = iterator_peekable(it, { next: $next, nth: $nth, last: $last, count: $count });
+  const p = iterator_peekable(it, {
+    next: $next,
+    fold: $foldOf,
+    nth: $nth,
+    last: $last,
+    count: $count,
+  });
   const a = $next(p);
   const b = $nextIf(p, (x) => x % 2 === 0);
   const c = $next(p);
@@ -34,10 +43,20 @@ function firstTwo(it) {
 }
 
 function fromBack(it) {
-  const p = iterator_peekable(it, { next: $next, nth: $nth, last: $last, count: $count });
-  const out = [peekableDoubleEndedIterator_nextBack(p) ?? 0];
+  const p = iterator_peekable(it, {
+    next: $next,
+    fold: $foldOf,
+    nth: $nth,
+    last: $last,
+    count: $count,
+  });
+  const out = [
+    peekableDoubleEndedIterator_nextBack(p, { next_back: $nextBack, rfold: $foldBack }) ?? 0,
+  ];
   out.push($next(p) ?? 0);
-  out.push(peekableDoubleEndedIterator_nextBack(p) ?? 0);
+  out.push(
+    peekableDoubleEndedIterator_nextBack(p, { next_back: $nextBack, rfold: $foldBack }) ?? 0,
+  );
   return out;
 }
 

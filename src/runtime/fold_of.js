@@ -1,9 +1,10 @@
 // `it.fold(init, f)` of a JS iterator whose `fold` is std's adapter's over
 // the crate's own, as a dictionary's `fold` is called, of the value it's of
 // (#214); given `unwind`, what a stage's panic strands, `$foldDropping`'s,
-// its own fold's to pass on (#423).
+// its own fold's to pass on (#423). Of a type parameter's adapter, a value
+// with no `fold` of its own, JS's helper, std's default (#621).
 function $foldOf(it, init, f, unwind) {
-  return it.fold(init, f, unwind);
+  return typeof it.fold === "function" ? it.fold(init, f, unwind) : $foldDropping(it, init, f, unwind);
 }
 
 // `it.fold(init, f)` of an accumulator with a destructor that a stage's

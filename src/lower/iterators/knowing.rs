@@ -1185,12 +1185,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(None);
             }
             // And its `rfold` and `nth_back`, std's compiled ones: its `rfold`
-            // where it reaches the `rfold` of the crate's own, which std passes
-            // on, as a `Fuse` does (#224, `reaches_its_own`); of another, the
-            // same as by `next_back`.
+            // where it may reach the `rfold` of the crate's own, which std
+            // passes on, as a `Fuse` does (#224), a type parameter's too; or
+            // where it holds what drops, which std's drops where it does, a
+            // `Peekable`'s source before what it peeked at (#649); of
+            // another, the same as by `next_back`.
             let double_ended = self.recognition().double_ended_iterator();
+            let std_order = self.drops(ty) != crate::lower::drops::Drops::Nothing;
             let rfold = match double_ended {
-                Some(back) if self.recognition().reaches_its_own(ty, OwnStep::Rfold, Reach::Sure) => {
+                Some(back) if std_order || self.recognition().reaches_its_own(ty, OwnStep::Rfold, Reach::May) => {
                     self.compiled_fold(ty, (back, "rfold"), span)?
                 }
                 _ => None,

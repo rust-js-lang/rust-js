@@ -3,6 +3,7 @@
 import {
   $count,
   $debugStr,
+  $foldOf,
   $given,
   $iter,
   $iterator,
@@ -37,7 +38,13 @@ function doubled(inner) {
 }
 function sumDoubled(j) {
   return $iterator({ inner: j }, (iterator) =>
-    doubledIterator_next(iterator, { next: $next, nth: $nth, last: $last, count: $count }),
+    doubledIterator_next(iterator, {
+      next: $next,
+      fold: $foldOf,
+      nth: $nth,
+      last: $last,
+      count: $count,
+    }),
   ).reduce((a, b) => (a + b) | 0, 0);
 }
 // Given back, stepped through what holds it, and through itself.

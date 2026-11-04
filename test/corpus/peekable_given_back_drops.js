@@ -4,6 +4,7 @@ import { iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $count,
   $dropEach,
+  $foldOf,
   $held,
   $iter,
   $iterator,
@@ -33,7 +34,11 @@ function counterIterator_next(counter) {
 }
 
 function consumed(it, dropI) {
-  const iter = iterator_peekable(it, { next: $next, nth: $nth, last: $last, count: $count }, dropI);
+  const iter = iterator_peekable(
+    it,
+    { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+    dropI,
+  );
   try {
     return iter.reduce((a, b) => (a + b) >>> 0, 0);
   } finally {

@@ -314,4 +314,22 @@ export const mutations: Mutation[] = [
       "^range_hints_given with std's iterator structs$",
     ],
   },
+  {
+    name: "type-parameter-fold-unsaid",
+    breaks:
+      "a type parameter's dictionary says no `fold` of its own where its value's may be the crate's, `Reach::Sure`'s answer: generic code's `map().fuse().fold(..)` of the crate's iterator that writes its `fold` never calls it (#621, #623)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "                let folds = recognition.reaches_its_own(ty, OwnStep::Fold, Reach::May)\n",
+    replace: "                let folds = recognition.reaches_its_own(ty, OwnStep::Fold, Reach::Sure)\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_steps_a_type_parameter_may_reach.rs$"],
+  },
+  {
+    name: "type-parameter-rfold-unsaid",
+    breaks:
+      "a type parameter's `DoubleEndedIterator` dictionary has no `rfold`, `$foldBack`, so a compiled `peekable()`'s `rfold` whose source's own `rfold` ran, the crate's, drops it again after (#649)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: '                    .then(|| Expr::helper("$foldBack")),\n',
+    replace: '                    .then(|| Expr::helper("$foldBack"))\n                    .filter(|_| false),\n',
+    tests: ["test/corpus.test.ts", "-t", "^own_steps_a_type_parameter_may_reach.rs$"],
+  },
 ];

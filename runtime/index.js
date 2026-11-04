@@ -647,13 +647,9 @@ export function $given(value, iterator, boxed = false, back, len) {
   // value's too, which the JS iterator would unbox: generic code's of items
   // that may look like `None`, whose value may be JS's own, an array's, with
   // no `nth` to ask (#522).
-  const own = (dictionary, steps, boxedSteps) =>
-    Object.entries(dictionary).every(
-      ([name, step]) => name === "getUnchecked" || steps[name] === step || (boxed && boxedSteps[name] === step),
-    );
-  if (own(iterator, { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count }, { next: $nextSome, nth: $nthSome, last: $lastSome })
-    && len === undefined
-    && (back === undefined || own(back, { next_back: $nextBack }, { next_back: $nextBackSome }))) {
+  const own = (dictionary) =>
+    Object.entries(dictionary).every(([name, step]) => name === "getUnchecked" || $askedStep(step, boxed) === name);
+  if (own(iterator) && len === undefined && (back === undefined || own(back))) {
     return value;
   }
   const it = $iterator(
@@ -674,6 +670,37 @@ export function $given(value, iterator, boxed = false, back, len) {
   // Made of the value, which `$givenClone` clones.
   it.given = true;
   return it;
+}
+
+// Which step `step`, a dictionary's, is, where it's one of std's helpers
+// that asks the value itself, `$foldOf`'s `fold`, its name in the
+// dictionary: the one table of them (ADR 1089). A dictionary of only these
+// is the value's own steps, which `$given` gives as it is; of one of them,
+// whether it took the value is the value's own answer, `$took`'s. Given
+// `boxed`, a step that boxes its `Some`, `$nextSome`'s, too (#522).
+export function $askedStep(step, boxed = false) {
+  if (step === $next || (boxed && step === $nextSome)) return "next";
+  if (step === $nextBack || (boxed && step === $nextBackSome)) return "next_back";
+  if (step === $foldOf) return "fold";
+  if (step === $foldBack) return "rfold";
+  if (step === $nth || (boxed && step === $nthSome)) return "nth";
+  if (step === $last || (boxed && step === $lastSome)) return "last";
+  if (step === $count) return "count";
+  return undefined;
+}
+
+// Whether a dictionary's `step` of `it`, a value of a type parameter, took
+// it whole and dropped it, as the crate's own `fold`, `last` and `count` do,
+// so generic code drops nothing of it after: none didn't; the crate's own,
+// or std's compiled one, did; std's helper that asks the value, `$foldOf`'s,
+// did where the value's own step ran, the crate's (`ownFold`) or std's
+// compiled struct's, which it takes (`takes`). A dictionary can't say which
+// of a type parameter's values is which: generic code's of a `fuse()` of one
+// it was given asks it at run time (#621, #649).
+export function $took(step, it) {
+  if (step === undefined) return false;
+  const name = $askedStep(step, true);
+  return name === undefined || it[$ownStep(name)] === true || it.$steps?.takes?.includes(name) === true;
 }
 
 // A clone of `it`, what generic code's `copied()` of a value it was given
@@ -2205,9 +2232,10 @@ export function $count(it, drop) {
 // `it.fold(init, f)` of a JS iterator whose `fold` is std's adapter's over
 // the crate's own, as a dictionary's `fold` is called, of the value it's of
 // (#214); given `unwind`, what a stage's panic strands, `$foldDropping`'s,
-// its own fold's to pass on (#423).
+// its own fold's to pass on (#423). Of a type parameter's adapter, a value
+// with no `fold` of its own, JS's helper, std's default (#621).
 export function $foldOf(it, init, f, unwind) {
-  return it.fold(init, f, unwind);
+  return typeof it.fold === "function" ? it.fold(init, f, unwind) : $foldDropping(it, init, f, unwind);
 }
 
 // `it.fold(init, f)` of an accumulator with a destructor that a stage's

@@ -9,6 +9,7 @@ import {
   $enumerate,
   $exactLen,
   $foldDropping,
+  $foldOf,
   $iter,
   $iterator,
   $last,
@@ -116,7 +117,11 @@ function boxed(at) {
 
 function tried(it, IteratorFused) {
   const v = $tryFoldSome(
-    iterator_fuse(it, { next: $next, nth: $nth, last: $last, count: $count }, IteratorFused),
+    iterator_fuse(
+      it,
+      { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+      IteratorFused,
+    ),
     [],
     (acc, n) => push(acc, n),
     $dropEach(dDrop_drop),

@@ -2,6 +2,7 @@
 
 import {
   $count,
+  $foldOf,
   $iter,
   $last,
   $lazyRange,
@@ -30,7 +31,10 @@ function tExt(TIterator) {
 }
 
 function firstTwo(it) {
-  return [tExt({ next: $next, nth: $nth, last: $last, count: $count }).skipOne(it), $next(it)];
+  return [
+    tExt({ next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count }).skipOne(it),
+    $next(it),
+  ];
 }
 
 function main() {

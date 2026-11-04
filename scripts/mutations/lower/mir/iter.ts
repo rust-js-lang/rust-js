@@ -633,4 +633,13 @@ export const mutations: Mutation[] = [
     replace: "        let iter_ty = receiver;\n        let dropping",
     tests: ["test/corpus.test.ts", "-t", "^consumed_own_iterator_dropped_once.rs$"],
   },
+  {
+    name: "dictionary-step-took-unasked",
+    breaks:
+      "whether a dictionary's `fold` took the iterator is whether it has one, not the value's answer: generic code's `sum()` of a `peekable()` of the crate's iterator with a `Drop` and no `fold` of its own, whose dictionary's `fold` is `$foldOf`, never drops it (#621, #649)",
+    file: "src/lower/mir/iter.rs",
+    find: '                        Expr::unary(js::UnaryOp::Not, Expr::call_helper("$took", vec![step, held.clone()]))\n',
+    replace: "                        Expr::bin(Op::Eq, step, Expr::undefined())\n",
+    tests: ["test/corpus.test.ts", "-t", "^peekable_given_back_drops.rs$"],
+  },
 ];

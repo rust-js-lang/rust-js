@@ -5,6 +5,7 @@ import {
   $closing,
   $count,
   $enumerate,
+  $foldOf,
   $iter,
   $iterator,
   $lastSome,
@@ -61,7 +62,11 @@ function skipCounted(it) {
 
 function fuseCounted(it, IFused) {
   return $count(
-    iterator_fuse(it, { next: $nextSome, nth: $nthSome, last: $lastSome, count: $count }, IFused),
+    iterator_fuse(
+      it,
+      { next: $nextSome, fold: $foldOf, nth: $nthSome, last: $lastSome, count: $count },
+      IFused,
+    ),
   );
 }
 

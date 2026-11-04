@@ -6,6 +6,7 @@ import {
   $KeySet,
   $byteLen,
   $eq,
+  $foldOf,
   $given,
   $hashSlice,
   $iter,
@@ -59,7 +60,7 @@ function tCounting(TIterator) {
       );
     },
     tallyBy(self, f, KHash, KPartialEq, KMap) {
-      return tCounting({ next: $nextSome }).counts(
+      return tCounting({ next: $nextSome, fold: $foldOf }).counts(
         iterator_map(self, f, TIterator),
         KHash,
         KPartialEq,

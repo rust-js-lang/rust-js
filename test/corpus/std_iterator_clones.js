@@ -10,6 +10,8 @@ import {
   $charIndices,
   $count,
   $debugStr,
+  $foldBack,
+  $foldOf,
   $foldToArray,
   $iter,
   $last,
@@ -36,7 +38,11 @@ function reversedTwice(it, IIterator, IDoubleEndedIterator, IClone) {
 }
 
 function backLen(it) {
-  const back = iterator_rev(it, { next: $next, nth: $nth, last: $last, count: $count });
+  const back = iterator_rev(
+    it,
+    { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+    { next_back: $nextBack, rfold: $foldBack },
+  );
   $next(back);
   return revExactSizeIterator_len(back, { len: (iterator) => iterator.len() });
 }

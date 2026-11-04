@@ -4,6 +4,7 @@ import { iterator_enumerate, iterator_map } from "@rust-js/std/iter.js";
 import {
   $cmp,
   $count,
+  $foldOf,
   $iter,
   $iterator,
   $next,
@@ -33,9 +34,10 @@ function tExt(TIterator) {
       return best;
     },
     positionMax(self, SelfItemOrd) {
-      const option = tExt({ next: $nextSome }).widest(
+      const option = tExt({ next: $nextSome, fold: $foldOf }).widest(
         iterator_map(iterator_enumerate(self, TIterator), ([i, x]) => [x, i], {
           next: $nextSome,
+          fold: $foldOf,
           nth: $nth,
           count: $count,
         }),

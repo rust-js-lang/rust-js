@@ -11,6 +11,7 @@ import {
   $mutGet,
   $next,
   $orInsert,
+  $took,
   $traitImpl,
 } from "@rust-js/runtime";
 
@@ -40,7 +41,7 @@ function tCounting(TIterator, dropT, dropTItem) {
             orInsert.value = (orInsert.value + 1) >>> 0;
           });
         } finally {
-          if (TIterator.fold === undefined) {
+          if (!$took(TIterator.fold, iter)) {
             dropT?.(iter);
           }
         }

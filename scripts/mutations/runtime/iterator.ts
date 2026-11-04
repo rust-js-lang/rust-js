@@ -111,8 +111,8 @@ export const mutations: Mutation[] = [
     name: "own-steps-not-the-value",
     breaks: "std's struct given with `fold: $foldOf` is wrapped, losing its own `advance_by`, so a chain's `nth` steps each item of a reversed `Vec` back to front (ADR 0912)",
     file: "src/runtime/iterator.js",
-    find: "  if (own(iterator, { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count }, { next: $nextSome, nth: $nthSome, last: $lastSome })\n",
-    replace: "  if (own(iterator, { next: $next }, {})\n",
+    find: '    Object.entries(dictionary).every(([name, step]) => name === "getUnchecked" || $askedStep(step, boxed) === name);\n',
+    replace: '    Object.entries(dictionary).every(([name, step]) => name === "getUnchecked" || (name === "next" && step === $next));\n',
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
   {
@@ -203,5 +203,23 @@ export const mutations: Mutation[] = [
     find: " || (boxed && boxedSteps[name] === step)",
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_own_last with"],
+  },
+  {
+    name: "took-helper-trusted",
+    breaks:
+      "a dictionary's step that's std's helper, `$foldOf`, is taken to have taken the value whatever the value's own did: generic code's `sum()` of a `peekable()` of the crate's iterator with a `Drop` and no `fold` of its own never drops it (#621)",
+    file: "src/runtime/iterator.js",
+    find: "  return name === undefined || it[$ownStep(name)] === true || it.$steps?.takes?.includes(name) === true;\n",
+    replace: "  return true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^peekable_given_back_drops.rs$"],
+  },
+  {
+    name: "took-own-unasked",
+    breaks:
+      "a dictionary's step that's std's helper never took the value, though the value's own ran, the crate's `rfold`: generic code's `peekable().rev().fold(..)` of it drops it twice (#649)",
+    file: "src/runtime/iterator.js",
+    find: "  return name === undefined || it[$ownStep(name)] === true || it.$steps?.takes?.includes(name) === true;\n",
+    replace: "  return name === undefined || it.$steps?.takes?.includes(name) === true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_steps_a_type_parameter_may_reach.rs$"],
   },
 ];

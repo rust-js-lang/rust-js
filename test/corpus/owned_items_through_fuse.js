@@ -3,6 +3,7 @@
 import {
   fuseDoubleEndedIterator_nextBack,
   fuseDoubleEndedIterator_nthBack,
+  fuseDoubleEndedIterator_rfold,
   fuseDoubleEndedIterator_tryRfold,
   fuseExactSizeIterator_len,
   iterator_fuse,
@@ -118,7 +119,18 @@ function main() {
             $dropEach(loudDrop_drop),
             loudDrop_drop,
           ),
-        undefined,
+        (iterator, init, f, unwind) =>
+          fuseDoubleEndedIterator_rfold(
+            iterator,
+            init,
+            f,
+            { next: $next },
+            { next_back: $nextBack },
+            $dropEach(loudDrop_drop),
+            unwind,
+            undefined,
+            loudDrop_drop,
+          ),
         (iterator, k) =>
           fuseDoubleEndedIterator_nthBack(
             iterator,

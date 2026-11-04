@@ -4,6 +4,7 @@ import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $count,
   $debugStr,
+  $foldOf,
   $folded,
   $iter,
   $iterator,
@@ -46,13 +47,23 @@ function skip(it) {
 
 function fuse(it, IFused) {
   return $lastSome(
-    iterator_fuse(it, { next: $nextSome, nth: $nthSome, last: $lastSome, count: $count }, IFused),
+    iterator_fuse(
+      it,
+      { next: $nextSome, fold: $foldOf, nth: $nthSome, last: $lastSome, count: $count },
+      IFused,
+    ),
   );
 }
 
 function peek(it) {
   return $lastSome(
-    iterator_peekable(it, { next: $nextSome, nth: $nthSome, last: $lastSome, count: $count }),
+    iterator_peekable(it, {
+      next: $nextSome,
+      fold: $foldOf,
+      nth: $nthSome,
+      last: $lastSome,
+      count: $count,
+    }),
   );
 }
 
@@ -67,7 +78,11 @@ function mapped(it) {
 function fuseNth(it, IFused) {
   return $nthSome(
     $lent(
-      iterator_fuse(it, { next: $nextSome, nth: $nthSome, last: $lastSome, count: $count }, IFused),
+      iterator_fuse(
+        it,
+        { next: $nextSome, fold: $foldOf, nth: $nthSome, last: $lastSome, count: $count },
+        IFused,
+      ),
     ),
     1,
   );

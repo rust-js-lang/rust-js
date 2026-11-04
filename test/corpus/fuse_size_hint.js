@@ -3,6 +3,7 @@
 import { iterator_fuse } from "@rust-js/std/iter.js";
 import {
   $count,
+  $foldOf,
   $iter,
   $lastSome,
   $next,
@@ -19,7 +20,7 @@ export function entry() {
 function hint(it, IFused) {
   const fused = iterator_fuse(
     it,
-    { next: $nextSome, nth: $nthSome, last: $lastSome, count: $count },
+    { next: $nextSome, fold: $foldOf, nth: $nthSome, last: $lastSome, count: $count },
     IFused,
   );
   $nextSome(fused);

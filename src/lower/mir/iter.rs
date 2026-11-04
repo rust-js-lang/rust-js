@@ -337,10 +337,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let taken = match self.consumes_by_fold(method, output) {
             false => None,
             true => match by.and_then(|by| Some((by, self.iterator_evidence(receiver, by)?))) {
+                // Whether its step took it, the value's own answer where the
+                // dictionary's is std's helper that asks it, `$foldOf`, which
+                // a type parameter's may be (`$took`, #621, #649).
                 Some((by, dictionary)) => {
                     let unowned = |name: &str| {
                         let name = crate::lower::bindings::trait_method_name(self.tcx, by, name);
-                        Expr::bin(Op::Eq, Expr::member(dictionary.clone(), name), Expr::undefined())
+                        let step = Expr::member(dictionary.clone(), name);
+                        Expr::unary(js::UnaryOp::Not, Expr::call_helper("$took", vec![step, held.clone()]))
                     };
                     Some(match own {
                         Some(own) => Expr::bin(Op::And, unowned(fold), unowned(own)),
