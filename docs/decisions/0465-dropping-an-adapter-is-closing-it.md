@@ -1152,3 +1152,24 @@ Mutations: `kept-discard-drop-unwinds`, `kept-throw-drops-acc-first`,
 name the new text, each as it meant: `back-filter-throw-keeps-item` is now
 `kept-throw-keeps-item`, and `discarded-throw-keeps-item` is a
 `skip_while`'s alone.
+
+## Amendment: a `take`'s `count` is closed as it unwinds (2026-11-04, #640)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+`Own(0).skip(1).take(3).count()` never dropped `Own`, where its `next`
+panics at its third step: native prints `drop 1`, `drop 2`, `drop own`.
+`take(3).skip(1).count()` did the same, through the skip's `count` of its
+source. Std's `count(self)` takes the `Take`, which drops what it holds as
+the panic unwinds through it, as #640's `skip` does. `$Steps`' `take`
+counts by its source's `advance_by`, then closes it; now that's
+`$consumed`, closed though it throws, as c9c71537e (#647) made it too, its
+one form. That takes 24 case-builds off the
+matrix's list: 11 of #640's 14, and 12 of #653's and 1 of #647's, the same
+`count` with an item's drop or a chain's side panicking. #640's other 3 are
+a generic collect's spread, which closes nothing as a step throws: that's
+the steps-may-panic gate's.
+
+`take_count_closes_as_it_unwinds.rs` holds both, and a `take` alone,
+against native Rust, beside #647's `take-count-unconsumed` (`runtime/steps.ts`).
