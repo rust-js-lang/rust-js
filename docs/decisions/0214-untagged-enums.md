@@ -591,3 +591,27 @@ an argument it keeps in its `let args = (&x,)`, `&*args.0`, followed to
   (`untagged/displayed.ts`), `displayed-value-given-options`
   (`format_spec.ts`), `displayed-value-given-pretty`
   (`display/written.ts`).
+
+## Amended (2026-11-04, rd730): its impl is written only where it's called
+
+After #557 every plain `{}` of webpack's `ModuleId` was `${id}`, but its
+module still wrote `export const moduleIdDisplay = {fmt: moduleIdDisplay_fmt}`
+and the function, which nothing called and upstream hasn't. Such an impl,
+one whose `Display` writes each variant's value as it is
+(`untagged::displayed::displaying_impls`, of the crate's untagged enums of
+no type parameters), is written only where something reaches it, as a
+derived impl is (`pipeline/reached.rs`): a placeholder with options calls
+its `fmt`, a generic function given its dictionary keeps the dictionary.
+Its library's contract lists the type, `displays_value`, so a consumer's
+plain `{}` of it is `${id}` in place (`Foreign::displays_its_value`), and
+a consumer that calls its impl, with options or generically, compiles its
+own of the library's MIR, as of any impl the library's JS doesn't export
+(ADR 0914, amended). Case N: what's written of the value is what it was.
+
+Held by `test/untagged-displayed.test.ts` (a library writing no impl, its
+consumer's `{}` in place, `{id:>4}` and a generic call of its own copy,
+run; an impl a generic call of its own crate reaches, written) and the
+corpus case `untagged_displayed_in_place.rs`. Mutations
+`displaying-impl-of-another-trait`, `displaying-impl-of-any-body`,
+`displayed-value-of-a-library-unread` (`untagged/displayed.ts`) and
+`displayed-impl-written-anyway` (`pipeline/reached.ts`).

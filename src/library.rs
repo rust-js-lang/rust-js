@@ -351,6 +351,11 @@ pub struct Library {
     /// call of one is the value.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub gives_argument: Vec<String>,
+    /// The keys of its untagged enums whose `Display` writes each
+    /// variant's value as it is (#557, rd730): a consumer's plain `{}` of
+    /// one is the value in place, `${id}`, and calls no dictionary.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub displays_value: Vec<String>,
     /// The keys of the structs its code makes values of, its own or a
     /// library's, a literal's (ADR 1022, amended): the
     /// program's own data, whose fields a consumer reads in place, whatever
@@ -542,6 +547,9 @@ pub struct Exports {
     /// Its functions each call of which is what it's given, by their keys
     /// (ADR 0584, amended).
     pub gives_argument: HashSet<String>,
+    /// Its untagged enums whose `Display` writes each variant's value as
+    /// it is, by their keys (rd730).
+    pub displays_value: HashSet<String>,
     /// The structs its code makes values of, by their keys (ADR 1022,
     /// amended).
     pub built: HashSet<String>,
@@ -624,6 +632,7 @@ impl Dependencies {
                 keyed: library.keyed.into_iter().collect(),
                 eq_by_address: library.eq_by_address.into_iter().collect(),
                 gives_argument: library.gives_argument.into_iter().collect(),
+                displays_value: library.displays_value.into_iter().collect(),
                 built: library.built.into_iter().collect(),
                 fields: library
                     .fields
@@ -787,6 +796,7 @@ impl Dependencies {
             keyed: library.keyed.into_iter().collect(),
             eq_by_address: library.eq_by_address.into_iter().collect(),
             gives_argument: library.gives_argument.into_iter().collect(),
+            displays_value: library.displays_value.into_iter().collect(),
             built: library.built.into_iter().collect(),
             fields: library
                 .fields

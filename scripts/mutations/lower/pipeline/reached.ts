@@ -175,4 +175,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/method-forwarding.test.ts", "-t", "a namespace's forwarding method says its function's nullable parameters"],
   },
+  {
+    name: "displayed-impl-written-anyway",
+    breaks:
+      "an untagged enum's `Display` each use prints in place is written anyway, `export const moduleIdDisplay = {fmt: ..}`, which nothing calls and upstream hasn't (rd730)",
+    file: "src/lower/pipeline/reached.rs",
+    find: "            (displaying.iter())\n",
+    replace: "            (displaying.iter().filter(|_| false))\n",
+    tests: ["test/untagged-displayed.test.ts"],
+  },
 ];

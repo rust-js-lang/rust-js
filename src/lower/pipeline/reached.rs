@@ -9,6 +9,10 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 use std::collections::{HashMap, HashSet};
 
+/// The types equal only to themselves, by their `==`'s keyed form, and
+/// those whose `==` is their address's (ADR 0864, amended).
+type Identities = (Vec<DefId>, Vec<DefId>);
+
 /// Of the crate's `trait_impls` and its lowered functions, `lowered`: the
 /// types equal only to themselves, which its contract lists for its
 /// consumers (ADR 0864, amended); and what's written only where it's
@@ -23,13 +27,15 @@ use std::collections::{HashMap, HashSet};
 /// written where something reads it as a value, as its calls don't (ADR
 /// 0264, amended); and each of a library's the crate compiles itself, its
 /// impls and its functions, written where the crate's code reaches it
-/// (ADR 0914, amended, #483).
+/// (ADR 0914, amended, #483); and the untagged enums each plain `{}` of
+/// which is the value in place, their `Display` impls written where reached
+/// (rd730).
 pub(super) fn written_where_reached<'tcx>(
     tcx: TyCtxt<'tcx>,
     (trait_impls, foreign): (&[DefId], &Foreign<'_, 'tcx>),
     function_bodies: &HashMap<DefId, &Body<'tcx>>,
     lowered: impl Iterator<Item = DefId>,
-) -> ((Vec<DefId>, Vec<DefId>), HashSet<DefId>) {
+) -> (Identities, HashSet<DefId>, Vec<DefId>) {
     let recognition = super::super::recognition::Recognition {
         tcx,
         typing_env: ty::TypingEnv::fully_monomorphized(),
@@ -60,6 +66,9 @@ pub(super) fn written_where_reached<'tcx>(
             .collect()
     };
     let identities = (of_impls(true), of_impls(false));
+    // The untagged enums whose `Display` each plain `{}` writes in place,
+    // and their impls (rd730).
+    let displaying = super::super::untagged::displayed::displaying_impls(&recognition, function_bodies);
     let derived: HashSet<DefId> = trait_impls
         .iter()
         .filter(|&&id| {
@@ -76,6 +85,14 @@ pub(super) fn written_where_reached<'tcx>(
             (trait_impls.iter().copied())
                 .filter(|&id| super::super::traits::read_only_generically(tcx, trait_of(id)))
                 .flat_map(|id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied())),
+        )
+        // And an untagged enum's `Display` each plain `{}` of which writes
+        // the value in place, `${id}`: its impl is written where a call
+        // through its dictionary reaches it, a generic one's, and its
+        // library's consumers write theirs in place too (rd730).
+        .chain(
+            (displaying.iter())
+                .flat_map(|&(_, imp)| std::iter::once(imp).chain(tcx.associated_item_def_ids(imp).iter().copied())),
         )
         // And what the crate compiles itself of a library, an impl, its
         // methods or a function, only what its code reaches (ADR 0914,
@@ -95,7 +112,11 @@ pub(super) fn written_where_reached<'tcx>(
                 || id.is_local() && !super::super::library::reachable(tcx, id) && field_read(id)
         }))
         .collect();
-    (identities, derived)
+    (
+        identities,
+        derived,
+        displaying.into_iter().map(|(adt, _)| adt).collect(),
+    )
 }
 
 /// Whether `id`, a body of the crate's, is lowered as a function of its

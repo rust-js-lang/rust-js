@@ -6,7 +6,6 @@ export function entry() {
   main();
 }
 
-export const moduleIdDisplay = { fmt: moduleIdDisplay_fmt };
 function moduleIdDisplay_fmt(moduleId, options) {
   if (typeof moduleId === "string") {
     return moduleId;
@@ -15,7 +14,6 @@ function moduleIdDisplay_fmt(moduleId, options) {
   }
 }
 
-export const keyDisplay = { fmt: keyDisplay_fmt };
 function keyDisplay_fmt(key, options) {
   let f = "";
   switch (typeof key) {
@@ -28,33 +26,6 @@ function keyDisplay_fmt(key, options) {
     case "boolean":
       f += $formatted(String(key), options);
       return f;
-  }
-}
-
-export const markDisplay = { fmt: markDisplay_fmt };
-function markDisplay_fmt(mark, options) {
-  if (typeof mark === "string") {
-    return mark;
-  } else {
-    return String(mark);
-  }
-}
-
-export const boxedDisplay = { fmt: boxedDisplay_fmt };
-function boxedDisplay_fmt(boxed, options) {
-  if (typeof boxed === "string") {
-    return boxed;
-  } else {
-    return $formatted(String(boxed), options, true);
-  }
-}
-
-export const chunkDisplay = { fmt: chunkDisplay_fmt };
-function chunkDisplay_fmt(chunk, options) {
-  if (typeof chunk === "string") {
-    return chunk;
-  } else {
-    return String(chunk);
   }
 }
 

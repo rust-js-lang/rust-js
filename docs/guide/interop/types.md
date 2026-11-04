@@ -868,8 +868,12 @@ export function size(input) {
   `f.write_str(x)`, as webpack's module id of `string | number` does, is
   the value in JS's template where a plain `{}` or `to_string()` shows
   it, `${id}`; a placeholder with options, `{:>6}`, still calls its `fmt`,
-  as does one whose arm writes an `f64` or more than the value
-  ([ADR 0214](../../decisions/0214-untagged-enums.md), amended, #557).
+  as does one whose arm writes an `f64` or more than the value. Its impl is
+  written only where something calls it, a placeholder with options or a
+  generic function given it, and a library's contract says so of it, so a
+  consumer's `{}` of it is `${id}` too, and one that calls it compiles its
+  own
+  ([ADR 0214](../../decisions/0214-untagged-enums.md), amended, #557, rd730).
 
 Arrays of different lengths, as React's Fizz server keeps a replay node,
 `[name, key, children, slots]` or a boundary's six, are told by their

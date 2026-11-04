@@ -2,32 +2,41 @@
 //! `{}`, a string, an integer, a `bool` or a `char`: webpack's module id of
 //! `string | number` (#557). JS's template makes Rust's text of each, so a
 //! plain `{}` of the enum is the value in JS's template, `${id}`, as an
-//! untagged enum's value is its variant's (ADR 0214).
+//! untagged enum's value is its variant's (ADR 0214). Its impl is written
+//! only where something reaches it, a dictionary a generic call is given,
+//! and its library's contract lists it, so a consumer's `{}` of it is in
+//! place too (rd730).
 
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, PatKind, StmtKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt};
+use rustc_span::def_id::DefId;
+use std::collections::HashMap;
 
 use super::untagged_adt;
 use crate::lower::analysis::{FormatCall, format_calls};
 use crate::lower::body_queries::strip;
 use crate::lower::format_args::Piece;
 use crate::lower::format_spec::Spec;
-use crate::lower::recognition::{WriteCall, fmt_trait_called};
+use crate::lower::recognition::{Recognition, WriteCall, fmt_trait_called};
 use crate::lower::{Body, FnCx, fn_def};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Whether `ty` is an untagged enum of the crate's, of no type
-    /// parameters, whose `Display` writes each variant's one value as it
-    /// is: what JS's template makes of the value, where no options are
-    /// given (`writes_each_value`).
+    /// Whether `ty` is an untagged enum of no type parameters whose
+    /// `Display` writes each variant's one value as it is: what JS's
+    /// template makes of the value, where no options are given
+    /// (`writes_each_value`). Of the crate's, read of its impl; of a
+    /// library's, as its contract says (rd730).
     pub(in crate::lower) fn displays_its_value(&self, ty: Ty<'tcx>) -> bool {
         let Some((adt, _)) = untagged_adt(self.tcx, ty) else {
             return false;
         };
         if self.tcx.generics_of(adt.did()).requires_monomorphization(self.tcx) {
             return false;
+        }
+        if !adt.did().is_local() {
+            return self.krate.foreign.displays_its_value(adt.did());
         }
         let Some(fmt) = self.recognition().display_fmt() else {
             return false;
@@ -36,9 +45,52 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Ok(Some(instance)) = self.resolve_instance(fmt, args) else {
             return false;
         };
-        (self.krate.bodies.get(&instance.def_id())).is_some_and(|body| self.writes_each_value(body))
+        (self.krate.bodies.get(&instance.def_id())).is_some_and(|body| self.recognition().writes_each_value(body))
     }
+}
 
+/// Each untagged enum of the crate's, of no type parameters, whose
+/// `Display` impl writes each variant's value as it is
+/// (`writes_each_value`), and that impl: every plain `{}` of it is the
+/// value in place, so the impl is written only where something else
+/// reaches it, and its contract lists the type (rd730).
+pub(in crate::lower) fn displaying_impls<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    bodies: &HashMap<DefId, &Body<'tcx>>,
+) -> Vec<(DefId, DefId)> {
+    let tcx = recognition.tcx;
+    let display = recognition.display_trait();
+    let Some(display_fmt) = recognition.display_fmt() else {
+        return Vec::new();
+    };
+    let of_display = |imp: DefId| {
+        tcx.impl_trait_ref(imp)
+            .instantiate_identity()
+            .skip_normalization()
+            .def_id
+            == display
+    };
+    let mut displaying = Vec::new();
+    for &imp in recognition.trait_impls.iter().filter(|imp| imp.is_local()) {
+        let ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
+        let Some((adt, _)) = untagged_adt(tcx, ty) else {
+            continue;
+        };
+        if !of_display(imp) || !adt.did().is_local() || tcx.generics_of(adt.did()).requires_monomorphization(tcx) {
+            continue;
+        }
+        let fmt = tcx.impl_item_implementor_ids(imp).get(&display_fmt);
+        if fmt
+            .and_then(|fmt| bodies.get(fmt))
+            .is_some_and(|body| recognition.writes_each_value(body))
+        {
+            displaying.push((adt.did(), imp));
+        }
+    }
+    displaying
+}
+
+impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Whether `body`, an untagged enum's `Display::fmt(&self, f)`, is a
     /// `match self` of an arm of each variant, binding its one value, each
     /// writing it to `f` as it is: `write!(f, "{x}")`, `x.fmt(f)`,
@@ -99,7 +151,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return false;
             }
             seen.push(variant_index);
-            let shown = self.recognition().untagged_payload(field.pattern.ty);
+            let shown = self.untagged_payload(field.pattern.ty);
             if !(self.is_string_like(shown) || shown.is_integral() || shown.is_bool()) {
                 return false;
             }
@@ -109,7 +161,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let Some((called, _)) = fn_def(thir[fun].ty) else {
                 return false;
             };
-            match (self.recognition().write_call(called, false), &args[..]) {
+            match (self.write_call(called, false), &args[..]) {
                 // `x.fmt(f)`, `Display::fmt(x, f)`.
                 (WriteCall::Display, &[value, to]) => {
                     is_var(self.tcx, thir, value, payload) && is_var(self.tcx, thir, to, formatter)

@@ -108,6 +108,9 @@ pub(super) struct Contracts<'a, 'tcx> {
     /// Its functions each call of which is what it's given (ADR 0584,
     /// amended).
     pub(super) gives_argument: &'a [DefId],
+    /// Its untagged enums whose `Display` writes each variant's value as
+    /// it is (#557, rd730).
+    pub(super) displays_value: &'a [DefId],
     /// The structs its code makes values of (ADR 1022, amended).
     pub(super) built: Vec<DefId>,
     /// What each function's return alone owns of what it's given (ADR
@@ -273,6 +276,7 @@ pub(super) fn exports<'tcx>(
         keyed,
         eq_by_address,
         gives_argument,
+        displays_value,
         built,
         owned_by_return,
         nulled_params,
@@ -469,6 +473,14 @@ pub(super) fn exports<'tcx>(
         },
         gives_argument: {
             let mut keys: Vec<String> = (gives_argument.iter())
+                .filter(|&&id| reachable(tcx, id))
+                .map(|&id| key(tcx, id))
+                .collect();
+            keys.sort();
+            keys
+        },
+        displays_value: {
+            let mut keys: Vec<String> = (displays_value.iter())
                 .filter(|&&id| reachable(tcx, id))
                 .map(|&id| key(tcx, id))
                 .collect();
@@ -1148,6 +1160,15 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             && self
                 .library(id.krate)
                 .is_some_and(|library| library.gives_argument.contains(&key(self.tcx, id)))
+    }
+
+    /// Does `id`, a library's untagged enum, `Display` each variant's value
+    /// as it is, as its contract says (#557, rd730)?
+    pub(super) fn displays_its_value(&self, id: DefId) -> bool {
+        !id.is_local()
+            && self
+                .library(id.krate)
+                .is_some_and(|library| library.displays_value.contains(&key(self.tcx, id)))
     }
 
     /// Does a library's code make values of `id`, a struct, as its contract

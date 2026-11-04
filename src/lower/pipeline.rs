@@ -722,11 +722,10 @@ pub fn lower_crate<'tcx>(
     .flat_map(|item| item.dependencies.through_copies.iter().copied())
     .collect::<Vec<_>>();
     let mut copies_of = copies::settle(&js_given, &fns, &mut lowered_items, lowered_copies, (tcx, &through));
-
-    // What's written only where it's reached (`reached.rs`), and the types
-    // equal only to themselves, its contract's (ADR 0864, amended).
+    // What's written only where it's reached (`reached.rs`), the types equal only to themselves, its
+    // contract's (ADR 0864, amended), and the untagged enums each plain `{}` of which is in place (rd730).
     let lowered = lowered_items.iter().map(|&(id, _)| id);
-    let ((identities, eq_by_address), derived) =
+    let ((identities, eq_by_address), derived, displays_value) =
         written_where_reached(tcx, (&trait_impls, &foreign), &function_bodies, lowered);
     // Its functions each call of which is what it's given, which its
     // contract lists for its consumers (ADR 0584, amended).
@@ -1472,6 +1471,7 @@ pub fn lower_crate<'tcx>(
                         keyed: &flattened.keyed,
                         eq_by_address: &eq_by_address,
                         gives_argument: &gives_argument,
+                        displays_value: &displays_value,
                         built: cell_borrows.pointers().built().collect(),
                         owned_by_return: self_handles.owned_by_return(),
                         nulled_params: &nulled_params.found(),

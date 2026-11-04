@@ -72,4 +72,32 @@ export const mutations: Mutation[] = [
     tests,
     snapshots: true,
   },
+  {
+    name: "displaying-impl-of-another-trait",
+    breaks:
+      "an untagged enum's `Debug` impl is taken for its `Display`, so a `Display` each use prints in place is written anyway, `export const moduleIdDisplay` nothing calls (rd730)",
+    file: "src/lower/untagged/displayed.rs",
+    find: "            == display\n",
+    replace: "            != display\n",
+    tests: ["test/untagged-displayed.test.ts"],
+  },
+  {
+    name: "displaying-impl-of-any-body",
+    breaks:
+      "an untagged enum's `Display` that writes more than its value is written only where reached, and its library's contract says it displays its value, so a consumer's `{}` of it is `${id}`, not what its impl writes (rd730)",
+    file: "src/lower/untagged/displayed.rs",
+    find: "            .is_some_and(|body| recognition.writes_each_value(body))\n",
+    replace: "            .is_some()\n",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_displayed_in_place.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "displayed-value-of-a-library-unread",
+    breaks:
+      "a library's untagged enum its contract says displays its value is shown by its impl, `moduleIdDisplay_fmt(id)`, where the library writes none, `[${id}]` (rd730)",
+    file: "src/lower/untagged/displayed.rs",
+    find: "            return self.krate.foreign.displays_its_value(adt.did());\n",
+    replace: "            return false;\n",
+    tests: ["test/untagged-displayed.test.ts"],
+  },
 ];
