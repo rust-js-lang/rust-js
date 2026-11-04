@@ -282,8 +282,8 @@ export const mutations: Mutation[] = [
     name: "consumer-closes-lent",
     breaks: "a consumer of an iterator lent by `by_ref()` closes it, which drops the crate's iterator its owner still holds (#422, #637)",
     file: "src/lower/mir/iter/closing.rs",
-    find: "            && !lent\n            && (method != Some(IterMethod::Collect) || self.is_user_iterator(iter_ty))\n",
-    replace: "            && (method != Some(IterMethod::Collect) || self.is_user_iterator(iter_ty))\n",
+    find: "            && !lent\n            && match method {\n",
+    replace: "            && match method {\n",
     tests: ["test/corpus.test.ts", "-t", "^consumed_own_iterator_dropped_once.rs$"],
   },
   {
@@ -298,8 +298,17 @@ export const mutations: Mutation[] = [
     name: "own-collect-unclosed",
     breaks: "a `collect()` of the crate's iterator with a `Drop`, whose `next` panics, drops what it collected before the iterator, where std's frame drops the iterator first (#655)",
     file: "src/lower/mir/iter/closing.rs",
-    find: "            && (method != Some(IterMethod::Collect) || self.is_user_iterator(iter_ty))\n",
-    replace: "            && method != Some(IterMethod::Collect)\n",
+    find: "                    self.is_user_iterator(iter_ty) || crate::lower::recognition::known_by_bounds(iter_ty)\n",
+    replace: "                    crate::lower::recognition::known_by_bounds(iter_ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_of_own_iterator_drops_it_first.rs$"],
+  },
+  {
+    name: "parameter-collect-unclosed",
+    breaks:
+      "generic code's `src.collect()` of a type parameter's iterator whose `next` panics drops what it collected before it, `dropI` after the collect, where std's collect frame drops it first (#640)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "                    self.is_user_iterator(iter_ty) || crate::lower::recognition::known_by_bounds(iter_ty)\n",
+    replace: "                    self.is_user_iterator(iter_ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_closes_its_source.rs$"],
   },
 ];

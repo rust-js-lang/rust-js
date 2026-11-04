@@ -1637,3 +1637,29 @@ crate's iterator's flatten, stepped from its back alone and part-way
 reversed, with a source's drop and a back inner's drop that panic, against
 native Rust in both builds. Mutations: `flatten-ends-inners-unclosed` and
 `flatten-ends-close-stops-at-a-panic` (`runtime/back_steps.ts`).
+
+## Amendment: a collect of a type parameter's iterator closes it (2026-11-04, #640)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+Generic code's `src.collect()` of a type parameter's iterator was given
+it unclosed, and dropped it after, `dropI?.(iter)` in a `finally`
+(`consumer_closes`' "nor of a type parameter's"): where the crate's own
+iterator given as `I` panicked in its `next`, what it collected was
+dropped before it. std's `extend_desugared` holds the iterator in the
+frame inside the one that holds the `Vec`, so it's dropped first, as
+66aa2816d (#655) made the crate's own collect close it. **A `collect()` of
+a type parameter's iterator closes it too**, `$collectDropping($closing(
+Iterator.from(src), dropI), drop, true)`, and nothing drops it after
+(`dropped_after` asks `consumer_closes`). In place, its caller says, what
+it collected is dropped first, then what's left by its closing. Other
+consumers of a type parameter's iterator are as they were.
+
+`generic_collect_closes_its_source` holds it against native Rust in both
+builds: of the crate's own whose `next` panics, of one that ends, of a
+`Vec`'s, and into an `Option`; #640's last two case-builds, #93701 plain
+and std, are taken off, and the 244 batches of generic collects find no
+unlisted failure, 49 more case-builds of #650, #653 and #677 among them
+running as native Rust. Mutation `parameter-collect-unclosed`
+(`lower/mir/iter/closing.ts`).
