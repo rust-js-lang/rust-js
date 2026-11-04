@@ -159,29 +159,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^adapter_source_drops.rs$"],
   },
   {
-    name: "moved-into-owner-unheld",
-    breaks:
-      "a `take` moved into a call whose value the body drops, `wrap(..)`'s `Holder<Take<..>>`, isn't held: what it has left drops as it reaches its limit, before the `println!` Rust drops it after (#243)",
-    file: "src/lower/mir/drops.rs",
-    find: "        dropped\n            || depth < 4\n",
-    replace: "        dropped\n            || depth < 0\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_moved_into_a_holder.rs$"],
-  },
-  {
-    name: "owner-closing-held-again",
-    breaks:
-      "what's moved into an adapter that's held itself is `$held(..)` again, inside: `$lazyTakeWhile($held($rev(..)))`, where the adapter's `hold()` holds it (#243)",
-    file: "src/lower/mir/drops.rs",
-    find: "                                && !self.dropped_by_closing(body.local_decls[destination.local].ty)\n",
-    replace: "",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^held_iterator_dropped_by_its_owner.rs$",
-    ],
-    snapshots: true,
-  },
-  {
     name: "empty-cleanup-caught",
     breaks:
       "a call whose unwinding drops nothing, an `FnOnce`'s self given away, is `try { .. } catch (error) { throw error; }` (ADR 0873)",

@@ -272,3 +272,24 @@ mutation `collected-closing-listed` survived: `consumer_drops_what_is_left`'s
 `take(..).filter(..).map(..)` lost its `Iterator.from` here. A compiler that
 panicked where the refusal changed the answer compiled the whole corpus,
 its iterator forms and the lowering suites without panicking.
+
+## Amendment: what's moved into a call is std's struct, held already (#606)
+
+The rule above that held a call's value moved into another call whose
+value the body drops, `Holder<Take<..>>`'s or `Peekable<Take<..>>`'s,
+holds nothing any more. Since 1f3e1a7b0 an iterator type is one
+representation wherever its values meet, so a `take` moved into a call,
+generic or not, `wrap(it)` of a `Holder<I>` or of a `Holder` of a named
+`Take<vec::IntoIter<_>>`, a `peekable()`'s or a `chain()`'s source given to
+generic code, is std's struct, compiled, which steps what it holds as Rust
+does and has no `hold()` (`held_parameters` already says so of a
+parameter's). `$held(iterator_take(..))` was a call that did nothing.
+The Nightly of 3c71ee8f9 found its mutation, `moved-into-owner-unheld`,
+surviving: with it, `iterator_moved_into_a_holder` printed the same, and
+of the whole corpus only that file's JS changed, losing its `$held`.
+
+So `owned_where_run` asks no call any more: a local is owned where it runs
+if the body drops it, or steps it by reference (#392). The two mutations
+of the rule, `moved-into-owner-unheld` and `owner-closing-held-again`, are
+gone with it. `iterator_moved_into_a_holder` still runs both holders
+against native Rust, `kept` and `twice`, without the `$held`.

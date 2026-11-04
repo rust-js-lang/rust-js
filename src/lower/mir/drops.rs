@@ -141,7 +141,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty = state.body.local_decls[place.local].ty;
         place.projection.is_empty()
             && (self.dropped_by_closing(ty) || self.recognition().bounded_iterator(ty))
-            && self.owned_where_run(state, place.local, 0)
+            && self.owned_where_run(state, place.local)
     }
 
     /// `$held(it);` of each parameter that holds an iterator dropped by
@@ -165,13 +165,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether the body drops `local` where it runs on, not only as a panic
-    /// unwinds past it; or moves it into a call whose value it drops so,
-    /// of a type holding it that its drop glue drops, `Peekable<Take<..>>`'s,
-    /// which drops it there (#243); or steps it by reference before what
-    /// takes it drops it (#392). Not one only moved into a consumer,
-    /// `collect`'s, whose value holds no iterator; nor into an adapter
-    /// dropped by closing, held itself, whose `hold()` holds it.
-    fn owned_where_run(&self, state: &State<'_, 'tcx>, local: mir::Local, depth: usize) -> bool {
+    /// unwinds past it; or steps it by reference before what takes it drops
+    /// it (#392). Not one only moved into a call: a consumer's, `collect`'s,
+    /// whose value holds no iterator; an adapter dropped by closing, held
+    /// itself, whose `hold()` holds it; or a call whose value holds it,
+    /// `Holder<Take<..>>` (#243), where it's std's struct, compiled, as an
+    /// iterator type is wherever its values meet (1f3e1a7b0), which steps
+    /// what it holds as Rust does and has no `hold()` (ADR 0570, amended).
+    fn owned_where_run(&self, state: &State<'_, 'tcx>, local: mir::Local) -> bool {
         let Some(drops) = state.facts.drops() else {
             return false;
         };
@@ -193,21 +194,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             if lent.local == local && lent.projection.is_empty()))
                     })
             });
-        let moved = |arg: &mir::Operand<'tcx>| matches!(arg, mir::Operand::Move(p) if p.local == local && p.projection.is_empty());
-        dropped
-            || depth < 4
-                && body.basic_blocks.iter().any(|data| {
-                    !data.is_cleanup
-                        && matches!(&data.terminator().kind, TerminatorKind::Call { args, destination, .. }
-                            if destination.projection.is_empty()
-                                && destination.local != local
-                                && args.iter().any(|arg| moved(&arg.node))
-                                && (body.local_decls[destination.local].ty.walk())
-                                    .any(|arg| arg.as_type() == Some(body.local_decls[local].ty))
-                                && !self.dropped_by_closing(body.local_decls[destination.local].ty)
-                                && self.owned_where_run(state, destination.local, depth + 1))
-                })
-            || lent
+        dropped || lent
     }
 
     /// What `body`'s drops drop, `None` if none drops anything JS sees.
