@@ -93,8 +93,8 @@ pub fn page() -> String {
 ```js
 // src/lib.js
 import { hello } from "./greet.js";
-export { hello } from "./greet.js";
 import * as Format from "./format.js";
+export { hello } from "./greet.js";
 
 export function welcome(name) {
   return Format.shout(hello(name));
@@ -175,7 +175,8 @@ of what it names for the module's own code where no other `use` does,
 source names neither way, of what's read by its path, comes after,
 packages then relative modules, each by its specifier; then imports for
 their effect, as written; then
-`@rust-js/runtime`
+`@rust-js/runtime`: each of these right after the last import a `use`
+places, or first, not after a `pub use` written below the code
 ([ADR 1063](../../decisions/1063-imports-are-in-the-order-of-their-uses.md),
 which replaces [ADR 0295](../../decisions/0295-import-order.md)'s order).
 

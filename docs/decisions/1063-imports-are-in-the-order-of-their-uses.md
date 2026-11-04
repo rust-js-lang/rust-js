@@ -220,3 +220,23 @@ its place ([ADR 1069](1069-imports-are-statements-of-the-module.md)); one
 the source names neither way is right after the one before it, so the
 order JS loads them in is this ADR's, unchanged. The order's owner is
 `to_oxc/header.rs`'s `entries`.
+
+## Amendment: an import no `use` places is with the imports (rd725)
+
+ReactDOMRootFB's last item is a `pub use`, upstream's `export
+{batchedUpdates as unstable_batchedUpdates} from ..`, written below its
+code, and its legacy wrappers read `$unwrap`. The runtime's import, which
+no `use` places, was right after the entry before it, that re-export, so
+it printed as the module's last line, where every other module prints it
+with its imports. **What's imported that no `use` places, an import of
+what's read by its path, one for its effect and the runtime's helpers,
+is right after the last import a `use` places, or first where none
+does**, in this ADR's order among themselves; a re-export placed after
+that last import stays after them. Where such an import loads changes
+nothing the module does: no `use` says its place, and the runtime's
+helpers load nothing of the program's (ADR 0262's case "None"). The rule
+is `to_oxc/header.rs`'s `entries`. Held by
+`test/lowering-comments-items.test.ts`'s "an import no use places is with
+the imports, not after a re-export below the code"; mutations
+`unplaced-import-after-last-reexport` and
+`unplaced-import-last-without-imports` (`to_oxc/header.ts`).

@@ -112,8 +112,8 @@ export const mutations: Mutation[] = [
     name: "imports-unused-first",
     breaks: "an import no `use` makes, a binding's of the crate's own, comes before those `use`s make, `../../a.js` first (ADR 1063)",
     file: "src/to_oxc/header.rs",
-    find: "    let written = |span: js::Span| (span.is_none(), span.lo);\n",
-    replace: "    let written = |span: js::Span| (!span.is_none(), span.lo);\n",
+    find: "    (placed.into_iter())\n        .chain(unplaced)\n",
+    replace: "    (unplaced.into_iter())\n        .chain(placed)\n",
     tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
   },
   {
@@ -188,5 +188,21 @@ export const mutations: Mutation[] = [
     find: "            _ if reexport.every => Says::ReexportAll(None),\n",
     replace: "",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of every name its module's file exports is export \\* from"],
+  },
+  {
+    name: "unplaced-import-after-last-reexport",
+    breaks: "the runtime's import, which no `use` places, prints after a `pub use`'s re-export below the code, the module's last line, not with the imports (rd725)",
+    file: "src/to_oxc/header.rs",
+    find: "        .rposition(|entry| !reexport(entry))\n",
+    replace: "        .rposition(|_| true)\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "an import no use places"],
+  },
+  {
+    name: "unplaced-import-last-without-imports",
+    breaks: "of a module no `use` imports into, the runtime's import prints after its last re-export, not first (rd725)",
+    file: "src/to_oxc/header.rs",
+    find: "        .map_or(0, |last| last + 1);\n",
+    replace: "        .map_or(placed.len(), |last| last + 1);\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "an import no use places"],
   },
 ];

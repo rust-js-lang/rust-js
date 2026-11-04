@@ -168,7 +168,12 @@ impl Entry<'_> {
 /// each by its specifier; then what it imports for its effect, as written,
 /// its CSS after what it styles; then the runtime's helpers. Each
 /// re-export where it's placed among them (`Reexport::at`), after an import
-/// placed there too, JS's load order either way (rd620).
+/// placed there too, JS's load order either way (rd620). What's imported
+/// that no `use` places is with the imports, right after the last one a
+/// `use` places, or first, not after a re-export written below the code,
+/// ReactDOMRootFB's last `pub use` (rd725): where an import nothing names
+/// in the Rust loads changes nothing the module does (ADR 0262's case
+/// "None"), as the runtime's helpers load nothing of the program's.
 pub(super) fn entries(module: &Module) -> Vec<Entry<'_>> {
     let mut named: Vec<(bool, Entry<'_>)> = Vec::new();
     let mut effects = Vec::new();
@@ -253,9 +258,18 @@ pub(super) fn entries(module: &Module) -> Vec<Entry<'_>> {
         commented: js::Span::NONE,
         declared: false,
     });
-    (named.into_iter().map(|(_, entry)| entry))
+    let reexport = |entry: &Entry<'_>| matches!(entry.says, Says::Reexport(_) | Says::ReexportAll(_));
+    let (unplaced, mut placed): (Vec<_>, Vec<_>) =
+        (named.into_iter().map(|(_, entry)| entry)).partition(|entry| entry.placed.is_none() && !reexport(entry));
+    let imported = (placed.iter())
+        .rposition(|entry| !reexport(entry))
+        .map_or(0, |last| last + 1);
+    let after = placed.split_off(imported);
+    (placed.into_iter())
+        .chain(unplaced)
         .chain(effects)
         .chain(runtime)
+        .chain(after)
         .collect()
 }
 

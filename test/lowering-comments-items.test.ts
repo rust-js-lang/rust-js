@@ -455,6 +455,45 @@ pub fn named() -> u32 {
   expect((inside.lib.named as () => number)()).toBe(3);
 });
 
+// React's ReactDOMRootFB ends with a `pub use`, upstream's `export
+// {batchedUpdates as unstable_batchedUpdates} from ..`, and its code reads
+// `$unwrap`: the runtime's import, which no `use` places, printed after
+// it, the module's last line. It's with the imports, after the last one a
+// `use` places, or first where none does (rd725).
+test("an import no use places is with the imports, not after a re-export below the code", async () => {
+  const work = `pub mod work {
+    pub fn batched_updates(n: i32) -> i32 {
+        n + 1
+    }
+}
+
+pub fn read(cell: &std::cell::Cell<Option<i32>>) -> i32 {
+    cell.get().unwrap()
+}
+
+pub use work::batched_updates as unstable_batched_updates;
+`;
+  const { js, lib } = await compiled("runtime-before-a-last-reexport", `use std::cell::Cell;
+
+pub mod lanes {
+    pub const LANE: i32 = 1;
+}
+
+use crate::lanes::LANE;
+
+${work.replace("&std::cell::Cell", "&Cell").replace("cell.get().unwrap()", "cell.get().unwrap() + LANE")}`);
+  expect(js).toContain(`import { LANE } from "./lanes.js";
+import { $unwrap } from "@rust-js/runtime";
+`);
+  expect(js.trimEnd().split("\n").filter((line) => !line.startsWith("//#")).at(-1)).toBe(
+    'export { batchedUpdates as unstableBatchedUpdates } from "./work.js";',
+  );
+  expect([(lib.read as (cell: { value: number }) => number)({ value: 2 }), (lib.unstableBatchedUpdates as (n: number) => number)(1)]).toEqual([3, 2]);
+  // No `use`: first.
+  const first = await compiled("runtime-first-before-a-last-reexport", work);
+  expect(first.js).toMatch(/^\/\/ Generated[^\n]*\n\nimport \{ \$unwrap \} from "@rust-js\/runtime";\n\nexport function read/);
+});
+
 // React's ReactFiberCommitWork imports `./ReactFiberLane` twice, its first
 // group's `import {..}` and `import {clearTransitionsForLanes}` ~180 lines
 // later: each `use` of a module is its import, where it's written, a
