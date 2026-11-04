@@ -275,11 +275,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `function`'s own type parameters bound by a function trait, `F:
     /// Fn(&Item) -> R`, a value of which is a JS function (`is_callable`),
     /// each with what its bound says it takes and gives, its `Output`'s or
-    /// `()` (#661). Not its impl's, which its type's declaration takes as
-    /// its own.
+    /// `()` (#661). Its own clauses alone: an impl's `F: Fn()` is its
+    /// impl's, which its type's declaration takes as its parameter.
     fn callables(&self, function: DefId) -> Vec<Callable<'tcx>> {
         let tcx = self.tcx;
-        let parent = tcx.generics_of(function).parent_count as u32;
         let clauses = tcx.clauses_of(function).clauses;
         let mut callables: Vec<Callable<'tcx>> = Vec::new();
         for (clause, _) in clauses.iter() {
@@ -289,8 +288,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let ty::Param(param) = bound.self_ty().kind() else {
                 continue;
             };
-            if param.index < parent
-                || callables.iter().any(|callable| callable.index == param.index)
+            if callables.iter().any(|callable| callable.index == param.index)
                 || tcx.fn_trait_kind_from_def_id(bound.def_id()).is_none()
                 || !self.is_callable(bound.self_ty())
             {

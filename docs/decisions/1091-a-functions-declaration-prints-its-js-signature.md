@@ -154,3 +154,29 @@ gives a `&mut`, `fn slot(&mut self) -> &mut u32`, and one that takes a
 self, other: &mut Self)`. Held by `test/declarations-ungiven.test.ts`'s "a
 trait of `&mut self` methods is the type of its dictionaries", whose
 TypeScript caller type-checks and gives what Rust's calls give.
+
+## Amended: a generated TypeScript caller holds each declaration to its JS
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; a test.
+
+The architecture test holds who decides a declared signature; it can't
+hold that what's decided is what the JS does. `test/declarations-conformance.test.ts`
+does, of a set of corpus cases (`declared_signatures.rs`, written for it,
+and seven that export functions): for each exported function, it makes a
+value of each parameter's declared type, a `&mut`'s box or object as the
+`.d.ts` says it is, and calls the function from a generated TypeScript
+caller, which `tsc` checks under `strict` and Node runs. The same calls,
+made of the same values in a native program of the case, must print the
+same: each result, and each `&mut`'s value after. A declaration that says
+a box where the JS takes the object, or the object where it takes a box,
+fails one or the other (`mut-ref-ts-type-its-pointee` is its mutation).
+
+TypeScript 7 has no JS API, so the test reads the `.d.ts` as rust-js
+prints it, and each case's Rust signatures from their text: of the types
+it has values of, numbers, `bool`, strings, `Vec`s and slices, `Option`s,
+tuples, `&`, `&mut`, a case's structs of those, `impl Fn` and a type
+parameter bound by `Fn` or by std's `Clone`, `Copy`, `PartialOrd` and the
+like. A function of another type, or one a declaration leaves out (ADR
+1077), is skipped; a case of none fails. It found no wrong answer in its
+first 70 calls. It runs in the nightly's suite (ADR 1030), as a regression
+net, and in each mutation that names it.

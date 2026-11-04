@@ -99,3 +99,19 @@ impl Steps for Counter {
 pub fn stepper() -> Box<dyn Steps> {
     Box::new(Counter { count: 0 })
 }
+
+// A trait that gives a `&mut`, which no owner says what its entry gives:
+// not declared, and a `dyn` of it `any`.
+pub trait Slots {
+    fn slot(&mut self) -> &mut u32;
+}
+
+impl Slots for Counter {
+    fn slot(&mut self) -> &mut u32 {
+        &mut self.count
+    }
+}
+
+pub fn slots() -> Box<dyn Slots> {
+    Box::new(Counter { count: 0 })
+}

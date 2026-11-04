@@ -401,6 +401,9 @@ test("a `&mut` that's a box is declared as its box, and a `dyn` as its pair", ()
   // Of a trait of a `&mut self` method, declared now (#662), its pair too.
   expect(declarations).toContain("export const counterSteps: Steps<Counter>;");
   expect(declarations).toContain(`export function stepper(): {\n    value: unknown;\n    impl: Steps<unknown>;\n};`);
+  // Of a trait that isn't declared, one that gives a `&mut`, `any`.
+  expect(declarations).toContain("export function slots(): any;");
+  expect(declarations).not.toContain("Slots<");
   expect(declarations).not.toContain("any[]");
   writeFileSync(
     join(dir, "use.ts"),

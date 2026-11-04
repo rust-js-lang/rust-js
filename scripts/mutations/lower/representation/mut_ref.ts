@@ -162,4 +162,12 @@ export const mutations: Mutation[] = [
     replace: "|| self.counted_weak(ty).is_some();\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_lent_mut.rs$"],
   },
+  {
+    name: "mut-ref-ts-type-its-pointee",
+    breaks: "a `&mut` its JS has as a box is declared as its pointee, `bump(n: number, by: number)`, so a TypeScript caller that follows it gives a number, whose `value` its JS writes (#619): the conformance test's caller throws",
+    file: "src/lower/representation/mut_ref.rs",
+    find: "            true => held_ts(pointee),\n",
+    replace: "            true => pointee,\n",
+    tests: ["test/declarations-conformance.test.ts"],
+  },
 ];
