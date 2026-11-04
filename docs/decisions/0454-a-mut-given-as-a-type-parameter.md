@@ -325,3 +325,35 @@ generic `replace` of a `Vec`, a struct, a number and a `String`, `get` and
 parameter's items and of numbers, swapped and replaced, beside the
 concrete forms. Mutations `cell-from-mut-of-a-param-wrapped` and
 `cell-get-mut-of-a-param-unwrapped`.
+
+## Amendment: what a bound trait's methods are given is walked (#682)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): Rust's behavior can't
+be preserved yet, so it's a compile error, as rule 2's other cases are.
+
+Generic code calls a method of a trait its type parameter is bound by,
+`S: Pick`, through the trait's dictionary, and gives it what it takes as
+generic code has it. The impl's entry turns a parameter's own `&mut` into
+what its impl takes, and the result's into what generic code takes (ADR
+1091, amended #679), but it doesn't change a `&mut` inside a parameter.
+So `s.pick(Some(&mut w))` of `fn pick(&mut self, other: Option<&mut
+Self>)` gave a `Clicks` impl generic code's handle on `w`, where it takes
+the object, and its writes went to the handle: native Rust printed
+`Clicks { n: 51 }`, rust-js `Clicks { n: 1 }`. That was a wrong answer.
+
+Rule 2's walk, `nested_mut_object`, now walks what each method of a bound
+trait of the crate's takes and gives, with the trait's `Self` as the
+bound gives it, past each parameter's and the result's own `&mut`, just
+as it walks a function's own signature. A call that gives a type
+parameter an object is refused there, with the message rule 2 gives;
+of a number's impl, whose box generic code's is, it isn't.
+
+- `test/diagnostics.test.ts`: the refusal of an `Option<&mut Self>` and a
+  `(&mut Self, i32)` a bound trait's method takes.
+- `test/corpus/nested_mut_self_of_a_number.rs`, against native Rust: both
+  shapes through a `u32`'s dictionary.
+- `docs/guide/limitations.md` lists it.
+- Mutations `dispatched-nested-mut-unwalked` (the methods unwalked) and
+  `dispatched-nested-mut-of-own-receiver` (a method's own `&mut self`
+  walked too, which refuses every generic call of an object's `&mut self`
+  method).

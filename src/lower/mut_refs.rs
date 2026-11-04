@@ -258,9 +258,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         unboxed.iter().any(|&unboxed| unboxed).then_some(unboxed)
     }
 
+    /// The methods of `trait_id`, a trait of the crate's, that generic code
+    /// calls through its dictionary: each of no type or const parameters of
+    /// its own, whose entry takes their evidence as well, and not a binding.
+    fn dispatched_methods(&self, trait_id: DefId) -> Vec<DefId> {
+        (self.tcx.associated_items(trait_id).in_definition_order())
+            .filter(|item| self.tcx.def_kind(item.def_id) == rustc_hir::def::DefKind::AssocFn)
+            .map(|item| item.def_id)
+            .filter(|&method| !crate::lower::bindings::is_binding(self.tcx, method))
+            .filter(|&method| {
+                (self.tcx.generics_of(method).own_params.iter())
+                    .all(|param| matches!(param.kind, ty::GenericParamDefKind::Lifetime))
+            })
+            .collect()
+    }
+
     /// A `&mut` to one of `def_id`'s type parameters that's an object in a
     /// call of it, `generic_args`, anywhere but a parameter or its result: in
-    /// a field of the crate's own type, an `Option` or a `Vec`; not a
+    /// a field of the crate's own type, an `Option` or a `Vec`, or within
+    /// what a method of a trait it's bound by takes or gives (#682); not a
     /// function's parameter through `F: Fn(&mut T)`, which the function
     /// given takes out of generic code's box (`unboxed_by_function`). Generic
     /// code has a cell there (ADR 0099), and the caller the object; a
@@ -275,19 +291,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let param_env = self.tcx.param_env(def_id);
         // A parameter or the result a box is made of or taken out of, its
         // `&mut` itself: what it's made of past that.
-        let mut todo: Vec<Ty<'tcx>> = Vec::new();
-        for ty in sig.inputs_and_output.iter() {
+        let past_own = |ty: Ty<'tcx>| -> Option<Ty<'tcx>> {
             let mut at = ty;
             while let ty::Ref(_, inner, Mutability::Not) = *at.kind() {
                 at = inner;
             }
             match *at.kind() {
                 ty::Ref(_, pointee, Mutability::Mut)
-                    if self.mut_ref_form_in(pointee, param_env) == MutRefForm::GenericBox => {}
-                ty::Param(_) if self.mut_ref_form_in(at, param_env) == MutRefForm::GenericBox => {}
-                _ => todo.push(ty),
+                    if self.mut_ref_form_in(pointee, param_env) == MutRefForm::GenericBox =>
+                {
+                    None
+                }
+                ty::Param(_) if self.mut_ref_form_in(at, param_env) == MutRefForm::GenericBox => None,
+                _ => Some(ty),
             }
-        }
+        };
+        let mut todo: Vec<Ty<'tcx>> = sig.inputs_and_output.iter().filter_map(past_own).collect();
         // A bound's types, but its own, `D: Get`'s `D`, which isn't a value:
         // a closure's parameters, `F: Fn(D)`, are.
         let mut given = Vec::new();
@@ -310,6 +329,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let args = bound.skip_binder().trait_ref.args;
                 todo.extend(walked(bound.def_id(), args));
                 given.push(args.type_at(0));
+                // What generic code gives a method of a trait of the crate's
+                // its type parameter is bound by, `S: Pick`, through its
+                // dictionary: an impl's entry makes its own of a
+                // parameter's or the result's `&mut`, not of one within,
+                // `Option<&mut Self>`'s (#682).
+                if bound.def_id().is_local()
+                    && matches!(args.type_at(0).kind(), ty::Param(_))
+                    && self.tcx.trait_of_assoc(def_id) != Some(bound.def_id())
+                {
+                    for method in self.dispatched_methods(bound.def_id()) {
+                        let method_args = ty::GenericArgs::for_item(self.tcx, method, |param, _| {
+                            match (param.index as usize) < args.len() {
+                                true => args[param.index as usize],
+                                false => self.tcx.lifetimes.re_erased.into(),
+                            }
+                        });
+                        let method_sig = (self.tcx.fn_sig(method).instantiate(self.tcx, method_args))
+                            .skip_normalization()
+                            .skip_binder();
+                        todo.extend(method_sig.inputs_and_output.iter().filter_map(past_own));
+                    }
+                }
             }
             if let Some(projection) = clause.as_projection_clause() {
                 let projection = projection.skip_binder();

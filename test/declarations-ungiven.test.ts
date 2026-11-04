@@ -401,14 +401,16 @@ test("a `&mut` that's a box is declared as its box, and a `dyn` as its pair", ()
   // Of a trait of a `&mut self` method, declared now (#662), its pair too.
   expect(declarations).toContain("export const counterSteps: Steps<Counter>;");
   expect(declarations).toContain(`export function stepper(): {\n    value: unknown;\n    impl: Steps<unknown>;\n};`);
-  // Of a trait that isn't declared, one that gives a `&mut`, `any`.
-  expect(declarations).toContain("export function slots(): any;");
-  expect(declarations).not.toContain("Slots<");
+  // Of one that gives a `&mut`, declared now (#679), its pair; of a trait
+  // that isn't declared, one of an associated type, `any`.
+  expect(declarations).toContain(`export function slots(): {\n    value: unknown;\n    impl: Slots<unknown>;\n};`);
+  expect(declarations).toContain("export function firsts(): any;");
+  expect(declarations).not.toContain("Firsts<");
   expect(declarations).not.toContain("any[]");
   writeFileSync(
     join(dir, "use.ts"),
     `import { squareShape } from "./shape.js";
-import { apply, areaOf, bump, call, Counter, fill, grow, largest, Level, set, shout, square, tick, total } from "./lib.js";
+import { apply, areaOf, bump, call, Counter, fill, grow, largest, Level, set, shout, slots, square, tick, total } from "./lib.js";
 
 const n = { value: 1 };
 bump(n);
@@ -441,6 +443,8 @@ const grown: number[] = [];
 grow(grown);
 grow(grown);
 const made = square(3);
+const held = slots();
+held.impl.slot(held).value += 3;
 console.log(
   JSON.stringify([
     n.value,
@@ -458,6 +462,7 @@ console.log(
     made.impl.area(made.value),
     areaOf({ value: { side: 2 }, impl: squareShape }),
     total([square(1), { value: { side: 2 }, impl: squareShape }]),
+    (held.value as Counter).count,
   ]),
 );
 `,
@@ -500,7 +505,7 @@ grow({ value: [] });
     "wrong.ts(10,8)",
   ]);
   // What it gives is what Rust's calls give: `2 b hi! Some(2) [3, 0, 4] 10 1
-  // High 1 1 [0, 1] 9 9 4 5`, the same calls' natively.
+  // High 1 1 [0, 1] 9 9 4 5 3`, the same calls' natively.
   expect(JSON.parse(run([process.execPath, join(dir, "use.ts")]))).toEqual([
     2,
     "b",
@@ -517,14 +522,16 @@ grow({ value: [] });
     9,
     4,
     5,
+    3,
   ]);
 });
 
 // A trait whose methods take `&mut self` is declared as the type of its
 // dictionaries too (#662): its `&mut self` is the box its entry takes, `{
 // value: Self }`, as `MutRefForm::ts_type` says in its trait's terms (ADR
-// 1086), and so is a function's `&mut C` it's given with its dictionary.
-// One that gives a `&mut`, or takes one to its `Self` besides, isn't.
+// 1086), and so is a function's `&mut C` it's given with its dictionary,
+// a `&mut Self` besides its receiver and a `&mut u32` it gives (#679). One
+// with a `&mut Self` within what it takes, `Option<&mut Self>`, isn't (#682).
 test("a trait of `&mut self` methods is the type of its dictionaries", () => {
   const dir = fixture("declarations-mut-traits");
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
@@ -543,11 +550,24 @@ test("a trait of `&mut self` methods is the type of its dictionaries", () => {
   expect(declarations).toContain("export const u32Counter: Counter<number>;");
   expect(declarations).toContain("export function bumpTwice<C>(c: {\n    value: C;\n}, CCounter: Counter<C>): number;");
   expect(declarations).toContain("export function bumpDyn(c: {\n    value: unknown;\n    impl: Counter<unknown>;\n}): number;");
-  expect(declarations).not.toContain("Swap");
-  expect(declarations).not.toContain("Slot");
+  // A `&mut Self` besides its receiver is the box its entry takes too, and a
+  // `&mut u32` it gives a box, `{ value }` (#679).
+  expect(declarations).toContain(`export interface Swap<Self> {
+    swapWith(self: ${held("Self")}, other: ${held("Self")}): void;
+}`);
+  expect(declarations).toContain("export const u32Swap: Swap<number>;");
+  expect(declarations).toContain("export const clicksSwap: Swap<Clicks>;");
+  expect(declarations).toContain(`export interface Slot<Self> {
+    slot(self: ${held("Self")}): ${held("number")};
+}`);
+  expect(declarations).toContain("export const clicksSlot: Slot<Clicks>;");
+  expect(declarations).toContain("export const u32Slot: Slot<number>;");
+  expect(declarations).toContain(`    keep(self: ${held("Self")}, into: ${held("Self | null | undefined")}): boolean;`);
+  // One within what it takes, which no entry makes its impl's own (#682).
+  expect(declarations).not.toContain("Pick");
   writeFileSync(
     join(dir, "use.ts"),
-    `import { bumpDyn, bumpTwice, clicks, clicksCounter, type Counter, u32Counter } from "./lib.js";
+    `import { bumpDyn, bumpTwice, type Clicks, clicks, clicksCounter, clicksKeep, clicksSlot, clicksSwap, type Counter, u32Counter, u32Keep, u32Slot, u32Swap } from "./lib.js";
 const c = { value: clicks() };
 const twice = bumpTwice(c, clicksCounter);
 const n = { value: 5 };
@@ -559,15 +579,30 @@ u32Counter.fill(7, out);
 const old = clicksCounter.reset(c, 3);
 const viaDyn = bumpDyn({ value: c.value, impl: clicksCounter });
 const counters: Counter<number>[] = [u32Counter];
-console.log(JSON.stringify([twice, fromNumber, n.value, total.value, out, old, c.value.n, viaDyn, counters.length]));
+const x = { value: 3 };
+const y = { value: 4 };
+u32Swap.swapWith(x, y);
+const p = { value: clicks() };
+const q = { value: { n: 9 } };
+clicksSwap.swapWith(p, q);
+clicksSlot.slot(p).value += 1;
+const u = { value: 5 };
+u32Slot.slot(u).value += 2;
+const kept: { value: Clicks | null | undefined } = { value: null };
+const hadClicks = clicksKeep.keep(p, kept);
+const keptNumber: { value: number | null | undefined } = { value: 3 };
+const hadNumber = u32Keep.keep(u, keptNumber);
+console.log(JSON.stringify([twice, fromNumber, n.value, total.value, out, old, c.value.n, viaDyn, counters.length, x.value, y.value, p.value.n, q.value.n, u.value, hadClicks, kept.value?.n, hadNumber, keptNumber.value]));
 `,
   );
-  // A value where its box is, refused.
+  // A value where its box is, refused, and a box where a value is.
   writeFileSync(
     join(dir, "wrong.ts"),
-    `import { bumpTwice, clicks, clicksCounter } from "./lib.js";
+    `import { bumpTwice, clicks, clicksCounter, clicksSlot, u32Swap } from "./lib.js";
 bumpTwice(clicks(), clicksCounter);
 clicksCounter.bump(clicks());
+u32Swap.swapWith({ value: 3 }, 4);
+const n: number = clicksSlot.slot({ value: clicks() });
 `,
   );
   writeFileSync(
@@ -580,8 +615,12 @@ clicksCounter.bump(clicks());
   const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
   const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
   expect(errors.filter((line) => line.startsWith("use.ts"))).toEqual([]);
-  expect(errors.map((line) => line.replace(/: error.*/, ""))).toEqual(["wrong.ts(2,11)", "wrong.ts(3,20)"]);
+  expect(errors.map((line) => line.replace(/: error.*/, ""))).toEqual(["wrong.ts(2,11)", "wrong.ts(3,20)", "wrong.ts(4,32)", "wrong.ts(5,7)"]);
   // What Rust's calls give: `bump_twice` of a `Clicks` 2, of a `5u32` 7, its
-  // `add` 2, `fill` `[7]`, `reset` the 2 it had, then 5, and `bump_dyn` 6.
-  expect(JSON.parse(run([process.execPath, join(dir, "use.ts")]))).toEqual([2, 7, 7, 2, [7], 2, 6, 6, 1]);
+  // `add` 2, `fill` `[7]`, `reset` the 2 it had, then 5, and `bump_dyn` 6;
+  // `swap_with` of `3u32` and `4u32` 4 and 3, of `Clicks`' `0` and `9` 9
+  // and 0, whose `*slot() += 1` makes 10, and `5u32`'s `*slot() += 2` 7;
+  // `keep` of the `Clicks` into `None` false, `Some(Clicks { n: 11 })`, and
+  // of the `7u32` into `Some(3)` true, `Some(8)`.
+  expect(JSON.parse(run([process.execPath, join(dir, "use.ts")]))).toEqual([2, 7, 7, 2, [7], 2, 6, 6, 1, 4, 3, 10, 0, 7, false, 11, true, 8]);
 });

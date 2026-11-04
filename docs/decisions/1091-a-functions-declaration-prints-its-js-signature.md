@@ -180,3 +180,59 @@ like. A function of another type, or one a declaration leaves out (ADR
 1077), is skipped; a case of none fails. It found no wrong answer in its
 first 70 calls. It runs in the nightly's suite (ADR 1030), as a regression
 net, and in each mutation that names it.
+
+## Amended (#679): a `&mut Self` besides the receiver, and a `&mut` given
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for the JS, which
+doesn't change. A TypeScript consumer of such a trait's dictionaries had
+no type for them, `any`.
+
+The #662 amendment still refused two shapes, since no owner said what an
+entry takes or gives of them: `fn swap_with(&mut self, other: &mut Self)`
+and `fn slot(&mut self) -> &mut u32`. The adapter answers both. Each
+impl's entry turns every parameter's own `&mut` into what its impl takes,
+as `param_is_box` says in the trait's terms and the impl's, so
+`clicksSwap.swapWith` is `(arg0, arg1) => clicksSwap_swapWith(arg0.value,
+arg1.value)`. It also turns the result's `&mut` into what generic code
+takes, `$cellOf` of an object an impl gives for a `&mut Self`
+(`boxed_in_call`). A `&mut u32` result is a box or a handle in every
+impl, `return self` of `u32`'s and `{ get value() { .. } }` of a field.
+So the entry takes and gives `MutRefForm`'s answer in the trait's terms,
+which the declaration already prints:
+
+```ts
+export interface Swap<Self> {
+    swapWith(self: { value: Self; }, other: { value: Self; }): void;
+}
+export interface Slot<Self> {
+    slot(self: { value: Self; }): { value: number; };
+}
+export interface Keep<Self> {
+    keep(self: { value: Self; }, into: { value: Self | null | undefined; }): boolean;
+}
+```
+
+`traits::method_dictionary` now refuses only what the adapter doesn't
+change: a `&mut` to what's of `Self` *within* what a method takes or
+gives, `fn pick(&mut self, other: Option<&mut Self>)`. Generic code gives
+the `Option` its own box, and an object's impl takes the object. Calling
+one through a dictionary with an object was a wrong answer, filed as #682,
+and is now refused where it's called
+([ADR 0454](0454-a-mut-given-as-a-type-parameter.md), amended).
+No declaration code changed.
+
+- `test/declarations-ungiven.test.ts`'s "a trait of `&mut self` methods":
+  `Swap`, `Slot` and `Keep` declared, of an object's impl and a number's,
+  each entry called from TypeScript as declared, giving what Rust's calls
+  give, a value given where the box goes refused by `tsc`, and `Pick`
+  still left out. "a `&mut` that's a box" checks that a `dyn Slots` is its
+  pair now, and that a trait of an associated type's `dyn` is `any`.
+- `test/declarations-conformance.test.ts` calls a function of a type
+  parameter bound by a trait of the case's once for each of the trait's
+  impls, giving that impl's dictionary, and shows a `&mut` it gives as
+  declared. `declared_signatures.rs` adds `add_to<S: Slot>`, `slot_of<S:
+  Slot>(s) -> &mut u32` and `swapped<C: Swap>`, of a struct and a `u32`.
+- Mutations `mut-self-besides-receiver-refused`, `mut-giver-trait-refused`
+  (each re-imposes its refusal), `nested-mut-self-trait-declared` (the
+  nested one declared) and `mut-self-trait-undeclared` (a receiver
+  refused too).

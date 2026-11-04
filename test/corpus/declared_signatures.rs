@@ -1,7 +1,10 @@
 // What each exported function takes and gives, as its declaration says it
 // (ADR 1091): a `&mut` of a number, a `String`, an `Option` and a `Vec`, a
 // struct and a `&mut` of one, a slice, a trailing `Option`, a tuple, an
-// `impl Fn`, a type parameter bound by `Fn` (#661) and one bound by `Clone`.
+// `impl Fn`, a type parameter bound by `Fn` (#661) and one bound by `Clone`;
+// and of a type parameter bound by a trait of the crate's, given an impl's
+// dictionary, whose method gives a `&mut`, or takes a `&mut Self` besides
+// its receiver (#679).
 // `test/declarations-conformance.test.ts` calls each from TypeScript.
 
 pub struct Point {
@@ -75,6 +78,55 @@ pub fn first_or<T: Clone>(items: &[T], or: T) -> T {
     items.first().cloned().unwrap_or(or)
 }
 
+pub struct Tally {
+    pub count: u32,
+}
+
+pub trait Slot {
+    fn slot(&mut self) -> &mut u32;
+}
+
+impl Slot for Tally {
+    fn slot(&mut self) -> &mut u32 {
+        &mut self.count
+    }
+}
+
+impl Slot for u32 {
+    fn slot(&mut self) -> &mut u32 {
+        self
+    }
+}
+
+pub trait Swap {
+    fn swap_with(&mut self, other: &mut Self);
+}
+
+impl Swap for Tally {
+    fn swap_with(&mut self, other: &mut Self) {
+        std::mem::swap(self, other);
+    }
+}
+
+impl Swap for u32 {
+    fn swap_with(&mut self, other: &mut Self) {
+        std::mem::swap(self, other);
+    }
+}
+
+pub fn add_to<S: Slot>(s: &mut S, by: u32) -> u32 {
+    *s.slot() += by;
+    *s.slot()
+}
+
+pub fn slot_of<S: Slot>(s: &mut S) -> &mut u32 {
+    s.slot()
+}
+
+pub fn swapped<C: Swap>(a: &mut C, b: &mut C) {
+    a.swap_with(b);
+}
+
 fn main() {
     let mut n = 1;
     println!("{}", bump(&mut n, 2));
@@ -92,4 +144,11 @@ fn main() {
     let mut lens = Vec::new();
     each_len(&["ab".to_string(), "c".to_string()], |len| lens.push(len));
     println!("{lens:?} {} {}", first_or(&[2, 9], 4), first_or::<u8>(&[], 7));
+    let mut tally = Tally { count: 1 };
+    let mut other = Tally { count: 8 };
+    *slot_of(&mut tally) += 2;
+    println!("{} {}", add_to(&mut tally, 3), add_to(&mut n, 4));
+    swapped(&mut tally, &mut other);
+    swapped(&mut n, &mut 9);
+    println!("{} {} {n}", tally.count, other.count);
 }

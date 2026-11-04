@@ -421,15 +421,18 @@ its entry takes, as generic code gives it, `bump(self: { value: Self }):
 void`, and so is a function's `&mut C` given with its dictionary,
 `bumpTwice<C>(c: { value: C }, CCounter: Counter<C>)`
 ([ADR 1091](../../decisions/1091-a-functions-declaration-prints-its-js-signature.md),
-amended, #662). Not one:
+amended, #662). So is a `&mut Self` it takes besides, `swapWith(self: {
+value: Self }, other: { value: Self }): void`, and a `&mut` it gives is
+the box or handle each entry gives, `slot(self: { value: Self }): {
+value: number }` (#679). Not one:
 
 - with a supertrait whose dictionary its own holds, `trait Labeled:
   Display`, or with an associated type or a constant;
 - with a method of type parameters of its own, `fn show<T: Display>(&self,
   value: T)`, whose entry takes their dictionaries too; a `#[track_caller]`
-  one, whose entry takes its caller's location; or one that gives a
-  `&mut`, `fn slot(&mut self) -> &mut u32`, or takes one to its `Self`
-  besides its receiver, `fn swap_with(&mut self, other: &mut Self)`;
+  one, whose entry takes its caller's location; or one with a `&mut` to
+  what's of its `Self` within what it takes or gives, `fn pick(&mut self,
+  other: Option<&mut Self>)`, which no entry makes its impl's own (#682);
 - of type parameters of its own, `trait Convert<T>`, a trait of classes,
   whose methods are its classes' prototypes', or a library's.
 

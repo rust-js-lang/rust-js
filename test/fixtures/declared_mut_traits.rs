@@ -1,7 +1,8 @@
 // A trait whose methods take `&mut self`, declared as the type of its
 // dictionaries (#662): its `&mut self` is the box its entry takes, `{
-// value: Self }`, and a `&mut` it takes besides as `MutRefForm` says. One
-// that gives a `&mut`, or takes one to its `Self` besides, isn't.
+// value: Self }`, and a `&mut` it takes besides, a `&mut Self` too, or
+// gives, as `MutRefForm` says (#679). One with a `&mut Self` within what
+// it takes, `Option<&mut Self>`, isn't (#682).
 
 pub trait Counter {
     fn bump(&mut self);
@@ -76,6 +77,12 @@ impl Swap for u32 {
     }
 }
 
+impl Swap for Clicks {
+    fn swap_with(&mut self, other: &mut Self) {
+        std::mem::swap(self, other);
+    }
+}
+
 pub trait Slot {
     fn slot(&mut self) -> &mut u32;
 }
@@ -83,5 +90,41 @@ pub trait Slot {
 impl Slot for Clicks {
     fn slot(&mut self) -> &mut u32 {
         &mut self.n
+    }
+}
+
+impl Slot for u32 {
+    fn slot(&mut self) -> &mut u32 {
+        self
+    }
+}
+
+pub trait Keep: Sized {
+    fn keep(&mut self, into: &mut Option<Self>) -> bool;
+}
+
+impl Keep for Clicks {
+    fn keep(&mut self, into: &mut Option<Self>) -> bool {
+        let had = into.is_some();
+        *into = Some(Clicks { n: self.n + 1 });
+        had
+    }
+}
+
+impl Keep for u32 {
+    fn keep(&mut self, into: &mut Option<Self>) -> bool {
+        let had = into.is_some();
+        *into = Some(*self + 1);
+        had
+    }
+}
+
+pub trait Pick {
+    fn pick(&mut self, other: Option<&mut Self>) -> bool;
+}
+
+impl Pick for u32 {
+    fn pick(&mut self, other: Option<&mut Self>) -> bool {
+        other.is_some()
     }
 }

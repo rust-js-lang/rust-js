@@ -7,6 +7,10 @@
 // differs from Rust's (#549, #559, #560, #619, #620). TypeScript 7 has no
 // JS API, so the `.d.ts` is read as rust-js prints it.
 //
+// A function of a type parameter bound by a trait of the case's is called
+// once for each impl of it, given that impl's dictionary as declared, and
+// a `&mut` it gives is shown as declared, a box's `value` (#679).
+//
 // A function of a type the generator has no value for, a function a
 // declaration leaves out (ADR 1077), or one of no parameters is skipped;
 // each case must have at least one call. The nightly's suite runs it
@@ -140,15 +144,37 @@ function split(text: string): string[] {
   return parts.map((p) => p.trim()).filter((p) => p !== "");
 }
 
-type Fn = { name: string; params: { name: string; ty: Ty }[]; output: Ty | null };
+// A function, its type parameters replaced, and the dictionaries of the
+// impls it's called with, by their JS names, `tallySlot`, which it's given
+// after its arguments, as its declaration takes them.
+type Fn = { name: string; params: { name: string; ty: Ty }[]; output: Ty | null; dictionaries: string[] };
+
+type Impl = { ty: Ty; dictionary: string };
+
+// Each impl of a trait of the case's, `impl Slot for Tally`, by its trait's
+// name: the type it's of and its dictionary's JS name, `tallySlot`, which
+// its module exports.
+function impls(source: string): Map<string, Impl[]> {
+  const found = new Map<string, Impl[]>();
+  for (const m of source.matchAll(/^impl (\w+) for (\w+) \{/gm)) {
+    if (!new RegExp(`^pub trait ${m[1]}\\b`, "m").test(source)) continue;
+    const dictionary = `${m[2][0].toLowerCase()}${m[2].slice(1)}${m[1]}`;
+    found.set(m[1], [...(found.get(m[1]) ?? []), { ty: parseType(tokens(m[2])), dictionary }]);
+  }
+  return found;
+}
 
 // Each top-level `pub fn`, its type parameters replaced: bound by `Fn`, its
-// function; of no other bound but std's, a `u32`.
+// function; of no other bound but std's, a `u32`; bound by a trait of the
+// case's, each of its impls' types in turn, a function of each, given that
+// impl's dictionary.
 function functions(source: string): Fn[] {
   const found: Fn[] = [];
+  const implsOf = impls(source);
   for (const m of source.matchAll(/^pub fn (\w+)/gm)) {
     let at = m.index! + m[0].length;
     const generics: Record<string, Ty | null> = {};
+    const ofTraits: [string, Impl[]][] = [];
     let bounds = "";
     if (source[at] === "<") {
       const [inside, end] = enclosed(source, at, "<", ">");
@@ -163,6 +189,7 @@ function functions(source: string): Fn[] {
       const by = said.join(":").trim();
       const fnBound = /^(?:Fn|FnMut|FnOnce)\(/.exec(by);
       generics[name.trim()] = fnBound ? parseFnBound(tokens(by), { i: 1 }) : /^[A-Z][A-Za-z]*$/.test(name.trim()) && /^(?:(?:Clone|Copy|PartialOrd|PartialEq|Ord|Eq|Debug|'static)\s*\+?\s*)*$/.test(by) ? { k: "num", n: "u32" } : null;
+      if (implsOf.has(by)) ofTraits.push([name.trim(), implsOf.get(by)!]);
     }
     const replace = (ty: Ty): Ty | null => {
       switch (ty.k) {
@@ -188,13 +215,22 @@ function functions(source: string): Fn[] {
           return ty;
       }
     };
-    const typed = split(params).map((p) => {
-      const colon = p.indexOf(":");
-      return { name: p.slice(0, colon).replace(/^mut\s+/, "").trim(), ty: replace(parseType(tokens(p.slice(colon + 1)))) };
-    });
-    const arrow = ret.indexOf("->");
-    const output = arrow < 0 ? { k: "tuple" as const, items: [] } : replace(parseType(tokens(ret.slice(arrow + 2))));
-    if (typed.every((p) => p.ty) && typed.length > 0) found.push({ name: m[1], params: typed as Fn["params"], output });
+    // Each choice of an impl for each type parameter bound by a trait of the case's.
+    let choices: Impl[][] = [[]];
+    for (const [, of] of ofTraits) choices = choices.flatMap((chosen) => of.map((imp) => [...chosen, imp]));
+    for (const chosen of choices) {
+      ofTraits.forEach(([name], i) => {
+        generics[name] = chosen[i].ty;
+      });
+      const typed = split(params).map((p) => {
+        const colon = p.indexOf(":");
+        return { name: p.slice(0, colon).replace(/^mut\s+/, "").trim(), ty: replace(parseType(tokens(p.slice(colon + 1)))) };
+      });
+      const arrow = ret.indexOf("->");
+      const output = arrow < 0 ? { k: "tuple" as const, items: [] } : replace(parseType(tokens(ret.slice(arrow + 2))));
+      const dictionaries = chosen.map((imp) => imp.dictionary);
+      if (typed.every((p) => p.ty) && typed.length > 0) found.push({ name: m[1], params: typed as Fn["params"], output, dictionaries });
+    }
   }
   return found;
 }
@@ -329,19 +365,24 @@ function shown(ty: Ty, structsOf: Map<string, Struct>): boolean {
   }
 }
 
-// What a `.d.ts` declares each exported function's parameters as, by its
-// JS name: `export function name<T>(a: A, b?: B): R;`, as rust-js prints
-// it (`typescript/`).
-function declared(dts: string): Map<string, string[]> {
-  const found = new Map<string, string[]>();
+// What a `.d.ts` declares each exported function's parameters and result
+// as, by its JS name: `export function name<T>(a: A, b?: B): R;`, as
+// rust-js prints it (`typescript/`).
+function declared(dts: string): Map<string, { params: string[]; returns: string }> {
+  const found = new Map<string, { params: string[]; returns: string }>();
   for (const m of dts.matchAll(/^export function (\w+)/gm)) {
     let at = m.index! + m[0].length;
     if (dts[at] === "<") at = enclosed(dts, at, "<", ">")[1];
-    const [params] = enclosed(dts, at, "(", ")");
-    found.set(m[1], split(params).map((p) => p.slice(p.indexOf(":") + 1).trim()));
+    const [params, end] = enclosed(dts, at, "(", ")");
+    const from = end + dts.slice(end).match(/^:\s*/)![0].length;
+    const returns = dts[from] === "{" ? dts.slice(from, enclosed(dts, from, "{", "}")[1]) : dts.slice(from, dts.indexOf(";", from));
+    found.set(m[1], { params: split(params).map((p) => p.slice(p.indexOf(":") + 1).trim()), returns });
   }
   return found;
 }
+
+// A declared type that's a box, `{ value: T }`, of a `&mut`.
+const boxed = (declaredTy: string) => /^\{\s*value\s*:/.test(declaredTy);
 
 const harness = `trait Show {
     fn show(&self) -> String;
@@ -412,8 +453,8 @@ test("each exported function's TypeScript caller type-checks and does what Rust 
     const imported = new Set<string>();
     for (const fn of functions(source)) {
       const jsName = camel(fn.name);
-      const declaredParams = params.get(jsName);
-      if (!declaredParams || declaredParams.length !== fn.params.length || !fn.output || !shown(fn.output, structsOf)) continue;
+      const declaredFn = params.get(jsName);
+      if (!declaredFn || declaredFn.params.length !== fn.params.length + fn.dictionaries.length || !fn.output || !shown(fn.output, structsOf)) continue;
       const variants = fn.params.some((p) => p.ty.k === "opt" || p.ty.k === "bool" || (p.ty.k === "ref" && p.ty.inner.k === "opt")) ? [0, 1] : [0];
       for (const variant of variants) {
         const rsArgs: string[] = [];
@@ -437,20 +478,25 @@ test("each exported function's TypeScript caller type-checks and does what Rust 
             return;
           }
           // A `&mut`'s value is a box or the object, as its declaration says.
-          const boxed = /^\{\s*value\s*:/.test(declaredParams[i]);
+          const inBox = boxed(declaredFn.params[i]);
           rsBefore.push(`let mut ${local}: ${rustType(pointee)} = ${v.rs};`);
           rsArgs.push(`&mut ${local}`);
           rsAfter.push(`${local}.show()`);
-          tsBefore.push(`const ${local} = ${boxed ? `{ value: ${v.ts} }` : v.ts};`);
+          tsBefore.push(`const ${local} = ${inBox ? `{ value: ${v.ts} }` : v.ts};`);
           tsArgs.push(local);
-          tsAfter.push(`show(${local}${boxed ? ".value" : ""})`);
+          tsAfter.push(`show(${local}${inBox ? ".value" : ""})`);
         });
         if (!ok) continue;
         calls++;
         imported.add(jsName);
-        const label = `${fn.name}#${variant}`;
+        // Each impl's dictionary, after the arguments, as declared.
+        for (const dictionary of fn.dictionaries) imported.add(dictionary);
+        tsArgs.push(...fn.dictionaries);
+        // A `&mut` it gives, the box or the object, as declared.
+        const result = fn.output.k === "ref" && fn.output.mut && boxed(declaredFn.returns) ? "out.value" : "out";
+        const label = `${fn.name}#${variant}${fn.dictionaries.map((d) => ` ${d}`).join("")}`;
         rs.push(`    {\n        ${rsBefore.join("\n        ")}\n        let out = ${fn.name}(${rsArgs.join(", ")});\n        println!("{} {}", ${JSON.stringify(label)}, [out.show(), ${rsAfter.join(", ")}].join(" "));\n    }`);
-        tsLines.push(`{\n  ${tsBefore.join("\n  ")}\n  const out = ${jsName}(${tsArgs.join(", ")});\n  console.log(${JSON.stringify(label)}, [show(out), ${tsAfter.join(", ")}].join(" "));\n}`);
+        tsLines.push(`{\n  ${tsBefore.join("\n  ")}\n  const out = ${jsName}(${tsArgs.join(", ")});\n  console.log(${JSON.stringify(label)}, [show(${result}), ${tsAfter.join(", ")}].join(" "));\n}`);
       }
     }
     expect([name, rs.length > 0]).toEqual([name, true]);
