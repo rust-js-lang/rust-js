@@ -251,7 +251,7 @@ export const mutations: Mutation[] = [
     name: "cell-method-value-reboxed",
     breaks: "a trait's method of a `&mut` to a number, a cell already, as a value is the arrow of its call, not the method itself",
     file: "src/lower.rs",
-    find: "                    |t| matches!(*t.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if !self.is_cell_pointee(inner)),\n",
+    find: "                    |t| matches!(*t.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if !self.mut_ref_form(inner).is_cell()),\n",
     replace: "                    |t| matches!(*t.kind(), ty::Ref(_, _, ty::Mutability::Mut)),\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer.rs$"],
     // The call's arrow gives the cell on as it is too (#476): only the JS

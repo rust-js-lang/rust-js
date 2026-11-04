@@ -56,7 +56,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         known == Std::Index
             && (self.tcx.trait_of_assoc(def_id)).is_some_and(|t| self.tcx.is_lang_item(t, LangItem::IndexMut))
             && matches!(output.kind(), ty::Ref(_, item, _)
-                if self.is_cell_pointee(*item) || written_through_at_once(state.body, state.at))
+                if self.mut_ref_form(*item).is_cell() || written_through_at_once(state.body, state.at))
     }
 
     /// An index's call: unchecked where `call_in_bounds` knows it,

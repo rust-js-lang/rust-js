@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a reborrow through a handle on a `Box<dyn Trait>` is the handle, not the pair it holds",
     file: "src/lower/mir/places.rs",
-    find: "                            && !matches!(ty.ty.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if self.is_cell_pointee(*inner)))\n",
+    find: "                            && !matches!(ty.ty.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if self.mut_ref_form(*inner).is_cell()))\n",
     replace: "                            && true)\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_mut"],
   },

@@ -164,7 +164,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn hasher(&mut self, state: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Hasher> {
         let state = self.spilled(state, out);
         let own = self.recognition().std_hasher(ty).is_some();
-        let held = match !own && self.is_cell_pointee(ty) {
+        let held = match !own && self.mut_ref_form(ty).is_cell() {
             true => state.clone(),
             false => boxed(state.clone()),
         };

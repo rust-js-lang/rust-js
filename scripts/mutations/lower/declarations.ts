@@ -1296,8 +1296,8 @@ export const mutations: Mutation[] = [
     name: "mut-box-declared-value",
     breaks: "a `&mut` its JS has as a box is declared as its value, `bump(n: number)`, so a TypeScript caller gives a number, whose `value` its JS can't write (#619)",
     file: "src/lower/declarations.rs",
-    find: "            ty::Ref(_, inner, ty::Mutability::Mut) if self.is_cell(*inner) => {\n",
-    replace: "            ty::Ref(_, inner, ty::Mutability::Mut) if false && self.is_cell(*inner) => {\n",
+    find: "                self.mut_ref_form(*inner).ts_type(value)\n",
+    replace: "                value\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "box is declared"],
   },
   {

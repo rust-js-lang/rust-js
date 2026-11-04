@@ -344,7 +344,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a deque's `range_mut` of numbers from MIR gives the numbers, not boxes on them, so writing one changes nothing",
     file: "src/lower/mir/std_calls.rs",
-    find: '                match this.is_boxable(generic_args.type_at(0)) {\n                    true => Expr::call_helper("$mutItems", vec![view]),\n',
+    find: '                match this.mut_ref_form(generic_args.type_at(0)) == MutRefForm::Box {\n                    true => Expr::call_helper("$mutItems", vec![view]),\n',
     replace:
       '                match false {\n                    true => Expr::call_helper("$mutItems", vec![view]),\n',
     tests: ["test/corpus.test.ts", "-t", "deque_range_mut"],
@@ -689,9 +689,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`peek_mut` of numbers gives the number, which a write changes nowhere",
     file: "src/lower/mir/std_calls.rs",
-    find: '                        Some(item) if this.is_boxable(item) => Expr::call_helper("$peekCell", vec![it]),\n',
-    replace:
-      '                        Some(item) if false && this.is_boxable(item) => Expr::call_helper("$peekCell", vec![it]),\n',
+    find: "                                Some(item) if this.mut_ref_form(item) == MutRefForm::Box => {\n",
+    replace: "                                Some(item) if false && this.mut_ref_form(item) == MutRefForm::Box => {\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_and_peek_mut.rs$"],
   },
   {

@@ -7,9 +7,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`get_mut` of a number gives the number, so a write through it is lost",
     file: "src/lower/std_types/once.rs",
-    find: "            OnceOp::GetMut if self.is_boxable(item) => {\n",
+    find: "            OnceOp::GetMut if self.mut_ref_form(item) == MutRefForm::Box => {\n",
     replace:
-      "            OnceOp::GetMut if false && self.is_boxable(item) => {\n",
+      "            OnceOp::GetMut if false && self.mut_ref_form(item) == MutRefForm::Box => {\n",
     tests: ["test/corpus.test.ts", "-t", "once_cells"],
   },
   {

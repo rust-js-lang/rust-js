@@ -797,7 +797,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/mir.rs", "    fn mir_function(", 325], // An or-pattern's alternatives JS holds as one, `mir_alike_alternatives`, for its locals' counts and facts (ADR 1045). The names of its hooks' callbacks, `callback_names`; a scope struct's method's `self`, named in `mir_locals` (ADR 1043). Its plain types asked of `plain_type`, and what's settled until it's written (#121). The `break`s and `continue`s with comments before them its structure found, for tidy (rd109). Its dictionaries written twice, declared at its top, `declare_kept` (ADR 0979). Its floats, for tidy (ADR 0966). What a closure took by value, `kept_captures` (ADR 0879). What it knows of the body before it writes any of it in one, `local_facts` (the review's P3); the parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742); the guards that hold (ADR 0790); what its `let`s bind in one (ADR 0598, amended). A class's method's `self` made `this` before tidy (ADR 0761, amended). Its `bool` paths renamed `this`'s too (#355).
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 750],
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 242], // A `to_owned()`'s answer, `to_owned_of` (#316).
-  ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 564], // `concat()` of text, `concatenated`'s (#495).
+  ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 556], // `concat()` of text, `concatenated`'s (#495); a `Result`'s `as_mut` by its form (ADR 1086).
   ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 23], // A consumed iterator's call, `consumed_call` (#424).
   ["src/lower/mir/iter.rs", "    fn mir_iter_method(", 258], // `len()` of one made in place, `len_in_place` (ADR 0986), its counted chain's too. Its receiver's type revealed, an `impl Iterator`'s (ADR 0985). `next_back()` of what's made here, `next_back_made_here` (#395). `advance_by` in std's bodies, `advanced_by` (ADR 0913).
 ];
@@ -1204,14 +1204,41 @@ test("a local written again is written_again's alone", () => {
   expect(counting).toEqual([]);
 });
 
-// Whether a `&mut` of an item std gives a closure, or gives back, is a
-// handle is `handles_mut`'s: a value JS can't change in place, or a type
-// parameter's, which generic code boxes (ADR 0454). `retain_mut` in generic
-// code asked `is_boxable` alone, gave a closure that writes `x.value` the
-// item itself, and threw (#131).
-test("a std call's `&mut` handle is handles_mut's alone", () => {
-  const asking = ["src/lower/std_types/slice.rs", "src/lower/std_types/map.rs"].filter((file) => /\bis_boxable\(/.test(read(file)));
+// What a `&mut` to a type is in JS, a box, a generic code's box, the
+// object, a guard's object, a value given as it is or the value itself, is
+// `mut_ref_form`'s one answer, a `MutRefForm` each operation matches (ADR
+// 1086). The predicates it's made of are its module's alone:
+// `Cell::from_mut` asked `is_boxable` where a parameter asked
+// `is_cell_pointee`, which disagree on a type parameter (#614), and
+// `retain_mut` in generic code asked `is_boxable` alone, giving a closure
+// that writes `x.value` the item itself (#131). A site that asks for a
+// concrete `Box` alone, not a generic one, gives a type parameter's `&mut`
+// another form than its parameter's: each is listed, so one more is a
+// choice someone made.
+test("a `&mut`'s JS form is mut_ref_form's alone", () => {
+  const owner = "src/lower/representation/mut_ref.rs";
+  const lowering = files("src/lower").filter((file) => file.endsWith(".rs") && file !== owner);
+  const asking = lowering.flatMap((file) =>
+    read(file).split("\n")
+      .filter((line) => /\b(?:fn (?:is_boxable|is_generic_boxed|is_cell_pointee)\(|\.(?:is_boxable|is_generic_boxed|is_cell_pointee|written_in_place)\((?!\)))/.test(line) && !/\bstorage\s*\.written_in_place\(/.test(line))
+      .map((line) => `${file}: ${line.trim()}`));
   expect(asking).toEqual([]);
+  const boxAlone = Object.fromEntries(lowering
+    .map((file) => [file, (read(file).match(/\bMutRefForm::Box\b/g) ?? []).length] as const)
+    .filter(([, count]) => count > 0));
+  expect(boxAlone).toEqual({
+    "src/lower/combinators.rs": 2,
+    "src/lower/drops/parts.rs": 1,
+    "src/lower/mir/std_calls.rs": 2,
+    "src/lower/std_types/any.rs": 1,
+    "src/lower/std_types/heap.rs": 1,
+    "src/lower/std_types/lazy.rs": 2,
+    "src/lower/std_types/once.rs": 1,
+    "src/lower/std_types/option.rs": 1,
+    "src/lower/std_types/pin.rs": 4,
+    "src/lower/std_types/rc.rs": 1,
+    "src/lower/std_types/uninit.rs": 1,
+  });
 });
 
 // What a module exports an item of its own as, its default, the name its

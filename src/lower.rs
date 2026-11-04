@@ -104,7 +104,7 @@ pub fn tidy_pass_names() -> Vec<String> {
     mir::tidy_pass_names()
 }
 use recognition::{Std, TypeFact};
-use representation::{Num, const_js, eval_const, f32_literal, static_value};
+use representation::{MutRefForm, Num, const_js, eval_const, f32_literal, static_value};
 pub use serde::{SerdeAttributes, attributes as serde_attributes};
 
 use body_queries::strip;
@@ -935,7 +935,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // it (ADR 0099): that call's arrow. One to anything else is a
                 // cell, a box already, given as it is.
                 if inputs.iter().any(
-                    |t| matches!(*t.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if !self.is_cell_pointee(inner)),
+                    |t| matches!(*t.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if !self.mut_ref_form(inner).is_cell()),
                 ) {
                     return Ok(None);
                 }

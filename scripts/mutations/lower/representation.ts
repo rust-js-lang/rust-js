@@ -138,46 +138,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "statics"],
   },
   {
-    name: "generic-mut-object-unboxed",
-    breaks:
-      "`twice(&mut c)` of a generic `&mut T` gives the object `c`, where `twice` reads a box",
-    file: "src/lower/representation.rs",
-    find: "self.is_boxable(inner) || self.is_generic_boxed(inner, self.tcx.param_env(fn_id))",
-    replace: "self.is_boxable(inner)",
-    tests: ["test/corpus.test.ts", "-t", "generic_mut_ref"],
-  },
-  {
-    name: "generic-mut-closure-boxed",
-    breaks:
-      "`f: &mut F` of an `F: FnMut()` is boxed, `f.value()`, where the closure itself is the `&mut` to it, `f()`: right, as a box is, but not the JS a person writes",
-    file: "src/lower/representation.rs",
-    find: "                self.tcx.fn_trait_kind_from_def_id(id).is_some()\n                    || is_std_def(self.tcx, id, StdItem::Iterator)",
-    replace:
-      "                false\n                    || is_std_def(self.tcx, id, StdItem::Iterator)",
-    tests: ["test/corpus.test.ts", "-t", "closure_mut_ref"],
-    snapshots: true,
-  },
-  {
-    name: "dyn-fn-mut-boxed",
-    breaks: "`f: &mut dyn FnMut()` is a box, and `f()` calls `f.value()`",
-    file: "src/lower/representation.rs",
-    find: "            && !self.is_callable(ty)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "closure_mut_ref"],
-    // The box is a cell of the function, `dynamic({ value() { .. } })`,
-    // which runs as the function does: only its snapshot tells them apart.
-    snapshots: true,
-  },
-  {
-    name: "generic-mut-not-cell",
-    breaks:
-      "a generic `&mut T` kept, `result.push(&mut list.value)`, is refused as a value of type `&mut T`",
-    file: "src/lower/representation.rs",
-    find: "        self.is_boxable(ty) || self.is_generic_boxed(ty, self.typing_env.param_env)\n",
-    replace: "        self.is_boxable(ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
-  },
-  {
     name: "dyn-not-object",
     breaks:
       "a `&mut dyn Counter` is taken for a cell, and its pair read as `pair.value`",
@@ -287,14 +247,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^locks"],
   },
   {
-    name: "ref-not-boxable",
-    breaks: "a `&mut` to a shared reference isn't a cell, and is refused",
-    file: "src/lower/representation.rs",
-    find: "        !self.is_unknown(ty)\n",
-    replace: "        !ty.is_ref() && !self.is_unknown(ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "mut_ref_to_ref"],
-  },
-  {
     name: "tagged-enum-a-string",
     breaks:
       "a tagged enum's fieldless variant, an object, is taken for its name, and compared, looked for and kept as a key by JS's identity",
@@ -382,33 +334,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "generic-boxed-in-callers-env",
-    breaks:
-      "a callee's projection is normalized in its caller's environment, whose parameters are numbered otherwise: rustc crashes",
-    file: "src/lower/representation.rs",
-    find: "        self.recognition().is_unknown_in(ty, typing_env)\n",
-    replace: "        self.recognition().is_unknown_in(ty, self.typing_env)\n",
-    tests: ["test/corpus.test.ts", "-t", "^deref_projection_generic.rs$"],
-  },
-  {
-    name: "mut-ref-to-mut-ref-refused",
-    breaks:
-      "a `&mut &mut u32`, arrayvec's `ScopeExitGuard`'s, is refused, where it's a cell of the cell",
-    file: "src/lower/representation.rs",
-    find: "            return self.is_cell_pointee(inner) || plain_object;\n",
-    replace: "            return plain_object;\n",
-    tests: ["test/corpus.test.ts", "-t", "^mut_ref_to_mut_ref.rs$"],
-  },
-  {
-    name: "pinned-ref-boxable",
-    breaks:
-      "a `&mut` to a `Pin<&mut i32>` is a cell of the pin, so `pin.as_mut()` writes the pin, not the number",
-    file: "src/lower/representation.rs",
-    find: "            return !self.mut_is_the_pin(ty) && self.is_boxable(pointer);\n",
-    replace: "            return self.is_boxable(pointer);\n",
-    tests: ["test/corpus.test.ts", "-t", "^pin_box.rs$"],
-  },
-  {
     name: "const-uninit-unseen",
     breaks:
       "a constant with no byte written isn't seen as one, and a use of it that may change is a clone, refused",
@@ -457,28 +382,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(clock|duration_by_mut)\\.rs$"],
   },
   {
-    name: "mut-ref-to-object-uncelled",
-    breaks:
-      "a `&mut` to a `&mut Money`, an impl for `&mut Money`'s `&mut self`, is refused",
-    file: "src/lower/representation.rs",
-    find: "            return self.is_cell_pointee(inner) || plain_object;\n",
-    replace: "            return self.is_cell_pointee(inner);\n",
-    tests: ["test/corpus.test.ts", "-t", "^mut_ref_to_object_impl.rs$"],
-  },
-  {
-    name: "mut-ref-to-iterator-celled",
-    breaks:
-      "a `&mut` to a `&mut` iterator is a cell, where it's the JS iterator, and `it.next` isn't one",
-    file: "src/lower/representation.rs",
-    find: "                && !self.implements_iterator(inner)\n",
-    replace: "",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(iter_by_ref|iter_next_back|dyn_iterators).rs$",
-    ],
-  },
-  {
     name: "write-result-variant-by-tag",
     breaks:
       "a `match` of an `io::Result<()>` reads its `TAG`, which `undefined` hasn't",
@@ -496,28 +399,6 @@ export const mutations: Mutation[] = [
     find: "            true => Expr::bigint(n),\n",
     replace: "            true => Expr::int(n),\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
-  },
-  {
-    name: "rc-mut-ref-is-object",
-    breaks:
-      "a `&mut` to a counted `Rc` is the `Rc` its owners share, so writing one through it is refused",
-    file: "src/lower/representation.rs",
-    find: "            && (!self.is_object(ty) || shared)\n",
-    replace: "            && !self.is_object(ty)\n",
-    tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
-  },
-  {
-    name: "given-iterator-written-refused",
-    breaks:
-      "an iterator given as it is isn't written in place, so `*b = b_orig.clone()` of a `&mut` to one, and `mem::replace` of one a closure captured, are refused",
-    file: "src/lower/representation.rs",
-    find: "(self.is_object(ty) || self.iterator_given_as_it_is(ty))",
-    replace: "self.is_object(ty)",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(replace_held_given_iterator|iterator_written_through).rs$",
-    ],
   },
   {
     name: "uninit-always-holds",
@@ -548,37 +429,6 @@ export const mutations: Mutation[] = [
       "-t",
       "^(catch_unwind_assert_drops|refused_drops_and_displays)\\.rs$",
     ],
-  },
-  {
-    name: "boxable-opaque-unrevealed",
-    breaks:
-      "a `&mut` of a closure returned as `impl FnMut` is a box of it, `{ value: f }`, which what's lent it calls as the function",
-    file: "src/lower/representation.rs",
-    find: "        let ty = self.reveal(ty);\n        // A `Pin` is its pointer",
-    replace: "        // A `Pin` is its pointer",
-    tests: ["test/corpus.test.ts", "-t", "^impl_fn_mut_lent.rs$"],
-  },
-  {
-    name: "type-parameter-mut-not-handle",
-    breaks:
-      "a `&mut` of a type parameter's item std gives a closure, generic `retain_mut`'s, is the item, where the closure made at the call writes its handle's `value`",
-    file: "src/lower/representation.rs",
-    find: "        self.is_boxable(ty) || self.is_unknown(ty)\n",
-    replace: "        self.is_boxable(ty)\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(generic_retain_handles|refcell_generic_mut_method).rs$",
-    ],
-  },
-  {
-    name: "guard-written-in-place",
-    breaks:
-      "`mem::swap` of two `RefCell` guards through `&mut`s swaps what the cells hold, where Rust swaps the guards",
-    file: "src/lower/representation.rs",
-    find: "        !self.is_cell_pointee(ty) && !self.is_guard(ty) && (",
-    replace: "        !self.is_cell_pointee(ty) && (",
-    tests: ["test/corpus.test.ts", "-t", "^guard_swap_refused.rs$"],
   },
   {
     name: "registered-symbol-key-itself",
@@ -725,15 +575,6 @@ export const mutations: Mutation[] = [
     find: "                    || super::untagged::arrays_in_place(self.tcx, *adt, args))\n",
     replace: "                    || false)\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
-  },
-  {
-    name: "flattened-state-mut-the-object",
-    breaks:
-      "a `&mut` to a class's flattened state is the class's object, so what it's lent to writing it whole `$assign`s the chunk, deleting its `name` and `reads` (#478)",
-    file: "src/lower/representation.rs",
-    find: "|| self.counted_weak(ty).is_some() || flattened;\n",
-    replace: "|| self.counted_weak(ty).is_some();\n",
-    tests: ["test/corpus.test.ts", "-t", "^flattened_state_lent_mut.rs$"],
   },
   {
     name: "keyed-otherwise-of-all",

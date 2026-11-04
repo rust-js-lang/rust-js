@@ -146,7 +146,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `value`, but where the place is already named.
             if elem == PlaceElem::Deref
                 && let ty::Ref(_, pointee, ty::Mutability::Mut) = ty.ty.kind()
-                && self.is_cell_pointee(*pointee)
+                && self.mut_ref_form(*pointee).is_cell()
             {
                 if !std::mem::take(&mut placed) {
                     value = Expr::held(value);
@@ -465,7 +465,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ty.ty.is_box()
                         || (read
                             && ty.ty.is_ref()
-                            && !matches!(ty.ty.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if self.is_cell_pointee(*inner)))
+                            && !matches!(ty.ty.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if self.mut_ref_form(*inner).is_cell()))
                 }
                 PlaceElem::Field(..) => self.transparent(ty.ty).is_some(),
                 _ => false,

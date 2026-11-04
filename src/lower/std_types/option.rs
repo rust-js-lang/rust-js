@@ -6,6 +6,7 @@ use crate::lower::calls::{Call, apply};
 use crate::lower::drops::Drops;
 
 use crate::js::result;
+use crate::lower::MutRefForm;
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -533,7 +534,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        if !self.is_boxable(item) {
+        if self.mut_ref_form(item) != MutRefForm::Box {
             // The `Option` the `&mut` is to, through its cell.
             let (option, _) = self.through_refs(option, option_ref);
             return Ok(self.option_items(option, item, out));
@@ -936,7 +937,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADR 0071), is that, read through its box, `$someValue`, as a
     /// pattern binds it (ADR 0921).
     fn option_place_through(&mut self, place: Expr, item: Ty<'tcx>) -> Expr {
-        match (self.boxed_payload(item), self.is_cell_pointee(item)) {
+        match (self.boxed_payload(item), self.mut_ref_form(item).is_cell()) {
             (true, true) => Expr::call_helper("$someMut", vec![Expr::handle(place)]),
             (true, false) => self.some_value(place),
             (false, true) => Expr::handle(place),

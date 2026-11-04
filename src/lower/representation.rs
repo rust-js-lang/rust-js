@@ -4,7 +4,7 @@
 //! `copies.rs`'s, and what can be represented `support.rs`'s.
 
 use super::bindings::{self, field_key};
-use super::recognition::{StdItem, is_std_def};
+use super::recognition::StdItem;
 use super::{FnCx, R, Shape};
 use crate::js;
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
@@ -22,10 +22,12 @@ use rustc_span::{Span, Symbol};
 
 mod cells;
 mod consts;
+mod mut_ref;
 mod options;
 
 use consts::{Units, const_js_by};
 pub(super) use consts::{const_js, zero_sized_js};
+pub(in crate::lower) use mut_ref::{MutRefForm, SignatureForms, held_ts};
 pub(in crate::lower) use options::{may_look_like_none, payload_through};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -301,66 +303,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.layout(ty).is_some_and(|layout| layout.is_zst())
     }
 
-    /// Is a `ty` value a JS object? Then a reference to it, even `&mut`, can
-    /// be the object itself: changes through it change the one object (ADR 0025).
-    /// A value that a `&mut` to must be a box to change (ADR 0072): one that
-    /// isn't a JS object, as a `String`, a number or a fieldless enum is.
-    /// Is a `&mut` of a `ty` a handle, `{ value }`, where std gives one to a
-    /// closure, `retain_mut`'s, or a guard derefs to one: of a value JS can't
-    /// change in place, `is_boxable`, or of a type parameter, which generic
-    /// code reads through its `value`, a box's (ADR 0454).
-    pub(super) fn handles_mut(&self, ty: Ty<'tcx>) -> bool {
-        self.is_boxable(ty) || self.is_unknown(ty)
-    }
-
-    pub(super) fn is_boxable(&self, ty: Ty<'tcx>) -> bool {
-        // What an `impl Trait` is, a returned closure's the closure.
-        let ty = self.reveal(ty);
-        // A `Pin` is its pointer (ADR 0329), and a `&mut` to a pinned
-        // reference the pin, which only what it points at is changed through.
-        if let Some(pointer) = self.recognition().pinned(ty) {
-            return !self.mut_is_the_pin(ty) && self.is_boxable(pointer);
-        }
-        // A `&mut` to a value JS can't change in place is a cell, which can't
-        // be changed in place either: a `&mut` to it, a cell of the cell. A
-        // `&mut` to a plain object is the object, which a write of the whole
-        // through a `&mut` to it, `*r = &mut other`, makes another: a cell
-        // too, rust_decimal's `impl AddAssign for &mut Decimal`'s `&mut self`.
-        // Not of an iterator or a function, each the JS one it steps or calls
-        // (ADRs 0071, 0099), nor of a slice, which may be a view of part of
-        // an array, split through a held `&mut` as it is.
-        if let ty::Ref(_, inner, Mutability::Mut) = *ty.kind() {
-            let plain_object = self.is_object(inner)
-                && !inner.is_slice()
-                && !self.is_callable(inner)
-                && !self.implements_iterator(inner)
-                && !self.is_generic_iter(inner);
-            return self.is_cell_pointee(inner) || plain_object;
-        }
-        // A counted `Rc` or its `Weak`, an object its owners share (ADR 0523), or a
-        // flattened state, its class's keys (#478): a `&mut` to one is a cell.
-        let flattened = matches!(ty.kind(), ty::Adt(adt, _) if self.krate.flattened.states.contains(&adt.did()));
-        let shared = self.counted_rc(ty).is_some() || self.counted_weak(ty).is_some() || flattened;
-        !self.is_unknown(ty)
-            && (!self.is_object(ty) || shared)
-            // A `&mut dyn FnMut()` is the function (ADR 0099).
-            && !self.is_callable(ty)
-            && self.unsupported_part(ty).is_none()
-    }
-
-    /// A type parameter a `&mut` is to, `&mut T` or `&mut Self`, where `param_env`
-    /// says what it's bound by: a box, whatever it is (ADR 0099), since generic
-    /// code is compiled once and `T` may be a number. Not one that's a JS
-    /// function or a JS iterator already: a closure, whose `&mut` is the
-    /// closure, or an iterator (ADR 0061).
-    pub(super) fn is_generic_boxed(&self, ty: Ty<'tcx>, param_env: ty::ParamEnv<'tcx>) -> bool {
-        let typing_env = ty::TypingEnv::new(param_env, ty::TypingMode::non_body_analysis());
-        self.recognition().is_unknown_in(ty, typing_env)
-            && !self.declared_bounds(ty, param_env).into_iter().any(|id| {
-                self.tcx.fn_trait_kind_from_def_id(id).is_some()
-                    || is_std_def(self.tcx, id, StdItem::Iterator)
-                    || is_std_def(self.tcx, id, StdItem::IntoIterator)
-            })
+    /// A type that's the value it holds, which it always does: a
+    /// `ManuallyDrop`, what `pin!` pins. Not a `MaybeUninit`, which may hold
+    /// none yet, a cell to be written (ADR 0332).
+    fn always_holds(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        self.transparent(ty)
+            .filter(|_| self.recognition().uninit_of(ty).is_none())
     }
 
     /// A JS function: a closure, a function, a `dyn Fn` and the like, or a
@@ -377,83 +325,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// What a `&mut` to is a cell: a value JS can't change in place, or a
-    /// type parameter, which may be one (ADR 0099).
-    pub(super) fn is_cell_pointee(&self, ty: Ty<'tcx>) -> bool {
-        self.is_boxable(ty) || self.is_generic_boxed(ty, self.typing_env.param_env)
-    }
-
-    /// A type that's the value it holds, which it always does: a
-    /// `ManuallyDrop`, what `pin!` pins. Not a `MaybeUninit`, which may hold
-    /// none yet, a cell to be written (ADR 0332).
-    fn always_holds(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-        self.transparent(ty)
-            .filter(|_| self.recognition().uninit_of(ty).is_none())
-    }
-
-    /// Whether what a `&mut` to a `ty` is, isn't a cell, is changed in place
-    /// to write it: an object, or an iterator given as it is (ADRs 0147,
-    /// 0411). The one answer, of `*r = v`, `$assign`, and of `mem::replace`
-    /// and the like, `$take` (ADR 0553).
-    /// Not a guard's, whose object is the cell it guards: writing it in
-    /// place would write what the cell holds.
-    pub(super) fn written_in_place(&self, ty: Ty<'tcx>) -> bool {
-        !self.is_cell_pointee(ty) && !self.is_guard(ty) && (self.is_object(ty) || self.iterator_given_as_it_is(ty))
-    }
-
-    /// A `&mut` to a value JS can't change in place, as a value: a cell, a box
-    /// or a handle, whose `value` is the place it points at (ADR 0099).
-    pub(super) fn is_cell(&self, ty: Ty<'tcx>) -> bool {
-        matches!(*ty.kind(), ty::Ref(_, inner, Mutability::Mut) if self.is_cell_pointee(inner))
-    }
-
-    /// A value of type `ty` seen through its references, as the code that
-    /// shows, compares or orders one reads it: a `&` is the value (ADR 0023),
-    /// a `&mut` to a value JS can't change in place a cell, whose `value` it
-    /// is (ADR 0099), or the place of a `Handle` on one.
-    pub(super) fn through_refs(&self, mut value: Expr, mut ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
-        while let ty::Ref(_, inner, mutability) = *ty.kind() {
-            if mutability == Mutability::Mut && self.is_cell_pointee(inner) {
-                value = match value.kind {
-                    js::ExprKind::Handle(place, _) => *place,
-                    _ => Expr::held(value),
-                };
-            }
-            ty = inner;
-        }
-        (value, ty)
-    }
-
-    /// Is one of the references `ty` is behind a `&mut` cell, so that its JS
-    /// value is an object, not what it points at (ADR 0099)?
-    pub(super) fn has_cell_layer(&self, mut ty: Ty<'tcx>) -> bool {
-        while let ty::Ref(_, inner, mutability) = *ty.kind() {
-            if mutability == Mutability::Mut && self.is_cell_pointee(inner) {
-                return true;
-            }
-            ty = inner;
-        }
-        false
-    }
-
-    /// Is `fn_id`'s parameter `i` a box: a `&mut` to a value JS can't change in
-    /// place (ADR 0074), or to a type parameter (ADR 0099)?
-    pub(super) fn param_is_box(&self, fn_id: DefId, i: usize) -> bool {
-        let inputs = self
-            .tcx
-            .fn_sig(fn_id)
-            .instantiate_identity()
-            .skip_normalization()
-            .skip_binder()
-            .inputs();
-        match inputs.get(i).map(|input| *input.kind()) {
-            Some(ty::Ref(_, inner, Mutability::Mut)) => {
-                self.is_boxable(inner) || self.is_generic_boxed(inner, self.tcx.param_env(fn_id))
-            }
-            _ => false,
-        }
-    }
-
+    /// Is a `ty` value a JS object? Then a reference to it, even `&mut`, can
+    /// be the object itself: changes through it change the one object (ADR 0025).
+    /// A value that a `&mut` to must be a box to change (ADR 0072): one that
+    /// isn't a JS object, as a `String`, a number or a fieldless enum is.
     pub(super) fn is_object(&self, ty: Ty<'tcx>) -> bool {
         // An `impl Trait` a function returns is the value it stands for: a
         // `&mut` to an `impl Iterator`'s array is the array.

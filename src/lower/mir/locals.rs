@@ -220,7 +220,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // a write through it, a closure's say, assigns.
                         let changes = match rvalue {
                             Rvalue::Ref(_, BorrowKind::Mut { .. }, borrowed) => {
-                                self.is_cell_pointee(borrowed.ty(&body.local_decls, self.tcx).ty)
+                                self.mut_ref_form(borrowed.ty(&body.local_decls, self.tcx).ty).is_cell()
                             }
                             Rvalue::RawPtr(kind, _) => kind.to_mutbl_lossy().is_mut(),
                             _ => false,

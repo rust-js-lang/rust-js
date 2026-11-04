@@ -6,6 +6,7 @@ use super::std_types::cow::CowOp;
 use super::std_types::map::{MapOp, Part};
 use super::{FnCx, R, Std};
 use crate::js::{self, Expr, Prop, Stmt, StmtKind};
+use crate::lower::MutRefForm;
 use rustc_ast::Mutability;
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
@@ -64,7 +65,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the object its `value` gave in place, so what was moved out would
     /// become what's written (#527, ADR 0454, amended).
     pub(in crate::lower) fn moved_out(&self, old: Expr, item: Ty<'tcx>) -> Expr {
-        match self.is_unknown(item) || self.written_in_place(item) {
+        match self.is_unknown(item) || self.mut_ref_form(item).written_in_place() {
             true => Expr::call_helper("$apart", vec![old]),
             false => old,
         }
@@ -202,16 +203,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty = inner;
         }
         let pointee = match *ty.kind() {
-            ty::Ref(_, pointee, Mutability::Mut) if self.is_generic_boxed(pointee, param_env) => {
+            ty::Ref(_, pointee, Mutability::Mut)
+                if self.mut_ref_form_in(pointee, param_env) == MutRefForm::GenericBox =>
+            {
                 self.instantiated(pointee, generic_args)
             }
-            ty::Param(_) if self.is_generic_boxed(ty, param_env) => match *self.instantiated(ty, generic_args).kind() {
-                ty::Ref(_, pointee, Mutability::Mut) => pointee,
-                _ => return None,
-            },
+            ty::Param(_) if self.mut_ref_form_in(ty, param_env) == MutRefForm::GenericBox => {
+                match *self.instantiated(ty, generic_args).kind() {
+                    ty::Ref(_, pointee, Mutability::Mut) => pointee,
+                    _ => return None,
+                }
+            }
             _ => return None,
         };
-        (!self.is_cell_pointee(pointee)).then(|| Ty::new_mut_ref(self.tcx, self.tcx.lifetimes.re_erased, pointee))
+        (!self.mut_ref_form(pointee).is_cell())
+            .then(|| Ty::new_mut_ref(self.tcx, self.tcx.lifetimes.re_erased, pointee))
     }
 
     /// Of a function value given for `def_id`'s parameter `i`, an `F:
@@ -245,8 +251,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .iter()
             .map(|given| {
                 matches!(*given.kind(), ty::Ref(_, pointee, Mutability::Mut)
-                    if self.is_generic_boxed(pointee, param_env)
-                        && !self.is_cell_pointee(self.instantiated(pointee, generic_args)))
+                    if self.mut_ref_form_in(pointee, param_env) == MutRefForm::GenericBox
+                        && !self.mut_ref_form(self.instantiated(pointee, generic_args)).is_cell())
             })
             .collect();
         unboxed.iter().any(|&unboxed| unboxed).then_some(unboxed)
@@ -276,8 +282,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 at = inner;
             }
             match *at.kind() {
-                ty::Ref(_, pointee, Mutability::Mut) if self.is_generic_boxed(pointee, param_env) => {}
-                ty::Param(_) if self.is_generic_boxed(at, param_env) => {}
+                ty::Ref(_, pointee, Mutability::Mut)
+                    if self.mut_ref_form_in(pointee, param_env) == MutRefForm::GenericBox => {}
+                ty::Param(_) if self.mut_ref_form_in(at, param_env) == MutRefForm::GenericBox => {}
                 _ => todo.push(ty),
             }
         }
@@ -359,8 +366,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Some(here);
                 }
                 if let ty::Ref(_, pointee, Mutability::Mut) = *part.kind()
-                    && self.is_generic_boxed(pointee, param_env)
-                    && !self.is_cell_pointee(self.instantiated(pointee, generic_args))
+                    && self.mut_ref_form_in(pointee, param_env) == MutRefForm::GenericBox
+                    && !self.mut_ref_form(self.instantiated(pointee, generic_args)).is_cell()
                 {
                     return Some(Ty::new_mut_ref(
                         self.tcx,

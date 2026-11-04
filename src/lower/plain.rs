@@ -246,7 +246,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let sized = |pointee: Ty<'tcx>| pointee.is_sized(self.tcx, self.typing_env);
         let pointer = super::pointers::raw_pointee(self.tcx, ty).is_some_and(|(pointee, _)| sized(pointee))
             || matches!(ty.kind(), ty::Ref(_, pointee, _)
-                if sized(*pointee) && (self.is_object(*pointee) && !self.is_cell_pointee(*pointee) || self.is_unknown(*pointee)));
+                if sized(*pointee) && (self.mut_ref_form(*pointee).is_the_object() || self.is_unknown(*pointee)));
         if number || ty.is_bool() || ty.is_char() || pointer {
             return Some(Plain::Scalar(ty));
         }

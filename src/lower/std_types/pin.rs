@@ -2,6 +2,7 @@
 //! promises of one is kept already.
 
 use crate::js::{Expr, Stmt, StmtKind};
+use crate::lower::MutRefForm;
 use crate::lower::calls::{Call, apply};
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
@@ -46,13 +47,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // A `&mut` to a pinned `Box` is a box of it, whose `value` is the
         // `Box`, what it points at (ADR 0074).
-        let handle = matches!(given.kind(), ty::Ref(_, _, ty::Mutability::Mut)) && self.is_boxable(pin);
+        let handle =
+            matches!(given.kind(), ty::Ref(_, _, ty::Mutability::Mut)) && self.mut_ref_form(pin) == MutRefForm::Box;
         Ok(Some(match op {
             PinOp::Map => {
                 let (pin, f) = (arg(), arg());
                 apply(f, vec![pin])
             }
-            PinOp::Mut if handle && !self.is_boxable(target) => Expr::held(arg()),
+            PinOp::Mut if handle && self.mut_ref_form(target) != MutRefForm::Box => Expr::held(arg()),
             PinOp::Mut => arg(),
             PinOp::Ref => match self.boxed_target(pointer) {
                 true => Expr::held(arg()),
@@ -63,7 +65,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             PinOp::Set => {
                 let (pin, value) = (arg(), arg());
                 let js_span = self.js_span(span);
-                match handle || self.is_boxable(target) {
+                match handle || self.mut_ref_form(target) == MutRefForm::Box {
                     true => out.push(StmtKind::Assign(Expr::held(pin), value).at(js_span)),
                     false => {
                         out.push(StmtKind::Expr(Expr::call(Expr::helper("$assign"), vec![pin, value])).at(js_span));
@@ -77,6 +79,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Is `pointer`, a `Pin`'s, a `&mut` to a number or text, which is a
     /// box?
     fn boxed_target(&self, pointer: Ty<'tcx>) -> bool {
-        matches!(*pointer.kind(), ty::Ref(_, target, ty::Mutability::Mut) if self.is_boxable(target))
+        matches!(*pointer.kind(), ty::Ref(_, target, ty::Mutability::Mut) if self.mut_ref_form(target) == MutRefForm::Box)
     }
 }

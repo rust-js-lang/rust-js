@@ -454,7 +454,7 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `IntoIterator` of a `&mut Vec` reads the box generic code gives as the array",
     file: "src/lower/traits/impls.rs",
-    find: "        matches!(*self_ty.kind(), ty::Ref(_, pointee, Mutability::Mut) if !self.is_cell_pointee(pointee))\n",
+    find: "        matches!(*self_ty.kind(), ty::Ref(_, pointee, Mutability::Mut) if !self.mut_ref_form(pointee).is_cell())\n",
     replace: "        false\n",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
   },

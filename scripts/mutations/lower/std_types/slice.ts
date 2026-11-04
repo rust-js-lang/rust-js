@@ -385,9 +385,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`index_mut` by a generic index whose output is known here, `[u32]`, is left in its box",
     file: "src/lower/std_types/slice.rs",
-    find: "                    Some(output) if mutable && !self.is_cell_pointee(output) => Expr::held(indexed),",
+    find: "                    Some(output) if mutable && !self.mut_ref_form(output).is_cell() => Expr::held(indexed),",
     replace:
-      "                    Some(output) if false && !self.is_cell_pointee(output) => Expr::held(indexed),",
+      "                    Some(output) if false && !self.mut_ref_form(output).is_cell() => Expr::held(indexed),",
     tests: ["test/corpus.test.ts", "-t", "^index_bound_generic.rs$"],
   },
   {
@@ -395,7 +395,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`index_mut` by a generic index of a `String`, a cell, is taken out of its handle",
     file: "src/lower/std_types/slice.rs",
-    find: "                    Some(output) if mutable && !self.is_cell_pointee(output) => Expr::held(indexed),",
+    find: "                    Some(output) if mutable && !self.mut_ref_form(output).is_cell() => Expr::held(indexed),",
     replace: "                    Some(_) if mutable => Expr::held(indexed),",
     tests: ["test/corpus.test.ts", "-t", "^index_bound_generic.rs$"],
   },

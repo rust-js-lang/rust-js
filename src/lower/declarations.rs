@@ -35,12 +35,11 @@ mod parts;
 mod representation;
 mod written;
 
+use super::representation::{SignatureForms, held_ts as held};
 use classes::exported_class;
 use comments::documented;
 pub(in crate::lower) use comments::jsdoc_of;
 use parts::{flattened_keys, opaque_fn_signature};
-pub(in crate::lower) use representation::Representation;
-use representation::held;
 
 pub use written::validate_types;
 use written::{Member, Signature};
@@ -73,7 +72,7 @@ pub(super) fn module<'tcx>(
         &HashMap<DefId, bool>,
     ),
     (type_facts, given, caller_locations): (&TypeFacts, super::traits::Given<'_>, &HashSet<DefId>),
-    representation: Representation<'_, 'tcx>,
+    representation: SignatureForms<'_, 'tcx>,
 ) -> Option<Value> {
     let mut out = Declarations {
         tcx,
@@ -488,7 +487,7 @@ struct Declarations<'a, 'tcx> {
     /// (`leave_out`), which the module's items take after it.
     notes: Vec<Value>,
     /// What lowering makes of a `&mut` and a `dyn` in a signature.
-    representation: Representation<'a, 'tcx>,
+    representation: SignatureForms<'a, 'tcx>,
     /// The item whose signature is declared, whose context `representation`
     /// is asked in: its bounds say what a `&mut` to one is (ADR 0099).
     owner: DefId,
@@ -1258,10 +1257,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
             ty::Bool => keyword("boolean"),
             ty::Char | ty::Str => keyword("string"),
             // A box or a handle, `bump(n: { value: number })`, as lowering
-            // has it (`is_cell`, #619); one to an object is the object.
-            ty::Ref(_, inner, ty::Mutability::Mut) if self.is_cell(*inner) => {
+            // has it (`MutRefForm::ts_type`, #619); one to an object is the
+            // object.
+            ty::Ref(_, inner, ty::Mutability::Mut) => {
                 let value = self.ts(*inner);
-                held(value)
+                self.mut_ref_form(*inner).ts_type(value)
             }
             ty::Ref(_, inner, _) => self.ts(*inner),
             // What a function that never returns returns (ADR 0386).

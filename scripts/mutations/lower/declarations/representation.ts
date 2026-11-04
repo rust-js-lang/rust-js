@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "mut-object-declared-box",
     breaks: "a `&mut` to an object is declared a box, `tick(counter: { value: Counter })`, where its JS takes the object (#619)",
     file: "src/lower/declarations/representation.rs",
-    find: "        (self.representation.cell_pointee)(self.owner, pointee)\n",
-    replace: "        let _ = (self.representation.cell_pointee)(self.owner, pointee);\n        true\n",
+    find: "        (self.representation.mut_ref)(self.owner, pointee)\n",
+    replace: "        let _ = (self.representation.mut_ref)(self.owner, pointee);\n        MutRefForm::Box\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "box is declared"],
   },
   {

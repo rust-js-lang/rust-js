@@ -9,7 +9,7 @@ an object replaced whole, are to come. Extends
 [0049](0049-traits-and-generics.md), [0025](0025-vec-loops-refcell-mut.md), [0033](0033-enums-with-fields.md) and [0074](0074-mut-boxes.md).
 Extended by [0897](0897-an-element-a-guard-reaches-is-its-place.md): an
 element at a parameter's index, and one a `RefCell`'s guard reaches, is
-its place.
+its place; amended by [1086](1086-a-mut-refs-js-form-is-mut-ref-forms.md): what a `&mut` to a type is, box or object, is `mut_ref_form`'s one answer.
 
 Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 

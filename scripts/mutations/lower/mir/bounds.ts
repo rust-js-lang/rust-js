@@ -47,8 +47,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`points[i] = p` of a `Vec` of objects is `$assign($index(points, i), p)`, not `points[$at(points, i)] = p`",
     file: "src/lower/mir/bounds.rs",
-    find: "                if self.is_cell_pointee(*item) || written_through_at_once(state.body, state.at))\n",
-    replace: "                if self.is_cell_pointee(*item))\n",
+    find: "                if self.mut_ref_form(*item).is_cell() || written_through_at_once(state.body, state.at))\n",
+    replace: "                if self.mut_ref_form(*item).is_cell())\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_item_written_whole.rs$"],
     snapshots: true,
   },

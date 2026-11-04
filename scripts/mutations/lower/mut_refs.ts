@@ -163,9 +163,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&mut` to an object given as a type parameter's value is the object, which an impl for `&mut T` reads as a box, and JS throws",
     file: "src/lower/mut_refs.rs",
-    find: "            ty::Param(_) if self.is_generic_boxed(ty, param_env) => match *self.instantiated(ty, generic_args).kind() {\n",
-    replace:
-      "            ty::Param(_) if false => match *self.instantiated(ty, generic_args).kind() {\n",
+    find: "            ty::Param(_) if self.mut_ref_form_in(ty, param_env) == MutRefForm::GenericBox => {\n",
+    replace: "            ty::Param(_) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
   },
   {
@@ -271,7 +270,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`Cell::from_mut(v).replace(..)` of a known `Vec` or struct gives the new value: only a type parameter's moved out apart (#527)",
     file: "src/lower/mut_refs.rs",
-    find: "        match self.is_unknown(item) || self.written_in_place(item) {\n",
+    find: "        match self.is_unknown(item) || self.mut_ref_form(item).written_in_place() {\n",
     replace: "        match self.is_unknown(item) {\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_cell_replaced.rs$"],
   },

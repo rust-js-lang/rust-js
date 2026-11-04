@@ -119,8 +119,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`mem::replace` of a captured field holding an iterator given as it is is refused, as if it weren't changed in place",
     file: "src/lower/mir/entries.rs",
-    find: "|| !self.written_in_place(pointee) {",
-    replace: "|| !self.is_object(pointee) {",
+    find: "                || !self.mut_ref_form(pointee).written_in_place()\n",
+    replace: "                || !self.is_object(pointee)\n",
     tests: ["test/corpus.test.ts", "-t", "^replace_held_given_iterator.rs$"],
   },
   {

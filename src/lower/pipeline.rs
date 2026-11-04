@@ -1343,10 +1343,10 @@ pub fn lower_crate<'tcx>(
                 let given = (module, &taken[&module]);
                 contexts::fn_cx(&shared, (owner, None, None), given, HashSet::new(), HashMap::new())
             };
-            let cell_pointee = |owner: DefId, pointee: ty::Ty<'tcx>| context(owner).is_cell_pointee(pointee);
+            let mut_ref = |owner: DefId, pointee: ty::Ty<'tcx>| context(owner).mut_ref_form(pointee);
             let pair_trait = |owner: DefId, ty: ty::Ty<'tcx>| context(owner).dynamic_trait(ty);
-            let representation = super::declarations::Representation {
-                cell_pointee: &cell_pointee,
+            let representation = super::representation::SignatureForms {
+                mut_ref: &mut_ref,
                 pair_trait: &pair_trait,
             };
             lowered.declarations = super::declarations::module(

@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a crate's hasher is given to its dictionary as the object, where its methods read a box's `value`",
     file: "src/lower/std_types/hash.rs",
-    find: "        let held = match !own && self.is_cell_pointee(ty) {\n",
+    find: "        let held = match !own && self.mut_ref_form(ty).is_cell() {\n",
     replace: "        let held = match true {\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_hashers.rs$"],
   },

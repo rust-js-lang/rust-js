@@ -2,6 +2,7 @@
 //! a call of the crate's is given.
 
 use super::*;
+use crate::lower::MutRefForm;
 use crate::lower::aggregates::Given;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -106,7 +107,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Rvalue::Ref(_, BorrowKind::Mut { .. }, target) = rvalue
             && target.projection.is_empty()
             && let ty::Ref(_, pointee, ty::Mutability::Mut) = state.body.local_decls[target.local].ty.kind()
-            && !self.is_cell_pointee(*pointee)
+            && !self.mut_ref_form(*pointee).is_cell()
         {
             let list = self.mir_place(state, *target, span, out)?;
             if matches!(list.kind, js::ExprKind::Var(_)) {
@@ -903,7 +904,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Place::ty_from(base.local, base.projection, decls, self.tcx).ty.kind(),
                 ty::Ref(_, _, ty::Mutability::Mut)
             )
-            && self.written_in_place(place.ty(decls, self.tcx).ty)
+            && self.mut_ref_form(place.ty(decls, self.tcx).ty).written_in_place()
             && !names_place(base)
         {
             let ty = place.ty(decls, self.tcx).ty;
@@ -1049,7 +1050,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // is.
             let held_box = |cx: &Self| {
                 arg_tys.get(i).is_some_and(
-                    |&ty| matches!(*ty.kind(), ty::Ref(_, pointee, ty::Mutability::Mut) if cx.is_cell_pointee(pointee)),
+                    |&ty| matches!(*ty.kind(), ty::Ref(_, pointee, ty::Mutability::Mut) if cx.mut_ref_form(pointee).is_cell()),
                 )
             };
             let value = match value {
@@ -1109,7 +1110,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let typing_env = ty::TypingEnv::post_analysis(self.tcx, fn_id);
                 let itself = |inner: Ty<'tcx>| {
                     let generic = self.recognition().is_unknown_in(inner, typing_env);
-                    self.is_object(inner) || (generic && !self.is_generic_boxed(inner, typing_env.param_env))
+                    self.is_object(inner)
+                        || (generic && self.mut_ref_form_in(inner, typing_env.param_env) != MutRefForm::GenericBox)
                 };
                 !self.param_is_box(fn_id, i)
                     && matches!(param.map(|p| *p.kind()), Some(ty::Ref(_, inner, ty::Mutability::Mut)) if itself(inner))

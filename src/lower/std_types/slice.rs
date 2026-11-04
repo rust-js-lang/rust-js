@@ -597,7 +597,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .ok()
                     .filter(|&ty| !crate::lower::recognition::known_by_bounds(ty));
                 match known {
-                    Some(output) if mutable && !self.is_cell_pointee(output) => Expr::held(indexed),
+                    Some(output) if mutable && !self.mut_ref_form(output).is_cell() => Expr::held(indexed),
                     _ => indexed,
                 }
             }

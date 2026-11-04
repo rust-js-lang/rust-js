@@ -16,6 +16,7 @@ use super::recognition::trait_method;
 use super::{FnCx, R, representation::Num};
 use crate::js::result;
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
+use crate::lower::MutRefForm;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -689,24 +690,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(self.unsupported(span, "this `Result`"));
                 };
                 let (ok_ty, err_ty) = (sides.type_at(0), sides.type_at(1));
-                let part = |this: &Self, ty: Ty<'tcx>| match this.is_boxable(ty) {
-                    true => Expr::handle(inside()),
-                    false => inside(),
-                };
-                let ok = part(self, ok_ty);
+                let boxed = |ty: Ty<'tcx>| self.mut_ref_form(ty) == MutRefForm::Box;
+                let part = |boxed: bool| if boxed { Expr::handle(inside()) } else { inside() };
+                let ok = part(boxed(ok_ty));
                 match comb {
                     Comb::ResultIterMut => Expr::cond(tag(true), Expr::array(vec![ok]), Expr::array(Vec::new())),
                     // Of objects, the `Result` itself, as `as_ref()`'s is.
-                    _ if !self.is_boxable(ok_ty) && !self.is_boxable(err_ty) => subject,
-                    _ => {
-                        // Of both, a handle on `r._0` whichever it is.
-                        if self.is_boxable(ok_ty) && self.is_boxable(err_ty) {
-                            result::tagged(result::tag(subject.clone()), ok)
-                        } else {
-                            let err = part(self, err_ty);
-                            Expr::cond(tag(true), result::ok(ok), result::err(err))
-                        }
-                    }
+                    _ if !boxed(ok_ty) && !boxed(err_ty) => subject,
+                    // Of both, a handle on `r._0` whichever it is.
+                    _ if boxed(ok_ty) && boxed(err_ty) => result::tagged(result::tag(subject.clone()), ok),
+                    _ => Expr::cond(tag(true), result::ok(ok), result::err(part(boxed(err_ty)))),
                 }
             }
             // `Ok(None)` is `None`, `Ok(Some(x))` `Some(Ok(x))`, `Err(e)` `Some(Err(e))`.
@@ -800,7 +793,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::DedupBy | Comb::DedupByKey | Comb::PopIf
                 if self
                     .slice_item(subject_ty)
-                    .is_none_or(|item| !self.is_object(item) && !self.is_boxable(item)) =>
+                    .is_none_or(|item| !self.is_object(item) && self.mut_ref_form(item) != MutRefForm::Box) =>
             {
                 return Err(self.unsupported(span, "this call, of items a `&mut` can't be given to its closure"));
             }

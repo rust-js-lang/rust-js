@@ -237,7 +237,7 @@ export const mutations: Mutation[] = [
       "a `RefMut` of a type parameter derefs to its cell's `value`, which a `&mut` of the type parameter is read through again, `guard.value.value`",
     file: "src/lower/std_types/cell.rs",
     find: "(mutable && self.handles_mut(guarded))",
-    replace: "(mutable && self.is_boxable(guarded))",
+    replace: "(mutable && self.mut_ref_form(guarded) == MutRefForm::Box)",
     tests: ["test/corpus.test.ts", "-t", "^refcell_generic_mut_method.rs$"],
   },
   {
@@ -872,8 +872,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`Cell::from_mut(r)` of a type parameter's `&mut T` is an in-place cell of generic code's box, `$cellOf(r)`, so its `replace` reads the box's `value` of a box and throws (#614)",
     file: "src/lower/std_types/cell.rs",
-    find: "            Std::CellFromMut => match self.is_cell_pointee(generic_args.type_at(0)) {\n",
-    replace: "            Std::CellFromMut => match self.is_boxable(generic_args.type_at(0)) {\n",
+    find: "            Std::CellFromMut => match self.mut_ref_form(generic_args.type_at(0)).is_cell() {\n",
+    replace: "            Std::CellFromMut => match self.mut_ref_form(generic_args.type_at(0)) == MutRefForm::Box {\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_from_mut_generic.rs$"],
   },
   {
@@ -881,8 +881,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`get_mut` of a type parameter's `Cell<T>` is the value it holds, `cell.value`, where generic code's `&mut T` is a box, so `mem::replace` of it writes nothing back (#614)",
     file: "src/lower/std_types/cell.rs",
-    find: "            Std::CellGetMut => match self.is_cell_pointee(generic_args.type_at(0)) {\n",
-    replace: "            Std::CellGetMut => match self.is_boxable(generic_args.type_at(0)) {\n",
+    find: "            Std::CellGetMut => match self.mut_ref_form(generic_args.type_at(0)).is_cell() {\n",
+    replace: "            Std::CellGetMut => match self.mut_ref_form(generic_args.type_at(0)) == MutRefForm::Box {\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_from_mut_generic.rs$"],
   },
 ];

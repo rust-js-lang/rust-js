@@ -340,7 +340,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of what a `&mut` to is a cell (`is_cell_pointee`), a number's,
             // a text's or a type parameter's, generic code's box (ADR 0454),
             // the cell itself, which that `&mut` is (#614).
-            Std::CellGetMut => match self.is_cell_pointee(generic_args.type_at(0)) {
+            Std::CellGetMut => match self.mut_ref_form(generic_args.type_at(0)).is_cell() {
                 true => arg(),
                 false => Expr::held(arg()),
             },
@@ -348,7 +348,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // that cell, the `&mut` itself, a type parameter's box too; of an
             // object, the object, a cell that writes it in place, as writing
             // through the `&mut` does (#614).
-            Std::CellFromMut => match self.is_cell_pointee(generic_args.type_at(0)) {
+            Std::CellFromMut => match self.mut_ref_form(generic_args.type_at(0)).is_cell() {
                 true => arg(),
                 false => crate::lower::mut_refs::in_place_cell(arg()),
             },

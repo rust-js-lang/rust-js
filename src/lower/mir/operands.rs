@@ -168,7 +168,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn captured_place(&self, state: &State<'_, 'tcx>, place: &Place<'tcx>) -> Option<Expr> {
         let field = match place.projection.as_slice() {
             [PlaceElem::Deref, PlaceElem::Field(field, ty)] | [PlaceElem::Field(field, ty)] => {
-                matches!(ty.kind(), ty::Ref(_, pointee, ty::Mutability::Mut) if self.is_cell_pointee(*pointee))
+                matches!(ty.kind(), ty::Ref(_, pointee, ty::Mutability::Mut) if self.mut_ref_form(*pointee).is_cell())
                     .then_some(*field)?
             }
             _ => return None,
@@ -444,7 +444,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // an object, a cell of its value, which nothing writes.
                 return Ok(match pointer {
                     Some((pointee, _)) if self.is_handle_pointer(ty) => {
-                        match self.is_object(pointee) && !self.is_cell_pointee(pointee) {
+                        match self.mut_ref_form(pointee).is_the_object() {
                             true => self.pointer_to(referred, pointee, Some(0), c.span)?,
                             false => Expr::object(vec![Prop::Field(js::HELD.into(), referred)]),
                         }

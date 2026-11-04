@@ -164,7 +164,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         _ => return Err(self.unsupported(span, "this reborrow, from its MIR")),
                     }
                 }
-                if matches!(kind, BorrowKind::Mut { .. }) && self.is_cell_pointee(pointee) {
+                if matches!(kind, BorrowKind::Mut { .. }) && self.mut_ref_form(pointee).is_cell() {
                     let target = self.mir_place(state, *place, span, out)?;
                     // Of a reference written again, `list` of `&mut list.value`
                     // in a loop that moves `list` on: what it is now, held.
@@ -245,7 +245,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         // Through `outer`, a `&mut` to `list`, a `&mut` to what
                         // isn't a cell: what `list` is.
-                        (_, Value::Ref(e)) if !place.projection.is_empty() && !self.is_cell_pointee(pointee) => {
+                        (_, Value::Ref(e)) if !place.projection.is_empty() && !self.mut_ref_form(pointee).is_cell() => {
                             Value::Expr(e)
                         }
                         (_, value) => value,
@@ -736,7 +736,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Some((base, PlaceElem::Deref)) = place.as_ref().last_projection()
                     && let ty::Ref(_, referent, ty::Mutability::Mut) =
                         *Place::ty_from(base.local, base.projection, decls, tcx).ty.kind()
-                    && self.is_cell_pointee(referent)
+                    && self.mut_ref_form(referent).is_cell()
                 {
                     let base = Place {
                         local: base.local,
@@ -761,7 +761,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         ty::Ref(..)
                     )
                     && self.is_object(pointee)
-                    && !self.is_cell_pointee(pointee)
+                    && !self.mut_ref_form(pointee).is_cell()
                 {
                     return Ok(Value::Expr(Expr::call(Expr::helper("$ptrTo"), vec![target])));
                 }

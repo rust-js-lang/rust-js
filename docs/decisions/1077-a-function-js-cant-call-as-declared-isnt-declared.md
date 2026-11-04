@@ -9,7 +9,7 @@ a caller's location and a const parameter's value are declared; amended
 as its pair. Amends
 [0196](0196-typescript-declarations.md), whose `.d.ts` declared every
 `pub` function, and the guide's "A type parameter with no bound takes
-none" ([0145](0145-type-facts.md)'s facts take one).
+none" ([0145](0145-type-facts.md)'s facts take one); amended by [1086](1086-a-mut-refs-js-form-is-mut-ref-forms.md): a declared `&mut`'s type is `MutRefForm::ts_type`'s, asked through `SignatureForms`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): results change. A JS
 caller that follows the declaration gets a value the Rust can't give, so

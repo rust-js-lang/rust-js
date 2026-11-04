@@ -474,7 +474,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut pointed = pointed_locals(body);
         pointed.locals.retain(|&local| {
             let ty = body.local_decls[local].ty;
-            !self.is_object(ty) || self.is_cell_pointee(ty)
+            !self.is_object(ty) || self.mut_ref_form(ty).is_cell()
         });
         pointed.read_only = self.read_only_refs(body);
         pointed
@@ -646,7 +646,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn read_only_pointer_to(&self, place: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
         let named = matches!(&place.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))
             || matches!(&place.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$index"));
-        match named || self.pointee_is_itself(pointee) || self.is_object(pointee) && !self.is_cell_pointee(pointee) {
+        match named || self.pointee_is_itself(pointee) || self.mut_ref_form(pointee).is_the_object() {
             true => self.pointer_to(place, pointee, None, span),
             false => Ok(Expr::object(vec![js::Prop::Field(js::HELD.into(), place)])),
         }
@@ -694,7 +694,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // is the place's. A `dyn Fn`'s, by the JS function it is, as a
         // JS object's is (ADR 0653): `std::ptr::eq(a, b)` is `a === b`.
         let function = matches!(pointee.kind(), ty::Dynamic(..)) && self.is_callable(pointee);
-        if (self.is_object(pointee) || function) && !self.is_cell_pointee(pointee) {
+        if (self.is_object(pointee) || function) && !self.mut_ref_form(pointee).is_cell() {
             return Ok(Expr::call(Expr::helper("$ptrTo"), vec![place]));
         }
         // A type parameter's value, an object or not as its caller gives
@@ -757,7 +757,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn pointers_equal(&mut self, a: Expr, b: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
         // An item's place is the object it holds only where the pointee is an
         // object, never a type parameter's, which may be a number.
-        let items = self.is_object(pointee) && !self.is_cell_pointee(pointee);
+        let items = self.mut_ref_form(pointee).is_the_object();
         if let Some(same) = same_object(&a, &b, items) {
             return Ok(same);
         }
@@ -888,7 +888,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.pointee_is_itself(held) {
                     return Ok(Some(value));
                 }
-                match self.is_object(held) && !self.is_cell_pointee(held) {
+                match self.mut_ref_form(held).is_the_object() {
                     true => helper("$ptrTo", vec![value]),
                     false => Expr::object(vec![js::Prop::Field(js::HELD.into(), value)]),
                 }
@@ -925,7 +925,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => self.spill("pointer", pointer, out),
                 };
                 let pointee = pointee.expect("a raw pointer");
-                let referred = match op == PointerOp::AsMut && self.is_cell_pointee(pointee) {
+                let referred = match op == PointerOp::AsMut && self.mut_ref_form(pointee).is_cell() {
                     true => pointer.clone(),
                     false => self.pointed_place(pointer.clone(), pointee),
                 };
@@ -972,7 +972,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(ty::Ref(_, referent, m)) => (*referent, m.is_mut()),
                     _ => unreachable!("a reference"),
                 };
-                match (self.is_object(referent) && !self.is_cell_pointee(referent), mutable) {
+                match (self.mut_ref_form(referent).is_the_object(), mutable) {
                     (true, _) => helper("$ptrTo", vec![reference]),
                     (false, true) => reference,
                     // A shared reference of a type parameter's, smallvec's
@@ -992,7 +992,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let pointer = arg();
                 let pointee = pointee.expect("a pointer");
                 // A cell's handle, the cell.
-                match op == PointerOp::PlaceMut && self.is_cell_pointee(pointee) {
+                match op == PointerOp::PlaceMut && self.mut_ref_form(pointee).is_cell() {
                     true => pointer,
                     false => self.pointed_place(pointer, pointee),
                 }

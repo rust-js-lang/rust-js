@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`*self = v` through a `&mut` to an object rebinds `self`, not the object",
     file: "src/lower/mir/assign.rs",
-    find: "            && self.written_in_place(place.ty(decls, self.tcx).ty)\n",
+    find: "            && self.mut_ref_form(place.ty(decls, self.tcx).ty).written_in_place()\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "replace_through_mut"],
   },
@@ -562,9 +562,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a copied default's `&mut self` of a blanket impl over every iterator is given its impl's method as the box, which steps nothing",
     file: "src/lower/mir/assign.rs",
-    find: "                    self.is_object(inner) || (generic && !self.is_generic_boxed(inner, typing_env.param_env))\n",
-    replace:
-      "                    self.is_object(inner) || (false && generic && !self.is_generic_boxed(inner, typing_env.param_env))\n",
+    find: "                        || (generic && self.mut_ref_form_in(inner, typing_env.param_env) != MutRefForm::GenericBox)\n",
+    replace: "                        || (false && generic && self.mut_ref_form_in(inner, typing_env.param_env) != MutRefForm::GenericBox)\n",
     tests: ["test/corpus.test.ts", "-t", "^blanket_iterator_trait.rs$"],
   },
   {

@@ -56,7 +56,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// &mut C`'s (ADR 0457). A `&C` is the value, and a `&mut` to a number
     /// or text its cell.
     pub(super) fn held_in_box(&self, self_ty: Ty<'tcx>) -> bool {
-        matches!(*self_ty.kind(), ty::Ref(_, pointee, Mutability::Mut) if !self.is_cell_pointee(pointee))
+        matches!(*self_ty.kind(), ty::Ref(_, pointee, Mutability::Mut) if !self.mut_ref_form(pointee).is_cell())
     }
 
     /// The entries of `tr`'s dictionary that give its supertraits', of those

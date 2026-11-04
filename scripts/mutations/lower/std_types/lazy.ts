@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`force_mut` of a number gives the number, so a write through it is lost",
     file: "src/lower/std_types/lazy.rs",
-    find: "        if op == LazyOp::Force || op == LazyOp::ForceMut && !self.is_boxable(item) {\n",
+    find: "        if op == LazyOp::Force || op == LazyOp::ForceMut && self.mut_ref_form(item) != MutRefForm::Box {\n",
     replace: "        if op == LazyOp::Force || op == LazyOp::ForceMut {\n",
     tests: ["test/corpus.test.ts", "-t", "lazy_cells"],
   },

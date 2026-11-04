@@ -3,6 +3,7 @@
 //! a value. A `&mut` to one is a box, the place it's written to.
 
 use crate::js::{self, Expr, Stmt, StmtKind};
+use crate::lower::MutRefForm;
 use crate::lower::calls::Call;
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
@@ -111,7 +112,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let target = tys[0].peel_refs();
                 let held = self.recognition().uninit_of(target).unwrap_or(target);
-                match self.is_boxable(held) {
+                match self.mut_ref_form(held) == MutRefForm::Box {
                     true => Expr::handle(place),
                     false => place,
                 }

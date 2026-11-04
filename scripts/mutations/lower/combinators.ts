@@ -300,17 +300,16 @@ export const mutations: Mutation[] = [
     breaks:
       "`as_mut()` of a `Result` of a number gives the number, not a handle",
     file: "src/lower/combinators.rs",
-    find: "                    true => Expr::handle(inside()),\n                    false => inside(),",
-    replace:
-      "                    true => inside(),\n                    false => inside(),",
+    find: "                let part = |boxed: bool| if boxed { Expr::handle(inside()) } else { inside() };\n",
+    replace: "                let part = |_: bool| inside();\n",
     tests: ["test/corpus.test.ts", "-t", "option_result_mut"],
   },
   {
     name: "result-as-mut-tag-ok",
     breaks: "`as_mut()` of a `Result` of numbers is always `Ok`",
     file: "src/lower/combinators.rs",
-    find: "                            result::tagged(result::tag(subject.clone()), ok)",
-    replace: "                            result::ok(ok)",
+    find: "                    _ if boxed(ok_ty) && boxed(err_ty) => result::tagged(result::tag(subject.clone()), ok),\n",
+    replace: "                    _ if boxed(ok_ty) && boxed(err_ty) => result::ok(ok),\n",
     tests: ["test/corpus.test.ts", "-t", "option_result_mut"],
   },
   {
@@ -318,8 +317,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`as_mut()` of a `Result` of a number and an object is always `Err`",
     file: "src/lower/combinators.rs",
-    find: "                            Expr::cond(tag(true), result::ok(ok), result::err(err))",
-    replace: "                            result::err(err)",
+    find: "                    _ => Expr::cond(tag(true), result::ok(ok), result::err(part(boxed(err_ty)))),\n",
+    replace: "                    _ => result::err(part(boxed(err_ty))),\n",
     tests: ["test/corpus.test.ts", "-t", "option_result_mut"],
   },
   {

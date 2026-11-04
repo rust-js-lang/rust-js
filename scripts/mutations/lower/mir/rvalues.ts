@@ -194,7 +194,7 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's `&mut outer[0]` through `outer`, a `&mut` to `list`, indexes a handle on `list`",
     file: "src/lower/mir/rvalues.rs",
-    find: "                        (_, Value::Ref(e)) if !place.projection.is_empty() && !self.is_cell_pointee(pointee) => {\n",
+    find: "                        (_, Value::Ref(e)) if !place.projection.is_empty() && !self.mut_ref_form(pointee).is_cell() => {\n",
     replace: "                        (_, Value::Ref(e)) if false => {\n",
     tests: ["test/lowering.test.ts", "-t", "split_off through a held"],
   },

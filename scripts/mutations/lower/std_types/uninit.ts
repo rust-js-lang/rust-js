@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "uninit-write-object-boxed",
     breaks: "`write`'s `&mut` to an object is a box of it",
     file: "src/lower/std_types/uninit.rs",
-    find: "                match self.is_boxable(held) {\n                    true => Expr::handle(place),",
+    find: "                match self.mut_ref_form(held) == MutRefForm::Box {\n                    true => Expr::handle(place),",
     replace:
       "                match true {\n                    true => Expr::handle(place),",
     tests: ["test/corpus.test.ts", "-t", "box_uninit"],

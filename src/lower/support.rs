@@ -192,7 +192,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return self.unsupported_in(*inner, seen);
             }
             // A `&mut` to anything else is a cell (ADR 0099).
-            ty::Ref(_, inner, Mutability::Mut) if self.is_cell_pointee(*inner) => return None,
+            ty::Ref(_, inner, Mutability::Mut) if self.mut_ref_form(*inner).is_cell() => return None,
             ty::Array(elem, _) | ty::Slice(elem) => return self.unsupported_in(*elem, seen),
             ty::Adt(_, _) if self.is_lang_adt(ty, LangItem::String) => return None,
             // A `TypeId` is its type's key (ADR 0331).

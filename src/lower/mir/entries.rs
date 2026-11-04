@@ -307,7 +307,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let first = values.next().expect("a `&mut`");
         let Value::Ref(a) = first else {
             // Of an object: changed in place.
-            if !matches!(known, Std::Swap | Std::Replace | Std::MemTake) || !self.written_in_place(pointee) {
+            if !matches!(known, Std::Swap | Std::Replace | Std::MemTake)
+                || !self.mut_ref_form(pointee).written_in_place()
+            {
                 return Err(self.unsupported(span, "this `&mut` given to `mem::swap` and the like, from its MIR"));
             }
             let a = self.value_expr(first, span)?;

@@ -206,7 +206,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let tr = ty::TraitRef::new_from_args(tcx, trait_id, generic_args);
                     let dictionary = this.dictionary(tr, span)?;
                     let receiver = exprs.remove(0);
-                    let receiver = match this.is_cell_pointee(tr.self_ty()) {
+                    let receiver = match this.mut_ref_form(tr.self_ty()).is_cell() {
                         true => receiver,
                         false => super::super::mut_refs::boxed(receiver),
                     };
@@ -688,7 +688,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut list = vec![items, start];
                 list.extend(end);
                 let view = this.view_call("$view", list);
-                match this.is_boxable(generic_args.type_at(0)) {
+                match this.mut_ref_form(generic_args.type_at(0)) == MutRefForm::Box {
                     true => Expr::call_helper("$mutItems", vec![view]),
                     false => view,
                 }
@@ -1070,7 +1070,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             StepOp::Peek => Expr::call_helper("$peek", vec![it]),
                             // A handle on a number or text, else the item itself.
                             StepOp::PeekMut => match this.iterator_item(arg_tys[0].peel_refs()) {
-                                Some(item) if this.is_boxable(item) => Expr::call_helper("$peekCell", vec![it]),
+                                Some(item) if this.mut_ref_form(item) == MutRefForm::Box => {
+                                    Expr::call_helper("$peekCell", vec![it])
+                                }
                                 _ => Expr::call_helper("$peek", vec![it]),
                             },
                             // Of items that may look like `None`, each boxed, the
@@ -1402,7 +1404,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 (of, false)
                             } else {
                                 let reference = local.is_some();
-                                if reference && !this.written_in_place(arg_tys[0].peel_refs()) {
+                                if reference && !this.mut_ref_form(arg_tys[0].peel_refs()).written_in_place() {
                                     return Err(this.unsupported(span, "assigning a whole value through a `&mut`"));
                                 }
                                 (place, reference)

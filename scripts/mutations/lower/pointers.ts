@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an object's pointer is its place's, `$ptr(a, \"value\")`, not the object's: two to it differ",
     file: "src/lower/pointers.rs",
-    find: '        if (self.is_object(pointee) || function) && !self.is_cell_pointee(pointee) {\n            return Ok(Expr::call(Expr::helper("$ptrTo")',
+    find: '        if (self.is_object(pointee) || function) && !self.mut_ref_form(pointee).is_cell() {\n            return Ok(Expr::call(Expr::helper("$ptrTo")',
     replace:
       '        if false {\n            return Ok(Expr::call(Expr::helper("$ptrTo")',
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
     name: "pointed-objects-kept",
     breaks: "a local holding an object a pointer's taken to is a cell too",
     file: "src/lower/pointers.rs",
-    find: "            !self.is_object(ty) || self.is_cell_pointee(ty)\n",
+    find: "            !self.is_object(ty) || self.mut_ref_form(ty).is_cell()\n",
     replace: "            true\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
     snapshots: true,
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`p.as_mut()` of a number is its value, not a handle on it, so writing it is lost",
     file: "src/lower/pointers.rs",
-    find: "                let referred = match op == PointerOp::AsMut && self.is_cell_pointee(pointee) {\n",
+    find: "                let referred = match op == PointerOp::AsMut && self.mut_ref_form(pointee).is_cell() {\n",
     replace: "                let referred = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
@@ -202,7 +202,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `NonNull`'s `as_mut()` of a number is the number, not the handle on its place, `handle.value.value`",
     file: "src/lower/pointers.rs",
-    find: "                match op == PointerOp::PlaceMut && self.is_cell_pointee(pointee) {\n",
+    find: "                match op == PointerOp::PlaceMut && self.mut_ref_form(pointee).is_cell() {\n",
     replace: "                match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^non_null.rs$"],
   },
@@ -768,7 +768,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`ptr::eq` of a type parameter's item and a reference is `items[0] === r`, `1 === 1` of two numbers' places",
     file: "src/lower/pointers.rs",
-    find: "        let items = self.is_object(pointee) && !self.is_cell_pointee(pointee);\n",
+    find: "        let items = self.mut_ref_form(pointee).is_the_object();\n",
     replace: "        let items = true;\n",
     tests: [
       "test/lowering-collections.test.ts",

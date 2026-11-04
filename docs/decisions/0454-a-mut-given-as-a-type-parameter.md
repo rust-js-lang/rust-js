@@ -7,7 +7,7 @@ out of an in-place cell is a copy apart (#527), and a `&mut` of an object
 given for longer than the call is one (#528); and (2026-11-04) generic
 code's box of an object holds the object itself (#606), and `Cell::from_mut` of
 a type parameter's `&mut T` is that box (#614). Extends [0099](0099-mut-references.md) and
-[0180](0180-generic-writers.md). Decided with the user.
+[0180](0180-generic-writers.md). Decided with the user; amended by [1086](1086-a-mut-refs-js-form-is-mut-ref-forms.md): a type parameter's box is `MutRefForm::GenericBox`, asked of `mut_ref_form`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): the same writes, to
 the same place; and a compile error where generic code would have a box

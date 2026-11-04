@@ -84,7 +84,7 @@ use super::std_types::number::NumOp;
 use super::std_types::rc::RcOp;
 use super::std_types::slice::SliceOp;
 use super::std_types::text::{StringEdit, TextOp, range_read};
-use super::{Body, FnCx, LoweredFn, R, Shape, bindings, fn_def};
+use super::{Body, FnCx, LoweredFn, MutRefForm, R, Shape, bindings, fn_def};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 
 /// A body's MIR, as borrowck reads it (ADR 0364), and its promoted constants.
@@ -1256,7 +1256,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let boxed = match captures {
                     // A closure's, by what it points at.
                     Some(_) => matches!(mir_body.local_decls[local].ty.kind(),
-                        ty::Ref(_, pointee, ty::Mutability::Mut) if self.is_cell_pointee(*pointee)),
+                        ty::Ref(_, pointee, ty::Mutability::Mut) if self.mut_ref_form(*pointee).is_cell()),
                     None => self.param_is_box(mir_body.source.def_id(), local.as_usize() - 1),
                 };
                 if boxed {

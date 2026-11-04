@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`as_mut()` of a pinned `Box` of an object is the box of it, not the object",
     file: "src/lower/std_types/pin.rs",
-    find: "            PinOp::Mut if handle && !self.is_boxable(target) => Expr::held(arg()),\n",
+    find: "            PinOp::Mut if handle && self.mut_ref_form(target) != MutRefForm::Box => Expr::held(arg()),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
   },
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
     name: "pin-set-assigns",
     breaks: "`set` of a pinned number replaces it as an object would be",
     file: "src/lower/std_types/pin.rs",
-    find: "                match handle || self.is_boxable(target) {",
+    find: "                match handle || self.mut_ref_form(target) == MutRefForm::Box {",
     replace: "                match false {",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
   },

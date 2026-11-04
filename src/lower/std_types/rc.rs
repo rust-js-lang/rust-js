@@ -7,6 +7,7 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
+use crate::lower::MutRefForm;
 use crate::lower::recognition::{rc_pointee, weak_pointee};
 use crate::lower::{FnCx, R};
 
@@ -250,7 +251,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     fn through_rc(&self, rc: Expr, item: Ty<'tcx>) -> Expr {
-        match self.is_boxable(item) {
+        match self.mut_ref_form(item) == MutRefForm::Box {
             true => rc,
             false => Expr::held(rc),
         }

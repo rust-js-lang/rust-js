@@ -896,6 +896,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0452 `{:?}` of a `PhantomData` of a type parameter shows the name its caller gives](0452-a-phantom-datas-name.md)
 - [0453 `{:?}` of a slice's iterator is what's left of it](0453-a-slice-iterators-debug.md)
 - [0454 A `&mut` given as a type parameter's value is a box](0454-a-mut-given-as-a-type-parameter.md) *(amended: what's moved out of an in-place cell is apart; a `&mut` of an object kept past the call is one; amended: regex-syntax's `ParserI` stays refused until #527's `moved_out` settles, #516, the user's decision)*
+- [1086 A `&mut`'s JS form is `MutRefForm`'s](1086-a-mut-refs-js-form-is-mut-ref-forms.md) *(amends 0099, 0454, 1077; steps 1 and 2 of 3, #614's family; its matrix found #636, #638)*
 - [0455 `nth_back`, `rfold` and `rfind` step from the back](0455-stepping-from-the-back.md)
 - [0456 A generic `ExactSizeIterator` knows its length](0456-a-generic-exact-size-iterator.md) *(amended: `rposition` of what `as_exact_size` makes knowing both)*
 - [0457 An `IntoIterator` bound on a reference is given its dictionary](0457-an-into-iterator-bound-on-a-reference.md)
