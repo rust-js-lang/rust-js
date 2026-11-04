@@ -3,8 +3,8 @@
 Status: Accepted (#543, #544, 2026-11-03; the user's decision, option A, for
 a `dyn Fn` field's names); amended (#630): a static's or a constant's
 function type is named as the functions its value may be, a filler that
-names nothing says nothing, and an alias in a `dyn Fn` or a private alias
-is named. Extends [0196](0196-typescript-declarations.md),
+names nothing says nothing (the user's decision, 2026-11-04), and an alias
+in a `dyn Fn` or a private alias is named. Extends [0196](0196-typescript-declarations.md),
 whose function type named each parameter after its type, and
 [0443](0443-a-value-a-caller-may-leave-out-is-an-option.md), whose
 optional trailing `Option`s were a function's alone.
@@ -202,6 +202,7 @@ PriorityLevel`.
   it was `(value: number)`. A parameter's or a cast's function has names of
   its own no one wrote here, so it can't disagree with the ones written;
   leaving every name to the types for it named less than the program does.
+  The user's decision (2026-11-04), which keeps this over the rule above.
 - **An alias written inside a `dyn Fn`, its parameters and its result, and
   inside a private alias of the crate's that isn't declared, is named**
   (`aliases_in`, `aliases_in_args`), as one in a fn pointer or a generic
