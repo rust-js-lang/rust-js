@@ -367,11 +367,13 @@ pub(super) fn assembled(mut found: Vec<Named>, sources: &super::sources::Capture
     };
     let glob = |leaf: Leaf| matches!(leaf, Leaf::Glob);
     let mut reexports: Vec<(rustc_span::Span, Reexport)> = Vec::new();
+    // A module's own, `export * as ns from`, is a statement of its own,
+    // never a name of a list, which JS can't say (#602).
+    let namespace = |reexport: &Reexport| matches!(reexport.named.as_slice(), [(all, _)] if all == "*");
     for ((at, written), from, named) in found {
-        match reexports
-            .iter_mut()
-            .find(|(was, reexport)| was.lo() == at.lo() && reexport.from == from)
-        {
+        match reexports.iter_mut().find(|(was, reexport)| {
+            was.lo() == at.lo() && reexport.from == from && named.0 != "*" && !namespace(reexport)
+        }) {
             Some((_, reexport)) => {
                 reexport.named.push(named);
                 reexport.written.push(leaf(written));
@@ -404,6 +406,8 @@ pub(super) fn assembled(mut found: Vec<Named>, sources: &super::sources::Capture
         match merged.last_mut() {
             Some(last)
                 if last.from == reexport.from
+                    && !namespace(last)
+                    && !namespace(&reexport)
                     && !last.span.is_none()
                     && !reexport.span.is_none()
                     && (sources
@@ -484,7 +488,14 @@ fn globbed(
         }
         let Res::Def(kind, id) = child.res else { continue };
         let name = child.ident.to_string();
+        // Another crate's item no JS module of rust-js's has, std's, that
+        // the glob gives only within the crate, of a private `use` it
+        // reaches, `use std::mem::*;` of rustc's import-glob-crate: no
+        // module's JS imports it from here, as a call of it is std's own
+        // wherever it's named, and no JS outside the crate sees the name.
+        let unsaid = !child.vis.is_public() && !id.is_local() && foreign.item(id).is_none();
         match kind {
+            _ if unsaid => {}
             DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. } => {
                 // Its own, through a module that re-exports it: written already.
                 if fns

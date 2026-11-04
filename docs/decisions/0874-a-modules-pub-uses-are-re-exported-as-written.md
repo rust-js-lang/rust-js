@@ -543,3 +543,41 @@ the module it names exports it", whose glob and glob of a glob are now
 `export * from`. Mutations `glob-every-never`, `glob-every-unequal`
 (`output.ts`), `glob-leaf-unmarked` (`lower/reexports.ts`) and
 `every-export-listed` (`to_oxc/header.ts`).
+
+## Amendment: `export * from` loads from where its file is, and a module's own is a statement of its own (#602, P0)
+
+React's markup Flight client config is react-markup's module, mounted
+`#[path = "../react-client/src/forks/ReactFlightClientConfig.markup.rs"]`
+in react-client's directory. Since #593 its glob of every name
+`react_markup_legacy_client_stream_config` exports printed `export * from
+'./src/ReactMarkupLegacyClientStreamConfig.js'`, relative to the crate's
+root, so the module failed to load: a module's JS is written in the
+crate's build directory and copied where it goes in source, each relative
+specifier relinked by the manifest's `links`, and those were each
+`import`'s and `export {..} from`'s, never an `export * from`'s or an
+`export * as ns from`'s. **`to_oxc::module_specifiers` gives every
+statement that loads a module, `export * from` and `export * as ns from`
+too**, so each is relinked as an `import` is. And a `pub use` of a module
+itself in a run with a glob of it was merged into the glob's list, `export
+{ * as streamConfig, decoder, chunk } from ..`, which JS can't read: **a
+module's own re-export, `export * as ns from`, is a statement of its own**
+(`reexports.rs`). Case N of ADR 0262: the same module, named from where
+the file is.
+
+Also since #592, rustc's `imports/import-glob-crate.rs` was refused: its
+root's `use std::mem::*;` and an unused function's `mod foo { pub use *;
+}` (edition 2015) give `foo` std's names, within the crate, and each was
+refused, "a `pub use` of every name of a module, of `forget`". **A glob
+says nothing of another crate's item no rust-js library has, std's, that
+it gives only within the crate**: a call of one is std's wherever it's
+named, and no JS outside the crate sees the name. A public glob of std's,
+`pub use std::mem::*;`, is refused still, as a `pub use std::mem::size_of;`
+is.
+
+Held by `test/cargo-in-source.test.ts`'s "a Cargo build's export * of a
+module placed outside its crate's directory loads" and
+`test/glob-reexports.test.ts`'s "a glob of std's names the crate alone sees
+says nothing of them"; mutations `export-all-unlinked`
+(`to_oxc/expressions.ts`), `namespace-merged-into-a-list`,
+`glob-of-std-within-the-crate-refused` and `public-glob-of-std-unsaid`
+(`lower/reexports.ts`).

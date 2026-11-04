@@ -197,3 +197,34 @@ pub mod client {
   expect(p.code).not.toBe(0);
   expect(p.stderr).toContain("a `pub use` of every name of a module, of `unstable_create_event_handle`");
 });
+
+// rustc's imports/import-glob-crate.rs: the crate root's `use
+// std::mem::*;` and an unused function's `mod foo { pub use *; }`, of
+// edition 2015, which gives `foo` std's names within the crate. Since #592
+// each was refused, "a `pub use` of every name of a module, of `forget`",
+// where the program passed before. std's items have no JS module, a call
+// of one is std's wherever it's named, and no JS outside the crate sees
+// those names, so the glob says nothing of them; of what it gives JS, the
+// crate's own, it says each. A public glob of std's is refused still.
+test("a glob of std's names the crate alone sees says nothing of them", async () => {
+  const dir = fixture("glob-of-std-within-the-crate");
+  writeFileSync(join(dir, "main.rs"), `use std::mem::*;
+
+pub fn bytes() -> usize {
+    size_of::<u16>()
+}
+
+pub fn main() {
+    mod foo {
+        pub use *;
+    }
+    assert_eq!(foo::bytes(), 2);
+}
+`);
+  run([compiler, join(dir, "main.rs"), "-o", join(dir, "main.js"), "--", "--edition", "2015", "-Aunused_imports"]);
+  const lib = await import(join(dir, "main.js"));
+  expect([lib.main(), lib.bytes()]).toEqual([undefined, 2]);
+  writeFileSync(join(dir, "public.rs"), "pub mod all {\n    pub use std::mem::*;\n}\n");
+  const p = runSync([compiler, join(dir, "public.rs"), "-o", join(dir, "public.js"), "--", "--crate-type=lib"], root, 60_000);
+  expect([p.code === 0, p.stderr]).toEqual([false, expect.stringContaining("a `pub use` of every name of a module, of `forget`")]);
+});

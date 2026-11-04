@@ -113,8 +113,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a module's `pub use`s from one module are one statement wherever they're written, their comments and order lost (ADR 0240, amended)",
     file: "src/lower/reexports.rs",
-    find: "            .find(|(was, reexport)| was.lo() == at.lo() && reexport.from == from)\n",
-    replace: "            .find(|(_, reexport)| reexport.from == from)\n",
+    find: "            was.lo() == at.lo() && reexport.from == from && named.0 != \"*\" && !namespace(reexport)\n",
+    replace: "            reexport.from == from && named.0 != \"*\" && !namespace(reexport)\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
   },
   {
@@ -440,5 +440,29 @@ export const mutations: Mutation[] = [
     find: "    let written = (statement, Leaf::Glob);\n",
     replace: "    let written = (statement, Leaf::Unwritten);\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of every name its module's file exports is export \\* from"],
+  },
+  {
+    name: "glob-of-std-within-the-crate-refused",
+    breaks: "a glob that gives std's names only within the crate, rustc's import-glob-crate's `pub use *;` of a root's `use std::mem::*;`, is refused, \"of `forget`\", where the program compiled before #592",
+    file: "src/lower/reexports.rs",
+    find: "        let unsaid = !child.vis.is_public() && !id.is_local() && foreign.item(id).is_none();\n",
+    replace: "        let unsaid = false && !id.is_local() && foreign.item(id).is_none();\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "a glob of std's names the crate alone sees"],
+  },
+  {
+    name: "public-glob-of-std-unsaid",
+    breaks: "a public glob of std's names, `pub use std::mem::*;`, says nothing of them, where a JS importer finds none, not refused",
+    file: "src/lower/reexports.rs",
+    find: "        let unsaid = !child.vis.is_public() && !id.is_local() && foreign.item(id).is_none();\n",
+    replace: "        let unsaid = !id.is_local() && foreign.item(id).is_none();\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "a glob of std's names the crate alone sees"],
+  },
+  {
+    name: "namespace-merged-into-a-list",
+    breaks: "a `pub use` of a module beside a glob of it, one run, prints `export { * as ns, a, b } from`, which JS can't read (#602)",
+    file: "src/lower/reexports.rs",
+    find: "                    && !namespace(last)\n                    && !namespace(&reexport)\n",
+    replace: "",
+    tests: ["test/cargo-in-source.test.ts", "-t", "export \\* of a module placed outside"],
   },
 ];

@@ -487,4 +487,12 @@ export const mutations: Mutation[] = [
       "a closure a symbol names is its method"
     ]
   },
+  {
+    name: "export-all-unlinked",
+    breaks: "an `export * from` of a module placed outside its crate's directory keeps its specifier from the crate's build directory where its JS goes in source, a file that isn't there (#602, P0)",
+    file: "src/to_oxc/expressions.rs",
+    find: "            self.add(&it.source);\n        }\n    }\n    let allocator",
+    replace: "            let _ = it;\n        }\n    }\n    let allocator",
+    tests: ["test/cargo-in-source.test.ts", "-t", "export \\* of a module placed outside"],
+  },
 ];

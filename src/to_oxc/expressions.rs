@@ -1164,6 +1164,11 @@ pub fn module_specifiers(code: &str, declarations: bool) -> Result<Vec<(usize, u
         fn visit_export_from_declaration(&mut self, it: &ExportFromDeclaration<'a>) {
             self.add(&it.source);
         }
+        // `export * from` and `export * as ns from` load what they name as
+        // an `import` does (#602).
+        fn visit_export_all_declaration(&mut self, it: &oxc_ast::ast::ExportAllDeclaration<'a>) {
+            self.add(&it.source);
+        }
     }
     let allocator = Allocator::default();
     let source_type = if declarations {
