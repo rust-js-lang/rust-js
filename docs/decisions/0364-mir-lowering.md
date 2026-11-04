@@ -1120,3 +1120,16 @@ and `says-of-an-and-unread` (`lower/mir/tidy/decisions.ts`), and
 `written-order-within-a-part-reversed` (`lower/mir/tidy/decisions/paths.ts`).
 The last is a wrong answer native Rust catches: `x[0]` read before its
 `x != null`.
+
+### `says_within` reads one test (#674, 2026-11-04)
+
+`simplified`'s stronger test, `a !== 1` before a later test of `a` that
+says more, read an `&&` or an `||` of an or-pattern's alternatives too,
+`(b === 3 && a === 2) || (b === 2 && a === 3)` (#617). Since #673's
+`said`, the arm before them failing says that `a !== 1`, and nothing read
+those two arms any more. Their mutations, `or-pattern-alternatives-say-nothing`
+and `or-pattern-alternative-tests-unread`, survived on 36a3aa30a, before
+#674. With both arms gone, `says_within` reads a single test of a value,
+an `atom`. Every corpus case's JS, and every snapshot's, is unchanged.
+So is the JS of 290 generated matches, guards among them, compiled with
+and without the arms. The arms and the two mutations are gone.

@@ -140,11 +140,11 @@ pub(super) fn simplified(tests: &[Expr], patterns: bool) -> Option<Vec<Expr>> {
     }
     // A test of a value a later one of it says more than, `a !== 1` before
     // `a === 2`: that one, in its place, so each test is still read only
-    // where it was, and the path's tests read `a === 2 && b === 2`; or an
-    // or-pattern's alternatives each of which does, `a !== 1` before `(b
-    // === 3 && a === 2) || (b === 2 && a === 3)` (#617). One the
-    // alternatives before it each say, `b !== 1` after them, goes as the
-    // arm before them failing says it (`said`, #631, #673).
+    // where it was, and the path's tests read `a === 2 && b === 2`. One an
+    // or-pattern's alternatives after it each say, `a !== 1` before `(b ===
+    // 3 && a === 2) || (b === 2 && a === 3)` (#617), or those before it,
+    // `b !== 1` after them, goes as the arm before them failing says it
+    // (`said`, #631, #673).
     let mut i = 0;
     while i < out.len() {
         let stronger =
@@ -175,15 +175,12 @@ pub(super) fn simplified(tests: &[Expr], patterns: bool) -> Option<Vec<Expr>> {
 }
 
 /// Whether `e` says of `subject` no more than `set` holds: a test of it
-/// within `set`, `a === 2` of `a !== 1`'s, of an `&&` one of its tests, of
-/// an `||` each of its alternatives, `(b === 3 && a === 2) || (b === 2 &&
-/// a === 3)` (`simplified`, #617).
+/// within `set`, `a === 2` of `a !== 1`'s (`simplified`). An `&&` or an
+/// `||` of an or-pattern's alternatives, `(b === 3 && a === 2) || (b === 2
+/// && a === 3)` after `a !== 1`, is `said`'s, as the arm before them
+/// failing says it (#617, #673).
 fn says_within(e: &Expr, subject: &Expr, set: &Set) -> bool {
-    match &e.kind {
-        ExprKind::Binary(Op::And, a, b) => says_within(a, subject, set) || says_within(b, subject, set),
-        ExprKind::Binary(Op::Or, a, b) => says_within(a, subject, set) && says_within(b, subject, set),
-        _ => atom(e).is_some_and(|(s, later)| same_subject(&s, subject) && later.within(set)),
-    }
+    atom(e).is_some_and(|(s, later)| same_subject(&s, subject) && later.within(set))
 }
 
 /// `path`'s tests in the order they're written, `a === 2 && b === 3` of

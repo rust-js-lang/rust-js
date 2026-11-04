@@ -31,24 +31,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "or-pattern-alternatives-say-nothing",
-    breaks:
-      "a later arm of a tuple's or-pattern after `(1, _) | (_, 1)` keeps `a !== 1` before `(b === 3 && a === 2) || ..`, which says it, more tests than the tree's, so the arms are MIR's `if (a !== 1 && b !== 1) { .. continue; } hit = true;`, not the chain as written (#617)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
-    find: "        ExprKind::Binary(Op::Or, a, b) => says_within(a, subject, set) && says_within(b, subject, set),\n",
-    replace: "        ExprKind::Binary(Op::Or, a, b) => false,\n",
-    tests: ["test/lowering-comments-inside.test.ts", "-t", "tuple's or-pattern is the arm's"],
-  },
-  {
-    name: "or-pattern-alternative-tests-unread",
-    breaks:
-      "an or-pattern's alternative, `a === 2 && b === 3`, says nothing of `b` past its first test, so `b !== 1` after them stays, `(0, 0)`'s `match` MIR's labeled block, not the chain as written (#617, #631)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
-    find: "        ExprKind::Binary(Op::And, a, b) => says_within(a, subject, set) || says_within(b, subject, set),\n",
-    replace: "        ExprKind::Binary(Op::And, a, b) => says_within(a, subject, set),\n",
-    tests: ["test/lowering-match-paths.test.ts", "-t", "after an arm that tests both values"],
-  },
-  {
     name: "decisions-impossible-path-kept",
     breaks:
       'a path no value takes, `c < "0" && c >= "A"`, is one of an arm\'s tests',
