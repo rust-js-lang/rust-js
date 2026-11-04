@@ -500,3 +500,15 @@ whose condition is a closure's catch_unwind is above the try", run:
 mutations `closure-condition-comment-in-the-try`,
 `condition-call-taken-for-a-closure` and
 `closure-let-else-said-in-the-try` (`prepare/catches.ts`).
+
+The mutation `condition-call-where-its-const-is`, which reads where the
+call is written from its `const` alone, `made.span`, is equivalent since
+this amendment: of a `match` of a closure's `catch_unwind` whose `const`
+MIR placed at an arm, it makes the call's comment the closure's, above the
+`try`, and a comment above that arm prints where the arm's own marker
+puts it, as before. The whole corpus compiled with and without it prints
+the same, and `lowering-comments-jumps`, `lowering-comments-ends`,
+`lowering-unwind-arms` and `js-any-values` pass with it, so it's removed
+(2026-11-04). The code keeps the call's own place, which says what the
+comment is of.
+

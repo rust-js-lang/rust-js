@@ -701,15 +701,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "condition makes the call"],
   },
   {
-    name: "condition-call-where-its-const-is",
-    breaks:
-      "where a `match` of `catch_unwind` calls is read from its `const`, a temporary MIR placed at an arm, so the comment above its `Ok(()) => {}` arm is taken as the call's, above the `try` (rd736)",
-    file: "src/prepare/catches.rs",
-    find: "    let written_at = match value.span.is_none() {\n        true => made.span,\n        false => value.span,\n    };\n",
-    replace: "    let written_at = made.span;\n",
-    tests: ["test/lowering-comments-jumps.test.ts", "-t", "loop.s Ok arm of nothing"],
-  },
-  {
     name: "closure-condition-comment-in-the-try",
     breaks:
       "a comment above an `if` whose condition is a closure's `catch_unwind`, `// c\\n if catch_unwind(|| { .. }).is_err()`, is first in the `try`, the closure's body, not above the `try`, as React's getOffsets writes it (#688)",
