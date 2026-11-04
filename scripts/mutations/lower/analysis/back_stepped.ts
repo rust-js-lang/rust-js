@@ -264,4 +264,31 @@ export const mutations: Mutation[] = [
     replace: "        .map(|source| source.peel_refs())\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_skip_take_and_filter_stepped_from_back.rs$"],
   },
+  {
+    name: "rev-stepped-from-back-unrecorded",
+    breaks:
+      "a `rev()` whose own `rfold` or `nth_back` the crate calls isn't recorded stepped from its back: one MIR holds in a variable first, past `String::new()` or lent to `nth_back`, is refused, its form gone (#702)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "    if reversed_source(tcx, adapter).is_some() {\n",
+    replace: "    if false && reversed_source(tcx, adapter).is_some() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
+  },
+  {
+    name: "flatten-asked-unrecorded",
+    breaks:
+      "a flatten a `rev()` asks to be double-ended isn't made knowing its back where it's made: one MIR holds in a variable before its `rev()`, past a call whose cleanup drops what's live beside it, is refused (#702)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                            || flatten_of_known_items(recognition, held)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
+  },
+  {
+    name: "flatten-of-adapters-recorded",
+    breaks:
+      "a `flat_map` whose closure gives std's adapter, `groups.iter().flat_map(|g| g.iter().map(f)).rev()`, is made knowing its back where it's made, its JS `.map` taken for std's struct: its `rev().collect()` is empty (#702)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "    !item.is_some_and(|item| matches!(item.peel_refs().kind(), ty::Adt(a, _) if is_iter_adapter_def(tcx, a.did())))\n",
+    replace: "    item.is_some() || true\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_iterators_from_back.rs$"],
+  },
 ];

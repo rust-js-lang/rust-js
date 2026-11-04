@@ -670,6 +670,14 @@ What's refused is in [the limitations](limitations.md).
   length, `ends((1..4).rev())`, is stepped as Rust's `Rev` steps it; a map
   of a reversed range given so is refused
   ([0987](../decisions/0987-a-rev-made-in-place-read-by-its-form.md)).
+  One whose own `rfold`, `nth_back` or `rfind` the crate calls is made
+  knowing its back where it's made, as its source's `fold`, `nth` and
+  `find`, wherever it's held before it's stepped:
+  `v.iter().map(f).rev().nth_back(1)` is `$nthBack($mapEnds($iter(v.toReversed()), f), 1)`,
+  `(0..5).rev().nth_back(n)` steps `$rev($iterator(range, $rangeNext, false,
+  $rangeNextBack))`, and a flatten's `rev().rfold(String::new(), f)` is
+  `$foldBack($rev($flattenEnds(..)), "", f)`
+  ([0545](../decisions/0545-a-map-stepped-from-its-back-is-made-knowing-it.md), #702).
 - **Room asked past `isize::MAX` bytes panics `capacity overflow`, as
   std's does:** `Vec::with_capacity(n)` is `$roomFor(n, 4); []`, of the
   items' size, and `reserve`, `vec![x; n]`, a slice's `repeat`,

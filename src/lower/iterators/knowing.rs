@@ -11,6 +11,65 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         crate::lower::iterators::reversal(value, range_back)
     }
 
+    /// Whether a `rev()` of type `ty` is made knowing its back where it's
+    /// made (`reversed_knowing`): one the crate steps from its back, its own
+    /// `rfold`, `nth_back` or `rfind` called (ADR 0545), of a source whose
+    /// `rev()` is made here, the crate's iterator, a range or a std
+    /// adapter, not a type parameter or a zip, which `reversed` steps by
+    /// what it's given. So one made in place that MIR holds in a variable
+    /// before it's stepped, past a call or a cleanup that drops it, or lends
+    /// to `nth_back`, steps from its back as it is, no form of it left to
+    /// read (#702). The one answer, of what's made and what's stepped.
+    pub(in crate::lower) fn reversed_made_knowing(&self, ty: ty::Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        crate::lower::recognition::reversed_source(self.tcx, ty).is_some_and(|source| {
+            let source = self.reveal(source.peel_refs());
+            !self.is_unknown(source) && crate::lower::recognition::zipped_sources(self.tcx, source).is_none()
+        }) && self.stepped_from_its_back(ty)
+    }
+
+    /// `value`, a `rev()` of type `ty` just made, made knowing its back
+    /// where `reversed_made_knowing` says: of the crate's iterator, by its
+    /// own `next` (`reversed_user_knowing`); of another, by its form
+    /// (`reversal_knowing`), or refused. Else itself.
+    pub(in crate::lower) fn reversed_knowing(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
+        let ty = self.reveal(ty.peel_refs());
+        if !self.reversed_made_knowing(ty) {
+            return Ok(value);
+        }
+        let source = crate::lower::recognition::reversed_source(self.tcx, ty).expect("a `rev()`");
+        if self.is_user_iterator(source) {
+            return self.reversed_user_knowing(value, source, (true, true), span);
+        }
+        match self.reversal_knowing(&value, source, span)? {
+            Some(knowing) => Ok(knowing),
+            None => Err(self.unsupported(
+                span,
+                &format!("a `{ty}` stepped from its back, made in a form rust-js can't step from its back"),
+            )),
+        }
+    }
+
+    /// `value`, a `rev()` of `source` made here, made knowing its back by
+    /// its form (`reversal`, ADR 0987), before its range is read out of it:
+    /// `$rev(it)` as it is, `it` made knowing its back where it was made;
+    /// `$rev` of a range stepped from its end made knowing its back; of an
+    /// array's items reversed, as its source's of them is. `None` of
+    /// another form.
+    fn reversal_knowing(&mut self, value: &Expr, source: ty::Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let Some(reversal) = self.reversal_of(value, source) else {
+            return Ok(None);
+        };
+        Ok(Some(match reversal {
+            Reversal::Stepped(_) | Reversal::Items => value.clone(),
+            Reversal::Range(range) => {
+                let range = self.as_double_ended(range.clone(), source, span)?;
+                Expr::call_helper("$rev", vec![range])
+            }
+            Reversal::Chain => self.as_double_ended(value.clone(), source, span)?,
+        }))
+    }
+
     /// Whether `ty`, a map's or a filter's, is one the crate steps from its
     /// back (ADR 0545), made knowing it where it's made: the one answer, of
     /// what's made and what's stepped.
@@ -329,6 +388,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `dyn`'s or a type parameter's, itself.
     pub(in crate::lower) fn as_double_ended(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
         let ty = self.reveal(ty);
+        // A `rev()` made in place, knowing its back where it's made
+        // (`reversed_made_knowing`): itself, wherever MIR holds it. Not one
+        // a variable or a field holds, std's struct (ADR 0871), which
+        // `knowing_held` gives its back below.
+        if self.reversed_made_knowing(ty) && made_in_place(&value) {
+            return Ok(value);
+        }
         // A `rev()` of the crate's iterator made in place, of its form, as
         // `reversed_user_knowing` makes it again.
         if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty)
@@ -337,23 +403,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return self.reversed_user_knowing(value, source, (true, false), span);
         }
-        // A `rev()` made here, by its form (`reversal`, ADR 0987), before
-        // its range is read out of it: `$rev(it)` as it is, `it` made
-        // knowing its back where it was made; `$rev` of a range stepped from
-        // its end made knowing its back; of an array's items reversed, as
-        // its source's of them is.
         if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty)
-            && let Some(reversal) = self.reversal_of(&value, source)
+            && let Some(knowing) = self.reversal_knowing(&value, source, span)?
         {
-            return match reversal {
-                Reversal::Stepped(_) => Ok(value.clone()),
-                Reversal::Range(range) => {
-                    let range = self.as_double_ended(range.clone(), source, span)?;
-                    Ok(Expr::call_helper("$rev", vec![range]))
-                }
-                Reversal::Items => Ok(value.clone()),
-                Reversal::Chain => self.as_double_ended(value.clone(), source, span),
-            };
+            return Ok(knowing);
         }
         let value = stepped_value(&value).unwrap_or(value);
         // One a struct holds, which keeps its source (ADR 0542): of one given

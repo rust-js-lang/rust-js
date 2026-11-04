@@ -11,6 +11,7 @@ use crate::lower::body_queries::strip;
 use crate::lower::recognition::{
     Recognition, back_stepped_source, copied_source, enumerated_source, filter_mapped_source, filtered_source,
     flattened_source, inspected_source, is_double_ended, is_exact_size, is_iter_adapter_def, mapped_source,
+    reversed_source,
 };
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::{ExprId, ExprKind};
@@ -111,13 +112,19 @@ pub(super) fn back_stepped<'tcx>(
                         // A held `Rev`'s, of an array's items too, which no
                         // form of the caller's reverses once it's held.
                         // And a map whose closure has a destructor, held in a
-                        // variable too.
+                        // variable too. And a flatten, which no form of its own
+                        // steps from the back, made `$flattenEnds` where it's
+                        // asked anyway: made so where it's made, as MIR may
+                        // hold it in a variable before its `rev()`, past a
+                        // call whose cleanup drops what's live (#702), but
+                        // of items that are std's adapters.
                         if held != asked
                             || given
                             || held_rev
                             || held_arg
                             || dropping_items(recognition, held, &drops)
                             || closure_drops(tcx, held, &drops)
+                            || flatten_of_known_items(recognition, held)
                         {
                             let made_apart = given || held_rev || held_arg;
                             stepped.extend(back_stepped_adapter(tcx, recognition, held, made_apart, &drops));
@@ -208,6 +215,13 @@ fn back_stepped_adapter<'tcx>(
     if flattened_source(tcx, adapter).is_some() {
         return Some(tcx.erase_and_anonymize_regions(adapter));
     }
+    // A `rev()`, whose forms, a range stepped from its end or an array's
+    // items' chain reversed, step only forward: made knowing its back where
+    // it's made, as MIR may hold it in a variable before its `rfold` or
+    // `nth_back`, past a call, a cleanup that drops it, or a `&mut` (#702).
+    if reversed_source(tcx, adapter).is_some() {
+        return Some(tcx.erase_and_anonymize_regions(adapter));
+    }
     // An enumeration of items with a destructor, held in a variable to drop
     // them, whose own `next_back()` the crate calls: std's compiled
     // `Enumerate` where it's held (ADR 0871), which steps its source by
@@ -235,6 +249,20 @@ fn back_stepped_adapter<'tcx>(
         && !dropping_items(recognition, adapter, &drops)
         && !closure_drops(tcx, adapter, &drops);
     (!native).then(|| tcx.erase_and_anonymize_regions(adapter))
+}
+
+/// Whether `adapter` is a flatten whose items are made knowing their backs
+/// alike where it's made and where it's stepped: an array's, a `Vec`'s or
+/// the crate's own iterators. Not std's adapters a closure gives,
+/// `flat_map(|g| g.iter().map(f))`'s, whose JS chain where the flatten is
+/// made is taken for std's struct, which steps nothing of it (#702).
+fn flatten_of_known_items<'tcx>(recognition: Recognition<'_, 'tcx>, adapter: Ty<'tcx>) -> bool {
+    let tcx = recognition.tcx;
+    let Some((source, made)) = flattened_source(tcx, adapter) else {
+        return false;
+    };
+    let item = made.or_else(|| recognition.iterator_item(source.peel_refs()));
+    !item.is_some_and(|item| matches!(item.peel_refs().kind(), ty::Adt(a, _) if is_iter_adapter_def(tcx, a.did())))
 }
 
 /// `stepped`, the types stepped from their back, and each map or filter

@@ -5,7 +5,8 @@ Status: Accepted; a filter of an array's items is one too, since
 [0488](0488-an-extension-bound-iterator-is-an-iterator.md) and [0535](0535-a-lazy-map-steps-from-its-back.md);
 accepts more of the [iterators draft](draft/cloned-and-buffering-iterators.md)'s
 analysis. Amended: a type parameter's map or filter where its bounds give
-no back is its JS iterator forward alone.
+no back is its JS iterator forward alone; a `rev()` whose own back step
+the crate calls is one too (#702).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): its items from its
 back, and when its function runs, are Rust's.
@@ -37,7 +38,8 @@ an array's.** `stepped_from_its_back` is the one answer the lowering asks.
   gives it, where its bounds say it has one; where they don't, `either`'s
   forward-only methods, it's made as before.
 - `rev()` isn't among them: its own forms reverse an array's or a range's
-  items eagerly where that reads better (ADR 0164).
+  items eagerly where that reads better (ADR 0164). Amended: one whose own
+  `rfold`, `nth_back` or `rfind` the crate calls is, below (#702).
 
 ## Why
 
@@ -256,3 +258,96 @@ where it's made, as one given behind an `impl` is.**
 - The mutations are `held-given-unrecorded`, `held-given-of-items-native`,
   `made-in-place-taken-held`, `held-through-borrows-unseen` and
   `path-call-uncalled` (`lower/analysis/back_stepped.ts`).
+
+## Amendment (2026-11-04): a `rev()` stepped from its back (#702)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; valid Rust was
+refused. `Folds(0, 2).map(|d| vec![D(d.0 * 10), d]).flatten().rev()
+.rfold(String::new(), f)`, of the crate's iterator `Folds` whose items `D`
+have a destructor, was refused: "a `Rev<Flatten<Map<Folds, ..>>>` as a
+`DoubleEndedIterator`, which rust-js can't step from its back". Of `u32`s
+it compiled. The cause wasn't the crate's iterator, nor what std's
+adapters ask of it (ADR 1089's `OwnStep`, which says `Rev::rfold` is its
+source's `fold`), but where the `rev()` is when it's stepped: MIR holds
+it in a variable before its `rfold` where a call between may unwind and
+drop it, `String::new()`'s, so a `Rev` of what has a destructor is a
+`const` by then, and `nth_back(n)` takes it by `&mut`, so
+`v.iter().map(f).rev().nth_back(1)` of numbers was refused too, and
+`(0..5).rev().nth_back(mk())`, `Folds(0, 3).rev().nth_back(mk())` and a
+`Vec`'s map's or filter's `rev().rfold(String::new(), f)`. Each step read
+the `rev()` by its form (ADR 0987), which a variable doesn't have: the
+first decision above left `rev()` out, its forms reading better.
+
+**A `rev()` whose own `DoubleEndedIterator` method the crate calls,
+`rfold`, `nth_back` or `rfind`, is recorded by `back_stepped`, as a
+flatten is, and made knowing its back where it's made.**
+
+- `knowing::reversed_made_knowing` is the one answer, asked where it's
+  made, `mir_iter_method`'s `rev()`, and where it's stepped,
+  `as_double_ended`, which takes one made in place as it is, held or not.
+  Not of a type parameter's or a zip's, which `reversed` steps by what
+  it's given, as before. Not `knows_its_back`, which answers of a type:
+  std's struct of the same type, a `Rev` a `Vec` or a field holds (ADR
+  0871), is given its back where it's stepped, `knowing_held`, as before,
+  so a type answer would take it as it is, with no back.
+- A flatten a `rev()` or generic code asks to be double-ended is recorded
+  too, wherever it's made: its forms never step from the back, and
+  `as_double_ended` made it `$flattenEnds` where it was asked, by its form,
+  which MIR may hold in a variable first, where the call between has a
+  cleanup that drops what's live beside it, a `found` of an earlier
+  statement. A crate's two flattens of different types were refused
+  together where each compiled alone. It's made `$flattenEnds` where it's
+  made now, so its JS is as it was. Not one whose items are std's adapters,
+  `groups.iter().flat_map(|g| g.iter().map(f))`: made knowing where it's
+  made, the closure's JS `.map` is taken for std's struct by the outer
+  call's span (`compiled_struct_at`) and steps nothing, as that flatten's
+  `next_back()` does already on main, a wrong answer filed as #716; at its
+  `rev()` it's made as before (`flatten_of_known_items`).
+- Where it's made, `reversed_knowing` makes it so: the crate's iterator's
+  by its own `next` (`reversed_user_knowing`), another by its form
+  (`reversal_knowing`, the reader `as_double_ended` had): `$rev(it)` and an
+  array's items reversed as they are, a range stepped from its end
+  `$rev` of the range knowing its back, a chain over an array's items
+  reversed its source's, `$mapEnds($iter(v.toReversed()), f)`. Any other
+  form is refused there, never stepped as a JS iterator with no back.
+- What it reads is as it was where the form was readable: the consumer
+  made the same form knowing its back then, the step later; a range's
+  `rev()` the crate steps from its back elsewhere in the crate, of the
+  same type, steps `$rev($iterator(range, $rangeNext, false,
+  $rangeNextBack))` where it was `$iterator(range, $rangeNextBack)`.
+- **The user's decision (2026-11-05): per type.** A `rev()` the crate
+  steps from its back anywhere is made knowing its back for every value of
+  its type, as a map is, so one only ever stepped forward reads the longer
+  form too: `$iterator([3], countdownDoubleEndedIterator_nextBack, false,
+  countdownIterator_next)` where it was `$iterator([3],
+  countdownDoubleEndedIterator_nextBack)`. The alternative, a fact of each
+  `rev()` call stepped from its back, reads tighter where a type's `rev()`s
+  differ, but needs a fact carried from each step back to where its value
+  was made through every place MIR may hold it, the bookkeeping this
+  amendment's flatten needs already; one type, one form, is the general
+  rule `back_stepped` answers.
+- Its order is std's: a `rev()`'s `rfold` folds its source forward, its
+  flatten's `next` of each inner, `$rev`'s `fold` its source's, and what
+  `Folds::next` panics part-way drops the accumulator, as std unwinds.
+- Still refused (#718, P2): a lazy `rev()`'s `next_back()`, a type parameter's
+  `rev().nth_back(n)`, a zip's, a `chain()` of a `Vec`'s items with a
+  destructor reversed, and a map of a range reversed held so
+  (`(0..5).map(f).rev().rfold(mk(), g)`), whose form isn't read.
+- `test/corpus/own_iterator_flattened_from_its_back.rs` checks the issue's
+  `rev().rfold`, a `flat_map`'s, a `Vec`'s, the crate's iterators
+  flattened, a flatten's `rfold` and `rev().fold`, `rev().nth_back` and
+  `rev().rfind`, the crate's iterator's, a slice's map's and a range's
+  `rev().nth_back`, a type parameter's `rev().rfold`, std's struct of the
+  crate's `rev()` a `Vec` holds, flattened, flattens beside what's live,
+  `rev().rfind` and `next_back()` before a `rev().rfold` and a `rev().fold`,
+  and two panics, against native Rust, as the crate builds it and with
+  std's iterator structs. Its `rfind` and `next_back()` leave a flatten's
+  inner part-way, whose items its close drops since #705. The mutations are `rev-stepped-from-back-unrecorded`,
+  `flatten-asked-unrecorded` and `flatten-of-adapters-recorded`
+  (`lower/analysis/back_stepped.ts`), `rev-made-knowing-read-by-form`,
+  `rev-made-knowing-of-a-held-struct` and
+  `rev-made-knowing-of-own-unknowing` (`lower/iterators/knowing.ts`) and
+  `rev-made-unknowing` (`lower/mir/iter.ts`). No program found steps a
+  type parameter's or a zip's `rev()` from its back that compiles either
+  way, so the guard that leaves them out has no mutation: it keeps their
+  forms as they were.

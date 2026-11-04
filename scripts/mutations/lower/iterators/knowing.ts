@@ -68,9 +68,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `rev()` made in place, given where generic code steps it from its back, is refused: `ends((1..4).rev())` (ADR 0987)",
     file: "src/lower/iterators/knowing.rs",
-    find: "        if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty)\n            && let Some(reversal) = self.reversal_of(&value, source)\n        {\n            return match reversal {\n                Reversal::Stepped(_) => Ok(value.clone()),\n",
+    find: "        if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty)\n            && let Some(knowing) = self.reversal_knowing(&value, source, span)?\n",
     replace:
-      "        if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty).filter(|_| false)\n            && let Some(reversal) = self.reversal_of(&value, source)\n        {\n            return match reversal {\n                Reversal::Stepped(_) => Ok(value.clone()),\n",
+      "        if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty).filter(|_| false)\n            && let Some(knowing) = self.reversal_knowing(&value, source, span)?\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_given_to_generic_code.rs$"],
   },
   {
@@ -78,9 +78,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a reversed range made in place, given where generic code steps it, is stepped forward: `ends((1..4).rev())` is `(Some(3), Some(1), ..)`, not `(Some(1), Some(3), ..)` (ADR 0987)",
     file: "src/lower/iterators/knowing.rs",
-    find: '                    let range = self.as_double_ended(range.clone(), source, span)?;\n                    Ok(Expr::call_helper("$rev", vec![range]))\n',
-    replace:
-      "                    let range = self.as_double_ended(range.clone(), source, span)?;\n                    Ok(range)\n",
+    find: '                let range = self.as_double_ended(range.clone(), source, span)?;\n                Expr::call_helper("$rev", vec![range])\n',
+    replace: "                let range = self.as_double_ended(range.clone(), source, span)?;\n                range\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_given_to_generic_code.rs$"],
   },
   {
@@ -755,5 +754,32 @@ export const mutations: Mutation[] = [
     find: "        (exact && self.hinted_by_its_struct(ty)).then(|| {\n",
     replace: "        (exact && self.compiled_step(ty, std_item(self.tcx, StdItem::Iterator), \"size_hint\")).then(|| {\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_of_a_peekable_from_back.rs$"],
+  },
+  {
+    name: "rev-made-knowing-read-by-form",
+    breaks:
+      "a `rev()` made knowing its back where it's made is read by its form where it's stepped: the crate's iterator's, held in a variable past `mk()`, is refused, `a rev() of a Folds a variable holds` (#702)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if self.reversed_made_knowing(ty) && made_in_place(&value) {\n            return Ok(value);\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
+  },
+  {
+    name: "rev-made-knowing-of-a-held-struct",
+    breaks:
+      "a `rev()` the crate steps from its back is taken as it is wherever it's stepped, std's struct a `Vec` holds too, which has no back: its flatten folds nothing (#702)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if self.reversed_made_knowing(ty) && made_in_place(&value) {\n",
+    replace: "        if self.reversed_made_knowing(ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
+  },
+  {
+    name: "rev-made-knowing-of-own-unknowing",
+    breaks:
+      "a `rev()` of the crate's iterator the crate steps from its back is made by its forms, not by its own `next`: its `$iterator(it, nextBack)` has no back, refused where it's made (#702)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            return self.reversed_user_knowing(value, source, (true, true), span);\n",
+    replace: "            return Ok(value);\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
   },
 ];

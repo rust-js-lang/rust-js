@@ -642,4 +642,13 @@ export const mutations: Mutation[] = [
     replace: "                        Expr::bin(Op::Eq, step, Expr::undefined())\n",
     tests: ["test/corpus.test.ts", "-t", "^own_steps_a_type_parameter_may_reach.rs$"],
   },
+  {
+    name: "rev-made-unknowing",
+    breaks:
+      "a `rev()` the crate steps from its back isn't made knowing it where it's made: a slice's map's `rev().nth_back(1)` lent to `nth_back` is `$iter(v.toReversed()).map(f)`, which has no back, and throws (#702)",
+    file: "src/lower/mir/iter.rs",
+    find: "            return self.reversed_knowing(reversed, output, span).map(Some);\n",
+    replace: "            return Ok(Some(reversed));\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
+  },
 ];

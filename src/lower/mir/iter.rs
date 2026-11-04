@@ -625,18 +625,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // of them; not of a lazy one, whose closures would run in another
         // order (ADR 0164). What it steps is closed with it, which drops
         // it: a compiled struct, a `fuse()`, by its own `return` (#225).
+        // One stepped from its back made knowing it (`reversed_knowing`).
         if std_method == Some(IterMethod::Rev) {
             let receiver = values.into_iter().next().expect("the receiver");
             let unsupported = |cx: &Self| cx.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR"));
-            if self.is_user_iterator(iter_ty) {
-                return self.reversed_user(receiver, receiver_ty, span).map(Some);
-            }
-            return Ok(Some(match self.range_kind(iter_ty) {
+            let reversed = match self.range_kind(iter_ty) {
+                _ if self.is_user_iterator(iter_ty) => self.reversed_user(receiver, receiver_ty, span)?,
                 None if let Some(reversed) = self.reversed(&receiver, iter_ty) => reversed,
                 Some(kind) if let Some(step) = kind.step(true) => self.stepped_by(receiver, Expr::helper(step)),
                 Some(_) => return Err(unsupported(self)),
                 None => self.rev_items(receiver, iter_ty, span)?,
-            }));
+            };
+            return self.reversed_knowing(reversed, output, span).map(Some);
         }
         // `size_hint()` of a `$iter`, exact, or of a generic one, as `$sizeHint`
         // finds it (ADR 0170); a range's is its bounds' (`RangeOp::SizeHint`).
