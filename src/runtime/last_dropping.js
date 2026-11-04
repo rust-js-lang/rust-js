@@ -16,13 +16,75 @@ function $lastDropping(it, drop, boxed) {
     it.return?.();
     return undefined;
   }
+  // Where `a`'s throws, a panic, `b` closed, as `last(self)` drops what it
+  // holds as it unwinds; where `b`'s does, `a`'s last dropped (#647).
   if (it.sides !== undefined) {
     const [a, b] = it.sides();
-    const aLast = a === undefined ? undefined : $lastDropping(a, drop, true);
-    const bLast = $lastDropping(b, drop, true);
+    let aLast;
+    try {
+      aLast = a === undefined ? undefined : $lastDropping(a, drop, true);
+    } catch (error) {
+      b.return?.();
+      throw error;
+    }
+    let bLast;
+    try {
+      bLast = $lastDropping(b, drop, true);
+    } catch (error) {
+      if (aLast !== undefined) drop?.($someValue(aLast));
+      throw error;
+    }
     if (bLast === undefined) return aLast === undefined ? undefined : some($someValue(aLast));
     if (aLast !== undefined) drop?.($someValue(aLast));
     return some($someValue(bLast));
+  }
+  // Std's `Flatten::last`: each inner iterator's own `last`, the one it's
+  // in first, then each its source makes, by its fold; each dropping what
+  // it passes, then the one kept before where it has one, as
+  // `iter.last().or(last)` drops it (#645). Where one throws, a panic, or
+  // `f` does, the one kept dropped, then what's left of the source, as the
+  // fold's closure drops the accumulator it holds as it unwinds.
+  if (it.inners !== undefined) {
+    const [front, source, f] = it.inners();
+    let kept;
+    const unwind = () => {
+      const dropped = kept;
+      kept = undefined;
+      if (dropped !== undefined) drop?.($someValue(dropped));
+    };
+    const take = (make) => {
+      let last;
+      try {
+        last = $lastDropping(make(), drop, true);
+      } catch (error) {
+        unwind();
+        throw error;
+      }
+      if (last === undefined) return;
+      if (kept !== undefined) drop?.($someValue(kept));
+      kept = last;
+    };
+    if (front !== undefined) {
+      try {
+        take(() => front);
+      } catch (error) {
+        source?.return?.();
+        throw error;
+      }
+    }
+    if (source !== undefined && Object.hasOwn(source, "fold")) {
+      source.fold(undefined, (_, item) => take(() => $stepsOf(f(item))), drop && unwind);
+    } else if (source !== undefined) {
+      try {
+        for (let step = source.next(); !step.done; step = source.next()) take(() => $stepsOf(f(step.value)));
+      } catch (error) {
+        unwind();
+        source.return?.();
+        throw error;
+      }
+      source.return?.();
+    }
+    return kept === undefined ? undefined : some($someValue(kept));
   }
   if (it.ownLast) {
     const step = it.last();

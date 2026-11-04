@@ -320,6 +320,7 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Flatten", Some("Iterator"), "size_hint"),
     ("Flatten", Some("Iterator"), "fold"),
     ("Flatten", Some("Iterator"), "try_fold"),
+    ("Flatten", Some("Iterator"), "last"),
     ("Flatten", Some("DoubleEndedIterator"), "next_back"),
     ("Flatten", Some("DoubleEndedIterator"), "rfold"),
     ("Flatten", Some("DoubleEndedIterator"), "try_rfold"),
@@ -327,6 +328,7 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("FlatMap", Some("Iterator"), "size_hint"),
     ("FlatMap", Some("Iterator"), "fold"),
     ("FlatMap", Some("Iterator"), "try_fold"),
+    ("FlatMap", Some("Iterator"), "last"),
     ("FlatMap", Some("DoubleEndedIterator"), "next_back"),
     ("FlatMap", Some("DoubleEndedIterator"), "rfold"),
     ("FlatMap", Some("DoubleEndedIterator"), "try_rfold"),
@@ -824,6 +826,19 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
         // Of the blocks it runs, a precondition check's left out, as
         // rust-js reads `UbChecks` as off (ADRs 0364, 0917).
         let body = tcx.optimized_mir(def_id);
+        // And each one std keeps private that it names as a value, which
+        // what it's given to calls, `FlattenCompat::last`'s own `last` given
+        // to its `iter_fold`, or a closure it makes holds, `into_item` in
+        // an inlined `filter_map` (#645).
+        for value in named_fns(tcx, body) {
+            if matches!(tcx.def_kind(value), DefKind::Fn)
+                && !tcx.visibility(value).is_public()
+                && tcx.is_mir_available(value)
+                && !found.contains(&value)
+            {
+                found.push(value);
+            }
+        }
         for block in crate::lower::std_coverage::reachable(tcx, body) {
             let Some(terminator) = &body.basic_blocks[block].terminator else {
                 continue;
@@ -873,6 +888,29 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
         }
     }
     found
+}
+
+/// Each function the constants of the blocks `body` runs name, as the value
+/// they are or one a closure they are holds.
+fn named_fns<'tcx>(tcx: TyCtxt<'tcx>, body: &rustc_middle::mir::Body<'tcx>) -> Vec<DefId> {
+    use rustc_middle::mir;
+    struct Named(Vec<DefId>);
+    impl<'tcx> mir::visit::Visitor<'tcx> for Named {
+        fn visit_const_operand(&mut self, constant: &mir::ConstOperand<'tcx>, _: mir::Location) {
+            for part in constant.ty().walk() {
+                if let Some(ty) = part.as_type()
+                    && let ty::FnDef(def_id, _) = *ty.kind()
+                {
+                    self.0.push(def_id);
+                }
+            }
+        }
+    }
+    let mut named = Named(Vec::new());
+    for block in crate::lower::std_coverage::reachable(tcx, body) {
+        mir::visit::Visitor::visit_basic_block_data(&mut named, block, &body.basic_blocks[block]);
+    }
+    named.0
 }
 
 /// A trait only std can name: private to its crate, or unstable, which a

@@ -138,12 +138,20 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-js-close-order",
     breaks:
-      "`flat_map` of a source and inner iterators that both drop closes the inner one first",
+      "`flatten` of inner iterators that drop, of a `map`'s source that drops too, closes the inner one first, as JS's `flatMap` does (#644)",
     file: "src/lower/combinators/adapters.rs",
-    find: '            Some(_) => Expr::call_helper("$flatMap", vec![items, each]),\n',
-    replace:
-      '            Some(_) => Expr::call(Expr::member(items, "flatMap"), vec![each]),\n',
-    tests: ["test/corpus.test.ts", "-t", "^flat_map_drops.rs$"],
+    find: "        match closed || self.drops(gives) != crate::lower::drops::Drops::Nothing {\n",
+    replace: "        match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_closed_part_way_drops_source_first.rs$"],
+  },
+  {
+    name: "flat-map-of-dropped-items-js",
+    breaks:
+      "`flat_map` of the crate's iterators that give items with a destructor is JS's `flatMap`, whose `last` drops each as the next comes, not each inner one's own `last` (#645)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "        match closed || self.drops(gives) != crate::lower::drops::Drops::Nothing {\n",
+    replace: "        match closed {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_last_takes_each_inner_last.rs$"],
   },
   {
     name: "flatten-vecs-unclosed",

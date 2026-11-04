@@ -422,4 +422,12 @@ export const mutations: Mutation[] = [
     replace: "\"std::mem::take\"",
     tests: ["test/corpus.test.ts", "-t", "^in_place_cell_moved_out.rs$"],
   },
+  {
+    name: "named-private-fns-uncompiled",
+    breaks: "a function std keeps private that a compiled body names as a value, `FlattenCompat::last`'s own `last`, isn't compiled with it, so `Flatten::last` isn't (#645)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "        for value in named_fns(tcx, body) {\n",
+    replace: "        for value in Vec::<DefId>::new() {\n",
+    tests: ["test/std-package.test.ts"],
+  },
 ];

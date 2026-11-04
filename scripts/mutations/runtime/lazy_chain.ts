@@ -130,4 +130,20 @@ export const mutations: Mutation[] = [
     replace: "    folded = $lent(second).tryFold(folded, f, broke);\n",
     tests: ["test/corpus.test.ts", "-t", "^try_folds_of_stages_unwind.rs$"],
   },
+  {
+    name: "chain-count-unconsumed",
+    breaks: "a chain's `count` whose first side panics never drops its second (#647)",
+    file: "src/runtime/lazy_chain.js",
+    find: "  const count = (drop) =>\n    $consumed(chained, () => {\n",
+    replace: "  const count = (drop) =>\n    ((_, run) => run())(chained, () => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_side_panics_drops_the_other.rs$"],
+  },
+  {
+    name: "chain-last-unconsumed",
+    breaks: "a chain's own `last`, a `skip`'s source's, whose first side panics never drops its second (#647)",
+    file: "src/runtime/lazy_chain.js",
+    find: "  const last = () =>\n    $consumed(chained, () => {\n",
+    replace: "  const last = () =>\n    ((_, run) => run())(chained, () => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_side_panics_drops_the_other.rs$"],
+  },
 ];

@@ -1038,3 +1038,33 @@ every adapter's are; each closes what it closed before.
 2026-10-30 (#422) named, are gone: a collect's and a fold's unwinding ask
 `steps_may_panic`, and what the iterator's type holds that has a
 destructor ([1089](1089-an-iterators-steps-are-passed-on-by-one-combinator.md)).
+
+## Amendment: a chain's `count` and `last` drop its other side as they unwind (2026-11-04, #647)
+
+std's `Chain::count` and `Chain::last` take the chain by value, so a
+panic in its first side's `count` or `last`, a `next` of the crate's
+that panics, drops its second side as it unwinds; and one in its second
+side's `last` drops the first side's last item, `a_last`, which it holds.
+`$lazyChain`'s `count` and `last` closed nothing as one threw, and
+`$lastDropping`'s chain of sides neither closed `b` nor dropped `a`'s
+last. Following ADR 0262's "results change" case: the chain's `count`
+and `last`, the steps `$forward` gives it, are `$consumed`, closed
+though they throw, as its `fold` is;
+and `$lastDropping` closes `b` where `a`'s throws, and drops `a`'s last
+where `b`'s does. A `take(n)`'s `count`, which advances its source, is
+`$consumed` too, as `Take::count(self)` drops its source as it unwinds:
+`own.chain(v).take(3).count()` dropped none of `v` where `own`'s `next`
+panicked (`take-count-unconsumed`).
+
+And `last()` of items with nothing to drop was the last of its array,
+which the eager rewrites (ADR 0139) made `[...a, ...b].at(-1)`: `b` isn't
+made until `a` is spread, so where `a`'s `next` panics nothing drops what
+`b` holds (#667). The amendment above, #653's, makes `last` of an iterator
+that holds what has a destructor whose steps may panic `$last(it)`, its
+own `last`: of a chain, `$lazyChain`'s, which is `$consumed` now, closing
+its other side as a step throws.
+
+`chain_side_panics_drops_the_other` holds each against native Rust; the
+mutations `chain-count-unconsumed`, `chain-last-unconsumed`,
+`last-sides-b-unclosed` and `last-sides-a-last-leaked` are caught, and
+#653's `last-holding-unclosed` is caught by it too.

@@ -972,4 +972,12 @@ export const mutations: Mutation[] = [
     replace: "        {\n            let _ = before;\n        }\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a pub use of what the module imports exports its binding"],
   },
+  {
+    name: "std-nested-fn-named-bare",
+    breaks: "a function std writes inside another, `FlattenCompat::last`'s own `last`, is exported from `@rust-js/std` as `last`, so every crate's variable `last` or `some` is named around it, `some$1$live` (#645)",
+    file: "src/lower/analysis/naming.rs",
+    find: "    if crate::lower::recognition::is_std_crate(tcx, def_id)\n",
+    replace: "    if false\n",
+    tests: ["test/std-package.test.ts"],
+  },
 ];

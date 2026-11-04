@@ -366,11 +366,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // end. Of items that are arrays, which know their backs, as they
         // are; of items that are iterators, an `Option`'s slice's iterator
         // say, each made knowing its back as it's taken (#260).
+        // Or `$flatMap(src, each)`, the one closed as std's is (#644).
         if let Some((source, made)) = crate::lower::recognition::flattened_source(self.tcx, ty)
             && let js::ExprKind::Call(callee, args) = &value.kind
-            && let js::ExprKind::Member(source_value, method) = &callee.kind
-            && method == "flatMap"
-            && let [each] = args.as_slice()
+            && let Some((source_value, each)) = match (&callee.kind, args.as_slice()) {
+                (js::ExprKind::Member(source_value, method), [each]) if method == "flatMap" => {
+                    Some((&**source_value, each))
+                }
+                (_, [source_value, each]) if callee.helper_name() == Some("$flatMap") => Some((source_value, each)),
+                _ => None,
+            }
             && let Some(inner) = made.or_else(|| self.iterator_item(source.peel_refs()))
         {
             let inner = inner.peel_refs();
@@ -391,7 +396,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => None,
             };
             if let Some(each) = each {
-                let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
+                let source_value = self.as_double_ended(source_value.clone(), source.peel_refs(), span)?;
                 return Ok(Expr::call_helper("$flattenEnds", vec![source_value, each]));
             }
         }

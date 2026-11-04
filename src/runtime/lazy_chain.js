@@ -39,14 +39,16 @@ function $lazyChain(a, b) {
       return folded;
     });
   // Std's `Chain::last`: `a`'s `last`, then `b`'s, both asked, `b`'s where
-  // it has one.
-  const last = () => {
-    const lastOf = (it) => (it.last !== undefined ? it.last() : $lent(it).last());
-    const a = first !== undefined ? lastOf(first) : { done: true, value: undefined };
-    first = undefined;
-    const b = lastOf(second);
-    return b.done ? a : b;
-  };
+  // it has one; closed though `a`'s throws, a panic, `b` with it, as
+  // `last(self)` drops what it holds as it unwinds (#647).
+  const last = () =>
+    $consumed(chained, () => {
+      const lastOf = (it) => (it.last !== undefined ? it.last() : $lent(it).last());
+      const a = first !== undefined ? lastOf(first) : { done: true, value: undefined };
+      first = undefined;
+      const b = lastOf(second);
+      return b.done ? a : b;
+    });
   // Std's `Chain::nth`: `a` advanced, then its next, or what's left of
   // `n` of `b`'s own `nth`, where it has one (#214), what it passes over
   // dropped as `a`'s is (ADR 0925).
@@ -81,15 +83,18 @@ function $lazyChain(a, b) {
     return folded;
   };
   // Std's `Chain::count`: `a`'s own `count`, then `b`'s, a `Take`'s
-  // advancing its source, which drops what it passes as one slice (#283).
-  const count = (drop) => {
-    let counted = 0;
-    if (first !== undefined) {
-      counted = $count(first, drop);
-      first = undefined;
-    }
-    return counted + $count(second, drop);
-  };
+  // advancing its source, which drops what it passes as one slice (#283);
+  // closed though `a`'s throws, a panic, `b` with it, as `count(self)`
+  // drops what it holds as it unwinds (#647).
+  const count = (drop) =>
+    $consumed(chained, () => {
+      let counted = 0;
+      if (first !== undefined) {
+        counted = $count(first, drop);
+        first = undefined;
+      }
+      return counted + $count(second, drop);
+    });
   // Std's `Chain::advance_by`: `a`'s, then `b`'s of what's left, `a` let
   // go once it's run out (#250), each given the items' drop its caller
   // gives (ADR 0925).

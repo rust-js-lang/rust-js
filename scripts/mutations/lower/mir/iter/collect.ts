@@ -611,4 +611,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^compiled_adapters_closed_as_a_collect_unwinds.rs$"],
   },
+  {
+    name: "string-collected-by-next",
+    breaks: "a collect into a `String` a panic may stop steps its chain by `next`, not its fold as `String::extend` does, so a nested flatten's source is dropped before the inner iterator it's in (#644); the matrix's `vec | flatten.flatten | string | consumer` shows it, which `--std-iterators` gets wrong still (#644's std cases), so the corpus holds its JS",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                Some(unwinding) => unwinding.folded(it),\n",
+    replace: "                Some(unwinding) => unwinding.collected(it),\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^flatten_closed_part_way_drops_source_first.rs$"],
+  },
 ];

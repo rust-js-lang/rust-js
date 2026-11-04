@@ -18,6 +18,7 @@ import {
   $getUnchecked,
   $given,
   $held,
+  $intoIter,
   $lastDropping,
   $lastSome,
   $lent,
@@ -4532,6 +4533,39 @@ export function flattenIterator_tryFold(
       );
 }
 
+export function flattenIterator_last(
+  flatten,
+  IIterator = { next: $next },
+  IItemIntoIterator,
+  UIterator = { next: $next },
+  UOneShot,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  return UOneShot
+    ? flattenCompatIUIterator2_last(
+        flatten.inner,
+        IIterator,
+        IItemIntoIterator,
+        dropI,
+        dropU,
+        dropIItem,
+        dropUItem,
+      )
+    : flattenCompatIUIterator_last(
+        flatten.inner,
+        IIterator,
+        IItemIntoIterator,
+        UIterator,
+        dropI,
+        dropU,
+        dropIItem,
+        dropUItem,
+      );
+}
+
 export function flattenDoubleEndedIterator_nextBack(
   flatten,
   IDoubleEndedIterator = { next_back: $nextBack },
@@ -4862,6 +4896,43 @@ export function flatMapIterator_tryFold(
         dropAcc,
         dropFold,
         dropR,
+        dropU,
+        dropUItem,
+      );
+}
+
+export function flatMapIterator_last(
+  flatMap,
+  UIntoIterator,
+  UIntoIterOneShot,
+  dropI,
+  dropU,
+  dropF,
+  dropIItem,
+  dropUItem,
+  dropUIntoIter,
+) {
+  return UIntoIterOneShot
+    ? flattenCompatIUIterator2_last(
+        flatMap.inner,
+        { next: $nextSome, fold: $foldOf },
+        UIntoIterator,
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropU,
+        dropUItem,
+      )
+    : flattenCompatIUIterator_last(
+        flatMap.inner,
+        { next: $nextSome, fold: $foldOf },
+        UIntoIterator,
+        UIntoIterator.IntoIterIterator(),
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
         dropU,
         dropUItem,
       );
@@ -8219,6 +8290,19 @@ export function iterator_flatten(
           dropSelfItemItem,
         );
       },
+      last(iterator) {
+        return flattenIterator_last(
+          iterator,
+          SelfIterator,
+          SelfItemIntoIterator,
+          SelfItemIntoIterator.IntoIterIterator(),
+          SelfItemIntoIterOneShot,
+          dropSelf,
+          dropSelfItemIntoIter,
+          dropSelfItem,
+          dropSelfItemItem,
+        );
+      },
       fold(iterator, init, f, unwind) {
         return flattenIterator_fold(
           iterator,
@@ -8256,7 +8340,7 @@ export function iterator_flatten(
           dropSelfItemItem,
         );
       },
-      takes: ["fold"],
+      takes: ["last", "fold"],
       close(iterator) {
         try {
           iterator.inner.iter.return();
@@ -8432,6 +8516,19 @@ export function iterator_flatMap(
           dropUIntoIter,
         );
       },
+      last(iterator) {
+        return flatMapIterator_last(
+          iterator,
+          UIntoIterator,
+          UIntoIterOneShot,
+          dropSelf,
+          dropU,
+          dropF,
+          dropSelfItem,
+          dropUItem,
+          dropUIntoIter,
+        );
+      },
       fold(iterator, init, f, unwind) {
         return flatMapIterator_fold(
           iterator,
@@ -8469,7 +8566,7 @@ export function iterator_flatMap(
           dropUIntoIter,
         );
       },
-      takes: ["fold"],
+      takes: ["last", "fold"],
       close(iterator) {
         try {
           iterator.inner.iter.return();
@@ -9545,6 +9642,105 @@ export function flattenCompatIUIterator2_tryFold(
         dropR,
         dropIItem,
       );
+}
+
+export function flattenCompatIUIterator_last(
+  flattenCompat,
+  IIterator = { next: $next },
+  IItemIntoIterator,
+  UIterator = { next: $next },
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  return FlattenCompat.iterFold(
+    flattenCompat,
+    undefined,
+    (a, b) => flattenCompatIUIterator_last_last(a, $given(b, UIterator, true), dropU, dropUItem),
+    IIterator,
+    IItemIntoIterator,
+    dropI,
+    dropU,
+    (option) => {
+      if (option != null) {
+        dropUItem?.($someValue(option));
+      }
+    },
+    undefined,
+    dropIItem,
+    dropUItem,
+  );
+}
+
+export function flattenCompatIUIterator2_last(
+  flattenCompat,
+  IIterator = { next: $next },
+  IItemIntoIterator,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  const value = flattenCompat.iter.iter;
+  let result;
+  try {
+    try {
+      if (value != null) {
+        const captured = (x) =>
+          intoItem(
+            $given(IItemIntoIterator.intoIter(x), IItemIntoIterator.IntoIterIterator(), true),
+            dropIItem,
+            dropUItem,
+            dropU,
+          );
+        const captured$1 = (arg0, arg1) => iterator_last_some(arg0, arg1, dropUItem);
+        const iter = $someValue(value);
+        let result$1;
+        try {
+          result$1 = $foldDropping(
+            $given(iter, IIterator, true),
+            result,
+            (acc, item) => {
+              let tmp;
+              try {
+                tmp = captured(item);
+              } catch (error) {
+                if (acc != null) {
+                  dropUItem?.($someValue(acc));
+                }
+                throw error;
+              }
+              if (tmp != null) {
+                const x = $someValue(tmp);
+                return captured$1(acc, x);
+              }
+              return acc;
+            },
+            (option) => {
+              if (option != null) {
+                dropUItem?.($someValue(option));
+              }
+            },
+          );
+        } finally {
+          if (IIterator.fold === undefined) {
+            dropI?.(iter);
+          }
+        }
+        result = result$1;
+      }
+    } finally {
+      if (flattenCompat.frontiter != null) {
+        dropU?.($someValue(flattenCompat.frontiter));
+      }
+    }
+  } finally {
+    if (flattenCompat.backiter != null) {
+      dropU?.($someValue(flattenCompat.backiter));
+    }
+  }
+  return result;
 }
 
 export function flattenCompatIUDoubleEndedIterator_nextBack(
@@ -11423,6 +11619,48 @@ export function andThenOrClear$2(opt, f, dropT, dropU, dropFnOnce) {
   }
   const result = undefined;
   dropFnOnce?.(f);
+  return result;
+}
+
+export function flattenCompatIUIterator_last_last(last, iter, dropU, dropUItem) {
+  let result$1;
+  try {
+    try {
+      result$1 = $lastDropping(Iterator.from(iter), dropUItem, true);
+    } finally {
+      if (!iter.ownFold && !iter.ownLast) {
+        dropU?.(iter);
+      }
+    }
+  } catch (error) {
+    if (last != null) {
+      dropUItem?.($someValue(last));
+    }
+    throw error;
+  }
+  const result = result$1 ?? last;
+  if (result$1 != null) {
+    if (last != null) {
+      dropUItem?.($someValue(last));
+    }
+  }
+  return result;
+}
+
+export function intoItem(inner, dropI, dropIItem, dropIIntoIter) {
+  const value = $held($intoIter(inner));
+  try {
+    return $nextSome(value);
+  } finally {
+    dropIIntoIter?.(value);
+  }
+}
+
+export function iterator_last_some(_1, x, dropT) {
+  const result = $some(x);
+  if (_1 != null) {
+    dropT?.($someValue(_1));
+  }
   return result;
 }
 

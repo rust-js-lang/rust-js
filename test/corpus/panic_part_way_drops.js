@@ -891,7 +891,7 @@ function main() {
     }
   });
   run("string", () => {
-    const s = $collectDropping(
+    const s = $foldToArray(
       $closing($iter(ds({ start: 90, end: 94 })), $dropEach(dDrop_drop)).map((d) => {
         try {
           boom(d, 92);
@@ -1048,7 +1048,7 @@ function main() {
     console.log(`[${out.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   });
   run("string of chars", () => {
-    const out = $collectDropping(
+    const out = $foldToArray(
       $closing($iter(ds({ start: 30, end: 33 })), $dropEach(dDrop_drop)).map((d) => {
         try {
           if (d[0] === 32) {

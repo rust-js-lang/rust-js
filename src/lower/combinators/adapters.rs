@@ -223,16 +223,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         )))
     }
 
-    /// `items.flatMap(each)`, `each` closing each inner iterator, of a
-    /// `source` that may hold what has a destructor too: closed first, as
-    /// Rust drops a `FlatMap`'s source before its inner iterator, where
-    /// JS's `flatMap` closes the inner one first, `$flatMap(items, each)`
-    /// (ADR 0510).
-    fn flat_mapped(&mut self, items: Expr, each: Expr, source: Ty<'tcx>, span: Span) -> R<Expr> {
-        Ok(match self.closing_drop(source, span)? {
-            Some(_) => Expr::call_helper("$flatMap", vec![items, each]),
-            None => Expr::call(Expr::member(items, "flatMap"), vec![each]),
-        })
+    /// `items.flatMap(each)` of inner iterators of type `inner`, made by
+    /// `each`, `closed` where each closes to drop what it holds; else, or
+    /// of items with a destructor, `$flatMap(items, each)`: its source
+    /// closed first, as Rust drops a `Flatten`'s fields, its source before
+    /// the inner iterator it's in, where JS's `flatMap` closes the inner one
+    /// first, whatever the source is, an adapter of what it drops too
+    /// (#644); and its `last` std's, each inner iterator's own, which drops
+    /// what it passes before the one kept before (#645) (ADR 0510).
+    fn flat_mapped(&self, items: Expr, each: Expr, inner: Ty<'tcx>, closed: bool) -> Expr {
+        let gives = self.iterable_item(inner);
+        match closed || self.drops(gives) != crate::lower::drops::Drops::Nothing {
+            true => Expr::call_helper("$flatMap", vec![items, each]),
+            false => Expr::call(Expr::member(items, "flatMap"), vec![each]),
+        }
     }
 
     /// `a.zip(b)` of `a` and `b`, JS iterators of `IntoIterator`s of those
@@ -304,10 +308,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     let f = next();
                     match self.closed_inner(Some(f.clone()), returned, span)? {
-                        Some(each) => self.flat_mapped(items, each, receiver_ty, span)?,
+                        Some(each) => self.flat_mapped(items, each, returned, true),
                         None => match self.iterable_of_each(Some(f.clone()), returned, span)? {
-                            Some(each) => method(items, "flatMap", vec![each]),
-                            None => method(items, "flatMap", vec![f]),
+                            Some(each) => self.flat_mapped(items, each, returned, false),
+                            None => self.flat_mapped(items, f, returned, false),
                         },
                     }
                 }
@@ -321,7 +325,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 // Of what owns items with a destructor, each closed (ADR 0510).
                 Some(item) if let Some(each) = self.closed_inner(None, item, span)? => {
-                    self.flat_mapped(items, each, receiver_ty, span)?
+                    self.flat_mapped(items, each, item, true)
                 }
                 // Of arrays, each stepped as an array is, `$iter(item)`: what
                 // `flat()` takes apart where the chain is made eager.
@@ -336,10 +340,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         vec!["item".into()],
                         vec![StmtKind::Return(Some(stepped)).at(js::Span::NONE)],
                     );
-                    method(items, "flatMap", vec![each])
+                    self.flat_mapped(items, each, item, false)
                 }
                 Some(item) if let Some(each) = self.iterable_of_each(None, item, span)? => {
-                    method(items, "flatMap", vec![each])
+                    self.flat_mapped(items, each, item, false)
                 }
                 _ => {
                     let each = Expr::arrow(

@@ -469,9 +469,20 @@ pub(super) fn calls_of<'tcx>(body: &Body<'tcx>) -> Vec<(DefId, ty::GenericArgsRe
     }
     struct Called<'tcx>(Vec<(DefId, ty::GenericArgsRef<'tcx>, rustc_span::Span)>);
     impl<'tcx> mir::visit::Visitor<'tcx> for Called<'tcx> {
+        // And each one a closure it names as a constant holds, which optimized
+        // MIR makes of one that captures only functions, std's inlined
+        // `filter_map_fold` of `into_item` and `last`'s `some` (#645).
         fn visit_const_operand(&mut self, constant: &mir::ConstOperand<'tcx>, _: mir::Location) {
             if let Some((callee, args)) = super::fn_def(constant.ty()) {
                 self.0.push((callee, args, constant.span));
+            } else if constant.ty().is_closure() {
+                for part in constant.ty().walk() {
+                    if let Some(ty) = part.as_type()
+                        && let Some((callee, args)) = super::fn_def(ty)
+                    {
+                        self.0.push((callee, args, constant.span));
+                    }
+                }
             }
         }
     }

@@ -1008,6 +1008,20 @@ pub(super) fn item_js_name(tcx: TyCtxt<'_>, def_id: DefId, trait_impls: &[DefId]
     if let Some(name) = crate::lower::classes::const_name(tcx, def_id) {
         return name;
     }
+    // A function std writes inside another, compiled into `@rust-js/std`
+    // (ADR 0561): named after the one it's in, `flattenCompatIUIterator_last_last`
+    // of `FlattenCompat::last`'s own `last`, not `last`, as every crate's
+    // names are made around the package's exports (#645).
+    if crate::lower::recognition::is_std_crate(tcx, def_id)
+        && matches!(tcx.def_kind(tcx.parent(def_id)), DefKind::Fn | DefKind::AssocFn)
+    {
+        let parent = tcx.parent(def_id);
+        return format!(
+            "{}_{}",
+            item_js_name(tcx, parent, trait_impls),
+            bindings::fn_name(tcx, def_id)
+        );
+    }
     bindings::fn_name(tcx, def_id)
 }
 

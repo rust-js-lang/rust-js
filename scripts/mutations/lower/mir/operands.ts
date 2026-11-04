@@ -321,4 +321,12 @@ export const mutations: Mutation[] = [
     replace: "                    None if false && crate::lower::instances::read_by_js_alone(self.tcx, None, Some(state.body))\n",
     tests: ["test/rest-parameters.test.ts", "-t", "a generic function of rest arguments JS alone reads is its own JS"],
   },
+  {
+    name: "closure-constant-captures-none",
+    breaks: "a closure optimized MIR names as a constant captures nothing, so a function item it holds, std's inlined `filter_map_fold`'s `into_item`, is refused as a closure's field read outside it, and `Flatten::last` isn't compiled (#645)",
+    file: "src/lower/mir/operands.rs",
+    find: "                    captured.push(self.mir_operand_read(state, &Operand::Constant(Box::new(constant)), out)?);\n",
+    replace: "                    let _ = constant;\n",
+    tests: ["test/std-package.test.ts"],
+  },
 ];

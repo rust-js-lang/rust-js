@@ -8,6 +8,7 @@ import {
   $debugStr,
   $dropEach,
   $dropItems,
+  $foldToArray,
   $iter,
   $last,
   $lazyChain,
@@ -38,7 +39,7 @@ function ds(base) {
 
 function main() {
   let r = $catchUnwind(() => {
-    const s = $collectDropping(
+    const s = $foldToArray(
       iterator_fuse($iter(ds(0)), { next: $next }, true, $dropEach(dDrop_drop), dDrop_drop).map(
         (d) => {
           try {
@@ -118,7 +119,7 @@ function main() {
       }
       throw error;
     }
-    const s = $collectDropping(
+    const s = $foldToArray(
       iterator_zip(
         value,
         tmp,
@@ -189,7 +190,7 @@ function main() {
   console.log(`peekable last ${r.TAG === "Err"}`);
   const log = [];
   r = $catchUnwind(() => {
-    const s = $collectDropping(
+    const s = $foldToArray(
       iterator_fuse($iter(ds(80)), { next: $next }, true, $dropEach(dDrop_drop), dDrop_drop).map(
         (d) => {
           try {

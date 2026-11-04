@@ -522,7 +522,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         } else if self.is_lang_adt(output, LangItem::String) {
             let items = match self.unwinding_collect(output, item, iter_ty, span)? {
-                Some(unwinding) => unwinding.collected(it),
+                // By its fold, as std's `String::extend` steps it,
+                // `for_each`'s: where a panic stops it, each adapter's fold
+                // unwinds as std's does, a flatten's inner iterator dropped
+                // before its source (#644).
+                Some(unwinding) => unwinding.folded(it),
                 None => items(it),
             };
             let items = match item {
@@ -767,5 +771,15 @@ impl UnwindingCollect {
             args.push(Expr::bool(true));
         }
         Expr::call_helper("$collectDropping", args)
+    }
+
+    /// `it` collected so by its fold, an array: `$foldToArray(it, drop)`.
+    fn folded(self, it: Expr) -> Expr {
+        let mut args = vec![it];
+        args.extend(self.drop);
+        if self.rest_first {
+            args.push(Expr::bool(true));
+        }
+        Expr::call_helper("$foldToArray", args)
     }
 }

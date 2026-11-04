@@ -20,9 +20,9 @@ function loudDrop_drop(loud) {
 }
 function innerLeft() {
   const first = $collectDropping(
-    $lazyRange(0, 3)
-      .flatMap((i) => $closing($iter([[i], [(i + 10) & 255]]), $dropEach(loudDrop_drop)))
-      .take(1),
+    $flatMap($lazyRange(0, 3), (i) =>
+      $closing($iter([[i], [(i + 10) & 255]]), $dropEach(loudDrop_drop)),
+    ).take(1),
     loudDrop_drop,
     true,
   );
@@ -30,10 +30,7 @@ function innerLeft() {
   const counts = [1, 2];
   try {
     const made = $collectDropping(
-      counts
-        .values()
-        .flatMap((n) => $lazyRange(0, n).map((value) => [value]))
-        .take(1),
+      $flatMap($iter(counts), (n) => $lazyRange(0, n).map((value) => [value])).take(1),
       loudDrop_drop,
       true,
     );

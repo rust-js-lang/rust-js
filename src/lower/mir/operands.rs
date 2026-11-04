@@ -274,13 +274,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => Value::Ref(Expr::held(self.named_fn_ref(def_id, None, c.span))),
                 })
             }
-            // A closure that captures nothing, which optimized MIR names as a
-            // constant: made here, as one made of its captures is.
+            // A closure that captures nothing of a size, which optimized MIR
+            // names as a constant: made here, as one made of its captures
+            // is, each it captured a constant of its own, a function std's
+            // inlined `filter_map_fold` takes, `into_item` (#645).
             Operand::Constant(c)
                 if matches!(c.ty().kind(), ty::Closure(..))
                     && matches!(c.const_, Const::Val(mir::ConstValue::ZeroSized, _)) =>
             {
-                Ok(Value::Expr(self.mir_closure(state, c.ty(), Vec::new(), c.span, out)?))
+                let upvars =
+                    crate::lower::recognition::held_types(c.ty()).map_or(&[][..], |(_, upvars)| upvars.as_slice());
+                let mut captured = Vec::new();
+                for &upvar in upvars {
+                    let constant = ConstOperand {
+                        span: c.span,
+                        user_ty: None,
+                        const_: Const::Val(mir::ConstValue::ZeroSized, upvar),
+                    };
+                    captured.push(self.mir_operand_read(state, &Operand::Constant(Box::new(constant)), out)?);
+                }
+                Ok(Value::Expr(self.mir_closure(state, c.ty(), captured, c.span, out)?))
             }
             // A constant where it's written, a call's argument's, which the
             // map gives a line comment after it on its line the JS of, `true,

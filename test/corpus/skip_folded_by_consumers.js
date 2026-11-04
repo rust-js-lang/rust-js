@@ -2,8 +2,8 @@
 
 import {
   $closing,
-  $collectDropping,
   $dropEach,
+  $foldToArray,
   $folded,
   $held,
   $iter,
@@ -154,7 +154,7 @@ function main() {
   }
   const value = last != null ? map(last) : undefined;
   console.log(`last ${value == null ? "None" : `Some(${value})`}`);
-  let text = $collectDropping(
+  let text = $foldToArray(
     $folded(
       $skipping(
         $closing(
@@ -184,7 +184,7 @@ function main() {
     ),
   ).join("");
   console.log(`folded ${text}`);
-  text = $collectDropping(
+  text = $foldToArray(
     $folded(
       $skipping(
         $closing(

@@ -247,7 +247,7 @@ export const mutations: Mutation[] = [
     name: "take-count-by-nth",
     breaks: "a `Take`'s `count` folds, so a `Skip` inside asks the crate's own `nth`, where std's advances it and asks none (#213)",
     file: "src/runtime/steps.js",
-    find: "      const counted = k === 0 ? 0 : k - this.advanceBy(k, drop);\n",
+    find: "      const counted = k === 0 ? 0 : $consumed(this, () => k - this.advanceBy(k, drop));\n",
     replace: "      const counted = taken.fold(0, (c) => c + 1);\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_take_own_nth.rs$"],
   },
@@ -410,5 +410,13 @@ export const mutations: Mutation[] = [
     find: "    $forward(skipped, this, { fold, tryFold, nth, count, advanceBy, last });\n",
     replace: "    $forward(skipped, this, { fold, tryFold, nth, advanceBy, last });\n",
     tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
+  },
+  {
+    name: "take-count-unconsumed",
+    breaks: "a `take(n).count()` whose source's step panics never closes its source, so a chain's second side is never dropped (#647)",
+    file: "src/runtime/steps.js",
+    find: "      const counted = k === 0 ? 0 : $consumed(this, () => k - this.advanceBy(k, drop));\n",
+    replace: "      const counted = k === 0 ? 0 : k - this.advanceBy(k, drop);\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_side_panics_drops_the_other.rs$"],
   },
 ];

@@ -345,10 +345,12 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       n -= advanced;
       return m - advanced;
     };
+    // Closed though its source's step throws, a panic, as `count(self)`
+    // drops what it took as it unwinds (#647).
     const count = (drop) => {
       const k = n;
       n = 0;
-      const counted = k === 0 ? 0 : k - this.advanceBy(k, drop);
+      const counted = k === 0 ? 0 : $consumed(this, () => k - this.advanceBy(k, drop));
       this.return();
       return counted;
     };
