@@ -622,8 +622,14 @@ Held by `test/corpus/while_let_written_break.rs` against native Rust,
 `test/lowering-comments.test.ts` ("a comment before a loop's break is
 before the break", now the `while let`'s), the scheduler's snapshot, and
 the mutations `guard-of-written-break-implied` (`mir/tidy/branches.ts`),
-`early-break-somes-joined` (`mir/tidy/jumps.ts`) and
-`negation-span-dropped` (`js/make.ts`).
+`early-break-somes-joined` (`mir/tidy/jumps.ts`). The mutation
+`negation-span-dropped` (`js/make.ts`), `!word`'s negation of no place,
+survived since `word.is_empty()` is `word === ""` (ADR 0266, rd732):
+no `!` of a method's call reaches `negated_test` there now, and the whole
+corpus, `while_let_written_break`'s file and the files of the
+scheduler's `workLoop` run with it applied print the same, so it was an
+equivalent mutant and is removed (2026-11-04). `negated_test` still
+keeps the `!`'s place, as it keeps every negation's.
 
 ## Amendment: an inner loop's tail moves out before `decisions` (rd141c, 2026-10-29)
 

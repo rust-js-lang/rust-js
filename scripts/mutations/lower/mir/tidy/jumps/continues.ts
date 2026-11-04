@@ -9,16 +9,6 @@ const keysIn = [
 
 export const mutations: Mutation[] = [
   {
-    name: "mixed-condition-ending-a-loop-continued",
-    breaks:
-      "an `if` ending a loop's body, of `&&`, `||` and `!` mixed, around a loop, is `if (a) { if (b && c === d) { continue; } for .. }`, a `continue` the program didn't write (rd72b, validateShorthandPropertyCollisionInDev)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                if let Some(test) = logicals::skipped_test(&block, &inner, logicals) {\n",
-    replace: "                if false && let Some(test) = logicals::skipped_test(&block, &inner, logicals) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^mixed_condition_around_inner_loop.rs$"],
-    snapshots: true,
-  },
-  {
     name: "jumps-into-branches-past-a-written-jump",
     breaks:
       "the `break` the program wrote after an `if` with an `else` is moved into the branch that goes on, `if (n === 0) { ..; break; } else { ..; continue; }` (uz2)",

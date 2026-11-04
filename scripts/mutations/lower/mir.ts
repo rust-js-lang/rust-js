@@ -272,7 +272,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                *unwind = UnwindAction::Unreachable;\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^drop_temporaries.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(drop_temporaries|allocator|refcell_vec_bounds).rs$"],
     snapshots: true,
   },
   {

@@ -576,15 +576,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "negation-span-dropped",
-    breaks: "`!word` of `word.is_empty()` negated is `word` of no place, so the program's `if` of a `break` isn't told apart from a `while let`'s `Some`, `while ((word = words[i]))` (#301, ADR 0702 amended)",
-    file: "src/js/make.rs",
-    find: "            ExprKind::Unary(UnaryOp::Not, inner) => inner.or_at(self.span),\n",
-    replace: "            ExprKind::Unary(UnaryOp::Not, inner) => *inner,\n",
-    tests: ["test/corpus.test.ts", "-t", "^while_let_written_break.rs$"],
-    snapshots: true,
-  },
-  {
     name: "null-said-twice",
     breaks: "`x !== undefined && x != null` stays both tests, not `x != null`, which says the first",
     file: "src/js/make.rs",

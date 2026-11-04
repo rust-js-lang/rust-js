@@ -230,3 +230,11 @@ is of `skipped_test`'s `if` itself now. Case (ADR 0262): N, as above.
 Held by `mixed_condition_around_inner_loop.rs`'s `negated` and
 `skipped_after` (native-compared) and the mutation
 `continued-blocks-of-block-ending-loops-only`.
+
+The mutation `mixed-condition-ending-a-loop-continued`, `continued_loop`'s
+`skipped_test` branch never taken, survived (the Nightly of 2026-11-04 and
+control-flow run 53): the whole corpus compiled without it prints the same,
+its `mixed_condition_around_inner_loop` too, as the `skipped tests` pass
+before `continued` has made such a block its `if` already. It was an
+equivalent mutant and is removed (2026-11-04); the branch stays, the rule's
+own statement where `continued` meets the block.
