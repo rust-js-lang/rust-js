@@ -97,6 +97,7 @@ depends on what the program does:
 - A `dyn Iterator` of a value with a destructor: `struct D; impl Drop for D { fn drop(&mut self) {} } let it: Box<dyn Iterator<Item = u32>> = Box::new(vec![D].into_iter().map(|_| 1)); println!("{}", it.count());`
 - A trait's default method that makes a value of its associated type, `Self::Unit::default()`, where an impl leaves the method to the default: `trait Shape { type Unit: Default + std::fmt::Display; fn unit(&self) -> Self::Unit { Self::Unit::default() } } struct Tri; impl Shape for Tri { type Unit = u8; } println!("{}", Tri.unit());`
 - A derived `Default` of a struct holding a map keyed by a type parameter, made in generic code, which isn't given its keys' class; a written `impl Default` is: `#[derive(Default)] struct Node<K> { children: std::collections::HashMap<K, u8> } fn make<K: Default + Eq + std::hash::Hash>() -> Node<K> { Node::default() } println!("{}", make::<u32>().children.len());`
+- A field whose JS name is `__proto__`, `Object.prototype`'s accessor, which would set or read the object's prototype where the field isn't its own; give it another JS name, `#[cfg_attr(rust_js, rust_js::name = "proto")]` ([ADR 1084](../decisions/1084-a-field-named-proto-is-refused.md)): `struct Linked { __proto__: Option<u32> } let l = Linked { __proto__: None }; println!("{}", l.__proto__.is_none());`
 
 ## Modules
 

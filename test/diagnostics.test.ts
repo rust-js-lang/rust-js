@@ -36,6 +36,14 @@ for (const [name, source, message, crate] of [
   // whose namespace it would be, refused.
   ["a pub use of every name of a module, of a module", "mod m {\n    pub mod n {\n        pub fn g() -> u32 { 1 }\n    }\n}\npub use m::*;\npub fn f() -> u32 { m::n::g() }", "does not support a `pub use` of every name of a module, of its module or class `n` yet: `pub use` each of its names that has JS by its name"],
   ["fields that are one JS property", 'pub struct P { pub first: u32, #[rust_js::name = "first"] pub other: u32 }\npub fn f(p: &P) -> u32 { p.first + p.other }', "both `first` in JS"],
+  // A field whose JS name is `__proto__` would set or read its object's
+  // prototype where it isn't the object's own (rd754): of each kind.
+  ["a struct's field named __proto__", "pub struct P { pub __proto__: Option<u32> }\npub fn f(p: &P) -> bool { p.__proto__.is_none() }", "a field whose JS name is `__proto__`, `__proto__` of `P`, sets or reads its object's prototype"],
+  ["a field given the JS name __proto__", 'pub struct P { #[rust_js::name = "__proto__"] pub linked: u32 }\npub fn f(p: &P) -> u32 { p.linked }', "a field whose JS name is `__proto__`, `linked` of `P`"],
+  ["a variant's field named __proto__", "pub enum E { A { __proto__: u32 }, B(u32) }\npub fn f(e: &E) -> u32 { match e { E::A { __proto__ } | E::B(__proto__) => *__proto__ } }", "a field whose JS name is `__proto__`, `__proto__` of `E::A`"],
+  ["a union's field named __proto__", "pub union U { pub __proto__: u32, pub other: i32 }\npub fn f(u: &U) -> u32 { unsafe { u.__proto__ } }", "a field whose JS name is `__proto__`, `__proto__` of `U`"],
+  ["a class's field named __proto__", "#[rust_js::class]\npub struct C { __proto__: Option<u32> }\n#[rust_js::class]\nimpl C {\n    pub fn new() -> Self { C { __proto__: None } }\n    pub fn get(&self) -> Option<u32> { self.__proto__ }\n}", "a field whose JS name is `__proto__`, `__proto__` of `C`"],
+  ["an ES class's field named __proto__", "#[rust_js::class(es)]\npub struct C { __proto__: u32 }\n#[rust_js::class]\nimpl C {\n    pub fn new() -> Self { C { __proto__: 1 } }\n    pub fn get(&self) -> u32 { self.__proto__ }\n}", "a field whose JS name is `__proto__`, `__proto__` of `C`"],
   // A binding's nullable parameter is one of its own, an `Option` (ADR 0275).
   ["a nullable parameter that isn't an Option", '#[rust_js::link_name = "f"]\n#[rust_js::nullable(n)]\npub fn f(n: u32) {}', "names no parameter of this function that's an `Option`"],
   // A `pub` thread-local is made as its module loads, as JS's importers

@@ -677,4 +677,22 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n",
     tests: ["test/lowering-nested-options.test.ts", "-t", "refuses what would box it"],
   },
+  {
+    name: "proto-field-unrefused",
+    breaks:
+      "a struct's field named `__proto__` compiles, `this.__proto__ = proto` setting its prototype and a `None` left out reading it, where Rust reads its own field (rd754)",
+    file: "src/lower/bindings.rs",
+    find: '    if field_key(tcx, field).name() != Some("__proto__") {\n',
+    replace: "    if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^field_named_proto.rs$"],
+  },
+  {
+    name: "proto-field-refused-by-its-rust-name",
+    breaks:
+      "a field named `__proto__` in Rust and given another JS name, `proto`, is refused, though its JS name is no accessor's (rd754)",
+    file: "src/lower/bindings.rs",
+    find: '    if field_key(tcx, field).name() != Some("__proto__") {\n',
+    replace: '    if field.name.as_str() != "__proto__" {\n',
+    tests: ["test/corpus.test.ts", "-t", "^field_named_proto_renamed.rs$"],
+  },
 ];

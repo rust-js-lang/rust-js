@@ -1,6 +1,6 @@
 # 0761. A `#[rust_js::class]` is a constructor function and its prototype
 
-Status: Accepted, by the user's decision of 2026-10-24; amended (rd682, the user's decision of 2026-11-03): a class its struct marks `#[rust_js::class(es)]` is an ES class; amended (#568, the user's decision of 2026-11-04): one marked `class(es, fields)` declares its fields; amended (rd325): a private class is its module's own; amended (rd554): a constructor may give an `Rc` of its instance; amended (#448): a prototype of methods isn't replaced at load; amended (#448, the user's decision of 2026-11-01): a load's prototype set right after its constructor; amended (2026-11-01, the user's decision): a class whose `new` isn't `pub` is its type alone; amended by [1049](1049-js-class-is-typed-by-classed.md) (the user's decision of 2026-11-01): a class `js::class` names is `js::Classed`, one line of the program's, and may implement a trait of types alone. Extends
+Status: Accepted, by the user's decision of 2026-10-24; amended (rd682, the user's decision of 2026-11-03): a class its struct marks `#[rust_js::class(es)]` is an ES class; amended (#568, the user's decision of 2026-11-04): one marked `class(es, fields)` declares its fields; amended (rd325): a private class is its module's own; amended (rd554): a constructor may give an `Rc` of its instance; amended (#448): a prototype of methods isn't replaced at load; amended (#448, the user's decision of 2026-11-01): a load's prototype set right after its constructor; amended (2026-11-01, the user's decision): a class whose `new` isn't `pub` is its type alone; amended by [1049](1049-js-class-is-typed-by-classed.md) (the user's decision of 2026-11-01): a class `js::class` names is `js::Classed`, one line of the program's, and may implement a trait of types alone. Amended by [1084](1084-a-field-named-proto-is-refused.md) (rd754): a field named `__proto__` is refused of any struct, a class's too. Extends
 [0047](0047-methods.md), whose object of functions stays every other
 struct's impl. Amended: its struct's comments, its `///` doc, are its
 constructor function's (below). Amended (2026-10-26, the user's
@@ -831,9 +831,9 @@ a refusal: Rust's assignment can't be kept in that form):
   value;`, the first of its statements that reads `this`, as Rust's
   `Self { .. }` is, which nothing can read before it's made: a field whose
   `None` is left out, `Labeled { label: None, size }`, absent until set;
-- a field isn't a JS name, or is `__proto__`, whose assignment is
-  `Object.prototype`'s setter's (one named `constructor` is refused of
-  any class, below, rd750).
+- a field isn't a JS name (one named `constructor` is refused of any
+  class, below, rd750, and one named `__proto__` of any struct, ADR
+  1084).
 
 Case N of ADR 0262 where it's declared: the define and the set make the
 same own property, in the same order. What's left that could tell them
@@ -893,3 +893,17 @@ it, its doc comment after it: `chunkName;\n\n  constructor(options) {`.
 Case: none, the JS's layout. Held by `test/es-classes.test.ts`'s "an ES
 class's fields are apart from its first member" and the mutation
 `es-class-fields-not-apart` (`to_oxc/starts.rs`).
+
+## Amendment: a field named `__proto__` is refused of any struct (ADR 1084)
+
+A class's field named `__proto__`, of either form, was set by its
+constructor, `this.__proto__ = proto;`, which calls `Object.prototype`'s
+setter: the instance's prototype became the value, or stayed where it was
+of a number, and a read of the field gave the class's prototype, where
+Rust reads its value (rd754, P0). Not a class's alone: a plain struct's
+`None` left out read the same, and a copy's or a variant's write set it.
+**A field whose JS name is `__proto__` is refused of any struct, variant
+or union** (ADR 1084), a class's of either form too, so `class(es,
+fields)` no longer asks it of the fields it declares: its refusal of a
+field of no JS name, `data-x`, says `` `data-x` is no JS name, which no
+class declares ``.

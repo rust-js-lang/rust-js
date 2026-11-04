@@ -267,7 +267,7 @@ impl Dashed {
         Dashed { data: 1 }
     }
 }
-`, "`data-x` is a field no class declares"],
+`, "`data-x` is no JS name, which no class declares"],
     ["es-fields-of-no-es-class", `#[cfg_attr(rust_js, rust_js::class(fields))]
 pub struct Labeled {
     pub label: Option<String>,

@@ -184,6 +184,7 @@ return { x, y };
 ## Amended by
 
 - [0246](0246-function-parameters-need-no-copy.md): A type parameter of a function needs no copy of its own
+- [1084](1084-a-field-named-proto-is-refused.md): A field whose JS name is `__proto__` is refused, as an object's `__proto__` is `Object.prototype`'s accessor
 
 ## Amendment: a value is compared with itself field by field
 

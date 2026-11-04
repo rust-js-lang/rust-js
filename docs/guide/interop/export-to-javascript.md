@@ -120,6 +120,12 @@ variant's field ([ADR 0573](../../decisions/0573-every-rust-name-is-camel-case-i
   which a JS module imports, `import { delete as remove }`
   ([ADR 0922](../../decisions/0922-an-export-is-named-first.md), amended).
   A method keeps its name, since it's a property: `Counter.new`.
+- **No field's JS name is `__proto__`**, an object's
+  `Object.prototype` accessor, which would set or read its prototype
+  where the field isn't the object's own: a struct's, a variant's or a
+  union's field named so is an error that says to give it another,
+  `#[cfg_attr(rust_js, rust_js::name = "proto")] __proto__: Option<u32>`
+  ([ADR 1084](../../decisions/1084-a-field-named-proto-is-refused.md)).
 - **A `const` is named as written**, `MAX_RESULTS`: JS's own convention
   for a constant ([ADR 0579](../../decisions/0579-a-thread-local-is-named-as-a-variable.md)).
 - **A `thread_local!` is named as a module's variable**: `CLICK_COUNT` is
@@ -774,11 +780,14 @@ order its constructor sets them. Where a declaration would change what
 the constructor does, `fields` is refused, saying why: the program reads
 its prototype, `js::class::<Plugin>().prototype()`, where it may define a
 setter of a field's name; the constructor leaves a field out, an
-`Option`'s `None`; a field is named `__proto__` or isn't a JS name; or the
+`Option`'s `None`; a field isn't a JS name; or the
 class extends a binding's, whose prototype may have an accessor of the
 name. `fields` without `es` is refused too (#568). A class's field named
 `constructor` is refused of either form, as no TypeScript class declares
-one and `this.constructor` hides its prototype's (rd750). Its constants
+one and `this.constructor` hides its prototype's (rd750), and one whose
+JS name is `__proto__`, as any struct's is, as its constructor's
+`this.__proto__ = ..` would set its prototype ([ADR
+1084](../../decisions/1084-a-field-named-proto-is-refused.md)). Its constants
 are its prototype's after it,
 `Plugin.prototype.limit = 3;`, and its module's default declared as it,
 `export default class Plugin { .. }`. JS sees an ES class: its methods

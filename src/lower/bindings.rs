@@ -192,6 +192,10 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
         if matches!(tcx.def_kind(def), DefKind::Struct | DefKind::Enum | DefKind::Union) {
             for field in tcx.adt_def(def).all_fields() {
                 let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+                if let Some(message) = prototype_key_refused(tcx, field) {
+                    tcx.dcx().span_err(tcx.def_span(field.did), message);
+                    valid = false;
+                }
                 if let Some(message) = nested_refused(tcx, field) {
                     tcx.dcx().span_err(tcx.def_span(field.did), message);
                     valid = false;
@@ -1210,6 +1214,28 @@ pub(crate) fn field_key(tcx: TyCtxt<'_>, field: &FieldDef) -> FieldKey {
             false => key,
         },
     )
+}
+
+/// Why `field`, a struct's, a variant's or a union's, can't be its JS
+/// name, where that's `__proto__` (rd754): an object's `__proto__` is
+/// `Object.prototype`'s accessor, so where the field isn't defined as the
+/// object's own, `{ ["__proto__"]: v }`, it's the prototype: a
+/// constructor's `this.__proto__ = v`, a copy's `Object.assign`, a union's
+/// or a flattened enum's write set it, and a read of an object its `None`
+/// is left out of (ADR 0280) gives it. Keeping it would take each of
+/// those to define the field instead, a constructor's
+/// `Object.defineProperty(this, "__proto__", { .. })`, which no one
+/// writes, so it's refused (ADR 1084; ADR 0262's D), saying what to write.
+/// A binding's member of that name, a JS object's, is JS's.
+fn prototype_key_refused(tcx: TyCtxt<'_>, field: &FieldDef) -> Option<String> {
+    if field_key(tcx, field).name() != Some("__proto__") {
+        return None;
+    }
+    Some(format!(
+        "rust-js: a field whose JS name is `__proto__`, `{}` of `{}`, sets or reads its object's prototype where it isn't the object's own, through `Object.prototype`'s accessor: name it otherwise, or give it another JS name, `#[rust_js::name = \"..\"]` (rd754, ADR 1084)",
+        field.name,
+        tcx.def_path_str(tcx.parent(field.did)),
+    ))
 }
 
 /// What `$stdIterator` (`src/runtime/std_iterator.js`) gives std's struct

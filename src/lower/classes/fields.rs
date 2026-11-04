@@ -28,8 +28,8 @@ use crate::js::{self, ExprKind, Stmt, StmtKind};
 ///   `this.name = value;` before which nothing reads `this`: one left
 ///   unset, its `None` left out, would be present, `undefined`, where it's
 ///   absent;
-/// - a field is named `__proto__`, `Object.prototype`'s accessor, or
-///   isn't a JS name.
+/// - a field isn't a JS name (one named `__proto__` is refused of any
+///   struct, rd754, and `constructor` of any class, rd750).
 ///
 /// A class that extends a binding's, whose prototype may have an accessor
 /// of a field's name, is refused `es` already (`forms::form_misuse`).
@@ -120,23 +120,20 @@ fn declarable(body: &[Stmt], keys: &[String]) -> Result<Vec<String>, String> {
         ));
     }
     match set.iter().find(|name| !declarable_name(name)) {
-        Some(name) => Err(format!(
-            "`{name}` is a field no class declares, `__proto__` `Object.prototype`'s setter's, or what's no JS name"
-        )),
+        Some(name) => Err(format!("`{name}` is no JS name, which no class declares")),
         None => Ok(set),
     }
 }
 
 /// Whether a field named `name` may be declared as it's set: a JS name,
-/// `chunkName;`, but `__proto__`, whose assignment is `Object.prototype`'s
-/// setter's (one named `constructor` is refused of any class, rd750).
+/// `chunkName;` (one named `__proto__` is refused of any struct, rd754,
+/// and `constructor` of any class, rd750).
 fn declarable_name(name: &str) -> bool {
     let mut chars = name.chars();
     chars
         .next()
         .is_some_and(|c| c.is_ascii_alphabetic() || c == '_' || c == '$')
         && chars.all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$')
-        && name != "__proto__"
 }
 
 /// Why a class's field named `constructor` is refused (rd750): no
