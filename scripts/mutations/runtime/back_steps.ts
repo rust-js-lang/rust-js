@@ -507,4 +507,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^reversed_vec_rest_through_zip_and_enumerate.rs$"],
   },
+  {
+    name: "flatten-ends-inners-unclosed",
+    breaks: "closing a flatten stepped from its back closes its source alone, so what's left of the inner it steps is never dropped (#705)",
+    file: "src/runtime/back_steps.js",
+    find: "  const flat = new $Steps(step(\"next\", \"next\", \"back\"), close);\n",
+    replace: "  const flat = new $Steps(step(\"next\", \"next\", \"back\"), () => $closed(it));\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_from_both_ends_drops_its_inners.rs$"],
+  },
+  {
+    name: "flatten-ends-close-stops-at-a-panic",
+    breaks: "closing a flatten stepped from its back stops where its source's drop panics, so its inners are never dropped, where Rust's drop glue drops each field as it unwinds (#705)",
+    file: "src/runtime/back_steps.js",
+    find: "    try {\n      it.return?.();\n    } finally {\n      try {\n        taken(\"next\");\n      } finally {\n        taken(\"back\");\n      }\n    }\n",
+    replace: "    it.return?.();\n    taken(\"next\");\n    taken(\"back\");\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_from_both_ends_drops_its_inners.rs$"],
+  },
 ];

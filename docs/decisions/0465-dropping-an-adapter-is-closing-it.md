@@ -1616,3 +1616,24 @@ nothing, against native Rust in both builds. Mutations:
 `enumerate-reversible-compiled-count-taken` (`lower/mir/iter/backs.ts`);
 `enumerate-of-a-slice-nth-mapped` and `enumerate-of-own-count-mapped` name
 their lines as they now read.
+
+## Amendment: a flatten stepped from its back closes its inners too (2026-11-04, #705)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+Std's `FlattenCompat` holds its source, `iter`, and the inner iterators
+it steps from each end, `frontiter` and `backiter`, and its drop glue
+drops them in that order, each one even where an earlier one's drop
+panics. `$flattenEnds`, a flatten the crate steps from its back, closed
+only its source, so what was left of the inner it was stepping was never
+dropped: `vec![D(0), D(1)].into_iter().map(|d| vec![D(d.0 * 10),
+d]).flatten().next_back()` never dropped `D(10)`. Its close now closes its
+source, then its front inner, then its back inner, each in a `finally` of
+the one before.
+
+`flatten_from_both_ends_drops_its_inners.rs` checks a `Vec`'s and the
+crate's iterator's flatten, stepped from its back alone and part-way
+reversed, with a source's drop and a back inner's drop that panic, against
+native Rust in both builds. Mutations: `flatten-ends-inners-unclosed` and
+`flatten-ends-close-stops-at-a-panic` (`runtime/back_steps.ts`).

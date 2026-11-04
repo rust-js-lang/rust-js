@@ -3473,7 +3473,11 @@ export function $enumerate(iter) {
 // where their source and its items are. From the front, the front inner's
 // items, then the next of the source's, then, its source done, the back
 // inner's; from the back, the same the other way, as std's `FlattenCompat`
-// steps them, its source fused. Closing it closes its source.
+// steps them, its source fused. Closing it closes what it holds in
+// `FlattenCompat`'s field order, its source, then the inner it steps from
+// the front, then the one from the back, each though an earlier one's
+// drop throws, a panic, as Rust's drop glue drops each field as it unwinds
+// (#705).
 export function $flattenEnds(it, each) {
   const done = { done: true, value: undefined };
   const inner = { next: undefined, back: undefined };
@@ -3498,7 +3502,23 @@ export function $flattenEnds(it, each) {
       inner[own] = $iter(each(outer.value));
     }
   };
-  const flat = new $Steps(step("next", "next", "back"), () => $closed(it));
+  const taken = (own) => {
+    const held = inner[own];
+    inner[own] = undefined;
+    held?.return?.();
+  };
+  const close = () => {
+    try {
+      it.return?.();
+    } finally {
+      try {
+        taken("next");
+      } finally {
+        taken("back");
+      }
+    }
+  };
+  const flat = new $Steps(step("next", "next", "back"), close);
   flat.back = step("back", "back", "next");
   flat.from = [it];
   return flat;
