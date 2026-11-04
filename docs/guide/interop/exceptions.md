@@ -881,6 +881,11 @@ export function described(value) {
   `if let Err(e) = r`, is first in the `catch`, before the payload's
   binding too, `catch (thrown) { // c\n const e = $unwound(thrown); .. }`
   ([ADR 0637](../../decisions/0637-a-match-of-a-throwing-call-is-try-catch.md#amendment-a-comment-above-an-if-of-the-err-is-first-in-the-catch-2026-11-03-489)).
+  But one above an `if` whose condition makes the call, `//
+  eslint-disable-next-line no-eval\n if js::eval("null").is_err() { ..
+  }`, is the call's, first in the `try`, `try { // eslint-disable-next-line
+  no-eval\n (0, eval)("null"); } catch { .. }`
+  ([ADR 0637](../../decisions/0637-a-match-of-a-throwing-call-is-try-catch.md#amendment-a-comment-above-an-if-whose-condition-makes-the-call-is-the-calls-2026-11-04-rd736)).
   One right above an `if` of the `Ok`, `// c\n if let Ok(n) = r { .. }`,
   is before what its arm does, in the `try` or after it, `try { ..; // c\n
   return 5; }`; one above a `let Ok(n) = r else`, before where the `try`

@@ -422,11 +422,12 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-updates-folded",
     breaks:
-      "MIR's branches each adding to a variable are `x = c ? x + a : x + b`",
+      "a formatter's arms each writing, `Some(w) => write!(f, \"{:>w$}\", s), None => f.write_str(&s)`, are `f = w != null ? f + $pad(..) : f + s`, not each its `return`",
     file: "src/lower/mir/tidy/branches.rs",
     find: "        && !(updates(x, yes) || updates(x, no))\n",
     replace: "        && !((updates(x, yes) || updates(x, no)) && false)\n",
-    tests: ["test/lowering-branches.test.ts", "-t", "branches that each add"],
+    tests: ["test/corpus.test.ts", "-t", "^formatter_queries.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-tidy-table-last-arm-unchecked",
@@ -645,19 +646,6 @@ export const mutations: Mutation[] = [
     replace:
       "                if false {\n                    value.span = span;\n",
     tests: ["test/emission.test.ts", "-t", "an if's branches made one conditional map to the if"],
-  },
-  {
-    name: "branch-adding-made-conditional",
-    breaks:
-      "React's `if (className == null) { className = m; } else { className += .. }` is `className = className == null ? m : className + ..` (ADR 0657, amended)",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "        && !(updates(x, yes) || updates(x, no))\n",
-    replace: "        && !(updates(x, yes) && updates(x, no))\n",
-    tests: [
-      "test/lowering-written-branches.test.ts",
-      "-t",
-      "adds to its variable",
-    ],
   },
   {
     name: "switch-arms-tail-shared",

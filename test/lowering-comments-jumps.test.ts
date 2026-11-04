@@ -574,6 +574,68 @@ pub fn evaluated(code: &str) -> bool {
   expect([href("a", "f"), href("", "f"), evaluated("1 + 2"), evaluated("(")]).toEqual(["A!", "f!", true, false]);
 });
 
+// React's checkEvalAvailabilityOnceDev, `// eslint-disable-next-line
+// no-eval\n if js::eval("null").is_err() { .. }`: a comment above an `if`
+// whose condition makes the call is the call's, before it in the `try`,
+// where ESLint's next line is the eval's, as upstream writes it; not the
+// `catch`'s, as one above an `if` of a `Result` made before it is, nor
+// before what an `Ok` arm does after the `try` (rd736).
+test("a comment above an if whose condition makes the call is before the call in the try", async () => {
+  const { js, lib } = await compiled("comment-above-a-tried-condition", `pub fn check(code: &str, log: &mut Vec<u32>) {
+    log.push(0);
+    // eslint-disable-next-line no-eval
+    if js::eval(code).is_err() {
+        log.push(1);
+    }
+}
+
+pub fn ok(code: &str, log: &mut Vec<u32>) {
+    // Evaluated.
+    if js::eval(code).is_ok() {
+        log.push(2);
+    }
+}
+
+pub fn bound(code: &str, log: &mut Vec<u32>) {
+    // Bound.
+    if let Err(e) = js::eval(code) {
+        log.push(u32::from(e.message().is_empty()) + 3);
+    }
+}
+
+pub fn apart(code: &str, log: &mut Vec<u32>) {
+    let r = js::eval(code);
+    // Of the catch.
+    if r.is_err() {
+        log.push(5);
+    }
+}
+
+pub fn left(code: &str) -> u32 {
+    // Set where it is made.
+    let Ok(v) = js::eval(code) else {
+        return 0;
+    };
+    if v.is_some() { 1 } else { 2 }
+}
+`);
+  expect(js).toContain("  log.push(0);\n  try {\n    // eslint-disable-next-line no-eval\n    (0, eval)(code);\n  } catch {\n    log.push(1);\n  }\n");
+  expect(js).toContain("  try {\n    // Evaluated.\n    (0, eval)(code);\n  } catch {\n    return;\n  }\n  log.push(2);\n");
+  expect(js).toContain("  try {\n    // Bound.\n    (0, eval)(code);\n  } catch (e) {\n");
+  expect(js).toContain("  try {\n    (0, eval)(code);\n  } catch {\n    // Of the catch.\n    log.push(5);\n  }\n");
+  expect(js).toContain("  try {\n    // Set where it is made.\n    return (0, eval)(code) != null ? 1 : 2;\n  } catch {\n    return 0;\n  }\n");
+  expect(js.match(/Set where it is made/g)).toHaveLength(1);
+  expect([lib.left("1" as never), lib.left("undefined" as never), lib.left("(" as never)]).toEqual([1, 2, 0]);
+  const log: number[] = [];
+  for (const code of ["1", "("]) {
+    lib.check(code as never, log as never);
+    lib.ok(code as never, log as never);
+    lib.bound(code as never, log as never);
+    lib.apart(code as never, log as never);
+  }
+  expect(log).toEqual([0, 2, 0, 1, 3, 5]);
+});
+
 // A comment above a later arm, `// c\n None => given`, of a `match` read as
 // `n ?? given`: the arm's code is between it and the operand, so it's not
 // the operand's, `n ?? // c\n given`, but the statement's (ADR 0444,

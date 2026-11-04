@@ -423,3 +423,39 @@ A comment above a first `Ok(()) => {}` is now held by that arm's own marker
 `if` MIR tests of the `Err`, needed: the comment is at the `try`'s end, not
 in the `catch`. The mutation `arm-comment-caught` is gone with it, as no
 program tells it from the code now (see there).
+
+## Amendment: a comment above an `if` whose condition makes the call is the call's (2026-11-04, rd736)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+React's checkEvalAvailabilityOnceDev, `// eslint-disable-next-line
+no-eval\n if js::eval("null").is_err() { console::error(..); }`, printed
+`try { (0, eval)('null'); } catch { // eslint-disable-next-line no-eval\n
+console.error(..) }`: the #489 amendment took a comment right above an
+`if` of the `Err` for the `catch`'s. That rule is of a `Result` made
+before the comment, `let r = f(); // c\n if r.is_err()`, the comment
+between the call and its test. Where the `if`'s condition makes the call,
+the call is written past the comment, as a `let` of it is: **a comment
+right above an `if` whose condition makes the call, `if f().is_err()`,
+`if let Err(e) = f()`, `if f().is_ok()` and `let Ok(v) = f() else` too,
+is the call's, first in the `try`**, before it, neither arm's:
+upstream's `try { // eslint-disable-next-line no-eval\n (0, eval)('null');
+} catch { .. }`, where ESLint's next line is the eval's.
+
+Whether the call is in the condition is where it's written against where
+the `if` is: at or past it. The call's own place, not its `const`'s, which
+of a temporary MIR made is an arm's: a `match catch_unwind(..) { // c\n
+Ok(()) => {} .. }`'s test is at that arm's pattern, past the call, and its
+comment stays the arm's. The marker is the `try`'s first statement, and
+the `try` is where the `if` is, the call's statement where the call is: a
+comment is printed before the first node at the place it's of, which
+would be the `try` were both at the call.
+
+Held by `test/lowering-comments-jumps.test.ts`'s "a comment above an if
+whose condition makes the call is before the call in the try", run:
+`is_err()`, `is_ok()`, `if let Err(e)`, a `let Ok(v) = .. else` (its
+comment once), and `let r = ..; // c\n if r.is_err()`, still the
+`catch`'s; and the mutations `condition-call-comment-caught`,
+`condition-call-comment-unsaid`, `condition-call-try-at-the-call`,
+`condition-call-where-its-const-is` and `tail-try-said-kept-a-closure`
+(`prepare/catches.ts`), the last of a `try` that ends a function, whose
+closure is its body past the marker (corpus `catch_unwind_ok_returns`).

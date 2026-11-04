@@ -168,3 +168,24 @@ the `return` of the whole `if` for one in each branch. **A branch's
 ? refProp : null;`. Held by the same test, its `ref_of` the port's shape,
 run in JS with `__DEV__` set, and the mutation
 `written-returns-of-a-returned-if` (`tidy/branches.ts`).
+
+## Amendment: what a branch that adds is held by now (2026-11-04)
+
+The two mutations of `one_assignment`'s `updates` rule survived. Its
+case, React's `if (className == null) { className = m; } else {
+className += .. }`, is a statement the program wrote, which ADR 0969's
+rd187 amendment keeps as written before `updates` is asked
+(`value_chains::written_as_statement`); a value's `if`, `x = if c { x +
+1 } else { x + 2 }`, gives each value to a temporary MIR makes, which
+adds nothing to itself. What reaches the rule is a formatter's
+`match`, each arm writing to it, `Some(w) => write!(f, "{:>w$}", s), None
+=> f.write_str(&s)`: without it, `f = w != null ? f + $pad(..) : f + s;
+return f;`, not each arm's `return`. The whole corpus run with each
+mutation applied tells one apart: `mir-tidy-updates-folded`, the rule
+gone, changes `formatter_queries` alone, and now names that case.
+`branch-adding-made-conditional`, the rule asked only where both branches
+add, changes nothing: no program reaches it with one branch adding and
+the other not, as no formatter's arm sets the text but by adding to it,
+so it was an equivalent mutant and is removed. The rule stays as it is,
+one branch adding enough: it says what the `if` is, not which of its
+shapes a program can reach today.

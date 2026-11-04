@@ -340,8 +340,16 @@ written. No other corpus case or port module changed.
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same tests in
 the same order, each statement run as often.
 
-Held by `test/corpus/match_arm_continues.rs` against native Rust;
-mutation `decisions-tail-copied` (`mir/tidy/decisions.ts`).
+Held by `test/corpus/match_arm_continues.rs` against native Rust.
+
+The mutation `decisions-tail-copied`, the refusal gone, survived, as
+`decisions` refuses a chain whose tests are longer than the tree's: the chain that copies the `if` into the `else` reads
+its tests again, 8 and 7 atoms where the tree's are 5 in the case's
+`numbers` and `bytes`, so `tests_made > written` refuses it too, and no
+tidy pass's output differs. The whole corpus run without the refusal
+changes nothing, so the mutant is equivalent and removed (2026-11-04).
+The refusal stays: it's the rule's reason, said where it is, which the
+count only meets.
 
 ## Amendment: a chain's arm needs no more than that the arms before it failed (#221, 2026-10-29)
 

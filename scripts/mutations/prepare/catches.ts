@@ -590,7 +590,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment right above an `if r.is_err() { .. }` a `try` folds is lost, not first in its `catch` (#489)",
     file: "src/prepare/catches.rs",
-    find: "    let said = (!said_of_ok).then(|| StmtKind::Comments.at(tested_at));\n",
+    find: "    let said = (!said_of_ok && !of_call).then(|| StmtKind::Comments.at(tested_at));\n",
     replace: "    let said: Option<Stmt> = None;\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
   },
@@ -673,5 +673,50 @@ export const mutations: Mutation[] = [
     find: "        *test = tested.negated_test();\n        *then = rest;\n",
     replace: "        *test = tested;\n        *otherwise = Some(rest);\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment above an arm that does nothing is the arm.s"],
+  },
+  {
+    name: "condition-call-comment-caught",
+    breaks:
+      "a comment above an `if` whose condition makes the call, `// eslint-disable-next-line no-eval\\n if js::eval(c).is_err()`, is the `catch`'s, not before the call in the `try` (rd736)",
+    file: "src/prepare/catches.rs",
+    find: "    let of_call = !written_at.is_none() && !tested_at.is_none() && written_at.lo >= tested_at.lo;\n",
+    replace: "    let of_call = false;\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "condition makes the call"],
+  },
+  {
+    name: "condition-call-comment-unsaid",
+    breaks: "a comment above an `if` whose condition makes the call is lost, not before the call in the `try` (rd736)",
+    file: "src/prepare/catches.rs",
+    find: "        tried.splice(0..0, call_said.iter().cloned());\n",
+    replace: "",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "condition makes the call"],
+  },
+  {
+    name: "condition-call-try-at-the-call",
+    breaks:
+      "the `try` of an `if` whose condition makes the call is where the call is, so the comment above the `if` is above the `try`, not before the call in it (rd736)",
+    file: "src/prepare/catches.rs",
+    find: "    let (span, call_at) = match of_call && !value.span.is_none() && tested_at.lo < value.span.lo {\n",
+    replace: "    let (span, call_at) = match false {\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "condition makes the call"],
+  },
+  {
+    name: "condition-call-where-its-const-is",
+    breaks:
+      "where a `match` of `catch_unwind` calls is read from its `const`, a temporary MIR placed at an arm, so the comment above its `Ok(()) => {}` arm is taken as the call's, above the `try` (rd736)",
+    file: "src/prepare/catches.rs",
+    find: "    let written_at = match value.span.is_none() {\n        true => made.span,\n        false => value.span,\n    };\n",
+    replace: "    let written_at = made.span;\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "loop.s Ok arm of nothing"],
+  },
+  {
+    name: "tail-try-said-kept-a-closure",
+    breaks:
+      "a `try` that ends a function, of an `if let Err(e) = catch_unwind(|| ..)` whose condition makes the call, keeps the closure called in place, `try { (() => { .. })(); }`, as the comment marker before it is taken for a statement (rd736)",
+    file: "src/prepare/catches.rs",
+    find: "            let said = tried\n                .iter()\n                .take_while(|s| matches!(s.kind, StmtKind::Comments))\n                .count();\n",
+    replace: "            let said = 0;\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_ok_returns.rs$"],
+    snapshots: true,
   },
 ];

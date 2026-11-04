@@ -531,11 +531,23 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     // of MIR's of a `match`, the arm its test names, the first, whose
     // pattern it tests at, `// Fine.\n Ok(()) => {}`'s of `r.TAG !== "Ok"`
     // (#489). The `Err`'s is the `catch`'s, first in it, as that arm is.
+    // But of an `if` whose condition makes the call, `// eslint-disable-
+    // next-line no-eval\n if js::eval("null").is_err() { .. }`, the call
+    // written past it, it's the call's, neither arm's: first in the `try`,
+    // as React's checkEvalAvailabilityOnceDev writes it (rd736). Where the
+    // call is written is its own place, not its `const`'s, which of a
+    // temporary MIR made is where an arm is.
+    let written_at = match value.span.is_none() {
+        true => made.span,
+        false => value.span,
+    };
+    let of_call = !written_at.is_none() && !tested_at.is_none() && written_at.lo >= tested_at.lo;
+    let call_said: Vec<Stmt> = of_call.then(|| StmtKind::Comments.at(tested_at)).into_iter().collect();
     let said_of_ok = match written {
         true => of_ok,
         false => ok,
     };
-    let said = (!said_of_ok).then(|| StmtKind::Comments.at(tested_at));
+    let said = (!said_of_ok && !of_call).then(|| StmtKind::Comments.at(tested_at));
     // Each arm's statements, and how many of `rest` are one's: an `if`'s
     // and its `else`'s; or, after an arm that leaves, the other's, `rest`,
     // which leaves too, where it's the `Err`'s, the `catch`'s; or, after an
@@ -587,7 +599,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     // where that is. And what's said above its binding, written before its
     // test, a `let Ok(n) = r else`'s, is before where the `try` sets it,
     // `// c\n n = ..;` (#489).
-    let arm_said: Vec<Stmt> = said_of_ok
+    let arm_said: Vec<Stmt> = (said_of_ok && !of_call)
         .then(|| StmtKind::Comments.at(tested_at))
         .into_iter()
         .collect();
@@ -701,6 +713,20 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
             hi: made.span.hi.max(value.span.hi),
         },
     };
+    // Of an `if` whose condition makes it, the `try` is where the `if` is,
+    // and the call where it's written, past it: what's said above the
+    // `if` is the call's, before it in the `try` (rd736), as a comment is
+    // printed before the first node at the place it's of.
+    let (span, call_at) = match of_call && !value.span.is_none() && tested_at.lo < value.span.lo {
+        true => (
+            js::Span {
+                lo: tested_at.lo,
+                hi: span.hi.max(tested_at.hi),
+            },
+            value.span,
+        ),
+        false => (span, span),
+    };
     // What unwound is the payload `$unwound` makes of what was thrown: the
     // `Err`'s binding, of the `catch`'s, `thrown` (ADR 0660).
     let (binding, in_catch) = match (caught, &error) {
@@ -741,11 +767,12 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
         tried.splice(at..at, arm_said.iter().cloned());
         let at = at.saturating_sub(usize::from(sets));
         tried.splice(at..at, value_said.iter().cloned());
+        tried.splice(0..0, call_said.iter().cloned());
         let (binding, mut handler) = read_as_thrown(binding.clone(), in_catch.clone());
         handler.splice(0..0, said.clone());
         StmtKind::TryCatch(tried, binding, handler).at(span)
     };
-    let alone = StmtKind::Expr(call.clone()).at(span);
+    let alone = StmtKind::Expr(call.clone()).at(call_at);
     let cannot_throw = |stmt: &Stmt| cannot_throw(stmt);
     // The `Ok`'s value kept is the call's too, `return f(x)`.
     if let Some((held, written, arm)) = held {
@@ -785,7 +812,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     // What the `Ok` arm does can't throw: in the `try`.
     if ok.iter().all(cannot_throw) {
         let first = match &value_name {
-            Some(name) => StmtKind::Const(name.clone(), call.clone()).at(span),
+            Some(name) => StmtKind::Const(name.clone(), call.clone()).at(call_at),
             None => alone,
         };
         let tried = std::iter::once(first).chain(ok.iter().cloned()).collect();
@@ -802,7 +829,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     let tried = match &value_name {
         Some(name) => {
             out.push(StmtKind::Let(name.clone(), None).at(span));
-            StmtKind::Assign(Expr::var(name), call.clone()).at(span)
+            StmtKind::Assign(Expr::var(name), call.clone()).at(call_at)
         }
         None => alone,
     };
@@ -830,7 +857,13 @@ pub(super) fn tail_tries(body: &mut [Stmt]) {
         StmtKind::Try(block, _) => tail_tries(block),
         StmtKind::TryCatch(tried, _, handler) => {
             tail_tries(handler);
-            if let [only] = tried.as_slice()
+            // Past what's said before it, an `if`'s comment the call's
+            // (rd736), which stays before its body.
+            let said = tried
+                .iter()
+                .take_while(|s| matches!(s.kind, StmtKind::Comments))
+                .count();
+            if let [only] = &tried[said..]
                 && let StmtKind::Expr(call) = &only.kind
                 && let ExprKind::Call(callee, args) = &call.kind
                 && args.is_empty()
@@ -838,7 +871,8 @@ pub(super) fn tail_tries(body: &mut [Stmt]) {
                 && params.is_empty()
                 && js::returns(inner) == (true, false)
             {
-                *tried = inner.clone();
+                let inner = inner.clone();
+                tried.splice(said.., inner);
             }
             // Its last `return;`, `let Err(x) = catch_unwind(..) else {
             // return; }`'s, falls off the function's end as it does (rd551).
