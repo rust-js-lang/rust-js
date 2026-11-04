@@ -308,7 +308,11 @@ export function direct() {
   [ADR 0592](../../decisions/0592-a-dictionary-is-its-modules-const.md)).
   An impl generic code gives its own dictionaries, `impl<T: Display>
   Display for Wrapper<T>`, is a function of them, `wrapperDisplay(TDisplay)`.
-  It's exported where the trait is `pub`.
+  It's exported where the trait is `pub`. A function that asks one twice
+  or more reads it once, at its top: `const WrapperDisplay =
+  wrapperDisplay(TDisplay);`
+  ([ADR 0979](../../decisions/0979-a-dictionary-a-body-writes-twice-is-declared-once.md),
+  amended, #691).
 - **A default method is copied into each impl's dictionary** that doesn't
   write its own, so a call inside it reaches the impl's own methods. The
   call goes straight to the impl's function, `clicksTouch_touch(self.value,

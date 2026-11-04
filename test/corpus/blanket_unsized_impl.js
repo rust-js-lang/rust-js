@@ -34,11 +34,12 @@ function firstTwo(it) {
 }
 
 function main() {
+  const RangeExt = tExt({ next: $rangeNext });
   const value = tExt({ next: $next }).second($iter([1, 2, 3]));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const range = { start: 1, end: 5 };
-  tExt({ next: $rangeNext }).skipOne(range);
-  const value$1 = tExt({ next: $rangeNext }).second(range);
+  RangeExt.skipOne(range);
+  const value$1 = RangeExt.second(range);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const value$2 = firstTwo($lazyRange(7, 9));
   console.log(

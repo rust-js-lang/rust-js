@@ -4,7 +4,8 @@ Status: Accepted, under the user's goal of 2026-10-26 ("keep going until
 all done"). The plan "rust-js: one representation per iterator", toward
 its fourth phase, readability parity. Extends
 [0098](0098-destructors.md)'s rule that a long drop is written once:
-the same of a dictionary.
+the same of a dictionary. Amended: a generic impl's dictionary, made of what
+the function is given, too (#691).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none, no observable
 difference. A dictionary of a type known whole is pure: objects and
@@ -62,3 +63,53 @@ lines.
 
 The mutations are `dictionary-declared-once-used`,
 `dictionary-repeats-unnamed` and `dictionary-of-steps-declared`.
+
+## Amendment: a generic impl's dictionary, made of what the function is given (#691)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, no observable
+difference. A generic impl's dictionary is its function's call,
+`holderTouch(TTouch)`, which `$traitImpl` caches by what it's given: each
+call gives the same object, and making it runs nothing of the program's
+but its entries' closures. Read once at the body's top, even ahead of a
+branch not taken, it gives what each place it's asked gave.
+
+A generic impl's dictionary was written at each place a body asked it:
+a copied default calling its own impl through the dictionary's entry
+(#690) wrote `holderTouch(TTouch).me(self)`, and so did generic code,
+`both<T: Touch>(h: &mut Holder<T>)` calling `h.twice()` twice, and
+`main` of a type known whole, `tExt({ next: $rangeNext })` twice. Nobody
+writes a lookup again at every call.
+
+- **What's kept.** Besides the literal of a type known whole, a body
+  keeps each dictionary made that is a call of one of the program's items,
+  a generic impl's function, of a type known whole or not, a copied
+  default's of its own impl among them: its `Self` dictionary is the
+  impl's, made of what the impl is given.
+- **What it may read.** What a body's top can: the runtime's helpers, the
+  program's items, what its own functions bind, and what the function is
+  given (`given_names`, `traits/given.rs`): its dictionaries, `TTouch`, and
+  what a copied default's made of them reads, its const parameters'
+  values, facts, caller's location and drops, `dropI`. A closure's top
+  reads its function's. A drop the body makes for itself isn't given, so
+  a dictionary that reads one stays where it is.
+- **Names.** A bound's dictionary's, as a function's parameter is named,
+  of its type and its trait: `HolderTouch`, `RangePull`. Two of one name
+  are told apart, `HolderTouch` and `HolderTouch$1`, as two literals are.
+- **Where.** The body's top, as before, before tidy: a copied default's
+  at its own, `const HolderTouch = holderTouch(TTouch);` ahead of
+  `HolderTouch.me(self)`; one a closure writes twice at the closure's. One
+  written once stays where it's asked. The largest is named first, as
+  before, so a literal a call is given, `fuseDebug`'s `{ fmt }` of
+  `peekableDebug(fuseDebug({ fmt }), debug)`, that's written nowhere else
+  stays in the call's `const`, where it was a `const` of its own when the
+  call was written three times.
+
+Twenty-five corpus snapshots change, 162 lines added and 131 removed.
+`test/corpus/generic_dictionary_declared_once.rs` runs against native
+Rust: a copied default calling its impl's dictionary twice, and behind a
+branch not taken; generic code, a closure in it and a branch not taken;
+generic code given a drop its impl's dictionary takes, `slotRenew(TDefault,
+dropT)`; `main`'s dictionaries of types known whole, one of another. The mutations
+are `generic-dictionary-repeats-unnamed` (`traits/dictionaries.ts`),
+`given-names-without-evidence` and `given-names-without-drops`
+(`traits/given.ts`).

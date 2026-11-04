@@ -66,12 +66,13 @@ function length(text, DStableDeref) {
 }
 
 function main() {
+  const RcStableDeref = rcStableDeref();
   const cell = { value: [1, 2, 3] };
   console.log(`${total($borrow(cell, true), refStableDeref(), $unborrow)}`);
   $borrowMut(cell).value.push(4);
   console.log(`${total($borrowMut(cell, true), refMutStableDeref(), $unborrow)}`);
-  console.log(`${total([5, 6], rcStableDeref())}`);
-  console.log(`${length("ada", stringStableDeref)} ${length("lovelace", rcStableDeref())}`);
+  console.log(`${total([5, 6], RcStableDeref)}`);
+  console.log(`${length("ada", stringStableDeref)} ${length("lovelace", RcStableDeref)}`);
   const tryBorrowMut = $tryBorrow(cell, true);
   console.log(`${tryBorrowMut.TAG === "Ok"}`);
   if (tryBorrowMut.TAG === "Ok") {

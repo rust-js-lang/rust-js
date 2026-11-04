@@ -48,16 +48,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `tr`'s dictionary, written where it's asked. Of a type known whole,
     /// one that holds a function, a compiled method given its sources'
     /// dictionaries, is kept: one its body writes twice or more is declared
-    /// once at its top (`declare_repeated`, ADR 0979).
+    /// once at its top (`declare_repeated`, ADR 0979). So is a generic
+    /// impl's, a call of its function made of what the function was given,
+    /// `holderTouch(TTouch)`, a copied default's of its own impl among them,
+    /// named as a bound's dictionary is, `HolderTouch` (ADR 0979, amended,
+    /// #691).
     pub(in crate::lower) fn dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
         let made = self.dictionary_made(tr, span)?;
-        if !rustc_middle::ty::TypeVisitableExt::has_non_region_param(&tr)
+        let named = if is_impl_call(&made) {
+            let word = bound_word(self.tcx, tr);
+            Some((word.clone(), word))
+        } else if !rustc_middle::ty::TypeVisitableExt::has_non_region_param(&tr)
             && !self.in_copied_default()
             && holds_a_function(&made)
-            && reads_only_whole_bodys(&made)
         {
-            let name = self.dictionary_name(tr);
             let shared = crate::lower::lower_first(self.tcx.item_name(tr.def_id).as_str());
+            Some((self.dictionary_name(tr), shared))
+        } else {
+            None
+        };
+        if let Some((name, shared)) = named
+            && reads_only_at_top(&made, &self.given_names())
+        {
             self.keep_dictionary(&made, name, shared);
         }
         Ok(made)
@@ -1054,9 +1066,17 @@ fn size(e: &Expr) -> usize {
     count
 }
 
+/// Whether `e`, a dictionary made, is a generic impl's, a call of its
+/// function, `holderTouch(TTouch)`: the program's item, given dictionaries.
+fn is_impl_call(e: &Expr) -> bool {
+    matches!(&e.kind, js::ExprKind::Call(callee, _)
+        if matches!(callee.kind, js::ExprKind::Var(_)) && callee.facts.has(js::Known::Item))
+}
+
 /// Whether `e` reads only what its body's top can: the runtime's helpers,
-/// the program's items, and the names its own functions bind (ADR 0979).
-fn reads_only_whole_bodys(e: &Expr) -> bool {
+/// the program's items, the names its own functions bind, and `given`,
+/// what the function was given (`given_names`, ADR 0979, amended).
+fn reads_only_at_top(e: &Expr, given: &HashSet<String>) -> bool {
     let mut bound: Vec<String> = Vec::new();
     let mut each = e.clone();
     each.each_mut(&mut |part| {
@@ -1070,7 +1090,10 @@ fn reads_only_whole_bodys(e: &Expr) -> bool {
     let mut each = e.clone();
     each.each_mut(&mut |part| {
         if let js::ExprKind::Var(name) = &part.kind {
-            only &= part.helper_name().is_some() || part.facts.has(js::Known::Item) || bound.contains(name);
+            only &= part.helper_name().is_some()
+                || part.facts.has(js::Known::Item)
+                || bound.contains(name)
+                || given.contains(name);
         }
     });
     only

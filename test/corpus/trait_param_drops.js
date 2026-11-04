@@ -100,21 +100,21 @@ function build(a, TTakeA) {
 }
 
 function main() {
-  const u8Default = { default: () => 0 };
+  const SinkTakeNoisy = sinkTakeA(noisyDrop_drop);
+  const WrapTakeNoisy = wrapTakeNoisy({ default: () => 0 });
+  const RelayTakeNoisy = relayTakeA(SinkTakeNoisy, noisyDrop_drop);
   console.log(`${sinkTakeA_take(undefined, [1], noisyDrop_drop)}`);
-  console.log(
-    `${relayTakeA_take([[undefined]], [2], relayTakeA(sinkTakeA(noisyDrop_drop), noisyDrop_drop), noisyDrop_drop)}`,
-  );
-  console.log(`${via([undefined], [3], relayTakeA(sinkTakeA(noisyDrop_drop), noisyDrop_drop))}`);
+  console.log(`${relayTakeA_take([[undefined]], [2], RelayTakeNoisy, noisyDrop_drop)}`);
+  console.log(`${via([undefined], [3], RelayTakeNoisy)}`);
   console.log(`${via(undefined, 4, sinkTakeA())}`);
   const w = [0];
-  console.log(`${wrapTakeNoisy(u8Default).take(w, [5])} ${via(w, [6], wrapTakeNoisy(u8Default))}`);
-  build([7], relayTakeA(wrapTakeNoisy(u8Default), noisyDrop_drop));
+  console.log(`${WrapTakeNoisy.take(w, [5])} ${via(w, [6], WrapTakeNoisy)}`);
+  build([7], relayTakeA(WrapTakeNoisy, noisyDrop_drop));
   console.log(`${sinkTakeA_take(undefined, [8], noisyDrop_drop)}`);
   const all = [
-    { impl: sinkTakeA(noisyDrop_drop) },
+    { impl: SinkTakeNoisy },
     { impl: keepTakeA(noisyDrop_drop) },
-    { value: [1], impl: wrapTakeNoisy(u8Default) },
+    { value: [1], impl: WrapTakeNoisy },
   ];
   try {
     for (const [i, t] of all.entries()) {

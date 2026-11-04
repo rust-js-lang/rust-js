@@ -3,6 +3,16 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "generic-dictionary-repeats-unnamed",
+    breaks:
+      "a generic impl's dictionary a body asks twice or more, `holderTouch(TTouch)`, is written each time, not read once at its top (ADR 0979, amended, #691)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "        let named = if is_impl_call(&made) {\n",
+    replace: "        let named = if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(generic_dictionary_declared_once|copied_default_through_its_entry).rs$"],
+    snapshots: true,
+  },
+  {
     name: "impl-nested-mut-unchecked",
     breaks:
       "a generic impl's dictionary of an object's, `impl<T: Pick> Wrap for Holder<T>` of a `Holder<Clicks>`, is made though its `T::pick(Some(&mut ..))` gives `Clicks`'s entry generic code's box: what it writes is lost (#685)",

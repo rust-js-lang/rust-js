@@ -141,13 +141,27 @@ function lexerDebug_fmt(lexer, options) {
 }
 
 function main() {
-  const debug = { fmt: (value, options) => $debugStr(value) };
-  const intoIterDebug = {
-    fmt: (value, options) =>
-      options?.alternate
-        ? $pretty(
-            "IntoIter(",
-            [
+  const PeekableDebug = peekableDebug(
+    fuseDebug({
+      fmt: (value, options) =>
+        options?.alternate
+          ? $pretty(
+              "IntoIter(",
+              [
+                options?.alternate
+                  ? $pretty(
+                      "[",
+                      value.items.slice(value.at, value.end).map((item) => $debugStr(item)),
+                      "]",
+                    )
+                  : `[${value.items
+                      .slice(value.at, value.end)
+                      .map((item) => $debugStr(item))
+                      .join(", ")}]`,
+              ],
+              ")",
+            )
+          : `IntoIter(${
               options?.alternate
                 ? $pretty(
                     "[",
@@ -157,27 +171,13 @@ function main() {
                 : `[${value.items
                     .slice(value.at, value.end)
                     .map((item) => $debugStr(item))
-                    .join(", ")}]`,
-            ],
-            ")",
-          )
-        : `IntoIter(${
-            options?.alternate
-              ? $pretty(
-                  "[",
-                  value.items.slice(value.at, value.end).map((item) => $debugStr(item)),
-                  "]",
-                )
-              : `[${value.items
-                  .slice(value.at, value.end)
-                  .map((item) => $debugStr(item))
-                  .join(", ")}]`
-          })`,
-  };
-  const words = withPosition($iter(["a", "b", "c"]), { next: $next }, true);
-  console.log(
-    `${withPositionDebug_fmt(words, undefined, peekableDebug(fuseDebug(intoIterDebug), debug))}`,
+                    .join(", ")}]`
+            })`,
+    }),
+    { fmt: (value, options) => $debugStr(value) },
   );
+  const words = withPosition($iter(["a", "b", "c"]), { next: $next }, true);
+  console.log(`${withPositionDebug_fmt(words, undefined, PeekableDebug)}`);
   const sizeHint = $sizeHint(words.peekable);
   const value = withPositionIterator_next(words);
   console.log(
@@ -185,7 +185,7 @@ function main() {
   );
   const arg = $sizeHint(words.peekable);
   console.log(
-    `${withPositionDebug_fmt(words, undefined, peekableDebug(fuseDebug(intoIterDebug), debug))} (${arg[0]}, ${arg[1] == null ? "None" : `Some(${arg[1]})`})`,
+    `${withPositionDebug_fmt(words, undefined, PeekableDebug)} (${arg[0]}, ${arg[1] == null ? "None" : `Some(${arg[1]})`})`,
   );
   const copy = withPositionClone_clone(
     words,
@@ -197,9 +197,7 @@ function main() {
       .map((item) => `(${$debugStr(item[0])}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
-  console.log(
-    `${withPositionDebug_fmt(copy, { alternate: true }, peekableDebug(fuseDebug(intoIterDebug), debug))}`,
-  );
+  console.log(`${withPositionDebug_fmt(copy, { alternate: true }, PeekableDebug)}`);
   console.log(
     `[${Array.from($iterator(copy, withPositionIterator_next))
       .map((item) => `(${$debugStr(item[0])}, ${$debugStr(item[1])})`)

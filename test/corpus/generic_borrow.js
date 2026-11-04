@@ -85,6 +85,7 @@ function labelledOrd_cmp(labelled, other, KBorrowStr) {
 function main() {
   const borrow = { borrow: (value) => value };
   const partialEq = { eq: (a, b) => a === b };
+  const i32EquivalentI32 = qEquivalentK(partialEq, borrow);
   const words = ["tea", "milk"];
   console.log(
     `${contains(words, "milk", borrow, partialEq)} ${contains(words, "coffee", borrow, partialEq)}`,
@@ -101,12 +102,12 @@ function main() {
 
   console.log(`${total([1, 2, 3], borrow)} ${total([4, 5], borrow)} ${total([6, 7], borrow)}`);
 
-  const value = position(words, "milk", qEquivalentK(partialEq, borrow));
-  const value$1 = position(words, "rum", qEquivalentK(partialEq, borrow));
+  const value = position(words, "milk", i32EquivalentI32);
+  const value$1 = position(words, "rum", i32EquivalentI32);
   console.log(
     `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  const value$2 = position([5, 6], 6, qEquivalentK(partialEq, borrow));
+  const value$2 = position([5, 6], 6, i32EquivalentI32);
   const value$3 = position(tags, "red", qEquivalentK(partialEq, tagBorrowStr));
   console.log(
     `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,

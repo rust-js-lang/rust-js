@@ -10,7 +10,8 @@ a type parameter's `&mut T` is that box (#614), and what a bound trait's
 methods are given is walked, a generic function's (#682) and a generic
 impl's (#685), past what its entry adapts within an `Option` or a tuple
 (#686); and a copied default calls through its impl's entry where the entry
-adapts more than a call does (#690). Extends [0099](0099-mut-references.md) and
+adapts more than a call does (#690), reading a generic impl's dictionary once
+(#691). Extends [0099](0099-mut-references.md) and
 [0180](0180-generic-writers.md). Decided with the user; amended by [1086](1086-a-mut-refs-js-form-is-mut-ref-forms.md): a type parameter's box is `MutRefForm::GenericBox`, asked of `mut_ref_form`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): the same writes, to
@@ -492,8 +493,12 @@ refused.
   by-value `self` and copy it back, `const self$1 = { value: self };
   xCh.set(self$1, 5); self = self$1.value;`, with the same answer but
   worse JS, so it was rejected.
-- A generic impl's copied default calls its own dictionary,
-  `holderTouch(TTouch).me(self)`, which `$traitImpl` caches.
+- A generic impl's copied default calls its own dictionary, which
+  `$traitImpl` caches, read once at its top where it calls it twice or
+  more, `const HolderTouch = holderTouch(TTouch);` then
+  `HolderTouch.me(self)`, as any body reads a dictionary it writes twice
+  ([0979](0979-a-dictionary-a-body-writes-twice-is-declared-once.md),
+  amended, #691).
 - `test/corpus/copied_default_through_its_entry.rs`, against native Rust:
   a `-> &mut Self` and a `-> Option<&mut Self>` given back and written
   whole, an `Option<&mut Self>` given a reborrow and then the `&mut`

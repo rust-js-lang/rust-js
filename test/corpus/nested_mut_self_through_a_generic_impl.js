@@ -66,25 +66,27 @@ function go(w, WWrap) {
 }
 
 function main() {
+  const HolderWrap$1 = holderWrap(clicksPick);
+  const HolderWrap = holderWrap(u32Pick);
   const u32Debug = { fmt: (value) => String(value) };
   let h = { a: 0, b: 1 };
   const w = { value: h };
-  go(w, holderWrap(u32Pick));
+  go(w, HolderWrap);
   $assign(h, w.value);
   console.log(`${holderDebug_fmt(h, u32Debug)}`);
   holderWrap_wrap(h, u32Pick);
   console.log(`${holderDebug_fmt(h, u32Debug)}`);
-  let d = { value: h, impl: holderWrap(u32Pick) };
+  let d = { value: h, impl: HolderWrap };
   d.impl.wrap(d);
   console.log(`${holderDebug_fmt(h, u32Debug)}`);
   h = { a: { n: 0 }, b: { n: 1 } };
   const w$1 = { value: h };
-  go(w$1, holderWrap(clicksPick));
+  go(w$1, HolderWrap$1);
   $assign(h, w$1.value);
   console.log(`${holderDebug_fmt(h, clicksDebug)}`);
   holderWrap_wrap(h, clicksPick);
   console.log(`${holderDebug_fmt(h, clicksDebug)}`);
-  d = { value: h, impl: holderWrap(clicksPick) };
+  d = { value: h, impl: HolderWrap$1 };
   d.impl.wrap(d);
   console.log(`${holderDebug_fmt(h, clicksDebug)}`);
 }

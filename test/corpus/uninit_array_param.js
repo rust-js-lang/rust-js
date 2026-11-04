@@ -45,18 +45,20 @@ const Inline = {
 };
 
 function main() {
-  const words = Inline.new(_T__N_Array(2));
+  const u8ArrayArray = _T__N_Array(3);
+  const StringArrayArray = _T__N_Array(2);
+  const words = Inline.new(StringArrayArray);
   for (const w of ["a", "b", "c"]) {
-    console.log(`${Inline.push(words, w, _T__N_Array(2))}`);
+    console.log(`${Inline.push(words, w, StringArrayArray)}`);
   }
-  const get = Inline.get(words, 0, _T__N_Array(2));
-  const value = Inline.get(words, 1, _T__N_Array(2));
-  const value$1 = Inline.get(words, 2, _T__N_Array(2));
+  const get = Inline.get(words, 0, StringArrayArray);
+  const value = Inline.get(words, 1, StringArrayArray);
+  const value$1 = Inline.get(words, 2, StringArrayArray);
   console.log(
     `${get == null ? "None" : `Some(${$debugStr(get)})`} ${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`,
   );
-  const empty = Inline.new(_T__N_Array(3));
-  const value$2 = Inline.get(empty, 0, _T__N_Array(3));
+  const empty = Inline.new(u8ArrayArray);
+  const value$2 = Inline.get(empty, 0, u8ArrayArray);
   console.log(`${empty.len} ${value$2 == null ? "None" : `Some(${value$2})`}`);
 }
 //# sourceMappingURL=case.js.map

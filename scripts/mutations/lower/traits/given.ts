@@ -3,6 +3,26 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "given-names-without-evidence",
+    breaks:
+      "a generic impl's dictionary a body asks twice, `holderTouch(TTouch)`, is written each time, as if the dictionary it's given weren't at its top (ADR 0979, amended, #691)",
+    file: "src/lower/traits/given.rs",
+    find: "        let given = (self.given.evidence.iter().map(|(_, value)| value))\n",
+    replace: "        let given = (self.given.evidence.iter().take(0).map(|(_, value)| value))\n",
+    tests: ["test/corpus.test.ts", "-t", "^(generic_dictionary_declared_once|copied_default_through_its_entry).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "given-names-without-drops",
+    breaks:
+      "a generic impl's dictionary given a drop that generic code asks twice, `slotRenew(TDefault, dropT)`, is written each time, as if the drop it's given weren't at its top (ADR 0979, amended, #691)",
+    file: "src/lower/traits/given.rs",
+    find: "        let mut names: HashSet<String> = self.given_drops().into_iter().collect();\n",
+    replace: "        let mut names: HashSet<String> = HashSet::new();\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_dictionary_declared_once.rs$"],
+    snapshots: true,
+  },
+  {
     name: "type-fact-of-wrong-kind",
     breaks: "`align_of::<T>()` reads the size its caller gave",
     file: "src/lower/traits/given.rs",

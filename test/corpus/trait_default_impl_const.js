@@ -25,7 +25,8 @@ function holderCapacity_capacity(holder, CAP) {
 }
 
 function main() {
+  const HolderCapacity = holderCapacity(3);
   const h = { items: [1, 2, 3] };
-  console.log(`${holderCapacity(3).remaining(h)} ${holderCapacity(3).full(h)}`);
+  console.log(`${HolderCapacity.remaining(h)} ${HolderCapacity.full(h)}`);
 }
 //# sourceMappingURL=case.js.map

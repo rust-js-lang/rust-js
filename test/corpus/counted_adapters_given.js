@@ -51,6 +51,7 @@ function main() {
   const exactSizeIterator = { len: (iterator) => iterator.len() };
   const takeExactSizeIterator = { len: (iterator) => $exactLen($sizeHint(iterator)) };
   const clone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
+  const TakeClone = takeClone(clone);
   const takeDoubleEndedIterator = {
     next_back: (iterator) =>
       takeIDoubleEndedIterator_nextBack(
@@ -97,7 +98,7 @@ function main() {
     { next: $next, fold: $foldOf },
     takeDoubleEndedIterator,
     takeExactSizeIterator,
-    takeClone(clone),
+    TakeClone,
   );
   console.log(
     `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}, ${value[2] == null ? "None" : `Some(${value[2]})`}, ${value[3]}, [${value[4].join(", ")}])`,
@@ -182,7 +183,7 @@ function main() {
         ),
     },
     { len: (iterator) => enumerateExactSizeIterator_len(iterator, takeExactSizeIterator) },
-    enumerateClone(takeClone(clone)),
+    enumerateClone(TakeClone),
   );
   console.log(
     `(${value$2[0]}, ${value$2[1] == null ? "None" : `Some((${value$2[1][0]}, ${value$2[1][1]}))`}, ${value$2[2] == null ? "None" : `Some((${value$2[2][0]}, ${value$2[2][1]}))`}, ${value$2[3]}, [${value$2[4].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}])`,

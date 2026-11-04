@@ -78,7 +78,8 @@ function loudDrop_drop(loud) {
 }
 
 function main() {
-  const words = tCounting({ next: $next }).counts(
+  const IntoIterCounting = tCounting({ next: $next });
+  const words = IntoIterCounting.counts(
     $iter(["x", "y", "x"]),
     {
       hash(value, state, H) {
@@ -98,7 +99,7 @@ function main() {
   console.log(
     `${get == null ? "None" : `Some(${get})`} ${value == null ? "None" : `Some(${value})`}`,
   );
-  const points = tCounting({ next: $next }).counts(
+  const points = IntoIterCounting.counts(
     $iter([
       [0, 1],
       [0, 1],

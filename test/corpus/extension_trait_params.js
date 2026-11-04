@@ -58,14 +58,16 @@ function dynamic(s) {
   return s.impl.total(s.value);
 }
 function main() {
+  const CountSorted = iSorted({ next: countIterator_next });
+  const IntoIterSorted = iSorted({ next: $next });
   console.log(
-    `[${through($iter([5, 3, 9, 1]), iSorted({ next: $next }), { cmp: $cmp }).join(
+    `[${through($iter([5, 3, 9, 1]), IntoIterSorted, { cmp: $cmp }).join(
       ", ",
-    )}] [${through([4], iSorted({ next: countIterator_next }), { cmp: $cmp }).join(", ")}]`,
+    )}] [${through([4], CountSorted, { cmp: $cmp }).join(", ")}]`,
   );
-  console.log(`[${iSorted({ next: countIterator_next }).sorted([5], { cmp: $cmp }).join(", ")}]`);
+  console.log(`[${CountSorted.sorted([5], { cmp: $cmp }).join(", ")}]`);
   console.log(
-    `${counted([3], { next: countIterator_next }, iSorted({ next: countIterator_next }))} ${counted($iter([1, 2]), { next: $next }, iSorted({ next: $next }))}`,
+    `${counted([3], { next: countIterator_next }, CountSorted)} ${counted($iter([1, 2]), { next: $next }, IntoIterSorted)}`,
   );
   console.log(`${summed([3], countSummed)} ${summed($iter([1, 2]), intoIterSummed)}`);
   console.log(

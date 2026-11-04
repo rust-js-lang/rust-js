@@ -149,6 +149,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|(_, value)| value.clone())
     }
 
+    /// The names what this function was given reads, its parameters after
+    /// its own or, in a copied default, its impl's, which its body's top
+    /// can read: its dictionaries, `TTouch`, and what one made of them reads,
+    /// a copied default's `holderTouch(TTouch)`; its const parameters'
+    /// values, facts, caller's location and drops (ADR 0979, amended).
+    pub(in crate::lower) fn given_names(&self) -> HashSet<String> {
+        let given = (self.given.evidence.iter().map(|(_, value)| value))
+            .chain(self.given.const_params.iter().map(|(_, value)| value))
+            .chain(self.given.type_facts.iter().map(|(_, _, value)| value))
+            .chain(self.given.caller_location.iter().map(|(_, value)| value));
+        let mut names: HashSet<String> = self.given_drops().into_iter().collect();
+        for value in given {
+            value.clone().each_mut(&mut |part| {
+                if let js::ExprKind::Var(name) = &part.kind {
+                    names.insert(name.clone());
+                }
+            });
+        }
+        names
+    }
+
     /// The fact of its type parameter `index` this function was given,
     /// `TSize` (ADR 0145).
     /// Whether type parameter `index` is a `FusedIterator`, as its caller

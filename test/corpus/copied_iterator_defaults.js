@@ -46,8 +46,9 @@ function tSkipping(TIterator, dropT, dropTItem) {
       }
     },
     skipTwo(self) {
-      tSkipping(TIterator, dropT, dropTItem).skipOne(self);
-      tSkipping(TIterator, dropT, dropTItem).skipOne(self);
+      const TSkipping = tSkipping(TIterator, dropT, dropTItem);
+      TSkipping.skipOne(self);
+      TSkipping.skipOne(self);
     },
     second(self) {
       $held(self);
@@ -122,8 +123,9 @@ function holderPeeled(IIterator, dropI, dropIItem) {
       }
     },
     dropTwo(self) {
-      holderPeeled(IIterator, dropI, dropIItem).dropFirst(self);
-      holderPeeled(IIterator, dropI, dropIItem).dropFirst(self);
+      const HolderPeeled = holderPeeled(IIterator, dropI, dropIItem);
+      HolderPeeled.dropFirst(self);
+      HolderPeeled.dropFirst(self);
     },
     $drop(holder) {
       dropI?.(holder[0]);
@@ -145,11 +147,14 @@ function holderNamed(dropI, dropIItem) {
 }
 
 function main() {
+  const RangeTotals = tTotals({ next: $rangeNext });
+  const GenTotals = tTotals({ next: genIterator_next });
+  const GenSkipping = tSkipping({ next: genIterator_next });
   const g = [0];
-  tSkipping({ next: genIterator_next }).skipOne(g);
+  GenSkipping.skipOne(g);
   const value = genIterator_next(g);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = tSkipping({ next: genIterator_next }).second([0]);
+  const value$1 = GenSkipping.second([0]);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const r = { start: 0, end: 4 };
   tSkipping({ next: $rangeNext }).skipTwo(r);
@@ -162,17 +167,15 @@ function main() {
   tSkipping({ next: loudsIterator_next }, undefined, loudDrop_drop).skipTwo(louds);
   console.log("louds skipped");
 
-  console.log(`${tTotals({ next: genIterator_next }).total([0])}`);
-  console.log(`[${tTotals({ next: genIterator_next }).doubled([1]).join(", ")}]`);
-  console.log(`${tTotals({ next: $rangeNext }).looped({ start: 1, end: 4 })}`);
+  console.log(`${GenTotals.total([0])}`);
+  console.log(`[${GenTotals.doubled([1]).join(", ")}]`);
+  console.log(`${RangeTotals.looped({ start: 1, end: 4 })}`);
   const h = [0];
   console.log(
-    `[${tTotals({ next: genIterator_next }).firstTwo(h).join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))(genIterator_next(h))}`,
+    `[${GenTotals.firstTwo(h).join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))(genIterator_next(h))}`,
   );
   const range = { start: 0, end: 5 };
-  console.log(
-    `[${tTotals({ next: $rangeNext }).firstTwo(range).join(", ")}] ${range.start}..${range.end}`,
-  );
+  console.log(`[${RangeTotals.firstTwo(range).join(", ")}] ${range.start}..${range.end}`);
 
   const held = [[0]];
   holderPeeled({ next: loudsIterator_next }, undefined, loudDrop_drop).dropTwo(held);

@@ -59,12 +59,12 @@ function wrappingOne_one(TOne, WrappingMul) {
 }
 
 function main() {
-  const wrappingMul = { mul: (a, b) => [(a[0] * b[0]) & 255] };
+  const WrappingOne = wrappingOne(u8One, { mul: (a, b) => [(a[0] * b[0]) & 255] });
   console.log(
     `${f64Signed.negative(-1.5)} ${f64Signed.negative(2)} ${f64Signed.negative(NaN)} ${i32Signed.atMostZero(0)}`,
   );
   console.log(
-    `${wrappingOne(u8One, wrappingMul).isOne([1], { eq: $eq })} ${wrappingOne(u8One, wrappingMul).isOne([3], { eq: $eq })} ${u8One.isOne(1, { eq: (a, b) => a === b })}`,
+    `${WrappingOne.isOne([1], { eq: $eq })} ${WrappingOne.isOne([3], { eq: $eq })} ${u8One.isOne(1, { eq: (a, b) => a === b })}`,
   );
   console.log(
     `${$displayF64(f64Signed.distance(2.5, -1))} ${i32Signed.distance(7, 3)} ${i32Signed.distance(-5, 5)}`,

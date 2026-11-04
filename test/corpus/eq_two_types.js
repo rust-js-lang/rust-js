@@ -31,9 +31,10 @@ function smallPartialEqSmall_eq(small, other, AArray, BArray, AItemPartialEqBIte
 }
 
 function main() {
+  const i32ArrayArray = _T__N_Array(2);
   const partialEq = { eq: (a, b) => a === b };
   console.log(
-    `${smallPartialEqSmall_eq([[1, 2]], [[1, 2]], _T__N_Array(2), _T__N_Array(2), partialEq)} ${smallPartialEqSmall_eq([[1, 2]], [[1, 3]], _T__N_Array(2), _T__N_Array(2), partialEq)}`,
+    `${smallPartialEqSmall_eq([[1, 2]], [[1, 2]], i32ArrayArray, i32ArrayArray, partialEq)} ${smallPartialEqSmall_eq([[1, 2]], [[1, 3]], i32ArrayArray, i32ArrayArray, partialEq)}`,
   );
 }
 //# sourceMappingURL=case.js.map

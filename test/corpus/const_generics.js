@@ -92,6 +92,9 @@ function shown(s, SShow) {
 }
 
 function main() {
+  const RingShow$1 = ringShow(5);
+  const RingShow = ringShow(2);
+  const GridShow = gridShow(2, 3);
   console.log(`${sum([1, 2, 3], 3)} ${sum([10, 10, 10, 10], 4)}`);
   console.log(`${describe(["a", "b"], 2, { fmt: (value) => $debugStr(value) })}`);
   console.log(`[${filled(7, 3).join(", ")}] [${filled(1, 0).join(", ")}]`);
@@ -104,11 +107,11 @@ function main() {
   console.log(`[${scaled([1, 2], 3).join(", ")}]`);
   const big = Ring.new(5);
   console.log(
-    `${shown(ring, ringShow(2))} ${shown(big, ringShow(5))} ${shown(ring, ringShow(2))} ${ringDisplay_fmt(ring, 2)}`,
+    `${shown(ring, RingShow)} ${shown(big, RingShow$1)} ${shown(ring, RingShow)} ${ringDisplay_fmt(ring, 2)}`,
   );
   const all = [
-    { value: ring, impl: ringShow(2) },
-    { value: big, impl: ringShow(5) },
+    { value: ring, impl: RingShow },
+    { value: big, impl: RingShow$1 },
   ];
   console.log(
     `[${all
@@ -117,7 +120,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `${shown(undefined, gridShow(2, 3))} ${shown(undefined, gridShow(2, 4))} ${shown(undefined, gridShow(2, 3))}`,
+    `${shown(undefined, GridShow)} ${shown(undefined, gridShow(2, 4))} ${shown(undefined, GridShow)}`,
   );
   // A function as a value, given its `N`.
   console.log(`${count(4)}`);

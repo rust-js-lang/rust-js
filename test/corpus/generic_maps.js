@@ -77,6 +77,7 @@ function pHash_hash(p, state, HHasher) {
 }
 
 function main() {
+  const IntoIterCounting = tCounting({ next: $next });
   const partialEq = { eq: (a, b) => a === b };
   const g = group(
     $iter([
@@ -125,7 +126,7 @@ function main() {
   );
   const arg = d.has([2, 2]);
   console.log(`${d.size} ${arg}`);
-  const c = tCounting({ next: $next }).counts(
+  const c = IntoIterCounting.counts(
     $iter(["x", "y", "x"]),
     {
       hash(value, state, H) {
@@ -142,7 +143,7 @@ function main() {
   );
   const value$1 = c.get("x");
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const cp = tCounting({ next: $next }).countsBy(
+  const cp = IntoIterCounting.countsBy(
     $iter([
       [0, 1],
       [0, 1],
@@ -161,7 +162,7 @@ function main() {
   );
   const value$2 = cp.get(0);
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const cs = tCounting({ next: $next }).counts(
+  const cs = IntoIterCounting.counts(
     $iter([
       [0, 1],
       [0, 1],
@@ -172,7 +173,7 @@ function main() {
   );
   const value$3 = cs.get([0, 1]);
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
-  const by = tCounting({ next: $next }).tallyBy(
+  const by = IntoIterCounting.tallyBy(
     $iter(["ab", "cd", "a"]),
     (s) => $byteLen(s),
     {

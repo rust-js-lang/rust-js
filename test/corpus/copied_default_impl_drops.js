@@ -68,18 +68,20 @@ function holderSkipping(IIterator, IDefault, dropI, dropIItem) {
       function dropSelf(holder) {
         dropI?.(holder[0]);
       }
+      const HolderSkipping = holderSkipping(IIterator, IDefault, dropI, dropIItem);
       $held(self);
       try {
-        holderSkipping(IIterator, IDefault, dropI, dropIItem).skipOne(self);
+        HolderSkipping.skipOne(self);
       } catch (error) {
         dropSelf?.(self);
         throw error;
       }
-      holderSkipping(IIterator, IDefault, dropI, dropIItem).eat(self);
+      HolderSkipping.eat(self);
     },
     skipTwo(self) {
-      holderSkipping(IIterator, IDefault, dropI, dropIItem).skipOne(self);
-      holderSkipping(IIterator, IDefault, dropI, dropIItem).skipOne(self);
+      const HolderSkipping = holderSkipping(IIterator, IDefault, dropI, dropIItem);
+      HolderSkipping.skipOne(self);
+      HolderSkipping.skipOne(self);
     },
     $drop(holder) {
       dropI?.(holder[0]);

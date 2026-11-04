@@ -139,28 +139,29 @@ function odd(items) {
 }
 
 function main() {
+  const VecStoreMutStrString = vecStoreMutKV();
   const map = {
     values: [
       [1, 10],
       [2, 20],
     ],
   };
-  const v = LiteMap.getMut(map, 1, vecStoreMutKV());
+  const v = LiteMap.getMut(map, 1, VecStoreMutStrString);
   if (v != null) {
     v.value = (v.value + 5) >>> 0;
   }
-  const firstMut = LiteMap.firstMut(map, vecStoreMutKV());
+  const firstMut = LiteMap.firstMut(map, VecStoreMutStrString);
   firstMut.value = (firstMut.value + 1) >>> 0;
-  const old = LiteMap.insertAt(map, 0, 99, vecStoreMutKV());
-  const missing = LiteMap.getMut(map, 7, vecStoreMutKV()) == null;
-  console.log(`${LiteMap.replaceFirst(map, 7, vecStoreMutKV())}`);
+  const old = LiteMap.insertAt(map, 0, 99, VecStoreMutStrString);
+  const missing = LiteMap.getMut(map, 7, VecStoreMutStrString) == null;
+  console.log(`${LiteMap.replaceFirst(map, 7, VecStoreMutStrString)}`);
   console.log(
     `[${map.values.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${old} ${missing}`,
   );
   const names = { values: [["a", "x"]] };
-  const value = LiteMap.firstMut(names, vecStoreMutKV());
+  const value = LiteMap.firstMut(names, VecStoreMutStrString);
   value.value += "!";
-  const was = LiteMap.insertAt(names, 0, "y", vecStoreMutKV());
+  const was = LiteMap.insertAt(names, 0, "y", VecStoreMutStrString);
   console.log(
     `[${names.values.map((item) => `(${$debugStr(item[0])}, ${$debugStr(item[1])})`).join(", ")}] ${was}`,
   );

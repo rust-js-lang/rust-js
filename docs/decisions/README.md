@@ -801,7 +801,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0976 An `IntoIterator` parameter is held as it is, never in a box](0976-an-into-iterator-parameter-is-held-as-it-is.md)
 - [0977 A kept default steps what its impl says `Self::Iter` is](0977-a-kept-default-steps-what-its-impl-says-self-iter-is.md)
 - [0978 A `loop` that advances, then tests, at each way's end is a `do … while`](0978-a-loop-that-advances-then-tests-at-each-end-is-a-do-while.md) *(amended: a `loop` that ends testing whether to leave, rd261)*
-- [0979 A dictionary a body writes twice is declared once at its top](0979-a-dictionary-a-body-writes-twice-is-declared-once.md)
+- [0979 A dictionary a body writes twice is declared once at its top](0979-a-dictionary-a-body-writes-twice-is-declared-once.md) *(amended: a generic impl's, `holderTouch(TTouch)`, made of what the function is given, #691)*
 - [0980 std's struct given to std's `rev()` is given as it is](0980-std-s-struct-given-to-rev-is-given-as-it-is.md)
 - [0981 A held struct's `rfold` is std's compiled one where it reaches the crate's own](0981-a-held-struct-s-rfold-is-std-s-compiled-one.md)
 - [0982 A lent iterator keeps its back and its length](0982-a-lent-iterator-keeps-its-back.md)
@@ -899,7 +899,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0451 A guard in generic code: its `Deref` a dictionary's, its drop given, what's read before it](0451-a-guard-in-generic-code.md) *(amended: what's read through a guard whose drop writes nothing, #452)*
 - [0452 `{:?}` of a `PhantomData` of a type parameter shows the name its caller gives](0452-a-phantom-datas-name.md)
 - [0453 `{:?}` of a slice's iterator is what's left of it](0453-a-slice-iterators-debug.md)
-- [0454 A `&mut` given as a type parameter's value is a box](0454-a-mut-given-as-a-type-parameter.md) *(amended: what's moved out of an in-place cell is apart; a `&mut` of an object kept past the call is one; amended: regex-syntax's `ParserI` stays refused until #527's `moved_out` settles, #516, the user's decision; amended: a dictionary's entry adapts a `&mut` within an `Option` or a tuple, #686; a copied default calls through its impl's entry where it adapts more than a call, #690)*
+- [0454 A `&mut` given as a type parameter's value is a box](0454-a-mut-given-as-a-type-parameter.md) *(amended: what's moved out of an in-place cell is apart; a `&mut` of an object kept past the call is one; amended: regex-syntax's `ParserI` stays refused until #527's `moved_out` settles, #516, the user's decision; amended: a dictionary's entry adapts a `&mut` within an `Option` or a tuple, #686; a copied default calls through its impl's entry where it adapts more than a call, #690, a generic impl's read once, #691)*
 - [1086 A `&mut`'s JS form is `MutRefForm`'s](1086-a-mut-refs-js-form-is-mut-ref-forms.md) *(amends 0099, 0454, 1077; steps 1 and 2 of 3, #614's family; its matrix found #636, #638; step 3's move out, #658, #659)*
 - [0455 `nth_back`, `rfold` and `rfind` step from the back](0455-stepping-from-the-back.md)
 - [0456 A generic `ExactSizeIterator` knows its length](0456-a-generic-exact-size-iterator.md) *(amended: `rposition` of what `as_exact_size` makes knowing both)*

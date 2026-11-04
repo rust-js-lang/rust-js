@@ -196,17 +196,19 @@ export function holderTouch(TTouch) {
       return given != null ? $cellOf(given) : undefined;
     },
     renewEnds(items) {
+      const HolderTouch = holderTouch(TTouch);
       const value = holderTouch_fresh(TTouch);
-      holderTouch(TTouch).lastOf(items).value = value;
-      const r = holderTouch(TTouch).firstOf(items);
+      HolderTouch.lastOf(items).value = value;
+      const r = HolderTouch.firstOf(items);
       if (r != null) {
         r.value = holderTouch_fresh(TTouch);
       }
     },
     viaMe(self) {
-      const r = holderTouch(TTouch).me(self);
+      const HolderTouch = holderTouch(TTouch);
+      const r = HolderTouch.me(self);
       r.value = holderTouch_fresh(TTouch);
-      holderTouch(TTouch).touchSome(r);
+      HolderTouch.touchSome(r);
     },
     viaMaybe(self) {
       const r = holderTouch(TTouch).maybe(self, true);
@@ -218,9 +220,10 @@ export function holderTouch(TTouch) {
       }
     },
     twiceSome(self, other) {
-      holderTouch(TTouch).touchSome(self, other);
-      holderTouch(TTouch).touchSome(self, other);
-      holderTouch(TTouch).touchSome(self);
+      const HolderTouch = holderTouch(TTouch);
+      HolderTouch.touchSome(self, other);
+      HolderTouch.touchSome(self, other);
+      HolderTouch.touchSome(self);
     },
     twice(self, other) {
       holderTouch_touch(self.value, other.value, TTouch);
@@ -288,6 +291,8 @@ function renewed(items, TTouch, TDebug) {
 }
 
 function main() {
+  const HolderDebug = holderDebug(clicksDebug);
+  const HolderTouch = holderTouch(clicksTouch);
   const u32Debug = { fmt: (value) => String(value) };
   const a = { n: 1 };
   const b = { n: 2 };
@@ -336,17 +341,17 @@ function main() {
   const h = { t: { n: 1 } };
   const k = { t: { n: 2 } };
   const self$6 = { value: h };
-  holderTouch(clicksTouch).viaMe(self$6);
+  HolderTouch.viaMe(self$6);
   $assign(h, self$6.value);
   const self$7 = { value: h };
   const other$3 = { value: k };
-  holderTouch(clicksTouch).twiceSome(self$7, other$3);
+  HolderTouch.twiceSome(self$7, other$3);
   $assign(h, self$7.value);
   $assign(k, other$3.value);
   console.log(`${holderDebug_fmt(h, clicksDebug)} ${holderDebug_fmt(k, clicksDebug)}`);
   const a$3 = { value: h };
   const b$3 = { value: k };
-  const value$2 = all(a$3, b$3, holderTouch(clicksTouch), holderDebug(clicksDebug));
+  const value$2 = all(a$3, b$3, HolderTouch, HolderDebug);
   $assign(h, a$3.value);
   $assign(k, b$3.value);
   console.log(`${value$2}`);
@@ -355,8 +360,6 @@ function main() {
   console.log(`[${items.map((item) => clicksDebug_fmt(item)).join(", ")}]`);
   console.log(`${renewed([{ n: 1 }, { n: 2 }], clicksTouch, clicksDebug)}`);
   console.log(`${renewed([1, 2, 3], u32Touch, u32Debug)}`);
-  console.log(
-    `${renewed([{ t: { n: 1 } }, { t: { n: 2 } }], holderTouch(clicksTouch), holderDebug(clicksDebug))}`,
-  );
+  console.log(`${renewed([{ t: { n: 1 } }, { t: { n: 2 } }], HolderTouch, HolderDebug)}`);
 }
 //# sourceMappingURL=case.js.map

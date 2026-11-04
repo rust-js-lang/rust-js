@@ -84,12 +84,13 @@ function loudDrop_drop(loud) {
 }
 
 function main() {
+  const WrapTake = wrapTake();
   const clone = { clone: (value) => value };
   console.log(`${eat([["through the dictionary"]], wrapConsume(clone, loudDrop_drop))}`);
   console.log(`${wrapConsume_consume([["called directly"]], clone, loudDrop_drop)}`);
   console.log(`${eat([5], wrapConsume(clone))}`);
-  console.log(`${taken([7], wrapTake())} ${taken([["taken"]], wrapTake(loudDrop_drop))}`);
-  console.log(`${taken([8], wrapTake())}`);
+  console.log(`${taken([7], WrapTake)} ${taken([["taken"]], wrapTake(loudDrop_drop))}`);
+  console.log(`${taken([8], WrapTake)}`);
   const wrapped = [["replaced"]];
   try {
     wrapReset_reset(wrapped, loudDefault, loudDrop_drop);

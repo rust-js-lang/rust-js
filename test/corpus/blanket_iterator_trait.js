@@ -72,17 +72,19 @@ function drain(p, PPull) {
 }
 
 function main() {
+  const IterPull = iPull({ next: $next });
+  const RangePull = iPull({ next: $rangeNext });
   const range = { start: 0, end: 5 };
   const pull = iPull_pull(range, { next: $rangeNext });
   const self = { value: range };
-  const pullTwo = iPull({ next: $rangeNext }).pullTwo(self);
+  const pullTwo = RangePull.pullTwo(self);
   $assign(range, self.value);
   console.log(
     `${pull == null ? "None" : `Some(${pull})`} (${pullTwo[0] == null ? "None" : `Some(${pullTwo[0]})`}, ${pullTwo[1] == null ? "None" : `Some(${pullTwo[1]})`})`,
   );
   console.log(`${range.start}..${range.end}`);
   const p = { value: range };
-  const value = drain(p, iPull({ next: $rangeNext }));
+  const value = drain(p, RangePull);
   $assign(range, p.value);
   console.log(`[${value.join(", ")}]`);
   const down = [3];
@@ -94,15 +96,15 @@ function main() {
   );
   const v = ["a", "b", "c"];
   const e = { inner: $iter(v), count: 0 };
-  const value$2 = enumeratedPull_pull(e, iPull({ next: $next }));
+  const value$2 = enumeratedPull_pull(e, IterPull);
   console.log(`${value$2 == null ? "None" : `Some((${value$2[0]}, ${$debugStr(value$2[1])}))`}`);
   const p$1 = { value: e };
-  const value$3 = drain(p$1, enumeratedPull(iPull({ next: $next })));
+  const value$3 = drain(p$1, enumeratedPull(IterPull));
   $assign(e, p$1.value);
   console.log(`[${value$3.map((item) => `(${item[0]}, ${$debugStr(item[1])})`).join(", ")}]`);
   const r = { inner: { start: 10, end: 13 }, count: 0 };
   const p$2 = { value: r };
-  const value$4 = drain(p$2, enumeratedPull(iPull({ next: $rangeNext })));
+  const value$4 = drain(p$2, enumeratedPull(RangePull));
   $assign(r, p$2.value);
   console.log(
     `[${value$4.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${r.inner.start}..${r.inner.end}`,

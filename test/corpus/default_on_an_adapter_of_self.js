@@ -47,11 +47,12 @@ function tExt(TIterator) {
 }
 
 function main() {
-  const value = tExt({ next: $next }).positionMax($iter([3, 9, 4]), { cmp: $cmp });
+  const EmptyExt = tExt({ next: $next });
+  const value = EmptyExt.positionMax($iter([3, 9, 4]), { cmp: $cmp });
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = tExt({ next: $next }).positionMax($iter(Array.from("bca")), { cmp: $cmp });
+  const value$1 = EmptyExt.positionMax($iter(Array.from("bca")), { cmp: $cmp });
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = tExt({ next: $next }).positionMax($iter([]), { cmp: $cmp });
+  const value$2 = EmptyExt.positionMax($iter([]), { cmp: $cmp });
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
 }
 //# sourceMappingURL=case.js.map

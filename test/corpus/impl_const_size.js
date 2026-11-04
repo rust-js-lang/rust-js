@@ -21,6 +21,7 @@ function size(SSize) {
 }
 
 function main() {
-  console.log(`${size(wSize(1))} ${size(wSize(8))} ${size(wSize(8))}`);
+  const WSize = wSize(8);
+  console.log(`${size(wSize(1))} ${size(WSize)} ${size(WSize)}`);
 }
 //# sourceMappingURL=case.js.map

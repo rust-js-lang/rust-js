@@ -50,19 +50,20 @@ function render(out, n, WWrite) {
 }
 
 function main() {
+  const BufWrite = bufWrite(16);
   const b = { bytes: [] };
   const out = { value: b };
   try {
     let tmp;
     try {
-      tmp = render(out, 7, bufWrite(16));
+      tmp = render(out, 7, BufWrite);
     } finally {
       $assign(b, out.value);
     }
     const write = bufWrite_write(b, [33, 33], 16);
     const n = write.TAG === "Ok" ? write._0 : undefined;
-    const value = bufWrite(16).writeFmt({ value: b }, "1");
-    const writeAll = bufWrite(16).writeAll({ value: b }, [63]);
+    const value = BufWrite.writeFmt({ value: b }, "1");
+    const writeAll = BufWrite.writeAll({ value: b }, [63]);
     console.log(
       `${$unwrapOk($fromUtf8(b.bytes.slice(), true), undefined, (e) => $debugUtf8Error(e, true))} ${n == null ? "None" : `Some(${n})`}`,
     );
