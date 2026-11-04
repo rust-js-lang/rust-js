@@ -1041,7 +1041,7 @@ pub fn single(a: u32, b: u32) -> u32 {
     }
 }
 `);
-  const test = "(b === 3 && a === 2) || (b === 2 && a === 3)";
+  const test = "(a === 2 && b === 3) || (a === 3 && b === 2)";
   expect(js).toContain(
     `    if (a === 1 || b === 1) {\n      hit = true;\n    } else if (${test}) {\n      // Two and three.\n      seen.push(true);\n    } else {\n      hit = false;\n    }\n`,
   );

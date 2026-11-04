@@ -146,3 +146,37 @@ fn excludes(e: &Expr, subject: &Expr, set: &Set) -> bool {
         }),
     }
 }
+
+/// `path`'s tests in the order they're written, `a === 2 && b === 3` of
+/// `(2, 3)`, where MIR tests `b` first, after `(_, 1)`'s `b === 1` (#632):
+/// of tests each of a part of one tuple MIR made, `_5[1]`, whose reads
+/// neither call nor throw, so none guards what another reads. A tuple's
+/// patterns are written in the order of its parts, each alternative's
+/// tests placed where it is: by that, then by the part. Otherwise as MIR
+/// reads them, a slice's `length` before the index it guards, `x != null`
+/// before `x.v`, a getter where it ran.
+pub(super) fn written_order(path: &mut [Expr]) {
+    let part = |t: &Expr| {
+        let (subject, _) = atom(t)?;
+        let ExprKind::Index(of, at) = &subject.kind else {
+            return None;
+        };
+        let (ExprKind::Var(tuple), ExprKind::Num(n)) = (&of.kind, &at.kind) else {
+            return None;
+        };
+        Some((written_at(t)?, tuple.clone(), *n))
+    };
+    let Some(parts) = path.iter().map(part).collect::<Option<Vec<_>>>() else {
+        return;
+    };
+    if parts.iter().any(|(_, tuple, _)| *tuple != parts[0].1) {
+        return;
+    }
+    let mut keyed: Vec<((u32, f64), Expr)> = (parts.into_iter().map(|(at, _, n)| (at, n)))
+        .zip(path.iter().cloned())
+        .collect();
+    keyed.sort_by(|(a, _), (b, _)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    for (slot, (_, test)) in path.iter_mut().zip(keyed) {
+        *slot = test;
+    }
+}

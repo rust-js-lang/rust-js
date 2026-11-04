@@ -15,13 +15,22 @@ const CALLS = [
 
 export const mutations: Mutation[] = [
   {
+    name: "alternatives-in-mir-order",
+    breaks:
+      "an or-pattern's alternatives of a tuple's parts test them in MIR's order, `(b === 3 && a === 2) || (b === 2 && a === 3)`, not as written, `a === 2 && b === 3` (#632)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "                paths.iter_mut().for_each(|path| written_order(path));\n",
+    replace: "",
+    tests: ["test/lowering-match-paths.test.ts", "-t", "alternatives test a tuple's parts in the order written"],
+  },
+  {
     name: "paths-alike-not-one",
     breaks:
       "a tuple's arm `(1, _) | (_, 1)` after `(0, 0)` keeps its paths `a === 0 && b === 1` and `a !== 0 && a !== 1 && b === 1` apart, more tests than the tree's, so the `match` is MIR's labeled block, not `else if (a === 1 || b === 1)` (#631)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "    unions(&mut paths);\n",
     replace: "",
-    tests: ["test/lowering-matches.test.ts", "-t", "after an arm that tests both values"],
+    tests: ["test/lowering-match-paths.test.ts", "-t", "after an arm that tests both values"],
   },
   {
     name: "empty-arm-else-only",

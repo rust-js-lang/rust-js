@@ -11,7 +11,7 @@ export function pair(a, b, log) {
     value = 1;
   } else if (a === 1 || b === 1) {
     value = 2;
-  } else if ((b === 3 && a === 2) || (b === 2 && a === 3)) {
+  } else if ((a === 2 && b === 3) || (a === 3 && b === 2)) {
     log.push(a);
     value = 7;
   } else {
@@ -29,7 +29,7 @@ export function firstTwo(a, b) {
     return 2;
   }
   if (b !== 1) {
-    if ((b === 3 && a === 2) || (b === 2 && a === 3)) {
+    if ((a === 2 && b === 3) || (a === 3 && b === 2)) {
       return 3;
     }
     return 4;
@@ -64,7 +64,7 @@ export function optional(x, n) {
     return 1;
   }
   if (n !== 1) {
-    if ((n === 2 && x === 2) || (n === 3 && x === 3)) {
+    if ((x === 2 && n === 2) || (x === 3 && n === 3)) {
       return 3;
     }
     return 4;
@@ -122,7 +122,7 @@ export function called(a, b, log) {
   if (value === 1 || value$1 === 1) {
     return 2;
   }
-  if ((value$1 === 3 && value === 2) || (value$1 === 2 && value === 3)) {
+  if ((value === 2 && value$1 === 3) || (value === 3 && value$1 === 2)) {
     return 3;
   }
   return 4;

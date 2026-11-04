@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "written-order-of-the-alternative-alone",
+    breaks:
+      "a tuple's parts' tests are ordered by where their alternative is alone, all alike, so MIR's `b === 3 && a === 2` stays, not the order of the tuple's parts, `a === 2 && b === 3` (#632)",
+    file: "src/lower/mir/tidy/decisions/paths.rs",
+    find: "    let mut keyed: Vec<((u32, f64), Expr)> = (parts.into_iter().map(|(at, _, n)| (at, n)))\n",
+    replace: "    let mut keyed: Vec<((u32, f64), Expr)> = (parts.into_iter().map(|(at, _, n)| (at, n * 0.0)))\n",
+    tests: ["test/lowering-match-paths.test.ts", "-t", "alternatives test a tuple's parts in the order written"],
+  },
+  {
     name: "or-pattern-alternatives-say-nothing",
     breaks:
       "a later arm of a tuple's or-pattern after `(1, _) | (_, 1)` keeps `a !== 1` before `(b === 3 && a === 2) || ..`, which says it, more tests than the tree's, so the arms are MIR's `if (a !== 1 && b !== 1) { .. continue; } hit = true;`, not the chain as written (#617)",
@@ -55,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions/paths.rs",
     find: "    (!excluded).then_some(out)\n",
     replace: "    Some(out).filter(|_| excluded || !excluded)\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "after an arm that tests both values"],
+    tests: ["test/lowering-match-paths.test.ts", "-t", "after an arm that tests both values"],
   },
   {
     name: "or-pattern-excluding-one-alternative",
@@ -73,6 +82,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions/paths.rs",
     find: "            None if said => drop(out.remove(i)),\n",
     replace: "            None if said && false => drop(out.remove(i)),\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "after an arm that tests both values"],
+    tests: ["test/lowering-match-paths.test.ts", "-t", "after an arm that tests both values"],
   },
 ];

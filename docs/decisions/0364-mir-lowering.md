@@ -16,7 +16,7 @@ Amended: a value a block gives last is given first only where nothing can
 tell (issue #219, below); an `|` of two values' tests is a chain of its
 arms; no arm holds a copy of what follows the `match` (kj-switch); a
 chain's arm needs no more than that the arms before it failed (#221); a
-tree of a `switch`'s guard is the `switch`'s (rd619); a test of a value an or-pattern's alternatives after it each say is theirs (#617); paths alike but for one value's test are one, and a path no alternative of whose or-pattern holds is none (#631). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
+tree of a `switch`'s guard is the `switch`'s (rd619); a test of a value an or-pattern's alternatives after it each say is theirs (#617); paths alike but for one value's test are one, and a path no alternative of whose or-pattern holds is none (#631); an alternative's tests of a tuple's parts are in the order written (#632). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -800,7 +800,7 @@ can't read as `a === 1 || b === 1`, keeps MIR's labeled block (until
 #631, below). Each
 alternative's tests are in the order MIR makes them, `b === 3 && a ===
 2`, not `a === 2 && b === 3` as written, where an earlier arm's
-alternative tests `b` first.
+alternative tests `b` first (until #632, below).
 
 ## Amendment: paths alike but for one value's test are one (#631, 2026-11-04)
 
@@ -879,3 +879,34 @@ chain holds, its `|` arm taken for the `else`; and of an `Option`'s or an
 enum's, `(None, _) | (_, 1)`, whose `Some` test is the tree's first: each
 still MIR's order of arms, `if (a === 1) { return 2; } if (b !== 1 && c
 !== 1) { .. } return 2;`.
+
+## Amendment: an alternative tests a tuple's parts in the order written (#632, 2026-11-04)
+
+`(1, _) | (_, 1) => .., (2, 3) | (3, 2) => ..`'s later arm tested `(b
+=== 3 && a === 2) || (b === 2 && a === 3)`: MIR tests `b` first there,
+past `(_, 1)`'s `b === 1`, and a path's tests were in the order MIR
+reads them.
+
+**A path's tests of the parts of one tuple MIR made, `_5[1]`, are in the
+order they're written** (`paths::written_order`, before an arm's paths
+are factored): by where each test is placed, its alternative's pattern,
+`(2, 3)`, then by its part, as a tuple's patterns are written in the
+order of its parts. `(a === 2 && b === 3) || (a === 3 && b === 2)`.
+
+Only of a path all of whose tests are of one tuple's parts: a part is an
+index of the JS array the tuple is, whose read neither calls nor throws,
+so no test guards what another reads, and the same tests are read,
+within the path, whatever their order. Any other path keeps MIR's order:
+an `Option`'s `x != null` before `x[0]`, a slice's `xs.length === 2`
+before `xs[0]`, an enum's `TAG` before its field, a getter's read where
+it ran. Of a tree whose guard calls (`Model`), paths stay as the tree
+tests them.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same pure
+reads, the same arm. Held by `test/lowering-matches.test.ts`'s "an
+or-pattern's alternatives test a tuple's parts in the order written", a
+tuple's, an `Option` of one's and a slice's, run, and the corpus cases
+whose JS it reorders, each against native Rust; the mutations
+`alternatives-in-mir-order` (`lower/mir/tidy/decisions.ts`) and
+`written-order-of-the-alternative-alone`
+(`lower/mir/tidy/decisions/paths.ts`).

@@ -22,7 +22,7 @@ mod presence;
 
 use calls::Model;
 pub(super) use defaults::default_values;
-use paths::{simplified, unions};
+use paths::{simplified, unions, written_order};
 pub(super) use presence::presence_said;
 
 /// More leaves than a match a person writes has: a tree of tests that
@@ -390,6 +390,9 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
                 Some(_) => arms[i].made.iter().filter_map(|path| simplified(path)).collect(),
                 None => arms[i].tests.clone(),
             };
+            if model.is_none() {
+                paths.iter_mut().for_each(|path| written_order(path));
+            }
             let spans: Vec<js::Span> = paths.iter().filter_map(|t| t.last()).map(|t| t.span).collect();
             paths.sort_by_key(|tests| {
                 let span = tests.last().map(|t| t.span).unwrap_or_default();

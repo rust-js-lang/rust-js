@@ -12,7 +12,7 @@ export function looped(pairs) {
     seen.push(hit);
     if (a === 1 || b === 1) {
       hit = true;
-    } else if ((b === 3 && a === 2) || (b === 2 && a === 3)) {
+    } else if ((a === 2 && b === 3) || (a === 3 && b === 2)) {
       // Two and three, either way.
       seen.push(true);
     } else {
@@ -28,7 +28,7 @@ export function returned(a, b) {
     return 1;
   }
   // Two and three, either way.
-  if ((b === 3 && a === 2) || (b === 2 && a === 3)) {
+  if ((a === 2 && b === 3) || (a === 3 && b === 2)) {
     const c = Math.imul(a, b) >>> 0;
     return (c + 1) >>> 0;
   }
@@ -39,7 +39,7 @@ export function assigned(a, b, log) {
   let value;
   if (a === 1 || b === 1) {
     value = 2;
-  } else if ((b === 3 && a === 2) || (b === 2 && a === 3)) {
+  } else if ((a === 2 && b === 3) || (a === 3 && b === 2)) {
     // Two and three, either way.
     log.push(a);
     value = 7;
