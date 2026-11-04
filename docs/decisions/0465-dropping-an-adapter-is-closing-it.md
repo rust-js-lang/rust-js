@@ -1292,6 +1292,7 @@ cases' in-place collects read `$foldToArray` now. Mutations:
 `in-place-collect-by-next` (`lower/mir/iter/collect.ts`) and
 `fold-to-array-in-place-drops-again` (`runtime/fold_of.ts`);
 `fold-to-array-unwinds-nothing` names the catch as it now reads.
+
 ## Amendment: a `Vec`'s slice drops past a panic, and a `take(n).rev()` folded asks `nth_back` as std's does (2026-11-04, #670)
 
 Case C ([0262](0262-when-rust-and-js-disagree.md)): results change, the
@@ -1386,3 +1387,26 @@ A `String` or a set collected of one is folded already, as
 against native Rust. Mutations: `trusted-len-of-a-collect-unasked`
 (`lower/analysis/type_facts.ts`), `generic-vec-collect-by-next`
 (`lower/mir/iter/collect.ts`).
+
+## Amendment: a zip whose second side panics drops what it took from its first (2026-11-04, #695)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+Std's `Zip::next` is `let x = self.a.next()?; let y = self.b.next()?;`.
+Where `b.next()` panics, `x` is a local of that frame, dropped as it
+unwinds, after what `b`'s own frame drops and before what the consumer
+holds. `$lazyZip` took `a`'s item and called `b`'s `next` outside any
+`try`, so a throw there lost the item: a `last()`, a `collect()` or a
+`fold` of `ds.into_iter().zip(panicky)` never dropped it. `dropA`, the
+drop the compiler already gives `$lazyZip` for an item of `a` whose `b`
+has run out, now drops it where `b`'s step throws too, before the throw
+goes on. Every consumer steps a zip by its `next`, so this one place
+covers each. Std's compiled struct (`--std-iterators`) unwinds as its MIR
+says, and was right already.
+
+`zip_second_side_panics.rs` checks a `last`, a `collect`, a `fold` and
+a `next` against native Rust in both builds. Mutation:
+`zip-panicking-side-leaks-a` (`runtime/lazy_zip.ts`). The matrix's zip
+is `.zip(10..13u32)`, whose side never panics, so none of its cases
+reached this.

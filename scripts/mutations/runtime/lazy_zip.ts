@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "zip-pulled-undropped",
     breaks: "an item `zip` steps where the other side's run out isn't dropped",
     file: "src/runtime/lazy_zip.js",
-    find: "      dropA?.(item.value);\n",
-    replace: "",
+    find: "    if (other.done) {\n      dropA?.(item.value);\n",
+    replace: "    if (other.done) {\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
   {
@@ -81,5 +81,13 @@ export const mutations: Mutation[] = [
     find: "  return [Math.min(aLow, bLow), high];\n",
     replace: "  return [Math.max(aLow, bLow), high];\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
+  },
+  {
+    name: "zip-panicking-side-leaks-a",
+    breaks: "a zip whose second side's `next` panics never drops the item it took from its first side, as std's `Zip::next` drops it as it unwinds (#695)",
+    file: "src/runtime/lazy_zip.js",
+    find: "    } catch (error) {\n      dropA?.(item.value);\n      throw error;\n    }\n",
+    replace: "    } catch (error) {\n      throw error;\n    }\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_second_side_panics.rs$"],
   },
 ];
