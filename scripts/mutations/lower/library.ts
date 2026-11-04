@@ -153,7 +153,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-closure-unreached",
     breaks:
-      "a library's `impl FnMut` of a value with a destructor, made a crate's `dyn FnMut`, is taken to drop nothing",
+      "a library's `impl FnMut` of a value with a destructor, made a `dyn FnMut` by a crate that is a library itself, whose callers it can't see, is taken to drop nothing",
     file: "src/lower/library.rs",
     find: "            ) => reached.functions |= library(def_id),\n",
     replace: "            ) => {}\n",

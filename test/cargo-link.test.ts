@@ -136,7 +136,7 @@ pub fn boxed() -> Box<dyn FnMut(bool)> {
     })
 }
 `);
-  const app = (name: string, from: { manifest: string; metadata: string }, made: string) => {
+  const app = (name: string, from: { manifest: string; metadata: string }, made: string, asLibrary = false) => {
     mkdirSync(join(dir, name), { recursive: true });
     writeFileSync(join(dir, name, "lib.rs"), `use std::cell::RefCell;
 use std::rc::Rc;
@@ -165,13 +165,18 @@ pub fn run() -> usize {
     queued(${made})
 }
 `);
-    return runSync([compiler, join(dir, name, "lib.rs"), "-o", join(dir, name, "app.js"), "--dependency", from.manifest, "--", "--crate-name", name, "--extern", `${name.replace("_app", "")}=${from.metadata}`], root, 120_000);
+    const kind = asLibrary ? ["--library", "--manifest", join(dir, name, "manifest.json")] : [];
+    return runSync([compiler, join(dir, name, "lib.rs"), "-o", join(dir, name, "app.js"), ...kind, "--dependency", from.manifest, "--", "--crate-name", name, "--extern", `${name.replace(/_app.*/, "")}=${from.metadata}`], root, 120_000);
   };
   const ok = app("plain_app", plain, "boxed(|_| {\n        let _ = plain::flag();\n    })");
   expect([ok.code, ok.stderr]).toEqual([0, ""]);
   // Its `impl FnMut`, made a `dyn` through a type parameter.
   const refused = app("giving_app", giving, "boxed(giving::make())");
   expect([refused.code === 0, refused.stderr]).toEqual([false, expect.stringContaining("with_borrow_mut` of a value with a destructor")]);
+  // And of a library, whose callers it can't see: its `impl FnMut` is
+  // what may drop, not a caller's type.
+  const consumer = app("giving_app_library", giving, "boxed(giving::make())", true);
+  expect([consumer.code === 0, consumer.stderr]).toEqual([false, expect.stringContaining("with_borrow_mut` of a value with a destructor")]);
   // A `dyn Fn` its export gives, made of one of its own closures.
   const given = app("boxing_app", boxing, "boxing::boxed()");
   expect([given.code === 0, given.stderr]).toEqual([false, expect.stringContaining("with_borrow_mut` of a value with a destructor")]);
