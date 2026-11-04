@@ -125,7 +125,9 @@ pub fn next() -> Option<&'static Unknown> {
   expect(lib.next()).toBe(null);
   lib.restore({ tag: 5, stateNode: node });
   expect(lib.next()).toBe(node);
-  // Of an `||`, where the place may be `undefined`: `?? null` kept.
+  // Of an `||`, where the place may be `undefined`: `?? null` kept, as
+  // the thread-local's `None` is `null` (mutations
+  // `nullable-local-set-undefined`, `nullable-local-calls-unseen`).
   lib.restoreOr({ tag: 7, stateNode: undefined });
   expect(lib.next()).toBe(null);
 });

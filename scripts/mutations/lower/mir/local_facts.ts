@@ -86,14 +86,14 @@ export const mutations: Mutation[] = [
   {
     name: "nullable-local-calls-unseen",
     breaks:
-      "no call that writes a nullable thread-local is found, so its `None` is written `undefined` (ADR 0586, amended)",
+      "no call that writes a nullable thread-local is found, so what may be `undefined` is stored as it is, `NEXT = fiber.stateNode`, where Rust's `None` is `null` (ADR 0586, amended)",
     file: "src/lower/mir/local_facts.rs",
     find: "                        quiet.nullable.insert(block);\n",
     replace: "",
     tests: [
-      "test/lowering-module-variables.test.ts",
+      "test/lowering-nullable-reads.test.ts",
       "-t",
-      "nullable thread-local's None is null",
+      "a place a test shows present is stored as it is",
     ],
   },
   {

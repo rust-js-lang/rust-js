@@ -154,7 +154,14 @@ reset, and ReactFiberHiddenContext `createCursor(null)`. The port's
   `nullable-local-set-undefined`, `nullable-made-as-given`
   (`std_types/cell.rs`), `nullable-local-calls-unseen`
   (`mir/local_facts.rs`) and `nullable-local-declared-undefined`
-  (`declarations.rs`).
+  (`declarations.rs`). `nullable-local-set-undefined` and
+  `nullable-local-calls-unseen` are held by
+  `test/lowering-nullable-reads.test.ts`'s "a place a test shows present
+  is stored as it is", run in JS: what's set may be `undefined`, `NEXT =
+  fiber.stateNode ?? null`. Since ADR 0861's #683 amendment, a `set(None)`
+  of a literal `None` is `null` where it's made, and a nullable
+  parameter's value `null` or a value, so neither reaches the coalesce
+  (the nightly of 2026-11-04 found both surviving).
 
 ## Amendment: of a generic struct's field of a type parameter's value, and of a thread-local a generic constructor makes
 

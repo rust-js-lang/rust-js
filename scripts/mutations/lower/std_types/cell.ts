@@ -586,14 +586,14 @@ export const mutations: Mutation[] = [
   {
     name: "nullable-local-set-undefined",
     breaks:
-      "a nullable thread-local set `None` is `undefined`, `current = undefined`, where React's is `null` (ADR 0586, amended)",
+      "a nullable thread-local set what may be `undefined` holds it, `NEXT = fiber.stateNode`, where Rust's `None` is `null` (ADR 0586, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "            _ if null_for_none => js::Storage::NullForNone.written(value, given_nulled),\n",
     replace: "",
     tests: [
-      "test/lowering-module-variables.test.ts",
+      "test/lowering-nullable-reads.test.ts",
       "-t",
-      "nullable thread-local's None is null",
+      "a place a test shows present is stored as it is",
     ],
   },
   {
