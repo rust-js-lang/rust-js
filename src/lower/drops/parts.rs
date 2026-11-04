@@ -21,6 +21,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && !crate::lower::recognition::is_held_compiled(self.tcx, self.reveal(ty)))
     }
 
+    /// Each of `parts`, a value and its type, dropped in turn, as Rust's drop
+    /// glue drops a struct's fields: the rest still dropped after one whose
+    /// drop panics (`each_dropped`, #416), a compiled std struct's close's
+    /// too (#677).
+    pub(in crate::lower) fn drop_each(&mut self, parts: Vec<(Expr, Ty<'tcx>)>, span: Span) -> R<Vec<Stmt>> {
+        let js_span = self.js_span(span);
+        let mut each = Vec::new();
+        for (value, ty) in parts {
+            let mut out = Vec::new();
+            self.drop_value(value, ty, span, &mut out)?;
+            each.push(out);
+        }
+        Ok(each_dropped(each, js_span))
+    }
+
     /// A `ty`'s drop, written in place: its own `drop`, then its parts'.
     pub(super) fn drop_parts(
         &mut self,

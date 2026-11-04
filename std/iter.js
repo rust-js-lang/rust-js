@@ -7456,10 +7456,13 @@ export function iterator_peekable(self, SelfIterator = { next: $next }, dropSelf
       },
       takes: ["last", "fold", "count"],
       close(iterator) {
-        dropSelf?.(iterator.iter);
-        if (iterator.peeked != null) {
-          if ($someValue(iterator.peeked) != null) {
-            dropSelfItem?.($someValue($someValue(iterator.peeked)));
+        try {
+          dropSelf?.(iterator.iter);
+        } finally {
+          if (iterator.peeked != null) {
+            if ($someValue(iterator.peeked) != null) {
+              dropSelfItem?.($someValue($someValue(iterator.peeked)));
+            }
           }
         }
       },
@@ -7700,8 +7703,11 @@ export function iterator_map(
       },
       takes: ["fold"],
       close(iterator) {
-        dropSelf?.(iterator.iter);
-        dropF?.(iterator.f);
+        try {
+          dropSelf?.(iterator.iter);
+        } finally {
+          dropF?.(iterator.f);
+        }
       },
     },
   );
@@ -7757,8 +7763,11 @@ export function iterator_filter(
       },
       takes: ["fold", "count"],
       close(iterator) {
-        dropSelf?.(iterator.iter);
-        dropP?.(iterator.predicate);
+        try {
+          dropSelf?.(iterator.iter);
+        } finally {
+          dropP?.(iterator.predicate);
+        }
       },
     },
   );
@@ -7866,8 +7875,11 @@ export function iterator_filterMap(
       },
       takes: ["fold"],
       close(iterator) {
-        dropSelf?.(iterator.iter);
-        dropF?.(iterator.f);
+        try {
+          dropSelf?.(iterator.iter);
+        } finally {
+          dropF?.(iterator.f);
+        }
       },
     },
   );
@@ -7920,8 +7932,11 @@ export function iterator_takeWhile(
       },
       takes: ["fold"],
       close(iterator) {
-        dropSelf?.(iterator.iter);
-        dropP?.(iterator.predicate);
+        try {
+          dropSelf?.(iterator.iter);
+        } finally {
+          dropP?.(iterator.predicate);
+        }
       },
     },
   );
@@ -7974,8 +7989,11 @@ export function iterator_skipWhile(
       },
       takes: ["fold"],
       close(iterator) {
-        dropSelf?.(iterator.iter);
-        dropP?.(iterator.predicate);
+        try {
+          dropSelf?.(iterator.iter);
+        } finally {
+          dropP?.(iterator.predicate);
+        }
       },
     },
   );
@@ -8038,8 +8056,11 @@ export function iterator_mapWhile(
       },
       takes: ["fold"],
       close(iterator) {
-        dropSelf?.(iterator.iter);
-        dropP?.(iterator.predicate);
+        try {
+          dropSelf?.(iterator.iter);
+        } finally {
+          dropP?.(iterator.predicate);
+        }
       },
     },
   );
@@ -8145,8 +8166,11 @@ export function iterator_inspect(
       },
       takes: ["fold"],
       close(iterator) {
-        dropSelf?.(iterator.iter);
-        dropF?.(iterator.f);
+        try {
+          dropSelf?.(iterator.iter);
+        } finally {
+          dropF?.(iterator.f);
+        }
       },
     },
   );
@@ -8742,11 +8766,14 @@ export function iterator_chain(
         },
         takes: ["last", "fold", "count"],
         close(iterator) {
-          if (iterator.a != null) {
-            dropSelf?.($someValue(iterator.a));
-          }
-          if (iterator.b != null) {
-            dropUIntoIter?.($someValue(iterator.b));
+          try {
+            if (iterator.a != null) {
+              dropSelf?.($someValue(iterator.a));
+            }
+          } finally {
+            if (iterator.b != null) {
+              dropUIntoIter?.($someValue(iterator.b));
+            }
           }
         },
       },
@@ -11156,8 +11183,11 @@ export function zipZipImplAB_new(
       },
       takes: ["fold"],
       close(iterator) {
-        dropA?.(iterator.a);
-        dropB?.(iterator.b);
+        try {
+          dropA?.(iterator.a);
+        } finally {
+          dropB?.(iterator.b);
+        }
       },
     },
   );
@@ -11264,8 +11294,11 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_new(
       },
       takes: ["fold"],
       close(iterator) {
-        dropA?.(iterator.a);
-        dropB?.(iterator.b);
+        try {
+          dropA?.(iterator.a);
+        } finally {
+          dropB?.(iterator.b);
+        }
       },
     },
   );
@@ -11359,8 +11392,11 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
       },
       takes: ["fold"],
       close(iterator) {
-        dropA?.(iterator.a);
-        dropB?.(iterator.b);
+        try {
+          dropA?.(iterator.a);
+        } finally {
+          dropB?.(iterator.b);
+        }
       },
     },
   );

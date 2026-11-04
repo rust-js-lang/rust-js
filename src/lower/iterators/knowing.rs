@@ -820,21 +820,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Of a kind dropped by closing, `Rev`'s, which an adapter over it
         // closes as it's closed: closing it drops what it holds, each field
-        // by its drop, as Rust drops the struct (ADR 0871).
+        // by its drop, as Rust drops the struct (ADR 0871), the rest still
+        // dropped after one whose drop panics, as its drop glue goes on
+        // (#677).
         if self.dropped_by_closing(ty)
             && let ty::Adt(adt, args) = ty.peel_refs().kind()
         {
-            let mut body = Vec::new();
-            for field in adt.all_fields() {
-                let field_ty = self
-                    .tcx
-                    .erase_and_anonymize_regions(field.ty(self.tcx, args).skip_normalization());
-                let value = Expr::member(
-                    Expr::var("iterator"),
-                    crate::lower::bindings::field_key(self.tcx, field).text(),
-                );
-                self.drop_value(value, field_ty, span, &mut body)?;
-            }
+            let fields = (adt.all_fields())
+                .map(|field| {
+                    let field_ty = self
+                        .tcx
+                        .erase_and_anonymize_regions(field.ty(self.tcx, args).skip_normalization());
+                    let value = Expr::member(
+                        Expr::var("iterator"),
+                        crate::lower::bindings::field_key(self.tcx, field).text(),
+                    );
+                    (value, field_ty)
+                })
+                .collect();
+            let body = self.drop_each(fields, span)?;
             if !body.is_empty() {
                 props.push(crate::js::Prop::Field(
                     "close".into(),

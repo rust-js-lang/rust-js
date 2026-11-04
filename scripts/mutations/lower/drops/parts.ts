@@ -230,4 +230,13 @@ export const mutations: Mutation[] = [
     replace: "    if true {\n        return StmtKind::ForOf {\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_parts_past_a_panic.rs$"],
   },
+  {
+    name: "compiled-close-unchained",
+    breaks:
+      "a compiled std adapter's close stops at the first part whose drop panics: a peekable's peeked item after its source's, a chain's second side, never dropped (#677)",
+    file: "src/lower/drops/parts.rs",
+    find: "        Ok(each_dropped(each, js_span))\n",
+    replace: "        let _ = js_span;\n        Ok(each.into_iter().flatten().collect())\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];
