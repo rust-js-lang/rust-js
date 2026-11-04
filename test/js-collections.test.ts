@@ -790,6 +790,24 @@ pub fn filled() -> &'static Dict<u32> {
     put(config, &ModuleId::Name("app".to_string()), 1);
     config
 }
+
+// React DOM's expandShorthandMap: each longhand a reference its iteration
+// gives, a key as it is.
+pub fn expanded(longhands: &[&str], value: u32) -> &'static Dict<u32> {
+    let expanded = dict::new();
+    for longhand in longhands {
+        dict::set(expanded, longhand, value);
+    }
+    expanded
+}
+
+pub fn read_each(config: &Dict<u32>, names: &[&str]) -> Vec<Option<u32>> {
+    names.iter().map(|name| dict::get(config, name).copied()).collect()
+}
+
+pub fn got(value: &Unknown, names: &[&str]) -> Vec<Option<&'static Unknown>> {
+    names.iter().map(|name| js::get(value, name)).collect()
+}
 `);
   expect(js).toContain("$dictGet(config, entry.id)");
   expect(js).toContain("  return config[n];");
@@ -801,4 +819,10 @@ pub fn filled() -> &'static Dict<u32> {
   const manifest = { 7: null, main: "chunk" };
   expect([lib.resolve(manifest, { id: 7 }), lib.resolve(manifest, { id: "main" })]).toEqual([null, "chunk"]);
   expect(() => lib.resolve(manifest, { id: 8 })).toThrow("no module");
+  // A reference to a key is that key, a `&&str` of a `&[&str]`'s iteration.
+  expect(js).toContain("    expanded[longhand] = value;");
+  const expanded = lib.expanded(["marginTop", "marginLeft"], 4);
+  expect(expanded).toEqual({ marginTop: 4, marginLeft: 4 });
+  expect(lib.readEach(expanded, ["marginLeft", "padding"])).toEqual([4, undefined]);
+  expect(lib.got({ a: 1, b: "x" }, ["b", "a"])).toEqual(["x", 1]);
 });

@@ -340,3 +340,16 @@ Case N ([0262](0262-when-rust-and-js-disagree.md)): JS names the property
 by the key's text, `config[3]` and `config["3"]` one, as Rust's dictionary
 of text is read by that text. Held by `test/js-collections.test.ts`, "a
 dictionary is read and written by any property key".
+
+## Amended (2026-11-04): a reference to a key is a key
+
+After the amendment above, React DOM's `expandShorthandMap`, `for longhand
+in longhands { dict::set(expanded, longhand, ..) }` of a `&[&str]`, failed
+to compile: each `longhand` is a `&&str`, and `PropertyKey` had no impl of
+a reference. `js::get`, of the same bound, refused it alike. Every
+reference to a `PropertyKey` is one, `impl<T: PropertyKey + ?Sized>
+PropertyKey for &T`, the value itself in JS, so idiomatic iteration keys a
+property as it is, with no `*longhand`; the one key type is unchanged.
+Held by `test/js-collections.test.ts`, "a dictionary is read and written
+by any property key": a `&[&str]` iterated into `dict::set`, `dict::get`
+and `js::get`, run.

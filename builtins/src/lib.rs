@@ -1532,6 +1532,10 @@ pub trait PropertyKey {}
 
 impl<T: PropertyKey + ?Sized> PropertyKey for Option<&T> {}
 
+/// A reference to one is one too, the value itself in JS: a `&&str` a
+/// `for longhand in longhands` of a `&[&str]` gives (ADR 0225, amended).
+impl<T: PropertyKey + ?Sized> PropertyKey for &T {}
+
 impl PropertyKey for str {}
 impl PropertyKey for String {}
 impl PropertyKey for Unknown {}
