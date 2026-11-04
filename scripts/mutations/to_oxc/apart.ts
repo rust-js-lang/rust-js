@@ -44,4 +44,12 @@ export const mutations: Mutation[] = [
     replace: "        if lines.len() < 1 {\n",
     tests: ["test/pilot.test.ts", "-t", "the pilot's committed JS is what rust-js writes"],
   },
+  {
+    name: "binding-import-code-after-spaced",
+    breaks: "the code right after a binding's declaration is a blank line apart from its import, where the Rust has none (rd752)",
+    file: "src/to_oxc/apart.rs",
+    find: "                return end;\n",
+    replace: "                let _ = end;\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "a binding's comments are above the import it makes"],
+  },
 ];

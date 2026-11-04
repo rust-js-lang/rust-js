@@ -695,4 +695,22 @@ export const mutations: Mutation[] = [
     replace: '    if field.name.as_str() != "__proto__" {\n',
     tests: ["test/corpus.test.ts", "-t", "^field_named_proto_renamed.rs$"],
   },
+  {
+    name: "block-directive-allowed",
+    breaks:
+      "an `async` block's `js::directive!` is written nowhere, without an error",
+    file: "src/lower/bindings.rs",
+    find: "        if !owned\n",
+    replace: "        if false && !owned\n",
+    tests: ["test/modules.test.ts", "-t", "in a body is the body"],
+  },
+  {
+    name: "directive-unwritten",
+    breaks:
+      'a client component\'s module has no \`"use client";\`, and Next.js renders it as a Server Component',
+    file: "src/lower/bindings.rs",
+    find: "            Some(directive) => directives.push(directive.to_string()),",
+    replace: "            Some(_) => {}",
+    tests: ["test/modules.test.ts", "-t", "make a module a Next.js route"],
+  },
 ];

@@ -141,15 +141,6 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
   },
   {
-    name: "block-directive-allowed",
-    breaks:
-      "an `async` block's `js::directive!` is written nowhere, without an error",
-    file: "src/lower/pipeline.rs",
-    find: "                if !owned\n",
-    replace: "                if false && !owned\n",
-    tests: ["test/modules.test.ts", "-t", "in a body is the body"],
-  },
-  {
     name: "on-load-earlier-names-unreserved",
     breaks:
       "two `on_load!` bodies that bind one name declare it twice at the module's top, which JS won't load",
@@ -224,15 +215,6 @@ export const mutations: Mutation[] = [
     find: ".or_else(|| initializer.then_some(local))",
     replace: ".or_else(|| (initializer && false).then_some(local))",
     tests: ["test/corpus.test.ts", "-t", "static_fns"],
-  },
-  {
-    name: "directive-unwritten",
-    breaks:
-      'a client component\'s module has no \`"use client";\`, and Next.js renders it as a Server Component',
-    file: "src/lower/pipeline.rs",
-    find: "                    Some(directive) => directives.push(directive.to_string()),",
-    replace: "                    Some(_) => {}",
-    tests: ["test/modules.test.ts", "-t", "make a module a Next.js route"],
   },
   {
     name: "on-load-a-function",

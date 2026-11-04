@@ -5,6 +5,7 @@
  * and the webapi crate's promises: `fetch`, binary data and WebAssembly.
  */
 
+/** Resolves with `value` after `ms` milliseconds. */
 import { setTimeout } from "node:timers/promises";
 
 async function double(x) {

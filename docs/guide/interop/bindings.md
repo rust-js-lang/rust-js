@@ -1292,6 +1292,7 @@ pub async fn fill() {
 ```
 
 ```js
+/** `put(key: string, value?: any): Promise<void>`. */
 import { put } from "my-store";
 
 export async function fill() {

@@ -229,3 +229,76 @@ JS module, a namespace, and a comment ending a run), and by
 one import, and by `test/cargo-link.test.ts`'s run of a binding a crate's
 module holds and that module's own function, `import merge, { size }`. Mutations are in `lower/analysis/naming.ts`,
 `lower/pipeline/packages.ts` and `link.ts`.
+
+## Amendment: a binding's comments are its import's (rd752)
+
+React Native's ReactFeatureFlags.native-fb writes
+
+```js
+// Re-export dynamic flags from the internal module.
+// Intentionally using * because this import is compiled to a `require` call.
+import * as dynamicFlagsUntyped from 'ReactNativeInternalFeatureFlags';
+const dynamicFlags: DynamicExportsType = (dynamicFlagsUntyped: any);
+```
+
+and its port writes the comments above the binding whose JS is that
+import, `#[rust_js::link_name = "get ReactNativeInternalFeatureFlags#* as
+dynamicFlagsUntyped"] fn dynamic_flags_untyped() ..`, and the
+`thread_local!` of `dynamicFlags` right after it. The JS lost both
+comments, and a blank line set the import apart from the `const`. Rule 3
+gave an import placed at a binding's declaration no `use`, so no comments
+(`Entry::commented` `NONE`), and a span of no width, which tells
+`apart` nothing, so `format::spaced` set it apart from the code. Nor was
+any comment above another binding kept, a global's, `JSON.parse`'s in
+TodoMVC, or a second of one module, `./greet.js#default` in the `imports`
+snapshot: a comment is before the next start only past what has no JS, a
+type alias or a `use`, and a function item's body ended that.
+
+**A binding's comments are the import's that's placed where it's
+declared, a doc comment's JSDoc too, through the one path a `use`'s take**
+(`header::entries`, `commented` the declaration where no `use` makes the
+import; `commented_at`). **The code right after the binding is right after
+the import, as the Rust has it**: of an import placed at a binding, the
+code after it is after the binding's whole item, which `UsesWritten`
+keeps now, not its signature (`header::declared_at`, `declared_end`).
+Rule 3 still holds where it said something: between two imports placed at
+bindings, and before their comments, the blank lines between function
+items tell nothing, so the imports stay one block, as the playground's
+CodeMirror bindings' do. **A comment above a binding of no JS where it's
+written, a global's or one whose import is placed at another binding, is
+before the next item that has JS, as one above a type alias is, and its
+doc comment is nowhere**, a type alias's too (`js::Module::bindings`,
+`to_oxc/starts.rs`'s `past_bindings` and `of_no_js`, a type alias's doc's rule moved there with it). No comment is
+dropped.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, none. A comment and a
+blank line run nothing; no import, binding or load order changes.
+
+The other ways: keeping the import at the top and the comments at the
+binding, which upstream writes nowhere; or the comments of every binding
+of one import above it, which moves a comment written far below above the
+first binding's import (the reconciler's ReactFiberConfig bindings).
+
+What changes: the `async`, `imports`, `playground` and `todomvc` snapshots
+gain their bindings' comments, each above its import or the next item, and
+the guide's bindings page its `put` binding's JSDoc above `import { put }
+from "my-store";`. In React's port, 47 lines of the port's own comments
+above bindings, most of them the reconciler's notes of what a
+ReactFiberConfig binding is of, are now in its JS, where they were lost.
+
+Held by `test/lowering-comments-items.test.ts`'s "a binding's comments are
+above the import it makes", run in JS, `test/modules.test.ts`'s "imports
+are where their bindings are declared" and `test/compiler.test.ts`'s
+`imports` leaf; mutations `binding-import-comments-lost`,
+`binding-import-blank-lines-unquieted` and
+`binding-import-end-before-an-import` (`to_oxc/header.ts`),
+`binding-import-blank-before-comments` and
+`binding-import-code-after-spaced` (`to_oxc.ts`),
+`binding-of-no-js-comments-lost`, `binding-of-no-js-doc-kept` and
+`binding-import-doc-dropped` (`to_oxc/starts.ts`, where `doc-of-no-js-kept`
+moved), and
+`binding-declared-signature-only` (`lower/analysis/naming.ts`). The
+module directives' collection moved to `lower/bindings.rs`'s
+`module_directives`, beside `directives_of`, and a doc comment's of no JS
+to `to_oxc/starts.rs`, so `lower/pipeline.rs` and `to_oxc.rs` stay within
+the compiler's file cap; their mutations moved with them.

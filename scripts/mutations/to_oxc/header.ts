@@ -205,4 +205,28 @@ export const mutations: Mutation[] = [
     replace: "        .map_or(placed.len(), |last| last + 1);\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "an import no use places"],
   },
+  {
+    name: "binding-import-comments-lost",
+    breaks: "the comments above a binding whose import is placed at it, no `use` naming it, are lost (rd752)",
+    file: "src/to_oxc/header.rs",
+    find: "                true => package.named_at,\n                false => package.span,\n",
+    replace: "                true => package.span,\n                false => package.span,\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "a binding's comments are above the import it makes"],
+  },
+  {
+    name: "binding-import-blank-lines-unquieted",
+    breaks: "an import placed at a binding takes the blank lines around its function item, a blank line between two such imports (rd752)",
+    file: "src/to_oxc/header.rs",
+    find: "        .filter(|entry| entry.declared && entry.commented == entry.placed)\n",
+    replace: "        .filter(|entry| entry.declared && entry.commented == entry.placed && false)\n",
+    tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
+  },
+  {
+    name: "binding-import-end-before-an-import",
+    breaks: "two imports placed at bindings are apart where the function items are, the end of the first told before the second (rd752)",
+    file: "src/to_oxc/header.rs",
+    find: " && body.get(i + 1).is_some_and(|next| !imported(next)))\n",
+    replace: ")\n",
+    tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
+  },
 ];

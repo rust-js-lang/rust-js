@@ -13,11 +13,14 @@ use oxc_ast_visit::Visit;
 /// which `format::spaced` leaves as they are. Of the rest, a statement
 /// rust-js makes of no code of its own, or of another's, `spaced` sets
 /// them apart as a person does (ADR 0303). `end` is where the text of the
-/// comments ends, where a blank line's empty one is.
+/// comments ends, where a blank line's empty one is. `declared`: where each
+/// import placed at a binding's declaration starts, and where that
+/// declaration ends, which the code after the import is after
+/// (`header::declared_end`, rd752).
 pub(super) fn apart(
     body: &[Statement<'_>],
     mut comments: Vec<oxc_ast::Comment>,
-    tops: &std::collections::HashMap<u32, u32>,
+    (tops, declared): (&std::collections::HashMap<u32, u32>, &super::header::Places),
     sources: &crate::program::Sources,
     end: u32,
 ) -> (Vec<oxc_ast::Comment>, Vec<bool>) {
@@ -36,8 +39,11 @@ pub(super) fn apart(
         }
     }
     let limit = sources.text.len() as u32;
-    let ends: Vec<u32> = (body.iter())
-        .map(|statement| {
+    let ends: Vec<u32> = (body.iter().enumerate())
+        .map(|(i, statement)| {
+            if let Some(end) = super::header::declared_end(body, i, declared) {
+                return end;
+            }
             let mut reach = Reach { end: 0, limit };
             reach.visit_statement(statement);
             reach.end

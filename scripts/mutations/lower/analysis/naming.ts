@@ -956,4 +956,12 @@ export const mutations: Mutation[] = [
     replace: "                (_, Some(def_id)) if false && def_id.is_local() => Some(\n",
     tests: ["test/require.test.ts"],
   },
+  {
+    name: "binding-declared-signature-only",
+    breaks: "a binding's declaration is its signature alone, so its body hides the comments above it from the next item (rd752)",
+    file: "src/lower/analysis/naming.rs",
+    find: "            .filter_map(|id| Some((tcx.source_span(id.as_local()?), id)))\n",
+    replace: "            .filter_map(|id| Some((tcx.def_span(id), id)))\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "a binding's comments are above the import it makes"],
+  },
 ];

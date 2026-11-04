@@ -9,6 +9,10 @@
 // The frame has an opaque origin and allows scripts only. Programs can report
 // results through postMessage, but cannot access the editor's DOM or storage.
 
+/**
+ * [Sucrase](https://github.com/alangpierce/sucrase): the JSX rust-js writes,
+ * as the JS the frame can run, which has no bundler.
+ */
 import { transform } from "sucrase";
 import { $extend, $iter, $next } from "@rust-js/runtime";
 

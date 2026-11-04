@@ -137,7 +137,8 @@ pub(super) struct Entry<'m> {
     /// or a binding the module declares of it (`Package::named_at`), or
     /// where a re-export is placed (`Reexport::at`); `NONE` of none.
     pub placed: js::Span,
-    /// The `use` whose comments are above it (rd92); `NONE` of none.
+    /// The `use` whose comments are above it (rd92), or of one no `use`
+    /// makes, the binding it's placed at (rd752); `NONE` of none.
     commented: js::Span,
     /// Whether it's placed at a binding the module declares, not a `use`.
     declared: bool,
@@ -186,7 +187,12 @@ pub(super) fn entries(module: &Module) -> Vec<Entry<'_>> {
             says,
             from: &package.from,
             placed: package.named_at,
-            commented: package.span,
+            // Of a binding's declaration, which no `use` names, its comments
+            // are the import's, the JS it makes there (rd752).
+            commented: match package.span.is_none() {
+                true => package.named_at,
+                false => package.span,
+            },
             declared: package.named_at != package.span,
         };
         let names = pairs(package.named.iter());
@@ -276,12 +282,47 @@ pub(super) fn entries(module: &Module) -> Vec<Entry<'_>> {
 /// Where the comments before each `use` an import or re-export is of are
 /// attached, by where the `use` starts: the start of the first statement
 /// of it, so they're above it once, of two one `use` makes (rd92).
-pub(super) fn commented_at(entries: &[Entry<'_>]) -> HashMap<u32, u32> {
+pub(super) fn commented_at(entries: &[Entry<'_>]) -> Places {
     let mut at = HashMap::new();
     for entry in entries.iter().filter(|entry| !entry.commented.is_none()) {
         at.entry(entry.commented.lo).or_insert(entry.at().lo);
     }
     at
+}
+
+/// Where each of one thing starts, and where another is: `commented_at`'s,
+/// `declared_at`'s.
+pub(super) type Places = HashMap<u32, u32>;
+
+/// Of `commented_at`'s, where each binding's declaration starts whose
+/// comments are its import's, and where it ends (rd752): the blank lines
+/// around a function item tell nothing of the imports between them (ADR
+/// 1069), so only its comments are before its import, and the blank lines
+/// between them, none before the first (`comments_of`); what's after its
+/// end, the code after its import (`declared_end`).
+pub(super) fn declared_at(entries: &[Entry<'_>]) -> Places {
+    (entries.iter())
+        .filter(|entry| entry.declared && entry.commented == entry.placed)
+        .map(|entry| (entry.commented.lo, entry.placed.hi))
+        .collect()
+}
+
+/// Where the code of `body`'s `i`th statement ends, of an import placed at
+/// a binding's declaration, `declared`'s, of no width: where the
+/// declaration ends, of the code after it, as the Rust has it; not of
+/// another import, which the blank lines between function items tell
+/// nothing of (ADR 1069, amended, rd752).
+pub(super) fn declared_end(body: &[Statement<'_>], i: usize, declared: &Places) -> Option<u32> {
+    let imported = |statement: &Statement<'_>| {
+        matches!(
+            statement,
+            Statement::ImportDeclaration(_) | Statement::ExportFromDeclaration(_) | Statement::ExportAllDeclaration(_)
+        )
+    };
+    let statement = &body[i];
+    let end = declared.get(&statement.span().start).copied()?;
+    (matches!(statement, Statement::ImportDeclaration(_)) && body.get(i + 1).is_some_and(|next| !imported(next)))
+        .then_some(end)
 }
 
 impl<'a> Cx<'a> {

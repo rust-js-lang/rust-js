@@ -532,7 +532,8 @@ pub(in crate::lower) struct UsesWritten {
     /// Each, and whether it's a `pub use`, a re-export.
     uses: Vec<(rustc_span::Span, Vec<DefId>, Vec<NamedThrough>, bool)>,
     /// Each binding the module declares itself, a function or a static of
-    /// its own or of an `extern` block, where it's written.
+    /// its own or of an `extern` block, where it's written, the whole item,
+    /// its body too, where its import's next code is after (rd752).
     declared: Vec<(rustc_span::Span, DefId)>,
     /// Each statement after one with nothing but attributes between, and
     /// that one.
@@ -617,7 +618,7 @@ impl UsesWritten {
         let mut declared: Vec<(rustc_span::Span, DefId)> = (items.free_items().map(|id| id.owner_id.to_def_id()))
             .chain(items.foreign_items().map(|id| id.owner_id.to_def_id()))
             .filter(|&id| is_binding(tcx, id))
-            .map(|id| (tcx.def_span(id), id))
+            .filter_map(|id| Some((tcx.source_span(id.as_local()?), id)))
             .collect();
         declared.sort_by_key(|(span, _)| span.lo());
         UsesWritten {
@@ -626,6 +627,11 @@ impl UsesWritten {
             declared,
             joined,
         }
+    }
+
+    /// Where each binding the module declares is written, the whole item.
+    pub(in crate::lower) fn bindings(&self) -> impl Iterator<Item = rustc_span::Span> + '_ {
+        self.declared.iter().map(|&(span, _)| span)
     }
 
     /// The first naming what `makes` says is of the import, or a binding

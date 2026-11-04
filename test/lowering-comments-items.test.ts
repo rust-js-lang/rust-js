@@ -993,3 +993,94 @@ pub fn first() -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('import { lane } from "./lanes.js";\nimport "./panel.js";\n\nexport function first() {');
 }, 600_000);
+
+// React Native's ReactFeatureFlags.native-fb writes two comments above
+// `import * as dynamicFlagsUntyped from 'ReactNativeInternalFeatureFlags';`,
+// and its next line, `const dynamicFlags = ..`, right after it. Its port
+// writes them above the binding, `#[rust_js::link_name = "get
+// ReactNativeInternalFeatureFlags#* as dynamicFlagsUntyped"] fn ..`, whose
+// JS is that import, where it's declared: the comments were lost, as was
+// any above a binding of no JS, and a blank line set the import apart from
+// the code the Rust has right after the binding. A binding's comments are
+// its import's, a doc comment's JSDoc too, and the code after the binding
+// is after the import as the Rust has it; between two bindings' imports,
+// the blank lines of their function items tell nothing (ADR 1069). One
+// above a binding whose import is another's, or that has none, a global's,
+// is before the next item that has JS, as one above a type alias is; its
+// doc comment is nowhere (rd752).
+test("a binding's comments are above the import it makes", async () => {
+  const dir = fixture("comments-of-a-binding");
+  writeFileSync(join(dir, "flags.js"), "export const on = true;\nexport const off = false;\n");
+  writeFileSync(join(dir, "m.js"), "export const a = () => 1;\nexport const b = () => 2;\nexport default () => 4;\n");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Flags {
+    pub on: bool,
+    pub off: bool,
+}
+
+// Re-export dynamic flags from the internal module.
+// Intentionally using * because this import is compiled to a \`require\` call.
+#[cfg_attr(
+    rust_js,
+    rust_js::link_name = "get ./flags.js#* as flagsUntyped"
+)]
+fn flags_untyped() -> &'static Flags {
+    unreachable!()
+}
+thread_local! {
+    static FLAGS: &'static Flags = flags_untyped();
+}
+
+/// The first of the module's.
+#[cfg_attr(rust_js, rust_js::link_name = "./m.js#a")]
+fn a() -> u32 {
+    unreachable!()
+}
+
+// Its default.
+#[cfg_attr(rust_js, rust_js::link_name = "./m.js#default")]
+fn d() -> u32 {
+    unreachable!()
+}
+
+// Of the same module, imported above.
+/// Its second.
+#[cfg_attr(rust_js, rust_js::link_name = "./m.js#b")]
+fn b() -> u32 {
+    unreachable!()
+}
+
+// The host's own.
+#[cfg_attr(rust_js, rust_js::link_name = "Math.max")]
+fn max(a: f64, b: f64) -> f64 {
+    unreachable!()
+}
+
+pub fn both() -> bool {
+    FLAGS.with(|flags| flags.on && !flags.off)
+}
+
+pub fn sum() -> f64 {
+    f64::from(a() + b() + d()) + max(1.0, 2.0)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`// Re-export dynamic flags from the internal module.
+// Intentionally using * because this import is compiled to a \`require\` call.
+import * as flagsUntyped from "./flags.js";
+const flags = flagsUntyped;
+
+/** The first of the module's. */
+import d, { a, b } from "./m.js";
+
+// Its default.
+
+// Of the same module, imported above.
+
+// The host's own.
+
+export function both() {`);
+  expect(js).not.toContain("Its second");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.both(), lib.sum()]).toEqual([true, 9]);
+});

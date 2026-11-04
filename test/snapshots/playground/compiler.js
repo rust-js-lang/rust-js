@@ -16,6 +16,10 @@
 // keeps global state, and a failed compile ends in a trap.
 
 import { reactLibs } from "../../../tooling/crates.js";
+// Some JS functions are declared more than once, typed for each use (`json`
+// for each file it reads, `new Directory` for what it holds): rustc warns
+// that native code would see one symbol. A directory's contents are a JS
+// `Map`, which a `HashMap` is.
 import {
   ConsoleStdout,
   Directory,

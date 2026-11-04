@@ -124,6 +124,7 @@ pub fn emit(
     let entries = header::entries(module);
     // The module's comments, each where its code is (ADR 0444), whose text
     // the program's source has, a doc comment's JSDoc after the Rust.
+    let declared = header::declared_at(&entries);
     let Commented {
         text,
         comments,
@@ -134,7 +135,7 @@ pub fn emit(
         exports,
         docs,
         own_places,
-    } = comments_of(module, sources, &header::commented_at(&entries));
+    } = comments_of(module, sources, (&header::commented_at(&entries), &declared));
     let cx = Cx {
         b: AstBuilder::new(&allocator),
         allocator: &allocator,
@@ -201,7 +202,7 @@ pub fn emit(
     let imports = header::among(&mut body, made, sources, b);
     // A blank line between two statements where the Rust has one between
     // their code, where it tells (ADR 0444, amended).
-    let (comments, told) = apart(&body, comments, &tops, sources, text.len() as u32);
+    let (comments, told) = apart(&body, comments, (&tops, &declared), sources, text.len() as u32);
     let program = Program::new(
         Span::new(0, rust_source.len() as u32),
         SourceType::mjs(),
@@ -470,7 +471,7 @@ struct Commented {
 fn comments_of(
     module: &Module,
     sources: &crate::program::Sources,
-    commented_at: &std::collections::HashMap<u32, u32>,
+    (commented_at, declared_at): (&header::Places, &header::Places),
 ) -> Commented {
     use oxc_ast::{CommentKind, CommentPosition};
     let mut text = sources.text.clone();
@@ -787,16 +788,7 @@ fn comments_of(
         // A doc comment of an item with no JS, a `pub type`'s, is that
         // item's, which its declaration has, nowhere in the JS (ADR 0444,
         // amended).
-        let of_no_js = |c: &crate::program::Comment| {
-            let mut after = c.hi as usize;
-            loop {
-                let skipped = after + (sources.text[after..].len() - sources.text[after..].trim_start().len());
-                match file.comments.iter().find(|o| o.lo as usize == skipped) {
-                    Some(o) => after = o.hi as usize,
-                    None => break c.doc && openings::type_alias(&sources.text[skipped..]),
-                }
-            }
-        };
+        let of_no_js = |c: &crate::program::Comment| starts::of_no_js(module, (&sources.text, file), c, commented_at);
         let own_line: Vec<&crate::program::Comment> = (file.comments.iter())
             .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !of_no_js(c) && !of_module(c))
             .collect();
@@ -912,6 +904,7 @@ fn comments_of(
                     let (lo, hi) = ((other.lo - c.hi) as usize, (other.hi - c.hi) as usize);
                     between.replace_range(lo..hi, &" ".repeat(hi - lo));
                 }
+                starts::past_bindings(module, &mut between, (c.hi, at));
                 // Past `let`s with no JS of their own, a variable read
                 // in place, `let timer = Rc::clone(timer);` (ADR
                 // 0603), a block's too, `let arg = unsafe {
@@ -1161,8 +1154,7 @@ fn comments_of(
                 // One after an `if`, its test's that the test's statement
                 // took, `return c ? a : b`'s: before the keyword.
                 if (blank_before(if_keyword(&comment).unwrap_or(comment.lo)) || (i == 0 && set_apart.contains(&at)))
-                    && !part
-                    && !taken
+                    && !(part || taken || (i == 0 && declared_at.contains_key(&at)))
                 {
                     pieces.push(blank(&text));
                 }
@@ -1189,7 +1181,7 @@ fn comments_of(
             // the `let` it's written in.
             let line_start = sources.text[..at as usize].rfind('\n').map_or(0, |i| i + 1) as u32;
             let first_on_line = !statement_starts.iter().any(|&s| s >= line_start && s < at);
-            if part || taken {
+            if part || taken || declared_at.contains_key(&at) {
             } else if (own.is_empty() && ((first_on_line && blank_before(written)) || set_apart.contains(&at)))
                 || (!own.is_empty() && last <= at && {
                     // A line of nothing between: not a closure's opening's.

@@ -263,10 +263,11 @@ test("extern items from JS modules become import statements", async () => {
   expect(lib).toContain('const join$1 = "c.txt";\n  return join(join("a", "b"), join$1);');
   expect(lib).toContain('Greet.polite("world")');
   // Two directories down, only what the file uses, from the same file,
-  // each where its binding is declared (ADR 1063, amended).
+  // each where its binding is declared (ADR 1063, amended), each binding's
+  // comments above it (rd752).
   const leaf = await Bun.file(join(target, "imports", "inner", "leaf.js")).text();
   expect(leaf).toMatch(
-    /\nimport greet from "\.\.\/greet\.js";\nimport wave from "\.\/wave\.js";\nimport \{ join as join\$1 \} from "node:path";\n\n(\/\/ .*\n)*function join/,
+    /\nimport greet from "\.\.\/greet\.js";\n(\/\/ .*\n)+import wave from "\.\/wave\.js";\n(\/\/ .*\n)+import \{ join as join\$1 \} from "node:path";\n\n(\/\/ .*\n)*function join/,
   );
   // Its own `join` renames its import of node:path's, not the root's.
   expect(leaf).toContain('return join(join$1("a", "leaf"));');

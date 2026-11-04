@@ -3,7 +3,10 @@
 // Two directories down, `./greet.js` still means the file beside the root's JS.
 
 import greet from "../greet.js";
+// A file beside this one, named from the root's: `./wave.js` here.
 import wave from "./wave.js";
+// The root's import too, beside this file's own `join`: renamed here,
+// and only here.
 import { join as join$1 } from "node:path";
 
 // Named as the root's import of `node:path`'s `join`, which this file

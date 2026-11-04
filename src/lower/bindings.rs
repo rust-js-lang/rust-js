@@ -811,6 +811,43 @@ pub(super) fn directives_of(tcx: TyCtxt<'_>, owner: LocalDefId) -> Vec<(Option<S
         .collect()
 }
 
+/// `module`'s own directives, `js::directive!("use client");`'s (ADR
+/// 0192); one of no text is refused, saying what to write, and so is one in
+/// a body that's no function's nor closure's, an `async` block's or a
+/// constant's, which has none: one in a body is its function's or its
+/// closure's (ADR 0349).
+pub(super) fn module_directives(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<String> {
+    let mut directives = Vec::new();
+    for (directive, span) in directives_of(tcx, module.to_local_def_id()) {
+        match directive {
+            Some(directive) => directives.push(directive.to_string()),
+            None => {
+                tcx.dcx()
+                    .span_err(span, "rust-js: write it `js::directive!(\"use client\");`");
+            }
+        }
+    }
+    for item in tcx.hir_module_free_items(module) {
+        let owner = directive_owner(tcx, item.owner_id.def_id);
+        let owned = owner == module.to_local_def_id()
+            || matches!(tcx.def_kind(owner), DefKind::Fn | DefKind::AssocFn)
+            || (tcx.def_kind(owner) == DefKind::Closure && tcx.coroutine_kind(owner).is_none());
+        if !owned
+            && let Some(attr) = (tcx.get_attrs_by_path(
+                item.owner_id.to_def_id(),
+                &[Symbol::intern("rust_js"), Symbol::intern("directive")],
+            ))
+            .next()
+        {
+            tcx.dcx().span_err(
+                attr.span(),
+                "rust-js: a directive is a module's, a function's or a closure's, written first in it",
+            );
+        }
+    }
+    directives
+}
+
 /// Is `def_id` a `js::on_load!`'s function, whose body is what its module
 /// runs when it's loaded (ADR 0267)?
 pub(super) fn is_on_load(tcx: TyCtxt<'_>, def_id: DefId) -> bool {

@@ -22,7 +22,6 @@ use crate::js::{self, Expr, Prop, StmtKind};
 use crate::program::{LoweredModule, Unlinked, UnlinkedModule};
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, TyCtxt};
-use rustc_span::Symbol;
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
 use std::collections::{HashMap, HashSet};
 
@@ -1094,6 +1093,7 @@ pub fn lower_crate<'tcx>(
             let through = |id| imported_through.get(&(module, id)).map(|through| through.module);
             let uses = super::analysis::UsesWritten::of(tcx, module, (&foreign, &held), &through);
             let written = |at: Option<rustc_span::Span>| at.map_or(js::Span::NONE, |at| sources.span(at));
+            let bindings_written: Vec<js::Span> = uses.bindings().map(|at| written(Some(at))).collect();
             // One `import` per JS module, of what this file uses from it, and
             // of what it imports for what that does when loaded (ADR 0110).
             let used = |export: &Export| pass.package_uses.contains(&(module, export.clone()));
@@ -1108,36 +1108,7 @@ pub fn lower_crate<'tcx>(
             );
             // `js::directive!("use client");` and `js::export_default!(page);`,
             // what a Next.js route's module has (ADR 0192).
-            let mut directives = Vec::new();
-            for (directive, span) in super::bindings::directives_of(tcx, module.to_local_def_id()) {
-                match directive {
-                    Some(directive) => directives.push(directive.to_string()),
-                    None => {
-                        tcx.dcx()
-                            .span_err(span, "rust-js: write it `js::directive!(\"use client\");`");
-                    }
-                }
-            }
-            // One in a body is its function's or its closure's (ADR 0349);
-            // one in an `async` block's, or a constant's, has none.
-            for item in tcx.hir_module_free_items(module) {
-                let owner = super::bindings::directive_owner(tcx, item.owner_id.def_id);
-                let owned = owner == module.to_local_def_id()
-                    || matches!(tcx.def_kind(owner), DefKind::Fn | DefKind::AssocFn)
-                    || (tcx.def_kind(owner) == DefKind::Closure && tcx.coroutine_kind(owner).is_none());
-                if !owned
-                    && let Some(attr) = (tcx.get_attrs_by_path(
-                        item.owner_id.to_def_id(),
-                        &[Symbol::intern("rust_js"), Symbol::intern("directive")],
-                    ))
-                    .next()
-                {
-                    tcx.dcx().span_err(
-                        attr.span(),
-                        "rust-js: a directive is a module's, a function's or a closure's, written first in it",
-                    );
-                }
-            }
+            let directives = super::bindings::module_directives(tcx, module);
             // What it holds of a binding as a value of its own (ADRs 0622, 0633).
             let module_held = held.modules.get(&module).map_or(&[][..], Vec::as_slice);
             let (
@@ -1225,6 +1196,7 @@ pub fn lower_crate<'tcx>(
                 path: paths[&module].clone(),
                 file: module_file(tcx, module).name.clone().into_local_path(),
                 code: sources.module_code(tcx, module),
+                bindings: bindings_written,
                 directives,
                 packages,
                 imports: Vec::new(),

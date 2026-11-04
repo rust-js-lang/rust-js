@@ -80,6 +80,10 @@ export const Filter = {
 
 const KEY = "todos-rust-js";
 
+// `localStorage` is an `Err` where the page may not keep data, as in a
+// sandboxed frame, the playground's: then the todos are the page's only.
+// JSON.parse throws of text that isn't JSON (ADR 0035).
+
 /** The todos kept from before, or none. */
 export function load() {
   let storage;

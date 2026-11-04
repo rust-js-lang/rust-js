@@ -4,8 +4,15 @@
 
 import greet, { punctuation } from "./greet.js";
 import * as Greet from "./greet.js";
+// Named imports, and a path inside one.
 import { join, posix } from "node:path";
+// A class from a module, next to the global of the same name.
 import { URL as URL$1 } from "node:url";
+// A file of our own, beside the root's JS: its default export, and a
+// path through the whole module.
+
+// Another module's export named as an import of this one, `greet` beside
+// `./greet.js`'s default, is imported apart from it.
 import { greet as greet$1 } from "./inner/wave.js";
 
 export function paths() {
