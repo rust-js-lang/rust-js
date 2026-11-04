@@ -23,7 +23,7 @@ pub(in crate::lower::mir::tidy) fn default_values(stmts: &mut Vec<Stmt>) {
             && let Some((last, rest)) = body.split_last()
             && let StmtKind::Assign(target, value) = &last.kind
             && let ExprKind::Var(x) = &target.kind
-            && (value.is_constant() || matches!(&value.kind, ExprKind::Array(items) if items.is_empty()))
+            && given_first(value)
             && let Some(given) = (Given {
                 x,
                 label,
@@ -65,7 +65,7 @@ fn copied_into_branches(stmts: &mut Vec<Stmt>, i: usize) -> bool {
     let StmtKind::Assign(target, value) = &last.kind else {
         return false;
     };
-    if !matches!(target.kind, ExprKind::Var(_)) || !matches!(value.kind, ExprKind::Var(_)) {
+    if !matches!(target.kind, ExprKind::Var(_)) || !copied(value) {
         return false;
     }
     // `stmts`, which end where the block does: the block's `break` at the
@@ -104,6 +104,30 @@ fn copied_into_branches(stmts: &mut Vec<Stmt>, i: usize) -> bool {
     }
     stmts.splice(i..=i, rest);
     true
+}
+
+/// Whether `last`, the last statement of a block MIR made of a value, `x =
+/// v`, is a default this module gives without the block: first, of a
+/// constant or an empty array (`default_values`), or in each branch, of a
+/// variable (`copied_into_branches`). Not one it computes, `x =
+/// compute(3)`, which the block's label stays for, as only the paths to
+/// it may run it (#583).
+pub(in crate::lower::mir::tidy) fn given_without_block(last: &Stmt) -> bool {
+    matches!(&last.kind, StmtKind::Assign(target, value)
+        if matches!(target.kind, ExprKind::Var(_)) && (given_first(value) || copied(value)))
+}
+
+/// Whether `value`, a block's default, is one `default_values` gives
+/// first: a constant, or an empty array, `Vec::new()`'s `[]`, which runs
+/// no code and which nothing holds but its variable (#556).
+fn given_first(value: &Expr) -> bool {
+    value.is_constant() || matches!(&value.kind, ExprKind::Array(items) if items.is_empty())
+}
+
+/// Whether `value`, a block's default, is one `copied_into_branches`
+/// gives in each branch: a variable, which reading again runs no code.
+fn copied(value: &Expr) -> bool {
+    matches!(value.kind, ExprKind::Var(_))
 }
 
 /// Whether `x` is declared in `before`, `let x = ..;`, and named by nothing

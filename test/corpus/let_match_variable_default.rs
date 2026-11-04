@@ -3,7 +3,8 @@
 // each branch that fails to it, `} else { n = fallback; }`, and no labeled
 // block (#567, decided on the user's behalf 2026-11-04). The same
 // assignment runs at the same point of each path as MIR's does at the
-// block's end. A computed `_`, a call, is still a labeled block.
+// block's end. A computed `_`, a call, is the chain of the arms
+// (`let_match_computed_default.rs`, #583).
 fn named(test: bool, tests: Option<u32>, main: bool, fallback: u32, log: &mut Vec<u32>) -> u32 {
     let n = match (test, tests) {
         (true, Some(t)) => {

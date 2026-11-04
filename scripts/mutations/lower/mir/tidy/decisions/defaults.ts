@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a value a block gives last that's a call's is given first, the call made first",
     file: "src/lower/mir/tidy/decisions/defaults.rs",
-    find: "            && (value.is_constant() || matches!(&value.kind, ExprKind::Array(items) if items.is_empty()))\n",
+    find: "            && given_first(value)\n",
     replace: "",
     tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
   },
@@ -120,8 +120,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let` of a `match` whose arms' failures share a last `_ => Vec::new()` keeps MIR's labeled block, `bb17: { .. break bb17; .. entries = []; }`, as the playground's `prepare` did (#556)",
     file: "src/lower/mir/tidy/decisions/defaults.rs",
-    find: "            && (value.is_constant() || matches!(&value.kind, ExprKind::Array(items) if items.is_empty()))\n",
-    replace: "            && value.is_constant()\n",
+    find: "    value.is_constant() || matches!(&value.kind, ExprKind::Array(items) if items.is_empty())\n",
+    replace: "    value.is_constant()\n",
     tests: ["test/corpus.test.ts", "-t", "^let_match_empty_default.rs$"],
     snapshots: true,
   },

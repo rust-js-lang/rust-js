@@ -460,4 +460,14 @@ export const mutations: Mutation[] = [
     replace: "            false => value,\n",
     tests: ["test/lowering-nullable-borrows.test.ts", "-t", "written through a borrow"],
   },
+  {
+    name: "option-items-held-apart",
+    breaks:
+      "an `Option`'s `iter().count()` in a tuple holds the `Option` in a `const`, and the tuple's earlier elements too, `const isSome = ..; const option = someOf(..);`, not each in place (#588)",
+    file: "src/lower/std_types/option.rs",
+    find: "            self.held_in_place(\"option\", option, out)\n",
+    replace: "            self.spill(\"option\", option, out)\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_iter_count_in_a_tuple.rs$"],
+    snapshots: true,
+  },
 ];

@@ -155,8 +155,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a chain whose tests are longer than the tree's, `value[0] != null` twice, is written",
     file: "src/lower/mir/tidy/decisions.rs",
-    find: "    if tests_made > written {\n",
-    replace: "    if false {\n",
+    find: "        if tests_made > written && !labeled {\n",
+    replace: "        if false {\n",
     tests: ["test/snapshots.test.ts", "-t", "strings"],
   },
   {
@@ -319,6 +319,36 @@ export const mutations: Mutation[] = [
     find: "    if switched_guard {\n",
     replace: "    if false && switched_guard {\n",
     tests: ["test/corpus.test.ts", "-t", "^(switch_arm_tests_its_own|default_value_exits|guards_that_call|guarded_arm_chains).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "computed-default-kept-labeled",
+    breaks:
+      "a `let` of a `match` whose `_` is computed, `_ => compute(3)`, keeps MIR's labeled block, `bb17: { if (test) { .. break bb17; } .. entries = compute(3); }`, not the chain of its arms (#583)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "        if tests_made > written && !labeled {\n",
+    replace: "        if tests_made > written {\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_match_computed_default.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "computed-default-of-an-empty-arm",
+    breaks:
+      "a condition's tree around a loop, `if (key && (!seen || last !== key)) { for .. }`, an arm of which does nothing, is a chain whose tests are read again, `key && (!key || !seen || ..)` (#583)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "        && bodies.iter().all(|body| !body.is_empty())\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^mixed_condition_around_inner_loop.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "computed-default-given-first",
+    breaks:
+      "a `match` whose `_` is a value given first, `_ => vec![]`, is a chain whose tests are read again, `else { entries = !test && main ? [root] : []; }`, not that default given first (#583, #556)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "        && !(default.len() == 1 && defaults::given_without_block(&default[0]))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^let_match_empty_default.rs$"],
     snapshots: true,
   },
 ];

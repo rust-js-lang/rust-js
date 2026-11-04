@@ -1276,11 +1276,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A name the program didn't write, which tidy reads as what
                 // it holds where that's a variable nothing sets meanwhile,
                 // a flattened state's `chunk` (`alias_variables`, rd482).
-                let held = self.spill(&name, object, out);
-                if let js::ExprKind::Var(name) = &held.kind {
-                    self.locals.mir.made.fixed.insert(name.clone());
-                }
-                held
+                self.held_in_place(&name, object, out)
             }
         };
         Ok(match part {
@@ -1300,13 +1296,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // reads in place where it's read once.
         let mut fixed = |e: Expr, name: &str, this: &mut Self| match fixed_place(&e) {
             true => e,
-            false => {
-                let held = this.spill(name, e, out);
-                if let js::ExprKind::Var(name) = &held.kind {
-                    this.locals.mir.made.fixed.insert(name.clone());
-                }
-                held
-            }
+            false => this.held_in_place(name, e, out),
         };
         // The same place, what's known of it kept: a nullable field's read
         // never `undefined` (ADR 0620, amended).

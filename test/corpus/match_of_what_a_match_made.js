@@ -217,8 +217,10 @@ function instanceOf(kind) {
   if (kind === "clip") {
     instance = $byteLen(kind) | 0;
     console.log(`clipping ${instance}`);
+  } else if (kind === "group") {
+    instance = 2;
   } else {
-    instance = kind === "group" ? 2 : undefined;
+    instance = undefined;
   }
   if (instance === undefined) {
     return -1;

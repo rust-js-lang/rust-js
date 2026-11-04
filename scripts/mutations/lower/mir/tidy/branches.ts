@@ -841,4 +841,24 @@ export const mutations: Mutation[] = [
       "each text a list filters",
     ],
   },
+  {
+    name: "first-arm-doing-more-half-folded",
+    breaks:
+      "a variable's value of a chain whose first arm does more than give it, `const t = tests; entries = [t];`, is half a conditional, `else { entries = !test && main ? [9] : compute(3); }`, not the chain (#583, ADR 0969)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "(then.len() == 1 || x != result)",
+    replace: "then.len() == 1",
+    tests: ["test/corpus.test.ts", "-t", "^let_match_computed_default.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "function-value-chained",
+    breaks:
+      "a function's value of an arm doing more and an `Option`'s `and_then`, `return scope.parent != null ? Env.get(..) : undefined;`, is an `else if` chain, no arm of the program's (#583)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "(then.len() == 1 || x != result)",
+    replace: "(then.len() == 1 || true)",
+    tests: ["test/corpus.test.ts", "-t", "^interpreter.rs$"],
+    snapshots: true,
+  },
 ];

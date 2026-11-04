@@ -8,7 +8,9 @@ the chain's too (the user's decision of 2026-10-28, rd23); and a
 conditional in a written `then` stays there (rd217); and a module's
 static's or thread-local's initializer of a chain is one nested
 conditional whatever its arms (the user's decision, rd234), a private
-one's `None` arm too (rd247).
+one's `None` arm too (rd247); and a variable's chain whose first arm does
+more than give it, but the function's value's, is the chain too (#583,
+[0364](0364-mir-lowering.md)'s amendment of 2026-11-04).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference: an `if` chain and a conditional give the same value, each test
@@ -480,3 +482,21 @@ desugaring's `match` is of type `()` too), and the mutations
 level = 1, .. }`, each arm an assignment, is its chain, `if (a === 1 || b
 === 1) { level = 1; } else if ..`, not `level = a === 1 || b === 1 ? 1 :
 ..`.
+
+## Amendment: a variable's chain whose first arm does more is the chain (#583, 2026-11-04)
+
+`chained_arms` took back a chain whose first arm does more than give the
+value, `const t = tests; entries = [t];`, only of a temporary; a
+variable's stayed half a conditional, `else { entries = !test && main ?
+[9] : compute(3); }`, a written `if let .. else if .. else`'s too. **It's
+the chain of a variable's too**, `else if (!test && main) { entries = [9];
+} else { entries = compute(3); }`, but of the function's value, whose
+conditional may be an `Option`'s `and_then`'s, `return parent != null ?
+Env.get(parent, name) : undefined;`, no arm the program wrote. Made with
+#583's chain of a computed default (the user's decision; see
+[0364](0364-mir-lowering.md)'s amendment of the day). Case
+([0262](0262-when-rust-and-js-disagree.md)): N. Held by the corpus
+`let_match_computed_default.rs` and `match_of_what_a_match_made.rs`
+(`instanceOf`, as written), and the mutations
+`first-arm-doing-more-half-folded` and `function-value-chained`
+(`lower/mir/tidy/branches.ts`).

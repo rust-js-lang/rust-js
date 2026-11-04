@@ -685,3 +685,50 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): N. Held by the corpus
 `default-copied-into-no-branch`, and the unit test
 `a_default_is_copied_only_where_each_break_ends_a_branch` (a `break` of
 the block before its last `if`, which keeps the block).
+
+## Amendment: a computed default is the `else` of the chain, its tests read again (#583, 2026-11-04, the user's decision)
+
+#567 left a computed `_`, a call, to the user. `let entries = match (test,
+tests) { (true, Some(t)) if cond => vec![t], (false, _) if main =>
+vec![9], _ => compute(3) };` printed MIR's tree, `bb17: { if (test) { if
+(tests != null && cond) { entries = [t]; break bb17; } } else if (main) {
+entries = [9]; break bb17; } entries = compute(3); }`: `decisions` kept
+the tree because the chain's tests, `test && tests != null && cond` then
+`!test && main`, are longer than the tree's, which reads `test` once, and
+neither `default_values` nor `copied_into_branches` gives a call without
+the block. The user decided: **such a `match` prints as the chain of its
+arms, `if (test && tests != null && cond) { .. } else if (!test && main) {
+entries = [9]; } else { entries = compute(3); }`, no label.**
+
+`decisions` takes the chain though its tests are longer where the tree's
+block would keep its label (`keeps_label`): more than one path goes on to
+the chain's `else`, which does what `defaults` doesn't give without the
+block (`defaults::given_without_block`, the one answer of what it gives:
+a constant or an empty array first, a variable in each branch), every
+arm does something, each leaves the block or returns or throws, and no
+`switch` takes the tree (no test in a `match` of constants, whose cases
+need no label). A test read again is read only where it was, before any
+arm runs, and only of tests whose reading does nothing (`pure` and no
+`has_effects`, so no getter, `Known::Getter`); a tree whose guard calls
+keeps `Model`'s rule. The tests MIR reads are of the scrutinee made once
+before the tree, `const value = flag(test, log);`, so its call runs once.
+
+The chain's last two arms, values, were then folded by `branch_values`,
+`else { entries = !test && main ? [9] : compute(3); }`, half a chain, as a
+written `if let .. else if .. else` printed already: the first arm does
+more than give the value (`const t = tests;`), and `chained_arms` took
+back only a temporary's chain of such a first arm. ADR 0969's rule holds
+of a variable's now too, but the function's value, whose conditional may
+be an `Option`'s `and_then`'s, no arm the program wrote
+(`interpreter.rs`'s `Env.get`).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference: the same tests of what nothing changes, the same arm taken,
+the default run only where no arm is. Held by the corpus
+`let_match_computed_default.rs` against native Rust (a `let`'s, an
+`Option`'s and a statement `match`'s, the scrutinee's call logged), and
+`match_of_what_a_match_made.rs`'s `instanceOf`, now the chain it's written
+as; the mutations `computed-default-kept-labeled`,
+`computed-default-of-an-empty-arm`, `computed-default-given-first`
+(`lower/mir/tidy/decisions.ts`) and `first-arm-doing-more-half-folded`,
+`function-value-chained` (`lower/mir/tidy/branches.ts`).

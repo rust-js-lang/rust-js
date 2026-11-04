@@ -499,12 +499,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// An `Option<T>`'s items, as its `iter()` gives them (ADR 0128):
-    /// `option == null ? [] : [option]`.
+    /// `option == null ? [] : [option]`. What holds an `Option` read
+    /// twice there, `const option = someOf(items);`, is a temporary of
+    /// MIR's lowering's (`Made::fixed`), read in place where it's read
+    /// once, its count's `option == null ? 0 : 1` (#588).
     pub(in crate::lower) fn option_items(&mut self, option: Expr, item: Ty<'tcx>, out: &mut Vec<Stmt>) -> Expr {
         let option = if option.reads_same() {
             option
         } else {
-            self.spill("option", option, out)
+            self.held_in_place("option", option, out)
         };
         let value = if self.boxed_payload(item) {
             self.some_value(option.clone())

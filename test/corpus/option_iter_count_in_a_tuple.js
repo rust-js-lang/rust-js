@@ -21,15 +21,11 @@ function nested(items) {
 }
 
 export function counted(a, b) {
-  const isSome = someOf(a) != null;
-  const isNone = someOf(b) == null;
-  const option = someOf(a);
-  return [isSome, isNone, option == null ? 0 : 1];
+  return [someOf(a) != null, someOf(b) == null, someOf(a) == null ? 0 : 1];
 }
 
 export function countedNested(a) {
-  const option = nested(a);
-  return option == null ? 0 : 1;
+  return nested(a) == null ? 0 : 1;
 }
 
 function main() {

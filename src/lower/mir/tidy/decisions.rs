@@ -125,6 +125,38 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>, told: &Told) {
     }
 }
 
+/// Whether the block of a tree whose arms are `arms`, each doing
+/// `bodies`, the chain's `else` `arms[otherwise]`, keeps its label as a
+/// tree: more than one path goes on to that `else`, which does what no
+/// other pass gives without the block (`defaults::given_without_block`),
+/// and each other arm leaves the block, or returns or throws, each arm
+/// doing something (one that does nothing is the `else` `chain` tries
+/// first, a test's, `if (a && (b || c)) { .. }`); and no
+/// `switch` takes it (`tested`, in no `match` of constants `told`), whose
+/// cases need no label.
+fn keeps_label(arms: &[Arm], bodies: &[Vec<Stmt>], otherwise: usize, tested: &[(&Expr, Expr)], told: &Told) -> bool {
+    let switched = (tested.iter()).any(|(written, _)| {
+        let mut parts = Vec::new();
+        leaf_tests(written, js::Span::NONE, &mut parts);
+        (parts.iter()).any(|(_, at)| !at.is_none() && told.switches.iter().any(|s| within(*at, s.span)))
+    });
+    let default = &bodies[otherwise];
+    let leaves = |i: usize| {
+        arms[i].out && !arms[i].leaves_loop
+            || matches!(
+                bodies[i].last().map(|s| &s.kind),
+                Some(StmtKind::Return(_) | StmtKind::Throw(_))
+            )
+    };
+    !switched
+        && arms[otherwise].tests.len() > 1
+        && arms[otherwise].out
+        && bodies.iter().all(|body| !body.is_empty())
+        && !(default.len() == 1 && defaults::given_without_block(&default[0]))
+        && (0..arms.len()).all(leaves)
+        && (0..arms.len()).any(|i| i != otherwise && arms[i].out)
+}
+
 /// A leaf of the tree: the tests that hold on the way to it, in the order
 /// they're made, what it does then, and whether that goes on past the
 /// block.
@@ -373,6 +405,19 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
         {
             return None;
         }
+        // A tree whose block keeps its label once it's left, its `else` a
+        // default it computes, `_ => compute(3)`, that more than one path
+        // goes on to: the chain, though its tests are longer, each read
+        // again where a later arm's path says it failed, `test` then
+        // `!test`, a JS label the Rust lacks being worse (#583, the user's
+        // decision). Only of tests reading them again does nothing.
+        let labeled = model.is_none()
+            && keeps_label(&arms, &bodies, otherwise, &tested, told)
+            && (steps.iter()).all(|(_, test)| {
+                let mut parts = Vec::new();
+                leaf_tests(test, js::Span::NONE, &mut parts);
+                (parts.iter()).all(|(part, _)| pure(part) && !part.has_effects())
+            });
         let mut chain: Option<Vec<Stmt>> = match std::mem::take(&mut bodies[otherwise]) {
             body if body.is_empty() => None,
             body => Some(body),
@@ -400,7 +445,7 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
         }
         // Tests no longer than the tree's, or the tree reads better.
         let written = count(&mut tested.iter().map(|(_, test)| test));
-        if tests_made > written {
+        if tests_made > written && !labeled {
             return None;
         }
         Some(chain.unwrap_or_default())

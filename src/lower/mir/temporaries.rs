@@ -4,6 +4,18 @@
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `value` held in a `const` named after `name`, as `spill` holds it,
+    /// a temporary of MIR's lowering's (`Made::fixed`), which tidy reads in
+    /// place where it's read once: a place fixed (`fixed_place_of`), or an
+    /// `Option` its items read twice (`option_items`, #588).
+    pub(in crate::lower) fn held_in_place(&mut self, name: &str, value: Expr, out: &mut Vec<Stmt>) -> Expr {
+        let held = self.spill(name, value, out);
+        if let js::ExprKind::Var(name) = &held.kind {
+            self.locals.mir.made.fixed.insert(name.clone());
+        }
+        held
+    }
+
     /// `lower` in an evaluation of its own: none of what's around it made and
     /// not yet used, nor the cleanup that unwinds to, nor the copies back a
     /// call around it owes, which are the enclosing evaluation's again once

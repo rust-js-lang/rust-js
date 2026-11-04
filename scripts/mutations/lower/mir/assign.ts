@@ -990,8 +990,8 @@ export const mutations: Mutation[] = [
     breaks:
       "the object a kept `&mut` is fixed in is a name of the program's, never read as the variable it holds, so a flattened state's field binding is `const value = chunk; value.value`, where upstream reads `chunk.value` (rd482)",
     file: "src/lower/mir/assign.rs",
-    find: "                if let js::ExprKind::Var(name) = &held.kind {\n                    self.locals.mir.made.fixed.insert(name.clone());\n                }\n                held\n            }\n        };\n        Ok(match part {",
-    replace: "                held\n            }\n        };\n        Ok(match part {",
+    find: "                self.held_in_place(&name, object, out)\n",
+    replace: "                self.spill(&name, object, out)\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell.rs$"],
     snapshots: true,
   },

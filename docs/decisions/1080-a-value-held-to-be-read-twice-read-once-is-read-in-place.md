@@ -1,6 +1,7 @@
 # 1080. A value held only to be read twice, read once, is read in place
 
-Status: Accepted.
+Status: Accepted. Amended: an `Option` its items hold is read in place
+where it's read once (#588).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same reads
 happen, in the same order, either way.
@@ -45,3 +46,20 @@ Held by corpus `cloned_option_of_a_type_parameter` and
 `option_iter_count_in_a_tuple`, and the mutations `cloned-option-held-first`
 (`lower/std_impls.ts`) and `option-count-of-its-array`
 (`lower/iterators/eager.ts`).
+
+## Amendment: an `Option` its items hold is read in place where it's read once (#588, 2026-11-04)
+
+The count's `Option` was still held first, `const option = someOf(a);`,
+so a tuple's elements before it were held in `const`s, `const isSome =
+..; const value = ..; return [isSome, value, option == null ? 0 : 1];`.
+**What `option_items` holds an `Option` in is a temporary of MIR's
+lowering's** (`Made::fixed`, as `fixed_place_of`'s are), which tidy's
+`inlined` reads in place where it's read once, as the count reads it:
+`return [lastOf([2]) != null, lastOf([1]) != null, someOf([1, 2]) == null
+? 0 : 1];`. Its items, read twice, `option == null ? [] : [option]`, keep
+it held. Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same
+calls in the same order (`moved`'s rule of what may run before a read).
+
+Held by the corpus `option_iter_count_in_a_tuple.rs`, now its elements in
+place, against native Rust, and the mutation `option-items-held-apart`
+(`lower/std_types/option.ts`). Closes #588.

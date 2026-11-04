@@ -285,16 +285,22 @@ pub(super) fn branch_values(
             }
             // A chain of more arms, its last ones folded first, `if (a) { x = p; }
             // else { x = b ? q : c ? r : s; }`: the chain, as it's written,
-            // each arm its own (`chained_arms`); of a temporary, where its
-            // first arm does more than give it, so the whole is no
-            // conditional either.
+            // each arm its own (`chained_arms`); where its first arm does
+            // more than give it, so the whole is no conditional either, of a
+            // temporary, or of a variable but the function's value, whose
+            // conditional may be an `Option`'s `and_then`'s, `return parent !=
+            // null ? Env.get(parent, name) : undefined;`, no arm of the
+            // program's: `let entries = match .. {
+            // (true, Some(t)) if cond => vec![t], (false, _) if main =>
+            // vec![9], _ => compute(3) }`'s `else if (!test && main) {
+            // entries = [9]; } else { entries = compute(3); }` (#583).
             StmtKind::If(ref test, ref then, Some(ref otherwise))
                 if let Some(Stmt {
                     kind: StmtKind::Assign(target, _),
                     ..
                 }) = then.last()
                     && let ExprKind::Var(x) = &target.kind
-                    && (!is_temporary(x) && then.len() == 1 || is_temporary(x) && then.len() > 1)
+                    && (!is_temporary(x) && (then.len() == 1 || x != result) || is_temporary(x) && then.len() > 1)
                     && let Some((y, folded)) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))
                     && x == y
                     && !switched(test, span, switches)

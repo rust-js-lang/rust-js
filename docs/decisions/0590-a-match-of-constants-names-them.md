@@ -281,3 +281,15 @@ block of an if chain is before its first statement" holds
 `arm-opening-not-an-opening`, and `lowering-comments-jumps`' "a comment
 above a _ arm whose pattern's comment has brackets is before its default"
 holds `comment-between-read-apart` (`to_oxc.ts`).
+
+## Confirmed: a comment above a `_` arm that's a value stays in its `default:` (2026-11-04, the user's decision)
+
+A change was asked that would have printed `// Never.` above `_ =>
+panic!(..)` above `default:`. Made, it moved two port files away from
+upstream, which writes such a comment inside its `default:`: the
+scheduler's `default: // Eventually times out` and ReactIODescription's
+`default: // Not useful descriptors.`, which rd214 above already cited.
+The user decided to keep the rule as it is: **a comment above a `_` arm
+that's a value is its body's, inside `default:`**, as one above a case of
+one value is (`match_arm_comments_kept.rs`'s `thrown`, the scheduler's
+port, `lowering`'s getIODescription test).
