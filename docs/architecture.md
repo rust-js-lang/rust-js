@@ -385,6 +385,8 @@ which lowering and `src/prepare.rs` both ask ([ADR 0688](decisions/0688-a-result
 in the printed lines, by the map ([ADR 0630](decisions/0630-a-comment-inside-an-expression.md));
 `src/to_oxc/placed.rs` places a statement copied into a function from past
 it, a `Drop` impl's body, in the function, its comments with it ([ADR 0753](decisions/0753-a-branch-of-only-comments-keeps-them.md));
+`src/to_oxc/apart.rs` says where a blank line is between a module's
+statements, as the Rust has one ([ADR 0444](decisions/0444-a-comment-is-where-its-code-is.md), amended);
 `src/to_oxc/header.rs` owns a module's header text, its imports' and
 re-exports' order, and their statements among the code, where their `use`s
 are ([ADR 1069](decisions/1069-imports-are-statements-of-the-module.md));

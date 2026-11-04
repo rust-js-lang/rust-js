@@ -102,6 +102,7 @@ pub fn positional(i: usize) -> String {
     format!("_{i}")
 }
 
+#[derive(Default)]
 pub struct Module {
     pub header: String,
     /// Whether the file's leading comments, the header's, are right above
@@ -1371,19 +1372,8 @@ mod tests {
 
     fn module_of(value: Expr) -> Module {
         Module {
-            header: String::new(),
-            header_on_code: false,
-            directives: Vec::new(),
-            packages: Vec::new(),
-            imports: Vec::new(),
-            reexports: Vec::new(),
-            helpers: Vec::new(),
             items: vec![Item::Statements(vec![StmtKind::Expr(value).at(Span::NONE)])],
-            default_export: None,
-            default_declared: false,
-            aliases: Vec::new(),
-            code: Span::NONE,
-            taken_into: Vec::new(),
+            ..Module::default()
         }
     }
 
