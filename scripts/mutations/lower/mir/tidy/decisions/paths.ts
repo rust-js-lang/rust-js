@@ -58,24 +58,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^or_pattern_paths_absorbed.rs$"],
   },
   {
-    name: "or-pattern-excluding-path-kept",
-    breaks:
-      "a path whose or-pattern's alternatives none can hold, `a === 0 && ((b === 3 && a === 2) || ..)`, is one of an arm's, more tests than the tree's, so the `match` is MIR's labeled block (#631)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
-    find: "    (!excluded).then_some(out)\n",
-    replace: "    Some(out).filter(|_| excluded || !excluded)\n",
-    tests: ["test/lowering-match-paths.test.ts", "-t", "after an arm that tests both values"],
-  },
-  {
-    name: "or-pattern-excluding-one-alternative",
-    breaks:
-      "a path one of whose or-pattern's alternatives can hold, `a === 2 && ((b === 3 && a === 2) || (b === 2 && a === 3))`, is none, so `(2, 3)` after `(2, 0)` takes the `_` arm, not native Rust's (#631)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
-    find: "        ExprKind::Binary(Op::Or, a, b) => excludes(a, subject, set) && excludes(b, subject, set),\n",
-    replace: "        ExprKind::Binary(Op::Or, a, b) => excludes(a, subject, set) || excludes(b, subject, set),\n",
-    tests: ["test/corpus.test.ts", "-t", "^or_pattern_paths_absorbed.rs$"],
-  },
-  {
     name: "absorbed-failing-says-any-test",
     breaks:
       "a path's failing test is taken to say any test of another path that isn't a value's, `x == null`, so the test goes where the values it lets in take another arm, not native Rust's (#673)",

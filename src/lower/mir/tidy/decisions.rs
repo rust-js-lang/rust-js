@@ -569,13 +569,13 @@ fn factored(mut paths: Vec<Vec<Expr>>, known: &[(Expr, Set)], patterns: bool) ->
 }
 
 /// An arm's `paths`, the tests of each, tried one after another: of one
-/// whose single test those before it fail, what that failing says left
-/// out of each after it, `(1, _) | (_, 1)`'s `a === 1 || b === 1`, not `a
-/// === 1 || (a !== 1 && b === 1)`. Tried first, where those before it each
-/// first test its value, and one of them says it fails: the value is read
-/// first then as before, and each test after only where it was. Then, of
-/// each path, a test whose failing says another goes (`absorbed`), and a
-/// path alike one before it is once (#673).
+/// whose single test those before it fail, tried first, where those before
+/// it each first test its value, and one of them says it fails: the value
+/// is read first then as before, and each test after only where it was.
+/// Then, of each path, a test whose failing says another goes
+/// (`absorbed`), `(1, _) | (_, 1)`'s `a === 1 || b === 1`, not `a === 1 ||
+/// (a !== 1 && b === 1)`, and `s === A || s === B` of a symbol's (#412);
+/// and a path alike one before it is once (#673).
 fn alternatives(paths: &mut Vec<Vec<Expr>>, patterns: bool) {
     for j in 0..paths.len() {
         let [only] = paths[j].as_slice() else { continue };
@@ -604,31 +604,6 @@ fn alternatives(paths: &mut Vec<Vec<Expr>>, patterns: bool) {
     // (#673).
     for j in (0..paths.len()).filter(|_| patterns) {
         absorbed(paths, j);
-    }
-    // And of a value's `===` no set says, a symbol's, `s === A || (s !== A
-    // && s === B)`'s `s !== A`, as it's written (#412).
-    let mut failed: Vec<(Expr, Set)> = Vec::new();
-    let mut negated: Vec<Expr> = Vec::new();
-    for tests in paths.iter_mut() {
-        let said = |t: &Expr| {
-            atom(t).is_some_and(|(s, set)| {
-                failed
-                    .iter()
-                    .any(|(f, fails)| same_subject(f, &s) && fails.within(&set))
-            }) || negated.iter().any(|n| n.written_alike(t))
-        };
-        if tests.iter().any(|t| !said(t)) {
-            tests.retain(|t| !said(t));
-        }
-        if let [only] = tests.as_slice() {
-            match atom(only) {
-                Some((s, set)) => failed.push((s, set.complement())),
-                None if matches!(&only.kind, ExprKind::Binary(Op::Eq, of, _) if is_subject(of)) => {
-                    negated.push(only.clone().negated_test())
-                }
-                None => {}
-            }
-        }
     }
     // A path alike another, as one's failing absorbed leaves it, `c === 2 &&
     // d === 2` twice: once, `p || p` being `p` (#673).

@@ -972,10 +972,17 @@ an arm's paths and the chain's arms, each the same pure tests' truth
    other arm is tried as the `else`, the longest first**: of four values,
    `(1, _, _, _) | .. | (_, _, _, 1)`, the `_`.
 
-#631's third rule, a test the alternatives before it each say, `X && b
-!== 1`'s `b !== 1`, is the second's now, the failing of the arm before
-them saying it: its own reading in `simplified` is gone, and its
-mutation `or-pattern-said-atom-kept`, which no test caught any more.
+The rules these take the place of are gone, one rule of each: #412's
+failing of an alternative before, `s === A || (s !== A && s === B)`'s
+`s !== A`, and of a single test's set, `a === 1 || (a !== 1 && b ===
+1)`'s, are rule 1's (`alternatives`' `failed` and `negated`); #631's
+second, a path none of whose or-pattern's alternatives holds (`excludes`
+in `simplified`), and third, a test the alternatives before it each say,
+`X && b !== 1`'s `b !== 1`, are rules 1's and 2's. No test, of the corpus,
+its snapshots and the lowering suites, read any of them past these, so
+their mutations went with them: `negated-alternative-kept`,
+`decisions-alternative-not-absorbed`, `or-pattern-excluding-path-kept`,
+`or-pattern-excluding-one-alternative` and `or-pattern-said-atom-kept`.
 
 Only of a tree that tests what a `match`'s patterns name: one testing
 what the program wrote, an `if`'s condition or an `&&` or `||`

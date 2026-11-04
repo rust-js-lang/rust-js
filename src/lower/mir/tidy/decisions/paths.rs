@@ -171,11 +171,7 @@ pub(super) fn simplified(tests: &[Expr], patterns: bool) -> Option<Vec<Expr>> {
             (None, None) => i += 1,
         }
     }
-    // A path whose or-pattern no alternative of holds, of what it says
-    // of a value, `a === 0 && ((b === 3 && a === 2) || ..)`: none (#631).
-    let excluded =
-        (out.iter()).any(|t| atom(t).is_none() && (known.iter()).any(|(subject, set)| excludes(t, subject, set)));
-    (!excluded).then_some(out)
+    Some(out)
 }
 
 /// Whether `e` says of `subject` no more than `set` holds: a test of it
@@ -187,20 +183,6 @@ fn says_within(e: &Expr, subject: &Expr, set: &Set) -> bool {
         ExprKind::Binary(Op::And, a, b) => says_within(a, subject, set) || says_within(b, subject, set),
         ExprKind::Binary(Op::Or, a, b) => says_within(a, subject, set) && says_within(b, subject, set),
         _ => atom(e).is_some_and(|(s, later)| same_subject(&s, subject) && later.within(set)),
-    }
-}
-
-/// Whether `e` is false wherever `subject`'s value is in `set`: a test
-/// of it outside `set`, of an `&&` one of its tests, of an `||` each of
-/// its alternatives, `(b === 3 && a === 2) || (b === 2 && a === 3)` of `a
-/// === 0`'s (`simplified`, #631).
-fn excludes(e: &Expr, subject: &Expr, set: &Set) -> bool {
-    match &e.kind {
-        ExprKind::Binary(Op::And, a, b) => excludes(a, subject, set) || excludes(b, subject, set),
-        ExprKind::Binary(Op::Or, a, b) => excludes(a, subject, set) && excludes(b, subject, set),
-        _ => atom(e).is_some_and(|(s, other)| {
-            same_subject(&s, subject) && other.kind == set.kind && other.intersect(set).is_empty()
-        }),
     }
 }
 

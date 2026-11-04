@@ -86,15 +86,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-switch-symbols.test.ts", "-t", "a value some arms"],
   },
   {
-    name: "negated-alternative-kept",
-    breaks:
-      "an or-pattern of symbols MIR tests apart is `s === A || (s !== A && s === B)`, not `s === A || s === B` (#412)",
-    file: "src/lower/mir/tidy/decisions.rs",
-    find: "            }) || negated.iter().any(|n| n.written_alike(t))\n",
-    replace: "            })\n",
-    tests: ["test/lowering-switch-symbols.test.ts", "-t", "a value some arms"],
-  },
-  {
     name: "decisions-guard-call-a-leaf",
     breaks:
       "a guard that calls, `[n, ..] if below(*n)`, is no test of the tree, so `guarded_rows` keeps MIR's `bb25:` block each arm breaks out of (#221)",
@@ -225,16 +216,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "        if paths[i..j].iter().any(|p| says(p)) {\n",
     replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "decisions-alternative-not-absorbed",
-    breaks:
-      "`(1, _) | (_, 1)` is `a === 1 || (a !== 1 && b === 1)`, longer than the tree, which stays",
-    file: "src/lower/mir/tidy/decisions.rs",
-    find: "            tests.retain(|t| !said(t));\n",
-    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
     snapshots: true,
   },
