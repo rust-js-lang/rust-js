@@ -626,4 +626,20 @@ export const mutations: Mutation[] = [
     replace: "                None if false && matches!(receiver.kind(), ty::Param(_)) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^last_takes_its_source.rs$"],
   },
+  {
+    name: "consumed-closed-dropped-again",
+    breaks: "an iterator its consumer closes, the crate's with a `Drop` over items with one, is dropped after its `fold`, `for_each`, `count` or `last` too, so twice (#637)",
+    file: "src/lower/mir/iter.rs",
+    find: "        if self.consumer_closes(self.recognition().iterator_method(def_id), iter_ty, false, dropping) {\n",
+    replace: "        if false && self.consumer_closes(self.recognition().iterator_method(def_id), iter_ty, false, dropping) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumed_own_iterator_dropped_once.rs$"],
+  },
+  {
+    name: "consumer-closes-unrevealed",
+    breaks: "who drops a consumed iterator is asked of its type unrevealed, so an `impl Iterator` the crate's iterator is, closed by its `fold`, is dropped after it too (#637)",
+    file: "src/lower/mir/iter.rs",
+    find: "        let iter_ty = self.reveal(receiver);\n        let dropping",
+    replace: "        let iter_ty = receiver;\n        let dropping",
+    tests: ["test/corpus.test.ts", "-t", "^consumed_own_iterator_dropped_once.rs$"],
+  },
 ];

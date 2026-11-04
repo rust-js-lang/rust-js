@@ -73,18 +73,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(it);
         }
         self.check_leaves_none(method, name, span)?;
-        // One that takes each item, `for_each`'s, `fold`'s, `collect`'s,
-        // closed too: a panic stops it early, and what's left is dropped as
-        // it unwinds, by its closing (#422). Of one lent, its lender's; of
-        // a type parameter's, its own drop after, which MIR writes, unwinding
-        // too.
-        // Not a `collect()`, which runs nothing of its own as it steps, its
-        // adapters' closing their source already.
-        let runs_nothing = method == Some(IterMethod::Collect);
-        match lent || runs_nothing || crate::lower::recognition::known_by_bounds(iter_ty) {
-            true => Ok(it),
-            false => self.closing(it, iter_ty, span),
+        match self.consumer_closes(method, iter_ty, lent, true) {
+            true => self.closing(it, iter_ty, span),
+            false => Ok(it),
         }
+    }
+
+    /// Whether a consumer, `method`, of an `iter_ty`, `lent` or not, of
+    /// items with a destructor, `dropping`, closes what it's given,
+    /// `$closing`, which drops it at its end and as a panic part-way
+    /// unwinds (#422): one that takes each item, `for_each`'s, `fold`'s,
+    /// `count`'s or `last`'s, of what closing drops (`closes_to_drop`).
+    /// Not of one lent, its lender's; nor of a type parameter's, its own
+    /// drop after, which MIR writes, unwinding too; nor a `collect()`,
+    /// which runs nothing of its own as it steps, its adapters' closing
+    /// their source already. The one answer of who drops a consumed
+    /// iterator: what its closing drops, nothing drops after it
+    /// (`dropped_after`), or the crate's iterator with a `Drop` was
+    /// dropped twice (#637).
+    pub(in crate::lower::mir) fn consumer_closes(
+        &self,
+        method: Option<IterMethod>,
+        iter_ty: Ty<'tcx>,
+        lent: bool,
+        dropping: bool,
+    ) -> bool {
+        dropping
+            && !method.is_some_and(IterMethod::holds_its_source)
+            && !lent
+            && method != Some(IterMethod::Collect)
+            && !crate::lower::recognition::known_by_bounds(iter_ty)
+            && self.closes_to_drop(iter_ty)
     }
 
     /// `it`, a JS iterator of a `ty` an adapter is given to hold, closed to
@@ -122,14 +141,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// struct, a `Peekable`'s, which drops what it holds itself, closed or
     /// stepped to its end (ADRs 0561, 0925).
     pub(in crate::lower) fn closing_drop(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
-        let owns = match self.recognition().owned_into_items(ty) {
-            Some(item) => self.drops(item) != crate::lower::drops::Drops::Nothing,
-            None => {
-                self.given_drop(ty).is_some()
-                    || self.is_user_iterator(ty) && self.drops(ty) != crate::lower::drops::Drops::Nothing
-            }
-        };
-        match owns {
+        match self.closes_to_drop(ty) {
             // The crate's own is stepped as `$iterator(value, next)`, which
             // drops its `value` (ADR 0421), as one given as it is is (ADR
             // 0514).
@@ -138,6 +150,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.held_drop_function(ty, stepped, span)
             }
             false => Ok(None),
+        }
+    }
+
+    /// Whether closing a `ty` drops what it holds, `closing_drop`'s: one
+    /// that owns items with a destructor, a generic one whose drop its
+    /// caller gives, or the crate's own with one.
+    fn closes_to_drop(&self, ty: Ty<'tcx>) -> bool {
+        match self.recognition().owned_into_items(ty) {
+            Some(item) => self.drops(item) != crate::lower::drops::Drops::Nothing,
+            None => {
+                self.given_drop(ty).is_some()
+                    || self.is_user_iterator(ty) && self.drops(ty) != crate::lower::drops::Drops::Nothing
+            }
         }
     }
 

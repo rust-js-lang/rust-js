@@ -430,6 +430,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.drops(receiver) == crate::lower::drops::Drops::Nothing {
             return Ok(false);
         }
+        // What its consumer closes, which drops it there, at its end or as a
+        // panic unwinds: nothing after (#637). Asked of its revealed type, as
+        // `mir_iter_method` closes it.
+        let iter_ty = self.reveal(receiver);
+        let dropping =
+            (self.iterator_item(iter_ty)).is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing);
+        if self.consumer_closes(self.recognition().iterator_method(def_id), iter_ty, false, dropping) {
+            return Ok(false);
+        }
         // What the crate's own `fold` is called by: it takes the iterator
         // and drops it, so nothing's dropped after (#162). Not of an adapter
         // that holds a function with a destructor, which it doesn't drop.

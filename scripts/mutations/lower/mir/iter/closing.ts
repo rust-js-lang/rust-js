@@ -277,4 +277,13 @@ export const mutations: Mutation[] = [
     replace: "            _ => self.by_its_fold(it, iter_ty, false),\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
+
+  {
+    name: "consumer-closes-lent",
+    breaks: "a consumer of an iterator lent by `by_ref()` closes it, which drops the crate's iterator its owner still holds (#422, #637)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "            && !lent\n            && method != Some(IterMethod::Collect)\n",
+    replace: "            && method != Some(IterMethod::Collect)\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumed_own_iterator_dropped_once.rs$"],
+  },
 ];

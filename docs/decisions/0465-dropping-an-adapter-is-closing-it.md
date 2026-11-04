@@ -983,3 +983,40 @@ Mutations: `map-ends-fold-not-its-sources`, `enumerate-fold-unwind-lost`,
 steps never unwind, stays `reduce` (`snapshots`). `fold-stage-by-type-unseen`
 now leaves the unseen steps' answer in place, and 20 mutations of the
 adapters these forward through name their new text, each as it meant.
+
+## Amendment: a consumed iterator has one owner of its drop, its consumer's closing (2026-11-04, #637)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+The crate's iterator with a `Drop`, over items with a `Drop`, consumed by
+`fold`, `for_each`, `count` or `last`, whole or held, printed its drop
+twice (#637, found by m6's iterator matrix). Two places decided it: the
+consumer's receiver was closed, `$closing(.., drop)`, which drops it at
+the consumer's end and as a panic part-way unwinds (`dropping_source`,
+#422), and `dropped_after` dropped the held receiver after the call (ADR
+0421). Its items had a destructor, so the first applied, and it was the
+crate's own with a `Drop`, so the second did too. With the crate's own
+`next` now taken to may panic (rd763), the second ran in a `finally`, and a
+panic in the fold's closure dropped what was left twice, items too.
+
+**The consumer's closing is the one owner.** `consumer_closes`
+(`mir/iter/closing.rs`) says whether a consumer closes what it's given: one
+that takes each item, of items with a destructor, of what closing drops
+(`closes_to_drop`), not lent, not a type parameter's, not a `collect()`.
+`dropping_source` closes by it, and `dropped_after` asks it, of the
+receiver's revealed type as `mir_iter_method` closes it, and drops nothing
+after one it closes. The closing was kept over the drop after because it
+covers every consumer the same way, at its end and as a panic unwinds, in
+the runtime (`$Steps`' `fold` closes as it throws), and reads as one call,
+where the drop after needs a `try`/`finally` around each call whose
+callback may panic. Any, all, find, position and the `try_` forms take the
+iterator by `&mut`, and leave it to its owner, as before.
+
+`consumed_own_iterator_dropped_once.rs` holds each consumer against native
+Rust: `fold`, `fold` panicking, `for_each`, `for_each` panicking, `count`,
+`last`, `sum`, `collect`, `any`, `all`, `find`, `position`, `try_fold`,
+`try_for_each`, a held `fold`, an opaque one's, a generic one's, a
+`by_ref()`'s and a `filter`'s `count`. Mutations: `consumed-closed-dropped-again`
+and `consumer-closes-unrevealed` (`lower/mir/iter.ts`), `consumer-closes-lent`
+(`lower/mir/iter/closing.ts`).

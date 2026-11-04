@@ -59,91 +59,81 @@ function run(name, f) {
 
 function main() {
   run("own next last", () => {
-    const iter = {
-      items: $iter(ds({ start: 170, end: 174 })),
-      at: 172,
-    };
-    let result;
-    try {
-      result = $lastDropping(
-        $closing($iterator(iter, panickyIterator_next), (it) => {
+    const x = $lastDropping(
+      $closing(
+        $iterator(
+          {
+            items: $iter(ds({ start: 170, end: 174 })),
+            at: 172,
+          },
+          panickyIterator_next,
+        ),
+        (it) => {
           for (const item of it.of.items) {
             dDrop_drop(item);
           }
-        }),
-        dDrop_drop,
-      );
-    } finally {
-      for (const item of iter.items) {
-        dDrop_drop(item);
-      }
-    }
-    const x = result;
+        },
+      ),
+      dDrop_drop,
+    );
     console.log(`${x != null}`);
     if (x != null) {
       dDrop_drop(x);
     }
   });
   run("own next by ? last", () => {
-    const iter = {
-      items: $iter(ds({ start: 190, end: 194 })),
-      at: 192,
-    };
-    let result;
-    try {
-      result = $lastDropping(
-        $closing($iterator(iter, questionedIterator_next), (it) => {
+    const x = $lastDropping(
+      $closing(
+        $iterator(
+          {
+            items: $iter(ds({ start: 190, end: 194 })),
+            at: 192,
+          },
+          questionedIterator_next,
+        ),
+        (it) => {
           for (const item of it.of.items) {
             dDrop_drop(item);
           }
-        }),
-        dDrop_drop,
-      );
-    } finally {
-      for (const item of iter.items) {
-        dDrop_drop(item);
-      }
-    }
-    const x = result;
+        },
+      ),
+      dDrop_drop,
+    );
     console.log(`${x != null}`);
     if (x != null) {
       dDrop_drop(x);
     }
   });
   run("own next fold", () => {
-    const iter = {
-      items: $iter(ds({ start: 180, end: 184 })),
-      at: 182,
-    };
-    const value = [];
-    let result;
-    try {
-      result = $foldDropping(
-        $closing($iterator(iter, panickyIterator_next), (it) => {
+    const x = $foldDropping(
+      $closing(
+        $iterator(
+          {
+            items: $iter(ds({ start: 180, end: 184 })),
+            at: 182,
+          },
+          panickyIterator_next,
+        ),
+        (it) => {
           for (const item of it.of.items) {
             dDrop_drop(item);
           }
-        }),
-        value,
-        (acc, d) => {
-          try {
-            acc.push(d);
-          } catch (error) {
-            for (const item of acc) {
-              dDrop_drop(item);
-            }
-            throw error;
-          }
-          return acc;
         },
-        $dropEach(dDrop_drop),
-      );
-    } finally {
-      for (const item of iter.items) {
-        dDrop_drop(item);
-      }
-    }
-    const x = result;
+      ),
+      [],
+      (acc, d) => {
+        try {
+          acc.push(d);
+        } catch (error) {
+          for (const item of acc) {
+            dDrop_drop(item);
+          }
+          throw error;
+        }
+        return acc;
+      },
+      $dropEach(dDrop_drop),
+    );
     console.log(`${x.length}`);
     for (const item of x) {
       dDrop_drop(item);
