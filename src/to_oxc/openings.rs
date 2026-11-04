@@ -51,6 +51,20 @@ pub(super) fn whole_arm(code: &str) -> bool {
     false
 }
 
+/// Whether `text`, from a start to the next, is only a match arm's test,
+/// `IMMEDIATE_PRIORITY =>`, whose comments are its body's (ADR 0590); and
+/// where the next start is first in an `else if`'s block, `opens_block`,
+/// of an arm that opens it, `(2, 2) => {`, its test to its `{`, past which
+/// only comments are, as `comments_only` says of where the `{` is: a
+/// comment above the arm is that statement's, not the test's (#595).
+pub(super) fn arm_test(text: &str, opens_block: bool, comments_only: impl Fn(usize) -> bool) -> bool {
+    let pattern = match text.find('{') {
+        Some(open) if opens_block && comments_only(open) => text[..open].trim_end(),
+        _ => text,
+    };
+    pattern.trim_end().ends_with("=>") && !pattern.contains([';', '{', '}', '\n'])
+}
+
 /// Whether `statement`, one of `leading_statements`, is a type alias, `pub
 /// type ActivityInstance = Unknown`, its attributes first: an item with no
 /// JS, so what's before it is before the next item that has (ADR 0444,

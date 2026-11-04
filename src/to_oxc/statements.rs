@@ -626,12 +626,16 @@ impl<'a> Cx<'a> {
                 let els = els.as_deref().map(|els| match els {
                     // A lone `if` in the `else` prints as `else if`; not one
                     // comments are before, `else { // Nothing has been
-                    // pinged.\n if (..) }`, as it's written (ADR 0444, amended).
+                    // pinged.\n if (..) }`, as it's written (ADR 0444, amended);
+                    // but one placed where its block's first statement is,
+                    // whose comments are that statement's (`at_its_first`).
                     [
                         only @ js::Stmt {
                             kind: StmtKind::If(..), ..
                         },
-                    ] if only.span.is_none() || !self.commented.contains(&only.span.lo) => self.stmt(only),
+                    ] if only.span.is_none() || !self.commented.contains(&only.span.lo) || at_its_first(only) => {
+                        self.stmt(only)
+                    }
                     _ => self.block(els),
                 });
                 Statement::new_if_statement(sp, self.expr(cond), self.block(then), els, b)
@@ -980,6 +984,18 @@ fn commented_end(stmts: &[js::Stmt]) -> Span {
         .map(|s| s.span.lo)
         .max();
     end.map_or(SPAN, |end| Span::new(end, end + 1))
+}
+
+/// Whether `stmt`, an `if`, is placed where its block's first statement
+/// is, as `decisions` places an `else if` of a later `match` arm, at that
+/// arm's code: the comments before it, above the arm or first in its
+/// block, are that statement's, which oxc prints them before, the `if`
+/// an `else if`, as it prints none before one (#595, ADR 0444, amended).
+fn at_its_first(stmt: &js::Stmt) -> bool {
+    let StmtKind::If(_, then, _) = &stmt.kind else {
+        return false;
+    };
+    (then.iter().find(|s| !s.span.is_none())).is_some_and(|first| first.span.lo == stmt.span.lo)
 }
 
 /// Whether a case of `body` goes on past its end, and so ends with

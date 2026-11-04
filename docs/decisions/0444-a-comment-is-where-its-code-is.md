@@ -1,6 +1,6 @@
 # 0444. A comment is in the JS where its code is, and so is a blank line
 
-Status: Accepted. Amended (2026-11-03): a comment after a drop guard's `let` is after its `finally`'s statement. Amended (2026-11-03): an index loop's item is before its body's comments. Amended (2026-11-01): a `// SAFETY:` comment is left out of the JS, the user's decision. Amended (2026-10-29): a comment above a `use` is above the import it makes; an inner doc comment is JS's plain one. Amended (2026-10-28): a field's doc comment is its struct's one literal's. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
+Status: Accepted. Amended (2026-11-04): a comment in or above a later match arm keeps its `else if` (#595). Amended (2026-11-03): a comment after a drop guard's `let` is after its `finally`'s statement. Amended (2026-11-03): an index loop's item is before its body's comments. Amended (2026-11-01): a `// SAFETY:` comment is left out of the JS, the user's decision. Amended (2026-10-29): a comment above a `use` is above the import it makes; an inner doc comment is JS's plain one. Amended (2026-10-28): a field's doc comment is its struct's one literal's. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
 an object is across lines where its struct literal is. Extends [0383](0383-a-files-leading-comments-are-its-jss.md),
 whose rules for what JS can hold are now every comment's, and
 [0018](0018-print-with-oxc.md). Its amendment, a branch's comment keeps it a statement, is
@@ -961,3 +961,63 @@ body's first statement is after its item", run, and the mutations
 (`mir/tidy/loops.ts`). The corpus cases matrix_strings and
 multiply_by_a_constant are re-blessed, each a comment after its loop's
 item.
+
+## Amendment: a comment in or above a later arm keeps its `else if` (2026-11-04, #595)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+
+A `match` whose tree is a chain of its arms (`decisions`, ADR 0364)
+places each `else if` of a later arm where that arm's code is, so a
+comment before the arm is its value's (the amendment of 2026-10-25
+above). That start is the block's first statement's too, and oxc prints
+what's at a start before the first node there, the `if`: so a comment
+first in the arm's block was taken for one before the `if`, which an
+`else` keeps its block for (the amendment of 2026-10-26), and the chain
+nested:
+
+```js
+} else {
+  // Two of two.
+  if (a === 2 && b === 2) {
+    seen.push(true);
+  } else {
+    hit = false;
+  }
+}
+```
+
+A comment above such an arm, `// c\n (2, 2) => {`, was before the test's
+right operand, which the pattern `(2, 2)` is where, `a === 2 &&\n //
+c\n b === 2`; and above an arm that opens a block whose `else if` MIR
+placed at its pattern, the chain nested the same way.
+
+1. **An `if` placed where its block's first statement starts has no
+   comments of its own**: the comments there are that statement's, which
+   oxc prints them before, and an `else`'s only such `if` is an `else if`
+   (`statements::at_its_first`). Only a placement makes this so, never a
+   comment the program wrote before an `if` in an `else`'s block, whose
+   test starts before its block.
+2. **A comment above a match arm is its body's past the arm's opening
+   too, `pattern => {`, where that block is an `else if`'s**
+   (`openings::arm_test`, of `arms::else_if_starts`' `firsts`), as it
+   was past `pattern =>` of a
+   value (ADR 0590): before the block's first statement, before a comment
+   written first in it, whether the `else if` is placed at its arm's code,
+   `decisions`', or at its pattern, MIR's. A `switch`'s case keeps its
+   comment above its `case` (rd166), and a chain's first arm its comment
+   above the `if`.
+
+```js
+} else if (a === 2 && b === 2) {
+  // Two of two.
+  seen.push(true);
+} else {
+  hit = false;
+}
+```
+
+Held by `test/lowering-comments-inside.test.ts`'s "a comment in or above
+a later arm of a match's chain keeps its else if", run, and the mutations
+`else-if-at-its-first-commented`, `else-if-at-its-first-of-any-start`
+(`to_oxc/statements.ts`) and `else-if-arm-opening-unread` (`to_oxc/openings.ts`).
+The guide's basics page shows it (`sorted`).

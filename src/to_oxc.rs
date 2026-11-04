@@ -847,13 +847,15 @@ fn comments_of(
                             })
                         })
                 };
+                // And of an arm that opens an `else if`'s block (#595).
                 let mut next = starts.partition_point(|&s| s < c.hi);
                 while let [at, after, ..] = starts[next.min(starts.len())..]
                     && only_comments(c.hi, at)
                     && case_starts.binary_search(&at).is_err()
-                    && let Some(pattern) = sources.text.get(at as usize..after as usize)
-                    && pattern.trim_end().ends_with("=>")
-                    && !pattern.contains([';', '{', '}', '\n'])
+                    && let Some(text) = sources.text.get(at as usize..after as usize)
+                    && openings::arm_test(text, else_ifs.firsts.contains(&after), |open| {
+                        only_comments(at + open as u32 + 1, after)
+                    })
                 {
                     next += 1;
                 }
@@ -1094,7 +1096,7 @@ fn comments_of(
             // Prettier keeps them, the `else if` one still; those written in
             // an `else`'s block before its only `if` keep the block, where
             // they are (`Cx::commented`, ADR 0444, amended).
-            if let Some(&hi) = else_ifs.get(&at)
+            if let Some(&hi) = else_ifs.starts.get(&at)
                 && let Some(last) = own.last()
                 && let Some(rest) = sources.text[last.hi as usize..at as usize]
                     .trim_start()

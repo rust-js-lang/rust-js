@@ -206,14 +206,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
   },
   {
-    name: "arm-comment-on-its-test",
-    breaks: "a comment before a match arm is before the `if` its test is, or lost on an `else if`",
-    file: "src/to_oxc.rs",
-    find: "                    && pattern.trim_end().ends_with(\"=>\")\n",
-    replace: "                    && pattern.trim_end().ends_with(\"=>\") && false\n",
-    tests: ["test/lowering-names.test.ts", "-t", "a match that's an if chain has its comments"],
-  },
-  {
     name: "item-macro-comment-lost",
     breaks: "a comment before `thread_local! {` is lost, as its opening's `{` is between it and the first item",
     file: "src/to_oxc.rs",
@@ -483,8 +475,8 @@ export const mutations: Mutation[] = [
     name: "else-if-comment-in-block",
     breaks: "a comment written before an `else if`'s `else`, react.dev's `// Single page without children`, makes it an `else { if }`",
     file: "src/to_oxc.rs",
-    find: "            if let Some(&hi) = else_ifs.get(&at)\n",
-    replace: "            if let Some(&hi) = else_ifs.get(&at).filter(|_| false)\n",
+    find: "            if let Some(&hi) = else_ifs.starts.get(&at)\n",
+    replace: "            if let Some(&hi) = else_ifs.starts.get(&at).filter(|_| false)\n",
     tests: ["test/lowering-loops.test.ts", "-t", "else-if at a loop's end"],
   },
   {

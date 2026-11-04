@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "arm-comment-on-its-test",
+    breaks: "a comment before a match arm is before the `if` its test is, or lost on an `else if`",
+    file: "src/to_oxc/openings.rs",
+    find: "    pattern.trim_end().ends_with(\"=>\") && !pattern.contains([';', '{', '}', '\\n'])\n",
+    replace: "    pattern.trim_end().ends_with(\"=>\") && !pattern.contains([';', '{', '}', '\\n']) && false\n",
+    tests: ["test/lowering-names.test.ts", "-t", "a match that's an if chain has its comments"],
+  },
+  {
+    name: "else-if-arm-opening-unread",
+    breaks: "a comment above a later `match` arm that opens a block, `// c\\n (2, 2) => {`, is before its test's right operand, `a === 2 &&\\n // c\\n b === 2`, not first in the `else if`'s block (#595)",
+    file: "src/to_oxc/openings.rs",
+    find: "        Some(open) if opens_block && comments_only(open) => text[..open].trim_end(),\n",
+    replace: "        Some(open) if false => text[..open].trim_end(),\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "keeps its else if"],
+  },
+  {
     name: "erased-let-block-code",
     breaks: "a `let` read in place whose value is a block, `unsafe { js::cast(arg) }`, is taken for code, so the comment before it goes before the `for` it's in (ADR 0444, amended)",
     file: "src/to_oxc/openings.rs",

@@ -1534,6 +1534,40 @@ export function found(n, out) {
 }
 ```
 
+A comment above a later `match` arm, or first in its block, is first in
+its `else if`'s block, and the chain stays one chain
+([ADR 0444, amended](../../decisions/0444-a-comment-is-where-its-code-is.md#amendment-a-comment-in-or-above-a-later-arm-keeps-its-else-if-2026-11-04-595)):
+
+```rust
+pub fn sorted(pair: (u32, u32), log: &mut Vec<u32>) {
+    match pair {
+        (1, _) | (_, 1) => log.push(1),
+        // Both two.
+        (2, 2) => {
+            // Logged twice.
+            log.push(2);
+            log.push(2);
+        }
+        _ => log.push(0),
+    }
+}
+```
+
+```js
+export function sorted(pair, log) {
+  if (pair[0] === 1 || pair[1] === 1) {
+    log.push(1);
+  } else if (pair[0] === 2 && pair[1] === 2) {
+    // Both two.
+    // Logged twice.
+    log.push(2);
+    log.push(2);
+  } else {
+    log.push(0);
+  }
+}
+```
+
 A `catch_unwind` closure's body is a `try`'s block, and an `Err` arm's a
 `catch`'s, each with the comments it ends with at its end:
 

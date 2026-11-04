@@ -142,20 +142,32 @@ pub(super) fn arm_starts(module: &Module) -> std::collections::HashMap<u32, Arm>
     starts
 }
 
+/// What `else_if_starts` finds: where each `if` that's an `else`'s only
+/// statement starts, by where it ends, and where the first statement of
+/// each one's block starts.
+pub(super) struct ElseIfs {
+    pub(super) starts: std::collections::HashMap<u32, u32>,
+    pub(super) firsts: std::collections::HashSet<u32>,
+}
+
 /// Where each `if` that's an `else`'s only statement starts, by where it
 /// ends: what's printed `else if` where no comment is before it in the
-/// block (ADR 0444, amended).
-pub(super) fn else_if_starts(module: &Module) -> std::collections::HashMap<u32, u32> {
+/// block (ADR 0444, amended); and where its block's first statement
+/// starts, which a comment above its `match` arm, `// c\n (2, 2) => {`,
+/// is before, past the arm's opening (#595).
+pub(super) fn else_if_starts(module: &Module) -> ElseIfs {
     let mut starts = std::collections::HashMap::new();
+    let mut firsts = std::collections::HashSet::new();
     let mut of = |mut stmts: Vec<js::Stmt>| {
         js::each_block_mut(&mut stmts, &mut |block| {
             for stmt in block.iter() {
                 if let StmtKind::If(_, _, Some(els)) = &stmt.kind
                     && let [only] = els.as_slice()
-                    && matches!(only.kind, StmtKind::If(..))
+                    && let StmtKind::If(_, then, _) = &only.kind
                     && !only.span.is_none()
                 {
                     starts.insert(only.span.lo, only.span.hi);
+                    firsts.extend(then.iter().find(|s| !s.span.is_none()).map(|first| first.span.lo));
                 }
             }
         });
@@ -168,7 +180,7 @@ pub(super) fn else_if_starts(module: &Module) -> std::collections::HashMap<u32, 
             js::Item::Namespace(n) => n.methods.iter().for_each(|method| of(method.body.clone())),
         }
     }
-    starts
+    ElseIfs { starts, firsts }
 }
 
 /// Where the Rust of `e` is, from the first of its parts placed to the end

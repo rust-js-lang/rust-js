@@ -786,6 +786,95 @@ pub fn pick(v: Option<u32>, out: &mut Vec<u32>) -> bool {
   expect([pick(4, out), pick(undefined, out), out]).toEqual([true, false, [4]]);
 });
 
+// A `match` whose tree is a chain of its arms (`decisions`): an `else if`
+// of a later arm is where that arm's code is, so a comment first in the
+// arm's block, or above the arm, is its block's, before its first
+// statement, the chain flat, not `} else { // c\n if (..)` nor between
+// the test's operands (#595, ADR 0444, amended).
+test("a comment in or above a later arm of a match's chain keeps its else if", async () => {
+  const { js, lib } = await compiled("comment-in-a-chain-arm", `pub fn inside(pairs: &[(u32, u32)]) -> Vec<bool> {
+    let mut seen = Vec::new();
+    let mut hit = false;
+    for &(a, b) in pairs {
+        seen.push(hit);
+        match (a, b) {
+            (1, _) | (_, 1) => hit = true,
+            (2, 2) => {
+                // Two of two.
+                seen.push(true);
+            }
+            _ => hit = false,
+        }
+    }
+    seen.push(hit);
+    seen
+}
+
+pub fn above(pairs: &[(u32, u32)]) -> Vec<bool> {
+    let mut seen = Vec::new();
+    let mut hit = false;
+    for &(a, b) in pairs {
+        seen.push(hit);
+        match (a, b) {
+            (1, _) | (_, 1) => hit = true,
+            // Two of two, above.
+            (2, 2) => {
+                seen.push(true);
+            }
+            _ => hit = false,
+        }
+    }
+    seen.push(hit);
+    seen
+}
+
+pub fn both(pairs: &[(u32, u32)]) -> Vec<bool> {
+    let mut seen = Vec::new();
+    let mut hit = false;
+    for &(a, b) in pairs {
+        seen.push(hit);
+        match (a, b) {
+            (1, _) | (_, 1) => hit = true,
+            // Above.
+            (2, 2) => {
+                // Inside.
+                seen.push(true);
+            }
+            _ => hit = false,
+        }
+    }
+    seen.push(hit);
+    seen
+}
+
+pub fn valued(pairs: &[(u32, u32)]) -> Vec<bool> {
+    let mut seen = Vec::new();
+    let mut hit = false;
+    for &(a, b) in pairs {
+        seen.push(hit);
+        match (a, b) {
+            (1, _) | (_, 1) => hit = true,
+            // Two of two, a value.
+            (2, 2) => seen.push(true),
+            _ => hit = false,
+        }
+    }
+    seen.push(hit);
+    seen
+}
+`);
+  const chain = (comments: string) =>
+    `    if (a === 1 || b === 1) {\n      hit = true;\n    } else if (a === 2 && b === 2) {\n${comments}      seen.push(true);\n    } else {\n      hit = false;\n    }\n`;
+  expect(js).toContain(chain("      // Two of two.\n"));
+  expect(js).toContain(chain("      // Two of two, above.\n"));
+  expect(js).toContain(chain("      // Above.\n      // Inside.\n"));
+  expect(js).toContain(chain("      // Two of two, a value.\n"));
+  const pairs = [[1, 5], [2, 2], [3, 3], [5, 1], [2, 2]];
+  for (const f of ["inside", "above", "both", "valued"]) {
+    expect((lib[f] as (p: number[][]) => boolean[])(pairs)).toEqual([false, true, true, true, false, true, true, true]);
+  }
+});
+
 // A loop over a slice counts its indices (ADR 1042), its item bound first,
 // `const x = xs[i];`: that's the loop's, where it's written, so a comment
 // above the body's first statement, or above a `match`'s first arm that
