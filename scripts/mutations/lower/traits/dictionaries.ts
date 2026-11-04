@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "impl-nested-mut-unchecked",
+    breaks:
+      "a generic impl's dictionary of an object's, `impl<T: Pick> Wrap for Holder<T>` of a `Holder<Clicks>`, is made though its `T::pick(Some(&mut ..))` gives `Clicks`'s entry generic code's box: what it writes is lost (#685)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                && let Some(here) = self.impl_nested_mut_object(impl_id, impl_args)\n",
+    replace: "                && let Some(here) = None::<Ty<'tcx>>\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a generic impl's &mut T"],
+  },
+  {
     name: "dictionary-declared-once-used",
     breaks:
       "a dictionary its body writes once is declared at its top too, where inline it reads as it's asked (ADR 0979)",

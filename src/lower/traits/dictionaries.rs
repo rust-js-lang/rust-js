@@ -811,6 +811,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 || self.krate.foreign.item(impl_id).is_some()
                 || self.krate.foreign.compiles(impl_id))
         {
+            // A `&mut` to an object its generic code gives within what a
+            // bound trait's method takes, which `T`'s dictionary's entry
+            // gives its impl as generic code's box (#685).
+            if impl_id.is_local()
+                && let Some(here) = self.impl_nested_mut_object(impl_id, impl_args)
+            {
+                let what = format!("a `{here}` inside what a generic impl gives a method of a trait it's bound by");
+                return Err(self.unsupported(span, &what));
+            }
             let callee = self.fn_ref(impl_id);
             let args = self.evidence_args(impl_id, impl_args, span)?;
             // One that takes nothing, its module's `const`, `circleShape` (ADR 0592).

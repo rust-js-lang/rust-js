@@ -259,6 +259,72 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect()
     }
 
+    /// Of a type in `def_id`'s signature, or a bound trait's method's, a
+    /// parameter or the result a box is made of or taken out of, its `&mut`
+    /// itself: what it's made of past that, `None` where that's all it is.
+    fn past_own(&self, ty: Ty<'tcx>, param_env: ty::ParamEnv<'tcx>) -> Option<Ty<'tcx>> {
+        let mut at = ty;
+        while let ty::Ref(_, inner, Mutability::Not) = *at.kind() {
+            at = inner;
+        }
+        match *at.kind() {
+            ty::Ref(_, pointee, Mutability::Mut)
+                if self.mut_ref_form_in(pointee, param_env) == MutRefForm::GenericBox =>
+            {
+                None
+            }
+            ty::Param(_) if self.mut_ref_form_in(at, param_env) == MutRefForm::GenericBox => None,
+            _ => Some(ty),
+        }
+    }
+
+    /// What generic code, `def_id`'s, gives a method of a trait of the
+    /// crate's that `bound` is, its type parameter's, `S: Pick`, through its
+    /// dictionary, past each parameter's and the result's own `&mut`, which
+    /// an impl's entry makes its own: `Option<&mut Self>`'s `&mut` is within
+    /// (#682). None of a method of `def_id`'s own trait, which it is.
+    fn dispatched_takes(&self, def_id: DefId, bound: ty::PolyTraitPredicate<'tcx>) -> Vec<Ty<'tcx>> {
+        let args = bound.skip_binder().trait_ref.args;
+        if !bound.def_id().is_local()
+            || !matches!(args.type_at(0).kind(), ty::Param(_))
+            || self.tcx.trait_of_assoc(def_id) == Some(bound.def_id())
+        {
+            return Vec::new();
+        }
+        let param_env = self.tcx.param_env(def_id);
+        let mut takes = Vec::new();
+        for method in self.dispatched_methods(bound.def_id()) {
+            let method_args =
+                ty::GenericArgs::for_item(self.tcx, method, |param, _| match (param.index as usize) < args.len() {
+                    true => args[param.index as usize],
+                    false => self.tcx.lifetimes.re_erased.into(),
+                });
+            let method_sig = (self.tcx.fn_sig(method).instantiate(self.tcx, method_args))
+                .skip_normalization()
+                .skip_binder();
+            takes.extend((method_sig.inputs_and_output.iter()).filter_map(|ty| self.past_own(ty, param_env)));
+        }
+        takes
+    }
+
+    /// A `&mut` to an object that a generic impl of the crate's, `impl_id`,
+    /// given `impl_args`, gives a method of a trait its type parameter is
+    /// bound by within what it takes, `impl<T: Pick> Wrap for Holder<T>`'s
+    /// `T::pick(.., Some(&mut ..))`, through `T`'s dictionary, whose entry
+    /// gives its impl generic code's box (#685): where its dictionary is
+    /// made, as `nested_mut_object` asks of a function's call.
+    pub(in crate::lower) fn impl_nested_mut_object(
+        &self,
+        impl_id: DefId,
+        impl_args: ty::GenericArgsRef<'tcx>,
+    ) -> Option<Ty<'tcx>> {
+        let todo = (self.tcx.clauses_of(impl_id).instantiate_identity(self.tcx).into_iter())
+            .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+            .flat_map(|bound| self.dispatched_takes(impl_id, bound))
+            .collect();
+        self.nested_mut_within(impl_id, impl_args, todo)
+    }
+
     /// A `&mut` to one of `def_id`'s type parameters that's an object in a
     /// call of it, `generic_args`, anywhere but a parameter or its result: in
     /// a field of the crate's own type, an `Option` or a `Vec`, or within
@@ -275,24 +341,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .skip_normalization()
             .skip_binder();
         let param_env = self.tcx.param_env(def_id);
-        // A parameter or the result a box is made of or taken out of, its
-        // `&mut` itself: what it's made of past that.
-        let past_own = |ty: Ty<'tcx>| -> Option<Ty<'tcx>> {
-            let mut at = ty;
-            while let ty::Ref(_, inner, Mutability::Not) = *at.kind() {
-                at = inner;
-            }
-            match *at.kind() {
-                ty::Ref(_, pointee, Mutability::Mut)
-                    if self.mut_ref_form_in(pointee, param_env) == MutRefForm::GenericBox =>
-                {
-                    None
-                }
-                ty::Param(_) if self.mut_ref_form_in(at, param_env) == MutRefForm::GenericBox => None,
-                _ => Some(ty),
-            }
-        };
-        let mut todo: Vec<Ty<'tcx>> = sig.inputs_and_output.iter().filter_map(past_own).collect();
+        let mut todo: Vec<Ty<'tcx>> = (sig.inputs_and_output.iter())
+            .filter_map(|ty| self.past_own(ty, param_env))
+            .collect();
         // A bound's types, but its own, `D: Get`'s `D`, which isn't a value:
         // a closure's parameters, `F: Fn(D)`, are.
         let mut given = Vec::new();
@@ -315,28 +366,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let args = bound.skip_binder().trait_ref.args;
                 todo.extend(walked(bound.def_id(), args));
                 given.push(args.type_at(0));
-                // What generic code gives a method of a trait of the crate's
-                // its type parameter is bound by, `S: Pick`, through its
-                // dictionary: an impl's entry makes its own of a
-                // parameter's or the result's `&mut`, not of one within,
-                // `Option<&mut Self>`'s (#682).
-                if bound.def_id().is_local()
-                    && matches!(args.type_at(0).kind(), ty::Param(_))
-                    && self.tcx.trait_of_assoc(def_id) != Some(bound.def_id())
-                {
-                    for method in self.dispatched_methods(bound.def_id()) {
-                        let method_args = ty::GenericArgs::for_item(self.tcx, method, |param, _| {
-                            match (param.index as usize) < args.len() {
-                                true => args[param.index as usize],
-                                false => self.tcx.lifetimes.re_erased.into(),
-                            }
-                        });
-                        let method_sig = (self.tcx.fn_sig(method).instantiate(self.tcx, method_args))
-                            .skip_normalization()
-                            .skip_binder();
-                        todo.extend(method_sig.inputs_and_output.iter().filter_map(past_own));
-                    }
-                }
+                todo.extend(self.dispatched_takes(def_id, bound));
             }
             if let Some(projection) = clause.as_projection_clause() {
                 let projection = projection.skip_binder();
@@ -356,6 +386,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => todo.push(ty),
             }
         }
+        self.nested_mut_within(def_id, generic_args, todo)
+    }
+
+    /// Of `todo`, types of `def_id`'s, a generic function's or impl's, past
+    /// what a box is made of: a `&mut` to an object, in a call of it,
+    /// `generic_args`, that generic code has as a box (`nested_mut_object`).
+    fn nested_mut_within(
+        &self,
+        def_id: DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        mut todo: Vec<Ty<'tcx>>,
+    ) -> Option<Ty<'tcx>> {
+        let param_env = self.tcx.param_env(def_id);
         // Each field's type in `def_id`'s own terms, as its signature is: in
         // the caller's, `I::Item` could be the caller's `A`.
         let own_env = ty::TypingEnv::non_body_analysis(self.tcx, def_id);

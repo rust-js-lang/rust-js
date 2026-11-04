@@ -6,7 +6,9 @@ Fn(&mut T)` takes generic code's box apart; and (2026-11-03) what's moved
 out of an in-place cell is a copy apart (#527), and a `&mut` of an object
 given for longer than the call is one (#528); and (2026-11-04) generic
 code's box of an object holds the object itself (#606), and `Cell::from_mut` of
-a type parameter's `&mut T` is that box (#614). Extends [0099](0099-mut-references.md) and
+a type parameter's `&mut T` is that box (#614), and what a bound trait's
+methods are given is walked, a generic function's (#682) and a generic
+impl's (#685). Extends [0099](0099-mut-references.md) and
 [0180](0180-generic-writers.md). Decided with the user; amended by [1086](1086-a-mut-refs-js-form-is-mut-ref-forms.md): a type parameter's box is `MutRefForm::GenericBox`, asked of `mut_ref_form`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): the same writes, to
@@ -357,3 +359,34 @@ of a number's impl, whose box generic code's is, it isn't.
   `dispatched-nested-mut-of-own-receiver` (a method's own `&mut self`
   walked too, which refuses every generic call of an object's `&mut self`
   method).
+
+## Amendment: what a generic impl's bound trait's methods are given is walked where its dictionary is made (#685)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): Rust's behavior can't
+be preserved yet, so it's a compile error, as #682's is.
+
+#682's walk asked a generic function's own bounds, and a call of an impl's
+method where its type is known, `h.wrap()`, whose bounds are its impl's
+too. But a generic impl's dictionary, made for generic code or a `dyn`,
+`holderWrap(clicksPick)` of `impl<T: Pick> Wrap for Holder<T>` and a
+`Holder<Clicks>`, had none: its `wrap`, compiled once for every `T`, calls
+`T::pick(.., Some(&mut self.b))` through `T`'s dictionary with generic
+code's handle on `self.b`, and `Clicks`'s entry gave its impl that handle,
+whose writes were lost. Native Rust printed `Clicks { n: 51 }` for `b`,
+rust-js `Clicks { n: 1 }`: a wrong answer.
+
+- **The impl's own bounds are walked where its dictionary is made**,
+  `impl_nested_mut_object`, by what a function's call asks of its own:
+  `dispatched_takes` gives each, past a parameter's and the result's own
+  `&mut`, and `nested_mut_within` finds a `&mut` to an object of the
+  impl's arguments there. The crate impl's dictionary is refused, "a
+  `&mut C` inside what a generic impl gives a method of a trait it's bound
+  by". Of a number's impl, whose box generic code's is, it isn't.
+- `test/diagnostics.test.ts`: the refusal of such a dictionary given to
+  generic code and made a `dyn`.
+- `test/corpus/nested_mut_self_through_a_generic_impl.rs`, against native
+  Rust: a number's, through generic code, where its type is known and as a
+  `dyn`.
+- `docs/guide/limitations.md` lists it.
+- Mutation `impl-nested-mut-unchecked` (`traits/dictionaries.ts`); the
+  #682 mutations name the walk as `dispatched_takes` has it.

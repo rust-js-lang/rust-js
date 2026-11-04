@@ -45,8 +45,8 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code gives a bound trait's method a `&mut` to an object within what it takes, `pick(Some(&mut w))`, through the dictionary, whose entry gives its impl generic code's box: `w` never changes (#682)",
     file: "src/lower/mut_refs.rs",
-    find: "                        todo.extend(method_sig.inputs_and_output.iter().filter_map(past_own));\n",
-    replace: "                        todo.extend(method_sig.inputs_and_output.iter().filter_map(past_own).filter(|_| false));\n",
+    find: "                todo.extend(self.dispatched_takes(def_id, bound));\n",
+    replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "a trait's method takes"],
   },
   {
@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a trait method's own `&mut self`, which its impl's entry unboxes, is taken for a `&mut` within what it takes: every generic call of a `&mut self` method of an object's impl is refused (#682)",
     file: "src/lower/mut_refs.rs",
-    find: "                        todo.extend(method_sig.inputs_and_output.iter().filter_map(past_own));\n",
-    replace: "                        todo.extend(method_sig.inputs_and_output.iter());\n",
+    find: "            takes.extend((method_sig.inputs_and_output.iter()).filter_map(|ty| self.past_own(ty, param_env)));\n",
+    replace: "            takes.extend(method_sig.inputs_and_output.iter());\n",
     tests: ["test/corpus.test.ts", "-t", "^declared_signatures.rs$"],
   },
   {
