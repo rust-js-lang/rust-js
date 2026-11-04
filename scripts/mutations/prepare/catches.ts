@@ -590,7 +590,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment right above an `if r.is_err() { .. }` a `try` folds is lost, not first in its `catch` (#489)",
     file: "src/prepare/catches.rs",
-    find: "    let said = (!said_of_ok && !of_call).then(|| StmtKind::Comments.at(tested_at));\n",
+    find: "    let said = (!said_of_ok && !in_condition).then(|| StmtKind::Comments.at(tested_at));\n",
     replace: "    let said: Option<Stmt> = None;\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
   },
@@ -679,8 +679,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment above an `if` whose condition makes the call, `// eslint-disable-next-line no-eval\\n if js::eval(c).is_err()`, is the `catch`'s, not before the call in the `try` (rd736)",
     file: "src/prepare/catches.rs",
-    find: "    let of_call = !written_at.is_none() && !tested_at.is_none() && written_at.lo >= tested_at.lo;\n",
-    replace: "    let of_call = false;\n",
+    find: "    let in_condition = !written_at.is_none() && !tested_at.is_none() && written_at.lo >= tested_at.lo;\n",
+    replace: "    let in_condition = false;\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "condition makes the call"],
   },
   {
@@ -696,7 +696,7 @@ export const mutations: Mutation[] = [
     breaks:
       "the `try` of an `if` whose condition makes the call is where the call is, so the comment above the `if` is above the `try`, not before the call in it (rd736)",
     file: "src/prepare/catches.rs",
-    find: "    let (span, call_at) = match of_call && !value.span.is_none() && tested_at.lo < value.span.lo {\n",
+    find: "    let (span, call_at) = match in_condition && !value.span.is_none() && tested_at.lo < value.span.lo {\n",
     replace: "    let (span, call_at) = match false {\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "condition makes the call"],
   },
@@ -710,13 +710,30 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "loop.s Ok arm of nothing"],
   },
   {
-    name: "tail-try-said-kept-a-closure",
+    name: "closure-condition-comment-in-the-try",
     breaks:
-      "a `try` that ends a function, of an `if let Err(e) = catch_unwind(|| ..)` whose condition makes the call, keeps the closure called in place, `try { (() => { .. })(); }`, as the comment marker before it is taken for a statement (rd736)",
+      "a comment above an `if` whose condition is a closure's `catch_unwind`, `// c\\n if catch_unwind(|| { .. }).is_err()`, is first in the `try`, the closure's body, not above the `try`, as React's getOffsets writes it (#688)",
     file: "src/prepare/catches.rs",
-    find: "            let said = tried\n                .iter()\n                .take_while(|s| matches!(s.kind, StmtKind::Comments))\n                .count();\n",
-    replace: "            let said = 0;\n",
-    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_ok_returns.rs$"],
-    snapshots: true,
+    find: "    let of_call = in_condition && js::called_body(&call).is_none();\n",
+    replace: "    let of_call = in_condition;\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "closure's catch_unwind"],
+  },
+  {
+    name: "condition-call-taken-for-a-closure",
+    breaks:
+      "a comment above an `if` whose condition makes a call of no closure body, `// eslint-disable-next-line no-eval\\n if js::eval(c).is_err()`, is above the `try`, not before the call in it (#688)",
+    file: "src/prepare/catches.rs",
+    find: "    let of_call = in_condition && js::called_body(&call).is_none();\n",
+    replace: "    let of_call = false;\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "condition makes the call"],
+  },
+  {
+    name: "closure-let-else-said-in-the-try",
+    breaks:
+      "a comment above a `let Ok(v) = catch_unwind(|| ..) else` is before the value's statement in the `try`, not above the `try` (#688)",
+    file: "src/prepare/catches.rs",
+    find: "        (true, Some(binding)) if !closure_said && !binding.span.is_none() && binding.span.lo < tested_at.lo => {\n",
+    replace: "        (true, Some(binding)) if !binding.span.is_none() && binding.span.lo < tested_at.lo => {\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "closure's catch_unwind"],
   },
 ];

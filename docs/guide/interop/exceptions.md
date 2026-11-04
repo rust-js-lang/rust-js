@@ -886,6 +886,10 @@ export function described(value) {
   }`, is the call's, first in the `try`, `try { // eslint-disable-next-line
   no-eval\n (0, eval)("null"); } catch { .. }`
   ([ADR 0637](../../decisions/0637-a-match-of-a-throwing-call-is-try-catch.md#amendment-a-comment-above-an-if-whose-condition-makes-the-call-is-the-calls-2026-11-04-rd736)).
+  Of a closure the program writes, `// c\n if catch_unwind(|| { .. })
+  .is_err() { .. }`, whose body is the `try`'s, it's above the `try`, `//
+  c\n try { .. } catch { .. }`, and one inside the closure first in it
+  ([ADR 0637](../../decisions/0637-a-match-of-a-throwing-call-is-try-catch.md#amendment-a-comment-above-an-if-of-a-closures-catch_unwind-is-above-the-try-2026-11-04-688)).
   One right above an `if` of the `Ok`, `// c\n if let Ok(n) = r { .. }`,
   is before what its arm does, in the `try` or after it, `try { ..; // c\n
   return 5; }`; one above a `let Ok(n) = r else`, before where the `try`

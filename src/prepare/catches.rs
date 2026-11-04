@@ -536,18 +536,23 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     // written past it, it's the call's, neither arm's: first in the `try`,
     // as React's checkEvalAvailabilityOnceDev writes it (rd736). Where the
     // call is written is its own place, not its `const`'s, which of a
-    // temporary MIR made is where an arm is.
+    // temporary MIR made is where an arm is. Of a closure the program
+    // writes, `// c\n if catch_unwind(|| { .. }).is_err()`, whose body is
+    // the `try`'s, it's above the `try`, as React's getOffsets writes it,
+    // and one inside the closure first in it (#688).
     let written_at = match value.span.is_none() {
         true => made.span,
         false => value.span,
     };
-    let of_call = !written_at.is_none() && !tested_at.is_none() && written_at.lo >= tested_at.lo;
+    let in_condition = !written_at.is_none() && !tested_at.is_none() && written_at.lo >= tested_at.lo;
+    let of_call = in_condition && js::called_body(&call).is_none();
+    let closure_said = in_condition && !of_call;
     let call_said: Vec<Stmt> = of_call.then(|| StmtKind::Comments.at(tested_at)).into_iter().collect();
     let said_of_ok = match written {
         true => of_ok,
         false => ok,
     };
-    let said = (!said_of_ok && !of_call).then(|| StmtKind::Comments.at(tested_at));
+    let said = (!said_of_ok && !in_condition).then(|| StmtKind::Comments.at(tested_at));
     // Each arm's statements, and how many of `rest` are one's: an `if`'s
     // and its `else`'s; or, after an arm that leaves, the other's, `rest`,
     // which leaves too, where it's the `Err`'s, the `catch`'s; or, after an
@@ -599,12 +604,14 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     // where that is. And what's said above its binding, written before its
     // test, a `let Ok(n) = r else`'s, is before where the `try` sets it,
     // `// c\n n = ..;` (#489).
-    let arm_said: Vec<Stmt> = (said_of_ok && !of_call)
+    let arm_said: Vec<Stmt> = (said_of_ok && !in_condition)
         .then(|| StmtKind::Comments.at(tested_at))
         .into_iter()
         .collect();
+    // Of a closure's, `let Ok(v) = catch_unwind(|| ..) else`, it's above
+    // the `try`, as above an `if` of one (#688).
     let value_said: Vec<Stmt> = match (value_name.is_some(), ok.first()) {
-        (true, Some(binding)) if !binding.span.is_none() && binding.span.lo < tested_at.lo => {
+        (true, Some(binding)) if !closure_said && !binding.span.is_none() && binding.span.lo < tested_at.lo => {
             vec![StmtKind::Comments.at(binding.span)]
         }
         _ => Vec::new(),
@@ -716,8 +723,9 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     // Of an `if` whose condition makes it, the `try` is where the `if` is,
     // and the call where it's written, past it: what's said above the
     // `if` is the call's, before it in the `try` (rd736), as a comment is
-    // printed before the first node at the place it's of.
-    let (span, call_at) = match of_call && !value.span.is_none() && tested_at.lo < value.span.lo {
+    // printed before the first node at the place it's of; or, of a
+    // closure's, the `try`'s, above it (#688).
+    let (span, call_at) = match in_condition && !value.span.is_none() && tested_at.lo < value.span.lo {
         true => (
             js::Span {
                 lo: tested_at.lo,
@@ -857,13 +865,7 @@ pub(super) fn tail_tries(body: &mut [Stmt]) {
         StmtKind::Try(block, _) => tail_tries(block),
         StmtKind::TryCatch(tried, _, handler) => {
             tail_tries(handler);
-            // Past what's said before it, an `if`'s comment the call's
-            // (rd736), which stays before its body.
-            let said = tried
-                .iter()
-                .take_while(|s| matches!(s.kind, StmtKind::Comments))
-                .count();
-            if let [only] = &tried[said..]
+            if let [only] = tried.as_slice()
                 && let StmtKind::Expr(call) = &only.kind
                 && let ExprKind::Call(callee, args) = &call.kind
                 && args.is_empty()
@@ -871,8 +873,7 @@ pub(super) fn tail_tries(body: &mut [Stmt]) {
                 && params.is_empty()
                 && js::returns(inner) == (true, false)
             {
-                let inner = inner.clone();
-                tried.splice(said.., inner);
+                *tried = inner.clone();
             }
             // Its last `return;`, `let Err(x) = catch_unwind(..) else {
             // return; }`'s, falls off the function's end as it does (rd551).

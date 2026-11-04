@@ -459,3 +459,44 @@ comment once), and `let r = ..; // c\n if r.is_err()`, still the
 `condition-call-where-its-const-is` and `tail-try-said-kept-a-closure`
 (`prepare/catches.ts`), the last of a `try` that ends a function, whose
 closure is its body past the marker (corpus `catch_unwind_ok_returns`).
+
+## Amendment: a comment above an `if` of a closure's `catch_unwind` is above the `try` (2026-11-04, #688)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+The amendment above made a comment right above an `if` whose condition
+makes the call the call's, first in the `try`. That is right for a call
+of no body of its own, `js::eval("null")`, whose comment ESLint reads as
+the eval's. But where the call is a closure the program writes,
+`catch_unwind(|| { .. })` or `catch_unwind(AssertUnwindSafe(|| { .. }))`,
+the closure's body is the `try`'s, and the Rust has two places for a
+comment: above the `if`, and inside the closure. Upstream puts the first
+above the `try` at six sites in React, ReactDOMSelection.js's getOffsets
+(`// .. See\n // https://bugzilla.mozilla.org/show_bug.cgi?id=208427\n
+try { .. } catch (e) { return null; }`, lines 26-33), ReactFiberHooks.js's
+runActionStateAction and ReactAct.js's act among them; they printed first
+in the `try`. Now **a comment right above an `if` whose condition is a
+closure's `catch_unwind`, `if catch_unwind(|| ..).is_err()`, `is_ok()`,
+`if let Err(e) = ..` and `let Ok(v) = .. else` too, is above the `try`**,
+neither the call's nor an arm's, and one inside the closure is first in
+the `try`, as it was. A call of no closure body keeps the amendment
+above's placement, `try { // eslint-disable-next-line no-eval\n (0,
+eval)("null"); }`; so does `catch_unwind(step)` of a function, whose call
+is `step();`, as the program wrote no body there.
+
+Whether the call is a closure's is `js::called_body` of it, the closure
+of nothing called where it's made that `catch_unwind` lowers to (ADR
+0660). The `try` is where the `if` is, as of the amendment above, with no
+marker in it: a comment is printed before the first node at the place
+it's of, the `try`. The marker before a `try`'s body that `tail_tries`
+stepped past (rd736) is now only of a call of no closure body, which it
+never takes apart, so that step is gone, and its mutation
+`tail-try-said-kept-a-closure` with it.
+
+Held by `test/lowering-comments-jumps.test.ts`'s "a comment above an if
+whose condition is a closure's catch_unwind is above the try", run:
+`is_err()`, `if let Err(e)` with a comment inside the closure too,
+`is_ok()`, `let Ok(v) = .. else` (its comment once), and
+`catch_unwind(step)`, still before the call in the `try`; and the
+mutations `closure-condition-comment-in-the-try`,
+`condition-call-taken-for-a-closure` and
+`closure-let-else-said-in-the-try` (`prepare/catches.ts`).

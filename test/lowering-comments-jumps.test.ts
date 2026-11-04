@@ -636,6 +636,85 @@ pub fn left(code: &str) -> u32 {
   expect(log).toEqual([0, 2, 0, 1, 3, 5]);
 });
 
+// React's getOffsets, `// c\n if catch_unwind(AssertUnwindSafe(|| { ..
+// })).is_err() { return None; }`: where the call is a closure the program
+// writes, its body the `try`'s, a comment above the `if` is above the
+// `try`, as upstream's `// c\n try { .. } catch { return null; }`, and one
+// inside the closure first in it; of `is_ok()`, `if let Err(e)` and `let
+// Ok(v) = .. else` too. A call of no closure body, `catch_unwind(step)`,
+// keeps it before the call in the `try`, as `js::eval`'s (#688).
+test("a comment above an if whose condition is a closure's catch_unwind is above the try", async () => {
+  const { js, lib } = await compiled("comment-above-a-tried-closure", `use std::panic::{AssertUnwindSafe, catch_unwind};
+
+pub fn checked(n: u32, log: &mut Vec<u32>) {
+    log.push(0);
+    // Above the try.
+    if catch_unwind(|| {
+        assert!(n < 5, "big");
+    })
+    .is_err()
+    {
+        log.push(1);
+    }
+}
+
+pub fn bound(n: u32, log: &mut Vec<u32>) {
+    // Above the try too.
+    if let Err(e) = catch_unwind(AssertUnwindSafe(|| {
+        // First in the try.
+        log.push(2);
+        assert!(n < 5, "big");
+    })) {
+        log.push(u32::from(e.downcast_ref::<&str>().is_some()) + 3);
+    }
+}
+
+pub fn ok(n: u32, log: &mut Vec<u32>) {
+    // Above an is_ok.
+    if catch_unwind(|| n.checked_sub(1).unwrap()).is_ok() {
+        log.push(5);
+    }
+}
+
+fn step() {
+    panic!("no");
+}
+
+pub fn named(log: &mut Vec<u32>) {
+    // Of the named call.
+    if catch_unwind(step).is_err() {
+        log.push(6);
+    }
+}
+
+pub fn left(n: u32) -> u32 {
+    // Above the let.
+    let Ok(v) = catch_unwind(|| {
+        assert!(n < 5, "big");
+        n + 1
+    }) else {
+        return 0;
+    };
+    v
+}
+`);
+  expect(js).toContain("  log.push(0);\n  // Above the try.\n  try {\n    if (n >= 5) {\n");
+  expect(js).toContain("  // Above the try too.\n  try {\n    // First in the try.\n    log.push(2);\n");
+  expect(js).toContain("  // Above an is_ok.\n  try {\n    $unwrap(");
+  expect(js).toContain("  try {\n    // Of the named call.\n    step();\n  } catch {\n    log.push(6);\n  }\n");
+  expect(js).toContain("  // Above the let.\n  try {\n    if (n >= 5) {\n");
+  expect(js.match(/Above the let/g)).toHaveLength(1);
+  expect([lib.left(1 as never), lib.left(7 as never)]).toEqual([2, 0]);
+  const log: number[] = [];
+  for (const n of [0, 1, 9]) {
+    lib.checked(n as never, log as never);
+    lib.bound(n as never, log as never);
+    lib.ok(n as never, log as never);
+  }
+  lib.named(log as never);
+  expect(log).toEqual([0, 2, 0, 2, 5, 0, 1, 2, 4, 5, 6]);
+});
+
 // A comment above a later arm, `// c\n None => given`, of a `match` read as
 // `n ?? given`: the arm's code is between it and the operand, so it's not
 // the operand's, `n ?? // c\n given`, but the statement's (ADR 0444,
