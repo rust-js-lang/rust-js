@@ -9,16 +9,6 @@ const CALLS = [
 
 export const mutations: Mutation[] = [
   {
-    name: "calls-read-after-unkept",
-    breaks:
-      "what a guard's call may change, read after it, `mark(n) && done`, is taken to read as before, and the tree a chain",
-    file: "src/lower/mir/tidy/decisions/calls.rs",
-    find: "                    && !(trace.iter()).all(|&c| self.made[c].is_some_and(|m| kept.contains(&m)))\n",
-    replace: "                    && false\n",
-    tests: CALLS,
-    snapshots: true,
-  },
-  {
     name: "calls-nothing-said",
     breaks:
       "a test what's tested before says, `!odd(b)` once `odd(b)` failed, stays, so the chain calls again and the tree stays",
@@ -46,6 +36,15 @@ export const mutations: Mutation[] = [
     find: "        if arms.iter().any(|arm| arm.made.iter().any(twice)) {\n",
     replace: "        if unique.len() < calls.len() || arms.iter().any(|arm| arm.made.iter().any(twice)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_guarded_or_pattern.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "guard-read-after-its-call-refused",
+    breaks: "a guard's read of what its own call changes, `mark(*n) && done.get()`, is refused as a read after a call, so the `match` stays MIR's labeled block, `bb30:` (C1, #523)",
+    file: "src/lower/mir/tidy/decisions/calls.rs",
+    find: "                    && !(trace.iter()).all(|&c| self.made[c].is_some_and(|m| kept.contains(&m)) || in_its_guard(c))\n",
+    replace: "                    && !(trace.iter()).all(|&c| self.made[c].is_some_and(|m| kept.contains(&m)) || in_its_guard(c) && false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^guards_that_call.rs$"],
     snapshots: true,
   },
 ];

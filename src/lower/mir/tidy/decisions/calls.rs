@@ -54,15 +54,20 @@ impl Model<'_> {
         if arms.iter().any(|arm| arm.made.iter().any(twice)) {
             return None;
         }
-        let made = (unique.iter())
+        let guarded: Vec<Option<&Guard>> = (unique.iter())
             .map(|c| guards.iter().find(|g| !c.span.is_none() && within(c.span, g.span)))
+            .collect();
+        let made = guarded
+            .iter()
             .map(|g| g.and_then(|g| g.tested.first().copied()))
             .collect();
+        let within_guard = guarded.iter().map(|g| g.map(|g| g.span)).collect();
         let mut model = Model {
             subjects: Vec::new(),
             opaque: Vec::new(),
             calls: unique,
             made,
+            within_guard,
             outcomes: Vec::new(),
         };
         let paths: Vec<(usize, &Vec<Expr>)> = (arms.iter().enumerate())
@@ -339,6 +344,10 @@ pub(super) struct Model<'e> {
     opaque: Vec<(Expr, Vec<js::Span>)>,
     calls: Vec<&'e Expr>,
     made: Vec<Option<js::Span>>,
+    /// Each call's guard, where it's one's: what's read in it after the
+    /// call, `[n, ..] if mark(*n) && done.get()`'s `done`, is read there
+    /// as the program wrote it, after the call, in the chain as in the tree.
+    within_guard: Vec<Option<js::Span>>,
     outcomes: Vec<Outcome>,
 }
 
@@ -424,8 +433,10 @@ impl Model<'_> {
                     Read::Opaque(j, _) => self.opaque[*j].1.as_slice(),
                     _ => &[],
                 };
+                let in_its_guard =
+                    |c: usize| !test.span.is_none() && self.within_guard[c].is_some_and(|g| within(test.span, g));
                 if matches!(read, Read::Subject(..) | Read::Opaque(..))
-                    && !(trace.iter()).all(|&c| self.made[c].is_some_and(|m| kept.contains(&m)))
+                    && !(trace.iter()).all(|&c| self.made[c].is_some_and(|m| kept.contains(&m)) || in_its_guard(c))
                 {
                     return None;
                 }

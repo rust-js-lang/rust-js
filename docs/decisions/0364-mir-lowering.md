@@ -1133,3 +1133,43 @@ and `or-pattern-alternative-tests-unread`, survived on 36a3aa30a, before
 an `atom`. Every corpus case's JS, and every snapshot's, is unchanged.
 So is the JS of 290 generated matches, guards among them, compiled with
 and without the arms. The arms and the two mutations are gone.
+
+of tests (#674).
+
+## Amendment: a guard reads what its own call changes where it's written (C1, the user's decision, #523, 2026-11-04)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. `[n, ..] if
+mark(*n) && done.get() => level = 3` kept MIR's labeled block, `bb30:`:
+`Model` refused any read after a call that the call may change, and
+`mark` sets `done`. The user decided C1 for #523's match trees: **a flat
+chain that tests again only pure tests, never a call or a getter**. Here
+the read is the guard's own, after its call, as the program wrote it, and
+the chain keeps the guard whole, so it reads `done` there too:
+
+```js
+if (row.length >= 1 && (row[0] === 1 || row[row.length - 1] === 1)) {
+  level = 1;
+} else if (row.length === 2 && row[0] === 2 && row[1] === 2) {
+  level = 2;
+} else if (row.length >= 1 && mark(row[0]) && done) {
+  level = 3;
+} else {
+  level++;
+}
+```
+
+`Model::eval` takes a read made after a call as told where it's written
+within that call's guard (`within_guard`), as well as where the `match`
+keeps the value it reads. A read of what an earlier guard's call changed,
+in a later guard, is still refused, so the tree stays.
+
+Corpus `guards_that_call.rs`'s `marked`, against native Rust; mutation
+`guard-read-after-its-call-refused` (`decisions/calls.ts`). `marked` was
+the only case of the refusal before: the mutation `calls-read-after-unkept`,
+which takes every read after a call as told, prints the whole corpus as
+it is now, and a later guard reading what an earlier guard's call set,
+`[n, ..] if mark(*n) => 1, [_, m, ..] if done.get() && *m > 0 => 3`, is
+the same chain with it or without (the tree tests in the order it's
+written), so that mutation is removed; the refusal stays, of a chain that
+would read the value where the tree hasn't called yet.
+

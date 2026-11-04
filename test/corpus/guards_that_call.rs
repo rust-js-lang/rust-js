@@ -2,7 +2,9 @@
 // arms, each call made where the tree makes it and no other time, and
 // what's read after it what the guard can't change, its `match`'s tests
 // (#221). `row.length >= 1 && below(row[0])`, not a labeled block the
-// guard's `break` leaves. A guard that changes what a later guard reads
+// guard's `break` leaves. A guard that reads what its own call changes,
+// `mark(*n) && done.get()`, reads it there, after the call, in the chain
+// as in the tree (#523, C1); one that changes what a later guard reads
 // keeps MIR's tree; a value a guard binds that its arm reads, its `const`.
 
 use std::cell::Cell;

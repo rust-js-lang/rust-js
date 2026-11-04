@@ -166,22 +166,13 @@ function marked(rows) {
       return n % 2 === 1;
     }
     let level = 4;
-    bb30: {
-      if (row.length >= 1) {
-        if (row[0] === 1 || row[row.length - 1] === 1) {
-          level = 1;
-          break bb30;
-        }
-        if (row.length === 2 && row[0] === 2 && row[1] === 2) {
-          level = 2;
-          break bb30;
-        }
-        const n = row[0];
-        if (mark(n) && done) {
-          level = 3;
-          break bb30;
-        }
-      }
+    if (row.length >= 1 && (row[0] === 1 || row[row.length - 1] === 1)) {
+      level = 1;
+    } else if (row.length === 2 && row[0] === 2 && row[1] === 2) {
+      level = 2;
+    } else if (row.length >= 1 && mark(row[0]) && done) {
+      level = 3;
+    } else {
       level++;
     }
     seen.push(level);
