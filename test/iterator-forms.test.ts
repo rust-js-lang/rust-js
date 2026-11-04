@@ -94,6 +94,9 @@ const few = [
   // A compiled struct's close, its fields dropped past one whose drop
   // panics (#677).
   "adapter_drop_past_a_panic.rs",
+  // A reversed `Vec`'s `take(n).count()`, what it passes dropped as one
+  // slice, past a panic too (#670).
+  "rev_take_count_drops_a_slice.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);
@@ -103,6 +106,8 @@ const chosen = which === "corpus" ? caseShard(cases) : few;
  * with why: what's left to do, which only shrinks. One that runs as Rust
  * does is taken off. */
 const differs: Record<string, string> = {
+  "nth_passed_drops_unwind.rs":
+    "std's compiled `StepBy` and `Skip` ask a `Vec`'s `nth` by `$nthDropping`, each passed dropped in turn, so a panicking drop stops it where std's `advance_by` drops the rest of its slice before the panic unwinds (#668)",
 };
 
 test("the cases a run of a few names are the corpus's, and each listed difference is one", () => {
@@ -156,3 +161,90 @@ test("a build of std's iterator structs makes no adapter in place", () => {
   expect(js).toContain('from "@rust-js/std/iter.js"');
   expect(js).not.toContain(".map(");
 });
+
+// A `take(n).rev()` of a `Vec` of destructors, which the build that
+// rewrites adapters refuses (a `Take` it can't step from its back), so no
+// corpus case has it: what it passes drops as std's `Take::rfold` drops it,
+// by its source's `nth_back(len - n - 1)`, then what that gives, where a
+// consumer that folds it takes it, a `String` collected of `char`s; and
+// by `nth_back(len - n)`, one slice, where one steps it by `next`, a `for`
+// loop or a `String` of `String`s; a panic in that slice's drop, the rest
+// of it dropped, then what's left; and in generic code, a `Vec` collected
+// by its fold where the caller's iterator is `TrustedLen`, by `next` where
+// it isn't, a `skip`'s (#670).
+test("a take's rev, consumed by fold or by next, drops what it passes as std's does", () => {
+  const dir = fixture("forms-take-rev");
+  const file = join(dir, "main.rs");
+  writeFileSync(file, `use std::cell::Cell;
+use std::panic::{AssertUnwindSafe, catch_unwind};
+
+thread_local! {
+    static BOOM: Cell<u32> = const { Cell::new(0) };
+}
+
+struct D(u32);
+
+impl Drop for D {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+        if self.0 == BOOM.get() {
+            BOOM.set(0);
+            panic!("drop {}", self.0);
+        }
+    }
+}
+
+fn five() -> Vec<D> {
+    (1..=5).map(D).collect()
+}
+
+fn digit(d: D) -> char {
+    char::from_digit(d.0, 10).unwrap()
+}
+
+fn taken<I: DoubleEndedIterator<Item = D> + ExactSizeIterator>(src: I, n: usize) -> Vec<u32> {
+    src.take(n).rev().map(|d| d.0).collect()
+}
+
+fn taken_digits<I: DoubleEndedIterator<Item = D> + ExactSizeIterator>(src: I) -> String {
+    src.take(2).rev().map(digit).collect()
+}
+
+fn taken_set<I: DoubleEndedIterator<Item = D> + ExactSizeIterator>(src: I) -> usize {
+    src.take(2).rev().map(|d| d.0).collect::<std::collections::HashSet<_>>().len()
+}
+
+fn main() {
+    println!("generic vec {:?}", taken(five().into_iter(), 2));
+    println!("generic vec of a skip {:?}", taken(five().into_iter().skip(1), 2));
+    println!("generic chars {}", taken_digits(five().into_iter()));
+    println!("generic set {}", taken_set(five().into_iter()));
+    let s: String = five().into_iter().take(3).rev().map(digit).collect();
+    println!("chars {s}");
+    let s: String = five().into_iter().take(3).rev().map(|d| d.0.to_string()).collect();
+    println!("strings {s}");
+    let mut s = String::new();
+    for d in five().into_iter().take(3).rev() {
+        s.push(digit(d));
+    }
+    println!("for {s}");
+    let s = five().into_iter().take(3).rev().fold(String::new(), |mut s, d| {
+        s.push(digit(d));
+        s
+    });
+    println!("fold {s}");
+    BOOM.set(4);
+    let r = catch_unwind(AssertUnwindSafe(|| {
+        five().into_iter().take(2).rev().map(digit).collect::<String>()
+    }));
+    println!("chars panics {:?}", r.ok());
+}
+`);
+  const native = runNative(file, dir, "2024");
+  if (typeof native === "string") throw new Error(native);
+  const compiled = compileJs(file, dir, "2024", false, {}, ["--std-iterators"]);
+  if (!("js" in compiled)) throw new Error(compiled.error);
+  const ran = runJs(runtimes[0][1], compiled.js, dir, "take-rev");
+  expect(ran.stdout).toBe(native.stdout);
+  expect(agree(ran, native)).toBe(true);
+}, 300_000);

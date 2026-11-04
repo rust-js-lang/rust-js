@@ -132,6 +132,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(Some((Expr::call_helper("$dropEach", vec![(**callee).clone()]), false)));
         }
+        // And of items whose drop may throw, `(intoIter) => {
+        // $dropItems(intoIter, dDrop_drop); }`, which `$dropEach` is too: so
+        // what its iterator passes over is still dropped as one slice, std's
+        // `advance_by`'s (#670).
+        if let [
+            Stmt {
+                kind: StmtKind::Expr(call),
+                ..
+            },
+        ] = body.as_slice()
+            && let js::ExprKind::Call(helper, args) = &call.kind
+            && helper.helper_name() == Some("$dropItems")
+            && let [items, each] = args.as_slice()
+            && matches!(&items.kind, js::ExprKind::Var(name) if *name == param)
+            && each.is_named()
+        {
+            return Ok(Some((Expr::call_helper("$dropEach", vec![each.clone()]), false)));
+        }
         Ok(Some((Expr::arrow(vec![param.into()], body), false)))
     }
 

@@ -95,10 +95,17 @@ fn decided_in(stmts: &mut Vec<Stmt>, from: usize, (test, written): (&Expr, &[js:
                     decided_in(otherwise, 0, (test, written), holds, parts);
                     disturbed |= disturbs_any(otherwise, test);
                 }
+                // A branch whose every `if` was decided away, an or-pattern's
+                // alternative no value reaches, `(_, _, 1) | (_, 1, 1)`'s
+                // second past the first's `c === 1` (#694): as
+                // `emptied_branch` writes it, `if (b === 1) {}` nothing.
+                let emptied = settled(stmts, j);
                 if disturbed {
                     return;
                 }
-                j += 1;
+                if !emptied {
+                    j += 1;
+                }
             }
             StmtKind::Labeled(_, body) => {
                 decided_in(body, 0, (test, written), holds, parts);
@@ -119,6 +126,28 @@ fn decided_in(stmts: &mut Vec<Stmt>, from: usize, (test, written): (&Expr, &[js:
                     j += 1;
                 }
             },
+        }
+    }
+}
+
+/// The `if` at `stmts[j]`, a branch of which its decided tests emptied, as
+/// `branches::emptied_branch` writes it: whether it went.
+fn settled(stmts: &mut Vec<Stmt>, j: usize) -> bool {
+    let StmtKind::If(_, then, otherwise) = &stmts[j].kind else {
+        return false;
+    };
+    if !then.is_empty() && otherwise.as_ref().is_none_or(|o| !o.is_empty()) {
+        return false;
+    }
+    let kind = std::mem::replace(&mut stmts[j].kind, StmtKind::Break(None));
+    match super::branches::emptied_branch(kind) {
+        Some(kind) => {
+            stmts[j].kind = kind;
+            false
+        }
+        None => {
+            stmts.remove(j);
+            true
         }
     }
 }

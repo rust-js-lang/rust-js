@@ -152,37 +152,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         )
     }
 
-    /// Whether `ty`'s `nth` drops what it passes over as one slice: a `Rev`
-    /// of one that does so from its back, a `Vec`'s, or a `StepBy`, a
-    /// `Skip`, a `Take`, a `Fuse`, a `Peekable` or an `Enumerate` of one whose `nth` does,
-    /// which ask it, or a `Chain` with such a side (#234, #261).
-    pub(in crate::lower) fn nths_a_slice(&self, ty: Ty<'tcx>) -> bool {
-        let ty = self.reveal(ty.peel_refs());
-        if let Some(source) = self.reversed(ty) {
-            return self.drops_passed_as_slice(source);
-        }
-        match ty.kind() {
-            ty::Adt(adt, args)
-                if matches!(
-                    std_path(self.tcx, adt.did()).as_str(),
-                    "std::iter::StepBy"
-                        | "std::iter::Skip"
-                        | "std::iter::Take"
-                        | "std::iter::Fuse"
-                        | "std::iter::Peekable"
-                        | "std::iter::Enumerate"
-                ) =>
-            {
-                self.nths_a_slice(args.type_at(0))
-            }
-            // A `Chain`'s, each side's `advance_by` (#261).
-            ty::Adt(adt, args) if std_path(self.tcx, adt.did()) == "std::iter::Chain" => {
-                self.nths_a_slice(args.type_at(0)) || self.nths_a_slice(args.type_at(1))
-            }
-            _ => false,
-        }
-    }
-
     /// std's iterator over an array's items, whose JS value is the array
     /// (ADR 0061): `Some(false)` of `slice::Iter`, which borrows them, and
     /// `Some(true)` of `array::IntoIter` and `vec::IntoIter`, which own them,
@@ -537,7 +506,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// What a `rev()` of type `ty` steps from its back, its source.
-    fn reversed_source(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub(super) fn reversed_source(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let ty::Adt(adt, args) = ty.kind() else { return None };
         (std_path(self.tcx, adt.did()) == "std::iter::Rev").then(|| args.types().next())?
     }

@@ -160,10 +160,7 @@ all of them in one session.
   JS is rust-js's own layout.
 - **A Node session each build**, about 40 ms, beside the layout's own:
   Cargo asks `rustc -vV` each build (above), and an editor's check too.
-- **Not its plugins**: a config's `plugins`, react-in-rust's
-  `prettier-plugin-hermes-parser`, are what that config names, found as
-  Prettier finds them; an upgrade of one alone is still no change Cargo
-  sees, left to its own issue.
+- **Its plugins too**, since #692 (below).
 
 What holds it: `test/cargo-workspace.test.ts`, "Cargo is told which
 Prettier lays out the app's JS": the app's Prettier upgraded at the same
@@ -172,3 +169,45 @@ layout. Mutations `cargo-version-without-prettier` and
 `cargo-prettier-of-no-crate` (`cargo.rs`),
 `prettier-identity-of-its-directories-alone` and
 `prettier-identity-found-nowhere` (`prettier.rs`).
+
+## Amendment: the plugins of the app's Prettier (#692)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, as above.
+
+A config's `plugins`, react-in-rust's `prettier-plugin-hermes-parser`,
+lay the JS out as much as Prettier does, and were in no key: an upgrade
+of one alone, Prettier and the config the same, kept every crate's old
+layout.
+
+**The `prettier <hash>` of the line hashes them too**: of each crate,
+after its Prettier's manifest, each plugin its configs name, by its name
+and its package's manifest (`prettier::identity`). Which, and where from,
+is asked as the layout would:
+
+- **Each module's config, by Prettier**: `resolveConfig` of the JS beside
+  each of the crate's `.rs` files, `.js` and `.jsx` alike, as rust-js
+  writes one of them, so an `overrides` entry's plugins are its own. A
+  module placed outside its crate's directory by `#[path]` is asked of
+  where its Rust is in the crate, which is no config of it: the crate's
+  other files' plugins are, but one that only an `overrides` entry for
+  that other place names isn't.
+- **Each one where Prettier 3 loads it from**, its `loadPlugin`, run where
+  the crate is: a `file:` URL, an absolute path, a file of that name
+  there, else the package Node finds from there; its manifest the
+  `package.json` above it, `findPackageJSON`. Prettier has no API that
+  says it, so the session mirrors Prettier 3's rule, which a Prettier
+  release that changes it would need followed here.
+- **A plugin given as an object**, not a name, is the config's own,
+  which the dep-info already names.
+
+Each module's two configs are asked in the one Node session of a build,
+Prettier caching each config file it reads: React's port's 17 packages,
+their `prettier-plugin-hermes-parser` found, take 0.4 s on the M3 Max
+(2026-11-04), where Prettier alone took about 40 ms.
+
+What holds it: `test/cargo-workspace.test.ts`, "Cargo is told which
+Prettier plugins lay out the app's JS": a plugin the config names
+upgraded alone at the same path, each of its files dated as before, and
+the next build's JS its layout. Mutations `prettier-identity-without-plugins`,
+`prettier-plugin-found-nowhere` and `prettier-plugins-of-no-file`
+(`prettier.rs`).

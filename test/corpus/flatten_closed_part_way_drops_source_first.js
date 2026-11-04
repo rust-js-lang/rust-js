@@ -6,7 +6,6 @@ import {
   $closing,
   $collectDropping,
   $dropEach,
-  $dropItems,
   $filterDropping,
   $flatMap,
   $flattenEnds,
@@ -220,13 +219,11 @@ function sourceDropPanics() {
   const r = $catchUnwind(() => {
     const it = $held(
       $flatMap(
-        $closing($iter([[1], [2], [3]]), (intoIter) => {
-          $dropItems(intoIter, boomDrop_drop);
-        }).map((x) => [[(x[0] + 10) >>> 0], x]),
-        (item) =>
-          $closing($iter(item), (vec) => {
-            $dropItems(vec, boomDrop_drop);
-          }),
+        $closing($iter([[1], [2], [3]]), $dropEach(boomDrop_drop)).map((x) => [
+          [(x[0] + 10) >>> 0],
+          x,
+        ]),
+        (item) => $closing($iter(item), $dropEach(boomDrop_drop)),
       ),
     );
     try {

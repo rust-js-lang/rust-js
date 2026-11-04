@@ -126,4 +126,13 @@ export const mutations: Mutation[] = [
       "an unwrap of a field a test says is there",
     ],
   },
+  {
+    name: "decided-branch-left-empty",
+    breaks:
+      "an or-pattern's alternative no value reaches, `(_, _, 1) | (_, 1, 1)`, leaves `if (b === 1) {}` once its `c === 1` is decided, and tidy's `values` stage panics, \"no empty if\" (#694)",
+    file: "src/lower/mir/tidy/decided.rs",
+    find: "                let emptied = settled(stmts, j);\n",
+    replace: "                let emptied = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^or_pattern_unreachable_alternative.rs$"],
+  },
 ];

@@ -11,6 +11,7 @@ mod own_steps;
 mod owners;
 pub(super) mod registry;
 mod serde;
+mod slice_steps;
 mod specialization;
 mod std_items;
 mod traits;

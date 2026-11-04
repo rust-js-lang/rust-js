@@ -63,6 +63,7 @@ const compilerLabels: Record<string, string> = {
   "test/corpus/guards_that_call.js": "#523",
   "test/corpus/interpreter.js": "#523",
   "test/corpus/or_bindings.js": "#523",
+  "test/corpus/or_pattern_unreachable_alternative.js": "#523",
   "test/snapshots/lexer/lexer.js": "#523",
 };
 
