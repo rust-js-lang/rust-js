@@ -3445,9 +3445,18 @@ export function $enumerate(iter) {
     enumerated.count = at + 1;
     return { done: false, value: [at, step.value] };
   };
+  // Std's `advance_by(m)`: its source's, given the item's drop of a pair's,
+  // counted as far as it went, so a `take`'s `count` of a reversed `Vec`'s
+  // drops what it passes as one slice, front to back (#654).
+  const advanceBy = (m, drop) => {
+    const left = enumerated.iter.advanceBy(m, drop && ((x) => drop([0, x])));
+    enumerated.count += m - left;
+    return left;
+  };
   // Each but its `count` and `try_fold` where its source has it.
   $forward(enumerated, iter, {
     countItems,
+    advanceBy: iter.advanceBy === undefined ? undefined : advanceBy,
     fold: iter.fold === undefined ? undefined : fold,
     tryFold,
     rfold: iter.rfold === undefined ? undefined : rfold,

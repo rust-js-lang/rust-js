@@ -190,8 +190,8 @@ export const mutations: Mutation[] = [
     name: "enumerate-try-fold-by-next",
     breaks: "$enumerate's try_fold is its source's",
     file: "src/runtime/back_steps.js",
-    find: "    countItems,\n    fold: iter.fold === undefined ? undefined : fold,\n    tryFold,\n",
-    replace: "    countItems,\n    fold: iter.fold === undefined ? undefined : fold,\n",
+    find: "    fold: iter.fold === undefined ? undefined : fold,\n    tryFold,\n",
+    replace: "    fold: iter.fold === undefined ? undefined : fold,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
   {
@@ -498,5 +498,13 @@ export const mutations: Mutation[] = [
     find: "      rfold: back ? (init, f, unwind) => $foldBack(it, init, folding(f, unwind), unwind) : undefined,\n",
     replace: "      rfold: it.rfold === undefined ? undefined : (init, f, unwind) => it.rfold(init, folding(f, unwind), unwind),\n",
     tests: ["test/corpus.test.ts", "-t", "^discarded_drop_leaks_the_accumulator.rs$"],
+  },
+  {
+    name: "enumerate-advance-by-unforwarded",
+    breaks: "an `enumerate()` passes no `advance_by` on, so a `take(n).count()` of a reversed `Vec`'s steps each item, dropping it back to front, where std's asks its source's, which drops them as one slice front to back (#654)",
+    file: "src/runtime/back_steps.js",
+    find: "    advanceBy: iter.advanceBy === undefined ? undefined : advanceBy,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^reversed_vec_rest_through_zip_and_enumerate.rs$"],
   },
 ];

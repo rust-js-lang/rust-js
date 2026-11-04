@@ -1551,3 +1551,38 @@ flatten `last` and #647's chain `last` of a `Vec`'s, against native Rust.
 Mutations: `closing-into-iter-last-folds` and
 `closing-into-iter-last-unclosed` (`runtime/closing.ts`),
 `heap-into-iter-passed-as-slice` (`lower/recognition/iterators.ts`).
+
+## Amendment: a reversed `Vec`'s rest through a `zip`'s `step_by`, and an `enumerate`'s `advance_by` (2026-11-04, #654)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. The order things are
+dropped in changes, so Rust's behavior is kept.
+
+- **A `step_by()` of a zip of two `TrustedLen` sides, of items with a
+  destructor, is `$stepBy`**, as one of the crate's own `fold` is (#671):
+  a filter by index would fold the zip by its fold, std's `SpecFold`,
+  which stops where the shorter side ends, where std's `StepBy` steps it
+  by `next` and `nth`, and the zip's `next` takes one item more of its
+  first side and drops it before the zip is dropped:
+  `ds().into_iter().rev().zip(10..13).step_by(2).fold(..)` drops 5, 4, 3,
+  2, then 1, the `Vec`'s rest, where the filter dropped 1 before 2. It's
+  asked of the zip, `zipped_sources` and `is_trusted_len`, not of any
+  adapter with a fold of its own: a reversed `Vec`'s, and a `skip` of
+  one, are `nths_a_slice`'s and `steps_past_a_slice`'s already.
+- **An `enumerate()` passes `advance_by` on**, as std's
+  `Enumerate::advance_by` asks its source's and counts how far it went.
+  A `take(n)`'s `count` is its source's `advance_by(n)`, so
+  `ds().into_iter().rev().enumerate().take(3).count()` drops 3, 4, 5 as
+  the `Vec`'s one slice, front to back, then 1 and 2, where `$Steps`'
+  default stepped each, back to front.
+
+Left: a `map` made in place over a compiled zip of two `TrustedLen`
+sides, collected into a `Vec`, is stepped by `next`, where std's
+`extend_trusted` folds it, so the zip's first side gives an item more,
+dropped before the `Vec`'s rest. Whether a collect's source is std's
+struct or one made in place is a fact of the call site that made the
+source, which the collect doesn't have.
+
+Corpus case: `reversed_vec_rest_through_zip_and_enumerate.rs`, against
+native Rust in both builds. Mutations: `step-by-of-trusted-zip-filtered`
+(`lower/combinators/adapters.ts`), `enumerate-advance-by-unforwarded`
+(`runtime/back_steps.ts`).

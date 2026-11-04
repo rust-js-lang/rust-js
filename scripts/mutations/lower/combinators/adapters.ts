@@ -438,6 +438,14 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "step-by-of-trusted-zip-filtered",
+    breaks: "a `step_by()` of a zip of a reversed `Vec`'s items and a range is a filter by index, which folds the zip by its `TrustedLen` fold, where std's `StepBy` steps it by `next`, which takes an item more of its first side and drops it before the rest (#654)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                    || crate::lower::recognition::zipped_sources(self.tcx, self.reveal(receiver_ty.peel_refs())).is_some()\n",
+    replace: "                    || false\n",
+    tests: ["test/corpus.test.ts", "-t", "^reversed_vec_rest_through_zip_and_enumerate.rs$"],
+  },
+  {
     name: "step-by-of-own-fold-filtered",
     breaks: "a `step_by()` of a `fuse()` of the crate's iterator with its own `fold` is a filter by index, whose fold calls it, where std's `StepBy` steps it by `next` and `nth` (#671)",
     file: "src/lower/combinators/adapters.rs",

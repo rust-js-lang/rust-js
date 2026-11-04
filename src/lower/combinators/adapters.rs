@@ -414,6 +414,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // filter's fold would call, where std's `StepBy` folds by
                     // its source's `next` and `nth` (#671).
                     || self.recognition().reaches_its_own(receiver_ty, OwnStep::Fold, Reach::Sure)
+                    // Or of a zip of two `TrustedLen` sides, of items with a
+                    // destructor: its fold, std's `SpecFold`, stops where the
+                    // shorter ends, where its `next` takes an item more of its
+                    // first side and drops it (#654).
+                    || crate::lower::recognition::zipped_sources(self.tcx, self.reveal(receiver_ty.peel_refs())).is_some()
+                        && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, receiver_ty.peel_refs())
+                        && self
+                            .iterator_item(receiver_ty.peel_refs())
+                            .is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing)
                     // And of a `Vec`'s, whose `nth` drops them as one slice
                     // in order, of items whose drop may panic, past which
                     // the slice's goes on (#668).
