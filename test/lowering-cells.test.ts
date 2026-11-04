@@ -777,10 +777,11 @@ pub fn emptied(bag: &Bag) -> u32 {
   expect(js).toContain("export function cancel(task) {\n  task.callback = undefined;\n}");
   expect(js).toContain("return task.callback == null;");
   expect(js).toContain("return { callback: (n) => (n + 1) >>> 0 };");
-  // \`take\` runs a \`Default\` of the crate's while it holds the cell.
-  // A `RefCell` of an object is the object, its contents taken in place
-  // (ADR 0863).
-  expect(js).toContain("$take($borrowMut(bag.items), { n: 0 })");
+  // \`take\` makes its \`Default\` before it borrows the cell, as std's
+  // \`self.replace(Default::default())\`, so its borrow is held for a
+  // moment, as a \`replace\`'s, and a field no other borrow of which can
+  // meet it is written as a property (#699).
+  expect(js).toContain("  const old = bag.items;\n  bag.items = { n: 0 };\n  return old.n;\n");
   const lib = await import(join(dir, "lib.js"));
   const t = lib.task();
   expect([lib.run(t, 1), lib.run(t, 3), lib.cancelled(t)]).toEqual([2, 6, false]);

@@ -107,13 +107,14 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
   {
-    name: "take-default-trusted",
+    name: "take-held-while-default-runs",
     breaks:
-      "a `take` that runs the crate's `Default` while it holds the cell is taken as holding it for a moment",
+      "a `take` of a `Default` of the crate's is counted, as if `Default` ran while it holds the cell, where std's makes it first: a flattened state's `take` is refused, and a field's plain `RefCell` taken is `$take($borrowMut(bag.items), ..)` (#699)",
     file: "src/lower/drops/ref_cells.rs",
-    find: "                    receiver.is_some_and(refcell)\n                        && !generic_args\n                            .types()\n                            .next()\n                            .is_some_and(|item| recognition.std_default(item))\n",
-    replace: "                    receiver.is_some_and(refcell) && false\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "written by replace and take"],
+    find: "                Some(Std::CellReplaceWith) => receiver.is_some_and(refcell) && !facts.momentary.contains(&fun),\n",
+    replace:
+      "                Some(Std::CellReplaceWith) => receiver.is_some_and(refcell) && !facts.momentary.contains(&fun),\n                Some(Std::CellTake) => receiver.is_some_and(refcell),\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_taken_default.rs$"],
   },
   {
     name: "library-plain-unread",

@@ -58,8 +58,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`Cell::take()` of a number leaves `undefined`, not its default, `0`",
     file: "src/lower/std_types/cell.rs",
-    find: "                    _ => self.default_value(item, span)?,",
-    replace: "                    _ => Expr::undefined(),",
+    find: "                        let made = self.default_value(item, span)?;\n",
+    replace: "                        let made = Expr::undefined();\n",
     tests: ["test/corpus.test.ts", "-t", "collection_methods"],
   },
   {
@@ -975,5 +975,23 @@ export const mutations: Mutation[] = [
     replace: "            Std::TryBorrow { lock: false, .. } if flattened && false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_tried.rs$"],
     snapshots: true,
+  },
+  {
+    name: "take-default-made-after",
+    breaks:
+      "a `take`'s `Default` of the crate's runs after the cell is borrowed and what it held is read, where std's makes it first: a `Cell`'s `take` moves out what it held before `Default` wrote it, `Count(1)` where Rust's is `Count(11)`, and a borrowed `RefCell`'s panics before its `Default` prints (#699)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                        if made.has_effects() {\n",
+    replace: "                        if false && made.has_effects() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(cell_taken_default_first|cell_taken_default_borrowed|flattened_state_taken_default).rs$"],
+  },
+  {
+    name: "take-cell-made-after-default",
+    breaks:
+      "a thread-local's `take`, of one made where it's first used, runs its `Default` before its initializer, `log default` printed before `local made`, where std's `with` makes the cell first (#699)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                                _ if first(&cell) => self.spill(\"cell\", cell, out),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cell_taken_default_first.rs$"],
   },
 ];

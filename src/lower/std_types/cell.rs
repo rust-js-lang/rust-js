@@ -303,20 +303,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // written: `const old = task.callback; task.callback = next;`.
             Std::CellReplace | Std::CellTake => {
                 let item = generic_args.type_at(0);
-                let cell = arg();
+                let mut cell = arg();
+                // A `take`'s `Default`, where it may run code, made first,
+                // before the cell is borrowed or what it held is read, as
+                // std's `take` is `self.replace(Default::default())`: the
+                // crate's may print, or borrow and write the cell (#699).
+                // The cell itself before it, a flattened state's object, and
+                // a thread-local's made where it's first used, whose
+                // initializer runs first.
+                //
                 // What it held is `old`, read as its place is: of a nullable
                 // field there where it's made, `null` or a value already
                 // (`Known::Defined`, ADR 0620, amended); of an optional one,
                 // maybe `undefined`. A nullable thread-local's is what MIR
                 // says its call gives (`nulled::reads_nullable_local`, ADR
                 // 0586, amended).
-                let next = written(
-                    &cell,
-                    match known {
-                        Std::CellReplace => arg(),
-                        _ => self.default_value(item, span)?,
-                    },
-                );
+                let next = match known {
+                    Std::CellReplace => written(&cell, arg()),
+                    _ => {
+                        let made = self.default_value(item, span)?;
+                        if made.has_effects() {
+                            let first =
+                                |e: &Expr| e.facts.has(js::Known::LocalRead) || !e.reads_same() || e.has_effects();
+                            cell = match cell.kind {
+                                js::ExprKind::Handle(object, storage @ js::Storage::InPlace(_)) if first(&object) => {
+                                    let object = self.spill("object", *object, out);
+                                    Expr {
+                                        kind: js::ExprKind::Handle(Box::new(object), storage),
+                                        ..cell
+                                    }
+                                }
+                                js::ExprKind::Handle(_, js::Storage::InPlace(_)) => cell,
+                                _ if first(&cell) => self.spill("cell", cell, out),
+                                _ => cell,
+                            };
+                            let made = written(&cell, made);
+                            self.spill("next", made, out)
+                        } else {
+                            written(&cell, made)
+                        }
+                    }
+                };
                 // A flattened state's, its handle on its class's object
                 // (ADR 1044): what it held, a copy of its variant's keys
                 // (`moved_out`), then each key of the new value set there,

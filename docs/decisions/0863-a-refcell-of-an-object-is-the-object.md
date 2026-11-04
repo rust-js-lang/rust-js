@@ -1361,3 +1361,12 @@ Decided by the user (2026-11-04), of the two amendments above
   reading the field twice**: its handle is read where it's used, each
   read the property's, and isn't held in a `const` as a `Cell`'s is (ADR
   0287, amended, #532).
+
+## Amendment: a `take`'s `Default` runs before its borrow (#699)
+
+"Where std's code holds it while the crate's runs: .. a `Default` a
+`take` runs" was false: std's `take` makes its `Default` before it
+borrows, so a `take`'s borrow is held for a moment, as a `replace`'s is,
+and a `Default` of the crate's is made first, before the borrow is
+checked. It's [ADR 1044's amendment](1044-a-flattened-state-is-its-classs-own-keys.md#amended-699-its-cells-own-take-compiles-its-default-made-first),
+where a flattened state met it.

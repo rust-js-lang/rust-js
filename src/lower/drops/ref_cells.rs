@@ -924,8 +924,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// momentary ones (ADR 0328), a `try_borrow`'s too (#687); a `swap`'s,
     /// which borrows two that may be one, but a flattened state's; a
     /// `replace_with`'s, held while its function runs where that may ask
-    /// (#687), and a `take`'s, while the crate's
-    /// `Default` does; a thread-local's `with_borrow`, held while what it's
+    /// (#687), never a `take`'s, whose `Default` runs before it borrows
+    /// (#699); a thread-local's `with_borrow`, held while what it's
     /// given runs, where that may borrow it (ADR 0580); and a borrow given
     /// as a function, `map(RefCell::borrow)`, whose guard its callee keeps.
     /// Each of its borrows, of a `RefCell` and whether it's counted, and
@@ -988,14 +988,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     receiver.is_some_and(refcell) && !args.iter().any(|&cell| flattened_state_lent(tcx, thir, cell))
                 }
                 // Held while its function runs, where that may ask (#687).
+                // Not a `take`'s, whose `Default` runs before it borrows, as
+                // std's is `self.replace(Default::default())`: held for a
+                // moment, as a `replace`'s (#699).
                 Some(Std::CellReplaceWith) => receiver.is_some_and(refcell) && !facts.momentary.contains(&fun),
-                Some(Std::CellTake) => {
-                    receiver.is_some_and(refcell)
-                        && !generic_args
-                            .types()
-                            .next()
-                            .is_some_and(|item| recognition.std_default(item))
-                }
                 _ => false,
             };
             let borrow = crate::lower::analysis::borrowed(recognition, thir, id);

@@ -4,7 +4,9 @@ Status: Accepted. Extends [0362](0362-refcell-fields-never-counted.md),
 whose field's `RefCell` is its value where each borrow of it is held for a
 moment, and [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md).
 Amended by [0863](0863-a-refcell-of-an-object-is-the-object.md): of a
-`RefCell` of an object, which changes in place, and `get_mut`.
+`RefCell` of an object, which changes in place, and `get_mut`. Amended
+(#699): a `take` holds it for a moment whatever its `Default`, made
+first.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A borrow that can't
 fail isn't counted; one that can still is, and still throws where Rust
@@ -99,3 +101,16 @@ lends a second cell, which is a cell then.
 - Mutations: `replace` taken to borrow nothing, a field lent to it a cell,
   a `take` of the crate's `Default` trusted, a plain one borrowed, the
   unread read kept, regions kept in the lookup.
+
+## Amended (#699): a `take` holds it for a moment whatever its `Default`
+
+"`take()` too, where `T::default()`, which runs while it's held, is
+std's" rested on a false premise: std's `take` is
+`self.replace(Default::default())`, which makes the default before it
+borrows. So a `take` holds its cell for a moment, as a `replace` does,
+whatever its `Default`, and recognition's `std_default` is gone; a
+`Default` of the crate's that may run code is made first, before the
+borrow is checked and what the cell held is read. What that `Default`
+borrows still asks of a guard held across the `take`. The decision and
+what holds it are [ADR 1044's amendment](1044-a-flattened-state-is-its-classs-own-keys.md#amended-699-its-cells-own-take-compiles-its-default-made-first),
+where the refusal it lifts was met.

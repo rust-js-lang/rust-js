@@ -33,8 +33,9 @@ function setThenGet(r, v, TCopy) {
 }
 
 function taken(r, TDefault) {
+  const next = TDefault.default();
   const old = $apart(r.value);
-  r.value = TDefault.default();
+  r.value = next;
   return old;
 }
 

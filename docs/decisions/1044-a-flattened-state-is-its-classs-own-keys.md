@@ -7,7 +7,8 @@ Amended (#482): a closure's write through a borrow it captures is the
 keys too. Amended (2026-11-04, #658, #659, the user's decision): what's
 moved out of it whole is a copy of its variant's keys. Amended (#687):
 its cell's `swap`, `get_mut`, `replace_with`, `into_inner` and
-`try_borrow` compile. Extended by [1071](1071-a-flattened-enum-is-told-by-its-keys.md):
+`try_borrow` compile. Amended (#699): its cell's own `take` compiles,
+its `Default` made first. Extended by [1071](1071-a-flattened-enum-is-told-by-its-keys.md):
 an enum of no tag, told by its keys, its owner `bindings::flattened`. Extends
 [0204](0204-flattened-props.md), whose flattened field was a struct of
 named fields or a JS object, to a `RefCell` of a discriminated union
@@ -517,3 +518,72 @@ against native Rust; and `test/classes-flattened-state.test.ts`'s copies, whose
 `std_types/cell.ts`, `drops/facts.ts`, `drops/ref_cells.ts`,
 `mir/local_facts.ts`, `mir/operands.ts`, `analysis/cell_borrows.ts`,
 `analysis/validation.ts`, `mir/tidy/values.ts` and `js/make.ts`.
+
+## Amended (#699): its cell's own `take` compiles, its `Default` made first
+
+A refusal, P2 (#699), and two wrong answers on `main` (P0, filed and
+closed with it). The cell's own `take` of a `Default` of the crate's, a
+derive's too, was refused (#687's "not in this"): `counted_in`
+(`drops/ref_cells.rs`) counted a `take`'s borrow wherever its `Default`
+wasn't std's (`std_default`, ADR 0585), as one held while the crate's
+code runs, and a flattened state counts no borrows. That premise is
+false: std's `RefCell::take` is `self.replace(Default::default())`, so
+`Default` runs before the cell is borrowed, and a `take`'s borrow is
+held for a moment, as a `replace`'s is. The same premise made lowering
+put the borrow first: a counted cell's `take` was `$take($borrowMut(log),
+logDefault_default())`, and a `Cell`'s `old = $apart(count.value);
+count.value = countDefault_default();`, so a `Default` that prints
+printed nothing before a borrowed cell's panic, where Rust prints, and
+one that writes the cell it's taken of was moved out of before it
+wrote, `Count(1)` where Rust's is `Count(11)`.
+
+- **A `take`'s borrow is never counted**, as a `replace`'s isn't: the
+  `std_default` case is gone with recognition's `std_default`. What its
+  `Default` runs still asks of a borrow held across the `take`
+  (`CellBorrows::cell_call_asks`, whose `bounds_ask` says so, before the
+  cell's borrow or while it's held alike), so a guard of the cell held
+  across one is counted and the `take` throws as Rust's panics. What
+  meets the cell's own borrow is only what runs while it's held, a
+  `replace_with`'s function (`replaced_with`), never a `take`'s
+  `Default`.
+- **A `take`'s `Default` that may run code is made first**
+  (`std_types/cell.rs`), `const next = statusDefault_default();`, before
+  the cell's borrow is checked and what it held is read, then moved out
+  and written as before: of a flattened state, the copy of its variant's
+  keys and each key set; of a counted cell, `$take($borrowMut(log),
+  next)`. The cell before it where reading it runs code, a thread-local's
+  made where it's first used, `const cell = local();`, as std's `with`
+  makes the cell before its `take` runs `Default`. A `Default` that runs
+  nothing, std's or a derive's of such, `{ n: 0 }`, stays in place.
+
+```js
+const next = statusDefault_default();
+old =
+  task.status === "pending"
+    ? { status: task.status, tries: task.tries }
+    : { status: task.status, value: task.value };
+task.status = next.status;
+task.tries = next.tries;
+task.value = next.value;
+```
+
+A field's `RefCell` whose only borrows were `take`s is now its value, as
+one only `replace`d is (ADR 0585): `const old = bag.items; bag.items = {
+n: 0 };`, and `refcell_transparent`'s newtype's borrows are unchecked.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior: what's printed before a panic, and what's moved out
+once `Default` has written the cell.
+
+Held by corpus `flattened_state_taken_default` (a derived `Default`, and
+a written one that reads and writes the same state through a
+thread-local, no borrow held, so neither panics), `cell_taken_default_first`
+(a counted `RefCell`, one of an object, a `Cell` and a thread-local made
+where it's first used, each `Default` printing and writing its cell) and
+`cell_taken_default_borrowed` (run-fail: `Default` prints, then the
+borrowed cell's `take` panics), against native Rust;
+`test/lowering-cells.test.ts`'s "a field's RefCell written by replace and
+take is its value". Mutations `take-held-while-default-runs`
+(`drops/ref_cells.ts`, for `take-default-trusted`, gone with what it
+mutated), `take-default-made-after` and `take-cell-made-after-default`
+(`std_types/cell.ts`).

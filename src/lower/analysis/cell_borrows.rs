@@ -276,8 +276,9 @@ impl<'tcx> CellBorrows<'tcx> {
         let itself = |ty| self.clones_itself(recognition, owner, ty);
         match called(recognition, def_id, args, receiver, &itself) {
             Called::Nothing | Called::Any => false,
-            // A cell's own call, and what it runs by its bounds while it
-            // holds its borrow, `replace_with`'s function (#687).
+            // A cell's own call, and what it runs by its bounds,
+            // `replace_with`'s function while it holds its borrow, a
+            // `take`'s `Default` before (#687, #699).
             Called::Cell(theirs) => {
                 asks(tcx, &self.closed, theirs, held) || {
                     let given = std_given(recognition, &self.impls, def_id, args);
@@ -390,9 +391,14 @@ impl<'tcx> CellBorrows<'tcx> {
     }
 
     /// Whether a cell's own call, of `def_id` and `args`, its borrow
-    /// `theirs`, may ask of `held`: its borrow, and what it runs by its
-    /// bounds while it holds it, `replace_with`'s function, a `take`'s
-    /// `Default` (`bounds_ask`, #687).
+    /// `theirs`, may ask of `held`, a borrow held across it: its borrow,
+    /// and what it runs by its bounds (`bounds_ask`, #687), while it holds
+    /// it, `replace_with`'s function, or before it borrows, a `take`'s
+    /// `Default`, as std's `take` is `self.replace(Default::default())`.
+    /// What meets its own borrow is only what runs while it's held, a
+    /// `replace_with`'s function (`drops/facts.rs`'s `replaced_with`), never
+    /// a `take`'s `Default`, so a `take` holds it for a moment, as a
+    /// `replace` does (#699).
     pub(in crate::lower) fn cell_call_asks(
         &self,
         recognition: &Recognition<'_, 'tcx>,
@@ -407,7 +413,7 @@ impl<'tcx> CellBorrows<'tcx> {
     /// Whether what std's `def_id`, called of `args`, runs by its bounds
     /// (`std_given`) may ask of `held`, where it's held while that runs: a
     /// `RefCell`'s `replace_with(f)`'s, what `f` runs, a `take`'s, its
-    /// `Default` (#687). Of a body that may borrow anything, which no
+    /// `Default` (#687), which runs before the `take` borrows (#699). Of a body that may borrow anything, which no
     /// summary says, or what rust-js can't see, it may: what runs while a
     /// borrow is held is the crate's own, which may reach the cell.
     pub(in crate::lower) fn bounds_ask(

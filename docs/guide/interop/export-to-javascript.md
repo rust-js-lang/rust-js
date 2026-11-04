@@ -1435,7 +1435,10 @@ and `swap` move out. A `replace_with`'s function is given the chunk's
 `&mut`, which writes its keys; a `swap` of two chunks' states first
 panics where they're one chunk, as Rust's second borrow does; and
 `get_mut`, `try_borrow` and `try_borrow_mut` give the chunk's `&mut` or
-borrow, `Ok` of it, as no other borrow can be held (#687). The cell lent,
+borrow, `Ok` of it, as no other borrow can be held (#687). Its cell's
+own `take` makes the state's `Default` first, as std's does, then moves
+it out, so a `Default` of the crate's may read or write the chunk
+(#699). The cell lent,
 `&chunk.state`, or borrowed where another borrow of it may be, a
 `replace_with` whose function borrows it too, is refused, as its object
 counts no borrows
