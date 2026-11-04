@@ -1172,7 +1172,7 @@ pub fn values(x: u32) -> [u32; 3] {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(
-    '// TODO: This is pretty well supported by browsers. Maybe we can drop it.\n\nimport { $f64ToInt } from "@rust-js/runtime";\n\nexport const clz32 = typeof Math.clz32 !== "undefined" ? Math.clz32 : clz32Fallback;\n\n// Count leading zeros.\nconst { log, LN2 } = Math;\nfunction clz32Fallback(x) {\n',
+    '// TODO: This is pretty well supported by browsers. Maybe we can drop it.\n\nimport { $f64ToInt } from "@rust-js/runtime";\n\nexport const clz32 = typeof Math.clz32 !== "undefined" ? Math.clz32 : clz32Fallback;\n\n// Count leading zeros.\nconst log = Math.log;\nconst LN2 = Math.LN2;\nfunction clz32Fallback(x) {\n',
   );
   const at = (text: string) => {
     expect(js).toContain(text);

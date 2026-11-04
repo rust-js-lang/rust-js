@@ -2116,12 +2116,14 @@ export function click() {
   ([ADR 0096](../../decisions/0096-statics.md), amended;
   [Module variables](global-scope.md#a-static-mut)).
 
-Constants side by side that each read a property of one object, exported
-or not, are one destructuring of it, as React's feature flag forks export
-what their host gives, `export const { alwaysThrottleRetries, .. } =
-dynamicFeatureFlags;`: the same properties, read once each, in their
-order. Exported ones are named as the properties they read; one named
-otherwise, or alone, is its own `export const`
+Constants side by side that each read a field of one Rust value, a
+constant's or a thread-local's, exported or not, are one destructuring of
+it, as React's feature flag forks export what their host gives, `export
+const { alwaysThrottleRetries, .. } = dynamicFeatureFlags;`: the same
+properties, read once each, in their order. Exported ones are named as the
+properties they read; one named otherwise, or alone, is its own `export
+const`, and so is each of a JS module's members, a binding's, or a
+global's, `export const log = Scheduler.log;`
 ([ADR 0031](../../decisions/0031-consts.md#amendment-exported-constants-of-one-objects-properties-are-one-export-of-its-destructuring-rd751), amended):
 
 ```rust

@@ -799,4 +799,12 @@ export const mutations: Mutation[] = [
     replace: "                    .is_some_and(|_| false) =>\n",
     tests: ["test/lowering-loops.test.ts", "-t", "Console's loops, spreads and calls"],
   },
+  {
+    name: "module-members-read-together",
+    breaks: "constants side by side of a JS module's members, or a global's, are destructured as one Rust value's fields, `export const { log, unstable_setDisableYieldValue } = Scheduler;` (#633)",
+    file: "src/prepare.rs",
+    find: "        if !values.contains(value) {\n",
+    replace: "        if false && !values.contains(value) {\n",
+    tests: ["test/lowering-constants.test.ts", "-t", "a JS module's members are each their own"],
+  },
 ];

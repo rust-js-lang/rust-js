@@ -16,7 +16,8 @@ export function entry() {
 
 // React's `clz32` polyfill: the fallback by the natural logarithm, which
 // `Math.clz32` is chosen over where the host has it.
-const { log: LOG, LN2 } = Math;
+const LOG = Math.log;
+const LN2 = Math.LN2;
 // Written as a literal, or computed, it's the number.
 const HALF_LN2 = 0.34657359027997264;
 const WRITTEN = 0.6931471805599453;

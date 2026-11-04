@@ -284,15 +284,31 @@ fn tested_assignments(stmts: &mut Vec<Stmt>) {
 
 /// Constants side by side that each read a property of one variable,
 /// `const P = MDXComponents.p;`, none set: its destructuring, as JS
-/// writes it, `const { Intro, p: P } = MDXComponents;`; of exported ones, each named as the property it reads, one export of
-/// them, `export const { alwaysThrottleRetries, enableObjectFiber } =
+/// writes it, `const { Intro, p: P } = MDXComponents;`; of exported ones,
+/// each named as the property it reads, one export of them, `export const { alwaysThrottleRetries, enableObjectFiber } =
 /// dynamicFlags;`, a namespace thread-local's form (rd751, ADR 1037,
 /// amended), each name at its constant, the comments between them in its
 /// list (`to_oxc/closing.rs`'s `exported`). Each property is read once, in
 /// its order, and each name bound right after its read, as each `const`
 /// did, of a variable nothing sets between them: a module's constant read
 /// of state set after it loads is made where it's first used (ADR 1006).
+/// The variable is a Rust value, whose fields they read: a constant or a
+/// thread-local of the module, or what it imports of the crate's modules;
+/// not a JS module's namespace, its export or a global, whose members are
+/// each a binding of its own, `export const log = Scheduler.log;` (#633).
 fn read_together(module: &mut js::Module) {
+    let values: HashSet<String> = (module.items.iter())
+        .filter_map(|item| match item {
+            js::Item::Const(constant) => Some(constant.name.clone()),
+            _ => None,
+        })
+        .chain(
+            module
+                .imports
+                .iter()
+                .flat_map(|import| import.named.iter().map(|(_, local)| local.clone())),
+        )
+        .collect();
     // What a constant reads, the variable and the property, if it's one,
     // and whether it's exported, as the property's name.
     let read = |item: &js::Item| -> Option<(Expr, String, bool)> {
@@ -302,7 +318,10 @@ fn read_together(module: &mut js::Module) {
         let ExprKind::Member(object, property) = &constant.value.kind else {
             return None;
         };
-        if !matches!(object.kind, ExprKind::Var(_)) {
+        let ExprKind::Var(value) = &object.kind else {
+            return None;
+        };
+        if !values.contains(value) {
             return None;
         }
         let readable = crate::names::is_identifier(property)

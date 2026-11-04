@@ -661,3 +661,38 @@ js::export_default!(OFF);
   const defaulted = await import(join(dir, "defaulted.js"));
   expect([defaulted.on(), defaulted.default]).toEqual([true, false]);
 });
+
+// React's react-reconciler Scheduler.js writes `export const log =
+// Scheduler.log;` and `export const unstable_setDisableYieldValue =
+// Scheduler.unstable_setDisableYieldValue;`, each a member of the
+// scheduler's module; its port reads two bindings, `#[link_name =
+// "scheduler#*.log"]` and `"scheduler#*.unstable_setDisableYieldValue"`,
+// which printed one `export const { log, unstable_setDisableYieldValue } =
+// Scheduler;`. A destructuring is of one Rust value's fields, a constant's
+// or a thread-local's, or one the crate's modules export; a JS module's
+// members, or a global's, are bindings of their own, each its own `const`
+// (#633).
+test("constants side by side of a JS module's members are each their own", async () => {
+  const dir = fixture("module-members-apart");
+  writeFileSync(join(dir, "sched.js"), "export const log = (n) => n;\nexport const unstable_setDisableYieldValue = (b) => b;\n");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "./sched.js#*.log"]
+    safe static SCHEDULER_LOG: Option<&'static dyn Fn(u32) -> u32>;
+    #[link_name = "./sched.js#*.unstable_setDisableYieldValue"]
+    safe static SCHEDULER_SET: Option<&'static dyn Fn(bool) -> bool>;
+}
+
+thread_local! {
+    pub static LOG: Option<&'static dyn Fn(u32) -> u32> = SCHEDULER_LOG;
+    #[cfg_attr(rust_js, rust_js::name = "unstable_setDisableYieldValue")]
+    pub static UNSTABLE_SET_DISABLE_YIELD_VALUE: Option<&'static dyn Fn(bool) -> bool> = SCHEDULER_SET;
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export const log = Sched.log;
+export const unstable_setDisableYieldValue = Sched.unstable_setDisableYieldValue;
+`);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.log(3), lib.unstable_setDisableYieldValue(true)]).toEqual([3, true]);
+});

@@ -793,8 +793,10 @@ test("a thread-local's RefCell is its own, whatever generic code's RefCell<T> is
 test("a thread-local of a library's flag is made as its module loads", () => {
   const out = chain(pairs, "thread_local_reads_library", ["dep", "app"]);
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
-  // Through the library's namespace, as their paths name them (ADR 1018).
-  expect(app).toContain("const { ENABLE_PROFILER_TIMER: SUPPORTS_USER_TIMING, count: SEEN } = Dep;\n");
+  // Through the library's namespace, as their paths name them (ADR 1018),
+  // each its own `const`: two of the library's items, no one value's
+  // fields (#633).
+  expect(app).toContain("const SUPPORTS_USER_TIMING = Dep.ENABLE_PROFILER_TIMER;\nconst SEEN = Dep.count;\n");
 }, 300_000);
 
 // ADR 0330, amended (React port gap rd56): a library's struct field whose

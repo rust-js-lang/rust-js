@@ -48,7 +48,8 @@ pub fn count(x: u32) -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(`export const clz32 = typeof Math.clz32 !== "undefined" ? Math.clz32 : clz32Fallback;`);
-  expect(js).toContain("const { log: LOG, LN2 } = Math;");
+  // Each a global's member, its own `const`, as upstream's (#633).
+  expect(js).toContain("const LOG = Math.log;\nconst LN2 = Math.LN2;");
   expect(js).not.toContain("0.6931471805599453");
   const inputs = [0, 1, 3, 1000, 0x7fffffff, 0x80000000, 0xffffffff];
   const expected = [32, 31, 30, 22, 1, 0, 0];

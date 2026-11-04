@@ -561,3 +561,36 @@ side of one object's properties are one destructuring", run in JS with
 getters that record each read, and mutations `exported-reads-apart`,
 `exported-renamed-read-together` and
 `exported-and-unexported-read-together` (`prepare.ts`).
+
+## Amendment: a destructuring is of one Rust value's fields (#633, the user's decision)
+
+React's react-reconciler Scheduler.js writes `export const log =
+Scheduler.log;` and `export const unstable_setDisableYieldValue =
+Scheduler.unstable_setDisableYieldValue;`, each a member of the scheduler's
+module. Its port reads two bindings of that module, `#[link_name =
+"scheduler#*.log"]` and `"scheduler#*.unstable_setDisableYieldValue"`, and
+the amendment above printed them `export const { log,
+unstable_setDisableYieldValue } = Scheduler;`: `read_together` took any
+variable's properties, where the rule was made of one Rust value's fields,
+www's flags' `DYNAMIC_FEATURE_FLAGS.with(|flags| flags.x)`.
+
+**The user's decision (2026-11-04): constants side by side are one
+destructuring only of one Rust value's fields**: the variable is a
+constant or a thread-local of the module, or what it imports of the
+crate's modules (`js::Module::items`' constants, `imports`' names). A JS
+module's namespace or export, a binding's, and a global are no Rust value:
+each member read is its own `const`, as a person writes a binding of each.
+React's clz32 port's `const log = Math.log; const LN2 = Math.LN2;` is
+upstream's again, where ADR 0887 recorded `const { log: LOG, LN2 } =
+Math;` as a difference, and the corpus's `math_values` reads so too. So
+does a library's module read by its namespace, `const SUPPORTS_USER_TIMING
+= Dep.ENABLE_PROFILER_TIMER; const SEEN = Dep.count;`: two of its items,
+no one value's fields.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, none; the same reads
+either way.
+
+Held by `test/lowering-constants.test.ts`'s "constants side by side of a JS
+module's members are each their own", run in JS, and `test/modules.test.ts`'s
+clz32 order, `test/lowering-math.test.ts` and `test/crates.test.ts`'s
+library flag; mutation `module-members-read-together` (`prepare.ts`).
