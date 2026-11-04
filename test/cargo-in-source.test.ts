@@ -236,3 +236,60 @@ test("a Cargo build's export * of a module placed outside its crate's directory 
   const loaded = `const m = await import(${JSON.stringify(config)}); console.log(m.decoder() + m.chunk(), m.streamConfig.chunk());`;
   expect(run([node ?? "node", "--input-type=module", "--eval", loaded]).trim()).toBe("3 2");
 }, 600_000);
+
+// What a module loads by a specifier in its code, a dynamic `import()`,
+// `js::import!` of a function of another module's, and a `require(..)`, a
+// binding's marked `#[rust_js::require]`, loads it as an `import` does:
+// written in the crate's build directory, its specifier is relative to the
+// root's file, and a module placed outside the crate's directory, `#[path =
+// "../client/src/Loader.rs"]`, has its JS in source elsewhere, where each
+// specifier is relinked. Neither was (#618, P0): each named a file that
+// isn't there, the promise rejected and the call threw, as #602's `export
+// * from` failed to load; nor was a file rust-js doesn't write, a
+// binding's JS, even by an `import`. Each names its module from where its
+// JS is.
+test("a Cargo build's import() and require from a module placed outside its crate's directory load", async () => {
+  const dir = fixture("cargo-in-source-dynamic-import");
+  const crate = join(dir, "app");
+  mkdirSync(join(crate, "src"), { recursive: true });
+  mkdirSync(join(dir, "client", "src"), { recursive: true });
+  const js = `js = { package = "rust-js-builtins", path = ${JSON.stringify(join(root, "builtins"))} }`;
+  writeFileSync(join(crate, "Cargo.toml"), `[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[lib]\npath = "app.rs"\n\n[dependencies]\n${js}\n`);
+  writeFileSync(join(crate, "app.rs"), '#[path = "../client/src/Loader.rs"]\npub mod loader;\n#[path = "src/lint.rs"]\npub mod lint;\n');
+  writeFileSync(join(crate, "src", "lint.rs"), "pub fn long_lines(text: &str) -> usize {\n    text.lines().filter(|line| line.len() > 3).count()\n}\n");
+  writeFileSync(join(crate, "src", "helper.js"), "export function twice(n) {\n  return n * 2;\n}\n\nexport function half(n) {\n  return n / 2;\n}\n");
+  writeFileSync(
+    join(dir, "client", "src", "Loader.rs"),
+    `pub async fn long_lines(text: String) -> usize {
+    let count = js::import!(crate::lint::long_lines).await;
+    count(&text)
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./src/helper.js#twice")]
+#[cfg_attr(rust_js, rust_js::require)]
+fn twice(_n: f64) -> f64 {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./src/helper.js#half")]
+fn half(_n: f64) -> f64 {
+    unreachable!()
+}
+
+pub fn doubled(n: f64) -> f64 {
+    twice(n) + half(n)
+}
+`,
+  );
+  writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app"]\nresolver = "3"\n');
+  await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: channel, compiler, offline: true, packageNames: ["app"], inSource: true });
+  const loader = join(dir, "client", "src", "Loader.js");
+  const out = readFileSync(loader, "utf8");
+  expect(out).toContain('await import("../../app/src/lint.js")');
+  expect(out).toContain('import { half } from "../../app/src/helper.js";');
+  expect(out).toContain('return require("../../app/src/helper.js").twice(n) + half(n);');
+  // `require` from the file itself, as a CommonJS module's is.
+  const loaded = `import { createRequire } from "node:module"; globalThis.require = createRequire(${JSON.stringify(loader)});
+const m = await import(${JSON.stringify(loader)}); console.log(await m.longLines("long\\nno\\nlonger"), m.doubled(4));`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", loaded]).trim()).toBe("2 10");
+}, 600_000);

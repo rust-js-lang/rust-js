@@ -333,7 +333,7 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
             block(body, visitor);
         }
         ExprKind::Function(function) => function_names(function, visitor),
-        ExprKind::ItemHole(_) | ExprKind::Import(_) => {}
+        ExprKind::ItemHole(_) | ExprKind::Import(_) | ExprKind::Specifier(_) => {}
         ExprKind::Jsx(jsx) => {
             if let JsxTag::Component(e) = &mut jsx.tag {
                 expr(e, visitor);

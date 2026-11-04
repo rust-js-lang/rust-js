@@ -76,7 +76,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // import it would make, where it's read: never imported (rd684,
             // ADR 0305, amended).
             if self.krate.required_uses.contains(&(self.module, def_id)) {
-                return Expr::member(Expr::call(Expr::var("require"), vec![Expr::str(&export.0)]), export.1);
+                return crate::lower::bindings::required(&export);
             }
             self.dependencies
                 .borrow_mut()

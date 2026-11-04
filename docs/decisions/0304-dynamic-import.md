@@ -3,7 +3,9 @@
 Status: Accepted. Amends [0028](0028-js-module-imports.md), which left
 dynamic `import()` for later. Amended (2026-11-02): a specifier known as
 the program runs is `js::import_specifier(specifier)` (rd607). Amended
-(2026-11-04): a getter's is its read off the module (#581).
+(2026-11-04): a getter's is its read off the module (#581). Amended
+(2026-11-04): a specifier in code, an `import()`'s and a `require`'s, is
+made from the module's file and relinked where its JS goes in source (#618).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -111,3 +113,53 @@ when it's called"): a live export read before and after the module bumps
 it, `[1, 2]`, the namespace the module itself, and no static import.
 Mutations `held-getter-read-as-import`, `imported-getter-read-once` and
 `imported-namespace-a-property`.
+
+## Amendment: a specifier in code is made from the module's file and relinked (#618)
+
+What a module loads by a specifier in its code, a dynamic `import()` and
+a `require(..)` ([0305](0305-require.md)), names its module as an
+`import` does, in both places a specifier is made:
+
+- **From the module's own file.** `js::import!`'s was, its
+  `ImportFrom` resolved at output planning; a `require`'s was a string
+  lowering wrote, the specifier from the crate root's file (a binding's,
+  ADR 0028) or from the build's output (a library's without a package),
+  so `outer/inner.js` printed `require("../dep/element.js")`, a file that
+  isn't there, where its unmarked `use` imports `"../../dep/element.js"`:
+  the call threw where Rust's returns (P0). **A `require`'s argument is
+  `js::ExprKind::Specifier`, made at output planning as an `import()`'s
+  is**, by the one `OutputPlan::linked_specifier`.
+- **Where its JS goes in source.** A module's JS is written in the
+  crate's build directory and copied where it goes in source, each
+  relative specifier relinked by the manifest's `links` (ADR
+  [0101](0101-cargo-workspace-wrapper.md)), which are what
+  `to_oxc::module_specifiers` finds: each static `import`'s and `export ..
+  from`'s (#602 added `export * from`'s), never an `import()`'s or a
+  `require`'s. So in a module placed outside its crate's directory,
+  `#[path = "../client/src/Loader.rs"]`, `js::import!(crate::lint::long_lines)`
+  kept `import("./src/lint.js")` in its copy at `client/src/Loader.js`,
+  and its promise rejected. **`module_specifiers` gives an `import("..")`'s
+  string and a `require("..")`'s too**, as `to_oxc::loads` reads each as
+  a load (rust-js renames a local `require`). And a file rust-js doesn't
+  write, a binding's JS, was never relinked, even by a static `import`:
+  only a file the build copies was. **The host names such a file where it
+  is in source, that far from the root's Rust as it is from the root's JS
+  in the build** (`tooling/cargo.js`'s `writeInSource`), which is what a
+  module in the crate's directory named already; a crate of crates.io's
+  keeps what it names.
+
+One of a specifier known as the program runs, `js::import_specifier`'s,
+names nothing rust-js wrote. Case N of ADR
+[0262](0262-when-rust-and-js-disagree.md): the same module, named from
+where the file is.
+
+Held by `test/cargo-in-source.test.ts`'s "a Cargo build's import() and
+require from a module placed outside its crate's directory load" (an
+`import()`, a required binding and an imported one, run in Node),
+`test/require.test.ts`'s "a use marked require in a module below the root
+requires its library from its own file" and `test/bindings-require.test.ts`'s
+"a required binding in a module below the root requires its file from its
+own"; mutations `dynamic-import-unlinked`, `require-unlinked`
+(`to_oxc/expressions.ts`), `require-specifier-of-the-root` (`output.ts`),
+`required-use-specifier-raw` (`lower/items.ts`) and
+`required-binding-specifier-raw` (`lower/bindings/imports.ts`).

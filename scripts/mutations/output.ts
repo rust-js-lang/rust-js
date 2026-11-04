@@ -439,4 +439,12 @@ export const mutations: Mutation[] = [
     replace: "            .is_some()\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of every name its module's file exports is export \\* from"],
   },
+  {
+    name: "require-specifier-of-the-root",
+    breaks: "a `require(..)` in a module below the root names its file from the crate root's file, `require(\"../dep/element.js\")` in `outer/inner.js`, a file that isn't there, and the call throws (#618, P0)",
+    file: "src/output.rs",
+    find: "            if let js::ExprKind::Import(import) | js::ExprKind::Specifier(import) = &mut e.kind {",
+    replace: "            if let js::ExprKind::Specifier(js::ImportFrom::Specifier(_)) = &e.kind {\n            } else if let js::ExprKind::Import(import) | js::ExprKind::Specifier(import) = &mut e.kind {",
+    tests: ["test/require.test.ts", "-t", "below the root"],
+  },
 ];

@@ -269,7 +269,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
  * that this build doesn't write goes, if it's still as written: an edited
  * one is a person's, and one rust-js wrote some other way isn't this
  * build's. Where each JS went.
- * @param {{ crate?: string, library?: { name: string }, modules: { file: string, map?: string, types?: string, types_only?: boolean, source: string, module: string[], in_source?: string, links?: { start: number, end: number, file: string }[], type_links?: { start: number, end: number, file: string }[] }[] }[]} manifests
+ * @param {{ crate?: string, input: string, output?: string, library?: { name: string }, modules: { file: string, map?: string, types?: string, types_only?: boolean, source: string, module: string[], in_source?: string, links?: { start: number, end: number, file: string }[], type_links?: { start: number, end: number, file: string }[] }[] }[]} manifests
  * @param {string} ledger
  * @param {string[]} [routes] directories where each file is a route,
  * Next.js's `pages/`: a module's there gets no declarations, which
@@ -339,14 +339,23 @@ export function writeInSource(manifests, ledger, routes = [], { check = false, p
       if (module) pending.push(module);
     }
   }
-  const crates = manifests.map(({ input, modules }) => {
+  const crates = manifests.map(({ input, output, modules }) => {
     const files = [];
+    // A file rust-js doesn't write, a binding's JS, is named relative to
+    // the root's JS (ADR 0028), which is in the build's directory, and in
+    // source beside the root's Rust: there it's that far from the root's
+    // Rust, as each module of the crate's directory names it already, and
+    // one placed outside it, `#[path = "../client/src/Loader.rs"]`, names
+    // it there too (#618). A crate of crates.io's keeps what it names.
+    const own = output === undefined || vendored.some(({ dir }) => input.startsWith(dir + sep))
+      ? undefined
+      : (/** @type {string} */ file) => join(dirname(input), relative(dirname(output), file));
     for (const { file, map, types, types_only, links, type_links } of modules) {
       if (vendoredFile(file) && !reached.has(file)) continue;
       const to = moved.get(file);
       // Of types alone, its `.d.ts` alone (ADR 1005).
       if (!types_only) {
-        const js = relinked(readFileSync(file), links, to, moved, packages).toString("utf8")
+        const js = relinked(readFileSync(file), links, to, { moved, own }, packages).toString("utf8")
           .replace(/\/\/# sourceMappingURL=\S+(\s*)$/, `//# sourceMappingURL=${basename(to)}.map$1`);
         writes.set(to, Buffer.from(js));
         files.push(to);
@@ -355,7 +364,7 @@ export function writeInSource(manifests, ledger, routes = [], { check = false, p
       // what they import where it's copied too.
       if (types && existsSync(types) && !routed(to)) {
         const typesTo = to.replace(/\.jsx?$/, ".d.ts");
-        writes.set(typesTo, relinked(readFileSync(types), type_links ?? [], typesTo, moved, packages));
+        writes.set(typesTo, relinked(readFileSync(types), type_links ?? [], typesTo, { moved, own }, packages));
         files.push(typesTo);
       }
       if (!types_only && map && existsSync(map)) {
@@ -419,8 +428,10 @@ export function packageOf(packages, file) {
 /**
  * `bytes`, a file rust-js wrote, for where it's copied, `to`: each
  * specifier the compiler found in it by a parse, its manifest's `links`
- * (ADR 0101), that names a file copied too names the copy, from `to`;
- * after a directive, in an `export .. from` or in a declaration alike. One
+ * (ADR 0101), that names a file copied too names the copy, from `to`, and
+ * one that names a file rust-js doesn't write names it where `own` says it
+ * is in source; after a directive, in an `export .. from`, an `import()`, a
+ * `require` or in a declaration alike. One
  * in another npm package than `to` is by the package's name, as Node finds
  * it wherever its package manager put it, `@acme/greet/src/util.js` (ADR
  * 0414). Nothing else changes: a string that reads like an import is the
@@ -428,14 +439,14 @@ export function packageOf(packages, file) {
  * @param {Buffer} bytes
  * @param {{ start: number, end: number, file: string }[]} links
  * @param {string} to
- * @param {Map<string, string>} moved
+ * @param {{ moved: Map<string, string>, own?: (file: string) => string }} where
  * @param {{ name: string, dir: string }[]} packages
  */
-function relinked(bytes, links, to, moved, packages) {
+function relinked(bytes, links, to, { moved, own }, packages) {
   const parts = [];
   let at = 0;
   for (const { start, end, file } of links) {
-    const target = moved.get(file);
+    const target = moved.get(file) ?? own?.(file);
     if (!target) continue;
     const home = packageOf(packages, target);
     const path = relative(dirname(to), target);

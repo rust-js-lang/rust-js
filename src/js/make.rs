@@ -532,6 +532,11 @@ impl Expr {
         Expr::new(ExprKind::Import(from))
     }
 
+    /// `require("x")`, of the module `from` names (ADR 0305).
+    pub fn require(from: ImportFrom) -> Expr {
+        Expr::call(Expr::var("require"), vec![Expr::new(ExprKind::Specifier(from))])
+    }
+
     pub fn handle(place: Expr) -> Expr {
         Expr::stored_handle(place, Storage::AsGiven)
     }

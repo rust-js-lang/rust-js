@@ -131,11 +131,9 @@ pub struct Module {
     /// noop() {}`, not `export default noop;` after it (ADR 0611).
     pub default_declared: bool,
     /// `export { getCurrentTime as unstable_now };`, a `pub use` of its own
-    /// item by another name, as `(local, exported)`, after its functions
-    /// (ADR 0596).
+    /// item by another name, as `(local, exported)`, after its functions (ADR 0596).
     pub aliases: Vec<(String, String)>,
-    /// Where its code is in the Rust, what a comment after its last code
-    /// ends (ADR 0621).
+    /// Where its code is in the Rust, what a comment after its last code ends (ADR 0621).
     pub code: Span,
     /// Each function that's now a declaration elsewhere, the variable or
     /// the field it only called (ADR 0610, #535), or a namespace's method
@@ -385,8 +383,8 @@ pub struct Reexport {
     pub every: bool,
 }
 
-/// Where a dynamic `import()` loads from (ADR 0304): a specifier, or a
-/// module of the crate's by its path, until its file's specifier is known.
+/// Where a dynamic `import()` or a `require` loads from (ADRs 0304, 0305): a specifier, as a
+/// `link_name`'s, or a module of the crate's, until its file's, from the importing file, is known.
 #[derive(Clone, PartialEq)]
 pub enum ImportFrom {
     Specifier(String),
@@ -1220,6 +1218,8 @@ pub enum ExprKind {
     ItemHole(u32),
     /// `import("./lint.js")`: the module, loaded when it's asked for (ADR 0304).
     Import(ImportFrom),
+    /// `"../dep/element.js"`, what `require` loads, made from the importing file (ADR 0305).
+    Specifier(ImportFrom),
     /// A drop function given to one of the crate's functions for its type
     /// parameter, `(item, index, drop)`: until the pipeline keeps it, where
     /// that function uses it, or leaves it out (ADR 0300). The item is its

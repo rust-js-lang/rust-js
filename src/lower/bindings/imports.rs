@@ -31,7 +31,7 @@ pub(in crate::lower) fn js_import(path: &str) -> Option<(Export, &str)> {
 /// `ReactFiberErrorDialog#*`, as `import * as` binds it, not its property
 /// `"*"`; else its export's property, `require("node:path").sep`.
 pub(in crate::lower) fn required(export: &Export) -> Expr {
-    let module = Expr::call(Expr::var("require"), vec![Expr::str(&export.0)]);
+    let module = Expr::require(js::ImportFrom::Specifier(export.0.clone()));
     match export.1 == js::NAMESPACE {
         true => module,
         false => Expr::member(module, &export.1),

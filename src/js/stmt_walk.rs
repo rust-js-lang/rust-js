@@ -23,6 +23,7 @@ impl Module {
                 ExprKind::DropArgument(..) => "a drop's argument",
                 ExprKind::Handle(_, _) | ExprKind::Pair(..) => "a `&mut`'s handle",
                 ExprKind::Import(ImportFrom::Module(_)) => "an `import()` of a module without its specifier",
+                ExprKind::Specifier(ImportFrom::Module(_)) => "a `require` of a module without its specifier",
                 _ => return,
             };
             found.get_or_insert(kind);

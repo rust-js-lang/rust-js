@@ -25,4 +25,12 @@ export const mutations: Mutation[] = [
     replace: "    match false && export.1 == js::NAMESPACE {\n",
     tests: ["test/bindings-require.test.ts", "-t", "a required binding of a whole module"],
   },
+  {
+    name: "required-binding-specifier-raw",
+    breaks: "a binding marked `#[rust_js::require]` in a module below the root requires its JS by its specifier from the crate root's file, `require(\"./helper.cjs\")` in `outer/inner.js`, a file that isn't there (#618, P0)",
+    file: "src/lower/bindings/imports.rs",
+    find: "    let module = Expr::require(js::ImportFrom::Specifier(export.0.clone()));",
+    replace: "    let module = Expr::call(Expr::var(\"require\"), vec![Expr::str(&export.0)]);",
+    tests: ["test/bindings-require.test.ts", "-t", "below the root"],
+  },
 ];

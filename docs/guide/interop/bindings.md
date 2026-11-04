@@ -248,7 +248,10 @@ reads, a parameter `eval`, is renamed so the call reads the global ([ADR
 1033](../../decisions/1033-a-bindings-path-may-quote-a-key.md), amended).
 
 A relative module, `./greet.js`, is relative to the crate root's JS file;
-each module that imports it gets the path from its own directory. The
+each module that imports it, `require`s it or loads it by `js::import!`
+gets the path from its own directory, and in a Cargo build's JS in source,
+from where that module's JS is, beside its Rust
+([ADR 0304, amended](../../decisions/0304-dynamic-import.md#amendment-a-specifier-in-code-is-made-from-the-modules-file-and-relinked-618)). The
 build reads it, and the files of the program's own it imports, for which
 of the crate's modules it loads: a module whose load reads another's
 `const` in a cycle through it reads its value

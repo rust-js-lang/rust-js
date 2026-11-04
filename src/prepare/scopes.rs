@@ -366,7 +366,8 @@ impl Walk {
             | ExprKind::Symbol(_)
             | ExprKind::Regex(_)
             | ExprKind::ItemHole(_)
-            | ExprKind::Import(_) => {}
+            | ExprKind::Import(_)
+            | ExprKind::Specifier(_) => {}
             ExprKind::Member(a, _)
             | ExprKind::OptionalMember(a, _)
             | ExprKind::Spread(a)

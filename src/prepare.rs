@@ -1275,6 +1275,7 @@ fn expr(e: &mut Expr) {
         | ExprKind::Symbol(_)
         | ExprKind::ItemHole(_)
         | ExprKind::Import(_)
+        | ExprKind::Specifier(_)
         | ExprKind::Regex(_) => {}
     }
     // `!!a && !!b`, each a value's truth: `!!(a && b)`, as React's

@@ -205,6 +205,7 @@ macro_rules! walks {
                     | ExprKind::Symbol(_)
                     | ExprKind::ItemHole(_)
                     | ExprKind::Import(_)
+                    | ExprKind::Specifier(_)
                     | ExprKind::Regex(_) => {}
                 }
             }

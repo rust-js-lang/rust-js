@@ -125,3 +125,37 @@ console.log(JSON.stringify([lib.dialog() === require("ReactFiberErrorDialog"), l
   expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
   expect(JSON.parse(p.stdout.toString())).toEqual([true, true, false, "www"]);
 });
+
+// A binding's relative module is relative to the crate root's file (ADR
+// 0028), and a module below the root imports it from its own file,
+// `../helper.cjs` from `outer/inner.js`. Its `require` named it from the
+// root's file, `require("./helper.cjs")`, a file that isn't there, so the
+// call threw (#618, P0): it names it as the import does.
+test("a required binding in a module below the root requires its file from its own", () => {
+  const dir = fixture("required-nested");
+  mkdirSync(join(dir, "outer"), { recursive: true });
+  writeFileSync(join(dir, "helper.cjs"), "module.exports = { twice: (n) => n * 2 };\n");
+  writeFileSync(join(dir, "lib.rs"), "pub mod outer;\n");
+  writeFileSync(join(dir, "outer.rs"), "pub mod inner;\n");
+  writeFileSync(join(dir, "outer", "inner.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "./helper.cjs#twice")]
+#[cfg_attr(rust_js, rust_js::require)]
+fn twice(_n: f64) -> f64 {
+    unreachable!()
+}
+
+pub fn doubled(n: f64) -> f64 {
+    twice(n)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  expect(readFileSync(join(dir, "outer", "inner.js"), "utf8")).toContain('return require("../helper.cjs").twice(n);');
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  // A CommonJS module's own `require`, of the module's file.
+  writeFileSync(join(dir, "run.js"), `import { createRequire } from "node:module";
+globalThis.require = createRequire(new URL("./outer/inner.js", import.meta.url));
+console.log((await import("./outer/inner.js")).doubled(4));
+`);
+  const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  expect(p.stdout.toString().trim()).toBe("8");
+});

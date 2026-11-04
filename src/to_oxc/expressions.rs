@@ -282,7 +282,10 @@ impl<'a> Cx<'a> {
                 let source = Expression::new_string_literal(SPAN, self.allocator.alloc_str(from), None, b);
                 Expression::new_import_expression(sp, source, None, None, b)
             }
-            ExprKind::Import(js::ImportFrom::Module(_)) => {
+            ExprKind::Specifier(js::ImportFrom::Specifier(from)) => {
+                Expression::new_string_literal(sp, self.allocator.alloc_str(from), None, b)
+            }
+            ExprKind::Import(js::ImportFrom::Module(_)) | ExprKind::Specifier(js::ImportFrom::Module(_)) => {
                 unreachable!("its output plan gives a module of the crate's its specifier")
             }
             ExprKind::DropArgument(..) => unreachable!("the pipeline keeps each drop argument or leaves it out"),
@@ -1145,9 +1148,9 @@ pub(super) fn member_name(property: &str) -> bool {
 }
 
 /// Where `code`, a module rust-js wrote, or its `declarations`, names another
-/// by its path: each specifier of an `import` and an `export .. from`, what
-/// rust-js prints of them, as the byte range of its text between its quotes,
-/// and the text. A host that moves the files rewrites these and nothing
+/// by its path: each specifier of an `import`, an `export .. from`, an
+/// `import("..")` of a string and a `require("..")`, what rust-js prints of
+/// them, as the byte range of its text between its quotes, and the text. A host that moves the files rewrites these and nothing
 /// else (ADR 0101): found by a parse, whatever comes before them.
 pub fn module_specifiers(code: &str, declarations: bool) -> Result<Vec<(usize, usize, String)>, String> {
     struct Specifiers(Vec<(usize, usize, String)>);
@@ -1168,6 +1171,27 @@ pub fn module_specifiers(code: &str, declarations: bool) -> Result<Vec<(usize, u
         // an `import` does (#602).
         fn visit_export_all_declaration(&mut self, it: &oxc_ast::ast::ExportAllDeclaration<'a>) {
             self.add(&it.source);
+        }
+        // And a dynamic `import("./x.js")`, `js::import!`'s of a function
+        // of another module, a promise of the module it names, as #602's.
+        fn visit_import_expression(&mut self, it: &oxc_ast::ast::ImportExpression<'a>) {
+            if let Expression::StringLiteral(source) = &it.source {
+                self.add(source);
+            }
+            oxc_ast_visit::walk::walk_import_expression(self, it);
+        }
+        // And a `require("./x.js")`, a `use` or a binding marked
+        // `#[rust_js::require]`'s (ADR 0305, amended, #618), as
+        // `to_oxc::loads` reads each: rust-js renames a local `require`,
+        // so this one is the global's.
+        fn visit_call_expression(&mut self, it: &oxc_ast::ast::CallExpression<'a>) {
+            if let Expression::Identifier(callee) = &it.callee
+                && callee.name == "require"
+                && let [oxc_ast::ast::Argument::StringLiteral(source)] = it.arguments.as_slice()
+            {
+                self.add(source);
+            }
+            oxc_ast_visit::walk::walk_call_expression(self, it);
         }
     }
     let allocator = Allocator::default();

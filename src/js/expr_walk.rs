@@ -93,6 +93,7 @@ impl Expr {
             | ExprKind::Symbol(_)
             | ExprKind::ItemHole(_)
             | ExprKind::Import(_)
+            | ExprKind::Specifier(_)
             | ExprKind::Regex(_) => {}
         }
     }
@@ -271,6 +272,7 @@ impl Expr {
             | ExprKind::Symbol(_)
             | ExprKind::ItemHole(_)
             | ExprKind::Import(_)
+            | ExprKind::Specifier(_)
             | ExprKind::Regex(_) => self.kind.clone(),
         };
         // The node it was, of new parts: what's known of it is still so.
@@ -650,6 +652,7 @@ impl Expr {
             | ExprKind::Var(_)
             | ExprKind::Symbol(_)
             | ExprKind::Regex(_)
+            | ExprKind::Specifier(_)
             | ExprKind::ItemHole(_)
             | ExprKind::Arrow(..)
             | ExprKind::AsyncArrow(..)

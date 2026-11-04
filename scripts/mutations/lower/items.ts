@@ -413,4 +413,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/require.test.ts"],
   },
+  {
+    name: "required-use-specifier-raw",
+    breaks: "a library's function a `use` marked `#[rust_js::require]` reads is required by its specifier from the crate root's file, `require(\"../dep/element.js\")` in `outer/inner.js`, a file that isn't there (#618, P0)",
+    file: "src/lower/items.rs",
+    find: "                return crate::lower::bindings::required(&export);",
+    replace: "                return Expr::member(Expr::call(Expr::var(\"require\"), vec![Expr::str(&export.0)]), export.1);",
+    tests: ["test/require.test.ts", "-t", "below the root"],
+  },
 ];

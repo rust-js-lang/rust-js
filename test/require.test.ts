@@ -8,7 +8,7 @@
 
 import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, run, target } from "./support";
 
@@ -42,7 +42,10 @@ function compiled(dir: string, files: Record<string, string>) {
   run([compiler, join(dir, "dep.rs"), "-o", join(dir, "dep", "lib.js"), "--library", "--manifest", join(dir, "dep", "lib.manifest.json"),
     "--", "--crate-name", "dep", `--emit=metadata=${join(dir, "libdep.rmeta")}`, ...js]);
   mkdirSync(join(dir, "app"), { recursive: true });
-  for (const [name, source] of Object.entries(files)) writeFileSync(join(dir, "app", name), source);
+  for (const [name, source] of Object.entries(files)) {
+    mkdirSync(dirname(join(dir, "app", name)), { recursive: true });
+    writeFileSync(join(dir, "app", name), source);
+  }
   return runSync([compiler, join(dir, "app", Object.keys(files)[0]), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
     "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js], dir, 120_000);
 }
@@ -126,6 +129,30 @@ export function onSomething() {
   expect(app.called()).toBe(false);
   expect([app.through(), app.shadowed()]).toEqual(["<t2>", "<r2>"]);
   expect(scope.loaded).toEqual([1, 2]);
+});
+
+// A library with no package is imported by its file's path, made from
+// each importing file. The `require` of one was the specifier from the
+// crate root's file, `require("../dep/element.js")` in `outer/inner.js`
+// too, a file that isn't there, and the call threw (#618, P0): it's made
+// from the module's file, as the import an unmarked `use` makes is.
+test("a use marked require in a module below the root requires its library from its own file", async () => {
+  const dir = fixture("required-use-nested");
+  const ran = compiled(dir, {
+    "lib.rs": "pub mod outer;\n",
+    "outer.rs": "pub mod inner;\n",
+    "outer/inner.rs": `#[cfg_attr(rust_js, rust_js::require)]
+use dep::create_element;
+
+pub fn made() -> String {
+    create_element("a")
+}
+`,
+  });
+  expect([ran.code, ran.stderr]).toEqual([0, ""]);
+  const inner = join(dir, "app", "outer", "inner.js");
+  expect(readFileSync(inner, "utf8")).toContain('return require("../../dep/element.js").createElement("a");');
+  expect((await import(inner)).made()).toBe("<a>");
 });
 
 test("require on a use of what isn't a library's function is refused", () => {

@@ -358,10 +358,11 @@ impl OutputPlan {
         (js_path, destination, rust_path): (PathBuf, PathBuf, &Path),
         (sources, resolved): (&program::Sources, &[PathBuf]),
     ) -> Result<Laid, String> {
-        // What it imports when it's asked for, from where its file is, a
-        // module of the crate's by its file's specifier (ADR 0304).
+        // What it imports when it's asked for, and what a `require` loads,
+        // from where its file is, a module of the crate's by its file's
+        // specifier (ADR 0304, ADR 0305, amended, #618).
         js_module.each_expr_mut(&mut |e| {
-            if let js::ExprKind::Import(import) = &mut e.kind {
+            if let js::ExprKind::Import(import) | js::ExprKind::Specifier(import) = &mut e.kind {
                 let specifier = match import {
                     js::ImportFrom::Module(path) => {
                         (self.scope_specifier(from, path)).unwrap_or_else(|| self.specifier(from, path))

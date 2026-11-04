@@ -8,7 +8,10 @@ Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 Amended below: a `require` no bundler sees is read off Node's `module`,
 `node::module[requireString]`, and called by `js::function::call`. Amended
 below (rd684): a `use` of a library's function marked `#[rust_js::require]`
-reads it through `require(module)` where the module reads it.
+reads it through `require(module)` where the module reads it. Amended
+(#618): its specifier is made from the module's own file, and relinked
+where its JS goes in source, as a dynamic `import()`'s is
+([0304, amended](0304-dynamic-import.md#amendment-a-specifier-in-code-is-made-from-the-modules-file-and-relinked-618)).
 
 ## Context
 
