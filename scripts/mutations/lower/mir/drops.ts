@@ -196,8 +196,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an iterator a variable steps by `next()` and then moves into `drop` isn't held, `$held(..)`, which its owner drops where Rust does (#392): its JS, as nothing shows the drop's timing apart now",
     file: "src/lower/mir/drops.rs",
-    find: "            || lent\n",
-    replace: "",
+    find: "        dropped || lent\n",
+    replace: "        dropped\n",
     snapshots: true,
     tests: [
       "test/corpus.test.ts",
