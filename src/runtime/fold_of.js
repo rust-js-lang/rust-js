@@ -50,6 +50,8 @@ function $foldDropping(it, init, f, unwind) {
 // std's `InPlaceDrop`, which the stage that panics drops before its fold
 // drops what's left: the fold's `unwind`.
 function $foldToArray(it, drop, restFirst = false) {
+  // A JS iterator's own helper, which has no fold, stepped by `next`.
+  if (typeof it.fold !== "function") return $collectDropping(it, drop, restFirst);
   const items = [];
   const unwind = restFirst || drop === undefined ? undefined : () => $dropItems(items, drop);
   try {

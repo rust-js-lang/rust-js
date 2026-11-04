@@ -3,10 +3,10 @@
 import {
   $cmp,
   $cmpItems,
-  $collectDropping,
   $debugStr,
   $downgrade,
   $eq,
+  $foldToArray,
   $iter,
   $makeMut,
   $newCyclic,
@@ -235,7 +235,7 @@ function main() {
   }
   let lists;
   try {
-    lists = $collectDropping(map, $rcDrop);
+    lists = $foldToArray(map, $rcDrop);
   } catch (error) {
     $rcDrop(fresh.title);
     $rcDrop(fresh.pages);

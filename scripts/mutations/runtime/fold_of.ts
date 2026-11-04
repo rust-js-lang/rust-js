@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "    $collectUnwound(it, items, drop, restFirst);\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_leaks_what_a_discard_strands.rs$"],
   },
+  {
+    name: "fold-to-array-foldless",
+    breaks: "an in-place collect of a JS iterator's own helper, which has no `fold`, throws `it.fold is not a function` (#681)",
+    file: "src/runtime/fold_of.js",
+    find: "  if (typeof it.fold !== \"function\") return $collectDropping(it, drop, restFirst);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rc_counted_uses.rs$"],
+  },
 ];

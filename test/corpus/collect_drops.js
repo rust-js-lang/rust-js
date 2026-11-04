@@ -7,6 +7,7 @@ import {
   $debugStr,
   $dropEach,
   $filterDropping,
+  $foldToArray,
   $iter,
   $lazySkipWhile,
 } from "@rust-js/runtime";
@@ -21,7 +22,7 @@ function noisyDrop_drop(noisy) {
 
 function main() {
   const v = [["a"], ["bb"], ["c"], ["dd"]];
-  const long = $collectDropping(
+  const long = $foldToArray(
     $filterDropping(
       $closing($iter(v), $dropEach(noisyDrop_drop)),
       (n) => $byteLen(n[0]) > 1,
@@ -53,7 +54,7 @@ function main() {
     try {
       try {
         const skip = () => true;
-        const none = $collectDropping(
+        const none = $foldToArray(
           $lazySkipWhile($closing($iter(old), $dropEach(noisyDrop_drop)), (item) => {
             if (skip(item)) {
               noisyDrop_drop(item);
@@ -75,7 +76,7 @@ function main() {
           );
           console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
 
-          const checked = $collectDropping(
+          const checked = $foldToArray(
             $filterDropping(
               $closing($iter([["p1"], ["p2"], ["p3"]]), $dropEach(noisyDrop_drop)),
               (n) => n[0] !== "p2",
