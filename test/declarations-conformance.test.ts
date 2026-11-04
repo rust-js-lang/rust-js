@@ -23,6 +23,7 @@ import { compiler, fixture, nativeBinary, root, run } from "./support";
 
 const cases = [
   "declared_signatures",
+  "nested_mut_self_through_a_dictionary",
   "let_chain_values",
   "switch_of_an_optional_bool",
   "or_pattern_paths_absorbed",

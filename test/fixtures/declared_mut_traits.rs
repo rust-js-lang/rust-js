@@ -1,8 +1,9 @@
 // A trait whose methods take `&mut self`, declared as the type of its
 // dictionaries (#662): its `&mut self` is the box its entry takes, `{
 // value: Self }`, and a `&mut` it takes besides, a `&mut Self` too, or
-// gives, as `MutRefForm` says (#679). One with a `&mut Self` within what
-// it takes, `Option<&mut Self>`, isn't (#682).
+// gives, as `MutRefForm` says (#679), and one within an `Option` it takes,
+// `Option<&mut Self>`, which each entry adapts (#686). One with a `&mut
+// Self` elsewhere within what it takes, `Vec<&mut Self>`, isn't (#682).
 
 pub trait Counter {
     fn bump(&mut self);
@@ -126,5 +127,15 @@ pub trait Pick {
 impl Pick for u32 {
     fn pick(&mut self, other: Option<&mut Self>) -> bool {
         other.is_some()
+    }
+}
+
+pub trait Gather {
+    fn gather(&mut self, others: Vec<&mut Self>) -> usize;
+}
+
+impl Gather for u32 {
+    fn gather(&mut self, others: Vec<&mut Self>) -> usize {
+        others.len()
     }
 }

@@ -2,6 +2,7 @@
 //! bounds', and a trait's default body copied into it.
 
 use super::*;
+use crate::lower::mut_refs::adapted_part;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A dictionary's `method`, which a std default given as another entry
@@ -402,6 +403,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     *value = Expr::held(std::mem::replace(value, Expr::undefined()));
                 }
             }
+            // And a `&mut` within what it takes past its own, `Option<&mut
+            // Self>`'s or `(&mut Self, u32)`'s, generic code's box, made the
+            // impl's own the same way, `other?.value` (#686).
+            let trait_env = self.tcx.param_env(item.def_id);
+            let declared_sig = (self.tcx.fn_sig(item.def_id).instantiate_identity())
+                .skip_normalization()
+                .skip_binder();
+            let impl_sig = (self.tcx.fn_sig(method).instantiate(self.tcx, instance.args))
+                .skip_normalization()
+                .skip_binder();
+            if self.formatter_param(method).is_none() {
+                for (i, value) in values.iter_mut().enumerate() {
+                    let parts = (declared_sig.inputs().get(i), impl_sig.inputs().get(i));
+                    let (Some(&declared), Some(&actual)) = parts else {
+                        continue;
+                    };
+                    let (Some(declared), Some(actual)) = (adapted_part(declared), adapted_part(actual)) else {
+                        continue;
+                    };
+                    if let Some(made) = self.within(declared, trait_env, actual).adapted(value, true) {
+                        *value = made;
+                    }
+                }
+            }
             // The drops its caller gives for its own type parameters, which it
             // passes on as the method's, where the method takes them (ADR 0163).
             let foreign = self.krate.foreign;
@@ -510,15 +535,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 false => call,
             };
-            let made = call.is_none();
+            // And a `&mut` within what it gives, `Option<&mut Self>`'s, the
+            // impl's made generic code's box (#686).
+            let given = self.fresh("given");
+            let given_back = match (adapted_part(declared_output), adapted_part(output)) {
+                (Some(declared), Some(output)) => {
+                    (self.within(declared, trait_env, output)).adapted(&Expr::var(&given), false)
+                }
+                _ => None,
+            };
+            let made = call.is_none() && given_back.is_none();
             let patterns = params.into_iter().map(|name| match &defaulted {
                 Some((location, at)) if *location == name => js::Pattern::Defaulted(name, at.clone()),
                 _ => name.into(),
             });
-            let arrow = Expr::arrow(
-                patterns.collect(),
-                vec![StmtKind::Return(Some(call.unwrap_or_else(|| Expr::call(callee, values)))).at(js::Span::NONE)],
-            );
+            let call = call.unwrap_or_else(|| Expr::call(callee, values));
+            let body = match given_back {
+                Some(adapted) => vec![
+                    StmtKind::Const(given, call).at(js::Span::NONE),
+                    StmtKind::Return(Some(adapted)).at(js::Span::NONE),
+                ],
+                None => vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
+            };
+            let arrow = Expr::arrow(patterns.collect(), body);
             // One that passes on just what it's given, in order, is the method.
             let value = match made {
                 true => passed_on(&arrow, Taker::Made, &[]).unwrap_or(arrow),

@@ -236,3 +236,17 @@ No declaration code changed.
   (each re-imposes its refusal), `nested-mut-self-trait-declared` (the
   nested one declared) and `mut-self-trait-undeclared` (a receiver
   refused too).
+
+## Amended (#686): a `&mut Self` within an `Option` or a tuple
+
+A trait method with a `&mut Self` inside an `Option` or a tuple that it
+takes or gives, `pick(&mut self, other: Option<&mut Self>)`, is now
+declared as its dictionaries' type: `pick(self: { value: Self }, other?:
+{ value: Self } | null | undefined): boolean`. Each impl's entry now
+converts generic code's box there to the impl's form and back (ADR 0454,
+amended #686). `method_dictionary` asks the shape that the entry adapts,
+`mut_refs::within_shape`, so the two can't disagree. One with a `&mut
+Self` anywhere else, `Vec<&mut Self>`, is still left out.
+`test/declarations-ungiven.test.ts` holds both, and
+`test/declarations-conformance.test.ts` calls
+`nested_mut_self_through_a_dictionary`'s functions as declared.

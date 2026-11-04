@@ -530,8 +530,9 @@ grow({ value: [] });
 // dictionaries too (#662): its `&mut self` is the box its entry takes, `{
 // value: Self }`, as `MutRefForm::ts_type` says in its trait's terms (ADR
 // 1086), and so is a function's `&mut C` it's given with its dictionary,
-// a `&mut Self` besides its receiver and a `&mut u32` it gives (#679). One
-// with a `&mut Self` within what it takes, `Option<&mut Self>`, isn't (#682).
+// a `&mut Self` besides its receiver and a `&mut u32` it gives (#679), and
+// one within an `Option` it takes (#686). One with a `&mut Self` elsewhere
+// within what it takes, `Vec<&mut Self>`, isn't (#682).
 test("a trait of `&mut self` methods is the type of its dictionaries", () => {
   const dir = fixture("declarations-mut-traits");
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
@@ -563,8 +564,12 @@ test("a trait of `&mut self` methods is the type of its dictionaries", () => {
   expect(declarations).toContain("export const clicksSlot: Slot<Clicks>;");
   expect(declarations).toContain("export const u32Slot: Slot<number>;");
   expect(declarations).toContain(`    keep(self: ${held("Self")}, into: ${held("Self | null | undefined")}): boolean;`);
-  // One within what it takes, which no entry makes its impl's own (#682).
-  expect(declarations).not.toContain("Pick");
+  // One within an `Option`, generic code's box, which each entry adapts (#686).
+  expect(declarations).toContain(`export interface Pick<Self> {
+    pick(self: ${held("Self")}, other?: ${held("Self")} | null | undefined): boolean;
+}`);
+  // One elsewhere within what it takes, which no entry makes its impl's own (#682).
+  expect(declarations).not.toContain("Gather");
   writeFileSync(
     join(dir, "use.ts"),
     `import { bumpDyn, bumpTwice, type Clicks, clicks, clicksCounter, clicksKeep, clicksSlot, clicksSwap, type Counter, u32Counter, u32Keep, u32Slot, u32Swap } from "./lib.js";

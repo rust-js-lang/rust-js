@@ -1,7 +1,8 @@
 // A trait's method that takes a `&mut Self` within what it takes, an
 // `Option` or a tuple, called by generic code through a dictionary of a
 // number's impl: generic code's box is the number's own, so its entry takes
-// it as it is. Of an object's impl, the call is refused (#682).
+// it as it is. Of an object's impl, its entry makes it the object
+// (nested_mut_self_through_a_dictionary.rs, #686).
 
 pub trait Pick {
     fn pick(&mut self, other: Option<&mut Self>) -> bool;

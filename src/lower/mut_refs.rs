@@ -35,6 +35,127 @@ pub(super) fn boxed(place: Expr) -> Expr {
     Expr::object(vec![Prop::Field(js::HELD.into(), place)])
 }
 
+/// What a value generic code gives a dictionary's entry, or takes back from
+/// it, holds of a `&mut` generic code has as its box, `GenericBox`, past a
+/// parameter's or the result's own `&mut`, which the entry makes its impl's
+/// own too (#686, ADRs 0099, 0454, 1086): each such `&mut`, by the form a
+/// `&mut` to the impl's type is, through `Option`s and tuples, `Option<&mut
+/// Self>` and `(&mut Self, u32)`; anything else as it is, which
+/// `nested_mut_object` walks, a `Vec<&mut Self>`.
+#[derive(Clone, Debug)]
+pub(in crate::lower) enum Within<'tcx> {
+    /// A `&mut` generic code has as its box, of what the impl's `&mut` is.
+    Mut(MutRefForm),
+    /// A tuple, of what each of its fields holds.
+    Tuple(Vec<Within<'tcx>>),
+    /// An `Option` whose `Some` boxes its value on neither side, of what
+    /// its value holds.
+    Some(Box<Within<'tcx>>),
+    /// Anything else, given as it is.
+    AsItIs(Ty<'tcx>),
+}
+
+impl<'tcx> Within<'tcx> {
+    /// The types given as they are, which may hold a `&mut` the entry
+    /// doesn't make its impl's own.
+    pub(in crate::lower) fn given_as_it_is(self, out: &mut Vec<Ty<'tcx>>) {
+        match self {
+            Within::Mut(_) => {}
+            Within::Tuple(parts) => parts.into_iter().for_each(|part| part.given_as_it_is(out)),
+            Within::Some(inner) => inner.given_as_it_is(out),
+            Within::AsItIs(ty) => out.push(ty),
+        }
+    }
+
+    /// `value`, of what this says, as the other side takes it: toward the
+    /// impl, `to_impl`, each `&mut` that's generic code's box made the
+    /// impl's form, as a parameter's own is, `arg1?.value`; back, each the
+    /// impl's made generic code's box, an in-place cell of an object, as the
+    /// result's own is (ADR 0454). `None` where it's the same value.
+    pub(in crate::lower) fn adapted(&self, value: &Expr, to_impl: bool) -> Option<Expr> {
+        match self {
+            Within::Mut(form) => match form.is_cell() {
+                true => None,
+                false if to_impl => Some(Expr::held(value.clone())),
+                false => Some(in_place_cell(value.clone())),
+            },
+            Within::Tuple(parts) => {
+                let field = |i: usize| Expr::index(value.clone(), Expr::int(i as i128));
+                let made: Vec<Option<Expr>> = (parts.iter().enumerate())
+                    .map(|(i, part)| part.adapted(&field(i), to_impl))
+                    .collect();
+                if made.iter().all(Option::is_none) {
+                    return None;
+                }
+                let items = (made.into_iter().enumerate()).map(|(i, made)| made.unwrap_or_else(|| field(i)));
+                Some(Expr::array(items.collect()))
+            }
+            Within::Some(inner) => {
+                let made = inner.adapted(&value.clone().present(), to_impl)?;
+                Some(match (inner.as_ref(), to_impl) {
+                    (Within::Mut(_), true) => Expr::optional_member(value.clone(), js::HELD),
+                    _ => Expr::cond(Expr::presence(value.clone(), true), made, Expr::undefined()),
+                })
+            }
+            Within::AsItIs(_) => None,
+        }
+    }
+}
+
+/// What a dictionary's entry adapts within of `ty`, a parameter's or the
+/// result's type (`Within`): what it is past its shared references, which
+/// are the value; `None` of a `&mut`, which the entry makes its impl's own
+/// apart, one level (ADR 0454).
+pub(in crate::lower) fn adapted_part<'tcx>(ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    let mut at = ty;
+    while let ty::Ref(_, inner, Mutability::Not) = *at.kind() {
+        at = inner;
+    }
+    (!matches!(at.kind(), ty::Ref(_, _, Mutability::Mut))).then_some(at)
+}
+
+/// `Within` of `declared` as `actual` gives it, each `&mut` `leaf` says is
+/// generic code's box its `Mut`, of the `form` of what `actual`'s is to:
+/// through tuples and `Option`s, of whose value, as `actual` has it,
+/// `unboxed` says a `Some` doesn't box it: generic code's of a `&mut` is the
+/// box, which never looks like `None` (ADR 0051). The one shape a dictionary's entry adapts (#686), which `FnCx::within`
+/// asks of its forms and `traits::method_dictionary` of where a `&mut` of
+/// `Self` is, which a declaration says.
+pub(in crate::lower) fn within_shape<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    (declared, actual): (Ty<'tcx>, Ty<'tcx>),
+    (leaf, form): (&dyn Fn(Ty<'tcx>) -> bool, &dyn Fn(Ty<'tcx>) -> MutRefForm),
+    unboxed: &dyn Fn(Ty<'tcx>) -> bool,
+) -> Within<'tcx> {
+    if leaf(declared)
+        && let ty::Ref(_, given, Mutability::Mut) = *actual.kind()
+    {
+        return Within::Mut(form(given));
+    }
+    if !declared.walk().filter_map(|part| part.as_type()).any(leaf) {
+        return Within::AsItIs(declared);
+    }
+    let option_of = |ty: Ty<'tcx>| match *ty.kind() {
+        ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option) => {
+            Some(args.type_at(0))
+        }
+        _ => None,
+    };
+    match (*declared.kind(), *actual.kind()) {
+        (ty::Tuple(fields), ty::Tuple(given)) if fields.len() == given.len() => Within::Tuple(
+            (fields.iter().zip(given.iter()))
+                .map(|(field, given)| within_shape(tcx, (field, given), (leaf, form), unboxed))
+                .collect(),
+        ),
+        _ => match (option_of(declared), option_of(actual)) {
+            (Some(some), Some(given)) if option_of(some).is_none() && unboxed(given) => {
+                Within::Some(Box::new(within_shape(tcx, (some, given), (leaf, form), unboxed)))
+            }
+            _ => Within::AsItIs(declared),
+        },
+    }
+}
+
 /// An in-place cell of `object`, `$cellOf(object)`: a `&mut` to an object
 /// as generic code has it, a box, whose `value` is the object and whose
 /// write of the whole changes it in place, `$assign`, as `*r = v` of the
@@ -278,12 +399,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// What generic code, `def_id`'s, gives a method of a trait of the
-    /// crate's that `bound` is, its type parameter's, `S: Pick`, through its
-    /// dictionary, past each parameter's and the result's own `&mut`, which
-    /// an impl's entry makes its own: `Option<&mut Self>`'s `&mut` is within
-    /// (#682). None of a method of `def_id`'s own trait, which it is.
-    fn dispatched_takes(&self, def_id: DefId, bound: ty::PolyTraitPredicate<'tcx>) -> Vec<Ty<'tcx>> {
+    /// What `declared`, a type of generic code's whose type parameters `env`
+    /// says what they're bound by, holds of a `&mut` that's generic code's
+    /// box, given as `actual`, the impl's type, is (`Within`): the one
+    /// answer of what a dictionary's entry adapts and of what a call that
+    /// gives one is refused.
+    pub(in crate::lower) fn within(
+        &self,
+        declared: Ty<'tcx>,
+        env: ty::ParamEnv<'tcx>,
+        actual: Ty<'tcx>,
+    ) -> Within<'tcx> {
+        let leaf = |ty: Ty<'tcx>| {
+            matches!(*ty.kind(), ty::Ref(_, pointee, Mutability::Mut)
+                if self.mut_ref_form_in(pointee, env) == MutRefForm::GenericBox)
+        };
+        let form = |given: Ty<'tcx>| self.mut_ref_form(given);
+        within_shape(self.tcx, (declared, actual), (&leaf, &form), &|payload| {
+            !self.boxed_payload(payload)
+        })
+    }
+
+    /// What generic code, `def_id`'s, called with `generic_args`, gives a
+    /// method of a trait of the crate's that `bound` is, its type
+    /// parameter's, `S: Pick`, through its dictionary, past each parameter's
+    /// and the result's own `&mut` and what `within` says the impl's entry
+    /// adapts, `Option<&mut Self>`'s `&mut` (#686): what it gives as it is,
+    /// `Vec<&mut Self>` (#682). None of a method of `def_id`'s own trait,
+    /// which it is.
+    fn dispatched_takes(
+        &self,
+        def_id: DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        bound: ty::PolyTraitPredicate<'tcx>,
+    ) -> Vec<Ty<'tcx>> {
         let args = bound.skip_binder().trait_ref.args;
         if !bound.def_id().is_local()
             || !matches!(args.type_at(0).kind(), ty::Param(_))
@@ -302,7 +451,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let method_sig = (self.tcx.fn_sig(method).instantiate(self.tcx, method_args))
                 .skip_normalization()
                 .skip_binder();
-            takes.extend((method_sig.inputs_and_output.iter()).filter_map(|ty| self.past_own(ty, param_env)));
+            for ty in (method_sig.inputs_and_output.iter()).filter_map(|ty| self.past_own(ty, param_env)) {
+                match adapted_part(ty) {
+                    Some(part) => {
+                        (self.within(part, param_env, self.instantiated(part, generic_args))).given_as_it_is(&mut takes)
+                    }
+                    None => takes.push(ty),
+                }
+            }
         }
         takes
     }
@@ -310,9 +466,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A `&mut` to an object that a generic impl of the crate's, `impl_id`,
     /// given `impl_args`, gives a method of a trait its type parameter is
     /// bound by within what it takes, `impl<T: Pick> Wrap for Holder<T>`'s
-    /// `T::pick(.., Some(&mut ..))`, through `T`'s dictionary, whose entry
-    /// gives its impl generic code's box (#685): where its dictionary is
-    /// made, as `nested_mut_object` asks of a function's call.
+    /// `T::pick(.., vec![&mut ..])`, through `T`'s dictionary, whose entry
+    /// gives its impl generic code's box where it doesn't adapt it, as it
+    /// does `Some(&mut ..)` (#685, #686): where its dictionary is made, as
+    /// `nested_mut_object` asks of a function's call.
     pub(in crate::lower) fn impl_nested_mut_object(
         &self,
         impl_id: DefId,
@@ -320,7 +477,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> Option<Ty<'tcx>> {
         let todo = (self.tcx.clauses_of(impl_id).instantiate_identity(self.tcx).into_iter())
             .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
-            .flat_map(|bound| self.dispatched_takes(impl_id, bound))
+            .flat_map(|bound| self.dispatched_takes(impl_id, impl_args, bound))
             .collect();
         self.nested_mut_within(impl_id, impl_args, todo)
     }
@@ -366,7 +523,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let args = bound.skip_binder().trait_ref.args;
                 todo.extend(walked(bound.def_id(), args));
                 given.push(args.type_at(0));
-                todo.extend(self.dispatched_takes(def_id, bound));
+                todo.extend(self.dispatched_takes(def_id, generic_args, bound));
             }
             if let Some(projection) = clause.as_projection_clause() {
                 let projection = projection.skip_binder();

@@ -338,9 +338,11 @@ pub(super) fn is_marker(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '
 /// an `async fn`'s future too; a constant, which only one generic code
 /// reads is in it (ADR 0100); a method's own type or const parameters'
 /// evidence, or its caller's location (ADR 0427); a `&mut` to what's of its
-/// `Self` within what it takes or gives, `Option<&mut Self>`, which no
-/// entry's adapter makes its impl's own, as it does a parameter's and its
-/// result's, `&mut self` and `-> &mut u32` (ADRs 0099, 1086, #662, #679); or
+/// `Self` within what it takes or gives but an `Option`'s or a tuple's,
+/// `Vec<&mut Self>`, which no entry's adapter makes its impl's own, as it
+/// does a parameter's and its result's, `&mut self` and `-> &mut u32`, and
+/// one within those, `Option<&mut Self>` (ADRs 0099, 1086, #662, #679,
+/// #686); or
 /// a method of a `where` some impl's type may not meet, which
 /// isn't in that impl's. Nor of a trait of type parameters of its own, each
 /// impl's dictionary for its arguments, nor of one with nothing to give, a
@@ -394,20 +396,33 @@ pub(in crate::lower) fn method_dictionary<'tcx>(
             .skip_binder();
         // A `&mut` it takes or gives is what `MutRefForm` says in its
         // trait's terms, as generic code has it, which each impl's entry
-        // makes its own of where it's a parameter or the result (ADRs 0099,
-        // 0454, 1086): a `&mut self`, and a `&mut Self` besides, `{ value:
-        // Self }`; a `&mut u32` it gives, a box. One in what it takes or
-        // gives, to what's of its `Self`, `Option<&mut Self>`, no entry
-        // makes its own, and its impls' forms may differ.
+        // makes its own of where it's a parameter or the result, and of a
+        // `&mut Self` within an `Option` or a tuple there, `mut_refs::Within`
+        // (ADRs 0099, 0454, 1086, #686): a `&mut self`, and a `&mut Self`
+        // besides, `{ value: Self }`; a `&mut u32` it gives, a box; an
+        // `Option<&mut Self>`, `{ value: Self } | undefined`. One to what's
+        // of its `Self` anywhere else, `Vec<&mut Self>`, no entry makes its
+        // own, and its impls' forms may differ.
         let self_ty = identity.type_at(0);
         let of_self = |ty: Ty<'tcx>| ty.walk().filter_map(|arg| arg.as_type()).any(|t| t == self_ty);
+        let to_self = |ty: Ty<'tcx>| matches!(*ty.kind(), ty::Ref(_, pointee, Mutability::Mut) if of_self(pointee));
+        // What an entry adapts within: a `&mut` to its `Self`, or to an
+        // associated type of it, generic code's box whatever its impl's.
+        let adapted = |ty: Ty<'tcx>| {
+            matches!(*ty.kind(), ty::Ref(_, pointee, Mutability::Mut)
+                if pointee == self_ty || matches!(pointee.kind(), ty::Alias(..)) && of_self(pointee))
+        };
         let unadapted = |ty: Ty<'tcx>| {
-            let within = match *ty.kind() {
-                ty::Ref(_, pointee, Mutability::Mut) => pointee,
-                _ => ty,
-            };
-            (within.walk().filter_map(|arg| arg.as_type()))
-                .any(|ty| matches!(*ty.kind(), ty::Ref(_, pointee, Mutability::Mut) if of_self(pointee)))
+            let mut given = Vec::new();
+            match super::mut_refs::adapted_part(ty) {
+                Some(part) => {
+                    let form = |_: Ty<'tcx>| super::MutRefForm::GenericBox;
+                    (super::mut_refs::within_shape(tcx, (part, part), (&adapted, &form), &|_| true))
+                        .given_as_it_is(&mut given)
+                }
+                None => given.extend(ty.builtin_deref(true)),
+            }
+            (given.iter().flat_map(|ty| ty.walk()).filter_map(|arg| arg.as_type())).any(to_self)
         };
         let changed = unadapted(sig.output()) || sig.inputs().iter().any(|&input| unadapted(input));
         // Of its declaration, or of an impl's own (ADR 0427).

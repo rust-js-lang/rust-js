@@ -813,7 +813,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             // A `&mut` to an object its generic code gives within what a
             // bound trait's method takes, which `T`'s dictionary's entry
-            // gives its impl as generic code's box (#685).
+            // gives its impl as generic code's box where it doesn't adapt
+            // it, a `Vec<&mut Self>`'s (#685, #686).
             if impl_id.is_local()
                 && let Some(here) = self.impl_nested_mut_object(impl_id, impl_args)
             {

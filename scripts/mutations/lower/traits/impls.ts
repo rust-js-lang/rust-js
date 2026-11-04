@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "entry-nested-mut-unadapted",
+    breaks:
+      "a dictionary's entry gives its impl what generic code gives within a parameter as it is, `Option<&mut Self>`'s box, where an object's impl takes the object (#686)",
+    file: "src/lower/traits/impls.rs",
+    find: "                        *value = made;\n",
+    replace: "                        let _ = made;\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_mut_self_through_a_dictionary.rs$"],
+  },
+  {
     name: "dyn-dictionary-without-drop",
     breaks:
       "a dictionary doesn't carry its type's drop, so a `dyn` of a value with a destructor never drops it",

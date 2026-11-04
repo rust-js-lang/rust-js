@@ -43,20 +43,56 @@ export const mutations: Mutation[] = [
   {
     name: "dispatched-nested-mut-unwalked",
     breaks:
-      "generic code gives a bound trait's method a `&mut` to an object within what it takes, `pick(Some(&mut w))`, through the dictionary, whose entry gives its impl generic code's box: `w` never changes (#682)",
+      "generic code gives a bound trait's method a `&mut` to an object within what it takes that its entry doesn't adapt, `pick(vec![&mut w])`, through the dictionary, whose entry gives its impl generic code's box: `w` never changes (#682)",
     file: "src/lower/mut_refs.rs",
-    find: "                todo.extend(self.dispatched_takes(def_id, bound));\n",
+    find: "                todo.extend(self.dispatched_takes(def_id, generic_args, bound));\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "a trait's method takes"],
+    tests: ["test/diagnostics.test.ts", "-t", "a generic &mut S to an object in a Vec"],
   },
   {
     name: "dispatched-nested-mut-of-own-receiver",
     breaks:
       "a trait method's own `&mut self`, which its impl's entry unboxes, is taken for a `&mut` within what it takes: every generic call of a `&mut self` method of an object's impl is refused (#682)",
     file: "src/lower/mut_refs.rs",
-    find: "            takes.extend((method_sig.inputs_and_output.iter()).filter_map(|ty| self.past_own(ty, param_env)));\n",
-    replace: "            takes.extend(method_sig.inputs_and_output.iter());\n",
+    find: "            for ty in (method_sig.inputs_and_output.iter()).filter_map(|ty| self.past_own(ty, param_env)) {\n",
+    replace: "            for ty in method_sig.inputs_and_output.iter() {\n",
     tests: ["test/corpus.test.ts", "-t", "^declared_signatures.rs$"],
+  },
+  {
+    name: "within-option-unadapted",
+    breaks:
+      "an `Option<&mut Self>` a bound trait's method takes is no shape its entry adapts: generic code's `p.pick(Some(q))` of an object's impl is refused again (#686)",
+    file: "src/lower/mut_refs.rs",
+    find: "                Within::Some(Box::new(within_shape(tcx, (some, given), (leaf, form), unboxed)))\n",
+    replace: "                Within::AsItIs(declared)\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_mut_self_through_a_dictionary.rs$"],
+  },
+  {
+    name: "within-mut-given-generic-box",
+    breaks:
+      "a dictionary's entry gives an object's impl generic code's box of a `&mut Self` within an `Option` or a tuple, `clicksPick_pick(arg0.value, arg1)`: its writes go to the box (#682, #686)",
+    file: "src/lower/mut_refs.rs",
+    find: "                false if to_impl => Some(Expr::held(value.clone())),\n",
+    replace: "                false if to_impl => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_mut_self_through_a_dictionary.rs$"],
+  },
+  {
+    name: "within-mut-given-back-as-the-object",
+    breaks:
+      "a dictionary's entry gives generic code the object an impl's `Option<&mut Self>` holds, which generic code reads as a box, `r.value` (#686)",
+    file: "src/lower/mut_refs.rs",
+    find: "                false => Some(in_place_cell(value.clone())),\n",
+    replace: "                false => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_mut_self_through_a_dictionary.rs$"],
+  },
+  {
+    name: "dispatched-adapted-walked",
+    breaks:
+      "what a dictionary's entry adapts, an `Option<&mut Self>` a bound trait's method takes, is walked for a `&mut` to an object as what it gives as it is: the call is refused (#686)",
+    file: "src/lower/mut_refs.rs",
+    find: "                        (self.within(part, param_env, self.instantiated(part, generic_args))).given_as_it_is(&mut takes)\n",
+    replace: "                        takes.push(part)\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_mut_self_through_a_dictionary.rs$"],
   },
   {
     name: "nested-mut-object-fields-unread",

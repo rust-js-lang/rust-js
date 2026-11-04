@@ -8,7 +8,8 @@ given for longer than the call is one (#528); and (2026-11-04) generic
 code's box of an object holds the object itself (#606), and `Cell::from_mut` of
 a type parameter's `&mut T` is that box (#614), and what a bound trait's
 methods are given is walked, a generic function's (#682) and a generic
-impl's (#685). Extends [0099](0099-mut-references.md) and
+impl's (#685), past what its entry adapts within an `Option` or a tuple
+(#686). Extends [0099](0099-mut-references.md) and
 [0180](0180-generic-writers.md). Decided with the user; amended by [1086](1086-a-mut-refs-js-form-is-mut-ref-forms.md): a type parameter's box is `MutRefForm::GenericBox`, asked of `mut_ref_form`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): the same writes, to
@@ -390,3 +391,64 @@ rust-js `Clicks { n: 1 }`: a wrong answer.
 - `docs/guide/limitations.md` lists it.
 - Mutation `impl-nested-mut-unchecked` (`traits/dictionaries.ts`); the
   #682 mutations name the walk as `dispatched_takes` has it.
+
+## Amendment: a dictionary's entry adapts a `&mut` within an `Option` or a tuple (#686)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so it
+keeps Rust's behavior. A refusal (#682, #685) is lifted.
+
+#682 and #685 refused a call that gave a bound trait's method a `&mut` to
+an object within a parameter, `pick(&mut self, other: Option<&mut Self>)`,
+because the impl's entry gave its impl generic code's box. Now the entry
+converts that `&mut` the same way it converts a parameter's own, both
+ways:
+
+```js
+export const clicksPick = {
+  pick(arg0, arg1) {
+    return clicksPick_pick(arg0.value, arg1?.value);
+  },
+  first(arg0, arg1, arg2) {
+    const given = clicksPick_first(arg0.value, arg1.value, arg2);
+    return given != null ? $cellOf(given) : undefined;
+  },
+};
+```
+
+- **One shape, `mut_refs::Within`**, made by `within_shape`. A `&mut`
+  that's generic code's box, `GenericBox` in generic code's terms, is
+  `Mut` of the form a `&mut` to the impl's type takes. Its tuples and its
+  `Option`s are read field by field, but only an `Option` whose `Some`
+  boxes neither side (`boxed_payload`) and that isn't an `Option` of an
+  `Option`. Anything else is `AsItIs`. It applies past a parameter's or
+  the result's shared references (`adapted_part`). The parameter's or the
+  result's own `&mut` is converted as before.
+- **What the entry does**, `Within::adapted`: toward the impl, a cell's
+  form is kept as it is, and any other form gets the box's `value` (the
+  object, #606), `arg1?.value` of an `Option`. Back, any other form gets
+  an in-place cell, `$cellOf`, as a result's own `&mut` does. A tuple is
+  rebuilt only where a field changes, `[arg1[0].value, arg1[1]]`.
+- **What's refused is what's `AsItIs`**: #682's walk (`dispatched_takes`)
+  and #685's (`impl_nested_mut_object`) go past what `within` adapts and
+  walk only the rest, so a `Vec<&mut Self>` is still refused at the call
+  and where a generic impl's dictionary is made.
+- **The declaration says it** (ADR 1091): `traits::method_dictionary`
+  asks `within_shape` for the same shape, so `pick(self: { value: Self },
+  other?: { value: Self } | null | undefined): boolean` is declared. A
+  `Vec<&mut Self>` is still left out.
+- A copied default's own call of such a method doesn't go through the
+  entry, which is #690, a wrong answer of its own.
+- `test/corpus/nested_mut_self_through_a_dictionary.rs`, against native
+  Rust: an `Option`, a tuple, an `Option` of a tuple, and a result's
+  `Option` and tuple, each through the dictionary of an object's impl, a
+  number's, and a generic impl's of each, with a reborrow given within.
+  `test/corpus/nested_mut_self_through_a_generic_impl.rs` adds #685's
+  object case. `test/declarations-conformance.test.ts` calls the case's
+  functions from TypeScript with each impl's dictionary as declared.
+  `test/diagnostics.test.ts` refuses a `Vec<&mut Self>` and a `&mut
+  Option<&mut Self>`.
+- Mutations `within-option-unadapted`, `within-mut-given-generic-box`,
+  `within-mut-given-back-as-the-object` and `dispatched-adapted-walked`
+  (`mut_refs.ts`), `entry-nested-mut-unadapted` (`traits/impls.ts`), and
+  `declared-nested-mut-left-out` (`traits.ts`). The #682 mutations point
+  at the `Vec` refusals.

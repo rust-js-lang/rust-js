@@ -6,6 +6,20 @@ export function entry() {
   main();
 }
 
+export const clicksDebug = { fmt: clicksDebug_fmt };
+
+function clicksDebug_fmt(clicks) {
+  return `Clicks { n: ${clicks.n} }`;
+}
+
+export const clicksPick = { pick: (arg0, arg1) => clicksPick_pick(arg0.value, arg1?.value) };
+function clicksPick_pick(clicks, other) {
+  if (other != null) {
+    other.n = (other.n + 50) >>> 0;
+  }
+  clicks.n = (clicks.n + 1) >>> 0;
+}
+
 export const u32Pick = { pick: u32Pick_pick };
 function u32Pick_pick(self, other) {
   if (other != null) {
@@ -53,15 +67,25 @@ function go(w, WWrap) {
 
 function main() {
   const u32Debug = { fmt: (value) => String(value) };
-  const h = { a: 0, b: 1 };
+  let h = { a: 0, b: 1 };
   const w = { value: h };
   go(w, holderWrap(u32Pick));
   $assign(h, w.value);
   console.log(`${holderDebug_fmt(h, u32Debug)}`);
   holderWrap_wrap(h, u32Pick);
   console.log(`${holderDebug_fmt(h, u32Debug)}`);
-  const d = { value: h, impl: holderWrap(u32Pick) };
+  let d = { value: h, impl: holderWrap(u32Pick) };
   d.impl.wrap(d);
   console.log(`${holderDebug_fmt(h, u32Debug)}`);
+  h = { a: { n: 0 }, b: { n: 1 } };
+  const w$1 = { value: h };
+  go(w$1, holderWrap(clicksPick));
+  $assign(h, w$1.value);
+  console.log(`${holderDebug_fmt(h, clicksDebug)}`);
+  holderWrap_wrap(h, clicksPick);
+  console.log(`${holderDebug_fmt(h, clicksDebug)}`);
+  d = { value: h, impl: holderWrap(clicksPick) };
+  d.impl.wrap(d);
+  console.log(`${holderDebug_fmt(h, clicksDebug)}`);
 }
 //# sourceMappingURL=case.js.map

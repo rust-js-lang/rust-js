@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "declared-nested-mut-left-out",
+    breaks:
+      "a trait whose method takes a `&mut Self` within an `Option`, which each entry adapts, isn't declared, nor the functions given its dictionaries (#686)",
+    file: "src/lower/traits.rs",
+    find: "                    (super::mut_refs::within_shape(tcx, (part, part), (&adapted, &form), &|_| true))\n",
+    replace: "                    (super::mut_refs::within_shape(tcx, (part, part), (&|_: Ty<'tcx>| false, &form), &|_| true))\n",
+    tests: ["test/declarations-conformance.test.ts"],
+  },
+  {
     name: "projection-extension-ungiven",
     breaks:
       "an extension's bound on an associated type, `U::IntoIter: DoubleEndedIterator` of std's `FlatMap`'s back, is given no dictionary, so its evidence is the `IntoIterator`'s `IntoIterIterator()`, an `Iterator`'s: `it.back is not a function` (ADR 0936)",
@@ -321,8 +330,8 @@ export const mutations: Mutation[] = [
     name: "mut-self-trait-undeclared",
     breaks: "a trait of a `&mut self` method isn't declared, `Counter`'s dictionaries and a `dyn Counter` `any`, though its entry takes the box `MutRefForm` says, `{ value: Self }` (#662)",
     file: "src/lower/traits.rs",
-    find: "                ty::Ref(_, pointee, Mutability::Mut) => pointee,\n",
-    replace: "                ty::Ref(_, pointee, Mutability::Mut) if false => pointee,\n",
+    find: "                None => given.extend(ty.builtin_deref(true)),\n",
+    replace: "                None => given.push(ty),\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "a trait of `&mut self` methods"],
   },
   {
@@ -345,10 +354,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nested-mut-self-trait-declared",
-    breaks: "a trait whose method takes a `&mut Self` within what it takes, `pick(&mut self, other: Option<&mut Self>)`, is declared, though its entries take what each impl does, generic code's box or the object (#682)",
+    breaks: "a trait whose method takes a `&mut Self` within what it takes that no entry adapts, `gather(&mut self, others: Vec<&mut Self>)`, is declared, though its entries take what each impl does, generic code's box or the object (#682)",
     file: "src/lower/traits.rs",
-    find: "                .any(|ty| matches!(*ty.kind(), ty::Ref(_, pointee, Mutability::Mut) if of_self(pointee)))\n",
-    replace: "                .any(|ty| matches!(*ty.kind(), ty::Ref(_, pointee, Mutability::Mut) if of_self(pointee) && false))\n",
+    find: "            (given.iter().flat_map(|ty| ty.walk()).filter_map(|arg| arg.as_type())).any(to_self)\n",
+    replace: "            (given.iter().flat_map(|ty| ty.walk()).filter_map(|arg| arg.as_type())).any(|_| false)\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "a trait of `&mut self` methods"],
   },
 ];
