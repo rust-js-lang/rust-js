@@ -250,3 +250,25 @@ its back by an inclusive range's `next_back` has std's `try_rfold` and
 `try_fold` and `fold`. Held by `range_inclusive_exhausted.rs` of std's
 structs, in the iterator forms test's default list, and the mutation
 `range-rfold-steps-past` (`runtime/iterator.ts`).
+
+## Amendment: a range's `Default` is std's derived one (2026-11-04, #639)
+
+`Default` of a range was refused, as of a std type rust-js doesn't name,
+``rust-js does not support `Default` of `std::ops::Range<i32>` yet``:
+`mem::take(&mut range)`, a range given where `T: Default` goes, whose
+dictionary had no `default`, and a derived `Default` of a struct holding
+one. A range is a struct as any is (above), and std's `Default` of
+`Range` and of `RangeFull`, the only ranges it gives one, is derived: each
+field's default. There's no observable difference to decide (ADR 0262's
+first case): **`default_value` makes a range's as any struct's, `{ start:
+0, end: 0 }` of a `Range<i32>`, each bound's default made in turn, the
+start's first, a type parameter's by its dictionary, `{ start:
+TDefault.default(), end: TDefault.default() }`, and `RangeFull`'s
+`undefined`, as `..` is.** rustc asks it of no other range, which has no
+`Default`. Held by `range_defaults.rs` against native Rust (a `mem::take`
+of one, before and after stepping it, one given where `T: Default` goes,
+`Range::<T>::default()` of integers, a BigInt's, a float's, `char`s,
+`String`s, a struct's and one whose `default` counts, its fields, its
+iteration, `len()`, `contains`, a slice of it, a derived `Default` holding
+ranges, `unwrap_or_default`) and the mutation `range-default-refused`
+(`lower/std_impls/defaults.ts`).

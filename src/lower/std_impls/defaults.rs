@@ -132,7 +132,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if let Some(which) = self.recognition().std_hasher(ty) => {
                 std_types::hash::new_hasher(which, Vec::new())
             }
-            ty::Adt(adt, _) if self.is_std(adt.did()) => {
+            // A range is a struct as any is (ADR 0129), and std's `Default`
+            // of one, `Range`'s and `RangeFull`'s, is derived: its fields'
+            // defaults, `{ start: 0, end: 0 }`, and `..`'s `undefined`, as
+            // below (#639).
+            ty::Adt(adt, _) if self.is_std(adt.did()) && self.range_kind(ty).is_none() => {
                 return Err(self.unsupported(span, &format!("`Default` of `{ty}`")));
             }
             ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.is_empty() => Expr::undefined(),

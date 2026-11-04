@@ -128,4 +128,13 @@ export const mutations: Mutation[] = [
       "each field is its own symbol's"
     ]
   },
+  {
+    name: "range-default-refused",
+    breaks:
+      "`Default` of a `Range` or a `RangeFull`, a struct as any is, is refused as another std type's, \"`Default` of `std::ops::Range<i32>`\": `mem::take(&mut range)`, a derived `Default` holding one, one given where `T: Default` goes (#639)",
+    file: "src/lower/std_impls/defaults.rs",
+    find: "            ty::Adt(adt, _) if self.is_std(adt.did()) && self.range_kind(ty).is_none() => {\n",
+    replace: "            ty::Adt(adt, _) if self.is_std(adt.did()) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_defaults.rs$"],
+  },
 ];

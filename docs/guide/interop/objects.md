@@ -659,7 +659,9 @@ export function equal(a, b) {
 - **A derived `Debug` is a function that makes Rust's text**,
   `Point { x: 1.0, y: 2.0 }`, called where `{:?}` is.
 - **A derived `Default` is the object it makes**: `Point::default()` is
-  `{ x: 0, y: 0 }`.
+  `{ x: 0, y: 0 }`. So is std's of a range, which is a struct too:
+  `Range::<u32>::default()` is `{ start: 0, end: 0 }`, and `RangeFull`'s
+  `undefined`, as `..` is ([ADR 0129](../../decisions/0129-range-values.md#amendment-a-ranges-default-is-stds-derived-one-2026-11-04-639)).
 - **A derived `PartialOrd` or `Ord` compares field by field**: `sort()`
   of them is `versions.sort((a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor))`.
 - **A type inside itself is cloned, compared and ordered by a function of
