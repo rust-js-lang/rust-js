@@ -366,18 +366,12 @@ function main() {
   }
   const value$4 = last != null ? map$2(last) : undefined;
   console.log(`chained own last ${value$4 == null ? "None" : `Some(${value$4})`}`);
-  const keep = (d) => d[0] < 9;
   const it = $held(
     $skipping(
       $lazyTakeWhile(
         $skipping($rev($closing($iter(ds()), $dropEach(dDrop_drop))), 2, dDrop_drop),
-        (item) => {
-          if (keep(item)) {
-            return true;
-          }
-          dDrop_drop(item);
-          return false;
-        },
+        (d) => d[0] < 9,
+        dDrop_drop,
       ),
       2,
       dDrop_drop,

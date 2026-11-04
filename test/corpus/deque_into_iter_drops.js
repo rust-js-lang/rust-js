@@ -43,12 +43,14 @@ function main() {
   iter.return();
   console.log(`counted ${counted}`);
 
-  const taken = Array.from(
+  const taken = $collectDropping(
     $lazyTakeWhile(
       $closing($iter(deque([2, 3, 9, 4])), $dropEach(loudDrop_drop)),
       (l) => l[0] < 5,
       loudDrop_drop,
     ),
+    loudDrop_drop,
+    true,
   );
   console.log(`taken ${taken.length}`);
   for (const item of taken) {

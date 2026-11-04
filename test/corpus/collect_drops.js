@@ -21,12 +21,13 @@ function noisyDrop_drop(noisy) {
 
 function main() {
   const v = [["a"], ["bb"], ["c"], ["dd"]];
-  const long = Array.from(
+  const long = $collectDropping(
     $filterDropping(
       $closing($iter(v), $dropEach(noisyDrop_drop)),
       (n) => $byteLen(n[0]) > 1,
       noisyDrop_drop,
     ),
+    noisyDrop_drop,
   );
   console.log(`kept ${long.length}`);
 

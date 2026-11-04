@@ -4,6 +4,7 @@ import {
   $closing,
   $collectDropping,
   $dropEach,
+  $filterDropping,
   $held,
   $iter,
   $iterator,
@@ -37,15 +38,8 @@ function ds(from) {
 }
 
 function main() {
-  const keep = (d) => d[0] < 3;
   let it = $held(
-    $lazyTakeWhile($closing($iter(ds(0)), $dropEach(dDrop_drop)), (item) => {
-      if (keep(item)) {
-        return true;
-      }
-      dDrop_drop(item);
-      return false;
-    }),
+    $lazyTakeWhile($closing($iter(ds(0)), $dropEach(dDrop_drop)), (d) => d[0] < 3, dDrop_drop),
   );
   try {
     let d;
@@ -88,15 +82,12 @@ function main() {
   } finally {
     it.return();
   }
-  const keep$1 = (d) => d[0] < 31;
   const takeWhile = $held(
-    $lazyTakeWhile($rev($closing($iter(ds(30)), $dropEach(dDrop_drop))), (item) => {
-      if (keep$1(item)) {
-        return true;
-      }
-      dDrop_drop(item);
-      return false;
-    }),
+    $lazyTakeWhile(
+      $rev($closing($iter(ds(30)), $dropEach(dDrop_drop))),
+      (d) => d[0] < 31,
+      dDrop_drop,
+    ),
   );
   try {
     const nth = $nthDropping($lent(takeWhile), 0, dDrop_drop, false);
@@ -181,21 +172,15 @@ function main() {
         return result;
       });
       const backs = $mapFrom(new Set(), value$1, true);
-      const keep = (d) => d[0] > 0;
-      const value$2 = $closing($iter(ds(100)), $dropEach(dDrop_drop))
-        .take(2)
-        .filter((item) => {
-          if (keep(item)) {
-            return true;
-          }
-          dDrop_drop(item);
-          return false;
-        })
-        .map((d) => {
-          const result = d[0];
-          dDrop_drop(d);
-          return result;
-        });
+      const value$2 = $filterDropping(
+        $closing($iter(ds(100)), $dropEach(dDrop_drop)).take(2),
+        (d) => d[0] > 0,
+        dDrop_drop,
+      ).map((d) => {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      });
       const kept = $mapFrom(new Set(), value$2, true);
       const scan = $lazyScan($closing($iter(ds(110)), $dropEach(dDrop_drop)), 0, (_, d) => {
         const result = d[0] < 111 ? d[0] : undefined;
