@@ -4,7 +4,7 @@ import { iterator_fuse } from "@rust-js/std/iter.js";
 import {
   $catchUnwind,
   $closing,
-  $dropItems,
+  $dropEach,
   $iter,
   $lastDropping,
   $next,
@@ -51,12 +51,7 @@ function run(name, f) {
 
 function main() {
   run("in place", () => {
-    const d = $lastDropping(
-      $closing($iter([[1], [2], [3]]), (intoIter) => {
-        $dropItems(intoIter, dDrop_drop);
-      }),
-      dDrop_drop,
-    );
+    const d = $lastDropping($closing($iter([[1], [2], [3]]), $dropEach(dDrop_drop)), dDrop_drop);
     function map(d) {
       const result = d[0] + 0;
       dDrop_drop(d);
@@ -69,9 +64,7 @@ function main() {
       $iter([[1], [2], [3]]),
       { next: $next },
       true,
-      (intoIter) => {
-        $dropItems(intoIter, dDrop_drop);
-      },
+      $dropEach(dDrop_drop),
       dDrop_drop,
     );
     const result = $lastDropping(iter, dDrop_drop);
@@ -83,16 +76,10 @@ function main() {
     }
     return result != null ? map(result) : undefined;
   });
-  run("generic", () =>
-    last($iter([[1], [2], [3]]), (intoIter) => {
-      $dropItems(intoIter, dDrop_drop);
-    }),
-  );
+  run("generic", () => last($iter([[1], [2], [3]]), $dropEach(dDrop_drop)));
   run("generic enumerated", () =>
     last(
-      $closing($iter([[1], [2], [3]]), (intoIter) => {
-        $dropItems(intoIter, dDrop_drop);
-      })
+      $closing($iter([[1], [2], [3]]), $dropEach(dDrop_drop))
         .map((x, i) => [i, x])
         .map(([, d]) => d),
       (map) => {
@@ -100,10 +87,6 @@ function main() {
       },
     ),
   );
-  run("last kept", () =>
-    last($iter([[3], [1]]), (intoIter) => {
-      $dropItems(intoIter, dDrop_drop);
-    }),
-  );
+  run("last kept", () => last($iter([[3], [1]]), $dropEach(dDrop_drop)));
 }
 //# sourceMappingURL=case.js.map

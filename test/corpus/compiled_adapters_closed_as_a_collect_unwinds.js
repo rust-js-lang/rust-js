@@ -16,6 +16,7 @@ import {
   $next,
   $range,
   $skipping,
+  $stepBy,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -208,19 +209,15 @@ function main() {
   );
   r = $catchUnwind(() => {
     const v = $collectDropping(
-      $skipping(
-        $closing($iter($range(1, 7).map((value) => [value])), (intoIter) => {
-          $dropItems(intoIter, boomDrop_drop);
-        }),
-        1,
+      $stepBy(
+        $skipping(
+          $closing($iter($range(1, 7).map((value) => [value])), $dropEach(boomDrop_drop)),
+          1,
+          boomDrop_drop,
+        ),
+        2,
         boomDrop_drop,
-      ).filter((item, i) => {
-        if (i % 2 === 0) {
-          return true;
-        }
-        boomDrop_drop(item);
-        return false;
-      }),
+      ),
       boomDrop_drop,
       true,
     );

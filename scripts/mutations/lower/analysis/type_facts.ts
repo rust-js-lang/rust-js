@@ -322,4 +322,12 @@ export const mutations: Mutation[] = [
     replace: "    assoc.is_local() || foreign.is_library(assoc.krate) || foreign.carried(assoc).contains(&fact)\n",
     tests: ["test/crates.test.ts", "-t", "associated type its dictionaries don't carry"],
   },
+  {
+    name: "trusted-len-of-a-collect-unasked",
+    breaks: "a generic `collect()` into a `Vec` of a `take(n).rev()` of a type parameter isn't given whether the caller's iterator is `TrustedLen`, which its fold asks (#670)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                        asking.asked.insert((caller, index, TypeFact::TrustedLen));\n",
+    replace: "",
+    tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
+  },
 ];

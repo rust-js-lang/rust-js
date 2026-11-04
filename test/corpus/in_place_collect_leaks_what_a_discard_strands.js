@@ -2,6 +2,7 @@
 
 import {
   $closing,
+  $dropEach,
   $dropItems,
   $filterDropping,
   $foldToArray,
@@ -42,13 +43,7 @@ function run(name, boom$1, case$) {
 function main() {
   run("filter", 4, () => {
     const collect = $foldToArray(
-      $filterDropping(
-        $closing($iter(ds()), (intoIter) => {
-          $dropItems(intoIter, dDrop_drop);
-        }),
-        (d) => d[0] !== 4,
-        dDrop_drop,
-      ),
+      $filterDropping($closing($iter(ds()), $dropEach(dDrop_drop)), (d) => d[0] !== 4, dDrop_drop),
       dDrop_drop,
     );
     $dropItems(collect, dDrop_drop);
@@ -56,13 +51,7 @@ function main() {
   });
   run("take_while", 4, () => {
     const collect = $foldToArray(
-      $lazyTakeWhile(
-        $closing($iter(ds()), (intoIter) => {
-          $dropItems(intoIter, dDrop_drop);
-        }),
-        (d) => d[0] < 4,
-        dDrop_drop,
-      ),
+      $lazyTakeWhile($closing($iter(ds()), $dropEach(dDrop_drop)), (d) => d[0] < 4, dDrop_drop),
       dDrop_drop,
     );
     $dropItems(collect, dDrop_drop);
@@ -71,9 +60,7 @@ function main() {
   run("map filter", 4, () => {
     const collect = $foldToArray(
       $filterDropping(
-        $closing($iter(ds()), (intoIter) => {
-          $dropItems(intoIter, dDrop_drop);
-        }).map((d) => d),
+        $closing($iter(ds()), $dropEach(dDrop_drop)).map((d) => d),
         (d) => d[0] % 2 === 1,
         dDrop_drop,
       ),
@@ -84,9 +71,7 @@ function main() {
   });
   run("map panics", 0, () => {
     const collect = $foldToArray(
-      $closing($iter(ds()), (intoIter) => {
-        $dropItems(intoIter, dDrop_drop);
-      }).map((d) => {
+      $closing($iter(ds()), $dropEach(dDrop_drop)).map((d) => {
         if (d[0] === 4) {
           try {
             throw new Error("map");
@@ -104,13 +89,7 @@ function main() {
   });
   run("filter ends", 0, () => {
     const collect = $foldToArray(
-      $filterDropping(
-        $closing($iter(ds()), (intoIter) => {
-          $dropItems(intoIter, dDrop_drop);
-        }),
-        (d) => d[0] !== 4,
-        dDrop_drop,
-      ),
+      $filterDropping($closing($iter(ds()), $dropEach(dDrop_drop)), (d) => d[0] !== 4, dDrop_drop),
       dDrop_drop,
     );
     $dropItems(collect, dDrop_drop);
