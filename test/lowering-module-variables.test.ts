@@ -68,28 +68,26 @@ pub fn told() -> (bool, u32, u32, String) {
 // React DOM's DOMEventNames, `export const ANIMATION_END =
 // getVendorPrefixedEventName('animationend')`, which SimpleEventPlugin's JS
 // imports: a `pub` thread-local is made as its module loads, after the
-// modules it imports, whatever its initializer runs, so a JS module
-// importing it reads its value, as its `.d.ts` says. Its initializer runs
-// as its module loads, where Rust runs it at its first use: what it prints
-// is printed then, the guide's listed difference (ADR 0037, amended, the
-// user's decision; React port gap rd51).
+// modules it imports, so a JS module importing it reads its value, as its
+// `.d.ts` says, where making it then can't show: its initializer reads what
+// only the loading code writes, getVendorPrefixedEventName's `style`, which
+// its module's `js::on_load!` sets (ADR 1006, amended, the user's
+// decisions; React port gap rd51, #554).
 test("a pub thread-local is made as its module loads, which a JS importer reads", async () => {
   const dir = fixture("exported-made-at-load");
   writeFileSync(join(dir, "lib.rs"), "pub mod event_names;\npub mod prefixes;\n");
-  writeFileSync(join(dir, "prefixes.rs"), `use std::cell::RefCell;
+  writeFileSync(join(dir, "prefixes.rs"), `use std::cell::Cell;
 
 thread_local! {
-    static PREFIXED: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+    static VENDOR: Cell<&'static str> = const { Cell::new("") };
+}
+
+js::on_load! {
+    VENDOR.set("webkit");
 }
 
 pub fn prefixed(name: &str) -> String {
-    println!("prefixing {name}");
-    PREFIXED.with_borrow_mut(|prefixed| prefixed.push(name.to_owned()));
-    "webkit".to_owned() + name
-}
-
-pub fn count() -> usize {
-    PREFIXED.with_borrow(Vec::len)
+    VENDOR.get().to_owned() + name
 }
 `);
   writeFileSync(join(dir, "event_names.rs"), `use crate::prefixes::prefixed;
@@ -98,51 +96,50 @@ thread_local! {
     pub static ANIMATION_END: String = prefixed("animationend");
 }
 `);
-  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
   expect(readFileSync(join(dir, "event_names.js"), "utf8")).toContain('export const ANIMATION_END = prefixed("animationend");\n');
   expect(readFileSync(join(dir, "event_names.d.ts"), "utf8")).toContain("export const ANIMATION_END: string;\n");
   writeFileSync(join(dir, "plugin.js"), 'import { ANIMATION_END } from "./event_names.js";\nexport const name = (type) => (type === ANIMATION_END ? "onAnimationEnd" : null);\n');
-  const printed: string[] = [];
-  const log = console.log;
-  console.log = (...line: unknown[]) => void printed.push(line.join(" "));
-  try {
-    const plugin = await import(join(dir, "plugin.js"));
-    expect(printed).toEqual(["prefixing animationend"]);
-    expect(plugin.name("webkitanimationend")).toBe("onAnimationEnd");
-    const prefixes = await import(join(dir, "prefixes.js"));
-    expect(prefixes.count()).toBe(1);
-  } finally {
-    console.log = log;
-  }
+  const plugin = await import(join(dir, "plugin.js"));
+  expect(plugin.name("webkitanimationend")).toBe("onAnimationEnd");
 });
 
 // React DOM's ScrollEndEventPlugin, `const isScrollEndEventSupported =
 // isEventSupported('scrollend')`: a private thread-local is made as its
-// module loads too, whatever its initializer runs, so what it prints is
-// printed as its module is imported, where Rust prints it at its first use,
-// the guide's differences, 30 (ADR 1006, amended, the user's decision). One
-// whose initializer runs a module in an import cycle with its own, which may
-// not have loaded yet, is made where it's first used.
+// module loads too, where making it then can't show, its initializer
+// calling what only makes a value, as React's calls only bindings. One whose
+// initializer prints is made where it's first used, as Rust makes it, so
+// it prints there (#554, ADR 1006, amended, the user's decisions); so is
+// one whose initializer runs a module in an import cycle with its own,
+// which may not have loaded yet.
 test("a private thread-local is made as its module loads, where its module's load can make it", async () => {
   const dir = fixture("private-made-at-load");
   writeFileSync(join(dir, "lib.rs"), "pub mod is_event_supported;\npub mod scroll_end;\npub mod cycle;\n");
   writeFileSync(join(dir, "is_event_supported.rs"), `pub fn is_event_supported(name: &str) -> bool {
-    println!("asked {name}");
     name.starts_with("scroll")
 }
+
+pub fn asked(name: &str) -> bool {
+    println!("asked {name}");
+    is_event_supported(name)
+}
 `);
-  writeFileSync(join(dir, "scroll_end.rs"), `use crate::is_event_supported::is_event_supported;
+  writeFileSync(join(dir, "scroll_end.rs"), `use crate::is_event_supported::{asked, is_event_supported};
 
 thread_local! {
     static IS_SCROLL_END_EVENT_SUPPORTED: bool = is_event_supported("scrollend");
+    static ASKED_SCROLL_END: bool = asked("scrollend");
 }
 
 pub fn supported() -> bool {
     IS_SCROLL_END_EVENT_SUPPORTED.with(|supported| *supported)
 }
 
+pub fn asked_supported() -> bool {
+    ASKED_SCROLL_END.with(|supported| *supported)
+}
+
 pub fn named() -> String {
-    println!("naming");
     crate::cycle::NAME.to_owned()
 }
 `);
@@ -157,19 +154,21 @@ pub fn named() -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  expect(readFileSync(join(dir, "scroll_end.js"), "utf8")).toContain('\nconst IS_SCROLL_END_EVENT_SUPPORTED = isEventSupported("scrollend");\n');
+  const scrollEnd = readFileSync(join(dir, "scroll_end.js"), "utf8");
+  expect(scrollEnd).toContain('\nconst IS_SCROLL_END_EVENT_SUPPORTED = isEventSupported("scrollend");\n');
+  expect(scrollEnd).toContain('\nconst ASKED_SCROLL_END = $local(() => asked("scrollend"));\n');
   expect(readFileSync(join(dir, "cycle.js"), "utf8")).toContain("const NAMED = $local(() => ScrollEnd.named());\n");
   const printed: string[] = [];
   const log = console.log;
   console.log = (...line: unknown[]) => void printed.push(line.join(" "));
   try {
     const scroll = await import(join(dir, "scroll_end.js"));
-    expect(printed).toEqual(["asked scrollend"]);
+    expect(printed).toEqual([]);
     expect(scroll.supported()).toBe(true);
-    const cycle = await import(join(dir, "cycle.js"));
+    expect(scroll.askedSupported()).toBe(true);
     expect(printed).toEqual(["asked scrollend"]);
+    const cycle = await import(join(dir, "cycle.js"));
     expect(cycle.named()).toBe("cycle");
-    expect(printed).toEqual(["asked scrollend", "naming"]);
   } finally {
     console.log = log;
   }

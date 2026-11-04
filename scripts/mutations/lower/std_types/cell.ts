@@ -847,4 +847,24 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
   },
+  {
+    name: "nullable-lazy-local-plain",
+    breaks:
+      "a nullable thread-local made where it's first used is `$local(() => ({ value: init }))`, so what's written through it is stored as it is, `undefined` for `None` (#541, #554)",
+    file: "src/lower/std_types/cell.rs",
+    find: '        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$local") => {\n',
+    replace: '        js::ExprKind::Call(callee, args) if false && callee.helper_name() == Some("$local") => {\n',
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_lazy_where_observable.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "nullable-local-set-plain",
+    breaks:
+      "a nullable thread-local `set` before its first use is made of `{ value }`, so what's written through it after is stored as it is, `undefined` for `None` (#554)",
+    file: "src/lower/std_types/cell.rs",
+    find: '                            false if null_for_none => Expr::call_helper("$nullableCell", vec![value.clone()]),\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_lazy_where_observable.rs$"],
+    snapshots: true,
+  },
 ];

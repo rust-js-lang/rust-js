@@ -2,7 +2,9 @@
 // whatever its arms, a function or a closure among them, as React DOM's
 // scheduleMicrotask is written; one whose arm does more than give its value
 // is an arrow called in place still, and each test runs once, in order, as
-// the log printed last shows.
+// the log printed last shows. These log what `main` reads, so each is made
+// where it's first used, its chain the `if`s its `$local` returns from
+// (ADR 1006, amended, #554).
 
 use std::cell::RefCell;
 

@@ -511,32 +511,44 @@ one's body too, `const a = ReactSharedInternals.A;` of
 ([0840](../decisions/0840-a-thread-locals-with-is-its-closures-body.md),
 amended, rd661).
 
-**A thread-local is made as its module loads, whatever its initializer
-runs**, after the modules it imports, as JS's `const` and `export const`
-are: React DOM's `const isScrollEndEventSupported =
+**A thread-local is made as its module loads where that can't show**,
+after the modules it imports, as JS's `const` and `export const` are:
+React DOM's `const isScrollEndEventSupported =
 isEventSupported("scrollend");` and `export const ANIMATION_END =
 getVendorPrefixedEventName("animationend");`, read by its name, so a JS
-module importing a `pub` one reads its value. What its initializer prints,
-panics with, reads or changes is done then, where Rust does it at its first
-use: the differences' list, 30. Its own module's items it reads are made
+module importing a `pub` one reads its value. Its initializer only makes a
+value, calls bindings, or reads and writes what only the code that runs as
+the modules load touches: other such initializers, a `js::on_load!`, and
+the functions only they call. What a binding's call does, and a std call's
+own panic, are done then, where Rust does them at its first use: the
+differences' list, 25 and 30. Its own module's items it reads are made
 before it; another module's, which it imports, have loaded
 ([1006](../decisions/1006-a-pub-thread-local-is-made-as-its-module-loads.md),
 amended).
 
-**One whose module's load can't make it first is made where it's first
-used**, as Rust makes each: one that runs or reads code of a module in an
-import cycle with its own, which may not have loaded yet, one that reads
-itself, or one that calls a `dyn Fn`, a fn pointer that may be any
-function, or what a type parameter is given. It's `const source =
-$local(() => [..])`, read by its call, `source()`, so what its initializer
-prints and a panic in it are where Rust has them: after what the call that
-first uses it is given, `COUNT.replace(made(9))` making 9 first, and made
-again at its next use after a panic. One `set` before it's used is made of
-what it's given, `if (!count.initWith({ value }))`, its initializer never
-run, as std's `LocalKey::set` is
-([0037](../decisions/0037-thread-locals.md), amended). **A `pub` one of
-those is refused**, as what JS's importers read is its value: move what it
-runs out of the cycle, or call what it runs by its name.
+**One whose making as its module loads would show, or that its module's
+load can't make first, is made where it's first used**, as Rust makes
+each: one whose initializer prints, may panic (`panic!`, `assert!`,
+`unreachable!()`), reads state a function that may run later sets, `LEN`
+of `static LAZY: RefCell<Option<u32>> = RefCell::new(made());` where
+`main` sets it first, or changes state such a function reads; and one
+that runs or reads code of a module in an import cycle with its own, which
+may not have loaded yet, one that reads itself, or one that calls a `dyn
+Fn`, a fn pointer that may be any function, or what a type parameter is
+given. It's `const source = $local(() => [..])`, read by its call,
+`source()`, so what its initializer prints and a panic in it are where
+Rust has them: after what the call that first uses it is given,
+`COUNT.replace(made(9))` making 9 first, and made again at its next use
+after a panic. One `set` before it's used is made of what it's given, `if
+(!count.initWith({ value }))`, its initializer never run, as std's
+`LocalKey::set` is; a `#[rust_js::nullable]` one's cell stores `null` for
+`None` however it's written, `$local(() => $nullableCell(..))`
+([0037](../decisions/0037-thread-locals.md),
+[1006](../decisions/1006-a-pub-thread-local-is-made-as-its-module-loads.md),
+amended, #554). **A `pub` one of those is refused**, as what JS's
+importers read is its value: make it `pub(crate)` and export a `pub fn`
+that reads it, move what it runs out of the cycle, or call what it runs by
+its name.
 
 Differences:
 
@@ -1216,10 +1228,12 @@ React and JSX are [their own pages](README.md#react).
     tests its truth, `!selection.extend`: they differ only of a member
     that's truthy and no function (ADR 0942, amended, the user's decision).
 30. A thread-local is made as its module loads where its module's load
-    can make it first, so what its initializer prints, panics with, reads
-    and changes is done then, where Rust does it at its first use, or never,
-    of one never used or `set` first (ADR 1006, amended, the user's
-    decisions).
+    can make it first and its initializer neither prints, may panic, reads
+    state a function that may run later sets, nor changes state one reads,
+    so what a binding's call in it does, a std call's own panic, and what
+    it shares with other such initializers alone are done then, where Rust
+    does them at its first use, or never, of one never used or `set` first
+    (ADR 1006, amended, the user's decisions, #554).
 31. A library's item its package's default entry re-exports is imported
     by the package's name, so a host that resolves another of its
     conditions, `react-server`, gets that condition's module, where the

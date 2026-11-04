@@ -2,7 +2,7 @@
 
 import * as Flags from "./flags.js";
 import * as Marks from "./marks.js";
-import { $debugStr } from "@rust-js/runtime";
+import { $debugStr, $local } from "@rust-js/runtime";
 
 export function entry() {
   main();
@@ -17,27 +17,38 @@ function double(n) {
 }
 
 let tries = 0;
-const names = [];
-const made = tries === 0 ? 1 : undefined;
-const taken = names.splice(0);
-const LIMITED = (LIMIT * 10) >>> 0;
-const COUNTED = (HITS + 1) >>> 0;
-const BASED = (BASE * 2) >>> 0;
-let PRINTED;
-console.log("printed");
-PRINTED = 3;
+let names = [];
+const made = $local(() => {
+  if (tries === 0) {
+    return 1;
+  }
+});
 
-const mapped = (() => {
+const taken = $local(() => {
+  const old = names;
+  names = [];
+  return old;
+});
+
+const LIMITED = $local(() => (LIMIT * 10) >>> 0);
+const COUNTED = $local(() => (HITS + 1) >>> 0);
+const BASED = (BASE * 2) >>> 0;
+const PRINTED = $local(() => {
+  console.log("printed");
+  return 3;
+});
+
+const mapped = $local(() => {
   const n = 2;
   function map(n) {
     console.log(`mapped ${n}`);
     return (n * 2) >>> 0;
   }
   return n != null ? map(n) : undefined;
-})();
+});
 
 // Reads `PRINTED`, made before it.
-const AFTER_PRINTED = (PRINTED + 1) >>> 0;
+const AFTER_PRINTED = $local(() => (PRINTED() + 1) >>> 0);
 const LATER = 7;
 // Reads `LATER`, written after it, so it's made after that one.
 const BEFORE_LATER = (LATER + 1) >>> 0;
@@ -47,13 +58,13 @@ const APPLIED = picked(4);
 const USES_FLAG = Flags.ON && BASE > 1;
 
 function main() {
-  const madeAtStart = made;
-  const takenAtStart = taken.slice();
-  const limited = LIMITED;
-  const counted = COUNTED;
+  const madeAtStart = made();
+  const takenAtStart = taken().slice();
+  const limited = LIMITED();
+  const counted = COUNTED();
   const based = BASED;
-  const afterPrinted = AFTER_PRINTED;
-  const mappedAtStart = mapped;
+  const afterPrinted = AFTER_PRINTED();
+  const mappedAtStart = mapped();
   const beforeLater = BEFORE_LATER;
   const applied = APPLIED;
   console.log("main");
@@ -65,11 +76,11 @@ function main() {
   const previous = HITS;
   HITS = (previous + 6) >>> 0;
   console.log(
-    `${madeAtStart == null ? "None" : `Some(${madeAtStart})`} ${made == null ? "None" : `Some(${made})`}`,
+    `${madeAtStart == null ? "None" : `Some(${madeAtStart})`} ${made() == null ? "None" : `Some(${made()})`}`,
   );
   console.log(`[${takenAtStart.map((item) => $debugStr(item)).join(", ")}]`);
   console.log(`${names.length}`);
-  console.log(`${limited} ${LIMITED}`);
+  console.log(`${limited} ${LIMITED()}`);
   console.log(`${counted}`);
   console.log(`${based}`);
   console.log(`${afterPrinted}`);

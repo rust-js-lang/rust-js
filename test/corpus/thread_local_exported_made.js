@@ -8,7 +8,7 @@ export function entry() {
 }
 
 function main() {
-  console.log(`${$byteLen(EventNames.ANIMATION_END)}`);
+  console.log(`${$byteLen(EventNames.ANIMATION_END())}`);
   console.log(`main ${EventNames.count()}`);
   console.log(`${EventNames.ANIMATION}`);
   console.log(`${EventNames.animationEnd()} ${EventNames.count()}`);

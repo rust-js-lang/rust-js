@@ -4,6 +4,8 @@ Status: Accepted. The user's decision (2026-10-28, React port gap rd51).
 Amended (rd542): a `dyn Fn` its call is given is what that call gave it,
 and a clone of a closure runs none of it. Amended (rd621): `may_run` is
 its own rule, and a drop runs the destructors its fields and `dyn`s hold.
+Amended (#554, the user's decision, 2026-11-04): one whose making as its
+module loads would show is made where it's first used, a `pub` one refused.
 Amends [0037](0037-thread-locals.md), whose amendment refusing a `pub`
 thread-local made where it's first used it replaces.
 
@@ -390,3 +392,121 @@ the crate makes one of only to hand it to JS holds, which `drop_runs`
 leaves out; a `dyn` whose drop may run one is what rust-js can't follow. An initializer that drops such a `dyn` is made
 where it's first used, a `pub` one refused, as one calling a `dyn Fn`
 is. Mutation `may-run-field-destructor`.
+
+## Amendment: made where it's first used where its module's load would show (#554)
+
+The user's decision (2026-11-04, option (b) of #554). Every thread-local
+was made as its module loaded unless its module's load couldn't make it
+first, so one whose initializer read what the program set later was made
+of what was there at the load:
+
+```rust
+fn made() -> Option<u32> { println!("made"); none_of(LEN.with(|l| l.get())) }
+thread_local! {
+    static LEN: Cell<u32> = const { Cell::new(1) };
+    static LAZY: RefCell<Option<u32>> = RefCell::new(made());
+}
+pub fn main() { println!("start"); LEN.set(5); println!("{:?}", LAZY.with_borrow(Clone::clone)); }
+```
+
+Native Rust prints `start`, `made`, `Some(5)`; the JS, `let lazy = made()
+?? null` at its module's top, printed `made` first and gave `None`: a
+wrong answer, which the difference accepted.
+
+**A thread-local is made where it's first used, `$local(() => ..)`, where
+making it as its module loads would show** (`analysis/lazy_locals.rs`, the
+one owner of where each is made): of all its initializer runs and reads,
+`may_run`'s answer,
+
+- **a body that prints or panics**, which Rust orders: a `println!`'s
+  `_print`, or a call of what never returns, a `panic!`, an `assert!`'s
+  failure, `unreachable!()`, `process::exit`. A std call's own panic,
+  `expect` of `None`, and what a binding's call does, stay at the module's
+  load (the guide's difference 25): React's `ReactSharedInternalsServer`,
+  a binding's `expect`, still fails its module's load, as upstream's
+  `throw` does;
+- **state it reads that a body that may run after the modules load
+  writes**: a thread-local of what has a cell (through the fields of the
+  crate's types, the type arguments of std's, and what a reference points
+  to; not a function's, a closure's or a `dyn`'s, which name no state, nor
+  a binding's type's type arguments, React's `&'static
+  Class<fn(.., Option<Rc<Fiber>>, ..)>`, a JS class), a `static mut`, a
+  `static` of interior mutability, each written by
+  a method that sets it or lends its cell, `set`, `take`, `replace`,
+  `with_borrow_mut`, `with`, or by any other use but a read, `get` and
+  `with_borrow`; a `static mut` where it's assigned or a pointer is taken;
+  any use of another `static` of a cell;
+- **state it writes that such a body reads or writes**, which would tell
+  whether it's been made.
+
+**A body runs only as the modules load** where it's a thread-local's
+initializer made then, a `js::on_load!`'s, a function only calls reach
+(ADR 0577's `only_called`) each of whose calls is in one of those, or a
+closure one of those gives std's call to run there, keeping none of it (in
+neither what it gives back nor what else it's given, a `with(|x| ..)`'s,
+not an iterator's `map`). Any other body may run after: `main`, a function
+JS may call, a trait's method, a closure kept. Each made where it's first
+used runs after the load too, so what only it ran may make another show:
+to a fixed point. One whose initializer only makes a value, calls a
+binding, or reads and writes what only the loading code touches is made as
+its module loads, as before: React DOM's `const isScrollEndEventSupported =
+isEventSupported("scrollend")`, and DOMEventNames' `export const
+ANIMATION_END = getVendorPrefixedEventName("animationend")`, which reads
+`style`, a `Cell` only its module's `js::on_load!` sets, and its caches,
+JS objects held by reference that bindings change (difference 25).
+
+**A `pub` one that would show is refused**, as before rd51: JS's importers
+read an `export const`, made as its module loads. "a `pub` thread-local
+whose initializer prints, in `made`", ".. may panic, in `checked`", "..
+reads `LEN`, which `grow` may change after the modules load", ".. changes
+`COUNT`, which `count` may read after the modules load": make it
+`pub(crate)`, made where it's first used, and export a `pub fn` that reads
+it.
+
+A lazy `#[rust_js::nullable]` one is a cell that stores `null` for `None`
+however it's written, `$local(() => $nullableCell(..))` (#541's
+`nullable_cell`), and so is the cell `set` makes of one not made yet,
+`initWith($nullableCell(4))`, not `{ value: 4 }`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C where it would show,
+results changed: Rust's behavior is kept, `$local`. B, the accepted
+difference, narrowed to what the program can't tell from Rust's order but
+by what bindings do and std's own panics, and by what the loading
+initializers do among themselves: two that share state only they touch,
+a cache only they fill, are made in their modules' order, where Rust makes
+each at its first use. N where nothing can tell.
+
+Over-cautious, for now: a destructor std may run of what it's given, of a
+type whose `Drop` prints, and a `with` of a thread-local of an `Rc` of a
+cell, which may change what it points to, make one lazy that can't show
+(`thread_local_refcell_set`'s `NOISY`, `refcell_flow_thread_local_init`'s
+`SECOND`): correct, read by its call. And what's read of state isn't told
+apart by its field: React Flight's `const TaintRegistryObjects =
+$local(() => ReactSharedInternals.TaintRegistryObjects)`, and its three
+siblings, read a `Cell` of the server internals, whose other cells, the
+dispatcher's, functions set after the load, so they're made where they're
+first used, where upstream destructures them as its module loads.
+
+The ports, built on this (2026-11-04): React's (react-in-rust 06d6b3f9),
+whose only thread-locals made where they're first used now are those four,
+private; no `pub` one refused. alien-signals' JS is unchanged.
+
+- Corpus `thread_local_lazy_where_observable`, against native Rust: the
+  issue's, one that prints, one that may panic, two that read `LEN` set
+  before their first use, one that writes `COUNT` that `main` reads, and a
+  nullable one written `None` by `set`, `replace` and `with_borrow_mut` and
+  `set` before its first use, each `$local`; a `const { .. }` one, a
+  binding's `Math.max` and two of a cache only they touch, filled in a
+  `with`'s closure, made as their module loads. `thread_local_exported_at_load`
+  is of such a cache; the cases rd120 ordered to dodge the difference,
+  `thread_local_made_where_used`, `thread_local_made_by_constructor`,
+  `thread_local_reads_another_set`, `thread_local_exported_made`, are
+  `$local` again.
+- `test/lowering-module-variables.test.ts`: a `pub` one reading what a
+  `js::on_load!` sets, an `export const`; a private one of what only makes
+  a value at load, one that prints, `$local`, printing at its first use,
+  and one of an import cycle, `$local` for that alone (the mutation
+  `out-of-order-private-at-load`, whose corpus case's initializers print
+  now). `test/diagnostics.test.ts`: the four refusals.
+- Mutations in `scripts/mutations/lower/analysis/lazy_locals.ts`, and
+  `nullable-local-set-plain` (`std_types/cell.rs`).

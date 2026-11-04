@@ -2,6 +2,7 @@
 
 import * as Marks from "./marks.js";
 import * as Stack from "./stack.js";
+import { $local } from "@rust-js/runtime";
 
 export function entry() {
   main();
@@ -43,16 +44,16 @@ const nested = Stack.cursorOfSome(1);
 const none = Stack.createCursor(undefined);
 const BASED = based();
 const COUNTED = counted();
-const NOISY = noisy();
-const MAPPED = mapped();
+const NOISY = $local(() => noisy());
+const MAPPED = $local(() => mapped());
 
 function read(cursor) {
   return cursor.current;
 }
 
 function main() {
-  const noisy = read(NOISY);
-  const mapped = MAPPED.current;
+  const noisy = read(NOISY());
+  const mapped = MAPPED().current;
   console.log("main");
   const old = cursor.current;
   cursor.current = 3;

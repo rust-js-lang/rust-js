@@ -147,8 +147,12 @@ react.dev's TopNav passes the same closure instead.
   refused. A private one is made as its module loads too (2026-10-29, gap
   rd120, ADR 1006, amended), React DOM's `const isScrollEndEventSupported =
   isEventSupported('scrollend')`, and where its module's load can't make
-  it, where it's first used. Listed in the guide's differences
-  (`semantics.md`, 30).
+  it, where it's first used. Narrowed (2026-11-04, #554, ADR 1006,
+  amended): one whose initializer prints, may panic, reads state a
+  function that may run later sets, or changes state one reads is made
+  where it's first used, a `pub` one refused; what bindings do, std's own
+  panics, and what such initializers share among themselves alone stay at
+  the load. Listed in the guide's differences (`semantics.md`, 30).
 - **A package's default entry is its root**, the second case's, which the
   user decided (2026-10-28, gap rd55, ADR 1008, amended): React DOM's
   `import {Children} from 'react'` is of `react`'s `"default":

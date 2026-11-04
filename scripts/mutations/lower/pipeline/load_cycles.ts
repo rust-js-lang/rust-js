@@ -138,7 +138,11 @@ export const mutations: Mutation[] = [
     find: "private.into_iter().filter(|&key| out_of_order(key).is_some())",
     replace:
       "private.into_iter().filter(|&key| false && out_of_order(key).is_some())",
-    tests: ["test/corpus.test.ts", "-t", "^thread_local_made_where_used.rs$"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a private thread-local is made as its module loads, where its module's load can make it",
+    ],
   },
   {
     name: "out-of-order-pub-lazy",

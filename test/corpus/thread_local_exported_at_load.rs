@@ -1,33 +1,34 @@
 // A `pub` thread-local is made as its module loads, as JS's `export const`
-// is, whatever its initializer runs (ADR 1006, the user's decision), and a
-// private one too (ADR 1006, amended): React DOM's `export const ANIMATION_END =
-// getVendorPrefixedEventName('animationend')`, which upstream's JS imports.
-// It differs from Rust only in when its initializer runs, so `main` first
-// reads each in the order their modules make them, and what each
-// initializer did, and in which order, is the same.
+// is (ADR 1006, the user's decision), and a private one too (ADR 1006,
+// amended), where making it then can't show (#554): React DOM's `export
+// const ANIMATION_END = getVendorPrefixedEventName('animationend')`, which
+// upstream's JS imports, whose initializer reads and fills a cache only the
+// loading initializers touch. One whose initializer shows it would be made
+// where it's first used, a `pub` one refused (`thread_local_lazy_where_observable`).
 mod prefixes {
     use std::cell::RefCell;
+    use std::collections::HashMap;
 
     thread_local! {
-        static SEEN: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+        static PREFIXED: RefCell<HashMap<String, String>> = RefCell::new(HashMap::new());
         // Made as its module loads too, before the `pub` ones, whose
         // module imports its own: so `prefixed` reads it first.
         static VENDOR: String = vendor();
     }
 
     fn vendor() -> String {
-        SEEN.with_borrow_mut(|seen| seen.push("vendor".to_owned()));
         "webkit".to_owned()
     }
 
     pub fn prefixed(name: &str) -> String {
-        let vendor = VENDOR.with(Clone::clone);
-        SEEN.with_borrow_mut(|seen| seen.push(name.to_owned()));
-        vendor + name
-    }
-
-    pub fn seen() -> Vec<String> {
-        SEEN.with_borrow(Clone::clone)
+        if let Some(prefixed) = PREFIXED.with_borrow(|prefixed| prefixed.get(name).cloned()) {
+            return prefixed;
+        }
+        VENDOR.with(|vendor| {
+            let prefixed = vendor.clone() + name;
+            PREFIXED.with_borrow_mut(|cache| cache.insert(name.to_owned(), prefixed.clone()));
+            prefixed
+        })
     }
 }
 
@@ -55,5 +56,4 @@ fn main() {
     println!("{}", event_names::ANIMATION_END.with(Clone::clone));
     println!("{}", event_names::TRANSITION_END.with(|end| end.len()));
     println!("{}", event_names::FIRST.with(|first| *first));
-    println!("{:?}", prefixes::seen());
 }

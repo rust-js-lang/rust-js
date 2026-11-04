@@ -28,8 +28,8 @@ thread_local! {
         } else {
             Box::new(|x| x)
         };
-    // Of the crate's code, made as its module loads too (ADR 1006,
-    // amended): `main` reads it first.
+    // Of the crate's code, which prints: made where it's first used (ADR
+    // 1006, amended, #554).
     static SCALE: Box<dyn Fn(u32) -> u32> =
         if flag("scale", true) && let Some(k) = lookup("scale", 3) {
             Box::new(move |x| x * k)

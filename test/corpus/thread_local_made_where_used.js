@@ -17,14 +17,14 @@ function guardDrop_drop(guard) {
   console.log("guard dropped");
 }
 
-let loud = noisy(7);
+const loud = $local(() => ({ value: noisy(7) }));
 const plain = 3;
 // A fn pointer's call runs what it may be, the crate's `noisy` here
 // (ADR 0907).
-const POINTED = (() => {
+const POINTED = $local(() => {
   const made = noisy;
   return made(9);
-})();
+});
 
 // Another module's function, of `limits`, in an import cycle with this
 // module. Its `const`, read by the initializer itself, is read as its
@@ -32,11 +32,11 @@ const POINTED = (() => {
 // module loads (ADR 1006, amended).
 const FROM_LIMITS = $local(() => noisy((Limits.limitPlusOne() - 1) >>> 0));
 // What it drops runs the crate's code too.
-const GUARDED = (() => {
+const GUARDED = $local(() => {
   const _guard = undefined;
   guardDrop_drop({ value: _guard });
   return 5;
-})();
+});
 
 let tries = 0;
 // Of `limits`, in an import cycle with this module.
@@ -59,13 +59,14 @@ export function around() {
 }
 
 function main() {
-  const loudAtStart = loud;
-  const pointed = POINTED;
-  const guarded = GUARDED;
+  const loudAtStart = loud().value;
+  const pointed = POINTED();
+  const guarded = GUARDED();
   console.log("main");
   console.log(`${loudAtStart}`);
-  loud = 8;
-  console.log(`${loud} ${plain}`);
+  const l = loud();
+  l.value = 8;
+  console.log(`${loud().value} ${plain}`);
   console.log(`${guarded}`);
   console.log(`${pointed}`);
   console.log(`${FROM_LIMITS()}`);

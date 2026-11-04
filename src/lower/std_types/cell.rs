@@ -185,9 +185,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             value = self.spill(&base, value, out);
                         }
                         // The cell this writes the value of: `{ value }`,
-                        // or the object a `RefCell` of one is (ADR 0863).
+                        // or the object a `RefCell` of one is (ADR 0863);
+                        // of a nullable one, a cell that stores `null` for
+                        // `None` however it's written, as its initializer's
+                        // is (`plain_statics`, #541, #554).
                         let made = match itself {
                             true => value.clone(),
+                            false if null_for_none => Expr::call_helper("$nullableCell", vec![value.clone()]),
                             false => Expr::object(vec![Prop::Field(js::HELD.into(), value.clone())]),
                         };
                         Some(Expr::call(Expr::member(getter, "initWith"), vec![made]))

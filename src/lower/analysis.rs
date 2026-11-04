@@ -1130,7 +1130,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let lazy_locals::LazyLocals {
         lazy: lazy_locals,
         at_load: locals_at_load,
-    } = lazy_locals::lazy_locals((&thread_local_inits, made_where_used), &runs);
+    } = lazy_locals::lazy_locals(tcx, (&thread_local_inits, made_where_used), (&runs, all_bodies));
     // What a function whose return alone owns a callback runs before it
     // returns that may call it (ADR 0317, amended, rd621).
     self_handles.quiet(tcx, &runs, &|id, index| foreign.quiet_by_return(id, index));
