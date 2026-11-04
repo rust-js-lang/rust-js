@@ -27,15 +27,17 @@ function $stdIterator(struct, steps) {
   };
   // What std's own compiled methods take whole, `fold`, `count` and `last`, as
   // Rust's move it, dropping what it held there: closing it after drops
-  // nothing again (ADR 0912).
-  const taking = (method, made) => {
+  // nothing again (ADR 0912). Taken as the call starts, as Rust moves it
+  // in: one that panics drops what it took as it unwinds, so a close after
+  // it, a generic caller's, drops nothing twice (rd764).
+  const taking = (method, run) => {
     if (steps.takes?.includes(method)) it.$closed = true;
-    return made;
+    return run();
   };
   // Given `unwind`, the compiled fold's accumulator's drop, where a stage's
   // panic strands it (#424).
   if (steps.fold !== undefined) {
-    it.fold = (init, f, unwind) => taking("fold", steps.fold(it, init, f, unwind));
+    it.fold = (init, f, unwind) => taking("fold", () => steps.fold(it, init, f, unwind));
   }
   // Its `try_fold`, std's, where it passes it on to its source's (#214).
   if (steps.tryFold !== undefined) {
@@ -46,7 +48,7 @@ function $stdIterator(struct, steps) {
   }
   // Its `count`, std's, its source's own (#293).
   if (steps.count !== undefined) {
-    it.count = (drop) => taking("count", steps.count(it, drop));
+    it.count = (drop) => taking("count", () => steps.count(it, drop));
   }
   // Its `advance_by`, std's, its source's, which drops what it passes as
   // its source does, a `Vec`'s as one slice (#286).
@@ -70,7 +72,7 @@ function $stdIterator(struct, steps) {
   }
   // And its `last`, the compiled one, its source's (#182).
   if (steps.last !== undefined) {
-    it.last = () => step(taking("last", steps.last(it)));
+    it.last = () => step(taking("last", () => steps.last(it)));
     it.ownLast = true;
   }
   it.knowing = (back, len, rfold, nthBack, tryRfold) => {

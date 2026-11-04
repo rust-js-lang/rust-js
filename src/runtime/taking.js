@@ -46,13 +46,13 @@ function $taking(iter, n, drop) {
       return !(len > taking.n && $nthBackOf(taking.iter, len - taking.n - 1, drop).done);
     };
     // Consumed, its source done with after (#225).
-    taking.rfold = (init, f) => {
-      const folded = taking.n === 0 || !trimmed() ? init : $foldBack(taking.iter, init, f);
+    taking.rfold = (init, f, unwind) => {
+      const folded = taking.n === 0 || !trimmed() ? init : $foldBack(taking.iter, init, f, unwind);
       $closed(taking.iter);
       return folded;
     };
-    taking.tryRfold = (init, f, broke) =>
-      taking.n === 0 || !trimmed() ? init : $tryRfoldOf(taking.iter, init, f, broke);
+    taking.tryRfold = (init, f, broke, unwind) =>
+      taking.n === 0 || !trimmed() ? init : $tryRfoldOf(taking.iter, init, f, broke, unwind);
   }
   return taking;
 }

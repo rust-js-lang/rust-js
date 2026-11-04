@@ -68,15 +68,15 @@ function $lazyChain(a, b) {
     const dropping = second.dropItem ?? drop;
     return second.nth !== undefined ? second.nth(n, dropping) : $lent(second).nth(n, dropping);
   };
-  chained.tryFold = (init, f, broke) => {
+  chained.tryFold = (init, f, broke, unwind) => {
     let folded = init;
     if (first !== undefined) {
-      folded = $lent(first).tryFold(folded, f, broke);
+      folded = $lent(first).tryFold(folded, f, broke, unwind);
       if (broke(folded)) return folded;
       first.return?.();
       first = undefined;
     }
-    folded = $lent(second).tryFold(folded, f, broke);
+    folded = $lent(second).tryFold(folded, f, broke, unwind);
     if (!broke(folded) && !chained.held) second.return?.();
     return folded;
   };
