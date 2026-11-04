@@ -23,11 +23,11 @@ export const mutations: Mutation[] = [
   {
     name: "or-pattern-alternative-tests-unread",
     breaks:
-      "an or-pattern's alternative, `b === 3 && a === 2`, says nothing of `a` past its first test, so `a !== 1` before them stays and the arms are MIR's tree, not the chain as written (#617)",
+      "an or-pattern's alternative, `a === 2 && b === 3`, says nothing of `b` past its first test, so `b !== 1` after them stays, `(0, 0)`'s `match` MIR's labeled block, not the chain as written (#617, #631)",
     file: "src/lower/mir/tidy/decisions/paths.rs",
     find: "        ExprKind::Binary(Op::And, a, b) => says_within(a, subject, set) || says_within(b, subject, set),\n",
     replace: "        ExprKind::Binary(Op::And, a, b) => says_within(a, subject, set),\n",
-    tests: ["test/lowering-comments-inside.test.ts", "-t", "tuple's or-pattern is the arm's"],
+    tests: ["test/lowering-match-paths.test.ts", "-t", "after an arm that tests both values"],
   },
   {
     name: "decisions-impossible-path-kept",
