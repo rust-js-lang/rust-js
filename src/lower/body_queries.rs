@@ -27,6 +27,7 @@ pub(super) use constants::{
     ConstantPatterns, PatternStep, PatternValue, pattern_places, pattern_value, transparent_subpattern,
 };
 pub(super) use ranges::{present_item_of_sized, ranges};
+pub(in crate::lower) use set_reads::is_option_unwrap;
 use whole_casts::whole_casts;
 
 /// The parts of a `for pat in head { body }` (ADR 0025).

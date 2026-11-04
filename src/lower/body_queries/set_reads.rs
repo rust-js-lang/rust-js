@@ -111,7 +111,7 @@ fn cell_get<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, call: ExprId) -> Option<
 }
 
 /// Is `fun`'s type an `Option`'s own `unwrap` or `expect`?
-fn is_option_unwrap<'tcx>(tcx: TyCtxt<'tcx>, fun: ty::Ty<'tcx>) -> bool {
+pub(in crate::lower) fn is_option_unwrap<'tcx>(tcx: TyCtxt<'tcx>, fun: ty::Ty<'tcx>) -> bool {
     let ty::FnDef(def_id, _) = *fun.kind() else {
         return false;
     };

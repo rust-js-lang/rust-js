@@ -3,6 +3,7 @@ import type { Mutation } from "../../../mutations";
 
 const observable = ["test/corpus.test.ts", "-t", "^thread_local_lazy_where_observable.rs$"];
 const byField = ["test/corpus.test.ts", "-t", "^thread_local_lazy_by_field.rs$"];
+const throughCopy = ["test/corpus.test.ts", "-t", "^thread_local_written_through_copy.rs$"];
 
 export const mutations: Mutation[] = [
   {
@@ -28,8 +29,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a thread-local whose initializer reads `LEN`, which `main` sets before its first use, is made as its module loads of what `LEN` held then: `None` where Rust gives `Some(5)` (#554)",
     file: "src/lower/analysis/lazy_locals.rs",
-    find: "            for &place in &touched.writes {\n                add(&mut outside.writes, place, *id);\n",
-    replace: "            for &place in touched.writes.iter().filter(|_| false) {\n                add(&mut outside.writes, place, *id);\n",
+    find: "            for &place in &touched.writes {\n                outside.writes.add(touches, place, *id);\n",
+    replace: "            for &place in touched.writes.iter().filter(|_| false) {\n                outside.writes.add(touches, place, *id);\n",
     tests: observable,
   },
   {
@@ -37,8 +38,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a thread-local whose initializer bumps `COUNT`, which `main` reads before its first use, is made as its module loads, so `main` reads 1 where Rust reads 0 (#554)",
     file: "src/lower/analysis/lazy_locals.rs",
-    find: "        .find_map(|&place| Some((place.state, Outside::by(touches, &outside.touches, place)?)))\n",
-    replace: "        .find_map(|&place| Some((place.state, Outside::by(touches, &outside.touches, place).filter(|_| false)?)))\n",
+    find: "        .find_map(|&place| Some((place.state, outside.touches.by(touches, place)?)))\n",
+    replace: "        .find_map(|&place| Some((place.state, outside.touches.by(touches, place).filter(|_| false)?)))\n",
     tests: observable,
   },
   {
@@ -46,8 +47,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a thread-local's `set` isn't a write of it, so `LEN.set(5)` in `main` changes nothing an initializer reads, and `LAZY` is made of `LEN`'s 1 as its module loads (#554)",
     file: "src/lower/analysis/lazy_locals.rs",
-    find: "                        if !read_only.contains(&at) && !tcx.is_mutable_static(def_id) {\n",
-    replace: "                        if false && !read_only.contains(&at) && !tcx.is_mutable_static(def_id) {\n",
+    find: "                            if gives_out || (!read_only.contains(&at) && !tcx.is_mutable_static(def_id)) {\n",
+    replace: "                            if gives_out || (false && !read_only.contains(&at) && !tcx.is_mutable_static(def_id)) {\n",
     tests: observable,
   },
   {
@@ -174,8 +175,8 @@ export const mutations: Mutation[] = [
     breaks:
       "two places of one field are taken apart, so `main`'s write of `dispatcher` isn't seen and `DISPATCHER` is made of its 1 as its module loads, where Rust reads 5 (#616)",
     file: "src/lower/analysis/lazy_locals.rs",
-    find: "        if a.state != b.state || f == g {\n",
-    replace: "        if a.state != b.state || (f == g && false) {\n",
+    find: "        if f == g {\n",
+    replace: "        if f == g && false {\n",
     tests: byField,
   },
   {
@@ -204,5 +205,78 @@ export const mutations: Mutation[] = [
     find: "                            let through = used.lends || (used.gives && points);\n",
     replace: "                            let through = used.lends || (used.gives && points && false);\n",
     tests: byField,
+  },
+  {
+    name: "read-gives-out-unwritten",
+    breaks:
+      "a thread-local's `get` that gives out a `&'static S` is a read alone, so `main`'s write through `PTR.get()` isn't seen and `READ` is made of 1 as its module loads, where Rust reads 5 (#635)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "                            let gives_out = points && whole.through;\n",
+    replace: "                            let gives_out = points && whole.through && false;\n",
+    tests: throughCopy,
+  },
+  {
+    name: "other-state-apart",
+    breaks:
+      "two kin's places are always apart, so `B`, made of the reference `A` holds, is written without `READ_A` seeing it, made of 1 as its module loads, where Rust reads 6 (#635)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "            return self.kin_of(a.state) == self.kin_of(b.state) && self.aliases[&a].meet(&self.aliases[&b]);\n",
+    replace: "            return false && self.kin_of(a.state) == self.kin_of(b.state) && self.aliases[&a].meet(&self.aliases[&b]);\n",
+    tests: throughCopy,
+  },
+  {
+    name: "static-own-unnamed",
+    breaks:
+      "a `static`'s own memory is taken to be pointed to by nothing, so `TO_COUNTER.get()`'s store to `COUNTER` isn't seen and `READ_COUNTER` is made of 1 as its module loads, where Rust reads 7 (#635)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "                named: if named { reach(tcx, held, true, false) } else { none() },\n",
+    replace: "                named: if named && false { reach(tcx, held, true, false) } else { none() },\n",
+    tests: throughCopy,
+  },
+  {
+    name: "field-behind-reference-owned",
+    breaks:
+      "a field of the struct a thread-local holds a `&'static` to is taken to be its own, so `B`'s write of the cell `A` points to too isn't seen and `READ_A` is made of 1 as its module loads (#635)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "                behind = true;\n",
+    replace: "",
+    tests: throughCopy,
+  },
+  {
+    name: "shared-places-unlisted",
+    breaks:
+      "a place that may share with another state's isn't listed for the others, so no write of another state is seen, and `READ_A` and `READ_COUNTER` are made as their module loads (#635)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "            if touches.aliases[&place].shares() {\n",
+    replace: "            if false && touches.aliases[&place].shares() {\n",
+    tests: throughCopy,
+  },
+  {
+    name: "initializer-as-is-read-through",
+    breaks:
+      "an initializer whose value is a binding's `static` as it is, React's `SERVER_INTERNALS.expect(..)`, is taken to read what it points to, which Flight's `internals.h.set(..)` writes, so the `pub` `REACT_SHARED_INTERNALS_SERVER` is refused (#635)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "                                through: given_as_is != Some(AsIs::Read(at)),\n",
+    replace: "                                through: true || given_as_is != Some(AsIs::Read(at)),\n",
+    tests: ["test/lowering-binding-paths.test.ts", "-t", "a binding its module checks as it loads is a thread-local of its expect"],
+  },
+  {
+    name: "kin-unjoined",
+    breaks:
+      "no state holds a reference another's read gives out, so `B`, made of `A`'s, and `TO_COUNTER`, of `&COUNTER`, are apart from them, and `READ_A` and `READ_COUNTER` are made as their module loads, of 1 where Rust reads 6 and 7 (#635)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "            if copies.is_empty() {\n",
+    replace: "            if true || copies.is_empty() {\n",
+    tests: throughCopy,
+  },
+  {
+    name: "field-as-is-read-through",
+    breaks:
+      "an initializer whose value is a clone of a field's `Rc`, `PENDING`'s, is taken to read what it points to, which `main` writes through it, so it's made where it's first used, `$local(..)` where React Flight's `TaintRegistryPendingRequests` is upstream's destructuring (#635)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "    let given = as_is\n",
+    replace: "    let given = (as_is && false)\n",
+    tests: throughCopy,
+    snapshots: true,
   },
 ];

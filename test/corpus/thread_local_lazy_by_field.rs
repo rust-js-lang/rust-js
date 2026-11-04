@@ -38,9 +38,11 @@ fn assign(target: &Internals, patch: &Patch) {
     target.registry.set(patch.registry);
 }
 
+// `Shared` and `Links` of their own types, so no other thread-local's
+// place may be one with theirs.
 struct Shared {
-    first: Rc<Cell<u32>>,
-    second: Rc<Cell<u32>>,
+    first: Rc<Cell<u16>>,
+    second: Rc<Cell<u16>>,
 }
 
 fn shared() -> Shared {
@@ -52,12 +54,12 @@ fn shared() -> Shared {
 }
 
 struct Links {
-    first: Cell<Option<&'static Cell<u32>>>,
-    second: Cell<Option<&'static Cell<u32>>>,
+    first: Cell<Option<&'static Cell<i64>>>,
+    second: Cell<Option<&'static Cell<i64>>>,
 }
 
 fn links() -> Links {
-    let cell: &'static Cell<u32> = Box::leak(Box::new(Cell::new(1)));
+    let cell: &'static Cell<i64> = Box::leak(Box::new(Cell::new(1)));
     Links {
         first: Cell::new(Some(cell)),
         second: Cell::new(Some(cell)),
@@ -90,8 +92,8 @@ thread_local! {
     static ASSIGNED_REGISTRY: u32 = ASSIGNED.with(|assigned| assigned.registry.get());
     static NESTED_REGISTRY: u32 = NESTED.with(|nested| nested.registry.get());
     static HELD_REGISTRY: u32 = HELD.with(|&held| held.registry.get());
-    static FIRST: u32 = SHARED.with(|shared| shared.first.get());
-    static LINKED: u32 = LINKS.with(|links| links.first.get().map_or(0, Cell::get));
+    static FIRST: u16 = SHARED.with(|shared| shared.first.get());
+    static LINKED: i64 = LINKS.with(|links| links.first.get().map_or(0, Cell::get));
 }
 
 fn main() {

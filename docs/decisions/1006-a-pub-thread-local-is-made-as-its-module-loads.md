@@ -7,6 +7,8 @@ its own rule, and a drop runs the destructors its fields and `dyn`s hold.
 Amended (#554, the user's decision, 2026-11-04): one whose making as its
 module loads would show is made where it's first used, a `pub` one refused.
 Amended (#616): what a `with` lends is told apart by its struct's fields.
+Amended (#635): a write through a reference copied out is a write of what
+it points to.
 Amends [0037](0037-thread-locals.md), whose amendment refusing a `pub`
 thread-local made where it's first used it replaces.
 
@@ -605,7 +607,7 @@ of it, aren't seen as writes of the state, of its fields or of the whole
 of it alike: a gap of their own, a wrong answer reported with #616, which
 this amendment neither opens nor closes: `static READ: u32 =
 PTR.get().unwrap().n.get()` is made as its module loads though `main`
-writes `PTR.get().unwrap().n` first.
+writes `PTR.get().unwrap().n` first. Closed by #635, the amendment below.
 
 The ports, built on this: React's ReactFlightServer destructures the four
 again, `const { TaintRegistryObjects, TaintRegistryValues,
@@ -620,3 +622,94 @@ ReactSharedInternals;`, upstream's.
   `Object.assign`, a closure that captures it, a reference copied out,
   `Rc`s of one cell, and references to one given out by `get`.
 - Mutations `field-*` in `scripts/mutations/lower/analysis/lazy_locals.ts`.
+
+## Amendment: a write through a reference copied out is a write of what it points to (#635)
+
+The amendments above saw state only by its name: a thread-local's `get`
+was a read, and two states were apart. So a reference copied out of one
+and written through went unseen:
+
+```rust
+thread_local! {
+    static PTR: Cell<Option<&'static S>> = Cell::new(Some(leaked()));
+    static READ: u32 = PTR.get().map_or(0, |s| s.n.get());
+    static A: &'static S = leaked();
+    static B: &'static S = A.with(|a| *a);
+    static READ_A: u32 = A.with(|a| a.n.get());
+}
+fn main() {
+    if let Some(s) = PTR.get() { s.n.set(5); }
+    B.with(|b| b.n.set(6));
+    // READ and READ_A
+}
+```
+
+Native Rust reads 5 and 6; the JS, `const READ = ..` and `const READ_A =
+a.n;` at the module's top, read 1 and 1: a wrong answer.
+
+**What a read gives out that points to state that may change may be
+written through, so it's a write of that state** (`lazy_locals`): a
+thread-local's `get` or `with_borrow`, or a `static mut`'s read, of what
+reaches, through a reference, an `Rc`, an `Arc` or a `Weak`, a type that
+isn't `Freeze` (`reach`). A `Cell` field's `get` of such was so since
+#616.
+
+**An initializer whose value is a state's as it is reads that state's own
+memory alone** (`given_as_is`): `SERVER_INTERNALS.expect(..)`, React's
+`ReactSharedInternalsServer` of a binding's `static` and the guide's
+`project/modules.md` example of it, or `PTR.get()`, or `*A`. What that
+points to is read where the thread-local is read, through its own places,
+the same at the load as later, so a write of it, Flight's
+`internals.h.set(..)`, doesn't make it lazy, nor refuse the `pub` one. A
+body that isn't an initializer gives its value to a caller that may read
+through it, so it reads what its value points to.
+
+**A state that may hold a reference another's read gives out is its kin**
+(`Touches::join_copies`): of each thread-local's initializer, with what it
+runs, and each `js::on_load!`, a state read there whose read may give out a
+reference to what may change (`Touched::copies`: a `static`'s, `&COUNTER`;
+a thread-local of a reference, `A.with(|a| *a)`; a field of a struct held
+by reference, or of one that points to such) is kin with the thread-local
+made, `B`, and with what the same bodies write, which may hold it. A body
+that may run after the load writes what it copies out of, as above, so
+only those the load runs need asking; all are, as which are made then
+changes in the fixed point. **Two kin's places are one where what they
+touch may be** (`Aliases`, by type, as two fields' are): what one reaches
+through a pointer, a field of a struct its state holds a `&'static` to,
+`A`'s and `B`'s `n`, or what it points to where that's read or written,
+meets what the other reaches, or a `static`'s own memory, `COUNTER` an
+atomic that `TO_COUNTER` holds a reference to. A thread-local's own memory
+is never pointed to by a `&'static`, two `static`s' are apart, and a raw
+pointer, a `dyn` or a closure may point to anything. States no copy joins
+stay apart, as before: the type alone doesn't join them.
+
+**An initializer whose value is a field as it is reads that field alone**
+(`field_as_is`): `REGISTRY.with(|r| r.pending.borrow().clone())`, a clone
+that's the value itself (`mutation::clones_itself`: an `Rc` whose counts
+nothing reads, ADR 0320), or a `Cell`'s `get`, or a copy. The thread-local
+holds what the field holds, kin with it, and what that points to is read
+through the thread-local where it's used: React Flight's
+`TaintRegistryPendingRequests`, whose `Set` Flight adds to through it.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results changed:
+made where it's first used, as Rust makes it. Over-cautious, by type:
+two kin that hold references to two different values of one type are
+taken to point to one, and such an initializer is made where it's first
+used: correct, read by its call.
+
+The ports: React's ReactFlightServer still destructures its four
+`TaintRegistry*` as its module loads, upstream's.
+
+- Corpus `thread_local_written_through_copy`, against native Rust: `READ`,
+  `READ_A`, and `READ_COUNTER` of an atomic `static` stored to through
+  another thread-local's reference, each made where it's first used. Each
+  case's types are its own, so another's can't decide it.
+  `test/lowering-binding-paths.test.ts`' binding checked as its module
+  loads and `project/modules.md`'s, `pub` thread-locals of a binding's
+  `expect`, still made as their module loads.
+  `PENDING`, a clone of the `Rc` `REGISTRY` holds, made as its module
+  loads though `main` writes through it.
+- Mutations `read-gives-out-unwritten`, `other-state-apart`,
+  `static-own-unnamed`, `field-behind-reference-owned`,
+  `shared-places-unlisted`, `kin-unjoined`, `initializer-as-is-read-through`
+  and `field-as-is-read-through` (`analysis/lazy_locals.ts`).

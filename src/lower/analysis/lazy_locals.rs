@@ -56,6 +56,7 @@ pub(super) fn lazy_locals<'tcx>(
     tcx: TyCtxt<'tcx>,
     (inits, made_where_used): (&HashMap<LocalDefId, LocalDefId>, &HashSet<LocalDefId>),
     (runs, bodies): (&Runs<'_, 'tcx>, &[&Body<'tcx>]),
+    counted: &super::Counted<'tcx>,
 ) -> LazyLocals {
     let mut found = LazyLocals {
         lazy: made_where_used.clone(),
@@ -75,7 +76,29 @@ pub(super) fn lazy_locals<'tcx>(
     // Each that would show it's made as its module loads, made where it's
     // first used, until none more is: a body only it ran runs outside the
     // load then, and what that touches may make another show (#554).
-    let touches = Touches::of(tcx, bodies);
+    let initializers: HashSet<DefId> = inits.keys().map(|init| init.to_def_id()).collect();
+    let mut touches = Touches::of(tcx, (bodies, counted), &initializers);
+    // What a reference copied out of state may be held by too: each
+    // thread-local made of one, and each state a loading body writes one to.
+    let made_by: Vec<(DefId, Vec<DefId>)> = (keyed.iter())
+        .map(|&(init, key)| {
+            let ran = std::iter::once(init.to_def_id()).chain(found.at_load[&key].iter().flatten().copied());
+            (key.to_def_id(), ran.collect())
+        })
+        .chain(
+            (bodies.iter())
+                .filter(|body| crate::lower::bindings::is_on_load(tcx, body.def_id))
+                .map(|body| {
+                    (
+                        body.def_id,
+                        std::iter::once(body.def_id)
+                            .chain(runs.of(body.def_id).into_iter().flatten())
+                            .collect(),
+                    )
+                }),
+        )
+        .collect();
+    touches.join_copies(&made_by);
     // Each function only calls reach, by its calls (ADR 0577).
     let only_called = super::only_called::only_called(tcx);
     loop {
@@ -120,6 +143,10 @@ struct Touched {
     writes: Vec<Place>,
     /// Whether it prints, or calls what never returns, a `panic!`'s.
     ordered: Option<Ordered>,
+    /// The states whose read may give out a reference to what may change,
+    /// which what it's given to may hold (#635): `PTR.get()`'s `&'static
+    /// S`, `A.with(|a| *a)`, a `static`'s own, `&COUNTER`.
+    copies: Vec<DefId>,
 }
 
 /// A place of the crate's state, by its name: the whole of it, or, of a
@@ -155,6 +182,9 @@ struct FieldUse {
     writes: bool,
     gives: bool,
     lends: bool,
+    /// Whether it's an initializer's value as it is (`field_as_is`), which
+    /// the thread-local holds then, read alone.
+    as_is: bool,
 }
 
 /// A field of what a struct's field holds: its type, and what it may point
@@ -175,15 +205,100 @@ enum Ordered {
 }
 
 /// Each body's `Touched`, by its id, and the bodies in the crate's order;
-/// and each field a `with` lends, by its state and field.
+/// each field a `with` lends, by its state and field; and what each place
+/// touched may share with another state's (`aliases`).
 struct Touches<'tcx> {
     order: Vec<DefId>,
     of: HashMap<DefId, Touched>,
     fields: HashMap<(DefId, FieldIdx), FieldOf<'tcx>>,
+    aliases: HashMap<Place, Aliases<'tcx>>,
+    /// Each state that may hold a reference another holds or is, by the
+    /// first of its kin (`join_copies`); one that's apart isn't here.
+    kin: HashMap<DefId, DefId>,
+}
+
+/// What a place may share with another state's place, by the types that
+/// aren't `Freeze` of what it touches (#635): `None` where it may be
+/// anything. Two states' places are one where what one reaches through a
+/// pointer may be what the other does, or a `static`'s own: a `&'static S`
+/// two thread-locals hold, or one to an atomic `static`.
+#[derive(Default)]
+struct Aliases<'tcx> {
+    /// Of a `static`, what it holds itself, which a reference may point to.
+    named: Option<HashSet<Ty<'tcx>>>,
+    /// What it reaches through a pointer: of a field of a struct its state
+    /// holds a reference to, the field; and what it points to, where that's
+    /// read or written (`Place::through`).
+    reached: Option<HashSet<Ty<'tcx>>>,
+}
+
+impl<'tcx> Aliases<'tcx> {
+    /// Of `place`, of `fields`, the types of the fields `with`s lend.
+    fn of(tcx: TyCtxt<'tcx>, fields: &HashMap<(DefId, FieldIdx), FieldOf<'tcx>>, place: Place) -> Self {
+        let none = || Some(HashSet::new());
+        let Some((held, named)) = held_of(tcx, place.state) else {
+            return Aliases {
+                named: none(),
+                reached: none(),
+            };
+        };
+        match place.field {
+            None => Aliases {
+                named: if named { reach(tcx, held, true, false) } else { none() },
+                reached: reach(tcx, held, false, place.through),
+            },
+            Some(field) => Aliases {
+                named: none(),
+                reached: reach(
+                    tcx,
+                    fields[&(place.state, field)].ty,
+                    behind_reference(held),
+                    place.through,
+                ),
+            },
+        }
+    }
+
+    /// Whether it may share anything with another state's place.
+    fn shares(&self) -> bool {
+        let some = |types: &Option<HashSet<Ty<'tcx>>>| types.as_ref().is_none_or(|types| !types.is_empty());
+        some(&self.named) || some(&self.reached)
+    }
+
+    /// Whether it and `other`, another state's, may be one place.
+    fn meet(&self, other: &Self) -> bool {
+        let meet = |a: &Option<HashSet<Ty<'tcx>>>, b: &Option<HashSet<Ty<'tcx>>>| match (a, b) {
+            (Some(a), Some(b)) => !a.is_disjoint(b),
+            (None, Some(b)) | (Some(b), None) => !b.is_empty(),
+            (None, None) => true,
+        };
+        meet(&self.reached, &other.reached) || meet(&self.reached, &other.named) || meet(&self.named, &other.reached)
+    }
+}
+
+/// Whether the struct `held` is, or holds, is reached through a reference:
+/// a `&'static S`'s, which another state may hold too, not a `Box`'s.
+fn behind_reference(mut held: Ty<'_>) -> bool {
+    let mut behind = false;
+    loop {
+        match held.kind() {
+            ty::Ref(_, pointee, _) => {
+                behind = true;
+                held = *pointee;
+            }
+            ty::Adt(adt, args) if adt.is_box() => held = args.type_at(0),
+            _ => return behind,
+        }
+    }
 }
 
 impl<'tcx> Touches<'tcx> {
-    fn of(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> Self {
+    /// Of `bodies`, `initializers` the thread-locals' initializers among them.
+    fn of(
+        tcx: TyCtxt<'tcx>,
+        (bodies, counted): (&[&Body<'tcx>], &super::Counted<'tcx>),
+        initializers: &HashSet<DefId>,
+    ) -> Self {
         let mut state: HashMap<DefId, bool> = HashMap::new();
         let mut changing = |id: DefId| *state.entry(id).or_insert_with(|| changes(tcx, id));
         let by_id: HashMap<DefId, &Body<'tcx>> = bodies.iter().map(|body| (body.def_id, *body)).collect();
@@ -191,13 +306,22 @@ impl<'tcx> Touches<'tcx> {
             order: bodies.iter().map(|body| body.def_id).collect(),
             of: HashMap::new(),
             fields: HashMap::new(),
+            aliases: HashMap::new(),
+            kin: HashMap::new(),
         };
         for body in bodies {
             let thir = &body.thir;
+            // The state an initializer's value is as it is, read by its name:
+            // its own memory alone is read there, what it points to where
+            // the thread-local is read, the same at the load as later.
+            let given_as_is = (initializers.contains(&body.def_id))
+                .then(|| body.root().and_then(|root| given_as_is(tcx, thir, root)))
+                .flatten();
             let mut touched = Touched {
                 reads: Vec::new(),
                 writes: Vec::new(),
                 ordered: None,
+                copies: Vec::new(),
             };
             // Each thread-local read where it's only read, `KEY` of
             // `KEY.get()` or `KEY.with_borrow(f)`, and each written, by a
@@ -225,7 +349,12 @@ impl<'tcx> Touches<'tcx> {
                     && let ExprKind::Borrow { arg: key, .. } = thir[strip(thir, key)].kind
                     && let ExprKind::Closure(ref closure) = thir[strip(thir, f)].kind
                     && let Some(closure) = by_id.get(&closure.closure_id.to_def_id())
-                    && let Some(fields) = fields_lent(tcx, &closure.thir)
+                    && let Some(fields) = fields_lent(
+                        tcx,
+                        counted,
+                        &closure.thir,
+                        given_as_is == Some(AsIs::Lent(strip(thir, key))),
+                    )
                 {
                     lent.insert(strip(thir, key), fields);
                 }
@@ -236,11 +365,30 @@ impl<'tcx> Touches<'tcx> {
                         if def_id.is_local() && changing(def_id) =>
                     {
                         let Some(fields) = lent.get(&at) else {
-                            touched.reads.push(Place::whole(def_id));
+                            let whole = Place {
+                                through: given_as_is != Some(AsIs::Read(at)),
+                                ..Place::whole(def_id)
+                            };
+                            touched.reads.push(whole);
                             // A `static mut` is written where it's assigned,
                             // below; anything else that isn't only read may be.
-                            if !read_only.contains(&at) && !tcx.is_mutable_static(def_id) {
-                                touched.writes.push(Place::whole(def_id));
+                            // And what a read gives out may be written
+                            // through, `PTR.get()`'s `&'static S` (#635).
+                            let points = (found.aliases.entry(whole))
+                                .or_insert_with(|| Aliases::of(tcx, &HashMap::new(), whole))
+                                .reached
+                                .as_ref()
+                                .is_none_or(|reached| !reached.is_empty());
+                            let gives_out = points && whole.through;
+                            // What's read as it is gives it out too.
+                            let copied = held_of(tcx, def_id).is_some_and(|(held, named)| {
+                                named || pointees(tcx, held).is_none_or(|pointees| !pointees.is_empty())
+                            });
+                            if copied {
+                                touched.copies.push(def_id);
+                            }
+                            if gives_out || (!read_only.contains(&at) && !tcx.is_mutable_static(def_id)) {
+                                touched.writes.push(whole);
                             }
                             continue;
                         };
@@ -265,6 +413,12 @@ impl<'tcx> Touches<'tcx> {
                             touched.reads.push(place);
                             if used.writes || through {
                                 touched.writes.push(place);
+                            }
+                            // A reference to it, or to what it points to,
+                            // given out, may be held by what it's given to.
+                            let behind = held_of(tcx, def_id).is_some_and(|(held, _)| behind_reference(held));
+                            if (used.lends || used.gives || used.as_is) && (points || behind) {
+                                touched.copies.push(def_id);
                             }
                         }
                         continue;
@@ -299,6 +453,16 @@ impl<'tcx> Touches<'tcx> {
             }
             found.of.insert(body.def_id, touched);
         }
+        let places: Vec<Place> = (found.of.values())
+            .flat_map(|touched| touched.reads.iter().chain(&touched.writes))
+            .copied()
+            .collect();
+        for place in places {
+            if !found.aliases.contains_key(&place) {
+                let aliases = Aliases::of(tcx, &found.fields, place);
+                found.aliases.insert(place, aliases);
+            }
+        }
         found
     }
 
@@ -307,11 +471,14 @@ impl<'tcx> Touches<'tcx> {
     /// other, or to what the other points to, where what they point to is
     /// read or written, `Rc`s of one cell.
     fn overlap(&self, a: Place, b: Place) -> bool {
+        if a.state != b.state {
+            return self.kin_of(a.state) == self.kin_of(b.state) && self.aliases[&a].meet(&self.aliases[&b]);
+        }
         let (Some(f), Some(g)) = (a.field, b.field) else {
-            return a.state == b.state;
+            return true;
         };
-        if a.state != b.state || f == g {
-            return a.state == b.state;
+        if f == g {
+            return true;
         }
         let (f, g) = (&self.fields[&(a.state, f)], &self.fields[&(b.state, g)]);
         // Whether what `from` points to may be `to`, or what `to` points to,
@@ -331,6 +498,150 @@ impl<'tcx> Touches<'tcx> {
     }
 }
 
+impl Touches<'_> {
+    /// The first of `state`'s kin, itself where it has none.
+    fn kin_of(&self, state: DefId) -> DefId {
+        self.kin.get(&state).copied().unwrap_or(state)
+    }
+
+    /// Of `made_by`, each thread-local's key with what its initializer
+    /// runs, and each `js::on_load!` with what it runs: each state whose
+    /// read may give out a reference (`Touched::copies`) is kin with what's
+    /// made of it, the key, and with what the same bodies write, which may
+    /// hold the reference: `static B: &'static S = A.with(|a| *a)`'s `B` and
+    /// `A` (#635). A body that may run after the load writes what it copies
+    /// out of, so only those the modules' load runs are asked; all are, as
+    /// which are made then changes.
+    fn join_copies(&mut self, made_by: &[(DefId, Vec<DefId>)]) {
+        let mut kin: HashMap<DefId, DefId> = HashMap::new();
+        fn first(kin: &HashMap<DefId, DefId>, mut state: DefId) -> DefId {
+            while let Some(&up) = kin.get(&state).filter(|&&up| up != state) {
+                state = up;
+            }
+            state
+        }
+        for (made, ran) in made_by {
+            let touched = || ran.iter().filter_map(|id| self.of.get(id));
+            let copies: Vec<DefId> = touched().flat_map(|touched| touched.copies.iter().copied()).collect();
+            if copies.is_empty() {
+                continue;
+            }
+            let holders = (touched().flat_map(|touched| touched.writes.iter().map(|place| place.state)))
+                .chain(std::iter::once(*made));
+            for holder in holders.chain(copies.iter().copied()).collect::<Vec<_>>() {
+                let (a, b) = (first(&kin, copies[0]), first(&kin, holder));
+                if a != b {
+                    kin.insert(b, a);
+                }
+            }
+        }
+        let states: Vec<DefId> = kin.keys().copied().collect();
+        self.kin = states.into_iter().map(|state| (state, first(&kin, state))).collect();
+    }
+}
+
+/// The state `root`, a body's value, is as it is, read by its name, where
+/// it's that: `*SERVER_INTERNALS`, `PTR.get()`, or an `Option`'s `expect`
+/// or `unwrap` of one, React's `SERVER_INTERNALS.expect(..)`, reborrowed or
+/// not; or the thread-local whose `with` gives the closure's value, which
+/// `fields_lent` asks of the field it's of (#635).
+fn given_as_is<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, root: ExprId) -> Option<AsIs> {
+    let mut e = root;
+    let mut lent = false;
+    loop {
+        e = strip(thir, e);
+        match thir[e].kind {
+            ExprKind::NamedConst { .. } | ExprKind::StaticRef { .. } if lent => return Some(AsIs::Lent(e)),
+            ExprKind::NamedConst { .. } | ExprKind::StaticRef { .. } => return Some(AsIs::Read(e)),
+            ExprKind::Deref { arg } => e = arg,
+            // A reborrow, `&*`, of what it reads.
+            ExprKind::Borrow {
+                borrow_kind: rustc_middle::mir::BorrowKind::Shared,
+                arg,
+            } if matches!(thir[strip(thir, arg)].kind, ExprKind::Deref { .. }) => e = arg,
+            ExprKind::Block { block } if thir[block].stmts.is_empty() => e = thir[block].expr?,
+            ExprKind::Call { fun, ref args, .. } => {
+                let (id, _) = crate::lower::fn_def(thir[fun].ty)?;
+                let key_get = crate::lower::recognition::local_key_cell_method(tcx, id)
+                    == Some(crate::lower::recognition::LocalKeyCellMethod::Get);
+                // A `with` whose closure's value is a field as it is
+                // (`fields_lent`'s `as_is`), or reads none of it.
+                let with = crate::lower::recognition::is_local_with(tcx, id);
+                if key_get || (with && !lent) {
+                    let ExprKind::Borrow { arg, .. } = thir[strip(thir, *args.first()?)].kind else {
+                        return None;
+                    };
+                    lent = with;
+                    e = arg;
+                } else if crate::lower::body_queries::is_option_unwrap(tcx, thir[fun].ty) {
+                    e = *args.first()?;
+                } else {
+                    return None;
+                }
+            }
+            _ => return None,
+        }
+    }
+}
+
+/// What an initializer's value is as it is (`given_as_is`).
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum AsIs {
+    /// The state read by its name there.
+    Read(ExprId),
+    /// What a `with` of the thread-local named there gives its closure.
+    Lent(ExprId),
+}
+
+/// The field `root`, a closure's value, is as it is: a copy of it, a
+/// `Cell`'s `get` of it, or a clone of it, or of what a `RefCell`'s
+/// `borrow` of it holds, that's the value itself (`clones_itself`: an
+/// `Option` of an `Rc` whose counts nothing reads, React Flight's
+/// `internals.taint_registry_pending_requests.borrow().clone()`).
+fn field_as_is<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    counted: &super::Counted<'tcx>,
+    thir: &Thir<'tcx>,
+    root: ExprId,
+) -> Option<ExprId> {
+    use crate::lower::recognition::{CellMethod, HandleStep, cell_own_method, handle_step};
+    let lent = |e: ExprId| match thir[strip(thir, e)].kind {
+        ExprKind::Borrow { arg, .. } => Some(strip(thir, arg)),
+        _ => None,
+    };
+    let mut e = strip(thir, root);
+    if let ExprKind::Block { block } = thir[e].kind {
+        e = strip(thir, thir[block].stmts.is_empty().then_some(thir[block].expr?)?);
+    }
+    let mut cloned = false;
+    loop {
+        match thir[e].kind {
+            ExprKind::Field { .. } => return Some(e),
+            ExprKind::Deref { arg } if cloned => e = strip(thir, arg),
+            ExprKind::Call { fun, ref args, .. } => {
+                let (id, fn_args) = crate::lower::fn_def(thir[fun].ty)?;
+                let first = *args.first()?;
+                if cell_own_method(tcx, id) == Some(CellMethod::Get) && !cloned {
+                    return lent(first).filter(|&field| matches!(thir[field].kind, ExprKind::Field { .. }));
+                }
+                match handle_step(tcx, id, fn_args) {
+                    _ if tcx.is_lang_item(id, rustc_hir::attrs::lang_items::LangItem::CloneFn) && !cloned => {
+                        let ty = fn_args.types().next()?;
+                        if !crate::lower::analysis::mutation::clones_itself(tcx, counted, ty) {
+                            return None;
+                        }
+                        cloned = true;
+                        e = lent(first)?;
+                    }
+                    Some(HandleStep::GuardDeref | HandleStep::Borrow) if cloned => e = lent(first)?,
+                    _ => return None,
+                }
+            }
+            _ => return None,
+        }
+    }
+}
+
 /// Of `thir`, the body of a closure a thread-local's `with` is given, the
 /// fields it reads of the struct it's lent, each with its type and how it's
 /// used, where it reads nothing else of it: each use of its parameter,
@@ -339,7 +650,12 @@ impl<'tcx> Touches<'tcx> {
 /// isn't, which may change any field: the struct lent whole, to a function,
 /// a method, a binding or a closure that captures it, or a reference to it
 /// copied out (#616).
-fn fields_lent<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Option<Vec<(FieldIdx, Ty<'tcx>, FieldUse)>> {
+fn fields_lent<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    counted: &super::Counted<'tcx>,
+    thir: &Thir<'tcx>,
+    as_is: bool,
+) -> Option<Vec<(FieldIdx, Ty<'tcx>, FieldUse)>> {
     use crate::lower::recognition::{CellMethod, cell_own_method};
     // Its own parameter, after the closure's environment, which has no pattern.
     let [param] = &(thir.params.iter())
@@ -376,11 +692,20 @@ fn fields_lent<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Option<Vec<(FieldI
             let used = FieldUse {
                 writes,
                 gives: !expr.ty.is_unit(),
-                lends: false,
+                ..FieldUse::default()
             };
             Some((strip(thir, arg), used))
         })
         .collect();
+    // Of an initializer's `with` whose closure's value is a field as it is,
+    // the field: its own memory alone is read there (#635).
+    let given = as_is
+        .then(|| {
+            thir.exprs
+                .last_index()
+                .and_then(|root| field_as_is(tcx, counted, thir, root))
+        })
+        .flatten();
     let mut fields: Vec<(FieldIdx, Ty<'tcx>, FieldUse)> = Vec::new();
     let mut read_through = HashSet::new();
     for (at, expr) in thir.exprs.iter_enumerated() {
@@ -408,13 +733,21 @@ fn fields_lent<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Option<Vec<(FieldI
             writes: true,
             gives: true,
             lends: true,
+            as_is: false,
         };
-        let used = celled.get(&at).copied().unwrap_or(lent);
+        let used = match given == Some(at) {
+            true => FieldUse {
+                as_is: true,
+                ..FieldUse::default()
+            },
+            false => celled.get(&at).copied().unwrap_or(lent),
+        };
         match fields.iter_mut().find(|(field, _, _)| *field == name) {
             Some((_, _, was)) => {
                 was.writes |= used.writes;
                 was.gives |= used.gives;
                 was.lends |= used.lends;
+                was.as_is |= used.as_is;
             }
             None => fields.push((name, expr.ty, used)),
         }
@@ -425,16 +758,24 @@ fn fields_lent<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Option<Vec<(FieldI
 }
 
 /// What a value of `ty` may point to that may change, which another value
-/// may point to too: each type it reaches through a reference, an `Rc`, an
-/// `Arc` or a `Weak` that isn't `Freeze`, through the fields of structs and
-/// enums and the type arguments of std's. `None` where it may point to
-/// anything: a raw pointer, which may be cast, a `dyn` or a closure, whose
-/// captures its type doesn't name, or a type rustc doesn't say.
+/// may point to too: `reach`'s, of its own memory not, of what it points
+/// to.
 fn pointees<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<HashSet<Ty<'tcx>>> {
+    reach(tcx, ty, false, true)
+}
+
+/// The types that aren't `Freeze` of what a value of `ty` holds that may be
+/// pointed to: of its own memory where it's reached through a pointer,
+/// `behind`, and of what it reaches through a reference, an `Rc`, an `Arc`
+/// or a `Weak`, where that's asked, `through`; through the fields of
+/// structs and enums and the type arguments of std's. `None` where that
+/// may be anything: a raw pointer, which may be cast, a `dyn` or a closure,
+/// whose captures its type doesn't name, or a type rustc doesn't say.
+fn reach<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, behind: bool, through: bool) -> Option<HashSet<Ty<'tcx>>> {
     use crate::lower::recognition::{is_std_crate, rc_pointee, weak_pointee};
     let typing_env = ty::TypingEnv::fully_monomorphized();
     let mut found = HashSet::new();
-    let mut todo = vec![(ty, false)];
+    let mut todo = vec![(ty, behind)];
     let mut seen = HashSet::new();
     while let Some((ty, behind)) = todo.pop() {
         let ty = tcx.erase_and_anonymize_regions(ty);
@@ -445,15 +786,20 @@ fn pointees<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<HashSet<Ty<'tcx>>> 
             found.insert(ty);
         }
         if let Some(pointee) = rc_pointee(tcx, ty).or_else(|| weak_pointee(tcx, ty)) {
-            todo.push((pointee, true));
+            if through {
+                todo.push((pointee, true));
+            }
             continue;
         }
         if crate::lower::pointers::raw_pointee(tcx, ty).is_some() {
-            return None;
+            if through {
+                return None;
+            }
+            continue;
         }
         match *ty.kind() {
-            ty::Dynamic(..) | ty::Closure(..) | ty::Param(..) | ty::Alias(..) => return None,
-            ty::Ref(_, pointee, _) => todo.push((pointee, true)),
+            ty::Dynamic(..) | ty::Closure(..) | ty::Param(..) | ty::Alias(..) if through || behind => return None,
+            ty::Ref(_, pointee, _) if through => todo.push((pointee, true)),
             // A marker holds nothing: a JS object's, `WeakMap`'s.
             ty::Adt(adt, _) if adt.is_phantom_data() => {}
             ty::Adt(adt, args) if is_std_crate(tcx, adt.did()) => todo.extend(args.types().map(|ty| (ty, behind))),
@@ -468,6 +814,30 @@ fn pointees<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<HashSet<Ty<'tcx>>> 
     Some(found)
 }
 
+/// What `id`, a thread-local's key or a `static`, holds, and whether it's
+/// a `static`, whose own memory a reference may point to; `None` of
+/// anything else.
+fn held_of(tcx: TyCtxt<'_>, id: DefId) -> Option<(Ty<'_>, bool)> {
+    use rustc_hir::def::DefKind;
+    let ty = || tcx.type_of(id).instantiate_identity().skip_normalization();
+    match tcx.def_kind(id) {
+        DefKind::Static { .. } => Some((ty(), true)),
+        DefKind::Const { .. } => match ty().kind() {
+            ty::Adt(key, args)
+                if crate::lower::recognition::is_std_def(
+                    tcx,
+                    key.did(),
+                    crate::lower::recognition::StdItem::LocalKey,
+                ) =>
+            {
+                Some((args.type_at(0), false))
+            }
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
 /// Whether `id`, a thread-local's key or a `static`, is state that may
 /// change: a `static mut`; a `static` or a thread-local of what has a
 /// cell, through the fields of the crate's types, the type arguments of
@@ -478,27 +848,12 @@ fn pointees<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<HashSet<Ty<'tcx>>> 
 /// binding's call may change, as what bindings do as a module loads is (the
 /// guide's difference 25).
 fn changes(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    use rustc_hir::def::DefKind;
     let typing_env = ty::TypingEnv::fully_monomorphized();
-    let held = match tcx.def_kind(id) {
-        DefKind::Static { .. } if tcx.is_mutable_static(id) => return true,
-        DefKind::Static { .. } => tcx.type_of(id).instantiate_identity().skip_normalization(),
-        DefKind::Const { .. } => {
-            let ty = tcx.type_of(id).instantiate_identity().skip_normalization();
-            match ty.kind() {
-                ty::Adt(key, args)
-                    if crate::lower::recognition::is_std_def(
-                        tcx,
-                        key.did(),
-                        crate::lower::recognition::StdItem::LocalKey,
-                    ) =>
-                {
-                    args.type_at(0)
-                }
-                _ => return false,
-            }
-        }
-        _ => return false,
+    if tcx.is_mutable_static(id) {
+        return true;
+    }
+    let Some((held, _)) = held_of(tcx, id) else {
+        return false;
     };
     let mut todo: Vec<Ty<'_>> = vec![held];
     let mut seen = HashSet::new();
@@ -617,42 +972,67 @@ fn run_in_place<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<DefId> {
 
 /// What the bodies that may run outside the modules' load touch: each
 /// place of state they may write, by the first that does, and each they
-/// read or write, by the first that does, by its state.
+/// read or write, by the first that does.
 struct Outside {
-    writes: HashMap<DefId, Vec<(Place, DefId)>>,
-    touches: HashMap<DefId, Vec<(Place, DefId)>>,
+    writes: Placed,
+    touches: Placed,
+}
+
+/// Places, each by the first body that touches it: by their state, and,
+/// of those that may share with another state's, in the bodies' order.
+#[derive(Default)]
+struct Placed {
+    by_state: HashMap<DefId, Vec<(Place, DefId)>>,
+    shared: Vec<(Place, DefId)>,
+}
+
+impl Placed {
+    fn add(&mut self, touches: &Touches<'_>, place: Place, by: DefId) {
+        let places = self.by_state.entry(place.state).or_default();
+        if !places.iter().any(|&(was, _)| was == place) {
+            places.push((place, by));
+            if touches.aliases[&place].shares() {
+                self.shared.push((place, by));
+            }
+        }
+    }
+
+    /// The first body that touches a place that may be `place`: of its
+    /// state, else of another's that may share with it (#635).
+    fn by(&self, touches: &Touches<'_>, place: Place) -> Option<DefId> {
+        let of_state = || {
+            (self.by_state.get(&place.state)?.iter())
+                .find(|&&(other, _)| touches.overlap(place, other))
+                .map(|&(_, by)| by)
+        };
+        of_state().or_else(|| {
+            (touches.aliases[&place].shares())
+                .then(|| {
+                    (self.shared.iter())
+                        .find(|&&(other, _)| other.state != place.state && touches.overlap(place, other))
+                        .map(|&(_, by)| by)
+                })
+                .flatten()
+        })
+    }
 }
 
 impl Outside {
     fn of(touches: &Touches<'_>, loading: &HashSet<DefId>) -> Self {
         let mut outside = Outside {
-            writes: HashMap::new(),
-            touches: HashMap::new(),
-        };
-        let add = |to: &mut HashMap<DefId, Vec<(Place, DefId)>>, place: Place, by: DefId| {
-            let places = to.entry(place.state).or_default();
-            if !places.iter().any(|&(was, _)| was == place) {
-                places.push((place, by));
-            }
+            writes: Placed::default(),
+            touches: Placed::default(),
         };
         for id in touches.order.iter().filter(|id| !loading.contains(id)) {
             let touched = &touches.of[id];
             for &place in &touched.writes {
-                add(&mut outside.writes, place, *id);
+                outside.writes.add(touches, place, *id);
             }
             for &place in touched.reads.iter().chain(&touched.writes) {
-                add(&mut outside.touches, place, *id);
+                outside.touches.add(touches, place, *id);
             }
         }
         outside
-    }
-
-    /// The first body of `of`'s, `writes` or `touches`, that touches a place
-    /// that may be `place`.
-    fn by(touches: &Touches<'_>, of: &HashMap<DefId, Vec<(Place, DefId)>>, place: Place) -> Option<DefId> {
-        (of.get(&place.state)?.iter())
-            .find(|&&(other, _)| touches.overlap(place, other))
-            .map(|&(_, by)| by)
     }
 }
 
@@ -684,14 +1064,12 @@ fn shows(touches: &Touches<'_>, outside: &Outside, init: DefId, reached: &[DefId
         return Some(Shows::Ordered(id, ordered));
     }
     let mut read = ran().flat_map(|(_, touched)| touched.reads.iter());
-    if let Some((state, by)) =
-        read.find_map(|&place| Some((place.state, Outside::by(touches, &outside.writes, place)?)))
-    {
+    if let Some((state, by)) = read.find_map(|&place| Some((place.state, outside.writes.by(touches, place)?))) {
         return Some(Shows::Reads(state, by));
     }
     let mut written = ran().flat_map(|(_, touched)| touched.writes.iter());
     written
-        .find_map(|&place| Some((place.state, Outside::by(touches, &outside.touches, place)?)))
+        .find_map(|&place| Some((place.state, outside.touches.by(touches, place)?)))
         .map(|(state, by)| Shows::Writes(state, by))
 }
 

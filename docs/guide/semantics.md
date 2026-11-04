@@ -543,7 +543,9 @@ only its struct's fields is told apart by field: React Flight's `const {
 TaintRegistryObjects, .. } = ReactSharedInternals;` reads cells nothing
 sets after the load, though functions set its dispatchers'. The struct
 lent whole, to a function, a method or a binding, or a reference to it
-copied out, may change every field. It's `const source = $local(() => [..])`, read by its call,
+copied out, may change every field. A write through a reference a read gives
+out, `PTR.get()`'s `&'static S`, or another thread-local made of it, is a
+write of what it points to. It's `const source = $local(() => [..])`, read by its call,
 `source()`, so what its initializer prints and a panic in it are where
 Rust has them: after what the call that first uses it is given,
 `COUNT.replace(made(9))` making 9 first, and made again at its next use

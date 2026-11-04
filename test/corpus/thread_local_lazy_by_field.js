@@ -25,7 +25,7 @@ function shared() {
 }
 
 function links() {
-  const cell = { value: 1 };
+  const cell = { value: 1n };
   return {
     first: cell,
     second: cell,
@@ -58,7 +58,7 @@ const ASSIGNED_REGISTRY = $local(() => assigned.registry);
 const NESTED_REGISTRY = $local(() => nested.registry);
 const HELD_REGISTRY = $local(() => held.registry);
 const FIRST = $local(() => SHARED.first.value);
-const LINKED = $local(() => (LINKS.first != null ? LINKS.first.value : 0));
+const LINKED = $local(() => (LINKS.first != null ? LINKS.first.value : 0n));
 
 function main() {
   INTERNALS.dispatcher = 5;
@@ -81,7 +81,7 @@ function main() {
   console.log(`${FIRST()}`);
   const cell = LINKS.second;
   if (cell != null) {
-    cell.value = 8;
+    cell.value = 8n;
   }
   console.log(`${LINKED()}`);
 }
