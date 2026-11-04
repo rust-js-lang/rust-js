@@ -156,7 +156,7 @@ function main() {
     console.log(`${x}`);
   });
   run("take_while", () => {
-    const x = $collectDropping(
+    const x = $foldToArray(
       $lazyTakeWhile(
         $closing($iter(ds({ start: 40, end: 44 })), $dropEach(dDrop_drop)),
         (d) => !boom(d, 42) || true,
@@ -171,7 +171,7 @@ function main() {
   });
   run("skip_while", () => {
     const skip = (d) => boom(d, 51) || true;
-    const x = $collectDropping(
+    const x = $foldToArray(
       $lazySkipWhile($closing($iter(ds({ start: 50, end: 54 })), $dropEach(dDrop_drop)), (item) => {
         let skipped = true;
         try {
@@ -207,7 +207,7 @@ function main() {
     function inspect(d) {
       boom(d, 82);
     }
-    const x = $collectDropping(
+    const x = $foldToArray(
       $closing($iter(ds({ start: 80, end: 84 })), $dropEach(dDrop_drop)).map((item) => {
         try {
           inspect(item);
@@ -268,7 +268,7 @@ function main() {
     }
   });
   run("filter", () => {
-    const x = $collectDropping(
+    const x = $foldToArray(
       $filterDropping(
         $closing($iter(ds({ start: 90, end: 94 })), $dropEach(dDrop_drop)),
         (d) => boom(d, 92) || true,
@@ -541,7 +541,7 @@ function main() {
     console.log(`${x.length}`);
   });
   run("map_while", () => {
-    const x = $collectDropping(
+    const x = $foldToArray(
       $lazyMapWhile(
         $closing($iter(ds({ start: 230, end: 234 })), $dropEach(dDrop_drop)),
         (d) => {

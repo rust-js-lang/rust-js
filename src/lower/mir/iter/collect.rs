@@ -299,7 +299,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         }
         let rest_first = drop.is_some() && item.is_some_and(|item| self.rest_dropped_first(output, iter_ty, item));
-        Ok(Some(UnwindingCollect { drop, rest_first }))
+        // Into a `Vec` std collects in place: by its fold, whose sink is
+        // what it collected, the accumulator `$kept` leaks as std's does
+        // (#681).
+        let in_place = drop.is_some()
+            && self.is_std_type(output, StdItem::Vec)
+            && self.collects_in_place(iter_ty, item) == Some(true);
+        Ok(Some(UnwindingCollect {
+            drop,
+            rest_first,
+            in_place,
+        }))
     }
 
     /// Whether stepping an iterator of `iter_ty` may panic by what it runs,
@@ -756,17 +766,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// How a collect a panic may stop drops what it holds: what it collected,
 /// by `drop`, and what's left of what it steps, closed, that first where
-/// `rest_first` (#422, #423).
+/// `rest_first` (#422, #423); of one std collects in place, `in_place`,
+/// what it collected as the fold's accumulator, which its `unwind` drops,
+/// or leaks where std's does (#681).
 struct UnwindingCollect {
     drop: Option<Expr>,
     rest_first: bool,
+    in_place: bool,
 }
 
 impl UnwindingCollect {
-    /// `it` collected so, an array: `$collectDropping(it, drop)`.
+    /// `it` collected so, an array: `$collectDropping(it, drop)`; in place,
+    /// `$foldToArray(it, drop)`, by its fold, as std's in-place collect is
+    /// its `try_fold` into the source's buffer.
     fn collected(self, it: Expr) -> Expr {
         let mut args = vec![it];
         args.extend(self.drop);
+        if self.in_place {
+            return Expr::call_helper("$foldToArray", args);
+        }
         if self.rest_first {
             args.push(Expr::bool(true));
         }

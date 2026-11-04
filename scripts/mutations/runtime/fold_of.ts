@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "fold-to-array-unwinds-nothing",
     breaks: "a compiled std struct's collect, a `zip`'s, a panic stopping it, drops neither what it collected nor what's left (#423)",
     file: "src/runtime/fold_of.js",
-    find: "  } catch (error) {\n    $collectUnwound(it, items, unwound ? undefined : drop, restFirst);\n    throw error;\n  }\n}",
-    replace: "  } catch (error) {\n    throw error;\n  }\n}",
+    find: "    $collectUnwound(it, items, unwind === undefined ? drop : undefined, restFirst);\n    throw error;\n  }\n}",
+    replace: "    throw error;\n  }\n}",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
@@ -57,5 +57,13 @@ export const mutations: Mutation[] = [
     find: "function $foldOf(it, init, f, unwind) {\n  return it.fold(init, f, unwind);\n",
     replace: "function $foldOf(it, init, f, unwind) {\n  return it.fold(init, f);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_unwind_given_on.rs$"],
+  },
+  {
+    name: "fold-to-array-in-place-drops-again",
+    breaks: "an in-place collect whose discarded item's drop panics drops what it collected, which std's `InPlaceDrop`, moved into the stage's result, leaks (#681)",
+    file: "src/runtime/fold_of.js",
+    find: "    $collectUnwound(it, items, unwind === undefined ? drop : undefined, restFirst);\n",
+    replace: "    $collectUnwound(it, items, drop, restFirst);\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_leaks_what_a_discard_strands.rs$"],
   },
 ];

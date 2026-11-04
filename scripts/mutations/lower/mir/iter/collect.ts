@@ -620,4 +620,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^flatten_closed_part_way_drops_source_first.rs$"],
   },
+  {
+    name: "in-place-collect-by-next",
+    breaks: "a collect std makes in place, of a `filter` whose discarded item's drop panics, steps it by `next`, so it drops what it collected, which std leaks (#681)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        if self.in_place {\n",
+    replace: "        if false && self.in_place {\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_leaks_what_a_discard_strands.rs$"],
+  },
 ];

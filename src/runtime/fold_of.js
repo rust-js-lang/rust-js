@@ -51,14 +51,7 @@ function $foldDropping(it, init, f, unwind) {
 // drops what's left: the fold's `unwind`.
 function $foldToArray(it, drop, restFirst = false) {
   const items = [];
-  let unwound = false;
-  const unwind =
-    restFirst || drop === undefined
-      ? undefined
-      : () => {
-          unwound = true;
-          $dropItems(items, drop);
-        };
+  const unwind = restFirst || drop === undefined ? undefined : () => $dropItems(items, drop);
   try {
     return it.fold(
       items,
@@ -69,7 +62,11 @@ function $foldToArray(it, drop, restFirst = false) {
       unwind,
     );
   } catch (error) {
-    $collectUnwound(it, items, unwound ? undefined : drop, restFirst);
+    // In place, what it collected is dropped by the fold's `unwind` alone,
+    // as std's `InPlaceDrop` is by the frame that holds it: not where a
+    // stage's closure has moved it into what it gives, then panicked
+    // dropping an item it discards, which leaks it (`$kept`, #681).
+    $collectUnwound(it, items, unwind === undefined ? drop : undefined, restFirst);
     throw error;
   }
 }

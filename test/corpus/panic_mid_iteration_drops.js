@@ -6,6 +6,7 @@ import {
   $collectDropping,
   $dropEach,
   $extend,
+  $foldToArray,
   $iter,
 } from "@rust-js/runtime";
 
@@ -25,7 +26,7 @@ function run(name, f) {
 function main() {
   run("map collect", () => {
     const v = [[1], [2], [3], [4]];
-    const out = $collectDropping(
+    const out = $foldToArray(
       $closing($iter(v), $dropEach(dDrop_drop)).map((d) => {
         if (d[0] === 3) {
           try {

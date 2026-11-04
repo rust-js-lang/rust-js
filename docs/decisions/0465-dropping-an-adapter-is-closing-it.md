@@ -1262,3 +1262,33 @@ closure left a reversed `Vec`'s rest undropped:
 `$consumed` now, as `rfold(self)` drops the `Skip`. Held by
 `skip_rfold_closes_as_it_unwinds.rs` against native Rust; mutation
 `skip-rfold-unclosed` (`runtime/skipping.ts`).
+
+## Amendment: a collect std makes in place is its fold, whose sink a discarded item's drop leaks (2026-11-04, #681)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+Std collects `ds.into_iter().filter(..).collect::<Vec<_>>()` in place: a
+`try_fold` into the source's buffer, whose sink, `InPlaceDrop`, holds
+what it collected. `filter_try_fold`'s closure moves that sink into what
+it gives before it drops the item it discards. So a panic of that drop
+leaks what it collected (rust-lang/rust#47949), as #651's fold leaks its
+accumulator: native prints `drop 4, drop 5, drop 6, drop 7`, never 1 to 3.
+The JS dropped them. `$collectDropping` steps by `next` and drops what it
+collected on any throw. A `take_while`'s stopped item did the same, in both
+builds.
+
+A collect into a `Vec` that `collects_in_place` says std makes in place,
+of items with a destructor, whose steps may panic, is `$foldToArray(it,
+drop)` now. That folds by the iterator's `fold`, whose `unwind` drops what
+it collected as a stage panics. `$foldToArray`'s catch no longer drops it
+again where it was given an `unwind`: `$kept` alone says whether the sink
+leaks or drops, and what's left is closed either way.
+
+`in_place_collect_leaks_what_a_discard_strands.rs` holds a filter's, a
+`take_while`'s and a map's filter's against native Rust, with a `map` that
+panics, which drops what it collected, and a filter that ends. Two corpus
+cases' in-place collects read `$foldToArray` now. Mutations:
+`in-place-collect-by-next` (`lower/mir/iter/collect.ts`) and
+`fold-to-array-in-place-drops-again` (`runtime/fold_of.ts`);
+`fold-to-array-unwinds-nothing` names the catch as it now reads.
