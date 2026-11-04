@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/skipping.js",
     find: "        drop?.(step.value);\n      }\n      return skipping.iter.next();\n",
     replace: "      }\n      return skipping.iter.next();\n",
-    tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^skip_drops_what_it_passes_first.rs$"],
   },
   {
     name: "skip-dropping-unclosed",
