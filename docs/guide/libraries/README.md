@@ -1,6 +1,6 @@
 # The crates rust-js ships
 
-rust-js ships five crates of bindings, one for each part of JavaScript a
+rust-js ships six crates of bindings, one for each part of JavaScript a
 program calls, and compiles Rust's own `std` itself. A binding crate is
 declarations only: it's never compiled to JS, and a call of one of its
 functions is the JS it names, `document.get_element_by_id("app")` being
@@ -13,6 +13,7 @@ functions is the JS it names, `document.get_element_by_id("app")` being
 | `node` | Node.js's modules | `rust-js-node` | `@rust-js/node` | `@types/node`: 160 of 1,535 exports, what ports have needed |
 | `react` | React and React DOM, 18.0 on | `rust-js-react` | `@rust-js/react` | `@types/react` and `@types/react-dom`: 244 of 244 exports |
 | `next` | Next.js | `rust-js-next` | `@rust-js/next` | Next.js's public modules: 2,099 of 2,099 exports |
+| `react_native` | React Native's host globals | `rust-js-react-native` | `@rust-js/react-native` | `nativeRuntimeScheduler`, what ports have needed |
 
 An app names each crate it uses in its `Cargo.toml` by the name it's
 `use`d by, and installs its npm package, which holds the crate; Cargo finds
@@ -596,6 +597,56 @@ import { useState } from "react";
 export function Counter() {
   const [count, setCount] = useState(0);
   return <button onClick={() => setCount((count) => (count + 1) | 0)}>Count is {count}</button>;
+}
+```
+
+## `react_native`: React Native's host
+
+The globals React Native's host installs in its JS runtime, for the Rust
+of a program that runs in React Native, as `webapi` is the browser's and
+`node` is Node's, each typed as React Native's C++ bindings define it
+([ADR 1083](../../decisions/1083-react-natives-host-globals-are-the-react-native-crates.md)). Each may be absent, where the program runs
+elsewhere: `js::is_defined(native_runtime_scheduler)` is `typeof
+nativeRuntimeScheduler !== "undefined"`, and a read of one the host hasn't,
+JS's `ReferenceError`, a panic. It has what ports have needed:
+`nativeRuntimeScheduler`, the scheduler React's `SchedulerNative` reads,
+Flow's `NativeSchedulerType`: its priorities, `u8`s, the scheduler's
+levels; `unstable_schedule_callback(priority, Callback(Box::new(..)))`, of
+a closure given whether it timed out that gives what's left of its work, a
+`js::Function` or `None`, and the host's own `Task` it makes, which
+`unstable_cancel_callback` takes; and `unstable_should_yield`,
+`unstable_request_paint`, `unstable_get_current_priority_level` and
+`unstable_now`. A member read as a value, as upstream exports it, is
+`js::method`'s:
+
+```rust
+use react_native::{NativeScheduler, native_runtime_scheduler};
+
+thread_local! {
+    pub static UNSTABLE_NOW: Option<&'static dyn Fn() -> f64> = if js::is_defined(native_runtime_scheduler) {
+        Some(js::method((native_runtime_scheduler, NativeScheduler::unstable_now)))
+    } else {
+        None
+    };
+}
+
+pub fn normal_priority() -> u8 {
+    if js::is_defined(native_runtime_scheduler) {
+        native_runtime_scheduler.unstable_normal_priority()
+    } else {
+        3
+    }
+}
+```
+
+```js
+export const unstableNow =
+  typeof nativeRuntimeScheduler !== "undefined" ? nativeRuntimeScheduler.unstable_now : undefined;
+
+export function normalPriority() {
+  return typeof nativeRuntimeScheduler !== "undefined"
+    ? nativeRuntimeScheduler.unstable_NormalPriority
+    : 3;
 }
 ```
 

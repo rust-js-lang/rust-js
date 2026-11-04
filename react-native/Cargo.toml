@@ -1,0 +1,28 @@
+# React Native for rust-js (ADR 1083): the globals React Native's host
+# installs, bound as any JS is, for a program's code that runs in React
+# Native, as webapi is the browser's and node is Node's.
+[package]
+name = "rust-js-react-native"
+version = "0.0.1"
+edition = "2024"
+description = "React Native for rust-js: the globals its host installs, as its C++ bindings define them"
+license = "MIT"
+repository = "https://github.com/rust-js-lang/rust-js"
+readme = "README.md"
+include = ["src", "README.md"]
+
+[lib]
+name = "react_native"
+path = "src/lib.rs"
+
+[dependencies]
+js = { package = "rust-js-builtins", path = "../builtins", version = "~0.0.2" }
+
+# rust-js compiles with `--cfg=rust_js` (ADR 0113): a `cfg` Cargo checks for.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(rust_js)"] }
+
+# A binding crate: what it binds is JS's own, so rustc checks it and
+# rust-js reads its metadata; it has no JS to compile (ADRs 0024, 0414).
+[package.metadata.rust-js]
+bindings = true

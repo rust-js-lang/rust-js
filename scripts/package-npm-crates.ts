@@ -1,12 +1,12 @@
 // Pack the crates rust-js releases on npm, `@rust-js/builtins`,
-// `@rust-js/webapi`, `@rust-js/react`, `@rust-js/next` and `@rust-js/node`: each is Cargo's own packaging of its crate, which
+// `@rust-js/webapi`, `@rust-js/react`, `@rust-js/next`, `@rust-js/node` and `@rust-js/react-native`: each is Cargo's own packaging of its crate, which
 // `package-crates.ts` makes and verifies with a plain stable rustc, in an
 // npm package that names the crate. What a crate shares with an app, the
 // crates it depends on, is a peer dependency, so an app has one copy of
 // each; Cargo finds them in its `node_modules` by a patch. This never
 // publishes.
 //
-//   bun scripts/package-npm-crates.ts <out-dir>   # <out-dir>/builtins.tgz, webapi.tgz, react.tgz, next.tgz, node.tgz
+//   bun scripts/package-npm-crates.ts <out-dir>   # <out-dir>/builtins.tgz, webapi.tgz, react.tgz, next.tgz, node.tgz, react-native.tgz
 
 import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

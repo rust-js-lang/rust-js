@@ -55,7 +55,7 @@ compiled for WASI; it is a separate build package, not a second compiler.
 | Native app build and editor check; the command each JS test runner runs a crate's tests by (ADR 1076) | `tooling/cli.js`, `tooling/build.js`, `tooling/cargo.js`, `tooling/check.js`, `tooling/runners.js` |
 | Host manifest validation and file publication | `tooling/manifest.js`, `tooling/publish.js` |
 | npm/Cargo integration and shipped binding catalog | `tooling/patch.js`, `tooling/crates.js` |
-| Shipped JS, web, React, Node and Next.js bindings | `builtins/`, `webapi/`, `react/`, `node/`, `next/`; the authoritative list is `tooling/crates.js` |
+| Shipped JS, web, React, Node, Next.js and React Native bindings | `builtins/`, `webapi/`, `react/`, `node/`, `next/`, `react-native/`; the authoritative list is `tooling/crates.js` |
 | External crates used by compiler tests | `serde/` builds crates.io dependencies; it is not a shipped binding crate |
 | WASI compiler build | `wasm/Cargo.toml`, `wasm/build.sh`, `wasm/patches/` |
 | Playground UI and in-browser compiler host | `wasm/web/rust/`, `wasm/web/compiler-client.js`, `wasm/web/compiler-worker.js`, `wasm/web/frame-report.js` |

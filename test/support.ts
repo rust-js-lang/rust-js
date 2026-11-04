@@ -389,6 +389,30 @@ export function buildNode(): string {
   return node;
 }
 
+/** The react-native crate's metadata, and the js crate's it uses beside
+ * it, in `target/react-native`, built once for the run and not again while
+ * what they're made from is what it was, as the node crate's are
+ * (`buildNode`). Where it is: `-L` it, and `--extern
+ * react_native=<it>/libreact_native.rmeta`. */
+let reactNative: string | undefined;
+export function buildReactNative(): string {
+  const dir = join(target, "react-native");
+  if (reactNative === undefined) {
+    buildCompiler();
+    const inputs = ["react-native/src", "react-native/build.sh", "builtins/src", "builtins/build.sh", "rust-toolchain.toml"]
+      .map((path) => join(root, path))
+      .concat(compiler);
+    const outputs = ["react_native", "js"].map((lib) => join(dir, `lib${lib}.rmeta`));
+    once(join(target, "tests-react-native", thisRun()), () =>
+      unlessUnchanged(join(dir, "libreact_native.stamp"), inputs, outputs, () =>
+        run(["react-native/build.sh", "-o", join(dir, "libreact_native.rmeta")]),
+      ),
+    );
+    reactNative = dir;
+  }
+  return reactNative;
+}
+
 const portsJs = new Map<string, string>();
 /** A port in `test/ports/<port>` (React's, as react-in-rust ports it, copied
  * with the modules it uses), compiled once a run against the js, node and

@@ -9,6 +9,7 @@ export const crates = [
   { dir: "react", lib: "react", cargo: "rust-js-react", npm: "@rust-js/react" },
   { dir: "node", lib: "node", cargo: "rust-js-node", npm: "@rust-js/node" },
   { dir: "next", lib: "next", cargo: "rust-js-next", npm: "@rust-js/next" },
+  { dir: "react-native", lib: "react_native", cargo: "rust-js-react-native", npm: "@rust-js/react-native" },
 ];
 
 // What a React program is compiled against: `react/build.sh` writes the

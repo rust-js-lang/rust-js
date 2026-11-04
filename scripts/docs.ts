@@ -22,7 +22,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { dirname, join, relative } from "node:path";
-import { buildCompiler, buildNode, buildReact, buildSerde, cargoApp, compiler, root, run, target } from "../test/support";
+import { buildCompiler, buildNode, buildReact, buildReactNative, buildSerde, cargoApp, compiler, root, run, target } from "../test/support";
 
 const check = process.argv.includes("--check");
 const guide = join(root, "docs/guide");
@@ -103,6 +103,11 @@ function crates(code: string): string[] {
     const node = buildNode();
     return ["--extern", `js=${join(node, "libjs.rmeta")}`, "--extern", `webapi=${join(node, "libwebapi.rmeta")}`,
       "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node];
+  }
+  // React Native's crate, with its js crate beside it.
+  if (/\breact_native::/.test(code)) {
+    const native = buildReactNative();
+    return ["--extern", `js=${join(native, "libjs.rmeta")}`, "--extern", `react_native=${join(native, "libreact_native.rmeta")}`, "-L", native];
   }
   buildReact();
   const flags = ["--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`,

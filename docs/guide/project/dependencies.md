@@ -22,6 +22,7 @@ write in JS, and nothing else.
 | `node` | `rust-js-node` | `@rust-js/node` | Node.js's modules: `fs`, `path`, `process`, `http` |
 | `react` | `rust-js-react` | `@rust-js/react` | React and React DOM, and `jsx!` |
 | `next` | `rust-js-next` | `@rust-js/next` | Next.js's components and hooks |
+| `react_native` | `rust-js-react-native` | `@rust-js/react-native` | React Native's host globals: `nativeRuntimeScheduler` |
 
 What's in each is [The crates rust-js ships](../libraries/README.md).
 
