@@ -6,7 +6,8 @@ too; amended (#550): a crate's trait is declared as the type of its
 dictionaries, and a function of one is declared with it; amended (#560):
 a caller's location and a const parameter's value are declared; amended
 (#619, #620): a `&mut` that's a box is declared as the box, and a `dyn`
-as its pair. Amends
+as its pair, `{ value: unknown; impl: Trait<unknown> }` (the user's
+decision, 2026-11-04). Amends
 [0196](0196-typescript-declarations.md), whose `.d.ts` declared every
 `pub` function, and the guide's "A type parameter with no bound takes
 none" ([0145](0145-type-facts.md)'s facts take one); amended by [1086](1086-a-mut-refs-js-form-is-mut-ref-forms.md): a declared `&mut`'s type is `MutRefForm::ts_type`'s, asked through `SignatureForms`.
@@ -342,7 +343,10 @@ export function stepper(): any;
   writes a value of some type, `Promise<unknown>`, `ReadonlyArray<unknown>`;
   a method's parameter is bivariant, so `{ value: { side: 2 }, impl:
   squareShape }` is one. The trait is imported from its module, as a
-  bound's dictionary is (#550).
+  bound's dictionary is (#550). The user's decision (2026-11-04), knowing
+  it also admits a pair of a value and another type's dictionary, `{ value:
+  5, impl: squareShape }`, which TypeScript can't tell apart without a
+  type parameter the `Vec` and the result can't have (Rejected, below).
 - **A `dyn` of another trait is `any`**, as what has no type here is (ADR
   0196): its dictionary isn't declared, a std trait's or one whose
   dictionaries hold what else (#550), a JS iterator's (`dyn Iterator`).
