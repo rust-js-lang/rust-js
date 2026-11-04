@@ -416,14 +416,20 @@ squareShape: Shape<Square> = { area: (s) => s.side ** 2, describe: (s) =>
 "a square" }`, which generic code calls as it calls an impl's.
 
 A trait is declared so where its dictionaries hold its methods alone, each
-taking what its signature says. Not one:
+taking what its signature says. A `&mut self` method's `self` is the box
+its entry takes, as generic code gives it, `bump(self: { value: Self }):
+void`, and so is a function's `&mut C` given with its dictionary,
+`bumpTwice<C>(c: { value: C }, CCounter: Counter<C>)`
+([ADR 1091](../../decisions/1091-a-functions-declaration-prints-its-js-signature.md),
+amended, #662). Not one:
 
 - with a supertrait whose dictionary its own holds, `trait Labeled:
   Display`, or with an associated type or a constant;
 - with a method of type parameters of its own, `fn show<T: Display>(&self,
   value: T)`, whose entry takes their dictionaries too; a `#[track_caller]`
-  one, whose entry takes its caller's location; or one of a `&mut`, `fn
-  bump(&mut self)`, which may take a box;
+  one, whose entry takes its caller's location; or one that gives a
+  `&mut`, `fn slot(&mut self) -> &mut u32`, or takes one to its `Self`
+  besides its receiver, `fn swap_with(&mut self, other: &mut Self)`;
 - of type parameters of its own, `trait Convert<T>`, a trait of classes,
   whose methods are its classes' prototypes', or a library's.
 

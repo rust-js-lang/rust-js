@@ -317,4 +317,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/declarations-ungiven.test.ts", "-t", "a namespace's, an object's and a class's member"],
   },
+  {
+    name: "mut-self-trait-undeclared",
+    breaks: "a trait of a `&mut self` method isn't declared, `Counter`'s dictionaries and a `dyn Counter` `any`, though its entry takes the box `MutRefForm` says, `{ value: Self }` (#662)",
+    file: "src/lower/traits.rs",
+    find: "                    ty::Ref(_, pointee, Mutability::Mut) => of_self(*pointee) && !(ty == input && receiver(i, ty)),\n",
+    replace: "                    ty::Ref(_, pointee, Mutability::Mut) => of_self(*pointee) || i < usize::MAX,\n",
+    tests: ["test/declarations-ungiven.test.ts", "-t", "a trait of `&mut self` methods"],
+  },
+  {
+    name: "mut-self-besides-receiver-declared",
+    breaks: "a trait whose method takes a `&mut Self` besides its receiver, `swap_with(&mut self, other: &mut Self)`, is declared, though no owner says what its entry takes of it (#662)",
+    file: "src/lower/traits.rs",
+    find: "                    ty::Ref(_, pointee, Mutability::Mut) => of_self(*pointee) && !(ty == input && receiver(i, ty)),\n",
+    replace: "                    ty::Ref(_, pointee, Mutability::Mut) => of_self(*pointee) && !(ty == input || receiver(i, ty)),\n",
+    tests: ["test/declarations-ungiven.test.ts", "-t", "a trait of `&mut self` methods"],
+  },
+  {
+    name: "mut-giver-trait-declared",
+    breaks: "a trait whose method gives a `&mut`, `slot(&mut self) -> &mut u32`, is declared, though no owner says what its entry gives (#662)",
+    file: "src/lower/traits.rs",
+    find: "            .any(|ty| matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut)))\n",
+    replace: "            .any(|ty| matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut)) && false)\n",
+    tests: ["test/declarations-ungiven.test.ts", "-t", "a trait of `&mut self` methods"],
+  },
 ];

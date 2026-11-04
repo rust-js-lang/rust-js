@@ -368,7 +368,9 @@ Rejected:
 
 Not yet: a type parameter's `Fn` bound is declared as no bound, `call<F>(f:
 F)`, nor are a trait's `&mut self` methods' dictionaries (#550), which
-take a box whatever the impl's type.
+take a box whatever the impl's type. (Both are since
+[1091](1091-a-functions-declaration-prints-its-js-signature.md), amended:
+#661, #662.)
 
 Held by `test/declarations-ungiven.test.ts`'s "a `&mut` that's a box is
 declared as its box, and a `dyn` as its pair" (its program

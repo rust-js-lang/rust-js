@@ -121,3 +121,36 @@ it did an `impl Fn(..)`'s, and leaves it out of its type parameters:
 answers both, where `erased` had answered the `impl Fn` alone, of a
 synthetic parameter. An impl's `F: Fn()` is its type's parameter,
 `Holder<F>`, declared as its type takes it, so it's no function's own.
+
+## Amended (#662): a trait of `&mut self` methods is declared
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for the JS, which
+doesn't change; a TypeScript consumer of such a trait's dictionaries, or
+of a `dyn` of it, had no type for them, `any`.
+
+`traits::method_dictionary` refused every trait with a `&mut` in a
+method's signature, "which may be a box". What a `&mut` a method takes is
+in its entry is `MutRefForm`'s answer in the trait's terms (ADR 1086),
+the one generic code gives it: a `&mut self` is a type parameter's, a
+box, `{ value: Self }`, which each impl's entry takes and unboxes,
+`bump: (arg0) => clicksCounter_bump(arg0.value)`; a `&mut u32` a box, a
+`&mut Vec<u32>` the array, in its trait's terms as in each impl's, since
+neither names `Self`. The declaration asks that owner through
+`SignatureForms`, so it says what the entry takes:
+
+```ts
+export interface Counter<Self> {
+    bump(self: { value: Self; }): void;
+    add(self: Self, total: { value: number; }): void;
+}
+export const clicksCounter: Counter<Clicks>;
+export function bumpTwice<C>(c: { value: C; }, CCounter: Counter<C>): number;
+export function bumpDyn(c: { value: unknown; impl: Counter<unknown>; }): number;
+```
+
+Still refused, where no owner says what an entry takes: a method that
+gives a `&mut`, `fn slot(&mut self) -> &mut u32`, and one that takes a
+`&mut` to what's of its `Self` besides its receiver, `fn swap_with(&mut
+self, other: &mut Self)`. Held by `test/declarations-ungiven.test.ts`'s "a
+trait of `&mut self` methods is the type of its dictionaries", whose
+TypeScript caller type-checks and gives what Rust's calls give.

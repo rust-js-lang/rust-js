@@ -215,18 +215,21 @@ test("a trait is the type of its dictionaries, which a function's declaration ta
   expect(declarations).toContain(
     "export function renamed<N>(named: N, to: string, NNamed: Named<N>, NShape: Shape<N>): string;",
   );
-  // A trait whose dictionary holds what else, or takes a `&mut`, isn't
-  // declared, nor is a function of it; a generic impl's dictionary isn't.
+  // A trait of a `&mut self` method is, its `self` the box its entry takes
+  // (#662), and a function of it.
+  expect(declarations).toContain("export interface Counter<Self> {\n    bump(self: {\n        value: Self;\n    }): number;\n}");
+  expect(declarations).toContain("export function bumped<C>(c: {\n    value: C;\n}, CCounter: Counter<C>): number;");
+  // A trait whose dictionary holds what else isn't declared, nor is a
+  // function of it; a generic impl's dictionary isn't.
   const note = (name: string, what: string) =>
     `// \`${name}\` isn't declared: its JS takes ${what} after its arguments, which a JS caller can't give (ADR 1077).`;
-  expect(declarations).toContain(note("bumped", "`C`'s `Counter` dictionary"));
   expect(declarations).toContain(note("sides", "`S`'s `Sided` dictionary"));
   expect(declarations).toContain(note("labels", "`L`'s `Labeled` dictionary"));
   expect(declarations).toContain(note("checked", "`C`'s `Checked` dictionary"));
   expect(declarations).toContain(note("shows", "`S`'s `Shows` dictionary"));
   expect(declarations).toContain(note("names", "`N`'s `Names` dictionary"));
   expect(declarations).toContain(note("shown", "`T`'s `Display` dictionary"));
-  for (const name of ["Counter", "Sided", "Labeled", "Checked", "Shows", "Names", "wrapperShape"]) {
+  for (const name of ["Sided", "Labeled", "Checked", "Shows", "Names", "wrapperShape"]) {
     expect(declarations).not.toContain(name + "<");
     expect(declarations).not.toContain(`export const ${name}`);
   }
@@ -261,6 +264,7 @@ import { wrapperShape } from "./lib.js";
 export const mixed = totalArea([{ radius: 1 }], rectShape);
 export const missing = totalArea([{ radius: 1 }]);
 export const ok = totalArea([{ radius: 1 }], circleShape);
+export const unboxed = bumped(1, { bump: () => 1 });
 `,
   );
   writeFileSync(
@@ -273,7 +277,7 @@ export const ok = totalArea([{ radius: 1 }], circleShape);
   const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
   const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
   expect(errors.filter((line) => line.startsWith("use.ts"))).toEqual([]);
-  expect(errors.map((line) => line.replace(/: error.*/, ""))).toEqual(["wrong.ts(3,10)", "wrong.ts(4,10)", "wrong.ts(5,35)", "wrong.ts(6,24)"]);
+  expect(errors.map((line) => line.replace(/: error.*/, ""))).toEqual(["wrong.ts(4,10)", "wrong.ts(5,35)", "wrong.ts(6,24)", "wrong.ts(8,31)"]);
   // What it gives is what Rust's calls give.
   const ran = run([process.execPath, join(dir, "use.ts")]);
   expect(JSON.parse(ran)).toEqual([
@@ -394,8 +398,9 @@ test("a `&mut` that's a box is declared as its box, and a `dyn` as its pair", ()
   expect(declarations).toContain(`export function square(side: number): ${pair()};`);
   expect(declarations).toContain(`export function areaOf(shape: ${pair()}): number;`);
   expect(declarations).toContain(`export function total(shapes: ${pair()}[]): number;`);
-  // Of a trait that isn't declared, `any`.
-  expect(declarations).toContain("export function stepper(): any;");
+  // Of a trait of a `&mut self` method, declared now (#662), its pair too.
+  expect(declarations).toContain("export const counterSteps: Steps<Counter>;");
+  expect(declarations).toContain(`export function stepper(): {\n    value: unknown;\n    impl: Steps<unknown>;\n};`);
   expect(declarations).not.toContain("any[]");
   writeFileSync(
     join(dir, "use.ts"),
@@ -510,4 +515,70 @@ grow({ value: [] });
     4,
     5,
   ]);
+});
+
+// A trait whose methods take `&mut self` is declared as the type of its
+// dictionaries too (#662): its `&mut self` is the box its entry takes, `{
+// value: Self }`, as `MutRefForm::ts_type` says in its trait's terms (ADR
+// 1086), and so is a function's `&mut C` it's given with its dictionary.
+// One that gives a `&mut`, or takes one to its `Self` besides, isn't.
+test("a trait of `&mut self` methods is the type of its dictionaries", () => {
+  const dir = fixture("declarations-mut-traits");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(import.meta.dir, "fixtures/declared_mut_traits.rs"), "utf8"));
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  const held = (ty: string) => `{\n        value: ${ty};\n    }`;
+  expect(declarations).toContain(`export interface Counter<Self> {
+    bump(self: ${held("Self")}): void;
+    add(self: Self, total: ${held("number")}): void;
+    fill(self: Self, out: number[]): void;
+    get(self: Self): number;
+    reset(self: ${held("Self")}, to: number): number;
+}`);
+  expect(declarations).toContain("export const clicksCounter: Counter<Clicks>;");
+  expect(declarations).toContain("export const u32Counter: Counter<number>;");
+  expect(declarations).toContain("export function bumpTwice<C>(c: {\n    value: C;\n}, CCounter: Counter<C>): number;");
+  expect(declarations).toContain("export function bumpDyn(c: {\n    value: unknown;\n    impl: Counter<unknown>;\n}): number;");
+  expect(declarations).not.toContain("Swap");
+  expect(declarations).not.toContain("Slot");
+  writeFileSync(
+    join(dir, "use.ts"),
+    `import { bumpDyn, bumpTwice, clicks, clicksCounter, type Counter, u32Counter } from "./lib.js";
+const c = { value: clicks() };
+const twice = bumpTwice(c, clicksCounter);
+const n = { value: 5 };
+const fromNumber = bumpTwice(n, u32Counter);
+const total = { value: 0 };
+clicksCounter.add(c.value, total);
+const out: number[] = [];
+u32Counter.fill(7, out);
+const old = clicksCounter.reset(c, 3);
+const viaDyn = bumpDyn({ value: c.value, impl: clicksCounter });
+const counters: Counter<number>[] = [u32Counter];
+console.log(JSON.stringify([twice, fromNumber, n.value, total.value, out, old, c.value.n, viaDyn, counters.length]));
+`,
+  );
+  // A value where its box is, refused.
+  writeFileSync(
+    join(dir, "wrong.ts"),
+    `import { bumpTwice, clicks, clicksCounter } from "./lib.js";
+bumpTwice(clicks(), clicksCounter);
+clicksCounter.bump(clicks());
+`,
+  );
+  writeFileSync(
+    join(dir, "tsconfig.json"),
+    JSON.stringify({
+      compilerOptions: { module: "esnext", moduleResolution: "bundler", strict: true, noEmit: true, skipLibCheck: false, allowJs: true, typeRoots: [join(root, "node_modules/@types")] },
+      files: ["use.ts", "wrong.ts"],
+    }),
+  );
+  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
+  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  expect(errors.filter((line) => line.startsWith("use.ts"))).toEqual([]);
+  expect(errors.map((line) => line.replace(/: error.*/, ""))).toEqual(["wrong.ts(2,11)", "wrong.ts(3,20)"]);
+  // What Rust's calls give: `bump_twice` of a `Clicks` 2, of a `5u32` 7, its
+  // `add` 2, `fill` `[7]`, `reset` the 2 it had, then 5, and `bump_dyn` 6.
+  expect(JSON.parse(run([process.execPath, join(dir, "use.ts")]))).toEqual([2, 7, 7, 2, [7], 2, 6, 6, 1]);
 });

@@ -337,8 +337,10 @@ pub(super) fn is_marker(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '
 /// supertrait's dictionary; an associated type, its bounds' dictionaries,
 /// an `async fn`'s future too; a constant, which only one generic code
 /// reads is in it (ADR 0100); a method's own type or const parameters'
-/// evidence, or its caller's location (ADR 0427); a `&mut`, which may be a box (ADR
-/// 0099); or a method of a `where` some impl's type may not meet, which
+/// evidence, or its caller's location (ADR 0427); a `&mut` it gives, or
+/// one to what's of its `Self` but its receiver, `&mut self`, each entry's
+/// adapter boxes as `MutRefForm` says of it (ADRs 0099, 1086, #662); or
+/// a method of a `where` some impl's type may not meet, which
 /// isn't in that impl's. Nor of a trait of type parameters of its own, each
 /// impl's dictionary for its arguments, nor of one with nothing to give, a
 /// marker's, nor of a trait of classes, each method its classes'
@@ -389,10 +391,21 @@ pub(in crate::lower) fn method_dictionary<'tcx>(
             .instantiate_identity()
             .skip_normalization()
             .skip_binder();
-        let changed = (sig.inputs_and_output.iter())
-            .flat_map(|ty| ty.walk())
+        // A `&mut` it takes is what `MutRefForm` says in its trait's terms,
+        // a `&mut self` its `{ value: Self }`, which its declaration says;
+        // one it gives, or to what's of its `Self` besides, isn't asked.
+        let self_ty = identity.type_at(0);
+        let of_self = |ty: Ty<'tcx>| ty.walk().filter_map(|arg| arg.as_type()).any(|t| t == self_ty);
+        let receiver = |i: usize, ty: Ty<'tcx>| i == 0 && matches!(ty.kind(), ty::Ref(_, p, _) if *p == self_ty);
+        let changed = (sig.output().walk())
             .filter_map(|arg| arg.as_type())
-            .any(|ty| matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut)));
+            .any(|ty| matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut)))
+            || (sig.inputs().iter().enumerate()).any(|(i, &input)| {
+                (input.walk().filter_map(|arg| arg.as_type())).any(|ty| match ty.kind() {
+                    ty::Ref(_, pointee, Mutability::Mut) => of_self(*pointee) && !(ty == input && receiver(i, ty)),
+                    _ => false,
+                })
+            });
         // Of its declaration, or of an impl's own (ADR 0427).
         let tracked = tracks_caller(tcx, method)
             || (tcx.all_impls(trait_id))
