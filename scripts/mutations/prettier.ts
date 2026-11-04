@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "prettier-editorconfig-ignored",
     breaks: "Prettier's config is read without the app's `.editorconfig`, which its own `prettier --check` reads",
     file: "src/prettier.rs",
-    find: "{ editorconfig: true }",
-    replace: "{ editorconfig: false }",
+    find: "  const options = await prettier.resolveConfig(file, { editorconfig: true });\n",
+    replace: "  const options = await prettier.resolveConfig(file, { editorconfig: false });\n",
     tests: ["test/settings.test.ts", "-t", "editorconfig"],
   },
   {
