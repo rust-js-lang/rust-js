@@ -1134,8 +1134,10 @@ export function ratio(a, b) {
   on followed, rd624; a call of the crate's function whose every return
   is so, React DOM's `getEventTarget`'s `target.parentNode` or
   `target`; the `Ok` of `catch_unwind(f)` of a function or closure whose
-  every return is so, and `a.or(b)` or `a.or_else(f)` of two that are,
-  React DOM's getActiveElement's `doc.activeElement ?? doc.body`, rd16;
+  every return is so, and `a.or(b)` or `a.or_else(f)` whose `b` is or
+  whose `f` returns so, whatever `a` is, React DOM's getActiveElement's
+  `doc.activeElement ?? doc.body`, rd16, and `component_stack.or(js::null())`,
+  #689; a nullable field's `take()` or `replace(v)`;
   a variable each of whose writes is so, `if profiling {
   reason() } else { js::null() }`; a shared `as_deref()` of such; a `let`
   a call writes that only such parameters and tests that read `null` and

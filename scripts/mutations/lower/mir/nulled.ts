@@ -5,6 +5,7 @@ import type { Mutation } from "../../../mutations";
 const rd632 = ["test/lowering-nullable-reads.test.ts", "-t", "returns null or a value"];
 const corpus632 = ["test/corpus.test.ts", "-t", "^nulled_returns_given_on.rs$"];
 const bound632 = ["test/lowering-nullable-reads.test.ts", "-t", "a bind of each parameter"];
+const or689 = ["test/lowering-nullable-combinators.test.ts", "-t", "an or of null, and a take"];
 
 export const mutations: Mutation[] = [
   {
@@ -397,6 +398,38 @@ export const mutations: Mutation[] = [
     find: "            comb @ (crate::lower::combinators::Comb::Or | crate::lower::combinators::Comb::OrElse),\n",
     replace: "            comb @ crate::lower::combinators::Comb::Or,\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "catch_unwind gives"],
+  },
+  {
+    name: "or-subject-asked",
+    breaks: "`a.or(b)` is `null` or a value only where `a` is too, so `component_stack.or(js::null())` of a field JS may leave out is given to `createCapturedValueFromError` and stored `stack ?? null` (#689)",
+    file: "src/lower/mir/nulled.rs",
+    find: "            && let [_, fallback] = args\n        {\n",
+    replace: "            && let [option, fallback] = args\n            && self.stored_in(state, &option.node, seen).0 == Given::Nulled\n        {\n",
+    tests: or689,
+  },
+  {
+    name: "field-take-unknown",
+    breaks: "a nullable field's `take()` and `replace(v)` may give `undefined`, so a call given `root.pending.take()` stores `stack ?? null` (#689)",
+    file: "src/lower/mir/nulled.rs",
+    find: "        if let Some(crate::lower::Std::OptionTake | crate::lower::Std::OptionReplace) = known\n",
+    replace: "        if false\n            && let Some(crate::lower::Std::OptionTake | crate::lower::Std::OptionReplace) = known\n",
+    tests: or689,
+  },
+  {
+    name: "field-take-of-any-place",
+    breaks: "a `take()` of any place is what the place held, so a nullable parameter's second `stack.take()`, `undefined`, is stored as it is (#689)",
+    file: "src/lower/mir/nulled.rs",
+    find: "            && matches!(place.projection.last(), Some(PlaceElem::Field(..)))\n",
+    replace: "",
+    tests: or689,
+  },
+  {
+    name: "field-take-unchecked",
+    breaks: "a `take()` of a plain field, which JS may leave out, is taken for `null` or a value, so `undefined` is stored as it is (#689)",
+    file: "src/lower/mir/nulled.rs",
+    find: "            && self.stored_in(state, &Operand::Copy(place), seen).0 == Given::Nulled\n        {\n            return (Given::Nulled, None);\n        }\n        // A shared",
+    replace: "        {\n            return (Given::Nulled, None);\n        }\n        // A shared",
+    tests: or689,
   },
   {
     name: "nullable-ref-as-given",

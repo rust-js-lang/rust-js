@@ -1,6 +1,6 @@
 # 0861. A function's own nullable parameter is `null` where it's given or set `None`
 
-Status: Accepted. Amended (2026-11-04): an `Option` read only by a nullable thread-local's `set` or `replace` is `null` for `None` where it's made (#683). Amended (2026-11-04): a nullable thread-local nothing reads apart stores what it's given as it is (#665). Amended (2026-11-04): a parameter is `null` or a value where it's found so; a forwarding namespace method's calls are its function's (#601). Amended (2026-10-29): its map by what's its argument in JS is stored as given. Amended (2026-11-02): a parameter each call gives `null` or a value is tested `!== null` (rd613). Extends [0275](0275-nullable-writes-null.md)'s
+Status: Accepted. Amended (2026-11-04): `a.or(b)` is `null` or a value where `b` is, and a nullable field's `take()` and `replace(v)` where the field is (#689). Amended (2026-11-04): an `Option` read only by a nullable thread-local's `set` or `replace` is `null` for `None` where it's made (#683). Amended (2026-11-04): a nullable thread-local nothing reads apart stores what it's given as it is (#665). Amended (2026-11-04): a parameter is `null` or a value where it's found so; a forwarding namespace method's calls are its function's (#601). Amended (2026-10-29): its map by what's its argument in JS is stored as given. Amended (2026-11-02): a parameter each call gives `null` or a value is tested `!== null` (rd613). Extends [0275](0275-nullable-writes-null.md)'s
 `#[rust_js::nullable(name)]`, a binding's parameter, to a function of the
 crate's own, and [0772](0772-a-nullable-cell-field-writes-null.md) and
 [0841](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)'s
@@ -932,3 +932,43 @@ it's given where nothing reads it apart.
   thread-local nothing reads apart stores a test tidy makes of its value
   with its None null" (React's form, run in JS), and the mutation
   `null-nones-local-set-unread` (`lower/mir/patterns.ts`).
+
+## Amendment: `or` asks its fallback alone, and a nullable field's `take()` (2026-11-04, #689)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. Each value is
+`null` or a value already, so only a `?? null` that never applied goes.
+
+React's createCapturedValueFromError printed `stack: stack ?? null`, where
+upstream writes `stack: stack` (ReactCapturedValue.js:57). Its one call,
+ReactFiberBeginWork's, gives it `component_stack.or(js::null())`, printed
+`componentStack ?? null`. `component_stack` is a plain field JS may leave
+out, so rd16's rule, `a.or(b)` is `null` or a value where `a` is and `b`
+is, didn't count the call.
+
+**`a.or(b)` is `null` or a value where `b` is; `a.or_else(f)` where `f`
+returns so; `a` isn't asked** (`mir/nulled.rs`' `written_given`). Each is
+`a` where it's `Some`, a value (a `Some` that looks like `None` is boxed,
+ADR 0051), else `b` or what `f` returns, so what `a`'s `None` is never
+reaches the result: `a ?? b` reads `null` and `undefined` alike.
+
+**An `Option`'s `take()` and `replace(v)` give what its place held**: `null`
+or a value where the place is a field that stores `null` for `None`
+(`bindings::null_where_made`), `root.pending.take()`, whose take sets it
+`null` (ADR 0996). A variable's, a parameter's, or what a `&mut` refers
+to, isn't asked: its earlier take may have set it `undefined`.
+
+Not `and`, `xor`, `filter` or `and_then`: each `None` they make is
+`undefined` (`kept_or`'s, `unpaired`'s, `filter`'s), save `and_then`'s of
+a function that gives `null` for `None` (`calls::and_then_given`), which
+isn't asked here; a call given one keeps `?? null`.
+
+- Held by corpus `nullable_or_null_given` (each given what `find` gives,
+  `undefined` for `None` in JS, stored in a nullable field tested `===
+  null`, against native Rust), and `test/lowering-nullable-combinators.test.ts`'s
+  "an or of null, and a take of a nullable field, are null or a value at
+  a call" (`or(js::null())`, `or_else(js::null)`, a `take()` `or` a
+  `replace(v)` each as given; `js::null().or(maybe())` and
+  `and(js::null())` kept `?? null`, run in JS). Mutations
+  `or-subject-asked`, `field-take-unknown`,
+  `field-take-of-any-place` and `field-take-unchecked`
+  (`mir/nulled.ts`).

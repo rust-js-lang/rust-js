@@ -546,15 +546,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return self.stored_in(state, &option.node, seen);
         }
-        // `a.or(b)` and `a.or_else(f)`, `a ?? b`: `a` where it's `Some`,
-        // else `b`, or what `f` returns, so `null` or a value where both
-        // are, React DOM's `doc.active_element().or_else(|| doc.body())`
-        // (rd16).
+        // `a.or(b)` and `a.or_else(f)`, `a ?? b`: `a` where it's `Some`, a
+        // value, else `b`, or what `f` returns, so `null` or a value where
+        // that is, whatever `a`'s `None` is: React DOM's
+        // `doc.active_element().or_else(|| doc.body())` (rd16), and
+        // ReactFiberBeginWork's `component_stack.or(js::null())` of a field
+        // JS may leave out (#689). Not `and`, `xor` or `filter`, whose `None`
+        // is `undefined`.
         if let Some(crate::lower::Std::Comb(
             comb @ (crate::lower::combinators::Comb::Or | crate::lower::combinators::Comb::OrElse),
         )) = known
-            && let [option, fallback] = args
-            && self.stored_in(state, &option.node, seen).0 == Given::Nulled
+            && let [_, fallback] = args
         {
             let fallback = match comb {
                 crate::lower::combinators::Comb::Or => self.stored_in(state, &fallback.node, seen).0 == Given::Nulled,
@@ -566,6 +568,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if fallback {
                 return (Given::Nulled, None);
             }
+        }
+        // An `Option`'s `take()` and `replace(v)`, what its place held: `null`
+        // or a value where that's a field that stores `null` for `None`,
+        // `root.pending.take()` (#689), which a take sets `null` (ADR 0996).
+        if let Some(crate::lower::Std::OptionTake | crate::lower::Std::OptionReplace) = known
+            && let Some(place) = args.first().and_then(|taken| self.borrowed(state, &taken.node))
+            && matches!(place.projection.last(), Some(PlaceElem::Field(..)))
+            && self.stored_in(state, &Operand::Copy(place), seen).0 == Given::Nulled
+        {
+            return (Given::Nulled, None);
         }
         // A shared `as_ref()` or `as_deref()` of such, the option itself in
         // JS (ADR 0023): `parent_fragment_instances.as_deref()` (rd632).
