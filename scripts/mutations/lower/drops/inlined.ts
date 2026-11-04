@@ -259,7 +259,7 @@ export const mutations: Mutation[] = [
     replace:
       "        ExprKind::Var(v) if !written.contains(key) && kept.contains(v) && false => Some(v.clone()),\n",
     tests: [
-      "test/lowering-unwinds.test.ts",
+      "test/lowering-drop-guards.test.ts",
       "-t",
       "a guard's fields are its variables",
     ],
@@ -272,7 +272,7 @@ export const mutations: Mutation[] = [
     find: "                && !later.may_replace(name)\n",
     replace: "",
     tests: [
-      "test/lowering-unwinds.test.ts",
+      "test/lowering-drop-guards.test.ts",
       "-t",
       "a guard's fields are its variables",
     ],
@@ -285,7 +285,7 @@ export const mutations: Mutation[] = [
     find: "                *count -= 1;\n",
     replace: "",
     tests: [
-      "test/lowering-unwinds.test.ts",
+      "test/lowering-drop-guards.test.ts",
       "-t",
       "a guard's fields are its variables",
     ],
@@ -298,7 +298,7 @@ export const mutations: Mutation[] = [
     find: "            |s| !matches!(&s.kind, StmtKind::Const(n, value) if matches!(&value.kind, ExprKind::Var(v) if v == n)),\n",
     replace: "            |_| true,\n",
     tests: [
-      "test/lowering-unwinds.test.ts",
+      "test/lowering-drop-guards.test.ts",
       "-t",
       "a guard's fields are its variables",
     ],
@@ -310,7 +310,7 @@ export const mutations: Mutation[] = [
     find: "            *count == 1\n",
     replace: "            *count >= 1\n",
     tests: [
-      "test/lowering-unwinds.test.ts",
+      "test/lowering-drop-guards.test.ts",
       "-t",
       "a guard's fields are its variables",
     ],

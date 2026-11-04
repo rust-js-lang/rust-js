@@ -779,7 +779,7 @@ export const mutations: Mutation[] = [
     find: 'const UNWOUND: &[&str] = &["names", "in place", "chains"];\n',
     replace: 'const UNWOUND: &[&str] = &["names", "in place"];\n',
     tests: [
-      "test/lowering-unwinds.test.ts",
+      "test/lowering-drop-guards.test.ts",
       "-t",
       "a guard's fields are its variables",
     ],

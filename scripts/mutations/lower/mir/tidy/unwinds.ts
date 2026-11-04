@@ -100,7 +100,7 @@ export const mutations: Mutation[] = [
     find: "            stmts.extend(rest);\n            scoped = true;\n",
     replace: "            stmts.extend(rest);\n",
     tests: [
-      "test/lowering-unwinds.test.ts",
+      "test/lowering-drop-guards.test.ts",
       "-t",
       "a guard's fields are its variables",
     ],

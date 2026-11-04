@@ -352,7 +352,7 @@ export const mutations: Mutation[] = [
     find: "        if !stage.again.is_empty() && hints.again.take() {\n",
     replace: "        if false {\n",
     tests: [
-      "test/lowering-unwinds.test.ts",
+      "test/lowering-drop-guards.test.ts",
       "-t",
       "a guard's fields are its variables",
     ],
