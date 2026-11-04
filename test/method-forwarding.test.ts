@@ -7,11 +7,14 @@
 // `X.prototype.m = f;` (rd715). Each test is a program of its own,
 // compiled and run.
 
-import { expect, test } from "bun:test";
+import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { compiler, fixture, root, run, target } from "./support";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
+
+// The js crate, which the library tests compile against.
+beforeAll(buildReact, 600_000);
 
 /** The crate `lib`, of the files `files`, compiled with its declarations. */
 function compiled(name: string, files: Record<string, string>) {
