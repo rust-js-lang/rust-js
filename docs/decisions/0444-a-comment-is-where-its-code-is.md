@@ -632,11 +632,24 @@ now keep theirs.
   is above the import it makes", run: of a crate module's import, a
   binding's JS file's, a `use` tree's, a module's `use`, and a type's
   `use` before an import and before the first statement. Mutations
-  `use-comment-dropped`, `use-comment-in-the-code`
+  `use-comment-in-the-code`
   (`to_oxc.ts`), `use-comment-twice` (`to_oxc/header.ts`),
   `type-use-is-code` (`to_oxc/openings.ts`), `use-tree-at-its-leaf`,
   `binding-use-makes-no-import` and `module-use-makes-no-import`
   (`lower/analysis/naming.ts`).
+
+*Amended (2026-11-04, #642):* `comments_of` no longer asks
+`commented_at` first where a comment at a `use` goes. Its mutation,
+`use-comment-dropped`, survived the nightly (#606): since da526f90e a
+forwarder's comments are in `js::Module::taken_into`, whose map already
+goes through `commented_at`, and an import's comment reaches the
+statement printed first of its `use`, which `commented_at`'s keys make a
+start, so both arms gave one answer. At 14b2d5053 the mutant still lost
+the test's forwarder doc comment. With it, every corpus case's JS was the
+same (1,602 cases), and twelve comment, module, re-export and snapshot
+suites passed (210 tests). The arm is removed with its mutation, so one
+place answers the question: `commented_at` through `taken_into`, and the
+start it adds.
 
 ## Amendment: an inner doc comment is written as JS's plain one (2026-10-29)
 

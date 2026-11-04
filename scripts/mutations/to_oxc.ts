@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "class-doc-unattached",
     breaks: "a class struct's `///` doc isn't before its constructor function, `/** Base class helpers .. */ function Component` (ADR 0761)",
     file: "src/to_oxc.rs",
-    find: "                .or(classes.get(&at).copied())\n",
-    replace: "                .or(None::<u32>)\n",
+    find: "            let attached_to = (classes.get(&at).copied())\n",
+    replace: "            let attached_to = (None::<u32>)\n",
     tests: ["test/classes.test.ts", "-t", "doc is its constructor function's"],
   },
   {
@@ -532,14 +532,6 @@ export const mutations: Mutation[] = [
     find: "                let blanks = pieces.iter().take_while(|&&(lo, hi)| lo == hi).count();\n                pieces.insert(blanks, (lo, text.len() as u32));\n",
     replace: "                pieces.insert(0, (lo, text.len() as u32));\n",
     tests: ["test/lowering-comment-fields.test.ts", "-t", "doc comment is before it"],
-  },
-  {
-    name: "use-comment-dropped",
-    breaks: "a comment above a `use` whose import is placed elsewhere, a forwarder's doc comment of a re-export at its module's `use`, is attached where no statement starts, and lost (rd92, rd620)",
-    file: "src/to_oxc.rs",
-    find: "            let attached_to = (commented_at.get(&at).copied())\n",
-    replace: "            let attached_to = (None::<u32>)\n",
-    tests: ["test/lowering-comments-items.test.ts", "-t", "above a use"],
   },
   {
     name: "use-comment-in-the-code",

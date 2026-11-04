@@ -1224,13 +1224,13 @@ fn comments_of(
             // An object's field's, its own: not a statement its value holds
             // on its line, `getInstanceFromNode() { throw .. }` (rd296).
             let field = (parts.get(&at)).is_some_and(|&(_, field)| field).then_some(at);
-            // An import's or a re-export's, before the first statement of
-            // its `use` (`header::commented_at`, rd92). Comments a block
-            // holds before a statement, that one's, which may start before
-            // them, a `catch_unwind` closure's value of an `Ok` arm they're
-            // said above (#489).
-            let attached_to = (commented_at.get(&at).copied())
-                .or(classes.get(&at).copied())
+            // A forwarder's, before its re-export where its `use`'s are
+            // (`taken_into`, through `header::commented_at`); an import's is
+            // the statement printed first of its `use`, which is a start
+            // (rd92, #642). Comments a block holds before a statement, that
+            // one's, which may start before them, a `catch_unwind` closure's
+            // value of an `Ok` arm they're said above (#489).
+            let attached_to = (classes.get(&at).copied())
                 .or(taken_into.get(&at).copied())
                 .or(case)
                 .or(field)
