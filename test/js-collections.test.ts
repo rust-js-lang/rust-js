@@ -746,3 +746,59 @@ console.log(JSON.stringify([lib.items(steps()), lib.items({ length: 2, 0: "x" })
     expect(result.stderr).toContain(says);
   }
 });
+
+// ADR 0225, amended (the user's decision): a dictionary's key is any
+// `js::PropertyKey`, as `js::get`'s, React's webpack client's
+// `bundlerConfig[id]` of a `string | number` id: a number, whose text JS
+// makes the name, and an untagged enum of a string or a number that says
+// it's one, given as the value it is; and a `Dict<Option<_>>`'s read of
+// one, which tells a JSON `null` from a missing key.
+test("a dictionary is read and written by any property key", async () => {
+  const { dir, js } = compiled("js-dict-keys", `use js::{Dict, PropertyKey, Unknown, dict};
+
+#[derive(Clone, PartialEq)]
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ModuleId {
+    Name(String),
+    Number(u32),
+}
+
+impl PropertyKey for ModuleId {}
+
+pub struct Entry {
+    pub id: ModuleId,
+}
+
+pub fn resolve(config: &Dict<Option<&'static Unknown>>, entry: &Entry) -> Option<&'static Unknown> {
+    let Some(&found) = dict::get(config, &entry.id) else {
+        panic!("no module");
+    };
+    found
+}
+
+pub fn by_number(config: &Dict<u32>, n: u32) -> Option<u32> {
+    dict::get(config, &n).copied()
+}
+
+pub fn put(config: &Dict<u32>, id: &ModuleId, value: u32) {
+    dict::set(config, id, value);
+}
+
+pub fn filled() -> &'static Dict<u32> {
+    let config = dict::new();
+    put(config, &ModuleId::Number(3), 30);
+    put(config, &ModuleId::Name("app".to_string()), 1);
+    config
+}
+`);
+  expect(js).toContain("$dictGet(config, entry.id)");
+  expect(js).toContain("  return config[n];");
+  expect(js).toContain("  config[id] = value;");
+  const lib = await import(join(dir, "lib.js"));
+  const config = lib.filled();
+  expect(config).toEqual({ 3: 30, app: 1 });
+  expect([lib.byNumber(config, 3), lib.byNumber(config, 4)]).toEqual([30, undefined]);
+  const manifest = { 7: null, main: "chunk" };
+  expect([lib.resolve(manifest, { id: 7 }), lib.resolve(manifest, { id: "main" })]).toEqual([null, "chunk"]);
+  expect(() => lib.resolve(manifest, { id: 8 })).toThrow("no module");
+});

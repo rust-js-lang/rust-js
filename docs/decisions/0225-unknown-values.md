@@ -323,3 +323,20 @@ reading its parent.
 holds a `&js::BigInt` now, of any size, with `to_string(radix)` its
 `toString` and `js::number::from_big_int` its `Number`. See
 [1057](1057-a-bigint-kind-is-a-bigint-of-any-size.md).
+
+## Amended (2026-11-04, the user's decision): a dictionary's key is any `PropertyKey`
+
+React's webpack client reads a module's entry of a `string | number` id,
+`bundlerConfig[id]`, where `dict::get` took text alone, so the port bound
+the read itself. `dict::get` and `dict::set` take any `js::PropertyKey`, as
+`js::get` does, one key type of every property read: text, a number, whose
+text JS makes the name, a value of any shape, or a type of the program's
+that says it's one, `impl js::PropertyKey for ModuleId {}` of an untagged
+enum of a string or a number, given as the value it is. `dict::get(config,
+&entry.id)` is `config[entry.id]`, or `$dictGet(config, entry.id)` of a
+`Dict<Option<_>>`, as before.
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): JS names the property
+by the key's text, `config[3]` and `config["3"]` one, as Rust's dictionary
+of text is read by that text. Held by `test/js-collections.test.ts`, "a
+dictionary is read and written by any property key".

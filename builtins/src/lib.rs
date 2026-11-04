@@ -1829,9 +1829,13 @@ pub mod dict {
     /// none, and an inherited key, `toString`, reads what it inherits, as
     /// TypeScript's `Record` and ReScript's `dict` do. Of a
     /// `Dict<Option<_>>`, `Some(None)` of a JSON `null`, and `None` where the
-    /// key isn't its own (ADR 0225).
+    /// key isn't its own (ADR 0225). The key is any [`PropertyKey`], as
+    /// [`get`](super::get)'s is: text, a number, whose text JS makes the
+    /// name, `bundlerConfig[id]` of a `string | number` id, or a type of the
+    /// program's that says it's one, an untagged enum of a string or a
+    /// number (ADR 0225, amended).
     #[cfg_attr(rust_js, rust_js::link_name = "get []")]
-    pub fn get<'a, T>(this: &'a Dict<T>, key: &str) -> Option<&'a T> {
+    pub fn get<'a, T, K: PropertyKey + ?Sized>(this: &'a Dict<T>, key: &K) -> Option<&'a T> {
         unreachable!()
     }
 
@@ -1841,9 +1845,9 @@ pub mod dict {
         unreachable!()
     }
 
-    /// `dict[key] = value`.
+    /// `dict[key] = value`, of any [`PropertyKey`], as [`get`]'s.
     #[cfg_attr(rust_js, rust_js::link_name = "set []")]
-    pub fn set<T>(this: &Dict<T>, key: &str, value: T) {
+    pub fn set<T, K: PropertyKey + ?Sized>(this: &Dict<T>, key: &K, value: T) {
         unreachable!()
     }
 

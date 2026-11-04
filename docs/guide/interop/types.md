@@ -3510,9 +3510,13 @@ export function name(tag, component, role) {
   `dict::from_entries(vec![..])` of its keys, any text, as `HashMap::from`
   takes them: each a string, it's the object literal, a comment between
   them kept; JS reads it by any key, `ariaProperties[name]`, and so does
-  `dict::get`
-  ([ADR 0666](../../decisions/0666-the-js-crate-binds-objects-reflection.md),
-  amended):
+  `dict::get`, and `dict::set` writes one: any `js::PropertyKey`, as
+  `js::get`'s, text, a number, whose text JS makes the name, or a type of
+  the program's that says it's one, an untagged enum of a string or a
+  number, `impl js::PropertyKey for ModuleId {}`, read by itself,
+  `bundlerConfig[id]`
+  ([ADRs 0666](../../decisions/0666-the-js-crate-binds-objects-reflection.md),
+  amended, [0225](../../decisions/0225-unknown-values.md), amended):
 
 ```rust
 use js::{Dict, dict};
