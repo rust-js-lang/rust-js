@@ -184,4 +184,20 @@ export const mutations: Mutation[] = [
     replace: "            (displaying.iter().filter(|_| false))\n",
     tests: ["test/untagged-displayed.test.ts"],
   },
+  {
+    name: "forwarding-method-comments-untaken",
+    breaks: "a namespace's method that's its module's function loses its comments, `// Passed on.` of its body (rd758)",
+    file: "src/lower/pipeline/reached.rs",
+    find: "                    crate::js::Item::Function(f) if f.name == theirs.name => Some(f.span),\n",
+    replace: "                    crate::js::Item::Function(f) if f.name == theirs.name && false => Some(f.span),\n",
+    tests: ["test/method-forwarding.test.ts", "-t", "keeps its comments before the function it is"],
+  },
+  {
+    name: "forwarding-method-reexport-comments-untaken",
+    breaks: "a namespace's method re-exported from another module loses the comments in its body, and the second's above it (rd758)",
+    file: "src/lower/pipeline/reached.rs",
+    find: "                    let holds = |r: &&crate::program::Reexport| r.span.lo <= written.lo && written.hi <= r.span.hi;\n",
+    replace: "                    let holds = |_: &&crate::program::Reexport| false;\n",
+    tests: ["test/method-forwarding.test.ts", "-t", "keeps its comments before the function it is"],
+  },
 ];

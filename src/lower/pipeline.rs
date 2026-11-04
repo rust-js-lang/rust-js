@@ -424,9 +424,8 @@ pub fn lower_crate<'tcx>(
     let own_callbacks = std::cell::OnceCell::new();
     // What runs where its module loads, which reads another module's
     // `const`s as their values where that module may load after its own
-    // (`load_cycles`).
-    // A thread-local made where it's first used runs nothing as its module
-    // loads (ADR 0037, amended).
+    // (`load_cycles`). A thread-local made where it's first used runs
+    // nothing as its module loads (ADR 0037, amended).
     let loads: HashSet<DefId> = (thread_local_inits.iter())
         .filter(|(_, key)| !lazy_locals.contains(key))
         .map(|(init, _)| init.to_def_id())
@@ -1229,6 +1228,7 @@ pub fn lower_crate<'tcx>(
                 directives,
                 packages,
                 imports: Vec::new(),
+                taken_into: Vec::new(),
                 reexports,
                 aliases,
                 items: js::in_load_order(
@@ -1264,6 +1264,7 @@ pub fn lower_crate<'tcx>(
                 types_only: false,
                 reexports_alone: module == CRATE_MOD_ID && super::reexports::reexports_alone(tcx, module),
             };
+            lowered.taken_into = reached::methods_taken_into(tcx, (module, &lowered), (&forwarded, &fns), &sources);
             // Each re-export among the imports (rd620).
             super::reexports::place(tcx, &mut lowered.reexports, &uses, (&fns, &foreign, &paths), &written);
             // A class's prototype its load replaces, set right after its
@@ -1309,12 +1310,11 @@ pub fn lower_crate<'tcx>(
                 .chain(&statics)
                 .filter_map(|&key| Some((fns.get(&key.to_def_id())?.name.as_str(), key)))
                 .collect();
-            // Those it exports as its variables, `export let x`, which
-            // their importers read by name (ADR 0270, amended); one it
-            // exports still its `{ value }`, which a JS module importing
-            // it would read as the box, refused.
-            // And its `#[rust_js::nullable]` thread-locals of a cell, whose
-            // `None` is `null` however it's written (#541).
+            // Those it exports as its variables, `export let x`, which their
+            // importers read by name (ADR 0270, amended); one it exports still
+            // its `{ value }`, which a JS module importing it would read as the
+            // box, refused. And its `#[rust_js::nullable]` thread-locals of a
+            // cell, whose `None` is `null` however it's written (#541).
             let nullable: HashSet<&str> = (thread_local_inits.values())
                 .filter(|&&key| {
                     tcx.parent_module_from_def_id(key) == module

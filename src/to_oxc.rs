@@ -494,8 +494,9 @@ fn comments_of(
         .collect();
     // Where each function that's now a declaration elsewhere is, and that
     // declaration, which its comments are before (#535).
+    // A re-export's, before the first statement of it (`header::commented_at`).
     let taken_into: std::collections::HashMap<u32, u32> = (module.taken_into.iter())
-        .map(|&(function, declared)| (function.lo, declared.lo))
+        .map(|&(function, declared)| (function.lo, *commented_at.get(&declared.lo).unwrap_or(&declared.lo)))
         .collect();
     let noinline = noinline_starts(module);
     let set_apart = set_apart_starts(module);
@@ -1148,7 +1149,7 @@ fn comments_of(
             // declaration's own, no blank line before or between them,
             // nor where its Rust starts, which the declaration's tells
             // (#535).
-            let taken = taken_into.contains_key(&at);
+            let taken = taken_into.contains_key(&at) && !commented_at.contains_key(&at);
             let mut pieces: Vec<(u32, u32)> = Vec::new();
             // A function kept out of line, `#[inline(never)]`, says so in its
             // JSDoc, the last line of its own, or one of its own (ADR 0649).

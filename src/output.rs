@@ -216,7 +216,7 @@ impl OutputPlan {
                 default_declared: module.default_declared,
                 aliases: module.aliases,
                 code: module.code,
-                taken_into: Vec::new(),
+                taken_into: module.taken_into,
             };
 
             let mut runtime: Vec<&'static str> = module.runtime.iter().map(|helper| helper.source()).collect();

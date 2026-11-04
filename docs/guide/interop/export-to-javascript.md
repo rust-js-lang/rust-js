@@ -1852,6 +1852,10 @@ export function updateContainer(n) {
   it says the same `#[rust_js::nullable(..)]` of its parameters as the
   function, or it's an error
   ([ADR 1037, amended](../../decisions/1037-a-module-namespace-is-a-unit-struct-of-its-functions.md#amendment-of-its-own-modules-function-too-one-named-apart-is-refused-566-585)).
+  Either's comments, above it, its doc and in its body, are before what
+  it is: the function, after the function's own, or the re-export, each
+  method's in the order written
+  ([ADR 1037, amended](../../decisions/1037-a-module-namespace-is-a-unit-struct-of-its-functions.md#amendment-a-forwarding-methods-comments-are-before-what-it-is-rd758-612)).
 - **A method its module names apart from its name is an error**: a
   method `close` beside a function `close` of its module, which a call
   through the namespace, `client.close(r)`, would read. Give one another

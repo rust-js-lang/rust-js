@@ -101,6 +101,80 @@ test("a namespace's method that only passes its parameters on to its module's fu
   expect(ran.trim()).toBe("[2,6,4,5]");
 });
 
+// rd758 (#612): a namespace's method that's a function, its own module's
+// (#566) or another's re-exported (rd292b), has no JS of its own, so its
+// comments, above it, its doc, in its body and after code on its line,
+// are before what it is: the function's declaration, after the function's
+// own, or the re-export, where its `use`'s are, its first method's as
+// they were, a blank line between kept, then the rest's, in the order
+// written. One of no comments, none (ADR 1037, amended).
+test("a namespace's forwarding method keeps its comments before the function it is", async () => {
+  const { p, dir, read } = compiled("namespace-forwarding-comments", {
+    "lib.rs": `mod other;
+
+use other::batched;
+
+/// Closes the response.
+pub fn close(n: f64) -> f64 {
+    n + 1.0
+}
+
+pub fn open(n: f64) -> f64 {
+    n
+}
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+pub struct Client;
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+impl Client {
+    /// Closes it.
+    pub fn close(&self, n: f64) -> f64 {
+        // Passed on.
+        close(n) // As it is.
+    }
+
+    pub fn open(&self, n: f64) -> f64 {
+        open(n)
+    }
+
+    // The batch.
+
+    // Above batched.
+    pub fn batched(&self, n: f64) -> f64 {
+        // In batched.
+        batched(n)
+    }
+
+    // Above flushed.
+    pub fn flushed(&self, n: f64) -> f64 {
+        // In flushed.
+        other::flushed(n)
+    }
+}
+
+pub fn inside(n: f64) -> f64 {
+    Client.close(n) + Client.open(n) + Client.batched(n) + Client.flushed(n)
+}
+`,
+    "other.rs": "pub fn batched(n: f64) -> f64 {\n    n * 2.0\n}\n\npub fn flushed(n: f64) -> f64 {\n    n * 3.0\n}\n",
+  });
+  expect(p.stderr).not.toContain("error");
+  expect(p.code).toBe(0);
+  const js = read("lib.js");
+  expect(js).toContain(
+    "\n/** Closes the response. */\n/** Closes it. */\n// Passed on.\n// As it is.\nexport function close(n) {\n  return n + 1;\n}\n\nexport function open(n) {\n",
+  );
+  expect(js).toContain(
+    "\n// The batch.\n\n// Above batched.\n// In batched.\n// Above flushed.\n// In flushed.\nimport { batched, flushed } from \"./other.js\";\nexport { batched, flushed } from \"./other.js\";\n",
+  );
+  const ran = run(["node", "--input-type=module", "--eval", `
+    import * as lib from ${JSON.stringify(join(dir, "lib.js"))};
+    console.log(JSON.stringify([lib.inside(1), lib.Client === undefined]));
+  `]);
+  expect(ran.trim()).toBe("[8,true]");
+});
+
 // #585: a namespace's method its module names apart from a function of its
 // name, `close$1`, was called through the namespace's value as `.close`,
 // that function: a wrong answer. Refused, naming both and what to write;

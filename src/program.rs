@@ -80,6 +80,9 @@ pub struct LoweredModule {
     pub default_declared: bool,
     /// Its own items it exports by another name too (ADR 0596).
     pub aliases: Vec<(String, String)>,
+    /// Its namespace methods that are functions, by what's printed of
+    /// them, whose comments are its (`js::Module::taken_into`, rd758).
+    pub taken_into: Vec<(js::Span, js::Span)>,
     /// What its `.d.ts` says of what it exports, but the header (ADR 0196):
     /// @rust-js/typescript's model, which TypeScript prints (ADR 0207).
     pub declarations: Option<serde_json::Value>,

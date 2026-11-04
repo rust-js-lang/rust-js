@@ -785,4 +785,20 @@ export const mutations: Mutation[] = [
     replace: "            if part {\n",
     tests: ["test/lowering-forwarding.test.ts", "-t", "keeps its comments above the declaration"],
   },
+  {
+    name: "taken-into-reexport-unresolved",
+    breaks: "a forwarding method's comments are attached to its re-export's `use`, where nothing is printed, not to the re-export's statement, and lost (rd758)",
+    file: "src/to_oxc.rs",
+    find: "        .map(|&(function, declared)| (function.lo, *commented_at.get(&declared.lo).unwrap_or(&declared.lo)))\n",
+    replace: "        .map(|&(function, declared)| (function.lo, declared.lo))\n",
+    tests: ["test/method-forwarding.test.ts", "-t", "keeps its comments before the function it is"],
+  },
+  {
+    name: "taken-into-reexport-own-as-taken",
+    breaks: "the comments above a re-export's first forwarding method, its own, lose the blank line between them (rd758)",
+    file: "src/to_oxc.rs",
+    find: "            let taken = taken_into.contains_key(&at) && !commented_at.contains_key(&at);\n",
+    replace: "            let taken = taken_into.contains_key(&at);\n",
+    tests: ["test/method-forwarding.test.ts", "-t", "keeps its comments before the function it is"],
+  },
 ];

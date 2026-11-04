@@ -6,7 +6,7 @@
 use super::super::Body;
 use super::super::library::Foreign;
 use rustc_middle::ty::{self, TyCtxt};
-use rustc_span::def_id::DefId;
+use rustc_span::def_id::{DefId, LocalModId};
 use std::collections::{HashMap, HashSet};
 
 /// The types equal only to themselves, by their `==`'s keyed form, and
@@ -187,6 +187,42 @@ pub(super) fn forwarded<'tcx>(
             super::super::classes::member(tcx, method) == Some(super::super::classes::Member::Namespace)
         });
     (namespaces, prototypes)
+}
+
+/// Of `module`'s namespace methods that are functions (`forwarded`, #566,
+/// rd292b), where each is written and what's printed of it, as
+/// `js::Module::taken_into` says them: its own module's function's JS, of
+/// `lowered`'s items, or the re-export of another's, that holds the
+/// method's name where it's written. The method has no JS of its own,
+/// so its comments, above it, its doc and in its body, are before that
+/// (rd758).
+pub(super) fn methods_taken_into(
+    tcx: TyCtxt<'_>,
+    (module, lowered): (LocalModId, &crate::program::LoweredModule),
+    (forwarded, fns): (&HashMap<DefId, DefId>, &HashMap<DefId, super::super::FnInfo>),
+    sources: &super::super::sources::CapturedSources,
+) -> Vec<(crate::js::Span, crate::js::Span)> {
+    let mut taken: Vec<_> = (forwarded.iter())
+        .filter(|&(method, _)| fns.get(method).is_some_and(|f| f.module == module))
+        .filter_map(|(&method, target)| {
+            let written = sources.span(tcx.hir_span_with_body(tcx.local_def_id_to_hir_id(method.as_local()?)));
+            let (mine, theirs) = (&fns[&method], fns.get(target)?);
+            let printed = match theirs.module == module {
+                true => lowered.items.iter().find_map(|item| match item {
+                    crate::js::Item::Function(f) if f.name == theirs.name => Some(f.span),
+                    _ => None,
+                })?,
+                false => {
+                    let holds = |r: &&crate::program::Reexport| r.span.lo <= written.lo && written.hi <= r.span.hi;
+                    let named = |r: &&crate::program::Reexport| r.named.iter().any(|(_, a)| a == mine.exported());
+                    lowered.reexports.iter().find(holds).filter(named)?.span
+                }
+            };
+            Some((written, printed))
+        })
+        .collect();
+    taken.sort_by_key(|&(method, _)| method.lo);
+    taken
 }
 
 /// Of `prototypes`, each prototype's method that's the function it passes

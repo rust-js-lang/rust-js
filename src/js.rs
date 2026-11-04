@@ -138,9 +138,11 @@ pub struct Module {
     /// ends (ADR 0621).
     pub code: Span,
     /// Each function that's now a declaration elsewhere, the variable or
-    /// the field it only called (ADR 0610), as `(function, declaration)`,
-    /// where each is written: the comments before the function, its doc
-    /// too, and in it are before the declaration, after its own (#535).
+    /// the field it only called (ADR 0610, #535), or a namespace's method
+    /// that's a function or its re-export (ADR 1037, rd758), as
+    /// `(function, declaration)`, where each is written: the comments
+    /// before the function, its doc too, and in it are before the
+    /// declaration, a re-export's statement where its `use`'s are.
     pub taken_into: Vec<(Span, Span)>,
 }
 

@@ -622,3 +622,68 @@ second part): "another crate calls a library's forwarding method through
 the namespace's value". rd613's test now says the attribute too (the
 user's decision, 2026-11-04).
 
+
+## Amendment: a forwarding method's comments are before what it is (rd758, #612)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. Comments don't
+run; this is where they're printed.
+
+A namespace's method that's the function it passes its parameters on to
+prints nothing of its own, of its own module's function (#566) or
+another's re-exported (rd292b), so every comment it had was lost, but
+one above the first of a re-exported run, the re-export's own:
+
+```rust
+#[cfg_attr(rust_js, rust_js::namespace)]
+impl Client {
+    pub fn close(&self, n: f64) -> f64 {
+        // Closes it.
+        close(n)
+    }
+}
+```
+
+printed `export function close(n) { .. }`, `// Closes it.` gone.
+
+**Its comments, above it, its doc, in its body and after code on its
+line, are before what it is: the function's declaration, after the
+function's own, or the re-export's statement, after the first method's,
+each method's in the order written**, as a function that's its variable
+has its comments before the variable (ADR 0610, amended, #535):
+
+```js
+/** Closes the response. */
+// Closes it.
+export function close(n) { .. }
+
+// Above batched.
+// In batched.
+// Above flushed.
+// In flushed.
+export { batched, flushed } from "./other.js";
+```
+
+The same owner places them: lowering says where each such method is
+written and what's printed of it, the function's JS or the re-export
+that holds its name where it's written
+(`pipeline::reached::methods_taken_into`), in
+`js::Module::taken_into`, and `to_oxc`'s `comments_of` places them, a
+re-export's at its statement, where its `use`'s are
+(`header::commented_at`). The first method's comments above it are the
+re-export's own, as before, its blank lines kept.
+
+A free function that only passes its parameters on to another module's
+stays a function where it has a comment (ADR 1064), which this doesn't
+change; a namespace's method has no form of its own to keep, its
+property being the function (#566, #585).
+
+What holds it: `test/method-forwarding.test.ts`, "a namespace's
+forwarding method keeps its comments before the function it is" (a doc
+of the function's and the method's, a comment in its body and after code
+on its line, one of no comments; a run of two re-exported, printed where
+a `use` of what it's from is, a blank line between the first's own,
+run). Mutations
+`forwarding-method-comments-untaken`,
+`forwarding-method-reexport-comments-untaken`
+(`lower/pipeline/reached.ts`), `taken-into-reexport-unresolved` and
+`taken-into-reexport-own-as-taken` (`to_oxc.ts`).
