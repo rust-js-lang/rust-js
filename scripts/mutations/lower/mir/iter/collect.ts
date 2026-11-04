@@ -628,20 +628,4 @@ export const mutations: Mutation[] = [
     replace: "        if false && self.in_place {\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_leaks_what_a_discard_strands.rs$"],
   },
-  {
-    name: "by-its-fold-past-nth-back",
-    breaks: "a `take(n).rev()` of a `Vec` of destructors collected into a `String` of `char`s steps by `next`, its source's `nth_back(len - n)`, where std's extend folds it, `nth_back(len - n - 1)`, dropping 4 before 5 (#670)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "            || recognition.nth_back_folded_sources(iter_ty).into_iter().any(drops)\n",
-    replace: "",
-    tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
-  },
-  {
-    name: "generic-vec-collect-by-next",
-    breaks: "a generic `collect()` into a `Vec` of a `take(n).rev()` of a `Vec`'s steps by `next` though the caller's iterator is `TrustedLen`, where std's `extend_trusted` folds it, dropping 3, 4, 5 for 4, 5, 3 (#670)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "                return Ok(Expr::cond(trusted, by_fold, by_next));\n",
-    replace: "                return Ok(Expr::cond(Expr::bool(false), by_fold, by_next));\n",
-    tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
-  },
 ];

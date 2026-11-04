@@ -482,12 +482,12 @@ pub(super) const STAGES: &[Stage] = &[
             // An `if` whose condition mixes `&&`, `||` and `!`, of `if`s that
             // leave a block MIR made: its one test (ADR 0946).
             pass("skipped tests", |b, h| {
-                js::statement_lists(b, &mut |s| logicals::skipped_tests(s, &h.written.logicals))
+                js::statement_lists(b, &mut |s| logicals::skipped_tests(s, &h.written.logicals, false))
             }),
             // A let chain's `&&` with an `else`, in the `if`s a block MIR made
             // is all of, its tests one now (ADR 0946, amended).
             pass("chains in blocks", |b, _| {
-                js::statement_lists(b, &mut |s| chains_in_blocks(s))
+                js::statement_lists(b, &mut |s| chains_in_blocks(s, false))
             }),
             // An `if` the program wrote with an `else`, as it wrote it, its
             // tests one now; and the `continue`s its branches end with, which
@@ -998,6 +998,17 @@ pub(super) const STAGES: &[Stage] = &[
                 bindings::readable_temporaries(&h.params.borrow(), b, h.suggested)
             }),
             pass("flags named", |b, h| flags::named_flags(b, h.flags)),
+            // A block MIR made still there of a condition whose `const`
+            // can't be read in place, or a let chain's binding a later test
+            // that calls may change: a `let` declared before the `if`, set
+            // where the `const` was (A1, B1, the user's decisions), so no
+            // label is left; before `shadows`, which reads its sets.
+            pass("condition lets", |b, h| {
+                js::statement_lists(b, &mut |s| {
+                    logicals::skipped_tests(s, &h.written.logicals, true);
+                    chains_in_blocks(s, true);
+                })
+            }),
             pass("shadows", |b, h| {
                 shadows::shadowed(&h.params.borrow(), b, &h.named.user)
             }),
@@ -1060,6 +1071,10 @@ pub(super) const STAGES: &[Stage] = &[
             // A slice's iterator only stepped, the array's own, once the
             // loops that may take it for theirs are made (rd270).
             pass("stepped slices", |b, _| crate::lower::iterators::stepped_slices(b)),
+            // A label MIR made still there whose jumps are each a `break`
+            // the program wrote of a loop it labeled: that label, `outer:`
+            // (D1, the user's decision).
+            pass("written loop labels", |b, h| written_loop_breaks(b, &h.written.loops)),
         ],
         // What `settled` ensured, kept: what's printed is checked as it is.
         ensures: &[

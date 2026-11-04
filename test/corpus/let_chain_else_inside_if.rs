@@ -3,7 +3,11 @@
 // .. } else { throw .. }`, as React's attachSuspenseRetryListeners writes
 // it inside its `if (enableX && ..)`, not tests that break a labeled
 // block; a binding a test reads is read where that test is (ADR 0946,
-// amended).
+// amended). One a later test that calls may change is set where its test
+// reads it, `(r = inProgressRoot) != null && swapRoot()`, a `let` declared
+// before the chain (B1, the user's decision); read twice there, it's set
+// first, `((r = inProgressRoot), r != null && r.lanes > 3 && ..)`; and one
+// of a parameter's name the chain's branch reads is given apart, `r$1`.
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
@@ -138,6 +142,39 @@ fn held(on: bool, a: Option<u32>, h: &Holder, log: &mut Vec<u32>) {
     log.push(9);
 }
 
+fn swapped_read_twice(a: Option<u32>) -> u32 {
+    let mut t = 0;
+    if a != Some(0) {
+        if let Some(l) = a
+            && let Some(r) = IN_PROGRESS_ROOT.with_borrow(Clone::clone)
+            && r.lanes.get() > 3
+            && swap_root()
+        {
+            t = r.lanes.get() + l;
+        } else {
+            t = 7;
+        }
+        t += 1;
+    }
+    t + 1
+}
+
+fn swapped_beside(a: Option<u32>, r: u32) -> u32 {
+    let mut t = 0;
+    if a != Some(0) {
+        if let Some(l) = a
+            && let Some(r) = IN_PROGRESS_ROOT.with_borrow(Clone::clone)
+            && swap_root()
+        {
+            t = r.lanes.get() + l;
+        } else {
+            t = 9;
+        }
+        t += r;
+    }
+    t + 1
+}
+
 fn main() {
     let root = Rc::new(Root { lanes: Cell::new(0) });
     let mut log = Vec::new();
@@ -163,4 +200,9 @@ fn main() {
     println!("{seen:?}");
     println!("{} {} {}", kept(2, Some(7), true), kept(2, None, false), root.lanes.get());
     println!("{} {}", swapped(true, Some(1)), swapped(false, Some(1)));
+    IN_PROGRESS_ROOT.set(Some(Rc::new(Root { lanes: Cell::new(2) })));
+    println!("{} {}", swapped_read_twice(Some(1)), swapped_read_twice(None));
+    println!("{} {}", swapped_read_twice(Some(1)), swapped_beside(Some(1), 1000));
+    IN_PROGRESS_ROOT.set(None);
+    println!("{}", swapped_beside(Some(1), 1000));
 }

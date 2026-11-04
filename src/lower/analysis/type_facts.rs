@@ -36,12 +36,10 @@ pub(super) fn type_fact_params<'tcx>(
     fns: &HashMap<DefId, FnInfo>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     given: Given<'_>,
-    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
 ) -> HashMap<DefId, Vec<(u32, TypeFact)>> {
     let iterator = std_item(tcx, StdItem::Iterator);
     // What `std_iterator_steps` steps a compiled std iterator's struct by.
     let steps = crate::lower::recognition::STRUCT_STEPS.map(|name| trait_method(tcx, iterator, name));
-    let collect = trait_method(tcx, iterator, "collect");
     let mut asking = Asking::default();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
@@ -188,24 +186,6 @@ pub(super) fn type_fact_params<'tcx>(
             {
                 asking.asked.insert((caller, index, TypeFact::Size));
                 continue;
-            }
-            // A `collect()` into a `Vec` of what folds by a type parameter's
-            // `nth_back`, a `take(n).rev()`'s of one: std's `Vec` folds a
-            // `TrustedLen` one, `extend_trusted`, and steps another by
-            // `next`, which asks another `nth_back`. Whether it is, its
-            // caller's, `ITrustedLen` (#670).
-            if callee == collect
-                && let [this, output] = args.types().collect::<Vec<_>>()[..]
-                && recognition.is_vec_like(output)
-                && !recognition.nth_back_folded_sources(this).is_empty()
-            {
-                for part in this.walk().filter_map(|part| part.as_type()) {
-                    if let ty::Param(_) = part.kind()
-                        && let Some(index) = slot_of(tcx, foreign, caller, part)
-                    {
-                        asking.asked.insert((caller, index, TypeFact::TrustedLen));
-                    }
-                }
             }
             // An unstable sort of a type parameter's items, whose order std
             // picks by their layout: its caller's, `TSort` (ADR 0471).

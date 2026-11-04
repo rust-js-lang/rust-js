@@ -940,7 +940,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `if` of `&&`, `||` and `!` mixed is `if`s that leave a block MIR made, `bb42:`, React's popHydrationState (ADR 0946)",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "                js::statement_lists(b, &mut |s| logicals::skipped_tests(s, &h.written.logicals))\n",
+    find: "                js::statement_lists(b, &mut |s| logicals::skipped_tests(s, &h.written.logicals, false))\n",
     replace: "                js::statement_lists(b, &mut |_| {})\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "one test"],
   },
@@ -1137,6 +1137,15 @@ export const mutations: Mutation[] = [
     find: "            pass(\"returned loops\", for_loops),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^for_returning_in_an_if\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "condition-lets-early",
+    breaks: "a condition's `let`s are made in tidy's first run of `skipped tests`, so a block a later pass makes another form of, a `while`'s test, is a `let` set in a sequence instead, `while (true) { let tmp; let x; if (..) { break; } .. }` (A1, #523)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                js::statement_lists(b, &mut |s| logicals::skipped_tests(s, &h.written.logicals, false))\n",
+    replace: "                js::statement_lists(b, &mut |s| logicals::skipped_tests(s, &h.written.logicals, true))\n",
+    tests: ["test/corpus.test.ts", "-t", "^lazy_effects.rs$"],
     snapshots: true,
   },
 ];

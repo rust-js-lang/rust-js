@@ -6,10 +6,14 @@
 // runs where Rust runs it and only on its way: a call logs, a field set,
 // two statements, a block whose value is a test, one in an `&&`, and the
 // `else if` after it. A field read before it is read before it still, and
-// a local's set, which sets a binding, is no part of one yet. A block's
+// a local's set is a part too, `((seen = 5), false)` (#523). A block's
 // `let` read once, by what comes right after it, `{ let deps =
 // *deps.borrow(); deps.unwrap() }` of a call's argument, is read where
 // it's read, `check(log, $unwrap(deps.value))`, after the tests before it.
+// One read twice, `{ let d = bump(log, flags); d * d }`, is set where it
+// was, a `let` declared before the `if`, `((d = bump(log, flags)), ..)`
+// (A1, the user's decision): one of a parameter's name, `d`, which the
+// `if`'s branch reads, is `d$1`, and the branch reads the parameter.
 use std::cell::{Cell, RefCell};
 
 fn check(log: &RefCell<Vec<String>>, n: u32) -> bool {
@@ -139,6 +143,46 @@ fn through(log: &RefCell<Vec<String>>, counter: &mut Counter, f: u32) -> u32 {
     *n + 1
 }
 
+fn bump(log: &RefCell<Vec<String>>, flags: &Cell<u32>) -> u32 {
+    log.borrow_mut().push(format!("bump {}", flags.get()));
+    flags.set(flags.get() + 1);
+    flags.get()
+}
+
+fn twice(log: &RefCell<Vec<String>>, flags: &Cell<u32>, f: u32, d: u32) -> u32 {
+    let mut n = 0;
+    if f & 1 != 0
+        || (f & 2 != 0
+            && (check(log, {
+                let d = bump(log, flags);
+                d * d
+            }) || {
+                flags.set(f | 8);
+                false
+            }))
+    {
+        n += d;
+    }
+    n + flags.get()
+}
+
+fn beside(log: &RefCell<Vec<String>>, flags: &Cell<u32>, f: u32, d: u32) -> u32 {
+    let mut n = 0;
+    if f & 2 != 0
+        && check(
+            log,
+            d + {
+                let d = bump(log, flags);
+                d * d
+            },
+        )
+    {
+        n += d;
+    }
+    let d = flags.get() + n;
+    d * 2
+}
+
 fn main() {
     let log = RefCell::new(Vec::new());
     for f in [0, 16, 32, 33, 48, 50] {
@@ -172,5 +216,9 @@ fn main() {
         log.borrow_mut().clear();
         let mut counter = Counter { n: 3 };
         println!("through {f}: {} {}", through(&log, &mut counter, f), counter.n);
+        let n = twice(&log, &flags, f, 1000);
+        println!("beside {f}: {}", beside(&log, &flags, f, 3));
+        println!("twice {f}: {n} {:?}", log.borrow());
+        log.borrow_mut().clear();
     }
 }

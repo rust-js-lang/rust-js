@@ -354,4 +354,13 @@ export const mutations: Mutation[] = [
     replace: "        _ = (depth, d);\n",
     tests: ["test/lowering-early-exits.test.ts", "-t", "whose turn gives its variable"],
   },
+  {
+    name: "written-loop-label-unnamed",
+    breaks: "a `for` MIR labels in a `'outer: loop` that runs once keeps MIR's label, `bb5: for (..)`, not the program's `outer:` (D1, #523)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "            let from = label.replace(to.clone()).expect(\"labeled\");\n            relabeled(inner, &from, to);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^loop_exit_moves.rs$"],
+    snapshots: true,
+  },
 ];

@@ -605,4 +605,22 @@ export const mutations: Mutation[] = [
     replace: "    let Some(StmtKind::Expr(call) | StmtKind::Return(Some(call))) = rest.first_mut().map(|s| &mut s.kind) else {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
   },
+  {
+    name: "set-where-read-of-each-read",
+    breaks: "a let chain's binding its test reads twice, `r != null && r.lanes > 3`, is set at each read, `(r = inProgressRoot) != null && (r = inProgressRoot).lanes > 3`, not once first (B1, #523)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "    let in_place = (reads == 1 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))\n",
+    replace: "    let in_place = (reads >= 1 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "set-where-read-first",
+    breaks: "a let chain's binding read once where its test is is set before the whole test, `((r = inProgressRoot), r != null && swapRoot())`, not where it's read, `(r = inProgressRoot) != null` (B1, the user's decision, #523)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "    let in_place = (reads == 1 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))\n",
+    replace: "    let in_place = (reads == 0 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
+    snapshots: true,
+  },
 ];

@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "React's attachSuspenseRetryListeners' let chain with an `else` inside an `if`, `if (lanes != null && root != null) { .. } else { throw .. }`, tests that break `bb23`",
     file: "src/lower/mir/tidy/logicals/chains.rs",
-    find: "        if !chain_within(body, label) {\n",
-    replace: "        if true {\n",
+    find: "                match chain_within(body, label, &mut hoisting) {\n",
+    replace: "                match false && chain_within(body, label, &mut hoisting) {\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
     snapshots: true,
   },
@@ -17,8 +17,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a let chain with an `else` whose binding is between its tests, `if (DEV) { const readable = ..; if (readable != null) { .. } }`, is left nested, the tail after it copied into an early `return`, not `if (DEV && options?.debugChannel?.readable != null) { .. } else { .. }` (rd614 b)",
     file: "src/lower/mir/tidy/logicals/chains.rs",
-    find: "        if let Some((0, chain)) = chained(body, label)\n",
-    replace: "        if let Some((0, chain)) = None::<(usize, Vec<Stmt>)>\n",
+    find: "            Some((0, chain)) if chain != *body => Some(chain_if(&chain, label, stmts[i].span, lets)),\n",
+    replace: "            Some((0, chain)) if false && chain != *body => Some(chain_if(&chain, label, stmts[i].span, lets)),\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_of_an_optional_read.rs$"],
     snapshots: true,
   },
@@ -27,8 +27,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a block's chain of no binding, a flag's, `const value = m.TAG === \"Rows\" && ..`, is made an `if` of its `else`, `let tmp; if (..) { tmp = false; } else { tmp = true; }`, before `flag values` sees it (rd614 b)",
     file: "src/lower/mir/tidy/logicals/chains.rs",
-    find: "            && chain != *body\n",
-    replace: "            && true\n",
+    find: "            Some((0, chain)) if chain != *body => Some(chain_if(&chain, label, stmts[i].span, lets)),\n",
+    replace: "            Some((0, chain)) => Some(chain_if(&chain, label, stmts[i].span, lets)),\n",
     tests: ["test/corpus.test.ts", "-t", "^flag_of_a_guarded_match.rs$"],
     snapshots: true,
   },
@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding of a let chain whose later test calls what may change it, `if let Some(n) = COUNT.get() && bump()`, is read after the call",
     file: "src/lower/mir/tidy/logicals/chains.rs",
-    find: "        && !calls(first)\n",
-    replace: "        && true\n",
+    find: "        match calls(first) {\n",
+    replace: "        match false && calls(first) {\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
   },
   {
@@ -68,5 +68,23 @@ export const mutations: Mutation[] = [
     find: "    let k = (list.iter())\n        .take_while(|s| matches!(&s.kind, StmtKind::Const(_, value) if read_of_a_path(value)))\n",
     replace: "    let k = (list.iter())\n        .take_while(|s| matches!(&s.kind, StmtKind::Const(_, value) if rereadable(value)))\n",
     tests: ["test/lowering-or-patterns.test.ts", "-t", "bound before an or of its tests"],
+  },
+  {
+    name: "chain-binding-past-a-call-unset",
+    breaks: "a let chain's binding between tests that call, `let Some(r) = ROOT.with_borrow(Clone::clone) && swap_root()`, isn't set where it's read, so the chain stays MIR's labeled blocks (B1, #523)",
+    file: "src/lower/mir/tidy/logicals/chains.rs",
+    find: "                set_in_tests(first, &mut asked);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "chain-if-late-negated",
+    breaks: "a let chain the late `condition lets` makes is its negation, `if (a == null || (r = ..) == null || !swapRoot()) { throw .. } t = ..`, where no `written elses` follows to write it as the program did (B1, #523)",
+    file: "src/lower/mir/tidy/logicals/chains.rs",
+    find: "        (false, true) => StmtKind::If(test, otherwise, Some(then)),\n",
+    replace: "        (false, true) => StmtKind::If(test.negated_test(), then, Some(otherwise)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
+    snapshots: true,
   },
 ];

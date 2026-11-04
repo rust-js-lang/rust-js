@@ -66,7 +66,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0074 A `&mut` to a string or a number is a box the caller copies back](0074-mut-boxes.md) *(amended: a box of what may be moved out holds a copy; amended (#487): a box is copied back as its call unwinds too, where that can be seen)*
 - [0076 A struct's `..base` after its fields, and std's own steps for a few more methods](0076-std-odds.md)
 - [0068 `VecDeque` and `BinaryHeap` are arrays; a heap moves its items as Rust's does](0068-queues.md) *(amended: a heap's `pop()` of what could look like `None`)*
-- [0015 Loops: put `while` back, label only when needed](0015-loops.md)
+- [0015 Loops: put `while` back, label only when needed](0015-loops.md) *(amended: a label the Rust writes is kept, one MIR makes never is, D1)*
 
 **Web programs**
 
@@ -766,8 +766,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [0943 A `#[rust_js::object]` is an object literal of its methods, each reading `this`](0943-an-object-of-methods-reading-this.md) *(extended by 1037: a module's namespace)*
 - [0944 A label the program wrote labels the `switch` an inner `switch` leaves, `getTag: switch`, camelCase](0944-a-label-the-program-wrote-labels-the-switch.md)
 - [0945 A sort by UTF-16 units is JS's `sort()`](0945-utf16-order-is-js-sort.md)
-- [0946 An `if` of `&&`, `||` and `!` mixed is its one test, not `if`s that leave a block MIR made](0946-an-if-of-mixed-logicals-is-its-one-test.md) *(amended: only the chain's tests are asked whether they call; a loop's body that ends in the block; a `continue` of a written negation is that `if`; one after another `continue` too)*
-- [1074 A block in a condition is a comma expression](1074-a-block-in-a-condition-is-a-comma-expression.md) *(extends 0946, #523; amended: a block's `let` read once is read where it's read)*
+- [0946 An `if` of `&&`, `||` and `!` mixed is its one test, not `if`s that leave a block MIR made](0946-an-if-of-mixed-logicals-is-its-one-test.md) *(amended: only the chain's tests are asked whether they call; a loop's body that ends in the block; a `continue` of a written negation is that `if`; one after another `continue` too; a binding a later test may change is set where it's read)*
+- [1074 A block in a condition is a comma expression](1074-a-block-in-a-condition-is-a-comma-expression.md) *(extends 0946, #523; amended: a block's `let` read once is read where it's read; a local's set is a part, `let`s read from the last; one read twice is a `let` set in the condition)*
 - [1078 A nullable place stores `null` for `None` however it's written](1078-a-nullable-place-stores-null-however-its-written.md) *(amends 0586, 0791, 0861, 0949; #541)*
 - [0947 A `return` of a logical the program wrote is that `return`, wherever its tests' `false` goes on](0947-a-returned-logical-is-returned-as-written.md) *(amended: a returned chain in an arm the function goes on past)*
 - [0948 A value read and then stepped by one is `x++` where it's read, `const id = counter++`](0948-a-value-read-then-stepped-is-plus-plus.md)

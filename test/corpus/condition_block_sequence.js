@@ -58,19 +58,9 @@ function readBefore(log, flags, f) {
 
 function local(log, f) {
   let seen = 1;
-  bb7: {
-    if (!(f & 1)) {
-      if (f & 2) {
-        if (!check(log, f)) {
-          seen = 5;
-        } else {
-          break bb7;
-        }
-      }
-      return seen;
-    }
+  if (f & 1 || (f & 2 && (check(log, f) || ((seen = 5), false)))) {
+    seen += 10;
   }
-  seen += 10;
   return seen;
 }
 
@@ -96,6 +86,38 @@ function through(log, counter, f) {
     return 0;
   }
   return (counter.n + 1) >>> 0;
+}
+
+function bump(log, flags) {
+  log.push(`bump ${flags.value}`);
+  flags.value = (flags.value + 1) >>> 0;
+  return flags.value;
+}
+
+function twice(log, flags, f, d) {
+  let n = 0;
+  let d$1;
+  if (
+    f & 1 ||
+    (f & 2 &&
+      ((d$1 = bump(log, flags)),
+      check(log, Math.imul(d$1, d$1) >>> 0) || ((flags.value = (f | 8) >>> 0), false)))
+  ) {
+    n += d;
+  }
+  return (n + flags.value) >>> 0;
+}
+
+function beside(log, flags, f, d) {
+  let n = 0;
+  if (f & 2) {
+    const d$1 = bump(log, flags);
+    if (check(log, (d + (Math.imul(d$1, d$1) >>> 0)) >>> 0)) {
+      n += d;
+    }
+  }
+  d = (flags.value + n) >>> 0;
+  return (d * 2) >>> 0;
 }
 
 function main() {
@@ -135,12 +157,17 @@ function main() {
     console.log(`marked ${f}: ${arg$2}`);
     log.length = 0;
     const deps = { value: (f * 20) >>> 0 };
-    const n = held(log, flags, deps, f);
+    let n = held(log, flags, deps, f);
     console.log(`held ${f}: ${n} [${log.map((item) => $debugStr(item)).join(", ")}]`);
     log.length = 0;
     const counter = { n: 3 };
     const arg$3 = through(log, counter, f);
     console.log(`through ${f}: ${arg$3} ${counter.n}`);
+    n = twice(log, flags, f, 1000);
+    const arg$4 = beside(log, flags, f, 3);
+    console.log(`beside ${f}: ${arg$4}`);
+    console.log(`twice ${f}: ${n} [${log.map((item) => $debugStr(item)).join(", ")}]`);
+    log.length = 0;
   }
 }
 //# sourceMappingURL=case.js.map

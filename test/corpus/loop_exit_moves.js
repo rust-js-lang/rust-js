@@ -68,11 +68,11 @@ function twoLoops(values) {
 // A labeled loop left from inside an inner one, then more.
 function gridFind(grid, want) {
   let at;
-  bb5: for (const [r, row] of grid.entries()) {
+  outer: for (const [r, row] of grid.entries()) {
     for (const [c, v] of row.entries()) {
       if (v === want) {
         at = [r, c];
-        break bb5;
+        break outer;
       }
     }
   }

@@ -65,6 +65,19 @@ fn continued_loop(
     loop {
         match body.last().map(|s| &s.kind) {
             Some(StmtKind::Labeled(..)) => {
+                // A condition the program wrote, of `&&`, `||` and
+                // `!` mixed, whose tests leave the block: its `if`, as
+                // written. One it wrote as a `continue` of its negation,
+                // `if !(a && (!b || c)) { continue; }`, the written jumps
+                // give back, its test as written (`kept_in_turn`, rd72c).
+                let last = body.last().expect("matched");
+                if let StmtKind::Labeled(label, _) = &last.kind
+                    && let Some(test) = logicals::skipped_test(label, last, false, logicals)
+                {
+                    body.pop();
+                    body.extend(test);
+                    break;
+                }
                 let Some(Stmt {
                     kind: StmtKind::Labeled(block, mut inner),
                     span,
@@ -72,15 +85,6 @@ fn continued_loop(
                 else {
                     unreachable!("matched")
                 };
-                // A condition the program wrote, of `&&`, `||` and
-                // `!` mixed, whose tests leave the block: its `if`, as
-                // written. One it wrote as a `continue` of its negation,
-                // `if !(a && (!b || c)) { continue; }`, the written jumps
-                // give back, its test as written (`kept_in_turn`, rd72c).
-                if let Some(test) = logicals::skipped_test(&block, &inner, logicals) {
-                    body.push(test);
-                    break;
-                }
                 let clashes = declared(&inner).any(|name| declared(body).any(|n| n == name));
                 if clashes || continues(&mut inner, &block, looped.as_deref(), false).is_none() {
                     body.push(StmtKind::Labeled(block, inner).at(span));

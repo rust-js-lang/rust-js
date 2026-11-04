@@ -445,12 +445,4 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_count_where_adapters_call_them.rs$"],
   },
-  {
-    name: "step-by-slice-in-order-filtered",
-    breaks: "a `step_by(n)` of a `Vec`'s items whose drop may panic is a filter by index, each it passes dropped as it's rejected, so a panic there drops the fold's accumulator before the rest of std's slice (#668)",
-    file: "src/lower/combinators/adapters.rs",
-    find: "                        && self.recognition().nths_a_slice_in_order(receiver_ty)\n",
-    replace: "                        && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^nth_passed_drops_unwind.rs$"],
-  },
 ];

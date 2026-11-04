@@ -413,11 +413,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // filter's fold would call, where std's `StepBy` folds by
                     // its source's `next` and `nth` (#671).
                     || self.recognition().folds_its_own(receiver_ty)
-                    // And of a `Vec`'s, whose `nth` drops them as one slice
-                    // in order, of items whose drop may panic, past which
-                    // the slice's goes on (#668).
-                    || (self.iterator_item(receiver_ty.peel_refs())).is_some_and(|item| self.drop_may_panic(item))
-                        && self.recognition().nths_a_slice_in_order(receiver_ty)
                 {
                     let mut list = vec![items, n];
                     list.extend(self.item_drop_of(receiver_ty, span)?);

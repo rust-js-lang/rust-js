@@ -1291,12 +1291,18 @@ on stays an `else`; a `!( .. )` you wrote of an `&&` or `||` stays one,
 ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md)).
 A block in the condition that does something before its value, `check(f)
 || { flags.set(f & !32); false }`, is a comma expression there, what it
-calls and the fields it sets, then its value, run only on its way, as
-alien-signals writes `(this.flags = flags & ~Pending, false)`. A block's
-`let` read once, by what follows it, `{ let deps =
-this.deps.borrow().clone(); deps.unwrap() }`, is its value read there,
-`checkDirty($unwrap(this$.deps), this$)`; a block that sets a variable of
-its own, or reads its `let` twice, is not one yet
+calls and the fields and variables it sets, then its value, run only on
+its way, as alien-signals writes `(this.flags = flags & ~Pending, false)`,
+and `{ seen = 5; false }` is `((seen = 5), false)`. A block's `let` read
+once, by what follows it, `{ let deps = this.deps.borrow().clone();
+deps.unwrap() }`, is its value read there, `checkDirty($unwrap(this$.deps),
+this$)`, and `more(flags.get(), { let d = bump(flags); d + 1 })` is
+`more(flags.value, (bump(flags) + 1) >>> 0)`, its arguments read in their
+order; one read twice is a `let` declared before the `if` and set where
+it was, `let d; if (f & 2 && ((d = flags.value), more(f * 4, d * d)))`,
+as React DOM writes `let next = null;` and `if ((next = node.firstChild)
+=== null)`, and so is a let chain's binding a later test that calls may
+change, `if (a != null && (r = inProgressRoot) != null && swapRoot())`
 ([ADR 1074](../../decisions/1074-a-block-in-a-condition-is-a-comma-expression.md)):
 
 ```rust
@@ -2945,7 +2951,10 @@ export function pairs(v) {
   Write the iterator, not a counter: clippy's `needless_range_loop` asks
   for it.
 - `break` and `continue` work as in JS, labels too: `'outer: for ...`,
-  `break 'outer;`.
+  `break 'outer;`, and a `'outer: loop` that runs once around a `for`,
+  `'outer: loop { for .. { .. break 'outer; } break; }`, is `outer: for
+  (..)`, the label you wrote. A label you didn't write is never in the JS
+  ([ADR 0015](../../decisions/0015-loops.md), amended).
 - A `break` or `continue` is where the program wrote it: `if checked >
   limit { ..; break; }` is `if (checked > limit) { ..; break; }`, the rest
   of the body after it, not an `else` ([ADR

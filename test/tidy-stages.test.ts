@@ -172,7 +172,7 @@ test("a stage's end is the last of its passes", () => {
   buildCompiler();
   const ends = stageEnds();
   expect(ends.length).toBeGreaterThan(10);
-  expect(ends).toContain("finish/stepped slices");
+  expect(ends).toContain("finish/written loop labels");
   expect(ends.some((end) => end.startsWith("again/"))).toBe(true);
 });
 

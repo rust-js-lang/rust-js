@@ -70,3 +70,29 @@ event_payloads` is `for (const { ref, nextImpl } of eventPayloads)`. The
 user accepted the difference by name (fo1): an index loop is clippy's
 `needless_range_loop`, and AGENTS.md keeps iterators as written. ADR
 0262 case: None.
+
+## Amendment: a label the Rust writes is kept, one MIR makes never is (D1, the user's decision, 2026-11-04, #523)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a label's name. The
+standing rule is that a JS label is never an accepted difference. The user
+decided (D1) **a narrow exception: a label the Rust program writes is
+kept**, `'outer:` as `outer:`, as React DOM writes `outer: while (true)`
+(packages/react-dom-bindings/src/client/ReactDOMSelection.js:75). **A label
+the compiler makes, `bb5:`, is still never accepted.**
+
+`'outer: loop { for (r, row) in .. { for .. { if .. { break 'outer; } } }
+break; }` runs its `loop` once, so MIR has no loop of it: the `for` the
+`loop` holds is labeled by MIR's block, `bb5: for (..)`, each `break bb5`
+a `break 'outer`, as leaving the `for` ends the `loop`. Now that label is
+the program's, `outer: for (..)` (`jumps::written_loop_breaks`, tidy's
+last pass): a loop MIR labeled whose own loop the program didn't label,
+inside the innermost loop the program labeled (`Written::loops`), where
+no label in the body has the name. A loop the program labeled that's a JS
+loop has it already (`written labels`), so the one left is no JS loop.
+
+`test/readability.test.ts`, "a label in the generated JS is one its Rust
+wrote", holds the rule: no committed JS but those it lists, each with its
+issue, has a `bbN:` label, a list that only shrinks. Corpus
+`loop_exit_moves.rs`'s `grid_find`, against native Rust; mutation
+`written-loop-label-unnamed` (`mir/tidy/jumps/labels.ts`).
+

@@ -130,13 +130,12 @@ function $closing(it, drop, slices = true) {
 // `it`, the array's items a `Vec`'s `IntoIter` owns, advanced by `m` from
 // its front, or from its back, `back`: what it passes dropped as one slice,
 // front to back, by `each`, as std's `advance_by` and `advance_back_by` drop
-// them, the rest of it after one throws, a destructor's panic, as Rust's
-// drop of a slice goes on; how many there weren't (#234, #250, #286, #670).
+// them; how many there weren't (#234, #250, #286).
 function $advanceSlice(it, m, each, back = false) {
   const n = Math.min(m, it.len());
   const passed = back ? it.items.slice(it.end - n, it.end) : it.items.slice(it.at, it.at + n);
   if (back) it.end -= n;
   else it.at += n;
-  $dropItems(passed, each);
+  for (const item of passed) each(item);
   return m - n;
 }

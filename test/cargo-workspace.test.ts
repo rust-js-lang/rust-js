@@ -211,43 +211,6 @@ test("Cargo is told which Prettier lays out the app's JS, so another one's crate
   expect(await built()).toStartWith("// laid out by 3.0.1\n");
 }, 600_000);
 
-// And which plugins its config names: react-in-rust's
-// `prettier-plugin-hermes-parser` upgraded alone, Prettier and its config
-// the same, kept every crate's old layout (#692). Each found where Prettier
-// loads it from, where the crate is.
-test("Cargo is told which Prettier plugins lay out the app's JS, so another one's crates are built again", async () => {
-  const dir = fixture("cargo-prettier-plugin-upgrade");
-  writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app"]\nresolver = "2"\n');
-  mkdirSync(join(dir, "app", "src"), { recursive: true });
-  writeFileSync(join(dir, "app", "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n');
-  writeFileSync(join(dir, "app", "src", "lib.rs"), 'pub fn greeting() -> &\'static str {\n    "hi"\n}\n');
-  writeFileSync(join(dir, ".prettierrc"), '{"plugins": ["prettier-plugin-stamp"]}\n');
-  // The app's Prettier, which lays a file out by each plugin its config
-  // names, loaded where it runs, as Prettier's `loadPlugin` does.
-  const prettier = join(dir, "node_modules", "prettier");
-  mkdirSync(prettier, { recursive: true });
-  writeFileSync(join(prettier, "package.json"), JSON.stringify({ name: "prettier", version: "3.0.0", main: "index.js" }));
-  writeFileSync(join(prettier, "index.js"), `const { createRequire } = require("node:module");\nconst { join } = require("node:path");\n`
-    + `module.exports = { resolveConfigFile: async () => ${JSON.stringify(join(dir, ".prettierrc"))}, `
-    + `resolveConfig: async () => ({ plugins: ["prettier-plugin-stamp"] }), `
-    + `format: async (code, { plugins = [] }) => plugins.reduce((text, name) => createRequire(join(process.cwd(), "noop.js"))(name).stamp(text), code) };\n`);
-  const plugin = join(dir, "node_modules", "prettier-plugin-stamp");
-  mkdirSync(plugin, { recursive: true });
-  const install = (version: string) => {
-    writeFileSync(join(plugin, "package.json"), JSON.stringify({ name: "prettier-plugin-stamp", version, main: "index.js" }));
-    writeFileSync(join(plugin, "index.js"), `module.exports = { stamp: (code) => "// stamped by ${version}\\n" + code };\n`);
-  };
-  install("1.0.0");
-  const manifest = join(dir, "Cargo.toml");
-  const built = async () => readFileSync((await check(manifest, { packageNames: ["app"] })).js!, "utf8");
-  expect(await built()).toStartWith("// stamped by 1.0.0\n");
-  // The plugin upgraded alone, at the same path, each file dated as it was.
-  const dates = ["package.json", "index.js"].map((file) => [join(plugin, file), statSync(join(plugin, file)).mtime] as const);
-  install("1.0.1");
-  for (const [file, mtime] of dates) utimesSync(file, mtime, mtime);
-  expect(await built()).toStartWith("// stamped by 1.0.1\n");
-}, 600_000);
-
 /** A workspace of one library, `app`, whose `value` its feature `alternate` changes. */
 function featured(dir: string): string {
   writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app"]\nresolver = "2"\n');

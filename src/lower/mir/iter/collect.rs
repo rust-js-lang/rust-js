@@ -145,8 +145,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a lent inclusive range (#414), or asks an `nth` of items with a
     /// destructor, which a reversed `Vec` drops as a slice, so its
     /// `nth(n - 1)` and a step by `next`'s `nth(n)` drop them in another
-    /// order (#494), or likewise an `nth_back`, a `take(n).rev()`'s of a
-    /// `Vec`'s (#670), `$folded(it)`, its items as that gives them; else `it`.
+    /// order (#494), `$folded(it)`, its items as that gives them; else `it`.
     /// `first_by_next`, of a consumer that takes its first item by `next`
     /// and folds the rest, a `String` collected of `String`s, `$folded(it,
     /// true)` (#494).
@@ -160,7 +159,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || recognition.folds_by_its_own_nth(iter_ty)
             || self.steps_lent_inclusive(iter_ty)
             || recognition.nth_folded_sources(iter_ty).into_iter().any(drops)
-            || recognition.nth_back_folded_sources(iter_ty).into_iter().any(drops)
         {
             true if first_by_next => Expr::call_helper("$folded", vec![it, Expr::bool(true)]),
             true => Expr::call_helper("$folded", vec![it]),
@@ -512,25 +510,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // exhausted at its last (#414).
             let folded = (self.compiled_struct_at(iter_ty, span) || self.steps_lent_inclusive(iter_ty))
                 && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
-            // Of std's struct that folds by a type parameter's `nth_back`, a
-            // `take(n).rev()`'s of one, which asks another than its `next`
-            // does: whether it's `TrustedLen` is its caller's, `ITrustedLen`,
-            // by its fold where it is, as `extend_trusted` collects it, else
-            // stepped by `next`, as std's other `SpecFromIter` steps it (#670).
-            if !folded
-                && iter_ty.has_param()
-                && self.compiled_struct_at(iter_ty, span)
-                && !self.recognition().nth_back_folded_sources(iter_ty).is_empty()
-            {
-                let trusted = self.type_fact_value(iter_ty, crate::lower::recognition::TypeFact::TrustedLen, span)?;
-                let args = self.folded_unwinding(it.clone(), output, item, iter_ty, span)?;
-                let by_fold = Expr::call_helper("$foldToArray", args);
-                let by_next = match self.unwinding_collect(output, item, Some(iter_ty), span)? {
-                    Some(unwinding) => unwinding.collected(it),
-                    None => Expr::collected(it),
-                };
-                return Ok(Expr::cond(trusted, by_fold, by_next));
-            }
             // By its fold, which drops what it holds as it unwinds itself
             // (`folded_unwinding`), first.
             match self.mapped_range(&it, iter_ty, item) {

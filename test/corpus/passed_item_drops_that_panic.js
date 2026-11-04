@@ -8,7 +8,6 @@ import {
   $iter,
   $range,
   $skipping,
-  $stepBy,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -18,32 +17,32 @@ export function entry() {
 function main() {
   const r = $catchUnwind(() => {
     const v = $collectDropping(
-      $stepBy(
-        $skipping(
-          $closing($iter($range(1, 7).map((n) => ({ d: [n] }))), (intoIter) => {
-            $dropItems(intoIter, (item) => {
-              console.log(`drop boom ${item.d[0]}`);
-              if (item.d[0] === 3) {
-                throw new Error("boom");
-              }
-            });
-          }),
-          1,
-          (pair) => {
-            console.log(`drop boom ${pair.d[0]}`);
-            if (pair.d[0] === 3) {
+      $skipping(
+        $closing($iter($range(1, 7).map((n) => ({ d: [n] }))), (intoIter) => {
+          $dropItems(intoIter, (item) => {
+            console.log(`drop boom ${item.d[0]}`);
+            if (item.d[0] === 3) {
               throw new Error("boom");
             }
-          },
-        ),
-        2,
+          });
+        }),
+        1,
         (pair) => {
           console.log(`drop boom ${pair.d[0]}`);
           if (pair.d[0] === 3) {
             throw new Error("boom");
           }
         },
-      ),
+      ).filter((item, i) => {
+        if (i % 2 === 0) {
+          return true;
+        }
+        console.log(`drop boom ${item.d[0]}`);
+        if (item.d[0] === 3) {
+          throw new Error("boom");
+        }
+        return false;
+      }),
       (pair) => {
         console.log(`drop boom ${pair.d[0]}`);
         if (pair.d[0] === 3) {

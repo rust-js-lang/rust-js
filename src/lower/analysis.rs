@@ -1311,7 +1311,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         unboxed: &unboxed,
         js_given: &js_given,
     };
-    let type_facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given, &recognition);
+    let type_facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given);
     let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
     let throwing = throwing::throwing_fns(tcx, &recognition, all_bodies);
     let never_unwinding = unwinding::never_unwinding(tcx, &recognition, all_bodies);

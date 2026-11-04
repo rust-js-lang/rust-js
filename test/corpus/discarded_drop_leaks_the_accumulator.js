@@ -3,7 +3,7 @@
 import { iterator_zip } from "@rust-js/std/iter.js";
 import {
   $closing,
-  $dropEach,
+  $dropItems,
   $filterDropping,
   $filterEnds,
   $foldBack,
@@ -84,7 +84,13 @@ function run(name, boom$1, case$) {
 function main() {
   run("filter fold", 4, () => {
     const fold = $foldDropping(
-      $filterEnds($closing($iter(ds()), $dropEach(dDrop_drop)), odd, dDrop_drop),
+      $filterEnds(
+        $closing($iter(ds()), (intoIter) => {
+          $dropItems(intoIter, dDrop_drop);
+        }),
+        odd,
+        dDrop_drop,
+      ),
       [0],
       add,
       accDrop_drop,
@@ -95,7 +101,13 @@ function main() {
   });
   run("filter rfold", 4, () => {
     const rfold = $foldBack(
-      $filterEnds($closing($iter(ds()), $dropEach(dDrop_drop)), odd, dDrop_drop),
+      $filterEnds(
+        $closing($iter(ds()), (intoIter) => {
+          $dropItems(intoIter, dDrop_drop);
+        }),
+        odd,
+        dDrop_drop,
+      ),
       [0],
       add,
       accDrop_drop,
@@ -106,7 +118,13 @@ function main() {
   });
   run("filter try_fold", 4, () => {
     const filter = $held(
-      $filterEnds($closing($iter(ds()), $dropEach(dDrop_drop)), odd, dDrop_drop),
+      $filterEnds(
+        $closing($iter(ds()), (intoIter) => {
+          $dropItems(intoIter, dDrop_drop);
+        }),
+        odd,
+        dDrop_drop,
+      ),
     );
     let r;
     try {
@@ -144,7 +162,9 @@ function main() {
           true,
           true,
           true,
-          $dropEach(dDrop_drop),
+          (intoIter) => {
+            $dropItems(intoIter, dDrop_drop);
+          },
           undefined,
           dDrop_drop,
         ),
@@ -192,10 +212,20 @@ function main() {
     accDrop_drop(fold);
     return result;
   });
-  run("generic filter fold", 4, () => sumOdd($iter(ds()), $dropEach(dDrop_drop)));
+  run("generic filter fold", 4, () =>
+    sumOdd($iter(ds()), (intoIter) => {
+      $dropItems(intoIter, dDrop_drop);
+    }),
+  );
   run("take_while fold", 4, () => {
     const fold = $foldDropping(
-      $lazyTakeWhile($closing($iter(ds()), $dropEach(dDrop_drop)), (d) => d[0] < 4, dDrop_drop),
+      $lazyTakeWhile(
+        $closing($iter(ds()), (intoIter) => {
+          $dropItems(intoIter, dDrop_drop);
+        }),
+        (d) => d[0] < 4,
+        dDrop_drop,
+      ),
       [0],
       add,
       accDrop_drop,
@@ -206,7 +236,13 @@ function main() {
   });
   run("take_while try_fold", 4, () => {
     const takeWhile = $held(
-      $lazyTakeWhile($closing($iter(ds()), $dropEach(dDrop_drop)), (d) => d[0] < 4, dDrop_drop),
+      $lazyTakeWhile(
+        $closing($iter(ds()), (intoIter) => {
+          $dropItems(intoIter, dDrop_drop);
+        }),
+        (d) => d[0] < 4,
+        dDrop_drop,
+      ),
     );
     let r;
     try {
@@ -231,7 +267,13 @@ function main() {
     return r.TAG === "Ok" ? map(r._0) : 0;
   });
   run("filter count", 4, () =>
-    $filterEnds($closing($iter(ds()), $dropEach(dDrop_drop)), odd, dDrop_drop).reduce((n, item) => {
+    $filterEnds(
+      $closing($iter(ds()), (intoIter) => {
+        $dropItems(intoIter, dDrop_drop);
+      }),
+      odd,
+      dDrop_drop,
+    ).reduce((n, item) => {
       dDrop_drop(item);
       return n + 1;
     }, 0),
@@ -244,7 +286,13 @@ function main() {
       return odd(d);
     }
     const fold = $foldDropping(
-      $filterDropping($closing($iter(ds()), $dropEach(dDrop_drop)), keep, dDrop_drop),
+      $filterDropping(
+        $closing($iter(ds()), (intoIter) => {
+          $dropItems(intoIter, dDrop_drop);
+        }),
+        keep,
+        dDrop_drop,
+      ),
       [0],
       add,
       accDrop_drop,
@@ -256,13 +304,18 @@ function main() {
   run("skip_while try_fold", 2, () => {
     const skip = (d) => d[0] < 3;
     const skipWhile = $held(
-      $lazySkipWhile($closing($iter(ds()), $dropEach(dDrop_drop)), (item) => {
-        if (skip(item)) {
-          dDrop_drop(item);
-          return true;
-        }
-        return false;
-      }),
+      $lazySkipWhile(
+        $closing($iter(ds()), (intoIter) => {
+          $dropItems(intoIter, dDrop_drop);
+        }),
+        (item) => {
+          if (skip(item)) {
+            dDrop_drop(item);
+            return true;
+          }
+          return false;
+        },
+      ),
     );
     let r;
     try {

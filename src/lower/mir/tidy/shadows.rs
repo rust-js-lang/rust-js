@@ -269,7 +269,15 @@ fn set_after_last_read(stmts: &[Stmt], shadow: &str, old: &str, mut set: bool) -
         set = match &stmt.kind {
             // Its value read first, then the shadow set.
             StmtKind::Assign(target, _) if matches!(&target.kind, ExprKind::Var(v) if v == shadow) => true,
-            StmtKind::If(_, then, otherwise) => {
+            StmtKind::If(test, then, otherwise) => {
+                // A test that sets it, `if ((d$1 = bump(flags)), ..)`, sets
+                // it before either branch runs, and reads `old` there in
+                // an order this doesn't follow (#523).
+                let tested = [StmtKind::Expr(test.clone()).at(js::Span::NONE)];
+                if js::Writes::sets(&tested, shadow) && js::mentions_in(&tested, old) > 0 {
+                    return None;
+                }
+                let set = set || js::Writes::sets(&tested, shadow);
                 let otherwise = otherwise.as_deref().unwrap_or_default();
                 let (a, b) = (
                     set_after_last_read(then, shadow, old, set)?,

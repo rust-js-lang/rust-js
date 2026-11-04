@@ -40,6 +40,33 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^boxed_array_iter.rs$"],
   },
   {
+    name: "nths-a-slice-not-through-enumerate",
+    breaks:
+      "a `step_by` of an `Enumerate` of a reversed `Vec` is a `filter`, which drops each item it passes, back to front, not as `nth_back`'s one slice (#277)",
+    file: "src/lower/recognition/iterators.rs",
+    find: '                        | "std::iter::Enumerate"\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
+  },
+  {
+    name: "nths-a-slice-not-through-fuse",
+    breaks:
+      "a `step_by` of a `Fuse` of a reversed `Vec` is a `filter`, which drops each item it passes, back to front, not as `nth_back`'s one slice (#261)",
+    file: "src/lower/recognition/iterators.rs",
+    find: '                        | "std::iter::Fuse"\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "step_by_compiled_source_nth"],
+  },
+  {
+    name: "nths-a-slice-not-through-peekable",
+    breaks:
+      "a `step_by` of a `Peekable` of a reversed `Vec` is a `filter`, which drops each item it passes, back to front, not as `nth_back`'s one slice (#261)",
+    file: "src/lower/recognition/iterators.rs",
+    find: '                        | "std::iter::Peekable"\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "step_by_compiled_source_nth"],
+  },
+  {
     name: "vec-into-iter-unknown",
     breaks: "a clone of a `Vec`'s `into_iter()` is refused",
     file: "src/lower/recognition/iterators.rs",
@@ -837,6 +864,15 @@ export const mutations: Mutation[] = [
       "-t",
       "^(std_inspect|adapter_functions_dropped).rs$",
     ],
+  },
+  {
+    name: "chain-nths-no-slice",
+    breaks:
+      "`rev().chain(..).step_by(2)` of a `Vec` is a filter dropping what it steps over from the back one at a time, not `$stepBy` asking the chain's `nth`, one slice (#261)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "                self.nths_a_slice(args.type_at(0)) || self.nths_a_slice(args.type_at(1))\n",
+    replace: "                false\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
   {
     name: "closing-source-holding-nothing-unclosed",

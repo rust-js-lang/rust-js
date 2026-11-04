@@ -303,7 +303,6 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | What an iterator owns of what it gives, which its drops drop and which nothing else holds (#141) | `recognition/owners.rs` | `owned_items`, `owned_into_items`, `owns_one_item`, `gives_owned_items` |
 | Compiled iterator stepping | `iterators.rs` | `std_iterator_steps`, `compiled_step` |
 | Whether std's `count`, `last`, `fold` or `nth` of an iterator reaches the one the crate's own iterator writes, through each std adapter that passes it on, or may, of a type parameter (#505, #521) | `recognition/own_steps.rs`; `recognition/iterators.rs` | `counts_its_own`, `lasts_its_own`, `may_fold_its_own`; `folds_its_own`, `nths_its_own` |
-| Which of std's steps of an iterator reach a source that drops what it passes as one slice, a `Vec`'s `IntoIter`'s `advance_by` and `advance_back_by`, and what std's `fold` asks an `nth_back` of (#234, #668, #670) | `recognition/slice_steps.rs` | `nths_a_slice`, `nths_a_slice_in_order`, `nth_back_folded_sources` |
 | Generic IntoIterator representation | `iterators.rs`, `recognition/iterators.rs` | `into_iter_held_as_it_is`, `into_iter_as_it_is`, `into_iter_by_dictionary` |
 | Function-value mutable arguments | `mut_refs.rs` | `unboxed_by_function` |
 | Body module placement | `lower.rs` | `body_module` |

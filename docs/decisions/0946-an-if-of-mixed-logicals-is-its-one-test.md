@@ -2,7 +2,10 @@
 
 Status: Accepted. Extended by
 [1074](1074-a-block-in-a-condition-is-a-comma-expression.md): what a way
-through the condition does is a comma expression in it. Extends [0613](0613-and-or-mixed-are-returned-as-written.md),
+through the condition does is a comma expression in it. Amended
+(2026-11-04, B1, the user's decision): a let chain's binding a later test
+may change is set where its test reads it, a `let` declared before the
+chain. Extends [0613](0613-and-or-mixed-are-returned-as-written.md),
 a value of `&&` and `||` mixed returned as one, and
 [0790](0790-a-break-the-program-wrote-is-where-it-is-written.md)'s `or_blocks`,
 an `if` of `!a || b`, to any `if` whose condition MIR made a tree of
@@ -94,7 +97,7 @@ inProgressRoot != null) { .. }`, whose `else` `written_elses` writes as
 the program did.
 
 Held by `test/corpus/let_chain_else_of_reads.rs`, against native Rust;
-mutation `chain-binding-between-tests-kept` (`mir/tidy/logicals.ts`).
+mutation `chain-binding-between-tests-kept` (`mir/tidy/logicals/skipped.ts`).
 
 ## Amendment: a let chain with an `else` inside an `if` (2026-10-28)
 
@@ -238,3 +241,44 @@ its `mixed_condition_around_inner_loop` too, as the `skipped tests` pass
 before `continued` has made such a block its `if` already. It was an
 equivalent mutant and is removed (2026-11-04); the branch stays, the rule's
 own statement where `continued` meets the block.
+
+## Amendment: a binding a later test may change is set where it's read (B1, the user's decision, 2026-11-04)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. A let chain's binding
+between tests that call, `if let Some(l) = a && let Some(r) =
+ROOT.with_borrow(Clone::clone) && swap_root() { .. } else { panic!() }`,
+can't be read again in the tests' place, as `swap_root` changes what it
+read, so the chain stayed MIR's labeled block. The user chose among a
+hoisted `let` assigned in the condition (B1) and nested `if`s with the
+`else` copied: **B1**:
+
+```js
+let r;
+if (a != null && (r = inProgressRoot) != null && swapRoot()) {
+  t = (r.lanes + a) >>> 0;
+} else {
+  throw new Error("none");
+}
+```
+
+as React DOM writes `let next = null;` and `if ((next = node.firstChild)
+=== null)` (react-dom-bindings/src/client/ReactDOMSelection.js:76, 96).
+
+- `chains::set_in_tests`, where the chain's tests call, makes each binding
+  at the start of a `then` before the `if` it's all of but set where that
+  `if`'s test reads it (`moves::set_where_read`): in place, `(r = ..) !=
+  null`, where it's read once and nothing JS evaluates before it there
+  does anything; else set first, `((r = ..), r != null && r.lanes > 3 &&
+  ..)`. The value is made where it was, after the tests before it.
+- Its `let` is declared before the chain by `chains_in_blocks`, in the
+  list the block is in, by the rule of a condition's `let`s
+  ([1074](1074-a-block-in-a-condition-is-a-comma-expression.md), amended):
+  of the late pass alone, `condition lets`, and as written there, `if (a
+  && b) { s } else { t }`, no `written elses` to come; its name apart from
+  a parameter `r` the code after the chain reads, `r$1`.
+
+Held by corpus `let_chain_else_inside_if.rs`'s `swapped`,
+`swapped_read_twice` and `swapped_beside`, against native Rust; mutations
+`chain-binding-past-a-call-unset`, `chain-if-late-negated`
+(`logicals/chains.ts`), `set-where-read-of-each-read` and
+`set-where-read-first` (`moves.ts`).

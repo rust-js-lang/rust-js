@@ -742,6 +742,43 @@ pub(super) fn read_again(stmts: &mut Vec<Stmt>, at: usize) -> bool {
     true
 }
 
+/// `const r = inProgressRoot; if (r != null && swapRoot()) { .. r .. }`:
+/// a let chain's binding, `stmts[at]`, read once in the test of the `if`
+/// right after it, where nothing JS evaluates before it there does
+/// anything (`leads`), so the value is made where it was: set there, `if
+/// ((r = inProgressRoot) != null && swapRoot())`, the reads in its
+/// branches the variable's, a `let` the caller declares before the
+/// chain, as React DOM's getModernOffsetsFromPoints declares `let next =
+/// null;` and tests `(next = node.firstChild) === null`
+/// (ReactDOMSelection.js:76, 96; B1, the user's decision, 2026-11-04).
+/// Read more than once there, or past what does something, it's set
+/// first, `((r = inProgressRoot), r != null && r.lanes > 3)`. Whether
+/// `stmts[at]` was a binding of an `if`'s test, set now.
+pub(super) fn set_where_read(stmts: &mut Vec<Stmt>, at: usize) -> bool {
+    let (
+        StmtKind::Const(name, value),
+        Some(Stmt {
+            kind: StmtKind::If(test, ..),
+            ..
+        }),
+    ) = (&stmts[at].kind, stmts.get(at + 1))
+    else {
+        return false;
+    };
+    let mut reads = 0;
+    test.visit_vars(&mut |v| reads += usize::from(v == name));
+    let set = Expr::assigned(Expr::var(name), value.clone());
+    let in_place = (reads == 1 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))
+        .then(|| test.substitute(&|v| (v == name).then(|| set.clone())))
+        .flatten();
+    let tested = in_place.unwrap_or_else(|| Expr::sequence(vec![set.clone(), test.clone()]));
+    if let StmtKind::If(test, ..) = &mut stmts[at + 1].kind {
+        *test = tested;
+    }
+    stmts.remove(at);
+    true
+}
+
 /// `const L = internals.d.L; const s = options.integrity; L(href, s);`:
 /// a function a field holds, read ahead of what its call is given where
 /// that needs statements, so called from a variable, with no `this`. Its

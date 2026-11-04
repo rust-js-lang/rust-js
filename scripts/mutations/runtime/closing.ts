@@ -110,8 +110,8 @@ export const mutations: Mutation[] = [
     name: "closing-slice-from-back",
     breaks: "a `Vec`'s `IntoIter` passed over from its back drops what it passes back to front, where std drops it as one slice, front to back (#234)",
     file: "src/runtime/closing.js",
-    find: "  $dropItems(passed, each);\n",
-    replace: "  $dropItems(back ? passed.reverse() : passed, each);\n",
+    find: "  for (const item of passed) each(item);\n",
+    replace: "  for (const item of back ? passed.reverse() : passed) each(item);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
   {
@@ -169,13 +169,5 @@ export const mutations: Mutation[] = [
     find: "    count: it.ownCount ? count : undefined,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
-  },
-  {
-    name: "advance-slice-stops-at-a-panic",
-    breaks: "a `Vec`'s slice passed over by `advance_by` or `advance_back_by` stops dropping at an item whose drop panics, and what's after it in the slice is never dropped (#670)",
-    file: "src/runtime/closing.js",
-    find: "  $dropItems(passed, each);\n",
-    replace: "  for (const item of passed) each(item);\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_take_count_drops_a_slice.rs$"],
   },
 ];

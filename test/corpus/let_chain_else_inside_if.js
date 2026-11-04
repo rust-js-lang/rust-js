@@ -91,15 +91,11 @@ function swapRoot() {
 function swapped(en, a) {
   let t = 0;
   if (a !== 0) {
-    bb22: {
-      if (en) {
-        if (a != null) {
-          const r = inProgressRoot;
-          if (r != null && swapRoot()) {
-            t = (r.lanes + a) >>> 0;
-            break bb22;
-          }
-        }
+    let r;
+    if (en) {
+      if (a != null && (r = inProgressRoot) != null && swapRoot()) {
+        t = (r.lanes + a) >>> 0;
+      } else {
         throw new Error("none");
       }
     }
@@ -119,6 +115,34 @@ function held(on, a, h, log) {
     }
   }
   log.push(9);
+}
+
+function swappedReadTwice(a) {
+  let t = 0;
+  if (a !== 0) {
+    let r;
+    if (a != null && ((r = inProgressRoot), r != null && r.lanes > 3 && swapRoot())) {
+      t = (r.lanes + a) >>> 0;
+    } else {
+      t = 7;
+    }
+    t = (t + 1) >>> 0;
+  }
+  return (t + 1) >>> 0;
+}
+
+function swappedBeside(a, r) {
+  let t = 0;
+  if (a !== 0) {
+    let r$1;
+    if (a != null && (r$1 = inProgressRoot) != null && swapRoot()) {
+      t = (r$1.lanes + a) >>> 0;
+    } else {
+      t = 9;
+    }
+    t = (t + r) >>> 0;
+  }
+  return (t + 1) >>> 0;
 }
 
 function main() {
@@ -146,5 +170,10 @@ function main() {
   console.log(`[${seen.join(", ")}]`);
   console.log(`${kept(2, 7, true)} ${kept(2, undefined, false)} ${root.lanes}`);
   console.log(`${swapped(true, 1)} ${swapped(false, 1)}`);
+  inProgressRoot = { lanes: 2 };
+  console.log(`${swappedReadTwice(1)} ${swappedReadTwice()}`);
+  console.log(`${swappedReadTwice(1)} ${swappedBeside(1, 1000)}`);
+  inProgressRoot = undefined;
+  console.log(`${swappedBeside(1, 1000)}`);
 }
 //# sourceMappingURL=case.js.map

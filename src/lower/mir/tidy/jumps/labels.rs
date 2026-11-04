@@ -382,6 +382,72 @@ pub(in crate::lower::mir::tidy) fn named_labels(stmts: &mut [Stmt], loops: &[(js
     walk(stmts, loops, &mut Vec::new());
 }
 
+/// A label MIR gives by its block, `bb5: for (..)`, still there once the
+/// rest of tidy is done, of a loop the program didn't label, in a loop it
+/// did, `'outer: loop { for .. { for .. { .. break 'outer; } } break; }`,
+/// which runs once, so it's no JS loop: that label, `outer: for (..)`,
+/// each `break bb5` the `break 'outer` it is, as the loop it leaves ends
+/// the loop the program labeled. Where no label in the body has it, which
+/// a loop the program labeled that's a JS loop has already (`written
+/// labels`). A label the Rust writes is kept, as React
+/// DOM writes `outer: while (true)` (ReactDOMSelection.js:75); one MIR
+/// makes never is (D1, the user's decision, 2026-11-04).
+pub(in crate::lower::mir::tidy) fn written_loop_breaks(
+    body: &mut Vec<Stmt>,
+    loops: &[(js::Span, bool, Option<String>)],
+) {
+    fn parts(stmt: &mut Stmt) -> Option<(&mut Option<String>, &mut Vec<Stmt>)> {
+        match &mut stmt.kind {
+            StmtKind::While { label, body, .. }
+            | StmtKind::DoWhile { label, body, .. }
+            | StmtKind::ForOf { label, body, .. }
+            | StmtKind::For { label, body, .. } => Some((label, body)),
+            _ => None,
+        }
+    }
+    // Each label the body has, which no other may take.
+    let mut taken = std::collections::HashSet::new();
+    js::statement_lists(body, &mut |list| {
+        for s in list.iter_mut() {
+            if let StmtKind::Labeled(label, _) = &s.kind {
+                taken.insert(label.clone());
+            }
+            if let Some((label, _)) = parts(s) {
+                taken.extend(label.clone());
+            }
+        }
+    });
+    let within = |inner: js::Span, outer: js::Span| outer.lo <= inner.lo && inner.hi <= outer.hi;
+    js::statement_lists(body, &mut |list| {
+        for s in list.iter_mut() {
+            let span = s.span;
+            let Some((Some(label), _)) = parts(s) else {
+                continue;
+            };
+            if !crate::lower::mir::is_block_label(label) || span.is_none() {
+                continue;
+            }
+            // Its own loop the program didn't label, and the innermost loop
+            // around it the program did.
+            let own = written_loop(loops, span);
+            let around = (loops.iter())
+                .filter(|(at, _, l)| l.is_some() && *at != span && within(span, *at))
+                .min_by_key(|(at, ..)| at.hi - at.lo);
+            let Some((_, _, Some(to))) = around else {
+                continue;
+            };
+            if own.is_some_and(|(_, _, l)| l.is_some()) || !taken.insert(to.clone()) {
+                continue;
+            }
+            let Some((label, inner)) = parts(s) else {
+                unreachable!("matched")
+            };
+            let from = label.replace(to.clone()).expect("labeled");
+            relabeled(inner, &from, to);
+        }
+    });
+}
+
 /// A block the program labeled, `'desc: { .. }`, by its name before
 /// anything else reads the body: the JS block MIR's breaks leave whose end
 /// a `break` the program wrote of it goes to, `desc: { .. }` (ADR 0742),

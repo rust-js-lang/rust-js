@@ -9,7 +9,6 @@ import {
   $cmp,
   $collectDropping,
   $count,
-  $dropEach,
   $dropItems,
   $extendMap,
   $iter,
@@ -79,14 +78,30 @@ function main() {
   const value = $iter(Array.from(byNumber().values()));
   const value$1 = limit();
   const values = $collectDropping(
-    $closing(value, $dropEach(loudDrop_drop), false).take(value$1).map(mapped),
+    $closing(
+      value,
+      (intoValues) => {
+        $dropItems(intoValues, loudDrop_drop);
+      },
+      false,
+    )
+      .take(value$1)
+      .map(mapped),
   );
   const arg = drops();
   console.log(`values [${values.join(", ")}] ${arg}`);
   const value$2 = $iter(Array.from(byLoud().keys()));
   const value$3 = limit();
   const keys = $collectDropping(
-    $closing(value$2, $dropEach(loudDrop_drop), false).take(value$3).map(mapped),
+    $closing(
+      value$2,
+      (intoKeys) => {
+        $dropItems(intoKeys, loudDrop_drop);
+      },
+      false,
+    )
+      .take(value$3)
+      .map(mapped),
   );
   const arg$1 = drops();
   console.log(`keys [${keys.join(", ")}] ${arg$1}`);
@@ -117,7 +132,15 @@ function main() {
   const value$6 = $iter(Array.from(set));
   const value$7 = limit();
   const items = $collectDropping(
-    $closing(value$6, $dropEach(loudDrop_drop), false).take(value$7).map(mapped),
+    $closing(
+      value$6,
+      (intoIter) => {
+        $dropItems(intoIter, loudDrop_drop);
+      },
+      false,
+    )
+      .take(value$7)
+      .map(mapped),
   );
   const arg$3 = drops();
   console.log(`set [${items.join(", ")}] ${arg$3}`);
@@ -138,7 +161,15 @@ function main() {
   const value$8 = $iter($sortedEntries(tree, $cmp).map((entry) => entry[1]));
   const value$9 = limit();
   const treeValues = $collectDropping(
-    $closing(value$8, $dropEach(loudDrop_drop), false).take(value$9).map(mapped),
+    $closing(
+      value$8,
+      (intoValues) => {
+        $dropItems(intoValues, loudDrop_drop);
+      },
+      false,
+    )
+      .take(value$9)
+      .map(mapped),
   );
   const arg$4 = drops();
   console.log(`tree values [${treeValues.join(", ")}] ${arg$4}`);
@@ -153,7 +184,15 @@ function main() {
   const value$10 = $iter($sortedKeys(treeSet, (a, b) => $cmp(a[0], b[0])));
   const value$11 = limit();
   const treeItems = $collectDropping(
-    $closing(value$10, $dropEach(loudDrop_drop), false).take(value$11).map(mapped),
+    $closing(
+      value$10,
+      (intoIter) => {
+        $dropItems(intoIter, loudDrop_drop);
+      },
+      false,
+    )
+      .take(value$11)
+      .map(mapped),
   );
   const arg$5 = drops();
   console.log(`tree set [${treeItems.join(", ")}] ${arg$5}`);
@@ -161,7 +200,11 @@ function main() {
   const value$12 = $iter(deque);
   const value$13 = limit();
   const dequeItems = $collectDropping(
-    $closing(value$12, $dropEach(loudDrop_drop)).take(value$13).map(mapped),
+    $closing(value$12, (intoIter) => {
+      $dropItems(intoIter, loudDrop_drop);
+    })
+      .take(value$13)
+      .map(mapped),
   );
   const arg$6 = drops();
   console.log(`deque [${dequeItems.join(", ")}] ${arg$6}`);
@@ -169,7 +212,11 @@ function main() {
   const value$14 = $iter(list);
   const value$15 = limit();
   const listItems = $collectDropping(
-    $closing(value$14, $dropEach(loudDrop_drop)).take(value$15).map(mapped),
+    $closing(value$14, (intoIter) => {
+      $dropItems(intoIter, loudDrop_drop);
+    })
+      .take(value$15)
+      .map(mapped),
   );
   const arg$7 = drops();
   console.log(`vec [${listItems.join(", ")}] ${arg$7}`);
@@ -177,15 +224,29 @@ function main() {
   const value$16 = $iter(Array.from(byNumber().values()));
   const value$17 = limit();
   const skipped = $collectDropping(
-    $skipping($closing(value$16, $dropEach(loudDrop_drop), false), value$17, loudDrop_drop).map(
-      mapped,
-    ),
+    $skipping(
+      $closing(
+        value$16,
+        (intoValues) => {
+          $dropItems(intoValues, loudDrop_drop);
+        },
+        false,
+      ),
+      value$17,
+      loudDrop_drop,
+    ).map(mapped),
   );
   const arg$8 = drops();
   console.log(`values skipped [${skipped.join(", ")}] ${arg$8}`);
   const skippedKeys = $collectDropping(
     $skipping(
-      $closing($iter(Array.from(byLoud().keys())), $dropEach(loudDrop_drop), false),
+      $closing(
+        $iter(Array.from(byLoud().keys())),
+        (intoKeys) => {
+          $dropItems(intoKeys, loudDrop_drop);
+        },
+        false,
+      ),
       2,
       loudDrop_drop,
     ).map(mapped),
@@ -208,9 +269,17 @@ function main() {
   const value$18 = $iter($sortedEntries(tree, $cmp).map((entry) => entry[1]));
   const value$19 = limit();
   const treeSkipped = $collectDropping(
-    $skipping($closing(value$18, $dropEach(loudDrop_drop), false), value$19, loudDrop_drop).map(
-      mapped,
-    ),
+    $skipping(
+      $closing(
+        value$18,
+        (intoValues) => {
+          $dropItems(intoValues, loudDrop_drop);
+        },
+        false,
+      ),
+      value$19,
+      loudDrop_drop,
+    ).map(mapped),
   );
   const arg$10 = drops();
   console.log(`tree values skipped [${treeSkipped.join(", ")}] ${arg$10}`);
@@ -218,13 +287,25 @@ function main() {
   const value$20 = $iter(list);
   const value$21 = limit();
   const listSkipped = $collectDropping(
-    $skipping($closing(value$20, $dropEach(loudDrop_drop)), value$21, loudDrop_drop).map(mapped),
+    $skipping(
+      $closing(value$20, (intoIter) => {
+        $dropItems(intoIter, loudDrop_drop);
+      }),
+      value$21,
+      loudDrop_drop,
+    ).map(mapped),
   );
   const arg$11 = drops();
   console.log(`vec skipped [${listSkipped.join(", ")}] ${arg$11}`);
 
   const counted = $count(
-    $closing($iter(Array.from(byNumber().values())), $dropEach(loudDrop_drop), false).take(2),
+    $closing(
+      $iter(Array.from(byNumber().values())),
+      (intoValues) => {
+        $dropItems(intoValues, loudDrop_drop);
+      },
+      false,
+    ).take(2),
     loudDrop_drop,
   );
   const arg$12 = drops();

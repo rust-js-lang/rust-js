@@ -32,15 +32,9 @@ function main() {
     y = x.value;
   }
   console.log(`${tmp}`);
-  bb23: {
-    if (!t) {
-      const x = { value: y };
-      const value = bump(x);
-      y = x.value;
-      if (!value) {
-        break bb23;
-      }
-    }
+  let value;
+  let x;
+  if (t || ((x = { value: y }), (value = bump(x)), (y = x.value), value)) {
     console.log("if ||");
   }
   if (f) {
