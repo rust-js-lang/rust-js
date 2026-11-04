@@ -94,14 +94,30 @@ function main() {
   const cache = ["rel", "href=a", "href=b", "href="];
   for (const href of ["b", undefined, "", "a", "z"]) {
     const value = find(cache, href);
-    const borrow = $borrow(cache, true);
-    try {
-      console.log(
-        `${href == null ? "None" : `Some(${$debugStr(href)})`} ${value == null ? "None" : `Some(${value})`} [${borrow.map((item) => $debugStr(item)).join(", ")}]`,
-      );
-    } finally {
-      $unborrow(borrow);
-    }
+    console.log(
+      `${href == null ? "None" : `Some(${$debugStr(href)})`} ${value == null ? "None" : `Some(${value})`} [${$borrow(
+        cache,
+      )
+        .map((item) => $debugStr(item))
+        .join(", ")}]`,
+    );
+  }
+  // Held while what may borrow it mutably runs, the cache's borrows are
+  // counted, `find`'s the one `try` around its loop.
+  const left = $borrow(cache, true);
+  try {
+    const value = removed(cache, "q", false);
+    console.log(
+      `${value == null ? "None" : `Some(${value})`} [${left.map((item) => $debugStr(item)).join(", ")}]`,
+    );
+  } finally {
+    $unborrow(left);
+  }
+}
+
+function removed(cache, href, remove) {
+  if (remove) {
+    return find(cache, href);
   }
 }
 //# sourceMappingURL=case.js.map

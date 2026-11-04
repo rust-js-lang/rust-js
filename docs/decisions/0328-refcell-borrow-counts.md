@@ -179,3 +179,37 @@ one already borrowed panics where Rust's does. 49 corpus cases read so,
 exceptions page reads `$borrowMut(log).push(..)` so; `docs/readability.txt`'s
 `$iter` share went from 81.8 to 82 in 10,000 lines, blessed: none more, in
 679 lines fewer.
+
+## Amendment: what ran before a guard was made can't meet it (2026-11-04, #552)
+
+A guard its statement holds, a temporary that lives to the statement's
+end, was taken as held while the whole statement ran, what ran before it
+was made too. `println!("{} {:?}", held(&log, 2), log.borrow())`, whose
+`held` borrows `log`, counted every borrow of `log`'s type, in `held` and
+everywhere else: `$borrowMut(log).push(n)`, and a `try`/`finally` the Rust
+lacks. But `format_args!` evaluates its arguments in order, as MIR does:
+`held` returns before the `Ref` is made, so no borrow it makes can meet
+it. **What runs, and ends, before a guard is made, in Rust's order of
+evaluation, is no code that runs while it's held** (`Finder::ended_before`
+in `drops/facts.rs`): a call's callee and its arguments before the one the
+guard is in, a tuple's or an array's parts before it, and a binary or
+logical operation's left side, of its right. What a call does with an
+earlier argument, given by value, is still the call's, which runs after:
+one with a destructor it drops asks, as before. A loop around the guard
+changes nothing, as a loop's body ends the temporaries made in it. Case:
+none of 0262's differences: no borrow skipped so can meet the guard, so
+its count, the JS's or Rust's, is never asked; a borrow made before it and
+still held is counted by its own extent, which the guard's borrow is in,
+and the guard's check meets it: `println!("{:?} {}", log.borrow_mut(),
+log.borrow().len())` still panics, `already mutably borrowed`.
+
+The cell is then the array it holds: ``console.log(`${held(log, 2)}
+[${log.join(", ")}]`)``. The corpus cases `refcell_borrow_after_a_call`
+(in a `println!`, a call's arguments, a tuple, an array, `+`, `&&`, a fn
+pointer's call, a loop) and `refcell_borrow_after_a_held_one` run against
+native Rust; a library's consumer's borrow made after the library's code
+returns is counted, not refused (`test/crates.test.ts`). A guard that's
+its statement's call's receiver (ADR 0863, amended) is as before. Held by
+the mutations `ended-before-arguments`, `-callee`, `-parts`,
+`-left-side`, `-all-held`, `-all-unseen` and `ended-after-parts`
+(`lower/drops/facts.ts`).

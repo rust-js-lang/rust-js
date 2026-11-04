@@ -701,6 +701,10 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
     .toThrow("is held while code rust-js can't see runs, which may be `dep`'s");
   expect(() => counting(out, "pub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    let n = types.borrow().len() + dep::types(&t).len();\n    println!(\"{n}\");\n}\n"))
     .toThrow("is held while code rust-js can't see runs, which may be `dep`'s");
+  // Made after the library's code returns, it isn't held while that runs,
+  // only while the consumer's own code may borrow it: counted, not refused
+  // (#552).
+  counting(out, "use std::cell::RefCell;\n\nfn more(types: &RefCell<Vec<String>>, go: bool) -> usize {\n    if go {\n        types.borrow_mut().push(String::new());\n    }\n    0\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    let n = dep::types(&t).len() + types.borrow().len() + more(&types, false);\n    println!(\"{n}\");\n}\n");
   expect(() => counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\nfn some(types: &RefCell<Option<Rc<RefCell<Vec<String>>>>>) -> bool {\n    types.borrow().is_some()\n}\n\npub fn main() {\n    let t = dep::start(None);\n    println!(\"{}\", some(&t.types));\n}\n"))
     .toThrow("`dep`, a rust-js library, borrows `dep::Transition::types` unchecked");
   expect(() => counting(out, "use std::cell::RefCell;\n\nfn get<T: Clone>(cell: &RefCell<T>) -> T {\n    cell.borrow().clone()\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    println!(\"{:?}\", get(&types));\n}\n"))

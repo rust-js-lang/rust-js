@@ -7,13 +7,20 @@ export function entry() {
 }
 
 function run(k) {
-  const tally = { n: k, pair: [2, 3] };
+  const tally = {
+    n: k,
+    pair: [2, 3],
+  };
 
   function bump() {
     const n = $borrowMut($fieldCell(tally, "n"), true);
     n.value = (n.value + tally.pair[0]) >>> 0;
     $unborrow(n);
     return n.value;
+  }
+
+  function bumpIf(go) {
+    return go ? bump() : tally.pair[1];
   }
 
   bump();
@@ -27,11 +34,11 @@ function run(k) {
   const borrow = $borrow($fieldCell(tally, "n"), true);
   let tmp;
   try {
-    tmp = [undefined, borrow, show()];
+    tmp = [undefined, borrow, bumpIf(false), show()];
   } finally {
     $unborrow(borrow);
   }
-  return `${value} ${tmp[1].value} ${tmp[2]}`;
+  return `${value} ${tmp[1].value} ${tmp[2]} ${tmp[3]}`;
 }
 
 function main() {

@@ -79,4 +79,12 @@ fn main() {
     for href in [Some("b"), None, Some(""), Some("a"), Some("z")] {
         println!("{href:?} {:?} {:?}", find(&cache, href), cache.borrow());
     }
+    // Held while what may borrow it mutably runs, the cache's borrows are
+    // counted, `find`'s the one `try` around its loop.
+    let left = cache.borrow();
+    println!("{:?} {left:?}", removed(&cache, Some("q"), false));
+}
+
+fn removed(cache: &RefCell<Vec<&'static str>>, href: Option<&str>, remove: bool) -> Option<usize> {
+    if remove { find(cache, href) } else { None }
 }

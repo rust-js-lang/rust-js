@@ -543,9 +543,47 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             (None, Some(extent)) => vec![extent],
             (None, None) => return,
         };
-        if self.held_quietly((fun, cell), &[], &extents) {
+        if self.held_quietly((fun, cell), (&[], &extents), &self.ended_before()) {
             self.facts.momentary.insert(fun);
         }
+    }
+
+    /// Of the expressions being walked, the parts of each that run, and
+    /// end, before `e`, the top of the walk, is made, in Rust's order of
+    /// evaluation (#552): a call's callee and its arguments before the one
+    /// `e` is in, a tuple's or an array's parts before it, a binary
+    /// operation's left side of its right. `held(&log, 2)` of `println!("{}
+    /// {:?}", held(&log, 2), log.borrow())`, which returns before the `Ref`
+    /// is made, so no borrow it makes meets it. None runs again while it's
+    /// held: a loop's body ends the temporaries made in it, so a guard's
+    /// extent is inside each loop around it.
+    fn ended_before(&self) -> HashSet<ExprId> {
+        let mut ended = HashSet::new();
+        for pair in self.stack.windows(2) {
+            let &[parent, child] = pair else { continue };
+            let before: &[ExprId] = match self.thir[parent].kind {
+                ExprKind::Call { fun, ref args, .. } => match args.iter().position(|&arg| arg == child) {
+                    Some(at) => {
+                        ended.insert(fun);
+                        &args[..at]
+                    }
+                    None => &[],
+                },
+                ExprKind::Tuple { ref fields } | ExprKind::Array { ref fields } => {
+                    match fields.iter().position(|&field| field == child) {
+                        Some(at) => &fields[..at],
+                        None => &[],
+                    }
+                }
+                ExprKind::Binary { lhs, rhs, .. } | ExprKind::LogicalOp { lhs, rhs, .. } if rhs == child => {
+                    ended.insert(lhs);
+                    &[]
+                }
+                _ => &[],
+            };
+            ended.extend(before.iter().copied());
+        }
+        ended
     }
 
     /// Of `e`, a borrow of what a guard guards, `&mut *c.borrow_mut()` or
@@ -681,7 +719,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                 moves.visit_expr(&self.thir[value]);
             }
         }
-        if !moves.moved && self.held_quietly((fun, cell), rest, value.as_slice()) {
+        if !moves.moved && self.held_quietly((fun, cell), (rest, value.as_slice()), &HashSet::new()) {
             self.facts.let_held.insert(fun);
         }
     }
@@ -708,6 +746,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             unmet: Vec::new(),
             seen_only: false,
             ids: &self.ids,
+            ended: &HashSet::new(),
         };
         quiet.items = quiet.items_of_own();
         quiet.visit_expr(&self.thir[receiver]);
@@ -720,9 +759,15 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
     }
 
     /// Whether `fun`'s guard of `cell`, held while `stmts` and `exprs` run,
-    /// meets no borrow that may ask of it (`Quiet`); if one may, whether
-    /// only code rust-js sees runs while it's held (`Seen`), a fact of it.
-    fn held_quietly(&mut self, (fun, cell): (ExprId, Borrow<'tcx>), stmts: &[StmtId], exprs: &[ExprId]) -> bool {
+    /// but those of their parts `ended` before it's made, meets no borrow
+    /// that may ask of it (`Quiet`); if one may, whether only code rust-js
+    /// sees runs while it's held (`Seen`), a fact of it.
+    fn held_quietly(
+        &mut self,
+        (fun, cell): (ExprId, Borrow<'tcx>),
+        (stmts, exprs): (&[StmtId], &[ExprId]),
+        ended: &HashSet<ExprId>,
+    ) -> bool {
         let mut quiet = Quiet {
             cx: self.cx,
             borrows: self.borrows,
@@ -735,6 +780,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             unmet: Vec::new(),
             seen_only: false,
             ids: &self.ids,
+            ended,
         };
         quiet.items = quiet.items_of_own();
         for &stmt in stmts {
@@ -752,6 +798,8 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             thir: self.thir,
             owner: self.body_owner,
             seen: true,
+            ids: &self.ids,
+            ended,
         };
         for &stmt in stmts {
             seen.visit_stmt(&self.thir[stmt]);
@@ -832,6 +880,10 @@ struct Seen<'c, 'a, 'tcx> {
     /// The function or closure whose body this is.
     owner: DefId,
     seen: bool,
+    /// Each expression's id, by where it is.
+    ids: &'c HashMap<usize, ExprId>,
+    /// What ended before the guard was made (`Finder::ended_before`).
+    ended: &'c HashSet<ExprId>,
 }
 
 impl<'c, 'a, 'tcx> Visitor<'a, 'tcx> for Seen<'c, 'a, 'tcx> {
@@ -840,7 +892,7 @@ impl<'c, 'a, 'tcx> Visitor<'a, 'tcx> for Seen<'c, 'a, 'tcx> {
     }
 
     fn visit_expr(&mut self, expr: &'a ThirExpr<'tcx>) {
-        if !self.seen {
+        if !self.seen || ended(self.ids, self.ended, expr) {
             return;
         }
         self.seen = match expr.kind {
@@ -888,6 +940,9 @@ struct Quiet<'c, 'q, 'a, 'tcx> {
     seen_only: bool,
     /// Each expression's id, by where it is.
     ids: &'c HashMap<usize, ExprId>,
+    /// What ended before `own`'s guard was made, which can't meet it
+    /// (`Finder::ended_before`).
+    ended: &'c HashSet<ExprId>,
 }
 
 impl<'c, 'q, 'a, 'tcx> Quiet<'c, 'q, 'a, 'tcx> {
@@ -1067,7 +1122,7 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
     }
 
     fn visit_expr(&mut self, expr: &'a ThirExpr<'tcx>) {
-        if !self.quiet {
+        if !self.quiet || ended(self.ids, self.ended, expr) {
             return;
         }
         // A borrow of a cell that can't be `own`'s here (`unmet_in`).
@@ -1138,6 +1193,12 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
         }
         visit::walk_stmt(self, stmt);
     }
+}
+
+/// Whether `expr`, by its id among `ids`, is one of `ended`, which ran and
+/// ended before a guard was made (`Finder::ended_before`).
+fn ended(ids: &HashMap<usize, ExprId>, ended: &HashSet<ExprId>, expr: &ThirExpr<'_>) -> bool {
+    (ids.get(&(std::ptr::from_ref(expr) as usize))).is_some_and(|id| ended.contains(id))
 }
 
 /// A place: a variable, or a part of one, or what a reference points to.

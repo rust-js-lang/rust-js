@@ -56,9 +56,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard held while its statement calls code that borrows is only checked",
     file: "src/lower/drops/facts.rs",
-    find: "        if self.held_quietly((fun, cell), &[], &extents) {\n",
+    find: "        if self.held_quietly((fun, cell), (&[], &extents), &self.ended_before()) {\n",
     replace:
-      "        if self.held_quietly((fun, cell), &[], &extents) || true {\n",
+      "        if self.held_quietly((fun, cell), (&[], &extents), &self.ended_before()) || true {\n",
     tests: [
       "test/lowering-cells.test.ts",
       "-t",
@@ -203,9 +203,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let`'s guard moved out of its block, `kept = v;`, is taken as held only until its block ends, so a borrow it meets after doesn't panic (ADR 0863)",
     file: "src/lower/drops/facts.rs",
-    find: "        if !moves.moved && self.held_quietly((fun, cell), rest, value.as_slice()) {\n",
+    find: "        if !moves.moved && self.held_quietly((fun, cell), (rest, value.as_slice()), &HashSet::new()) {\n",
     replace:
-      "        if self.held_quietly((fun, cell), rest, value.as_slice()) {\n",
+      "        if self.held_quietly((fun, cell), (rest, value.as_slice()), &HashSet::new()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_let_guard_kept.rs$"],
   },
   {
@@ -409,5 +409,73 @@ export const mutations: Mutation[] = [
     find: "        let through = self.guarded_borrow(init);\n",
     replace: "        let through: Option<ExprId> = None;\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_let_borrow.rs$"],
+  },
+  {
+    name: "ended-before-arguments",
+    breaks:
+      "a guard made after a call's earlier argument returns, `sum(held(&log, 2), log.borrow().len())`, is taken as held while that argument runs, so its cell is counted (#552)",
+    file: "src/lower/drops/facts.rs",
+    find: "                        &args[..at]\n",
+    replace: "                        &[]\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_after_a_call.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "ended-before-callee",
+    breaks:
+      "a guard given to what a call returns, `picked(&log)(2, log.borrow().len())`, is taken as held while that call runs, so its cell is counted (#552)",
+    file: "src/lower/drops/facts.rs",
+    find: "                        ended.insert(fun);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_after_a_call.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "ended-before-parts",
+    breaks:
+      "a guard made after a tuple's or an array's earlier part, `(held(&log, 3), log.borrow().len())`, is taken as held while that part runs, so its cell is counted (#552)",
+    file: "src/lower/drops/facts.rs",
+    find: "                        Some(at) => &fields[..at],\n",
+    replace: "                        Some(_) => &[],\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_after_a_call.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "ended-after-parts",
+    breaks:
+      "a tuple's parts after a guard are taken as ended before it's made, so the `RefMut` of `println!(\"{:?} {}\", log.borrow_mut(), log.borrow().len())` isn't counted, and the `borrow()` it meets doesn't panic (#552)",
+    file: "src/lower/drops/facts.rs",
+    find: "                        Some(at) => &fields[..at],\n",
+    replace: "                        Some(at) => &fields[at + 1..],\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_after_a_held_one.rs$"],
+  },
+  {
+    name: "ended-before-left-side",
+    breaks:
+      "a guard made on a binary operation's right side, `held(&log, 2) + log.borrow().len()`, is taken as held while its left side runs, so its cell is counted (#552)",
+    file: "src/lower/drops/facts.rs",
+    find: "                    ended.insert(lhs);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_after_a_call.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "ended-before-all-held",
+    breaks:
+      "what ran before a guard was made is taken as running while it's held, so every borrow of a cell given to a `println!`'s earlier argument is counted (#552)",
+    file: "src/lower/drops/facts.rs",
+    find: "        if !self.quiet || ended(self.ids, self.ended, expr) {\n",
+    replace: "        if !self.quiet {\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_after_a_call.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "ended-before-all-unseen",
+    breaks:
+      "a library's code that returned before a guard was made is taken as running while it's held, so a consumer's borrow made after it is refused (#552)",
+    file: "src/lower/drops/facts.rs",
+    find: "        if !self.seen || ended(self.ids, self.ended, expr) {\n",
+    replace: "        if !self.seen {\n",
+    tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values they hold"],
   },
 ];

@@ -44,7 +44,7 @@ function holderDeref_deref(holder) {
 
 function holderDrop_drop(holder) {
   holder.items.length = 0;
-  $borrowMut(holder.log).push("dropped");
+  holder.log.push("dropped");
 }
 
 function main() {
@@ -60,12 +60,8 @@ function main() {
     items: [4, 5, 6],
     log,
   };
-  const value = length(held, holderDeref, holderDrop_drop);
-  const borrow = $borrow(log, true);
-  try {
-    console.log(`${value} [${borrow.map((item) => $debugStr(item)).join(", ")}]`);
-  } finally {
-    $unborrow(borrow);
-  }
+  console.log(
+    `${length(held, holderDeref, holderDrop_drop)} [${log.map((item) => $debugStr(item)).join(", ")}]`,
+  );
 }
 //# sourceMappingURL=case.js.map

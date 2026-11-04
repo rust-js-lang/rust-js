@@ -232,13 +232,9 @@ function main() {
             return result;
           }
           const value$2 = value != null ? map(value) : undefined;
-          const strong = branch.strong;
-          const value$3 = branch.weak;
-          const value$4 = $borrow(branch.value.children, true);
           console.log(
-            `${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`} ${strong} ${value$3} ${value$4.length}`,
+            `${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`} ${branch.strong} ${branch.weak} ${branch.value.children.length}`,
           );
-          $unborrow(value$4);
         } finally {
           $unborrow(value$1);
         }

@@ -15,6 +15,10 @@ impl Tally {
         *n += self.pair.0;
         *n
     }
+
+    fn bump_if(&self, go: bool) -> u32 {
+        if go { self.bump() } else { self.pair.1 }
+    }
 }
 
 struct Pair(u32, String);
@@ -26,10 +30,19 @@ impl Pair {
 }
 
 fn run(k: u32) -> String {
-    let tally = Tally { n: RefCell::new(k), pair: (2, 3) };
+    let tally = Tally {
+        n: RefCell::new(k),
+        pair: (2, 3),
+    };
     tally.bump();
     let pair = Pair(k, "x".to_string());
-    format!("{} {} {}", tally.bump(), tally.n.borrow(), pair.show())
+    format!(
+        "{} {} {} {}",
+        tally.bump(),
+        tally.n.borrow(),
+        tally.bump_if(false),
+        pair.show()
+    )
 }
 
 fn main() {

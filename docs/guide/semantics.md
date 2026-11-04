@@ -345,7 +345,10 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   `prepare(c.borrow().as_deref())`, what it guards lent, `as_deref()`'s,
   or a copy or clone of it, only while that and the arguments after it
   are read, not while the binding runs (0863, amended, the user's
-  decision, rd427).
+  decision, rd427). What runs before a guard is made, in Rust's order,
+  meets none of it: `println!("{} {:?}", held(&log, 2), log.borrow())`,
+  whose `held` returns before the `Ref` is made, counts nothing
+  ([0328](../decisions/0328-refcell-borrow-counts.md#amendment-what-ran-before-a-guard-was-made-cant-meet-it-2026-11-04-552)).
   A call of a fn pointer runs what the crate made one of that type of,
   `Math.clz32` or a fallback, unless a value of its type may come from
   JS or a library, an exported function's parameter say, which may be

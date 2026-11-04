@@ -87,10 +87,9 @@ function main() {
     label: 2,
     shape: { r: 1.5 },
   };
-  const value = grown($dynCell(lent, circleShape));
-  const borrow = $borrow(lent, true);
-  console.log(`${$displayF64(value)} ${$displayF64(borrow.shape.r)}`);
-  $unborrow(borrow);
+  console.log(
+    `${$displayF64(grown($dynCell(lent, circleShape)))} ${$displayF64($borrow(lent).shape.r)}`,
+  );
   const circle = {
     value: {
       label: 0,
@@ -137,6 +136,15 @@ function main() {
       });
       throw error;
     }
+    let borrow;
+    try {
+      borrow = $borrow(circle.value);
+    } catch (error) {
+      $rcDrop(shape, (value) => {
+        value.impl.$drop?.(value.shape);
+      });
+      throw error;
+    }
     let tmp;
     try {
       tmp = $borrow(circle.value);
@@ -146,16 +154,7 @@ function main() {
       });
       throw error;
     }
-    let tmp$1;
-    try {
-      tmp$1 = $borrow(circle.value);
-    } catch (error) {
-      $rcDrop(shape, (value) => {
-        value.impl.$drop?.(value.shape);
-      });
-      throw error;
-    }
-    console.log(`${$displayF64(tmp.shape.r + tmp$1.label)}`);
+    console.log(`${$displayF64(borrow.shape.r + tmp.label)}`);
     const square = {
       value: {
         label: 1,
@@ -178,9 +177,9 @@ function main() {
       throw error;
     }
     const shapes = [shape, rc];
-    let tmp$2;
+    let tmp$1;
     try {
-      tmp$2 = $borrowMut($index(shapes, 1).value, true);
+      tmp$1 = $borrowMut($index(shapes, 1).value, true);
     } catch (error) {
       $dropItems(shapes, (item) => {
         $rcDrop(item, (value) => {
@@ -193,18 +192,18 @@ function main() {
       throw error;
     }
     const receiver$1 = {
-      impl: tmp$2.impl,
+      impl: tmp$1.impl,
       get value() {
-        return tmp$2.shape;
+        return tmp$1.shape;
       },
       set value(value) {
-        tmp$2.shape = value;
+        tmp$1.shape = value;
       },
     };
     try {
       receiver$1.impl.grow(receiver$1, 3);
     } catch (error) {
-      $unborrow(tmp$2);
+      $unborrow(tmp$1);
       $dropItems(shapes, (item) => {
         $rcDrop(item, (value) => {
           value.impl.$drop?.(value.shape);
@@ -216,7 +215,7 @@ function main() {
       throw error;
     }
     try {
-      $unborrow(tmp$2);
+      $unborrow(tmp$1);
     } catch (error) {
       $dropItems(shapes, (item) => {
         $rcDrop(item, (value) => {
@@ -228,9 +227,24 @@ function main() {
       });
       throw error;
     }
+    let tmp$2;
+    try {
+      tmp$2 = $borrowMut($index(shapes, 1).value);
+    } catch (error) {
+      $dropItems(shapes, (item) => {
+        $rcDrop(item, (value) => {
+          value.impl.$drop?.(value.shape);
+        });
+      });
+      $rcDrop(square, (value) => {
+        squareDrop_drop(value.shape);
+      });
+      throw error;
+    }
+    tmp$2.label = (tmp$2.label + 1) >>> 0;
     let tmp$3;
     try {
-      tmp$3 = $borrowMut($index(shapes, 1).value);
+      tmp$3 = total(shapes);
     } catch (error) {
       $dropItems(shapes, (item) => {
         $rcDrop(item, (value) => {
@@ -242,10 +256,9 @@ function main() {
       });
       throw error;
     }
-    tmp$3.label = (tmp$3.label + 1) >>> 0;
     let tmp$4;
     try {
-      tmp$4 = total(shapes);
+      tmp$4 = $borrow(square.value);
     } catch (error) {
       $dropItems(shapes, (item) => {
         $rcDrop(item, (value) => {
@@ -257,34 +270,7 @@ function main() {
       });
       throw error;
     }
-    let tmp$5;
-    try {
-      tmp$5 = $borrow(square.value, true);
-    } catch (error) {
-      $dropItems(shapes, (item) => {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.shape);
-        });
-      });
-      $rcDrop(square, (value) => {
-        squareDrop_drop(value.shape);
-      });
-      throw error;
-    }
-    console.log(`${$displayF64(tmp$4)} ${tmp$5.label}`);
-    try {
-      $unborrow(tmp$5);
-    } catch (error) {
-      $dropItems(shapes, (item) => {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.shape);
-        });
-      });
-      $rcDrop(square, (value) => {
-        squareDrop_drop(value.shape);
-      });
-      throw error;
-    }
+    console.log(`${$displayF64(tmp$3)} ${tmp$4.label}`);
     try {
       $rcDrop(square, (value) => {
         squareDrop_drop(value.shape);
