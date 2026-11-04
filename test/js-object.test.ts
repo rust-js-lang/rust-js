@@ -1267,7 +1267,11 @@ pub fn type_of_type(next_type: Option<&'static Unknown>) -> Option<&'static Unkn
 // js::classify(value).object()`, and a closure in it names its own
 // `value`, its `Result` that reads nothing of `object`: the `if` is that
 // test still, `object` read as `value` (rd514). A closure of its own
-// `value` that reads `object` keeps the `const`, which it reads.
+// `value` that reads `object` keeps the `const`, which it reads. The
+// first closure's arms do other JS: of the same, `log(&text)` and
+// `log(&reason)`, its `match` is that JS once, `log(checked(part)._0)`
+// (b9ac9eca3), which holds no `value`, and this checked nothing (the
+// Nightly of 3c71ee8f9).
 test("an object tested beside a closure's own of its name is its test", async () => {
   const { js, lib } = await compiled("object-tested-beside-own", `use js::Unknown;
 
@@ -1283,7 +1287,7 @@ pub fn resolve(value: Option<&'static Unknown>, log: &dyn Fn(&str), then: &dyn F
         log(&js::type_of(js::get(object, "x")));
         then(&move |part| match checked(part) {
             Ok(text) => log(&text),
-            Err(reason) => log(&reason),
+            Err(reason) => log(&format!("{reason}!")),
         });
         return true;
     }
@@ -1307,7 +1311,7 @@ pub fn resolve_read(value: Option<&'static Unknown>, log: &dyn Fn(&str), then: &
   const log = (text: string) => seen.push(text);
   const then = (f: (part: unknown) => void) => { f(1); f(null); };
   expect([lib.resolve({ x: 1 }, log, then), lib.resolve(2, log, then), lib.resolveRead({ x: "s" }, log, then)]).toEqual([true, false, true]);
-  expect(seen).toEqual(["number", "ok", "null", "okstring", "null"]);
+  expect(seen).toEqual(["number", "ok", "null!", "okstring", "null"]);
 });
 
 // React's mountTransition stores the function it returns in its hook,
