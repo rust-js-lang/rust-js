@@ -16,10 +16,19 @@ fn reversed_hint<I: DoubleEndedIterator>(it: I) -> (usize, Option<usize>) {
     it.rev().size_hint()
 }
 
+// Copied, of an exact size, its length given with it: a JS iterator of
+// its own, stepping the one it's given, whose hint is that one's.
+fn copied_hint<'a, I: ExactSizeIterator<Item = &'a u32> + Clone>(it: I) -> (usize, (usize, Option<usize>)) {
+    let mut copied = it.copied();
+    copied.next();
+    (copied.len(), hint(copied.clone()))
+}
+
 fn main() {
     let v = vec![1u32, 2, 3];
     println!("{:?} {:?}", passed_on(v.iter()), passed_on(1..9u32));
     println!("{:?} {:?}", reversed_hint(v.iter()), reversed_hint(v.iter().skip(1)));
+    println!("{:?} {:?}", copied_hint(v.iter()), copied_hint(v.iter().skip(1)));
     let options = vec![Some(1u32), None, Some(3)];
     println!(
         "{:?} {:?}",
