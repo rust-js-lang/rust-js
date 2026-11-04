@@ -69,7 +69,7 @@ pub(super) fn module<'tcx>(
         &[super::bindings::HeldBinding],
         &HashMap<DefId, bool>,
     ),
-    (type_facts, given): (&TypeFacts, super::traits::Given<'_>),
+    (type_facts, given, caller_locations): (&TypeFacts, super::traits::Given<'_>, &HashSet<DefId>),
 ) -> Option<Value> {
     let mut out = Declarations {
         tcx,
@@ -94,6 +94,7 @@ pub(super) fn module<'tcx>(
         notes: Vec::new(),
         type_facts,
         bounds_given: given,
+        caller_locations,
     };
     // What `js::export_default! { .. }` holds, a function or a constant, is
     // the module's default and nothing else, as its JS is, `export default
@@ -472,6 +473,8 @@ struct Declarations<'a, 'tcx> {
     /// JS takes after its parameters (`evidence`).
     type_facts: &'a TypeFacts,
     bounds_given: super::traits::Given<'a>,
+    /// The crate's functions that take their caller's location (ADR 0427).
+    caller_locations: &'a HashSet<DefId>,
     /// The notes of the members the declaration just made left out
     /// (`leave_out`), which the module's items take after it.
     notes: Vec<Value>,
@@ -1321,6 +1324,16 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 }
                 if tcx.is_lang_item(did, LangItem::String) {
                     return keyword("string");
+                }
+                // A `Location` is `{ file, line, column }` (ADR 0427, #560).
+                if tcx.is_lang_item(did, LangItem::PanicLocation) {
+                    let members: Vec<Value> = (super::std_types::location::PARTS.iter())
+                        .map(|&(name, text)| {
+                            let ty = keyword(if text { "string" } else { "number" });
+                            json!({ "kind": "property", "name": name, "optional": false, "readonly": true, "type": ty })
+                        })
+                        .collect();
+                    return json!({ "kind": "object", "members": members });
                 }
                 if is_std_def(tcx, did, StdItem::Vec) {
                     return json!({ "kind": "array", "element": self.ts(args.type_at(0)), "readonly": false });

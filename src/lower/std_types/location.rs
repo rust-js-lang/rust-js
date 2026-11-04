@@ -34,6 +34,23 @@ pub(in crate::lower) fn location_op(path: &str) -> Option<LocationOp> {
     })
 }
 
+/// A location's parts, as its object has them, each with whether it's
+/// text, `file`, or a number, `line` and `column`: `{ file, line, column }`.
+/// The one list of what's made and what's declared (#560).
+pub(in crate::lower) const PARTS: [(&str, bool); 3] = [("file", true), ("line", false), ("column", false)];
+
+/// Whether `id` takes its caller's location, the crate's, which
+/// `caller_locations` says (ADR 0427), or a library's, as its manifest
+/// does: the one question its parameters, its calls and its declaration
+/// ask.
+pub(in crate::lower) fn takes_location(
+    caller_locations: &std::collections::HashSet<rustc_span::def_id::DefId>,
+    foreign: &crate::lower::library::Foreign<'_, '_>,
+    id: rustc_span::def_id::DefId,
+) -> bool {
+    caller_locations.contains(&id) || foreign.takes_location(id)
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A `Location`'s function: `None` if `known` is another.
     pub(in crate::lower) fn location_call(
@@ -55,10 +72,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether `id` takes its caller's location, the crate's or a
-    /// library's (ADR 0427): the one question its parameters and its calls
-    /// ask.
+    /// library's (`takes_location`).
     pub(in crate::lower) fn takes_caller_location(&self, id: rustc_span::def_id::DefId) -> bool {
-        self.krate.caller_locations.contains(&id) || self.krate.foreign.takes_location(id)
+        takes_location(self.krate.caller_locations, self.krate.foreign, id)
     }
 
     /// The location a call at `span` gives, or `Location::caller()` there
@@ -81,10 +97,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .display(RemapPathScopeComponents::MACRO)
             .to_string_lossy()
             .into_owned();
+        let [(file_key, _), (line_key, _), (column_key, _)] = PARTS;
         Expr::object(vec![
-            Prop::Field("file".into(), Expr::str(file)),
-            Prop::Field("line".into(), Expr::int(at.line as i128)),
-            Prop::Field("column".into(), Expr::int(at.col_display as i128 + 1)),
+            Prop::Field(file_key.into(), Expr::str(file)),
+            Prop::Field(line_key.into(), Expr::int(at.line as i128)),
+            Prop::Field(column_key.into(), Expr::int(at.col_display as i128 + 1)),
         ])
     }
 }

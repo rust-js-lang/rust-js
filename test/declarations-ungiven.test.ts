@@ -286,3 +286,72 @@ export const ok = totalArea([{ radius: 1 }], circleShape);
     "a b 0",
   ]);
 });
+
+// A `#[track_caller]` function's caller's location (ADR 0427) and a const
+// parameter's value (ADR 0107), which its JS takes after its arguments, are
+// what a JS caller gives as a Rust caller does: declared, in their order
+// before its dictionaries, neither optional (#560, ADR 1077, amended).
+test("a function's caller's location and a const parameter's value are declared", () => {
+  const dir = fixture("declarations-evidence-given");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(import.meta.dir, "fixtures/evidence_given.rs"), "utf8"));
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function checked(n, why, location) {");
+  expect(js).toContain("export function sized(shapes, location, N, SShape) {");
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  const location = "{\n    readonly file: string;\n    readonly line: number;\n    readonly column: number;\n}";
+  expect(declarations).toContain(`export function here(location: ${location}): ${location};`);
+  expect(declarations).toContain(`export function checked(n: number, why: string | null | undefined, location: ${location}): number;`);
+  // One that reads no location takes none, its `Option` left out as before.
+  expect(declarations).toContain("export function unwrapped(n?: number | null | undefined): number;");
+  expect(declarations).toContain("export function zeros(N: number): number[];");
+  expect(declarations).toContain("export function big(N: bigint): bigint;");
+  expect(declarations).toContain(`export function sized<S>(shapes: S[], location: ${location}, N: number, SShape: Shape<S>): string;`);
+  expect(declarations).toContain("    width(grid: Grid, W: number): number;");
+  expect(declarations).not.toContain("isn't declared");
+  writeFileSync(
+    join(dir, "use.ts"),
+    `import { big, checked, Grid, here, sized, zeros } from "./lib.js";
+import { squareShape } from "./shape.js";
+
+const at = { file: "use.ts", line: 4, column: 12 };
+let panicked = "";
+try {
+  checked(0, null, at);
+} catch (error) {
+  panicked = (error as Error).message;
+}
+console.log(
+  JSON.stringify([here(at), checked(2, undefined, at), zeros(3), String(big(4n)), sized([{ side: 2 }], at, 1, squareShape), panicked, Grid.width({ cells: [] }, 4)]),
+);
+`,
+  );
+  writeFileSync(
+    join(dir, "wrong.ts"),
+    `import { checked, zeros } from "./lib.js";
+export const unplaced = checked(1, null);
+export const unsized = zeros();
+`,
+  );
+  writeFileSync(
+    join(dir, "tsconfig.json"),
+    JSON.stringify({
+      compilerOptions: { module: "esnext", moduleResolution: "bundler", strict: true, noEmit: true, skipLibCheck: false, allowJs: true, typeRoots: [join(root, "node_modules/@types")] },
+      files: ["use.ts", "wrong.ts"],
+    }),
+  );
+  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
+  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  expect(errors.map((line) => line.replace(/: error.*/, ""))).toEqual(["wrong.ts(2,25)", "wrong.ts(3,24)"]);
+  // What it gives is what Rust's calls give, a panic naming where it's told it's called from.
+  expect(JSON.parse(run([process.execPath, join(dir, "use.ts")]))).toEqual([
+    { file: "use.ts", line: 4, column: 12 },
+    2,
+    [0, 0, 0],
+    "4",
+    "1 of area 4 at 4",
+    "zero at use.ts:4:12",
+    4,
+  ]);
+});

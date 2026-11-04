@@ -235,14 +235,17 @@ impl<'tcx> Declarations<'_, 'tcx> {
 
     /// What `function`'s JS takes after its own parameters, as its
     /// declaration declares it, in `evidence_slots`' order, of the same
-    /// owners, `facts_asked`' and `bounds`': each bound's dictionary of a
-    /// trait that's declared, `SShape: Shape<S>` (#550), named as its JS
-    /// names it (`bound_word`). Or what a JS caller can't give, the first
-    /// (#549, the user's decision, 2026-11-03, ADR 1077): a fact of a type
-    /// parameter, `size(TSize)` (ADR 0145), which only a Rust caller knows;
-    /// or a bound's dictionary of another trait, `shown(value, TDisplay)`,
-    /// a std trait's the runtime's own. (A rest parameter is given none, ADR
-    /// 0664.) What a JS caller leaves out, a drop or a copy's, isn't asked.
+    /// owners, `takes_location`'s, `const_params`', `facts_asked`' and
+    /// `bounds`': its caller's location, `location: { readonly file: string;
+    /// .. }`, and each const parameter's value, `N: number` (#560); each
+    /// bound's dictionary of a trait that's declared, `SShape: Shape<S>`
+    /// (#550), named as its JS names it (`bound_word`). Or what a JS caller
+    /// can't give, the first (#549, the user's decision, 2026-11-03, ADR
+    /// 1077): a fact of a type parameter, `size(TSize)` (ADR 0145), which
+    /// only a Rust caller knows; or a bound's dictionary of another trait,
+    /// `shown(value, TDisplay)`, a std trait's the runtime's own. (A rest
+    /// parameter is given none, ADR 0664.) What a JS caller leaves out, a
+    /// drop or a copy's, isn't asked.
     pub(super) fn evidence(&mut self, function: DefId) -> Result<Vec<Value>, String> {
         let generics = self.tcx.generics_of(function);
         if let Some(&(index, fact)) = self.type_facts.get(&function).and_then(|facts| facts.first()) {
@@ -260,6 +263,25 @@ impl<'tcx> Declarations<'_, 'tcx> {
             return Err(format!("`{of}`'s `{name}` dictionary"));
         }
         let mut params = Vec::new();
+        // Its caller's location, which a JS caller gives as a Rust caller
+        // does, where it's called from (ADR 0427, #560).
+        if super::super::std_types::location::takes_location(self.caller_locations, self.foreign, function) {
+            let name = crate::names::fresh_in(&mut taken, "location");
+            let ty = self.ts(self.tcx.caller_location_ty());
+            params.push(json!({ "name": name, "optional": false, "rest": false, "type": ty }));
+        }
+        // Each const parameter's value, `N`, a number a JS caller gives as
+        // it's typed (ADR 0107, #560).
+        for param in super::super::traits::const_params(self.tcx, function) {
+            let name = crate::names::fresh_in(&mut taken, param.name.as_str());
+            let ty = self
+                .tcx
+                .type_of(param.def_id)
+                .instantiate_identity()
+                .skip_normalization();
+            let ty = self.ts(ty);
+            params.push(json!({ "name": name, "optional": false, "rest": false, "type": ty }));
+        }
         for bound in bounds {
             let ty = self.dictionary_type(bound);
             let name = crate::names::fresh_in(&mut taken, &super::super::traits::bound_word(self.tcx, bound));

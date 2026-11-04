@@ -3,7 +3,8 @@
 Status: Accepted (#549, the user's decision, 2026-11-03, option B);
 amended (#559): a namespace's function, an object's and a class's member
 too; amended (#550): a crate's trait is declared as the type of its
-dictionaries, and a function of one is declared with it. Amends
+dictionaries, and a function of one is declared with it; amended (#560):
+a caller's location and a const parameter's value are declared. Amends
 [0196](0196-typescript-declarations.md), whose `.d.ts` declared every
 `pub` function, and the guide's "A type parameter with no bound takes
 none" ([0145](0145-type-facts.md)'s facts take one).
@@ -109,9 +110,7 @@ the same table.
 - A function of a bound comes back into the `.d.ts` where its trait's
   dictionaries are declared (#550, amended below).
 - A `#[track_caller]` function's `location` and a const parameter's `N`
-  are evidence too. They're out of this decision: a JS caller that leaves
-  `location` out gets a panic of no location, and `N` is a number a caller
-  can give.
+  are evidence too, declared since #560 (amended below).
 
 Held by `test/declarations-ungiven.test.ts`, which has a note for each
 fact kind and a dictionary, a type's method left out of its object, an
@@ -220,3 +219,63 @@ another type, none and the imports of what isn't declared, and the
 caller's run gives what Rust's calls give. Mutations in
 `lower/traits.ts`, `lower/declarations/functions.ts`,
 `lower/declarations/dictionaries.ts` and `lower/declarations.ts`.
+
+## Amended (#560): a caller's location and a const parameter's value
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change. Each
+was declared as if it weren't there, `checked(n: number): number`,
+`zeros(): number[]`, and a JS caller that followed the declaration got
+what Rust can't give: `checked(0)` threw `TypeError: Cannot read
+properties of undefined (reading 'file')` where Rust panics `zero at
+src/lib.rs:12:5`; `here()` was `undefined`; `zeros()` was `new
+Array(undefined).fill(0)`, `[0]`, where `zeros::<3>()` is `[0, 0, 0]`;
+`big()`, a `const N: u64`, `undefined`, declared `bigint`. The JS is
+unchanged; the declaration now says what it takes.
+
+**Both are what a JS caller can give, so each is declared, required, in
+`evidence_slots`' order, before the dictionaries:**
+
+```ts
+export function checked(n: number, location: {
+    readonly file: string;
+    readonly line: number;
+    readonly column: number;
+}): number;
+export function zeros(N: number): number[];
+export function big(N: bigint): bigint;
+```
+
+- **A caller's location** is `{ file, line, column }` (ADR 0427,
+  `location::PARTS`, the one list of what's made and what's declared), what
+  a Rust caller gives of where it calls from. A JS caller gives its own,
+  and the function reads it as Rust's reads its caller's: `checked(0, {
+  file: "app.ts", line: 3, column: 7 })` panics `zero at app.ts:3:7`.
+  Which functions take one is `location::takes_location`'s, the crate's
+  `caller_locations` or a library's manifest, the question lowering asks
+  too. A `Location` is declared so wherever it's named, `here()`'s
+  `&'static Location` too, which was `any`.
+- **A const parameter's value** is the number, `bool` or `char` it is, of
+  its type as declared, `usize` a `number` and `u64` a `bigint`, named as
+  the Rust names it, `N`. `zeros(3)` is `[0, 0, 0]`, as `zeros::<3>()`.
+- **Neither is optional**, and after either a trailing `Option` isn't
+  either, as after a dictionary.
+
+Rejected:
+- **A note, as a fact's.** A fact is rustc's knowledge of a type no JS
+  caller has (above); a location and a const's value are values a caller
+  chooses, as a Rust caller chooses `zeros::<3>`.
+- **`location?`, optional.** Left out, it's `undefined`, and the body
+  reads its `file`: a `TypeError` where Rust names a place.
+- **A default, `location = { file: "src/lib.rs", .. }` of the function's
+  definition**, as a dictionary's entry and a function pointer's shim
+  have it (ADR 0427). It changes the JS of every exported tracked
+  function, and a JS caller isn't a shim: it can say where it calls from.
+
+Held by `test/declarations-ungiven.test.ts`'s "a function's caller's
+location and a const parameter's value are declared" (its program
+`test/fixtures/evidence_given.rs`): each declared, a type's method of its
+impl's const parameter, one of both a location, a const and a
+dictionary in their order; `tsc` checks a TypeScript caller and refuses
+one that leaves either out; the caller's run gives what Rust's calls
+give, a panic naming the location given. Mutations in
+`lower/declarations/functions.ts` and `lower/declarations.ts`.

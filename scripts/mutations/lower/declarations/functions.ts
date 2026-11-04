@@ -250,8 +250,8 @@ export const mutations: Mutation[] = [
     name: "dictionary-parameter-undeclared",
     breaks: "a function's bound's dictionary of a declared trait, `totalArea(shapes, SShape)`'s, isn't declared, so a TypeScript caller gives none and `SShape.area` throws (#550)",
     file: "src/lower/declarations/functions.rs",
-    find: "            params.push(json!({ \"name\": name, \"optional\": false, \"rest\": false, \"type\": ty }));\n",
-    replace: "",
+    find: "            let name = crate::names::fresh_in(&mut taken, &super::super::traits::bound_word(self.tcx, bound));\n            params.push(json!({ \"name\": name, \"optional\": false, \"rest\": false, \"type\": ty }));\n",
+    replace: "            let name = crate::names::fresh_in(&mut taken, &super::super::traits::bound_word(self.tcx, bound));\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
   },
   {
@@ -269,5 +269,21 @@ export const mutations: Mutation[] = [
     find: "        let evidence = match own && !super::super::bindings::is_binding(self.tcx, def_id) {\n",
     replace: "        let evidence = match !super::super::bindings::is_binding(self.tcx, def_id) {\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
+  },
+  {
+    name: "caller-location-undeclared",
+    breaks: "a `#[track_caller]` function's caller's location, which its JS takes after its arguments, isn't declared, so a TypeScript caller gives none and `checked(0)` throws a `TypeError` where Rust panics naming its caller (#560)",
+    file: "src/lower/declarations/functions.rs",
+    find: "        if super::super::std_types::location::takes_location(self.caller_locations, self.foreign, function) {\n",
+    replace: "        if false && super::super::std_types::location::takes_location(self.caller_locations, self.foreign, function) {\n",
+    tests: ["test/declarations-ungiven.test.ts", "-t", "location and a const"],
+  },
+  {
+    name: "const-value-undeclared",
+    breaks: "a const parameter's value, `zeros(N)`'s, isn't declared, so a TypeScript caller gives none and `zeros()` is `[0]` where `zeros::<3>()` is `[0, 0, 0]` (#560)",
+    file: "src/lower/declarations/functions.rs",
+    find: "        for param in super::super::traits::const_params(self.tcx, function) {\n",
+    replace: "        for param in super::super::traits::const_params(self.tcx, function).into_iter().filter(|_| false) {\n",
+    tests: ["test/declarations-ungiven.test.ts", "-t", "location and a const"],
   },
 ];

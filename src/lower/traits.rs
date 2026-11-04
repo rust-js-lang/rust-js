@@ -122,7 +122,7 @@ fn own_const_params(tcx: TyCtxt<'_>, id: DefId) -> Vec<u32> {
         .collect()
 }
 
-fn const_params(tcx: TyCtxt<'_>, id: DefId) -> Vec<&ty::GenericParamDef> {
+pub(super) fn const_params(tcx: TyCtxt<'_>, id: DefId) -> Vec<&ty::GenericParamDef> {
     let generics = tcx.generics_of(id);
     (0..generics.count())
         .map(|index| generics.param_at(index, tcx))

@@ -2345,6 +2345,59 @@ type as JS does, `js::any_of(value)` and `js::cast` back
 ([ADR 0909](../../decisions/0909-a-type-parameters-value-is-any-value.md));
 or, for one only Rust calls, no `pub`.
 
+What a JS caller can give is declared after its arguments, as its JS
+takes it: a `#[track_caller]` function's caller's location, `{ file,
+line, column }`, which a JS caller gives of where it calls from, as a Rust
+caller does ([ADR 0427](../../decisions/0427-track-caller.md)); a const
+parameter's value, `N`, of its type
+([ADR 0107](../../decisions/0107-const-generics.md)); and a bound's
+dictionary of a declared trait. None of them is optional, and a trailing
+`Option` before them isn't either
+([ADR 1077](../../decisions/1077-a-function-js-cant-call-as-declared-isnt-declared.md),
+amended):
+
+```rust
+use std::panic::Location;
+
+#[track_caller]
+pub fn checked(n: u32) -> u32 {
+    if n == 0 {
+        panic!("zero at {}", Location::caller());
+    }
+    n
+}
+
+pub fn zeros<const N: usize>() -> [u8; N] {
+    [0; N]
+}
+```
+
+```js
+export function checked(n, location) {
+  if (n === 0) {
+    throw new Error(`zero at ${location.file}:${location.line}:${location.column}`);
+  }
+  return n;
+}
+
+export function zeros(N) {
+  return new Array(N).fill(0);
+}
+```
+
+```ts
+export function checked(n: number, location: {
+    readonly file: string;
+    readonly line: number;
+    readonly column: number;
+}): number;
+
+export function zeros(N: number): number[];
+```
+
+`checked(0, { file: "app.ts", line: 3, column: 7 })` panics `zero at
+app.ts:3:7`, and `zeros(3)` is `[0, 0, 0]`, as `zeros::<3>()`.
+
 Some types aren't declared yet, and a caller of them isn't checked: a
 `Result` and an `async fn`'s result are `any`, as are a tuple struct,
 an `impl Iterator` and a counted `Rc`, and a type's methods object, `Counter`, has its

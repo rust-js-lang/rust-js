@@ -1284,4 +1284,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
   },
+  {
+    name: "location-declared-any",
+    breaks: "a `Location`, what a tracked function takes and `Location::caller()` gives, is declared `any`, where it's `{ file, line, column }` (#560)",
+    file: "src/lower/declarations.rs",
+    find: "                if tcx.is_lang_item(did, LangItem::PanicLocation) {\n",
+    replace: "                if false && tcx.is_lang_item(did, LangItem::PanicLocation) {\n",
+    tests: ["test/declarations-ungiven.test.ts", "-t", "location and a const"],
+  },
 ];
