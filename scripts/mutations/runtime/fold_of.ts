@@ -50,12 +50,4 @@ export const mutations: Mutation[] = [
     replace: "      undefined,\n    );\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^panic_mid_iteration_drops with"],
   },
-  {
-    name: "fold-of-unwind-lost",
-    breaks: "a dictionary's `fold` of std's struct, `$foldOf`, gives it no `unwind`: `last` of a `flat_map` drops what's left before the one it kept (#423)",
-    file: "src/runtime/fold_of.js",
-    find: "function $foldOf(it, init, f, unwind) {\n  return it.fold(init, f, unwind);\n",
-    replace: "function $foldOf(it, init, f, unwind) {\n  return it.fold(init, f);\n",
-    tests: ["test/iterator-forms.test.ts", "-t", "^panic_in_own_next_drops with"],
-  },
 ];

@@ -853,3 +853,19 @@ and `dropping-last-folded-first` (`lower/mir/iter/closing.ts`) are caught.
 `map-extend-steps` and `extend-map-unclosed-on-throw` are gone with the
 code they held. `skipping-nth-only-own` and `folded-fold-unexposed` now
 name the case that reaches their code.
+
+## Amendment: two of #423's runtime mutations are equivalent (#606)
+
+The Nightly of 3c71ee8f9 found `fold-of-unwind-lost` (`$foldOf` gives its
+`fold` no `unwind`) and `dictionary-fold-unwind-lost` (`$iterator`'s own
+`fold` gives none) surviving. They had been held by
+`panic_in_own_next_drops`' `flat_map(..).last()` of std's structs, until
+std's `last` stopped folding: `$lastDropping` steps it now. With both
+mutations applied, every corpus case runs as native Rust does, as the
+crate builds it (1,593 tests) and with std's iterator structs
+(`ITERATOR_FORMS=corpus`, 1,574). Probes didn't catch them either: a
+`flat_map` folded through an `inspect`, and the crate's own panicking
+`next` behind a `flat_map` and an `inspect`, by `fold` and by `last`.
+Std's compiled frames drop their own accumulators as they unwind. Both
+mutations are removed as equivalent. #615 (P3) asks for a program whose
+drops the forwarded `unwind` changes, or for the forwarding's removal.
