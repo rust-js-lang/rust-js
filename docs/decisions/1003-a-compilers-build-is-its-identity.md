@@ -119,8 +119,8 @@ another build.
 - **Not in a manifest's identity**: a library's facts, which a consumer
   reads, aren't the printer's, and `--version-json` stays the binary's.
 - **Not the app's Prettier**, which lays the JS out (ADR 0381): the app's
-  input, not the compiler's. Its configs are in the dep-info; which
-  Prettier is installed isn't, a gap of its own.
+  input, not the compiler's, its configs in the dep-info. Which Prettier
+  is installed is in the line too, since #684 (below).
 
 Each change to the printer rebuilds every crate of a Cargo build, as a
 change to the compiler's sources does, its files kept beside the others'
@@ -131,3 +131,44 @@ declarations printer rust-js runs": a crate's `.d.ts` built, the printer
 changed at the same path and dated as before, and the next build's `.d.ts`
 the new printer's. Mutations `cargo-version-without-printer` (`cargo.rs`),
 `printer-unnamed` and `printer-of-its-package-alone` (`typescript.rs`).
+
+## Amendment: the app's Prettier (#684)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, as above.
+
+The app's Prettier lays out the JS rust-js writes (ADR 0381), each file by
+the config Prettier finds for it, which a crate's dep-info names. Which
+Prettier was in no key: an upgrade of the app's, `yarn upgrade prettier`,
+lays the JS out otherwise, but it's a package of `node_modules`, no file
+of which Cargo dates, so every crate stayed fresh with its old layout.
+
+**Cargo is told it too**: `.., declarations 4081613b597496de, prettier
+<hash>`, a hash of the manifest of the Prettier each crate rust-js compiles
+finds, the app's own and crates.io's (`RUST_JS_CRATES`,
+`RUST_JS_DEPENDENCIES`), with its version, by each crate's directory
+(`prettier::identity`). It's found as the layout's session imports it, from
+where the crate is: Node's `findPackageJSON("prettier", <crate>/lib.js)`,
+all of them in one session.
+
+- **By its manifest**: an installed package's files are its release's,
+  which its version says; hashing all of Prettier's would read megabytes
+  each build for nothing more.
+- **Of every crate at once**: the line is one for the build. A crate
+  added, or a Prettier installed for one of them, rebuilds every crate, as
+  a change to the compiler does; that's as rare as it's cheap to be right.
+- **None where no crate has one**: the line is as before, and a crate's
+  JS is rust-js's own layout.
+- **A Node session each build**, about 40 ms, beside the layout's own:
+  Cargo asks `rustc -vV` each build (above), and an editor's check too.
+- **Not its plugins**: a config's `plugins`, react-in-rust's
+  `prettier-plugin-hermes-parser`, are what that config names, found as
+  Prettier finds them; an upgrade of one alone is still no change Cargo
+  sees, left to its own issue.
+
+What holds it: `test/cargo-workspace.test.ts`, "Cargo is told which
+Prettier lays out the app's JS": the app's Prettier upgraded at the same
+path, each of its files dated as before, and the next build's JS its
+layout. Mutations `cargo-version-without-prettier` and
+`cargo-prettier-of-no-crate` (`cargo.rs`),
+`prettier-identity-of-its-directories-alone` and
+`prettier-identity-found-nowhere` (`prettier.rs`).

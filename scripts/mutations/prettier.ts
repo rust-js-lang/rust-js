@@ -42,4 +42,20 @@ export const mutations: Mutation[] = [
     replace: "  prettier = module;",
     tests: ["test/settings.test.ts", "-t", "CommonJS Prettier"],
   },
+  {
+    name: "prettier-identity-of-its-directories-alone",
+    breaks: "which Prettier lays out the crates' JS, as Cargo is told it, is their directories alone, not what's installed, so an upgrade of it at the same path keeps the old layout (#684)",
+    file: "src/prettier.rs",
+    find: "        for part in [dir.as_os_str().as_encoded_bytes(), &read] {\n",
+    replace: "        for part in [dir.as_os_str().as_encoded_bytes(), &read[..0]] {\n",
+    tests: ["test/cargo-workspace.test.ts", "-t", "told which Prettier"],
+  },
+  {
+    name: "prettier-identity-found-nowhere",
+    breaks: "no crate's Prettier is found for what Cargo is told, so an upgrade of it keeps the old layout (#684)",
+    file: "src/prettier.rs",
+    find: '    found.push(findPackageJSON("prettier", pathToFileURL(join(dir, "lib.js"))) ?? null);\n',
+    replace: '    found.push(findPackageJSON("prettier-nowhere", pathToFileURL(join(dir, "lib.js"))) ?? null);\n',
+    tests: ["test/cargo-workspace.test.ts", "-t", "told which Prettier"],
+  },
 ];

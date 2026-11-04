@@ -345,6 +345,11 @@ haven't changed is fresh, and its JS is the JS that build wrote.
   ([ADR 1003](../../decisions/1003-a-compilers-build-is-its-identity.md)):
   a compiler rebuilt or swapped in, a `git pull` of rust-js's say, builds
   every crate again. The cache never needs clearing for it.
+- **So is another Prettier.** Your Prettier's configs are among what a
+  crate's build read, and which Prettier is installed is told Cargo by
+  its package's manifest, its version with it: an upgrade lays out every
+  crate again. A plugin a config names isn't yet: after upgrading one
+  alone, remove `node_modules/.cache/rust-js/target`.
 
 - **Cargo builds in `node_modules/.cache/rust-js/target`**, out of what your
   bundler watches. Set `CARGO_TARGET_DIR` to build elsewhere.

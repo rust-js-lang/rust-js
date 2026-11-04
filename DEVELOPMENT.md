@@ -465,8 +465,9 @@ the workflow's 2 machines; `--shards=4` splits it across four.
 - **Read every bless patch before committing it.**
 - **A compiler change needs no cache cleared by hand.** Cargo is told the
   compiler's build and the `@rust-js/typescript` that prints the `.d.ts`,
-  each by what it is (ADR 1003, amended for #675): a `yarn rust` or a regen
-  after rust-js changes, at the same path or another, builds every crate
+  each by what it is (ADR 1003, amended for #675), and the app's Prettier
+  by its package's manifest (#684): a `yarn rust` or a regen after rust-js
+  or Prettier changes, at the same path or another, builds every crate
   again. A cache copied from another checkout is rebuilt too, as its
   crates' paths differ; copy none, as it's tens of GB ([slow spots](#slow-spots-still-to-fix)).
 - **A red run is the change's.** Fix it at once, on `main`, and say what

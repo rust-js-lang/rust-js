@@ -181,6 +181,36 @@ test("a Cargo build is done until the app's Prettier config changes", async () =
   expect(await built()).toContain("return 'hi';");
 }, 600_000);
 
+// And which Prettier: an upgrade of the app's lays its JS out otherwise, of
+// a package Cargo dates nothing of, its configs the same, and every crate
+// was fresh, its old layout kept (#684). Of what's installed, not its date:
+// one copied in as old as the cache is another build too.
+test("Cargo is told which Prettier lays out the app's JS, so another one's crates are built again", async () => {
+  const dir = fixture("cargo-prettier-upgrade");
+  writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app"]\nresolver = "2"\n');
+  mkdirSync(join(dir, "app", "src"), { recursive: true });
+  writeFileSync(join(dir, "app", "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "app", "src", "lib.rs"), 'pub fn greeting() -> &\'static str {\n    "hi"\n}\n');
+  writeFileSync(join(dir, ".prettierrc"), "{}\n");
+  // The app's Prettier, at a release that says it's laid the file out.
+  const prettier = join(dir, "node_modules", "prettier");
+  mkdirSync(prettier, { recursive: true });
+  const install = (version: string) => {
+    writeFileSync(join(prettier, "package.json"), JSON.stringify({ name: "prettier", version, main: "index.js" }));
+    writeFileSync(join(prettier, "index.js"), `module.exports = { resolveConfigFile: async () => ${JSON.stringify(join(dir, ".prettierrc"))}, `
+      + `resolveConfig: async () => ({}), format: async (code) => "// laid out by ${version}\\n" + code };\n`);
+  };
+  install("3.0.0");
+  const manifest = join(dir, "Cargo.toml");
+  const built = async () => readFileSync((await check(manifest, { packageNames: ["app"] })).js!, "utf8");
+  expect(await built()).toStartWith("// laid out by 3.0.0\n");
+  // Upgraded at the same path, each file dated as it was.
+  const dates = ["package.json", "index.js"].map((file) => [join(prettier, file), statSync(join(prettier, file)).mtime] as const);
+  install("3.0.1");
+  for (const [file, mtime] of dates) utimesSync(file, mtime, mtime);
+  expect(await built()).toStartWith("// laid out by 3.0.1\n");
+}, 600_000);
+
 /** A workspace of one library, `app`, whose `value` its feature `alternate` changes. */
 function featured(dir: string): string {
   writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app"]\nresolver = "2"\n');

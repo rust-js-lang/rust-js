@@ -495,6 +495,7 @@ fn expand(given: &[String]) -> Result<Vec<String>, String> {
 /// another checkout's or worktree's, is another build (ADR 1003). And the
 /// `@rust-js/typescript` that prints its `.d.ts`, which isn't in the binary:
 /// another, at the same path, is another build too (ADR 1003, amended; #675).
+/// So is another of the app's Prettier, which lays its JS out (#684).
 fn verbose_version(rustc: &str) -> Invocation {
     let output = match std::process::Command::new(rustc).arg("-vV").output() {
         Ok(output) => output,
@@ -522,11 +523,20 @@ fn verbose_version(rustc: &str) -> Invocation {
             return Invocation::Rustc(ExitCode::FAILURE);
         }
     };
+    // And the app's Prettier, which lays out the JS of the crates it
+    // compiles, a package Cargo dates nothing of (#684).
+    let layout = match layout() {
+        Ok(layout) => layout.map(|hash| format!(", prettier {hash}")).unwrap_or_default(),
+        Err(error) => {
+            eprintln!("rust-js: {error}");
+            return Invocation::Rustc(ExitCode::FAILURE);
+        }
+    };
     let mut out = std::io::stdout().lock();
     match out.write_all(&output.stdout).and_then(|()| {
         writeln!(
             out,
-            "rust-js: {version}, Rust {toolchain}, ABI {abi}, build {build}{printer}"
+            "rust-js: {version}, Rust {toolchain}, ABI {abi}, build {build}{printer}{layout}"
         )
     }) {
         Ok(()) => Invocation::Rustc(ExitCode::SUCCESS),
@@ -534,6 +544,22 @@ fn verbose_version(rustc: &str) -> Invocation {
             eprintln!("rust-js: cannot write rustc's version: {error}");
             Invocation::Rustc(ExitCode::FAILURE)
         }
+    }
+}
+
+/// Which Prettier lays out the JS of the crates rust-js compiles, of the
+/// app's own and of crates.io's, as the tooling lists them: none where it
+/// lists none, outside its build.
+fn layout() -> Result<Option<String>, String> {
+    let mut dirs = Vec::new();
+    for var in [CRATES, DEPENDENCIES] {
+        if std::env::var_os(var).is_some() {
+            dirs.extend(listed(var)?);
+        }
+    }
+    match dirs.is_empty() {
+        true => Ok(None),
+        false => crate::prettier::identity(&dirs),
     }
 }
 
