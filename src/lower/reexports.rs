@@ -830,6 +830,10 @@ pub(super) fn reexports_alone(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
             // Its `mod`s, and std's prelude rustc gives every crate.
             hir::ItemKind::Mod(..) | hir::ItemKind::ExternCrate(..) => true,
             hir::ItemKind::Use(..) if !tcx.visibility(item.owner_id).is_public() => true,
+            // A list's stem, `pub use react_client::{CHILDREN,
+            // create_element};`'s, which re-exports nothing itself: each
+            // of its leaves is an item of its own (rd755).
+            hir::ItemKind::Use(_, hir::UseKind::ListStem) => true,
             _ => super::analysis::is_reexport(tcx, item),
         }
     })

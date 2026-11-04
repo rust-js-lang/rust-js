@@ -219,9 +219,19 @@ root's `entry_is_root` read them unchanged: the consumer imports it by
 the package's name where its Rust names it through the root, by its
 module's file where a module's path names it; the root re-exporting it
 of its home is the entry's already and writes no JS. A name the entry
-re-exports directly keeps its entry. The contract is a compiler's, whose
+re-exports directly keeps its entry.
+
+**A `pub use` of a list is a root's re-exports alone too**: `pub use
+react_client::{CHILDREN, create_element};`, the guide's own form, is in
+rustc's HIR one `use` item for each leaf and one for the list's stem,
+public, which re-exports nothing; `reexports::reexports_alone` took the
+stem for an item of its own, so React's root wrote `react.js`, `export
+{Children, createElement} from './src/ReactClient.js'`, where `pub use
+react_client::CHILDREN;` alone wrote none. The stem is passed over, each
+leaf held to `is_reexport` as before. The contract is a compiler's, whose
 identity a consumer checks (ADR 0100), so a library written before is
 rebuilt. Held by `test/libraries.test.ts`' "through its module's
 re-export" test (one hop and two, no `kids/src/lib.js`, native Rust's
-answer) and mutations `package-entry-through-unread`,
-`package-entry-through-any-name` and `package-entry-through-one-hop`.
+answer, a root's list) and mutations `package-entry-through-unread`,
+`package-entry-through-any-name`, `package-entry-through-one-hop`
+(`packages.rs`) and `reexports-alone-list-stem-own` (`lower/reexports.rs`).

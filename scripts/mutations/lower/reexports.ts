@@ -174,6 +174,15 @@ export const mutations: Mutation[] = [
     tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
   },
   {
+    name: "reexports-alone-list-stem-own",
+    breaks:
+      "a crate's root of `pub use react_client::{CHILDREN, create_element};` is taken as holding an item of its own, the list's stem, so it writes a second entry, React's react.js, beside its package's (rd755, ADR 1008, amended)",
+    file: "src/lower/reexports.rs",
+    find: "            hir::ItemKind::Use(_, hir::UseKind::ListStem) => true,\n",
+    replace: "",
+    tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
+  },
+  {
     name: "export-named-apart-reexported-apart",
     breaks:
       "`pub use crate::delete;` re-exports it as `export { delete as delete$ }`, not by its own name (#338)",

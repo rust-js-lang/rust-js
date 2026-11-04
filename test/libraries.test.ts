@@ -334,9 +334,9 @@ pub fn count() -> u32 {
 // names: a consumer naming it through the library's root imports it by
 // the package's name, `require('react').createElement`, as it does one of
 // the entry's module's own, through each module that re-exports it in
-// turn; and a root re-exporting it alone writes no JS of its own, its
-// re-export of the item's home the entry's already (rd755, ADR 1008,
-// amended).
+// turn; and a root re-exporting it alone, a `pub use` of a list too,
+// `pub use react_client::{CHILDREN, create_element};`, writes no JS of its
+// own, the entry's already (rd755, ADR 1008, amended).
 test("an item a package's entry re-exports through its module's re-export is imported by the package's name", () => {
   const dir = fixture("package-entry-through");
   writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["kids", "dom"]\nresolver = "3"\n');
@@ -346,13 +346,13 @@ test("an item a package's entry re-exports through its module's re-export is imp
   }
   const kids = join(dir, "kids");
   writeFileSync(join(kids, "package.json"), JSON.stringify({ name: "@acme/kids", type: "module", main: "index.js" }));
-  writeFileSync(join(kids, "src", "lib.rs"), "mod inner;\npub mod mid;\npub mod outer;\n\npub use mid::made;\npub use outer::twice;\n");
-  writeFileSync(join(kids, "src", "inner.rs"), "pub fn made() -> u32 {\n    7\n}\n\npub fn twice(n: u32) -> u32 {\n    n * 2\n}\n");
-  writeFileSync(join(kids, "src", "mid.rs"), "pub use crate::inner::{made, twice};\n");
+  writeFileSync(join(kids, "src", "lib.rs"), "mod inner;\npub mod mid;\npub mod outer;\n\npub use mid::{halve, made};\npub use outer::twice;\n");
+  writeFileSync(join(kids, "src", "inner.rs"), "pub fn halve(n: u32) -> u32 {\n    n / 2\n}\n\npub fn made() -> u32 {\n    7\n}\n\npub fn twice(n: u32) -> u32 {\n    n * 2\n}\n");
+  writeFileSync(join(kids, "src", "mid.rs"), "pub use crate::inner::{halve, made, twice};\n");
   writeFileSync(join(kids, "src", "outer.rs"), "pub use crate::mid::twice;\n");
-  writeFileSync(join(kids, "index.js"), "export {made} from './src/mid.js';\nexport {twice} from './src/outer.js';\n");
+  writeFileSync(join(kids, "index.js"), "export {halve, made} from './src/mid.js';\nexport {twice} from './src/outer.js';\n");
   writeFileSync(join(dir, "dom", "src", "by_module.rs"), "pub fn one_more() -> u32 {\n    kids::mid::made() + 1\n}\n");
-  writeFileSync(join(dir, "dom", "src", "lib.rs"), "pub mod by_module;\n\npub fn run() -> u32 {\n    kids::twice(kids::made()) + by_module::one_more()\n}\n");
+  writeFileSync(join(dir, "dom", "src", "lib.rs"), "pub mod by_module;\n\npub fn run() -> u32 {\n    kids::halve(kids::twice(kids::made())) + by_module::one_more()\n}\n");
   mkdirSync(join(dir, "node_modules", "@acme"), { recursive: true });
   symlinkSync(kids, join(dir, "node_modules", "@acme", "kids"), "dir");
   mkdirSync(join(dir, "node_modules", "@rust-js"));
@@ -364,13 +364,13 @@ test("an item a package's entry re-exports through its module's re-export is imp
   writeFileSync(join(native, "main.rs"), "fn main() {\n    println!(\"{}\", dom::run());\n}\n");
   run(["rustc", "--edition=2024", join(native, "main.rs"), "-o", join(native, "program"), "--extern", `dom=${join(native, "libdom.rlib")}`, "-L", `dependency=${native}`]);
   const nativeRun = run([join(native, "program")]).trim();
-  expect(nativeRun).toBe("22");
+  expect(nativeRun).toBe("15");
   const built = build(join(dir, "dom"));
   expect(built.stderr).toBe("");
   const js = readFileSync(join(dir, "dom", "src", "lib.js"), "utf8");
   // By the package's name, through the root; by its module's file, in a
   // module whose Rust names it through that module.
-  expect(js).toContain('import { made, twice } from "@acme/kids";\n');
+  expect(js).toContain('import { halve, made, twice } from "@acme/kids";\n');
   expect(js).not.toContain("inner.js");
   const byModule = readFileSync(join(dir, "dom", "src", "by_module.js"), "utf8");
   expect(byModule).toContain('import { made } from "../../kids/src/mid.js";\n');
