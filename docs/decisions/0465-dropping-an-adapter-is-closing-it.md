@@ -1509,3 +1509,45 @@ temporary `result$1` beside the value they return, `result`, as every
 such collect does, and `cycled_iterators`' `two` names its `iter$1` in
 both of the collect's branches (renamed `x$1` 579.9 to 580 in 10,000
 lines before the baseline took this stack's other new cases).
+
+## Amendment: a `Vec`'s `IntoIter` takes its `last` by its back (2026-11-04, #648)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. What's dropped as a
+drop panics changes, so Rust's behavior is kept.
+
+Std's `vec::IntoIter`, `array::IntoIter` and `vec_deque::IntoIter` each
+write `last` themselves, as `next_back()`: the last item is taken, then
+what's left is dropped as the iterator is, front to back, as one slice
+that goes on past a drop that panics. Where one of those drops panics,
+the item taken is leaked, as rustc doesn't drop what a function gives
+back as a later drop unwinds. `ds().into_iter().last()`, D(3)'s drop
+panicking, prints `drop 1`, `drop 2`, `drop 3`, `drop 4` natively, and
+D(5) is never dropped. `$lastDropping` folded it, by std's default, so
+the JS dropped D(5) where native leaks it, and never dropped D(4).
+
+- **A `$closing` of an array's items it owns, of a type
+  `drops_passed_as_slice` names, has its own `last`**: its iterator's
+  back, then itself closed. It's gated on the `slices` the compiler gives
+  it alone, not on the items' drop being `$dropEach`'s, as an inline drop
+  is given too. A `skip`'s `last` asks its source's, a `chain`'s each
+  side's and a flatten's each inner iterator's (#645), so each reaches it.
+- **`drops_passed_as_slice` no longer names `binary_heap::IntoIter`**. It
+  writes neither `advance_back_by` nor `last`, so std's defaults drop what
+  its `nth_back` passes one at a time from the back, and fold its `last`.
+  It's closed as one that drops each as it's passed, as a `Drain` is,
+  `$closing($iter(heap), drop, false)`. Its `nth_back(2)` dropped 10 and
+  20 of a heap of 10 to 50 as a slice, where std drops 20, then 10.
+
+Left to the compiled-iterator protocol: a compiled std struct, a `fuse()`'s
+or a `peekable()`'s in either build, and with `--std-iterators` a `skip()`'s
+and a `chain()`'s, holds a bare `$iter` of the `Vec`'s items, and generic
+code is given one, whose `last` folds it. Neither knows whether it's a
+`Vec`'s `IntoIter` or a `Drain`'s, so that fact belongs with what the
+protocol gives a `Vec`'s `IntoIter`. `iterator-forms.test.ts` lists the
+corpus case under `differs` for it.
+
+Corpus case: `vec_last_takes_its_back.rs`, which also holds #645's
+flatten `last` and #647's chain `last` of a `Vec`'s, against native Rust.
+Mutations: `closing-into-iter-last-folds` and
+`closing-into-iter-last-unclosed` (`runtime/closing.ts`),
+`heap-into-iter-passed-as-slice` (`lower/recognition/iterators.ts`).

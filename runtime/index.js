@@ -2462,7 +2462,9 @@ export function $closing(it, drop, slices = true) {
   // And from its front, its `advance_by` and `nth`, what they pass over
   // dropped as one slice too, by itself, as a `chain`'s `nth` asks it
   // (#250); how many there weren't.
-  const slice = slices && it.items !== undefined && it.nthBack === undefined && drop?.each !== undefined;
+  // A `Vec`'s `IntoIter`, whose `last` is its own (#648).
+  const intoIter = slices && it.items !== undefined && it.nthBack === undefined && drop !== undefined;
+  const slice = intoIter && drop.each !== undefined;
   const advanceBackBy = (m) => $advanceSlice(it, m, drop.each, true);
   const advanceBy = (m) => $advanceSlice(it, m, drop.each);
   if (slice) {
@@ -2511,9 +2513,18 @@ export function $closing(it, drop, slices = true) {
     return it.count();
   };
   // Its `last`, the crate's own, which takes it and drops what it has left
-  // itself, as a `skip`'s `last` asks it (#494).
-  if (it.ownLast) closing.ownLast = true;
+  // itself, as a `skip`'s `last` asks it (#494). Of an array's items it
+  // owns, std's `IntoIter::last`, `next_back()`: its last item, then what
+  // it has left dropped, front to back, as it's dropped; where one of
+  // those drops panics, the item it took is leaked, as rustc doesn't drop
+  // what a function gives back as a later drop unwinds (#648).
+  if (it.ownLast || intoIter) closing.ownLast = true;
   const last = () => {
+    if (intoIter) {
+      const step = it.back();
+      close();
+      return step;
+    }
     closed = true;
     return it.last();
   };
@@ -2549,7 +2560,7 @@ export function $closing(it, drop, slices = true) {
           : undefined,
     fold,
     count: it.ownCount ? count : undefined,
-    last: it.ownLast ? last : undefined,
+    last: it.ownLast || intoIter ? last : undefined,
     rfold: it.rfold !== undefined ? rfold : undefined,
     tryRfold: "tryRfold",
     tryFold,

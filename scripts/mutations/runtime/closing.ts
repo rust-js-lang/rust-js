@@ -150,8 +150,8 @@ export const mutations: Mutation[] = [
     name: "closing-own-last-unforwarded",
     breaks: "what holds the crate's iterator with its own `last` doesn't say so, so a `skip`'s `last` of it folds it (#494)",
     file: "src/runtime/closing.js",
-    find: "    last: it.ownLast ? last : undefined,\n",
-    replace: "",
+    find: "    last: it.ownLast || intoIter ? last : undefined,\n",
+    replace: "    last: intoIter ? last : undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
   },
   {
@@ -177,5 +177,21 @@ export const mutations: Mutation[] = [
     find: "  $dropItems(passed, each);\n",
     replace: "  for (const item of passed) each(item);\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_take_count_drops_a_slice.rs$"],
+  },
+  {
+    name: "closing-into-iter-last-folds",
+    breaks: "a closed `Vec`'s `into_iter()`'s `last` folds it, dropping each before the next, not std's `IntoIter::last`, which takes its back and drops what's left, so a drop that panics drops the item that was to replace it and leaks the rest (#648)",
+    file: "src/runtime/closing.js",
+    find: "  if (it.ownLast || intoIter) closing.ownLast = true;\n",
+    replace: "  if (it.ownLast) closing.ownLast = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_last_takes_its_back.rs$"],
+  },
+  {
+    name: "closing-into-iter-last-unclosed",
+    breaks: "a closed `Vec`'s `into_iter()`'s own `last` takes its back and never drops what it has left (#648)",
+    file: "src/runtime/closing.js",
+    find: "      const step = it.back();\n      close();\n",
+    replace: "      const step = it.back();\n      closed = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_last_takes_its_back.rs$"],
   },
 ];

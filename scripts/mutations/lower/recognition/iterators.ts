@@ -143,6 +143,16 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
   },
   {
+    name: "heap-into-iter-passed-as-slice",
+    breaks:
+      "a `BinaryHeap`'s `into_iter()` is taken to drop what it passes as one slice and take its `last` by its back, as a `Vec`'s does, where std's defaults drop each it passes from the back and fold it (#648)",
+    file: "src/lower/recognition/iterators.rs",
+    find: '            "std::vec::IntoIter" | "std::array::IntoIter" | "std::collections::vec_deque::IntoIter"\n',
+    replace:
+      '            "std::vec::IntoIter"\n                | "std::array::IntoIter"\n                | "std::collections::vec_deque::IntoIter"\n                | "std::collections::binary_heap::IntoIter"\n',
+    tests: ["test/corpus.test.ts", "-t", "^vec_last_takes_its_back.rs$"],
+  },
+  {
     name: "heap-drain-not-owning",
     breaks:
       "a heap's `drain()` isn't an iterator that owns what it took out, so one of values with destructors is refused",

@@ -137,18 +137,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// Whether `ty` drops what it passes over from its back as one slice,
-    /// front to back, as `vec::IntoIter`'s, `array::IntoIter`'s,
-    /// `VecDeque`'s and `BinaryHeap`'s `advance_back_by` does, where the
-    /// default, a `Drain`'s or a B-tree's, drops each as it's passed (#234).
+    /// front to back, as `vec::IntoIter`'s, `array::IntoIter`'s and
+    /// `VecDeque`'s `advance_back_by` does, where the default, a `Drain`'s,
+    /// a B-tree's or a `BinaryHeap`'s, drops each as it's passed (#234);
+    /// and whose `last` is its own, `next_back()`, what it has left then
+    /// dropped as it's dropped, where the default folds it (#648).
     pub(in crate::lower) fn drops_passed_as_slice(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty.peel_refs());
         let ty::Adt(adt, _) = ty.kind() else { return false };
         matches!(
             std_path(self.tcx, adt.did()).as_str(),
-            "std::vec::IntoIter"
-                | "std::array::IntoIter"
-                | "std::collections::vec_deque::IntoIter"
-                | "std::collections::binary_heap::IntoIter"
+            "std::vec::IntoIter" | "std::array::IntoIter" | "std::collections::vec_deque::IntoIter"
         )
     }
 

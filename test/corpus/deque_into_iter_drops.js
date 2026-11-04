@@ -105,7 +105,10 @@ function main() {
   }
 
   const heap = $heapFrom([[10], [11]], (a, b) => $cmp(a[0], b[0]));
-  const some = $count($closing($iter(heap), $dropEach(loudDrop_drop)).take(1), loudDrop_drop);
+  const some = $count(
+    $closing($iter(heap), $dropEach(loudDrop_drop), false).take(1),
+    loudDrop_drop,
+  );
   console.log(`heap ${some}`);
 }
 //# sourceMappingURL=case.js.map

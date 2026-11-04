@@ -106,6 +106,8 @@ const chosen = which === "corpus" ? caseShard(cases) : few;
  * with why: what's left to do, which only shrinks. One that runs as Rust
  * does is taken off. */
 const differs: Record<string, string> = {
+  "vec_last_takes_its_back.rs":
+    "a compiled `Skip`'s and `Chain`'s `last` ask a bare `$iter` of a `Vec`'s items for its `last`, which folds it, as what the compiled-iterator protocol gives a `Vec`'s `IntoIter` lacks its own `last`, std's `next_back()` (#648)",
   "nth_passed_drops_unwind.rs":
     "std's compiled `StepBy` and `Skip` ask a `Vec`'s `nth` by `$nthDropping`, each passed dropped in turn, so a panicking drop stops it where std's `advance_by` drops the rest of its slice before the panic unwinds (#668)",
 };
