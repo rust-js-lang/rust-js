@@ -523,4 +523,20 @@ export const mutations: Mutation[] = [
     replace: "    it.return?.();\n    taken(\"next\");\n    taken(\"back\");\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_from_both_ends_drops_its_inners.rs$"],
   },
+  {
+    name: "flatten-ends-fold-unforwarded",
+    breaks: "a flatten stepped from its back has no `fold`, so its `fold`, and a `rev()`'s `rfold` of it, step it by `next`, never calling its source's own `fold` (#649)",
+    file: "src/runtime/back_steps.js",
+    find: '  $forward(flat, it, { fold: folding(front, "next", "back"), rfold:',
+    replace: "  $forward(flat, it, { rfold:",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_folds_reach_its_sources_own.rs$"],
+  },
+  {
+    name: "flatten-ends-rfold-unforwarded",
+    breaks: "a flatten stepped from its back has no `rfold`, so its `rfold`, and a `rev()`'s `fold` of it, step it by `next_back`, never calling its source's own `rfold` (#621, #649)",
+    file: "src/runtime/back_steps.js",
+    find: ', rfold: folding($foldBack, "back", "next") });\n',
+    replace: " });\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_folds_reach_its_sources_own.rs$"],
+  },
 ];

@@ -280,3 +280,30 @@ Mutations: `type-parameter-fold-unsaid` and `type-parameter-rfold-unsaid`
 `given-boxed-steps-not-own` and `knowing-rfold-unasked` name their new
 text, and `std-struct-fold-undictionaried` a compiled struct's JS, as a
 type parameter's `fold` is `Reach::May`'s now.
+
+## Amendment: a flatten stepped from its back folds as std's `FlattenCompat` does (2026-11-04, #621, #649)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+`$flattenEnds`, a flatten the crate steps from its back, had no `fold` and
+no `rfold`, so std's defaults stepped it by `next` or `next_back`, and
+neither its source's own `fold` or `rfold` nor an inner's was called.
+`Folds(0, 3).map(pair).flatten().rfold(..)` never ran the crate's own
+`rfold`, and its `rev().rfold(..)`, `Rev::rfold`, which is
+`Flatten::fold`, never ran its own `fold`. It now gives both by
+`$forward`, std's `FlattenCompat::fold` and `rfold`: the inner it's in at
+that end, then its source's own fold of each item's inner, each inner's
+own, then the inner at its other end. `OwnStep::asked_of` says a
+flatten's and a flat map's `rfold` is its source's, as their `fold` is,
+so the table is std's; no program's JS differs by it today, as each place
+that asks it of a flatten asks the value at run time too, so no mutation
+holds it.
+
+`flatten_folds_reach_its_sources_own.rs` checks a flatten's and a flat
+map's `rfold`, a `rev()`'s `fold` and `rfold`, generic code's, each
+inner's own, and a closure that panics part-way, against native Rust in
+both builds. In the matrix, #621's 14 cases, 123 of #649's and 20 of
+#650's run as Rust does. Mutations: `flatten-ends-fold-unforwarded` and
+`flatten-ends-rfold-unforwarded` (`runtime/back_steps.ts`);
+`rfolds-not-through-peekable` names its line as it now reads.

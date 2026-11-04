@@ -3521,6 +3521,30 @@ export function $flattenEnds(it, each) {
   const flat = new $Steps(step("next", "next", "back"), close);
   flat.back = step("back", "back", "next");
   flat.from = [it];
+  // Std's `FlattenCompat::fold`: the front inner's rest, then its source's
+  // `fold` of each item's inner, then the back inner's rest; its `rfold`
+  // the same from the back. Each is its source's and each inner's own step,
+  // the crate's where it writes one, which a `rev()`'s `rfold` and `fold`
+  // ask too (#621, #649). What a fold hasn't reached yet, its source and
+  // its other inner, stays its own, closed in their order as what consumes
+  // it unwinds (#705).
+  const front = (stepped, init, f, unwind) =>
+    typeof stepped.fold === "function" ? stepped.fold(init, f, unwind) : $foldDropping(stepped, init, f, unwind);
+  const folding = (fold, own, other) => (init, f, unwind) => {
+    const inners = (stepped, a) => fold(stepped, a, f, unwind);
+    let folded = init;
+    const first = inner[own];
+    inner[own] = undefined;
+    if (first !== undefined) folded = inners(first, folded);
+    if (!ended) {
+      ended = true;
+      folded = fold(it, folded, (a, x) => inners($iter(each(x)), a), unwind);
+    }
+    const last = inner[other];
+    inner[other] = undefined;
+    return last === undefined ? folded : inners(last, folded);
+  };
+  $forward(flat, it, { fold: folding(front, "next", "back"), rfold: folding($foldBack, "back", "next") });
   return flat;
 }
 

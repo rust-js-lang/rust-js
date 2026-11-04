@@ -135,8 +135,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `peekable()`'s `rfold` isn't said to be its source's, so generic code's `src.take(3).peekable().rev()` collected into a `Vec` steps by `next`, dropping 4 before 5 (#697)",
     file: "src/lower/recognition/own_steps.rs",
-    find: '            (Rfold, "Map" | "Filter" | "Enumerate" | "Fuse" | "Peekable") => own,\n',
-    replace: '            (Rfold, "Map" | "Filter" | "Enumerate" | "Fuse") => own,\n',
+    find: '            (Rfold, "Map" | "Filter" | "Enumerate" | "Fuse" | "Peekable" | "FlatMap" | "Flatten") => own,\n',
+    replace: '            (Rfold, "Map" | "Filter" | "Enumerate" | "Fuse" | "FlatMap" | "Flatten") => own,\n',
     tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
   },
   {

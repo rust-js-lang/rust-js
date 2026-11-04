@@ -73,7 +73,8 @@ impl OwnStep {
     /// back its source's `nth_back` past what it won't give, then its
     /// `rfold` or `try_rfold`; a `skip`'s `rfold` its `try_rfold`; a
     /// peekable's `rfold` its source's, after what it peeked at (#649),
-    /// and its `try_rfold`, as a fuse's is, its source's (#697).
+    /// and its `try_rfold`, as a fuse's is, its source's (#697); a flatten's
+    /// `rfold` its source's, as its `fold` is (#649).
     fn asked_of(self, adapter: &str) -> &'static [(usize, OwnStep)] {
         use OwnStep::*;
         let own: &'static [(usize, OwnStep)] = match self {
@@ -102,7 +103,7 @@ impl OwnStep {
                 "Map" | "Filter" | "FilterMap" | "Enumerate" | "Inspect" | "Skip" | "SkipWhile" | "Copied" | "Cloned"
                 | "Fuse" | "Peekable" | "FlatMap" | "Flatten" | "Take" | "TakeWhile" | "Scan" | "MapWhile",
             ) => own,
-            (Rfold, "Map" | "Filter" | "Enumerate" | "Fuse" | "Peekable") => own,
+            (Rfold, "Map" | "Filter" | "Enumerate" | "Fuse" | "Peekable" | "FlatMap" | "Flatten") => own,
             (Rfold, "Take") => &[(0, Rfold), (0, NthBack)],
             (Rfold, "Skip") => &[(0, TryRfold)],
             (TryRfold, "Take") => &[(0, NthBack), (0, TryRfold)],
