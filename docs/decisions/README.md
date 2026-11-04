@@ -1032,6 +1032,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0085 Experimental scalar library linkage](0085-scalar-library-linkage.md) *(replaced by 0100)*
 - [0572 A compiler file is at most 1,500 lines](0572-a-compiler-file-is-at-most-1500-lines.md)
 - [0854 A checkout's own compiler is built from its sources before it runs](0854-a-checkouts-compiler-is-built-before-it-runs.md)
+- [1085 Issues carry a kind and an area](1085-issues-carry-a-kind-and-an-area.md)
 
 ## Adding a decision
 

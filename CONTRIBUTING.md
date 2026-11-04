@@ -36,6 +36,12 @@ A refusal is better than a wrong answer, so issues are worked in this order,
 and every issue carries exactly one of these labels. A P0 is fixed or filed
 at once, as [Correctness first](#correctness-first) says.
 
+Every issue also carries one `kind: …`, the mistake its fix corrects, one
+`area: …`, the owner whose question it answered wrongly, and `regression`
+where a known commit broke what worked. [docs/bug-kinds.md](docs/bug-kinds.md)
+defines them, says what a filer records and who confirms the kind, and how
+their counts choose the next refactor.
+
 ## Architecture principle
 
 **Understand each piece through its responsibility and contracts.**
