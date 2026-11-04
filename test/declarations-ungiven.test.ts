@@ -379,15 +379,15 @@ test("a `&mut` that's a box is declared as its box, and a `dyn` as its pair", ()
   // A `&mut` it gives back is a handle on the item.
   expect(declarations).toContain(`export function largest(items: number[]): ${held("number")};`);
   // A closure's `&mut` parameter, as generic code gives it; a `&mut` to a
-  // closure is the closure.
+  // closure is the closure, of the function its bound says (#661).
   expect(declarations).toContain(`export function apply(f: (value: ${held("number")}) => void, n: ${held("number")}): void;`);
-  expect(declarations).toContain("export function call<F>(f: F): void;");
+  expect(declarations).toContain("export function call(f: () => void): void;");
   expect(declarations).toContain(`    raise(level: ${held("Level", "    ")}): void;`);
   // A `&mut` to an object is the object.
   expect(declarations).toContain("export function tick(counter: Counter): void;");
   // A method's own type parameter's bound is its own: a `&mut F` of an
-  // `F: FnMut` is the function.
-  expect(declarations).toContain("    each<F>(counter: Counter, f: F): void;");
+  // `F: FnMut(u32)` is the function.
+  expect(declarations).toContain("    each(counter: Counter, f: (value: number) => void): void;");
   expect(declarations).toContain("export function grow(items: number[]): void;");
   const pair = (indent = "") => `{\n${indent}    value: unknown;\n${indent}    impl: Shape<unknown>;\n${indent}}`;
   expect(declarations).toContain('import type { Shape } from "./shape.js";');

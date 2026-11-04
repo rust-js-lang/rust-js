@@ -132,4 +132,22 @@ export const mutations: Mutation[] = [
     replace: "        let skipped = usize::from(false && !inputs.is_empty());\n",
     tests: ["test/classes.test.ts"],
   },
+  {
+    name: "impl-fn-bound-its-callable",
+    breaks:
+      "an impl's `F: Fn() -> u32` is its method's function type, `call<F>(holder: Holder<() => number>)`, where the type's declaration takes it as its parameter, `Holder<F>` (#661)",
+    file: "src/lower/signatures.rs",
+    find: "            if param.index < parent\n",
+    replace: "            if param.index < parent && false\n",
+    tests: ["test/declarations-impl-fn.test.ts", "-t", "bound by Fn"],
+  },
+  {
+    name: "fn-bound-not-callable",
+    breaks:
+      "a type parameter bound by `Fn`, `twice<F: Fn(u32) -> u32>(f: F)`, is declared a plain `F`, which any value meets, where its JS calls it (#661)",
+    file: "src/lower/signatures.rs",
+    find: "                || !self.is_callable(bound.self_ty())\n",
+    replace: "                || !self.is_callable(bound.self_ty())\n                || !bound.self_ty().to_string().starts_with(\"impl \")\n",
+    tests: ["test/declarations-impl-fn.test.ts", "-t", "bound by Fn"],
+  },
 ];

@@ -104,3 +104,20 @@ in the context of the item declared.
   `body_receiver`, the part `receiver_as_this` asks of a body: a trait
   of classes' default is lowered of its first parameter into its impl's
   dictionary, and `defaults::prototype_defaults` takes it as `this`.
+
+## Amended (#661): a type parameter bound by `Fn` is its function
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for the JS, which
+doesn't change; the declaration was looser than it (AGENTS.md's ports
+rule): `twice<F: Fn(u32) -> u32>(f: F)` was `twice<F>(f: F)`, which a
+TypeScript caller could give any value its JS then calls.
+
+A `JsSignature` says which of a function's own type parameters it's given
+a JS function of, `callables`: each bound by `Fn`, `FnMut` or `FnOnce` of
+what lowering makes a JS function (`is_callable`), with what its bound
+takes and gives. The declaration erases each to that function type, as
+it did an `impl Fn(..)`'s, and leaves it out of its type parameters:
+`twice(f: (value: number) => number, n: number): number`. One rule now
+answers both, where `erased` had answered the `impl Fn` alone, of a
+synthetic parameter. An impl's `F: Fn()` is its type's parameter,
+`Holder<F>`, declared as its type takes it, so it's no function's own.

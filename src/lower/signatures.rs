@@ -26,6 +26,19 @@ pub(in crate::lower) struct JsSignature<'tcx> {
     pub(in crate::lower) params: Vec<JsParam<'tcx>>,
     /// What it gives.
     pub(in crate::lower) result: Form<'tcx>,
+    /// Its own type parameters it's given a JS function of.
+    pub(in crate::lower) callables: Vec<Callable<'tcx>>,
+}
+
+/// One of a function's own type parameters its JS is given a JS function
+/// of, `F: Fn(&Item, usize) -> R` or an `impl Fn(..)`: a closure, a
+/// function or a fn pointer, each a JS function (ADR 0099), by its index,
+/// with what the function takes and gives (#661).
+#[derive(Clone, Copy)]
+pub(in crate::lower) struct Callable<'tcx> {
+    pub(in crate::lower) index: u32,
+    pub(in crate::lower) inputs: &'tcx [Ty<'tcx>],
+    pub(in crate::lower) output: Ty<'tcx>,
 }
 
 /// One of what a function's JS takes.
@@ -252,6 +265,52 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 optional: false,
             },
         };
-        JsSignature { params, result }
+        JsSignature {
+            params,
+            result,
+            callables: self.callables(function),
+        }
+    }
+
+    /// `function`'s own type parameters bound by a function trait, `F:
+    /// Fn(&Item) -> R`, a value of which is a JS function (`is_callable`),
+    /// each with what its bound says it takes and gives, its `Output`'s or
+    /// `()` (#661). Not its impl's, which its type's declaration takes as
+    /// its own.
+    fn callables(&self, function: DefId) -> Vec<Callable<'tcx>> {
+        let tcx = self.tcx;
+        let parent = tcx.generics_of(function).parent_count as u32;
+        let clauses = tcx.clauses_of(function).clauses;
+        let mut callables: Vec<Callable<'tcx>> = Vec::new();
+        for (clause, _) in clauses.iter() {
+            let Some(bound) = clause.as_trait_clause().map(|b| b.skip_binder()) else {
+                continue;
+            };
+            let ty::Param(param) = bound.self_ty().kind() else {
+                continue;
+            };
+            if param.index < parent
+                || callables.iter().any(|callable| callable.index == param.index)
+                || tcx.fn_trait_kind_from_def_id(bound.def_id()).is_none()
+                || !self.is_callable(bound.self_ty())
+            {
+                continue;
+            }
+            let ty::Tuple(inputs) = bound.trait_ref.args.type_at(1).kind() else {
+                continue;
+            };
+            let output = (clauses.iter())
+                .filter_map(|(clause, _)| clause.as_projection_clause())
+                .map(|p| p.skip_binder())
+                .find(|p| matches!(p.self_ty().kind(), ty::Param(q) if q.index == param.index))
+                .and_then(|p| p.term.as_type())
+                .unwrap_or(tcx.types.unit);
+            callables.push(Callable {
+                index: param.index,
+                inputs: inputs.as_slice(),
+                output,
+            });
+        }
+        callables
     }
 }

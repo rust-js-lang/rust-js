@@ -541,7 +541,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `impl Fn(&Item, usize) -> R` parameter is declared `unknown`, not its function",
     file: "src/lower/declarations.rs",
-    find: "            erased.insert(param.index, function);\n",
+    find: "                slot.insert(self.function_type(callable.inputs, callable.output, &[], true));\n",
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "impl Fn parameter"],
   },
@@ -1290,5 +1290,13 @@ export const mutations: Mutation[] = [
     find: "        let outer = self.fill_value_names(def_id, ty);\n",
     replace: "        let outer = self.function_names.len();\n",
     tests: ["test/declarations-function-types.test.ts", "-t", "the functions its value may be"],
+  },
+  {
+    name: "callable-type-parameter-declared",
+    breaks: "a type parameter declared as the function it's bound by stays a type parameter too, `twice<F>(f: (value: number) => number)` (#661)",
+    file: "src/lower/declarations.rs",
+    find: "            .filter(|param| !callables.iter().any(|callable| callable.index == param.index))\n",
+    replace: "            .filter(|param| callables.is_empty() || param.index != u32::MAX)\n",
+    tests: ["test/declarations-impl-fn.test.ts", "-t", "bound by Fn"],
   },
 ];

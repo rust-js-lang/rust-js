@@ -481,14 +481,26 @@ struct Declarations<'a, 'tcx> {
 
 impl<'tcx> Declarations<'_, 'tcx> {
     /// `["C"]`: an item's type parameters, but those `impl Trait` stands
-    /// for, and those that are a type of TypeScript's.
+    /// for, those that are a type of TypeScript's, and a function's it's
+    /// given a JS function of, declared as the function (`callables`).
     fn generics(&mut self, def_id: DefId) -> Vec<Value> {
         let erased = erasures(self.tcx, def_id);
+        let callables = self.callables(def_id);
         (self.tcx.generics_of(def_id).own_params.iter())
             .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { synthetic: false, .. }))
             .filter(|param| !erased.iter().any(|(index, _)| *index == param.index))
+            .filter(|param| !callables.iter().any(|callable| callable.index == param.index))
             .map(|param| json!({ "name": param.name.as_str() }))
             .collect()
+    }
+
+    /// A function's own type parameters it's given a JS function of, its
+    /// `JsSignature`'s (#661); none of another item.
+    fn callables(&self, def_id: DefId) -> Vec<super::signatures::Callable<'tcx>> {
+        match self.tcx.def_kind(def_id) {
+            DefKind::Fn | DefKind::AssocFn => (self.representation.signature)(def_id).callables,
+            _ => Vec::new(),
+        }
     }
 
     /// An item's type parameters that are a type of TypeScript's, by index,
@@ -505,40 +517,14 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 erased.insert(index, self.written(bound, &declared, ty::List::empty()));
             }
         }
-        // An `impl Fn(&Item, usize) -> R` parameter is the function it says,
-        // `(item: Item, index: number) => R`, as TypeScript writes a callback.
-        let clauses = self.tcx.clauses_of(def_id).clauses;
-        for (clause, _) in clauses.iter() {
-            let Some(bound) = clause.as_trait_clause().map(|b| b.skip_binder()) else {
-                continue;
-            };
-            let ty::Param(param) = bound.self_ty().kind() else {
-                continue;
-            };
-            let synthetic = matches!(
-                self.tcx
-                    .generics_of(def_id)
-                    .param_at(param.index as usize, self.tcx)
-                    .kind,
-                ty::GenericParamDefKind::Type { synthetic: true, .. }
-            );
-            if !synthetic
-                || erased.contains_key(&param.index)
-                || self.tcx.fn_trait_kind_from_def_id(bound.def_id()).is_none()
-            {
-                continue;
+        // A function's type parameter it's given a JS function of, `F:
+        // Fn(&Item, usize) -> R` or an `impl Fn(..)`, is the function it
+        // says, `(item: Item, index: number) => R`, as TypeScript writes a
+        // callback (`JsSignature::callables`, #661).
+        for callable in self.callables(def_id) {
+            if let std::collections::hash_map::Entry::Vacant(slot) = erased.entry(callable.index) {
+                slot.insert(self.function_type(callable.inputs, callable.output, &[], true));
             }
-            let ty::Tuple(inputs) = bound.trait_ref.args.type_at(1).kind() else {
-                continue;
-            };
-            let output = (clauses.iter())
-                .filter_map(|(clause, _)| clause.as_projection_clause())
-                .map(|p| p.skip_binder())
-                .find(|p| matches!(p.self_ty().kind(), ty::Param(q) if q.index == param.index))
-                .and_then(|p| p.term.as_type())
-                .unwrap_or(self.tcx.types.unit);
-            let function = self.function_type(inputs.as_slice(), output, &[], true);
-            erased.insert(param.index, function);
         }
         self.erased = outer;
         erased
