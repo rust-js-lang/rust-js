@@ -5,6 +5,9 @@
 // what a function gives back as a later drop unwinds (#648). In place,
 // through a `skip()` and a `chain()`, each of which asks its source's own
 // `last`, and of an array's and a `VecDeque`'s, whose `last` is theirs too.
+// So too through a `fuse()` and a `peekable()`, whose `last` asks its
+// source's, and in generic code, given one as its type parameter, which
+// can't tell it from a `Drain` but by what its caller says of it.
 // A `BinaryHeap`'s has none, so its `last` folds it, and its `nth_back`
 // drops each it passes from the back, as std's defaults do.
 use std::collections::{BinaryHeap, VecDeque};
@@ -24,6 +27,10 @@ impl Drop for D {
 
 fn ds() -> Vec<D> {
     vec![D(1), D(2), D(3), D(4), D(5)]
+}
+
+fn last_of<I: Iterator<Item = D>>(it: I) -> Option<u32> {
+    it.last().map(|d| d.0 + 0)
 }
 
 fn run(name: &str, f: impl FnOnce() -> Option<u32>) {
@@ -47,6 +54,20 @@ fn main() {
             .chain(vec![D(2), D(3), D(4)])
             .last()
             .map(|d| d.0 + 0)
+    });
+    run("fused", || ds().into_iter().fuse().last().map(|d| d.0 + 0));
+    run("peeked", || {
+        let mut it = ds().into_iter().peekable();
+        println!("peeked {:?}", it.peek().map(|d| d.0 + 0));
+        it.last().map(|d| d.0 + 0)
+    });
+    run("generic", || last_of(ds().into_iter()));
+    run("generic, skipped and fused", || last_of(ds().into_iter().skip(1).fuse()));
+    run("generic, a drain's", || {
+        let mut v = ds();
+        let r = last_of(v.drain(..));
+        println!("left {}", v.len());
+        r
     });
     run("flattened", || {
         ds().into_iter()

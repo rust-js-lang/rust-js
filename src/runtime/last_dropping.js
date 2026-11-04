@@ -86,8 +86,10 @@ function $lastDropping(it, drop, boxed) {
     }
     return kept === undefined ? undefined : some($someValue(kept));
   }
+  // Given `drop`, which a `Vec`'s `IntoIter`'s own, `$slicing`'s, drops
+  // what it has left by (#648).
   if (it.ownLast) {
-    const step = it.last();
+    const step = it.last(drop);
     return step.done ? undefined : some(step.value);
   }
   let last;

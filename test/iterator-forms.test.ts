@@ -104,6 +104,10 @@ const few = [
   "nth_passes_a_slice_or_each.rs",
   // A `skip()` of a `Peekable` stepped from its back, by its length (#706).
   "skip_of_a_peekable_from_back.rs",
+  // A `Vec`'s `IntoIter::last`, its back taken, then what's left dropped as
+  // one slice, asked by std's compiled `Skip`, `Chain`, `Fuse` and
+  // `Peekable` (#648).
+  "vec_last_takes_its_back.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);
@@ -112,10 +116,7 @@ const chosen = which === "corpus" ? caseShard(cases) : few;
 /** The cases whose std-struct build doesn't run as native Rust yet, each
  * with why: what's left to do, which only shrinks. One that runs as Rust
  * does is taken off. */
-const differs: Record<string, string> = {
-  "vec_last_takes_its_back.rs":
-    "a compiled `Skip`'s and `Chain`'s `last` ask a bare `$iter` of a `Vec`'s items for its `last`, which folds it, as what the compiled-iterator protocol gives a `Vec`'s `IntoIter` lacks its own `last`, std's `next_back()` (#648)",
-};
+const differs: Record<string, string> = {};
 
 test("the cases a run of a few names are the corpus's, and each listed difference is one", () => {
   for (const name of [...few, ...Object.keys(differs)]) expect(cases).toContain(name);

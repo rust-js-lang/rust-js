@@ -210,4 +210,20 @@ export const mutations: Mutation[] = [
     replace: "  return it;\n",
     tests: ["test/corpus.test.ts", "-t", "^(nth_passes_a_slice_or_each|nth_passed_drops_unwind).rs$"],
   },
+  {
+    name: "slicing-last-folds",
+    breaks: "a `Vec`'s `IntoIter` given generic code or std's compiled `Fuse` or `Peekable` isn't given its own `last`, so it's folded, a drop that panics dropping the item that was to replace it, where std's `IntoIter::last` takes its back and drops what's left as one slice (#648)",
+    file: "src/runtime/closing.js",
+    find: "  it.ownLast = true;\n  it.dropItem = drop;\n",
+    replace: "  it.dropItem = drop;\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^vec_last_takes_its_back"],
+  },
+  {
+    name: "slicing-last-leaves-the-rest",
+    breaks: "a `Vec`'s `IntoIter`'s own `last`, given its items' drop, takes its back and never drops what it has left (#648)",
+    file: "src/runtime/closing.js",
+    find: "      if (each !== undefined) it.advanceBy(it.len(), each);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^vec_last_takes_its_back"],
+  },
 ];

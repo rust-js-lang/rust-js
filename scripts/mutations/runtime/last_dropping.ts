@@ -106,4 +106,12 @@ export const mutations: Mutation[] = [
     replace: "      throw error;\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_side_panics_drops_the_other.rs$"],
   },
+  {
+    name: "last-dropping-own-given-no-drop",
+    breaks: "`last()` asks an iterator's own `last` without the items' drop, so a `Vec`'s `IntoIter` a compiled flatten holds as its inner, given its steps by `$given`, which knows no drop, takes its back and drops nothing it has left (#648)",
+    file: "src/runtime/last_dropping.js",
+    find: "    const step = it.last(drop);\n",
+    replace: "    const step = it.last();\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^vec_last_takes_its_back with"],
+  },
 ];

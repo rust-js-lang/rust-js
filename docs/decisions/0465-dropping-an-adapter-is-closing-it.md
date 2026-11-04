@@ -1751,3 +1751,35 @@ fields drop. Such a `step_by()` is `$stepBy` now
 fold, a `flat_map()`'s, a reversed source's collect into a `String` and a
 set's, against native Rust in both builds; the matrix's 8 are taken off.
 Mutation: `step-by-of-a-flatten-filtered` (`lower/combinators/adapters.ts`).
+
+## Amendment: a `Vec`'s `IntoIter` given its own `last` by `$slicing` (2026-11-05, #648)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. What's dropped as a
+drop panics changes, so Rust's behavior is kept.
+
+The amendment above gave `$closing` std's `IntoIter::last`, and left the
+`Vec`'s `IntoIter` a compiled std struct holds, a `fuse()`'s or a
+`peekable()`'s in either build and a `skip()`'s or a `chain()`'s with
+`--std-iterators`, and generic code's, to the compiled-iterator protocol:
+each holds a bare `$iter` of the items, which can't tell an `IntoIter`
+from a `Drain`, and its `last` folded it. `ds().into_iter().fuse().last()`,
+D(3)'s drop panicking, dropped D(5) and never D(4).
+
+That protocol is `$slicing`, which the one owner, `slice_seen`
+(`mir/iter/closing.rs`), says a value is given, by the `Iterator`
+dictionary's `advanceBy: $advanceSlice` or a step's helper: it now gives
+the value its `last` too, `ownLast`, std's `IntoIter::last`. It takes the
+back, then drops what's left as one slice by the drop it's given,
+`$lastDropping`'s, or the one `$slicing` was given. Given none, as
+`$given`'s value is, its owner drops what's left after, generic code or
+the compiled struct, whose `$took` says the `Vec`'s `last` took nothing.
+`$lastDropping` gives an iterator's own `last` its drop, since what holds
+a flatten's inner iterator drops nothing of it after its `last`.
+
+`vec_last_takes_its_back.rs` adds a `fuse()`'s, a `peekable()`'s, generic
+code's of a `Vec`'s, of a `skip(1).fuse()` of one, and of a `Drain`'s,
+which folds, against native Rust in both builds, and leaves
+`iterator-forms.test.ts`'s `differs`. The matrix took off 64 of #648's
+100. Mutations: `slicing-last-folds`, `slicing-last-leaves-the-rest`
+(`runtime/closing.ts`), `last-dropping-own-given-no-drop`
+(`runtime/last_dropping.ts`).

@@ -157,9 +157,16 @@ function $advanceSlice(it, m, each, back = false) {
 // by the `drop` each is given, or the items' own, `drop`, the rest of the
 // slice after one throws; and its `nth` and `nth_back`, std's defaults of
 // them, so its own, which drop what they pass themselves (`ownNth`), as
-// an adapter over it asks. Its caller, which knows its type, gives it so
-// where it's given to what doesn't: generic code, std's compiled
-// adapters, a step whose helper sees only the JS iterator. A `Drain`'s, a
+// an adapter over it asks; and its `last`, std's `IntoIter::last`,
+// `next_back()`, what it has left then dropped as one slice, by the drop
+// it's given, `$lastDropping`'s, as no owner drops a flatten's inner
+// iterator after, or the items' own; given none, by its owner after,
+// generic code or std's compiled adapter: where one of those drops
+// panics, the item it took is leaked, as rustc doesn't drop what a
+// function gives back as a later drop unwinds (#648). Its caller, which
+// knows its type, gives it so where it's given to what doesn't: generic
+// code, std's compiled adapters, a step whose helper sees only the JS
+// iterator. A `Drain`'s, a
 // B-tree's and a `BinaryHeap`'s aren't: theirs are std's defaults, each
 // dropped as it's passed, a panic stopping them (#703, #704).
 function $slicing(it, drop) {
@@ -170,9 +177,15 @@ function $slicing(it, drop) {
     advanceBackBy: (m, each = drop) => $advanceSlice(it, m, each, true),
     nth: (k, each = drop) => (it.advanceBy(k, each) > 0 ? { done: true, value: undefined } : it.next()),
     nthBack: (k, each = drop) => (it.advanceBackBy(k, each) > 0 ? { done: true, value: undefined } : it.back()),
+    last: (each = drop) => {
+      const step = it.back();
+      if (each !== undefined) it.advanceBy(it.len(), each);
+      return step;
+    },
   });
   it.ownNth = true;
   it.ownNthBack = true;
+  it.ownLast = true;
   it.dropItem = drop;
   return it;
 }
