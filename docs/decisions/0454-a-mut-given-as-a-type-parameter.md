@@ -5,7 +5,8 @@ refusal of a closure's parameter below: a function given for an `F:
 Fn(&mut T)` takes generic code's box apart; and (2026-11-03) what's moved
 out of an in-place cell is a copy apart (#527), and a `&mut` of an object
 given for longer than the call is one (#528); and (2026-11-04) generic
-code's box of an object holds the object itself (#606). Extends [0099](0099-mut-references.md) and
+code's box of an object holds the object itself (#606), and `Cell::from_mut` of
+a type parameter's `&mut T` is that box (#614). Extends [0099](0099-mut-references.md) and
 [0180](0180-generic-writers.md). Decided with the user.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): the same writes, to
@@ -298,3 +299,29 @@ one copy. `may_move_out` and its mutation are gone. Found beside it, and
 filed as #614 (P0): `Cell::from_mut` of a type parameter's `&mut T` makes
 an in-place cell of generic code's box, where the box is that cell. The
 same JS before and after this change.
+
+## Amendment: `Cell::from_mut` of a type parameter's `&mut T` is its box (#614)
+
+`fn through_cell<T>(r: &mut T, v: T) -> T { Cell::from_mut(r).replace(v) }`
+threw `TypeError: Cannot read properties of undefined` where Rust gives
+the old value: `Cell::from_mut` asked `is_boxable(T)`, false of a type
+parameter, so it made an in-place cell of generic code's box,
+`$cellOf(r)`, whose `value` is the box, not the value. A wrong answer,
+found beside #606. Case R ([0262](0262-when-rust-and-js-disagree.md)), now
+Rust's.
+
+What a `&mut` to a `T` is has one owner, `is_cell_pointee`: a cell of a
+number or a text, and generic code's box of a type parameter's
+(`is_generic_boxed`). `Cell::from_mut` and its inverse, `Cell::get_mut`,
+ask it, not `is_boxable`: of a cell pointee, the `&mut` is the cell
+already, `r` itself; of an object, `$cellOf(v)`, as before. `get_mut` of a
+type parameter's `Cell<T>` gave `cell.value`, the value, where generic code
+reads a `&mut T` as a box.
+
+Held by `test/corpus/cell_from_mut_generic.rs` against native Rust:
+generic `replace` of a `Vec`, a struct, a number and a `String`, `get` and
+`set` of a `Copy` struct and a number, `take`, `get_mut` given to
+`mem::replace` of a `Vec` and a number, and `as_slice_of_cells` of a type
+parameter's items and of numbers, swapped and replaced, beside the
+concrete forms. Mutations `cell-from-mut-of-a-param-wrapped` and
+`cell-get-mut-of-a-param-unwrapped`.

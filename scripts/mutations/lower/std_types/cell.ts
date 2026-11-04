@@ -867,4 +867,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^thread_local_lazy_where_observable.rs$"],
     snapshots: true,
   },
+  {
+    name: "cell-from-mut-of-a-param-wrapped",
+    breaks:
+      "`Cell::from_mut(r)` of a type parameter's `&mut T` is an in-place cell of generic code's box, `$cellOf(r)`, so its `replace` reads the box's `value` of a box and throws (#614)",
+    file: "src/lower/std_types/cell.rs",
+    find: "            Std::CellFromMut => match self.is_cell_pointee(generic_args.type_at(0)) {\n",
+    replace: "            Std::CellFromMut => match self.is_boxable(generic_args.type_at(0)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_from_mut_generic.rs$"],
+  },
+  {
+    name: "cell-get-mut-of-a-param-unwrapped",
+    breaks:
+      "`get_mut` of a type parameter's `Cell<T>` is the value it holds, `cell.value`, where generic code's `&mut T` is a box, so `mem::replace` of it writes nothing back (#614)",
+    file: "src/lower/std_types/cell.rs",
+    find: "            Std::CellGetMut => match self.is_cell_pointee(generic_args.type_at(0)) {\n",
+    replace: "            Std::CellGetMut => match self.is_boxable(generic_args.type_at(0)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_from_mut_generic.rs$"],
+  },
 ];
