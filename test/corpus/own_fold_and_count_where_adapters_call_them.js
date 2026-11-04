@@ -44,6 +44,25 @@ function countsIterator_count(counts) {
   return (4 - counts[0]) >>> 0;
 }
 
+function nthsIterator_next(nths) {
+  if (nths[0] === 0) {
+    return;
+  }
+  nths[0] = (nths[0] - 1) >>> 0;
+  return nths[0];
+}
+
+function nthsIterator_nth(nths, n) {
+  console.log(`own nth ${n}`);
+  for (let i = 0; i < n; i++) {
+    const value = nthsIterator_next(nths);
+    if (value == null) {
+      return;
+    }
+  }
+  return nthsIterator_next(nths);
+}
+
 function main() {
   console.log(
     `${$stepBy(
@@ -53,6 +72,12 @@ function main() {
   );
   console.log(
     `${$stepBy($iterator([5], foldsIterator_next, false, undefined, undefined, undefined, foldsIterator_fold), 2).reduce((n) => n + 1, 0)}`,
+  );
+  console.log(
+    `${$stepBy(
+      iterator_fuse([5], { next: nthsIterator_next, nth: nthsIterator_nth }, false),
+      2,
+    ).reduce((n) => n + 1, 0)}`,
   );
   console.log(
     `${$stepBy(

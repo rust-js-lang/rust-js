@@ -90,6 +90,7 @@ const few = [
   "panic_mid_fold_drops.rs",
   "panic_mid_iteration_drops.rs",
   "panic_part_way_drops.rs",
+  "passed_item_drops_that_panic.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);

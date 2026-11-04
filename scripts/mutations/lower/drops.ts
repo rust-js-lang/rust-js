@@ -80,4 +80,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nested_generic_types.rs$"],
     snapshots: true,
   },
+  {
+    name: "drop-may-panic-fields-unseen",
+    breaks: "an item with no `Drop` of its own whose field's drop panics is taken never to panic, so a `skip().step_by()` of a `Vec` of them, collected, leaves what's left undropped as the drop's panic unwinds",
+    file: "src/lower/drops.rs",
+    find: "                own || adt.all_fields().any(|field| {\n",
+    replace: "                own && adt.all_fields().any(|field| {\n",
+    tests: ["test/corpus.test.ts", "-t", "^passed_item_drops_that_panic.rs$"],
+  },
 ];

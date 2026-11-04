@@ -192,6 +192,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.impl_drop_query().drops(self.impl_type(ty))
     }
 
+    /// Whether dropping a `ty` may panic: a `Drop` of the crate's that isn't
+    /// one it never unwinds (ADR 0902), its own or a part's, a field's of
+    /// the crate's types, a type argument's of std's, a tuple's, an array's
+    /// or a closure's capture's; of a type parameter, a `dyn` or an alias,
+    /// anyone's. The one answer, which what drops items it passes over asks.
+    pub(in crate::lower) fn drop_may_panic(&self, ty: Ty<'tcx>) -> bool {
+        self.drop_may_panic_in(ty, &mut HashSet::new())
+    }
+
+    fn drop_may_panic_in(&self, ty: Ty<'tcx>, seen: &mut HashSet<Ty<'tcx>>) -> bool {
+        if !seen.insert(ty) || self.drops(ty) == Drops::Nothing {
+            return false;
+        }
+        match ty.kind() {
+            ty::Param(_) | ty::Dynamic(..) | ty::Alias(..) => true,
+            ty::Adt(adt, args) if adt.did().is_local() => {
+                let own = (self.tcx.adt_destructor(adt.did()))
+                    .is_some_and(|destructor| !self.krate.never_unwinding.contains(&destructor.did));
+                own || adt.all_fields().any(|field| {
+                    let field_ty =
+                        (self.tcx).erase_and_anonymize_regions(field.ty(self.tcx, args).skip_normalization());
+                    self.drop_may_panic_in(field_ty, seen)
+                })
+            }
+            ty::Adt(_, args) => args.types().any(|arg| self.drop_may_panic_in(arg, seen)),
+            ty::Tuple(parts) => parts.iter().any(|part| self.drop_may_panic_in(part, seen)),
+            ty::Array(item, _) | ty::Slice(item) => self.drop_may_panic_in(*item, seen),
+            ty::Closure(_, args) => {
+                (args.as_closure().upvar_tys().iter()).any(|upvar| self.drop_may_panic_in(upvar, seen))
+            }
+            _ => false,
+        }
+    }
+
     pub(in crate::lower) fn has_drops(&self, ty: Ty<'tcx>) -> bool {
         self.impl_drop_query().has_drops(self.impl_type(ty))
     }

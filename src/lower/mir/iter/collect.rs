@@ -317,23 +317,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether an adapter of std's that `iter_ty` holds, its revealed type's,
     /// drops items it passes over as it's stepped, a `skip`'s, a
-    /// `step_by`'s, a `filter`'s, a `filter_map`'s, a `skip_while`'s, a
-    /// `take_while`'s or a `take`'s, of items whose drop may panic: a type
-    /// parameter's, anyone's, or one whose own `Drop`, or a part's, isn't
-    /// one of the crate's that never unwind (ADR 0902).
+    /// `step_by`'s, a `skip_while`'s or a `take`'s, of items whose drop
+    /// may panic, `drop_may_panic`'s.
     fn passed_drops_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
-        let drop_may_panic = |item: Ty<'tcx>| {
-            (item.walk().filter_map(|part| part.as_type())).any(|part| match part.kind() {
-                ty::Param(_) => true,
-                ty::Adt(adt, _) => (self.tcx.adt_destructor(adt.did()))
-                    .is_some_and(|destructor| !self.krate.never_unwinding.contains(&destructor.did)),
-                _ => false,
-            })
-        };
         (self.reveal(iter_ty).walk().filter_map(|part| part.as_type()))
             .filter_map(|part| self.recognition().passes_over_items(part))
             .filter_map(|source| self.iterator_item(source))
-            .any(|item| self.drops(item) != crate::lower::drops::Drops::Nothing && drop_may_panic(item))
+            .any(|item| self.drop_may_panic(item))
     }
 
     /// Whether an iterator `iter_ty` holds, itself or a source std's

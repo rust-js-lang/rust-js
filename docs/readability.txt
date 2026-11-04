@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1647
-lines	167718
+files	1649
+lines	167874
 temporaries	0	0
 labeled blocks	12	0.7
 while (true)	135	8
-$iter	1271	75.8
+$iter	1272	75.8
 Iterator.from	140	8.3
-return;	223	13.3
-renamed x$1	9636	574.5
+return;	225	13.4
+renamed x$1	9638	574.1
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1976	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	207	0	0	0	6	0	0	35
@@ -226,7 +226,7 @@ test/corpus/collection_taken_drops_what_is_left.js	315	0	0	0	13	0	0	66
 test/corpus/combinators_owned_drops.js	233	0	0	0	0	0	0	107
 test/corpus/comment_before_a_bare_continue_arm.js	143	0	0	0	0	0	0	0
 test/corpus/comment_before_an_arms_only_continue.js	89	0	0	0	0	0	0	0
-test/corpus/compiled_adapters_closed_as_a_collect_unwinds.js	200	0	0	0	9	0	0	0
+test/corpus/compiled_adapters_closed_as_a_collect_unwinds.js	232	0	0	0	10	0	0	0
 test/corpus/compound_assignment_order.js	66	0	0	0	0	0	0	17
 test/corpus/condition_block_sequence.js	147	0	1	0	0	0	0	6
 test/corpus/conditional_branch_comments.js	51	0	0	0	0	0	0	0
@@ -283,7 +283,7 @@ test/corpus/cow_compare.js	60	0	0	0	0	0	0	7
 test/corpus/cow_keys.js	86	0	0	0	1	0	0	7
 test/corpus/cow_texts_joined.js	57	0	0	0	1	1	0	0
 test/corpus/cows.js	51	0	0	0	0	0	0	0
-test/corpus/cycled_iterators.js	157	0	0	0	2	1	2	6
+test/corpus/cycled_iterators.js	158	0	0	0	2	1	2	6
 test/corpus/cycled_reversed_ranges.js	74	0	0	0	2	0	0	0
 test/corpus/debug_builder_held.js	95	0	0	0	0	0	0	0
 test/corpus/debug_hex_composite.js	83	0	0	0	0	0	0	8
@@ -512,6 +512,7 @@ test/corpus/fn_pointer_of_borrowed_struct.js	18	0	0	0	0	0	0	0
 test/corpus/fold_back_drops_what_it_takes.js	95	0	0	0	0	0	0	0
 test/corpus/fold_from_none.js	36	0	0	0	0	0	0	6
 test/corpus/folded_call_panic_drops.js	24	0	0	0	0	0	0	0
+test/corpus/for_binding_set_by_its_closure.js	39	0	0	0	0	0	0	0
 test/corpus/for_left_drops_its_rest_where_it_ends.js	144	0	0	3	3	0	0	26
 test/corpus/for_returning_in_an_if.js	100	0	0	0	0	0	0	0
 test/corpus/format_args_order.js	37	0	0	0	0	0	0	4
@@ -965,7 +966,7 @@ test/corpus/own_back_methods_given_dictionaries.js	268	0	0	0	0	0	0	2
 test/corpus/own_back_through_adapters.js	921	0	0	1	0	0	0	0
 test/corpus/own_callback_params.js	104	0	0	0	0	0	0	0
 test/corpus/own_count_through_adapters.js	299	0	0	0	1	2	1	0
-test/corpus/own_fold_and_count_where_adapters_call_them.js	145	0	0	0	0	0	2	0
+test/corpus/own_fold_and_count_where_adapters_call_them.js	170	0	0	0	0	0	4	0
 test/corpus/own_fold_and_nth.js	529	0	0	0	0	2	0	12
 test/corpus/own_fold_through_adapters.js	325	0	0	0	1	0	0	5
 test/corpus/own_fold_unwind_given_on.js	312	0	0	1	7	0	0	0
@@ -1413,7 +1414,7 @@ test/corpus/table_rows.js	77	0	0	0	0	0	1	5
 test/corpus/table_rows_kept_by_views.js	93	0	0	0	0	0	0	0
 test/corpus/tagged_enum_values.js	49	0	0	0	0	0	0	3
 test/corpus/tagged_pointers.js	76	0	0	0	0	0	0	0
-test/corpus/take_destructors.js	767	0	0	2	10	2	0	30
+test/corpus/take_destructors.js	768	0	0	2	10	2	0	30
 test/corpus/taken_and_returned.js	213	0	0	0	0	0	0	18
 test/corpus/taken_then_overwritten.js	168	0	0	0	0	0	0	12
 test/corpus/temporaries_taken_apart.js	163	0	0	0	0	0	0	9
@@ -1450,6 +1451,7 @@ test/corpus/thread_local_syntax.js	32	0	0	0	0	0	0	0
 test/corpus/thread_local_vec_taken.js	48	0	0	0	0	0	0	0
 test/corpus/thread_local_with_in_place.js	87	0	0	0	0	0	1	7
 test/corpus/thread_local_with_nested.js	36	0	0	0	0	0	0	0
+test/corpus/thread_local_written_through_copy.js	58	0	0	0	0	0	0	2
 test/corpus/thread_yield.js	15	0	0	0	0	0	0	0
 test/corpus/to_owned_is_clone.js	46	0	0	0	0	0	0	0
 test/corpus/track_caller.js	57	0	0	0	0	0	0	0

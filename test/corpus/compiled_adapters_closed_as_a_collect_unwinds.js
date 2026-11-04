@@ -7,11 +7,14 @@ import {
   $collectDropping,
   $debugStr,
   $dropEach,
+  $dropItems,
   $iter,
   $last,
   $lazyChain,
   $mapFrom,
   $next,
+  $range,
+  $skipping,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -20,6 +23,13 @@ export function entry() {
 
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
+}
+
+function boomDrop_drop(boom) {
+  console.log(`drop boom ${boom[0]}`);
+  if (boom[0] === 3) {
+    throw new Error("boom");
+  }
 }
 
 function ds(base) {
@@ -195,5 +205,27 @@ function main() {
   console.log(
     `fuse string no panic ${r.TAG === "Err"} [${log.map((item) => $debugStr(item)).join(", ")}]`,
   );
+  r = $catchUnwind(() => {
+    const v = $collectDropping(
+      $skipping(
+        $closing($iter($range(1, 7).map((value) => [value])), (intoIter) => {
+          $dropItems(intoIter, boomDrop_drop);
+        }),
+        1,
+        boomDrop_drop,
+      ).filter((item, i) => {
+        if (i % 2 === 0) {
+          return true;
+        }
+        boomDrop_drop(item);
+        return false;
+      }),
+      boomDrop_drop,
+      true,
+    );
+    $dropItems(v, boomDrop_drop);
+    return v.length;
+  });
+  console.log(`skip step_by vec ${r.TAG === "Err"}`);
 }
 //# sourceMappingURL=case.js.map

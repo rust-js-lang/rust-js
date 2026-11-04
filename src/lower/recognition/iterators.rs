@@ -444,13 +444,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// What std's adapter `ty` steps, where it drops items of it that it
-    /// passes over as it's stepped: a `skip`'s, a `step_by`'s, a `filter`'s,
-    /// a `filter_map`'s, a `skip_while`'s, a `take_while`'s or a `take`'s.
+    /// passes over as it's stepped, outside a fold's closure, which still
+    /// holds what it was given: a `skip`'s, a `step_by`'s, a `skip_while`'s
+    /// or a `take`'s. Not a `filter`'s, a `filter_map`'s or a
+    /// `take_while`'s, whose rejected item is dropped inside the closure,
+    /// after the accumulator moved into what it returns, which std leaks
+    /// (rustc's #47949, `$kept`'s).
     pub(in crate::lower) fn passes_over_items(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let ty::Adt(adt, args) = ty.kind() else { return None };
         matches!(
             std_path(self.tcx, adt.did()).strip_prefix("std::iter::"),
-            Some("Skip" | "StepBy" | "Filter" | "FilterMap" | "SkipWhile" | "TakeWhile" | "Take")
+            Some("Skip" | "StepBy" | "SkipWhile" | "Take")
         )
         .then(|| args.types().next())
         .flatten()
