@@ -1,49 +1,31 @@
-// Mutations of src/lower/recognition/slice_steps.rs (#234, #668, #670).
+// Mutations of src/lower/recognition/slice_steps.rs (#234, #668, #670, #697).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "nths-a-slice-not-through-enumerate",
+    name: "nths-a-slice-not-through-adapters",
     breaks:
-      "a `step_by` of an `Enumerate` of a reversed `Vec` is a `filter`, which drops each item it passes, back to front, not as `nth_back`'s one slice (#277)",
+      "a `step_by` of a `Skip`, a `Fuse`, a `Peekable` or an `Enumerate` of a reversed `Vec` is a `filter`, which drops each item it passes, back to front, not as `nth_back`'s one slice: the `OwnStep` catalog's `nth` is not asked (#261, #277, #697)",
     file: "src/lower/recognition/slice_steps.rs",
-    find: '                        | "std::iter::Enumerate"\n',
-    replace: "",
+    find: "        let mut sources = asked.chain(self.nth_advanced_source(ty));\n",
+    replace: "        let mut sources = asked.take(0).chain(self.nth_advanced_source(ty));\n",
     tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
-  },
-  {
-    name: "nths-a-slice-not-through-fuse",
-    breaks:
-      "a `step_by` of a `Fuse` of a reversed `Vec` is a `filter`, which drops each item it passes, back to front, not as `nth_back`'s one slice (#261)",
-    file: "src/lower/recognition/slice_steps.rs",
-    find: '                        | "std::iter::Fuse"\n',
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "step_by_compiled_source_nth"],
-  },
-  {
-    name: "nths-a-slice-not-through-peekable",
-    breaks:
-      "a `step_by` of a `Peekable` of a reversed `Vec` is a `filter`, which drops each item it passes, back to front, not as `nth_back`'s one slice (#261)",
-    file: "src/lower/recognition/slice_steps.rs",
-    find: '                        | "std::iter::Peekable"\n',
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "step_by_compiled_source_nth"],
-  },
-  {
-    name: "chain-nths-no-slice",
-    breaks:
-      "`rev().chain(..).step_by(2)` of a `Vec` is a filter dropping what it steps over from the back one at a time, not `$stepBy` asking the chain's `nth`, one slice (#261)",
-    file: "src/lower/recognition/slice_steps.rs",
-    find: "                self.nth_drops_a_slice(args.type_at(0), in_order) || self.nth_drops_a_slice(args.type_at(1), in_order)\n",
-    replace: "                false\n",
-    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
   {
     name: "nth-back-of-a-take-unasked",
     breaks: "a `take`'s `rfold` isn't said to ask its source's `nth_back`, so a `take(n).rev()` collected into a `String` steps by `next` (#670)",
     file: "src/lower/recognition/slice_steps.rs",
-    find: "            Some(\"Take\") => (true, 1),\n",
-    replace: "            Some(\"Take\") => (false, 1),\n",
+    find: "                OwnStep::NthBack => found.push(source),\n",
+    replace: "                OwnStep::NthBack => {}\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
+  },
+  {
+    name: "nth-back-not-through-try-rfold",
+    breaks:
+      "a `skip`'s `rfold`, its `try_rfold`, isn't followed to a `take`'s, so a `take(3).fuse().skip(1).rev()` collected into a `String` steps by `next`, dropping 4 before 5 (#697)",
+    file: "src/lower/recognition/slice_steps.rs",
+    find: "                OwnStep::Fold | OwnStep::Rfold | OwnStep::TryRfold => {\n",
+    replace: "                OwnStep::TryRfold => {}\n                OwnStep::Fold | OwnStep::Rfold => {\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
   },
   {

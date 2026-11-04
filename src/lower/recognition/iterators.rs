@@ -452,12 +452,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.tcx.impl_item_implementor_ids(imp).get(&method).copied()
     }
 
-    /// What a `rev()` of type `ty` steps from its back, its source.
-    pub(super) fn reversed_source(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-        let ty::Adt(adt, args) = ty.kind() else { return None };
-        (std_path(self.tcx, adt.did()) == "std::iter::Rev").then(|| args.types().next())?
-    }
-
     /// What an iterator of type `iterator` gives, its `Item`, normalized:
     /// the one place that works it out.
     pub(crate) fn iterator_item(&self, iterator: Ty<'tcx>) -> Option<Ty<'tcx>> {

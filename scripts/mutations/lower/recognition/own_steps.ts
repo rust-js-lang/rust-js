@@ -113,12 +113,57 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
   {
+    name: "try-rfolds-not-through-fuse",
+    breaks:
+      "a `fuse()`'s `try_rfold` isn't said to be its source's, so a `take(3).fuse().skip(1).rev()` collected into a `String` steps by `next`, dropping 4 before 5 (#697)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: '            (TryRfold, "Map" | "Filter" | "Enumerate" | "Skip" | "Fuse" | "Peekable") => own,\n',
+    replace: '            (TryRfold, "Map" | "Filter" | "Enumerate" | "Skip" | "Peekable") => own,\n',
+    tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
+  },
+  {
+    name: "try-rfolds-not-through-peekable",
+    breaks:
+      "a `peekable()`'s `try_rfold` isn't said to be its source's, so a `take(3).peekable().skip(1).rev()` collected into a `String` steps by `next`, dropping 4 before 5 (#697)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: '            (TryRfold, "Map" | "Filter" | "Enumerate" | "Skip" | "Fuse" | "Peekable") => own,\n',
+    replace: '            (TryRfold, "Map" | "Filter" | "Enumerate" | "Skip" | "Fuse") => own,\n',
+    tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
+  },
+  {
+    name: "rfolds-not-through-peekable",
+    breaks:
+      "a `peekable()`'s `rfold` isn't said to be its source's, so generic code's `src.take(3).peekable().rev()` collected into a `Vec` steps by `next`, dropping 4 before 5 (#697)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: '            (Rfold, "Map" | "Filter" | "Enumerate" | "Fuse" | "Peekable") => own,\n',
+    replace: '            (Rfold, "Map" | "Filter" | "Enumerate" | "Fuse") => own,\n',
+    tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
+  },
+  {
+    name: "nths-its-own-no-peekable",
+    breaks:
+      "a `peekable()`'s `nth` isn't said to be its source's, so a `step_by` of a `Peekable` of a reversed `Vec` is a `filter`, which drops each item it passes, back to front, not as `nth_back`'s one slice (#261)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "            (Nth, \"Skip\" | \"Take\" | \"StepBy\" | \"Enumerate\" | \"Fuse\" | \"Peekable\") => own,\n",
+    replace: "            (Nth, \"Skip\" | \"Take\" | \"StepBy\" | \"Enumerate\" | \"Fuse\") => own,\n",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
+  },
+  {
+    name: "chain-nths-no-slice",
+    breaks:
+      "`rev().chain(..).step_by(2)` of a `Vec` is a filter dropping what it steps over from the back one at a time, not `$stepBy` asking the chain's `nth`, its first side's `advance_by`, one slice (#261)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: '        (std_path(self.tcx, adt.did()) == "std::iter::Chain").then(|| args.types().next())?\n',
+    replace: '        (std_path(self.tcx, adt.did()) == "std::iter::Never").then(|| args.types().next())?\n',
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
+  {
     name: "nths-its-own-no-enumerate",
     breaks: "enumerate's nth is its source's",
     file: "src/lower/recognition/own_steps.rs",
     find: "            (Nth, \"Skip\" | \"Take\" | \"StepBy\" | \"Enumerate\" | \"Fuse\" | \"Peekable\") => own,\n",
     replace: "            (Nth, \"Skip\" | \"Take\" | \"StepBy\" | \"Fuse\" | \"Peekable\") => own,\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(own_nth_through_adapters|step_by_compiled_source_nth).rs$"],
   },
   {
     name: "nths-its-own-no-fuse",
@@ -128,7 +173,7 @@ export const mutations: Mutation[] = [
     find: "            (Nth, \"Skip\" | \"Take\" | \"StepBy\" | \"Enumerate\" | \"Fuse\" | \"Peekable\") => own,\n",
     replace: "            (Nth, \"Skip\" | \"Take\" | \"StepBy\" | \"Enumerate\" | \"Peekable\") => own,\n",
     snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^own_last_and_nth_passed_on.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(own_last_and_nth_passed_on|step_by_compiled_source_nth).rs$"],
   },
   {
     name: "take-folds-unseen",

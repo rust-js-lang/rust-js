@@ -173,7 +173,9 @@ test("a build of std's iterator structs makes no adapter in place", () => {
 // loop or a `String` of `String`s; a panic in that slice's drop, the rest
 // of it dropped, then what's left; and in generic code, a `Vec` collected
 // by its fold where the caller's iterator is `TrustedLen`, by `next` where
-// it isn't, a `skip`'s (#670).
+// it isn't, a `skip`'s (#670); and through a `peekable()`, or a `fuse()`
+// under a `skip`, whose `rfold` or `try_rfold` is its source's, of a
+// `String` of `String`s too, its first by `next` and the rest folded (#697).
 test("a take's rev, consumed by fold or by next, drops what it passes as std's does", () => {
   const dir = fixture("forms-take-rev");
   const file = join(dir, "main.rs");
@@ -216,8 +218,13 @@ fn taken_set<I: DoubleEndedIterator<Item = D> + ExactSizeIterator>(src: I) -> us
     src.take(2).rev().map(|d| d.0).collect::<std::collections::HashSet<_>>().len()
 }
 
+fn taken_peeked<I: DoubleEndedIterator<Item = D> + ExactSizeIterator>(src: I) -> Vec<u32> {
+    src.take(3).peekable().rev().map(|d| d.0).collect()
+}
+
 fn main() {
     println!("generic vec {:?}", taken(five().into_iter(), 2));
+    println!("generic vec of a peekable {:?}", taken_peeked(five().into_iter()));
     println!("generic vec of a skip {:?}", taken(five().into_iter().skip(1), 2));
     println!("generic chars {}", taken_digits(five().into_iter()));
     println!("generic set {}", taken_set(five().into_iter()));
@@ -235,6 +242,16 @@ fn main() {
         s
     });
     println!("fold {s}");
+    let s: String = five().into_iter().take(3).peekable().rev().map(digit).collect();
+    println!("peekable chars {s}");
+    let s: String = five().into_iter().take(3).fuse().skip(1).rev().map(digit).collect();
+    println!("fuse skip chars {s}");
+    let s: String = five().into_iter().take(3).peekable().skip(1).rev().map(digit).collect();
+    println!("peekable skip chars {s}");
+    let s: String = five().into_iter().take(3).fuse().skip(1).rev().map(|d| d.0.to_string()).collect();
+    println!("fuse skip strings {s}");
+    let s: String = five().into_iter().take(3).peekable().skip(1).rev().map(|d| d.0.to_string()).collect();
+    println!("peekable skip strings {s}");
     BOOM.set(4);
     let r = catch_unwind(AssertUnwindSafe(|| {
         five().into_iter().take(2).rev().map(digit).collect::<String>()

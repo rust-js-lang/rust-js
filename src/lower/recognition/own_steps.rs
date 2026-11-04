@@ -72,7 +72,8 @@ impl OwnStep {
     /// `nth_back`, its first's, past its second (#220); a `take` from its
     /// back its source's `nth_back` past what it won't give, then its
     /// `rfold` or `try_rfold`; a `skip`'s `rfold` its `try_rfold`; a
-    /// peekable's `rfold` its source's, after what it peeked at (#649).
+    /// peekable's `rfold` its source's, after what it peeked at (#649),
+    /// and its `try_rfold`, as a fuse's is, its source's (#697).
     fn asked_of(self, adapter: &str) -> &'static [(usize, OwnStep)] {
         use OwnStep::*;
         let own: &'static [(usize, OwnStep)] = match self {
@@ -105,7 +106,7 @@ impl OwnStep {
             (Rfold, "Take") => &[(0, Rfold), (0, NthBack)],
             (Rfold, "Skip") => &[(0, TryRfold)],
             (TryRfold, "Take") => &[(0, NthBack), (0, TryRfold)],
-            (TryRfold, "Map" | "Filter" | "Enumerate" | "Skip") => own,
+            (TryRfold, "Map" | "Filter" | "Enumerate" | "Skip" | "Fuse" | "Peekable") => own,
             (Nth, "Skip" | "Take" | "StepBy" | "Enumerate" | "Fuse" | "Peekable") => own,
             (NthBack, "Skip" | "Take" | "Enumerate" | "Fuse") => own,
             (Last, "Skip" | "Fuse" | "Peekable" | "Copied" | "Cloned") => own,
@@ -162,6 +163,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (step.asked_of(adapter).iter())
             .filter_map(|&(at, asked)| Some((args.types().nth(at)?, asked)))
             .collect()
+    }
+
+    /// What std's `nth` of a `ty`, one of std's adapters, asks an
+    /// `advance_by` of, a step the crate's iterator doesn't write, so not
+    /// `OwnStep::asked_of`'s: a chain's first side, before its second's
+    /// `nth` (#214, #261).
+    pub(in crate::lower) fn nth_advanced_source(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let ty::Adt(adt, args) = self.reveal(ty).kind() else {
+            return None;
+        };
+        (std_path(self.tcx, adt.did()) == "std::iter::Chain").then(|| args.types().next())?
     }
 
     /// Whether what std asks of an iterator of type `ty` reaches the crate's

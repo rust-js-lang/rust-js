@@ -8,9 +8,9 @@ use crate::lower::recognition::OwnStep;
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Whether `ty`'s `nth` drops what it passes over as one slice: a `Rev`
-    /// of one that does so from its back, a `Vec`'s, or a `StepBy`, a
-    /// `Skip`, a `Take`, a `Fuse`, a `Peekable` or an `Enumerate` of one whose `nth` does,
-    /// which ask it, or a `Chain` with such a side (#234, #261).
+    /// of one that does so from its back, a `Vec`'s, or an adapter whose
+    /// `nth` asks one that does, the `OwnStep` catalog's, or a `Chain` with
+    /// such a side (#234, #261, #697).
     pub(in crate::lower) fn nths_a_slice(&self, ty: Ty<'tcx>) -> bool {
         self.nth_drops_a_slice(ty, false)
     }
@@ -33,64 +33,40 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if in_order && self.drops_passed_as_slice(ty) {
             return true;
         }
-        match ty.kind() {
-            ty::Adt(adt, args)
-                if matches!(
-                    std_path(self.tcx, adt.did()).as_str(),
-                    "std::iter::StepBy"
-                        | "std::iter::Skip"
-                        | "std::iter::Take"
-                        | "std::iter::Fuse"
-                        | "std::iter::Peekable"
-                        | "std::iter::Enumerate"
-                ) =>
-            {
-                self.nth_drops_a_slice(args.type_at(0), in_order)
-            }
-            // A `Chain`'s, each side's `advance_by` (#261).
-            ty::Adt(adt, args) if std_path(self.tcx, adt.did()) == "std::iter::Chain" => {
-                self.nth_drops_a_slice(args.type_at(0), in_order) || self.nth_drops_a_slice(args.type_at(1), in_order)
-            }
-            _ => false,
-        }
+        // What its `nth` asks an `nth` or an `advance_by` of, the `OwnStep`
+        // catalog's.
+        let asked = (self.asked_sources(ty, OwnStep::Nth).into_iter())
+            .filter(|&(_, asked)| asked == OwnStep::Nth)
+            .map(|(source, _)| source);
+        let mut sources = asked.chain(self.nth_advanced_source(ty));
+        sources.any(|source| self.nth_drops_a_slice(source, in_order))
     }
 
-    /// What std's `fold` of a `ty`, an iterator, asks an `nth_back` of: of a
-    /// `rev()`, what its source's `rfold` asks one of; and those of each
-    /// adapter's whose `fold` is its source's. A `take(n).rev()`'s fold asks
-    /// its source's `nth_back(len - n - 1)`, then drops what that gives,
-    /// where its `next` asks `nth_back(len - n)`: of a `Vec`'s, which drops
-    /// what it passes as one slice, front to back, the two drop in another
-    /// order (#670).
+    /// What std's `fold` of a `ty`, an iterator, asks an `nth_back` of:
+    /// the `OwnStep` catalog's answer, through each adapter whose fold, from
+    /// either end, is its source's. A `take(n).rev()`'s fold asks its
+    /// source's `nth_back(len - n - 1)`, then drops what that gives, where
+    /// its `next` asks `nth_back(len - n)`: of a `Vec`'s, which drops what it
+    /// passes as one slice, front to back, the two drop in another order
+    /// (#670); so does one with a `peekable()` or a `skip(k)` of a `fuse()`
+    /// between them, whose `rfold` or `try_rfold` is its source's (#697).
     pub(in crate::lower) fn nth_back_folded_sources(&self, ty: Ty<'tcx>) -> Vec<Ty<'tcx>> {
-        let ty = self.reveal(ty);
-        if let Some(reversed) = self.reversed_source(ty) {
-            return self.nth_back_rfolded_sources(reversed);
-        }
-        (self.asked_sources(ty, OwnStep::Fold).into_iter())
-            .filter(|&(_, asked)| asked == OwnStep::Fold)
-            .flat_map(|(source, _)| self.nth_back_folded_sources(source))
-            .collect()
+        self.nth_back_sources(ty, OwnStep::Fold)
     }
 
-    /// What std's `rfold` of a `ty`, a double-ended iterator, asks an
-    /// `nth_back` of: a `take`'s source, past what it won't give; and those
-    /// of each adapter's whose `rfold` is its source's.
-    fn nth_back_rfolded_sources(&self, ty: Ty<'tcx>) -> Vec<Ty<'tcx>> {
-        let ty = self.reveal(ty);
-        let ty::Adt(adt, args) = ty.kind() else {
-            return Vec::new();
-        };
-        let (asked, sources) = match std_path(self.tcx, adt.did()).strip_prefix("std::iter::") {
-            Some("Take") => (true, 1),
-            Some("Map" | "Filter" | "Enumerate" | "Fuse" | "Skip") => (false, 1),
-            Some("Chain") => (false, 2),
-            _ => (false, 0),
-        };
-        let sources: Vec<Ty<'tcx>> = args.types().take(sources).collect();
-        let mut found = if asked { sources.clone() } else { Vec::new() };
-        for source in sources {
-            found.extend(self.nth_back_rfolded_sources(source));
+    /// What std's `step` of a `ty`, a fold from either end, asks an
+    /// `nth_back` of (`asked_sources`): each source asked one, and those of
+    /// each asked a fold.
+    fn nth_back_sources(&self, ty: Ty<'tcx>, step: OwnStep) -> Vec<Ty<'tcx>> {
+        let mut found = Vec::new();
+        for (source, asked) in self.asked_sources(ty, step) {
+            match asked {
+                OwnStep::NthBack => found.push(source),
+                OwnStep::Fold | OwnStep::Rfold | OwnStep::TryRfold => {
+                    found.extend(self.nth_back_sources(source, asked))
+                }
+                OwnStep::Nth | OwnStep::Last | OwnStep::Count => {}
+            }
         }
         found
     }

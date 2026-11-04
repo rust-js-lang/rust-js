@@ -37,6 +37,28 @@ test("which own step an adapter reaches is the OwnStep catalog's alone", () => {
   expect(read("src/lower/recognition/own_steps.rs")).toContain("fn asked_of(self, adapter: &str)");
 });
 
+// What an adapter's fold or `nth`, from either end, asks of what it holds is
+// that catalog's too, wherever another question follows it: slice_steps.rs
+// kept its own list of adapters whose `rfold` asks an `nth_back`, without the
+// `peekable()` the catalog had, so generic code's `take(3).peekable().rev()`
+// was collected by `next`, dropping 4 before 5 where std drops 5 before 4,
+// and the list of those whose `nth` asks one, the catalog's own row (#697).
+// A function of the lowering named for a fold or an `nth` names no adapter of
+// std's but in own_steps.rs, which asks it of `asked_sources`.
+test("which source an adapter's fold or nth asks is the OwnStep catalog's alone", () => {
+  const adapter = /"(?:std::iter::)?(Map|Filter|FilterMap|Take|Skip|Fuse|Peekable|Enumerate|StepBy|Chain|Rev|Inspect|Copied|Cloned|Flatten|FlatMap|SkipWhile|TakeWhile|Scan|MapWhile|Zip)"/;
+  const listed: string[] = [];
+  for (const file of ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"))) {
+    if (file === "src/lower/recognition/own_steps.rs") continue;
+    for (const item of read(file).split(/\n(?=\s*(?:pub(?:\([^)]*\))? )?fn \w+)/)) {
+      const name = item.match(/fn (\w+)/)?.[1];
+      if (name !== undefined && /fold|nth/.test(name) && adapter.test(item)) listed.push(`${file}: fn ${name}`);
+    }
+  }
+  expect(listed).toEqual([]);
+  expect(read("src/lower/recognition/slice_steps.rs")).toContain("self.asked_sources(ty, OwnStep::Nth)");
+});
+
 // Whether stepping an iterator may panic, which decides what a fold's
 // `unwind` and a collect's `$collectDropping` drop, is `steps_may_panic`'s
 // alone, of the iterator's type (ADR 1089): its JS's arrows, `chain_may_throw`,

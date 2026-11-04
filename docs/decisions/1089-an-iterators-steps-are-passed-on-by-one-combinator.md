@@ -180,6 +180,55 @@ catalog's entries, each as it meant.
 Left for later: `$iterator`'s options object, and the JS step table
 `$given` reads.
 
+## Amendment: what a slice's steps follow is the catalog's too (2026-11-04, #697)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change. The JS
+must drop what std drops, in std's order.
+
+`recognition/slice_steps.rs` asks which adapters pass an `nth` or a fold on to
+what they hold, so it can find a `Vec`'s `IntoIter` that drops what it passes
+as one slice. It kept two lists of its own beside the catalog:
+
+- `nth_back_rfolded_sources` held the adapters whose `rfold` asks an
+  `nth_back`. It lacked the catalog's `peekable()`, so in generic code
+  `src.take(3).peekable().rev()` was collected into a `Vec` by `next`
+  where std folds it: under `--std-iterators` it dropped 4 before 5,
+  where native Rust drops 5 before 4.
+- `nth_drops_a_slice` held the adapters whose `nth` asks an `nth`. That
+  was the catalog's `Nth` row.
+
+Both lists are gone:
+
+- `nth_back_folded_sources` follows `asked_sources` from a fold through each
+  `fold`, `rfold` and `try_rfold` to the sources asked an `nth_back`.
+- `nth_drops_a_slice` follows the `Nth` row.
+- A chain's first side, which a chain's `nth` asks an `advance_by` of, is
+  `nth_advanced_source`, in `own_steps.rs`. The crate's iterator never
+  writes that step, so it isn't an `OwnStep`.
+
+The old list followed a `skip`'s `rfold` into a `fuse()` and a `take`, so
+the catalog now has std's `Fuse::try_rfold` and `Peekable::try_rfold`, each
+its source's (`core/src/iter/adapters/fuse.rs`, `peekable.rs`). Its
+`TryRfold` row had left both out.
+
+`test/iterator-forms.test.ts`'s "a take's rev" adds a `peekable()`, a
+`fuse()` under a `skip(1)` and a `peekable()` under one, collected into a
+`String` of `char`s and of `String`s, and generic code's
+`take(3).peekable().rev()` collected into a `Vec`; each is checked against
+native Rust. A `String` of `String`s takes its first item by `next` and folds
+the rest. On main, its `peekable()` under a `skip(1)` dropped 5 before 4,
+where native Rust drops 4 before 5. `test/architecture-iterators.test.ts`
+("which source an adapter's fold or nth asks is the OwnStep catalog's
+alone") rejects a lowering function named for a fold or an `nth` that
+names one of std's adapters outside `own_steps.rs`.
+Mutations: `nth-back-of-a-take-unasked`, `nth-back-not-through-try-rfold`
+and `nths-a-slice-not-through-adapters` (`lower/recognition/slice_steps.ts`);
+`try-rfolds-not-through-fuse`, `try-rfolds-not-through-peekable`,
+`rfolds-not-through-peekable`, `nths-its-own-no-peekable` and
+`chain-nths-no-slice` (`lower/recognition/own_steps.ts`). The catalog's
+`nths-its-own-no-enumerate` and `nths-its-own-no-fuse` also run the slice
+case that the old list's mutations of those adapters ran.
+
 ## Amendment: a type parameter's own steps are its value's to say (2026-11-04, #621, #623, #637, #649)
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): R. Each changed
