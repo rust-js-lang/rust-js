@@ -127,7 +127,7 @@ impl Drop for Restore {
     }
 }
 
-pub fn frame_of(r#fn: &dyn Fn() -> Option<&'static Unknown>, line: &str) -> String {
+pub fn frame_of(r#fn: &js::Function, line: &str) -> String {
     let _restore = Restore;
     // V8 adds a "new" prefix for native classes. Let's remove it to make it prettier.
     let mut frame = format!("\\n{}", line.replacen(" at new ", " at ", 1));

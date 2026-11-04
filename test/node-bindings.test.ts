@@ -781,7 +781,7 @@ pub fn captured(target: &JsError) {
     js_error::capture_stack_trace(target, None);
 }
 
-pub fn trimmed(target: &JsError, above: &'static dyn Fn() -> Option<&'static js::Unknown>) {
+pub fn trimmed(target: &JsError, above: &'static js::Function) {
     js_error::capture_stack_trace(target, Some(above));
 }
 
@@ -1083,7 +1083,7 @@ js::export_default! {
             "_compile",
             function::with_this(move |this, (content, filename): (&str, &str)| {
                 // SAFETY: Node's _compile is a function.
-                let original: &dyn Fn() -> Option<&'static Unknown> = unsafe { js::cast(original_compile) };
+                let original: &js::Function = unsafe { js::cast(original_compile) };
                 let this_arg = this.map(|this| this as &dyn IntoUnknown);
                 if !content.contains("use client") && !content.contains("use server") {
                     return function::apply(original, this_arg, Some(js::arguments()));

@@ -39077,7 +39077,7 @@ impl ByteLengthQueuingStrategy {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ByteLengthQueuingStrategy/size)
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
-    pub fn size(&self) -> &'static dyn Fn() -> Option<&'static Unknown> {
+    pub fn size(&self) -> &'static js::Function {
         unreachable!()
     }
 
@@ -44713,7 +44713,7 @@ impl CountQueuingStrategy {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CountQueuingStrategy/size)
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
-    pub fn size(&self) -> &'static dyn Fn() -> Option<&'static Unknown> {
+    pub fn size(&self) -> &'static js::Function {
         unreachable!()
     }
 

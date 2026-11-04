@@ -85,6 +85,22 @@ impl Written {
             _ => None,
         }
     }
+
+    /// Whether it's a function's type: one written, `(a: string) => void`,
+    /// or TypeScript's `Function`, the global type of every function, of no
+    /// module, as `js::Function`'s is (ADR 1082): what `typeof` says is a
+    /// `"function"`.
+    pub(in crate::lower) fn is_function(&self) -> bool {
+        match self {
+            Written::Function(_) => true,
+            Written::Reference {
+                from: None,
+                name,
+                args: None,
+            } => name == "Function",
+            _ => false,
+        }
+    }
 }
 
 /// TypeScript's keyword types, and `null`.

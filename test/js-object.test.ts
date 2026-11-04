@@ -500,11 +500,11 @@ pub fn caught(module_object: Option<&'static Unknown>) -> bool {
   expect([lib.caught(undefined), lib.caught(m)]).toEqual([true, false]);
 });
 
-// ADR 0700: TypeScript's `Function` is `&dyn Fn() -> Option<&'static
-// Unknown>`, one form everywhere: called of nothing, what it gives is any
-// value, as `js::Kind::Function` holds it and `Reflect` takes it.
+// ADRs 0700, 1082: TypeScript's `Function` is `&js::Function`, one form
+// everywhere: called of nothing, what it gives is any value, as
+// `js::Kind::Function` holds it and `Reflect` takes it.
 test("TypeScript's Function gives any value", async () => {
-  const { js, lib, warnings } = await compiled("js-object-function", `use js::{Kind, Unknown, reflect};
+  const { js, lib, warnings } = await compiled("js-object-function", `use js::{Function, Kind, Unknown, reflect};
 
 pub fn called(value: Option<&'static Unknown>) -> Option<&'static Unknown> {
     match js::classify(value) {
@@ -513,7 +513,7 @@ pub fn called(value: Option<&'static Unknown>) -> Option<&'static Unknown> {
     }
 }
 
-pub fn applied(f: &dyn Fn() -> Option<&'static Unknown>, this: &Unknown) -> Option<&'static Unknown> {
+pub fn applied(f: &Function, this: &Unknown) -> Option<&'static Unknown> {
     reflect::apply(f, Some(this), &[Some(js::unknown("a"))])
 }
 
@@ -779,11 +779,9 @@ pub fn own() -> (String, u32) {
 // apart from `undefined`, `None`; its arguments an array, none of `None`.
 // React's `fn.apply(null, arguments)`.
 test("a function is applied to a this of any value and an array of arguments", async () => {
-  const { js, lib, warnings } = await compiled("js-object-function-apply", `use js::{Kind, Unknown, function};
+  const { js, lib, warnings } = await compiled("js-object-function-apply", `use js::{Function, Kind, Unknown, function};
 
-type AnyFunction = dyn Fn() -> Option<&'static Unknown>;
-
-pub fn applied(f: &AnyFunction, args: &[Option<&'static Unknown>]) -> [Option<&'static Unknown>; 3] {
+pub fn applied(f: &Function, args: &[Option<&'static Unknown>]) -> [Option<&'static Unknown>; 3] {
     [
         function::apply(f, Some(&Kind::Null), Some(&args)),
         function::apply(f, None, None),
@@ -903,11 +901,11 @@ pub fn bound(f: &dyn Fn(u32) -> u32) -> u32 {
 // host without one, a `Map`. Run of a function component, a class, and an
 // async component whose rejection is silenced.
 test("React's component stack frame is found as upstream finds it", async () => {
-  const { js, lib, warnings } = await compiled("js-object-component-frame", `use js::{Class, JsError, JsObject, Kind, Promise, PropertyDescriptor, Unknown, WeakMap, object, reflect};
+  const { js, lib, warnings } = await compiled("js-object-component-frame", `use js::{Class, Function, JsError, JsObject, Kind, Promise, PropertyDescriptor, Unknown, WeakMap, object, reflect};
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 thread_local! {
-    static COMPONENT_FRAME_CACHE: &'static WeakMap<dyn Fn() -> Option<&'static Unknown>, String> =
+    static COMPONENT_FRAME_CACHE: &'static WeakMap<Function, String> =
         if js::is_defined(js::weak_map::new::<JsObject, String>) {
             js::weak_map::new()
         } else {
@@ -936,7 +934,7 @@ impl Drop for RestoreProps {
 
 #[cfg_attr(rust_js, rust_js::name = "DetermineComponentFrameRoot")]
 pub fn determine_component_frame_root(
-    r#fn: &dyn Fn() -> Option<&'static Unknown>,
+    r#fn: &Function,
     construct: bool,
     reflected: bool,
 ) -> (Option<String>, Option<String>) {
@@ -958,10 +956,10 @@ pub fn determine_component_frame_root(
                 },
             );
             if reflected && js::is_defined(reflect::construct) {
-                if let Err(x) = catch_unwind(|| reflect::construct(&fake, &[], None)) {
+                if let Err(x) = catch_unwind(|| reflect::construct(Function::of(&fake), &[], None)) {
                     control = x.downcast_ref::<&'static JsError>().copied();
                 }
-                reflect::construct(r#fn, &[], Some(&fake));
+                reflect::construct(r#fn, &[], Some(Function::of(&fake)));
             } else {
                 if let Err(x) = catch_unwind(fake) {
                     control = x.downcast_ref::<&'static JsError>().copied();
@@ -1003,7 +1001,7 @@ pub fn determine_component_frame_root(
     (None, None)
 }
 
-pub fn cached(r#fn: &dyn Fn() -> Option<&'static Unknown>, frame: String) -> Option<String> {
+pub fn cached(r#fn: &Function, frame: String) -> Option<String> {
     COMPONENT_FRAME_CACHE.with(|cache| {
         let before = cache.get(r#fn);
         cache.set(r#fn, frame);

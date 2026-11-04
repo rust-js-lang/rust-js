@@ -310,10 +310,10 @@ export function middle(items) {
   value ([ADR 0699](../../decisions/0699-a-map-of-objects-is-a-weak-map.md)):
 
 ```rust
-use js::{JsObject, Unknown, WeakMap};
+use js::{Function, JsObject, WeakMap};
 
 thread_local! {
-    pub static CACHE: &'static WeakMap<dyn Fn() -> Option<&'static Unknown>, String> =
+    pub static CACHE: &'static WeakMap<Function, String> =
         if js::is_defined(js::weak_map::new::<JsObject, String>) {
             js::weak_map::new()
         } else {
@@ -2851,6 +2851,89 @@ export function pop() {
   return value;
 }
 ```
+- **A JS function of any signature is a `js::Function`**, TypeScript's
+  `Function`: what `Kind::Function` holds, and what a binding of a
+  `Function` takes and gives, `reflect::apply`'s target, a `WeakMap` of
+  functions' key, `function::BIND`, a key's `js::method`. One type, so it's
+  stored, kept and returned as any value is, declared `Function`.
+  `js::Function::of(&f)` is any function as one, a function item, a
+  closure, a `fn` pointer or a `dyn Fn`, the function itself. Called of
+  nothing, `f()`, it gives any value, as TypeScript types a `Function`'s
+  call: it derefs to `dyn Fn() -> Option<&'static Unknown>`. Called of
+  arguments or a `this`, it's `function::call`'s
+  ([ADR 1082](../../decisions/1082-a-js-function-of-any-signature-is-js-function.md),
+  the user's decision):
+
+```rust
+use js::{Function, Kind, Unknown};
+use std::cell::RefCell;
+use std::collections::HashMap;
+
+thread_local! {
+    static MODULES: RefCell<HashMap<String, &'static Function>> = RefCell::new(HashMap::new());
+}
+
+pub fn save_module(render: &'static Function) -> String {
+    let idx = MODULES.with_borrow(|modules| modules.len()).to_string();
+    MODULES.with_borrow_mut(|modules| modules.insert(idx.clone(), render));
+    idx
+}
+
+pub fn read_module(idx: &str) -> Option<&'static Function> {
+    MODULES.with_borrow(|modules| modules.get(idx).copied())
+}
+
+pub fn initial(value: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    match js::classify(value) {
+        Kind::Function(initializer) => initializer(),
+        _ => value,
+    }
+}
+
+fn render() -> String {
+    "<p>".to_string()
+}
+
+pub fn saved() -> String {
+    save_module(Function::of(&render))
+}
+```
+
+```js
+const modules = new Map();
+
+export function saveModule(render) {
+  const idx = String(modules.size);
+  modules.set(idx, render);
+  return idx;
+}
+
+export function readModule(idx) {
+  return modules.get(idx);
+}
+
+export function initial(value) {
+  return typeof value === "function" ? value() : value;
+}
+
+function render() {
+  return "<p>";
+}
+
+export function saved() {
+  return saveModule(render);
+}
+```
+
+```ts
+export function saveModule(render: Function): string;
+
+export function readModule(idx: string): Function | null | undefined;
+
+export function initial(value?: unknown | null | undefined): unknown | null | undefined;
+
+export function saved(): string;
+```
 - **What every function has, `Function.prototype`'s, is `js::function`'s**,
   of a function of any signature, `js::AnyFunction`, as TypeScript types
   each: `function::name(f)` is `f.name`, a `String`, `function::length(f)`
@@ -3071,10 +3154,10 @@ export function logMeasure(task, name, start, end) {
   task.run(performance.measure.bind(performance, name, options));
 }
 ```
-- **A JS function of any shape is bound to a slice or a `Vec` of
-  arguments**, as many as it's given, spread: a `Kind::Function`, called of
-  nothing and giving any value, bound to `&args`, each of a `Copy` type, is
-  a function of that shape. React's noop renderer's bindToConsole,
+- **A JS function of any signature is bound to a slice or a `Vec` of
+  arguments**, as many as it's given, spread: a `js::Function`,
+  `Kind::Function`'s, bound to `&args`, each of a `Copy` type, is a
+  `Function` too. React's noop renderer's bindToConsole,
   upstream's `Function.prototype.bind.apply(console[methodName],
   [console].concat(args))`, the same function:
 

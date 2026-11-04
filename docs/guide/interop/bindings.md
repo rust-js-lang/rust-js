@@ -1210,10 +1210,11 @@ export async function open(other) {
   what was thrown, and gives whether it's handled (ADR 0653, amended;
   [ADR 1021](../../decisions/1021-a-listener-is-a-closure-or-one-js-gave.md),
   amended).
-  TypeScript's `Function`, of whatever it takes, is `&dyn Fn() ->
-  Option<&'static Unknown>`, called of nothing for any value, as
-  `js::Kind::Function` holds it
-  ([ADR 0700](../../decisions/0700-typescripts-function-gives-any-value.md)).
+  TypeScript's `Function`, of whatever it takes, is `&js::Function`,
+  which `js::Kind::Function` holds, called of nothing for any value,
+  `f()`
+  ([ADRs 0700](../../decisions/0700-typescripts-function-gives-any-value.md),
+  [1082](../../decisions/1082-a-js-function-of-any-signature-is-js-function.md)).
 - **`#[rust_js::nullable]` makes the result's `None` `null`** for a caller
   that tests `!== null`; `#[rust_js::nullable(range)]` passes the parameter
   `range`'s `None` as `null`. Of a type parameter, `fn create_cursor<T>(

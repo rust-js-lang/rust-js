@@ -498,6 +498,15 @@ export const mutations: Mutation[] = [
     ],
   },
   {
+    name: "untagged-function-type-a-class",
+    breaks:
+      "`js::Function`, written `Function`, is a class `instanceof Function` tests, so `Kind::Function` of one is refused, a frame's function being no `Function` of this realm (ADR 1082)",
+    file: "src/lower/untagged.rs",
+    find: "                Some(written @ Written::Reference { .. }) if written.is_function() => Some(Kind::Function),\n",
+    replace: "",
+    tests: ["test/js-functions.test.ts", "-t", "is a js::Function"],
+  },
+  {
     name: "untagged-class-by-rust-name",
     breaks:
       'an untagged enum\'s JS object variant declared `#[rust_js::types = "URL"]` is tested `instanceof Url`, its Rust name, which JS has no class of (#391)',

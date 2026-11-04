@@ -483,7 +483,7 @@ test("a closure of rest arguments as a value is JS's rest parameter: React's cac
 use std::panic::{self, AssertUnwindSafe};
 use std::rc::Rc;
 
-use js::{IntoUnknown, JsError, JsObject, Kind, Map, Rest, Unknown, WeakMap, function, map, weak_map};
+use js::{Function, IntoUnknown, JsError, JsObject, Kind, Map, Rest, Unknown, WeakMap, function, map, weak_map};
 
 #[derive(Clone, Copy, PartialEq)]
 #[repr(u8)]
@@ -505,11 +505,8 @@ struct CacheNode {
 
 unsafe impl js::Defined for CacheNode {}
 
-/// A JS function of any arguments, TypeScript's \`Function\`.
-type AnyFunction = dyn Fn() -> Option<&'static Unknown>;
-
 thread_local! {
-    static ROOT: Cell<Option<&'static WeakMap<AnyFunction, Rc<CacheNode>>>> = const { Cell::new(None) };
+    static ROOT: Cell<Option<&'static WeakMap<Function, Rc<CacheNode>>>> = const { Cell::new(None) };
 }
 
 pub fn begin() {
@@ -529,7 +526,7 @@ fn create_cache_node() -> Rc<CacheNode> {
     })
 }
 
-pub fn cache(r#fn: &'static AnyFunction) -> impl Fn(&dyn Rest<dyn IntoUnknown>) -> Option<&'static Unknown> {
+pub fn cache(r#fn: &'static Function) -> impl Fn(&dyn Rest<dyn IntoUnknown>) -> Option<&'static Unknown> {
     move |args: &dyn Rest<dyn IntoUnknown>| {
         let Some(fn_map) = ROOT.get() else {
             return function::apply(r#fn, Some(&Kind::Null), Some(&args));
@@ -613,7 +610,7 @@ pub fn cache(r#fn: &'static AnyFunction) -> impl Fn(&dyn Rest<dyn IntoUnknown>) 
   expect(out).toContain("      const result = fn.apply(null, args);\n");
   expect(out).toContain("      erroredNode.v = error;\n      throw error;\n");
   expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain(
-    "export function cache(fn: () => unknown | null | undefined): (...args: (unknown | null | undefined)[]) => unknown | null | undefined;",
+    "export function cache(fn: Function): (...args: (unknown | null | undefined)[]) => unknown | null | undefined;",
   );
   writeFileSync(join(dir, "upstream.js"), upstreamCache);
   const lib = await import(join(dir, "lib.js"));
@@ -628,7 +625,7 @@ pub fn cache(r#fn: &'static AnyFunction) -> impl Fn(&dyn Rest<dyn IntoUnknown>) 
 test("a call of a closure of rest arguments spreads them, through any type that says so", async () => {
   const dir = fixture("rest-closure-calls");
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
-  writeFileSync(join(dir, "lib.rs"), `use js::{IntoUnknown, Rest, Unknown};
+  writeFileSync(join(dir, "lib.rs"), `use js::{Function, IntoUnknown, Rest, Unknown};
 
 type Counted = dyn Fn(&dyn Rest<dyn IntoUnknown>) -> usize;
 
@@ -640,7 +637,7 @@ pub fn joined() -> impl Fn(&dyn Rest<str>) -> String {
     |names: &dyn Rest<str>| names.join(", ")
 }
 
-pub fn passed_on(f: &'static dyn Fn() -> Option<&'static Unknown>) -> impl Fn(&dyn Rest<dyn IntoUnknown>) -> Option<&'static Unknown> {
+pub fn passed_on(f: &'static Function) -> impl Fn(&dyn Rest<dyn IntoUnknown>) -> Option<&'static Unknown> {
     move |args: &dyn Rest<dyn IntoUnknown>| js::function::call(f, None, args)
 }
 

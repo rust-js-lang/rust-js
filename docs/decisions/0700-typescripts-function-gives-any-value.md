@@ -2,6 +2,9 @@
 
 Status: Accepted. Amends [0653](0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md),
 whose TypeScript `Function` was `&dyn Fn()`, which gives nothing.
+Amended by [1082](1082-a-js-function-of-any-signature-is-js-function.md)
+(2026-11-04, the user's decision): TypeScript's `Function` is `js::Function`,
+which derefs to this `dyn Fn`, so `f()` is still a call of nothing.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: each is the JS
 function it was, called as JS calls it; what it gives is what JS gives.

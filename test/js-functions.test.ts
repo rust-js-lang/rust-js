@@ -996,12 +996,12 @@ pub fn shown() -> bool {
 });
 
 // React's noop renderer's bindToConsole, `Function.prototype.bind.apply(
-// console[methodName], [console].concat(args))`: a JS function of any shape,
-// `Kind::Function`'s, bound to a slice or a `Vec` of arguments, spread, as
+// console[methodName], [console].concat(args))`: a JS function of any
+// signature, a `js::Function`, `Kind::Function`'s, bound to a slice or a `Vec` of arguments, spread, as
 // `bind` binds a tuple, `method.bind(console, ...args)`, the function JS's
 // `bind.apply` makes too (rd294).
 test("a JS function of any shape is bound to a slice of arguments, spread", async () => {
-  const { js, lib } = await compiled("bind-slice", `use js::{Kind, Unknown, function};
+  const { js, lib } = await compiled("bind-slice", `use js::{Function, Kind, Unknown, function};
 
 pub fn bound(target: &'static Unknown, method_name: &str, args: &[Option<&'static Unknown>]) -> &'static Unknown {
     let Kind::Function(method) = js::classify(js::get(target, method_name)) else {
@@ -1010,7 +1010,7 @@ pub fn bound(target: &'static Unknown, method_name: &str, args: &[Option<&'stati
     js::unknown_of(function::bind(method, Some(&target), args))
 }
 
-pub fn bound_vec(method: &'static dyn Fn() -> Option<&'static Unknown>, args: Vec<u32>) -> &'static Unknown {
+pub fn bound_vec(method: &'static Function, args: Vec<u32>) -> &'static Unknown {
     js::unknown_of(function::bind(method, None, &args))
 }
 `);
@@ -1181,4 +1181,70 @@ pub async fn named(base: &str, file: &str) -> Option<&'static Unknown> {
   expect(await lib.named(base, "named.js")).toBe("loaded");
   expect((await lib.load(`${base}named.js`)).name).toBe("loaded");
   await expect(lib.load(`${base}missing.js`)).rejects.toThrow();
+});
+
+// ADR 1082 (#589, rd724, the user's decision): a JS function of any
+// signature is one type, `js::Function`, TypeScript's `Function`, which
+// react-noop-renderer's flight-modules stores and gives back: kept in a
+// map and returned as any value is, declared `Function`; made of any
+// function by `Function::of(&f)`, the function itself; `Kind::Function`'s,
+// called of nothing as upstream calls it, `f()`, by its `Deref`, and of
+// arguments by `function::call`.
+test("a JS function of any signature is a js::Function", async () => {
+  const dir = fixture("js-function-type");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::collections::HashMap;
+
+use js::{Function, Kind, Unknown, function};
+
+thread_local! {
+    static MODULES: RefCell<HashMap<String, &'static Function>> = RefCell::new(HashMap::new());
+}
+
+pub fn save_module(render: &'static Function) -> String {
+    let idx = MODULES.with_borrow(|modules| modules.len()).to_string();
+    MODULES.with_borrow_mut(|modules| modules.insert(idx.clone(), render));
+    idx
+}
+
+pub fn read_module(idx: &str) -> Option<&'static Function> {
+    MODULES.with_borrow(|modules| modules.get(idx).copied())
+}
+
+pub fn initial(value: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    match js::classify(value) {
+        Kind::Function(initializer) => initializer(),
+        _ => value,
+    }
+}
+
+pub fn rendered(idx: &str, props: &Unknown) -> Option<&'static Unknown> {
+    function::call(read_module(idx)?, None, (props,))
+}
+
+fn twice(n: u32) -> u32 {
+    n * 2
+}
+
+pub fn saved() -> (String, String) {
+    (save_module(Function::of(&twice)), save_module(Function::of(&|n: u32| n * 3)))
+}
+`);
+  const built = runSync([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 600_000);
+  expect(built.code, built.stderr).toBe(0);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  return typeof value === "function" ? value() : value;');
+  expect(js).toContain("  return value.call(undefined, props);");
+  expect(js).toContain("  return [saveModule(twice), saveModule((n) => (n * 3) >>> 0)];");
+  const dts = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(dts).toContain("export function saveModule(render: Function): string;");
+  expect(dts).toContain("export function readModule(idx: string): Function | null | undefined;");
+  const lib = await import(join(dir, "lib.js"));
+  const render = (props: { name: string }) => `<p>${props.name}</p>`;
+  const idx = lib.saveModule(render);
+  expect(lib.readModule(idx)).toBe(render);
+  expect(lib.rendered(idx, { name: "a" })).toBe("<p>a</p>");
+  expect([lib.initial(() => 7), lib.initial(8)]).toEqual([7, 8]);
+  const [two, three] = lib.saved();
+  expect([lib.rendered(two, 5), lib.rendered(three, 5)]).toEqual([10, 15]);
 });

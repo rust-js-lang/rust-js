@@ -466,6 +466,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             let class = |name: String| Some(Kind::Class(name, Some(adt.did())));
             return match written_types(self.tcx, adt.did()) {
+                // TypeScript's `Function`, `js::Function`'s, a function's,
+                // `typeof value === "function"` in any realm (ADR 1082).
+                Some(written @ Written::Reference { .. }) if written.is_function() => Some(Kind::Function),
                 None if self.is_js_error(ty) => None,
                 None => Some(Kind::Object),
                 Some(Written::Reference { from: None, name, .. }) => class(name),

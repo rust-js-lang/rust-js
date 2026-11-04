@@ -79,4 +79,26 @@ export const mutations: Mutation[] = [
     replace: "                readonly: false,",
     tests: ["test/declarations-libraries.test.ts", "-t", "declared as written"],
   },
+  {
+    name: "function-type-is-a-class",
+    breaks:
+      "TypeScript's `Function`, `js::Function`'s, isn't a function's type, so `Kind::Function` of one is refused as a class `instanceof Function` would test, which a frame's function isn't (ADR 1082)",
+    file: "src/lower/declarations/written.rs",
+    find: '            } => name == "Function",',
+    replace: '            } => name == "Function" && false,',
+    tests: ["test/js-functions.test.ts", "-t", "is a js::Function"],
+  },
+  {
+    name: "function-type-is-any-reference",
+    breaks:
+      "any type a binding names is a function's, `HTMLElement`'s too, so `Kind::Object` of an element is `typeof === \"function\"`, which no element is (ADR 1082)",
+    file: "src/lower/declarations/written.rs",
+    find: '            } => name == "Function",',
+    replace: '            } => !name.is_empty(),',
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "an untagged enum's JS object is tested by the class TypeScript names",
+    ],
+  },
 ];

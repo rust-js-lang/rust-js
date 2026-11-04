@@ -468,11 +468,9 @@ a `fn` pointer, an `impl Fn`
 ([ADR 0851](../../decisions/0851-a-closure-of-rest-arguments-is-jss-rest-parameter.md)):
 
 ```rust
-use js::{IntoUnknown, Kind, Rest, Unknown, function};
+use js::{Function, IntoUnknown, Kind, Rest, Unknown, function};
 
-pub fn logged(
-    r#fn: &'static dyn Fn() -> Option<&'static Unknown>,
-) -> impl Fn(&dyn Rest<dyn IntoUnknown>) -> Option<&'static Unknown> {
+pub fn logged(r#fn: &'static Function) -> impl Fn(&dyn Rest<dyn IntoUnknown>) -> Option<&'static Unknown> {
     move |args: &dyn Rest<dyn IntoUnknown>| {
         for &arg in args.iter() {
             js::set(js::unknown(&r#fn), "last", arg);
@@ -513,7 +511,7 @@ export function named(names) {
 ```
 
 ```ts
-export function logged(fn: () => unknown | null | undefined): (...args: (unknown | null | undefined)[]) => unknown | null | undefined;
+export function logged(fn: Function): (...args: (unknown | null | undefined)[]) => unknown | null | undefined;
 
 export function joined(): (...args: string[]) => string;
 

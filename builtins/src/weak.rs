@@ -10,11 +10,16 @@ use core::marker::PhantomData;
 /// object, so one is a key as its `impl` says, `unsafe impl WeakKey for State {}`.
 /// TypeScript's `WeakKey`, a `dyn WeakKey` (ADR 0677).
 #[cfg_attr(rust_js, rust_js::types = "WeakKey")]
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` isn't what a weak collection keys",
+    note = "a weak collection keys an object or a symbol; a function of any signature as a `js::Function`, `WeakMap<js::Function, V>`, of `js::Function::of(&f)` (ADR 1082)"
+)]
 pub unsafe trait WeakKey {}
 
-// What `js::Kind` holds of an array and a function, each an object (ADR 0677).
+// What `js::Kind` holds of an array and a function, each an object (ADRs
+// 0677, 1082).
 unsafe impl<T> WeakKey for [T] {}
-unsafe impl WeakKey for dyn Fn() -> Option<&'static super::Unknown> + '_ {}
+unsafe impl WeakKey for super::Function {}
 
 /// [`WeakMap`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakMap):
 /// a value of each key it holds, the key held weakly, any value, as a

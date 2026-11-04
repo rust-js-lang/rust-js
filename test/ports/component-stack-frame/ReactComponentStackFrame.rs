@@ -6,7 +6,7 @@
 use std::cell::{Cell, RefCell};
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
-use js::{Class, JsError, JsObject, Kind, Promise, PropertyDescriptor, Unknown, WeakMap, object, reflect};
+use js::{Class, Function, JsError, JsObject, Kind, Promise, PropertyDescriptor, Unknown, WeakMap, object, reflect};
 use node::js_error::{self, PrepareStackTrace};
 
 use crate::console_patching_dev::{disable_logs, reenable_logs};
@@ -79,7 +79,7 @@ pub fn describe_debug_info_frame(
 
 thread_local! {
     static REENTRY: Cell<bool> = const { Cell::new(false) };
-    static COMPONENT_FRAME_CACHE: Option<&'static WeakMap<dyn Fn() -> Option<&'static Unknown>, String>> =
+    static COMPONENT_FRAME_CACHE: Option<&'static WeakMap<Function, String>> =
         if __DEV__ {
             Some(if js::is_defined(js::weak_map::new::<JsObject, String>) {
                 js::weak_map::new()
@@ -139,7 +139,7 @@ impl Drop for RestoreProps {
 /// it for both control and sample stacks.
 #[cfg_attr(rust_js, rust_js::name = "DetermineComponentFrameRoot")]
 fn determine_component_frame_root(
-    r#fn: &dyn Fn() -> Option<&'static Unknown>,
+    r#fn: &Function,
     construct: bool,
 ) -> (Option<String>, Option<String>) {
     let mut control: Option<&'static JsError> = None;
@@ -167,10 +167,10 @@ fn determine_component_frame_root(
             if js::is_defined(reflect::construct) {
                 // We construct a different control for this case to include any extra
                 // frames added by the construct call.
-                if let Err(x) = catch_unwind(|| reflect::construct(&fake, &[], None)) {
+                if let Err(x) = catch_unwind(|| reflect::construct(Function::of(&fake), &[], None)) {
                     control = x.downcast_ref::<&'static JsError>().copied();
                 }
-                reflect::construct(r#fn, &[], Some(&fake));
+                reflect::construct(r#fn, &[], Some(Function::of(&fake)));
             } else {
                 if let Err(x) = catch_unwind(fake) {
                     control = x.downcast_ref::<&'static JsError>().copied();
@@ -235,7 +235,7 @@ fn determine_component_frame_root(
 ///   (3) diffing the control and sample error stacks to find the stack frame
 ///       which represents our component.
 pub fn describe_native_component_frame(
-    r#fn: &dyn Fn() -> Option<&'static Unknown>,
+    r#fn: &Function,
     construct: bool,
 ) -> String {
     // If something asked for a stack inside a fake render, it should get ignored.
@@ -404,10 +404,10 @@ pub fn describe_native_component_frame(
     synthetic_frame
 }
 
-pub fn describe_class_component_frame(ctor: &dyn Fn() -> Option<&'static Unknown>) -> String {
+pub fn describe_class_component_frame(ctor: &Function) -> String {
     describe_native_component_frame(ctor, true)
 }
 
-pub fn describe_function_component_frame(r#fn: &dyn Fn() -> Option<&'static Unknown>) -> String {
+pub fn describe_function_component_frame(r#fn: &Function) -> String {
     describe_native_component_frame(r#fn, false)
 }

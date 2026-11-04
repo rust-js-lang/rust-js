@@ -331,7 +331,7 @@ pub fn name(value: Option<&'static Unknown>) -> String {
     }
 }
 
-pub fn function_seen(value: Option<&'static Unknown>, seen: &'static WeakMap<dyn Fn() -> Option<&'static Unknown>, bool>) -> bool {
+pub fn function_seen(value: Option<&'static Unknown>, seen: &'static WeakMap<js::Function, bool>) -> bool {
     match js::classify(value) {
         Kind::Function(function) => {
             let before = seen.has(function);
@@ -1235,7 +1235,7 @@ test("a Map is a WeakMap where the host has none", async () => {
   writeFileSync(join(dir, "lib.rs"), `use js::{JsObject, Map, Unknown, WeakMap};
 
 thread_local! {
-    pub static CACHE: &'static WeakMap<dyn Fn() -> Option<&'static Unknown>, String> =
+    pub static CACHE: &'static WeakMap<js::Function, String> =
         if js::is_defined(js::weak_map::new::<JsObject, String>) {
             js::weak_map::new()
         } else {
@@ -1243,7 +1243,7 @@ thread_local! {
         };
 }
 
-pub fn cached(f: &dyn Fn() -> Option<&'static Unknown>, frame: String) -> Option<String> {
+pub fn cached(f: &js::Function, frame: String) -> Option<String> {
     CACHE.with(|cache| {
         let before = cache.get(f);
         cache.set(f, frame);
@@ -1266,7 +1266,7 @@ pub fn strong(object: &JsObject) -> (u32, bool, u32) {
   expect(js).toContain("const before = cache.get(f);");
   expect(js).toContain("const map = new Map();");
   expect(js).toContain("const size = map.size;");
-  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export const cache: WeakMap<() => unknown | null | undefined, string>;");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export const cache: WeakMap<Function, string>;");
   writeFileSync(join(dir, "run.mjs"), `const weak = process.argv[2] === "weak";
 if (!weak) delete globalThis.WeakMap;
 const lib = await import("./lib.js");

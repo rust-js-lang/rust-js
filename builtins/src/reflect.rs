@@ -5,12 +5,12 @@
 //! that isn't an object, a string say, JS throws a `TypeError` of.
 
 
-use super::{Dict, IntoUnknown, PropertyKey, Unknown};
+use super::{Dict, Function, IntoUnknown, PropertyKey, Unknown};
 
 /// [`Reflect.apply(f, this, args)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Reflect/apply):
 /// what `f` gives, called with `this` and `arguments`.
 #[cfg_attr(rust_js, rust_js::link_name = "Reflect.apply")]
-pub fn apply(target: &dyn Fn() -> Option<&'static Unknown>, this_argument: Option<&Unknown>, arguments: &[Option<&Unknown>]) -> Option<&'static Unknown> {
+pub fn apply(target: &Function, this_argument: Option<&Unknown>, arguments: &[Option<&Unknown>]) -> Option<&'static Unknown> {
     unreachable!()
 }
 
@@ -19,9 +19,9 @@ pub fn apply(target: &dyn Fn() -> Option<&'static Unknown>, this_argument: Optio
 /// where it's given.
 #[cfg_attr(rust_js, rust_js::link_name = "Reflect.construct")]
 pub fn construct(
-    target: &dyn Fn() -> Option<&'static Unknown>,
+    target: &Function,
     arguments: &[Option<&Unknown>],
-    new_target: Option<&dyn Fn() -> Option<&'static Unknown>>,
+    new_target: Option<&Function>,
 ) -> &'static Unknown {
     unreachable!()
 }

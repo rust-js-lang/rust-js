@@ -284,9 +284,10 @@ pub enum Kind<'a> {
     Bool(bool),
     /// A symbol, `typeof value === "symbol"`.
     Symbol(&'a Symbol),
-    /// A function, `typeof value === "function"`, TypeScript's `Function`:
-    /// called of nothing, what it gives is any value (ADR 0700).
-    Function(&'a dyn Fn() -> Option<&'static Unknown>),
+    /// A function, `typeof value === "function"`, TypeScript's `Function`,
+    /// a [`Function`]: called of nothing, what it gives is any value (ADRs
+    /// 0700, 1082).
+    Function(&'a Function),
     Array(&'a [Option<&'a Unknown>]),
     /// `undefined`: `value === undefined`.
     #[cfg_attr(rust_js, rust_js::undefined)]
@@ -529,6 +530,46 @@ impl<T: Defined + ?Sized> AnyShape<()> for T {}
 /// is which one, rustc's to infer, as [`AnyShape`]'s is.
 pub trait AnyFunction<M: ?Sized> {}
 
+/// A JS function of any signature, TypeScript's `Function`: what
+/// [`classify`]'s `Kind::Function` holds, and what each binding of a
+/// `Function` takes and gives, one type of them all, stored, kept and
+/// returned as any value is, `Map<string, Function>`'s (ADR 1082, the
+/// user's decision). [`Function::of`] makes one of any function. Called of
+/// nothing, `f()`, what it gives is any value, as TypeScript types a
+/// `Function`'s call: it derefs to `dyn Fn() -> Option<&'static Unknown>`,
+/// the function itself. Of arguments, or a `this`, [`function::call`]; its
+/// name, length and source are [`function`]'s, as any function's are.
+#[cfg_attr(rust_js, rust_js::types = "Function")]
+pub struct Function(PhantomData<JsObject>);
+
+unsafe impl Defined for Function {}
+
+/// A `Function` is one of any signature, and so is a reference to one,
+/// what [`function::bind`] is given.
+impl AnyFunction<Function> for Function {}
+impl AnyFunction<Function> for &Function {}
+
+/// A JS function called of nothing, the function itself: `f()` (ADR 1082).
+impl core::ops::Deref for Function {
+    type Target = dyn Fn() -> Option<&'static Unknown>;
+
+    fn deref(&self) -> &Self::Target {
+        // Never runs: rust-js compiles this `Deref` to the function itself.
+        unreachable!()
+    }
+}
+
+impl Function {
+    /// `f` as a JS function of any signature, which it is, a function item,
+    /// a closure, a `fn` pointer, a `dyn Fn` or a binding's function, of
+    /// whatever it takes and gives: the function itself (ADR 1082).
+    /// `js::Function::of(&render)` is `render`.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    pub fn of<F: AnyFunction<M> + ?Sized, M>(this: &F) -> &Function {
+        unreachable!()
+    }
+}
+
 /// A function of each arity up to 16, its marker the `fn` pointer of its
 /// signature: of any shape, and any function.
 macro_rules! functions {
@@ -560,7 +601,7 @@ pub mod function {
         /// `FunctionBind.apply(this, arguments)` is `function::apply(FUNCTION_BIND,
         /// this, Some(js::arguments()))` (rd510).
         #[link_name = "Function.prototype.bind"]
-        pub safe static BIND: &'static dyn Fn() -> Option<&'static super::Unknown>;
+        pub safe static BIND: &'static super::Function;
     }
 
     /// [`f.name`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/name):
@@ -645,7 +686,7 @@ pub mod function {
     /// dispatch(&fiber, action)` lends what it keeps. React's
     /// `dispatchSetState.bind(null, fiber, queue)` of
     /// `function::bind(dispatch_set_state, Some(&Kind::Null), (fiber, queue))`.
-    /// A JS function of any shape, a [`super::Kind::Function`], is bound to
+    /// A JS function of any signature, a [`super::Function`], is bound to
     /// a slice or a `Vec` of arguments too, spread: React's noop renderer's
     /// `Function.prototype.bind.apply(console[methodName],
     /// [console].concat(args))` of `function::bind(method, Some(&console),
@@ -720,7 +761,7 @@ pub mod function {
     /// parameters and each count of them bound. No program names it.
     #[diagnostic::on_unimplemented(
         message = "`{L}` aren't the first arguments a function `{Self}` takes",
-        note = "a function's first arguments are bound as a tuple, `(a, b)`, `(a,)` of one and `()` of none, each of a `Copy` type or what its parameter borrows; bound of none, the function is `Copy`; a JS function of any shape, a `Kind::Function`, is bound to a slice or a `Vec` of `Copy` values too, `&args`"
+        note = "a function's first arguments are bound as a tuple, `(a, b)`, `(a,)` of one and `()` of none, each of a `Copy` type or what its parameter borrows; bound of none, the function is `Copy`; a JS function of any signature, a `js::Function`, is bound to a slice or a `Vec` of `Copy` values too, `&args`"
     )]
     pub trait Bound<'l, L> {
         /// The function bound.
@@ -731,17 +772,16 @@ pub mod function {
         type Rest = F;
     }
 
-    /// A JS function of any shape, TypeScript's `Function`, called of
-    /// nothing and giving any value ([`super::Kind::Function`]'s), bound to
-    /// a slice or a `Vec` of its first arguments, spread, as many as it's
-    /// given, `method.bind(console, ...args)`: a function of that shape,
-    /// which keeps a copy of each (rd294).
-    impl<'l, 'a, F: 'l, T: Copy + 'l> Bound<'l, &'a [T]> for (F, fn() -> Option<&'static super::Unknown>) {
-        type Rest = &'l (dyn Fn() -> Option<&'static super::Unknown> + 'l);
+    /// A JS function of any signature, TypeScript's `Function`, a
+    /// [`super::Function`], bound to a slice or a `Vec` of its first
+    /// arguments, spread, as many as it's given, `method.bind(console,
+    /// ...args)`: a `Function` too, which keeps a copy of each (rd294).
+    impl<'l, 'a, F: 'l, T: Copy + 'l> Bound<'l, &'a [T]> for (F, super::Function) {
+        type Rest = &'l super::Function;
     }
 
-    impl<'l, 'a, F: 'l, T: Copy + 'l> Bound<'l, &'a Vec<T>> for (F, fn() -> Option<&'static super::Unknown>) {
-        type Rest = &'l (dyn Fn() -> Option<&'static super::Unknown> + 'l);
+    impl<'l, 'a, F: 'l, T: Copy + 'l> Bound<'l, &'a Vec<T>> for (F, super::Function) {
+        type Rest = &'l super::Function;
     }
 
     /// What a bound function keeps of an argument it's given first for a
@@ -1134,7 +1174,7 @@ pub fn is_object<B: Copy>(binding: B) -> bool {
 /// Some(listener), (event,))`, it's JS's `listener.handleEvent(event)`,
 /// which reads the member once and throws JS's `TypeError`, a panic,
 /// where it isn't a function (rd334). Its type is a function of any
-/// shape's, [`Kind::Function`]'s, but read anywhere else it's refused,
+/// signature's, a [`Function`], but read anywhere else it's refused,
 /// as it may be no function: [`get`] reads a member as a value, and
 /// [`classify`]'s `Kind::Function` holds one that's a function.
 #[cfg_attr(rust_js, rust_js::link_name = "method")]
@@ -1174,7 +1214,7 @@ arities! { methods }
 /// A member of a value of any shape, by its key: what JS calls as the
 /// value's method, a function of any shape's type (rd334).
 impl<T, K: PropertyKey + ?Sized> Method<sealed::Keyed> for (T, &K) {
-    type Function = &'static dyn Fn() -> Option<&'static Unknown>;
+    type Function = &'static Function;
 }
 
 /// [`this || other`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/Logical_OR):
@@ -1326,6 +1366,13 @@ impl<T> Made for &'static T {
 
 impl Made for () {
     type Instance = Unknown;
+}
+
+/// A JS function of any signature, [`Function`], as a constructor `new`
+/// gives nothing, making a value of any shape: `Class::of(f)` of a
+/// `Function` component (ADR 1082).
+impl Signature for Function {
+    type Class = fn() -> Unknown;
 }
 
 impl<T> Made for Option<T> {
