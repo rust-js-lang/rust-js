@@ -73,12 +73,18 @@ test("a process's descendants are stopped with it, and its deadline kept", async
       return false;
     }
   };
-  await Bun.sleep(50);
-  expect(alive(Number(readFileSync(pidFile, "utf8")))).toBe(false);
+  // Stopped, it's gone once whoever it's left to reaps it: at once alone,
+  // past a fixed 50 ms on a machine at a load of 20 or more (#750). So it's
+  // asked again until it's gone, for 5 s at most: still there then, it was
+  // left running.
+  const gone = async (pid: number) => {
+    for (const until = Date.now() + 5000; alive(pid) && Date.now() < until; ) await Bun.sleep(20);
+    return !alive(pid);
+  };
+  expect(await gone(Number(readFileSync(pidFile, "utf8")))).toBe(true);
   const sync = runSync(["sh", "-c", `sleep 30 & echo $! > ${pidFile}; wait`], ".", 100);
   expect(sync.timedOut).toBe(true);
-  await Bun.sleep(50);
-  expect(alive(Number(readFileSync(pidFile, "utf8")))).toBe(false);
+  expect(await gone(Number(readFileSync(pidFile, "utf8")))).toBe(true);
 });
 
 // A process that ends, leaving what it started holding its output open,
