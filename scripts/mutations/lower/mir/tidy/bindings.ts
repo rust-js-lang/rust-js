@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
     find: "        if alone && let StmtKind::Labeled(_, body) = &mut stmts[first].kind {\n",
     replace:
       "        if false && alone && let StmtKind::Labeled(_, body) = &mut stmts[first].kind {\n",
-    tests: ["test/corpus.test.ts", "-t", "^or_bindings.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^borrow_loop_inner_break_outer.rs$"],
     snapshots: true,
   },
   {

@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators/callbacks.rs",
     find: "            Some(crate::lower::recognition::Std::Drop | crate::lower::recognition::Std::Forget)\n",
     replace: "            Some(crate::lower::recognition::Std::Forget)\n",
-    tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^closure_block_value.rs$"],
   },
   {
     name: "boxed-for-js-refused",
