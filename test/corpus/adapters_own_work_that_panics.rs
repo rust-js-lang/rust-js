@@ -160,6 +160,18 @@ fn main() {
         let v = ds();
         v.iter().cloned().collect::<Vec<_>>().len()
     });
+    run("zip of cloned, read by index", (0, 2), || {
+        let v = ds();
+        v.iter().cloned().zip(10..13).collect::<Vec<_>>().len()
+    });
+    run("zip of cloned, folded", (0, 0), || {
+        let v = ds();
+        v.iter().cloned().zip(10..12).map(|(d, n)| d.0 as usize + n).sum()
+    });
+    run("zip of cloned and a slice's items", (0, 2), || {
+        let (v, w) = (ds(), ds());
+        v.iter().cloned().zip(w[..2].iter()).count()
+    });
     run("cycle", (0, 2), || once(5).cycle().take(3).collect::<Vec<_>>().len());
     run("cycle of what holds nothing", (0, 2), || {
         Twice(2).cycle().take(5).map(D).collect::<Vec<_>>().len()

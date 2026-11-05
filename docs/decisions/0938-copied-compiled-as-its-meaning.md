@@ -35,3 +35,38 @@ it was refused, "Copy without representation evidence".
   `heap_pop_of_a_param.rs` join the suite's few.
 - The normal build's JS doesn't change.
 - Mutations: `copied-back-uncompiled`, `identity-copy-param-refused`.
+
+## Amendment: `Cloned` is compiled as its meaning too (#727)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): Rust's behavior is
+kept where rust-js refused it. With std's structs alone,
+`v.iter().cloned().zip(once(7).chain(once(8))).count()` was refused,
+"reading a `Cloned<slice::Iter<D>>` by its index, as std's zip of it
+does": std's compiled `Zip` asks whether each side is
+`TrustedRandomAccess` (ADR 0975), which a `Cloned` of a slice's items is,
+and std's `Cloned` wasn't compiled, so there was no reader of its item at
+an index, and a random-access fact of a type rust-js can't read by index
+is refused, never given.
+
+- **`Cloned` is `MEANING_ONLY`, compiled as `Copied` is**: its `next`,
+  `__iterator_get_unchecked`, `size_hint`, `fold`, `try_fold`,
+  `next_back`, `rfold`, `try_rfold`, `len`, derived `clone` and `fmt`, and
+  std's `cloned`. Those are all its impls write; its `nth`, `count` and
+  the like are `Iterator`'s, of its `next`. Its dictionary carries its own
+  reader by index, `getUnchecked`, as `Copied`'s does, so std's zip reads
+  it by index where both its sides are random access, cloning each item
+  as it reads it, and steps it by `next` where the other side isn't.
+- **Not the fact asked of a zip's sides together.** Asking
+  `TrustedRandomAccess` of both sides at once would leave this case, its
+  other side a `chain()`, stepped by `next`; but a zip of a `cloned()` and
+  a slice's items, or a range, both random access, would still be
+  refused. Compiling std's `Cloned` covers both, and keeps the one rule:
+  a random-access type rust-js has no reader for is refused.
+
+Consequences: the iterator forms' `differs` is empty again;
+`adapters_own_work_that_panics.rs` checks a `cloned()` zipped with a
+range and with a slice's items, read by index, a clone panicking part-way,
+and folded, against native Rust in both builds, and joins the suite's
+few. The normal build's JS doesn't change: there a `cloned()` is still
+what the recognizers make of it. Mutations: `cloned-reader-uncompiled`,
+`cloned-compiled-everywhere`.

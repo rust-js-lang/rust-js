@@ -8,7 +8,7 @@
   "library": {
     "version": 15,
     "name": "rust_js_std",
-    "crate_hash": "d312384283bc2119af0441097028c3b9",
+    "crate_hash": "d1354dc6b7240d0511dc8b8d80920f9f",
     "items": [
       {
         "key": "core::iter::adapters::filter::{impl#9}::assume_count_le_upper_bound",
@@ -604,6 +604,363 @@
             "index": 2,
             "marks": [
               "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::cloned::{impl#11}",
+        "rust_path": "rust_js_std::<core::iter::Cloned<I> as core::clone::Clone>",
+        "module": [
+          "iter"
+        ],
+        "export": "clonedClone",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::cloned::{impl#11}::clone",
+        "rust_path": "rust_js_std::<core::iter::Cloned<I> as core::clone::Clone>::clone",
+        "module": [
+          "iter"
+        ],
+        "export": "clonedClone_clone",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::cloned::{impl#12}",
+        "rust_path": "rust_js_std::<core::iter::Cloned<I> as core::fmt::Debug>",
+        "module": [
+          "iter"
+        ],
+        "export": "clonedDebug",
+        "member": null
+      },
+      {
+        "key": "core::iter::adapters::cloned::{impl#12}::fmt",
+        "rust_path": "rust_js_std::<core::iter::Cloned<I> as core::fmt::Debug>::fmt",
+        "module": [
+          "iter"
+        ],
+        "export": "clonedDebug_fmt",
+        "member": null
+      },
+      {
+        "key": "core::iter::adapters::cloned::{impl#2}::next_back",
+        "rust_path": "rust_js_std::<core::iter::Cloned<I> as core::iter::DoubleEndedIterator>::next_back",
+        "module": [
+          "iter"
+        ],
+        "export": "clonedDoubleEndedIterator_nextBack",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::double_ended::DoubleEndedIterator"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::cloned::{impl#2}::rfold",
+        "rust_path": "rust_js_std::<core::iter::Cloned<I> as core::iter::DoubleEndedIterator>::rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "clonedDoubleEndedIterator_rfold",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::double_ended::DoubleEndedIterator",
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::cloned::{impl#2}::try_rfold",
+        "rust_path": "rust_js_std::<core::iter::Cloned<I> as core::iter::DoubleEndedIterator>::try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "clonedDoubleEndedIterator_tryRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::double_ended::DoubleEndedIterator",
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::cloned::{impl#3}::len",
+        "rust_path": "rust_js_std::<core::iter::Cloned<I> as core::iter::ExactSizeIterator>::len",
+        "module": [
+          "iter"
+        ],
+        "export": "clonedExactSizeIterator_len",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::exact_size::ExactSizeIterator"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::cloned::{impl#1}::__iterator_get_unchecked",
+        "rust_path": "rust_js_std::<core::iter::Cloned<I> as core::iter::Iterator>::__iterator_get_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "clonedIterator___iteratorGetUnchecked",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::cloned::{impl#1}::fold",
+        "rust_path": "rust_js_std::<core::iter::Cloned<I> as core::iter::Iterator>::fold",
+        "module": [
+          "iter"
+        ],
+        "export": "clonedIterator_fold",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::cloned::{impl#1}::next",
+        "rust_path": "rust_js_std::<core::iter::Cloned<I> as core::iter::Iterator>::next",
+        "module": [
+          "iter"
+        ],
+        "export": "clonedIterator_next",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::cloned::{impl#1}::size_hint",
+        "rust_path": "rust_js_std::<core::iter::Cloned<I> as core::iter::Iterator>::size_hint",
+        "module": [
+          "iter"
+        ],
+        "export": "clonedIterator_sizeHint",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::cloned::{impl#1}::try_fold",
+        "rust_path": "rust_js_std::<core::iter::Cloned<I> as core::iter::Iterator>::try_fold",
+        "module": [
+          "iter"
+        ],
+        "export": "clonedIterator_tryFold",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop",
+              "clone"
             ]
           },
           {
@@ -10920,6 +11277,33 @@
         ]
       },
       {
+        "key": "core::iter::traits::iterator::Iterator::cloned",
+        "rust_path": "rust_js_std::core::iter::Iterator::cloned",
+        "module": [
+          "iter"
+        ],
+        "export": "iterator_cloned",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::traits::iterator::Iterator::copied",
         "rust_path": "rust_js_std::core::iter::Iterator::copied",
         "module": [
@@ -12060,6 +12444,11 @@
       "core::iter::adapters::chain::{impl#2}",
       "core::iter::adapters::chain::{impl#6}",
       "core::iter::adapters::chain::{impl#7}",
+      "core::iter::adapters::cloned::{impl#11}",
+      "core::iter::adapters::cloned::{impl#12}",
+      "core::iter::adapters::cloned::{impl#1}",
+      "core::iter::adapters::cloned::{impl#2}",
+      "core::iter::adapters::cloned::{impl#3}",
       "core::iter::adapters::copied::{impl#13}",
       "core::iter::adapters::copied::{impl#14}",
       "core::iter::adapters::copied::{impl#1}",
@@ -12290,6 +12679,17 @@
         "copiedExactSizeIterator_len",
         "copiedClone_clone",
         "copiedDebug_fmt",
+        "clonedIterator_next",
+        "clonedIterator___iteratorGetUnchecked",
+        "clonedIterator_sizeHint",
+        "clonedIterator_fold",
+        "clonedIterator_tryFold",
+        "clonedDoubleEndedIterator_nextBack",
+        "clonedDoubleEndedIterator_rfold",
+        "clonedDoubleEndedIterator_tryRfold",
+        "clonedExactSizeIterator_len",
+        "clonedClone_clone",
+        "clonedDebug_fmt",
         "filterMapIterator_next",
         "filterMapIterator_sizeHint",
         "filterMapIterator_fold",
@@ -12421,6 +12821,7 @@
         "iterator_map",
         "iterator_filter",
         "iterator_copied",
+        "iterator_cloned",
         "iterator_filterMap",
         "iterator_takeWhile",
         "iterator_skipWhile",
@@ -12506,6 +12907,8 @@
         "filterDebug",
         "copiedClone",
         "copiedDebug",
+        "clonedClone",
+        "clonedDebug",
         "filterMapClone",
         "filterMapDebug",
         "takeWhileClone",
@@ -12534,7 +12937,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "b4dfd6dd101eab08"
+      "hash": "deae3fe82c9d540e"
     },
     {
       "file": "iter.js.map",

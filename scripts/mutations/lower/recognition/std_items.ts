@@ -44,6 +44,29 @@ export const mutations: Mutation[] = [
     ],
   },
   {
+    name: "cloned-reader-uncompiled",
+    breaks:
+      "std's `Cloned`'s `__iterator_get_unchecked` isn't compiled: the build of std's structs alone refuses a `cloned()` std's zip reads by index, `reading a Cloned<slice::Iter<D>> by its index` (#727, ADR 0938)",
+    file: "src/lower/recognition/std_items.rs",
+    find: '    ("Cloned", Some("Iterator"), "__iterator_get_unchecked"),\n',
+    replace: "",
+    tests: [
+      "test/iterator-forms.test.ts",
+      "-t",
+      "^adapters_own_work_that_panics with",
+    ],
+  },
+  {
+    name: "cloned-compiled-everywhere",
+    breaks:
+      "std's `Cloned` isn't `MEANING_ONLY`, so the normal build makes a held `cloned()` std's struct, not the JS iterator the recognizers make of it: the normal build's JS changes (#727, ADR 0938)",
+    file: "src/lower/recognition/std_items.rs",
+    find: '    "Copied",\n    "Cloned",\n];\n',
+    replace: '    "Copied",\n];\n',
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^cloned_items_from_both_ends.rs$"],
+  },
+  {
     name: "meaning-only-made-everywhere",
     breaks:
       "a `MEANING_ONLY` adapter, `Filter`, is std's struct in the normal build too, so `v.into_iter().filter(p).collect()` isn't the JS chain the recognizers make (ADR 0932)",

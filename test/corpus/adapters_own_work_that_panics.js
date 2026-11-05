@@ -20,12 +20,15 @@ import {
   $next,
   $nextBack,
   $range,
+  $rangeLen,
   $rangeNext,
   $repeating,
   $repeatingN,
   $rev,
   $roomForHint,
   $sizeHint,
+  $slice,
+  $trustedZip,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -303,6 +306,74 @@ function main() {
       $dropItems(v, dDrop_drop);
     }
     return collect.length;
+  });
+  run("zip of cloned, read by index", [0, 2], () => {
+    const v = ds();
+    let collect;
+    try {
+      collect = $collectDropping(
+        $trustedZip(
+          v.values().map((item) => dClone_clone(item)),
+          $iterator({ start: 10, end: 13 }, $rangeNext, false, undefined, $rangeLen),
+        ),
+        (value) => {
+          dDrop_drop(value[0]);
+        },
+        true,
+      );
+      $dropItems(collect, (item) => {
+        dDrop_drop(item[0]);
+      });
+    } finally {
+      $dropItems(v, dDrop_drop);
+    }
+    return collect.length;
+  });
+  run("zip of cloned, folded", [0, 0], () => {
+    const v = ds();
+    try {
+      return $trustedZip(
+        v.values().map((item) => dClone_clone(item)),
+        $iterator({ start: 10, end: 12 }, $rangeNext, false, undefined, $rangeLen),
+      )
+        .map(([d, n]) => {
+          const result = (d[0] + n) >>> 0;
+          dDrop_drop(d);
+          return result;
+        })
+        .reduce((a, b) => (a + b) >>> 0, 0);
+    } finally {
+      $dropItems(v, dDrop_drop);
+    }
+  });
+  run("zip of cloned and a slice's items", [0, 2], () => {
+    const value = ds();
+    let tmp;
+    try {
+      tmp = [value, ds()];
+    } catch (error) {
+      $dropItems(value, dDrop_drop);
+      throw error;
+    }
+    const v = tmp[0];
+    const w = tmp[1];
+    let result;
+    try {
+      try {
+        result = $trustedZip(
+          v.values().map((item) => dClone_clone(item)),
+          $iter($slice(w, 0, 2)),
+        ).reduce((n, item) => {
+          dDrop_drop(item[0]);
+          return n + 1;
+        }, 0);
+      } finally {
+        $dropItems(w, dDrop_drop);
+      }
+    } finally {
+      $dropItems(v, dDrop_drop);
+    }
+    return result;
   });
   run(
     "cycle",

@@ -64,7 +64,7 @@ std's `zip`, and `TrustedRandomAccessNoCoerce::size`.
   `IterMethod::GetUnchecked`, `$getUnchecked(it, i, dictionary)`. It reads
   std's compiled adapter by the reader its dictionary carries,
   `getUnchecked`, the compiled reader of `Map`, `Enumerate`, `Copied`,
-  `Skip`, `Take`, `Fuse` or `Zip`. An array's `$iter` and a range need no
+  `Cloned` (ADR 0938, amended, #727), `Skip`, `Take`, `Fuse` or `Zip`. An array's `$iter` and a range need no
   entry: it reads them as they are. Only compiled adapters' dictionaries
   carry the reader, and only where `Zip` is compiled (a first form gave
   every slice's dictionary an entry, 1,500 lines of the corpus with std's

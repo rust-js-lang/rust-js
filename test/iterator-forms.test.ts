@@ -124,6 +124,10 @@ const few = [
   "collect_closes_what_its_hint_panics.rs",
   // And its hint asked again each time the `Vec` is full (#728).
   "collect_asks_hint_as_it_grows.rs",
+  // A `cloned()` std's compiled `Zip` reads by index, std's compiled
+  // `Cloned`'s `__iterator_get_unchecked`, or steps by `next` beside a
+  // `chain()` (#727).
+  "adapters_own_work_that_panics.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus")
@@ -135,16 +139,7 @@ const chosen = which === "corpus" ? caseShard(cases) : few;
 /** The cases whose std-struct build doesn't run as native Rust yet, each
  * with why: what's left to do, which only shrinks. One that runs as Rust
  * does is taken off. */
-const differs: Record<string, string> = {
-  // A `zip()` of a `cloned()` of a slice's items: std's compiled `Zip` asks
-  // whether each side is read by index, `TrustedRandomAccess`, which a
-  // `Cloned<slice::Iter<D>>` is, but std's `Cloned` isn't compiled, so
-  // there's no reader of its item at an index, and it's refused rather
-  // than read as another is; though its other side here, a `chain()`, isn't
-  // read so, and std steps both by `next` (#727).
-  "adapters_own_work_that_panics.rs":
-    "reading a `Cloned<slice::Iter<D>>` by its index, as std's zip of it does, is refused: std's `Cloned` isn't compiled (#727)",
-};
+const differs: Record<string, string> = {};
 
 test("the cases a run of a few names are the corpus's, and each listed difference is one", () => {
   for (const name of [...few, ...Object.keys(differs)])
