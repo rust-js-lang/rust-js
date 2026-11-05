@@ -1147,8 +1147,9 @@ fn adapter_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, path: &str) -> Option<T
 }
 
 /// Of std's adapter of type `ty` that steps from its back where its source
-/// does, `Map`, `Filter`, `FilterMap` or `Copied`, its source (ADRs 0455,
-/// 0480, 0526). A `rev()` made in place is read by its form (ADR 0987).
+/// does, `Map`, `Filter`, `FilterMap`, `Copied` or `Cloned`, its source (ADRs
+/// 0455, 0480, 0526, #792). A `rev()` made in place is read by its form (ADR
+/// 0987).
 pub(crate) fn back_stepped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
         ty::Adt(adt, args)
@@ -1158,6 +1159,7 @@ pub(crate) fn back_stepped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Opti
                     | "std::iter::Filter"
                     | "std::iter::FilterMap"
                     | "std::iter::Copied"
+                    | "std::iter::Cloned"
                     | "std::iter::Inspect"
             ) =>
         {
@@ -1168,14 +1170,18 @@ pub(crate) fn back_stepped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Opti
 }
 
 /// Of std's adapter of type `ty` that knows its length where its source
-/// does, `Map`, `Copied`, `Enumerate` or `Rev`, its source (ADRs 0456,
-/// 0528, 0530).
+/// does, `Map`, `Copied`, `Cloned`, `Enumerate` or `Rev`, its source (ADRs
+/// 0456, 0528, 0530, #792).
 pub(crate) fn length_kept_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
         ty::Adt(adt, args)
             if matches!(
                 std_path(tcx, adt.did()).as_str(),
-                "std::iter::Map" | "std::iter::Copied" | "std::iter::Enumerate" | "std::iter::Rev"
+                "std::iter::Map"
+                    | "std::iter::Copied"
+                    | "std::iter::Cloned"
+                    | "std::iter::Enumerate"
+                    | "std::iter::Rev"
             ) =>
         {
             Some(args.type_at(0))

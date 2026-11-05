@@ -423,9 +423,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `enumerate` of what knows its length isn't seen to know its own",
     file: "src/lower/recognition/iterators.rs",
-    find: '                "std::iter::Map" | "std::iter::Copied" | "std::iter::Enumerate" | "std::iter::Rev"\n',
-    replace:
-      '                "std::iter::Map" | "std::iter::Copied" | "std::iter::Rev"\n',
+    find: "                \"std::iter::Map\"\n                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Enumerate\"\n                    | \"std::iter::Rev\"\n",
+    replace: "                \"std::iter::Map\"\n                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Rev\"\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -437,9 +436,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a map of an iterator that knows its length doesn't, so its `len()` is refused",
     file: "src/lower/recognition/iterators.rs",
-    find: '                "std::iter::Map" | "std::iter::Copied" | "std::iter::Enumerate" | "std::iter::Rev"\n',
-    replace:
-      '                "std::iter::Copied" | "std::iter::Enumerate" | "std::iter::Rev"\n',
+    find: "                \"std::iter::Map\"\n                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Enumerate\"\n                    | \"std::iter::Rev\"\n",
+    replace: "                \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Enumerate\"\n                    | \"std::iter::Rev\"\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -479,9 +477,8 @@ export const mutations: Mutation[] = [
     name: "rev-length-unknown",
     breaks: "a `rev()` of what knows its length isn't seen to know its own",
     file: "src/lower/recognition/iterators.rs",
-    find: '                "std::iter::Map" | "std::iter::Copied" | "std::iter::Enumerate" | "std::iter::Rev"\n',
-    replace:
-      '                "std::iter::Map" | "std::iter::Copied" | "std::iter::Enumerate"\n',
+    find: "                \"std::iter::Map\"\n                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Enumerate\"\n                    | \"std::iter::Rev\"\n",
+    replace: "                \"std::iter::Map\"\n                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Enumerate\"\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -821,5 +818,21 @@ export const mutations: Mutation[] = [
     find: "        .filter(|&held| !matches!(held.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
+  {
+    name: "cloned-not-back-stepped",
+    breaks: "a `cloned()` of a slice's items whose `Clone` runs code doesn't step from its back where its source does, and a zip of two is refused (#792)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Inspect\"\n",
+    replace: "                    | \"std::iter::Copied\"\n                    | \"std::iter::Inspect\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_of_cloned_items_whose_clone_runs.rs$"],
+  },
+  {
+    name: "cloned-length-not-kept",
+    breaks: "a `cloned()` of a slice's items whose `Clone` runs code doesn't know its length where its source does, and a zip of two is refused (#792)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Enumerate\"\n",
+    replace: "                    | \"std::iter::Copied\"\n                    | \"std::iter::Enumerate\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_of_cloned_items_whose_clone_runs.rs$"],
   },
 ];

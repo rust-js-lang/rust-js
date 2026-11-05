@@ -680,3 +680,27 @@ refusal of valid Rust lifted. Held by corpus
 (`mir/assign.ts`). The map's variable is left declared where nothing reads
 it, `const map = value.map(f)`, as it is of a map of an array's items held
 already: a readability gap of its own.
+
+## Amended (2026-11-06, #792): a zip's sides, and a `cloned()` of what's cloned by code
+
+A zip of two `cloned()`s whose `Clone` runs code, `a.iter().cloned().zip(
+b.iter().cloned())`, was refused in the default build, even forward where
+another use of its type steps it from its back, "a `Cloned<Iter<D>>` as an
+`ExactSizeIterator`": the zip is `$trustedZipEnds` of its sides made
+knowing their lengths (#740), and MIR holds a side, `x.map(clone)`, in a
+variable before the zip is made, so no form of it was left to read, and
+no rule made it knowing where it was made. **A recorded zip's sides are
+recorded too, as a chain's are** (`with_stepped_sources`, #718), **and a
+`cloned()` is an adapter that steps from its back and knows its length
+where its source does**, as a `copied()` is (`back_stepped_source`,
+`length_kept_source`): `copied_items` makes it `$mapEnds($iter(a), clone)`
+where it's made, which knows both.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; a
+refusal of valid Rust lifted. Held by corpus
+`zip_of_cloned_items_whose_clone_runs`, against native Rust in both builds,
+with a `Clone` that prints: forward, `len()`, `next_back()` and `rev()`.
+No other snapshot changes. Mutations `cloned-not-back-stepped`,
+`cloned-length-not-kept` (`recognition/iterators.ts`),
+`zip-sides-not-back-stepped`, `cloned-source-not-recorded`
+(`analysis/back_stepped.ts`).

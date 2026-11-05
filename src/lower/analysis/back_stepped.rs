@@ -11,9 +11,9 @@
 
 use crate::lower::body_queries::strip;
 use crate::lower::recognition::{
-    Recognition, back_stepped_source, chained_sources, copied_source, enumerated_source, enumerates_a_compiled_struct,
-    filter_mapped_source, filtered_source, flattened_source, inspected_source, is_double_ended, is_exact_size,
-    is_iter_adapter_def, mapped_source, reversed_source, zipped_sources,
+    Recognition, back_stepped_source, chained_sources, cloned_source, copied_source, enumerated_source,
+    enumerates_a_compiled_struct, filter_mapped_source, filtered_source, flattened_source, inspected_source,
+    is_double_ended, is_exact_size, is_iter_adapter_def, mapped_source, reversed_source, zipped_sources,
 };
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::{ExprId, ExprKind};
@@ -298,12 +298,14 @@ fn back_stepped_adapter<'tcx>(
 /// back (#739). And a chain's sides in turn, which `$lazyChain` steps from
 /// their back, each made knowing it where it's made: MIR holds side `a` in
 /// a variable before the chain is made, where `b`'s drop flag must be
-/// cleared, so no form of `a` is left to read (#718).
+/// cleared, so no form of `a` is left to read (#718). And a zip's sides,
+/// which `$zipEnds` steps from their back and counts, a `cloned()`'s too,
+/// as MIR holds a side in a variable before the zip is made (#792).
 fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: HashSet<Ty<'tcx>>) -> HashSet<Ty<'tcx>> {
     let mut all = stepped.clone();
     let mut sources: Vec<Ty<'tcx>> = stepped.into_iter().collect();
     while let Some(ty) = sources.pop() {
-        let held = match chained_sources(tcx, ty) {
+        let held = match chained_sources(tcx, ty).or_else(|| zipped_sources(tcx, ty)) {
             Some((a, b)) => vec![a, b],
             None => back_stepped_source(tcx, ty).into_iter().collect(),
         };
@@ -312,6 +314,7 @@ fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: HashSet<Ty<'tcx>>) -> 
                 || filtered_source(tcx, held).is_some()
                 || filter_mapped_source(tcx, held).is_some()
                 || copied_source(tcx, held).is_some()
+                || cloned_source(tcx, held).is_some()
                 || inspected_source(tcx, held).is_some()
                 || chained_sources(tcx, held).is_some()
             {

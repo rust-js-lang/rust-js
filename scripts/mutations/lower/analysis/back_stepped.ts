@@ -231,7 +231,7 @@ export const mutations: Mutation[] = [
     breaks:
       "each held adapter a back-stepped one steps is marked, whatever it is: the crate's own iterator a held `filter` steps is made with its exact length, `$exactLen(..)`, which nothing asks (#218)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "            if mapped_source(tcx, held).is_some()\n                || filtered_source(tcx, held).is_some()\n                || filter_mapped_source(tcx, held).is_some()\n                || copied_source(tcx, held).is_some()\n                || inspected_source(tcx, held).is_some()\n                || chained_sources(tcx, held).is_some()\n            {\n",
+    find: "            if mapped_source(tcx, held).is_some()\n                || filtered_source(tcx, held).is_some()\n                || filter_mapped_source(tcx, held).is_some()\n                || copied_source(tcx, held).is_some()\n                || cloned_source(tcx, held).is_some()\n                || inspected_source(tcx, held).is_some()\n                || chained_sources(tcx, held).is_some()\n            {\n",
     replace: "            if true {\n",
     tests: [
       "test/corpus.test.ts",
@@ -366,5 +366,21 @@ export const mutations: Mutation[] = [
     find: "    (mapped_source(tcx, adapter).is_some() || inspected_source(tcx, adapter).is_some())\n",
     replace: "    mapped_source(tcx, adapter).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^move_closure_adapter_from_its_back.rs$"],
+  },
+  {
+    name: "zip-sides-not-back-stepped",
+    breaks: "a zip stepped from its back doesn't make its sides knowing theirs where they're made, and a `cloned()` side MIR holds in a variable is refused (#792)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "        let held = match chained_sources(tcx, ty).or_else(|| zipped_sources(tcx, ty)) {\n",
+    replace: "        let held = match chained_sources(tcx, ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_of_cloned_items_whose_clone_runs.rs$"],
+  },
+  {
+    name: "cloned-source-not-recorded",
+    breaks: "a `cloned()` a back-stepped adapter holds isn't made knowing its back where it's made (#792)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                || cloned_source(tcx, held).is_some()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^zip_of_cloned_items_whose_clone_runs.rs$"],
   },
 ];
