@@ -202,4 +202,20 @@ export const mutations: Mutation[] = [
     replace: "    const folded = skipping.tryRfold(init, f, () => false, unwind);\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_rfold_closes_as_it_unwinds.rs$"],
   },
+  {
+    name: "skipping-last-unclosed",
+    breaks: "a `skip()`'s `last` whose source's `nth(n - 1)` panics leaves its source unclosed, where std's `last(self)` drops it as it unwinds (#735)",
+    file: "src/runtime/skipping.js",
+    find: "    const source = $consumed(skipping, () => skipping.skipped());\n",
+    replace: "    const source = skipping.skipped();\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_first_nth_panics.rs$"],
+  },
+  {
+    name: "skipping-last-unforwarded",
+    breaks: "a `skip()`'s `last` is std's default, its fold, not its source's `last` after what it skips, so the crate's own `last` behind it is never asked (#232, #735)",
+    file: "src/runtime/skipping.js",
+    find: "    last: typeof iter.last === \"function\" ? last : undefined,\n",
+    replace: "    last: undefined,\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_last_and_nth_passed_on.rs$"],
+  },
 ];

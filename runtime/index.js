@@ -1824,80 +1824,10 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     $forward(taken, this, { nth, tryFold, fold, advanceBy, count });
     return taken;
   }
-  // Std's `Skip`: its first step is its source's `nth(n)`, which stops at a
-  // `None`, and gives it; each after is its source's. Its fold and its
-  // `try_fold`, the source's after its `nth(n - 1)`; its `nth(k)`, its
-  // source's `nth(n + k)`.
+  // Std's `Skip`, JS's name for it: the one `Skip`, `$skipping`'s, of its
+  // items, which nothing here drops (#735).
   drop(n) {
-    const skipped = new $Steps(
-      () => {
-        if (n === 0) return this.next();
-        const k = n;
-        n = 0;
-        return this.nth(k);
-      },
-      () => this.return(),
-    );
-    skipped.from = [this];
-    // Its `fold`, then closed where its `nth(n - 1)` found none, as
-    // `fold(self)` drops what it has left at its end (#242).
-    const fold = (init, g, unwind, ends) => {
-      if (n > 0) {
-        const k = n;
-        n = 0;
-        if (this.nth(k - 1).done) {
-          $closedAfter(ends, () => this.return());
-          return init;
-        }
-      }
-      return this.fold(init, g, unwind, ends);
-    };
-    const tryFold = (init, g, broke, unwind) => {
-      if (n > 0) {
-        const k = n;
-        n = 0;
-        if (this.nth(k - 1).done) return init;
-      }
-      return this.tryFold(init, g, broke, unwind);
-    };
-    const nth = (k) => {
-      const skip = n;
-      n = 0;
-      return this.nth(skip + k);
-    };
-    // Its `count`, std's: its source's `nth(n - 1)`, then its source's
-    // `count`, the crate's own where it writes one (#505).
-    const count = (drop) => {
-      if (n > 0) {
-        const k = n;
-        n = 0;
-        if (this.nth(k - 1).done) {
-          this.return();
-          return 0;
-        }
-      }
-      return $count(this, drop);
-    };
-    // Its `advance_by(m)`, std's: its source advanced past what it skips
-    // and `m` more (#213).
-    const advanceBy = (m, drop) => {
-      const skip = n;
-      const left = this.advanceBy(skip + m, drop);
-      const advanced = skip + m - left;
-      n = Math.max(skip - advanced, 0);
-      return m - Math.max(advanced - skip, 0);
-    };
-    // Std's `Skip::last`: its source's `nth(n - 1)`, then its source's `last`.
-    const last = () => {
-      if (n > 0) {
-        const k = n;
-        n = 0;
-        if (this.nth(k - 1).done) return { done: true, value: undefined };
-      }
-      return this.last();
-    };
-    $forward(skipped, this, { fold, tryFold, nth, count, advanceBy, last });
-    return skipped;
+    return $skipping(this, n);
   }
 }
 
@@ -2773,7 +2703,8 @@ export function $slicing(it, drop) {
 // where items have a destructor, as Rust's `nth` drops what it skips;
 // closing it closes what it steps, which drops what it holds (ADRs 0422,
 // 0465). Its back and length are its source's less what it skips, as
-// Rust's `next_back` and `len` are.
+// Rust's `next_back` and `len` are. The one `Skip`: a `$Steps`' `drop(n)`,
+// JS's name for it, is it too (#735).
 export function $skipping(iter, n, drop) {
   const skipping = new $Steps(
     () => {
@@ -2889,6 +2820,15 @@ export function $skipping(iter, n, drop) {
     }
     return skipping.iter;
   };
+  // Std's `Skip::last`: its source's `last`, after what it skips, the
+  // crate's own where it writes one (#232). Closed where what it skips
+  // throws, a panic, or ends it, as `last(self)` drops it (#735).
+  const last = () => {
+    const source = $consumed(skipping, () => skipping.skipped());
+    if (source !== undefined) return source.last();
+    skipping.return();
+    return { done: true, value: undefined };
+  };
   // Std's `Skip::nth(k)`, its source's `nth(n + k)`, where that drops what
   // it passes over itself, a reversed `Vec`'s as one slice (#234). Each
   // `nth` it asks of its source here, and its count's, fold's, try_fold's
@@ -2937,6 +2877,7 @@ export function $skipping(iter, n, drop) {
     nthBack: iter.nthBack !== undefined ? nthBack : undefined,
     tryRfold: iter.tryRfold !== undefined ? tryRfold : undefined,
     rfold: iter.tryRfold !== undefined ? rfold : undefined,
+    last: typeof iter.last === "function" ? last : undefined,
   });
   if (iter.ownNth) skipping.ownNth = true;
   // Its `count` its source's, the crate's own where it writes one, which

@@ -142,3 +142,32 @@ back, the last item it keeps, found by the source's length as std's
 `next_back_index` finds it. A `skip` or a `take` made in place is counted
 by `as_exact_size` too, so one can be such a source. Held by
 `test/corpus/rev_step_by.rs`.
+
+## Amendment: one `Skip`, `$skipping`; a `$Steps`' `drop(n)` is it (2026-11-05, #735)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. A leak changes the
+result, so Rust's behavior is kept.
+
+The runtime had two implementations of std's `Skip`: `$skipping`, this
+ADR's explicit adapter, which items with a destructor and held adapters
+use, and a `$Steps`' own `drop(n)`, which the JS writes for items with
+nothing to drop, as JS names a skip. rd767 made `$skipping`'s `fold` and
+`try_fold` pass `unwind` to their first `nth(n - 1)` and close what they
+consume as it throws. `drop(n)`'s never did. So `It(0).skip(2).fold(Acc(0),
+f)` in the default build, the crate's `next` panicking within what it
+skips, left `Acc(0)` and the crate's iterator undropped, where std's
+`Skip::fold` (core/src/iter/adapters/skip.rs:122) drops `init`, then
+`self`, as it unwinds.
+
+`drop(n)` is now `$skipping(this, n)`, with no drop of the items, so
+there's one owner of `Skip`'s steps. The JS still writes `.drop(n)`, JS's
+name for it, so no output changes. `$skipping` gains its own `last`,
+std's `Skip::last`: its source's `last` after its `nth(n - 1)`, which
+`drop(n)` had, closed where what it skips throws or ends it, as
+`last(self)` drops it. `drop(n)`'s eight mutations went with its code.
+
+Corpus case `skip_first_nth_panics.rs` holds a `fold`, a `try_fold`, a
+`count`, a `last` and a mapped `fold` whose first `nth` panics, against
+native Rust in both builds. Mutations: `steps-drop-js-own`
+(`runtime/steps.ts`), `skipping-last-unclosed` and
+`skipping-last-unforwarded` (`runtime/skipping.ts`).

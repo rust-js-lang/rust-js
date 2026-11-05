@@ -373,80 +373,10 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     $forward(taken, this, { nth, tryFold, fold, advanceBy, count });
     return taken;
   }
-  // Std's `Skip`: its first step is its source's `nth(n)`, which stops at a
-  // `None`, and gives it; each after is its source's. Its fold and its
-  // `try_fold`, the source's after its `nth(n - 1)`; its `nth(k)`, its
-  // source's `nth(n + k)`.
+  // Std's `Skip`, JS's name for it: the one `Skip`, `$skipping`'s, of its
+  // items, which nothing here drops (#735).
   drop(n) {
-    const skipped = new $Steps(
-      () => {
-        if (n === 0) return this.next();
-        const k = n;
-        n = 0;
-        return this.nth(k);
-      },
-      () => this.return(),
-    );
-    skipped.from = [this];
-    // Its `fold`, then closed where its `nth(n - 1)` found none, as
-    // `fold(self)` drops what it has left at its end (#242).
-    const fold = (init, g, unwind, ends) => {
-      if (n > 0) {
-        const k = n;
-        n = 0;
-        if (this.nth(k - 1).done) {
-          $closedAfter(ends, () => this.return());
-          return init;
-        }
-      }
-      return this.fold(init, g, unwind, ends);
-    };
-    const tryFold = (init, g, broke, unwind) => {
-      if (n > 0) {
-        const k = n;
-        n = 0;
-        if (this.nth(k - 1).done) return init;
-      }
-      return this.tryFold(init, g, broke, unwind);
-    };
-    const nth = (k) => {
-      const skip = n;
-      n = 0;
-      return this.nth(skip + k);
-    };
-    // Its `count`, std's: its source's `nth(n - 1)`, then its source's
-    // `count`, the crate's own where it writes one (#505).
-    const count = (drop) => {
-      if (n > 0) {
-        const k = n;
-        n = 0;
-        if (this.nth(k - 1).done) {
-          this.return();
-          return 0;
-        }
-      }
-      return $count(this, drop);
-    };
-    // Its `advance_by(m)`, std's: its source advanced past what it skips
-    // and `m` more (#213).
-    const advanceBy = (m, drop) => {
-      const skip = n;
-      const left = this.advanceBy(skip + m, drop);
-      const advanced = skip + m - left;
-      n = Math.max(skip - advanced, 0);
-      return m - Math.max(advanced - skip, 0);
-    };
-    // Std's `Skip::last`: its source's `nth(n - 1)`, then its source's `last`.
-    const last = () => {
-      if (n > 0) {
-        const k = n;
-        n = 0;
-        if (this.nth(k - 1).done) return { done: true, value: undefined };
-      }
-      return this.last();
-    };
-    $forward(skipped, this, { fold, tryFold, nth, count, advanceBy, last });
-    return skipped;
+    return $skipping(this, n);
   }
 }
 

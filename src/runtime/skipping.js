@@ -4,7 +4,8 @@
 // where items have a destructor, as Rust's `nth` drops what it skips;
 // closing it closes what it steps, which drops what it holds (ADRs 0422,
 // 0465). Its back and length are its source's less what it skips, as
-// Rust's `next_back` and `len` are.
+// Rust's `next_back` and `len` are. The one `Skip`: a `$Steps`' `drop(n)`,
+// JS's name for it, is it too (#735).
 function $skipping(iter, n, drop) {
   const skipping = new $Steps(
     () => {
@@ -120,6 +121,15 @@ function $skipping(iter, n, drop) {
     }
     return skipping.iter;
   };
+  // Std's `Skip::last`: its source's `last`, after what it skips, the
+  // crate's own where it writes one (#232). Closed where what it skips
+  // throws, a panic, or ends it, as `last(self)` drops it (#735).
+  const last = () => {
+    const source = $consumed(skipping, () => skipping.skipped());
+    if (source !== undefined) return source.last();
+    skipping.return();
+    return { done: true, value: undefined };
+  };
   // Std's `Skip::nth(k)`, its source's `nth(n + k)`, where that drops what
   // it passes over itself, a reversed `Vec`'s as one slice (#234). Each
   // `nth` it asks of its source here, and its count's, fold's, try_fold's
@@ -168,6 +178,7 @@ function $skipping(iter, n, drop) {
     nthBack: iter.nthBack !== undefined ? nthBack : undefined,
     tryRfold: iter.tryRfold !== undefined ? tryRfold : undefined,
     rfold: iter.tryRfold !== undefined ? rfold : undefined,
+    last: typeof iter.last === "function" ? last : undefined,
   });
   if (iter.ownNth) skipping.ownNth = true;
   // Its `count` its source's, the crate's own where it writes one, which
