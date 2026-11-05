@@ -7,9 +7,10 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildCompiler, compiler, fixture, run } from "./support";
+import { buildCompiler, buildReact, compiler, fixture, run, target } from "./support";
 
 beforeAll(buildCompiler, 600_000);
+beforeAll(buildReact, 600_000);
 
 // A tuple's match whose first arm tests both values, `(0, 0) => ..`, then
 // an or-pattern's, `(1, _) | (_, 1) => ..`: that arm's paths, `a === 0 &&
@@ -163,4 +164,48 @@ pub fn guarded(x: Option<(u8, u8)>, k: u8) -> u8 {
   expect(options.flatMap((x) => [0, 1, 2, 5].map((k) => lib.guarded(x, k)))).toEqual([
     4, 2, 3, 1, 4, 4, 3, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 3, 4,
   ]);
+});
+
+// Index reads of a binding's object, `js::get(o, &3.0)`, are property
+// reads a getter may answer, never a tuple's parts: tested in the order
+// the Rust reads them, `o[3]` first, so where `o[3]` fails no other is
+// read, and a getter that throws past it isn't run (#756, P0).
+test("a binding's index reads are tested in the order they're written", async () => {
+  const dir = fixture("binding-index-order");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+pub fn index_alts(o: &Unknown) -> bool {
+    js::strict_equals(js::get(o, &3.0), 1.0)
+        && (js::strict_equals(js::get(o, &0.0), 2.0) || js::strict_equals(js::get(o, &0.0), 3.0))
+        && (js::strict_equals(js::get(o, &1.0), 4.0) || js::strict_equals(js::get(o, &1.0), 5.0))
+        && (js::strict_equals(js::get(o, &2.0), 6.0) || js::strict_equals(js::get(o, &2.0), 7.0))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const lib = await import(join(dir, "lib.js"));
+  const reads: number[] = [];
+  const object = (values: number[], throwing = -1) =>
+    Object.defineProperties(
+      {},
+      Object.fromEntries(
+        values.map((v, i) => [
+          i,
+          {
+            get() {
+              reads.push(i);
+              if (i === throwing) throw new Error(`index ${i} read`);
+              return v;
+            },
+          },
+        ]),
+      ),
+    );
+  expect(lib.indexAlts(object([2, 4, 6, 0]))).toBe(false);
+  expect(reads).toEqual([3]);
+  reads.length = 0;
+  expect(lib.indexAlts(object([2, 4, 6, 0], 0))).toBe(false);
+  expect(reads).toEqual([3]);
+  reads.length = 0;
+  expect(lib.indexAlts(object([3, 5, 7, 1]))).toBe(true);
+  expect(reads[0]).toBe(3);
 });

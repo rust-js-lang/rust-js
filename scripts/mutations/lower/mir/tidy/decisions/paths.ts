@@ -112,4 +112,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(match_in_loop_continue_break).rs$"],
     snapshots: true,
   },
+  {
+    name: "part-of-any-index-read",
+    breaks: "any read `x[n]` of a variable is a tuple's part, a binding's `js::get(o, &3.0)` too, so its tests are sorted by index and `o[0]`'s getter runs before `o[3]`'s, throwing where Rust returns `false` (#756, P0)",
+    file: "src/lower/mir/tidy/decisions/paths.rs",
+    find: "        if !root.facts.has(js::Known::Part) {\n",
+    replace: "        if false && !root.facts.has(js::Known::Part) {\n",
+    tests: ["test/lowering-match-paths.test.ts", "-t", "a binding's index reads are tested in the order they're written"],
+  },
 ];

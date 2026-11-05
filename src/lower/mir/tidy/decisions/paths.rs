@@ -338,7 +338,7 @@ fn within_place(outer: &Expr, inner: &Expr) -> bool {
     inner.written_alike(outer) || holders(inner).any(|h| h.written_alike(outer))
 }
 
-/// The tuple MIR made and which of its parts `test` reads, `_5` and `1` of
+/// The tuple rust-js made and which of its parts `test` reads, `_5` and `1` of
 /// `_5[1] === 3`, `_5[1] != null`, `_5[1][0] === 3` and `_5[1].length ===
 /// 2`: of a test whose every read is of that one part, `None` of one that
 /// calls, or reads anything else.
@@ -348,6 +348,11 @@ pub(super) fn part(test: &Expr) -> Option<(String, f64)> {
             ExprKind::Index(of, _) => matches!(of.kind, ExprKind::Var(_)),
             _ => false,
         })?;
+        // A tuple's part, as the representation says (`Known::Part`), never
+        // a read a getter may answer, `js::get(o, &3.0)`'s `o[3]` (#756).
+        if !root.facts.has(js::Known::Part) {
+            return None;
+        }
         let ExprKind::Index(of, at) = &root.kind else {
             return None;
         };

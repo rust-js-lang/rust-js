@@ -948,6 +948,13 @@ pub enum Known {
     /// one dropped by closing it, is dropped there, nothing after
     /// (`consumed_call`, #660).
     ClosesWhatItSteps,
+    /// A part of a tuple, `t[1]`, of the array rust-js made of it
+    /// (`Representation::project`): a read of an array's item, which calls
+    /// nothing and throws nothing, so tests of a tuple's parts may read in
+    /// the order its pattern names them (`decisions::paths::part`, #674).
+    /// Never a binding's `js::get(o, &1.0)`, which a getter may answer
+    /// (#756).
+    Part,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

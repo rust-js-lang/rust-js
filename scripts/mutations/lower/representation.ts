@@ -592,4 +592,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n            return Expr::object(Vec::new());\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_enum.rs$"],
   },
+  {
+    name: "tuple-part-unknown",
+    breaks: "a tuple's part isn't said to be one (`Known::Part`), so its tests read in MIR's order, `(b === 3 && a === 2) || ..`, not as written (#674, #756)",
+    file: "src/lower/representation.rs",
+    find: "                        facts: read.facts.with(js::Known::Part),\n",
+    replace: "                        facts: read.facts,\n",
+    tests: ["test/lowering-match-paths.test.ts", "-t", "alternatives test a tuple's parts in the order written"],
+  },
 ];

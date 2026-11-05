@@ -1136,6 +1136,27 @@ and without the arms. The arms and the two mutations are gone.
 
 of tests (#674).
 
+### A tuple's part is the representation's fact (#756, P0, 2026-11-05)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's order is kept. `written_order` sorted a path's tests by the index
+they read, and `paths::part` took any JS read `x[n]` of a variable by a
+number for a tuple's part: a binding's `js::get(o, &3.0)` too, a property
+read a getter or a proxy may answer, which may throw. `js::get(o, &3.0) ==
+1.0 && (js::get(o, &0.0) == 2.0 || ..)` read `o[0]` first, and threw where
+`o[0]`'s getter throws and Rust returns `false` past `o[3]`. Since
+43d8b918f (this amendment's #674).
+
+Now the representation says it: `Representation::project` marks a read
+of an array-shaped value's item `Known::Part`, but of a struct JS may make
+(`fields_answered_by_getters`), and `part` reads only a read so marked.
+A binding's index read, and a string's (`js::string::get`, React's
+`isDataUri`, upstream's `src[4] === ':'` first), are read as written.
+Held by `lowering-match-paths.test.ts`'s "a binding's index reads are
+tested in the order they're written", a getter object's reads, and the
+mutations `part-of-any-index-read` (`decisions/paths.ts`) and
+`tuple-part-unknown` (`lower/representation.ts`).
+
 ## Amendment: a guard reads what its own call changes where it's written (C1, the user's decision, #523, 2026-11-04)
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. `[n, ..] if
