@@ -33,11 +33,22 @@ function $extremeBy(items, compare, max, boxed, drop, ends) {
       drop?.(kept);
       throw error;
     }
+    // Where the one passed over panics as it drops, the one kept is
+    // leaked, as rustc leaks what `max_by(v1, v2)` returns while a later
+    // drop unwinds (ADR 0465's #648 amendment), a pair's too (#776).
+    const passed = (value) => {
+      try {
+        drop?.(value);
+      } catch (error) {
+        holding = false;
+        throw error;
+      }
+    };
     if (later) {
-      drop?.(kept);
+      passed(kept);
       return (held = item);
     }
-    drop?.(item);
+    passed(item);
     return kept;
   };
   if (ends !== undefined) {
@@ -89,7 +100,12 @@ function $minBy(items, compare, boxed = false, drop = undefined, ends = undefine
 // comes, as std pairs them, and the keys compared by `compare`.
 // Where `key` throws, the item it was asked of dropped, as std's pairing
 // closure holds it (#423).
-function $extremeByKey(items, key, compare, max, boxed, drop, ends) {
+// Of keys with a destructor, given their drop, `dropKey`: each pair passed
+// over dropped as a tuple is, its key, then its item, though the key's
+// drop panics; the kept pair's key dropped before its item is given back,
+// as `let (_, x) = ..?` drops what it doesn't bind, the item dropped as
+// that drop panics (#776).
+function $extremeByKey(items, key, compare, max, boxed, drop, ends, dropKey) {
   const owned = Array.isArray(items) && drop !== undefined ? $closing($iter(items), $dropEach(drop)) : items;
   // Its first pair made, so the `Map` std pairs them by is folded, which
   // moves `key` into its source's fold, dropped before what's left; till
@@ -114,17 +130,34 @@ function $extremeByKey(items, key, compare, max, boxed, drop, ends) {
       if (folding) ends();
       else after = true;
     });
+  const dropPair =
+    dropKey === undefined
+      ? drop && ((pair) => drop(pair[1]))
+      : (pair) =>
+          $inTurn(
+            () => dropKey(pair[0]),
+            drop && (() => drop(pair[1])),
+          );
   let pair;
   try {
-    pair = $extremeBy(keyed, (a, b) => compare(a[0], b[0]), max, false, drop && ((pair) => drop(pair[1])), dropped);
+    pair = $extremeBy(keyed, (a, b) => compare(a[0], b[0]), max, false, dropPair, dropped);
   } finally {
     if (after) ends();
   }
-  return pair === undefined ? undefined : boxed ? $some(pair[1]) : pair[1];
+  if (pair === undefined) return undefined;
+  if (dropKey !== undefined) {
+    try {
+      dropKey(pair[0]);
+    } catch (error) {
+      drop?.(pair[1]);
+      throw error;
+    }
+  }
+  return boxed ? $some(pair[1]) : pair[1];
 }
-function $maxByKey(items, key, compare, boxed = false, drop = undefined, ends = undefined) {
-  return $extremeByKey(items, key, compare, true, boxed, drop, ends);
+function $maxByKey(items, key, compare, boxed = false, drop = undefined, ends = undefined, dropKey = undefined) {
+  return $extremeByKey(items, key, compare, true, boxed, drop, ends, dropKey);
 }
-function $minByKey(items, key, compare, boxed = false, drop = undefined, ends = undefined) {
-  return $extremeByKey(items, key, compare, false, boxed, drop, ends);
+function $minByKey(items, key, compare, boxed = false, drop = undefined, ends = undefined, dropKey = undefined) {
+  return $extremeByKey(items, key, compare, false, boxed, drop, ends, dropKey);
 }

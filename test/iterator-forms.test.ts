@@ -155,6 +155,11 @@ const few = [
   // A zip read by index of maps whose closures hold what drops, a slice's
   // and a range's, `b` made knowing its length where it's made (#775).
   "zip_by_index_of_holding_maps.rs",
+  // Keys with a destructor in `max_by_key`, `min_by_key` and
+  // `is_sorted_by_key`, a slice's too, dropped where std drops them, and
+  // what `max_by` keeps leaked as what it passes over panics as it drops
+  // (#776, #783, #785).
+  "keys_with_a_destructor_drop_where_std_drops_them.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus")

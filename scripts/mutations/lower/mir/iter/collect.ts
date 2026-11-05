@@ -870,4 +870,12 @@ export const mutations: Mutation[] = [
     replace: "                                && !self.recognition().bounded_by_items(iter_ty)) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
   },
+  {
+    name: "is-sorted-by-key-drop-unpassed",
+    breaks: "an iterator's `is_sorted_by_key` isn't given its keys' drop: no key with a destructor is ever dropped (#776)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                self.is_sorted_call(keys, key, key_drop, span)\n",
+    replace: "                let _ = key_drop;\n                self.is_sorted_call(keys, key, None, span)\n",
+    tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
+  },
 ];

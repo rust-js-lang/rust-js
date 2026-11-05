@@ -296,3 +296,51 @@ to `$isSortedBy` as what drops with it (`consumed_function`, ADR 0470);
 `test/corpus/iterator_is_sorted_by.rs` checks them against native Rust in
 both builds; mutations `is-sorted-by-ends-lost`, `is-sorted-by-unconsumed`,
 `is-sorted-by-key-unmapped` and `is-sorted-by-ends-unrun`.
+
+## Amendment: a key with a destructor drops where std drops it (2026-11-05, #776, #783)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. For an iterator the key was a refusal (#776). A
+slice dropped no key at all, a wrong answer (#783, P0).
+
+An iterator's `is_sorted_by_key(f)` of a key with a destructor was refused.
+A slice's, `[1u32, 3, 2].is_sorted_by_key(|x| K(*x))`, compiled and dropped
+no key. Std's `is_sorted_by` (`core/src/iter/traits/iterator.rs`) keeps
+the item before as `last`, and its `check` closure ends each step with
+`*last = curr`, which drops the key it replaces. Where two are out of
+order it returns `false`, dropping `curr`. Then `all` drops its closure,
+`is_sorted_by` drops `last` and then `self`, what's left of the `Map`. A
+slice's is `self.iter().is_sorted_by_key(f)`, the same steps.
+
+`$isSortedBy(items, f, ends, drop)` takes the items' drop last, so no call
+without one changes. Given one, it steps by hand rather than by `for..of`,
+whose `return` closes the iterator before a `finally` could drop `last`:
+- each key replaced is dropped as `*last = curr` drops it. If that drop
+  panics, `last` is already `curr`, so it is the one dropped as it unwinds;
+- where two are out of order, `curr` is dropped, then `ends`, then `last`,
+  then what's left of `items` is closed, by `$inTurn`;
+- where `f` or a step panics, it goes the same way, `curr` first where `f`
+  was given one.
+
+`is_sorted_call` gives it the key's drop, `std_drop_function`'s, from both
+the iterator's `sorted_called` and the slice's `SliceOp::IsSortedByKey`. A
+slice's `$isSortedByKey(v, f, cmp, drop)` given a drop is `$isSortedBy` of
+its keys, `v.values().map(f)`. `check_leaves_none` counts `is_sorted_by_key`
+among the methods that move each item on to their function, as `map` does,
+so a `Vec`'s items with a destructor of their own compile too.
+
+`test/corpus/keys_with_a_destructor_drop_where_std_drops_them.rs` checks
+this against native Rust in both builds:
+- the crate's iterator, a slice's iterator, a `Vec`'s items with a
+  destructor, and slices;
+- sorted, unsorted and empty;
+- a key's function, the keys' comparison, and a replaced key's drop, each
+  panicking part way.
+
+Mutations: `sorted-dropping-replaced-kept`, `sorted-dropping-curr-kept`,
+`sorted-dropping-replaced-before-set`, `slice-sorted-by-key-undropped`
+(`runtime/slice_ops.ts`), `is-sorted-by-key-drop-unpassed`
+(`lower/mir/iter/collect.ts`), `slice-is-sorted-by-key-drop-unpassed`
+(`lower/std_types/slice.ts`) and `is-sorted-by-key-leaves-none`
+(`lower/mir/iter/closing.ts`). The guide's limitations no longer list it.
+Kind: missing case, both. Area: iterators for #776, drops-unwind for #783.

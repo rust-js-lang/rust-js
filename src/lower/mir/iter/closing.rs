@@ -493,6 +493,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | IterMethod::Partition
                     | IterMethod::Filter
                     | IterMethod::SkipWhile
+                    // Std's `self.map(f).is_sorted()`, which moves each into
+                    // `f` as a map does (#776).
+                    | IterMethod::IsSortedByKey
             )
         );
         if keeps_each {

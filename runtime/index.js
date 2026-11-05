@@ -6036,7 +6036,61 @@ export function $copyWithin(v, start, end, dest) {
 // so an iterator's later items aren't made. Given `ends`, what drops with
 // `f`: run at its end and as it unwinds, as std's `all` drops `f` before
 // what's left of the iterator (#763).
-export function $isSortedBy(items, f, ends) {
+//
+// Given `drop`, of items with a destructor, the keys `is_sorted_by_key`
+// makes: stepped as std's `is_sorted_by` steps them, each item kept as
+// `last` till the next replaces it, and dropped as `*last = curr` drops
+// it, `last` then `curr` though that drop panics. Where two are out of
+// order, `curr` dropped, then what drops with `f`, as `all` ends, then
+// `last`, then what's left of `items` closed, as `is_sorted_by`'s frame
+// drops them, and so as `f` or a step panics (#776).
+export function $isSortedBy(items, f, ends, drop) {
+  if (drop !== undefined) {
+    const it = Iterator.from(items);
+    let last;
+    let holding = false;
+    let done = false;
+    const end = () =>
+      $inTurn(
+        ends,
+        () => holding && ((holding = false), drop(last)),
+        () => done || it.return?.(),
+      );
+    let sorted = true;
+    try {
+      let step = it.next();
+      if (!step.done) {
+        last = step.value;
+        holding = true;
+        while (!(step = it.next()).done) {
+          const item = step.value;
+          let ordered;
+          try {
+            ordered = f(last, item);
+          } catch (error) {
+            drop(item);
+            throw error;
+          }
+          if (!ordered) {
+            drop(item);
+            sorted = false;
+            break;
+          }
+          const replaced = last;
+          last = item;
+          drop(replaced);
+        }
+      }
+      done = step.done;
+    } catch (error) {
+      try {
+        end();
+      } catch {}
+      throw error;
+    }
+    end();
+    return sorted;
+  }
   let first = true;
   let last;
   try {
@@ -6052,8 +6106,17 @@ export function $isSortedBy(items, f, ends) {
 }
 
 // `is_sorted_by_key(f, cmp)`: `f` of each item once, as an iterator's is, up
-// to the first out of order.
-export function $isSortedByKey(v, f, cmp) {
+// to the first out of order. Of keys with a destructor, given their
+// `drop`: std's `self.iter().is_sorted_by_key(f)`, each key dropped where
+// `$isSortedBy` drops it (#783).
+export function $isSortedByKey(v, f, cmp, drop) {
+  if (drop !== undefined)
+    return $isSortedBy(
+      v.values().map((item) => f(item)),
+      (a, b) => cmp(a, b) <= 0,
+      undefined,
+      drop,
+    );
   if (v.length === 0) return true;
   let last = f(v[0]);
   for (let i = 1; i < v.length; i++) {
@@ -14459,11 +14522,22 @@ export function $extremeBy(items, compare, max, boxed, drop, ends) {
       drop?.(kept);
       throw error;
     }
+    // Where the one passed over panics as it drops, the one kept is
+    // leaked, as rustc leaks what `max_by(v1, v2)` returns while a later
+    // drop unwinds (ADR 0465's #648 amendment), a pair's too (#776).
+    const passed = (value) => {
+      try {
+        drop?.(value);
+      } catch (error) {
+        holding = false;
+        throw error;
+      }
+    };
     if (later) {
-      drop?.(kept);
+      passed(kept);
       return (held = item);
     }
-    drop?.(item);
+    passed(item);
     return kept;
   };
   if (ends !== undefined) {
@@ -14515,7 +14589,12 @@ export function $minBy(items, compare, boxed = false, drop = undefined, ends = u
 // comes, as std pairs them, and the keys compared by `compare`.
 // Where `key` throws, the item it was asked of dropped, as std's pairing
 // closure holds it (#423).
-export function $extremeByKey(items, key, compare, max, boxed, drop, ends) {
+// Of keys with a destructor, given their drop, `dropKey`: each pair passed
+// over dropped as a tuple is, its key, then its item, though the key's
+// drop panics; the kept pair's key dropped before its item is given back,
+// as `let (_, x) = ..?` drops what it doesn't bind, the item dropped as
+// that drop panics (#776).
+export function $extremeByKey(items, key, compare, max, boxed, drop, ends, dropKey) {
   const owned = Array.isArray(items) && drop !== undefined ? $closing($iter(items), $dropEach(drop)) : items;
   // Its first pair made, so the `Map` std pairs them by is folded, which
   // moves `key` into its source's fold, dropped before what's left; till
@@ -14540,19 +14619,36 @@ export function $extremeByKey(items, key, compare, max, boxed, drop, ends) {
       if (folding) ends();
       else after = true;
     });
+  const dropPair =
+    dropKey === undefined
+      ? drop && ((pair) => drop(pair[1]))
+      : (pair) =>
+          $inTurn(
+            () => dropKey(pair[0]),
+            drop && (() => drop(pair[1])),
+          );
   let pair;
   try {
-    pair = $extremeBy(keyed, (a, b) => compare(a[0], b[0]), max, false, drop && ((pair) => drop(pair[1])), dropped);
+    pair = $extremeBy(keyed, (a, b) => compare(a[0], b[0]), max, false, dropPair, dropped);
   } finally {
     if (after) ends();
   }
-  return pair === undefined ? undefined : boxed ? $some(pair[1]) : pair[1];
+  if (pair === undefined) return undefined;
+  if (dropKey !== undefined) {
+    try {
+      dropKey(pair[0]);
+    } catch (error) {
+      drop?.(pair[1]);
+      throw error;
+    }
+  }
+  return boxed ? $some(pair[1]) : pair[1];
 }
-export function $maxByKey(items, key, compare, boxed = false, drop = undefined, ends = undefined) {
-  return $extremeByKey(items, key, compare, true, boxed, drop, ends);
+export function $maxByKey(items, key, compare, boxed = false, drop = undefined, ends = undefined, dropKey = undefined) {
+  return $extremeByKey(items, key, compare, true, boxed, drop, ends, dropKey);
 }
-export function $minByKey(items, key, compare, boxed = false, drop = undefined, ends = undefined) {
-  return $extremeByKey(items, key, compare, false, boxed, drop, ends);
+export function $minByKey(items, key, compare, boxed = false, drop = undefined, ends = undefined, dropKey = undefined) {
+  return $extremeByKey(items, key, compare, false, boxed, drop, ends, dropKey);
 }
 
 // `max()` of `items`, numbers, `bool`s or `Ordering`s: std's

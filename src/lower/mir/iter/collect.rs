@@ -980,7 +980,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `$isSortedBy(it, f)`, given what drops with `f`, which std's `all`
     /// drops before what's left (#734); `it.is_sorted_by_key(f)`, std's
     /// `self.map(f).is_sorted()`, `$isSortedBy(it.map(f), ..)` of each
-    /// key, the type `f` gives, by its `PartialOrd` (#763).
+    /// key, the type `f` gives, by its `PartialOrd` (#763), given its drop
+    /// where it has a destructor (#776).
     pub(super) fn sorted_called(
         &mut self,
         it: Expr,
@@ -1004,13 +1005,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => arg_tys[1].fn_sig(tcx),
                 };
                 let key = tcx.instantiate_bound_regions_with_erased(sig).output();
-                if self.drops(key) != crate::lower::drops::Drops::Nothing {
-                    return Err(self.unsupported(span, "`is_sorted_by_key` of a key with a destructor"));
-                }
+                // A key with a destructor, given its drop: each one
+                // replaced dropped, and where two are out of order the later,
+                // then the last, as std's `is_sorted_by` drops them (#776).
+                let key_drop = self.std_drop_function(key, span)?;
                 let keys = Expr::call(Expr::member(it, "map"), vec![self.unary_callback(arg(), own)]);
-                self.is_sorted_call(keys, key, span)
+                self.is_sorted_call(keys, key, key_drop, span)
             }
-            _ => self.is_sorted_call(it, item, span),
+            _ => self.is_sorted_call(it, item, None, span),
         }
     }
 

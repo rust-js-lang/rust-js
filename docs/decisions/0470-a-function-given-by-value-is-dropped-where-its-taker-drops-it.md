@@ -228,3 +228,56 @@ a panic in it unwinds and of items with a destructor. The mutations are
 `extreme-by-ends-unrun` and `extreme-by-key-ends-before-its-source`.
 `eq_by`, `cmp_by` and `partial_cmp_by` are unstable, `iter_order_by`, so
 no stable program calls them.
+
+## Amendment: a key with a destructor, and what `max_by` keeps as a later drop panics (2026-11-05, #776, #785)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. A key with a destructor was a refusal (#776),
+and the kept value's drop was a wrong answer (#785, P0).
+
+**A key with a destructor** (#776). `max_by_key(f)` is std's
+`self.map(key(f)).max_by(compare)`, of `(f(&x), x)` pairs. Then:
+- `cmp::max_by(v1, v2)` returns one pair and drops the other, as a tuple
+  drops: its key, then its item, the item though the key's drop panics;
+- `let (_, x) = ..?` drops the kept pair's key before `Some(x)` is
+  returned. If that drop panics, `x` drops as it unwinds.
+
+`extreme_by_call` gave up on such a key with "a key with a destructor". It
+now passes the key's drop last, so no other call changes:
+`$maxByKey(items, key, compare, boxed, drop, ends, dropKey)`.
+`$extremeByKey` drops each pair it passes over by `$inTurn`, key then item,
+and drops the kept pair's key before it gives the item back.
+
+**What's kept, where the one passed over panics as it drops** (#785).
+`cmp::min_by(v1, v2)` keeps `v1` and returns it while `v2` drops. Where
+`v2`'s drop panics, rustc leaks what the function was returning, as ADR
+0465's #648 amendment says of a later drop that unwinds. `$extremeBy`'s
+`keep` left `holding` set, so its catch dropped the kept one as it
+unwound: `vec![D(12), D(13), D(14)].into_iter().min_by(..)` dropped `D(12)`
+where D(13)'s drop panicked. `keep` now clears `holding` where the drop of
+the one it passes over throws. That is so of `max_by`, `min_by` and their
+`_key` forms, whose pairs drop the same way.
+
+Still refused: a key *function* with a destructor over the crate's
+iterator (above, step 2). Where `reduce`'s first step ends, std drops the
+`Map` whole, the crate's iterator before the key function. In JS the
+caller drops the crate's iterator after the call, and `ends` runs within
+it. Making that order std's needs the consumer to own the iterator's drop,
+which is #734's consume primitive.
+
+`test/corpus/keys_with_a_destructor_drop_where_std_drops_them.rs` checks
+`max_by_key` and `min_by_key` of keys with a destructor against native
+Rust in both builds:
+- over the crate's iterator, a slice's, and a `Vec`'s items with a
+  destructor;
+- empty and of one item;
+- a key's function, the keys' comparison, a passed-over key's drop and
+  the kept key's drop, each panicking;
+- `min_by` and `max_by` where what they pass over panics as it drops.
+
+Mutations: `max-by-key-drop-unpassed` (`lower/iterators/ends.ts`), and
+`extreme-by-key-pair-key-undropped`, `extreme-by-key-pair-not-in-turn`,
+`extreme-by-key-kept-key-undropped`, `extreme-by-key-kept-item-leaked` and
+`extreme-passed-drop-panic-drops-kept` (`runtime/max_by.ts`).
+`max-by-drops-none` and `extreme-by-listed` name their lines as they now
+read. Kind: missing case, both. Area: iterators.

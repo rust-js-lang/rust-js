@@ -399,7 +399,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// in a row by their `PartialOrd`: `$isSortedBy(items, (a, b) => a <=
     /// b)` of numbers, JS's `<=` being `false` of a NaN as `partial_cmp`'s
     /// is; else their `partial_cmp` at most `Equal`, which `None` isn't.
-    pub(in crate::lower) fn is_sorted_call(&mut self, items: Expr, item: Ty<'tcx>, span: Span) -> R<Expr> {
+    /// Given `drop`, of items with a destructor, `$isSortedBy` drops them
+    /// where std's `is_sorted_by` does (#776).
+    pub(in crate::lower) fn is_sorted_call(
+        &mut self,
+        items: Expr,
+        item: Ty<'tcx>,
+        drop: Option<Expr>,
+        span: Span,
+    ) -> R<Expr> {
         let item = item.peel_refs();
         let (a, b) = (Expr::var("a"), Expr::var("b"));
         let le = match super::representation::Num::of(item) {
@@ -413,7 +421,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             vec!["a".into(), "b".into()],
             vec![StmtKind::Return(Some(le)).at(js::Span::NONE)],
         );
-        Ok(Expr::call_helper("$isSortedBy", vec![items, in_order]))
+        let mut args = vec![items, in_order];
+        if let Some(drop) = drop {
+            args.extend([Expr::undefined(), drop]);
+        }
+        Ok(Expr::call_helper("$isSortedBy", args))
     }
 
     /// `(a, b) => <their Ordering>`, or the function itself: `$cmp`,

@@ -76,7 +76,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0024 The `webapi` crate: DOM bindings generated from WebIDL](0024-web-crate.md) *(extended by 0891: `new X` of a method)*
 - [0025 `Vec`, `for` loops, `RefCell` and `&mut` to objects](0025-vec-loops-refcell-mut.md) *(extended by 1042: a loop over an array counts its indices)*
 - [0034 String methods are JS's; a `char` is a one-character string; `format!` is `+`](0034-strings-and-chars.md)
-- [0036 An iterator is a JS array; `Ordering` is -1, 0 or 1](0036-iterators-and-sorting.md) *(extended by 0748: a `for` of a slice's first items; amended: `collect()` into `()`)*
+- [0036 An iterator is a JS array; `Ordering` is -1, 0 or 1](0036-iterators-and-sorting.md) *(extended by 0748: a `for` of a slice's first items; amended: `collect()` into `()`; amended: a key with a destructor, #776, #783)*
 - [0037 `thread_local!` is a variable of its module](0037-thread-locals.md) *(amended: a function of the crate's that only makes a value is made as its module loads; a boxed closure, `Box::new`, only makes a value; an initializer that reads what may change, prints, or gives std the crate's closure is made where it's first used, #376; a library's flag, and another module's, read as the module loads; a `pub` one made where it's first used refused; amended by 1006: a `pub` one is made as its module loads, then every one its module's load can make, rd120; what a binding's call runs is `loaded_by`'s)*
 - [0028 Imports from JS modules: `#[link_name = "module#path"]`](0028-js-module-imports.md) *(amended: a binding crate's static of a default export is imported by the name it gives, rd422)*
 - [0029 `async`/`.await` are JS's `async`/`await`; a future is a promise](0029-async-await.md)
@@ -917,7 +917,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0467 A map's keys with a destructor drop as Rust's do](0467-a-maps-keys-drop-as-rusts-do.md)
 - [0468 A lent adapter leaves its source to its lender, lent once](0468-a-lent-adapter-leaves-its-source-to-its-lender.md)
 - [0469 A function std leaves unrun is dropped there](0469-a-function-std-leaves-unrun-is-dropped-there.md)
-- [0470 A function given by value is dropped where its taker drops it](0470-a-function-given-by-value-is-dropped-where-its-taker-drops-it.md)
+- [0470 A function given by value is dropped where its taker drops it](0470-a-function-given-by-value-is-dropped-where-its-taker-drops-it.md) *(amended: a key with a destructor, and what `max_by` keeps as a later drop panics, #776, #785)*
 - [0471 A generic unstable sort is sorted as its caller's type picks](0471-a-generic-unstable-sort-is-its-callers.md)
 - [0472 An `Option` an `Option` holds is given as it's held](0472-an-options-option-is-given-as-its-held.md)
 - [0473 `fuse()` is Rust's `Fuse`](0473-fuse-is-rusts-fuse.md) *(superseded by 0566)*

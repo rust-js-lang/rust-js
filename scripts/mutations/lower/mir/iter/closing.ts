@@ -342,4 +342,12 @@ export const mutations: Mutation[] = [
     replace: "        (false && moved && (recognition.held_function(ty)).is_some_and(|f| self.drops(f) != crate::lower::drops::Drops::Nothing))\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
+  {
+    name: "is-sorted-by-key-leaves-none",
+    breaks: "`is_sorted_by_key` of a `Vec`'s items with a destructor is refused, as if it left some undropped, where it moves each into its function (#776)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "                    | IterMethod::IsSortedByKey\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
+  },
 ];

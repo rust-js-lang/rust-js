@@ -465,4 +465,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^slice_range_reverse.rs$"],
     snapshots: true,
   },
+  {
+    name: "slice-is-sorted-by-key-drop-unpassed",
+    breaks: "a slice's `is_sorted_by_key` isn't given its keys' drop: no key with a destructor is ever dropped (#783)",
+    file: "src/lower/std_types/slice.rs",
+    find: "                args.extend(self.std_drop_function(key_ty, span)?);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
+  },
 ];

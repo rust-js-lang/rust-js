@@ -649,14 +649,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             SliceOp::SwapWithSlice => helper("$swapWithSlice", vec![arg(), arg()]),
             SliceOp::DequeSlices => Expr::array(vec![arg(), Expr::array(Vec::new())]),
             // Each two in a row, by their `PartialOrd`, `is_sorted_call`'s.
-            SliceOp::IsSorted => self.is_sorted_call(arg(), item(), span)?,
+            SliceOp::IsSorted => self.is_sorted_call(arg(), item(), None, span)?,
             SliceOp::IsSortedBy => helper("$isSortedBy", vec![arg(), arg()]),
             SliceOp::IsSortedByKey => {
                 let (items, key) = (arg(), arg());
                 // `is_sorted_by_key<'a, F, K>`: its key, the third type.
                 let key_ty = generic_args.types().nth(2).expect("its key's type");
                 let cmp = self.cmp_fn(key_ty, true, span)?;
-                helper("$isSortedByKey", vec![items, key, cmp])
+                // A key with a destructor, given its drop, which std's
+                // `self.iter().is_sorted_by_key(f)` drops as it replaces
+                // one and where two are out of order (#783).
+                let mut args = vec![items, key, cmp];
+                args.extend(self.std_drop_function(key_ty, span)?);
+                helper("$isSortedByKey", args)
             }
             SliceOp::PartitionPoint => helper("$partitionPoint", vec![arg(), arg()]),
             SliceOp::ChunksExact { mutable: false } => helper("$chunksExact", vec![arg(), arg()]),

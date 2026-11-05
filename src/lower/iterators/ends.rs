@@ -101,7 +101,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(item) if !self.is_primitive_ord(item) => {
                 let compare = self.cmp_fn(item, false, span)?;
                 let helper = if max { "$maxBy" } else { "$minBy" };
-                self.extreme_by(helper, vec![items, compare], item, None, span)?
+                self.extreme_by(helper, vec![items, compare], item, (None, None), span)?
             }
             _ => Expr::call(Expr::helper(if max { "$max" } else { "$min" }), vec![items]),
         })
@@ -123,36 +123,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let Some(key) = key else {
             let helper = if max { "$maxBy" } else { "$minBy" };
-            return self.extreme_by(helper, vec![items, f], item, ends, span);
+            return self.extreme_by(helper, vec![items, f], item, (ends, None), span);
         };
-        if self.drops(key) != crate::lower::drops::Drops::Nothing {
-            return Err(self.unsupported(span, "a key with a destructor"));
-        }
+        // A key with a destructor, given its drop: each pair passed over
+        // drops its key, then its item, and the kept one's key drops before
+        // its item is given back, as std's `(key, item)` pairs do (#776).
+        let key_drop = self.std_drop_function(key, span)?;
         let compare = self.cmp_fn(key, false, span)?;
         let helper = if max { "$maxByKey" } else { "$minByKey" };
-        self.extreme_by(helper, vec![items, f, compare], item, ends, span)
+        self.extreme_by(helper, vec![items, f, compare], item, (ends, key_drop), span)
     }
 
     /// `helper`, `$maxBy` or one of its kind, given `args`, then whether an
     /// `item` is boxed where it may look like `None` (ADR 0051), what
     /// drops each passed over, of one with a destructor (ADR 0098), and
-    /// `ends`, what drops with its function (#734).
+    /// `ends`, what drops with its function (#734), and a key's drop, of
+    /// one with a destructor (#776).
     fn extreme_by(
         &mut self,
         helper: &'static str,
         mut args: Vec<Expr>,
         item: ty::Ty<'tcx>,
-        ends: Option<Expr>,
+        (ends, key_drop): (Option<Expr>, Option<Expr>),
         span: Span,
     ) -> R<Expr> {
         let boxed = self.boxed_payload(item);
         let drop = self.std_drop_function(item, span)?;
-        if boxed || drop.is_some() || ends.is_some() {
+        if boxed || drop.is_some() || ends.is_some() || key_drop.is_some() {
             args.push(Expr::bool(boxed));
         }
-        match (drop, ends) {
-            (drop, Some(ends)) => args.extend([drop.unwrap_or_else(Expr::undefined), ends]),
-            (drop, None) => args.extend(drop),
+        match (drop, ends, key_drop) {
+            (drop, ends, Some(key_drop)) => args.extend([
+                drop.unwrap_or_else(Expr::undefined),
+                ends.unwrap_or_else(Expr::undefined),
+                key_drop,
+            ]),
+            (drop, Some(ends), None) => args.extend([drop.unwrap_or_else(Expr::undefined), ends]),
+            (drop, None, None) => args.extend(drop),
         }
         Ok(Expr::call(Expr::helper(helper), args))
     }
