@@ -57,11 +57,7 @@ function kept(f, v, dropF) {
     },
     "after",
   );
-  try {
-    return $collectDropping(iter);
-  } finally {
-    iter.return();
-  }
+  return $collectDropping(iter);
 }
 
 function countBy(it, f, dropF) {

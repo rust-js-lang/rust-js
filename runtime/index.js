@@ -8472,19 +8472,26 @@ export function $roomFor(count, size) {
 // item, a `cycle()`'s, std steps it once first: with an item, its lower
 // bound then is `usize::MAX`, so the same panic, as it unwinds the item
 // dropped, `drop`, then what's left of it, closed (ADR 0940, amended).
+// Where it throws, a panic, its hint's or its room's, `it` is closed, as
+// `from_iter` drops what it took as it unwinds: so `$collectDropping` of
+// it closes it wherever it ends (#660).
 export function $roomForHint(it, size, trusted, endless = false, drop) {
-  if (endless && trusted) throw new Error("capacity overflow");
-  if (endless) {
-    const first = it.next();
-    if (first.done) return it;
-    drop?.(first.value);
+  try {
+    if (endless && trusted) throw new Error("capacity overflow");
+    if (endless) {
+      const first = it.next();
+      if (first.done) return it;
+      drop?.(first.value);
+      throw new Error("capacity overflow");
+    }
+    const [lower, upper] = $sizeHint(it);
+    if (trusted && upper !== undefined) $roomFor(upper, size);
+    else $roomFor(Math.min(lower + 1, 2 ** 32 - 1), size);
+    return it;
+  } catch (error) {
     it.return?.();
-    throw new Error("capacity overflow");
+    throw error;
   }
-  const [lower, upper] = $sizeHint(it);
-  if (trusted && upper !== undefined) $roomFor(upper, size);
-  else $roomFor(Math.min(lower + 1, 2 ** 32 - 1), size);
-  return it;
 }
 
 // `s.reserve(additional)` of a `String`: room for its bytes and as many

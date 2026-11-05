@@ -746,4 +746,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^fold_drops_moved_function_first with std"],
   },
+  {
+    name: "collect-dropping-closing-unsaid",
+    breaks: "a `$collectDropping` collect, which closes what it steps, doesn't say so, so its consumer closes it again after in a `finally`, `try { result = $collectDropping(iter); } finally { iter.return(); }`, which does nothing (#660)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                Expr::call_helper(\"$collectDropping\", args).closes_what_it_steps()\n",
+    replace: "                Expr::call_helper(\"$collectDropping\", args)\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_of_a_value_given_as_it_is.rs$"],
+    snapshots: true,
+  },
 ];

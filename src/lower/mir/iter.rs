@@ -301,6 +301,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             made.extend(call);
             return Ok(None);
         };
+        // A collect that closed it, at its end or as a panic unwinds, of one
+        // dropped by closing it: dropped, nothing after (#660).
+        if result.facts.has(js::Known::ClosesWhatItSteps) && self.dropped_by_closing(receiver_ty) {
+            made.extend(call);
+            return Ok(Some(result));
+        }
         let result = self.spill("result", result, &mut call);
         let mut dropped = Vec::new();
         self.dropped_consumed(held, (receiver_ty, def_id, output), span, &mut dropped)?;

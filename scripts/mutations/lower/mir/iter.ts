@@ -659,4 +659,12 @@ export const mutations: Mutation[] = [
     replace: "        let _ = moved;\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
+  {
+    name: "consumed-collect-closing-any",
+    breaks: "a collect that closes what it steps drops nothing after of an iterator with a destructor of its own, the crate's, which closing it doesn't drop, so its `Drop` never runs (#660)",
+    file: "src/lower/mir/iter.rs",
+    find: "        if result.facts.has(js::Known::ClosesWhatItSteps) && self.dropped_by_closing(receiver_ty) {\n",
+    replace: "        if result.facts.has(js::Known::ClosesWhatItSteps) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_drop_consumed.rs$"],
+  },
 ];

@@ -57,11 +57,7 @@ function counterIterator_next(counter) {
 
 function firsts(iter, n, IIterator, IClone, dropI, dropIItem) {
   const iter$1 = $cycleOf(iter, IClone.clone, IIterator.next, true, dropI).take(n);
-  try {
-    return $collectDropping(iter$1, dropIItem, true);
-  } finally {
-    iter$1.return();
-  }
+  return $collectDropping(iter$1, dropIItem, true);
 }
 
 function two(iter, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {

@@ -1577,13 +1577,7 @@ function main() {
       },
       "after",
     );
-    let result;
-    try {
-      result = $collectDropping(iter);
-    } finally {
-      iter.return();
-    }
-    const v = result;
+    const v = $collectDropping(iter);
     $print(`| [${v.join(", ")}] | `);
   });
   case$("collected by next", (g) => {

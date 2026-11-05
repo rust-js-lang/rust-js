@@ -1080,6 +1080,13 @@ impl Expr {
         )
     }
 
+    /// It, a collect that closes what it steps, so marked
+    /// (`Known::ClosesWhatItSteps`), beside what else is known of it.
+    pub fn closes_what_it_steps(mut self) -> Expr {
+        self.facts = self.facts.with(Known::ClosesWhatItSteps);
+        self
+    }
+
     /// It, a `Rev`, an `Enumerate` or a `Map` made in place, so marked
     /// (`Known::InPlace`), beside what else is known of it.
     pub fn in_place(mut self) -> Expr {

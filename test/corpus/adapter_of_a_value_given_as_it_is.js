@@ -19,13 +19,7 @@ function firstTwo(items, IIterator, IClone, dropI) {
   const iter = $closing($given(items, IIterator), (it) => {
     dropI?.(it.of);
   }).take(2);
-  let result;
-  try {
-    result = $collectDropping(iter);
-  } finally {
-    iter.return();
-  }
-  const v = result;
+  const v = $collectDropping(iter);
   console.log("collected");
   return v;
 }

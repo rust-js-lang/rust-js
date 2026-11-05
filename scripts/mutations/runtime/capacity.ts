@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "endless-once-unstepped",
     breaks: "a `collect()` of what isn't `TrustedLen` but has no end once it gives an item panics before it's stepped, so its first item's never made, and a `cycle()` with nothing panics too, where std steps it once first (#433, ADR 0940)",
     file: "src/runtime/capacity.js",
-    find: "    const first = it.next();\n    if (first.done) return it;\n",
-    replace: "    const first = { done: false };\n",
+    find: "      const first = it.next();\n      if (first.done) return it;\n",
+    replace: "      const first = { done: false };\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_endless_once_stepped.rs$"],
   },
   {
@@ -113,5 +113,13 @@ export const mutations: Mutation[] = [
     find: "  if (ctrlOffset + buckets + width > 2 ** 31 - 1 - (ctrlAlign - 1)) throw overflow();\n",
     replace: "  if (ctrlOffset + buckets + width > 2 ** 31 - 1) throw overflow();\n",
     tests: ["test/runtime-package.test.ts", "-t", "ends where wasm32"],
+  },
+  {
+    name: "room-for-hint-unclosed",
+    breaks: "a `collect()` into a `Vec` whose source's `size_hint` panics as its room is asked never drops the source, where `from_iter` drops what it took as it unwinds (#660)",
+    file: "src/runtime/capacity.js",
+    find: "  } catch (error) {\n    it.return?.();\n    throw error;\n  }\n}\n",
+    replace: "  } catch (error) {\n    throw error;\n  }\n}\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_closes_what_its_hint_panics.rs$"],
   },
 ];

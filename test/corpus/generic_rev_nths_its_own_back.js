@@ -54,11 +54,7 @@ function skipped(it, dropI) {
     dDrop_drop(d);
     return result;
   });
-  try {
-    return $collectDropping(iter);
-  } finally {
-    iter.return();
-  }
+  return $collectDropping(iter);
 }
 
 function skippedLast(it, dropI) {
@@ -83,11 +79,7 @@ function stepped(it, dropI) {
     dDrop_drop(d);
     return result;
   });
-  try {
-    return $collectDropping(iter);
-  } finally {
-    iter.return();
-  }
+  return $collectDropping(iter);
 }
 
 function steppedCount(it, dropI) {

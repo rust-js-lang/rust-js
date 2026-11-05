@@ -384,16 +384,11 @@ function main() {
       },
       dDrop_drop,
     );
-    let result;
-    try {
-      result = $collectDropping($roomForHint(iter, 4, false), dDrop_drop, true);
-    } finally {
-      iter.return();
-    }
-    for (const item of result) {
+    const collect = $collectDropping($roomForHint(iter, 4, false), dDrop_drop, true);
+    for (const item of collect) {
       dDrop_drop(item);
     }
-    return result.length;
+    return collect.length;
   });
   run("skip fold", () => {
     const fold = $foldDropping(
@@ -967,16 +962,11 @@ function main() {
       },
       dDrop_drop,
     );
-    let result;
-    try {
-      result = $collectDropping($roomForHint(iter, 4, false), dDrop_drop, true);
-    } finally {
-      iter.return();
-    }
-    for (const item of result) {
+    const collect = $collectDropping($roomForHint(iter, 4, false), dDrop_drop, true);
+    for (const item of collect) {
       dDrop_drop(item);
     }
-    return result.length;
+    return collect.length;
   });
   run("take collect", () => {
     const collect = $collectDropping(

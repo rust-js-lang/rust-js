@@ -1905,3 +1905,39 @@ against native Rust in both builds. The matrix's #677 list is empty.
 Mutation: `collect-end-unwound-leaks` (`runtime/fold_of.ts`);
 `collect-dropping-keeps-collected`, which survived its own case, is held
 by `collect_close_panics.rs`'s filter.
+
+## Amendment: a collect that closes what it steps says so, and nothing closes it after (2026-11-05, #660)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. The `finally`
+that's removed did nothing, so JS's form is used. The form's change is
+the user's decision (2026-11-05): drop the `finally`.
+
+The amendment for #423 left a consumed collect closing its iterator in a
+`finally` after `$collectDropping`, which closes it too: `let result; try
+{ result = $collectDropping(iter); } finally { iter.return(); }`, where
+the second close does nothing (`$closed`). No one writes that by hand.
+
+`$collectDropping` closes what it steps at its end and as a panic
+unwinds. The one place that form is made, collect.rs's
+`UnwindingCollect::collected`, now says so as a fact of the expression,
+`Known::ClosesWhatItSteps`. `consumed_call` (mir/iter.rs) asks the fact,
+not the JS's form. Where it holds and the receiver is one dropped by
+closing it (`dropped_by_closing`), nothing is dropped after and the
+result isn't spilled: `const v = $collectDropping(iter);`. The crate's
+own iterator with a `Drop` isn't dropped by closing it, so it keeps its
+drop after (`iterator_drop_consumed.rs`).
+
+For that to hold wherever the collect ends, `$roomForHint`, which asks a
+compiled std struct's `size_hint` for room before `$collectDropping`
+steps it, now closes `it` where that throws: a `size_hint` that panics,
+or a `capacity overflow`. Std's `from_iter` drops what it took as it
+unwinds. Before, only the `finally` dropped it. Which item std takes by
+`next` before it asks the hint is #724's.
+
+10 corpus snapshots lose their `try`/`finally`. Corpus case
+`collect_closes_what_its_hint_panics.rs`, checked against native Rust in
+both builds, holds a `fuse()`'s and a `peekable()`'s collect of the
+crate's iterator whose `size_hint` panics, and one that ends. Mutations:
+`room-for-hint-unclosed` (`runtime/capacity.ts`),
+`consumed-collect-closing-any` (`lower/mir/iter.ts`),
+`collect-dropping-closing-unsaid` (`lower/mir/iter/collect.ts`).

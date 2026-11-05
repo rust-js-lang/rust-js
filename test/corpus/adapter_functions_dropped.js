@@ -100,13 +100,7 @@ function main() {
     },
     "alone",
   );
-  let result;
-  try {
-    result = $collectDropping(iter$1);
-  } finally {
-    iter$1.return();
-  }
-  const flat = result;
+  const flat = $collectDropping(iter$1);
   console.log(`[${flat.join(", ")}] flattened`);
   let d$live = true;
   const d = [4];
@@ -131,13 +125,7 @@ function main() {
     },
     "before",
   );
-  let result$1;
-  try {
-    result$1 = $collectDropping(iter$2);
-  } finally {
-    iter$2.return();
-  }
-  const kept = result$1;
+  const kept = $collectDropping(iter$2);
   console.log(`[${kept.join(", ")}] kept`);
   let e$live = true;
   const e = [5];

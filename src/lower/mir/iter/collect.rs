@@ -938,7 +938,9 @@ impl UnwindingCollect {
     /// its `try_fold` into the source's buffer; where that's its caller's
     /// answer, as it says, `$collectsInPlace(..) ? $foldToArray(it, drop) :
     /// $collectDropping(it, drop, true)`, as `ITrustedLen` picks a fold
-    /// (#672, #670).
+    /// (#672, #670). `$collectDropping` closes `it` at its end and as a
+    /// panic unwinds, which it says (`Known::ClosesWhatItSteps`, #660), as
+    /// `$roomForHint` closes it where asking its room throws.
     fn collected(self, it: Expr) -> Expr {
         let mut args = vec![it];
         args.extend(self.drop);
@@ -951,7 +953,7 @@ impl UnwindingCollect {
             }
             InPlace::No => {
                 args.extend(self.rest_first);
-                Expr::call_helper("$collectDropping", args)
+                Expr::call_helper("$collectDropping", args).closes_what_it_steps()
             }
         }
     }

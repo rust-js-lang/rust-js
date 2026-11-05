@@ -28,11 +28,7 @@ function skipped(it, dropI) {
     noisyDrop_drop(n);
     return result;
   });
-  try {
-    return $collectDropping(iter);
-  } finally {
-    iter.return();
-  }
+  return $collectDropping(iter);
 }
 
 function nthOf(it, dropI) {

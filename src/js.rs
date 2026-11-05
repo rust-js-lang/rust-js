@@ -943,6 +943,11 @@ pub enum Known {
     /// form of no other call, which a `let` of its value only it reads
     /// is read in place of (`Expr::own_keyed_method_receiver`, rd226b).
     KeyedMethod,
+    /// A collect that closes what it steps, at its end and as a panic
+    /// unwinds, `$collectDropping(iter)` of a `Vec`'s: what it consumed,
+    /// one dropped by closing it, is dropped there, nothing after
+    /// (`consumed_call`, #660).
+    ClosesWhatItSteps,
 }
 
 /// A cross-module reference, resolved before preparation or printing.
