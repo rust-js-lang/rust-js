@@ -595,6 +595,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 })?,
                 false => false,
             };
+            // Whether it's `TrustedLen` where that's its caller's, a type
+            // parameter's that folds by its `nth_back` (#670): as it says,
+            // `ITrustedLen`, so its first item is taken by `next` before its
+            // hint is asked only where it isn't (#724).
+            let callers_trusted = (!trusted
+                && iter_ty.has_param()
+                && self.compiled_struct_at(iter_ty, span)
+                && !self.recognition().nth_back_folded_sources(iter_ty).is_empty())
+            .then(|| self.type_fact_value(iter_ty, crate::lower::recognition::TypeFact::TrustedLen, span))
+            .transpose()?;
             let it = match item {
                 Some(item)
                     if asks_room
@@ -604,16 +614,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 && !self.recognition().bounded_by_items(iter_ty)) =>
                 {
                     let size = self.room_item_size(item);
-                    let mut given = vec![it, size, Expr::bool(trusted)];
-                    if endless || endless_once {
-                        given.push(Expr::bool(true));
+                    let mut given = vec![it, size, callers_trusted.clone().unwrap_or_else(|| Expr::bool(trusted))];
+                    // Of one not `TrustedLen`, whose first item std takes by
+                    // `next` before it asks room, that item's drop, as a
+                    // panic asking it unwinds (#724).
+                    let drop = match !trusted && self.drops(item) != crate::lower::drops::Drops::Nothing {
+                        true => self.drop_function(item, span)?,
+                        false => None,
+                    };
+                    if endless || endless_once || drop.is_some() {
+                        given.push(Expr::bool(endless || endless_once));
                     }
-                    if endless_once
-                        && self.drops(item) != crate::lower::drops::Drops::Nothing
-                        && let Some(drop) = self.drop_function(item, span)?
-                    {
-                        given.push(drop);
-                    }
+                    given.extend(drop);
                     Expr::call_helper("$roomForHint", given)
                 }
                 _ => it,
@@ -634,12 +646,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // does: whether it's `TrustedLen` is its caller's, `ITrustedLen`,
             // by its fold where it is, as `extend_trusted` collects it, else
             // stepped by `next`, as std's other `SpecFromIter` steps it (#670).
-            if !folded
-                && iter_ty.has_param()
-                && self.compiled_struct_at(iter_ty, span)
-                && !self.recognition().nth_back_folded_sources(iter_ty).is_empty()
-            {
-                let trusted = self.type_fact_value(iter_ty, crate::lower::recognition::TypeFact::TrustedLen, span)?;
+            if !folded && let Some(trusted) = callers_trusted {
                 let args = self.folded_unwinding(it.clone(), output, item, iter_ty, span)?;
                 let by_fold = Expr::call_helper("$foldToArray", args);
                 let by_next = match self.unwinding_collect(output, item, Some(iter_ty), span)? {

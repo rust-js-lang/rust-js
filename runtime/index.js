@@ -8464,34 +8464,66 @@ export function $roomFor(count, size) {
 }
 
 // `it`, of what `Vec::from_iter` asks room for first, of `size` bytes each,
-// as std's `SpecFromIter` does: a `TrustedLen`'s, `trusted`, its upper
-// bound where its hint has one; of one whose type has no end, `endless`,
-// a `capacity overflow` panic; else its lower bound and one more. A JS
-// iterator's hint of no upper bound is no hint, not an endless one (ADR
-// 0940). Of one that isn't `TrustedLen` but is `endless` once it gives an
-// item, a `cycle()`'s, std steps it once first: with an item, its lower
-// bound then is `usize::MAX`, so the same panic, as it unwinds the item
-// dropped, `drop`, then what's left of it, closed (ADR 0940, amended).
-// Where it throws, a panic, its hint's or its room's, `it` is closed, as
-// `from_iter` drops what it took as it unwinds: so `$collectDropping` of
-// it closes it wherever it ends (#660).
+// as std's `SpecFromIter` does. Of a `TrustedLen`'s, `trusted`, its hint
+// first: its upper bound where it has one; of one whose type has no end,
+// `endless`, a `capacity overflow` panic. A JS iterator's hint of no
+// upper bound is no hint, not an endless one (ADR 0940). Of another,
+// std's `SpecFromIterNested`: its first item by `next`, then, where it
+// has one, its hint's lower bound and one more; of none, nothing asked
+// and nothing stepped again, an empty `Vec`. Of one `endless` once it
+// gives an item, a `cycle()`'s, that lower bound is `usize::MAX`, so the
+// same panic (ADR 0940, amended). What it gives is `it` with that item
+// first (#724). Where a step throws, a panic, `it` is closed, as
+// `from_iter` drops what it took as it unwinds; where asking its room
+// does, the item taken is dropped first, `drop`, as it was taken last:
+// so `$collectDropping` of what it gives closes `it` wherever it ends
+// (#660).
 export function $roomForHint(it, size, trusted, endless = false, drop) {
-  try {
-    if (endless && trusted) throw new Error("capacity overflow");
-    if (endless) {
-      const first = it.next();
-      if (first.done) return it;
-      drop?.(first.value);
-      throw new Error("capacity overflow");
+  const unwound = (asked, before) => {
+    try {
+      return asked();
+    } catch (error) {
+      try {
+        before?.();
+      } finally {
+        it.return?.();
+      }
+      throw error;
     }
-    const [lower, upper] = $sizeHint(it);
-    if (trusted && upper !== undefined) $roomFor(upper, size);
-    else $roomFor(Math.min(lower + 1, 2 ** 32 - 1), size);
+  };
+  if (trusted) {
+    unwound(() => {
+      if (endless) throw new Error("capacity overflow");
+      const [lower, upper] = $sizeHint(it);
+      $roomFor(upper !== undefined ? upper : Math.min(lower + 1, 2 ** 32 - 1), size);
+    });
     return it;
-  } catch (error) {
-    it.return?.();
-    throw error;
   }
+  const first = unwound(() => it.next());
+  if (!first.done) {
+    unwound(
+      () => {
+        if (endless) throw new Error("capacity overflow");
+        const [lower] = $sizeHint(it);
+        $roomFor(Math.min(lower + 1, 2 ** 32 - 1), size);
+      },
+      () => drop?.(first.value),
+    );
+  }
+  let given = false;
+  const steps = new $Steps(
+    () => {
+      if (first.done) return first;
+      if (!given) {
+        given = true;
+        return first;
+      }
+      return it.next();
+    },
+    () => it.return?.(),
+  );
+  steps.from = [it];
+  return steps;
 }
 
 // `s.reserve(additional)` of a `String`: room for its bytes and as many

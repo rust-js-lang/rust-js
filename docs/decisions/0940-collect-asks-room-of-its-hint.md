@@ -4,7 +4,8 @@ Status: Accepted, under the user's goal of 2026-10-26 ("keep going until
 all done, the choice is your recommendation"). The plan "rust-js: one
 representation per iterator", its second phase. Extends
 [0774](0774-room-past-isize-max-bytes-panics.md). Amended: what has no
-end once it gives an item (below).
+end once it gives an item (below); amended: what isn't `TrustedLen` is
+stepped once before its hint is asked (below, #724).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): results change.
 `(0..).map(f).collect::<Vec<u8>>()` called `f` without end where Rust
@@ -81,3 +82,47 @@ mutations are `lengths.ts`'s seven, `endless-once-collect-unchecked`,
 `endless-once-of-items-of-no-size` and `endless-once-item-drop-ungiven`
 in `collect.ts`, and `endless-once-unstepped` and
 `endless-once-item-undropped` in `capacity.ts`.
+
+## Amendment: what isn't `TrustedLen` gives its first item before its hint is asked (2026-11-05, #724)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. What's stepped and
+what's dropped as a hint panics changes, so Rust's behavior is kept.
+
+Std's `SpecFromIterNested::from_iter` of what isn't `TrustedLen` takes
+the first item by `next`. Of none, it gives an empty `Vec`, asking and
+stepping nothing more. Of one, it asks `size_hint` for room for its lower
+bound and one more. `$roomForHint` asked the hint before anything was
+stepped, the order of a `TrustedLen`'s. A crate's iterator whose
+`size_hint` reads what `next` changes, or panics, showed it:
+`Own { at: 0, .. }.fuse().collect::<Vec<D>>()`, the hint panicking,
+printed `hint at 0` where native prints `next at 0`, `hint at 1`, then
+drops `D(1)` and the iterator.
+
+`$roomForHint` of what isn't `TrustedLen` now takes the first item by
+`next`, then asks its room. It gives a `$Steps` that gives that item
+first, then steps what it was given, closing it as it's closed. Of no
+first item, it gives that `$Steps`, done, which steps nothing again. Where
+asking the room throws, the item is dropped, then what it was given is
+closed, as `from_iter` drops its locals as it unwinds. The compiler gives
+it the items' drop wherever it isn't `TrustedLen`, not only where it has
+no end once stepped. Where whether it's `TrustedLen` is a type
+parameter's, its caller's `ITrustedLen` (#670), `$roomForHint` is given
+that answer too, so of a caller's `vec::IntoIter` it asks the hint first,
+as `extend_trusted` does, and of another it steps first. The amendment above is this case's: of `endless`,
+the room asked after the first item is `usize::MAX`'s.
+
+Left as it was: std's `extend_desugared` asks the hint again each time
+the `Vec` is full as it grows. rust-js keeps no native capacity (ADR
+0419), so the JS asks it once. And a collect the recognizers make in
+place, of the crate's iterator, asks no hint at all. Both are #728's.
+
+`collect_closes_what_its_hint_panics.rs` holds a `fuse()`'s and a
+`peekable()`'s collect of the crate's iterator that prints its steps and
+hints: one that ends, one with no item, and one whose hint panics,
+against native Rust in both builds; it joins iterator-forms' few (TESTS.md:
+64). Mutations: `room-for-hint-asks-before-next` and
+`room-for-hint-steps-none-again` (`runtime/capacity.ts`);
+`endless-once-item-undropped` and `endless-once-item-drop-ungiven` (its
+`lower/mir/iter/collect.ts`), each of the first item's drop, now held by
+both cases; `endless-room-by-lower` and `endless-once-unstepped` follow
+the code.

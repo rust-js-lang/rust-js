@@ -64,10 +64,9 @@ export const mutations: Mutation[] = [
     breaks:
       "the item a `collect()` of what has no end once stepped makes, `(0..).skip(1).map(|_| Noisy(..))`'s, isn't dropped as it panics `capacity overflow` (#433, ADR 0940)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                    if endless_once\n                        && self.drops(item) != crate::lower::drops::Drops::Nothing\n",
-    replace:
-      "                    if false\n                        && self.drops(item) != crate::lower::drops::Drops::Nothing\n",
-    tests: ["test/corpus.test.ts", "-t", "^collect_endless_once_stepped.rs$"],
+    find: "                    let drop = match !trusted && self.drops(item) != crate::lower::drops::Drops::Nothing {\n",
+    replace: "                    let drop = match false && self.drops(item) != crate::lower::drops::Drops::Nothing {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(collect_endless_once_stepped|collect_closes_what_its_hint_panics).rs$"],
   },
   {
     name: "collect-hint-room-unasked",

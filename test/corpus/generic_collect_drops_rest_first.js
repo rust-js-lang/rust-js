@@ -70,7 +70,7 @@ function fused(src, IFused, dropI) {
     },
     dDrop_drop,
   );
-  const v = $collectDropping($roomForHint(iter, 4, false), dDrop_drop, true);
+  const v = $collectDropping($roomForHint(iter, 4, false, false, dDrop_drop), dDrop_drop, true);
   $dropItems(v, dDrop_drop);
   return v.length;
 }
@@ -97,7 +97,7 @@ function peeked(src, dropI) {
     },
     dDrop_drop,
   );
-  const v = $collectDropping($roomForHint(iter, 4, false), dDrop_drop, true);
+  const v = $collectDropping($roomForHint(iter, 4, false, false, dDrop_drop), dDrop_drop, true);
   $dropItems(v, dDrop_drop);
   return v.length;
 }

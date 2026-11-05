@@ -117,6 +117,9 @@ const few = [
   "fold_drops_moved_function_first.rs",
   // And as a panic in it unwinds, a closure a std call is given (#719).
   "closure_folded_by_value_panics.rs",
+  // A `Vec`'s collect of what isn't `TrustedLen`: its first item by
+  // `next`, then its hint asked, which may panic (#724, #660).
+  "collect_closes_what_its_hint_panics.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus")

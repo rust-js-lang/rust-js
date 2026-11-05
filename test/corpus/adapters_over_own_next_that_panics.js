@@ -384,7 +384,11 @@ function main() {
       },
       dDrop_drop,
     );
-    const collect = $collectDropping($roomForHint(iter, 4, false), dDrop_drop, true);
+    const collect = $collectDropping(
+      $roomForHint(iter, 4, false, false, dDrop_drop),
+      dDrop_drop,
+      true,
+    );
     for (const item of collect) {
       dDrop_drop(item);
     }
@@ -962,7 +966,11 @@ function main() {
       },
       dDrop_drop,
     );
-    const collect = $collectDropping($roomForHint(iter, 4, false), dDrop_drop, true);
+    const collect = $collectDropping(
+      $roomForHint(iter, 4, false, false, dDrop_drop),
+      dDrop_drop,
+      true,
+    );
     for (const item of collect) {
       dDrop_drop(item);
     }

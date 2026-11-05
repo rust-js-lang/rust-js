@@ -7,19 +7,29 @@ export function entry() {
   main();
 }
 
+function dDrop_drop(d) {
+  console.log(`drop ${d[0]}`);
+}
+
 function ownDrop_drop(own) {
-  console.log("drop own");
+  console.log(`drop own at ${own.at}`);
 }
 
 function ownIterator_next(own) {
+  console.log(`next at ${own.at}`);
   own.at = (own.at + 1) >>> 0;
-  return own.at < 4 ? own.at : undefined;
+  return own.at <= own.end ? [own.at] : undefined;
 }
 function ownIterator_sizeHint(own) {
+  console.log(`hint at ${own.at}`);
   if (own.hintPanics) {
     throw new Error("hint");
   }
   return [0, 3];
+}
+
+function own(end, hintPanics) {
+  return { at: 0, end, hintPanics };
 }
 
 function run(name, f) {
@@ -33,32 +43,71 @@ function run(name, f) {
 function main() {
   run("collected", () => {
     const iter = iterator_fuse(
-      { at: 0, hintPanics: false },
+      own(3, false),
       { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
       false,
       ownDrop_drop,
+      dDrop_drop,
     );
-    const v = $collectDropping($roomForHint(iter, 4, false));
-    console.log(`collected [${v.join(", ")}]`);
+    const v = $collectDropping($roomForHint(iter, 4, false, false, dDrop_drop), dDrop_drop, true);
+    console.log(`collected ${v.length}`);
+    for (const item of v) {
+      dDrop_drop(item);
+    }
+    return v.length;
+  });
+  run("none", () => {
+    const iter = iterator_fuse(
+      own(0, false),
+      { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+      false,
+      ownDrop_drop,
+      dDrop_drop,
+    );
+    const v = $collectDropping($roomForHint(iter, 4, false, false, dDrop_drop), dDrop_drop, true);
+    for (const item of v) {
+      dDrop_drop(item);
+    }
+    return v.length;
+  });
+  run("none, peeked", () => {
+    const iter = iterator_peekable(
+      own(0, false),
+      { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+      ownDrop_drop,
+      dDrop_drop,
+    );
+    const v = $collectDropping($roomForHint(iter, 4, false, false, dDrop_drop), dDrop_drop, true);
+    for (const item of v) {
+      dDrop_drop(item);
+    }
     return v.length;
   });
   run("its hint panics", () => {
     const iter = iterator_fuse(
-      { at: 0, hintPanics: true },
+      own(3, true),
       { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
       false,
       ownDrop_drop,
+      dDrop_drop,
     );
-    const v = $collectDropping($roomForHint(iter, 4, false));
+    const v = $collectDropping($roomForHint(iter, 4, false, false, dDrop_drop), dDrop_drop, true);
+    for (const item of v) {
+      dDrop_drop(item);
+    }
     return v.length;
   });
   run("peeked, its hint panics", () => {
     const iter = iterator_peekable(
-      { at: 0, hintPanics: true },
+      own(3, true),
       { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
       ownDrop_drop,
+      dDrop_drop,
     );
-    const v = $collectDropping($roomForHint(iter, 4, false));
+    const v = $collectDropping($roomForHint(iter, 4, false, false, dDrop_drop), dDrop_drop, true);
+    for (const item of v) {
+      dDrop_drop(item);
+    }
     return v.length;
   });
 }
