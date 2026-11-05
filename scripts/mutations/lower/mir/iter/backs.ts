@@ -702,4 +702,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
   },
+  {
+    name: "enumerate-of-map-made-forward",
+    breaks: "an enumeration the crate steps from its back of a map, JS's own `.map(f)`, is given its source as it's made, with no back: `ds().into_iter().map(f).enumerate().rfold(..)` throws `enumerated.iter.back is not a function` (#778)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                            || crate::lower::recognition::mapped_source(self.tcx, iter_ty).is_some()\n",
+    replace: "                            || false && crate::lower::recognition::mapped_source(self.tcx, iter_ty).is_some()\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_folds_of_sources_made_knowing_their_back.rs$"],
+  },
+  {
+    name: "copy-of-compiled-struct-backless",
+    breaks: "a `copied()` that's its source, of std's compiled `fuse()` or `peekable()`, stepped from its back, is the struct given `next` alone: `nums.iter().fuse().copied().rfold(..)` throws `it.back is not a function` (#778)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                        || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)) =>\n",
+    replace: "                        || false && crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_folds_of_sources_made_knowing_their_back.rs$"],
+  },
 ];

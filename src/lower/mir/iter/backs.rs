@@ -219,8 +219,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.is_its_source(output)
                     && self.knows_its_back(output)
                     && !self.has_a_back(iter_ty)
-                    && self.recognition().is_iter_adapter(iter_ty) =>
+                    && (self.recognition().is_iter_adapter(iter_ty)
+                        || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)) =>
             {
+                // Of std's compiled struct, a `fuse()`'s or a
+                // `peekable()`'s, given its compiled back where it's made
+                // (`knowing_held`), not the `next` alone its dictionary
+                // has (#778).
                 self.as_double_ended(receiver.clone(), iter_ty, span)?
             }
             // A map of one that knows its length, too (ADR 0456).
@@ -284,15 +289,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     {
                         knowing
                     }
-                    // Of a `take(n)` or a `step_by(n)` the crate steps from its
-                    // back, whose JS, `.take(n)` and `$stepBy`, knows neither
-                    // its back nor its length, which its index from the back
-                    // is counted by: made knowing them, or refused
-                    // (`as_exact_size`), never stepped by what it lacks (#651).
+                    // Of another the crate steps from its back whose JS knows
+                    // neither its back nor its length, which its index from
+                    // the back is counted by: a `take(n)`'s or a
+                    // `step_by(n)`'s, `.take(n)` and `$stepBy` (#651), a
+                    // map's, JS's own `.map(f)` (#778): made knowing them, or
+                    // refused (`as_exact_size`), never stepped by what it
+                    // lacks.
                     None if self.stepped_from_its_back(output)
                         && (crate::lower::recognition::counted_source(self.tcx, iter_ty)
                             .is_some_and(|(_, skip)| !skip)
-                            || crate::lower::recognition::stepped_by_source(self.tcx, iter_ty).is_some()) =>
+                            || crate::lower::recognition::stepped_by_source(self.tcx, iter_ty).is_some()
+                            || crate::lower::recognition::mapped_source(self.tcx, iter_ty).is_some()
+                                && !self.has_a_back(iter_ty)) =>
                     {
                         let it = self.as_exact_size(receiver.clone(), iter_ty, true, span)?;
                         self.closing(it, held, span)?

@@ -543,3 +543,31 @@ chain from its back with others that fold, count, `for_each`, `last`,
 the crate's iterators, against native Rust in both builds. `test/architecture-iterators.test.ts` refuses a
 second runtime `Chain`. `$chainEnds`' mutations went with its code; those
 of its back steps are `lazy_chain.ts`' now.
+
+## Amendment: an rfold's source is made with its back (2026-11-05, #778)
+
+Two adapters the crate folds from their back, `back_stepped`'s already,
+were made where they're made of a source with no back, so the fold threw
+`it.back is not a function` where Rust folds (results change, ADR 0262):
+
+- An enumeration of a map, recorded for its items' destructor, of JS's
+  own `.map(f)`: `ds().into_iter().map(f).enumerate().rfold(..)`.
+  `back_kept`'s enumerate arm makes a map's source as `as_exact_size`
+  does, `$enumerate($mapEnds(..))`, as it did a `take()`'s and a
+  `step_by()`'s (#651).
+- A `copied()` that's its source, of std's compiled `fuse()` or
+  `peekable()`: `nums.iter().fuse().copied().rfold(..)` was the struct
+  given its dictionary's `next` alone. `back_kept`'s copy arm makes it
+  knowing its back (`as_double_ended`, `knowing_held`) of std's compiled
+  struct as of an adapter.
+
+36 rows of the iterator matrix listed under #646 and #650 run as Rust
+does now, taken off its list; most since #723. Still listed under them,
+#778's: an enumeration of a slice's `cloned()`, JS's `.map(clone)`, which
+`as_exact_size` doesn't read, and of the crate's iterator's `skip()` or
+`rev()` of items with a destructor, whose `$skipping(.., drop)` it refuses.
+Making every source kind knowing its back where it's made is #764's.
+`back_folds_of_sources_made_knowing_their_back` holds the fixed shapes
+against native Rust in both builds; mutations
+`enumerate-of-map-made-forward` and `copy-of-compiled-struct-backless`
+(`lower/mir/iter/backs.ts`).
