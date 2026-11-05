@@ -130,4 +130,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(fused_iterators|double_ended_iterators|own_fold_and_nth|own_steps_behind_adapters_unwind).rs$"],
     snapshots: true,
   },
+  {
+    name: "knowing-unread",
+    breaks:
+      "tidy's `stepped_in_place` doesn't see through `$knowing`, so what a `fuse()` std's struct is made knowing its back steps keeps a `size_hint` nothing asks",
+    file: "src/lower/iterators/value.rs",
+    find: "    e.facts.has(Known::IterKnowing)\n",
+    replace: "    let _ = e;\n    false\n",
+    tests: ["test/corpus.test.ts", "-t", "^fused_iterator.rs$"],
+    snapshots: true,
+  },
 ];
