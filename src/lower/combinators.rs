@@ -333,7 +333,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let items = parts.iter().map(|part| Expr::spread(part.clone())).collect();
             return self.concat_copies(Expr::array(items), subject_ty, span);
         }
-        if let Some(value) = self.read_once(comb, boxed, tys, &subject, &mut values, span, out)? {
+        if let Some(value) = self.read_once(comb, boxed, (tys, generic_args), &subject, &mut values, span, out)? {
             return Ok(value);
         }
         // The subject is read more than once.
@@ -882,7 +882,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         comb: Comb,
         boxed: bool,
-        tys: &[Ty<'tcx>],
+        (tys, generic_args): (&[Ty<'tcx>], ty::GenericArgsRef<'tcx>),
         subject: &Expr,
         values: &mut Vec<Expr>,
         span: Span,
@@ -912,6 +912,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(self.default_value(inner, span)?)
             }
             Comb::UnwrapOrElse if !boxed => Some(self.call_with(values.remove(0), Vec::new(), "fallback", out)),
+            // `map_or_else(g, f)` by an `f` that gives what it's given, the
+            // option's own value as JS has it, `js::shown` or `|name| name`
+            // (`maps_to_itself`), is `unwrap_or_else(g)`'s, React's
+            // `getComponentNameFromType(Component) || Component` (#787).
+            Comb::MapOrElse
+                if !boxed && self.maps_to_itself(tys[2], (generic_args.type_at(0), generic_args.type_at(1))) =>
+            {
+                Some(self.call_with(values.remove(0), Vec::new(), "fallback", out))
+            }
             Comb::OrElse => Some(self.call_with(values.remove(0), Vec::new(), "fallback", out)),
             Comb::Or if !values[0].has_effects() => Some(values.remove(0)),
             _ => None,

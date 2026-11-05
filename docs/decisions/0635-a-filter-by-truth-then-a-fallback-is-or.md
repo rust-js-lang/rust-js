@@ -9,7 +9,8 @@ chain's and a nullable result's too. Extended by
 fallback where it's falsy, is `||`. Amended below: a module variable's
 text kept by its truth, then matched, is tested by its truth; a let-else
 of a read kept by its truth is the read tested by its truth, and an exit
-that reads the `Option` keeps it.
+that reads the `Option` keeps it; a `map_or_else` whose `f` gives what
+it's given is a fallback too (#787).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): no program can tell.
 
@@ -241,3 +242,41 @@ applied, the whole corpus and every other test file print the same JS,
 `label`'s `a || "Memo"` included. A chain that ends in a non-null literal
 is never `null`, so nothing coalesces it. The arm and its mutation are
 removed. `fallen-chain-any-last` mutates the arm that remains.
+
+## Amendment: a `map_or_else` of the value as it is is a fallback (#787)
+
+React's mountLazyComponent is `getComponentNameFromType(Component) ||
+Component`. Its port keeps a name that isn't empty, then shows it or the
+component: `get_component_name_from_type(component).filter(|name|
+!name.is_empty()).map_or_else(|| js::shown(component), js::shown)`. It was
+`const option = getComponentNameFromType(component) || undefined; const
+loggedComponent = option != null ? option : component;`: `map_or_else`
+called `f` of what the `Option` held, though `f` gives it as it is.
+
+**`map_or_else(g, f)` is `unwrap_or_else(g)` where `f` gives what it's
+given**, as the one answer `maps_to_itself`, which `Option::map` asks, says:
+a binding that's its argument (`js::shown`, `JsForm::This`), a crate
+function each call of which is its argument, or a closure that gives it as
+it is. So after a `filter` by truth it's this ADR's `||`, `name ||
+component`; of an `Option` not boxed only, as `unwrap_or_else`'s is. Any
+other `f` is called where the `Option` holds a value, as before.
+
+A closure that gives a value with a destructor back, `|name| name` of a
+`String`, gives it as it is too: its MIR, before drop elaboration, drops
+the argument it moved out, `_0 = move _2; drop(_2)`, a drop that
+elaboration makes nothing. Only a drop of a local a step moved out whole
+is: `|n| *n` of an `Rc`, `_0 = (*_2); drop(_2)`, reads through the `Rc`
+and drops it, which changes its count (`test/corpus/rc_counts.rs`), so
+it's no closure of the value as it is. So `o.map(|name| name)` of an
+`Option<String>` is `o`, as it was of an `Option<&str>`.
+
+A `filter` of a property of an object `js::cast` gives, React's
+ApplyGesture's `props.name.as_deref().filter(|&name| name != "auto")`,
+keeps its `const` of the read: the property may be a getter, which a
+second read would run again, so it's read once, never fused.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each value takes the
+branch Rust's does: `test/corpus/option_chains_fused.rs` checks `None`,
+`Some("")` and a name against native Rust, and a number's `filter(|x| *x
+!= 0.0)`, which isn't JS's truth of it, as `NaN` and `-0` show, stays a
+conditional.

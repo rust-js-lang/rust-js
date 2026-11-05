@@ -858,4 +858,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_payload_where_read.rs$"],
     snapshots: true,
   },
+  {
+    name: "map-or-else-fused-of-any-f",
+    breaks:
+      "`map_or_else(g, f)` is `unwrap_or_else(g)`'s only where `f` gives what it's given (`maps_to_itself`): of `|name| name.to_uppercase()` it's `o || g()`, the name not shouted, a wrong answer (#787)",
+    file: "src/lower/combinators.rs",
+    find: "                if !boxed && self.maps_to_itself(tys[2], (generic_args.type_at(0), generic_args.type_at(1))) =>\n",
+    replace: "                if !boxed =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_chains_fused.rs$"],
+  },
 ];

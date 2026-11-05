@@ -3524,6 +3524,12 @@ export function label(text) {
 
 - Only a `filter` by the truth of what it holds is `||`: any other test,
   `filter(|n| *n > 0)`, is a conditional, `n != null && n > 0 ? n : 1`.
+- A `map_or_else(|| fallback, f)` whose `f` gives what it's given, `|name|
+  name` or `js::shown`, is `unwrap_or_else`'s: React's
+  `name.filter(|n| !n.is_empty()).map_or_else(|| js::shown(component),
+  js::shown)` is `name || component`. Any other `f` is called where it
+  holds a value, `o != null ? o.toUpperCase() : component`
+  ([ADR 0635](../../decisions/0635-a-filter-by-truth-then-a-fallback-is-or.md), amended, #787).
 - Text is falsy only where it's empty, so a `filter` by `!t.is_empty()`
   is by its truth, though `t.is_empty()` alone prints `t === ""`. So a
   `match` of what it keeps is a test of that truth: `match

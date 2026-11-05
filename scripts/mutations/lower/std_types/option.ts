@@ -447,8 +447,8 @@ export const mutations: Mutation[] = [
     name: "closure-map-effects-dropped",
     breaks: "a closure that does more than give its argument back, counts a call, is taken as mapping the option to itself, so its count is never made (rd632)",
     file: "src/lower/std_types/option.rs",
-    find: "        steps == writes.len()\n",
-    replace: "        true\n",
+    find: "        steps == writes.len() && dropped.iter()",
+    replace: "        true && dropped.iter()",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "maps an option to itself"],
   },
   {
@@ -477,5 +477,24 @@ export const mutations: Mutation[] = [
     find: "            (OptionPlaceOp::Insert, Some(_)) if !value.reads_same() => self.spill(\"value\", value, out),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^option_insert_makes_its_value_first.rs$"],
+  },
+  {
+    name: "identity-closure-drop-refused",
+    breaks:
+      "a closure that gives its `String` back, `|name| name`, is the value as it is though its MIR drops the argument it moved out, so `map_or_else(|| c, |name| name)` after a `filter` by truth is `o || c` (#787)",
+    file: "src/lower/std_types/option.rs",
+    find: "                TerminatorKind::Drop { place, .. } if place.projection.is_empty() => dropped.push(place.local),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^option_chains_fused.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "identity-closure-drops-unmoved",
+    breaks:
+      "a closure that drops a local no step moved out, `|n| *n` of an `Rc`, reads through it and drops it, so it isn't the value as it is: `upgrade().map(|n| *n)` would lose its `$rcDrop`, and the counts after differ from Rust's (#787, a wrong answer)",
+    file: "src/lower/std_types/option.rs",
+    find: "        steps == writes.len() && dropped.iter().all(|&local| moved_whole(local))\n",
+    replace: "        steps == writes.len() && !dropped.is_empty() || steps == writes.len()\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_counts.rs$"],
   },
 ];

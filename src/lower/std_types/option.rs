@@ -43,7 +43,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// reborrow, `&*p`, or a call that's the value itself (`Std::Same`, a
     /// JS object's `Deref` to its class's base, ADR 0024; `Std::Pointee`),
     /// React DOM's `parent_node().map(|parent_node| &**parent_node)`
-    /// (rd632). No branch, no other call or statement.
+    /// (rd632). No branch, no other call or statement; a drop only of a
+    /// local a step moved out whole (#787).
     fn closure_gives_its_argument(&self, f: Ty<'tcx>) -> bool {
         let ty::Closure(def_id, args) = *f.kind() else {
             return false;
@@ -63,6 +64,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         type Written<'b, 'tcx> =
             Result<&'b Rvalue<'tcx>, (&'b Operand<'tcx>, &'b [rustc_span::Spanned<Operand<'tcx>>])>;
         let mut writes: Vec<(mir::Local, Written<'_, 'tcx>)> = Vec::new();
+        // The locals dropped whole, each of which a step must move out.
+        let mut dropped: Vec<mir::Local> = Vec::new();
         for data in body.basic_blocks.iter() {
             for statement in &data.statements {
                 match &statement.kind {
@@ -81,6 +84,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     destination,
                     ..
                 } if destination.projection.is_empty() => writes.push((destination.local, Err((func, args)))),
+                TerminatorKind::Drop { place, .. } if place.projection.is_empty() => dropped.push(place.local),
                 TerminatorKind::Goto { .. } | TerminatorKind::Return | TerminatorKind::UnwindResume => {}
                 _ => return false,
             }
@@ -120,8 +124,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return false;
             }
         }
+        // A drop of a local a step moved out whole is nothing, as drop
+        // elaboration makes it: `_0 = move _2; drop(_2)` of `|name| name`
+        // of a `String` (#787). One of a local a step only read through,
+        // `_0 = (*_2); drop(_2)` of `|n| *n` of an `Rc`, drops it, so the
+        // closure does more than give its argument.
+        let moved_whole = |local: mir::Local| {
+            writes.iter().any(|(_, write)| match write {
+                Ok(Rvalue::Use(Operand::Move(p), _)) => p.local == local && p.projection.is_empty(),
+                Err((_, [arg])) => {
+                    matches!(&arg.node, Operand::Move(p) if p.local == local && p.projection.is_empty())
+                }
+                _ => false,
+            })
+        };
         // Each write is a step, or it does something else.
-        steps == writes.len()
+        steps == writes.len() && dropped.iter().all(|&local| moved_whole(local))
     }
 
     /// An `Option`'s or a `Result`'s method, and `bool::then` (ADRs 0030, 0062): `None` if `known` is another.
