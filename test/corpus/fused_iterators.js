@@ -9,6 +9,7 @@ import {
   $lent,
   $next,
   $nextSome,
+  $roomForHint,
   $sizeHint,
 } from "@rust-js/runtime";
 
@@ -103,7 +104,9 @@ function main() {
     `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${pairDebug_fmt(flips, flipDebug)}`,
   );
   console.log(`${pairDebug_fmt(again, flipDebug)}`);
-  console.log(`[${Array.from($iterator(again, pairIterator_next, true).take(3)).join(", ")}]`);
+  console.log(
+    `[${Array.from($roomForHint($iterator(again, pairIterator_next, true, undefined, undefined, pairIterator_sizeHint).take(3), 4, false)).join(", ")}]`,
+  );
   const loud = $held(iterator_fuse(["loud", 3], { next: loudIterator_next }, false, loudDrop_drop));
   let loud$live;
   try {

@@ -672,7 +672,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         && (endless
                             || endless_once
                             || self.compiled_struct_at(iter_ty, span)
-                                && !self.recognition().bounded_by_items(iter_ty)) =>
+                                && !self.recognition().bounded_by_items(iter_ty)
+                            || self.hint_reaches_own(iter_ty)) =>
                 {
                     let size = self.room_item_size(item);
                     let mut given = vec![it, size, callers_trusted.clone().unwrap_or_else(|| Expr::bool(trusted))];

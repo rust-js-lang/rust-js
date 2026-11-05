@@ -621,4 +621,12 @@ export const mutations: Mutation[] = [
     replace: "    const folded = $consumed(stepped, () => stepped.tryFold(init, f, () => false, unwind), ends);",
     tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
   },
+  {
+    name: "map-ends-hint-dropped",
+    breaks: "a `map()` made knowing its back gives `(0, None)`, not its source's hint, so a collect into a `String` never asks the crate's own (#733)",
+    file: "src/runtime/back_steps.js",
+    find: "  map.sizeHint = () => $sizeHint(it);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^map_ends_size_hint.rs$"],
+  },
 ];

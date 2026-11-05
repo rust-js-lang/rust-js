@@ -795,3 +795,29 @@ dictionary gives the hint through `$given`, the next step.
 A collect into a `Vec` asks it as it grows (`$roomForHint`) only of std's
 compiled structs still. Giving it to the recognizers' chains, step 4,
 changes the default build's output and is the user's decision.
+
+## Amendment: a `Vec` collect asks the crate's hint as it grows (2026-11-05, #733 step 4)
+
+ADR 0262's case: results change, so Rust's behavior is kept. A collect
+into a `Vec` is given `$roomForHint` wherever `hint_reaches_own(iter_ty)`
+holds, as well as of std's compiled structs: the crate's iterator that
+writes its own `size_hint`, or std's adapters of one, made in place. It
+asks the hint after the first item and again each time the `Vec` is full,
+std's `SpecFromIterNested` then `extend_desugared` (ADR 0940's #728
+model). None of those is `TrustedLen`, which no crate iterator can be, so
+it's given `false`. Elsewhere the hint is std's own, and asking it changes
+only room, so ordinary collects of ranges, slices and `Vec`s print as
+before. The coordinator approved the form: 11 corpus snapshots, each of a
+crate iterator with its own `size_hint`.
+
+A flatten's front inner hint (`$flatHint`) and its inner `Vec` stepped as
+`$iter` (`$innerOf`) are now observable, by when a `flat_map()` collected
+into a `Vec` asks its source's hint again, and their mutations hold them.
+
+`$mapEnds` is the `map()` made knowing its back, used where its source is
+stepped from its back elsewhere in the crate. It had no `sizeHint`, so a
+collect of one into a `String` or a hash table asked none of the crate's
+hint, where std's `Map` passes its source's on (map.rs:111). It has one
+now. Twelve conformance cases (`own Every | chain | string`, `hash set`,
+`hash map`) failed this way in their batch but passed alone, so they
+weren't listed.

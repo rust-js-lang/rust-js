@@ -82,4 +82,25 @@ fn main() {
         it.panics_at = 5;
         it.fuse().collect::<Vec<D>>().len()
     });
+    // Of adapters the default build makes in place, each passing on or
+    // bounding its source's hint as std's do (#733).
+    run("mapped", || own(20, none, |n| n).map(|n| n + 1).collect::<Vec<u32>>().len());
+    run("filtered, half hinted", || {
+        own(20, half, |n| n).filter(|n| n % 3 != 0).collect::<Vec<u32>>().len()
+    });
+    run("taken", || own(20, all, |n| n as u8).take(12).collect::<Vec<u8>>().len());
+    run("flat-mapped, its inner's left counted", || {
+        own(4, none, |n| n).flat_map(|n| vec![n; 10]).collect::<Vec<u32>>().len()
+    });
+    run("chained", || (0..3).chain(own(9, none, |n| n)).collect::<Vec<u32>>().len());
+    run("mapped, its first hint panics", || {
+        let mut it = own(3, none, D);
+        it.panics_at = 1;
+        it.map(|d| d).collect::<Vec<D>>().len()
+    });
+    run("filtered, a hint panics as it grows", || {
+        let mut it = own(12, none, D);
+        it.panics_at = 7;
+        it.filter(|d| d.0 % 2 == 1).collect::<Vec<D>>().len()
+    });
 }

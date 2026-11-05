@@ -862,4 +862,12 @@ export const mutations: Mutation[] = [
     replace: "                false => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
   },
+  {
+    name: "vec-collect-asks-no-own-hint",
+    breaks: "a collect into a `Vec` of a chain made in place over the crate's iterator asks no hint, which std's `from_iter` asks after its first item and as it grows (#733)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                                && !self.recognition().bounded_by_items(iter_ty)\n                            || self.hint_reaches_own(iter_ty)) =>\n",
+    replace: "                                && !self.recognition().bounded_by_items(iter_ty)) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
+  },
 ];

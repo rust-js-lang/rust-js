@@ -30,6 +30,7 @@ import {
   $nth,
   $nthBack,
   $rev,
+  $roomForHint,
   $skipping,
   $taking,
   $tryOf,
@@ -293,23 +294,27 @@ function main() {
   );
   console.log(
     `[${Array.from(
-      $rev(
-        $taking(
-          $iterator(
-            count(),
-            countIterator_next,
-            false,
-            countDoubleEndedIterator_nextBack,
-            (it) => $exactLen(countIterator_sizeHint(it)),
-            countIterator_sizeHint,
-            undefined,
-            undefined,
-            undefined,
-            countDoubleEndedIterator_rfold,
-            countDoubleEndedIterator_nthBack,
+      $roomForHint(
+        $rev(
+          $taking(
+            $iterator(
+              count(),
+              countIterator_next,
+              false,
+              countDoubleEndedIterator_nextBack,
+              (it) => $exactLen(countIterator_sizeHint(it)),
+              countIterator_sizeHint,
+              undefined,
+              undefined,
+              undefined,
+              countDoubleEndedIterator_rfold,
+              countDoubleEndedIterator_nthBack,
+            ),
+            5,
           ),
-          5,
         ),
+        4,
+        false,
       ),
     ).join(", ")}]`,
   );

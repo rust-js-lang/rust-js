@@ -12,6 +12,7 @@ import {
   $nextBack,
   $nth,
   $rev,
+  $roomForHint,
   $skipping,
   $stepByEnds,
   $taking,
@@ -223,23 +224,27 @@ function main() {
   );
   console.log(
     `[${Array.from(
-      $rev(
-        $skipping(
-          $iterator(
-            [0, 6],
-            plainDoubleEndedIterator_nextBack,
-            false,
-            plainIterator_next,
-            (it) => $exactLen(plainIterator_sizeHint(it)),
-            plainIterator_sizeHint,
+      $roomForHint(
+        $rev(
+          $skipping(
+            $iterator(
+              [0, 6],
+              plainDoubleEndedIterator_nextBack,
+              false,
+              plainIterator_next,
+              (it) => $exactLen(plainIterator_sizeHint(it)),
+              plainIterator_sizeHint,
+            ),
+            2,
           ),
-          2,
         ),
+        4,
+        false,
       ),
     ).join(", ")}]`,
   );
   console.log(
-    `[${Array.from($rev($mapEnds($iterator([0, 4], plainDoubleEndedIterator_nextBack, false, plainIterator_next, undefined, plainIterator_sizeHint), (x) => (x * 3) | 0))).join(", ")}]`,
+    `[${Array.from($roomForHint($rev($mapEnds($iterator([0, 4], plainDoubleEndedIterator_nextBack, false, plainIterator_next, undefined, plainIterator_sizeHint), (x) => (x * 3) | 0)), 4, false)).join(", ")}]`,
   );
   const filter = $held(
     $filterEnds(

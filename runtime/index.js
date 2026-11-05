@@ -3416,6 +3416,8 @@ export function $mapEnds(it, f) {
   );
   if (it.back !== undefined) map.back = () => mapped(it.back());
   if (it.len !== undefined) map.len = () => it.len();
+  // Std's `Map::size_hint`, its source's (map.rs:111, #733).
+  map.sizeHint = () => $sizeHint(it);
   // Std's `Map::fold`, `try_fold`, `rfold` and `try_rfold`, its source's of
   // each mapped, the crate's own where it reaches it (#220, rd762).
   // Where `f` throws, a panic, the accumulator dropped by `unwind` (#423).

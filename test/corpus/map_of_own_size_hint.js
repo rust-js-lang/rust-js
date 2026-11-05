@@ -8,6 +8,7 @@ import {
   $iterator,
   $next,
   $peek,
+  $roomForHint,
   $sizeHint,
 } from "@rust-js/runtime";
 
@@ -56,8 +57,12 @@ function main() {
     `(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}) ${$exactLen($sizeHint(p))}`,
   );
   const v = Array.from(
-    $iterator([6], countIterator_next, false, undefined, undefined, countIterator_sizeHint).map(
-      (x) => (x * 10) >>> 0,
+    $roomForHint(
+      $iterator([6], countIterator_next, false, undefined, undefined, countIterator_sizeHint).map(
+        (x) => (x * 10) >>> 0,
+      ),
+      4,
+      false,
     ),
   );
   const arg = $capacity(v) >= 6;

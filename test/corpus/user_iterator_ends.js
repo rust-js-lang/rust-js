@@ -12,6 +12,7 @@ import {
   $mapEnds,
   $maxByKey,
   $rev,
+  $roomForHint,
   $rposition,
   $stepBy,
 } from "@rust-js/runtime";
@@ -41,58 +42,66 @@ function cd(n) {
 }
 function main() {
   console.log(
-    `[${Array.from($iterator(cd(5), countdownDoubleEndedIterator_nextBack)).join(", ")}]`,
+    `[${Array.from($roomForHint($iterator(cd(5), countdownDoubleEndedIterator_nextBack, false, undefined, undefined, countdownIterator_sizeHint), 4, false)).join(", ")}]`,
   );
   console.log(
-    `[${Array.from($rev($mapEnds($iterator(cd(5), countdownIterator_next, false, countdownDoubleEndedIterator_nextBack, undefined, countdownIterator_sizeHint), (x) => (x * 2) >>> 0))).join(", ")}]`,
+    `[${Array.from($roomForHint($rev($mapEnds($iterator(cd(5), countdownIterator_next, false, countdownDoubleEndedIterator_nextBack, undefined, countdownIterator_sizeHint), (x) => (x * 2) >>> 0)), 4, false)).join(", ")}]`,
   );
   console.log(
-    `[${Array.from($rev($filterEnds($iterator(cd(6), countdownIterator_next, false, countdownDoubleEndedIterator_nextBack, undefined, countdownIterator_sizeHint), (x) => x % 2 === 0))).join(", ")}]`,
-  );
-  console.log(
-    `[${Array.from(
-      $lazyZip(
-        $iterator(
-          cd(4),
-          countdownIterator_next,
-          false,
-          undefined,
-          undefined,
-          countdownIterator_sizeHint,
-        ),
-        $iterator(
-          cd(4),
-          countdownDoubleEndedIterator_nextBack,
-          false,
-          undefined,
-          undefined,
-          countdownIterator_sizeHint,
-        ),
-      ),
-    )
-      .map((item) => `(${item[0]}, ${item[1]})`)
-      .join(", ")}]`,
+    `[${Array.from($roomForHint($rev($filterEnds($iterator(cd(6), countdownIterator_next, false, countdownDoubleEndedIterator_nextBack, undefined, countdownIterator_sizeHint), (x) => x % 2 === 0)), 4, false)).join(", ")}]`,
   );
   console.log(
     `[${Array.from(
-      $rev(
-        $enumerate(
+      $roomForHint(
+        $lazyZip(
           $iterator(
-            cd(5),
+            cd(4),
             countdownIterator_next,
             false,
+            undefined,
+            undefined,
+            countdownIterator_sizeHint,
+          ),
+          $iterator(
+            cd(4),
             countdownDoubleEndedIterator_nextBack,
-            (it) => $exactLen(countdownIterator_sizeHint(it)),
+            false,
+            undefined,
+            undefined,
             countdownIterator_sizeHint,
           ),
         ),
+        8,
+        false,
       ),
     )
       .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,
   );
   console.log(
-    `[${Array.from($stepBy($iterator(cd(7), countdownIterator_next).drop(2), 2)).join(", ")}]`,
+    `[${Array.from(
+      $roomForHint(
+        $rev(
+          $enumerate(
+            $iterator(
+              cd(5),
+              countdownIterator_next,
+              false,
+              countdownDoubleEndedIterator_nextBack,
+              (it) => $exactLen(countdownIterator_sizeHint(it)),
+              countdownIterator_sizeHint,
+            ),
+          ),
+        ),
+        8,
+        false,
+      ),
+    )
+      .map((item) => `(${item[0]}, ${item[1]})`)
+      .join(", ")}]`,
+  );
+  console.log(
+    `[${Array.from($roomForHint($stepBy($iterator(cd(7), countdownIterator_next, false, undefined, undefined, countdownIterator_sizeHint).drop(2), 2), 4, false)).join(", ")}]`,
   );
   const it = cd(6);
   const next = countdownIterator_next(it);
@@ -114,9 +123,11 @@ function main() {
   console.log(
     `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
   );
-  console.log(`[${Array.from($iterator(it, countdownIterator_next)).join(", ")}]`);
   console.log(
-    `[${Array.from($rev($lazyChain($iterator(cd(3), countdownIterator_next, false, countdownDoubleEndedIterator_nextBack, undefined, countdownIterator_sizeHint), $iterator(cd(2), countdownIterator_next, false, countdownDoubleEndedIterator_nextBack, undefined, countdownIterator_sizeHint)))).join(", ")}]`,
+    `[${Array.from($roomForHint($iterator(it, countdownIterator_next, false, undefined, undefined, countdownIterator_sizeHint), 4, false)).join(", ")}]`,
+  );
+  console.log(
+    `[${Array.from($roomForHint($rev($lazyChain($iterator(cd(3), countdownIterator_next, false, countdownDoubleEndedIterator_nextBack, undefined, countdownIterator_sizeHint), $iterator(cd(2), countdownIterator_next, false, countdownDoubleEndedIterator_nextBack, undefined, countdownIterator_sizeHint))), 4, false)).join(", ")}]`,
   );
   console.log(
     `${$iterator(cd(4), countdownIterator_next).reduce((a, b) => (a + b) >>> 0, 0)} ${((value) => (value == null ? "None" : `Some(${value})`))($maxByKey($iterator(cd(4), countdownIterator_next), (x) => x % 3, $cmp))}`,

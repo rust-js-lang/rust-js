@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
   },
+  {
+    name: "flat-hint-front-unasked",
+    breaks: "a flatten's hint counts none of the inner iterator it's in, so a `flat_map()` collected into a `Vec` asks room by its source's alone (#733)",
+    file: "src/runtime/size_hint.js",
+    find: "$hintSum(front === undefined ? none : $sizeHint(front), ",
+    replace: "$hintSum(none, ",
+    tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
+  },
 ];

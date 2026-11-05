@@ -475,4 +475,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
   },
+  {
+    name: "flatten-inner-uncounted",
+    breaks: "a flatten's inner `Vec` is stepped as JS's array iterator, whose hint is `(0, None)`, so a `flat_map()` collected into a `Vec` asks room by none of what it has left (#733)",
+    file: "src/runtime/steps.js",
+    find: "  return Array.isArray(made) ? $iter(made) : made;\n",
+    replace: "  return made;\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
+  },
 ];

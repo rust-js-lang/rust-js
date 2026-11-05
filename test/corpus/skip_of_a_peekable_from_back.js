@@ -21,6 +21,7 @@ import {
   $nextBack,
   $peek,
   $rev,
+  $roomForHint,
   $sizeHint,
   $skipping,
   $tryOf,
@@ -178,68 +179,76 @@ function main() {
     console.log(`each ${x}`);
   });
   const c = Array.from(
-    $rev(
-      $skipping(
-        $knowing(
-          iterator_peekable(
-            { at: 0, end: 4 },
-            { next: countIterator_next, sizeHint: countIterator_sizeHint },
-          ),
-          (iterator) =>
-            peekableDoubleEndedIterator_nextBack(iterator, {
-              next_back: countDoubleEndedIterator_nextBack,
-            }),
-          (iterator) => $exactLen($sizeHint(iterator)),
-          undefined,
-          undefined,
-          (iterator, init, f, broke, unwind, ends) =>
-            peekableDoubleEndedIterator_tryRfold(
-              iterator,
-              init,
-              f,
+    $roomForHint(
+      $rev(
+        $skipping(
+          $knowing(
+            iterator_peekable(
+              { at: 0, end: 4 },
               { next: countIterator_next, sizeHint: countIterator_sizeHint },
-              { next_back: countDoubleEndedIterator_nextBack },
-              $tryOf(broke),
-              undefined,
-              unwind,
-              ends,
             ),
+            (iterator) =>
+              peekableDoubleEndedIterator_nextBack(iterator, {
+                next_back: countDoubleEndedIterator_nextBack,
+              }),
+            (iterator) => $exactLen($sizeHint(iterator)),
+            undefined,
+            undefined,
+            (iterator, init, f, broke, unwind, ends) =>
+              peekableDoubleEndedIterator_tryRfold(
+                iterator,
+                init,
+                f,
+                { next: countIterator_next, sizeHint: countIterator_sizeHint },
+                { next_back: countDoubleEndedIterator_nextBack },
+                $tryOf(broke),
+                undefined,
+                unwind,
+                ends,
+              ),
+          ),
+          1,
         ),
-        1,
       ),
+      4,
+      false,
     ),
   );
   console.log(`[${c.join(", ")}]`);
   const t = Array.from(
-    $rev(
-      $skipping(
-        $knowing(
-          iterator_peekable(
-            iterator_take({ at: 0, end: 5 }, 2, {
-              next: countIterator_next,
-              sizeHint: countIterator_sizeHint,
-            }),
-            { next: $next, fold: $foldOf },
-          ),
-          (iterator) => peekableDoubleEndedIterator_nextBack(iterator, takeDoubleEndedIterator),
-          (iterator) => $exactLen($sizeHint(iterator)),
-          undefined,
-          undefined,
-          (iterator, init, f, broke, unwind, ends) =>
-            peekableDoubleEndedIterator_tryRfold(
-              iterator,
-              init,
-              f,
+    $roomForHint(
+      $rev(
+        $skipping(
+          $knowing(
+            iterator_peekable(
+              iterator_take({ at: 0, end: 5 }, 2, {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+              }),
               { next: $next, fold: $foldOf },
-              takeDoubleEndedIterator,
-              $tryOf(broke),
-              undefined,
-              unwind,
-              ends,
             ),
+            (iterator) => peekableDoubleEndedIterator_nextBack(iterator, takeDoubleEndedIterator),
+            (iterator) => $exactLen($sizeHint(iterator)),
+            undefined,
+            undefined,
+            (iterator, init, f, broke, unwind, ends) =>
+              peekableDoubleEndedIterator_tryRfold(
+                iterator,
+                init,
+                f,
+                { next: $next, fold: $foldOf },
+                takeDoubleEndedIterator,
+                $tryOf(broke),
+                undefined,
+                unwind,
+                ends,
+              ),
+          ),
+          1,
         ),
-        1,
       ),
+      4,
+      false,
     ),
   );
   console.log(`[${t.join(", ")}]`);

@@ -25,6 +25,7 @@ import {
   $next,
   $reduce,
   $rev,
+  $roomForHint,
   $skipping,
   $stepBy,
   $stepByEnds,
@@ -329,11 +330,32 @@ function consume(n) {
     console.log("after");
     console.log(
       `[${$collectDropping(
-        $lazyChain(
-          $stepBy(
+        $roomForHint(
+          $lazyChain(
+            $stepBy(
+              $closing(
+                $iterator(
+                  counter(3),
+                  countIterator_next,
+                  false,
+                  undefined,
+                  undefined,
+                  countIterator_sizeHint,
+                  undefined,
+                  countIterator_nth,
+                  undefined,
+                  undefined,
+                  countDoubleEndedIterator_nthBack,
+                ),
+                (it) => {
+                  console.log(`drop count ${it.of.at} ${it.of.end}`);
+                },
+              ),
+              2,
+            ),
             $closing(
               $iterator(
-                counter(3),
+                counter(2),
                 countIterator_next,
                 false,
                 undefined,
@@ -349,26 +371,9 @@ function consume(n) {
                 console.log(`drop count ${it.of.at} ${it.of.end}`);
               },
             ),
-            2,
           ),
-          $closing(
-            $iterator(
-              counter(2),
-              countIterator_next,
-              false,
-              undefined,
-              undefined,
-              countIterator_sizeHint,
-              undefined,
-              countIterator_nth,
-              undefined,
-              undefined,
-              countDoubleEndedIterator_nthBack,
-            ),
-            (it) => {
-              console.log(`drop count ${it.of.at} ${it.of.end}`);
-            },
-          ),
+          4,
+          false,
         ),
       ).join(", ")}]`,
     );

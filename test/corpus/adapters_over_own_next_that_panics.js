@@ -859,28 +859,34 @@ function main() {
   });
   run("skip collect", () => {
     const collect = $collectDropping(
-      $skipping(
-        $closing(
-          $iterator(
-            own({ start: 160, end: 164 }, 162),
-            ownIterator_next,
-            false,
-            undefined,
-            undefined,
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            undefined,
-            ownDoubleEndedIterator_rfold,
+      $roomForHint(
+        $skipping(
+          $closing(
+            $iterator(
+              own({ start: 160, end: 164 }, 162),
+              ownIterator_next,
+              false,
+              undefined,
+              undefined,
+              ownIterator_sizeHint,
+              ownIterator_fold,
+              undefined,
+              undefined,
+              ownDoubleEndedIterator_rfold,
+            ),
+            (it) => {
+              console.log("drop own");
+              for (const item of it.of.items) {
+                dDrop_drop(item);
+              }
+            },
           ),
-          (it) => {
-            console.log("drop own");
-            for (const item of it.of.items) {
-              dDrop_drop(item);
-            }
-          },
+          1,
+          dDrop_drop,
         ),
-        1,
+        4,
+        false,
+        false,
         dDrop_drop,
       ),
       dDrop_drop,
@@ -904,47 +910,53 @@ function main() {
       throw error;
     }
     const collect = $collectDropping(
-      $lazyChain(
-        $closing(
-          $iterator(
-            value,
-            ownIterator_next,
-            false,
-            undefined,
-            undefined,
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            undefined,
-            ownDoubleEndedIterator_rfold,
+      $roomForHint(
+        $lazyChain(
+          $closing(
+            $iterator(
+              value,
+              ownIterator_next,
+              false,
+              undefined,
+              undefined,
+              ownIterator_sizeHint,
+              ownIterator_fold,
+              undefined,
+              undefined,
+              ownDoubleEndedIterator_rfold,
+            ),
+            (it) => {
+              console.log("drop own");
+              for (const item of it.of.items) {
+                dDrop_drop(item);
+              }
+            },
           ),
-          (it) => {
-            console.log("drop own");
-            for (const item of it.of.items) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-        $closing(
-          $iterator(
-            tmp,
-            ownIterator_next,
-            false,
-            undefined,
-            undefined,
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            undefined,
-            ownDoubleEndedIterator_rfold,
+          $closing(
+            $iterator(
+              tmp,
+              ownIterator_next,
+              false,
+              undefined,
+              undefined,
+              ownIterator_sizeHint,
+              ownIterator_fold,
+              undefined,
+              undefined,
+              ownDoubleEndedIterator_rfold,
+            ),
+            (it) => {
+              console.log("drop own");
+              for (const item of it.of.items) {
+                dDrop_drop(item);
+              }
+            },
           ),
-          (it) => {
-            console.log("drop own");
-            for (const item of it.of.items) {
-              dDrop_drop(item);
-            }
-          },
         ),
+        4,
+        false,
+        false,
+        dDrop_drop,
       ),
       dDrop_drop,
       true,
@@ -978,26 +990,32 @@ function main() {
   });
   run("take collect", () => {
     const collect = $collectDropping(
-      $closing(
-        $iterator(
-          own({ start: 190, end: 195 }, 192),
-          ownIterator_next,
-          false,
-          undefined,
-          undefined,
-          ownIterator_sizeHint,
-          ownIterator_fold,
-          undefined,
-          undefined,
-          ownDoubleEndedIterator_rfold,
-        ),
-        (it) => {
-          console.log("drop own");
-          for (const item of it.of.items) {
-            dDrop_drop(item);
-          }
-        },
-      ).take(4),
+      $roomForHint(
+        $closing(
+          $iterator(
+            own({ start: 190, end: 195 }, 192),
+            ownIterator_next,
+            false,
+            undefined,
+            undefined,
+            ownIterator_sizeHint,
+            ownIterator_fold,
+            undefined,
+            undefined,
+            ownDoubleEndedIterator_rfold,
+          ),
+          (it) => {
+            console.log("drop own");
+            for (const item of it.of.items) {
+              dDrop_drop(item);
+            }
+          },
+        ).take(4),
+        4,
+        false,
+        false,
+        dDrop_drop,
+      ),
       dDrop_drop,
       true,
     );
@@ -1008,22 +1026,28 @@ function main() {
   });
   run("rev collect", () => {
     const collect = $collectDropping(
-      $closing(
-        $iterator(
-          own({ start: 200, end: 204 }, 201),
-          ownDoubleEndedIterator_nextBack,
-          false,
-          undefined,
-          undefined,
-          ownIterator_sizeHint,
-          ownDoubleEndedIterator_rfold,
+      $roomForHint(
+        $closing(
+          $iterator(
+            own({ start: 200, end: 204 }, 201),
+            ownDoubleEndedIterator_nextBack,
+            false,
+            undefined,
+            undefined,
+            ownIterator_sizeHint,
+            ownDoubleEndedIterator_rfold,
+          ),
+          (it) => {
+            console.log("drop own");
+            for (const item of it.of.items) {
+              dDrop_drop(item);
+            }
+          },
         ),
-        (it) => {
-          console.log("drop own");
-          for (const item of it.of.items) {
-            dDrop_drop(item);
-          }
-        },
+        4,
+        false,
+        false,
+        dDrop_drop,
       ),
       dDrop_drop,
       true,

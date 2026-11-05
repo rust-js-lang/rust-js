@@ -20,6 +20,7 @@ import {
   $next,
   $nextBack,
   $nth,
+  $roomForHint,
   $sizeHint,
   $stepBy,
   $tryFoldSome,
@@ -263,15 +264,21 @@ function main() {
   });
   run("copied collect", () => {
     const collect = $collectDropping(
-      $iterator(
-        made(),
-        numsIterator_next,
+      $roomForHint(
+        $iterator(
+          made(),
+          numsIterator_next,
+          false,
+          undefined,
+          undefined,
+          numsIterator_sizeHint,
+          numsIterator_fold,
+        ).map((value) => [value]),
+        4,
         false,
-        undefined,
-        undefined,
-        numsIterator_sizeHint,
-        numsIterator_fold,
-      ).map((value) => [value]),
+        false,
+        dDrop_drop,
+      ),
       dDrop_drop,
       true,
     );

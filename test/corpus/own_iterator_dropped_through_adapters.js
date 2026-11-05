@@ -27,6 +27,7 @@ import {
   $nth,
   $nthDropping,
   $rev,
+  $roomForHint,
   $skipping,
   $stepBy,
   $taking,
@@ -304,28 +305,32 @@ function main() {
   );
   console.log(
     `[${$collectDropping(
-      $rev(
-        $taking(
-          $closing(
-            $iterator(
-              count(),
-              countIterator_next,
-              false,
-              countDoubleEndedIterator_nextBack,
-              (it) => $exactLen(countIterator_sizeHint(it)),
-              countIterator_sizeHint,
-              undefined,
-              countIterator_nth,
-              undefined,
-              countDoubleEndedIterator_rfold,
-              countDoubleEndedIterator_nthBack,
+      $roomForHint(
+        $rev(
+          $taking(
+            $closing(
+              $iterator(
+                count(),
+                countIterator_next,
+                false,
+                countDoubleEndedIterator_nextBack,
+                (it) => $exactLen(countIterator_sizeHint(it)),
+                countIterator_sizeHint,
+                undefined,
+                countIterator_nth,
+                undefined,
+                countDoubleEndedIterator_rfold,
+                countDoubleEndedIterator_nthBack,
+              ),
+              (it) => {
+                countDrop_drop(it.of);
+              },
             ),
-            (it) => {
-              countDrop_drop(it.of);
-            },
+            5,
           ),
-          5,
         ),
+        4,
+        false,
       ),
     ).join(", ")}]`,
   );
@@ -439,28 +444,32 @@ function main() {
   );
   console.log(
     `[${$collectDropping(
-      $rev(
-        $mapEnds(
-          $closing(
-            $iterator(
-              count(),
-              countIterator_next,
-              false,
-              countDoubleEndedIterator_nextBack,
-              undefined,
-              countIterator_sizeHint,
-              undefined,
-              countIterator_nth,
-              undefined,
-              countDoubleEndedIterator_rfold,
-              countDoubleEndedIterator_nthBack,
+      $roomForHint(
+        $rev(
+          $mapEnds(
+            $closing(
+              $iterator(
+                count(),
+                countIterator_next,
+                false,
+                countDoubleEndedIterator_nextBack,
+                undefined,
+                countIterator_sizeHint,
+                undefined,
+                countIterator_nth,
+                undefined,
+                countDoubleEndedIterator_rfold,
+                countDoubleEndedIterator_nthBack,
+              ),
+              (it) => {
+                countDrop_drop(it.of);
+              },
             ),
-            (it) => {
-              countDrop_drop(it.of);
-            },
+            (x) => (x * 2) | 0,
           ),
-          (x) => (x * 2) | 0,
         ),
+        4,
+        false,
       ),
     ).join(", ")}]`,
   );
