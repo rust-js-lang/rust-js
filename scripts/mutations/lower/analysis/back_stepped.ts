@@ -196,15 +196,16 @@ export const mutations: Mutation[] = [
   {
     name: "stepped-sources-any-adapter",
     breaks:
-      "each held adapter a back-stepped one steps is marked, whatever it is, and steps a JS iterator with no back (#218)",
+      "each held adapter a back-stepped one steps is marked, whatever it is: a held chain's map is `$mapEnds(Iterator.from($chainEnds(..)))`, and the crate's own iterator a held `filter` steps is made with its exact length, `$exactLen(..)`, which nothing asks (#218)",
     file: "src/lower/analysis/back_stepped.rs",
     find: "            if mapped_source(tcx, held).is_some()\n                || filtered_source(tcx, held).is_some()\n                || filter_mapped_source(tcx, held).is_some()\n                || copied_source(tcx, held).is_some()\n                || inspected_source(tcx, held).is_some()\n            {\n",
     replace: "            if true {\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
-      "^(back_stepped_adapter_sources|held_filter_map_from_its_back).rs$",
+      "^(back_stepped_adapter_sources|rev_in_place_through_adapters).rs$",
     ],
+    snapshots: true,
   },
   {
     name: "held-rev-source-unstepped",
