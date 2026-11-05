@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure that holds a value with a destructor, in an `AssertUnwindSafe` given to `catch_unwind`, is refused as made where it's not kept",
     file: "src/lower/drops/facts.rs",
-    find: "                ExprKind::Adt(..) if self.cx.recognition.transparent(self.thir[parent].ty).is_some() => child = parent,\n",
+    find: "                ExprKind::Adt(..) if self.cx.recognition.transparent(self.thir[expr].ty).is_some() => child = expr,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_assert_drops.rs$"],
   },
@@ -145,9 +145,19 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure holding an `Rc` made as a block's value for a `let` is refused",
     file: "src/lower/drops/facts.rs",
-    find: '                            self.block_for_let(parent.expect("a block"))\n',
-    replace: "                            false\n",
+    find: "            Some((block, ExprKind::Block { block: b })) if self.thir[*b].expr == Some(child) => self.placed(block),\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^closure_block_value.rs$"],
+  },
+  {
+    name: "closure-block-given-to-a-call-refused",
+    breaks:
+      "a closure holding a `D` made as a block's value given straight to a call, `fold(0, { let g = D(90); move |a, x| .. })`, is refused, a block placed only for a `let` (#759)",
+    file: "src/lower/drops/facts.rs",
+    find: "            Some((block, ExprKind::Block { block: b })) if self.thir[*b].expr == Some(child) => self.placed(block),\n",
+    replace:
+      "            Some((block, ExprKind::Block { block: b })) if self.thir[*b].expr == Some(child) => {\n                let (parent, child) = self.context_at(block);\n                parent.is_none() && self.lets.contains_key(&child)\n            }\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_block_given_to_a_call.rs$"],
   },
   {
     name: "arm-temporaries-unscoped",

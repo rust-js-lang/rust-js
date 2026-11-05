@@ -255,8 +255,9 @@ function main() {
   ```
 
   Its drop sees what it took only where JS sees those variables: it's
-  made for a `let` or a call, and an error made anywhere else, as a
-  block's value, assigned, or dropped outside the body it's made in. One
+  made for a `let` or a call, or as the value of a block that is, and an
+  error made anywhere else, assigned, or dropped outside the body it's
+  made in. One
   that isn't called once by its own body, `Fn` or `FnMut`, isn't given to
   a call by value, which may consume it without its body dropping what it
   holds. One that takes part of a value, `t.0`, is an error. rustc's own
@@ -705,3 +706,23 @@ test`, `dedup` and `heap retain`, and the mutation `retain-left-as-thrown`
 A map's `retain` drops an entry it doesn't keep as std drops the pair:
 its value though its key's drop panics, `$retainMap`'s `finally`; held by
 `map retain` and `map-retain-value-after-key-panic` (`runtime/map_ops.ts`).
+
+## Amendment: a closure made as a block's value given to a call (#759)
+
+A closure that holds a value with a destructor, made as a block's value
+given straight to a call, `fold(0, { let g = D(90); move |a, x| .. })` or
+`.map({ let h = D(80); move |x| .. })`, was refused: a block's value was
+placed only for a `let`. A block is placed where a closure made in its
+place would be, for a `let`, given to a call, or the value of a block
+that is, through what passes a value on, `AssertUnwindSafe(..)` too: one
+rule, `placed`, asked of the closure and then of each block whose value
+it is. The block's variables are the function's in the JS, seen where
+the call is, so its own locals drop as the block ends, before the call,
+and what the closure took drops where the call drops the closure, as a
+panic in it unwinds too, in both builds. A block's value that's a
+block's, `let f = { let a = ..; { let g = ..; move || .. } };`, is placed
+the same way. Held by `test/corpus/closure_block_given_to_a_call.rs`,
+the conformance table's `fold holding block` and `map holding block`
+cases (ADR 1092), each run as native Rust runs it in both builds, and
+the mutations `closure-block-given-to-a-call-refused` and
+`closure-block-value-refused`.

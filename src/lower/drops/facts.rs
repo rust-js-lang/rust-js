@@ -123,21 +123,31 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
     /// What `e`, the top of the walk, is used for: the expression it's in,
     /// past what only passes it on, and which of its parts `e` is.
     fn context(&self) -> (Option<ExprId>, ExprId) {
-        let mut child = *self.stack.last().expect("an expression being walked");
-        for &parent in self.stack.iter().rev().skip(1) {
+        let at = self.stack.len().checked_sub(1).expect("an expression being walked");
+        let (parent, child) = self.context_at(at);
+        (parent.map(|p| self.stack[p]), child)
+    }
+
+    /// What the expression at `at` in the walk is used for, as `context`
+    /// says of its top: where in the walk the expression it's in is, and
+    /// which of its parts the one at `at` is.
+    fn context_at(&self, at: usize) -> (Option<usize>, ExprId) {
+        let mut child = self.stack[at];
+        for parent in (0..at).rev() {
             // A `let`'s value is its statement's, not the block's around it:
             // its pattern says what it takes.
             if self.lets.contains_key(&child) {
                 return (None, child);
             }
-            match self.thir[parent].kind {
+            let expr = self.stack[parent];
+            match self.thir[expr].kind {
                 ExprKind::Scope { .. }
                 | ExprKind::Use { .. }
                 | ExprKind::ValueTypeAscription { .. }
-                | ExprKind::PlaceTypeAscription { .. } => child = parent,
+                | ExprKind::PlaceTypeAscription { .. } => child = expr,
                 // A type that's the value it holds, `AssertUnwindSafe(f)`, is
                 // its value's place (ADR 0660).
-                ExprKind::Adt(..) if self.cx.recognition.transparent(self.thir[parent].ty).is_some() => child = parent,
+                ExprKind::Adt(..) if self.cx.recognition.transparent(self.thir[expr].ty).is_some() => child = expr,
                 _ => return (Some(parent), child),
             }
         }
@@ -184,18 +194,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                 Drops::Nothing => {}
                 Drops::Unsupported(t, what) => self.problem(expr.span, &describe(t, what)),
                 Drops::Runs => {
-                    let (parent, child) = self.context();
-                    let placed = match parent.map(|p| &self.thir[p].kind) {
-                        None => self.lets.contains_key(&child),
-                        Some(ExprKind::Call { args, .. }) => args.contains(&child),
-                        // A block's value, `{ let r = r.clone(); move || *r }`, made
-                        // for a `let`: what it took is the block's, seen where the
-                        // `let` is.
-                        Some(ExprKind::Block { block }) if self.thir[*block].expr == Some(child) => {
-                            self.block_for_let(parent.expect("a block"))
-                        }
-                        _ => false,
-                    };
+                    let placed = self.placed(self.stack.len() - 1);
                     // One its maker gives back or makes a `dyn Fn` carries its drop (ADRs
                     // 0484, 0521).
                     let carried = matches!(expr.kind, ExprKind::Closure(ref c)
@@ -232,23 +231,19 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
         }
     }
 
-    /// Whether the block `block`, an expression being walked, is a `let`'s
-    /// value, as it is or through the scopes around it.
-    fn block_for_let(&self, block: ExprId) -> bool {
-        let Some(at) = self.stack.iter().rposition(|&e| e == block) else {
-            return false;
-        };
-        let mut child = block;
-        for &parent in self.stack[..at].iter().rev() {
-            if self.lets.contains_key(&child) {
-                return true;
-            }
-            match self.thir[parent].kind {
-                ExprKind::Scope { .. } | ExprKind::Use { .. } => child = parent,
-                _ => return false,
-            }
+    /// Whether the closure at `at` in the walk is where JS sees what it
+    /// took: made for a `let` or given to a call, or the value of a block
+    /// that is, `{ let r = r.clone(); move || *r }` or `fold(0, { let g =
+    /// D(1); move |a, x| .. })` (#759), whose variables are the function's
+    /// in the JS, seen where the block is.
+    fn placed(&self, at: usize) -> bool {
+        let (parent, child) = self.context_at(at);
+        match parent.map(|p| (p, &self.thir[self.stack[p]].kind)) {
+            None => self.lets.contains_key(&child),
+            Some((_, ExprKind::Call { args, .. })) => args.contains(&child),
+            Some((block, ExprKind::Block { block: b })) if self.thir[*b].expr == Some(child) => self.placed(block),
+            _ => false,
         }
-        self.lets.contains_key(&child)
     }
 
     /// Whether a call of `callee`, a function's type, may drop a closure

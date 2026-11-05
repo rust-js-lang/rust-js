@@ -555,8 +555,8 @@ const stepAdapters: Adapter[] = [
     text: (from, panics) => `.map(move |x| { let _h = &h; ${counted(panics, "map", mapped(from))} })`,
   },
   {
-    // The same made by a block given to the call, which rust-js refuses
-    // (#759): kept so the refusal stays seen.
+    // The same made by a block given to the call, which runs as the
+    // statement form does since #759's fix.
     name: "map holding block",
     closure: true,
     shape: (from) => (from.item === "D" ? from : { item: "N", owns: false, back: from.back, exact: from.exact }),
@@ -645,8 +645,8 @@ const stepConsumers: Consumer[] = [
     text: (it, p) => `${holds}let acc = ${it}.fold(Acc(0), ${holding(p, "mut a, x", "a.0 += x.v(); a")});\n    println!("fold {} after {seen}", acc.0);`,
   },
   {
-    // The same made by a block given to the call, which rust-js refuses
-    // (#759): kept so the refusal stays seen.
+    // The same made by a block given to the call, which runs as the
+    // statement form does since #759's fix.
     name: "fold holding block",
     closure: true,
     takes: any,
@@ -701,10 +701,9 @@ export function conformanceCases(): Case[] {
       const shapes = [source.shape, shape];
       for (const consumer of steps) {
         if (!consumer.takes(shape)) continue;
-        // A closure made by a block given to the call, refused (#759): a
-        // few of it, of a `Vec`'s, the consumer's alone and the adapter's
-        // folded, so the refusal stays seen and costs few batches a second
-        // compile.
+        // A closure made by a block given to the call (#759): a few of it,
+        // of a `Vec`'s, the consumer's alone and the adapter's folded, the
+        // statement form's other shapes being the same closure.
         const block = (name: string) => name.endsWith(" block");
         const blockCase =
           source.name === "vec" &&
