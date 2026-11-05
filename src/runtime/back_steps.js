@@ -302,6 +302,15 @@ function $filterEnds(it, p, drop) {
     },
     folding,
   );
+  // Std's `Filter::size_hint`, none to its source's upper bound, and its
+  // `count`, its source's hint asked first (filter.rs:118, 135, #733).
+  filter.sizeHint = () => $upperOnly(it);
+  $forward(filter, it, {
+    count: (drop) => {
+      $sizeHint(it);
+      return $Steps.prototype.count.call(filter, drop);
+    },
+  });
   filter.from = [it];
   return filter;
 }

@@ -4,7 +4,9 @@ import { chainDoubleEndedIterator_nextBack, iterator_chain } from "@rust-js/std/
 import {
   $advanceSlice,
   $closing,
+  $count,
   $dropEach,
+  $filterEnds,
   $foldToArray,
   $held,
   $iter,
@@ -103,6 +105,56 @@ function main() {
         ),
       ).join("");
       console.log(`${s}`);
+      const odd = $foldToArray(
+        $reserveHint(
+          $mapEnds(
+            $filterEnds(
+              $lazyChain(
+                $iterator(
+                  ends(),
+                  endsIterator_next,
+                  false,
+                  endsDoubleEndedIterator_nextBack,
+                  undefined,
+                  endsIterator_sizeHint,
+                ),
+                $closing($iter([[6]]), $dropEach(dDrop_drop)),
+              ),
+              (d) => d[0] % 2 === 1,
+              dDrop_drop,
+            ),
+            (d) => {
+              try {
+                return String.fromCharCode((97 + (d[0] & 255)) & 255);
+              } finally {
+                dDrop_drop(d);
+              }
+            },
+          ),
+          1,
+        ),
+      ).join("");
+      console.log(`${odd}`);
+      console.log(
+        `${$count(
+          $filterEnds(
+            $lazyChain(
+              $iterator(
+                ends(),
+                endsIterator_next,
+                false,
+                endsDoubleEndedIterator_nextBack,
+                undefined,
+                endsIterator_sizeHint,
+              ),
+              $closing($iter([[6]]), $dropEach(dDrop_drop)),
+            ),
+            (d) => d[0] % 2 === 1,
+            dDrop_drop,
+          ),
+          dDrop_drop,
+        )}`,
+      );
     } finally {
       if (back != null) {
         dDrop_drop(back);

@@ -1,7 +1,9 @@
-// A `map()` of what's stepped from its back elsewhere, made knowing its
-// back (`$mapEnds`), passes its source's `size_hint` on, as std's `Map`
-// does (map.rs:111): a collect into a `String` asks the crate's own once
-// before it steps, as `Extend<char>` reserves by it (#733).
+// A `map()` or a `filter()` of what's stepped from its back elsewhere, made
+// knowing its back (`$mapEnds`, `$filterEnds`), has std's `size_hint`: a
+// map's its source's (map.rs:111), a filter's none to its source's upper
+// bound (filter.rs:118). A collect into a `String` asks the crate's own once
+// before it steps, as `Extend<char>` reserves by it, and a filter's
+// `count()` asks its source's first (filter.rs:135, #733).
 struct D(u32);
 
 impl Drop for D {
@@ -52,4 +54,11 @@ fn main() {
         .map(|d| char::from(b'a' + d.0 as u8))
         .collect();
     println!("{s}");
+    let odd: String = ends()
+        .chain(vec![D(6)])
+        .filter(|d| d.0 % 2 == 1)
+        .map(|d| char::from(b'a' + d.0 as u8))
+        .collect();
+    println!("{odd}");
+    println!("{}", ends().chain(vec![D(6)]).filter(|d| d.0 % 2 == 1).count());
 }

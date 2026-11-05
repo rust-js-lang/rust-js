@@ -829,3 +829,8 @@ hint, where std's `Map` passes its source's on (map.rs:111). It has one
 now. Twelve conformance cases (`own Every | chain | string`, `hash set`,
 `hash map`) failed this way in their batch but passed alone, so they
 weren't listed.
+
+`$filterEnds` had the same gap: no `sizeHint`, and a `count` that asked no
+hint. It now has std's `Filter::size_hint`, `(0, hi)` of its source's,
+`$upperOnly`'s, and std's `Filter::count`, which asks its source's hint
+first (filter.rs:118, 135), as `$Steps.filter` does.

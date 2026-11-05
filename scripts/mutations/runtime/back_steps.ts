@@ -629,4 +629,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_ends_size_hint.rs$"],
   },
+  {
+    name: "filter-ends-hint-dropped",
+    breaks: "a `filter()` made knowing its back gives `(0, None)`, not `(0, hi)` of its source's, so a collect into a `String` never asks the crate's own (#733)",
+    file: "src/runtime/back_steps.js",
+    find: "  filter.sizeHint = () => $upperOnly(it);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^map_ends_size_hint.rs$"],
+  },
+  {
+    name: "filter-ends-count-hint-unasked",
+    breaks: "a `filter()` made knowing its back counts without asking its source's hint first, as std's `Filter::count` does (#733)",
+    file: "src/runtime/back_steps.js",
+    find: "      $sizeHint(it);\n      return $Steps.prototype.count.call(filter, drop);\n",
+    replace: "      return $Steps.prototype.count.call(filter, drop);\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_ends_size_hint.rs$"],
+  },
 ];
