@@ -882,11 +882,26 @@ pub(super) struct IterLocals {
     /// place is given only to what steps it, never writing it whole
     /// (`body_queries::in_place_adapters`).
     once: HashSet<Local>,
+    /// Each local a back step takes through its `&mut`,
+    /// `v.iter().take(2).nth_back(1)`'s `nth_back(&mut _11, 1)`
+    /// (`back_stepped_temporaries`), and the span of that step.
+    back_stepped: HashMap<Local, Span>,
 }
 
 impl IterLocals {
+    /// Of a local a back step takes through its `&mut`
+    /// (`back_stepped_temporaries`), the span of that step: made knowing its
+    /// back where it's made, as that step would make it, its type not
+    /// wherever else it's made (#718).
+    pub(super) fn back_stepped(&self, local: Local) -> Option<Span> {
+        self.back_stepped.get(&local).copied()
+    }
+
     /// Of `body`, before its first statement is lowered.
-    pub(super) fn of(body: &mir::Body<'_>) -> IterLocals {
+    pub(super) fn of<'tcx>(
+        recognition: crate::lower::recognition::Recognition<'_, 'tcx>,
+        body: &mir::Body<'tcx>,
+    ) -> IterLocals {
         let mut writes: IndexVec<Local, usize> = IndexVec::from_elem_n(0, body.local_decls.len());
         for data in body.basic_blocks.iter() {
             for statement in &data.statements {
@@ -906,10 +921,52 @@ impl IterLocals {
             .filter(|&(_, &n)| n == 1)
             .map(|(local, _)| local)
             .collect();
+        let back_stepped = back_stepped_temporaries(recognition, body);
         IterLocals {
             maps: HashMap::new(),
             marks: HashMap::new(),
             once,
+            back_stepped,
         }
     }
+}
+
+/// Each local of `body` a whole `&mut` of which is given as the receiver of
+/// what asks its back (`IterMethod::asks_its_back`), and where: MIR's temporary of `v.iter().take(2)` before `nth_back(&mut
+/// _11, 1)`, which holds it in a variable to lend it. Its value is made
+/// there, so made knowing its back there, where it's made (#718); one held,
+/// std's struct, is as it is (`made_knowing_where_held`).
+fn back_stepped_temporaries<'tcx>(
+    recognition: crate::lower::recognition::Recognition<'_, 'tcx>,
+    body: &mir::Body<'tcx>,
+) -> HashMap<Local, Span> {
+    // Each whole `&mut` of a whole local, `_12 = &mut _11`.
+    let mut lent: HashMap<Local, Local> = HashMap::new();
+    for data in body.basic_blocks.iter() {
+        for statement in &data.statements {
+            if let mir::StatementKind::Assign(assign) = &statement.kind
+                && let (to, mir::Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of)) = &**assign
+                && to.projection.is_empty()
+                && of.projection.is_empty()
+            {
+                lent.insert(to.local, of.local);
+            }
+        }
+    }
+    let mut stepped = HashMap::new();
+    for data in body.basic_blocks.iter() {
+        if let mir::TerminatorKind::Call { func, args, .. } = &data.terminator().kind
+            && let Some((callee, _)) = func.const_fn_def()
+            && recognition
+                .iterator_method(callee)
+                .is_some_and(crate::lower::recognition::IterMethod::asks_its_back)
+            && let Some(receiver) = args.first()
+            && let mir::Operand::Move(given) | mir::Operand::Copy(given) = &receiver.node
+            && given.projection.is_empty()
+            && let Some(&of) = lent.get(&given.local)
+        {
+            stepped.insert(of, data.terminator().source_info.span);
+        }
+    }
+    stepped
 }

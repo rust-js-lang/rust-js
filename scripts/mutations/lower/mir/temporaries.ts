@@ -594,4 +594,12 @@ export const mutations: Mutation[] = [
     replace: "        let _ = marks;\n",
     tests: ["test/corpus.test.ts", "-t", "^(rev_made_knowing_its_back|own_iterator_flattened_from_its_back).rs$"],
   },
+  {
+    name: "back-stepped-temporary-unrecorded",
+    breaks: "a temporary MIR holds a `take(n)` made in place in to lend it to `nth_back` isn't recorded, so it isn't made knowing its back where it's made and its back step is refused (#718)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            stepped.insert(of, data.terminator().source_info.span);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
+  },
 ];

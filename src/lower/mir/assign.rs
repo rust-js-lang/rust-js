@@ -798,6 +798,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         }
         let expr = self.value_expr(value, span)?;
+        // A temporary a back step takes through its `&mut`, of a `skip(n)`,
+        // a `take(n)` or a `step_by(n)` made in place, which MIR
+        // holds to lend it: made knowing its back where it's made, `$taking`
+        // say, and marked so for its read (#718).
+        let expr = match state
+            .iter_locals
+            .back_stepped(local)
+            .filter(|_| place.projection.is_empty())
+        {
+            Some(at) => self.made_knowing_where_held(expr, state.body.local_decls[local].ty, at)?,
+            None => expr,
+        };
         let js_span = self.js_span(span);
         // A temporary made once of what reads the same anywhere, however
         // often it's read, or what a variant's pattern binds to it: written

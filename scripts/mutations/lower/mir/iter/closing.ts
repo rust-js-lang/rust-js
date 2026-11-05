@@ -350,4 +350,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
   },
+  {
+    name: "skip-made-unmarked-in-place",
+    breaks: "`skip(n)` made in place, JS's `.drop(n)`, isn't marked so, and a back step of it gives it std's compiled `Skip`'s steps, `it.back is not a function` (#718)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        }\n        .in_place())\n",
+    replace: "        })\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
+  },
 ];

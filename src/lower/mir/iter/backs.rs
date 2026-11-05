@@ -348,6 +348,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
+    /// `value` of type `ty`, a local's a back step takes through its `&mut`
+    /// (`IterLocals::back_stepped`): a `skip(n)`, a
+    /// `take(n)` or a `step_by(n)` the recognizers made in place
+    /// (`made_in_place`), made knowing its back where it's made, as what
+    /// steps it asks (`as_double_ended`), which refuses one of items with a
+    /// destructor, and marked so (`made_knowing_its_back`), its mark carried
+    /// by its local. Another as it is: one held, `$held` or closed to drop
+    /// what it holds, std's struct (#718).
+    pub(in crate::lower::mir) fn made_knowing_where_held(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let ty = self.reveal(ty);
+        let counted = crate::lower::recognition::counted_source(self.tcx, ty).is_some()
+            || crate::lower::recognition::stepped_by_source(self.tcx, ty).is_some();
+        if !counted || !crate::lower::iterators::made_in_place(&value) {
+            return Ok(value);
+        }
+        let knowing = self.as_double_ended(value, ty, span)?;
+        Ok(crate::lower::iterators::made_knowing_its_back(knowing))
+    }
+
     /// `rev()` of the crate's iterator, `receiver` of type `receiver_ty`:
     /// its own `next_back` and back methods, through a `&mut` as std passes
     /// them on (#217), closed to drop it where it's owned (#223); refused of

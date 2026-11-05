@@ -710,4 +710,20 @@ export const mutations: Mutation[] = [
     replace: "        if self.range_kind(iter_ty).is_some() || self.implements_iterator(receiver_ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_for_over_own_iterator.rs$"],
   },
+  {
+    name: "next-back-of-marked-unread",
+    breaks: "`next_back` of a variable made knowing its back where it's held reads its type alone, which doesn't, and is refused (#718)",
+    file: "src/lower/mir/iter.rs",
+    find: "self.has_a_back(iter_ty) || std_method == Some(IterMethod::NextBack) && knows_back(&it);",
+    replace: "self.has_a_back(iter_ty);",
+    tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
+  },
+  {
+    name: "take-made-unmarked-in-place",
+    breaks: "`take(n)` made in place, JS's `.take(n)`, isn't marked so, and a back step of it gives it std's compiled `Take`'s steps, `it.back is not a function` (#718)",
+    file: "src/lower/mir/iter.rs",
+    find: "            Some(IterMethod::Take) => method(\"take\", it, vec![arg()]).in_place(),\n",
+    replace: "            Some(IterMethod::Take) => method(\"take\", it, vec![arg()]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
+  },
 ];

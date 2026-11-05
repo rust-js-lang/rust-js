@@ -13,6 +13,7 @@ mod collect;
 pub(in crate::lower::mir) mod sources;
 
 use self::sources::*;
+use crate::lower::iterators::was_made_knowing_its_back as knows_back;
 use crate::lower::recognition::{OwnStep, Reach};
 
 use rustc_hir::attrs::lang_items::LangItem;
@@ -645,8 +646,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(method) = std_method.filter(|method| method.steps_from_its_back()) {
             return self.back_step(method, values, (iter_ty, output, arg_tys), span);
         }
-        // `next_back(&mut it)` and `len(&it)`: of what knows its back, a
-        // range, a `$iter` or one held (ADRs 0071, 0549); not a lazy one.
+        // `next_back(&mut it)` and `len(&it)`: of what knows its back, a range, a `$iter`,
+        // one held or made knowing it where it's held (ADRs 0071, 0549, #718); not a lazy one.
         if matches!(std_method, Some(IterMethod::NextBack | IterMethod::Len)) {
             let it = values.into_iter().next().expect("the receiver");
             // The crate's iterator's `len()`, std's: its `size_hint()`, exact.
@@ -680,7 +681,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return Ok(Some(back));
             }
-            let array = self.has_a_back(iter_ty);
+            let array = self.has_a_back(iter_ty) || std_method == Some(IterMethod::NextBack) && knows_back(&it);
             // `len(&self)` of a `Self` that's a `&mut`.
             let lends_self = matches!(receiver_ty.kind(), ty::Ref(_, through, _) if through.is_mutable_ptr());
             return Ok(Some(match (std_method, self.range_kind(iter_ty)) {
@@ -788,7 +789,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let test = self.unary_callback(arg(), own);
                 self.filtered(it, test, dropping, span)?
             }
-            Some(IterMethod::Take) => method("take", it, vec![arg()]),
+            Some(IterMethod::Take) => method("take", it, vec![arg()]).in_place(),
             // Of items with a destructor, each it skips dropped as it's
             // skipped, as Rust's `nth` drops it (ADRs 0422, 0465).
             Some(IterMethod::Skip) => self.skipped(it, arg(), dropping, span)?,

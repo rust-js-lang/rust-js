@@ -1091,4 +1091,12 @@ export const mutations: Mutation[] = [
     replace: "            && crate::lower::iterators::is_items_map(&expr)\n",
     tests: ["test/corpus.test.ts", "-t", "^move_closure_adapter_from_its_back.rs$"],
   },
+  {
+    name: "back-stepped-temporary-made-unknowing",
+    breaks: "a temporary a back step takes through its `&mut` is made as it is, `$iter(v).take(2)`, not knowing its back, and its `nth_back` is refused (#718)",
+    file: "src/lower/mir/assign.rs",
+    find: "            Some(at) => self.made_knowing_where_held(expr, state.body.local_decls[local].ty, at)?,\n",
+    replace: "            Some(_) => expr,\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
+  },
 ];

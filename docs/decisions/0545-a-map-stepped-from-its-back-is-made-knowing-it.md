@@ -825,3 +825,49 @@ against native Rust in both builds.
 `as_exact_size`, which asks `knowing_held` of std's compiled struct first,
 is held by `enumerate_of_droppers_from_back.rs` too (its mutation
 `enumerate-of-take-from-back-unknowing`).
+
+## Amended (2026-11-06, #718): a temporary a back step takes, made knowing its back where it's made
+
+`next_back`, `nth_back`, `rfind`, `rfold`'s `try_rfold` and
+`advance_back_by` take their receiver through a `&mut`, so MIR holds a
+`skip(n)` or a `take(n)` made in place in a temporary to lend it:
+`v.iter().take(2).rfind(p)` is `_11 = take(..); rfind(&mut _11, p)`. Its
+form, JS's `.take(n)`, steps only forward, and the variable's read keeps
+none of it, so the back step was refused, "a `Take<Iter<i32>>` as a
+`DoubleEndedIterator`", while `rfold`, which takes it by value, made it
+`$taking` where it is. Recording the type stepped from its back
+(`back_stepped`) would change it wherever it's made, held ones too (iterI
+found `held_adapters_by_ref.js` change for nothing).
+
+**The local is the fact, not the type.** `IterLocals` records each local
+a whole `&mut` of which is given as the receiver of what asks its back
+(`back_stepped_temporaries`, `IterMethod::asks_its_back`: `steps_from_its_back`'s
+and `next_back`), and that step's span. Where such a local is written,
+a `skip(n)`, a `take(n)` or a `step_by(n)` the recognizers made in place is
+made knowing its back as that step would make it, `as_double_ended` at its
+span, `$taking($iter(v), 2)`, and marked so (`made_knowing_its_back`); the
+mark is carried by the local, and `next_back` of one so marked is
+`$nextBack`. Made where Rust makes it, nothing it reads is read later.
+`$taking` and `$skipping` step from either end, so a local stepped forward
+too is as right.
+
+The recognizers' `take(n)` and `skip(n)` are marked made in place
+(`Known::InPlace`) where they're made, as std_calls' adapters are: so
+`knowing_held` never gives a JS `.take(n)` std's compiled `Take`'s steps,
+which threw `it.back is not a function`. One held, std's struct, `$held`
+of the crate's iterator, or closed to drop what it holds, is as it is; one
+of a `Vec`'s items with a destructor is made so too, by afdd70519's
+counted arm. `rposition`, which asks the length too, is
+left refused: no mark says a value knows its length.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; a
+refusal of valid Rust lifted. Held by corpus
+`skip_and_take_stepped_from_their_back_in_place`, against native Rust in
+both builds; no other snapshot changes, and both iterator slices pass.
+Mutations `back-stepped-temporary-unrecorded` (`mir/temporaries.ts`),
+`back-stepped-temporary-made-unknowing` (`mir/assign.ts`),
+`back-stepped-temporary-unmarked`, `back-stepped-temporary-of-any-adapter-made`,
+`back-stepped-temporary-held-made` (`mir/iter/backs.ts`, by its snapshots),
+`next-back-of-marked-unread`, `take-made-unmarked-in-place` (`mir/iter.ts`),
+`skip-made-unmarked-in-place` (`mir/iter/closing.ts`),
+`next-back-asks-no-back` (`recognition/iterators.ts`).
