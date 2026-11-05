@@ -110,6 +110,13 @@ where it was named after its call, `next` or `nthBack`; a closure
 declared as `function map(d)` now `let map; .. map = (d) => ..` in a
 `try`; `$dispose($removeAt(handlers, 0))` now through a `const value`.
 
+The readability gate's shares of `$iter` (89.4 to 89.9 in 10,000 lines),
+`Iterator.from` (8.8 to 8.9) and `return;` (12.8 to 12.9) grew with it
+by arithmetic alone, blessed after: over the files the baseline lists,
+`$iter`'s count fell from 1,677 to 1,671, and `Iterator.from`'s, 165, and
+`return;`'s, 239, stayed, as the lines they're shares of fell from 187,439
+to 185,955, the `try`s merged.
+
 It also showed a lowering that read its argument in place past an effect,
 `Option::insert`'s drop of the old value, right only where such a spurious
 flush held the argument first (#765, fixed before this).
