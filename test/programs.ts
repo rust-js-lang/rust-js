@@ -5,7 +5,7 @@
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { compileFailure, runSync, stopped, type Exit } from "./child";
+import { compileFailure, run as runAsync, runSync, stopped, type Exit } from "./child";
 import { decode, encode, same, type Outcome } from "./oracle";
 import { compiler, contentDirectory, nativeBinary, root, run } from "./support";
 
@@ -142,8 +142,31 @@ export function compileJs(
   // named for them, so each set's JS is kept apart in one `dir`.
   flags: string[] = [],
 ): { js: string } | CompileError {
+  const { cmd, js } = compileCommand(file, dir, edition, library, flags);
+  return compiled(runSync(cmd, root, compileTimeout, env), js);
+}
+
+/** `compileJs`, without blocking the others running: compiles of one
+ * `dir`, each named for its flags, run at once, its wrapper written once. */
+export async function compileJsAsync(
+  file: string,
+  dir: string,
+  edition = "2024",
+  library = false,
+  env: Record<string, string> = {},
+  flags: string[] = [],
+): Promise<{ js: string } | CompileError> {
+  const { cmd, js } = compileCommand(file, dir, edition, library, flags);
+  return compiled(await runAsync(cmd, root, compileTimeout, env), js);
+}
+
+/** How `file` is compiled into `dir`, and where its JS goes: its wrapper
+ * written, where it isn't already, so a compile that's reading it isn't
+ * given it emptied by another's write. */
+function compileCommand(file: string, dir: string, edition: string, library: boolean, flags: string[]): { cmd: string[]; js: string } {
   const wrapper = join(dir, "lib.rs");
-  writeFileSync(wrapper, `include!(${rustString(file)});\npub fn entry() {\n    main()\n}\n`);
+  const text = `include!(${rustString(file)});\npub fn entry() {\n    main()\n}\n`;
+  if (!existsSync(wrapper) || readFileSync(wrapper, "utf8") !== text) writeFileSync(wrapper, text);
   // As a library, as a crate another uses is (ADR 0100): in a folder of its own.
   // Of many, `--prepare-without` each of preparation's rewrites, a
   // name of a file's length, its end their hash.
@@ -152,7 +175,11 @@ export function compileJs(
   const name = flags.length === 0 ? "case" : `case-${short}`;
   const js = library ? join(dir, "library", `${name}.js`) : join(dir, `${name}.js`);
   const mode = library ? ["--library", "--manifest", join(dir, "library", `${name}.manifest.json`)] : [];
-  const p = runSync([compiler, wrapper, "-o", js, ...mode, ...flags, "--", `--edition=${edition}`, "-Awarnings", remapRoot], root, compileTimeout, env);
+  return { cmd: [compiler, wrapper, "-o", js, ...mode, ...flags, "--", `--edition=${edition}`, "-Awarnings", remapRoot], js };
+}
+
+/** A compile's JS, or how it failed. */
+function compiled(p: Exit, js: string): { js: string } | CompileError {
   if (p.code === 0 && !stopped(p, compileTimeout)) return { js };
   const { kind, reason } = compileFailure(p, compileTimeout);
   return { kind, reason, error: kind === "crashed" ? `rust-js crashed: ${reason}\n${p.stderr}` : p.stderr };

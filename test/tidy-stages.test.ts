@@ -18,11 +18,12 @@
 
 import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { availableParallelism } from "node:os";
 import { basename, join } from "node:path";
 
 import { cases, corpus, directives } from "./corpus-cases";
 import { generate, print, type Program } from "./generate";
-import { agree, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
+import { agree, compileJs, compileJsAsync, runJs, runNative, runtimes, show, type CompileError, type Run } from "./programs";
 import { reduce, size } from "./reduce";
 import { buildCompiler, caseShard, compiler, contentDirectory, fixture, run, target, writeWhole } from "./support";
 import { record, runKey, shared, verified } from "./verified-runs";
@@ -117,19 +118,73 @@ const leastDiffers: Record<string, string> = {};
 /** A compile's JS, its map's line left out: what's run, and kept by. */
 const code = (js: string) => readFileSync(js, "utf8").replace(/^\/\/# sourceMappingURL=.*$/m, "");
 
+type Compiled = { js: string } | CompileError;
+
+/** A case's compiles in this run, by its file, edition and flags: each
+ * made once, the control test's of the cases' (#808). */
+const compiles = new Map<string, Promise<Compiled>>();
+
+/** `file` compiled into `dir` with `flags`, or as it already was in this
+ * run, by the compiler this run built. */
+function compile(file: string, dir: string, edition: string, flags: string[]): Promise<Compiled> {
+  const key = [file, edition, ...flags].join("\0");
+  let made = compiles.get(key);
+  if (made === undefined) compiles.set(key, (made = compileJsAsync(file, dir, edition, false, {}, flags)));
+  return made;
+}
+
+/** `file`'s finished JS, and the rewrites of preparation's that changed
+ * it, as `--prepare-fired` writes them into `dir`. */
+const fullCompiles = new Map<string, Promise<{ compiled: Compiled; fired: string[] }>>();
+function compileFull(file: string, dir: string, edition: string): Promise<{ compiled: Compiled; fired: string[] }> {
+  const key = [file, edition].join("\0");
+  let made = fullCompiles.get(key);
+  if (made === undefined) {
+    const firedFile = join(dir, "fired.txt");
+    made = compileJsAsync(file, dir, edition, false, {}, ["--prepare-fired", firedFile]).then((compiled) => ({
+      compiled,
+      fired: "js" in compiled ? readFileSync(firedFile, "utf8").split("\n").filter(Boolean) : [],
+    }));
+    fullCompiles.set(key, made);
+  }
+  return made;
+}
+
+/** A case's folder in this run, one for its compiles, which the control
+ * test's are of: each JS named for its flags, so two differ by them alone. */
+const caseDirs = new Map<string, string>();
+function caseDir(name: string): string {
+  const stem = basename(name, ".rs");
+  let dir = caseDirs.get(stem);
+  if (dir === undefined) caseDirs.set(stem, (dir = fixture(`stages-${stem}`)));
+  return dir;
+}
+
+/** Each of `items` given to `f`, as many at once as there are cores. */
+async function eachAtOnce<T, U>(items: T[], f: (item: T) => Promise<U>): Promise<U[]> {
+  const results: U[] = new Array(items.length);
+  let next = 0;
+  const worker = async () => {
+    for (let at = next++; at < items.length; at = next++) results[at] = await f(items[at]);
+  };
+  await Promise.all(Array.from({ length: Math.min(availableParallelism(), items.length) }, worker));
+  return results;
+}
+
 /** How `file`'s variants differ from `native`, each a line or more, or
- * none: `final` is its finished JS's error, a variant's refusal its own. */
-function differences(file: string, dir: string, edition: string, native: Run, only?: string): string[] {
+ * none: `final` is its finished JS's error, a variant's refusal its own.
+ * Its variants are compiled at once, then run one after another. */
+async function differences(file: string, dir: string, edition: string, native: Run, only?: string): Promise<string[]> {
   const problems: string[] = [];
-  const firedFile = join(dir, "fired.txt");
-  const full = compileJs(file, dir, edition, false, {}, ["--prepare-fired", firedFile]);
+  const { compiled: full, fired } = await compileFull(file, dir, edition);
   if (!("js" in full)) return [`rust-js failed: ${full.error.split("\n").slice(0, 6).join("\n")}`];
-  const fired = readFileSync(firedFile, "utf8").split("\n").filter(Boolean);
   const finalEnd = stageEnds().at(-1);
   const least = variants([]).at(-1)!.name;
   const listed = leastDiffers[basename(file)];
-  for (const { name, flags } of variants(fired).filter((variant) => only === undefined || variant.name === only)) {
-    const compiled = compileJs(file, dir, edition, false, {}, flags);
+  const chosen = variants(fired).filter((variant) => only === undefined || variant.name === only);
+  const made = await eachAtOnce(chosen, ({ flags }) => compile(file, dir, edition, flags));
+  for (const [at, { name, flags }] of chosen.entries()) {
+    const compiled = made[at];
     if (!("js" in compiled)) {
       // What runs before tidy is the same at every stage, so a stage the
       // case is refused at, and the finished one isn't, is refused by a
@@ -176,29 +231,6 @@ test("a stage's end is the last of its passes", () => {
   expect(ends.some((end) => end.startsWith("again/"))).toBe(true);
 });
 
-// What's checked is each stage's JS, not the finished JS each time: tidy
-// stopped after its first stage leaves a body as no later stage does; and
-// so is preparation's without a rewrite it made.
-test("a case's JS after tidy's first stage isn't its JS after the last, nor without a rewrite that fired", () => {
-  buildCompiler();
-  const [first, ...rest] = stageEnds();
-  const dir = fixture("stages-control");
-  const at = (name: string, flags: string[]) => {
-    const compiled = compileJs(join(corpus, name), dir, "2024", false, {}, flags);
-    if (!("js" in compiled)) throw new Error(compiled.error);
-    // Its map is named for the stage, as its file is: the code's what's compared.
-    return code(compiled.js);
-  };
-  expect(at("conditional_regions.rs", ["--tidy-until", first])).not.toBe(at("conditional_regions.rs", ["--tidy-until", rest.at(-1)!]));
-  // Of a case whose rewrites are made in place, a block's, and where
-  // their conditions say, `undefined left out`'s.
-  const fired = join(dir, "fired.txt");
-  const full = at("interpreter.rs", ["--prepare-fired", fired]);
-  const each = readFileSync(fired, "utf8").split("\n").filter(Boolean);
-  expect(each).toEqual(expect.arrayContaining(["undefined left out", "elses after exits"]));
-  for (const pass of each) expect([pass, at("interpreter.rs", ["--prepare-without", pass])]).not.toEqual([pass, full]);
-});
-
 // A variant is made only of a rewrite that fired, so one that didn't must
 // leave the JS as it is: what `--prepare-fired` says is each that changed
 // anything, or a rewrite's variant would go unchecked.
@@ -235,32 +267,60 @@ for (const name of chosen.filter((name) => cases.includes(name))) {
   // What doesn't run as Rust does yet, or doesn't run, has no stage to
   // check; a malformed directive is the corpus's to report.
   if (typeof want === "string" || want.kind === "compile-fail" || want.kind === "ignore-rust-js") continue;
-  test(`${basename(name, ".rs")} after each of tidy's stages and without each of preparation's rewrites`, () => {
-    const dir = fixture(`stages-${basename(name, ".rs")}`);
+  test(`${basename(name, ".rs")} after each of tidy's stages and without each of preparation's rewrites`, async () => {
+    const dir = caseDir(name);
     const native = runNative(file, dir, want.edition, want.native);
     if (typeof native === "string") throw new Error(native);
-    expect(differences(file, dir, want.edition, native).join("\n\n")).toBe("");
+    expect((await differences(file, dir, want.edition, native)).join("\n\n")).toBe("");
   }, 600_000);
 }
+
+// What's checked is each stage's JS, not the finished JS each time: tidy
+// stopped after its first stage leaves a body as no later stage does; and
+// so is preparation's without a rewrite it made. After the cases, whose
+// compiles of these it reads, made once (#808).
+test("a case's JS after tidy's first stage isn't its JS after the last, nor without a rewrite that fired", async () => {
+  buildCompiler();
+  const [first, ...rest] = stageEnds();
+  const at = async (name: string, flags: string[]) => {
+    const compiled = await compile(join(corpus, name), caseDir(name), "2024", flags);
+    if (!("js" in compiled)) throw new Error(compiled.error);
+    // Its map is named for the stage, as its file is: the code's what's compared.
+    return code(compiled.js);
+  };
+  const [firstStage, lastStage] = await Promise.all([
+    at("conditional_regions.rs", ["--tidy-until", first]),
+    at("conditional_regions.rs", ["--tidy-until", rest.at(-1)!]),
+  ]);
+  expect(firstStage).not.toBe(lastStage);
+  // Of a case whose rewrites are made in place, a block's, and where
+  // their conditions say, `undefined left out`'s.
+  const { compiled, fired: each } = await compileFull(join(corpus, "interpreter.rs"), caseDir("interpreter.rs"), "2024");
+  if (!("js" in compiled)) throw new Error(compiled.error);
+  const full = code(compiled.js);
+  expect(each).toEqual(expect.arrayContaining(["undefined left out", "elses after exits"]));
+  const without = await eachAtOnce(each, (pass) => at("interpreter.rs", ["--prepare-without", pass]));
+  for (const [i, pass] of each.entries()) expect([pass, without[i]]).not.toEqual([pass, full]);
+});
 
 /** A generated program's first variant that differs from native Rust, if
  * any: `undefined` of one rustc rejects or rust-js refuses, which
  * `fuzz.test.ts` judges. */
-function programDiffers(program: Program, seed: number, only?: string): string | undefined {
+async function programDiffers(program: Program, seed: number, only?: string): Promise<string | undefined> {
   const dir = fixture(`stages-seed-${seed}`);
   const text = print(program, seed);
   const file = join(contentDirectory(text), "program.rs");
   writeWhole(file, text);
   const native = runNative(file, dir);
   if (typeof native === "string") return undefined;
-  const [problem] = differences(file, dir, "2024", native, only);
+  const [problem] = await differences(file, dir, "2024", native, only);
   return problem?.startsWith("rust-js failed") ? undefined : problem;
 }
 
 for (const seed of seeds) {
   test(`generated program ${seed} after each of tidy's stages and without each of preparation's rewrites`, async () => {
     const program = generate(seed);
-    const problem = programDiffers(program, seed);
+    const problem = await programDiffers(program, seed);
     if (problem === undefined) return;
     // As small as the same variant still differs, kept as it's found.
     const variant = problem.slice(0, problem.indexOf(":"));
@@ -269,7 +329,7 @@ for (const seed of seeds) {
     const repro = join(out, `seed-${seed}.stages.rs`);
     const keep = (p: Program) => writeFileSync(repro, print(p, seed));
     keep(program);
-    const { program: smallest } = await reduce(program, async (candidate) => programDiffers(candidate, seed, variant) !== undefined, {
+    const { program: smallest } = await reduce(program, async (candidate) => (await programDiffers(candidate, seed, variant)) !== undefined, {
       until: Date.now() + 300_000,
       kept: keep,
     });
