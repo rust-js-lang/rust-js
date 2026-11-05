@@ -179,7 +179,11 @@ function $holding(it, drop, moved) {
   // Its function and what drops with `f`, `ends`, in the order its fold
   // drops them, given to what it steps to drop as its fold ends; dropped
   // here as it's closed where that didn't, once.
+  // Held, as `$consume` holds what it folds, so what it steps closes as
+  // it's closed, after its function, not as it's stepped to its end, a
+  // `step_by`'s source's (#734).
   const moving = (by) => (init, f, unwind, ends) => {
+    holding.hold?.();
     const outer = once(ends);
     if (moved === "alone") return by(init, f, unwind, outer, own);
     const both = moved === "before" ? () => $closedAfter(own, outer) : () => $closedAfter(outer, own);
@@ -196,10 +200,16 @@ function $holding(it, drop, moved) {
       $closedAfter(ends, () => holding.return());
     }
   });
-  if (holding.rfold !== undefined) {
-    const rfold = holding.rfold;
-    holding.rfold = moving((init, f, unwind, ends) => rfold(init, f, unwind, ends));
-  }
+  // Its `rfold`, its own, or of what knows its back but no `rfold` of
+  // its own, an array's `map`, `$foldBack` of its back: moved as its fold
+  // is, as std's `Map::rfold` moves its function into its source's (#734).
+  const rfold =
+    holding.rfold ??
+    (holding.back === undefined
+      ? undefined
+      : (init, f, unwind, ends) =>
+          $foldBack({ back: () => holding.back(), return: () => holding.return() }, init, f, unwind, ends));
+  if (rfold !== undefined) holding.rfold = moving((init, f, unwind, ends) => rfold(init, f, unwind, ends));
   return holding;
 }
 

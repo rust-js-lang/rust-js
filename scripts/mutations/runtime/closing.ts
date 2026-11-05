@@ -250,4 +250,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
+  {
+    name: "holding-fold-unheld",
+    breaks: "an adapter's closure folded by value drops after what it steps, which closed itself as a `step_by()` stepped it to its end (#734)",
+    file: "src/runtime/closing.js",
+    find: "    holding.hold?.();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
+  },
+  {
+    name: "holding-rfold-of-its-back-missing",
+    breaks: "a `map()` of a `Vec`'s items folded from its back, which has no `rfold` of its own, drops its closure as it's closed, after what's left, where std's `Map::rfold` moves it into its source's (#734)",
+    file: "src/runtime/closing.js",
+    find: "    (holding.back === undefined\n",
+    replace: "    (true\n",
+    tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
+  },
 ];

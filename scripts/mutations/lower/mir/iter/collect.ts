@@ -770,4 +770,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(IterMethod::Fold | IterMethod::ForEach | IterMethod::Reduce)\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_closure_dropped_first.rs$"],
   },
+  {
+    name: "consumer-own-fold-excluded",
+    breaks: "a consumer's closure folded by value over what reaches the crate's own `fold`, a `take()` of it, drops after what's left, where std's `fold(self, init, f)` drops it first (#734)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        self.drops(f) != crate::lower::drops::Drops::Nothing\n            && (self.drops(iter_ty)",
+    replace: "        self.drops(f) != crate::lower::drops::Drops::Nothing\n            && !self.recognition().reaches_its_own(iter_ty, OwnStep::Fold, Reach::May)\n            && (self.drops(iter_ty)",
+    tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
+  },
 ];

@@ -148,16 +148,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its rest or itself, or whose fold moves a function an adapter holds
     /// (`folds_held_function`), the user's decision; and in std's compiled
     /// body, of the `F` it was given or a closure that carries its drop
-    /// (#710). Not where the crate's own `fold` is reached, which drops what
-    /// it's given itself. Its drop is the fold's `ends`, `$consume`'s, not
-    /// `dropped_given`'s after the call: the one answer of both.
+    /// (#710); where the crate's own `fold` is reached too, which is given
+    /// `ends` as its `F`'s drop (`fold_entry`, #734). Its drop is the fold's
+    /// `ends`, `$consume`'s, not `dropped_given`'s after the call: the one
+    /// answer of both.
     pub(in crate::lower) fn consumed_function(
         &self,
         method: Option<IterMethod>,
         iter_ty: Ty<'tcx>,
         f: Ty<'tcx>,
     ) -> bool {
-        let recognition = self.recognition();
         let by_value = matches!(
             method,
             Some(IterMethod::Fold | IterMethod::RFold | IterMethod::ForEach | IterMethod::Reduce)
@@ -169,7 +169,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.carries_its_drop(f) || self.given_drop(f).is_some();
         }
         self.drops(f) != crate::lower::drops::Drops::Nothing
-            && !recognition.reaches_its_own(iter_ty, OwnStep::Fold, Reach::May)
             && (self.drops(iter_ty) != crate::lower::drops::Drops::Nothing || self.folds_held_function(iter_ty))
     }
 

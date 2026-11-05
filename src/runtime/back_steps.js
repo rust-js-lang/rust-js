@@ -340,7 +340,8 @@ function $filterEnds(it, p, drop) {
   // Std's `Filter::fold`, `try_fold`, `rfold` and `try_rfold`, its source's
   // of each kept (#220, #625), the accumulator held as `$kept` says (#423,
   // #651); from the back, its source's own or std's default of its back,
-  // a compiled `Zip`'s say, `$foldBack`'s and `$tryRfoldOf`'s.
+  // a compiled `Zip`'s say, `$foldBack`'s and `$tryRfoldOf`'s; given
+  // what drops with `f`, `ends`, passed on (#734).
   const folding = (f, unwind) => (a, x) => ($kept(p, drop, x, undefined, a, unwind) ? f(a, x) : a);
   const back = it.back !== undefined;
   $forward(
@@ -349,7 +350,7 @@ function $filterEnds(it, p, drop) {
     {
       fold: "fold",
       tryFold: "tryFold",
-      rfold: back ? (init, f, unwind) => $foldBack(it, init, folding(f, unwind), unwind) : undefined,
+      rfold: back ? (init, f, unwind, ends) => $foldBack(it, init, folding(f, unwind), unwind, ends) : undefined,
       tryRfold: back ? (init, f, broke, unwind) => $tryRfoldOf(it, init, folding(f, unwind), broke, unwind) : undefined,
     },
     folding,

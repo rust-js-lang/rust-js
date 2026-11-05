@@ -535,25 +535,19 @@ function main() {
       }
       throw error;
     }
-    return $consume(
-      rev,
-      "rfold",
-      0,
-      (a, d) => {
-        try {
-          if (d[0] === "y") {
-            throw new Error("y");
-          }
-          return (((a + 1) >>> 0) + zero(g)) >>> 0;
-        } finally {
-          dDrop_drop(d);
+    function f(a, d) {
+      try {
+        if (d[0] === "y") {
+          throw new Error("y");
         }
-      },
-      undefined,
-      () => {
-        dDrop_drop(g);
-      },
-    );
+        return (((a + 1) >>> 0) + zero(g)) >>> 0;
+      } finally {
+        dDrop_drop(d);
+      }
+    }
+    return $consume(rev, "rfold", 0, f, undefined, () => {
+      dDrop_drop(g);
+    });
   });
   case$("a panic in reduce", (g) => {
     const iter = It.new(3, "it");

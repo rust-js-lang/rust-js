@@ -2648,7 +2648,11 @@ export function $holding(it, drop, moved) {
   // Its function and what drops with `f`, `ends`, in the order its fold
   // drops them, given to what it steps to drop as its fold ends; dropped
   // here as it's closed where that didn't, once.
+  // Held, as `$consume` holds what it folds, so what it steps closes as
+  // it's closed, after its function, not as it's stepped to its end, a
+  // `step_by`'s source's (#734).
   const moving = (by) => (init, f, unwind, ends) => {
+    holding.hold?.();
     const outer = once(ends);
     if (moved === "alone") return by(init, f, unwind, outer, own);
     const both = moved === "before" ? () => $closedAfter(own, outer) : () => $closedAfter(outer, own);
@@ -2665,10 +2669,16 @@ export function $holding(it, drop, moved) {
       $closedAfter(ends, () => holding.return());
     }
   });
-  if (holding.rfold !== undefined) {
-    const rfold = holding.rfold;
-    holding.rfold = moving((init, f, unwind, ends) => rfold(init, f, unwind, ends));
-  }
+  // Its `rfold`, its own, or of what knows its back but no `rfold` of
+  // its own, an array's `map`, `$foldBack` of its back: moved as its fold
+  // is, as std's `Map::rfold` moves its function into its source's (#734).
+  const rfold =
+    holding.rfold ??
+    (holding.back === undefined
+      ? undefined
+      : (init, f, unwind, ends) =>
+          $foldBack({ back: () => holding.back(), return: () => holding.return() }, init, f, unwind, ends));
+  if (rfold !== undefined) holding.rfold = moving((init, f, unwind, ends) => rfold(init, f, unwind, ends));
   return holding;
 }
 
@@ -3491,7 +3501,8 @@ export function $filterEnds(it, p, drop) {
   // Std's `Filter::fold`, `try_fold`, `rfold` and `try_rfold`, its source's
   // of each kept (#220, #625), the accumulator held as `$kept` says (#423,
   // #651); from the back, its source's own or std's default of its back,
-  // a compiled `Zip`'s say, `$foldBack`'s and `$tryRfoldOf`'s.
+  // a compiled `Zip`'s say, `$foldBack`'s and `$tryRfoldOf`'s; given
+  // what drops with `f`, `ends`, passed on (#734).
   const folding = (f, unwind) => (a, x) => ($kept(p, drop, x, undefined, a, unwind) ? f(a, x) : a);
   const back = it.back !== undefined;
   $forward(
@@ -3500,7 +3511,7 @@ export function $filterEnds(it, p, drop) {
     {
       fold: "fold",
       tryFold: "tryFold",
-      rfold: back ? (init, f, unwind) => $foldBack(it, init, folding(f, unwind), unwind) : undefined,
+      rfold: back ? (init, f, unwind, ends) => $foldBack(it, init, folding(f, unwind), unwind, ends) : undefined,
       tryRfold: back ? (init, f, broke, unwind) => $tryRfoldOf(it, init, folding(f, unwind), broke, unwind) : undefined,
     },
     folding,

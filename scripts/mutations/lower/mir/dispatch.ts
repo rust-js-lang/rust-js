@@ -1083,4 +1083,12 @@ export const mutations: Mutation[] = [
     replace: "            if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_closure_dropped_first.rs$"],
   },
+  {
+    name: "std-method-call-unasked",
+    breaks: "a call that resolves to a body compiled into `@rust-js/std` but is lowered as std's iterator method, a `Rev`'s `rfold`, drops nothing of the function it's given, a closure that holds what has a destructor, leaked (#754)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            || (self.tcx.trait_of_assoc(def_id).is_some() && self.std_iterator_call(def_id, generic_args, span)?);\n",
+    replace: "            || false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
+  },
 ];

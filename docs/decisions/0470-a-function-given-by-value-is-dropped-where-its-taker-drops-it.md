@@ -144,3 +144,56 @@ closure folded by value is dropped by $consume alone". The mutations are
 `skip-while-fold-ends-lost`, `iterator-rfold-ends-lost`,
 `consumed-function-never`, `consumed-rfold-not-by-value` and
 `consumed-function-dropped-after`.
+
+## Amendment: step 1b, each fold that moves a function drops it first (#734, #754)
+
+After step 1, the iterator tables still listed 197 of the matrix's cases
+and 953 of the conformance table's under #734, and #754's rfolds, where a
+closure a fold by value moves drops after what's left, or never. Four
+causes, each fixed where its owner is; the results change, so Rust's
+behavior is kept (ADR 0262):
+
+1. **A consumer over what reaches the crate's own `fold`.**
+   `consumed_function` left out an iterator whose fold may reach the
+   crate's own, `own.take(3).fold(0, f)` say, as that fold drops what
+   it's given itself; but `fold_entry` gives the crate's fold `ends` as
+   its `F`'s drop, so `$consume` drops it once there too. The exclusion
+   is gone.
+2. **A held function's fold of a source closed at its end.** `$holding`'s
+   fold, an adapter's closure moved into the fold it asks, didn't hold
+   what it steps, as `$consume` does: a `$closing` source closed itself
+   as it was stepped to its end, a `step_by()`'s by its `nth`, before
+   `ends`. It's held now, so what it steps closes as it's closed, after
+   the function. Each part is still closed in turn as it's done with
+   (ADR 1092's S9): a `$lazyChain` closes its first side itself.
+3. **A held function folded from the back.** `$holding` had an `rfold`
+   only where what it holds had one, and a `map()` of a `Vec`'s items,
+   `$mapEnds` of a JS iterator, has none: it was stepped by its back,
+   its function dropped as it was closed. It's `$foldBack` of its back
+   now, moved as its fold is, as std's `Map::rfold` moves its function
+   into its source's. And `$filterEnds`' `rfold` passes `ends` on.
+4. **A call compiled into `@rust-js/std` but lowered as std's method.**
+   `Rev::rfold` resolves to its body compiled into `@rust-js/std`, so
+   dispatch took it for a call whose callee drops the function it's
+   given; but the build that rewrites adapters lowers it as std's
+   iterator method, `$foldBack`, which drops nothing:
+   `(1..6u32).rev().rfold(0, f)` leaked `f`'s captures with no panic
+   (#754). `mir_call_values_given` asks `std_iterator_call`, the answer
+   the call's lowering asks, too.
+
+`test/corpus/folded_functions_drop_before_the_rest.rs` checks each, and a
+chain under a map that holds a closure, against native Rust in both
+builds. The mutations are `consumer-own-fold-excluded`,
+`holding-fold-unheld`, `holding-rfold-of-its-back-missing`,
+`filter-ends-rfold-ends-lost` and `std-method-call-unasked`; step 1's
+`enumerate-fold-ends-lost` and `fold-back-ends-after`, which no shape
+reached then, are restored on the case. The tables' known list takes off
+1131 cases; #754 has none left.
+
+What the tables still list of it moves to the issues that own it, and
+#734 has none left: a `chain`'s first side whose fold panics, closed after
+the closure where std drops it first (#757, the one-`Chain` work); a
+`skip_while`'s predicate that panics before it reaches its source's fold,
+where std's `SkipWhile::fold` and `try_fold` drop their `fold` before
+`init`, their parameters, and `try_fold` takes no `ends` (#768); and a
+map's function as a drop panics (#762).

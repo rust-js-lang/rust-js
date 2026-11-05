@@ -755,7 +755,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
-        let given = match self.is_std_call(def_id, generic_args)? {
+        // Std's, or one lowered as std's iterator method, though it resolves
+        // to a body compiled into `@rust-js/std`, a `Rev`'s `rfold` the
+        // build that rewrites adapters steps as `$foldBack` (#754).
+        let std = self.is_std_call(def_id, generic_args)?
+            || (self.tcx.trait_of_assoc(def_id).is_some() && self.std_iterator_call(def_id, generic_args, span)?);
+        let given = match std {
             true => {
                 let known = self.known_trait_call(def_id, generic_args);
                 self.given_unused(known, (arg_tys, output), span)?
