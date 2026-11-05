@@ -94,7 +94,9 @@ for (const [name, input, crates] of cases) {
 // The playground's own bindings declare JS types as a program does, and a
 // program is stable Rust (ADRs 0110, 0111): a JS type is a struct of a
 // `JsObject`, not an extern type, a nightly feature. So it compiles with no
-// `RUSTC_BOOTSTRAP`, as a user's does.
+// `RUSTC_BOOTSTRAP`, as a user's does. Its compile is the playground
+// snapshot's, which took 5.1 s in the wasm job: past bun's 5 s, it was
+// killed (#606), so it's given the snapshots' time.
 test("the playground's own Rust is stable Rust", () => {
   const { RUSTC_BOOTSTRAP: _, ...env } = process.env;
   const flags = ["--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`,
@@ -106,4 +108,4 @@ test("the playground's own Rust is stable Rust", () => {
   // And it's clean under rustc's defaults, no `#[allow]` written for
   // rust-js's sake (AGENTS.md, ADRs 0439, 0440).
   expect(p.stderr.toString()).not.toContain("warning");
-});
+}, 120_000);
