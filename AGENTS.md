@@ -196,7 +196,11 @@ run with other settings. Other workflows are
 [started by hand](DEVELOPMENT.md#workflows).
 
 **Keep the loop fast.** A slow step is paid on every change, by every
-agent. Check with `bun run check:fast`, whose timings warn when a step is
+agent. **Use every CPU core for every piece of work**: tests, the corpus,
+mutations, builds, and your own scripts, bisects and probes run in parallel
+parts sized to the free cores, never one process at a time
+([how](DEVELOPMENT.md#keeping-the-loop-fast)). Where work still runs serially
+and could be split, split it or list it as a slow spot. Check with `bun run check:fast`, whose timings warn when a step is
 slower than its usual, and read [DEVELOPMENT.md](DEVELOPMENT.md#keeping-the-loop-fast)
 before long work. When something is slower than it needs to be, fix it,
 or add it to that page's list of slow spots with its cost and what would

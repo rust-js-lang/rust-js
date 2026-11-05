@@ -349,6 +349,27 @@ The loop is part of the product: a slow step is paid on every change, by
 every agent at once. Noticing one and making it faster is everyone's job,
 as a wrong answer is.
 
+- **Every step runs on all the machine's cores.** The Macs here have 8 to
+  12 cores, and an agent's time is mostly waiting on a step, so a step
+  that runs on one core while the rest sit idle is wasted development time.
+  Every way of running work here has a parallel form; use it:
+  - the corpus and any file of cases: in parts, `RUST_JS_CASES=i/n` each,
+    as `check:fast` runs them (`caseParts`), with `BLESS=1` per part when
+    blessing, never one process of the whole file;
+  - test files: `bun test --parallel`, or `check:fast`, which runs them at
+    once;
+  - mutations: `--jobs=N` workers and `--tests=N` (`scripts/mutations.ts`);
+  - builds: a workspace whole, with `--package` as often as needed (below);
+  - your own scripts and investigations, such as a bisect, a probe over many
+    cases or a sweep of seeds: in parallel processes (`xargs -P`, a `Promise.all` of
+    `Bun.spawn`s), never a loop of one at a time.
+  
+  Size the parts to the cores left free (`uptime`'s load against
+  `sysctl -n hw.ncpu`), so several agents don't oversubscribe the machine
+  (see "Run few agents at once" below). Where work still runs on one core
+  and could be split, split it: give the tool a parallel form, or add it to
+  the slow spots below with its cost and what would split it. A step is
+  done when it uses the machine, not only when it passes.
 - **Use the loop's own tools, so its timings see you.** `bun run
   check:fast` is the change's checks at once, timed against their usual;
   hand-rolled runs (a corpus shard in the background, a build then a test)
