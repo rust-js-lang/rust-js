@@ -36,7 +36,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let entry = self.spill(
                     "entry",
                     Expr {
-                        facts: js::Facts::NONE,
+                        facts: crate::lower::iterators::its_facts(entry.facts),
                         kind,
                         span: entry.span,
                     },

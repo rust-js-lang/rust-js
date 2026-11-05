@@ -318,7 +318,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             Expr::member(this.spill("value", *object, out), &field)
                         }
                         kind => Expr {
-                            facts: js::Facts::NONE,
+                            facts: crate::lower::iterators::its_facts(place.facts),
                             kind,
                             span: place.span,
                         },

@@ -143,3 +143,17 @@ test("the iterator matrix's slice runs of each module that owns a rule of iterat
   expect(iteratorPaths.filter((path) => !tracked.some((file) => new Bun.Glob(path).match(file)))).toEqual([]);
   expect(touchesIterators(["src/lower/jsx.rs", "docs/guide/README.md"])).toBe(false);
 });
+
+// An expression rebuilt of its own kind keeps what its maker marked it,
+// `facts: its_facts(e.facts)` (lower/iterators/value.rs): the iterator
+// value's marks are the one way a reader past its maker knows what it is
+// (ADR 1092, amended). `iterated`, `from_iterator` and tidy's `unarrayed`
+// rebuilt a range stepped from its end with `Facts::NONE`, and a `for` over
+// `(a..b).rev()` stopped counting down (#730).
+test("an expression rebuilt of its own kind keeps its value's marks", () => {
+  const rebuilt = /Expr \{\s*facts:\s*(?:js::)?Facts::NONE,\s*kind,/;
+  const dropping = ["src/lower.rs", ...files("src/lower")]
+    .filter((file) => file.endsWith(".rs") && rebuilt.test(read(file)));
+  expect(dropping).toEqual([]);
+});
+
