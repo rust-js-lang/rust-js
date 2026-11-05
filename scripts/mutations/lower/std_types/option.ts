@@ -470,4 +470,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^option_iter_count_in_a_tuple.rs$"],
     snapshots: true,
   },
+  {
+    name: "option-insert-value-after-drop",
+    breaks: "`Option::insert` reads its value in place after it drops the old one, so `slot.insert(made(5))` prints `drop 1` before `made 5` where nothing else flushes it (#765)",
+    file: "src/lower/std_types/option.rs",
+    find: "            (OptionPlaceOp::Insert, Some(_)) if !value.reads_same() => self.spill(\"value\", value, out),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^option_insert_makes_its_value_first.rs$"],
+  },
 ];

@@ -28,10 +28,11 @@ function kept(slot, value, dropT) {
 }
 
 function putIter(slot, items, dropIItem, dropIIntoIter) {
+  const value = $intoIter(items);
   if (slot.value != null) {
     dropIIntoIter?.($someValue(slot.value));
   }
-  slot.value = $some($intoIter(items));
+  slot.value = $some(value);
   return $lent($someValue(slot.value)).reduce((n, item) => {
     dropIItem?.(item);
     return n + 1;

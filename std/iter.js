@@ -204,9 +204,9 @@ export const FlattenCompat = {
           throw error;
         }
         if (tmp$1.TAG === "Continue") {
-          const value = tmp$1._0;
+          const value$1 = tmp$1._0;
           tmp = true;
-          acc = value;
+          acc = value$1;
         } else {
           try {
             result = RTry.FromResidual().fromResidual(tmp$1._0);
@@ -239,11 +239,13 @@ export const FlattenCompat = {
                 flattenCompat.iter,
                 acc,
                 (acc, iter) => {
+                  let value;
                   try {
+                    value = IItemIntoIterator.intoIter(iter);
                     if (flattenCompat.frontiter != null) {
                       IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.frontiter));
                     }
-                    flattenCompat.frontiter = $some(IItemIntoIterator.intoIter(iter));
+                    flattenCompat.frontiter = $some(value);
                   } catch (error) {
                     dropAcc?.(acc);
                     throw error;
@@ -262,11 +264,13 @@ export const FlattenCompat = {
                 flattenCompat.iter,
                 acc,
                 (acc, iter) => {
+                  let value;
                   try {
+                    value = IItemIntoIterator.intoIter(iter);
                     if (flattenCompat.frontiter != null) {
                       IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.frontiter));
                     }
-                    flattenCompat.frontiter = $some(IItemIntoIterator.intoIter(iter));
+                    flattenCompat.frontiter = $some(value);
                   } catch (error) {
                     dropAcc?.(acc);
                     throw error;
@@ -287,9 +291,9 @@ export const FlattenCompat = {
         throw error;
       }
       if (tmp$1.TAG === "Continue") {
-        const value$1 = tmp$1._0;
+        const value = tmp$1._0;
         tmp = true;
-        acc = value$1;
+        acc = value;
         try {
           if (flattenCompat.frontiter != null) {
             dropU?.($someValue(flattenCompat.frontiter));
@@ -487,9 +491,9 @@ export const FlattenCompat = {
           throw error;
         }
         if (tmp$1.TAG === "Continue") {
-          const value = tmp$1._0;
+          const value$1 = tmp$1._0;
           tmp = true;
-          acc = value;
+          acc = value$1;
         } else {
           try {
             result = RTry.FromResidual().fromResidual(tmp$1._0);
@@ -522,11 +526,13 @@ export const FlattenCompat = {
                 flattenCompat.iter,
                 acc,
                 (acc, iter) => {
+                  let value;
                   try {
+                    value = IItemIntoIterator.intoIter(iter);
                     if (flattenCompat.backiter != null) {
                       IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.backiter));
                     }
-                    flattenCompat.backiter = $some(IItemIntoIterator.intoIter(iter));
+                    flattenCompat.backiter = $some(value);
                   } catch (error) {
                     dropAcc?.(acc);
                     throw error;
@@ -546,11 +552,13 @@ export const FlattenCompat = {
                 flattenCompat.iter,
                 acc,
                 (acc, iter) => {
+                  let value;
                   try {
+                    value = IItemIntoIterator.intoIter(iter);
                     if (flattenCompat.backiter != null) {
                       IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.backiter));
                     }
-                    flattenCompat.backiter = $some(IItemIntoIterator.intoIter(iter));
+                    flattenCompat.backiter = $some(value);
                   } catch (error) {
                     dropAcc?.(acc);
                     throw error;
@@ -572,9 +580,9 @@ export const FlattenCompat = {
         throw error;
       }
       if (tmp$1.TAG === "Continue") {
-        const value$1 = tmp$1._0;
+        const value = tmp$1._0;
         tmp = true;
-        acc = value$1;
+        acc = value;
         try {
           if (flattenCompat.backiter != null) {
             dropU?.($someValue(flattenCompat.backiter));

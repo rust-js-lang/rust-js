@@ -515,7 +515,10 @@ iterator of them drops each before the last as the next comes,
 `push_front`, `pop_front`, `insert` and `remove` move its items too; and an
 `Option`'s `take`, `replace` and `take_if` move what it holds out, or in,
 its old value given back (`option_destructors`); `insert` drops the old
-one before it puts the new one in, and `get_or_insert` the one it's given
+one before it puts the new one in, the new one made first, `const value =
+made(5);`, as Rust evaluates the argument before the call, where it was
+read in place past the drop (#765, `option_insert_makes_its_value_first`,
+mutation `option-insert-value-after-drop`), and `get_or_insert` the one it's given
 where it holds one, as Rust's does. A `BinaryHeap`'s `push`, `pop`,
 `append`, `from`, `into_sorted_vec` and `drain` move its items too, and
 its `retain` drops each it doesn't keep as it's met, as std's `Vec::retain`

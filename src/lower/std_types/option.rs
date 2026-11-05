@@ -893,6 +893,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => None,
         };
         let dropped = dropped.map(|call| vec![StmtKind::Expr(call).at(js_span)]);
+        // `insert`'s value made first, as Rust evaluates the argument before
+        // the call drops the old one, `const value = made(5);`: what makes
+        // it may print, panic or read what the drop changes (#765).
+        let value = match (op, &dropped) {
+            (OptionPlaceOp::Insert, Some(_)) if !value.reads_same() => self.spill("value", value, out),
+            _ => value,
+        };
         let present = Expr::bin(Op::LooseNe, place.clone(), Expr::null());
         let assign = StmtKind::Assign(place.clone(), self.inserted(value, item)).at(js_span);
         match (op, dropped) {
