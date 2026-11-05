@@ -61,6 +61,12 @@ function initializeReplaced(chunk, fail) {
     chunk.status = "fulfilled";
     chunk.value = 7;
   } catch (thrown) {
+    const old =
+      chunk.status === "pending" || chunk.status === "fulfilled"
+        ? { status: chunk.status, value: chunk.value }
+        : chunk.status === "rejected"
+          ? { status: chunk.status, reason: chunk.reason }
+          : { status: chunk.status, message: chunk.message };
     const error = $unwound(thrown);
     const message$1 = message(error);
     chunk.status = "failed";

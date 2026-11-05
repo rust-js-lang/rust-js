@@ -701,3 +701,23 @@ each field's panic caught. Mutations `in-place-fields-set-before-computed`
 (`mir/tidy/values.ts`). `bun scripts/react-in-rust.ts regen
 react-client` gives the pin's `initializeModelChunk` again, and
 `initializeModuleChunk`'s field held before its tag is set.
+
+## Amended (2026-11-05, #786): a `RefCell::replace` whose cell is in a variable copies too
+
+`chunk.state.replace(ChunkState::Initialized { value: handler.value.get(),
+.. })` gave back `const old = chunk`, the object the new value's sets
+then changed: `matches!(old, ChunkState::Resolved { .. })` was `false`
+where Rust's is `true`. The call in the new value runs after `&chunk.state`
+is taken, so MIR holds the cell in a variable, and `replace` reached the
+cell's general arm, which took a `RefCell`'s moved-out value as its place,
+"never one" of a state's object. **A `RefCell`'s or a thread-local's value
+moved out is `moved_out_of_cell`'s**: a flattened state's a copy of its
+variant's keys, any other value as it is. Since 73f7c0e20 (#658, #659),
+whose in-place arm copies where the cell is a handle at the call; a gap,
+not a regression of a form that worked.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's value is kept; P0. Held by corpus
+`flattened_state_replaced_after_a_call`, against native Rust in both
+builds. Mutation `ref-cell-replace-of-a-held-state-aliased`
+(`std_types/cell.ts`).

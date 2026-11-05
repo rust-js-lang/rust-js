@@ -994,4 +994,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cell_taken_default_first.rs$"],
   },
+  {
+    name: "ref-cell-replace-of-a-held-state-aliased",
+    breaks: "a flattened state's `RefCell::replace` whose cell MIR holds in a variable gives back the object itself, which the new value's sets change, not a copy of its old variant's keys (#786)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                    true => self.moved_out_of_cell(place.clone(), item),\n",
+    replace: "                    true => place.clone(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_replaced_after_a_call.rs$"],
+  },
 ];

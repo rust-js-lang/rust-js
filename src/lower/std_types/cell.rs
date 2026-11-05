@@ -420,9 +420,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // in-place cell, `Cell::from_mut`'s, writes into the same
                 // object (`moved_out`), and a `&mut` to a flattened state, its
                 // class's object's keys, `Cell::from_mut(&mut *state)` (#659).
-                // Not a `RefCell`'s, nor a thread-local's, which are never one.
+                // Of a `RefCell`'s, or a thread-local's, its value moved out
+                // of the cell: a flattened state's a copy of its variant's
+                // keys, as one a variable holds reaches here, which writing
+                // the object changes (`moved_out_of_cell`, #786).
                 let moved = match of_key || self.is_std_type(held, StdItem::RefCell) {
-                    true => place.clone(),
+                    true => self.moved_out_of_cell(place.clone(), item),
                     false => self.moved_out(place.clone(), item),
                 };
                 let old = self.spill("old", moved, out);
