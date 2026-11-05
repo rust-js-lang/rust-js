@@ -162,10 +162,9 @@ function $holding(it, drop, moved) {
       drop();
     }
   };
-  const holding = $closing(it, (it) => {
-    it.return();
-    own();
-  });
+  // What it steps, then its function, though the first's drop throws, a
+  // panic, as `Map`'s drop glue drops `iter`, then `f` (#762).
+  const holding = $closing(it, (it) => $inTurn(() => it.return(), own));
   if (moved === undefined) return holding;
   const once = (ends) => {
     let done = false;

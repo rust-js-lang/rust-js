@@ -231,7 +231,9 @@ throws, as drop glue goes on unwinding:
 
 `$holding` closes what it steps, then its function (ADRs 0485, 0991).
 `$flattenEnds` closes its source, then both inners (#705). `$lazyZip`
-closes `a`, then `b`.
+closes `a`, then `b`. Each goes on past a part's throw by one owner,
+`$inTurn` (`$closeEach` of iterators), as do `$lazyChain`'s, `$trustedZip`'s,
+`$flatMap`'s and a comparison's two (ADR 0465's #743 amendment).
 
 Rust aborts on a panic raised while unwinding. JS can't abort. A drop that
 panics during another's unwind goes on in JS, and the first error
@@ -307,7 +309,7 @@ implementations disagree:
 | `Take` | `$Steps.take`, `$taking` |
 | `Map` | `$Steps.map`, `$mapEnds` |
 | `Filter` | `$Steps.filter`, `$filterEnds`, `$filterDropping` |
-| `Chain` | `$lazyChain`, `$chainEnds` |
+| `Chain` | `$lazyChain` alone since #739, which knows its back where both sides do (ADR 0545's #739 amendment); `test/architecture-iterators.test.ts` refuses a second |
 | `Flatten`, `FlatMap` | `$Steps.flatMap`, `$flatMap`, `$flattenEnds` |
 | `StepBy` | `$stepBy`, `$stepByEnds` |
 | `Zip` | `$lazyZip`, `$trustedZip` |

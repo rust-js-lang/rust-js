@@ -10,11 +10,11 @@ import {
   mapDoubleEndedIterator_tryRfold,
 } from "@rust-js/std/iter.js";
 import {
-  $chainEnds,
   $filterEnds,
   $iter,
   $iterator,
   $knowing,
+  $lazyChain,
   $next,
   $nextBack,
   $rev,
@@ -58,7 +58,7 @@ function filtered() {
 }
 function main() {
   console.log(
-    `[${Array.from($rev($chainEnds($iterator({ n: 3 }, downIterator_next, false, downDoubleEndedIterator_nextBack), $iter([7, 8])))).join(", ")}]`,
+    `[${Array.from($rev($lazyChain($iterator({ n: 3 }, downIterator_next, false, downDoubleEndedIterator_nextBack), $iter([7, 8])))).join(", ")}]`,
   );
   console.log(
     `[${Array.from(

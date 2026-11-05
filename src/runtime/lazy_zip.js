@@ -11,10 +11,8 @@ function $lazyZip(a, b, dropA) {
   const right = $stepsOf(b);
   left.hold?.();
   right.hold?.();
-  const close = () => {
-    left.return?.();
-    right.return?.();
-  };
+  // `a` then `b`, the second though the first's drop throws (#743).
+  const close = () => $closeEach(left, right);
   const zipped = new $Steps(() => {
     const item = left.next();
     if (item.done) return item;
@@ -60,10 +58,7 @@ function $trustedZip(a, b) {
       if (item.done) return item;
       return { done: false, value: [item.value, b.next().value] };
     },
-    () => {
-      left.return?.();
-      b.return?.();
-    },
+    () => $closeEach(left, b),
   );
   zipped.from = [left, b];
   return zipped;

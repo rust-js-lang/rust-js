@@ -22,8 +22,16 @@ export const mutations: Mutation[] = [
     name: "iter-cmp-left-open",
     breaks: "`cmp` never drops what either iterator has left, `iter_compare` not closing what it took (#242)",
     file: "src/runtime/iter_cmp.js",
-    find: "  } finally {\n    y.return?.();\n    x.return?.();\n  }\n",
-    replace: "  } finally {\n  }\n",
+    find: "    $closeEach(y, x);\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
+  },
+  {
+    name: "iter-cmp-close-stops-at-a-panic",
+    breaks: "`cmp` stops closing where its second iterator's drop panics, so the first's rest is never dropped (#743)",
+    file: "src/runtime/iter_cmp.js",
+    find: "    $closeEach(y, x);\n",
+    replace: "    y.return?.();\n    x.return?.();\n",
+    tests: ["test/corpus.test.ts", "-t", "^parts_close_past_a_panic.rs$"],
   },
 ];

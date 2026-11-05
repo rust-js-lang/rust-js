@@ -21,7 +21,7 @@ function $iterCmp(a, b, cmp) {
     if (stopped) return order;
     return y.next().done ? 0 : -1;
   } finally {
-    y.return?.();
-    x.return?.();
+    // The second though the first's drop throws (#743).
+    $closeEach(y, x);
   }
 }

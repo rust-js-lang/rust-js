@@ -22,9 +22,17 @@ export const mutations: Mutation[] = [
     name: "iter-eq-unclosed",
     breaks: "`eq` doesn't close what it compared once it ends, so what's left of either isn't dropped",
     file: "src/runtime/cmp_items.js",
-    find: "    y.return?.();\n    x.return?.();\n",
+    find: "    $closeEach(y, x);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+  },
+  {
+    name: "iter-eq-close-stops-at-a-panic",
+    breaks: "`eq` stops closing where its second iterator's drop panics, so the first's rest is never dropped (#743)",
+    file: "src/runtime/cmp_items.js",
+    find: "    $closeEach(y, x);\n",
+    replace: "    y.return?.();\n    x.return?.();\n",
+    tests: ["test/corpus.test.ts", "-t", "^parts_close_past_a_panic.rs$"],
   },
   {
     name: "iter-eq-by-next",

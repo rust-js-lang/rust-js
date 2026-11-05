@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "zip-other-unclosed",
     breaks: "`zip`'s other side isn't closed with it, so what it hasn't given isn't dropped",
     file: "src/runtime/lazy_zip.js",
-    find: "    right.return?.();\n",
-    replace: "",
+    find: "  const close = () => $closeEach(left, right);\n",
+    replace: "  const close = () => $closeEach(left);\n",
     tests: ["test/corpus.test.ts", "-t", "^(adapter_drops|zip_sides_dropped_with_it).rs$"],
   },
   {
@@ -89,5 +89,13 @@ export const mutations: Mutation[] = [
     find: "    } catch (error) {\n      dropA?.(item.value);\n      throw error;\n    }\n",
     replace: "    } catch (error) {\n      throw error;\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_second_side_panics.rs$"],
+  },
+  {
+    name: "zip-close-stops-at-a-panic",
+    breaks: "closing a zip stops where its first side's drop panics, so its second is never dropped (#743)",
+    file: "src/runtime/lazy_zip.js",
+    find: "  const close = () => $closeEach(left, right);\n",
+    replace: "  const close = () => {\n    left.return?.();\n    right.return?.();\n  };\n",
+    tests: ["test/corpus.test.ts", "-t", "^parts_close_past_a_panic.rs$"],
   },
 ];

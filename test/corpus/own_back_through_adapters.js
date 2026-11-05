@@ -13,7 +13,6 @@ import {
   mapDoubleEndedIterator_tryRfold,
 } from "@rust-js/std/iter.js";
 import {
-  $chainEnds,
   $closing,
   $enumerate,
   $exactLen,
@@ -23,6 +22,7 @@ import {
   $folded,
   $iterator,
   $knowing,
+  $lazyChain,
   $lent,
   $mapEnds,
   $next,
@@ -189,12 +189,12 @@ function main() {
   ).at(-1);
   console.log(`${last == null ? "None" : `Some(${last})`}`);
   console.log(
-    `${$rev($chainEnds($iterator(count(), countIterator_next, false, countDoubleEndedIterator_nextBack, undefined, countIterator_sizeHint, undefined, undefined, undefined, countDoubleEndedIterator_rfold, countDoubleEndedIterator_nthBack), $iterator(count(), countIterator_next, false, countDoubleEndedIterator_nextBack, undefined, countIterator_sizeHint, undefined, undefined, undefined, countDoubleEndedIterator_rfold, countDoubleEndedIterator_nthBack))).reduce((n) => n + 1, 0)}`,
+    `${$rev($lazyChain($iterator(count(), countIterator_next, false, countDoubleEndedIterator_nextBack, undefined, countIterator_sizeHint, undefined, undefined, undefined, countDoubleEndedIterator_rfold, countDoubleEndedIterator_nthBack), $iterator(count(), countIterator_next, false, countDoubleEndedIterator_nextBack, undefined, countIterator_sizeHint, undefined, undefined, undefined, countDoubleEndedIterator_rfold, countDoubleEndedIterator_nthBack))).reduce((n) => n + 1, 0)}`,
   );
   const second = $nth(
     $lent(
       $rev(
-        $chainEnds(
+        $lazyChain(
           $iterator(
             count(),
             countIterator_next,

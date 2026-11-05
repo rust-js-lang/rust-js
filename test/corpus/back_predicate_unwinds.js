@@ -15,7 +15,6 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $catchUnwind,
-  $chainEnds,
   $closing,
   $dropEach,
   $enumerate,
@@ -29,6 +28,7 @@ import {
   $iter,
   $iterator,
   $knowing,
+  $lazyChain,
   $lent,
   $next,
   $nextBack,
@@ -167,11 +167,9 @@ function main() {
   });
   second("chain rfind", (p) => {
     const chain = $held(
-      Iterator.from(
-        $chainEnds(
-          $closing($iter(ds()), $dropEach(dDrop_drop)),
-          $closing($iter([[4]]), $dropEach(dDrop_drop)),
-        ),
+      $lazyChain(
+        $closing($iter(ds()), $dropEach(dDrop_drop)),
+        $closing($iter([[4]]), $dropEach(dDrop_drop)),
       ),
     );
     let result;

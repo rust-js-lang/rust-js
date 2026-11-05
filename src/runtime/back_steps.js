@@ -151,68 +151,6 @@ function $mapEnds(it, f) {
   return map;
 }
 
-// A chain of two JS iterators that know their backs, `a.chain(b)`, which
-// knows its own, as Rust's `Chain` is double-ended where both are: `a`'s
-// then `b`'s from the front, `b`'s then `a`'s from the back, each let go of
-// once it's done, as std's clears it. Closing it closes both (ADR 0465).
-function $chainEnds(a, b) {
-  const done = { done: true, value: undefined };
-  const sides = { a, b };
-  // The first side let go of once it's done, as std's clears it; the
-  // second stepped on, as std's is.
-  const step = (first, second, by) => () => {
-    if (sides[first] !== undefined) {
-      const at = sides[first][by]();
-      if (!at.done) return at;
-      sides[first] = undefined;
-    }
-    return sides[second] === undefined ? done : sides[second][by]();
-  };
-  const chain = new $Steps(step("a", "b", "next"), () => {
-    sides.a?.return?.();
-    sides.b?.return?.();
-  });
-  chain.back = step("b", "a", "back");
-  // Std's `Chain::rfold` and `try_rfold`, `b`'s then `a`'s, and its
-  // `nth_back`, `b` stepped back past `n`, then `a`'s own `nth_back`, where
-  // they reach the crate's own (#220).
-  // What drops with `f`, `ends`, given to `a`'s alone, as `Chain::rfold`
-  // gives `b`'s `&mut f` and `a`'s `f` (#734).
-  const rfold = (init, f, unwind, ends) => {
-    let folded = init;
-    if (sides.b !== undefined) folded = $foldBack(sides.b, folded, f, unwind);
-    if (sides.a !== undefined) folded = $foldBack(sides.a, folded, f, unwind, ends);
-    return folded;
-  };
-  const tryRfold = (init, f, broke, unwind) => {
-    let folded = init;
-    if (sides.b !== undefined) {
-      folded = $tryRfoldOf(sides.b, folded, f, broke, unwind);
-      if (broke(folded)) return folded;
-      sides.b = undefined;
-    }
-    return sides.a === undefined ? folded : $tryRfoldOf(sides.a, folded, f, broke, unwind);
-  };
-  const nthBack = (n) => {
-    if (sides.b !== undefined) {
-      for (; n > 0; n--) if (sides.b.back().done) break;
-      if (n === 0) {
-        const at = sides.b.back();
-        if (!at.done) return at;
-      }
-      sides.b = undefined;
-    }
-    return sides.a === undefined ? done : sides.a.nthBack(n);
-  };
-  $forward(chain, a, {
-    rfold: a.rfold !== undefined || b.rfold !== undefined ? rfold : undefined,
-    tryRfold: a.tryRfold !== undefined || b.tryRfold !== undefined ? tryRfold : undefined,
-    nthBack: a.nthBack !== undefined ? nthBack : undefined,
-  });
-  chain.from = [a, b];
-  return chain;
-}
-
 // `it.step_by(step)`, as Rust's `StepBy` steps: its first item, then
 // each `step`th, a skip stopped by a `None`, which it gives, and stepped on
 // after, as std's `nth` is; each passed over dropped, `drop`, where items
@@ -501,17 +439,12 @@ function $flattenEnds(it, each) {
     inner[own] = undefined;
     held?.return?.();
   };
-  const close = () => {
-    try {
-      it.return?.();
-    } finally {
-      try {
-        taken("next");
-      } finally {
-        taken("back");
-      }
-    }
-  };
+  const close = () =>
+    $inTurn(
+      () => it.return?.(),
+      () => taken("next"),
+      () => taken("back"),
+    );
   const flat = new $Steps(step("next", "next", "back"), close);
   flat.back = step("back", "back", "next");
   flat.from = [it];

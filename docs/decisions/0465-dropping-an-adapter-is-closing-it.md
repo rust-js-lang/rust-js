@@ -2061,3 +2061,48 @@ answered, over the corpus with each build and both iterator tables whole
   adapter closed to drop what it holds: without them, what they answer
   fell through to the refusal removed here; it falls through to the
   struct's fields now, which drop the same.
+
+## Amendment: what drops many parts drops each in turn past a panic, by `$inTurn` (2026-11-05, #743, #762)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+Drop glue drops each field of a value in turn, and goes on to the next
+though an earlier one's drop panics (ADR 1092 S7). The runtime's closes
+of what holds many parts wrote `a.return(); b.return();` with no `finally`:
+a chain whose `a` held `D(3)`, whose drop panics, never dropped its `b`,
+and nor did a zip, `$lazyZip` and `$trustedZip` alike (#743); a `map()`
+whose function holds what drops, `$holding`, leaked that function where its
+source's drop panicked (#762); and `cmp` and `eq` of two iterators left the
+first undropped where the second's drop panicked. `$flattenEnds` and
+`$flatMap` went on, each by its own nested `finally`, and `$closedAfter`,
+what drops with a fold's `f` and then what's left, by its own.
+
+`$inTurn(...runs)` (`steps.js`) is the one answer now: it runs each, the
+next though one throws, and the first error goes on, as JS can't abort
+where Rust does on a second panic (S7). `$closeEach(...parts)` closes
+iterators so, in std's field order: `$lazyChain`'s `a` then `b`,
+`$lazyZip`'s and `$trustedZip`'s, and `$iterCmp`'s and `$iterEq`'s `other`
+then `self`. `$closedAfter`, `$flattenEnds`' close, `$flatMap`'s and
+`$holding`'s (its source, then its function, as `Map` drops `iter`, then
+`f`) are `$inTurn` of their parts. A chain's side whose fold panics is
+closed by its own fold as it unwinds, before what drops with `f`, as
+`a.fold(acc, &mut f)` drops `a` in its own frame; a close of it there
+too, tried, changed nothing in the corpus or the tables (#757).
+
+Kind: protocol gap (four implementers of `return()` didn't go on past a
+panic, where two others did, each by a hand-written `finally`). Area:
+iterators. Old, not bisected.
+
+`parts_close_past_a_panic.rs` checks a chain, a zip, a flatten, a chain
+made knowing its back, `cmp`, `eq` and a holding map, each dropped where a
+part's drop panics, against native Rust in both builds. Mutations:
+`in-turn-stops-at-a-throw` (`runtime/steps.ts`),
+`chain-close-stops-at-a-panic` and `chain-fold-side-closed-after-ends`
+(`runtime/lazy_chain.ts`), `zip-close-stops-at-a-panic`
+(`runtime/lazy_zip.ts`), `holding-close-stops-at-source-throw`
+(`runtime/closing.ts`), `iter-cmp-close-stops-at-a-panic` and
+`iter-eq-close-stops-at-a-panic`; `flatten-ends-close-stops-at-a-panic` and
+`flat-map-inner-kept-as-source-drop-throws` name their lines as they read
+now. `$Steps.flatMap`'s close, which drops its inner before its source, is
+left as it is: its items drop nothing (ADR 0510).

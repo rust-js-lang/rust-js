@@ -45,7 +45,7 @@ function $iterEq(a, b, eq, dropA, dropB, lengths) {
     dropB?.(q.value);
     return false;
   } finally {
-    y.return?.();
-    x.return?.();
+    // The second though the first's drop throws (#743).
+    $closeEach(y, x);
   }
 }

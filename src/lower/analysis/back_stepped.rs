@@ -133,7 +133,7 @@ pub(super) fn back_stepped<'tcx>(
                         // A chain of items with a destructor a `rev()` or
                         // generic code asks to be double-ended, which MIR
                         // holds in a variable to drop them before it's
-                        // asked: made `$chainEnds` where it's made, as no
+                        // asked: made knowing its back where it's made, as no
                         // form is left to read where it's stepped (#718).
                         if held == asked
                             && !given
@@ -267,7 +267,11 @@ fn back_stepped_adapter<'tcx>(
 /// `stepped`, the types stepped from their back, and each map or filter
 /// they step from its back in turn, their sources', through what steps
 /// from its back where its source does: made knowing its back where it's
-/// made, held in a variable or not, as what steps it asks (#218).
+/// made, held in a variable or not, as what steps it asks (#218). And a
+/// chain one steps, the one runtime `Chain`, which MIR may hold in a
+/// variable before its map is made, its sides made knowing theirs where
+/// it's made: a `map` of a chain of the crate's iterators folded from its
+/// back (#739).
 fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: HashSet<Ty<'tcx>>) -> HashSet<Ty<'tcx>> {
     let mut all = stepped.clone();
     for ty in stepped {
@@ -278,6 +282,7 @@ fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: HashSet<Ty<'tcx>>) -> 
                 || filter_mapped_source(tcx, held).is_some()
                 || copied_source(tcx, held).is_some()
                 || inspected_source(tcx, held).is_some()
+                || chained_sources(tcx, held).is_some()
             {
                 all.insert(tcx.erase_and_anonymize_regions(held));
             }

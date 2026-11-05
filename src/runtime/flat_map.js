@@ -30,18 +30,20 @@ function $flatMap(it, f) {
     },
     // Its inner iterator dropped though its source's drop throws, a panic,
     // as Rust's drop glue drops each field as it unwinds.
-    () => {
-      try {
-        if (!ended) {
-          ended = true;
-          it.return?.();
-        }
-      } finally {
-        const front = inner;
-        inner = undefined;
-        front?.return?.();
-      }
-    },
+    () =>
+      $inTurn(
+        () => {
+          if (!ended) {
+            ended = true;
+            it.return?.();
+          }
+        },
+        () => {
+          const front = inner;
+          inner = undefined;
+          front?.return?.();
+        },
+      ),
   );
   // Its `fold`, std's `FlattenCompat::fold`: the rest of the one it's in,
   // then its source's own fold of each one's, as `$Steps`' `flatMap` folds,

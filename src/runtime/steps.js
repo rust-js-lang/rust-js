@@ -232,10 +232,13 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
           inner = Iterator.from(f(step.value, i++));
         }
       },
-      () => {
-        inner?.return?.();
-        this.return();
-      },
+      // Its source, then the inner it's in, in `FlattenCompat`'s field
+      // order, the second though the first's drop throws (#743).
+      () =>
+        $inTurn(
+          () => this.return(),
+          () => inner?.return?.(),
+        ),
     );
     flat.from = [this];
     // Its source's by `&mut` of what drops with `g`, `ends`, which it drops
@@ -455,14 +458,37 @@ function $consumed(it, run, ends) {
 // `close()` after `ends`, what drops with a fold's `f`, where it's given:
 // as `fold(self, init, f)` drops `f`, then what's left of `self`, at its end
 // and as it unwinds, the second though the first throws, a destructor's
-// panic (#710).
+// panic (#710): `$inTurn`'s.
 function $closedAfter(ends, close) {
-  if (ends === undefined) return close();
-  try {
-    ends();
-  } finally {
-    close();
+  $inTurn(ends, close);
+}
+
+// Each of `runs` run in turn, the next though an earlier one throws, a
+// panic, as drop glue drops each field of what it drops though an earlier
+// field's drop unwinds; the first error goes on, as JS can't abort where
+// Rust does on a second panic (ADR 1092 S7, #743). One `undefined` is none.
+// The one answer of what a drop of many parts runs as one of them throws.
+function $inTurn(...runs) {
+  let failed = false;
+  let first;
+  for (const run of runs) {
+    try {
+      run?.();
+    } catch (error) {
+      if (!failed) {
+        failed = true;
+        first = error;
+      }
+    }
   }
+  if (failed) throw first;
+}
+
+// Each of `parts`, what an adapter holds, closed in turn, `return()`, in
+// std's field order, by `$inTurn`: a chain's `a` then `b`, a zip's `a` then
+// `b` (#743). One let go, `undefined`, is none.
+function $closeEach(...parts) {
+  $inTurn(...parts.map((part) => part && (() => part.return?.())));
 }
 
 // `ends`, what drops with a fold's `f`, run once however often it's asked:

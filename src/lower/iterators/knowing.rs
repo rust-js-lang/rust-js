@@ -148,7 +148,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A flatten the crate steps from its back, made knowing it,
         // `$flattenEnds`, and a chain a function gives behind an `impl`,
-        // `$chainEnds`.
+        // `$lazyChain` of sides made knowing theirs (#739).
         if crate::lower::recognition::flattened_source(self.tcx, ty).is_some()
             || crate::lower::recognition::chained_sources(self.tcx, ty).is_some() && self.stepped_from_its_back(ty)
         {
@@ -470,8 +470,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         // A chain made here, `$lazyChain(a, b)`: each made knowing its back,
-        // `$chainEnds` of them, which steps `b`'s then `a`'s from the back, as
-        // std's `Chain` does.
+        // and the one runtime `Chain` of them again, which then knows its
+        // own and steps `b`'s then `a`'s from the back, as std's `Chain`
+        // does (#739).
         if let Some((first, second)) = crate::lower::recognition::chained_sources(self.tcx, ty)
             && let js::ExprKind::Call(callee, args) = &value.kind
             && callee.helper_name() == Some("$lazyChain")
@@ -481,7 +482,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let b = stepped_value(b).unwrap_or_else(|| b.clone());
             let a = self.as_double_ended(a, first.peel_refs(), span)?;
             let b = self.as_double_ended(b, second, span)?;
-            return Ok(Expr::call_helper("$chainEnds", vec![a, b]));
+            return Ok(Expr::call_helper("$lazyChain", vec![a, b]));
         }
         // A map made here of one that knows its back, `src.map(f)`: its
         // source's items, each `f`'s, from either end, as Rust's `Map` steps

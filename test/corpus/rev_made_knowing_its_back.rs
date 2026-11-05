@@ -4,7 +4,7 @@
 // which passes its own `nth`, `fold` and `try_fold` on as std's `Rev` does;
 // of a range's map or filter, given a call's value before its `rfold`, what
 // steps it from its back, not its numbers reversed inward; and a chain of
-// items with a destructor, `$chainEnds` where it's made.
+// items with a destructor, made knowing its back where it's made.
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 struct D(u32);

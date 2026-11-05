@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     name: "flat-map-inner-closed-first",
     breaks: "`$flatMap` closes the inner iterator before its source, as JS's `flatMap` does, not as Rust drops a `FlatMap`",
     file: "src/runtime/flat_map.js",
-    find: "      try {\n        if (!ended) {\n          ended = true;\n          it.return?.();\n",
-    replace: "      inner?.return?.();\n      try {\n        if (!ended) {\n          ended = true;\n          it.return?.();\n",
+    find: "      $inTurn(\n        () => {\n          if (!ended) {\n",
+    replace: "      $inTurn(\n        () => inner?.return?.(),\n        () => {\n          if (!ended) {\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_drops.rs$"],
   },
   {
@@ -55,8 +55,8 @@ export const mutations: Mutation[] = [
     name: "flat-map-inner-kept-as-source-drop-throws",
     breaks: "`$flatMap`'s inner iterator isn't dropped where its source's drop panics, where Rust's drop glue drops each field as it unwinds",
     file: "src/runtime/flat_map.js",
-    find: "      } finally {\n        const front = inner;\n        inner = undefined;\n        front?.return?.();\n      }\n",
-    replace: "      } finally {\n        inner = undefined;\n      }\n",
+    find: "        () => {\n          const front = inner;\n          inner = undefined;\n          front?.return?.();\n        },\n",
+    replace: "        () => {\n          inner = undefined;\n        },\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_closed_part_way_drops_source_first.rs$"],
   },
   {

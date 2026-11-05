@@ -929,7 +929,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         false => made,
                     };
                     // And an `inspect(f)`'s, made as a map, and a `filter_map(f)`'s (#473);
-                    // a chain's, `$chainEnds` (#718).
+                    // a chain's, `$lazyChain` of sides made knowing theirs (#718, #739).
                     let back_made = [
                         IterComb::Flatten,
                         IterComb::FlatMap,

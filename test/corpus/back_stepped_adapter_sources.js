@@ -14,7 +14,6 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $byteLen,
-  $chainEnds,
   $debugStr,
   $enumerate,
   $filterEnds,
@@ -24,6 +23,7 @@ import {
   $iter,
   $iterator,
   $knowing,
+  $lazyChain,
   $mapEnds,
   $next,
   $nextBack,
@@ -128,7 +128,7 @@ function main() {
   console.log(
     `${everyOther == null ? "None" : `Some(${everyOther})`} ${taken} ${skipped == null ? "None" : `Some(${skipped})`}`,
   );
-  const chained = $nextBack($mapEnds($chainEnds($iter(v), $iter(v)), (x) => (x * 2) | 0));
+  const chained = $nextBack($mapEnds($lazyChain($iter(v), $iter(v)), (x) => (x * 2) | 0));
   const fused = $nextBack(
     $filterEnds(
       $knowing(

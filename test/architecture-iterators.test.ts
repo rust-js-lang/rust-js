@@ -117,19 +117,17 @@ test("every runtime fold takes what drops with its f", () => {
 // parameters, `SkipWhile`'s, `Skip`'s, `StepBy`'s and a `take`'s back,
 // drops `f` before the accumulator as it unwinds (`$stepHolding`), so each
 // takes `ends` and passes it on where std moves `f` into its source's
-// (#768). One that took `(init, f, broke, unwind)` alone lost it. The
-// chain's are iterD's, merging `$chainEnds` into `$lazyChain`: the merged
-// `Chain` takes `ends` too, and leaves this list then.
+// (#768). One that took `(init, f, broke, unwind)` alone lost it; the one
+// runtime `Chain`'s gives `ends` to the side std moves `f` into (#739).
 test("every runtime tryFold takes what drops with its f", () => {
   const without = /\b(try(Fold|Rfold))\s*(=|:)\s*(\w+(\.\w+)?\s*(&&|\?)\s*)?\(+\s*init, \w+, broke, unwind\)\s*=>|^\s*try(Fold|Rfold)\(init, \w+, broke, unwind\)\s*\{|\(init, \w+, broke, unwind\) => try(Fold|Rfold)\(/m;
   expect(without.test("  const tryFold = (init, f, broke, unwind) => {")).toBe(true);
   expect(without.test("  tryFold(init, f, broke, unwind) {")).toBe(true);
   expect(without.test("  const tryFold = (init, f, broke, unwind, ends) => {")).toBe(false);
-  const chain = ["src/runtime/back_steps.js", "src/runtime/lazy_chain.js"];
   const lacking = files("src/runtime")
     .filter((file) => file.endsWith(".js"))
     .filter((file) => read(file).split("\n").some((line) => !line.trimStart().startsWith("//") && without.test(line)));
-  expect(lacking).toEqual(chain);
+  expect(lacking).toEqual([]);
 });
 
 // A by-value consumer's own function, where its drop is seen, is dropped by
@@ -178,3 +176,34 @@ test("an expression rebuilt of its own kind keeps its value's marks", () => {
   expect(dropping).toEqual([]);
 });
 
+// Std's `Chain` is `$lazyChain` alone, which knows its back where both sides
+// know theirs (ADR 0545's #739 amendment, the user's decision): a second,
+// `$chainEnds`, had std's back steps and not its front ones, and the two
+// disagreed (#739, #752). No runtime file declares another chain, and no
+// lowering writes one.
+test("std's Chain is $lazyChain alone", () => {
+  const chains = /^(?:function\*? |const |let |class )(\$\w*[Cc]hain\w*)\b/gm;
+  const declared = files("src/runtime")
+    .filter((file) => file.endsWith(".js"))
+    .flatMap((file) => [...read(file).matchAll(chains)].map((m) => m[1]));
+  expect(declared).toEqual(["$lazyChain"]);
+  const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
+  expect(lowering.filter((file) => /"\$\w*[Cc]hain\w*"/.test(read(file).replaceAll('"$lazyChain"', "")))).toEqual([]);
+});
+
+// What drops many parts drops each in turn, the next though one's drop
+// throws, by `$inTurn` alone (ADR 0465's #743 amendment): a close written
+// as one `return()` after another stopped at a panicking first part and
+// leaked the rest, a chain's `b`, a zip's, a holding map's function (#743,
+// #762).
+test("an adapter's parts are closed in turn by $inTurn alone", () => {
+  const closes = /\.return(\?\.)?\(\);?\s*$/;
+  const back = (lines: string[]) =>
+    lines.flatMap((line, i) => (i > 0 && closes.test(line) && closes.test(lines[i - 1]) ? [`${i}: ${lines[i - 1].trim()} ${line.trim()}`] : []));
+  expect(back(["    a.return?.();", "    b.return?.();"])).toHaveLength(1);
+  const by = files("src/runtime")
+    .filter((file) => file.endsWith(".js"))
+    .flatMap((file) => back(read(file).split("\n")).map((line) => `${file}:${line}`));
+  expect(by).toEqual([]);
+  expect(read("src/runtime/steps.js")).toContain("function $inTurn(...runs)");
+});

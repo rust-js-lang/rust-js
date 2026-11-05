@@ -1691,10 +1691,13 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
           inner = Iterator.from(f(step.value, i++));
         }
       },
-      () => {
-        inner?.return?.();
-        this.return();
-      },
+      // Its source, then the inner it's in, in `FlattenCompat`'s field
+      // order, the second though the first's drop throws (#743).
+      () =>
+        $inTurn(
+          () => this.return(),
+          () => inner?.return?.(),
+        ),
     );
     flat.from = [this];
     // Its source's by `&mut` of what drops with `g`, `ends`, which it drops
@@ -1914,14 +1917,37 @@ export function $consumed(it, run, ends) {
 // `close()` after `ends`, what drops with a fold's `f`, where it's given:
 // as `fold(self, init, f)` drops `f`, then what's left of `self`, at its end
 // and as it unwinds, the second though the first throws, a destructor's
-// panic (#710).
+// panic (#710): `$inTurn`'s.
 export function $closedAfter(ends, close) {
-  if (ends === undefined) return close();
-  try {
-    ends();
-  } finally {
-    close();
+  $inTurn(ends, close);
+}
+
+// Each of `runs` run in turn, the next though an earlier one throws, a
+// panic, as drop glue drops each field of what it drops though an earlier
+// field's drop unwinds; the first error goes on, as JS can't abort where
+// Rust does on a second panic (ADR 1092 S7, #743). One `undefined` is none.
+// The one answer of what a drop of many parts runs as one of them throws.
+export function $inTurn(...runs) {
+  let failed = false;
+  let first;
+  for (const run of runs) {
+    try {
+      run?.();
+    } catch (error) {
+      if (!failed) {
+        failed = true;
+        first = error;
+      }
+    }
   }
+  if (failed) throw first;
+}
+
+// Each of `parts`, what an adapter holds, closed in turn, `return()`, in
+// std's field order, by `$inTurn`: a chain's `a` then `b`, a zip's `a` then
+// `b` (#743). One let go, `undefined`, is none.
+export function $closeEach(...parts) {
+  $inTurn(...parts.map((part) => part && (() => part.return?.())));
 }
 
 // `ends`, what drops with a fold's `f`, run once however often it's asked:
@@ -2686,10 +2712,9 @@ export function $holding(it, drop, moved) {
       drop();
     }
   };
-  const holding = $closing(it, (it) => {
-    it.return();
-    own();
-  });
+  // What it steps, then its function, though the first's drop throws, a
+  // panic, as `Map`'s drop glue drops `iter`, then `f` (#762).
+  const holding = $closing(it, (it) => $inTurn(() => it.return(), own));
   if (moved === undefined) return holding;
   const once = (ends) => {
     let done = false;
@@ -3378,68 +3403,6 @@ export function $mapEnds(it, f) {
   return map;
 }
 
-// A chain of two JS iterators that know their backs, `a.chain(b)`, which
-// knows its own, as Rust's `Chain` is double-ended where both are: `a`'s
-// then `b`'s from the front, `b`'s then `a`'s from the back, each let go of
-// once it's done, as std's clears it. Closing it closes both (ADR 0465).
-export function $chainEnds(a, b) {
-  const done = { done: true, value: undefined };
-  const sides = { a, b };
-  // The first side let go of once it's done, as std's clears it; the
-  // second stepped on, as std's is.
-  const step = (first, second, by) => () => {
-    if (sides[first] !== undefined) {
-      const at = sides[first][by]();
-      if (!at.done) return at;
-      sides[first] = undefined;
-    }
-    return sides[second] === undefined ? done : sides[second][by]();
-  };
-  const chain = new $Steps(step("a", "b", "next"), () => {
-    sides.a?.return?.();
-    sides.b?.return?.();
-  });
-  chain.back = step("b", "a", "back");
-  // Std's `Chain::rfold` and `try_rfold`, `b`'s then `a`'s, and its
-  // `nth_back`, `b` stepped back past `n`, then `a`'s own `nth_back`, where
-  // they reach the crate's own (#220).
-  // What drops with `f`, `ends`, given to `a`'s alone, as `Chain::rfold`
-  // gives `b`'s `&mut f` and `a`'s `f` (#734).
-  const rfold = (init, f, unwind, ends) => {
-    let folded = init;
-    if (sides.b !== undefined) folded = $foldBack(sides.b, folded, f, unwind);
-    if (sides.a !== undefined) folded = $foldBack(sides.a, folded, f, unwind, ends);
-    return folded;
-  };
-  const tryRfold = (init, f, broke, unwind) => {
-    let folded = init;
-    if (sides.b !== undefined) {
-      folded = $tryRfoldOf(sides.b, folded, f, broke, unwind);
-      if (broke(folded)) return folded;
-      sides.b = undefined;
-    }
-    return sides.a === undefined ? folded : $tryRfoldOf(sides.a, folded, f, broke, unwind);
-  };
-  const nthBack = (n) => {
-    if (sides.b !== undefined) {
-      for (; n > 0; n--) if (sides.b.back().done) break;
-      if (n === 0) {
-        const at = sides.b.back();
-        if (!at.done) return at;
-      }
-      sides.b = undefined;
-    }
-    return sides.a === undefined ? done : sides.a.nthBack(n);
-  };
-  $forward(chain, a, {
-    rfold: a.rfold !== undefined || b.rfold !== undefined ? rfold : undefined,
-    tryRfold: a.tryRfold !== undefined || b.tryRfold !== undefined ? tryRfold : undefined,
-    nthBack: a.nthBack !== undefined ? nthBack : undefined,
-  });
-  chain.from = [a, b];
-  return chain;
-}
-
 // `it.step_by(step)`, as Rust's `StepBy` steps: its first item, then
 // each `step`th, a skip stopped by a `None`, which it gives, and stepped on
 // after, as std's `nth` is; each passed over dropped, `drop`, where items
@@ -3728,17 +3691,12 @@ export function $flattenEnds(it, each) {
     inner[own] = undefined;
     held?.return?.();
   };
-  const close = () => {
-    try {
-      it.return?.();
-    } finally {
-      try {
-        taken("next");
-      } finally {
-        taken("back");
-      }
-    }
-  };
+  const close = () =>
+    $inTurn(
+      () => it.return?.(),
+      () => taken("next"),
+      () => taken("back"),
+    );
   const flat = new $Steps(step("next", "next", "back"), close);
   flat.back = step("back", "back", "next");
   flat.from = [it];
@@ -4729,8 +4687,8 @@ export function $iterCmp(a, b, cmp) {
     if (stopped) return order;
     return y.next().done ? 0 : -1;
   } finally {
-    y.return?.();
-    x.return?.();
+    // The second though the first's drop throws (#743).
+    $closeEach(y, x);
   }
 }
 
@@ -12808,14 +12766,26 @@ export function $zip(a, b) {
   return Array.from({ length: Math.min(a.length, b.length) }, (_, i) => [a[i], b[i]]);
 }
 
-// `a.chain(b)`, lazy: each of `a`'s, then each of `b`'s; `a` closed once
-// it's done, as std's lets it go, and `b` stepped on after a `None`, as
-// std's is; each closed as it ends, which drops what each holds (ADR 0465).
-// Its fold, std's, `a`'s then `b`'s, which an iterator rust-js makes routes
-// through the crate's own (#162), and its `try_fold`, `a`'s then `b`'s.
+// `a.chain(b)`, lazy, Rust's `Chain`, the runtime's one (ADR 0545's #739
+// amendment): each of `a`'s, then each of `b`'s; `a` closed once it's done
+// from the front, as std's lets it go, and `b` stepped on after a `None`,
+// as std's is; each closed as it ends, which drops what each holds (ADR
+// 0465). Where both know their back, a chain the crate steps from its back
+// makes them so (`$knowing`, ADR 0545), it knows its own, as std's
+// `Chain` is double-ended where both are: `b`'s then `a`'s from the back,
+// `b` let go once it's done from there. Its steps are std's, each side's,
+// the crate's own where they reach it: from the front `fold`, `last`,
+// `nth`, `try_fold`, `count` and `advance_by` (#162), from the back
+// `rfold`, `try_rfold`, `nth_back` and `advance_back_by` (#220). Closing it
+// closes `a`, then `b`, the second though the first's drop throws, as drop
+// glue drops each field (`$closeEach`, #743).
 export function $lazyChain(a, b) {
+  const done = { done: true, value: undefined };
   let first = $stepsOf(a);
-  const second = $stepsOf(b);
+  let second = $stepsOf(b);
+  // The side that's done from where it's stepped let go, closed, as std's
+  // `and_then_or_clear` drops it; the other stepped on after a `None`, as
+  // std's is, closed there unless it's held, which its owner drops (#243).
   const chained = new $Steps(
     () => {
       if (first !== undefined) {
@@ -12824,20 +12794,20 @@ export function $lazyChain(a, b) {
         first.return?.();
         first = undefined;
       }
+      if (second === undefined) return done;
       const step = second.next();
-      // `b` done, never let go by std's, which its owner drops, held (#243).
       if (step.done && !chained.held) second.return?.();
       return step;
     },
-    () => {
-      first?.return?.();
-      second.return?.();
-    },
+    () => $closeEach(first, second),
   );
   // Closed though a fold throws, a panic, `b` with what's left of `a`, as
   // std's `Chain::fold` drops itself as it unwinds (#423).
   // What drops with `f`, `ends`, given to `b`'s fold alone, as
-  // `Chain::fold` gives `a`'s `&mut f` and `b`'s `f` (#734).
+  // `Chain::fold` gives `a`'s `&mut f` and `b`'s `f` (#734). Each side
+  // closed once its fold is done with it, as `a.fold(acc, &mut f)` takes
+  // `a`: never set aside unclosed, which a held side, `$consume`'s, needs
+  // (#757).
   const fold = (init, f, unwind, ends) =>
     $consumed(
       chained,
@@ -12847,6 +12817,10 @@ export function $lazyChain(a, b) {
           folded = $foldDropping(first, folded, f, unwind);
           first.return?.();
           first = undefined;
+        }
+        if (second === undefined) {
+          ends?.();
+          return folded;
         }
         folded = $foldDropping(second, folded, f, unwind, ends);
         $closedAfter(ends, () => second.return?.());
@@ -12859,8 +12833,9 @@ export function $lazyChain(a, b) {
   // `last(self)` drops what it holds as it unwinds (#647).
   const last = () =>
     $consumed(chained, () => {
-      const lastOf = (it) => (it.last !== undefined ? it.last() : $lent(it).last());
-      const a = first !== undefined ? lastOf(first) : { done: true, value: undefined };
+      const lastOf = (it) =>
+        it === undefined ? done : it.last !== undefined ? it.last() : $lent(it).last();
+      const a = lastOf(first);
       first = undefined;
       const b = lastOf(second);
       return b.done ? a : b;
@@ -12883,10 +12858,13 @@ export function $lazyChain(a, b) {
       first.return?.();
       first = undefined;
     }
+    if (second === undefined) return done;
     const dropping = second.dropItem ?? drop;
     return second.nth !== undefined ? second.nth(n, dropping) : $lent(second).nth(n, dropping);
   };
-  const tryFold = (init, f, broke, unwind) => {
+  // Std's `Chain::try_fold`: `a`'s by `&mut f`, let go once it's run out,
+  // then `b`'s, given `f` and so what drops with it, `ends` (#768).
+  const tryFold = (init, f, broke, unwind, ends) => {
     let folded = init;
     if (first !== undefined) {
       folded = $lent(first).tryFold(folded, f, broke, unwind);
@@ -12894,7 +12872,8 @@ export function $lazyChain(a, b) {
       first.return?.();
       first = undefined;
     }
-    folded = $lent(second).tryFold(folded, f, broke, unwind);
+    if (second === undefined) return folded;
+    folded = $lent(second).tryFold(folded, f, broke, unwind, ends);
     if (!broke(folded) && !chained.held) second.return?.();
     return folded;
   };
@@ -12909,7 +12888,7 @@ export function $lazyChain(a, b) {
         counted = $count(first, drop);
         first = undefined;
       }
-      return counted + $count(second, drop);
+      return second === undefined ? counted : counted + $count(second, drop);
     });
   // Std's `Chain::advance_by`: `a`'s, then `b`'s of what's left, `a` let
   // go once it's run out (#250), each given the items' drop its caller
@@ -12923,9 +12902,99 @@ export function $lazyChain(a, b) {
       first.return?.();
       first = undefined;
     }
-    return advanced(second, m, drop);
+    return second === undefined ? m : advanced(second, m, drop);
   };
   $forward(chained, first, { fold, last, nth, tryFold, count, advanceBy });
+  if (first.back !== undefined && second.back !== undefined) {
+    chained.back = () => {
+      if (second !== undefined) {
+        const step = second.back();
+        if (!step.done) return step;
+        second.return?.();
+        second = undefined;
+      }
+      if (first === undefined) return done;
+      const step = first.back();
+      if (step.done && !chained.held) first.return?.();
+      return step;
+    };
+    // Std's `Chain::rfold`: `b`'s, then `a`'s, closed though `b`'s throws,
+    // `a` with it, as `rfold(self)` drops itself as it unwinds; what drops
+    // with `f`, `ends`, given to `a`'s alone, as `Chain::rfold` gives `b`'s
+    // `&mut f` and `a`'s `f` (#734).
+    const rfold = (init, f, unwind, ends) =>
+      $consumed(
+        chained,
+        () => {
+          let folded = init;
+          if (second !== undefined) {
+            folded = $foldBack(second, folded, f, unwind);
+            second.return?.();
+            second = undefined;
+          }
+          if (first === undefined) {
+            ends?.();
+            return folded;
+          }
+          folded = $foldBack(first, folded, f, unwind, ends);
+          $closedAfter(ends, () => first.return?.());
+          first = undefined;
+          return folded;
+        },
+        ends,
+      );
+    // Std's `Chain::try_rfold`: `b`'s, let go once it's run out, then `a`'s,
+    // given `f` and so what drops with it, `ends` (#768).
+    const tryRfold = (init, f, broke, unwind, ends) => {
+      let folded = init;
+      if (second !== undefined) {
+        folded = $tryRfoldOf(second, folded, f, broke, unwind);
+        if (broke(folded)) return folded;
+        second.return?.();
+        second = undefined;
+      }
+      return first === undefined ? folded : $tryRfoldOf(first, folded, f, broke, unwind, ends);
+    };
+    // Std's `Chain::advance_back_by`: `b`'s, then `a`'s of what's left,
+    // `b` let go once it's run out; each its own, a `Vec`'s as one slice,
+    // else each `next_back` dropped by `drop` (#752).
+    const backBy = (it, m, drop) => {
+      if (it.advanceBackBy !== undefined) return it.advanceBackBy(m, it.dropItem ?? drop);
+      for (; m > 0; m--) {
+        const step = it.back();
+        if (step.done) break;
+        drop?.(step.value);
+      }
+      return m;
+    };
+    const advanceBackBy = (m, drop) => {
+      if (second !== undefined) {
+        m = backBy(second, m, drop);
+        if (m === 0) return 0;
+        second.return?.();
+        second = undefined;
+      }
+      return first === undefined ? m : backBy(first, m, drop);
+    };
+    // Std's `Chain::nth_back`: `b` advanced back past `n`, which drops what
+    // it passes, then its `next_back`; or what's left of `n` of `a`'s own
+    // `nth_back` (#752).
+    const nthBack = (n, drop) => {
+      if (second !== undefined) {
+        n = backBy(second, n, drop);
+        if (n === 0) {
+          const step = second.back();
+          if (!step.done) return step;
+        }
+        second.return?.();
+        second = undefined;
+      }
+      if (first === undefined) return done;
+      if (first.nthBack !== undefined) return first.nthBack(n, first.dropItem ?? drop);
+      return $nthBackOf(first, n, first.dropItem ?? drop);
+    };
+    $forward(chained, first, { rfold, tryRfold, advanceBackBy, nthBack });
+  }
   // Its `nth` drops what it passes over itself where each side's does, a
   // `Vec`'s (#250).
   // Its `count`, each side's, the crate's own where one writes it (#505).
@@ -12958,10 +13027,8 @@ export function $lazyZip(a, b, dropA) {
   const right = $stepsOf(b);
   left.hold?.();
   right.hold?.();
-  const close = () => {
-    left.return?.();
-    right.return?.();
-  };
+  // `a` then `b`, the second though the first's drop throws (#743).
+  const close = () => $closeEach(left, right);
   const zipped = new $Steps(() => {
     const item = left.next();
     if (item.done) return item;
@@ -13007,10 +13074,7 @@ export function $trustedZip(a, b) {
       if (item.done) return item;
       return { done: false, value: [item.value, b.next().value] };
     },
-    () => {
-      left.return?.();
-      b.return?.();
-    },
+    () => $closeEach(left, b),
   );
   zipped.from = [left, b];
   return zipped;
@@ -13072,18 +13136,20 @@ export function $flatMap(it, f) {
     },
     // Its inner iterator dropped though its source's drop throws, a panic,
     // as Rust's drop glue drops each field as it unwinds.
-    () => {
-      try {
-        if (!ended) {
-          ended = true;
-          it.return?.();
-        }
-      } finally {
-        const front = inner;
-        inner = undefined;
-        front?.return?.();
-      }
-    },
+    () =>
+      $inTurn(
+        () => {
+          if (!ended) {
+            ended = true;
+            it.return?.();
+          }
+        },
+        () => {
+          const front = inner;
+          inner = undefined;
+          front?.return?.();
+        },
+      ),
   );
   // Its `fold`, std's `FlattenCompat::fold`: the rest of the one it's in,
   // then its source's own fold of each one's, as `$Steps`' `flatMap` folds,
@@ -14239,8 +14305,8 @@ export function $iterEq(a, b, eq, dropA, dropB, lengths) {
     dropB?.(q.value);
     return false;
   } finally {
-    y.return?.();
-    x.return?.();
+    // The second though the first's drop throws (#743).
+    $closeEach(y, x);
   }
 }
 

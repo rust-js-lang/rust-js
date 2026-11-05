@@ -451,4 +451,12 @@ export const mutations: Mutation[] = [
     replace: "  return ends;\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
   },
+  {
+    name: "in-turn-stops-at-a-throw",
+    breaks: "what drops many parts in turn stops at the first whose drop panics, so a chain's or a zip's second side is never dropped (#743)",
+    file: "src/runtime/steps.js",
+    find: "    } catch (error) {\n      if (!failed) {\n",
+    replace: "    } catch (error) {\n      throw error;\n      if (!failed) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^parts_close_past_a_panic.rs$"],
+  },
 ];

@@ -489,3 +489,57 @@ survived on main, and both rules are gone with them. A flatten inside
 what's asked, a map's source, say, is still recorded with the rest
 (`back_stepped_adapter`). The corpus, as the crate builds it and with
 std's iterator structs, runs as before; no snapshot changed.
+
+## Amendment: one runtime `Chain`, which knows its back where both sides do (2026-11-05, #739, #752, the user's decision)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+A chain the crate steps from its back anywhere is made knowing its back
+wherever its type is made (#702, #718). It was `$chainEnds(a, b)`, a second
+runtime `Chain` beside `$lazyChain(a, b)`, and it had std's back steps alone:
+`rfold`, `try_rfold` and `nth_back`. So its front steps were `$Steps`'
+defaults. With `back()` in the crate stepping `Own(2).chain(vec![D(7)])`
+from its back, `Own(2).chain(vec![D(7)]).fold(..)`, `count()` and
+`for_each(..)` elsewhere never ran the crate's own `fold` or `count`, and
+the order of drops changed in `last` and `collect` (#739). Its `nth_back`
+stepped what it skipped of `b` by `back()` and dropped none of it, where
+std's `Chain::nth_back` is `b.advance_back_by(n)`, then `a.nth_back`
+(`core/src/iter/adapters/chain.rs`): `vec![D(1), D(2)].into_iter()
+.chain(vec![D(6), D(7)]).nth_back(1)` leaked `D(7)` (#752). Its `rfold`
+left `a` unclosed where `b`'s fold panicked. And its sides, done, were let
+go unclosed: folded by value with a closure that drops, `$consume` holds
+what it folds, so nothing closes itself at its end, and the crate's own
+iterator on side `a` was never dropped (#757, a regression of 1c23afa16).
+
+The user chose one `Chain` (2026-11-05). `$chainEnds` is gone, and
+`$lazyChain(a, b)` gains std's back steps where both sides know their back
+(`back`, `rfold`, `try_rfold`, `advance_back_by` and `nth_back`): `b`'s,
+then `a`'s, `b` let go and closed once it's done from the back, as
+`and_then_or_clear` drops it, `a` stepped on there unless it's held, as
+`b` is from the front (#243). Its `rfold` is `$consumed`, as its `fold`
+is, and gives `ends` to `a`'s fold alone, as `Chain::rfold` gives `a` its
+`f` (#734). Its `nth_back` and `advance_back_by` advance each side by its
+own `advance_back_by`, a `Vec`'s one slice, else each `next_back` dropped by
+the drop they're given. Each fold closes each side explicitly once it's
+done with it, `fold` and `rfold` alike, and sets none aside unclosed.
+knowing.rs makes a back-stepped chain `$lazyChain(a', b')` of its sides
+made knowing, where it made `$chainEnds(a', b')`; that helper's name is
+the only change of form. And `back_stepped`'s sources of what's stepped
+from its back take in a chain, as they take a map or a filter: a map of a
+chain of the crate's iterators, folded from its back, was refused where
+MIR held the chain in a variable before the map (`a Chain<It, It> as a
+DoubleEndedIterator`); its sides are made knowing where it's made now.
+
+Kind: duplicated authority (two runtime `Chain`s, one with std's front
+steps, one with its back steps). Area: iterators. Old: since a chain was
+first made knowing its back by type (#702, #718).
+
+`chain_stepped_from_its_back_elsewhere.rs` pairs a function that steps a
+chain from its back with others that fold, count, `for_each`, `last`,
+`nth`, `any` and collect a chain of its type from its front, and checks
+`nth_back` past each side, an `rfold` whose `f` panics, #757's `fold` and
+`rfold` by a closure that drops, and a holding map's `rfold` of a chain of
+the crate's iterators, against native Rust in both builds. `test/architecture-iterators.test.ts` refuses a
+second runtime `Chain`. `$chainEnds`' mutations went with its code; those
+of its back steps are `lazy_chain.ts`' now.

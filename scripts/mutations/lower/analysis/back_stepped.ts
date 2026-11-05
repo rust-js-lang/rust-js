@@ -196,9 +196,9 @@ export const mutations: Mutation[] = [
   {
     name: "stepped-sources-any-adapter",
     breaks:
-      "each held adapter a back-stepped one steps is marked, whatever it is: a held chain's map is `$mapEnds(Iterator.from($chainEnds(..)))`, and the crate's own iterator a held `filter` steps is made with its exact length, `$exactLen(..)`, which nothing asks (#218)",
+      "each held adapter a back-stepped one steps is marked, whatever it is: the crate's own iterator a held `filter` steps is made with its exact length, `$exactLen(..)`, which nothing asks (#218)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "            if mapped_source(tcx, held).is_some()\n                || filtered_source(tcx, held).is_some()\n                || filter_mapped_source(tcx, held).is_some()\n                || copied_source(tcx, held).is_some()\n                || inspected_source(tcx, held).is_some()\n            {\n",
+    find: "            if mapped_source(tcx, held).is_some()\n                || filtered_source(tcx, held).is_some()\n                || filter_mapped_source(tcx, held).is_some()\n                || copied_source(tcx, held).is_some()\n                || inspected_source(tcx, held).is_some()\n                || chained_sources(tcx, held).is_some()\n            {\n",
     replace: "            if true {\n",
     tests: [
       "test/corpus.test.ts",
@@ -300,5 +300,14 @@ export const mutations: Mutation[] = [
     find: "                            && chained_sources(tcx, held).is_some()\n",
     replace: "                            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_made_knowing_its_back.rs$"],
+  },
+  {
+    name: "chain-under-back-stepped-map-unrecorded",
+    breaks:
+      "a chain a map stepped from its back holds isn't made knowing its back where it's made: MIR holds it in a variable, so the map's `rfold` of a chain of the crate's iterators is refused (#739)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                || chained_sources(tcx, held).is_some()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^chain_stepped_from_its_back_elsewhere.rs$"],
   },
 ];

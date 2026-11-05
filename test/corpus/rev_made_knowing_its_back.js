@@ -13,7 +13,6 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $catchUnwind,
-  $chainEnds,
   $closing,
   $count,
   $dropEach,
@@ -25,6 +24,7 @@ import {
   $iter,
   $iterator,
   $last,
+  $lazyChain,
   $mapEnds,
   $next,
   $nextBack,
@@ -307,11 +307,9 @@ function main() {
   );
 
   s = $rev(
-    Iterator.from(
-      $chainEnds(
-        $closing($iter([[1], [2]]), $dropEach(dDrop_drop)),
-        $closing($iter([[3]]), $dropEach(dDrop_drop)),
-      ),
+    $lazyChain(
+      $closing($iter([[1], [2]]), $dropEach(dDrop_drop)),
+      $closing($iter([[3]]), $dropEach(dDrop_drop)),
     ),
   ).reduce((s, d) => {
     const result = (((s * 10) >>> 0) + d[0]) >>> 0;
@@ -321,11 +319,9 @@ function main() {
   console.log(`${s}`);
   s = $foldBack(
     $rev(
-      Iterator.from(
-        $chainEnds(
-          $closing($iter([[1], [2]]), $dropEach(dDrop_drop)),
-          $closing($iter([[3]]), $dropEach(dDrop_drop)),
-        ),
+      $lazyChain(
+        $closing($iter([[1], [2]]), $dropEach(dDrop_drop)),
+        $closing($iter([[3]]), $dropEach(dDrop_drop)),
       ),
     ),
     0,
@@ -339,11 +335,9 @@ function main() {
   r = $catchUnwind(() =>
     $foldBack(
       $rev(
-        Iterator.from(
-          $chainEnds(
-            $closing($iter([[1], [2]]), $dropEach(dDrop_drop)),
-            $closing($iter([[3], [4]]), $dropEach(dDrop_drop)),
-          ),
+        $lazyChain(
+          $closing($iter([[1], [2]]), $dropEach(dDrop_drop)),
+          $closing($iter([[3], [4]]), $dropEach(dDrop_drop)),
         ),
       ),
       0,

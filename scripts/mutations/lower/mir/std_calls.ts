@@ -847,10 +847,10 @@ export const mutations: Mutation[] = [
   {
     name: "chain-stepped-from-back-made-unknowing",
     breaks:
-      "a chain the crate steps from its back isn't made `$chainEnds` where it's made: one MIR holds in a variable, of items with a destructor, is refused at its `rev()` (#718)",
+      "a chain the crate steps from its back isn't made knowing its back where it's made: one MIR holds in a variable, of items with a destructor, is refused at its `rev()` (#718)",
     file: "src/lower/mir/std_calls.rs",
     find: "                        IterComb::Chain,\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^rev_made_knowing_its_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(rev_made_knowing_its_back|chain_stepped_from_its_back_elsewhere).rs$"],
   },
 ];

@@ -284,4 +284,12 @@ export const mutations: Mutation[] = [
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
   },
+  {
+    name: "holding-close-stops-at-source-throw",
+    breaks: "a map's function that holds what drops is leaked where its source's drop panics, where `Map`'s drop glue drops `iter`, then `f` (#762)",
+    file: "src/runtime/closing.js",
+    find: "  const holding = $closing(it, (it) => $inTurn(() => it.return(), own));\n",
+    replace: "  const holding = $closing(it, (it) => {\n    it.return();\n    own();\n  });\n",
+    tests: ["test/corpus.test.ts", "-t", "^parts_close_past_a_panic.rs$"],
+  },
 ];
