@@ -612,7 +612,17 @@ async function test(
   // one after another have Bun's five seconds each, which a JSX test of
   // three seconds alone ran past on a nightly's machine of two workers,
   // and its mutation was inconclusive.
-  const p = await run([process.execPath, "test", "--timeout=60000", ...(bail ? ["--bail"] : []), ...tests], root, testTimeout, {
+  const p = await run([process.execPath, "test", "--timeout=60000", ...(bail ? ["--bail"] : []), ...tests], root, testTimeout, testsEnv(compiler, own, snapshots, env));
+  rmSync(own, { recursive: true, force: true });
+  const output = p.stdout + p.stderr;
+  const { pass, fail } = summary(output);
+  return { passed: passed(p.code, !stopped(p, testTimeout), output), ran: pass + fail, output, exit: p };
+}
+
+/** What a mutant's tests, or a control's, run with besides the runner's
+ * own environment, `env` with them: `compiler`, and `own`, its target. */
+export function testsEnv(compiler: string, own: string, snapshots: boolean, env: Record<string, string> = {}): Record<string, string | undefined> {
+  return {
     ...env,
     RUST_JS_COMPILER: compiler,
     // Which mutation of a build of many it is, for a test that runs a
@@ -629,11 +639,11 @@ async function test(
     // `(fail)` to judge by: "inconclusive" of what was caught. Its plain
     // output is the same everywhere.
     GITHUB_ACTIONS: undefined,
-  });
-  rmSync(own, { recursive: true, force: true });
-  const output = p.stdout + p.stderr;
-  const { pass, fail } = summary(output);
-  return { passed: passed(p.code, !stopped(p, testTimeout), output), ran: pass + fail, output, exit: p };
+    // Never a bless: a mutant's tests would write its JS over the corpus's
+    // snapshots, and its tests pass. `BLESS=1 bun run check:fast` gave it
+    // to the change's mutations (#729).
+    BLESS: undefined,
+  };
 }
 
 /** A set of tests a mutation names, `bun test` arguments: its files, and

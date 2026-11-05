@@ -100,19 +100,11 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
   },
   {
-    name: "literal-chain-coalesced",
-    breaks: "`(a || \"Memo\") ?? null`, of a nullable result, keeps its `?? null`, which a literal never needs",
-    file: "src/prepare.rs",
-    find: "        last if last.is_constant() => chained.push(last),\n",
-    replace: "        last if last.is_constant() => return None,\n",
-    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
-  },
-  {
     name: "fallen-chain-any-last",
     breaks: "`(a || b) ?? c` is `a || b`, the `?? c` of a `b` that may be `undefined` dropped",
     file: "src/prepare.rs",
-    find: "        last if last.is_constant() => chained.push(last),\n",
-    replace: "        last if true => chained.push(last),\n",
+    find: "        _ => return None,\n    }\n    chained.into_iter().reduce(",
+    replace: "        last => chained.push(last),\n    }\n    chained.into_iter().reduce(",
     tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
   },
   {
@@ -178,15 +170,6 @@ export const mutations: Mutation[] = [
     find: "    if !js::same_path(tested, target) {\n",
     replace: "    if false {\n",
     tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
-  },
-  {
-    name: "empty-else-kept",
-    breaks: "an `else` of nothing is `else {}`",
-    file: "src/prepare.rs",
-    find: "            && els.as_ref().is_some_and(Vec::is_empty)\n",
-    replace: "            && els.as_ref().is_some_and(|_| false)\n",
-    tests: ["test/corpus.test.ts", "-t", "^(rev_lazy_drops|temporaries_taken_apart).rs$"],
-    snapshots: true,
   },
   {
     name: "template-values-unprepared",

@@ -7,8 +7,8 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } 
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { judge, lists, mutate, mutations, site, syncTree, unmatched, unparsed } from "../scripts/mutations";
-import type { Exit } from "./child";
+import { judge, lists, mutate, mutations, site, syncTree, testsEnv, unmatched, unparsed } from "../scripts/mutations";
+import { run as runChild, type Exit } from "./child";
 import { installPackages } from "./packages-of";
 import { node } from "./programs";
 import { fixture, limitations, root, run } from "./support";
@@ -182,4 +182,20 @@ test("a runtime mutant's tests import its runtime, installed in their own target
   const byPath = /join\(root, "(runtime|std)"|"(runtime|std)\/[\w.]+\.js"/;
   const others = [...new Bun.Glob("test/*.ts").scanSync(root)].filter((file) => !["test/packages-of.ts", "test/mutations.test.ts"].includes(file));
   expect(others.filter((file) => byPath.test(readFileSync(join(root, file), "utf8")))).toEqual([]);
+});
+
+// A mutant's tests never bless: given `BLESS`, the corpus's tests would write
+// the mutant's JS over its snapshots, and pass. `BLESS=1 bun run check:fast`
+// gave it to the change's mutations (#729).
+test("a mutant's tests run with no BLESS, whatever the runner's environment", async () => {
+  const before = process.env.BLESS;
+  process.env.BLESS = "1";
+  try {
+    const env = testsEnv("/bin/mutant", fixture("no-bless"), true);
+    const p = await runChild([process.execPath, "-e", "console.log(process.env.BLESS ?? 'unset')"], root, 30_000, env);
+    expect(p.stdout.trim()).toBe("unset");
+  } finally {
+    if (before === undefined) delete process.env.BLESS;
+    else process.env.BLESS = before;
+  }
 });

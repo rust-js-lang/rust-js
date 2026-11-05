@@ -232,3 +232,12 @@ the first was upstream's `if (errorMsg)`. **Each of a list's is its test**,
 is tested by its truth" and the mutation `mir-tidy-filtered-first-alone`
 (`lower/mir/tidy/branches.ts`).
 
+
+## Amendment: a chain ending in a literal is never coalesced (#725)
+
+`fallen_to` kept `(a || "Memo") ?? null` as `a || "Memo"`. Its mutation,
+`literal-chain-coalesced`, survived the Nightly of 85f123290. With it
+applied, the whole corpus and every other test file print the same JS,
+`label`'s `a || "Memo"` included. A chain that ends in a non-null literal
+is never `null`, so nothing coalesces it. The arm and its mutation are
+removed. `fallen-chain-any-last` mutates the arm that remains.

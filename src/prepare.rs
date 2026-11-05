@@ -665,13 +665,6 @@ fn block(body: &mut Vec<Stmt>, ends: bool) {
         {
             stmt.kind = coalesced;
         }
-        // `else {}`, of nothing but Rust's comments, is no `else`.
-        if let StmtKind::If(_, _, els) = &mut stmt.kind
-            && els.as_ref().is_some_and(Vec::is_empty)
-            && passes::applies(Pass::EmptyElses)
-        {
-            *els = None;
-        }
         // `let timeout = undefined;` is `let timeout;`, as a person writes it:
         // a `let` starts as `undefined`, each time it's run; and `return
         // undefined;` is `return;`, as JS ends a function with nothing to give
@@ -915,9 +908,9 @@ fn optional_first(part: &Expr, x: &Expr) -> Option<Expr> {
 
 /// `chain ?? y`, of a chain of `||`, `x || z`: `x` where it's truthy, never
 /// `null` or `undefined`, else `z ?? y`. Of one that ends in `undefined`, a
-/// `filter` by truth's, or `null`, `x || y`; of one that ends in another
-/// literal, which `??` keeps, the chain, `a || "Memo"` (ADR 0635). Each
-/// `||` after the one before, `a || b || y`, as JS reads them.
+/// `filter` by truth's, or `null`, `x || y`. Each `||` after the one before,
+/// `a || b || y`, as JS reads them. A chain that ends in another literal,
+/// `a || "Memo"`, is never `??`'d: it's never `null` (ADR 0635, amended).
 fn fallen_to(chain: &Expr, y: &Expr) -> Option<Expr> {
     fn parts(e: &Expr, out: &mut Vec<Expr>) {
         match &e.kind {
@@ -939,7 +932,6 @@ fn fallen_to(chain: &Expr, y: &Expr) -> Option<Expr> {
         {
             parts(y, &mut chained)
         }
-        last if last.is_constant() => chained.push(last),
         _ => return None,
     }
     chained.into_iter().reduce(|a, b| Expr::bin(js::Op::Or, a, b))

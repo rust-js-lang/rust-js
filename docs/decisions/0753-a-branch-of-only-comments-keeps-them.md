@@ -414,3 +414,14 @@ as written, `} else if (..) { .. } else { // Neither .. }`.
 Held by corpus `else_of_only_comments_in_a_loop` and
 `switch_default_comment_after_return`, and the mutation
 `commented-break-popped-after-any-block`.
+
+## Amendment: tidy alone leaves out an else of nothing (#725)
+
+There were two places that left out an `else` of nothing. One was
+preparation's `empty elses` pass. The other was tidy's `branches.rs`,
+which makes `if (t) { .. } else {}` the `if` alone. With the pass's
+mutation, `empty-else-kept`, applied, nothing printed differs: the whole
+corpus, every other test file, the tidy stages' runs, and probes of an
+`else` left with nothing. That includes `lowering-branches.test.ts`'s "an
+else of nothing is left out". So the pass is removed, along with its
+mutation and its `Pass::EmptyElses`. Tidy's rule is the only one.

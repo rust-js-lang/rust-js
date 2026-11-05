@@ -282,15 +282,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 RangeBound::Item(i) => Expr::index(range.clone(), Expr::int(i as i128)),
                 RangeBound::Field(kind, field) => {
                     let index = variant(kind).ok_or_else(|| this.unsupported(span, "this range's bounds"))?;
-                    let held = match &range.kind {
-                        js::ExprKind::Object(props, ..) => props.iter().find_map(|prop| match prop {
-                            Prop::Field(name, value) if name == field => Some(value.clone()),
-                            _ => None,
-                        }),
-                        _ => None,
-                    };
-                    let held = held.unwrap_or_else(|| Expr::member(range.clone(), field));
-                    this.adt_value(bound, index, vec![held], &[], None, span)?
+                    this.adt_value(bound, index, vec![Expr::member(range.clone(), field)], &[], None, span)?
                 }
                 RangeBound::Unbounded => {
                     let index = variant("Unbounded").ok_or_else(|| this.unsupported(span, "this range's bounds"))?;

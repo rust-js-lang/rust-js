@@ -662,30 +662,6 @@ impl Default for TypeWalks<'_> {
     }
 }
 
-/// What an arrow of `params` that returns `call` is, if it's a function of
-/// the crate's by name given them as they are: `(arg0) => shapeArea_area(arg0)`
-/// is `shapeArea_area`, not a dictionary's method, read off it. Not a
-/// runtime helper, whose arrow names what it's given by its type, `(s) =>
-/// $byteLen(s)`, where it's written in place.
-/// A call of a dictionary made here, `({ fmt: (value, options) => .. })
-/// .fmt(a, b)`: its function's, `((value, options) => ..)(a, b)`, an arrow,
-/// which no `this` reaches, of a dictionary nothing else in has an effect
-/// (ADR 0538).
-fn in_place_method(call: Expr) -> Expr {
-    if let js::ExprKind::Call(callee, list) = &call.kind
-        && let js::ExprKind::Member(object, name) = &callee.kind
-        && let js::ExprKind::Object(props, ..) = &object.kind
-        && !object.has_effects()
-        && let Some(f) = props.iter().find_map(|p| match p {
-            js::Prop::Field(field, f) if field == name && matches!(f.kind, js::ExprKind::Arrow(..)) => Some(f),
-            _ => None,
-        })
-    {
-        return Expr::call(f.clone(), list.clone());
-    }
-    call
-}
-
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What walks of types found under the typing environment in force.
     fn walks(&self) -> Rc<TypeWalks<'tcx>> {
@@ -953,7 +929,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let Some(call) = self.trait_call(def_id, args, values, span, out)? else {
                     return Ok(None);
                 };
-                let call = in_place_method(call);
                 let mut patterns: Vec<js::Pattern> = params.into_iter().map(Into::into).collect();
                 patterns.extend(variadic.map(js::Pattern::Rest));
                 let arrow = Expr::arrow(patterns, vec![StmtKind::Return(Some(call)).at(js_span)]);

@@ -136,3 +136,13 @@ b, "difference"))`, a B-tree's in its order. Which operator a std trait
 is, recognition asked by two lists of its own beside `value_operator`'s
 and `assign_operator`'s; it asks those, and the architecture test holds
 the one list. Held by `test/corpus/set_operators.rs`.
+
+## Amendment: a range's bounds read its fields (#725)
+
+A range's `start_bound()` and `end_bound()` read the bound out of an
+object written in place, `{ start: 2, end: 5 }`, where it was one. MIR
+holds a range in a local before it asks its bounds, `const value = {
+start: 2, end: 5 }; value.start`, so it never was one. With
+`range-bounds-literal-read` applied, the whole corpus and every other test
+file print the same JS (the Nightly of 85f123290). So the branch and its
+mutation are removed.

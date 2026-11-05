@@ -56,3 +56,14 @@ of no items, against native Rust; the padding is each item's, its
   `Formatter` it captures, `|disp| disp.fmt(f)`, is still refused.
 - Mutations refuse the call, lose what it writes, and keep the
   dictionary or the arrow around it.
+
+## Amendment: the in-place dictionary call is gone (#725)
+
+`in_place_method` turned a std trait function value's call of a dictionary
+made in place, `({ fmt: (value, options) => .. }).fmt(arg0, arg1)`, into
+the call of its arrow. Its mutation, `in-place-method-kept`, survived the
+Nightly of 85f123290. With it applied, the whole corpus (1,678 cases) and
+every other test file `check:fast --all` runs print the same JS:
+`trait_call` no longer gives a call of a dictionary written in place, and
+`writer_fn_pointer.rs` is `(value, options) => $formatted(..)` either way.
+The function and its mutation are removed.

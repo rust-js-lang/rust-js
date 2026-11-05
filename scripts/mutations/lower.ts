@@ -129,8 +129,8 @@ export const mutations: Mutation[] = [
     name: "std-trait-fn-value-refused",
     breaks: "`ToString::to_string` and `i32::max` as values are errors, std's trait functions the crate's dictionaries don't have",
     file: "src/lower.rs",
-    find: "                    return Ok(None);\n                };\n                let call = in_place_method(call);\n",
-    replace: "                    return Err(self.unsupported(span, \"this trait function value\"));\n                };\n                let call = in_place_method(call);\n",
+    find: "                    return Ok(None);\n                };\n                let mut patterns: Vec<js::Pattern>",
+    replace: "                    return Err(self.unsupported(span, \"this trait function value\"));\n                };\n                let mut patterns: Vec<js::Pattern>",
     tests: ["test/corpus.test.ts", "-t", "std_function_values"],
   },
   {
@@ -265,15 +265,6 @@ export const mutations: Mutation[] = [
     find: "            let location = self.location_at(self.tcx.def_span(def_id));\n            let evidence = self.evidence_args_with(def_id, args, location, span)?;\n",
     replace: "            let location = self.caller_location(self.tcx.def_span(def_id));\n            let evidence = self.evidence_args_with(def_id, args, location, span)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
-  },
-  {
-    name: "in-place-method-kept",
-    breaks: "std's trait method as a value is `(arg0, arg1) => ({ fmt: .. }).fmt(arg0, arg1)`, not its function",
-    file: "src/lower.rs",
-    find: "                let call = in_place_method(call);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^writer_fn_pointer.rs$"],
-    snapshots: true,
   },
   {
     name: "local-const-not-from-mir",

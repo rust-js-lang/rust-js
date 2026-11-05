@@ -250,3 +250,10 @@ this change as well. Asked for all 1,114 at once under a load of 24, ten
 of the asks were killed by SIGKILL, and their mutants "survived". An ask
 killed by a signal is now asked again, up to three times. One that still
 can't be asked makes its mutant inconclusive, not a survivor.
+
+## Amendment: a mutant's tests never bless
+
+`BLESS=1 bun run check:fast` passed `BLESS` on to "mutations the change
+adds". A mutant's corpus tests then wrote the mutant's JS over the
+snapshots, and passed (#729). The runner now unsets `BLESS` for every
+test run it starts (`testsEnv`), and `test/mutations.test.ts` holds that.
