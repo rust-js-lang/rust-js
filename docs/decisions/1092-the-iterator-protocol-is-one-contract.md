@@ -671,3 +671,15 @@ readers. `stepped_form` goes: its readers ask value.rs's `steps`.
 `stepped_value`, `steps` of what isn't made in place, moves to value.rs.
 Its readers are knowing.rs's `as_exact_size` and `as_double_ended`, and
 eager.rs's `consumed_into_iters`.
+
+Step 6 gives `in_place_adapter_steps` one reader, mir/iter.rs's
+`steps_in_place(span)`. `marked_in_place` makes each value's mark of it, and
+`steps_adapter_in_place` and `compiled_struct_at` ask it. range.rs's
+`range_own_step` asks the receiver's mark instead. The answer is still keyed
+by the call's span. The span would be gone only if each in-place adapter's
+maker marked what it makes and the mark carried to its sources. A source
+inside a `rev()`, `v.iter().map(f).rev()`'s `map()`, has no mark of its own
+today, so that is a change in what's decided, not a mechanical one. It is
+#730's later step, after iterC's knowing.rs work, proved against the corpus
+case by case.
+

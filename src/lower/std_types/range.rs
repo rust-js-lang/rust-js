@@ -122,7 +122,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         method: Option<IterMethod>,
         (range, lent): (Ty<'tcx>, bool),
         values: &[Expr],
-        span: rustc_span::Span,
     ) -> Option<Expr> {
         let reversed = self.recognition().reversed(range);
         let kind = self.range_kind(reversed.unwrap_or(range))?;
@@ -148,10 +147,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut values = values.to_vec();
         // A reversed one's bounds: of one made here, its `$iterator`'s, those
         // it was made of, once `reversed_step` reads them; of one held,
-        // std's `Rev`, what it holds, `iter` (ADR 0871).
+        // std's `Rev`, what it holds, `iter` (ADR 0871): as the value's mark
+        // says, `marked_in_place`'s.
         if reversed.is_some() {
             let first = values.first_mut()?;
-            *first = match self.frame.facts.in_place_adapter_steps.contains(&span) {
+            *first = match crate::lower::iterators::made_in_place(first) {
                 true => crate::lower::iterators::bounds_of(first.clone()),
                 false => Expr::member(first.clone(), "iter"),
             };

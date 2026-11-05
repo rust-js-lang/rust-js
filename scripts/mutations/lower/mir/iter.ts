@@ -451,8 +451,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Rev` stepped where it's made is taken as std's struct, closed after it's consumed",
     file: "src/lower/mir/iter.rs",
-    find: "            && !(crate::lower::recognition::is_held_compiled(self.tcx, ty)\n",
-    replace: "            && !(false\n",
+    find: "            && !(crate::lower::recognition::is_held_compiled(self.tcx, ty) && self.steps_in_place(span))\n",
+    replace: "            && !(false && self.steps_in_place(span))\n",
     snapshots: true,
     tests: [
       "test/corpus.test.ts",
@@ -678,5 +678,15 @@ export const mutations: Mutation[] = [
     find: "        let stepped = matches!(std_method, Some(IterMethod::Next | IterMethod::SizeHint));\n",
     replace: "        let stepped = matches!(std_method, Some(IterMethod::Next));\n",
     tests: ["test/corpus.test.ts", "-t", "^by_ref_lends.rs$"],
+  },
+  {
+    name: "steps-in-place-never",
+    breaks:
+      "no call steps an adapter made in place, so `v.iter().map(f).rfold(..)` steps std's compiled `Map`, whose back the recognizers' JS `.map()` hasn't (ADR 0871)",
+    file: "src/lower/mir/iter.rs",
+    find: "        self.frame.facts.in_place_adapter_steps.contains(&span)\n",
+    replace: "        let _ = span;\n        false\n",
+    tests: ["test/corpus.test.ts", "-t", "^(rev_in_place_through_adapters|flat_map_of_maps_from_its_back|range_own_steps).rs$"],
+    snapshots: true,
   },
 ];

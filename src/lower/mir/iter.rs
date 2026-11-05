@@ -466,7 +466,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .trait_of_assoc(def_id)
             .is_some_and(|tr| crate::lower::recognition::is_iterator_extension(self.tcx, tr))
             && (generic_args.types().next()).is_some_and(|ty| crate::lower::recognition::is_held_compiled(self.tcx, ty))
-            && self.frame.facts.in_place_adapter_steps.contains(&span)
+            && self.steps_in_place(span)
+    }
+
+    /// Whether the call at `span` steps a `rev()`, an `enumerate()` or a
+    /// `map()` made in place, as `body_queries::in_place_adapters` says (ADR
+    /// 0871): the one reader of `in_place_adapter_steps`, which
+    /// `marked_in_place` makes each value's mark of, and whose other readers
+    /// ask that mark. Still keyed by the call's span: that each in-place
+    /// adapter's maker marks what it makes, and its sources, is #730's later
+    /// step (ADR 1092, amended).
+    pub(in crate::lower) fn steps_in_place(&self, span: Span) -> bool {
+        self.frame.facts.in_place_adapter_steps.contains(&span)
     }
 
     /// Whether a value of `ty` the call at `span` takes is std's compiled
@@ -475,8 +486,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// make of it, a JS iterator that closes as it ends (ADR 0871).
     pub(in crate::lower) fn compiled_struct_at(&self, ty: Ty<'tcx>, span: Span) -> bool {
         crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
-            && !(crate::lower::recognition::is_held_compiled(self.tcx, ty)
-                && self.frame.facts.in_place_adapter_steps.contains(&span))
+            && !(crate::lower::recognition::is_held_compiled(self.tcx, ty) && self.steps_in_place(span))
     }
     /// Whether an iterator taken by value, `items.fold(..)`'s, of a
     /// `receiver` with something to drop, is dropped after its method, as
@@ -605,7 +615,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(self.value_into_iter(value, receiver_ty, output));
         }
         // A range's own `nth`, `last` and `count`, of its bounds (#163).
-        if let Some(stepped) = self.range_own_step(std_method, (iter_ty, receiver_ty.is_mutable_ptr()), &values, span) {
+        if let Some(stepped) = self.range_own_step(std_method, (iter_ty, receiver_ty.is_mutable_ptr()), &values) {
             return Ok(Some(stepped));
         }
         // `B::from_iter(items)`, which `items.collect()` is (ADR 0160).
