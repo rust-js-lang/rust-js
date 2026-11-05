@@ -45,5 +45,10 @@ function $rev(it) {
     },
   });
   if (it.dropItem !== undefined) rev.dropItem = it.dropItem;
+  // What its source steps, `$iterator`'s `of`, a range's bounds: what a
+  // reversed range's own `count`, `last` and `nth` read, of one made
+  // knowing its back, `$rev($iterator(range, $rangeNext, false,
+  // $rangeNextBack))`, as of `$iterator(range, $rangeNextBack)` (#721).
+  if (it.of !== undefined) rev.of = it.of;
   return rev;
 }

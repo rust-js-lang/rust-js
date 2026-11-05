@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rev_of_rev_folds_its_source.rs$"],
   },
+  {
+    name: "rev-of-unforwarded",
+    breaks: "a range's `rev()` made knowing its back has no `of`, so another of its `rev()`s' `count()` reads no bounds and throws, once the crate `rfold`s one (#721)",
+    file: "src/runtime/rev.js",
+    find: "  if (it.of !== undefined) rev.of = it.of;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rev_range_counted_beside_its_rfold.rs$"],
+  },
 ];

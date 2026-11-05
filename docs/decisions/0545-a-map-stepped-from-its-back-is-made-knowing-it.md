@@ -326,6 +326,14 @@ flatten is, and made knowing its back where it's made.**
   was made through every place MIR may hold it, the bookkeeping this
   amendment's flatten needs already; one type, one form, is the general
   rule `back_stepped` answers.
+- A range's own `count()`, `last()` and `nth()` of its `rev()` read its
+  bounds, `.of` of what it's given: of one made knowing its back,
+  `$rev($iterator(range, $rangeNext, false, $rangeNextBack))`, `$rev`'s
+  `of`, its source's, as `$iterator(range, $rangeNextBack)`'s was. It had
+  none, so `(1..6u32).rev().count()` threw in a crate that `rfold`s a
+  range's `rev()` anywhere (#721, P0, a regression of this amendment;
+  `test/corpus/rev_range_counted_beside_its_rfold.rs`, mutation
+  `rev-of-unforwarded`).
 - Its order is std's: a `rev()`'s `rfold` folds its source forward, its
   flatten's `next` of each inner, `$rev`'s `fold` its source's, and what
   `Folds::next` panics part-way drops the accumulator, as std unwinds.

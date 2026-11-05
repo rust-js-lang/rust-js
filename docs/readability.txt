@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1718
-lines	183250
+files	1719
+lines	183348
 temporaries	0	0
 labeled blocks	8	0.4
 while (true)	144	7.9
-$iter	1594	87
+$iter	1594	86.9
 Iterator.from	159	8.7
 return;	235	12.8
-renamed x$1	10436	569.5
+renamed x$1	10444	569.6
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drop_past_a_panic.js	46	0	0	0	1	0	0	0
 test/corpus/adapter_drops.js	1976	0	0	1	18	3	1	134
@@ -1286,6 +1286,7 @@ test/corpus/rev_of_lazy_chains.js	64	0	0	0	0	0	0	0
 test/corpus/rev_of_rev_folds_its_source.js	318	0	0	2	1	0	3	6
 test/corpus/rev_of_rev_last_folds.js	116	0	0	0	8	0	0	0
 test/corpus/rev_own_back_methods.js	187	0	0	0	0	0	0	0
+test/corpus/rev_range_counted_beside_its_rfold.js	98	0	0	0	0	0	0	8
 test/corpus/rev_step_by.js	79	0	0	0	3	0	0	2
 test/corpus/rev_take_count_drops_a_slice.js	76	0	0	0	7	0	0	2
 test/corpus/reversed_vec_rest_through_zip_and_enumerate.js	199	0	0	0	6	0	0	0
