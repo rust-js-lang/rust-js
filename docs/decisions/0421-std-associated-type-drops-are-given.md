@@ -128,3 +128,26 @@ as it is, its dictionary's steps its own, which no type says. Held by
 `flatten_count_takes_each_inner_count.rs`'s `Kept`, counted and its
 `last` asked, against native Rust in both builds, and the mutations
 `given-param-drop-unwrapped` and `given-drop-of-the-wrapper`.
+
+## Amended (2026-11-06, #718): the drop of a type parameter's value keeps each item's own
+
+`held_drop_function` gave a type parameter's drop as the arrow `(it) =>
+$givenDrop(it, dropI)` (#766). `$closing` finds the drop of each item, by
+which a `Vec`'s `IntoIter` drops a slice it passes over, as the drop's
+`each`, `$dropEach`'s; an arrow has none. So a `Vec`'s `IntoIter` of items
+with a destructor given as it is, which `$given` gives its slice's steps
+(`$slicing`), dropped nothing its `nth`, `advance_by` or `advance_back_by`
+passed over: `self.0.skip(1).map(f).next()` of a `Held<IntoIter<D>>` never
+printed `drop 1`, `self.0.step_by(2)` lost every other item's drop, and a
+map's `nth_back` its last's. A wrong answer, since 1fa4c15ca (#766).
+
+**`$givenDrop(drop)` is the drop itself**: a function of the value or the
+JS iterator `$given` made of it, which keeps `drop.each`. Generic code is
+given `$givenDrop(dropI)`, which reads better than the arrow, and
+`$closing` passes each item's drop as for any other (`passes_each_owned`).
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. Held by corpus
+`given_iterator_of_droppers_drops_what_it_passes`, against native Rust in
+both builds (main prints it without `drop 1`, `drop 2` and `drop 4`), and
+the mutation `given-drop-hides-each`; `given-drop-of-the-wrapper` names its
+line as it now reads.

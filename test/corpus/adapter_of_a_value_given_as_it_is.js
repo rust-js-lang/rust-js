@@ -24,14 +24,14 @@ function counterDrop_drop(counter) {
   console.log(`drop counter ${counter[0]}`);
 }
 function firstTwo(items, IIterator, IClone, dropI) {
-  const iter = $closing($given(items, IIterator), (it) => $givenDrop(it, dropI)).take(2);
+  const iter = $closing($given(items, IIterator), $givenDrop(dropI), false).take(2);
   const v = $collectDropping($roomForHint(iter, 4, false));
   console.log("collected");
   return v;
 }
 function found(items, IIterator, IClone, dropI) {
   const map = $held(
-    $closing($given(items, IIterator), (it) => $givenDrop(it, dropI)).map((x) => (x * 3) >>> 0),
+    $closing($given(items, IIterator), $givenDrop(dropI), false).map((x) => (x * 3) >>> 0),
   );
   let r;
   try {

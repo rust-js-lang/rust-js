@@ -10293,7 +10293,7 @@ export function flattenCompatIUIterator_last(
       flattenCompatIUIterator_last_last(
         a,
         $given(b, UIterator, true),
-        (it) => $givenDrop(it, dropU),
+        $givenDrop(dropU),
         dropUItem,
       ),
     IIterator,
@@ -10400,7 +10400,7 @@ export function flattenCompatIUIterator_count(
       flattenCompatIUIterator_count_count(
         a,
         $given(b, UIterator, true),
-        (it) => $givenDrop(it, dropU),
+        $givenDrop(dropU),
         dropUItem,
       ),
     IIterator,

@@ -158,8 +158,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// drop function, or where its caller made it a JS iterator, `iterated`,
     /// `$iterator(value, next)`, one that drops `value`, its `of` (ADR 0421);
     /// of a type parameter, `$given`'s, which is the value itself where its
-    /// dictionary's steps are its own, `$givenDrop`, the drop of the value
-    /// it was made of, or of it (#766).
+    /// dictionary's steps are its own, `$givenDrop(drop)`, the drop of the
+    /// value it was made of, or of it (#766), which keeps each item's own
+    /// drop, `drop.each`, what a `Vec`'s slice it passes over is dropped by
+    /// (#718).
     pub(in crate::lower) fn held_drop_function(&mut self, ty: Ty<'tcx>, iterated: bool, span: Span) -> R<Option<Expr>> {
         if !iterated || !self.has_drops(ty) {
             return self.drop_function(ty, span);
@@ -168,12 +170,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let Some(drop) = self.drop_function(ty, span)? else {
                 return Ok(None);
             };
-            let param = self.fresh("it");
-            let dropped = Expr::call_helper("$givenDrop", vec![Expr::var(&param), drop]);
-            return Ok(Some(Expr::arrow(
-                vec![param.into()],
-                vec![StmtKind::Return(Some(dropped)).at(js::Span::NONE)],
-            )));
+            return Ok(Some(Expr::call_helper("$givenDrop", vec![drop])));
         }
         let param = self.fresh("it");
         let mut body = Vec::new();

@@ -258,8 +258,16 @@ export const mutations: Mutation[] = [
     name: "given-drop-of-the-wrapper",
     breaks: "`$givenDrop` drops the JS iterator `$given` made of the value, not the value, a `TypeError` (#766)",
     file: "src/runtime/iterator.js",
-    find: "  drop?.(it.given === true ? it.of : it);\n",
-    replace: "  drop?.(it);\n",
+    find: "  const dropped = (it) => drop?.(it.given === true ? it.of : it);\n",
+    replace: "  const dropped = (it) => drop?.(it);\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^flatten_count_takes_each_inner_count with"],
+  },
+  {
+    name: "given-drop-hides-each",
+    breaks: "the drop of a type parameter's value given as it is hides each item's own drop, `drop.each`, so a `Vec`'s `IntoIter` it was given drops nothing its `nth`, `skip` or `step_by` passes over (#718)",
+    file: "src/runtime/iterator.js",
+    find: "  dropped.each = drop?.each;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^given_iterator_of_droppers_drops_what_it_passes.rs$"],
   },
 ];

@@ -721,12 +721,17 @@ export function $took(step, it) {
   return name === undefined || it[$ownStep(name)] === true || it.$steps?.takes?.includes(name) === true;
 }
 
-// The drop of `it`, a value of a type parameter generic code was given,
+// What drops `it`, a value of a type parameter generic code was given,
 // `$given`'s, by `drop`, the value's, if it has one: where `$given` made a
 // JS iterator of the value, the value's, its `of`; else the value
-// itself's (#766).
-export function $givenDrop(it, drop) {
-  drop?.(it.given === true ? it.of : it);
+// itself's (#766). And each item's own drop, `drop.each`, a `$dropEach`'s,
+// which a slice it passes over is dropped by, as `$closing` asks it: so a
+// `Vec`'s `IntoIter` the type parameter was given drops what its `nth`,
+// `nth_back` and `advance_by` pass over (#718).
+export function $givenDrop(drop) {
+  const dropped = (it) => drop?.(it.given === true ? it.of : it);
+  dropped.each = drop?.each;
+  return dropped;
 }
 
 // A clone of `it`, what generic code's `copied()` of a value it was given
