@@ -93,3 +93,30 @@ thousand lines: the case gives a `Vec`'s `IntoIterator` dictionary,
 `into_iter: (items) => $iter(items)`, this ADR's form, three times.
 Mutations `into-iterator-of-bound-iterator-refused` and
 `impl-bound-held-by-itself`.
+
+## Amendment: the crate's generic iterator's `into_iter()` is itself (2026-11-06, #806)
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): a refusal lifted.
+`into_iter()` of an iterator gives it back as it is, so nothing that
+runs changes.
+
+Generic code's `for x in w` over the crate's own generic iterator struct,
+a `w: Wrapper<I>` of `impl<I: Iterator> Iterator for Wrapper<I>`, was
+refused, "calling `IntoIterator::into_iter`", though the same loop over a
+concrete `Wrapper<Range<u32>>` compiled. MIR's `into_iter()` took a value
+for its own iterator only where `implements_iterator` said so, which
+reads the type's `Item` and doesn't count one that's still a projection
+of std's `Iterator`, `I::Item`.
+
+Whether `into_iter()` gives a value back as it is is rustc's selection of
+std's blanket `impl<I: Iterator> IntoIterator for I`, `iterates_as_itself`,
+which the dictionaries already ask (above). MIR's `into_iter()`
+(`value_into_iter`) now asks it too, the one answer: the loop steps the
+crate's `next`, `wrapperIterator_next(iter, IIterator)`, as a concrete
+loop does. No other case's JS changed.
+
+`test/corpus/generic_for_over_own_iterator.rs` loops over a `Wrapper`
+whose `next` prints, generic over its iterator, over its items, an impl's
+method looping `for _ in self`, and a loop that drops a value and breaks,
+against native Rust in both builds. Mutation:
+`generic-own-iterator-into-iter-refused`.

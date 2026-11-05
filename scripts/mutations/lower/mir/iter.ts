@@ -728,4 +728,13 @@ export const mutations: Mutation[] = [
     replace: "        if self.consumer_closes(method, iter_ty, false, dropping) {\n",
     tests: ["test/corpus.test.ts", "-t", "^max_by_key_of_a_dropping_key_over_its_iterator.rs$"],
   },
+  {
+    name: "generic-own-iterator-into-iter-refused",
+    breaks:
+      "generic code's `for _ in w` over the crate's own generic iterator struct, a `Wrapper<I>` whose items are `I::Item`, isn't known to be its own iterator, so it's refused, \"calling `IntoIterator::into_iter`\" (#806)",
+    file: "src/lower/mir/iter.rs",
+    find: "        if self.range_kind(iter_ty).is_some() || self.recognition().iterates_as_itself(receiver_ty) {\n",
+    replace: "        if self.range_kind(iter_ty).is_some() || self.implements_iterator(receiver_ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_for_over_own_iterator.rs$"],
+  },
 ];

@@ -947,15 +947,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `x.into_iter()`, of `value` of type `receiver_ty`: a range stays one,
-    /// an iterator is itself, and a collection's items a JS iterator; `None`
-    /// of what `mir_std_call` makes, `for x in &mut v`'s handles on numbers
-    /// (ADR 0099).
+    /// an iterator is itself, as rustc selects std's blanket `impl<I:
+    /// Iterator> IntoIterator for I` of it (`iterates_as_itself`), a generic
+    /// one of the crate's, `Wrapper<I>`, too (#806); and a collection's
+    /// items a JS iterator; `None` of what `mir_std_call` makes, `for x in
+    /// &mut v`'s handles on numbers (ADR 0099).
     fn value_into_iter(&mut self, value: Expr, receiver_ty: Ty<'tcx>, output: Ty<'tcx>) -> Option<Expr> {
         let iter_ty = receiver_ty.peel_refs();
         if self.recognition().is_given_iterable(receiver_ty) {
             return Some(crate::lower::iterators::given_into_iter(value));
         }
-        if self.range_kind(iter_ty).is_some() || self.implements_iterator(receiver_ty) {
+        if self.range_kind(iter_ty).is_some() || self.recognition().iterates_as_itself(receiver_ty) {
             return Some(value);
         }
         let handles = matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut))
