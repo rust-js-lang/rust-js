@@ -870,4 +870,20 @@ export const mutations: Mutation[] = [
     replace: "            .is_some_and(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
   },
+  {
+    name: "dropping-skip-uncounted",
+    breaks: "a `skip(n)` of items with a destructor, `$skipping(source, n, drop)`, isn't made knowing its back and its length, so an enumeration of the crate's iterator's `skip()` folded from its back is refused (#778)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            && callee.helper_name() == Some(\"$skipping\")\n            && let [source_value, n, drop] = args.as_slice()\n",
+    replace: "            && callee.helper_name() == Some(\"$skipping\")\n            && let [source_value, n, drop] = args.as_slice()\n            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_folds_of_sources_made_knowing_their_back.rs$"],
+  },
+  {
+    name: "cloned-map-uncounted",
+    breaks: "a `cloned()` of what isn't a number, `src.map(clone)`, isn't made knowing its back and its length, so an enumeration of it folded from its back is refused (#778)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            .or_else(|| crate::lower::recognition::cloned_source(self.tcx, ty))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^back_folds_of_sources_made_knowing_their_back.rs$"],
+  },
 ];

@@ -625,11 +625,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "enumerate-of-take-from-back-unknowing",
-    breaks: "an `enumerate()` of a `take()` of items with a destructor, folded from its back, is `$enumerate` of `.take(n)`, which knows neither its back nor its length: `enumerated.iter.len is not a function` (#651)",
+    breaks: "an enumeration the crate steps from its back of a source whose JS knows no back is given it as it's made: of a `take()` of items with a destructor, `.take(n)`, `enumerated.iter.len is not a function` (#651); of a map, `ds().into_iter().map(f).enumerate().rfold(..)`, and of a slice's `cloned()`'s and the crate's iterator's `skip()`'s and `rev()`'s, `enumerated.iter.back is not a function` (#778)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    None if self.stepped_from_its_back(output)\n                        && (crate::lower::recognition::counted_source(self.tcx, iter_ty)\n",
-    replace: "                    None if false\n                        && (crate::lower::recognition::counted_source(self.tcx, iter_ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_take_from_back_refused.rs$"],
+    find: "                    None if self.stepped_from_its_back(output) && !self.has_a_back(iter_ty) => {\n",
+    replace: "                    None if false && self.stepped_from_its_back(output) && !self.has_a_back(iter_ty) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_take_from_back_refused.rs$|^back_folds_of_sources_made_knowing_their_back.rs$"],
   },
   {
     name: "nth-back-of-a-vec-unsliced",
@@ -710,14 +710,6 @@ export const mutations: Mutation[] = [
     find: "                let lent = self.slicing(lent, iter_ty, true, span)?;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
-  },
-  {
-    name: "enumerate-of-map-made-forward",
-    breaks: "an enumeration the crate steps from its back of a map, JS's own `.map(f)`, is given its source as it's made, with no back: `ds().into_iter().map(f).enumerate().rfold(..)` throws `enumerated.iter.back is not a function` (#778)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "                            || crate::lower::recognition::mapped_source(self.tcx, iter_ty).is_some()\n",
-    replace: "                            || false && crate::lower::recognition::mapped_source(self.tcx, iter_ty).is_some()\n",
-    tests: ["test/corpus.test.ts", "-t", "^back_folds_of_sources_made_knowing_their_back.rs$"],
   },
   {
     name: "copy-of-compiled-struct-backless",

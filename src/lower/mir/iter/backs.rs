@@ -301,13 +301,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // map's, JS's own `.map(f)` (#778): made knowing them, or
                     // refused (`as_exact_size`), never stepped by what it
                     // lacks.
-                    None if self.stepped_from_its_back(output)
-                        && (crate::lower::recognition::counted_source(self.tcx, iter_ty)
-                            .is_some_and(|(_, skip)| !skip)
-                            || crate::lower::recognition::stepped_by_source(self.tcx, iter_ty).is_some()
-                            || crate::lower::recognition::mapped_source(self.tcx, iter_ty).is_some()
-                                && !self.has_a_back(iter_ty)) =>
-                    {
+                    None if self.stepped_from_its_back(output) && !self.has_a_back(iter_ty) => {
                         let it = self.as_exact_size(receiver.clone(), iter_ty, true, span)?;
                         self.closing(it, held, span)?
                     }

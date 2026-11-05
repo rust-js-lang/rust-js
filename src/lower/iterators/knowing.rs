@@ -368,6 +368,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let name = if skip { "$skipping" } else { "$taking" };
             return Ok(Expr::call_helper(name, vec![source_value, n]));
         }
+        // A `skip(n)` of items with a destructor made here, `$skipping(source,
+        // n, drop)`, which drops each it skips as it's skipped (ADR 0465):
+        // its source made knowing its back and its length, as it is of
+        // others, its `len` and back what it steps by (#778).
+        if let Some((source, true)) = crate::lower::recognition::counted_source(self.tcx, ty)
+            && let js::ExprKind::Call(callee, args) = &value.kind
+            && callee.helper_name() == Some("$skipping")
+            && let [source_value, n, drop] = args.as_slice()
+        {
+            let source_value = stepped_value(source_value).unwrap_or_else(|| source_value.clone());
+            let source_value = self.as_exact_size(source_value, source.peel_refs(), back, span)?;
+            return Ok(Expr::call_helper(
+                "$skipping",
+                vec![source_value, n.clone(), drop.clone()],
+            ));
+        }
         // An enumeration made here of an array's items, `$enumerate` of their
         // `$iter`, as `as_double_ended` makes it.
         if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)
@@ -379,9 +395,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A map made here, `src.map(f)`: its source's, each `f`'s, as
         // `as_double_ended` makes it (ADR 0455). And an `inspect(f)`, made
-        // so.
+        // so, and a `cloned()` of what isn't a number, `src.map(clone)` (#778).
         if let Some(source) = crate::lower::recognition::mapped_source(self.tcx, ty)
             .or_else(|| crate::lower::recognition::inspected_source(self.tcx, ty))
+            .or_else(|| crate::lower::recognition::cloned_source(self.tcx, ty))
             && let js::ExprKind::Call(callee, args) = &value.kind
             && let js::ExprKind::Member(source_value, method) = &callee.kind
             && method == "map"

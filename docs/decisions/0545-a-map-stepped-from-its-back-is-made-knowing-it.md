@@ -561,16 +561,30 @@ were made where they're made of a source with no back, so the fold threw
   knowing its back (`as_double_ended`, `knowing_held`) of std's compiled
   struct as of an adapter.
 
-36 rows of the iterator matrix listed under #646 and #650 run as Rust
-does now, taken off its list; most since #723. Still listed under them,
-#778's: an enumeration of a slice's `cloned()`, JS's `.map(clone)`, which
-`as_exact_size` doesn't read, and of the crate's iterator's `skip()` or
-`rev()` of items with a destructor, whose `$skipping(.., drop)` it refuses.
-Making every source kind knowing its back where it's made is #764's.
-`back_folds_of_sources_made_knowing_their_back` holds the fixed shapes
-against native Rust in both builds; mutations
-`enumerate-of-map-made-forward` and `copy-of-compiled-struct-backless`
-(`lower/mir/iter/backs.ts`).
+36 rows of the iterator matrix listed under #646 and #650 ran as Rust
+does after that, taken off its list, most since #723.
+
+Then the rest of #778's, by one rule in place of a list: an enumeration
+`back_stepped` records, made of a source whose JS knows no back
+(`!has_a_back`), is `$enumerate` of that source made knowing its length
+and its back (`as_exact_size`), whatever kind it is, where `back_kept`
+named a `take()`, a `step_by()` and a map alone.
+`as_exact_size` reads two more forms for it: a `cloned()` of what isn't a
+number, JS's `src.map(clone)`, as a map; and a `skip(n)` of items with a
+destructor, `$skipping(src, n, drop)`, its source made knowing them. So
+a slice's `cloned().enumerate()`, and the crate's iterator's
+`skip(1).enumerate()` and `rev().enumerate()` of what has a destructor,
+fold from their back as Rust's do, and #778's last 11 rows are off the
+list. Asked its back, a type parameter bound by `ExactSizeIterator`
+alone is made knowing its length as before (`enumerate_of_known_length`):
+a back flag by the source's `DoubleEndedIterator` survived as an
+equivalent. `back_folds_of_sources_made_knowing_their_back` holds each
+against native Rust in both builds; mutations `enumerate-of-take-from-back-unknowing`
+(its line the rule's now) and `copy-of-compiled-struct-backless`
+(`lower/mir/iter/backs.ts`), and
+`dropping-skip-uncounted` and `cloned-map-uncounted`
+(`lower/iterators/knowing.ts`). An enumeration not recorded, of items
+with nothing to drop, stepped by its own `next_back()`, is still #764's.
 
 ## Amended (2026-11-05, #751): an inspect of an array's items with a destructor too
 

@@ -66,160 +66,326 @@ function everyDoubleEndedIterator_nextBack(every) {
   return every[0] < every[1] ? value() : undefined;
 }
 
-function main() {
-  const acc = $foldBack(
-    $enumerate(
-      $mapEnds($closing($iter(ds()), $dropEach(dDrop_drop)), (x) => {
-        const result = [(x[0] + 100) >>> 0];
-        dDrop_drop(x);
-        return result;
-      }),
-    ),
-    [0],
-    (a, [i, x]) => {
-      a[0] = (a[0] + ((((i * 1000) >>> 0) + x[0]) >>> 0)) >>> 0;
-      const result = a;
-      dDrop_drop(x);
-      return result;
-    },
-    accDrop_drop,
-  );
+export const cClone = { clone: cClone_clone, $drop: cDrop_drop };
+function cClone_clone(c) {
+  console.log(`clone ${c[0]}`);
+  return [c[0]];
+}
+function cDrop_drop(c) {
+  console.log(`drop c${c[0]}`);
+}
+
+function givesIterator_next(gives) {
+  function value() {
+    gives[0] = (gives[0] + 1) >>> 0;
+    return [gives[0]];
+  }
+  return gives[0] < gives[1] ? value() : undefined;
+}
+function givesIterator_sizeHint(gives) {
+  const n = (gives[1] - gives[0]) >>> 0;
+  return [n, n];
+}
+function givesDoubleEndedIterator_nextBack(gives) {
+  function value() {
+    gives[1] = (gives[1] - 1) >>> 0;
+    return [(gives[1] + 1) >>> 0];
+  }
+  return gives[0] < gives[1] ? value() : undefined;
+}
+function givesDoubleEndedIterator_rfold(gives, init, f, dropB, dropF) {
+  console.log("own rfold");
+  let acc$live = true;
+  let acc = init;
+  let result;
   try {
-    console.log(`${accDebug_fmt(acc)}`);
-    const v = [1, 2, 3];
-    const acc$1 = $foldBack($enumerate($iter(v)), [0], (a, [i, x]) => {
-      a[0] = (a[0] + ((((i * 10) >>> 0) + x) >>> 0)) >>> 0;
-      return a;
-    });
     try {
-      console.log(`${accDebug_fmt(acc$1)}`);
-      const acc = $foldBack(
+      let nextBack;
+      while (true) {
+        try {
+          nextBack = givesDoubleEndedIterator_nextBack(gives);
+        } catch (error) {
+          if (acc$live) {
+            dropB?.(acc);
+          }
+          throw error;
+        }
+        if (nextBack != null) {
+          const x = nextBack;
+          acc$live = false;
+          const value = f(acc, x);
+          acc$live = true;
+          acc = value;
+          continue;
+        }
+        try {
+          if (nextBack != null) {
+            dDrop_drop(nextBack);
+          }
+        } catch (error) {
+          if (acc$live) {
+            dropB?.(acc);
+          }
+          throw error;
+        }
+        break;
+      }
+      acc$live = false;
+      result = acc;
+    } finally {
+      dropF?.(f);
+    }
+  } finally {
+    console.log("drop gives");
+  }
+  return result;
+}
+
+function main() {
+  const cs = [[1], [2], [3]];
+  try {
+    const acc = $foldBack(
+      $enumerate($mapEnds($iter(cs), (item) => cClone_clone(item))),
+      [0],
+      (a, [i, c]) => {
+        a[0] = (((((a[0] * 10) >>> 0) + i) >>> 0) + c[0]) >>> 0;
+        const result = a;
+        cDrop_drop(c);
+        return result;
+      },
+    );
+    try {
+      console.log(`${accDebug_fmt(acc)}`);
+      const acc$1 = $foldBack(
         $enumerate(
           $skipping(
-            $iterator(
-              [0, 5],
-              everyIterator_next,
-              false,
-              everyDoubleEndedIterator_nextBack,
-              (it) => $exactLen(everyIterator_sizeHint(it)),
-              everyIterator_sizeHint,
+            $closing(
+              $iterator(
+                [0, 5],
+                givesIterator_next,
+                false,
+                givesDoubleEndedIterator_nextBack,
+                (it) => $exactLen(givesIterator_sizeHint(it)),
+                givesIterator_sizeHint,
+                undefined,
+                undefined,
+                undefined,
+                givesDoubleEndedIterator_rfold,
+              ),
+              (it) => {
+                console.log("drop gives");
+              },
             ),
             1,
+            dDrop_drop,
           ),
         ),
         [0],
-        (a, [i, x]) => {
-          a[0] = (((((a[0] * 10) >>> 0) + i) >>> 0) + x) >>> 0;
-          return a;
+        (a, [i, d]) => {
+          a[0] = (((((a[0] * 10) >>> 0) + i) >>> 0) + d[0]) >>> 0;
+          const result = a;
+          dDrop_drop(d);
+          return result;
         },
         accDrop_drop,
       );
       try {
-        console.log(`${accDebug_fmt(acc)}`);
-        const acc$1 = $foldBack(
+        console.log(`${accDebug_fmt(acc$1)}`);
+        const acc = $foldBack(
           $enumerate(
-            $iterator(
-              [0, 4],
-              everyDoubleEndedIterator_nextBack,
-              false,
-              everyIterator_next,
-              (it) => $exactLen(everyIterator_sizeHint(it)),
-              everyIterator_sizeHint,
+            $closing(
+              $iterator(
+                [0, 4],
+                givesDoubleEndedIterator_nextBack,
+                false,
+                givesIterator_next,
+                (it) => $exactLen(givesIterator_sizeHint(it)),
+                givesIterator_sizeHint,
+                givesDoubleEndedIterator_rfold,
+              ),
+              (it) => {
+                console.log("drop gives");
+              },
             ),
           ),
           [0],
-          (a, [i, x]) => {
-            a[0] = (((((a[0] * 10) >>> 0) + i) >>> 0) + x) >>> 0;
-            return a;
+          (a, [i, d]) => {
+            a[0] = (((((a[0] * 10) >>> 0) + i) >>> 0) + d[0]) >>> 0;
+            const result = a;
+            dDrop_drop(d);
+            return result;
           },
           accDrop_drop,
         );
         try {
-          console.log(`${accDebug_fmt(acc$1)}`);
-          const nums = [1, 2, 3, 4, 5];
-          const acc = $foldBack(
-            $knowing(
-              iterator_fuse($iter(nums), { next: $next }, true),
-              (iterator) =>
-                fuseDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, true),
-              (iterator) =>
-                fuseExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
-              undefined,
-              (iterator, k) =>
-                fuseDoubleEndedIterator_nthBack(
-                  iterator,
-                  k,
-                  { next: $next },
-                  { next_back: $nextBack },
-                  true,
-                ),
-              (iterator, init, f, broke, unwind, ends) =>
-                fuseDoubleEndedIterator_tryRfold(
-                  iterator,
-                  init,
-                  f,
-                  { next: $next },
-                  { next_back: $nextBack },
-                  $tryOf(broke),
-                  true,
-                  undefined,
-                  unwind,
-                  ends,
-                ),
+          console.log(`${accDebug_fmt(acc)}`);
+          const acc$1 = $foldBack(
+            $enumerate(
+              $mapEnds($closing($iter(ds()), $dropEach(dDrop_drop)), (x) => {
+                const result = [(x[0] + 100) >>> 0];
+                dDrop_drop(x);
+                return result;
+              }),
             ),
             [0],
-            (a, x) => {
-              a[0] = (((a[0] * 10) >>> 0) + x) >>> 0;
-              return a;
+            (a, [i, x]) => {
+              a[0] = (a[0] + ((((i * 1000) >>> 0) + x[0]) >>> 0)) >>> 0;
+              const result = a;
+              dDrop_drop(x);
+              return result;
             },
+            accDrop_drop,
           );
           try {
-            console.log(`${accDebug_fmt(acc)}`);
-            const acc$1 = $foldBack(
-              $knowing(
-                iterator_peekable($iter(nums)),
-                peekableDoubleEndedIterator_nextBack,
-                (iterator) => $exactLen($sizeHint(iterator)),
-                undefined,
-                undefined,
-                (iterator, init, f, broke, unwind, ends) =>
-                  peekableDoubleEndedIterator_tryRfold(
-                    iterator,
-                    init,
-                    f,
-                    { next: $next },
-                    { next_back: $nextBack },
-                    $tryOf(broke),
-                    undefined,
-                    unwind,
-                    ends,
-                  ),
-              ),
-              [0],
-              (a, x) => {
-                a[0] = (((a[0] * 10) >>> 0) + x) >>> 0;
-                return a;
-              },
-            );
+            console.log(`${accDebug_fmt(acc$1)}`);
+            const v = [1, 2, 3];
+            const acc = $foldBack($enumerate($iter(v)), [0], (a, [i, x]) => {
+              a[0] = (a[0] + ((((i * 10) >>> 0) + x) >>> 0)) >>> 0;
+              return a;
+            });
             try {
-              console.log(`${accDebug_fmt(acc$1)}`);
+              console.log(`${accDebug_fmt(acc)}`);
+              const acc$1 = $foldBack(
+                $enumerate(
+                  $skipping(
+                    $iterator(
+                      [0, 5],
+                      everyIterator_next,
+                      false,
+                      everyDoubleEndedIterator_nextBack,
+                      (it) => $exactLen(everyIterator_sizeHint(it)),
+                      everyIterator_sizeHint,
+                    ),
+                    1,
+                  ),
+                ),
+                [0],
+                (a, [i, x]) => {
+                  a[0] = (((((a[0] * 10) >>> 0) + i) >>> 0) + x) >>> 0;
+                  return a;
+                },
+                accDrop_drop,
+              );
+              try {
+                console.log(`${accDebug_fmt(acc$1)}`);
+                const acc = $foldBack(
+                  $enumerate(
+                    $iterator(
+                      [0, 4],
+                      everyDoubleEndedIterator_nextBack,
+                      false,
+                      everyIterator_next,
+                      (it) => $exactLen(everyIterator_sizeHint(it)),
+                      everyIterator_sizeHint,
+                    ),
+                  ),
+                  [0],
+                  (a, [i, x]) => {
+                    a[0] = (((((a[0] * 10) >>> 0) + i) >>> 0) + x) >>> 0;
+                    return a;
+                  },
+                  accDrop_drop,
+                );
+                try {
+                  console.log(`${accDebug_fmt(acc)}`);
+                  const nums = [1, 2, 3, 4, 5];
+                  const acc$1 = $foldBack(
+                    $knowing(
+                      iterator_fuse($iter(nums), { next: $next }, true),
+                      (iterator) =>
+                        fuseDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, true),
+                      (iterator) =>
+                        fuseExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
+                      undefined,
+                      (iterator, k) =>
+                        fuseDoubleEndedIterator_nthBack(
+                          iterator,
+                          k,
+                          { next: $next },
+                          { next_back: $nextBack },
+                          true,
+                        ),
+                      (iterator, init, f, broke, unwind, ends) =>
+                        fuseDoubleEndedIterator_tryRfold(
+                          iterator,
+                          init,
+                          f,
+                          { next: $next },
+                          { next_back: $nextBack },
+                          $tryOf(broke),
+                          true,
+                          undefined,
+                          unwind,
+                          ends,
+                        ),
+                    ),
+                    [0],
+                    (a, x) => {
+                      a[0] = (((a[0] * 10) >>> 0) + x) >>> 0;
+                      return a;
+                    },
+                  );
+                  try {
+                    console.log(`${accDebug_fmt(acc$1)}`);
+                    const acc = $foldBack(
+                      $knowing(
+                        iterator_peekable($iter(nums)),
+                        peekableDoubleEndedIterator_nextBack,
+                        (iterator) => $exactLen($sizeHint(iterator)),
+                        undefined,
+                        undefined,
+                        (iterator, init, f, broke, unwind, ends) =>
+                          peekableDoubleEndedIterator_tryRfold(
+                            iterator,
+                            init,
+                            f,
+                            { next: $next },
+                            { next_back: $nextBack },
+                            $tryOf(broke),
+                            undefined,
+                            unwind,
+                            ends,
+                          ),
+                      ),
+                      [0],
+                      (a, x) => {
+                        a[0] = (((a[0] * 10) >>> 0) + x) >>> 0;
+                        return a;
+                      },
+                    );
+                    try {
+                      console.log(`${accDebug_fmt(acc)}`);
+                    } finally {
+                      accDrop_drop(acc);
+                    }
+                  } finally {
+                    accDrop_drop(acc$1);
+                  }
+                } finally {
+                  accDrop_drop(acc);
+                }
+              } finally {
+                accDrop_drop(acc$1);
+              }
             } finally {
-              accDrop_drop(acc$1);
+              accDrop_drop(acc);
             }
           } finally {
-            accDrop_drop(acc);
+            accDrop_drop(acc$1);
           }
         } finally {
-          accDrop_drop(acc$1);
+          accDrop_drop(acc);
         }
       } finally {
-        accDrop_drop(acc);
+        accDrop_drop(acc$1);
       }
     } finally {
-      accDrop_drop(acc$1);
+      accDrop_drop(acc);
     }
   } finally {
-    accDrop_drop(acc);
+    for (const item of cs) {
+      cDrop_drop(item);
+    }
   }
 }
 //# sourceMappingURL=case.js.map
