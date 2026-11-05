@@ -485,7 +485,7 @@ The structure that enforces the contract has three parts:
 - **std's compiled adapters (`--std-iterators`) as the oracle** that the
   hand-written runtime is proved against.
 
-The conformance table (`test/iterator-conformance.test.ts`, ADR 1090's
+The conformance table (`ITERATOR_TABLE=conformance bun test test/iterator-matrix.test.ts`, ADR 1090's
 generator) runs each adapter through each step, in both builds, against
 native Rust.
 

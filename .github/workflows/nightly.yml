@@ -222,6 +222,53 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  # The iterator conformance table (ADR 1092): each adapter alone through
+  # each step of the contract, in both builds against native Rust, but the
+  # rows of test/iterator-matrix-known.txt it lists.
+  conformance:
+    name: iterator conformance (${{ matrix.machine }}/2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        machine: [1, 2]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run parts of machine ${{ matrix.machine }} of 2
+        env:
+          ITERATOR_TABLE: conformance
+          ITERATOR_MATRIX: all
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+          MACHINE: ${{ matrix.machine }}
+        run: |
+          pids=()
+          for core in 1 2 3 4; do
+            part=$(( (MACHINE - 1) * 4 + core ))
+            RUST_JS_CASES=$part/8 bun test --timeout=900000 test/iterator-matrix.test.ts > "conformance-$part.log" 2>&1 &
+            pids+=($!)
+          done
+          failed=0
+          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
+          cat conformance-*.log
+          exit $failed
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: iterator-conformance-${{ matrix.machine }}
+          path: target/iterator-matrix
+          if-no-files-found: ignore
+          retention-days: 14
+
   # The crates from crates.io the guide says run (docs/crate-corpus.md):
   # each compiled with every crate it uses, its probe run beside native
   # Rust, a crate doing worse than its row says failing the job, as chrono
@@ -294,7 +341,7 @@ jobs:
   # again that day, commented on, naming each failed job with its link: the
   # issue watch gives it an owner that day, and no one polls for it.
   issue:
-    needs: [check, seeds, fuzz, stages, programs, forms, mut-refs, matrix, crates, port]
+    needs: [check, seeds, fuzz, stages, programs, forms, mut-refs, matrix, conformance, crates, port]
     if: always() && github.ref == 'refs/heads/main' && contains(needs.*.result, 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 10

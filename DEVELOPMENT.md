@@ -84,6 +84,7 @@ branch's one running, and no branch's run touches another's.
 | The day's 600 generated programs through the same, `TIDY_STAGES=programs` | | | yes (`programs`, 6 machines of 100) |
 | What JS made, read as often as Rust reads it in every variant, `test/getter-reads.test.ts` (ADR 1087) | in `check:fast` when tidy or preparation changes: 16 s on the Mac | with the stages' sample | in the suite |
 | The iterator conformance matrix, `test/iterator-matrix.test.ts` (ADR 1090): every source, chain, consumer and panic site in both builds against native Rust | `bun test test/iterator-matrix.test.ts` (8 batches) when a change touches iterators; `ITERATOR_MATRIX=all RUST_JS_CASES=i/n` for all of them | **Iterator matrix** workflow, of a push that changes `src/runtime/`, `src/lower/iterators/` or `src/lower/mir/iter/`: the day's 8 batches | every case, on 6 machines (`matrix`) |
+| The iterator conformance table, `ITERATOR_TABLE=conformance` of the same test (ADR 1092): each adapter alone through each step of the contract, from either end, with closures that hold a destructor, in both builds against native Rust | `ITERATOR_TABLE=conformance bun test test/iterator-matrix.test.ts` (8 batches) when a change touches a step; `ITERATOR_MATRIX=all` for all 360 | the same workflow: the day's 8 batches of it too | every case, on 2 machines (`conformance`) |
 | Release qualification | | | yes |
 | react.dev port: its JS against what it committed, `bun run port measure`; its build's 823 pages, `bun run port compare` | yes: the port is private | | |
 | React's port, react-in-rust at `ports/react-in-rust.pin`: `cargo check` of it, `bun scripts/react-in-rust.ts check` | when a change touches a binding | **React port** workflow, of a push that changes `builtins/`, `webapi/`, `node/` or `react/` | |
@@ -611,6 +612,10 @@ passes fails it until `bun test/iterator-matrix.ts take-off` takes it off.
 Its 8 batches took 21 s on the Mac in 4 parts (2026-11-04), after the build.
 `ITERATOR_MATRIX=#<issue>` runs the batches that hold one issue's known
 cases, 27 to 908 of the 1,700, for its fixer, then `take-off`. Started by hand too: `gh workflow run iterator-matrix.yml`.
+It then runs 8 of the conformance table's 360 batches the same way
+(`ITERATOR_TABLE=conformance`, ADR 1092), whose known cases are rows of the
+same list, `conformance:plain` and `conformance:std`, taken off by the same
+`take-off`.
 
 ### `react-in-rust.yml`, the React port, of a push that changes a binding
 

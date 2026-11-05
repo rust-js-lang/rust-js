@@ -9,6 +9,7 @@
 //   bun test test/iterator-matrix.test.ts                                        # a sample, ITERATOR_MATRIX_SEED's batches
 //   ITERATOR_MATRIX=all RUST_JS_CASES=1/8 bun test test/iterator-matrix.test.ts  # an eighth of every batch
 //   ITERATOR_MATRIX=#651 bun test test/iterator-matrix.test.ts                   # the batches holding #651's known cases
+//   ITERATOR_TABLE=conformance bun test test/iterator-matrix.test.ts             # the conformance table's (ADR 1092), each likewise
 //
 // A case that doesn't run as Rust does fails its batch, but those
 // test/iterator-matrix-known.txt lists, each under its issue, which only
@@ -20,7 +21,23 @@ import { beforeAll, expect, test } from "bun:test";
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 
-import { allCases, batches, builds, failures, fixedFile, knownCases, program, readKnown, sample, segments, version, type Case } from "./iterator-matrix";
+import {
+  batches,
+  builds,
+  casesOf,
+  failures,
+  fixedFile,
+  knownCases,
+  listedBuild,
+  ofTable,
+  program,
+  readKnown,
+  sample,
+  segments,
+  table,
+  version,
+  type Case,
+} from "./iterator-matrix";
 import { compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, fixture } from "./support";
 import { shard } from "../scripts/shard";
@@ -42,14 +59,16 @@ if (which !== undefined && which !== "all" && issue === undefined) {
 }
 const list = readKnown();
 const known = knownCases(list);
-const every = allCases();
+const every = casesOf(table);
 const all = batches(every);
 // A sample is whole batches, so each case is in the same program as in a
 // run of all of them, and judged the same.
 const seed = whole("ITERATOR_MATRIX_SEED", 1);
 const indexes = all.map((_, i) => i);
 const perBatch = all[0].length;
-const ofIssue = [...known].filter(([, n]) => String(n) === issue).map(([name]) => Math.floor(Number(name.split(" ")[1]) / perBatch));
+const ofIssue = [...known]
+  .filter(([name, n]) => String(n) === issue && ofTable(name.split(" ")[0]))
+  .map(([name]) => Math.floor(Number(name.split(" ")[1]) / perBatch));
 const chosen =
   which === "all" ? indexes : issue !== undefined ? [...new Set(ofIssue)].sort((a, b) => a - b) : sample(indexes, seed, whole("ITERATOR_MATRIX_BATCHES", 8));
 if (issue !== undefined && chosen.length === 0) throw new Error(`ITERATOR_MATRIX=${which}: no known case is under #${issue}`);
@@ -61,10 +80,12 @@ const mine = shard(
 ).map(Number);
 // Its numbers are of the cases the generator made when it was made: of
 // another generator, another list, each issue's cases found again.
+// The list is both tables'; this run judges its own table's rows.
 test("the known failures are of these cases, each one a case", () => {
-  if (list.issues.length > 0) expect(list.version, "the cases changed: make test/iterator-matrix-known.txt again").toBe(version(every));
-  const names = new Set(every.flatMap((c) => builds.map(([build]) => `${build} ${c.n}`)));
-  expect([...known.keys()].filter((name) => !names.has(name))).toEqual([]);
+  const mineListed = [...known.keys()].filter((name) => ofTable(name.split(" ")[0]));
+  if (mineListed.length > 0) expect(list.versions[table], `the ${table}'s cases changed: make its rows of test/iterator-matrix-known.txt again`).toBe(version(every));
+  const names = new Set(every.flatMap((c) => builds.map(([build]) => `${listedBuild(build)} ${c.n}`)));
+  expect(mineListed.filter((name) => !names.has(name))).toEqual([]);
 });
 
 type Verdict = { kind: "same" } | { kind: "refused"; why: string } | { kind: "differs"; js: string; why?: string } | { kind: "crashed"; why: string };
@@ -160,7 +181,7 @@ function judge(cases: Case[], native: Map<string, string>, dir: string, build: s
 for (const index of mine) {
   const batch = all[index];
   test(`batch ${index + 1} of ${all.length}: ${batch.length} cases`, () => {
-    const dir = fixture(`iterator-matrix-${index}`);
+    const dir = fixture(`iterator-${table}-${index}`);
     const file = join(dir, "native.rs");
     writeFileSync(file, program(batch));
     const native: Run | string = runNative(file, dir);
@@ -173,15 +194,17 @@ for (const index of mine) {
     let refused = 0;
     for (const [build, flags] of builds) {
       for (const [c, verdict] of judge(batch, expected, dir, build, flags)) {
-        const name = `${build}: ${c.id}`;
-        const issue = known.get(`${build} ${c.n}`);
+        // As the one list names it, of either table.
+        const listed = listedBuild(build);
+        const name = `${listed}: ${c.id}`;
+        const issue = known.get(`${listed} ${c.n}`);
         if (verdict.kind === "refused") refused++;
         if (verdict.kind === "same" || verdict.kind === "refused") {
           if (issue === undefined) continue;
           // What `bun test/iterator-matrix.ts take-off` takes off the list.
           mkdirSync(failures, { recursive: true });
-          appendFileSync(fixedFile, `${build} ${c.n}\n`);
-          problems.push(`${name} (${build} ${c.n}) is no wrong answer now (${verdict.kind}): take it off test/iterator-matrix-known.txt (#${issue})`);
+          appendFileSync(fixedFile, `${listed} ${c.n}\n`);
+          problems.push(`${name} (${listed} ${c.n}) is no wrong answer now (${verdict.kind}): take it off test/iterator-matrix-known.txt (#${issue})`);
           continue;
         }
         // Each that differs, its program alone and what each printed, a
@@ -189,7 +212,7 @@ for (const index of mine) {
         mkdirSync(failures, { recursive: true });
         const repro = join(failures, `${name.replaceAll(/[^A-Za-z0-9]+/g, "-")}.rs`);
         writeFileSync(repro, program([c]));
-        writeFileSync(repro.replace(/\.rs$/, ".json"), JSON.stringify({ name, build, n: c.n, issue, verdict, native: expected.get(c.id) }, null, 2));
+        writeFileSync(repro.replace(/\.rs$/, ".json"), JSON.stringify({ name, build: listed, n: c.n, issue, verdict, native: expected.get(c.id) }, null, 2));
         if (issue !== undefined) continue;
         const said =
           verdict.kind === "crashed"

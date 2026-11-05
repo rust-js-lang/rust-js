@@ -138,9 +138,10 @@ outside the fold. So every fold or `for_each` by value drops what is left
 of the iterator before its closure, at its end and as it unwinds, in both
 builds. Only an adapter's held function is given as `ends` (#710).
 **Gap G2 (#735):** `$Steps.prototype.drop`'s `fold` and `tryFold` (a lazy
-`skip()`) run their first `nth` outside `$staged` and `$consumed`. As that
-panics they leak `init` and never close the source. `$skipping`, the other
-`Skip`, does both.
+`skip()`) ran their first `nth` outside `$staged` and `$consumed`. As that
+panicked they leaked `init` and never closed the source. `$skipping`, the
+other `Skip`, does both. iterB's fix makes `$skipping` the only runtime
+`Skip`: `drop(n)` is `$skipping(this, n)`, with std's `Skip::last`.
 
 **S3. `unwind` is the accumulator's drop**, given by the consumer, where a
 stage's panic would strand it (#423). Every implementer passes it on to
@@ -182,10 +183,34 @@ drops nothing.
 **S6. `len()` and `hint()` read and change nothing.** Their presence is the
 trait: an iterator that has `back` is a `DoubleEndedIterator`, one that has
 `len` is an `ExactSizeIterator`. `$sizeHint(it)` asks `hint`, else `len`,
-else std's default. An adapter's hint is std's for that adapter
-(`Take::size_hint`, `take.rs:73`; `Skip`'s, `skip.rs:91`; `StepBy`'s;
-`Zip`'s, ADR 0989), and a `Peekable`'s default `len` is its struct's hint
+else std's default. A `Peekable`'s default `len` is its struct's hint
 (ADR 0918's #706 amendment).
+
+What each `size_hint` is, std's. A consumer that reserves by it, a
+`collect()` into a `Vec` (ADR 0940, #728) or a `String`, `HashMap` or
+`HashSet` (`string.rs:2507`, hashbrown's `extend`), shows it:
+
+| Iterator | `size_hint()`, of its source's `(lo, hi)` (`iter/adapters/`) |
+|---|---|
+| a `Vec`'s, a slice's, an array's, a range's | exact, what's left |
+| the crate's | its own, else `(0, None)` (`iterator.rs:189`) |
+| `Map`, `Inspect`, `Enumerate`, `Rev`, `Copied`, `Cloned` | the source's (`map.rs:111`, `inspect.rs:83`, `enumerate.rs:87`, `rev.rs:56`, `copied.rs:64`) |
+| `Filter`, `FilterMap`, `SkipWhile`, `MapWhile`, `Scan` | `(0, hi)` (`filter.rs:118`, `filter_map.rs:126`, `skip_while.rs:65`, `map_while.rs:49`, `scan.rs:51`) |
+| `TakeWhile` | `(0, Some(0))` once its predicate failed, else `(0, hi)` (`take_while.rs:59`) |
+| `Skip` | `(lo - n, hi - n)`, each saturating (`skip.rs:91`) |
+| `Take` | `(0, Some(0))` at `n == 0`; else `(min(lo, n), min(hi, n))`, `hi` none as `n` (`take.rs:73`) |
+| `StepBy` | before its first item, `n == 0 ? 0 : 1 + (n - 1) / step` of each bound; after, `n / step` (`step_by.rs:236`) |
+| `Chain` | both sides: `lo` saturating sum, `hi` checked sum, none if either has none; one side left, that side's; none, `(0, Some(0))` (`chain.rs:182`) |
+| `Zip` | `(min(lo), min(hi))`, `hi` the one either has (`zip.rs:216`) |
+| `Fuse` | its source's, `(0, Some(0))` once it's done (`fuse.rs:80`) |
+| `Peekable` | `(0, Some(0))` if it peeked a `None`; else its source's plus one for a peeked item, `lo` saturating and `hi` checked (`peekable.rs:76`) |
+| `Flatten`, `FlatMap` | `lo` the front and back inners' `lo`s summed. Of inners of a fixed size `N` (`[T; N]`), plus `N` times the source's `lo`, and `hi` exact likewise. Else `hi` the inners' `hi`s summed only once the source's hint is `(0, Some(0))`, otherwise none (`flatten.rs:534`). Of inners that give at most one item (`Option`, `Result`), `(0, hi)`, or the source's where each gives one (`flatten.rs:864`) |
+| `Cycle` | `(0, Some(0))` of an empty source, `(0, None)` of one whose `lo` is 0, else `(usize::MAX, None)` (`cycle.rs:46`) |
+| `&mut I` | `I`'s (`iterator.rs:4239`) |
+
+**Gap G10 (#733):** the runtime's adapters' `hint` isn't std's
+`size_hint` in every case, and the recognizers' chains ask no hint at all.
+This table is what #733 builds against.
 
 **S7. `return()` is the drop.** It closes once: a second `return()` drops
 nothing (`$closing`'s `closed`, `$stdIterator`'s `$closed`). It drops the
@@ -386,27 +411,46 @@ No large move of helpers happens before the conformance table exists.
 ## The conformance table
 
 `test/iterator-matrix.ts`'s `conformanceCases()` is a second table of ADR
-1090's generator, built from the same sources, adapters and consumers, and
-run by the same harness (`test/iterator-conformance.test.ts`). Where the
-matrix pairs two adapters over a few consumers, this table takes one
-adapter at a time and runs it through every step of §2 that it has:
-`next`, `next_back`, `fold`, `rfold`, `try_fold`, `try_rfold` (`rfind`),
-`nth`, `nth_back`, `count`, `last`, `size_hint` and `len`, and the drop of
-what's left after a partial step. Each case runs:
+1090's generator. It is built from the same sources, adapters and
+consumers, and run by the same harness:
+`ITERATOR_TABLE=conformance bun test test/iterator-matrix.test.ts`. Its
+known failures are rows of the matrix's one list,
+`test/iterator-matrix-known.txt`, under the same issues: `conformance:plain`
+and `conformance:std`, each with its table's generator version, taken off
+by the same `take-off`.
+
+Where the matrix pairs two adapters over a few consumers, this table takes
+each adapter alone, and no adapter at all, and runs it through every step
+of §2 that it has:
+
+- the matrix's consumers;
+- `next` with the rest dropped, `next_back`, `nth_back`, `rfind`
+  (`try_rfold`), `find`, `position` and `for_each`;
+- `size_hint`, `len`, and the `capacity` of a collect into a `Vec`.
+
+Each case runs:
 
 - plain;
 - with an item's drop panicking;
 - with the adapter's closure panicking, and with the consumer's;
-- with closures that capture a `D`, so S2's order shows (#734).
+- with closures that hold a `D` of their own (`map holding`, and `fold
+  holding`, `rfold holding`, `for_each holding`, `try_fold holding` and
+  `any holding`), so S2's order shows (#734).
 
 Each runs natively and in both builds. The `--std-iterators` build is the
-second oracle, as (c) says. The adapters are every one §3 lists, including
-those the matrix leaves out (`take_while`, `skip_while`, `map_while`,
-`scan`, `inspect`, `filter_map`, `flat_map`, `by_ref`, `cycle`). They run
-over the sources that tell its steps apart: a `Vec`'s, a range, the crate's
-iterator that writes every step and one that writes none, and a type
-parameter. Its known failures are listed as the matrix's are, under their
-issues, and only shrink.
+second oracle, as (c) says. The adapters are the matrix's and those it
+leaves out: `take_while`, `skip_while`, `map_while`, `scan`, `inspect`,
+`filter_map`, `flat_map` and `by_ref`. They run over the sources that tell
+their steps apart:
+
+- a `Vec`'s, a reversed `Vec`'s, a range and a slice's;
+- the crate's iterators that write none of their steps (`Plain`), a
+  `size_hint` (`Hints`, `Exact`, which print as it runs, #733), every step
+  (`Every`), or a back (`Backs`);
+- a type parameter of a `Vec`'s and of the crate's.
+
+That is 21,587 cases in 360 programs. Its known failures are listed as the
+matrix's are, under their issues, and only shrink.
 
 ## Alternatives
 
@@ -439,8 +483,27 @@ issues, and only shrink.
 ## Consequences
 
 - This ADR is the contract a change to an iterator step is checked
-  against. Its gaps G1–G9 are #730's work list. G1 is #734, G2 is #735 and
-  G6 is #736, each P0, filed from this contract's probes.
+  against. Its gaps G1–G10 are #730's work list:
+  - G1 is #734, G2 is #735 and G6 is #736, each P0, filed from this
+    contract's probes;
+  - G10 is #733.
+- The conformance table's first runs found these P0s, each minimized
+  against native Rust:
+  - #738: `rfind` leaks the item its predicate panicked on (S1);
+  - #739: `$chainEnds` lacks a chain's front steps (G7);
+  - #743: a chain's and a zip's drop stop at their first side's panic
+    (S7);
+  - #744: `$flattenEnds`' folds don't pass `unwind` to their closure
+    (S3);
+  - #745: `len` and `size_hint` are read off an assumed JS shape (G9);
+  - #746: a compiled `scan()`'s collect drops in the wrong order;
+  - #747: a `&mut I`'s `rfold` reaches `I::rfold` (§3);
+  - #748: a compiled `scan()` consumed by value drops its source twice;
+  - #749: a type parameter's `by_ref()` is the value itself (§3).
+
+  Their cases are listed under each in `test/iterator-matrix-known.txt`,
+  which only shrinks. A collected `Vec`'s capacity number is ADR 0419's
+  case B: the table checks only `capacity() >= len()`.
 - docs/architecture.md's "Libraries and runtime" names the contract and its
   owners.
 - The stale references to "ADR 1092" for the iterator matrix

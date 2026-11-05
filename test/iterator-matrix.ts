@@ -8,6 +8,12 @@
 // takes and makes (an item, double-ended, exact-sized), each consumer what
 // item it takes, and each panic site where it can be. Nothing is skipped
 // by a list.
+//
+// It makes two tables of the same sources, adapters and consumers, which
+// one harness runs (ITERATOR_TABLE): the matrix, every chain of none to two
+// adapters through a few consumers (ADR 1090); and the conformance table,
+// each adapter alone through every step of ADR 1092's contract, from either
+// end, with closures that capture what has a destructor (#730).
 
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -22,31 +28,48 @@ export const builds: [name: string, flags: string[]][] = [
   ["std", ["--std-iterators"]],
 ];
 
-/** Where each failure's program and lines are written. */
+/** Which table a run makes: the matrix (ADR 1090) or the conformance
+ * table (ADR 1092), `ITERATOR_TABLE`'s. */
+export type Table = "matrix" | "conformance";
+export const table: Table = (() => {
+  const which = process.env.ITERATOR_TABLE ?? "matrix";
+  if (which !== "matrix" && which !== "conformance") throw new Error(`ITERATOR_TABLE=${which}: \`matrix\` or \`conformance\``);
+  return which;
+})();
+
+/** Where each failure's program and lines are written, of either table. */
 export const failures = join(target, "iterator-matrix");
 /** The known failures a run found running as Rust does, one a line. */
 export const fixedFile = join(failures, "fixed.txt");
 const knownFile = join(root, "test", "iterator-matrix-known.txt");
 
-/** The known failures, by `<build> <n>`, a case's build and its number
- * in `allCases()`, each one's issue. Under a line `#<issue> <title>`, a line
- * a build, `plain 120-179,4410`, the numbers of its cases as sorted ranges;
- * `//` a comment. Its `// generator <version>` line is the version of the
- * cases its numbers are of. */
-export type Known = { version: string | undefined; issues: { heading: string; cases: Map<string, number[]> }[] };
+/** How the known list names a build's cases of `of`: `plain` of the
+ * matrix's, `conformance:plain` of the conformance table's. */
+export const listedBuild = (build: string, of: Table = table) => (of === "matrix" ? build : `${of}:${build}`);
+/** Whether a listed build's cases are `of`'s. */
+export const ofTable = (listed: string, of: Table = table) => (of === "matrix" ? !listed.includes(":") : listed.startsWith(`${of}:`));
+
+/** The known failures of both tables, one list: by `<build> <n>`, a case's
+ * build as `listedBuild` names it and its number in its table's cases, each
+ * one's issue. Under a line `#<issue> <title>`, a line a build, `plain
+ * 120-179,4410` or `conformance:std 12`, the numbers of its cases as sorted
+ * ranges; `//` a comment. Its `// generator <version>` line is the version
+ * of the matrix's cases its numbers are of, `// generator conformance
+ * <version>` the conformance table's. */
+export type Known = { versions: Partial<Record<Table, string>>; issues: { heading: string; cases: Map<string, number[]> }[] };
 
 export function parseKnown(text: string): Known {
-  const known: Known = { version: undefined, issues: [] };
+  const known: Known = { versions: {}, issues: [] };
   for (const line of text.split("\n")) {
-    const version = /^\/\/ generator (\w+)$/.exec(line);
-    if (version) known.version = version[1];
+    const version = /^\/\/ generator (?:(conformance) )?(\w+)$/.exec(line);
+    if (version) known.versions[(version[1] as Table | undefined) ?? "matrix"] = version[2];
     if (line === "" || line.startsWith("//")) continue;
     if (/^#\d+ /.test(line)) {
       known.issues.push({ heading: line, cases: new Map() });
       continue;
     }
     const at = known.issues.at(-1);
-    const row = /^(\w+) (\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)$/.exec(line);
+    const row = /^((?:conformance:)?\w+) (\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)$/.exec(line);
     if (!at || !row) throw new Error(`test/iterator-matrix-known.txt: \`${line}\` is no build's cases under an issue`);
     const numbers = row[2].split(",").flatMap((range) => {
       const [from, to = from] = range.split("-").map(Number);
@@ -85,15 +108,21 @@ export function ranges(numbers: number[]): string {
   return out.join(",");
 }
 
-/** The list's text: `header`, its version, each issue's builds' ranges. */
+/** The list's text: `header`, each table's version, each issue's builds'
+ * ranges, the matrix's first. */
 export function printKnown(known: Known, header: string): string {
+  const order = (build: string) => `${build.includes(":") ? 1 : 0} ${build}`;
   const issues = known.issues
     .map(({ heading, cases }) => {
-      const rows = [...cases].filter(([, numbers]) => numbers.length > 0).sort(([a], [b]) => a.localeCompare(b));
+      const rows = [...cases].filter(([, numbers]) => numbers.length > 0).sort(([a], [b]) => order(a).localeCompare(order(b)));
       return rows.length === 0 ? "" : `\n${heading}\n${rows.map(([build, numbers]) => `${build} ${ranges(numbers)}`).join("\n")}\n`;
     })
     .join("");
-  return `${header}// generator ${known.version}\n${issues}`;
+  const versions = (["matrix", "conformance"] as const)
+    .filter((of) => known.versions[of] !== undefined)
+    .map((of) => `// generator ${of === "matrix" ? "" : `${of} `}${known.versions[of]}\n`)
+    .join("");
+  return `${header}${versions}${issues}`;
 }
 
 export const readKnown = () => parseKnown(existsSync(knownFile) ? readFileSync(knownFile, "utf8") : "");
@@ -243,6 +272,9 @@ type Consumer = {
   /** Its statements, of the chain `it`, an expression, `panics` saying
    * its closure does. */
   text: (it: string, panics: boolean) => string;
+  /** Whether it takes `it` by `&mut` where `it` is an expression, so a
+   * generic case's parameter alone is `mut`. */
+  lends?: boolean;
 };
 
 /** A consumer's closure's start: its call counted, and a panic at the
@@ -267,12 +299,13 @@ export const consumers: Consumer[] = [
     name: "try_fold",
     closure: true,
     takes: any,
+    lends: true,
     // Broken off at the third item, the accumulator dropped where it is.
     text: (it, p) =>
       `let r = ${it}.try_fold(Acc(0), |mut a, x| { ${call(p)} a.0 += x.v(); if seen == 3 { Err(a.0) } else { Ok(a) } });\n    match &r { Ok(a) => println!("ok {}", a.0), Err(n) => println!("err {n}") }`,
   },
-  { name: "any", closure: true, takes: any, text: (it, p) => `let r = ${it}.any(|x| { ${call(p)} x.v() % 3 == 0 });\n    println!("any {r} after {seen}");` },
-  { name: "all", closure: true, takes: any, text: (it, p) => `let r = ${it}.all(|x| { ${call(p)} x.v() % 4 != 0 });\n    println!("all {r} after {seen}");` },
+  { name: "any", closure: true, takes: any, lends: true, text: (it, p) => `let r = ${it}.any(|x| { ${call(p)} x.v() % 3 == 0 });\n    println!("any {r} after {seen}");` },
+  { name: "all", closure: true, takes: any, lends: true, text: (it, p) => `let r = ${it}.all(|x| { ${call(p)} x.v() % 4 != 0 });\n    println!("all {r} after {seen}");` },
   { name: "count", closure: false, takes: any, text: (it) => `let n = ${it}.count();\n    println!("count {n}");` },
   { name: "last", closure: false, takes: any, text: (it) => `let l = ${it}.last();\n    println!("last {:?}", l.as_ref().map(V::v));` },
   {
@@ -372,6 +405,202 @@ export function allCases(): Case[] {
   return out;
 }
 
+// The conformance table (ADR 1092, #730): each adapter of std's alone,
+// through each step of the contract, over the sources that tell its steps
+// apart: a `Vec`'s, a reversed `Vec`'s, a range, a slice's, the crate's
+// iterator that writes none of its steps, one that writes every one, one
+// double-ended, and a type parameter of a `Vec`'s and of the crate's.
+
+/** The adapters only the table runs, besides the matrix's. */
+const stepAdapters: Adapter[] = [
+  {
+    name: "take_while",
+    closure: true,
+    shape: (from) => ({ ...from, back: false, exact: false }),
+    text: (_, panics) => `.take_while(|x| ${counted(panics, "take_while", "x.v() % 10 < 4")})`,
+  },
+  {
+    name: "skip_while",
+    closure: true,
+    shape: (from) => ({ ...from, back: false, exact: false }),
+    text: (_, panics) => `.skip_while(|x| ${counted(panics, "skip_while", "x.v() % 10 < 2")})`,
+  },
+  {
+    name: "map_while",
+    closure: true,
+    shape: (from) => ({ ...from, back: false, exact: false }),
+    text: (_, panics) => `.map_while(|x| ${counted(panics, "map_while", "(x.v() % 10 < 4).then_some(x)")})`,
+  },
+  {
+    name: "scan",
+    closure: true,
+    shape: (from) => ({ ...from, back: false, exact: false }),
+    text: (_, panics) => `.scan(0u32, |s, x| ${counted(panics, "scan", "{ *s += 1; (*s < 4).then_some(x) }")})`,
+  },
+  { name: "inspect", closure: true, shape: (from) => from, text: (_, panics) => `.inspect(|x| ${counted(panics, "inspect", 'println!("saw {}", x.v())')})` },
+  {
+    name: "filter_map",
+    closure: true,
+    shape: (from) => ({ ...from, exact: false }),
+    text: (_, panics) => `.filter_map(|x| ${counted(panics, "filter_map", "(x.v() % 2 == 1).then_some(x)")})`,
+  },
+  {
+    name: "flat_map",
+    closure: true,
+    shape: (from) => (owned(from.item) ? { ...from, exact: false } : undefined),
+    text: (from, panics) => `.flat_map(|x| ${counted(panics, "flat_map", from.item === "D" ? "vec![D(x.0 + 10), x]" : "vec![x + 10, x]")})`,
+  },
+  {
+    // A closure that holds a `D` of its own, `drop 90`, moved into the
+    // adapter, which its fold drops where std's does (ADR 0991).
+    name: "map holding",
+    closure: true,
+    shape: (from) => (from.item === "D" ? from : { item: "N", owns: false, back: from.back, exact: from.exact }),
+    text: (from, panics) => {
+      const body = { D: "D(x.0 + 100)", N: "x + 100", "&D": "x.0 + 100", "&N": "x + 100", pair: "x.v()" }[from.item];
+      return `.map({ let g = D(90); move |x| { let _g = &g; ${counted(panics, "map", body)} } })`;
+    },
+  },
+  // Lent, `caseFn`'s: its steps are `&mut I`'s.
+  { name: "by_ref", closure: false, shape: (from) => from, text: () => "" },
+];
+
+/** A consumer's closure that holds a `D` of its own, `drop 90`, and counts
+ * by the case's `seen`, which it borrows: its start, as `call`'s. */
+const holding = (panics: boolean, params: string, body: string) =>
+  `{ let g = D(90); let seen = &mut seen; move |${params}| { let _g = &g; *seen += 1;${panics ? ` if *seen == 2 { panic!("consumer") }` : ""} ${body} } }`;
+const back = (shape: Shape) => shape.back;
+
+/** The steps only the table runs, besides the matrix's consumers: each
+ * step of the contract that isn't one already, and the folds by value of
+ * a closure that holds what has a destructor (#734). */
+const stepConsumers: Consumer[] = [
+  {
+    name: "next",
+    closure: false,
+    takes: any,
+    // What it leaves dropped where it's dropped, before what it gave.
+    text: (it) => `let mut it = ${it};\n    let a = it.next();\n    drop(it);\n    println!("next {:?}", a.as_ref().map(V::v));`,
+  },
+  {
+    name: "next_back",
+    closure: false,
+    takes: back,
+    text: (it) => `let mut it = ${it};\n    let a = it.next_back();\n    println!("back {:?}", a.as_ref().map(V::v));\n    let b = it.next();\n    println!("then {:?}", b.as_ref().map(V::v));`,
+  },
+  {
+    name: "nth_back",
+    closure: false,
+    takes: back,
+    text: (it) => `let mut it = ${it};\n    let a = it.nth_back(1);\n    println!("nth_back {:?}", a.as_ref().map(V::v));\n    let b = it.next_back();\n    println!("then {:?}", b.as_ref().map(V::v));`,
+  },
+  {
+    name: "rfind",
+    closure: true,
+    takes: back,
+    lends: true,
+    text: (it, p) => `let r = ${it}.rfind(|x| { ${call(p)} x.v() % 2 == 0 });\n    println!("rfind {:?} after {seen}", r.as_ref().map(V::v));`,
+  },
+  {
+    name: "find",
+    closure: true,
+    takes: any,
+    lends: true,
+    text: (it, p) => `let r = ${it}.find(|x| { ${call(p)} x.v() % 2 == 0 });\n    println!("find {:?} after {seen}", r.as_ref().map(V::v));`,
+  },
+  {
+    name: "position",
+    closure: true,
+    takes: any,
+    lends: true,
+    text: (it, p) => `let r = ${it}.position(|x| { ${call(p)} x.v() % 3 == 0 });\n    println!("position {r:?} after {seen}");`,
+  },
+  { name: "size_hint", closure: false, takes: any, text: (it) => `let it = ${it};\n    println!("hint {:?}", it.size_hint());` },
+  {
+    // What a collect into a `Vec` reserved, by the hints it asked as it grew
+    // (#728, #733), which the crate's `Hints` and `Exact` print: its room
+    // is what std promises of it, at least its length, not native Rust's
+    // number, which ADR 0419 leaves to std's growth (case B).
+    name: "capacity",
+    closure: false,
+    takes: any,
+    text: (it) => `let v: Vec<_> = ${it}.collect();\n    println!("vec{} room {}", show(&v), v.capacity() >= v.len());`,
+  },
+  { name: "len", closure: false, takes: (shape) => shape.exact, text: (it) => `let it = ${it};\n    println!("len {}", it.len());` },
+  {
+    name: "for_each",
+    closure: true,
+    takes: any,
+    text: (it, p) => `${it}.for_each(|x| { ${call(p)} println!("item {}", x.v()); });\n    println!("for_each after {seen}");`,
+  },
+  {
+    name: "fold holding",
+    closure: true,
+    takes: any,
+    text: (it, p) => `let acc = ${it}.fold(Acc(0), ${holding(p, "mut a, x", "a.0 += x.v(); a")});\n    println!("fold {} after {seen}", acc.0);`,
+  },
+  {
+    name: "rfold holding",
+    closure: true,
+    takes: back,
+    text: (it, p) => `let acc = ${it}.rfold(Acc(0), ${holding(p, "mut a, x", "a.0 += x.v(); a")});\n    println!("rfold {} after {seen}", acc.0);`,
+  },
+  {
+    name: "for_each holding",
+    closure: true,
+    takes: any,
+    text: (it, p) => `${it}.for_each(${holding(p, "x", 'println!("item {}", x.v());')});\n    println!("for_each after {seen}");`,
+  },
+  {
+    name: "try_fold holding",
+    closure: true,
+    takes: any,
+    lends: true,
+    text: (it, p) =>
+      `let r = ${it}.try_fold(Acc(0), ${holding(p, "mut a, x", "a.0 += x.v(); if *seen == 3 { Err(a.0) } else { Ok(a) }")});\n    match &r { Ok(a) => println!("ok {}", a.0), Err(n) => println!("err {n}") }`,
+  },
+  {
+    name: "any holding",
+    closure: true,
+    takes: any,
+    lends: true,
+    text: (it, p) => `let r = ${it}.any(${holding(p, "x", "x.v() % 3 == 0")});\n    println!("any {r} after {seen}");`,
+  },
+];
+
+// The crate's own `Hints` and `Exact` print as their `size_hint` runs, which
+// a collect into a `Vec` reserves by (#733).
+const tableSources = ["vec", "rev vec", "range", "vec iter", "own Plain", "own Hints", "own Exact", "own Every", "own Backs", "generic vec", "generic own Every"];
+
+/** Every case of the conformance table, in one order: each source alone and
+ * through each adapter, each step that takes it, each panic site. */
+export function conformanceCases(): Case[] {
+  const out: Case[] = [];
+  const steps = [...consumers, ...stepConsumers];
+  for (const source of tableSources.map((name) => sources.find((s) => s.name === name)!)) {
+    const chains: [Adapter[], Shape][] = [[[], source.shape]];
+    for (const a of [...adapters, ...stepAdapters]) {
+      const shape = a.shape(source.shape);
+      if (shape) chains.push([[a], shape]);
+    }
+    for (const [chain, shape] of chains) {
+      const shapes = [source.shape, shape];
+      for (const consumer of steps) {
+        if (!consumer.takes(shape)) continue;
+        for (const site of sites) {
+          if (!applies(site, source, chain, consumer, shapes)) continue;
+          const id = `${source.name} | ${chain.map((a) => a.name).join(".") || "-"} | ${consumer.name} | ${site}`;
+          out.push({ n: out.length, id, source, chain, consumer, site });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/** The cases of `table`. */
+export const casesOf = (of: Table): Case[] => (of === "matrix" ? allCases() : conformanceCases());
+
 /** The cases in programs of `perBatch`, in their order. */
 export function batches(cases: Case[], perBatch = 60): Case[][] {
   const out: Case[][] = [];
@@ -410,6 +639,10 @@ function caseFn(c: Case, n: number): string {
       // Peeked first, so what it holds is in each step after.
       body.push(`let mut it = ${expr}.peekable();`, `println!("peeked {:?}", it.peek().map(|x| x.v()));`);
       expr = "it";
+    } else if (a.name === "by_ref") {
+      // Lent: what the consumer leaves is dropped as `held` is, after it.
+      body.push(`let mut held = ${expr};`);
+      expr = "held.by_ref()";
     } else {
       expr += a.text(shape, panics);
     }
@@ -421,7 +654,7 @@ function caseFn(c: Case, n: number): string {
     lines.push(`fn ${name}() {\n    ${name}_of(${source.expr(site)});\n}`);
     // `try_fold`, `any` and `all` take `&mut self`: of the parameter
     // itself, it's `mut`.
-    const held = chain.length === 0 && ["try_fold", "any", "all"].includes(consumer.name) ? "mut src" : "src";
+    const held = chain.length === 0 && consumer.lends ? "mut src" : "src";
     lines.push(`fn ${name}_of<I: DoubleEndedIterator<Item = D> + ExactSizeIterator>(${held}: I) {\n${inner}\n}`);
   } else {
     lines.push(`fn ${name}() {\n${inner}\n}`);
@@ -430,11 +663,13 @@ function caseFn(c: Case, n: number): string {
 }
 
 /** The crate's iterator `own`, of `D(1)` to `D(5)`, its `next` panicking
- * as it would yield `D(boom)`. */
-function ownIterator(own: Own): string {
+ * as it would yield `D(boom)`; its `size_hint` printing as it runs where
+ * `hints` says, the conformance table's, so who asks it shows (#733). */
+function ownIterator(own: Own, hints: boolean): string {
   const has = (step: Own["steps"][number]) => own.steps.includes(step);
   const steps: string[] = [];
-  if (has("size_hint")) steps.push(`    fn size_hint(&self) -> (usize, Option<usize>) {\n        let n = (self.end - self.at) as usize;\n        (n, Some(n))\n    }`);
+  const said = hints ? `println!("own size_hint {n}");\n        ` : "";
+  if (has("size_hint")) steps.push(`    fn size_hint(&self) -> (usize, Option<usize>) {\n        let n = (self.end - self.at) as usize;\n        ${said}(n, Some(n))\n    }`);
   if (has("fold"))
     steps.push(
       `    fn fold<B, F: FnMut(B, D) -> B>(mut self, init: B, mut f: F) -> B {\n        println!("own fold");\n        let mut acc = init;\n        while let Some(x) = self.next() {\n            acc = f(acc, x);\n        }\n        acc\n    }`,
@@ -624,9 +859,9 @@ fn run(name: &str, case: fn()) {
 `;
 
 /** A program of `cases`, which runs each in turn. */
-export function program(cases: Case[]): string {
+export function program(cases: Case[], of: Table = table): string {
   const used = new Set(cases.map((c) => c.source.name.replace(/^generic /, "")));
-  const iterators = owns.filter((own) => used.has(`own ${own.name}`)).map(ownIterator);
+  const iterators = owns.filter((own) => used.has(`own ${own.name}`)).map((own) => ownIterator(own, of === "conformance"));
   const fns = cases.map((c, n) => caseFn(c, n));
   const main = `fn main() {\n${cases.map((c, n) => `    run(${JSON.stringify(c.id)}, case_${n});`).join("\n")}\n}`;
   return [prelude, ...iterators, ...fns, main].join("\n\n") + "\n";
@@ -652,28 +887,35 @@ export function segments(stdout: string): Map<string, string> {
   return out;
 }
 
-const header = `// The iterator matrix's cases that don't run as native Rust does yet (ADR
-// 1090), each under its issue, \`#<issue> <title>\`: a line a build, the
-// numbers of its cases in \`allCases()\` as ranges. Each listed must still
-// fail, so the list only shrinks: \`bun test/iterator-matrix.ts take-off\`
-// takes off what the last runs found fixed. Its numbers are of the
-// generator's version below; a change to the cases makes the list again,
-// with each issue's cases found again.
+const header = `// The iterator matrix's cases (ADR 1090) and the conformance table's (ADR
+// 1092) that don't run as native Rust does yet, each under its issue,
+// \`#<issue> <title>\`: a line a build, \`plain\` or \`std\` of the matrix's,
+// \`conformance:plain\` or \`conformance:std\` of the table's, the numbers of
+// its cases in \`allCases()\` or \`conformanceCases()\` as ranges. Each listed
+// must still fail, so the list only shrinks: \`bun test/iterator-matrix.ts
+// take-off\` takes off what the last runs found fixed. Its numbers are of
+// each table's generator version below; a change to a table's cases makes
+// its rows again, with each issue's cases found again.
 `;
 
 // `bun test/iterator-matrix.ts take-off`: the known failures the last runs
-// found running as Rust does, taken off the list. `add <issue> <title>
-// <regex>`: the failures written to target/iterator-matrix/ whose names
-// match, put under the issue, for an issue filed for them. `program <n>`:
-// case n's program alone, to run it natively and as JS.
+// of either table found running as Rust does, taken off the list. `add
+// <issue> <title> <regex>`: the failures written to target/iterator-matrix/
+// whose names match, `plain: ..` or `conformance:plain: ..`, put under the
+// issue, for an issue filed for them. `program <n>`: case n's program
+// alone, of `ITERATOR_TABLE`'s table, to run it natively and as JS.
 if (import.meta.main) {
   const [command, ...args] = process.argv.slice(2);
   const known = readKnown();
-  const current = version(allCases());
-  if (known.version !== undefined && known.version !== current && known.issues.length > 0) {
-    throw new Error(`the list is of the generator's ${known.version}, the cases are ${current}: make it again, each issue's cases found again`);
+  for (const of of ["matrix", "conformance"] as const) {
+    const current = version(casesOf(of));
+    const listed = known.versions[of];
+    const rows = known.issues.some(({ cases }) => [...cases].some(([build, numbers]) => ofTable(build, of) && numbers.length > 0));
+    if (listed !== undefined && listed !== current && rows) {
+      throw new Error(`the list's ${of} is of the generator's ${listed}, its cases are ${current}: make it again, each issue's cases found again`);
+    }
+    known.versions[of] = current;
   }
-  known.version = current;
   if (command === "take-off") {
     const fixed = new Set(existsSync(fixedFile) ? readFileSync(fixedFile, "utf8").split("\n").filter(Boolean) : []);
     for (const { cases } of known.issues) {
@@ -696,9 +938,9 @@ if (import.meta.main) {
     writeFileSync(knownFile, printKnown(known, header));
     console.log(`added ${found.length} under #${issue}`);
   } else if (command === "program" && args.length === 1) {
-    const c = allCases()[Number(args[0])];
+    const c = casesOf(table)[Number(args[0])];
     if (!c) throw new Error(`no case ${args[0]}`);
-    process.stdout.write(program([c]));
+    process.stdout.write(program([c], table));
   } else {
     throw new Error("`take-off`, `add <issue> <title> <regex>`, or `program <n>`, case n's program alone");
   }
