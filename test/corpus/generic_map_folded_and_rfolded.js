@@ -2,6 +2,7 @@
 
 import { iterator_take } from "@rust-js/std/iter.js";
 import {
+  $count,
   $filterEnds,
   $foldBack,
   $foldOf,
@@ -55,7 +56,7 @@ function kept(_) {
 
 const Wrap = {
   countKept(wrap, IIterator) {
-    return $filterEnds($given(wrap.inner, IIterator, true), kept).reduce((n) => n + 1, 0);
+    return $count($filterEnds($given(wrap.inner, IIterator, true), kept));
   },
   lastKept(wrap, IIterator, IDoubleEndedIterator) {
     return $nextBackSome(

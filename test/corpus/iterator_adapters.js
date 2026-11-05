@@ -14,6 +14,7 @@ import {
   $nextSome,
   $nth,
   $rangeNext,
+  $roomForHint,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -62,7 +63,7 @@ function takeTwo(it, IIterator) {
 
 const Pass = {
   all(pass, IIterator) {
-    return Array.from($given(pass[0], IIterator, true));
+    return Array.from($roomForHint($given(pass[0], IIterator, true), 0, false));
   },
   shown(pass, IIterator, IItemDebug) {
     const out = [];

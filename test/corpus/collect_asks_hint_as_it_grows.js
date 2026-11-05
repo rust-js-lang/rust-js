@@ -2,13 +2,17 @@
 
 import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
+  $byteLen,
   $catchUnwind,
   $closing,
   $collectDropping,
   $filterDropping,
+  $foldToArray,
+  $folded,
   $iterator,
   $lazyChain,
   $lazyRange,
+  $reserveHint,
   $roomForHint,
   $some,
 } from "@rust-js/runtime";
@@ -335,5 +339,61 @@ function main() {
     }
     return collect.length;
   });
+  run(
+    "generic, filtered",
+    () =>
+      collected(
+        $iterator(
+          own(20, half, (n) => n),
+          ownIterator_next,
+          true,
+          undefined,
+          undefined,
+          ownIterator_sizeHint,
+        ),
+        (it) => {
+          ownDrop_drop(it.of);
+        },
+      ).length,
+  );
+  run("generic, of a range", () => collected($lazyRange(1, 20)).length);
+  run("generic, text", () =>
+    $byteLen(
+      text(
+        $iterator(
+          own(6, all, (n) => n),
+          ownIterator_next,
+          true,
+          undefined,
+          undefined,
+          ownIterator_sizeHint,
+        ),
+        (it) => {
+          ownDrop_drop(it.of);
+        },
+      ),
+    ),
+  );
+}
+
+/**
+ * Generic code's collects, of what its caller gives: the crate's
+ * iterator, whose hint its caller's dictionary passes on, or a range
+ * (#733).
+ */
+function collected(it, dropI) {
+  const iter = $closing(Iterator.from(it), dropI, false).filter((n) => n % 3 !== 0);
+  return $collectDropping($roomForHint(iter, 4, false));
+}
+
+function text(it, dropI) {
+  const iter = $closing(Iterator.from(it), dropI, false).map((n) =>
+    String.fromCharCode((97 + (n & 255)) & 255),
+  );
+  try {
+    return $foldToArray($reserveHint($folded(iter), 1)).join("");
+  } finally {
+    iter.return();
+  }
 }
 //# sourceMappingURL=case.js.map

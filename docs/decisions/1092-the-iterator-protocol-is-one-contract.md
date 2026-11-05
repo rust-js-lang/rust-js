@@ -861,3 +861,25 @@ weren't listed.
 hint. It now has std's `Filter::size_hint`, `(0, hi)` of its source's,
 `$upperOnly`'s, and std's `Filter::count`, which asks its source's hint
 first (filter.rs:118, 135), as `$Steps.filter` does.
+
+## Amendment: generic code asks its caller's hint (2026-11-05, #733, the user's decision)
+
+ADR 0262's case: results change, so Rust's behavior is kept. Generic
+code's collect of a type parameter's iterator, or of std's adapters of
+one, asks its hint wherever std's does: `hint_reaches_own` answers yes
+for a type only its caller knows. Where the caller's value is the crate's
+own iterator, `$given` passes on its dictionary's `sizeHint`, and the
+caller's `size_hint` runs. Where it's JS's own, `$sizeHint` answers
+`[0, undefined]`, and nothing runs.
+
+The user chose this, (a), over a caller fact `IHint` saying whether the
+hint can reach the crate's own, (b). A generic function is one JS function
+for every caller, so (b) keeps every wrapper (a) adds, as a conditional,
+and adds a fact to each function and an argument to each call: 71
+wrappers in 62 functions, and 143 call sites in the corpus. Under (a), 42
+corpus snapshots change, and neither the React port nor std/ changes.
+
+Still left: a `Vec` collect of a type parameter's items is given room by
+an item size of 0, as their layout isn't known here, so it isn't asked
+again as it grows. That needs `TSize`, the fact #672's `IInPlace` already
+gives.

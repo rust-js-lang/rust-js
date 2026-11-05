@@ -11,6 +11,7 @@ import {
   $iterator,
   $next,
   $rangeNext,
+  $roomForHint,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -57,7 +58,7 @@ function counterIterator_next(counter) {
 
 function firsts(iter, n, IIterator, IClone, dropI, dropIItem) {
   const iter$1 = $cycleOf(iter, IClone.clone, IIterator.next, true, dropI).take(n);
-  return $collectDropping(iter$1, dropIItem, true);
+  return $collectDropping($roomForHint(iter$1, 0, false, false, dropIItem), dropIItem, true);
 }
 
 function two(iter, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
@@ -65,7 +66,7 @@ function two(iter, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
   try {
     return $collectsInPlace(IInPlace, IItemSize, IItemAlign)
       ? $foldToArray(iter$1, dropIItem)
-      : $collectDropping(iter$1, dropIItem, true);
+      : $collectDropping($roomForHint(iter$1, 0, false, false, dropIItem), dropIItem, true);
   } finally {
     iter$1.return();
   }

@@ -8,6 +8,7 @@ import {
   $lent,
   $mapEnds,
   $next,
+  $roomForHint,
   $unwrap,
 } from "@rust-js/runtime";
 
@@ -65,14 +66,14 @@ function moved(it, IIterator, IExactSizeIterator, IClone) {
   );
   const first = $unwrap($next(copied));
   first.x = (first.x + 10) >>> 0;
-  return [{ ...first }, copied.len(), Array.from(copied)];
+  return [{ ...first }, copied.len(), Array.from($roomForHint(copied, 4, false))];
 }
 
 function movedPlain(it) {
   const copied = $mapEnds(Iterator.from(it), (item) => ({ ...item }));
   const first = $unwrap($next(copied));
   first.x = (first.x + 10) >>> 0;
-  return [{ ...first }, copied.len(), Array.from(copied)];
+  return [{ ...first }, copied.len(), Array.from($roomForHint(copied, 4, false))];
 }
 
 function lent(it, IIterator, IExactSizeIterator, IClone) {
@@ -87,7 +88,7 @@ function lent(it, IIterator, IExactSizeIterator, IClone) {
 function lentPlain(it) {
   const copied = $lent(Iterator.from(it));
   const n = copied.len();
-  const first = Array.from(copied.take(1));
+  const first = Array.from($roomForHint(copied.take(1), 4, false));
   return [n, first, $next(it)];
 }
 

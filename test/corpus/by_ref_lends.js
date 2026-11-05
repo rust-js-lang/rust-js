@@ -18,6 +18,7 @@ import {
   $rangeNextBack,
   $rangeNthBack,
   $rev,
+  $roomForHint,
   $sizeHint,
   $skipping,
   $slicing,
@@ -215,20 +216,28 @@ function mapped(src, dropI) {
   const held = src;
   try {
     const firsts = Array.from(
-      $mapEnds($lent(held), (d) => {
-        const result = (d[0] * 10) >>> 0;
-        dDrop_drop(d);
-        return result;
-      }).take(2),
+      $roomForHint(
+        $mapEnds($lent(held), (d) => {
+          const result = (d[0] * 10) >>> 0;
+          dDrop_drop(d);
+          return result;
+        }).take(2),
+        4,
+        false,
+      ),
     );
     const arg = held.len();
     console.log(`mapped [${firsts.join(", ")}], ${arg} left`);
     const all = Array.from(
-      $mapEnds($lent(held), (d) => {
-        const result = d[0];
-        dDrop_drop(d);
-        return result;
-      }),
+      $roomForHint(
+        $mapEnds($lent(held), (d) => {
+          const result = d[0];
+          dDrop_drop(d);
+          return result;
+        }),
+        4,
+        false,
+      ),
     );
     console.log(`mapped [${all.join(", ")}]`);
   } finally {

@@ -22,6 +22,7 @@ import {
   $rangeNextBack,
   $rangeNthBack,
   $rev,
+  $roomForHint,
   $sizeHint,
   $tryOf,
 } from "@rust-js/runtime";
@@ -87,38 +88,42 @@ function ends(it, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone, I
   const left = fuseExactSizeIterator_len(f, IExactSizeIterator);
   const copy = fuseClone_clone(f, IClone);
   const rest = Array.from(
-    $rev(
-      $knowing(
-        copy,
-        (iterator) => fuseDoubleEndedIterator_nextBack(iterator, IDoubleEndedIterator, IFused),
-        (iterator) => fuseExactSizeIterator_len(iterator, IExactSizeIterator),
-        (iterator, init, f, unwind, ends) =>
-          fuseDoubleEndedIterator_rfold(
-            iterator,
-            init,
-            f,
-            IIterator,
-            IDoubleEndedIterator,
-            undefined,
-            unwind,
-            ends,
-          ),
-        (iterator, k) =>
-          fuseDoubleEndedIterator_nthBack(iterator, k, IIterator, IDoubleEndedIterator, IFused),
-        (iterator, init, f, broke, unwind, ends) =>
-          fuseDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            IIterator,
-            IDoubleEndedIterator,
-            $tryOf(broke),
-            IFused,
-            undefined,
-            unwind,
-            ends,
-          ),
+    $roomForHint(
+      $rev(
+        $knowing(
+          copy,
+          (iterator) => fuseDoubleEndedIterator_nextBack(iterator, IDoubleEndedIterator, IFused),
+          (iterator) => fuseExactSizeIterator_len(iterator, IExactSizeIterator),
+          (iterator, init, f, unwind, ends) =>
+            fuseDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              IIterator,
+              IDoubleEndedIterator,
+              undefined,
+              unwind,
+              ends,
+            ),
+          (iterator, k) =>
+            fuseDoubleEndedIterator_nthBack(iterator, k, IIterator, IDoubleEndedIterator, IFused),
+          (iterator, init, f, broke, unwind, ends) =>
+            fuseDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              IIterator,
+              IDoubleEndedIterator,
+              $tryOf(broke),
+              IFused,
+              undefined,
+              unwind,
+              ends,
+            ),
+        ),
       ),
+      4,
+      false,
     ),
   );
   const total = fuseDoubleEndedIterator_rfold(

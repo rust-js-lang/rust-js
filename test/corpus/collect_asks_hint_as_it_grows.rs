@@ -103,4 +103,18 @@ fn main() {
         it.panics_at = 7;
         it.filter(|d| d.0 % 2 == 1).collect::<Vec<D>>().len()
     });
+    run("generic, filtered", || collected(own(20, half, |n| n)).len());
+    run("generic, of a range", || collected(1..20).len());
+    run("generic, text", || text(own(6, all, |n| n)).len());
+}
+
+/// Generic code's collects, of what its caller gives: the crate's
+/// iterator, whose hint its caller's dictionary passes on, or a range
+/// (#733).
+fn collected<I: Iterator<Item = u32>>(it: I) -> Vec<u32> {
+    it.filter(|n| n % 3 != 0).collect()
+}
+
+fn text<I: Iterator<Item = u32>>(it: I) -> String {
+    it.map(|n| char::from(b'a' + n as u8)).collect()
 }

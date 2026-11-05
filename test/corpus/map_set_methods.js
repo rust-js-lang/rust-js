@@ -14,6 +14,7 @@ import {
   $removeEntry,
   $retainMap,
   $retainSet,
+  $roomForHint,
   $setAlgebra,
   $setReplace,
   $sortedEntries,
@@ -30,7 +31,7 @@ export function entry() {
 }
 
 function sorted(items, TOrd, TClone) {
-  items = Array.from(Iterator.from(items));
+  items = Array.from($roomForHint(Iterator.from(items), 0, false));
   items.sort(TOrd.cmp);
   return items;
 }

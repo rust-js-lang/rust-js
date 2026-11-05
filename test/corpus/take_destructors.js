@@ -13,6 +13,7 @@ import {
   $next,
   $range,
   $rangeInclusiveNext,
+  $roomForHint,
   $skipping,
 } from "@rust-js/runtime";
 
@@ -27,7 +28,11 @@ function splitFirst(iter, k, dropI, dropIItem) {
   $held(iter);
   let first;
   try {
-    first = $collectDropping($lent(Iterator.from(iter)).take(k), dropIItem, true);
+    first = $collectDropping(
+      $roomForHint($lent(Iterator.from(iter)).take(k), 0, false, false, dropIItem),
+      dropIItem,
+      true,
+    );
   } catch (error) {
     dropI?.(iter);
     throw error;

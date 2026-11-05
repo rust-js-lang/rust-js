@@ -9,6 +9,7 @@ import {
   $lent,
   $next,
   $rangeNext,
+  $roomForHint,
   $someValue,
   $took,
   $traitImpl,
@@ -83,7 +84,7 @@ function tTotals(TIterator, dropT) {
     },
     doubled(self) {
       const iter = $closing($given(self, TIterator), dropT, false).map((x) => (x * 2) & 255);
-      return $collectDropping(iter);
+      return $collectDropping($roomForHint(iter, 1, false));
     },
     looped(self) {
       let n = 0;
@@ -99,7 +100,7 @@ function tTotals(TIterator, dropT) {
       return n;
     },
     firstTwo(self) {
-      return Array.from($lent($given(self, TIterator)).take(2));
+      return Array.from($roomForHint($lent($given(self, TIterator)).take(2), 1, false));
     },
     $drop: dropT,
   }));

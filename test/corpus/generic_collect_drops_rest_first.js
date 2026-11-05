@@ -105,13 +105,19 @@ function peeked(src, dropI) {
 function chained(src, dropI) {
   BOOM = 3;
   const v = $collectDropping(
-    $lazyChain(
-      $closing(Iterator.from(src), dropI, false).map((x) => {
-        const result = [(x[0] + 100) >>> 0];
-        dDrop_drop(x);
-        return result;
-      }),
-      $closing($iter([[6]]), $dropEach(dDrop_drop)),
+    $roomForHint(
+      $lazyChain(
+        $closing(Iterator.from(src), dropI, false).map((x) => {
+          const result = [(x[0] + 100) >>> 0];
+          dDrop_drop(x);
+          return result;
+        }),
+        $closing($iter([[6]]), $dropEach(dDrop_drop)),
+      ),
+      4,
+      false,
+      false,
+      dDrop_drop,
     ),
     dDrop_drop,
     true,
@@ -131,7 +137,7 @@ function mapped(src, IInPlace, dropI) {
   try {
     result = $collectsInPlace(IInPlace, 4, 4)
       ? $foldToArray(iter, dDrop_drop)
-      : $collectDropping(iter, dDrop_drop, true);
+      : $collectDropping($roomForHint(iter, 4, false, false, dDrop_drop), dDrop_drop, true);
   } finally {
     iter.return();
   }
@@ -156,7 +162,9 @@ function counted(src, IInPlace, dropI) {
           dDrop_drop(value[1]);
         })
       : $collectDropping(
-          iter,
+          $roomForHint(iter, 8, false, false, (value) => {
+            dDrop_drop(value[1]);
+          }),
           (value) => {
             dDrop_drop(value[1]);
           },
@@ -190,7 +198,7 @@ function kept(src, TSize, TAlign, IInPlace, dropT, dropI) {
   try {
     result$1 = $collectsInPlace(IInPlace, TSize, TAlign)
       ? $foldToArray(iter, dropT)
-      : $collectDropping(iter, dropT, true);
+      : $collectDropping($roomForHint(iter, 0, false, false, dropT), dropT, true);
   } finally {
     iter.return();
   }
@@ -249,7 +257,7 @@ function discarded(src, IInPlace, dropI) {
   try {
     result = $collectsInPlace(IInPlace, 4, 4)
       ? $foldToArray(iter, dDrop_drop)
-      : $collectDropping(iter, dDrop_drop, true);
+      : $collectDropping($roomForHint(iter, 4, false, false, dDrop_drop), dDrop_drop, true);
   } finally {
     iter.return();
   }

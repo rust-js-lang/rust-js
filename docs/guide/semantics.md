@@ -669,7 +669,8 @@ What's refused is in [the limitations](limitations.md).
   hash table asks the crate's hint once before it steps, as their `extend`
   reserves by it, `$reserveHint(it, 1)`; a collect into a `Vec` asks it
   after its first item and again each time it's full, as std's
-  `extend_desugared` does, `$roomForHint(it, size, false)`; and a
+  `extend_desugared` does, `$roomForHint(it, size, false)`, in generic
+  code too, of what its caller gives; and a
   `filter()`'s `count()` its source's first ([1092](../decisions/1092-the-iterator-protocol-is-one-contract.md)).
 - **`len()` of an iterator made where it's asked is counted, not
   stepped:** each adapter's is its source's, as std's: `v.iter().map(f).len()`

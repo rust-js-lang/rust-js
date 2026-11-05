@@ -886,4 +886,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^back_folds_of_sources_made_knowing_their_back.rs$"],
   },
+  {
+    name: "hint-unasked-of-a-caller",
+    breaks: "generic code's collect into a `String` of a type parameter's iterator asks no hint, so the crate's own its caller gives never runs, where std's `Extend<char>` asks it (#733)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if self.is_unknown(ty) {\n            return true;\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
+  },
 ];

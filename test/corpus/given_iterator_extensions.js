@@ -7,6 +7,7 @@ import {
   $given,
   $iter,
   $iterator,
+  $lazyChain,
   $lazyRange,
   $next,
   $nextBack,
@@ -16,6 +17,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
+  $roomForHint,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -40,7 +42,16 @@ function countdownDoubleEndedIterator_nextBack(countdown) {
 
 function twice(iter, IIterator, IClone, IExactSizeIterator) {
   const len = IExactSizeIterator.len(iter);
-  return [len, [...$given(IClone.clone(iter), IIterator, true), ...$given(iter, IIterator, true)]];
+  return [
+    len,
+    Array.from(
+      $roomForHint(
+        $lazyChain($given(IClone.clone(iter), IIterator, true), $given(iter, IIterator, true)),
+        0,
+        false,
+      ),
+    ),
+  ];
 }
 
 function ends(iter, IIterator, IClone, IDoubleEndedIterator) {
@@ -60,7 +71,7 @@ function passedOn(iter, IIterator, IClone, IDoubleEndedIterator, IExactSizeItera
   return [
     last($given(IClone.clone(iter), IIterator, true, IDoubleEndedIterator)),
     size($given(IClone.clone(iter), IIterator, true, undefined, IExactSizeIterator.len)),
-    Array.from($iterator(iter, IDoubleEndedIterator.next_back, true)),
+    Array.from($roomForHint($iterator(iter, IDoubleEndedIterator.next_back, true), 0, false)),
   ];
 }
 
@@ -73,11 +84,13 @@ function handedOn(iter, IIterator, IClone, IDoubleEndedIterator) {
 }
 
 function backwards(iter, IIterator, IClone, IDoubleEndedIterator) {
-  return Array.from($iterator(iter, IDoubleEndedIterator.next_back, true));
+  return Array.from($roomForHint($iterator(iter, IDoubleEndedIterator.next_back, true), 0, false));
 }
 
 function after(iter, IIterator, IClone) {
-  return [...$lazyRange(10, 12), ...$given(iter, IIterator)];
+  return Array.from(
+    $roomForHint($lazyChain($lazyRange(10, 12), $given(iter, IIterator)), 4, false),
+  );
 }
 
 function main() {

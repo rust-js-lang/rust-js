@@ -8,6 +8,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $roomFor,
+  $roomForHint,
   $step,
   $stepBy,
 } from "@rust-js/runtime";
@@ -18,7 +19,7 @@ export function entry() {
 
 function every(it, n) {
   const step = $step(n);
-  return Array.from($stepBy(Iterator.from(it), step));
+  return Array.from($roomForHint($stepBy(Iterator.from(it), step), 4, false));
 }
 
 function main() {

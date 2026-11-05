@@ -19,6 +19,7 @@ import {
   $lent,
   $next,
   $range,
+  $roomForHint,
   $stepBy,
 } from "@rust-js/runtime";
 
@@ -41,9 +42,9 @@ function f() {
   return { n: 0 };
 }
 function twice(it) {
-  const a = Array.from($lent(Iterator.from(it)));
-  const b = Array.from($lent(Iterator.from(it)));
-  const c = Array.from(Iterator.from(it));
+  const a = Array.from($roomForHint($lent(Iterator.from(it)), 4, false));
+  const b = Array.from($roomForHint($lent(Iterator.from(it)), 4, false));
+  const c = Array.from($roomForHint(Iterator.from(it), 4, false));
   return [a, b, c];
 }
 function main() {

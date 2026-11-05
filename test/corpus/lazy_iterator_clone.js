@@ -24,7 +24,10 @@ export function entry() {
 }
 
 function both(it, IIterator, IClone) {
-  return [Array.from($given(IClone.clone(it), IIterator)), Array.from($given(it, IIterator))];
+  return [
+    Array.from($roomForHint($given(IClone.clone(it), IIterator), 4, false)),
+    Array.from($roomForHint($given(it, IIterator), 4, false)),
+  ];
 }
 
 function scaled(it, k, IIterator, IClone) {

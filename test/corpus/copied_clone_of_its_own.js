@@ -9,6 +9,7 @@ import {
   $last,
   $max,
   $next,
+  $roomForHint,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -44,13 +45,20 @@ function twiceApart(it, IIterator, IClone) {
   const once = $givenClone(copied, IClone.clone);
   $next(once);
   const twice = $givenClone(once, IClone.clone);
-  return [Array.from(copied), Array.from(once), Array.from(twice)];
+  return [
+    Array.from($roomForHint(copied, 4, false)),
+    Array.from($roomForHint(once, 4, false)),
+    Array.from($roomForHint(twice, 4, false)),
+  ];
 }
 
 // Cloned where it's given on, as its own type parameter.
 function both(j, JIterator, JClone) {
   const k = JClone.clone(j);
-  return [Array.from($given(j, JIterator)), Array.from($given(k, JIterator))];
+  return [
+    Array.from($roomForHint($given(j, JIterator), 4, false)),
+    Array.from($roomForHint($given(k, JIterator), 4, false)),
+  ];
 }
 
 function passedOn(it, IIterator, IClone) {

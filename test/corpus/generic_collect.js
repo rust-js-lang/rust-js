@@ -5,9 +5,11 @@ import {
   $cmp,
   $collectResults,
   $debugStr,
+  $intoIter,
   $iter,
   $lazyRange,
   $parseInt,
+  $roomForHint,
   $sortedEntries,
 } from "@rust-js/runtime";
 
@@ -28,7 +30,15 @@ function bagDebug_fmt(bag) {
 }
 
 function bagFromIteratorU32_fromIter(items) {
-  return [Array.from(Iterator.from(items).filter((x) => x % 3 !== 0))];
+  return [
+    Array.from(
+      $roomForHint(
+        $intoIter(items).filter((x) => x % 3 !== 0),
+        4,
+        false,
+      ),
+    ),
+  ];
 }
 
 function parsed(words, BFromIteratorResult) {

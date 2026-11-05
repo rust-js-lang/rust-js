@@ -11,6 +11,7 @@ import {
   $nthDropping,
   $range,
   $rev,
+  $roomForHint,
   $skipping,
 } from "@rust-js/runtime";
 
@@ -28,7 +29,7 @@ function skipped(it, dropI) {
     noisyDrop_drop(n);
     return result;
   });
-  return $collectDropping(iter);
+  return $collectDropping($roomForHint(iter, 4, false));
 }
 
 function nthOf(it, dropI) {

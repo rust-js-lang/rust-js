@@ -11,6 +11,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rev,
+  $roomForHint,
   $some,
   $someValue,
 } from "@rust-js/runtime";
@@ -29,7 +30,7 @@ function lastEven(it) {
 }
 
 function evensBack(it) {
-  return Array.from($rev($filterEnds(it, (x) => x % 2 === 0)));
+  return Array.from($roomForHint($rev($filterEnds(it, (x) => x % 2 === 0)), 4, false));
 }
 
 function sumBack(it) {
@@ -60,18 +61,22 @@ function lastHalf(it) {
 
 function nested(it) {
   return Array.from(
-    $rev(
-      $mapEnds(
-        $filterEnds(
-          $mapEnds(Iterator.from(it), (x) => {
-            if (x > 2) {
-              return $some(x % 2 === 0 ? x : undefined);
-            }
-          }),
-          (item) => item != null,
+    $roomForHint(
+      $rev(
+        $mapEnds(
+          $filterEnds(
+            $mapEnds(Iterator.from(it), (x) => {
+              if (x > 2) {
+                return $some(x % 2 === 0 ? x : undefined);
+              }
+            }),
+            (item) => item != null,
+          ),
+          $someValue,
         ),
-        $someValue,
       ),
+      8,
+      false,
     ),
   );
 }

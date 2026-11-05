@@ -6,6 +6,7 @@ import {
   $given,
   $iter,
   $next,
+  $roomForHint,
   $selectNthUnstable,
   $slice,
   $sortUnstable,
@@ -35,7 +36,7 @@ const $iSorted = new WeakMap();
 function iSorted(IIterator) {
   return $traitImpl($iSorted, [IIterator], () => ({
     sortedUnstable(self, SelfItemOrd, SelfItemSort) {
-      const v = Array.from($given(self, IIterator, true));
+      const v = Array.from($roomForHint($given(self, IIterator, true), 0, false));
       $sortUnstable(v, (a, b) => SelfItemOrd.cmp(a, b) < 0, SelfItemSort);
       return v;
     },

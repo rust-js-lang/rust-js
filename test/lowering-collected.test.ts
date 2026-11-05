@@ -36,7 +36,9 @@ pub fn halves(s: &str) -> Vec<&str> {
 `,
   );
   expect(js).not.toContain("toArray");
-  expect(js).toContain("export function all(items) {\n  return Array.from(Iterator.from(items));\n}");
+  // Of what its caller gives, its hint asked as std's `from_iter` asks it,
+  // which the crate's own may write (ADR 1092, #733).
+  expect(js).toContain("export function all(items) {\n  return Array.from($roomForHint($intoIter(items), 4, false));\n}");
   expect(js).toContain("return Array.from($lazyRange(0, n).filter((i) => i % 2 === 0));");
   expect(js).toMatch(/return Array\.from\(\$rsplit\w*\(s, /);
   expect((lib.all as (items: number[]) => number[])([1, 2, 3])).toEqual([1, 2, 3]);

@@ -25,6 +25,7 @@ import {
   $maxBy,
   $minBy,
   $partialCmp,
+  $roomForHint,
   $some,
   $thenCmp,
   $traitImpl,
@@ -573,7 +574,7 @@ export function total(items) {
 }
 
 export function middle(items, k) {
-  return Array.from(Iterator.from(items).drop(1).take(k));
+  return Array.from($roomForHint(Iterator.from(items).drop(1).take(k), 4, false));
 }
 
 export function looped(items) {

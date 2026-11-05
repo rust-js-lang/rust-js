@@ -10,6 +10,7 @@ import {
   $nextBack,
   $nextBackSome,
   $rev,
+  $roomForHint,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -17,7 +18,7 @@ export function entry() {
 }
 
 function backwards(it) {
-  return Array.from($rev(it));
+  return Array.from($roomForHint($rev(it), 0, false));
 }
 
 function lastEven(it) {

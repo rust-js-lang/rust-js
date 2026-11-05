@@ -8,6 +8,7 @@ import {
   $iterator,
   $lastDropping,
   $rev,
+  $roomForHint,
   $skipping,
   $slicing,
   $stepBy,
@@ -54,7 +55,7 @@ function skipped(it, dropI) {
     dDrop_drop(d);
     return result;
   });
-  return $collectDropping(iter);
+  return $collectDropping($roomForHint(iter, 4, false));
 }
 
 function skippedLast(it, dropI) {
@@ -79,7 +80,7 @@ function stepped(it, dropI) {
     dDrop_drop(d);
     return result;
   });
-  return $collectDropping(iter);
+  return $collectDropping($roomForHint(iter, 4, false));
 }
 
 function steppedCount(it, dropI) {

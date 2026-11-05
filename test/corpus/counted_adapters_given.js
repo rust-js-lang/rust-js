@@ -28,6 +28,7 @@ import {
   $knowing,
   $next,
   $nextBack,
+  $roomForHint,
   $sizeHint,
   $skipping,
   $taking,
@@ -43,7 +44,7 @@ function ends(it, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone) {
   const len = IExactSizeIterator.len(it);
   const copy = IClone.clone(it);
   const last = IDoubleEndedIterator.next_back(it);
-  const rest = Array.from($given(copy, IIterator, true));
+  const rest = Array.from($roomForHint($given(copy, IIterator, true), 0, false));
   return [len, first, last, IExactSizeIterator.len(it), rest];
 }
 

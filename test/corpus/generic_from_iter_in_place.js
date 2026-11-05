@@ -10,6 +10,7 @@ import {
   $dropItems,
   $foldToArray,
   $iter,
+  $roomForHint,
   $sort,
 } from "@rust-js/runtime";
 
@@ -27,11 +28,15 @@ function dDrop_drop(d) {
 function all(iter, IInPlace, IItemSize, IItemAlign, dropIItem) {
   return $collectsInPlace(IInPlace, IItemSize, IItemAlign)
     ? $foldToArray(Iterator.from(iter), dropIItem)
-    : $collectDropping(Iterator.from(iter), dropIItem, true);
+    : $collectDropping(
+        $roomForHint(Iterator.from(iter), 0, false, false, dropIItem),
+        dropIItem,
+        true,
+      );
 }
 
 function sorted(iter, IItemOrd) {
-  const v = Array.from(Iterator.from(iter));
+  const v = Array.from($roomForHint(Iterator.from(iter), 0, false));
   $sort(v, IItemOrd.cmp);
   return v;
 }

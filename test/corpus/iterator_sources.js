@@ -15,6 +15,7 @@ import {
   $next,
   $repeating,
   $repeatingWith,
+  $roomForHint,
   $some,
   $successors,
   $unzip,
@@ -32,7 +33,9 @@ function counterIterator_next(counter) {
 }
 
 function repeated(first, n) {
-  return Array.from($successors($some(first), (item) => $some(item), true).take(n));
+  return Array.from(
+    $roomForHint($successors($some(first), (item) => $some(item), true).take(n), 0, false),
+  );
 }
 
 function powersOfTwo(limit) {

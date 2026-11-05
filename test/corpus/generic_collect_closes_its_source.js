@@ -10,6 +10,7 @@ import {
   $foldToArray,
   $iter,
   $iterator,
+  $roomForHint,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -31,7 +32,11 @@ function everyIterator_next(every) {
 function collected(src, IInPlace, dropI) {
   const v = $collectsInPlace(IInPlace, 4, 4)
     ? $foldToArray($closing(Iterator.from(src), dropI, false), dDrop_drop)
-    : $collectDropping($closing(Iterator.from(src), dropI, false), dDrop_drop, true);
+    : $collectDropping(
+        $roomForHint($closing(Iterator.from(src), dropI, false), 4, false, false, dDrop_drop),
+        dDrop_drop,
+        true,
+      );
   console.log(`collected ${v.length}`);
   for (const item of v) {
     dDrop_drop(item);

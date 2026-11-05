@@ -28,6 +28,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rev,
+  $roomForHint,
   $tryOf,
 } from "@rust-js/runtime";
 
@@ -36,7 +37,7 @@ export function entry() {
 }
 
 function backPairs(it) {
-  return Array.from($rev($enumerate(it)));
+  return Array.from($roomForHint($rev($enumerate(it)), 8, false));
 }
 
 function ends(it) {
@@ -79,49 +80,53 @@ function fusedBack(it, IFused) {
     IFused,
   );
   const rest = Array.from(
-    $rev(
-      $knowing(
-        f,
-        (iterator) =>
-          fuseDoubleEndedIterator_nextBack(
-            iterator,
-            { next_back: $nextBack, rfold: $foldBack },
-            IFused,
-          ),
-        undefined,
-        (iterator, init, f, unwind, ends) =>
-          fuseDoubleEndedIterator_rfold(
-            iterator,
-            init,
-            f,
-            { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
-            { next_back: $nextBack, rfold: $foldBack },
-            undefined,
-            unwind,
-            ends,
-          ),
-        (iterator, k) =>
-          fuseDoubleEndedIterator_nthBack(
-            iterator,
-            k,
-            { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
-            { next_back: $nextBack, rfold: $foldBack },
-            IFused,
-          ),
-        (iterator, init, f, broke, unwind, ends) =>
-          fuseDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
-            { next_back: $nextBack, rfold: $foldBack },
-            $tryOf(broke),
-            IFused,
-            undefined,
-            unwind,
-            ends,
-          ),
+    $roomForHint(
+      $rev(
+        $knowing(
+          f,
+          (iterator) =>
+            fuseDoubleEndedIterator_nextBack(
+              iterator,
+              { next_back: $nextBack, rfold: $foldBack },
+              IFused,
+            ),
+          undefined,
+          (iterator, init, f, unwind, ends) =>
+            fuseDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+              { next_back: $nextBack, rfold: $foldBack },
+              undefined,
+              unwind,
+              ends,
+            ),
+          (iterator, k) =>
+            fuseDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+              { next_back: $nextBack, rfold: $foldBack },
+              IFused,
+            ),
+          (iterator, init, f, broke, unwind, ends) =>
+            fuseDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+              { next_back: $nextBack, rfold: $foldBack },
+              $tryOf(broke),
+              IFused,
+              undefined,
+              unwind,
+              ends,
+            ),
+        ),
       ),
+      4,
+      false,
     ),
   );
   $extend(rest, last == null ? [] : [last]);

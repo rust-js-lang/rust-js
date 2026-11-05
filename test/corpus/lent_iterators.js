@@ -7,6 +7,7 @@ import {
   $lent,
   $next,
   $nextIf,
+  $roomForHint,
   $successors,
   $toDigit,
   $unwrap,
@@ -48,7 +49,7 @@ function word(it) {
 }
 
 function take2(it) {
-  return Array.from($lent(Iterator.from(it)).take(2));
+  return Array.from($roomForHint($lent(Iterator.from(it)).take(2), 4, false));
 }
 
 function untilZero(it) {

@@ -5,12 +5,14 @@ import {
   $cmp,
   $debugStr,
   $extend,
+  $intoIter,
   $iter,
   $iterator,
   $mutItems,
   $next,
   $range,
   $rangeNext,
+  $roomForHint,
   $slice,
   $sortedEntries,
 } from "@rust-js/runtime";
@@ -32,9 +34,13 @@ function count(i) {
 }
 function firsts(i, IItemDebug) {
   return Array.from(
-    Iterator.from(i)
-      .take(2)
-      .map((x) => IItemDebug.fmt(x)),
+    $roomForHint(
+      $intoIter(i)
+        .take(2)
+        .map((x) => IItemDebug.fmt(x)),
+      12,
+      false,
+    ),
   );
 }
 function main() {

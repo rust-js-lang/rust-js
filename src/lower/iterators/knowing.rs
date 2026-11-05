@@ -853,14 +853,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the program can see: the crate's own `size_hint`, or one that std's
     /// adapter of type `ty` asks, as each asks its source's (ADR 1092's
     /// table). Where it can't, asking it changes nothing but the room a
-    /// collect asks, which is std's own (#733). Not yet a type parameter's
-    /// or a `dyn Iterator`'s, which its caller's may be: generic code's JS
-    /// adapters of what it's given may be JS's own, which ask no hint, so
-    /// asking it there would change no answer.
+    /// collect asks, which is std's own (#733). Of a type only its caller
+    /// knows, a type parameter's or an associated type's, always: its
+    /// caller's may be the crate's own, whose hint `$given` passes on from
+    /// its dictionary, and where it's JS's own, asking it runs nothing (the
+    /// user's decision, ADR 1092).
     pub(in crate::lower) fn hint_reaches_own(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.reveal(ty.peel_refs());
         if self.is_user_iterator(ty) {
             return self.writes_size_hint(ty);
+        }
+        if self.is_unknown(ty) {
+            return true;
         }
         crate::lower::recognition::adapted_iterators(self.tcx, self.typing_env, ty)
             .is_some_and(|held| held.into_iter().any(|held| self.hint_reaches_own(held)))

@@ -8,10 +8,12 @@ import {
   $collectOptions,
   $collectResults,
   $debugStr,
+  $intoIter,
   $iter,
   $lazyRange,
   $parseBig,
   $parseInt,
+  $roomForHint,
   $sortedEntries,
   $sortedKeys,
   $splitOnce,
@@ -55,7 +57,7 @@ function bagDebug_fmt(bag) {
 }
 
 function bagFromIteratorI32_fromIter(it) {
-  const v = Array.from(Iterator.from(it));
+  const v = Array.from($roomForHint($intoIter(it), 4, false));
   v.sort((a, b) => a - b);
   return [v];
 }

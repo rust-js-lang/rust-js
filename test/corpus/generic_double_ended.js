@@ -12,6 +12,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rev,
+  $roomForHint,
   $someValue,
 } from "@rust-js/runtime";
 
@@ -50,11 +51,11 @@ function pairwiseSub(t) {
 
 function lastThenRest(t) {
   const last = $nextBack(t);
-  return [last, Array.from(Iterator.from(t))];
+  return [last, Array.from($roomForHint(Iterator.from(t), 4, false))];
 }
 
 function reversed(t) {
-  return Array.from($rev(t));
+  return Array.from($roomForHint($rev(t), 4, false));
 }
 
 function passedOn(t) {
