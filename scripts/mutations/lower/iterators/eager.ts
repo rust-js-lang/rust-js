@@ -490,16 +490,7 @@ export const mutations: Mutation[] = [
     find: "    stepped_through(object, false, fuse);\n}",
     replace: "    let _ = (object, fuse);\n}",
     snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^user_iterator_ends.rs$"],
-  },
-  {
-    name: "stepped-through-step-by-not",
-    breaks: "a `step_by` of the crate's iterator's `skip`, `$stepBy($iterator(..).drop(2), 2)`, collected, strips its `size_hint`",
-    file: "src/lower/iterators/eager.rs",
-    find: "        stepped_through(source, false, fuse);\n        return;\n",
-    replace: "        let _ = source;\n        return;\n",
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^user_iterator_ends.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(user_iterator_ends|fused_iterator|math_values|own_last_and_nth_passed_on).rs$"],
   },
   {
     name: "stepped-through-last-not",
@@ -509,15 +500,6 @@ export const mutations: Mutation[] = [
     replace: "steps_all(name)",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^own_last_and_nth_passed_on.rs$"],
-  },
-  {
-    name: "map-source-hint-trimmed",
-    breaks: "the crate's iterator a map steps keeps its size_hint, the map's, which its JS writes where a consumer steps it, `Array.from($iterator(.., hint).map(f))`",
-    file: "src/lower/iterators/eager.rs",
-    find: '    if method == "map" && crate::lower::iterators::stepped_value(object).is_some() {',
-    replace: "    if false {",
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^map_of_own_size_hint.rs$"],
   },
   {
     name: "collected-helper-iterator-from-kept",
@@ -535,7 +517,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "        {\n            stepped_through(it, false, fuse);\n        } else if",
     replace: "        {\n        } else if",
-    tests: ["test/lowering-collected.test.ts"],
+    tests: ["test/corpus.test.ts", "-t", "^fused_iterator.rs$"],
+    snapshots: true,
   },
   {
     name: "eager-taker-throw-unseen",

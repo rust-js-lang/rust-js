@@ -448,15 +448,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_unwraps.rs$"],
   },
   {
-    name: "boxed-max-by-refused",
-    breaks:
-      "`min_by` of a type parameter's items is refused, where `$minBy` boxes its pick",
-    file: "src/lower/std_types/values.rs",
-    find: "            | Std::IterComb(crate::lower::combinators::IterComb::MaxBy(_) | crate::lower::combinators::IterComb::MaxByKey(_))\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^boxed_option_unwraps.rs$"],
-  },
-  {
     name: "boxed-take-if-refused",
     breaks: "`take_if` of an `Option<Option<T>>` is refused",
     file: "src/lower/std_types/values.rs",

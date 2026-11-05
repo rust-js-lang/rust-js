@@ -419,3 +419,24 @@ own `count`, as std's `FlattenCompat::count` does
 ([ADR 0510](0510-flat-map-and-flatten-of-destructors.md), amended).
 `reaches_its_own` and `asked_sources` read `INNERS` through one answer,
 `Recognition::flattened_inner`.
+
+## Amendment: a `step_by()` of the crate's own `fold` is one whose steps may panic (2026-11-06, #799)
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)): nothing that runs
+changes.
+
+`step_by()` was made `$stepBy` of a source that reaches the crate's own
+`fold` (#671). That term no longer decides anything: an own `fold` is
+generic, `fold<B, F>`, so it's never one that never unwinds (ADR 0902),
+and its impl makes the source one whose steps may panic
+(`steps_may_panic`, #773), which makes it `$stepBy` already. The term and
+its mutation, `step-by-of-own-fold-filtered`, are gone;
+`step-by-in-place-of-panicking-steps` runs
+`own_fold_and_count_where_adapters_call_them.rs` too.
+
+Since #773, the own-`nth` terms were reached only by an iterator whose
+`next` and `nth` never unwind, which no case had:
+`step_by_of_own_nth_that_never_unwinds.rs` is a fused one whose `nth`
+gives what `next` wouldn't, `step_by(3)` of it and of a chain of two,
+against native Rust, which `step-by-own-nth-filtered` and
+`chain-nths-unseen` change.

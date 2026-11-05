@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "        let made = Expr::unary(*op, (**arg).clone());\n",
     replace:
-      "        let made = Expr { kind: ExprKind::Unary(*op, arg.clone()), facts: js::Facts::NONE, span: e.span };\n",
+      "        let made = Expr { kind: ExprKind::Unary(*op, arg.clone()), facts: js::Facts::NONE, span: e.span, held_as: js::HeldAs(None) };\n",
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",

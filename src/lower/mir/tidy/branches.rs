@@ -916,8 +916,6 @@ pub(super) fn returned_in_branches(stmts: &mut Vec<Stmt>, result: &str) {
     }
     let mut made = vec![stmts[stmts.len() - 2].clone()];
     returned_at_ends(&mut made);
-    // A block whose `break`s are `return`s now: its statements in its place.
-    js::statement_lists(&mut made, &mut unlabeled);
     let [made] = <[Stmt; 1]>::try_from(made).unwrap_or_else(|_| unreachable!("an `if`, as it was"));
     // Read nowhere else.
     if js::mentions_in(std::slice::from_ref(&made), result) > 0

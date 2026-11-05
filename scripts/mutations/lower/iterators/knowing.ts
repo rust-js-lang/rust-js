@@ -915,4 +915,30 @@ export const mutations: Mutation[] = [
     replace: "            (!self.is_unknown(source) || matches!(source.kind(), ty::Param(_)))\n                && crate::lower::recognition::zipped_sources(self.tcx, source).is_none()\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_from_its_back.rs$"],
   },
+  {
+    name: "size-hint-of-projection-refused",
+    breaks:
+      "`size_hint()` of a generic `I::IntoIter` is refused, where a type parameter's is its JS value's",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            || self.is_unknown(ty)\n            || self.explicit_adapter(ty)\n",
+    replace: "            || matches!(ty.kind(), ty::Param(_))\n            || self.explicit_adapter(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_into_iter.rs$"],
+  },
+  {
+    name: "compiled-iterator-size-hint-refused",
+    breaks:
+      "`size_hint()` of a compiled std iterator, a `Fuse`'s, is refused, as if its struct carried no hint",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            || self.struct_hint_known(ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fuse_size_hint.rs$"],
+  },
+  {
+    name: "held-size-hint-refused",
+    breaks: "a held adapter's size hint is refused",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            || self.explicit_adapter(ty)\n            || self.range_kind(ty).is_some()\n",
+    replace: "            || self.range_kind(ty).is_some()\n",
+    tests: ["test/corpus.test.ts", "-t", "^(held_cycle).rs$"],
+  },
 ];

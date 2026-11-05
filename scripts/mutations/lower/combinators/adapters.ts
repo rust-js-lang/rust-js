@@ -325,7 +325,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators/adapters.rs",
     find: "                    || self.recognition().reaches_its_own(receiver_ty, OwnStep::Nth, Reach::Sure)\n",
     replace: "                    || false\n",
-    tests: ["test/corpus.test.ts", "-t", "^(own_nth_through_adapters|own_fold_and_count_where_adapters_call_them).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(own_nth_through_adapters|own_fold_and_count_where_adapters_call_them|step_by_of_own_nth_that_never_unwinds).rs$"],
   },
   {
     name: "step-by-range-filtered",
@@ -426,14 +426,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^reversed_vec_rest_through_zip_and_enumerate.rs$"],
   },
   {
-    name: "step-by-of-own-fold-filtered",
-    breaks: "a `step_by()` of a `fuse()` of the crate's iterator with its own `fold` is a filter by index, whose fold calls it, where std's `StepBy` steps it by `next` and `nth` (#671)",
-    file: "src/lower/combinators/adapters.rs",
-    find: "                    || self.recognition().reaches_its_own(receiver_ty, OwnStep::Fold, Reach::Sure)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_count_where_adapters_call_them.rs$"],
-  },
-  {
     name: "step-by-slice-in-order-filtered",
     breaks: "a `step_by(n)` of a `Vec`'s items whose drop may panic is a filter by index, each it passes dropped as it's rejected, so a panic there drops the fold's accumulator before the rest of std's slice (#668)",
     file: "src/lower/combinators/adapters.rs",
@@ -479,6 +471,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators/adapters.rs",
     find: "                    || self.steps_may_panic(receiver_ty.peel_refs())\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(skip_while_first_step_unwinds|own_fold_and_count_where_adapters_call_them).rs$"],
   },
 ];

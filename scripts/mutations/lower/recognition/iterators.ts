@@ -785,7 +785,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/iterators.rs",
     find: "        is_compiled_std_iterator(tcx, source) && !super::is_held_compiled(tcx, source)\n",
     replace: "        is_compiled_std_iterator(tcx, source)\n",
-    tests: ["test/corpus.test.ts", "-t", "^enumerate_made_in_place_from_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(enumerate_made_in_place_from_back|enumerate_made_knowing_read_again).rs$"],
+    snapshots: true,
   },
   {
     name: "scan-not-closed-on-drop",

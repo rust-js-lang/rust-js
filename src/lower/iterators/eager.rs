@@ -622,26 +622,13 @@ pub(in crate::lower) fn consumed_into_iters(body: &mut Vec<Stmt>, fuse: Option<&
 /// `$roomForHint(..)`'s, keeps what its hint asks (#733).
 fn stepped_through(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
     stepped_in_place(e, by_for, fuse);
-    let js::ExprKind::Call(callee, args) = &mut e.kind else {
+    let js::ExprKind::Call(callee, _) = &mut e.kind else {
         return;
     };
-    if callee
-        .helper_name()
-        .is_some_and(|name| ADAPTING_HELPERS.contains(&name))
-        && let Some(source) = args.first_mut()
-    {
-        stepped_through(source, false, fuse);
-        return;
-    }
     let js::ExprKind::Member(object, method) = &mut callee.kind else {
         return;
     };
     if !ADAPTED_TILL_DONE.contains(&method.as_str()) {
-        return;
-    }
-    // The crate's iterator a `map` steps keeps its `size_hint`, which the
-    // `map`'s is, as std's `Map` passes it on.
-    if method == "map" && crate::lower::iterators::stepped_value(object).is_some() {
         return;
     }
     stepped_through(object, false, fuse);

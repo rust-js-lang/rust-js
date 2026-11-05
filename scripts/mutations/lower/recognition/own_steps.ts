@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/own_steps.rs",
     find: "            (Nth, \"Chain\") => &[(1, Nth)],\n",
     replace: "            (Nth, \"Chain\") => &[],\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(adapters_own_nth_fold|step_by_of_own_nth_that_never_unwinds).rs$"],
   },
   {
     name: "scan-folds-unseen",

@@ -467,3 +467,14 @@ the mutations `consumed-unclosed-on-throw` and
 `given-drop-ignored` (`lower/traits/calls.ts`),
 `std-iterator-fold-unwind-lost` (`runtime/std_iterator.ts`) and
 `fold-of-a-param-unwinding-unseen` (`lower/mir/iter/collect.ts`).
+
+## Amendment: a compiled iterator's hint is `held_hint_known`'s alone (2026-11-06, #799)
+
+`size_hint()` from MIR asked `hints_its_size`, of a `$iter`, a type
+parameter's, an explicit adapter's or a compiled struct's own hint,
+beside `adapted_hint_known`, whose `held_hint_known` asks each of those
+already. It's gone: what's asked is `array_source(..)` or
+`adapted_hint_known(..)`, one answer. Its mutations,
+`size-hint-of-projection-refused`, `compiled-iterator-size-hint-refused`
+and `held-size-hint-refused`, mutate `held_hint_known` now, in
+`iterators/knowing.rs`. Nothing that runs changes (case N).

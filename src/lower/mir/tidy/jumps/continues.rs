@@ -689,7 +689,8 @@ pub(in crate::lower::mir::tidy) fn written_at(test: &Expr) -> js::Span {
 /// kept, as written (ADR 0684): of `if (c) { a; continue; } else { b }`
 /// last, where `jumps into branches` made the rest its `else`, `if (c) {
 /// a; continue; } b` (ADR 0745). A loop's label those were the last jumps
-/// to goes with them.
+/// to is taken off as any nothing names is: MIR's by tidy's `unlabeled`,
+/// the program's by preparation (#799).
 pub(in crate::lower::mir::tidy) fn tail_continues(
     stmts: &mut [Stmt],
     written: &crate::lower::mir::hints::Written,
@@ -700,11 +701,7 @@ pub(in crate::lower::mir::tidy) fn tail_continues(
         | StmtKind::ForOf { label, body, .. }
         | StmtKind::For { label, body, .. } = &mut stmt.kind
         {
-            let named = label.as_deref().is_some_and(|l| js::names_jump(body, l));
             ends_going_on(body, label, written, commented);
-            if named && label.as_deref().is_some_and(|l| !js::names_jump(body, l)) {
-                *label = None;
-            }
         }
     }
 }

@@ -153,7 +153,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Or of std's adapters of those, each a `$Steps` with std's
             // hint (#733).
-            false => self.hints_its_size(iter_ty) || self.adapted_hint_known(iter_ty),
+            false => self.array_source(iter_ty).is_some() || self.adapted_hint_known(iter_ty),
         };
         if !known {
             return Err(self.unsupported(span, &format!("`size_hint()` of a `{iter_ty}`, from its MIR")));
@@ -964,17 +964,5 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.iterator_item(output).is_some_and(|item| self.is_cell(item));
         let items = iter_ty.is_array() || iter_ty.is_slice() || self.is_vec_like(iter_ty);
         (!handles && items).then(|| self.std_iterator(value, output))
-    }
-
-    /// Whether `$sizeHint` finds an `iter_ty`'s size: a `$iter`'s, exact, a
-    /// generic one's, as it finds it (ADR 0170), and a compiled std
-    /// iterator's, its struct's own hint (ADR 0561), a held map's of the
-    /// crate's own iterator too.
-    fn hints_its_size(&self, iter_ty: Ty<'tcx>) -> bool {
-        // One a struct holds, its own of its source's (ADR 0542).
-        self.array_source(iter_ty).is_some()
-            || self.is_unknown(iter_ty)
-            || self.explicit_adapter(iter_ty)
-            || self.struct_hint_known(iter_ty)
     }
 }

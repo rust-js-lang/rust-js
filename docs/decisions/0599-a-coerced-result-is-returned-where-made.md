@@ -38,3 +38,10 @@ item;` assigned in each branch and returned, stays as written.
   returned where made"; "a `let` from MIR is declared where it's first
   named" holds the program's own.
 - Mutation: of any variable.
+
+## Amendment: the block made of `return`s is unlabeled by tidy's own stage (2026-11-06, #799)
+
+A block whose `break`s became `return`s here was unlabeled here too,
+`statement_lists(.., unlabeled)`, which tidy's `unlabeled` stage does
+after it anyway: the JS of every case was the same without it, so it's
+gone with its mutation, `held-block-left-labeled`.

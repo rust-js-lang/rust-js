@@ -171,3 +171,10 @@ Corpus case `skip_first_nth_panics.rs` holds a `fold`, a `try_fold`, a
 native Rust in both builds. Mutations: `steps-drop-js-own`
 (`runtime/steps.ts`), `skipping-last-unclosed` and
 `skipping-last-unforwarded` (`runtime/skipping.ts`).
+
+## Amendment: a held adapter's hint is `held_hint_known`'s (2026-11-06, #799)
+
+`size_hint()` of a held adapter, an explicit one's, is found by
+`held_hint_known` alone, as ADR 0561's amendment of this date says; MIR's
+second list of the same, `hints_its_size`, is gone. Nothing that runs
+changes (case N).

@@ -404,9 +404,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::Comb(
                 Comb::UnwrapOrElse | Comb::UnwrapOrDefault | Comb::ResultUnwrapOrElse | Comb::ResultUnwrapOrDefault
             )
-            // The pick of `max_by` and the like, boxed as `$maxBy` makes it
-            // (ADR 0464).
-            | Std::IterComb(crate::lower::combinators::IterComb::MaxBy(_) | crate::lower::combinators::IterComb::MaxByKey(_))
             )
     }
 

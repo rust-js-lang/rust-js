@@ -177,3 +177,10 @@ Held by `test/corpus/continue_outer_past_block.rs` and
 `borrow_loop_inner_break_outer.rs` against native Rust, and mutations
 `named-continues-unseen` and `named-continue-unnamed`
 (`tidy/jumps/continues.ts`).
+
+## Amendment: a label whose last jumps went is taken off as any is (2026-11-06, #799)
+
+`tail_continues` took off a loop's label where the `continue`s it took
+away were its last jumps. Tidy's `unlabeled` takes off one MIR made that
+nothing names, and preparation the program's, so its own was the same
+JS in every case: gone, with its mutation, `tail-continued-label-kept`.

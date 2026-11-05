@@ -378,20 +378,10 @@ export const mutations: Mutation[] = [
     breaks:
       "`find_map` of items with a destructor is refused, though it gives each to its function",
     file: "src/lower/combinators.rs",
-    find: "            IterComb::Partition | IterComb::FindMap | IterComb::MaxBy(_) | IterComb::MaxByKey(_) | IterComb::Nth\n",
+    find: "            IterComb::Partition | IterComb::FindMap | IterComb::MaxByKey(_) | IterComb::Nth\n",
     replace:
-      "            IterComb::Partition | IterComb::MaxBy(_) | IterComb::MaxByKey(_) | IterComb::Nth\n",
+      "            IterComb::Partition | IterComb::MaxByKey(_) | IterComb::Nth\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps_drop.rs$"],
-  },
-  {
-    name: "max-by-leaves-drops",
-    breaks:
-      "`max_by` of items with a destructor is refused, though it drops each it passes over",
-    file: "src/lower/combinators.rs",
-    find: "            IterComb::Partition | IterComb::FindMap | IterComb::MaxBy(_) | IterComb::MaxByKey(_) | IterComb::Nth\n",
-    replace:
-      "            IterComb::Partition | IterComb::FindMap | IterComb::MaxByKey(_) | IterComb::Nth\n",
-    tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
   },
   {
     name: "zip-holds-none",

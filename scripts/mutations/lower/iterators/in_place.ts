@@ -10,7 +10,7 @@ export const mutations: Mutation[] = [
     find: "        _ if fused && given.len() <= 3 && given.first().is_some_and(is_js_iterator) => given[0].clone(),\n",
     replace:
       "        _ if fused && given.first().is_some_and(is_js_iterator) => given[0].clone(),\n",
-    tests: ["test/corpus.test.ts", "-t", "^owned_items_through_fuse.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(owned_items_through_fuse|compiled_adapters_closed_as_a_collect_unwinds).rs$"],
   },
 
   {

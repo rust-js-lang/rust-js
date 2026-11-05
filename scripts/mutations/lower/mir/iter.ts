@@ -178,16 +178,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iterator_drop_consumed.rs$"],
   },
   {
-    name: "size-hint-of-projection-refused",
-    breaks:
-      "`size_hint()` of a generic `I::IntoIter` is refused, where a type parameter's is its JS value's",
-    file: "src/lower/mir/iter.rs",
-    find: "            || self.is_unknown(iter_ty)\n            || self.explicit_adapter(iter_ty)\n",
-    replace:
-      "            || matches!(iter_ty.kind(), ty::Param(_))\n            || self.explicit_adapter(iter_ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "^size_hint_into_iter.rs$"],
-  },
-  {
     name: "find-dropping-undropped",
     breaks: "`find` of items with a destructor drops none it passes over",
     file: "src/lower/mir/iter.rs",
@@ -240,15 +230,6 @@ export const mutations: Mutation[] = [
     find: "                self.given_drop(receiver).is_some()\n                    || (compiled && self.holds_given_drops(receiver))\n",
     replace: "                (compiled && self.holds_given_drops(receiver))\n",
     tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
-  },
-  {
-    name: "compiled-iterator-size-hint-refused",
-    breaks:
-      "`size_hint()` of a compiled std iterator, a `Fuse`'s, is refused, as if its struct carried no hint",
-    file: "src/lower/mir/iter.rs",
-    find: "            || self.struct_hint_known(iter_ty)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^fuse_size_hint.rs$"],
   },
   {
     name: "held-function-unclosed",
@@ -308,14 +289,6 @@ export const mutations: Mutation[] = [
     find: "        if values.len() != 2 || !self.iterator_cloned_apart(output) {\n",
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
-  },
-  {
-    name: "held-size-hint-refused",
-    breaks: "a held adapter's size hint is refused",
-    file: "src/lower/mir/iter.rs",
-    find: "            || self.explicit_adapter(iter_ty)\n            || self.struct_hint_known(iter_ty)\n",
-    replace: "            || self.struct_hint_known(iter_ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "^(held_cycle).rs$"],
   },
   {
     name: "cloned-mapped-anyway",
@@ -676,8 +649,8 @@ export const mutations: Mutation[] = [
     name: "adapter-hint-refused",
     breaks: "`size_hint()` of std's adapter of the crate's iterator, `own.filter(f)`'s, is refused where its JS has std's (#733)",
     file: "src/lower/mir/iter.rs",
-    find: "            false => self.hints_its_size(iter_ty) || self.adapted_hint_known(iter_ty),\n",
-    replace: "            false => self.hints_its_size(iter_ty),\n",
+    find: "            false => self.array_source(iter_ty).is_some() || self.adapted_hint_known(iter_ty),\n",
+    replace: "            false => self.array_source(iter_ty).is_some(),\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
   },
   {

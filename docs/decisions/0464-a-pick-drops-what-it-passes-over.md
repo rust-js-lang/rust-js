@@ -70,3 +70,14 @@ function final_one(items, dropIItem, dropIIntoIter) {
 - **What generic code's callers may give grows**: a consumed iterator of
   items with a destructor, `fold`, `count`, `last`, `max`, as itertools'
   free functions take.
+
+## Amendment: `max_by`'s pick is MIR's (2026-11-06, #799)
+
+Since c4ff618a6, `max_by` and `min_by`, by a key or not, are std's
+iterator methods from MIR (ADR 0470, amended). The recognizers'
+`IterComb::MaxBy` no longer reaches what says it leaves no item undropped
+(`leaves_none`), nor do it and `MaxByKey` reach what says their `Option`
+is boxed as it's made (`refuses_boxed_option`), in any case or test, each
+probed: those arms are gone, with `max-by-leaves-drops` and
+`boxed-max-by-refused`. Where
+one were reached, it'd be refused, never wrong.

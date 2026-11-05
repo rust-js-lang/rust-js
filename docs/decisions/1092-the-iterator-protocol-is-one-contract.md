@@ -918,3 +918,17 @@ Still left: a `Vec` collect of a type parameter's items is given room by
 an item size of 0, as their layout isn't known here, so it isn't asked
 again as it grows. That needs `TSize`, the fact #672's `IInPlace` already
 gives.
+
+## Amendment: what's stepped through is never the crate's hint-asked iterator (2026-11-06, #799)
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
+Since a collect of the crate's iterator asks its hint through
+`$roomForHint`, and `$sizeHint(..)` asks it apart, nothing that steps a
+chain through, `stepped_through`, is given one whose hint is asked. Two
+of its exceptions changed nothing in any of the corpus's 1,740 cases or
+the 1,325 tests of the lowering, compiler, docs, library and snapshot
+files, each probed where its answer would differ: a `map` of the crate's
+stepped iterator left as it was, and a `$stepBy`'s source stepped through.
+Both are gone, with their mutations, `map-source-hint-trimmed` and
+`stepped-through-step-by-not`, and `ADAPTING_HELPERS`.

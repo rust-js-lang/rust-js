@@ -563,7 +563,7 @@ export const mutations: Mutation[] = [
     breaks: "a value read in place knows nothing of the call that made it, so what spills it names it after itself, `option` (#769)",
     file: "src/lower/mir/temporaries.rs",
     find: "        && let Some(name) = state.locals.called.get(&local)\n",
-    replace: "        && let Some(name) = None::<&String>\n",
+    replace: "        && let Some(name) = None::<&js::Held>\n",
     tests: ["test/corpus.test.ts", "-t", "^nth_passes_a_slice_or_each.rs$"],
     snapshots: true,
   },

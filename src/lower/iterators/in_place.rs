@@ -11,9 +11,6 @@ pub(super) const CONSUMED_TILL_DONE: [&str; 5] = ["reduce", "forEach", "some", "
 /// stepped, and asking its hint only where it's asked its own.
 pub(super) const ADAPTED_TILL_DONE: [&str; 5] = ["map", "filter", "take", "drop", "flatMap"];
 
-/// The runtime's helpers that adapt their first argument so, `$stepBy`'s.
-pub(super) const ADAPTING_HELPERS: [&str; 1] = ["$stepBy"];
-
 /// The runtime's helpers that step their first argument to its end by
 /// its `last`, asking no hint (#733).
 pub(super) const LAST_HELPERS: [&str; 2] = ["$last", "$lastSome"];
