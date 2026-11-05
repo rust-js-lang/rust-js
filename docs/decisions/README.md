@@ -796,7 +796,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0970 A `LinkedList`'s `into_iter()` owns its array](0970-a-linked-lists-into-iter-owns-its-array.md)
 - [0971 An escape is the array of what it gives](0971-an-escape-is-the-array-of-what-it-gives.md)
 - [0972 A function that reads its `this` is `js::function::with_this`'s](0972-a-function-that-reads-its-this-is-with-thiss.md) *(amended: its last parameter of rest arguments is JS's rest parameter; amended by 1009: held by `Class::of`, a constructor closed over what it captures; amended: it gives the JS function itself, `&'l dyn Fn`, rd209; amended: as many parameters as a function, sixteen, rd400; amended: a place of its `this` is never read in a handle's accessors, #449)*
-- [0973 A zip std reads by index stops at the shorter](0973-a-zip-std-reads-by-index-stops-at-the-shorter.md)
+- [0973 A zip std reads by index stops at the shorter](0973-a-zip-std-reads-by-index-stops-at-the-shorter.md) *(amended: a `b` that holds what drops made knowing its length, #775)*
 - [0974 A `while` that steps its variable last is a `for`](0974-a-while-that-steps-its-variable-last-is-a-for.md)
 - [0975 std's `Zip` is compiled, its impl picked by its sides' facts](0975-std-s-zip-is-compiled-its-impl-picked-by-its-sides-facts.md)
 - [0976 An `IntoIterator` parameter is held as it is, never in a box](0976-an-into-iterator-parameter-is-held-as-it-is.md)
@@ -992,7 +992,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0542 An adapter a struct holds keeps its source and its state](0542-a-held-adapter-keeps-its-source-and-state.md) *(amended by 0925: an explicit counted adapter is none now, each std's struct)*
 - [0543 A `Peekable` a struct holds keeps what it peeked at](0543-a-held-peekable-keeps-what-it-peeked-at.md) *(superseded in part by 0561; extended by 0899: a specialization a fact picks, `OneShot`'s too)*
 - [0544 A `Cycle` a struct holds keeps both it cycles](0544-a-held-cycle-keeps-both-it-cycles.md)
-- [0545 A map the crate steps from its back is made knowing it](0545-a-map-stepped-from-its-back-is-made-knowing-it.md) *(amended: what a function gives behind an `impl DoubleEndedIterator`; amended: a `filter_map(f)` too, #473; amended: one held, given to a `rev()` or generic code, #484; amended: a `rev()` stepped from its back, #702)*
+- [0545 A map the crate steps from its back is made knowing it](0545-a-map-stepped-from-its-back-is-made-knowing-it.md) *(amended: what a function gives behind an `impl DoubleEndedIterator`; amended: a `filter_map(f)` too, #473; amended: one held, given to a `rev()` or generic code, #484; amended: a `rev()` stepped from its back, #702; amended: a chain's sides, #718)*
 - [0546 A declaration names a function as its JS does](0546-a-declaration-names-a-function-as-its-js-does.md)
 - [0547 A `copied()` of an iterator with a destructor drops it](0547-a-copied-iterator-with-a-destructor-is-closed.md)
 - [0548 A library's manifest says which type parameters it steps](0548-a-librarys-manifest-says-which-parameters-it-steps.md)

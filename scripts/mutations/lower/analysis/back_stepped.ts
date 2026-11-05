@@ -189,9 +189,46 @@ export const mutations: Mutation[] = [
     breaks:
       "a map two adapters inside a back-stepped one isn't made knowing its back (#218)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "            source = back_stepped_source(tcx, held);\n",
-    replace: "            source = None;\n",
+    find: "            sources.push(held);\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^back_stepped_adapter_sources.rs$"],
+  },
+  {
+    name: "chain-sides-unstepped",
+    breaks:
+      "a chain's sides aren't made knowing their back where they're made: `v.into_iter().filter(p).chain(w).rev()` of droppers, whose `a` MIR holds in a variable for `w`'s drop flag, is refused, a `Filter` as a `DoubleEndedIterator` (#718)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "            Some((a, b)) => vec![a, b],\n",
+    replace: "            Some(_) => Vec::new(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_of_adapters_stepped_from_its_back.rs$"],
+  },
+  {
+    name: "chain-side-a-unstepped",
+    breaks:
+      "a chain's first side isn't made knowing its back where it's made, only its second: a held `filter()` on side `a` of droppers stepped from the back is refused (#718)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "            Some((a, b)) => vec![a, b],\n",
+    replace: "            Some((_, b)) => vec![b],\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_of_adapters_stepped_from_its_back.rs$"],
+  },
+  {
+    name: "zip-by-index-holding-map-unasked",
+    breaks:
+      "a zip read by index doesn't record its `b`, a map whose closure holds what drops: the map, held in a variable, is refused as an `ExactSizeIterator` (#775)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "            if Some(callee) == zip\n",
+    replace: "            if false\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_by_index_of_holding_maps.rs$"],
+  },
+  {
+    name: "zip-by-index-any-map-asked",
+    breaks:
+      "a zip read by index records its `b` though its closure drops nothing: a map made in place `$mapEnds(..)` where it was `.map(f)`, a change of form (#775)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                if closure_drops(tcx, b, &drops) {\n",
+    replace: "                if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(zip_by_index|zip_by_index_of_holding_maps).rs$"],
+    snapshots: true,
   },
   {
     name: "stepped-sources-any-adapter",

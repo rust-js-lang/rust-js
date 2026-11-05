@@ -3,6 +3,25 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "back-stepped-range-map-length-unknown",
+    breaks:
+      "a range's map whose closure has a destructor, a zip's `b` read by index, isn't read as knowing its length where it's made knowing it: refused as an `ExactSizeIterator` (#775)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                || self.range_kind(source.peel_refs()).is_some()\n",
+    replace: "                || false\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_by_index_of_holding_maps.rs$"],
+  },
+  {
+    name: "back-stepped-range-map-length-always",
+    breaks:
+      "every range's map stepped from its back is made knowing its length, though its closure drops nothing and nothing asks it: `$rangeLen` where it wasn't (#775)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                    && matches!(ty.kind(), ty::Adt(_, args) if self.drops(args.type_at(1)) != crate::lower::drops::Drops::Nothing)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(map_stepped_from_its_back|range_mapped_by_a_function).rs$"],
+    snapshots: true,
+  },
+  {
     name: "compiled-source-map-length-unknown",
     breaks:
       "a map whose closure has a destructor, of a `fuse()`, std's compiled struct, isn't read as knowing its length where it's made knowing it: refused as an `ExactSizeIterator` (#385)",

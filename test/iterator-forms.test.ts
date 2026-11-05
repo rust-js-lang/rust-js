@@ -148,6 +148,13 @@ const few = [
   // gives back, never dropped by a `$roomForHint` std's in-place collect
   // never asks (#770).
   "generic_collect_drops_rest_first.rs",
+  // A chain whose sides are std's adapters over items with a destructor,
+  // stepped from its back, each side made knowing its back where it's made
+  // (#718).
+  "chain_of_adapters_stepped_from_its_back.rs",
+  // A zip read by index of maps whose closures hold what drops, a slice's
+  // and a range's, `b` made knowing its length where it's made (#775).
+  "zip_by_index_of_holding_maps.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus")

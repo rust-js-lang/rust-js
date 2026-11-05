@@ -599,3 +599,37 @@ and an inspect of a reversed source. Mutation
 An inspect or a map whose closure has a destructor, over a `Vec`'s
 `u32`s, is refused the same way, `closure_drops`'s map of that closure
 held where no form steps it from its back: its own gap, #780.
+
+## Amendment: a chain's sides are made knowing their back where they're made (2026-11-05, #718)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, since this was a
+refusal. Rust's behavior is kept.
+
+`v.into_iter().filter(p).chain(w)` of a `Vec<D>`, stepped from its back by
+`rev()` or `rfold`, was refused in the default build: "a `Filter<IntoIter<D>,
+..>` as a `DoubleEndedIterator`". That was so whether the chain was held in
+a variable or made in place, through `.rev().map(f).sum()` too. The same
+was true of a `map()`, `inspect()` or `filter_map()` side. MIR holds side `a`
+in a variable before the chain is made, where `w`'s drop flag is cleared. So
+when the one runtime `Chain` is made knowing its back (`$lazyChain(a', b')`,
+#739), `a` has no form left to read. `back_stepped`'s walk skips a chain's
+subtree, so the side was never recorded stepped from its back.
+
+`with_stepped_sources` now takes in a chain's two sides, as it takes in a
+map's or a filter's source. Each map, filter, `filter_map`, `inspect`,
+copy or chain among them, and their own sources in turn, is made knowing its
+back where it's made: `$filterEnds(..)`, `$mapEnds(..)`. Whatever steps the
+chain then finds each side knowing it. No other corpus snapshot changes.
+
+Not done here, and left to #718: a `skip(n)` or `take(n)` side, and a held
+`v.into_iter().skip(1)` before its `rev()` with no chain, which are refused
+as before.
+
+Kind: missing case. Area: iterators. Old: f8ea97dc3^ refuses the same
+shapes. `chain_of_adapters_stepped_from_its_back.rs` checks a held and an
+in-place chain whose sides are a filter, a map, an `inspect`, a
+`filter_map` and a map on `b`. It steps them through a `for`, `next`, a sum,
+`rfold`, `nth_back` and a collect, and once with a predicate that panics part
+way. It runs against native Rust in both builds. Mutations:
+`chain-sides-unstepped`, `chain-side-a-unstepped`;
+`stepped-sources-one-deep` names its line as it now reads.

@@ -241,6 +241,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None if self.is_user_iterator(iter_ty) => {
                         self.user_iterator_knowing(receiver.clone(), held, (back, len), span)?
                     }
+                    // A range's, made knowing its length too where the map is,
+                    // `$rangeLen`, a zip's `b` read by index (#775).
+                    None if len && self.range_kind(iter_ty).is_some() => {
+                        self.as_exact_size(receiver.clone(), iter_ty, back, span)?
+                    }
                     None if back && !self.has_a_back(iter_ty) => {
                         self.as_double_ended(receiver.clone(), iter_ty, span)?
                     }

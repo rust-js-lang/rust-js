@@ -6,6 +6,8 @@
 //! made knowing its back where it's made, as the iterators draft asks of
 //! one owner, before lowering: so one held in a variable before it's
 //! stepped, as a library's drop flags make one, still steps from its back.
+//! So are a chain's sides (#718), and a map whose closure has a destructor
+//! that a zip read by index asks the length of (#775).
 
 use crate::lower::body_queries::strip;
 use crate::lower::recognition::{
@@ -29,7 +31,9 @@ pub(super) fn back_stepped<'tcx>(
     // Each body's own, by its function: what a caller's call of it makes too.
     let mut of_body: HashMap<rustc_span::def_id::DefId, HashSet<Ty<'tcx>>> = HashMap::new();
     let rev = crate::lower::recognition::compiled_provided_method(tcx, "Iterator", "rev");
+    let zip = crate::lower::recognition::compiled_provided_method(tcx, "Iterator", "zip");
     for body in all_bodies {
+        let typing_env = ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(body.def_id));
         let stepped = of_body.entry(body.def_id).or_default();
         // A `rev()` held, std's compiled `Rev`, which steps what it's given
         // by its dictionary, not one a std iterator's method steps where
@@ -47,6 +51,20 @@ pub(super) fn back_stepped<'tcx>(
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
+            // A zip that reads its sides by index (ADR 0973), which asks the
+            // length of `b`, a map whose closure has a destructor, held in a
+            // variable to drop it, whose form no use reads: made knowing its
+            // length where it's made, as one a bound asks it of is (#775).
+            if Some(callee) == zip
+                && let [a, b] = args.types().collect::<Vec<_>>()[..]
+                && !rustc_middle::ty::TypeVisitableExt::has_param(&(a, b))
+                && crate::lower::recognition::zips_by_index(tcx, typing_env, a, b)
+            {
+                let b = recognition.reveal(crate::lower::recognition::iterator_type_of(tcx, typing_env, b));
+                if closure_drops(tcx, b, &drops) {
+                    stepped.extend(back_stepped_adapter(tcx, recognition, b, false, &drops));
+                }
+            }
             let held_rev = Some(callee) == rev && called.get(&at).is_none_or(|(span, _)| !in_place.contains(span));
             // `DoubleEndedIterator`'s own method, `next_back()`, which asks
             // it of what it's called on: below, of each adapter.
@@ -271,12 +289,19 @@ fn back_stepped_adapter<'tcx>(
 /// chain one steps, the one runtime `Chain`, which MIR may hold in a
 /// variable before its map is made, its sides made knowing theirs where
 /// it's made: a `map` of a chain of the crate's iterators folded from its
-/// back (#739).
+/// back (#739). And a chain's sides in turn, which `$lazyChain` steps from
+/// their back, each made knowing it where it's made: MIR holds side `a` in
+/// a variable before the chain is made, where `b`'s drop flag must be
+/// cleared, so no form of `a` is left to read (#718).
 fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: HashSet<Ty<'tcx>>) -> HashSet<Ty<'tcx>> {
     let mut all = stepped.clone();
-    for ty in stepped {
-        let mut source = back_stepped_source(tcx, ty);
-        while let Some(held) = source.map(|held| held.peel_refs()) {
+    let mut sources: Vec<Ty<'tcx>> = stepped.into_iter().collect();
+    while let Some(ty) = sources.pop() {
+        let held = match chained_sources(tcx, ty) {
+            Some((a, b)) => vec![a, b],
+            None => back_stepped_source(tcx, ty).into_iter().collect(),
+        };
+        for held in held.into_iter().map(|held| held.peel_refs()) {
             if mapped_source(tcx, held).is_some()
                 || filtered_source(tcx, held).is_some()
                 || filter_mapped_source(tcx, held).is_some()
@@ -286,7 +311,7 @@ fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: HashSet<Ty<'tcx>>) -> 
             {
                 all.insert(tcx.erase_and_anonymize_regions(held));
             }
-            source = back_stepped_source(tcx, held);
+            sources.push(held);
         }
     }
     all

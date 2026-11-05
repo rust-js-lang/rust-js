@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "range-map-made-lengthless",
+    breaks:
+      "a range's map made knowing its length, a zip's `b` read by index, is made knowing only its back: `$trustedZip` throws `b.len is not a function` (#775)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                    None if len && self.range_kind(iter_ty).is_some() => {\n",
+    replace: "                    None if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_by_index_of_holding_maps.rs$"],
+  },
+  {
     name: "back-stepped-enumerate-fuse-unwrapped",
     breaks:
       "`rev()` of an enumeration of std's compiled `Fuse` the crate steps from its back gives `$enumerate` the struct as it is: `TypeError: enumerated.iter.len is not a function` (#383)",
