@@ -2457,28 +2457,11 @@ export function $instantCheckedSince(a, b) {
 // By its `tryFold`, as std's `find` is its `try_fold`: `it` is the `&mut`
 // `find` takes, `$lent`'s, a `$Steps`, which has one; a `skip` asks its
 // source `nth(n - 1)` (ADR 0932). The one `test` throws on, a panic, is
-// dropped as it unwinds, as std's `find`'s closure holds it (#423).
+// dropped as it unwinds, as std's `find`'s closure holds it (#423): each
+// asked by `$kept`, which `$findBack` asks too (#738).
 export function $findDropping(it, test, drop, boxed) {
   let item;
-  const hit = it.tryFold(
-    false,
-    (_, x) => {
-      let found;
-      try {
-        found = test(x);
-      } catch (error) {
-        drop?.(x);
-        throw error;
-      }
-      if (found) {
-        item = x;
-        return true;
-      }
-      drop?.(x);
-      return false;
-    },
-    (hit) => hit,
-  );
+  const hit = it.tryFold(false, (_, x) => $kept(test, drop, x) && ((item = x), true), (hit) => hit);
   if (!hit) return undefined;
   it.return?.();
   return boxed ? $some(item) : item;
@@ -3243,27 +3226,18 @@ export function $foldBack(it, init, f, unwind, ends) {
 
 // `it.rfind(p)`: the first item from the back `p` holds of, or `undefined`;
 // `found` and `drop`, of each it passes over, as `$nthBack`'s. Std's, its
-// `try_rfold`, where that reaches the crate's own (#220).
+// `try_rfold`, where that reaches the crate's own (#220). Each item asked
+// by `$kept`, as `find`'s are, `$findDropping`'s: the one `p` throws on, a
+// panic, dropped as it unwinds, as std's `check` closure holds it
+// (`double_ended.rs:419`, #738).
 export function $findBack(it, p, found = (item) => item, drop) {
   if (it.tryRfold !== undefined) {
     let hit;
-    const hits = it.tryRfold(
-      false,
-      (_, x) => {
-        if (!p(x)) {
-          drop?.(x);
-          return false;
-        }
-        hit = x;
-        return true;
-      },
-      (hits) => hits,
-    );
+    const hits = it.tryRfold(false, (_, x) => $kept(p, drop, x) && ((hit = x), true), (hits) => hits);
     return hits ? found(hit) : undefined;
   }
   for (let step = it.back(); !step.done; step = it.back()) {
-    if (p(step.value)) return found(step.value);
-    drop?.(step.value);
+    if ($kept(p, drop, step.value)) return found(step.value);
   }
   return undefined;
 }
@@ -3500,25 +3474,19 @@ export function $filterEnds(it, p, drop) {
   // Each item `p` keeps, the one it was asked of dropped where it throws,
   // a panic, as std's `Filter` holds it as it unwinds (#423), and each it
   // doesn't by `drop`: `$kept`'s.
-  const kept = (step) => () => {
-    for (let at = step(); !at.done; at = step()) {
-      if ($kept(p, drop, at.value)) return at;
-    }
-    return { done: true, value: undefined };
-  };
   const filter = new $Steps(
-    kept(() => it.next()),
+    () => {
+      for (let at = it.next(); !at.done; at = it.next()) {
+        if ($kept(p, drop, at.value)) return at;
+      }
+      return { done: true, value: undefined };
+    },
     () => $closed(it),
   );
-  if (it.back !== undefined) filter.back = kept(() => it.back());
-  // Std's `Filter::next_back`, its source's `rfind`, a `try_rfold`, where
-  // that reaches the crate's own (#220).
-  if (it.tryRfold !== undefined) {
-    filter.back = () => {
-      let hit;
-      const hits = it.tryRfold(false, (_, x) => $kept(p, drop, x) && ((hit = x), true), (hits) => hits);
-      return hits ? { done: false, value: hit } : { done: true, value: undefined };
-    };
+  // Std's `Filter::next_back`, its source's `rfind`, `$findBack`'s: its
+  // `try_rfold` where that reaches the crate's own (#220), else its back.
+  if (it.back !== undefined || it.tryRfold !== undefined) {
+    filter.back = () => $findBack(it, p, (value) => ({ done: false, value }), drop) ?? { done: true, value: undefined };
   }
   // Std's `Filter::fold`, `try_fold`, `rfold` and `try_rfold`, its source's
   // of each kept (#220, #625), the accumulator held as `$kept` says (#423,
@@ -3561,9 +3529,11 @@ export function $enumerate(iter) {
   enumerated.iter = iter;
   enumerated.count = 0;
   enumerated.hint = () => $sizeHint(enumerated.iter);
+  // Std's `Enumerate::next_back`: its source's, then where it is, the count
+  // so far and how many are left after it, asked once it's stepped (#738).
   enumerated.back = () => {
-    const left = enumerated.iter.len();
-    return pair(enumerated.iter.back(), enumerated.count + left - 1);
+    const step = enumerated.iter.back();
+    return step.done ? step : pair(step, enumerated.count + enumerated.iter.len());
   };
   enumerated.len = () => enumerated.iter.len();
   // Std's `Enumerate::count`: its source's, which `$count` asks by this
@@ -3586,7 +3556,7 @@ export function $enumerate(iter) {
   };
   const tryRfold = (init, f, broke, unwind) => {
     let at = enumerated.count + enumerated.iter.len();
-    return enumerated.iter.tryRfold(init, (a, x) => f(a, [--at, x]), broke, unwind);
+    return $tryRfoldOf(enumerated.iter, init, (a, x) => f(a, [--at, x]), broke, unwind);
   };
   const nthBack = (k) => {
     const step = enumerated.iter.nthBack(k);
@@ -3624,7 +3594,10 @@ export function $enumerate(iter) {
     fold: iter.fold === undefined ? undefined : fold,
     tryFold,
     rfold: iter.rfold === undefined ? undefined : rfold,
-    tryRfold: iter.tryRfold === undefined ? undefined : tryRfold,
+    // Its `try_rfold` std's where its source has a back too: how many are
+    // left asked once, then its source's own, or std's of its back, an
+    // `rfind`'s (#738).
+    tryRfold: iter.tryRfold === undefined && iter.back === undefined ? undefined : tryRfold,
     nthBack: iter.nthBack === undefined ? undefined : nthBack,
     nth: iter.nth === undefined ? undefined : nth,
   });
@@ -14279,11 +14252,12 @@ export function $rposition(items, found) {
   }
   const iter = items.items !== undefined;
   const [array, at, end] = iter ? [items.items, items.at, items.end] : [items, 0, items.length];
+  // Each taken before `f` is asked of it, as `next_back` takes it, so what
+  // `f` owns, and drops as it unwinds, a panic, is no longer the `$iter`'s
+  // to drop (#738).
   for (let i = end - 1; i >= at; i--) {
-    if (found(array[i])) {
-      if (iter) items.end = i;
-      return i - at;
-    }
+    if (iter) items.end = i;
+    if (found(array[i])) return i - at;
   }
   if (iter) items.end = at;
   return undefined;

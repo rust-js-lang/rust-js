@@ -1974,3 +1974,63 @@ iterators. Regression of a9ebb21a4, bisected by the nightly.
 Mutation: `rev-of-rev-of-closed-items-collapsed`; `rev-of-rev-kept` and
 `rev-of-rev-of-own-steps-dropped` name their lines as they now read
 (`lower/mir/iter/backs.ts`).
+
+## Amendment: a predicate asked from the back drops its item as it unwinds, by `$kept` (2026-11-05, #738)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+`rfind`'s runtime, `$findBack`, called its predicate with no catch, by its
+source's `try_rfold` and by `next_back` alike, so the item it panicked on
+was never dropped: `vec![D(1), D(2), D(3)].into_iter().rfind(p)`, `p`
+panicking at its second call, dropped 3 and 1 where native drops 3, 2, 1.
+Std's `rfind` is `try_rfold` with `check(predicate)`
+(`core/src/iter/traits/double_ended.rs:419`), whose closure owns `x` while
+`predicate(&x)` runs. The forward `find`, `$findDropping`, had a catch of
+its own, a second copy of what `$kept` already answers for `filter` and
+`take_while`.
+
+`$kept` (`steps.js`) is now the one answer of what a predicate's item is
+as it's asked: dropped where the predicate throws, then by `drop` where it
+isn't kept. `$findDropping` and `$findBack` both ask it, and
+`$filterEnds`' `next_back`, std's `Filter::next_back`, which is its
+source's `rfind`, is `$findBack` itself, not a third copy of it.
+
+`$rposition` over a `$iter` of items with a destructor took each item
+only once its function answered, so an item the function owns and drops as
+it panics (`rposition` takes its item by value) was dropped again with
+what was left: native drops 3, 2, 1, the JS 3, 2, 1, 2, 3. It takes each
+first now, as `next_back` does.
+
+The conformance table (ADR 1092) found one more `rfind` difference with
+no drop in it: an `enumerate()`'s, over the crate's iterator with no
+`try_rfold` of its own, asked its length at each step, before each
+`next_back`, where std's `Enumerate::try_rfold` asks it once
+(`iter/adapters/enumerate.rs`) and its `next_back` asks it after its step.
+`$enumerate` has std's `try_rfold` wherever its source has a back now, and
+its `back` asks the length after the step. Under `--std-iterators`, a
+compiled `Cloned`'s `rfind` (`vec iter | cloned | rfind | consumer`) never
+dropped the clone the predicate panicked on, `$findBack`'s same leak; it
+runs as native now.
+
+Kind: protocol gap (one of two finds didn't drop what it held as its
+closure unwound); the `rposition` double drop is a local slip. Area:
+iterators. Old, not bisected.
+
+`back_predicate_unwinds.rs` checks `rfind` of a `Vec`'s items, through
+`flat_map`, `by_ref` and `chain`, of the crate's iterator and of a type
+parameter, and `rposition`, `rev()`'s `find_map`, `find`, `position`, `any`
+and `all`, a filter's `next_back`, and std's `Take` and `Skip` held,
+whose `rfind` is their `try_rfold`, each with a predicate that panics, and
+a filter stepped from either end, against native Rust in both builds.
+Mutations: `find-back-throw-keeps-item` and
+`find-back-try-rfold-throw-keeps-item` (`runtime/back_steps.ts`), whose
+`filter-ends-keeps-all` and `filter-ends-keeps-dropped` are this case's now
+that the line they mutate is the filter's `next` alone,
+`enumerate-back-len-first` and `enumerate-try-rfold-of-back-unasked`
+(`runtime/back_steps.ts`, the case's `Hints`),
+`rposition-takes-after-asking` (`runtime/position.ts`), and
+`find-dropping-throw-keeps-item` now goes past `$kept`
+(`runtime/find_dropping.ts`). An `inspect()` of items with a destructor
+can't be stepped from its back in the default build yet (#751), so the
+case has no `inspect().rfind`.

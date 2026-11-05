@@ -22,11 +22,12 @@ function $rposition(items, found) {
   }
   const iter = items.items !== undefined;
   const [array, at, end] = iter ? [items.items, items.at, items.end] : [items, 0, items.length];
+  // Each taken before `f` is asked of it, as `next_back` takes it, so what
+  // `f` owns, and drops as it unwinds, a panic, is no longer the `$iter`'s
+  // to drop (#738).
   for (let i = end - 1; i >= at; i--) {
-    if (found(array[i])) {
-      if (iter) items.end = i;
-      return i - at;
-    }
+    if (iter) items.end = i;
+    if (found(array[i])) return i - at;
   }
   if (iter) items.end = at;
   return undefined;

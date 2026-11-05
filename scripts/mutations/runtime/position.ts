@@ -18,13 +18,21 @@ export const mutations: Mutation[] = [
     "name": "rposition-leaves-kept-whole",
     "breaks": "`rposition` of a kept iterator leaves what it stepped from its back there",
     "file": "src/runtime/position.js",
-    "find": "      if (iter) items.end = i;\n",
-    "replace": "",
+    "find": "    if (iter) items.end = i;\n    if (found(array[i])) return i - at;\n",
+    "replace": "    if (found(array[i])) return i - at;\n",
     "tests": [
       "test/corpus.test.ts",
       "-t",
       "rposition"
     ]
+  },
+  {
+    name: "rposition-takes-after-asking",
+    breaks: "`rposition` of a `$iter` takes each item only once `f` has given its answer, so one `f` owns and drops as it panics is dropped again with what's left (#738)",
+    file: "src/runtime/position.js",
+    find: "    if (iter) items.end = i;\n    if (found(array[i])) return i - at;\n",
+    replace: "    if (found(array[i])) return i - at;\n    if (iter) items.end = i;\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_predicate_unwinds.rs$"],
   },
   {
     name: "position-by-next",
