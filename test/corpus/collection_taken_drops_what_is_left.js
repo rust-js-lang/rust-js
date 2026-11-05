@@ -119,7 +119,7 @@ function main() {
 
   let tree = $treeFrom(
     new $BTreeMap(),
-    $lazyRange(0, 3).map((i) => [i, [i]]),
+    $range(0, 3).map((i) => [i, [i]]),
     false,
     $cmp,
     loudDrop_drop,
@@ -133,7 +133,7 @@ function main() {
   console.log(`tree values [${treeValues.join(", ")}] ${arg$4}`);
   const treeSet = $treeFrom(
     new ($btreeSet((a, b) => $cmp(a[0], b[0]), $KeySet))(),
-    $lazyRange(0, 3).map((value) => [value]),
+    $range(0, 3).map((value) => [value]),
     true,
     (a, b) => $cmp(a[0], b[0]),
     undefined,
@@ -183,7 +183,7 @@ function main() {
   console.log(`keys skipped [${skippedKeys.join(", ")}] ${arg$9}`);
   tree = $treeFrom(
     new $BTreeMap(),
-    $lazyRange(0, 3).map((i) => [i, [i]]),
+    $range(0, 3).map((i) => [i, [i]]),
     false,
     $cmp,
     loudDrop_drop,

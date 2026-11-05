@@ -122,6 +122,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         matches!(ty.kind(), ty::Adt(adt, _) if is_vec_like_def(self.tcx, adt.did()))
     }
 
+    /// Whether std's `FromIterator` of `ty` grows a `Vec`, asking what it
+    /// steps its `size_hint` at its first item and each time it's full:
+    /// a `Vec`'s, a `VecDeque`'s and a `Box<[T]>`'s, and of what std makes
+    /// of one, a `BinaryHeap`'s, `BinaryHeap::from(vec)`, and a `BTreeSet`'s
+    /// or `BTreeMap`'s, a sorted `bulk_build` (#797). Not a `LinkedList`'s,
+    /// which extends a new one.
+    pub(in crate::lower) fn grows_as_vec(&self, ty: Ty<'tcx>) -> bool {
+        GROWS_AS_VEC.iter().any(|&item| self.is_std_type(ty, item))
+            || ty.boxed_ty().is_some_and(|inner| inner.is_slice())
+    }
+
     /// `std::str::Chars`, what a string's `chars()` gives.
     pub(in crate::lower) fn is_str_chars(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(self.tcx, adt.did(), StdCrate::Core)
@@ -1248,6 +1259,15 @@ const VEC_LIKE: &[StdItem] = &[
     StdItem::VecDeque,
     StdItem::BinaryHeap,
     StdItem::LinkedList,
+];
+
+/// The std collections whose `FromIterator` grows a `Vec`, `grows_as_vec`'s.
+const GROWS_AS_VEC: &[StdItem] = &[
+    StdItem::Vec,
+    StdItem::VecDeque,
+    StdItem::BinaryHeap,
+    StdItem::BTreeSet,
+    StdItem::BTreeMap,
 ];
 
 /// Of `did`, the js crate's `Set` or `Map`, a JS collection whose own

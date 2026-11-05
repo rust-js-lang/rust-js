@@ -698,7 +698,7 @@ function main() {
     }
     const x = $treeFrom(
       new ($btreeSet((a, b) => $cmp(a[0], b[0]), $KeySet))(),
-      $collectDropping(
+      $foldToArray(
         $closing($iter(ds({ start: 20, end: 24 })), $dropEach(dDrop_drop)).map((item) => {
           try {
             inspect(item);
@@ -725,7 +725,7 @@ function main() {
       boom(d, 32);
     }
     const x = $heapFrom(
-      $collectDropping(
+      $foldToArray(
         $closing($iter(ds({ start: 30, end: 34 })), $dropEach(dDrop_drop)).map((item) => {
           try {
             inspect(item);

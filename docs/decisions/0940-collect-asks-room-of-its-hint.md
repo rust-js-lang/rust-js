@@ -6,7 +6,8 @@ representation per iterator", its second phase. Extends
 [0774](0774-room-past-isize-max-bytes-panics.md). Amended: what has no
 end once it gives an item (below); amended: what isn't `TrustedLen` is
 stepped once before its hint is asked (below, #724), and its hint is
-asked again as the `Vec` grows (below, #728).
+asked again as the `Vec` grows (below, #728); a heap's and a B-tree's
+collect is the `Vec`'s it's made of (below, #797).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): results change.
 `(0..).map(f).collect::<Vec<u8>>()` called `f` without end where Rust
@@ -192,3 +193,46 @@ see, so asking none there changes nothing else (N).
 
 `generic_collect_drops_rest_first.rs` is off iterator-forms' `differs` and
 in its few. The mutation is `in-place-collect-asks-room`.
+
+## Amendment: a heap's and a B-tree's collect is the `Vec` it's made of (2026-11-06, #797)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. The crate's
+iterator collected into a `BinaryHeap`, a `BTreeSet` or a `BTreeMap` was
+never asked its `size_hint`, where native asks at 1, 5 and 9 of 10 `u32`s,
+so Rust's behavior is kept.
+
+Std's `FromIterator` of each collects a `Vec` first and makes the
+collection of it: `BinaryHeap::from(iter.into_iter().collect::<Vec<_>>())`
+(collections/binary_heap/mod.rs), and a B-tree's sorts the `Vec` and
+`bulk_build`s of it (collections/btree/map.rs, set.rs). So that `Vec`'s
+collect, std's `SpecFromIter`, is the whole of how it's stepped: its hint
+asked as it grows, collected in place where its source allows, and
+unwinding as it does. A `VecDeque`'s and a `Box<[T]>`'s already were; a
+`LinkedList`'s extends a new one and asks none.
+
+**One answer, `Recognition::grows_as_vec`**: whether std's `from_iter` of
+a type grows a `Vec`, of a `Vec`, a `VecDeque`, a `Box<[T]>`, a
+`BinaryHeap`, a `BTreeSet` and a `BTreeMap`. The collect asks room only
+of what it says, and a heap or a B-tree is collected as a `Vec` of its
+items in its allocator (`collected_as_vec` of `vec_grown_for`), then made
+of it: `$heapFrom(items, cmp)`, `new $BTreeSet(items)`. A B-tree, which
+takes any iterable, is given the iterator itself where nothing else is
+asked of it. serde_json's `Map` isn't std's and keeps its own collect.
+
+Where no hint is asked, what changed is only the `Vec`'s own form:
+`$heapFrom(Array.from($lazyRange(0, 5).map(f)), $cmp)` is
+`$heapFrom($range(0, 5).map(f), $cmp)`, a B-tree's `$lazyRange(1, 4)` is
+`$range(1, 4)`, and a heap of a `Vec`'s iterator of items with a
+destructor that a panic may stop folds in place, `$foldToArray`, as std's
+inner collect does (`panic_part_way_drops`).
+
+A generic collect into a `BTreeSet<T>` of a type parameter's items asks
+as a `Vec<T>`'s does, once, as their size isn't known: #796's.
+
+Corpus case `collect_as_vec_asks_hint.rs`: the crate's iterator into each
+collection, mapped, generic over `u32`s, and of items with a destructor
+whose hint panics as it grows; and std's own iterators, whose hints no
+program sees. It runs against native Rust in both builds. Mutations:
+`heap-and-btree-not-grown-as-vec`, `heap-grown-as-itself`,
+`btree-collected-as-array`, `linked-list-asks-room`,
+`grows-as-vec-without-btree-set`.

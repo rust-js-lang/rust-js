@@ -7,11 +7,11 @@ import {
   $debugStr,
   $insertStr,
   $iter,
-  $lazyRange,
   $mutEntries,
   $next,
   $nextBack,
   $print,
+  $range,
   $sortedEntries,
   $treeRange,
 } from "@rust-js/runtime";
@@ -21,7 +21,7 @@ export function entry() {
 }
 
 function main() {
-  const scores = new $BTreeMap($lazyRange(1, 7).map((k) => [k, ((k | 0) * 10) | 0]));
+  const scores = new $BTreeMap($range(1, 7).map((k) => [k, ((k | 0) * 10) | 0]));
   for (const [k, v] of $mutEntries(
     scores,
     $treeRange(
@@ -104,7 +104,7 @@ function main() {
       .join(", ")}} ${arg}`,
   );
 
-  const points = new $BTreeMap($lazyRange(0, 4).map((k) => [k, [k, 0]]));
+  const points = new $BTreeMap($range(0, 4).map((k) => [k, [k, 0]]));
   for (const [, p] of $treeRange(
     points,
     $cmp,
@@ -129,7 +129,7 @@ function main() {
       .join(", ")}} ${arg$1}`,
   );
 
-  const set = new $BTreeSet($lazyRange(0, 5));
+  const set = new $BTreeSet($range(0, 5));
   for (const x of $treeRange(
     set,
     $cmp,

@@ -716,7 +716,11 @@ What's refused is in [the limitations](limitations.md).
   `SpecFromIter` does, but of one over a slice's or a `Vec`'s items; and of
   one that has no end its type knows, `(0..).map(f)`, a `TrustedLen` of no
   upper bound, panics `capacity overflow` before any item's made
-  ([0940](../decisions/0940-collect-asks-room-of-its-hint.md)). One that
+  ([0940](../decisions/0940-collect-asks-room-of-its-hint.md)). So does a
+  `collect()` into a `VecDeque`, a `Box<[T]>`, a `BinaryHeap`, a
+  `BTreeSet` or a `BTreeMap`, which std collects as a `Vec` first; not
+  into a `LinkedList`, which std extends as each item comes
+  ([0940](../decisions/0940-collect-asks-room-of-its-hint.md), amended). One that
   isn't `TrustedLen` but has no end once it gives an item is stepped once
   first, as std does, and then panics the same way, dropping that item:
   `items.iter().cycle().map(f)` of items that has some, or `(0..).skip(n)`.

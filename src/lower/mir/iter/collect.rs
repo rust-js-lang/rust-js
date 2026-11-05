@@ -655,128 +655,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(Expr::call(Expr::member(dictionary, from_iter), args));
         }
-        Ok(if self.is_std_type(output, StdItem::BinaryHeap) {
-            let items = match self.unwinding_collect(output, item, iter_ty, span)? {
-                Some(unwinding) => unwinding.collected(it, None),
-                None => items(it),
+        let heap = self.is_std_type(output, StdItem::BinaryHeap);
+        let made_of_vec = (heap || self.is_sorted(output)) && self.recognition().grows_as_vec(output);
+        Ok(if made_of_vec {
+            // A heap or a B-tree, which std's `from_iter` collects into a
+            // `Vec` first, then makes of it, `BinaryHeap::from(vec)` or a
+            // sorted `bulk_build`: that `Vec`'s collect, which asks its hint
+            // as it grows, collects in place and unwinds as any does (#797).
+            let grown = item.map_or(output, |item| self.vec_grown_for(output, item));
+            let items = match iter_ty {
+                Some(iter_ty) => self.collected_as_vec(it, grown, item, iter_ty, !heap, span)?,
+                None => it,
             };
-            self.heap_values(HeapOp::From, vec![items], (output, false), span)?
+            match heap {
+                true => self.heap_values(HeapOp::From, vec![items], (output, false), span)?,
+                false => self.made_of(
+                    self.is_set(output),
+                    self.tcx.mk_args(&[output.into()]),
+                    items,
+                    false,
+                    span,
+                )?,
+            }
         // A `Vec`, or a `Box<[T]>`, an array too (ADR 0530).
         } else if self.is_vec_like(output) || output.boxed_ty().is_some_and(|inner| inner.is_slice()) {
             let Some(iter_ty) = iter_ty else { return Ok(it) };
-            // Of std's struct, the room its hint asks first, as std's
-            // `SpecFromIter` does, and of one whose type has no end, the
-            // `capacity overflow` a `TrustedLen`'s none asks (ADR 0940). Not
-            // of a `LinkedList`, whose `from_iter` extends a new one, asking
-            // none.
-            let trusted = crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
-            let endless = trusted && self.recognition().endless_by_type(iter_ty);
-            // Of another whose hint has no end once it gives an item, a
-            // `cycle()`'s, std steps it once, then asks room for its lower
-            // bound and one more, `usize::MAX`: a `capacity overflow` of
-            // items of any size, the item it made dropped (ADR 0940,
-            // amended). Of items of no size, room for any number, so it goes
-            // on as JS does.
-            let sized = |item: Ty<'tcx>| self.layout(item).is_some_and(|layout| layout.size.bytes() > 0);
-            let asks_room = !self.is_std_type(output, StdItem::LinkedList);
-            let endless_once = match !trusted && asks_room && item.is_some_and(sized) {
-                true => self.recognition().endless_once_stepped(iter_ty).ok_or_else(|| {
-                    self.unsupported(
-                        span,
-                        "`collect()` into a `Vec` of what may have no end only as what it holds says, a `cycle()` chained with what has an end, a `cycle()` of what's partly filtered or a `step_by(n)` of what has no end, which panics `capacity overflow` only then",
-                    )
-                })?,
-                false => false,
-            };
-            // Whether it's `TrustedLen` where that's its caller's, a type
-            // parameter's that folds by its `nth_back` (#670): as it says,
-            // `ITrustedLen`, so its first item is taken by `next` before its
-            // hint is asked only where it isn't (#724).
-            let callers_trusted = (!trusted
-                && iter_ty.has_param()
-                && self.compiled_struct_at(iter_ty, span)
-                && !self.recognition().nth_back_folded_sources(iter_ty).is_empty())
-            .then(|| self.type_fact_value(iter_ty, crate::lower::recognition::TypeFact::TrustedLen, span))
-            .transpose()?;
-            let unroomed = it.clone();
-            let it = match item {
-                Some(item)
-                    if asks_room
-                        && (endless
-                            || endless_once
-                            || self.compiled_struct_at(iter_ty, span)
-                                && !self.recognition().bounded_by_items(iter_ty)
-                            || self.hint_reaches_own(iter_ty)) =>
-                {
-                    let size = self.room_item_size(item);
-                    let mut given = vec![it, size, callers_trusted.clone().unwrap_or_else(|| Expr::bool(trusted))];
-                    // Of one not `TrustedLen`, whose first item std takes by
-                    // `next` before it asks room, that item's drop, as a
-                    // panic asking it unwinds (#724).
-                    let drop = match !trusted && self.drops(item) != crate::lower::drops::Drops::Nothing {
-                        true => self.drop_function(item, span)?,
-                        false => None,
-                    };
-                    if endless || endless_once || drop.is_some() {
-                        given.push(Expr::bool(endless || endless_once));
-                    }
-                    given.extend(drop);
-                    Expr::call_helper("$roomForHint", given)
-                }
-                _ => it,
-            };
-            // Of std's struct that's `TrustedLen`, by its `fold`, as std's
-            // `extend_trusted` collects it, a zip's `SpecFold` (#380), and
-            // of one stepping a lent inclusive range, which that leaves
-            // exhausted at its last (#414).
-            // And of one whose fold moves a function an adapter holds with
-            // a destructor, which drops before what's left, where std doesn't
-            // collect it in place, by `try_fold`, which doesn't move it (#710).
-            let folded = (self.compiled_struct_at(iter_ty, span)
-                || self.steps_lent_inclusive(iter_ty)
-                || self.folds_held_function(iter_ty) && self.collects_in_place(Some(iter_ty), item) == Some(false))
-                && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
-            // Of std's struct that folds by a type parameter's `nth_back`, a
-            // `take(n).rev()`'s of one, which asks another than its `next`
-            // does: whether it's `TrustedLen` is its caller's, `ITrustedLen`,
-            // by its fold where it is, as `extend_trusted` collects it, else
-            // stepped by `next`, as std's other `SpecFromIter` steps it (#670).
-            if !folded && let Some(trusted) = callers_trusted {
-                let args = self.folded_unwinding(it.clone(), output, item, iter_ty, span)?;
-                let by_fold = Expr::call_helper("$foldToArray", args);
-                let by_next = match self.unwinding_collect(output, item, Some(iter_ty), span)? {
-                    Some(unwinding) => unwinding.collected(it, Some(unroomed)),
-                    None => Expr::collected(it),
-                };
-                return Ok(Expr::cond(trusted, by_fold, by_next));
-            }
-            // By its fold, which drops what it holds as it unwinds itself
-            // (`folded_unwinding`), first.
-            // A range's `map`, an array's `map` (ADR 0063), only where a panic
-            // that stops it has nothing to drop: one of items with a
-            // destructor drops what it made as it unwinds (#800).
-            let mapped = match self.mapped_range(&it, iter_ty, item) {
-                Some(items) if self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none() => Some(items),
-                _ => None,
-            };
-            match mapped {
-                Some(items) => items,
-                None if folded && self.steps_lent_inclusive(iter_ty) => {
-                    let args = self.folded_unwinding(it, output, item, iter_ty, span)?;
-                    Expr::call_helper("$foldToArray", args)
-                }
-                None if folded && self.collected_items(&it, iter_ty).is_none() => {
-                    let args = self.folded_unwinding(it, output, item, iter_ty, span)?;
-                    Expr::call_helper("$foldToArray", args)
-                }
-                None if let Some(unwinding) = self.unwinding_collect(output, item, Some(iter_ty), span)? => {
-                    unwinding.collected(it, Some(unroomed))
-                }
-                None => match self.collected_items(&it, iter_ty) {
-                    Some(items) => items,
-                    None => Expr::collected(it),
-                },
-            }
+            self.collected_as_vec(it, output, item, iter_ty, false, span)?
         } else if self.is_lang_adt(output, LangItem::String) {
             // Of `char`s, its hint asked first, as std's `Extend<char>`
             // reserves by it (string.rs:2507); of strings, none.
@@ -809,11 +713,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.collect_fallible(it, output, item, iter_ty, span)?
         } else if self.is_map(output) {
             let set = self.is_set(output);
-            // A panic that may stop it: a B-tree's, which std collects as a
-            // `Vec` first, collected so; another's, which extends a new one,
-            // `$mapFrom`, what's left then what it holds dropped (#423).
-            // Of a hash table's, its hint asked first, as hashbrown's
-            // `extend` reserves by it; a B-tree's is its `Vec`'s.
+            // A panic that may stop it: serde_json's sorted `Map`'s,
+            // collected as an array first; another's, which extends a new
+            // one, `$mapFrom`, what's left then what it holds dropped
+            // (#423). Of a hash table's, its hint asked first, as
+            // hashbrown's `extend` reserves by it. A std B-tree is made of
+            // the `Vec` it grows, above (#797).
             let it = match self.is_sorted(output) {
                 true => it,
                 false => self.reserved_by_hint(it, iter_ty, item),
@@ -833,6 +738,147 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             return Err(self.unsupported(span, &format!("`collect` into a `{output}`, from its MIR")));
         })
+    }
+
+    /// `collect()` of `it`, an iterator of type `iter_ty`, into a JS array
+    /// of `item`s, as std grows a `Vec`, a `VecDeque` or a `Box<[T]>`, or
+    /// what `output`, a `Vec` a heap or a B-tree is made of, is (#797); a
+    /// `LinkedList`'s too, which asks no room. Where what it's made into
+    /// takes any `iterable`, a B-tree's, `it` itself where nothing else is
+    /// asked of it.
+    fn collected_as_vec(
+        &mut self,
+        it: Expr,
+        output: Ty<'tcx>,
+        item: Option<Ty<'tcx>>,
+        iter_ty: Ty<'tcx>,
+        iterable: bool,
+        span: Span,
+    ) -> R<Expr> {
+        // Of std's struct, the room its hint asks first, as std's
+        // `SpecFromIter` does, and of one whose type has no end, the
+        // `capacity overflow` a `TrustedLen`'s none asks (ADR 0940). Only
+        // of what std grows as a `Vec` (`grows_as_vec`), not a
+        // `LinkedList`, whose `from_iter` extends a new one, asking none.
+        let trusted = crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
+        let endless = trusted && self.recognition().endless_by_type(iter_ty);
+        // Of another whose hint has no end once it gives an item, a
+        // `cycle()`'s, std steps it once, then asks room for its lower
+        // bound and one more, `usize::MAX`: a `capacity overflow` of
+        // items of any size, the item it made dropped (ADR 0940,
+        // amended). Of items of no size, room for any number, so it goes
+        // on as JS does.
+        let sized = |item: Ty<'tcx>| self.layout(item).is_some_and(|layout| layout.size.bytes() > 0);
+        let asks_room = self.recognition().grows_as_vec(output);
+        let endless_once = match !trusted && asks_room && item.is_some_and(sized) {
+            true => self.recognition().endless_once_stepped(iter_ty).ok_or_else(|| {
+                self.unsupported(
+                    span,
+                    "`collect()` into a `Vec` of what may have no end only as what it holds says, a `cycle()` chained with what has an end, a `cycle()` of what's partly filtered or a `step_by(n)` of what has no end, which panics `capacity overflow` only then",
+                )
+            })?,
+            false => false,
+        };
+        // Whether it's `TrustedLen` where that's its caller's, a type
+        // parameter's that folds by its `nth_back` (#670): as it says,
+        // `ITrustedLen`, so its first item is taken by `next` before its
+        // hint is asked only where it isn't (#724).
+        let callers_trusted = (!trusted
+            && iter_ty.has_param()
+            && self.compiled_struct_at(iter_ty, span)
+            && !self.recognition().nth_back_folded_sources(iter_ty).is_empty())
+        .then(|| self.type_fact_value(iter_ty, crate::lower::recognition::TypeFact::TrustedLen, span))
+        .transpose()?;
+        let unroomed = it.clone();
+        let it = match item {
+            Some(item)
+                if asks_room
+                    && (endless
+                        || endless_once
+                        || self.compiled_struct_at(iter_ty, span) && !self.recognition().bounded_by_items(iter_ty)
+                        || self.hint_reaches_own(iter_ty)) =>
+            {
+                let size = self.room_item_size(item);
+                let mut given = vec![it, size, callers_trusted.clone().unwrap_or_else(|| Expr::bool(trusted))];
+                // Of one not `TrustedLen`, whose first item std takes by
+                // `next` before it asks room, that item's drop, as a
+                // panic asking it unwinds (#724).
+                let drop = match !trusted && self.drops(item) != crate::lower::drops::Drops::Nothing {
+                    true => self.drop_function(item, span)?,
+                    false => None,
+                };
+                if endless || endless_once || drop.is_some() {
+                    given.push(Expr::bool(endless || endless_once));
+                }
+                given.extend(drop);
+                Expr::call_helper("$roomForHint", given)
+            }
+            _ => it,
+        };
+        // Of std's struct that's `TrustedLen`, by its `fold`, as std's
+        // `extend_trusted` collects it, a zip's `SpecFold` (#380), and
+        // of one stepping a lent inclusive range, which that leaves
+        // exhausted at its last (#414).
+        // And of one whose fold moves a function an adapter holds with
+        // a destructor, which drops before what's left, where std doesn't
+        // collect it in place, by `try_fold`, which doesn't move it (#710).
+        let folded = (self.compiled_struct_at(iter_ty, span)
+            || self.steps_lent_inclusive(iter_ty)
+            || self.folds_held_function(iter_ty) && self.collects_in_place(Some(iter_ty), item) == Some(false))
+            && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
+        // Of std's struct that folds by a type parameter's `nth_back`, a
+        // `take(n).rev()`'s of one, which asks another than its `next`
+        // does: whether it's `TrustedLen` is its caller's, `ITrustedLen`,
+        // by its fold where it is, as `extend_trusted` collects it, else
+        // stepped by `next`, as std's other `SpecFromIter` steps it (#670).
+        if !folded && let Some(trusted) = callers_trusted {
+            let args = self.folded_unwinding(it.clone(), output, item, iter_ty, span)?;
+            let by_fold = Expr::call_helper("$foldToArray", args);
+            let by_next = match self.unwinding_collect(output, item, Some(iter_ty), span)? {
+                Some(unwinding) => unwinding.collected(it, Some(unroomed)),
+                None => Expr::collected(it),
+            };
+            return Ok(Expr::cond(trusted, by_fold, by_next));
+        }
+        // By its fold, which drops what it holds as it unwinds itself
+        // (`folded_unwinding`), first.
+        // A range's `map`, an array's `map` (ADR 0063), only where a panic
+        // that stops it has nothing to drop: one of items with a
+        // destructor drops what it made as it unwinds (#800).
+        let mapped = match self.mapped_range(&it, iter_ty, item) {
+            Some(items) if self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none() => Some(items),
+            _ => None,
+        };
+        Ok(match mapped {
+            Some(items) => items,
+            None if folded && self.steps_lent_inclusive(iter_ty) => {
+                let args = self.folded_unwinding(it, output, item, iter_ty, span)?;
+                Expr::call_helper("$foldToArray", args)
+            }
+            None if folded && self.collected_items(&it, iter_ty).is_none() => {
+                let args = self.folded_unwinding(it, output, item, iter_ty, span)?;
+                Expr::call_helper("$foldToArray", args)
+            }
+            None if let Some(unwinding) = self.unwinding_collect(output, item, Some(iter_ty), span)? => {
+                unwinding.collected(it, Some(unroomed))
+            }
+            None => match self.collected_items(&it, iter_ty) {
+                Some(items) => items,
+                None if iterable => it,
+                None => Expr::collected(it),
+            },
+        })
+    }
+
+    /// The `Vec` of `item`s std's `from_iter` of `output`, a heap or a
+    /// B-tree, collects first, in its allocator, `output`'s last argument.
+    fn vec_grown_for(&self, output: Ty<'tcx>, item: Ty<'tcx>) -> Ty<'tcx> {
+        let ty::Adt(_, args) = output.kind() else { return output };
+        let Some(alloc) = args.types().last() else {
+            return output;
+        };
+        let vec = self.tcx.adt_def(std_item(self.tcx, StdItem::Vec));
+        Ty::new_adt(self.tcx, vec, self.tcx.mk_args(&[item.into(), alloc.into()]))
     }
 
     /// `it`, of type `iter_ty`, asked its `size_hint` before it's stepped,

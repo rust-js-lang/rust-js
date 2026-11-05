@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`collect()` of std's struct that's `TrustedLen`, a zip's, steps it by `next()`, not its `fold` as std's `extend_trusted` does: its closure runs once more (#380)",
     file: "src/lower/mir/iter/collect.rs",
-    find: '                None if folded && self.collected_items(&it, iter_ty).is_none() => {\n                    let args = self.folded_unwinding(it, output, item, iter_ty, span)?;\n                    Expr::call_helper("$foldToArray", args)\n                }\n',
+    find: '            None if folded && self.collected_items(&it, iter_ty).is_none() => {\n                let args = self.folded_unwinding(it, output, item, iter_ty, span)?;\n                Expr::call_helper("$foldToArray", args)\n            }\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_fold_steps_the_shorter.rs$"],
   },
@@ -34,9 +34,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`(0..).map(f).collect::<Vec<_>>()`, a `TrustedLen` with no upper bound, maps without end where Rust panics `capacity overflow` before any item's made (ADR 0940)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            let endless = trusted && self.recognition().endless_by_type(iter_ty);\n",
+    find: "        let endless = trusted && self.recognition().endless_by_type(iter_ty);\n",
     replace:
-      "            let endless = trusted && self.recognition().endless_by_type(iter_ty) && false;\n",
+      "        let endless = trusted && self.recognition().endless_by_type(iter_ty) && false;\n",
     tests: ["test/corpus.test.ts", "-t", "^asked_length_overflow.rs$"],
   },
   {
@@ -44,9 +44,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`collect()` into a `Vec` of a `cycle()` of an array's items, not `TrustedLen`, maps without end where Rust steps it once and panics `capacity overflow` (#433, ADR 0940)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            let endless_once = match !trusted && asks_room && item.is_some_and(sized) {\n",
+    find: "        let endless_once = match !trusted && asks_room && item.is_some_and(sized) {\n",
     replace:
-      "            let endless_once = match false && !trusted && asks_room && item.is_some_and(sized) {\n",
+      "        let endless_once = match false && !trusted && asks_room && item.is_some_and(sized) {\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_endless_once_stepped.rs$"],
   },
   {
@@ -54,9 +54,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`collect()` of a `cycle()` into a `Vec<()>` panics `capacity overflow`, where Rust has room for any number of items of no size and goes on (#433, ADR 0940)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            let endless_once = match !trusted && asks_room && item.is_some_and(sized) {\n",
+    find: "        let endless_once = match !trusted && asks_room && item.is_some_and(sized) {\n",
     replace:
-      "            let endless_once = match !trusted && asks_room && item.is_some() {\n",
+      "        let endless_once = match !trusted && asks_room && item.is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_endless_once_stepped.rs$"],
   },
   {
@@ -64,8 +64,8 @@ export const mutations: Mutation[] = [
     breaks:
       "the item a `collect()` of what has no end once stepped makes, `(0..).skip(1).map(|_| Noisy(..))`'s, isn't dropped as it panics `capacity overflow` (#433, ADR 0940)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                    let drop = match !trusted && self.drops(item) != crate::lower::drops::Drops::Nothing {\n",
-    replace: "                    let drop = match false && self.drops(item) != crate::lower::drops::Drops::Nothing {\n",
+    find: "                let drop = match !trusted && self.drops(item) != crate::lower::drops::Drops::Nothing {\n",
+    replace: "                let drop = match false && self.drops(item) != crate::lower::drops::Drops::Nothing {\n",
     tests: ["test/corpus.test.ts", "-t", "^(collect_endless_once_stepped|collect_closes_what_its_hint_panics).rs$"],
   },
   {
@@ -73,9 +73,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`collect()` into a `Vec` of std's struct asks no room of its hint first, so `(0..usize::MAX).map(f).collect()` maps without end where Rust's `SpecFromIter` panics `capacity overflow` (ADR 0940)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                            || self.compiled_struct_at(iter_ty, span)\n",
+    find: "                        || self.compiled_struct_at(iter_ty, span) && !self.recognition().bounded_by_items(iter_ty)\n",
     replace:
-      "                            || false && self.compiled_struct_at(iter_ty, span)\n",
+      "                        || false && self.compiled_struct_at(iter_ty, span) && !self.recognition().bounded_by_items(iter_ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^std_rev.rs$"],
     snapshots: true,
   },
@@ -134,9 +134,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`collect()` into a `BinaryHeap` from MIR is its items as they came, not in heap order",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        Ok(if self.is_std_type(output, StdItem::BinaryHeap) {\n",
-    replace:
-      "        Ok(if false && self.is_std_type(output, StdItem::BinaryHeap) {\n",
+    find: "                true => self.heap_values(HeapOp::From, vec![items], (output, false), span)?,\n",
+    replace: "                true => items,\n",
     tests: ["test/corpus.test.ts", "-t", "heap_peek_mut"],
   },
   {
@@ -427,11 +426,10 @@ export const mutations: Mutation[] = [
   {
     name: "sorted-collect-unwinding-unseen",
     breaks:
-      "a `collect` into a B-tree a panic may stop drops nothing it took (#423)",
+      "a `collect` into a B-tree isn't the `Vec`'s it's made of, so a panic that may stop it drops nothing it took (#423, #797)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                Some(unwinding) if self.is_sorted(output) => (unwinding.collected(it, None), false),",
-    replace:
-      "                Some(_) if self.is_sorted(output) => (it, false),",
+    find: "                Some(iter_ty) => self.collected_as_vec(it, grown, item, iter_ty, !heap, span)?,\n",
+    replace: "                Some(_) if !heap => it,\n                Some(iter_ty) => self.collected_as_vec(it, grown, item, iter_ty, !heap, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
@@ -446,11 +444,10 @@ export const mutations: Mutation[] = [
   {
     name: "heap-collect-unwinding-unseen",
     breaks:
-      "a `collect` into a `BinaryHeap` a panic may stop drops nothing it took (#423)",
+      "a `collect` into a `BinaryHeap` isn't the `Vec`'s it's made of, so a panic that may stop it drops nothing it took (#423, #797)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        Ok(if self.is_std_type(output, StdItem::BinaryHeap) {\n            let items = match self.unwinding_collect(output, item, iter_ty, span)? {",
-    replace:
-      "        Ok(if self.is_std_type(output, StdItem::BinaryHeap) {\n            let items = match None::<UnwindingCollect> {",
+    find: "                Some(iter_ty) => self.collected_as_vec(it, grown, item, iter_ty, !heap, span)?,\n",
+    replace: "                Some(_) if heap => Expr::collected(it),\n                Some(iter_ty) => self.collected_as_vec(it, grown, item, iter_ty, !heap, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
@@ -500,9 +497,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a compiled std struct's collect a panic may stop, a `zip`'s, steps it by `next`, not its `SpecFold`, as std's `extend_trusted` does (#380, #423)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                None if folded && self.collected_items(&it, iter_ty).is_none() => {\n",
+    find: "            None if folded && self.collected_items(&it, iter_ty).is_none() => {\n",
     replace:
-      "                None if false && folded && self.collected_items(&it, iter_ty).is_none() => {\n",
+      "            None if false && folded && self.collected_items(&it, iter_ty).is_none() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
     snapshots: true,
   },
@@ -639,7 +636,7 @@ export const mutations: Mutation[] = [
     breaks: "a collect into a `String` a panic may stop steps its chain by `next`, not its fold as `String::extend` does, so a nested flatten's source is dropped before the inner iterator it's in (#644); the matrix's `vec | flatten.flatten | string | consumer` shows it, which `--std-iterators` gets wrong still (#644's std cases), so the corpus holds its JS",
     file: "src/lower/mir/iter/collect.rs",
     find: "                Some(unwinding) => unwinding.folded(it),\n",
-    replace: "                Some(unwinding) => unwinding.collected(it),\n",
+    replace: "                Some(unwinding) => unwinding.collected(it, None),\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^flatten_closed_part_way_drops_source_first.rs$"],
   },
@@ -663,8 +660,8 @@ export const mutations: Mutation[] = [
     name: "generic-vec-collect-by-next",
     breaks: "a generic `collect()` into a `Vec` of a `take(n).rev()` of a `Vec`'s steps by `next` though the caller's iterator is `TrustedLen`, where std's `extend_trusted` folds it, dropping 3, 4, 5 for 4, 5, 3 (#670)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                return Ok(Expr::cond(trusted, by_fold, by_next));\n",
-    replace: "                return Ok(Expr::cond(Expr::bool(false), by_fold, by_next));\n",
+    find: "            return Ok(Expr::cond(trusted, by_fold, by_next));\n",
+    replace: "            return Ok(Expr::cond(Expr::bool(false), by_fold, by_next));\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
   },
   {
@@ -716,8 +713,8 @@ export const mutations: Mutation[] = [
     name: "collect-trusted-by-next",
     breaks: "a `TrustedLen` collect into a `Vec` of one that folds a held function steps it by `next`, so the function drops after what it left (#710)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                || self.folds_held_function(iter_ty) && self.collects_in_place(Some(iter_ty), item) == Some(false))\n",
-    replace: "                || false)\n",
+    find: "            || self.folds_held_function(iter_ty) && self.collects_in_place(Some(iter_ty), item) == Some(false))\n",
+    replace: "            || false)\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
   {
@@ -866,8 +863,8 @@ export const mutations: Mutation[] = [
     name: "vec-collect-asks-no-own-hint",
     breaks: "a collect into a `Vec` of a chain made in place over the crate's iterator asks no hint, which std's `from_iter` asks after its first item and as it grows (#733)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                                && !self.recognition().bounded_by_items(iter_ty)\n                            || self.hint_reaches_own(iter_ty)) =>\n",
-    replace: "                                && !self.recognition().bounded_by_items(iter_ty)) =>\n",
+    find: "                        || self.compiled_struct_at(iter_ty, span) && !self.recognition().bounded_by_items(iter_ty)\n                        || self.hint_reaches_own(iter_ty)) =>\n",
+    replace: "                        || self.compiled_struct_at(iter_ty, span) && !self.recognition().bounded_by_items(iter_ty)) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
   },
   {
@@ -893,8 +890,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's `map` collected into a `Vec` is an array's `map` whatever its items, so where a panic stops it, `(1..=3).map(made).collect()`, what it made isn't dropped: Rust prints `drop 1`, `drop 2`, the JS nothing, a wrong answer (#800)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                Some(items) if self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none() => Some(items),\n",
-    replace: "                Some(items) => Some(items),\n",
+    find: "            Some(items) if self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none() => Some(items),\n",
+    replace: "            Some(items) => Some(items),\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_panic_drops_collected.rs$"],
   },
   {
@@ -913,5 +910,43 @@ export const mutations: Mutation[] = [
     find: "            true => self.closing(it, arg_tys[0], span)?,\n",
     replace: "            true => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^max_by_key_of_a_dropping_key_over_its_iterator.rs$"],
+  },
+  {
+    name: "heap-and-btree-not-grown-as-vec",
+    breaks:
+      "a collect into a `BinaryHeap`, a `BTreeSet` or a `BTreeMap` isn't the `Vec` std's `from_iter` collects first, so the crate's iterator is never asked its `size_hint`, where native asks at 1, 5 and 9 (#797)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        let made_of_vec = (heap || self.is_sorted(output)) && self.recognition().grows_as_vec(output);\n",
+    replace: "        let made_of_vec = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_as_vec_asks_hint.rs$"],
+  },
+  {
+    name: "heap-grown-as-itself",
+    breaks:
+      "the `Vec` a heap or a B-tree is made of is collected as the heap or the B-tree, so std's in-place collect of it isn't seen: a panic stopping it drops what's left and what it collected in another order than native's (#797)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            let grown = item.map_or(output, |item| self.vec_grown_for(output, item));\n",
+    replace: "            let grown = output;\n",
+    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "btree-collected-as-array",
+    breaks:
+      "a B-tree, which takes any iterable, is made of `Array.from(it)` where nothing else is asked of what it collects, an array no one needs (#797)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                None if iterable => it,\n",
+    replace: "                None if iterable && false => it,\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_as_vec_asks_hint.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "linked-list-asks-room",
+    breaks:
+      "a collect into a `LinkedList`, whose `from_iter` extends a new one asking no room, asks the crate's iterator its `size_hint` as a `Vec` would (#797)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        let asks_room = self.recognition().grows_as_vec(output);\n",
+    replace: "        let asks_room = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_as_vec_asks_hint.rs$"],
   },
 ];

@@ -7,8 +7,8 @@ import {
   $extendMap,
   $insert,
   $iter,
-  $lazyRange,
   $orInsert,
+  $range,
   $retainMap,
   $sortedEntries,
   $treeFrom,
@@ -25,7 +25,7 @@ function noisyDrop_drop(noisy) {
 function main() {
   const tree = $treeFrom(
     new $BTreeMap(),
-    $lazyRange(1, 7).map((k) => [k, [(k * 10) >>> 0]]),
+    $range(1, 7).map((k) => [k, [(k * 10) >>> 0]]),
     false,
     $cmp,
     noisyDrop_drop,

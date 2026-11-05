@@ -435,4 +435,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^hash_phantom_data.rs$"],
   },
+  {
+    name: "grows-as-vec-without-btree-set",
+    breaks:
+      "a `BTreeSet` isn't one whose `from_iter` grows a `Vec`, so a collect into one never asks the crate's iterator its `size_hint`, where native asks at 1, 5 and 9 (#797)",
+    file: "src/lower/recognition/types.rs",
+    find: "    StdItem::BTreeSet,\n    StdItem::BTreeMap,\n];\n",
+    replace: "    StdItem::BTreeMap,\n];\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_as_vec_asks_hint.rs$"],
+  },
 ];

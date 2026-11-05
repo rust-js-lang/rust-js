@@ -8,7 +8,7 @@ import {
   $entryGet,
   $entryInsert,
   $entryRemove,
-  $lazyRange,
+  $range,
   $sortedEntries,
   $unwrap,
 } from "@rust-js/runtime";
@@ -18,7 +18,7 @@ export function entry() {
 }
 
 function main() {
-  const names = new $BTreeMap($lazyRange(1, 5).map((i) => [i, String(i)]));
+  const names = new $BTreeMap($range(1, 5).map((i) => [i, String(i)]));
   let first = $endEntry(names, $cmp, false);
   if (first != null) {
     const value = $entryGet(first, true);

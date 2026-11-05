@@ -7,6 +7,7 @@ import {
   $extendMap,
   $iterator,
   $lazyRange,
+  $range,
   $rangeInclusiveNext,
   $sortedKeys,
   $unwrap,
@@ -18,7 +19,7 @@ export function entry() {
 
 function main() {
   const s = new Set($lazyRange(1, 7));
-  const t = new $BTreeSet($lazyRange(1, 4));
+  const t = new $BTreeSet($range(1, 4));
   const m = new Map($lazyRange(1, 4).map((i) => [i, Math.imul(i, i)]));
   const u = new $BTreeSet($iterator({ start: "a", end: "c" }, $rangeInclusiveNext));
   const more = new Set();

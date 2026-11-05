@@ -5,8 +5,8 @@ import {
   $BTreeSet,
   $cmp,
   $debugStr,
-  $lazyRange,
   $mutEntries,
+  $range,
   $sortedEntries,
   $treeRange,
 } from "@rust-js/runtime";
@@ -104,7 +104,7 @@ function main() {
     }`,
   );
 
-  const set = new $BTreeSet($lazyRange(1, 7));
+  const set = new $BTreeSet($range(1, 7));
   console.log(
     `[${between(set, [
       { TAG: "Excluded", _0: 1 },

@@ -4,7 +4,7 @@ import {
   $cmp,
   $heapAppend,
   $heapFrom,
-  $lazyRange,
+  $range,
   $repeatItems,
   $repeatingN,
   $splice,
@@ -41,8 +41,8 @@ function main() {
     `${repeated.length} ${repeated.at(-1) == null ? "None" : `Some(${repeated.at(-1)})`}`,
   );
 
-  const a = $heapFrom(Array.from($lazyRange(0, 1100000)), $cmp);
-  const b = $heapFrom(Array.from($lazyRange(0, 10)), $cmp);
+  const a = $heapFrom($range(0, 1100000), $cmp);
+  const b = $heapFrom($range(0, 10), $cmp);
   $heapAppend(a, b, $cmp);
   const peek = a[0];
   console.log(`${a.length} ${peek == null ? "None" : `Some(${peek})`} ${b.length}`);

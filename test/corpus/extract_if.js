@@ -80,7 +80,7 @@ function main() {
   small.sort((a, b) => a - b);
   console.log(`[${small.join(", ")}] ${set.size}`);
 
-  const tree = new $BTreeMap($lazyRange(1, 9).map((i) => [i, String(i)]));
+  const tree = new $BTreeMap($range(1, 9).map((i) => [i, String(i)]));
   const taken = Array.from(
     $mapExtractIf(
       tree,
@@ -127,7 +127,7 @@ function main() {
       ),
     ).reduce((n) => n + 1, 0)}`,
   );
-  const keys = new $BTreeSet($lazyRange(1, 9));
+  const keys = new $BTreeSet($range(1, 9));
   const firsts = Iterator.from(
     $mapExtractIf(
       keys,

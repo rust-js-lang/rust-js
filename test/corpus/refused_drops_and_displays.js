@@ -13,6 +13,7 @@ import {
   $next,
   $pad,
   $plus,
+  $range,
   $repeatingWith,
   $sortedEntries,
   $sortedKeys,
@@ -327,7 +328,7 @@ function splitOff() {
       console.log(`drop ${value[0]}`);
     }
     console.log("mid");
-    const s = new $BTreeSet($lazyRange(1, 6));
+    const s = new $BTreeSet($range(1, 6));
     const t = $treeSplitOff(s, 3, $cmp, true);
     console.log(
       `{${Array.from($sortedKeys(s, $cmp)).join(", ")}} {${Array.from($sortedKeys(t, $cmp)).join(", ")}}`,
