@@ -2385,8 +2385,15 @@ export function $collectDropping(it, drop, restFirst = false) {
     throw error;
   }
   // And at its end, as std's `collect` drops what it took then, what an
-  // adapter that stops early left (ADR 0570).
-  it.return?.();
+  // adapter that stops early left (ADR 0570). Where that drop panics, what
+  // it collected is dropped as it unwinds, as std's `from_iter` drops the
+  // `Vec` it holds (#677).
+  try {
+    it.return?.();
+  } catch (error) {
+    if (drop) $dropItems(items, drop);
+    throw error;
+  }
   return items;
 }
 

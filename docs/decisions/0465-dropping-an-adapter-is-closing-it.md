@@ -1883,3 +1883,25 @@ and `enumerate-reversible-compiled-count-taken` (`lower/mir/iter/backs.ts`),
 `enumerate-of-held-compiled-taken-for-compiled-struct`
 (`lower/recognition/iterators.ts`); `enumerate-compiled-count-unseen` and
 `enumerate-of-droppers-unrecorded` name their lines as they now read.
+
+## Amendment: a collect's last close that panics drops what it collected (2026-11-05, #677)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+`$collectDropping` closes what it steps once it's done (ADR 0570). Where
+that close panics, a `take(3)` of a flatten whose source's rest holds an
+item with a panicking drop say, std's `from_iter` unwinds holding the
+`Vec` it collected, and drops it. `$collectDropping` let the panic out past
+what it had collected, in both builds: the close was outside the `try`
+that drops it. It's dropped there now, after what the close dropped, as
+std's order is. In the build the recognizers make, a JS `take()` closes its
+source as it reaches its count, inside that `try`, so only a zip's end
+showed it there.
+
+`collect_close_panics.rs` holds a flatten's `take(3)` and a reversed
+`Vec`'s flatten's `zip()` collected, and a filter that panics mid-collect,
+against native Rust in both builds. The matrix's #677 list is empty.
+Mutation: `collect-end-unwound-leaks` (`runtime/fold_of.ts`);
+`collect-dropping-keeps-collected`, which survived its own case, is held
+by `collect_close_panics.rs`'s filter.

@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/fold_of.js",
     find: "    if (drop !== undefined) $dropItems(items, drop);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^panic_mid_iteration_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(panic_mid_iteration_drops|collect_close_panics).rs$"],
   },
   {
     name: "collect-rest-first-ignored",
@@ -73,5 +73,14 @@ export const mutations: Mutation[] = [
     find: "  if (typeof it.fold !== \"function\") return $collectDropping(it, drop, restFirst);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_counted_uses.rs$"],
+  },
+  {
+    name: "collect-end-unwound-leaks",
+    breaks:
+      "a collect into a `Vec` whose last drop of what it steps panics, a `take()`'s of a flatten, leaks what it collected, where std's `from_iter` drops the `Vec` it holds as it unwinds (#677)",
+    file: "src/runtime/fold_of.js",
+    find: "    if (drop) $dropItems(items, drop);\n    throw error;\n  }\n  return items;\n",
+    replace: "    throw error;\n  }\n  return items;\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_close_panics.rs$"],
   },
 ];
