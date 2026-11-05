@@ -780,7 +780,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // hides the crate's own steps (#235), or its source's `nth` of what it drops (#493).
             Some(IterMethod::Map) => match self.unary_callback(arg(), own) {
                 f if f.is_identity() && dropping.is_none() && !self.recognition().reaches_own_steps(iter_ty) => it,
-                f => method("map", it, vec![f]),
+                f => crate::lower::iterators::lazily_made(method("map", it, vec![f])),
             },
             // Of items with a destructor: each it doesn't keep dropped as it
             // discards it (ADR 0098), `filtered`'s.

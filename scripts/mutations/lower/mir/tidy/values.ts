@@ -472,4 +472,13 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_written_whole_of_other_places.rs$"],
   },
+  {
+    name: "unread-map-assignment-kept",
+    breaks: "MIR's `let` and assignment of a map nothing reads, a call's `try`'s, is kept, left declared after its `try` is gone (#805)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "    let gone: HashSet<String> = (assigned.into_iter())\n        .filter(|name| js::mentions_in(body, name) == 1)\n        .collect();\n",
+    replace: "    let gone: HashSet<String> = HashSet::new();\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^unread_map_of_a_held_iterator.rs$"],
+  },
 ];

@@ -158,4 +158,13 @@ export const mutations: Mutation[] = [
     replace: "        true => held,\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_made_knowing_its_back.rs$"],
   },
+  {
+    name: "map-of-an-iterator-unmarked",
+    breaks: "MIR's map of a JS iterator isn't said to be one, so a held map made again where it's stepped from its back is left declared, unread (#805)",
+    file: "src/lower/iterators/value.rs",
+    find: "    e.facts = e.facts.with(Known::Iterator);\n    e\n",
+    replace: "    e\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^unread_map_of_a_held_iterator.rs$"],
+  },
 ];

@@ -25,13 +25,8 @@ export function entry() {
 function main() {
   const g = 9;
   try {
-    const value = $iter([1, 2, 3, 4]);
-    const map = value.map((d) => {
-      $print(`see ${d} `);
-      return (d + g) >>> 0;
-    });
     const found = $findBack(
-      $mapEnds(value, (d) => {
+      $mapEnds($iter([1, 2, 3, 4]), (d) => {
         $print(`see ${d} `);
         return (d + g) >>> 0;
       }),

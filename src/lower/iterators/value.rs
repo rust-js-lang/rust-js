@@ -241,6 +241,14 @@ pub(in crate::lower) fn gives_made_in_place(f: &Expr) -> bool {
     f.facts.has(Known::IterResultInPlace)
 }
 
+/// `e`, an adapter MIR made of a JS iterator `method_source` made one,
+/// `it.map(f)`: lazy, a JS iterator itself, said so (`Known::Iterator`), so
+/// one nothing reads is no statement (tidy's `unread_maps`, #805).
+pub(in crate::lower) fn lazily_made(mut e: Expr) -> Expr {
+    e.facts = e.facts.with(Known::Iterator);
+    e
+}
+
 /// `$rev(it)`: `it` stepped from its back (ADR 0516), marked so.
 pub(in crate::lower) fn reversed_by(it: Expr) -> Expr {
     let mut e = Expr::call_helper("$rev", vec![it]);

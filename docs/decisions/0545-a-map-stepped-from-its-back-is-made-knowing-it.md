@@ -704,3 +704,30 @@ No other snapshot changes. Mutations `cloned-not-back-stepped`,
 `cloned-length-not-kept` (`recognition/iterators.ts`),
 `zip-sides-not-back-stepped`, `cloned-source-not-recorded`
 (`analysis/back_stepped.ts`).
+
+## Amended (2026-11-06, #805): the held map made again leaves no statement
+
+Where `next_back` or `rfind` makes a held map again, `iter_locals.maps`'
+(#780), the variable that held it stayed declared, read by nothing, `const
+map = value.map(f)` before `$findBack($mapEnds(value, f), ..)`. Tidy's
+`unread_maps` dropped an unread `$iter(v).map(f)` alone; it can't drop any
+unread `x.map(f)`, as a `collect()`'s is an array's eager `map`, which runs
+its closure though nothing reads what it made. **MIR's map of a JS
+iterator says it is one, `Known::Iterator`** (value.rs's `lazily_made`,
+of what `method_source` made one), **and `unread_maps` drops an unread map that
+says so** (`iterators::lazily_mapped`), decided by that fact, never by its
+call's shape: its `const`, or MIR's `let` and the assignment a call's `try`
+holds where that's its only mention, `let _5; try { _5 = _6.map(f); }`.
+Making it runs nothing, a JS iterator's lazy `map` (#805's question:
+`as_js_iterator` makes a std iterator's value a JS iterator, never an
+array).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; the JS
+reads as a person writes it. Held by corpus
+`unread_map_of_a_held_iterator`, against native Rust in both builds: a held
+map's and a borrowed one's `rfind`, their closures run only as `rfind`
+steps them, and a `collect()` of a map nothing reads after, whose closure
+still runs on each item. `move_closure_adapter_from_its_back` loses its
+unread `const value` and `const map`. Mutations `unread-map-by-its-shape`
+(`iterators.ts`), `map-of-an-iterator-unmarked` (`iterators/value.ts`),
+`unread-map-assignment-kept` (`mir/tidy/values.ts`).

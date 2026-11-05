@@ -321,4 +321,12 @@ export const mutations: Mutation[] = [
       "^(extension_map_rfold|generic_map_folded_and_rfolded|map_stepped_from_its_back|exact_size_len).rs$",
     ],
   },
+  {
+    name: "unread-map-by-its-shape",
+    breaks: "an unread map is no statement by its shape alone, `x.map(f)`, so an unread `collect()` of an array's eager `map` never runs its closure (#805)",
+    file: "src/lower/iterators.rs",
+    find: "        e.facts.has(js::Known::Iterator) && method == \"map\" && f.reads_only_vars()\n",
+    replace: "        method == \"map\" && f.reads_only_vars()\n",
+    tests: ["test/corpus.test.ts", "-t", "^unread_map_of_a_held_iterator.rs$"],
+  },
 ];

@@ -256,16 +256,46 @@ pub(super) fn spread_spreads(e: &mut Expr) {
 }
 
 /// A map of an array's items nothing reads, `next_back` having stepped its
-/// source instead: no statement, as making it does nothing.
+/// source instead: no statement, as making it does nothing. And a map of
+/// what its maker said is a JS iterator (`Known::Iterator`, `iterators::
+/// lazily_mapped`), which `next_back` or `rfind` made again: lazy, so
+/// making it runs nothing, never an array's eager `map` (#805).
 pub(super) fn unread_maps(body: &mut Vec<Stmt>) {
     let mut read = HashSet::new();
     js::visit_stmts(body, &mut |name| {
         read.insert(name.to_string());
     });
     js::statement_lists(body, &mut |stmts| {
-        stmts.retain(
-            |s| !matches!(&s.kind, StmtKind::Const(name, value) if !read.contains(name) && iterators::is_items_map(value)),
-        );
+        stmts.retain(|s| {
+            !matches!(&s.kind, StmtKind::Const(name, value)
+                if !read.contains(name) && (iterators::is_items_map(value) || iterators::lazily_mapped(value)))
+        });
+    });
+    // And MIR's `let` and the assignment a call's `try` holds, `let _5; try
+    // { _5 = _6.map(f); } ..`, its only mention (#805).
+    let mut assigned = Vec::new();
+    js::statement_lists(body, &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Assign(target, value) = &stmt.kind
+                && let ExprKind::Var(name) = &target.kind
+                && iterators::lazily_mapped(value)
+            {
+                assigned.push(name.clone());
+            }
+        }
+    });
+    let gone: HashSet<String> = (assigned.into_iter())
+        .filter(|name| js::mentions_in(body, name) == 1)
+        .collect();
+    if gone.is_empty() {
+        return;
+    }
+    js::statement_lists(body, &mut |stmts| {
+        stmts.retain(|s| match &s.kind {
+            StmtKind::Assign(target, _) => !matches!(&target.kind, ExprKind::Var(name) if gone.contains(name)),
+            StmtKind::Let(name, None) => !gone.contains(name),
+            _ => true,
+        });
     });
 }
 
