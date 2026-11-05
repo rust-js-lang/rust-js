@@ -764,9 +764,15 @@ export function $dropping(f, drop) {
   return f;
 }
 
-// A closure made elsewhere dropped: the drop it carries, `$dropping`'s, run.
+// A closure made elsewhere dropped: the drop it carries, `$dropping`'s, run,
+// once, as Rust drops a value once: a fold it was moved into drops it where
+// std's does, before what's left, and its caller's drop after does nothing
+// (#710).
 export function $dispose(f) {
-  f[$disposeKey]?.();
+  const drop = f[$disposeKey];
+  if (drop === undefined) return;
+  f[$disposeKey] = undefined;
+  drop();
 }
 
 // A borrowed function made a `dyn Fn`, `Rc::new(&f)`'s: one of its own that
@@ -1693,8 +1699,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
         if (ended) return folded;
         ended = true;
         const made = unwind === undefined ? (x) => f(x, i++) : (x, a) => $staged(f, x, i++, a, unwind);
-        const passed = ends === false ? false : own;
-        return this.fold(folded, (a, x) => $foldDropping(Iterator.from(made(x, a)), a, g, unwind), unwind, passed);
+        return this.fold(folded, (a, x) => $foldDropping(Iterator.from(made(x, a)), a, g, unwind), unwind, own);
       } finally {
         if (ends) ends();
       }
@@ -1965,10 +1970,9 @@ export function $consumed(it, run, ends) {
 // `close()` after `ends`, what drops with a fold's `f`, where it's given:
 // as `fold(self, init, f)` drops `f`, then what's left of `self`, at its end
 // and as it unwinds, the second though the first throws, a destructor's
-// panic (#710). `ends` `false`, of a fold std takes by `&mut`, an in-place
-// collect's `try_fold`, none.
+// panic (#710).
 export function $closedAfter(ends, close) {
-  if (!ends) return close();
+  if (ends === undefined) return close();
   try {
     ends();
   } finally {
@@ -2342,24 +2346,27 @@ export function $foldDropping(it, init, f, unwind, ends) {
 // std's unwinds, what's left first, `restFirst`, where it doesn't collect
 // in place (#423). In place, what it collected is the fold's accumulator,
 // std's `InPlaceDrop`, which the stage that panics drops before its fold
-// drops what's left: the fold's `unwind`.
-export function $foldToArray(it, drop, restFirst = false) {
+// drops what's left: the fold's `unwind`. In place of items with nothing to
+// drop, `inPlace`, as its caller knows it (#710).
+export function $foldToArray(it, drop, restFirst = false, inPlace = drop !== undefined && !restFirst) {
   // A JS iterator's own helper, which has no fold, stepped by `next`.
   if (typeof it.fold !== "function") return $collectDropping(it, drop, restFirst);
   const items = [];
   const unwind = restFirst || drop === undefined ? undefined : () => $dropItems(items, drop);
+  const push = (items, x) => {
+    items.push(x);
+    return items;
+  };
   try {
-    // In place, std's `try_fold` by `&mut`, which moves no adapter's
-    // function into it, so it drops after what's left (`false`, #710).
-    return it.fold(
-      items,
-      (items, x) => {
-        items.push(x);
-        return items;
-      },
-      unwind,
-      unwind === undefined ? undefined : false,
-    );
+    // In place, `inPlace`, std's `try_fold` by `&mut`, which moves no
+    // adapter's function into the fold it asks, then what's left closed,
+    // an adapter's function after it (#710).
+    if (inPlace && typeof it.tryFold === "function") {
+      const folded = it.tryFold(items, push, () => false, unwind);
+      it.return?.();
+      return folded;
+    }
+    return it.fold(items, push, unwind);
   } catch (error) {
     // In place, what it collected is dropped by the fold's `unwind` alone,
     // as std's `InPlaceDrop` is by the frame that holds it: not where a
@@ -2656,8 +2663,7 @@ export function $closing(it, drop, slices = true) {
 // dropped after its fold, `"alone"`, as `FlattenCompat::fold` folds its
 // `Map` by `&mut`; else kept, a `take_while`'s, a `map_while`'s or a
 // `skip_while`'s, whose fold is its `try_fold`, dropped with it after what it
-// steps. Folded by `&mut`, `ends` `false`, an in-place collect's
-// `try_fold`, kept too.
+// steps.
 export function $holding(it, drop, moved) {
   let dropped = false;
   const own = () => {
@@ -2684,7 +2690,6 @@ export function $holding(it, drop, moved) {
   // drops them, given to what it steps to drop as its fold ends; dropped
   // here as it's closed where that didn't, once.
   const moving = (by) => (init, f, unwind, ends) => {
-    if (ends === false) return by(init, f, unwind, false);
     const outer = once(ends);
     if (moved === "alone") return by(init, f, unwind, outer, own);
     const both = moved === "before" ? () => $closedAfter(own, outer) : () => $closedAfter(outer, own);
@@ -11238,7 +11243,8 @@ export function $stdIterator(struct, steps) {
       return advanced.TAG === "Ok" ? 0 : advanced._0;
     });
   $forward(it, steps, {
-    fold: steps.fold && ((init, f, unwind) => taking("fold", () => steps.fold(it, init, f, unwind))),
+    // What drops with `f`, `ends`, its body's drop of its `F` (#710).
+    fold: steps.fold && ((init, f, unwind, ends) => taking("fold", () => steps.fold(it, init, f, unwind, ends))),
     tryFold: steps.tryFold && ((init, f, broke, unwind) => steps.tryFold(it, init, f, broke, unwind)),
     count: steps.count && ((drop) => taking("count", () => steps.count(it, drop))),
     advanceBy: steps.advanceBy === undefined ? advance : (m, drop) => steps.advanceBy(it, m, drop),
@@ -11257,9 +11263,9 @@ export function $stdIterator(struct, steps) {
     $forward(it, steps, {
       rfold:
         rfold &&
-        ((init, f, unwind) => {
+        ((init, f, unwind, ends) => {
           try {
-            return rfold(it, init, f, unwind);
+            return rfold(it, init, f, unwind, ends);
           } finally {
             it.$closed = true;
           }
@@ -12904,10 +12910,7 @@ export function $flatMap(it, f) {
       ended = true;
       const made = unwind === undefined ? f : (x, a) => $staged(f, x, undefined, a, unwind);
       const each = (a, x) => $foldDropping($stepsOf(made(x, a)), a, g, unwind);
-      const passed = ends === false ? false : own;
-      return typeof it.fold === "function"
-        ? it.fold(folded, each, unwind, passed)
-        : $foldDropping(it, folded, each, unwind, passed);
+      return typeof it.fold === "function" ? it.fold(folded, each, unwind, own) : $foldDropping(it, folded, each, unwind, own);
     } finally {
       if (ends) ends();
     }

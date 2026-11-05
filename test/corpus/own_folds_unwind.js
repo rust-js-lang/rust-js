@@ -225,11 +225,12 @@ function main() {
           undefined,
           undefined,
           undefined,
-          (iterator, init, f, unwind) => wrapIterator_fold(iterator, init, f, dDrop_drop, unwind),
+          (iterator, init, f, unwind, ends) =>
+            wrapIterator_fold(iterator, init, f, dDrop_drop, unwind, ends),
           undefined,
           undefined,
-          (iterator, init, f, unwind) =>
-            wrapDoubleEndedIterator_rfold(iterator, init, f, dDrop_drop, unwind),
+          (iterator, init, f, unwind, ends) =>
+            wrapDoubleEndedIterator_rfold(iterator, init, f, dDrop_drop, unwind, ends),
         ),
         (it) => {
           for (const item of it.of.items) {
@@ -275,12 +276,12 @@ function main() {
               (iterator) => wrapDoubleEndedIterator_nextBack(iterator, dDrop_drop),
               undefined,
               undefined,
-              (iterator, init, f, unwind) =>
-                wrapIterator_fold(iterator, init, f, dDrop_drop, unwind),
+              (iterator, init, f, unwind, ends) =>
+                wrapIterator_fold(iterator, init, f, dDrop_drop, unwind, ends),
               undefined,
               undefined,
-              (iterator, init, f, unwind) =>
-                wrapDoubleEndedIterator_rfold(iterator, init, f, dDrop_drop, unwind),
+              (iterator, init, f, unwind, ends) =>
+                wrapDoubleEndedIterator_rfold(iterator, init, f, dDrop_drop, unwind, ends),
             ),
             (it) => {
               for (const item of it.of.items) {
@@ -329,11 +330,12 @@ function main() {
           undefined,
           undefined,
           undefined,
-          (iterator, init, f, unwind) => wrapIterator_fold(iterator, init, f, dDrop_drop, unwind),
+          (iterator, init, f, unwind, ends) =>
+            wrapIterator_fold(iterator, init, f, dDrop_drop, unwind, ends),
           undefined,
           undefined,
-          (iterator, init, f, unwind) =>
-            wrapDoubleEndedIterator_rfold(iterator, init, f, dDrop_drop, unwind),
+          (iterator, init, f, unwind, ends) =>
+            wrapDoubleEndedIterator_rfold(iterator, init, f, dDrop_drop, unwind, ends),
         ),
         (it) => {
           for (const item of it.of.items) {

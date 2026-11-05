@@ -692,9 +692,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a compiled std fold, a `Fuse`'s, is given no drop of its accumulator, so a stage's panic inside it leaves it undropped (#424)",
     file: "src/lower/iterators/knowing.rs",
-    find: '        let dropped = vec![(acc, Expr::var("unwind"))];\n',
+    find: "        let dropped = vec![(acc, Expr::var(\"unwind\")), (acc + 1, Expr::var(\"ends\"))];\n",
     replace:
-      '        let dropped: Vec<(u32, Expr)> = vec![(acc, Expr::var("unwind"))].into_iter().filter(|_| false).collect();\n',
+      "        let dropped = vec![(acc + 1, Expr::var(\"ends\"))];\n",
     tests: [
       "test/std-package.test.ts",
       "-t",
@@ -781,5 +781,13 @@ export const mutations: Mutation[] = [
     find: "            return self.reversed_user_knowing(value, source, (true, true), span);\n",
     replace: "            return Ok(value);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
+  },
+  {
+    name: "compiled-fold-f-undropped",
+    breaks: "std's compiled fold isn't given its `F`'s drop, what drops with `f`, so it never drops it before what it has left (#710)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        let dropped = vec![(acc, Expr::var(\"unwind\")), (acc + 1, Expr::var(\"ends\"))];\n",
+    replace: "        let dropped = vec![(acc, Expr::var(\"unwind\"))];\n",
+    tests: ["test/std-package.test.ts"],
   },
 ];

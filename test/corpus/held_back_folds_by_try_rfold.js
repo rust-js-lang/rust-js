@@ -84,7 +84,7 @@ function main() {
         },
         countExactSizeIterator,
       ),
-    rfold: (iterator, init, f, unwind) =>
+    rfold: (iterator, init, f, unwind, ends) =>
       takeIDoubleEndedIterator_rfold(
         iterator,
         init,
@@ -98,6 +98,7 @@ function main() {
         countExactSizeIterator,
         undefined,
         unwind,
+        ends,
       ),
     nthBack: (iterator, k) =>
       takeIDoubleEndedIterator_nthBack(
@@ -166,7 +167,7 @@ function main() {
           takeDoubleEndedIterator,
         ),
       (iterator) => $exactLen($sizeHint(iterator)),
-      (iterator, init, f, unwind) =>
+      (iterator, init, f, unwind, ends) =>
         skipDoubleEndedIterator_rfold(
           iterator,
           init,
@@ -175,6 +176,7 @@ function main() {
           takeDoubleEndedIterator,
           undefined,
           unwind,
+          ends,
         ),
       (iterator, k) =>
         skipDoubleEndedIterator_nthBack(

@@ -255,7 +255,7 @@ function main() {
             { next_back: numsDoubleEndedIterator_nextBack },
             false,
           ),
-        rfold: (iterator, init, f, unwind) =>
+        rfold: (iterator, init, f, unwind, ends) =>
           fuseDoubleEndedIterator_rfold(
             iterator,
             init,
@@ -264,6 +264,7 @@ function main() {
             { next_back: numsDoubleEndedIterator_nextBack },
             undefined,
             unwind,
+            ends,
           ),
         nthBack: (iterator, k) =>
           fuseDoubleEndedIterator_nthBack(

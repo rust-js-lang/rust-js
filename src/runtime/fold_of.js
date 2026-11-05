@@ -51,24 +51,27 @@ function $foldDropping(it, init, f, unwind, ends) {
 // std's unwinds, what's left first, `restFirst`, where it doesn't collect
 // in place (#423). In place, what it collected is the fold's accumulator,
 // std's `InPlaceDrop`, which the stage that panics drops before its fold
-// drops what's left: the fold's `unwind`.
-function $foldToArray(it, drop, restFirst = false) {
+// drops what's left: the fold's `unwind`. In place of items with nothing to
+// drop, `inPlace`, as its caller knows it (#710).
+function $foldToArray(it, drop, restFirst = false, inPlace = drop !== undefined && !restFirst) {
   // A JS iterator's own helper, which has no fold, stepped by `next`.
   if (typeof it.fold !== "function") return $collectDropping(it, drop, restFirst);
   const items = [];
   const unwind = restFirst || drop === undefined ? undefined : () => $dropItems(items, drop);
+  const push = (items, x) => {
+    items.push(x);
+    return items;
+  };
   try {
-    // In place, std's `try_fold` by `&mut`, which moves no adapter's
-    // function into it, so it drops after what's left (`false`, #710).
-    return it.fold(
-      items,
-      (items, x) => {
-        items.push(x);
-        return items;
-      },
-      unwind,
-      unwind === undefined ? undefined : false,
-    );
+    // In place, `inPlace`, std's `try_fold` by `&mut`, which moves no
+    // adapter's function into the fold it asks, then what's left closed,
+    // an adapter's function after it (#710).
+    if (inPlace && typeof it.tryFold === "function") {
+      const folded = it.tryFold(items, push, () => false, unwind);
+      it.return?.();
+      return folded;
+    }
+    return it.fold(items, push, unwind);
   } catch (error) {
     // In place, what it collected is dropped by the fold's `unwind` alone,
     // as std's `InPlaceDrop` is by the frame that holds it: not where a

@@ -93,9 +93,9 @@ it, and otherwise after what it steps, as before.**
   `try_fold` by `&mut self`, or keeps the predicate in `self`, so the
   function drops with the adapter, after what it steps.
 - A fold std takes by `&mut`, an in-place collect's `try_fold`, moves no
-  function. `$foldToArray` in place gives `ends` as `false`, and the
-  function drops after what's left, as `forget_allocation_drop_remaining`
-  drops it before the iterator.
+  function: `$foldToArray` in place steps it by `tryFold`, then closes
+  it, so the function drops after what's left, as
+  `forget_allocation_drop_remaining` drops it before the iterator.
 - Where std folds and rust-js stepped by `next`, a consumer whose fold
   may reach such a function (`folds_held_function`, through the
   `OwnStep::Fold` catalog) folds now. A `TrustedLen` `collect()` into a
@@ -103,18 +103,32 @@ it, and otherwise after what it steps, as before.**
   A `Vec`'s or a deque's `extend` of one is `$extend(v, it, true)`. A
   `step_by(n)` over one is std's `$stepBy`, which steps it by `nth`, where
   a filter's fold would move the function.
-- Still as they were: a compiled std struct's `Map`, a `peekable()`'s or a
-  `fuse()`'s source in the default build and every adapter under
-  `--std-iterators`. Its fold disposes the closure after its source's fold
-  returns (`$dispose(f)` after `$foldDropping`), so its function still
-  drops after what's left. That is the compiled fold's own convention, and
-  follows apart.
+- Std's compiled structs, a `peekable()`'s or a `fuse()`'s source in the
+  default build and each adapter under `--std-iterators`, drop it where
+  their MIR does. A compiled fold is given `ends` as its own `F`'s drop
+  (`fold_entry`), which its body drops before what it has left, as
+  `fold(self, init, f)` drops `f`. A fold it asks of a JS iterator is given
+  `ends` in turn (`folded`): the drop of the closure it moves into it,
+  `Map::fold`'s `map_fold(f, g)`, which carries its drop (`$dropping`), or
+  of std's body, the `F` it was given, whose drop is its caller's `ends`.
+  The drop after the call
+  stays, and drops nothing again: `$dispose` runs a closure's drop once,
+  as Rust drops a value once, and `ends` is once. A collect in place of
+  items with nothing to drop is said so by its caller (`$foldToArray`'s
+  `inPlace`), where a compiled `Map`'s fold would move its function.
+- Apart: a call std is given a closure by value, of std's compiled body,
+  drops it only as the call returns, so a panic in a compiled `Map`'s
+  closure leaks it under `--std-iterators`, where Rust drops it as it
+  unwinds (`test/corpus/closure_folded_by_value_panics.rs`, filed apart).
 
 `test/corpus/fold_drops_moved_function_first.rs` checks each consumer and
 adapter above against native Rust: by value, by `next`, by `&mut`, in
-place, two closures, a panic in the closure and in what's left. The
+place, two closures, a panic in what's left, as the crate builds it and
+with std's iterator structs (`test/iterator-forms.test.ts`);
+`closure_folded_by_value_panics.rs`, a panic in the closure, as the crate
+builds it. The
 mutations are `holding-moved-ignored`, `holding-before-after-swapped`,
-`holding-alone-as-after` and `holding-in-place-moves`
+and `holding-alone-as-after`
 (`runtime/closing.ts`), `take-fold-closes-at-its-limit`
 (`runtime/steps.ts`), `flat-map-own-unpassed` (`runtime/flat_map.ts`),
 `extend-by-next` (`runtime/extend.ts`), `map-folded-before`,
@@ -123,4 +137,8 @@ mutations are `holding-moved-ignored`, `holding-before-after-swapped`,
 (`lower/mir/iter.ts`), `folds-held-function-never`
 (`lower/mir/iter/closing.ts`), `collect-trusted-by-next`
 (`lower/mir/iter/collect.ts`) and `extend-trusted-by-next`
-(`lower/combinators.ts`).
+(`lower/combinators.ts`); of std's compiled structs, `fold-given-no-ends`,
+`fold-given-no-ends-of-a-param` and `in-place-of-numbers-unsaid`
+(`lower/mir/iter/collect.ts`), `compiled-fold-f-undropped`
+(`lower/iterators/knowing.ts`), `std-iterator-fold-ends-lost`
+(`runtime/std_iterator.ts`), `in-place-by-fold` (`runtime/fold_of.ts`) and `dispose-twice` (`runtime/dropping.ts`).

@@ -92,7 +92,7 @@ function ends(it, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone, I
         copy,
         (iterator) => fuseDoubleEndedIterator_nextBack(iterator, IDoubleEndedIterator, IFused),
         (iterator) => fuseExactSizeIterator_len(iterator, IExactSizeIterator),
-        (iterator, init, f, unwind) =>
+        (iterator, init, f, unwind, ends) =>
           fuseDoubleEndedIterator_rfold(
             iterator,
             init,
@@ -101,6 +101,7 @@ function ends(it, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone, I
             IDoubleEndedIterator,
             undefined,
             unwind,
+            ends,
           ),
         (iterator, k) =>
           fuseDoubleEndedIterator_nthBack(iterator, k, IIterator, IDoubleEndedIterator, IFused),

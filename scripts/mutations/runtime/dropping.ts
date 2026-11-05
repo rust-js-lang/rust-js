@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "dispose-plain-function",
     breaks: "a `dyn Fn` of a function that carries no drop throws as it's dropped",
     file: "src/runtime/dropping.js",
-    find: "  f[$disposeKey]?.();\n",
-    replace: "  f[$disposeKey]();\n",
+    find: "  const drop = f[$disposeKey];\n  if (drop === undefined) return;\n",
+    replace: "  const drop = f[$disposeKey];\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops.rs$"],
   },
   {
@@ -33,5 +33,13 @@ export const mutations: Mutation[] = [
     find: "  return (...args) => f(...args);\n",
     replace: "  return f;\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_borrowed_function.rs$"],
+  },
+  {
+    name: "dispose-twice",
+    breaks: "a closure that carries its drop is dropped again by its caller after the fold it was moved into dropped it (#710)",
+    file: "src/runtime/dropping.js",
+    find: "  f[$disposeKey] = undefined;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
 ];

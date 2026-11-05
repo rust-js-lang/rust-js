@@ -117,11 +117,11 @@ function main() {
         undefined,
         undefined,
         undefined,
-        (iterator, init, f, unwind) =>
+        (iterator, init, f, unwind, ends) =>
           twoIterator_fold(iterator, init, f, { next: $next }, { next: $next }),
         (iterator, n) => twoIterator_nth(iterator, n, { next: $next }, { next: $next }),
         undefined,
-        (iterator, init, f, unwind) =>
+        (iterator, init, f, unwind, ends) =>
           twoDoubleEndedIterator_rfold(
             iterator,
             init,
@@ -157,7 +157,7 @@ function main() {
         undefined,
         undefined,
         undefined,
-        (iterator, init, f, unwind) =>
+        (iterator, init, f, unwind, ends) =>
           twoDoubleEndedIterator_rfold(
             iterator,
             init,
@@ -193,7 +193,7 @@ function main() {
         undefined,
         undefined,
         undefined,
-        (iterator, init, f, unwind) =>
+        (iterator, init, f, unwind, ends) =>
           twoDoubleEndedIterator_rfold(
             iterator,
             init,
@@ -242,7 +242,7 @@ function main() {
       undefined,
       undefined,
       undefined,
-      (iterator, init, f, unwind) =>
+      (iterator, init, f, unwind, ends) =>
         twoDoubleEndedIterator_rfold(
           iterator,
           init,

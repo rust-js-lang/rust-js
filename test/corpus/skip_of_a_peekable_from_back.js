@@ -60,7 +60,7 @@ function main() {
         { next_back: countDoubleEndedIterator_nextBack },
         countExactSizeIterator,
       ),
-    rfold: (iterator, init, f, unwind) =>
+    rfold: (iterator, init, f, unwind, ends) =>
       takeIDoubleEndedIterator_rfold(
         iterator,
         init,
@@ -70,6 +70,7 @@ function main() {
         countExactSizeIterator,
         undefined,
         unwind,
+        ends,
       ),
     nthBack: (iterator, k) =>
       takeIDoubleEndedIterator_nthBack(

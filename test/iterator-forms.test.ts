@@ -111,6 +111,9 @@ const few = [
   // What `last`'s fold has in hand as a later drop panics, a `filter`'s
   // discarded item's or a `take`'s source's, leaked, not dropped (#648).
   "last_fold_gives_back_what_it_kept.rs",
+  // An adapter's closure a fold by value moves, dropped before what its
+  // source has left, by std's compiled fold too (#710).
+  "fold_drops_moved_function_first.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);

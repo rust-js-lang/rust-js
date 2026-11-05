@@ -57,7 +57,8 @@ function $stdIterator(struct, steps) {
       return advanced.TAG === "Ok" ? 0 : advanced._0;
     });
   $forward(it, steps, {
-    fold: steps.fold && ((init, f, unwind) => taking("fold", () => steps.fold(it, init, f, unwind))),
+    // What drops with `f`, `ends`, its body's drop of its `F` (#710).
+    fold: steps.fold && ((init, f, unwind, ends) => taking("fold", () => steps.fold(it, init, f, unwind, ends))),
     tryFold: steps.tryFold && ((init, f, broke, unwind) => steps.tryFold(it, init, f, broke, unwind)),
     count: steps.count && ((drop) => taking("count", () => steps.count(it, drop))),
     advanceBy: steps.advanceBy === undefined ? advance : (m, drop) => steps.advanceBy(it, m, drop),
@@ -76,9 +77,9 @@ function $stdIterator(struct, steps) {
     $forward(it, steps, {
       rfold:
         rfold &&
-        ((init, f, unwind) => {
+        ((init, f, unwind, ends) => {
           try {
-            return rfold(it, init, f, unwind);
+            return rfold(it, init, f, unwind, ends);
           } finally {
             it.$closed = true;
           }

@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "fold-to-array-collected-last",
     breaks: "a collect in place of std's struct, a `map`'s, a stage panicking, drops what's left before what it collected, where std's `InPlaceDrop` drops what it collected first (#423)",
     file: "src/runtime/fold_of.js",
-    find: "      unwind,\n      unwind === undefined ? undefined : false,\n    );\n",
-    replace: "      undefined,\n      unwind === undefined ? undefined : false,\n    );\n",
+    find: "      const folded = it.tryFold(items, push, () => false, unwind);\n",
+    replace: "      const folded = it.tryFold(items, push, () => false, undefined);\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^panic_mid_iteration_drops with"],
   },
   {
@@ -82,5 +82,13 @@ export const mutations: Mutation[] = [
     find: "    if (drop) $dropItems(items, drop);\n    throw error;\n  }\n  return items;\n",
     replace: "    throw error;\n  }\n  return items;\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_close_panics.rs$"],
+  },
+  {
+    name: "in-place-by-fold",
+    breaks: "an in-place collect folds, which moves a compiled `Map`'s function before what's left, where std's `try_fold` by `&mut` keeps it (#710)",
+    file: "src/runtime/fold_of.js",
+    find: "    if (inPlace && typeof it.tryFold === \"function\") {\n",
+    replace: "    if (false) {\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^fold_drops_moved_function_first with std"],
   },
 ];

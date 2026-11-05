@@ -515,9 +515,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => None,
         };
         let mut args = vec![it];
-        if let (Some(drop), Some(item)) = (drop, item) {
-            args.push(drop);
-            args.extend(self.rest_dropped_first(output, Some(iter_ty), item, span)?);
+        match (drop, item) {
+            (Some(drop), Some(item)) => {
+                args.push(drop);
+                args.extend(self.rest_dropped_first(output, Some(iter_ty), item, span)?);
+            }
+            // Of items with nothing to drop, collected in place through a
+            // function its fold would move, said so: std's `try_fold` by
+            // `&mut`, which keeps it to drop after what's left (#710).
+            _ if self.folds_held_function(iter_ty) && self.collects_in_place(Some(iter_ty), item) == Some(true) => {
+                args.extend([Expr::undefined(), Expr::bool(false), Expr::bool(true)]);
+            }
+            _ => {}
         }
         Ok(args)
     }
@@ -790,6 +799,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Expr> {
         let own = arg_tys.last().is_some_and(|ty| self.is_called_as_written(*ty));
+        // A closure it's given by value that carries its drop, `$dropping`'s,
+        // std's `Map::fold`'s `map_fold(f, g)` of compiled code: its drop,
+        // `ends`, given to the fold, which drops it before what's left of
+        // what it folds, as `fold(self, init, f)` drops `f` first (#710).
+        // Dropped after the call too, which then does nothing (`$dispose`).
+        // And of std's compiled body, a `Skip::fold`'s, the `F` it was given
+        // to fold by, whose drop is its caller's `ends`, which drops once.
+        let compiled = crate::lower::recognition::is_compiled_std(self.tcx, self.frame.owner);
+        let ends = match arg_tys.last() {
+            Some(&ty) if self.carries_its_drop(ty) || compiled && self.given_drop(ty).is_some() => {
+                let mut dropped = Vec::new();
+                self.drop_value(f.clone(), ty, span, &mut dropped)?;
+                Some(Expr::arrow(Vec::new(), dropped))
+            }
+            _ => None,
+        };
         let callback = self.binary_callback(f, own);
         let acc = match init {
             Some(_) => arg_tys.get(1).copied(),
@@ -811,12 +836,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut args = vec![callback, init];
         crate::lower::calls::given_to_js(&mut args);
-        // `$foldDropping(it, init, f, drop)`, which passes it on (#423).
-        if let Some(unwind) = unwind {
+        // `$foldDropping(it, init, f, drop)`, which passes it on (#423), and
+        // what drops with `f` (#710).
+        if unwind.is_some() || ends.is_some() {
             args.swap(0, 1);
+            let unwind = unwind.unwrap_or_else(Expr::undefined);
             return Ok(Expr::call_helper(
                 "$foldDropping",
-                [vec![it], args, vec![unwind]].concat(),
+                [vec![it], args, vec![unwind], Vec::from_iter(ends)].concat(),
             ));
         }
         Ok(Expr::call(Expr::member(it, "reduce"), args))

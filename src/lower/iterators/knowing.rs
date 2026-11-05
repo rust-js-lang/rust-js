@@ -1044,10 +1044,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The compiled `fold` or `rfold`, `method`, of std's struct `ty`, a
     /// held `Map`'s (ADRs 0871, 0912), as a dictionary's entry,
-    /// `(iterator, init, f, unwind) => ..`, given `unwind`, the runtime's
-    /// fold's, `$foldDropping`'s or `$foldBack`'s, as what drops its
-    /// accumulator, its `B`, where a stage's panic strands it inside its
-    /// closure, before what's left (#423, #424).
+    /// `(iterator, init, f, unwind, ends) => ..`, given `unwind`, the
+    /// runtime's fold's, `$foldDropping`'s or `$foldBack`'s, as what drops
+    /// its accumulator, its `B`, where a stage's panic strands it inside its
+    /// closure, before what's left (#423, #424), and `ends`, what drops with
+    /// `f`, as its `F`'s drop, which its body drops where std's does, before
+    /// what's left of what it folds (#710).
     /// `None` where it isn't compiled.
     pub(in crate::lower) fn compiled_fold(
         &mut self,
@@ -1073,8 +1075,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (self.resolve_instance(fold, args)?).ok_or_else(|| self.unsupported(span, "this implementation"))?;
         // The method's own first type parameter, its `B`.
         let acc = self.tcx.generics_of(instance.def_id()).parent_count as u32;
-        let params = ["iterator", "init", "f", "unwind"];
-        let dropped = vec![(acc, Expr::var("unwind"))];
+        let params = ["iterator", "init", "f", "unwind", "ends"];
+        let dropped = vec![(acc, Expr::var("unwind")), (acc + 1, Expr::var("ends"))];
         let mut values = params[..3].iter().map(|&name| Expr::var(name)).collect::<Vec<_>>();
         let location = self.caller_location(span);
         values.extend(self.evidence_args_given(

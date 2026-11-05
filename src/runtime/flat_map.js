@@ -57,10 +57,7 @@ function $flatMap(it, f) {
       ended = true;
       const made = unwind === undefined ? f : (x, a) => $staged(f, x, undefined, a, unwind);
       const each = (a, x) => $foldDropping($stepsOf(made(x, a)), a, g, unwind);
-      const passed = ends === false ? false : own;
-      return typeof it.fold === "function"
-        ? it.fold(folded, each, unwind, passed)
-        : $foldDropping(it, folded, each, unwind, passed);
+      return typeof it.fold === "function" ? it.fold(folded, each, unwind, own) : $foldDropping(it, folded, each, unwind, own);
     } finally {
       if (ends) ends();
     }

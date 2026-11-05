@@ -63,8 +63,8 @@ export const mutations: Mutation[] = [
     name: "flat-map-own-unpassed",
     breaks: "a `flat_map`'s own function isn't given to its source's fold, so it drops after the source's rest (#710)",
     file: "src/runtime/flat_map.js",
-    find: "      const passed = ends === false ? false : own;\n",
-    replace: "      const passed = undefined;\n",
+    find: "      return typeof it.fold === \"function\" ? it.fold(folded, each, unwind, own) : $foldDropping(it, folded, each, unwind, own);\n",
+    replace: "      return typeof it.fold === \"function\" ? it.fold(folded, each, unwind) : $foldDropping(it, folded, each, unwind);\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
 ];

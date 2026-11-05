@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "std-iterator-fold-unwind-lost",
     breaks: "a std struct's compiled fold is given no `unwind`, so a stage's panic inside it leaves the accumulator undropped (#424)",
     file: "src/runtime/std_iterator.js",
-    find: "    fold: steps.fold && ((init, f, unwind) => taking(\"fold\", () => steps.fold(it, init, f, unwind))),",
-    replace: "    fold: steps.fold && ((init, f, unwind) => taking(\"fold\", () => steps.fold(it, init, f))),",
+    find: "    fold: steps.fold && ((init, f, unwind, ends) => taking(\"fold\", () => steps.fold(it, init, f, unwind, ends))),",
+    replace: "    fold: steps.fold && ((init, f, unwind, ends) => taking(\"fold\", () => steps.fold(it, init, f, undefined, ends))),",
     tests: ["test/corpus.test.ts", "-t", "^panic_in_std_fold_drops.rs$"],
   },
   {
@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "std-iterator-rfold-unwind-lost",
     breaks: "std's compiled struct's `rfold`, known where it's used, gets no `unwind`: a stage's panic leaves the accumulator undropped (#423)",
     file: "src/runtime/std_iterator.js",
-    find: "            return rfold(it, init, f, unwind);\n",
-    replace: "            return rfold(it, init, f);\n",
+    find: "            return rfold(it, init, f, unwind, ends);\n",
+    replace: "            return rfold(it, init, f, undefined, ends);\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_folds_unwind with"],
   },
   {
@@ -111,8 +111,16 @@ export const mutations: Mutation[] = [
     breaks:
       "std's compiled struct isn't taken once its compiled `rfold` ends: a `peekable()`'s `rev().fold(..)` whose closure panics drops its source and what it peeked at as std's `rfold` unwinds, then again as it's closed (#649)",
     file: "src/runtime/std_iterator.js",
-    find: "            return rfold(it, init, f, unwind);\n          } finally {\n            it.$closed = true;\n",
-    replace: "            return rfold(it, init, f, unwind);\n          } finally {\n",
+    find: "            return rfold(it, init, f, unwind, ends);\n          } finally {\n            it.$closed = true;\n",
+    replace: "            return rfold(it, init, f, unwind, ends);\n          } finally {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_steps_a_type_parameter_may_reach.rs$"],
+  },
+  {
+    name: "std-iterator-fold-ends-lost",
+    breaks: "std's compiled struct's fold drops what drops with `f`, so its `F` is never dropped before what it has left (#710)",
+    file: "src/runtime/std_iterator.js",
+    find: "steps.fold(it, init, f, unwind, ends))",
+    replace: "steps.fold(it, init, f, unwind))",
+    tests: ["test/iterator-forms.test.ts", "-t", "^fold_drops_moved_function_first with std"],
   },
 ];

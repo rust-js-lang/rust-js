@@ -538,7 +538,7 @@ function main() {
             loudDrop_drop,
           ),
         undefined,
-        (iterator, init, f, unwind) =>
+        (iterator, init, f, unwind, ends) =>
           fuseDoubleEndedIterator_rfold(
             iterator,
             init,
@@ -547,6 +547,7 @@ function main() {
             { next_back: loudDoubleEndedIterator_nextBack, rfold: loudDoubleEndedIterator_rfold },
             loudDrop_drop,
             unwind,
+            ends,
           ),
         (iterator, k) =>
           fuseDoubleEndedIterator_nthBack(
@@ -662,7 +663,7 @@ function main() {
             false,
           ),
         (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator),
-        (iterator, init, f, unwind) =>
+        (iterator, init, f, unwind, ends) =>
           fuseDoubleEndedIterator_rfold(
             iterator,
             init,
@@ -675,6 +676,7 @@ function main() {
             },
             undefined,
             unwind,
+            ends,
           ),
         (iterator, k) =>
           fuseDoubleEndedIterator_nthBack(
@@ -739,7 +741,7 @@ function main() {
                 false,
               ),
             (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator),
-            (iterator, init, f, unwind) =>
+            (iterator, init, f, unwind, ends) =>
               fuseDoubleEndedIterator_rfold(
                 iterator,
                 init,
@@ -752,6 +754,7 @@ function main() {
                 },
                 undefined,
                 unwind,
+                ends,
               ),
             (iterator, k) =>
               fuseDoubleEndedIterator_nthBack(
@@ -810,7 +813,7 @@ function main() {
             rfold: countDoubleEndedIterator_rfold,
             nthBack: countDoubleEndedIterator_nthBack,
           }),
-        rfold: (iterator, init, f, unwind) =>
+        rfold: (iterator, init, f, unwind, ends) =>
           mapDoubleEndedIterator_rfold(
             iterator,
             init,
@@ -825,6 +828,7 @@ function main() {
             undefined,
             undefined,
             unwind,
+            ends,
           ),
         tryRfold: (iterator, init, f, broke, unwind) =>
           mapDoubleEndedIterator_tryRfold(
@@ -867,7 +871,7 @@ function main() {
                 false,
               ),
             (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator),
-            (iterator, init, f, unwind) =>
+            (iterator, init, f, unwind, ends) =>
               fuseDoubleEndedIterator_rfold(
                 iterator,
                 init,
@@ -880,6 +884,7 @@ function main() {
                 },
                 undefined,
                 unwind,
+                ends,
               ),
             (iterator, k) =>
               fuseDoubleEndedIterator_nthBack(

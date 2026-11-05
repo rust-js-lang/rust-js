@@ -127,7 +127,7 @@ function main() {
             $dropEach(loudDrop_drop),
             loudDrop_drop,
           ),
-        (iterator, init, f, unwind) =>
+        (iterator, init, f, unwind, ends) =>
           fuseDoubleEndedIterator_rfold(
             iterator,
             init,
@@ -136,7 +136,7 @@ function main() {
             { next_back: $nextBack },
             $dropEach(loudDrop_drop),
             unwind,
-            undefined,
+            ends,
             loudDrop_drop,
           ),
         (iterator, k) =>
@@ -238,7 +238,7 @@ function main() {
             $dropEach(loudDrop_drop),
             loudDrop_drop,
           ),
-        rfold: (iterator, init, f, unwind) =>
+        rfold: (iterator, init, f, unwind, ends) =>
           revDoubleEndedIterator_rfold(
             iterator,
             init,
@@ -246,7 +246,7 @@ function main() {
             { next: $next, advanceBy: $advanceSlice },
             $dropEach(loudDrop_drop),
             unwind,
-            undefined,
+            ends,
             loudDrop_drop,
           ),
         nthBack: (iterator, k) =>

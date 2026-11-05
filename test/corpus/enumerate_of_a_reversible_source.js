@@ -94,7 +94,7 @@ function main() {
               dDrop_drop,
             ),
           (iterator) => $exactLen($sizeHint(iterator)),
-          (iterator, init, f, unwind) =>
+          (iterator, init, f, unwind, ends) =>
             peekableDoubleEndedIterator_rfold(
               iterator,
               init,
@@ -103,7 +103,7 @@ function main() {
               { next_back: $nextBack },
               $dropEach(dDrop_drop),
               unwind,
-              undefined,
+              ends,
               dDrop_drop,
             ),
           undefined,
@@ -219,7 +219,7 @@ function main() {
               dDrop_drop,
             ),
           (iterator) => $exactLen($sizeHint(iterator)),
-          (iterator, init, f, unwind) =>
+          (iterator, init, f, unwind, ends) =>
             peekableDoubleEndedIterator_rfold(
               iterator,
               init,
@@ -228,7 +228,7 @@ function main() {
               { next_back: $nextBack },
               $dropEach(dDrop_drop),
               unwind,
-              undefined,
+              ends,
               dDrop_drop,
             ),
           undefined,

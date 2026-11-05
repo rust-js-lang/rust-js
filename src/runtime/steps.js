@@ -248,8 +248,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
         if (ended) return folded;
         ended = true;
         const made = unwind === undefined ? (x) => f(x, i++) : (x, a) => $staged(f, x, i++, a, unwind);
-        const passed = ends === false ? false : own;
-        return this.fold(folded, (a, x) => $foldDropping(Iterator.from(made(x, a)), a, g, unwind), unwind, passed);
+        return this.fold(folded, (a, x) => $foldDropping(Iterator.from(made(x, a)), a, g, unwind), unwind, own);
       } finally {
         if (ends) ends();
       }
@@ -520,10 +519,9 @@ function $consumed(it, run, ends) {
 // `close()` after `ends`, what drops with a fold's `f`, where it's given:
 // as `fold(self, init, f)` drops `f`, then what's left of `self`, at its end
 // and as it unwinds, the second though the first throws, a destructor's
-// panic (#710). `ends` `false`, of a fold std takes by `&mut`, an in-place
-// collect's `try_fold`, none.
+// panic (#710).
 function $closedAfter(ends, close) {
-  if (!ends) return close();
+  if (ends === undefined) return close();
   try {
     ends();
   } finally {

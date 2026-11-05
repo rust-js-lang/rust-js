@@ -131,7 +131,7 @@ function main() {
               countDrop_drop,
             ),
           (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
-          (iterator, init, f, unwind) =>
+          (iterator, init, f, unwind, ends) =>
             fuseDoubleEndedIterator_rfold(
               iterator,
               init,
@@ -148,6 +148,7 @@ function main() {
               },
               countDrop_drop,
               unwind,
+              ends,
             ),
           (iterator, k) =>
             fuseDoubleEndedIterator_nthBack(
@@ -213,7 +214,7 @@ function main() {
               countDrop_drop,
             ),
           (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
-          (iterator, init, f, unwind) =>
+          (iterator, init, f, unwind, ends) =>
             fuseDoubleEndedIterator_rfold(
               iterator,
               init,
@@ -230,6 +231,7 @@ function main() {
               },
               countDrop_drop,
               unwind,
+              ends,
             ),
           (iterator, k) =>
             fuseDoubleEndedIterator_nthBack(
@@ -375,7 +377,7 @@ function main() {
             countDrop_drop,
           ),
         (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
-        (iterator, init, f, unwind) =>
+        (iterator, init, f, unwind, ends) =>
           fuseDoubleEndedIterator_rfold(
             iterator,
             init,
@@ -388,6 +390,7 @@ function main() {
             },
             countDrop_drop,
             unwind,
+            ends,
           ),
         (iterator, k) =>
           fuseDoubleEndedIterator_nthBack(
@@ -553,7 +556,7 @@ function main() {
             countDrop_drop,
           ),
         (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
-        (iterator, init, f, unwind) =>
+        (iterator, init, f, unwind, ends) =>
           fuseDoubleEndedIterator_rfold(
             iterator,
             init,
@@ -566,6 +569,7 @@ function main() {
             },
             countDrop_drop,
             unwind,
+            ends,
           ),
         (iterator, k) =>
           fuseDoubleEndedIterator_nthBack(

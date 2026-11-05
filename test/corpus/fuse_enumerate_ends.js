@@ -89,7 +89,7 @@ function fusedBack(it, IFused) {
             IFused,
           ),
         undefined,
-        (iterator, init, f, unwind) =>
+        (iterator, init, f, unwind, ends) =>
           fuseDoubleEndedIterator_rfold(
             iterator,
             init,
@@ -98,6 +98,7 @@ function fusedBack(it, IFused) {
             { next_back: $nextBack, rfold: $foldBack },
             undefined,
             unwind,
+            ends,
           ),
         (iterator, k) =>
           fuseDoubleEndedIterator_nthBack(

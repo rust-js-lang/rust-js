@@ -9,9 +9,15 @@ function $dropping(f, drop) {
   return f;
 }
 
-// A closure made elsewhere dropped: the drop it carries, `$dropping`'s, run.
+// A closure made elsewhere dropped: the drop it carries, `$dropping`'s, run,
+// once, as Rust drops a value once: a fold it was moved into drops it where
+// std's does, before what's left, and its caller's drop after does nothing
+// (#710).
 function $dispose(f) {
-  f[$disposeKey]?.();
+  const drop = f[$disposeKey];
+  if (drop === undefined) return;
+  f[$disposeKey] = undefined;
+  drop();
 }
 
 // A borrowed function made a `dyn Fn`, `Rc::new(&f)`'s: one of its own that

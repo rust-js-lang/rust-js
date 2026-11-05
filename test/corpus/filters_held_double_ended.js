@@ -63,7 +63,7 @@ function main() {
         next_back: $rangeNextBack,
         nthBack: $rangeNthBack,
       }),
-    rfold: (iterator, init, f, unwind) =>
+    rfold: (iterator, init, f, unwind, ends) =>
       mapDoubleEndedIterator_rfold(
         iterator,
         init,
@@ -74,6 +74,7 @@ function main() {
         undefined,
         undefined,
         unwind,
+        ends,
       ),
     tryRfold: (iterator, init, f, broke, unwind) =>
       mapDoubleEndedIterator_tryRfold(

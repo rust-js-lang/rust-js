@@ -91,7 +91,7 @@ function main() {
         undefined,
         undefined,
         undefined,
-        (iterator, init, f, unwind) =>
+        (iterator, init, f, unwind, ends) =>
           somesDoubleEndedIterator_rfold(
             iterator,
             init,
@@ -131,7 +131,7 @@ function main() {
         undefined,
         undefined,
         undefined,
-        (iterator, init, f, unwind) =>
+        (iterator, init, f, unwind, ends) =>
           oksDoubleEndedIterator_rfold(
             iterator,
             init,

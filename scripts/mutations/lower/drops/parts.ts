@@ -127,9 +127,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure made elsewhere that carries its drop is refused where it's dropped",
     file: "src/lower/drops/parts.rs",
-    find: "                if self.frame.owner != *def_id && self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>\n",
+    find: "            if self.frame.owner != def_id && self.krate.closure_facts.carries_its_drop(self.tcx, def_id))\n",
     replace:
-      "                if false && self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>\n",
+      "            if false && self.krate.closure_facts.carries_its_drop(self.tcx, def_id))\n",
     tests: ["test/corpus.test.ts", "-t", "^returned_closure_drops.rs$"],
   },
   {
@@ -155,9 +155,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure that carries its drop is dropped by its maker's variables where it's made, once for each clone",
     file: "src/lower/drops/parts.rs",
-    find: '                out.push(StmtKind::Expr(Expr::call_helper("$dispose", vec![value])).at(js_span));\n            }\n            ty::Closure(def_id, _) | ty::CoroutineClosure(def_id, _) => self.drop_taken',
-    replace:
-      "                self.drop_taken(*def_id, span, made, out)?;\n            }\n            ty::Closure(def_id, _) | ty::CoroutineClosure(def_id, _) => self.drop_taken",
+    find: "            ty::Closure(..) if self.carries_its_drop(ty) => {\n                out.push(StmtKind::Expr(Expr::call_helper(\"$dispose\", vec![value])).at(js_span));\n",
+    replace: "            ty::Closure(def_id, _) if self.carries_its_drop(ty) => {\n                self.drop_taken(*def_id, span, made, out)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
   },
   {
@@ -198,9 +197,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure that carries its drop, called by `FnOnce`, drops itself in its own body by `$dispose` of a function that has no name there (ADR 0873)",
     file: "src/lower/drops/parts.rs",
-    find: "                if self.frame.owner != *def_id && self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>\n",
+    find: "            if self.frame.owner != def_id && self.krate.closure_facts.carries_its_drop(self.tcx, def_id))\n",
     replace:
-      "                if self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>\n",
+      "            if self.krate.closure_facts.carries_its_drop(self.tcx, def_id))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_once_drops_itself.rs$"],
   },
   {

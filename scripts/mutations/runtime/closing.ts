@@ -250,12 +250,4 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
-  {
-    name: "holding-in-place-moves",
-    breaks: "an in-place collect, std's `try_fold` by `&mut`, moves a `map`'s function, which drops before what's left (#710)",
-    file: "src/runtime/closing.js",
-    find: "    if (ends === false) return by(init, f, unwind, false);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
-  },
 ];

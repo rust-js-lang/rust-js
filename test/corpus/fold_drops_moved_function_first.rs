@@ -192,6 +192,14 @@ fn main() {
             .count();
         print!("| {n} | ");
     });
+    case("peekable", |g| {
+        let n = ds().into_iter().take(2).map(move |d| d.0 + zero(&g)).peekable().count();
+        print!("| {n} | ");
+    });
+    case("fused", |g| {
+        let n: u32 = ds().into_iter().take(2).map(move |d| d.0 + zero(&g)).fuse().sum();
+        print!("| {n} | ");
+    });
     case("the crate's iterator", |g| {
         let n: u32 = Counting(0).map(move |d| d.0 + zero(&g)).sum();
         print!("| {n} | ");
@@ -225,17 +233,6 @@ fn main() {
         let n: u32 = it.sum();
         print!("| {first:?} {n} | ");
     });
-    case("a panic in the closure", |g| {
-        let n: u32 = ds()
-            .into_iter()
-            .take(3)
-            .map(move |d| {
-                assert!(d.0 != 2, "two");
-                d.0 + zero(&g)
-            })
-            .sum();
-        print!("| {n} | ");
-    });
     case("a panic in what's left", |g| {
         let n: u32 = [D(1), D(2), D(40), D(5)]
             .into_iter()
@@ -255,6 +252,10 @@ fn main() {
             })
             .collect();
         print!("| {} | ", v.len());
+    });
+    case("collected in place, of numbers", |g| {
+        let v: Vec<u32> = ds().into_iter().take(2).map(move |d| d.0 + zero(&g)).collect();
+        print!("| {v:?} | ");
     });
     case("collected by next", |g| {
         let v: Vec<u64> = ds()

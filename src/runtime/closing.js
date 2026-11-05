@@ -153,8 +153,7 @@ function $closing(it, drop, slices = true) {
 // dropped after its fold, `"alone"`, as `FlattenCompat::fold` folds its
 // `Map` by `&mut`; else kept, a `take_while`'s, a `map_while`'s or a
 // `skip_while`'s, whose fold is its `try_fold`, dropped with it after what it
-// steps. Folded by `&mut`, `ends` `false`, an in-place collect's
-// `try_fold`, kept too.
+// steps.
 function $holding(it, drop, moved) {
   let dropped = false;
   const own = () => {
@@ -181,7 +180,6 @@ function $holding(it, drop, moved) {
   // drops them, given to what it steps to drop as its fold ends; dropped
   // here as it's closed where that didn't, once.
   const moving = (by) => (init, f, unwind, ends) => {
-    if (ends === false) return by(init, f, unwind, false);
     const outer = once(ends);
     if (moved === "alone") return by(init, f, unwind, outer, own);
     const both = moved === "before" ? () => $closedAfter(own, outer) : () => $closedAfter(outer, own);

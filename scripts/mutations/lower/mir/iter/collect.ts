@@ -145,9 +145,9 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's `fold` asks whether what it starts from is the crate's function, not its callback",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        let own = arg_tys.last().is_some_and(|ty| self.is_called_as_written(*ty));\n        let callback = self.binary_callback(f, own);\n",
+    find: "        let own = arg_tys.last().is_some_and(|ty| self.is_called_as_written(*ty));\n",
     replace:
-      "        let own = arg_tys.get(1).is_some_and(|ty| self.is_called_as_written(*ty));\n        let callback = self.binary_callback(f, own);\n",
+      "        let own = arg_tys.get(1).is_some_and(|ty| self.is_called_as_written(*ty));\n",
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",
@@ -721,5 +721,29 @@ export const mutations: Mutation[] = [
     find: "                || self.folds_held_function(iter_ty) && self.collects_in_place(Some(iter_ty), item) == Some(false))\n",
     replace: "                || false)\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
+  },
+  {
+    name: "fold-given-no-ends",
+    breaks: "a compiled `Map::fold` gives the fold it asks no drop of the closure it moved into it, so its function drops after what the `take` left (#710)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            Some(&ty) if self.carries_its_drop(ty) || compiled && self.given_drop(ty).is_some() => {\n",
+    replace: "            Some(&ty) if false && self.carries_its_drop(ty) => {\n",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
+    name: "fold-given-no-ends-of-a-param",
+    breaks: "a compiled `Skip::fold` gives the fold it asks no drop of the `F` it was given, so a `map`'s function over it drops after what the `take` left (#710)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            Some(&ty) if self.carries_its_drop(ty) || compiled && self.given_drop(ty).is_some() => {\n",
+    replace: "            Some(&ty) if self.carries_its_drop(ty) => {\n",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
+    name: "in-place-of-numbers-unsaid",
+    breaks: "a collect in place of items with nothing to drop isn't said to be, so its fold moves a `map`'s function, which drops before what's left (#710)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                args.extend([Expr::undefined(), Expr::bool(false), Expr::bool(true)]);\n",
+    replace: "",
+    tests: ["test/iterator-forms.test.ts", "-t", "^fold_drops_moved_function_first with std"],
   },
 ];
