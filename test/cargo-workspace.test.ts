@@ -7,7 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { cpSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { node } from "./programs";
-import { buildCompiler, buildSerde, compiler, fixture, root, run } from "./support";
+import { buildCompiler, buildSerde, compiler, fixture, outsideFixture, root, run } from "./support";
 import { cargo, check, printed, throughRustJs } from "./crates";
 
 beforeAll(buildCompiler, 600_000);
@@ -322,8 +322,11 @@ test("what another crate's derive writes is compiled as the crate's own code", a
 // a count, as the crates sharing it count it (ADRs 0523, 0844): a crate's JS is the same however
 // it's reached, alone or through a dependent, its `dyn Fn` dropped as a
 // library's is (ADR 0521), as React's `shared` is (ADR 0360, amended).
+// Outside the checkout, where no Prettier is found: one found puts every
+// crate's directory in Cargo's key (ADR 1003, #684), so a crate added to
+// the workspace would rebuild each without its `RUST_JS_APPS` recorded.
 test("the app's crate is a program where no crate uses it, and a library, the same bytes, where one does, whichever packages are built", async () => {
-  const dir = fixture("crates-app-program");
+  const dir = outsideFixture("crates-app-program");
   const counts = "use std::rc::Rc;\n\npub struct Shared(pub Rc<u32>);\n\npub fn enqueue(task: Box<dyn Fn()>) {\n    task();\n}\n\npub fn main() {\n    let a = Rc::new(5);\n    let b = Rc::clone(&a);\n    println!(\"{} {} {}\", *a, *b, Rc::strong_count(&a));\n}\n";
   // `user` reads no count, and holds a `Copy` struct it never changes in
   // place, which neither a program nor a library copies (ADR 0914, amended).

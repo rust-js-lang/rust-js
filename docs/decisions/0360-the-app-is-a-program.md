@@ -136,3 +136,16 @@ same for every build of the workspace, so a crate one build checked is
 done for the next, and a build of the whole workspace makes each crate
 what its own package's build does, a member nothing uses a program, where
 it had made every crate a library.
+
+## Amendment: what holds the record is outside the checkout (#725)
+
+Since #684 (ADR 1003, amended), the Prettier a crate finds puts every
+crate's directory in rust-js's `rustc -vV` line, which Cargo hashes into
+every crate's fingerprint: a crate added to the workspace rebuilds each
+crate, whether `RUST_JS_APPS` is recorded or not. The test "the app's
+crate is a program where no crate uses it ..." built in the checkout,
+whose Prettier its crates found, so `cargo-app-untracked` survived the
+Nightly of 85f123290. Where no Prettier is found, the default for an app,
+the line names no directory, and only the record makes `user`, a program
+until `shell` uses it, a library: the test now builds outside the
+checkout (`outsideFixture`), where the mutation is caught.

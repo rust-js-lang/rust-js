@@ -1,16 +1,17 @@
 // Crates whose `#[test]`s `rust-js test` runs (ADRs 0916, 1076), for the
 // tests of that command.
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 import { compiler, fixture, root } from "./support";
 
 /** A crate, `app`, of `files`, each by its path in the crate, `src/lib.rs`
  * among them, whose tests are for `runner`, where given, and which uses a
- * crate of its own, `util`, by its path, and with `js`, rust-js's `js`. */
-export function testCrate(name: string, files: Record<string, string>, { runner, js = false }: { runner?: string; js?: boolean } = {}): string {
-  const dir = fixture(name);
+ * crate of its own, `util`, by its path, and with `js`, rust-js's `js`. In
+ * a fixture, or in a directory of its own `within` the one given. */
+export function testCrate(name: string, files: Record<string, string>, { runner, js = false, within }: { runner?: string; js?: boolean; within?: string } = {}): string {
+  const dir = within ? mkdtempSync(join(within, `${name}_`)) : fixture(name);
   const write = (path: string, text: string) => {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
     writeFileSync(join(dir, path), text);

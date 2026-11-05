@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
 import { runSync, stopped } from "./child";
@@ -303,6 +304,18 @@ export const fixtures = join(target, "fixtures");
 // test looks for in the JS, a block's `bb5` say, never in the path its
 // header names, as `-bb6e90b4` was (`\bbb\d+`).
 const mine = join(fixtures, `${process.pid}-x${crypto.randomUUID().slice(0, 8)}`);
+
+/** A test's own directory outside the checkout, `@rust-js/runtime` and
+ * `@rust-js/std` installed in it, as an app's are: where no Prettier is
+ * found, which a fixture in the checkout finds, the checkout's own, and
+ * whose crates' directories it then puts in Cargo's key (ADR 1003, #684).
+ * Removed as the test file's process exits, as a fixture is. */
+export function outsideFixture(name: string): string {
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), `rust-js-${name}-`)));
+  installRuntime(dir);
+  if (!process.env.RUST_JS_KEEP_FIXTURES) process.on("exit", () => rmSync(dir, { recursive: true, force: true }));
+  return dir;
+}
 
 /** What a binding crate packages, as its `Cargo.toml`'s `include` names
  * it: each file of each path it lists, relative to the crate, sorted. The

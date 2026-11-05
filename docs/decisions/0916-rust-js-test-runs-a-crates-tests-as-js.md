@@ -64,3 +64,15 @@ the user's. Held by the test "two crates of one name at two paths, one
 target, each run their own tests" and the mutation
 `cargo-unit-of-another-refused`.
 
+
+### Its test is outside the checkout (#725)
+
+Since #684 (ADR 1003, amended), the Prettier a crate finds puts the crate's
+directory in rust-js's `rustc -vV` line, which Cargo hashes into the unit's
+name: two crates of one name at two paths, each finding one, get two unit
+directories, and nothing collides. The test's fixtures, in the checkout,
+found the checkout's Prettier, so the guard went unreached and
+`cargo-unit-of-another-refused` survived the Nightly of 85f123290. An app
+with no Prettier, the default, still shares the unit's directory: the test
+now builds both crates outside the checkout (`outsideFixture`), and checks
+that they wrote to one unit's directory, where the mutation is caught.

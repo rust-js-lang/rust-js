@@ -5,9 +5,9 @@
 // Each runner's own: test/rust-js-test-runners.test.ts.
 
 import { beforeAll, expect, test } from "bun:test";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildCompiler, fixture } from "./support";
+import { buildCompiler, outsideFixture } from "./support";
 import { counts, rustJsTest, testCrate } from "./rust-js-tests";
 
 beforeAll(buildCompiler, 600_000);
@@ -53,13 +53,19 @@ test("what follows -- is the runner's, its name pattern picking the tests to run
 
 // Cargo gives a crate the same unit's directory wherever its package is, a
 // project moved or another of the same name sharing its target: the second
-// build's JS replaces the first's there, each crate's tests its own.
+// build's JS replaces the first's there, each crate's tests its own. Outside
+// the checkout, where no Prettier is found: a crate's Prettier puts its
+// directory in rust-js's `rustc -vV`, and so in the unit's (ADR 1003,
+// #684), which a fixture here, finding the checkout's, would.
 test("two crates of one name at two paths, one target, each run their own tests", () => {
-  const shared = join(fixture("rust-js-test-shared-target"), "target");
-  const first = rustJsTest(testCrate("rust-js-test-first", { "src/lib.rs": lib }), [], shared);
-  const second = rustJsTest(testCrate("rust-js-test-second", { "src/lib.rs": failing }), [], shared);
+  const top = outsideFixture("test-namesakes");
+  const shared = join(top, "target");
+  const first = rustJsTest(testCrate("first", { "src/lib.rs": lib }, { within: top }), [], shared);
+  const second = rustJsTest(testCrate("second", { "src/lib.rs": failing }, { within: top }), [], shared);
   expect([first.code, second.code]).toEqual([0, 1]);
   expect(counts("node", second.said).fail).toBe(1);
+  // Both in one unit's directory, which the second replaced.
+  expect(readdirSync(join(shared, "wasm32-unknown-unknown/debug/deps/rust-js")).filter((unit) => unit.startsWith("app-"))).toHaveLength(1);
 });
 
 // ADR 1076: each module's tests in its own `.test.js` beside its JS, the
