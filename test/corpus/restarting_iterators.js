@@ -168,6 +168,22 @@ function main() {
   console.log(
     `from_fn ([${value$18[0].join(", ")}], [${value$18[1].join(", ")}], [${value$18[2].join(", ")}])`,
   );
+  // Std's `advance_by`, which a `map`'s `nth` steps its source by, stops
+  // at the first `None`, the rest left to step.
+  const skipped = twice(
+    $iterator(f(), flakyIterator_next)
+      .map((x) => (x + 1) >>> 0)
+      .drop(3),
+  );
+  console.log(
+    `map skip3 ([${skipped[0].join(", ")}], [${skipped[1].join(", ")}], [${skipped[2].join(", ")}])`,
+  );
+  const mapped = $iterator(f(), flakyIterator_next).map((x) => (x * 10) >>> 0);
+  const third = Array.from($lent(mapped).drop(3).take(1))[0];
+  const after = $next(mapped);
+  console.log(
+    `map nth ${third == null ? "None" : `Some(${third})`} ${after == null ? "None" : `Some(${after})`}`,
+  );
   // A zip isn't done with at its first end: its other side, which drops
   // what it holds, is still stepped after (#279).
   const louds = $range(20, 25).map((value) => [value]);

@@ -72,6 +72,14 @@ fn main() {
         if n % 3 == 0 || n > 8 { None } else { Some(n) }
     });
     println!("from_fn {:?}", twice(from.map(|x| x + 1)));
+    // Std's `advance_by`, which a `map`'s `nth` steps its source by, stops
+    // at the first `None`, the rest left to step.
+    let skipped = twice(f().map(|x| x + 1).skip(3));
+    println!("map skip3 {skipped:?}");
+    let mut mapped = f().map(|x| x * 10);
+    let third = mapped.nth(3);
+    let after = mapped.next();
+    println!("map nth {third:?} {after:?}");
     // A zip isn't done with at its first end: its other side, which drops
     // what it holds, is still stepped after (#279).
     let louds: Vec<Loud> = (20..25).map(Loud).collect();
