@@ -430,4 +430,22 @@ export const mutations: Mutation[] = [
     replace: "        for value in Vec::<DefId>::new() {\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "map-of-a-zip-folded-apart-made-in-place",
+    breaks:
+      "a `map()` of a zip std folds as a whole is made in place, a JS `map` the collect steps by `next`, where std's `extend_trusted` folds it by the zip's fold: a reversed `Vec`'s rest is dropped back to front (#654)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "        || (super::mapped_source(tcx, ty))\n",
+    replace: "        || false && (super::mapped_source(tcx, ty))\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_mapped_collect_folds.rs$"],
+  },
+  {
+    name: "enumerate-of-a-zip-folded-apart-made-in-place",
+    breaks:
+      "an `enumerate()` of a zip std folds as a whole is made in place, stepped by `next` as it's collected, where std folds it by the zip's fold (#654)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "            .or_else(|| super::enumerated_source(tcx, ty))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^zip_mapped_collect_folds.rs$"],
+  },
 ];

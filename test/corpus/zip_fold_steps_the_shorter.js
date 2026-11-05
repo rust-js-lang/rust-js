@@ -5,6 +5,7 @@ import {
   iterator_rev,
   iterator_zip,
   mapIterator___iteratorGetUnchecked,
+  zipIterator___iteratorGetUnchecked,
 } from "@rust-js/std/iter.js";
 import {
   $foldOf,
@@ -101,23 +102,34 @@ function main() {
   console.log(`[${back.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${calls}`);
 
   calls = 0;
-  const s = iterator_zip(
-    iterator_map($iter(v), (x) => {
-      calls = (calls + 1) | 0;
-      return x;
-    }),
-    [7, 8],
-    { next: $next, fold: $foldOf, getUnchecked: mapIterator___iteratorGetUnchecked },
-    vecIntoIterator,
-    true,
-    true,
-    true,
-    false,
-    true,
-    true,
-  )
-    .map(([a, b]) => (a + b) | 0)
-    .reduce((a, b) => (a + b) | 0, 0);
+  const s = iterator_map(
+    iterator_zip(
+      iterator_map($iter(v), (x) => {
+        calls = (calls + 1) | 0;
+        return x;
+      }),
+      [7, 8],
+      { next: $next, fold: $foldOf, getUnchecked: mapIterator___iteratorGetUnchecked },
+      vecIntoIterator,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+    ),
+    ([a, b]) => (a + b) | 0,
+    {
+      next: $next,
+      fold: $foldOf,
+      getUnchecked: (iterator, i) =>
+        zipIterator___iteratorGetUnchecked(iterator, i, {
+          next: $next,
+          fold: $foldOf,
+          getUnchecked: mapIterator___iteratorGetUnchecked,
+        }),
+    },
+  ).reduce((a, b) => (a + b) | 0, 0);
   console.log(`${s} ${calls}`);
   calls = 0;
   let n = iterator_zip(

@@ -547,9 +547,15 @@ pub(crate) fn is_trusted_len<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<
 /// `a` once more, and a step of `a` runs code, a closure's or a `fn`'s, or
 /// gives an item with a destructor. The recognizers' JS iterator can't tell
 /// a fold from its steps, so it's std's struct where it's made too (#380).
-/// Of a type rustc knows whole.
+/// And a `TrustedLen` adapter whose fold is its source's, each item mapped,
+/// a `map()`'s or an `enumerate()`'s, of one that folds apart: its fold is
+/// that zip's, so it's std's struct too, which a collect into a `Vec` folds
+/// as `extend_trusted` does (#654). Of a type rustc knows whole.
 pub(crate) fn folds_apart<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     zip_folds_to_the_shorter(tcx, ty) == Some(false)
+        || (super::mapped_source(tcx, ty))
+            .or_else(|| super::enumerated_source(tcx, ty))
+            .is_some_and(|source| folds_apart(tcx, source))
 }
 
 /// Of a zip of type `ty`, rustc knowing it whole, where std's fold of it

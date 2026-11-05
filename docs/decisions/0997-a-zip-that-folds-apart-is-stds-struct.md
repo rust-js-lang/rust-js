@@ -65,3 +65,45 @@ native Rust, in both builds. The mutations are
 
 Generic code's zip, whose sides' traits only its caller knows, still
 steps as before: difference 15 narrows to it.
+
+## Amendment: a map or an enumeration of such a zip is std's struct too (2026-11-05, #654)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept. The output form is the user's decision
+(2026-11-05), taken on the recommendation below.
+
+`ds().into_iter().rev().zip(10..13).map(f).collect::<Vec<_>>()` dropped
+the reversed `Vec`'s rest back to front, where std drops it as one slice,
+front to back. The zip folds apart, so it was std's struct where it was
+made, but the `map()` over it was made in place as a JS `map`. The
+collect stepped that `map` by `next`, where std's `extend_trusted` folds
+it, and `Map::fold` is the zip's `SpecFold`, which takes the shorter
+side's count of pairs. Stepped by `next`, the zip takes one item more of
+its first side and drops it before the rest.
+
+Whether the zip is std's struct is a fact of its own call site, which the
+collect can't see. So it's carried by the type, not read from the `map`'s
+form: `recognition::folds_apart`, the one answer, now also holds of a
+`TrustedLen` adapter whose fold is its source's, each item mapped, a
+`map()` or an `enumerate()`, whose source folds apart. An `inspect()`
+isn't `TrustedLen`, so std's collect steps it by `next` too, and a
+`copied()` of a zip's pairs can't be written. Such an adapter is std's
+struct where it's made too (`in_place_adapters` leaves it out). A collect
+folds it by `$foldToArray`, as it folds the zip.
+
+The two corpus cases that already ran as Rust does read longer. In
+`zip_fold_steps_the_shorter.js`, a `.map(f).reduce(..)` of such a zip is
+now `iterator_map(iterator_zip(..), f, dict).reduce(..)`. In
+`compiled_adapters_closed_as_a_collect_unwinds.js`, a
+`$foldToArray(zip.map(f))` is now `$foldToArray(iterator_map(..))`,
+closed in a `finally`. Leaving the form, with the collect stepping a JS
+`map`, would have needed the collect to read the `.map(f)` form, which
+reconstructs a fact. It is the representation #380 chose for the zip
+itself, and it arises only where a zip folds apart.
+
+`zip_mapped_collect_folds.rs` checks a reversed and a forward `Vec`'s zip
+mapped, an enumeration of one, each collected, and an inspect of one
+collected and folded, against native Rust in both builds. The matrix's
+#654 list is empty. Mutations: `map-of-a-zip-folded-apart-made-in-place`
+and `enumerate-of-a-zip-folded-apart-made-in-place`
+(`lower/recognition/std_items.ts`).
