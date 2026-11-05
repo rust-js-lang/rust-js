@@ -58,9 +58,9 @@ export function cargoEnv(compiler, react, { apps, crates, dependencies = [] }, {
  * binds is JS's own, and rust-js reads its metadata (ADR 0024). And the
  * crates of crates.io's or git's, `dependencies`, each by its directory,
  * name and version, which rust-js compiles where it can, its types alone
- * where it can't (ADR 0415).
+ * where it can't (ADR 0415). And the workspace's members, by name.
  * @param {{ manifestPath: string, toolchain?: string, offline?: boolean }} options
- * @returns {Promise<{ apps: string[], crates: string[], dependencies: { dir: string, name: string, version: string }[], own?: string }>} */
+ * @returns {Promise<{ apps: string[], crates: string[], dependencies: { dir: string, name: string, version: string }[], members: string[], own?: string }>} */
 export async function cargoBuild({ manifestPath, toolchain, offline = false }) {
   const manifest = resolve(manifestPath);
   const args = [...(toolchain ? [`+${toolchain}`] : []), "metadata", "--format-version=1", "--manifest-path", manifest, ...(offline ? ["--offline"] : [])];
@@ -85,7 +85,8 @@ export async function cargoBuild({ manifestPath, toolchain, offline = false }) {
     .filter((pkg) => pkg.source !== null)
     .map((pkg) => ({ dir: realpathSync(dirname(pkg.manifest_path)), name: pkg.name, version: pkg.version }))
     .sort((a, b) => a.dir.localeCompare(b.dir));
-  return { apps, crates, dependencies, own: ownPackage(packages, manifest) };
+  const names = packages.filter((pkg) => members.includes(pkg.id)).map((pkg) => pkg.name).sort();
+  return { apps, crates, dependencies, members: names, own: ownPackage(packages, manifest) };
 }
 
 /**
@@ -95,23 +96,48 @@ export async function cargoBuild({ manifestPath, toolchain, offline = false }) {
  * they come. In a target directory of its own, `targetDir`, it neither waits
  * for the dev server's check nor makes it check again.
  *
+ * Of `packageNames`, or Cargo's default, the manifest's: a full-stack
+ * workspace's client, whose other members [`nativeCheck`] checks (ADR 1094).
+ *
  * With `lints`, it's `rust-js clippy`'s (ADR 0888): each crate of the app's
  * own linted by clippy's lints, with those flags, `["-D", "warnings"]`, as
  * rust-js reads it, and none compiled; what Cargo says printed as Cargo
- * prints it, of `packageNames`', or Cargo's default, the manifest's.
+ * prints it.
  * @param {{ manifestPath: string, toolchain: string, compiler: string, react?: string, targetDir: string, packageNames?: string[], lints?: string[] }} options
  * @returns {Promise<number>} Cargo's exit code
  */
 export async function lintCheck({ manifestPath, toolchain, compiler, react, targetDir, packageNames = [], lints }) {
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
   const manifest = resolve(manifestPath);
-  const linted = lints ? packageNames.flatMap((name) => ["--package", name]) : ["--message-format=json"];
+  const linted = [...packageNames.flatMap((name) => ["--package", name]), ...(lints ? [] : ["--message-format=json"])];
   const args = [`+${toolchain}`, "check", ...linted, "--target", target, "--manifest-path", manifest];
   const env = { ...cargoEnv(compiler, react, await cargoBuild({ manifestPath: manifest, toolchain })), CARGO_TARGET_DIR: targetDir };
   if (lints) env.RUST_JS_CLIPPY = JSON.stringify(lints);
   else delete env.RUST_JS_CLIPPY;
   return new Promise((done, failed) => {
     spawn("cargo", args, { cwd: dirname(manifest), env, stdio: ["ignore", "inherit", "inherit"] })
+      .on("error", failed)
+      .on("close", (code) => done(code ?? 1));
+  });
+}
+
+/**
+ * The rest of an editor's check of a full-stack workspace (ADR 1094): each
+ * member but `except`, the packages rust-js checks, native Rust, by a plain
+ * `cargo check` of every target, as rust-analyzer's own check is, Cargo's
+ * JSON messages printed as they come. Its toolchain and target directory are
+ * the workspace's own, as a `cargo check` there has them.
+ * @param {{ manifestPath: string, except: string[] }} options
+ * @returns {Promise<number>} Cargo's exit code, 0 where no member is left
+ */
+export async function nativeCheck({ manifestPath, except }) {
+  const manifest = resolve(manifestPath);
+  const { members } = await cargoBuild({ manifestPath: manifest });
+  const native = members.filter((name) => !except.includes(name));
+  if (native.length === 0) return 0;
+  const args = ["check", ...native.flatMap((name) => ["--package", name]), "--all-targets", "--message-format=json", "--manifest-path", manifest];
+  return new Promise((done, failed) => {
+    spawn("cargo", args, { cwd: dirname(manifest), stdio: ["ignore", "inherit", "inherit"] })
       .on("error", failed)
       .on("close", (code) => done(code ?? 1));
   });

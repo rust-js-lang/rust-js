@@ -412,6 +412,19 @@ as a plain rustc doesn't. A created app has it in `.vscode/settings.json`
 }
 ```
 
+A full-stack workspace, a native server beside the page rust-js compiles
+([A Cargo workspace](#a-cargo-workspace)), names its client as `rust-js
+build` does, `--package frontend`. The packages it names are checked
+through rust-js, and every other member natively, by a plain `cargo check
+--all-targets`, as rust-analyzer's own check would, so the server's errors
+show too ([ADR 1094](../../decisions/1094-a-full-stack-workspace-is-checked-by-package.md)):
+
+```json
+{
+  "rust-analyzer.check.overrideCommand": ["./node_modules/.bin/rust-js-check", "--package", "frontend"]
+}
+```
+
 `rust-js-check` builds in its own target directory, so it neither waits
 for `rust-js build` nor makes it build again. rustc's warnings show there,
 of what JS uses too: a struct's fields a binding is given, `&Logs { .. }`

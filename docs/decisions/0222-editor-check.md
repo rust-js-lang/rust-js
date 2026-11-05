@@ -1,7 +1,8 @@
 # 0222. An editor checks the app through rust-js
 
 Status: Accepted; amended by [0888](0888-rust-js-clippy.md) (one Cargo
-check with `rust-js clippy`'s). Extends [0101](0101-cargo-workspace-wrapper.md) and
+check with `rust-js clippy`'s) and [1094](1094-a-full-stack-workspace-is-checked-by-package.md)
+(a full-stack workspace's client through rust-js, the rest natively). Extends [0101](0101-cargo-workspace-wrapper.md) and
 [0113](0113-plain-rustc.md).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
@@ -63,3 +64,13 @@ It and this check run Cargo through rust-js by one function,
 JSON for rust-analyzer, as before; `rust-js clippy` with them. This check
 still runs no clippy lint: it's the build's, its refusals too, which
 lowering says, and clippy-driver's options change what lowering reads.
+
+## Amended by 1094: a full-stack workspace's client through rust-js, the rest natively
+
+The premise that every member of the workspace is a crate rust-js compiles
+didn't hold for a full-stack app, whose native server the check compiled
+for rust-js's target and failed (#788). `rust-js-check --package <name>`,
+as `rust-js build`'s, checks the packages it names through rust-js, and
+every other member natively, by a plain `cargo check --all-targets`, as
+rust-analyzer's own check would. Without `--package`, the check is this
+ADR's.

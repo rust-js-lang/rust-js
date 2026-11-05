@@ -265,7 +265,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [0219 A sequence a webapi function takes is a slice](0219-webapi-sequences.md)
 - [0220 A JSX tag can be a value, named by a capitalized local](0220-jsx-tag-values.md)
 - [0221 A binding's last slice can be its rest arguments](0221-variadic-bindings.md) *(amended by 0640: a TypeScript rest parameter is a tuple)*
-- [0222 An editor checks the app through rust-js](0222-editor-check.md) *(amended by 0888: one Cargo check with `rust-js clippy`'s)*
+- [0222 An editor checks the app through rust-js](0222-editor-check.md) *(amended by 0888: one Cargo check with `rust-js clippy`'s; by 1094: a full-stack workspace's client through rust-js, the rest natively)*
+- [1094 The editor checks a full-stack workspace's client through rust-js and the rest natively](1094-a-full-stack-workspace-is-checked-by-package.md) *(the user's decision, 2026-11-05, #788)*
 - [0223 The webapi crate knows each event's type and each tag's element](0223-webapi-event-and-tag-maps.md)
 - [0224 A tag's element reaches its handlers and its `ref`](0224-typed-intrinsic-elements.md)
 - [1066 A binding getter's function unwrapped where it's called is the getter's read](1066-a-getters-function-unwrapped-where-its-called-is-the-read.md)
