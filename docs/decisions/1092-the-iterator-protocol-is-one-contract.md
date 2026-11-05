@@ -932,3 +932,44 @@ files, each probed where its answer would differ: a `map` of the crate's
 stepped iterator left as it was, and a `$stepBy`'s source stepped through.
 Both are gone, with their mutations, `map-source-hint-trimmed` and
 `stepped-through-step-by-not`, and `ADAPTING_HELPERS`.
+
+## Amendment: generic code's `Vec` grows by its caller's item size (2026-11-06, #796)
+
+ADR 0262's case: results change, so Rust's behavior is kept. Generic
+code's collect into what std grows as a `Vec` (`grows_as_vec`: a `Vec`,
+a `VecDeque`, a `Box<[T]>`, or the `Vec` that a `BinaryHeap` or a
+B-tree is made of, #797) now grows by its items' size, which only its
+caller knows. The example is `fn all<T, I: Iterator<Item = T>>(it: I) ->
+Vec<T> { it.collect() }`. Before, `$roomForHint(.., 0, false)` took those
+items to have no size, so the `Vec` was never full and the caller's own
+`size_hint` ran once. Native Rust asks it at 1, 5, 9 and 17.
+
+- The size of a type parameter's or an associated type's items is its
+  `TSize`, the ADR 0145 fact.
+- The size of a type built from them, `(T, u8)` or `Option<I::Item>`, is
+  its built slot's (ADR 0145, #737).
+- A caller that knows the type gives the size, and a generic caller passes
+  on what it was given.
+- A trait's default copied into an impl reads it in the impl's terms.
+
+There is one predicate for each question, so the analysis and the
+lowering can't drift apart. `Recognition::hint_reaches_own`, moved from
+`knowing.rs` to `recognition/lengths.rs`, says whether the hint may run
+the crate's own `size_hint`. `Recognition::grows_as_vec` says whether
+the output grows as a `Vec`. `type_facts`' `grown_asked` asks the size
+where both hold of a collect whose items' size is a caller's. The
+lowering's `grown_item_size` reads it where `$roomForHint` is given.
+Where the hint is std's own, nothing the program can see changes, so the
+size stays `room_item_size`'s count-alone 0 (ADR 0774) and no fact is
+asked.
+
+`adapted_iterators`, which `hint_reaches_own` follows through std's
+adapters, used to take any type argument rustc couldn't rule out as an
+iterator for one the adapter steps. That included a `map(f)`'s generic
+`F: Fn(&T) -> U` and a `successors()`' item `T`. Now it takes only the
+arguments that the adapter's own `Iterator` impl bounds by `Iterator`,
+by a trait that extends it, or by a flat map's `IntoIterator`. Asking the
+item size would otherwise make `pub fn applied<T, U, F>(..) -> Vec<U>`
+take `U`'s size, which a JS caller can't give, so it would go undeclared
+(ADR 1077). It also drops two `$roomForHint` wrappers whose hint was
+std's own.

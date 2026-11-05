@@ -368,11 +368,11 @@ export const mutations: Mutation[] = [
   {
     name: "built-layout-ungated",
     breaks:
-      "a built type's layout is read wherever its function is called, not only where its source's `IInPlace` is given, so a caller giving `undefined` gives constants no collect reads (#737)",
+      "a built type's layout is read wherever its function is called, not only where its source's `IInPlace` is given, so a caller of a `LinkedList` collect giving `undefined` gives constants no collect reads (#737, #796)",
     file: "src/lower/analysis/type_facts.rs",
     find: "        .filter(|gates| !gates.is_empty());\n",
     replace: "        .filter(|_| false);\n",
-    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
     snapshots: true,
   },
   {
@@ -477,5 +477,33 @@ export const mutations: Mutation[] = [
     replace: "        ty::Param(param) => Some(param.index),\n",
     tests: ["test/corpus.test.ts", "-t", "^default_own_param_numbered_as_the_impls.rs$"],
     snapshots: true,
+  },
+  {
+    name: "grown-size-unasked",
+    breaks:
+      "generic code's collect into a `Vec` of a type parameter's iterator asks its caller no `TSize`, so it's refused, \"`size_of` of a type parameter\" (#796)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        asked.extend(grown_asked(recognition, typing_env, owner, (callee, args)));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size.rs$"],
+  },
+  {
+    name: "grown-size-asked-of-any-hint",
+    breaks:
+      "generic code's collect into a `Vec` of a `T` asks its caller's `TSize` where its iterator's hint is std's own, which it never reads (#796)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: " || !revealed.hint_reaches_own(iter) {\n",
+    replace: " {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "grown-size-of-a-built-type-unasked",
+    breaks:
+      "generic code's collect into a `Vec<(T, u8)>` of a type parameter's iterator asks its caller no layout of `(T, u8)`, so it's refused, \"`size_of` of a type parameter\" (#796)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "    size.into_iter().collect()\n",
+    replace: "    size.into_iter().filter(|each| matches!(each, Asked::Slot(..))).collect()\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size.rs$"],
   },
 ];

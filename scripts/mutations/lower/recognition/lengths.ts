@@ -83,4 +83,37 @@ export const mutations: Mutation[] = [
       "^collect_cycle_partly_filtered_refused.rs$",
     ],
   },
+  {
+    name: "std-size-hint-taken-as-own",
+    breaks:
+      "an iterator of the crate's with std's `size_hint` is given it as its own, a call of the provided method",
+    file: "src/lower/recognition/lengths.rs",
+    find: "            .is_some_and(|instance| instance.def_id() != size_hint && compiled(instance.def_id()))\n",
+    replace: "            .is_some_and(|_| true)\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
+  },
+  {
+    name: "hint-reaches-own-never",
+    breaks: "a collect into a `String` of the crate's iterator's `char`s asks its hint not before it steps, as `Extend<char>` does (#733)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "            return self.writes_size_hint(ty);\n",
+    replace: "            return false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
+  {
+    name: "hint-reaches-own-not-through-adapters",
+    breaks: "a collect into a `HashSet` of a `filter()` of the crate's iterator asks its hint not first, as hashbrown's `extend` does (#733)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "            .is_some_and(|held| held.into_iter().any(|held| self.hint_reaches_own(held)))\n",
+    replace: "            .is_some_and(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
+  {
+    name: "hint-unasked-of-a-caller",
+    breaks: "generic code's collect into a `String` of a type parameter's iterator asks no hint, so the crate's own its caller gives never runs, where std's `Extend<char>` asks it (#733)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "        if self.is_unknown(ty) {\n            return true;\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
+  },
 ];

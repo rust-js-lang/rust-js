@@ -62,8 +62,8 @@ function takeTwo(it, IIterator) {
 }
 
 const Pass = {
-  all(pass, IIterator) {
-    return Array.from($roomForHint($given(pass[0], IIterator, true), 0, false));
+  all(pass, IIterator, IItemSize) {
+    return Array.from($roomForHint($given(pass[0], IIterator, true), IItemSize, false));
   },
   shown(pass, IIterator, IItemDebug) {
     const out = [];
@@ -147,7 +147,7 @@ function main() {
   const [m, left] = takeTwo([4], { next: countdownIterator_next });
   console.log(`${m} ${left[0]}`);
   console.log(
-    `[${Pass.all([$iter([1, undefined, 3])], { next: $nextSome })
+    `[${Pass.all([$iter([1, undefined, 3])], { next: $nextSome }, 8)
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );

@@ -198,7 +198,7 @@ function kept(src, TSize, TAlign, IInPlace, dropT, dropI) {
   try {
     result$1 = $collectsInPlace(IInPlace, TSize, TAlign)
       ? $foldToArray(iter, dropT)
-      : $collectDropping($roomForHint(iter, 0, false, false, dropT), dropT, true);
+      : $collectDropping($roomForHint(iter, TSize, false, false, dropT), dropT, true);
   } finally {
     iter.return();
   }

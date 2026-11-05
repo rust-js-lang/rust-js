@@ -4,6 +4,43 @@
 use super::*;
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// Whether the crate's iterator `ty`'s impl writes a `size_hint` of its
+    /// own, which rust-js compiled, not std's `(0, None)`. The one answer,
+    /// of what's given it and what may reach it (`hint_reaches_own`).
+    pub(in crate::lower) fn writes_size_hint(&self, ty: ty::Ty<'tcx>) -> bool {
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        let size_hint = trait_method(self.tcx, iterator, "size_hint");
+        let args = self.args_of(iterator, ty.peel_refs());
+        let compiled = |id: DefId| id.is_local() || self.foreign.item(id).is_some() || self.foreign.compiles(id);
+        crate::lower::items::resolve_instance_in(self.tcx, self.typing_env, size_hint, args)
+            .ok()
+            .flatten()
+            .is_some_and(|instance| instance.def_id() != size_hint && compiled(instance.def_id()))
+    }
+
+    /// Whether asking `size_hint` of an iterator of type `ty` may run what
+    /// the program can see: the crate's own `size_hint`, or one that std's
+    /// adapter of type `ty` asks, as each asks its source's (ADR 1092's
+    /// table). Where it can't, asking it changes nothing but the room a
+    /// collect asks, which is std's own (#733). Of a type only its caller
+    /// knows, a type parameter's or an associated type's, always: its
+    /// caller's may be the crate's own, whose hint `$given` passes on from
+    /// its dictionary, and where it's JS's own, asking it runs nothing (the
+    /// user's decision, ADR 1092). The one answer, of the collect that asks
+    /// it and of what a generic function is given for that, its items'
+    /// `TSize` (#796).
+    pub(in crate::lower) fn hint_reaches_own(&self, ty: ty::Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        if self.is_user_iterator(ty) {
+            return self.writes_size_hint(ty);
+        }
+        if self.is_unknown(ty) {
+            return true;
+        }
+        adapted_iterators(self.tcx, self.typing_env, ty)
+            .is_some_and(|held| held.into_iter().any(|held| self.hint_reaches_own(held)))
+    }
+
     /// Whether an iterator of type `ty` gives no more items than an array's
     /// it steps, which exist already: std's adapters that give at most what
     /// their source does, over a slice's or a `Vec`'s items. What collects

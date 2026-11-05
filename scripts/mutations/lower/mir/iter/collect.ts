@@ -940,4 +940,22 @@ export const mutations: Mutation[] = [
     replace: "        let asks_room = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_as_vec_asks_hint.rs$"],
   },
+  {
+    name: "grown-size-of-a-caller-zero",
+    breaks:
+      "generic code's collect into a `Vec` of a type parameter's items grows by a size of 0, never full, so it asks the crate's hint its caller gives once, not again as it grows (#796)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        self.type_fact_value(item, crate::lower::recognition::TypeFact::Size, span)\n    }\n",
+    replace: "        Ok(self.room_item_size(item))\n    }\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size.rs$"],
+  },
+  {
+    name: "grown-size-asked-of-a-known-hint",
+    breaks:
+      "generic code's collect into a `Vec<T>` of std's own iterator asks `TSize`, which no caller gives where the hint is std's, so it's refused, \"`size_of` of a type parameter\" (#796)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        if self.layout(item).is_some() || !self.hint_reaches_own(iter_ty) {\n            return Ok(self.room_item_size(item));\n",
+    replace: "        if self.layout(item).is_some() {\n            return Ok(self.room_item_size(item));\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size.rs$"],
+  },
 ];

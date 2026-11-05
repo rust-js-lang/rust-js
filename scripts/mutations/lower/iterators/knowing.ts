@@ -277,15 +277,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
   },
   {
-    name: "std-size-hint-taken-as-own",
-    breaks:
-      "an iterator of the crate's with std's `size_hint` is given it as its own, a call of the provided method",
-    file: "src/lower/iterators/knowing.rs",
-    find: "            .is_some_and(|instance| instance.def_id() != size_hint && self.is_rust_fn(instance.def_id()))\n",
-    replace: "            .is_some_and(|_| true)\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
-  },
-  {
     name: "peekable-hint-undictionaried",
     breaks:
       "a compiled `Peekable`'s hint isn't given its source's dictionary, so it says `(0, None)` of the crate's iterator",
@@ -842,22 +833,6 @@ export const mutations: Mutation[] = [
     tests: ["test/diagnostics.test.ts", "-t", "the size hint of a peekable filter made here"],
   },
   {
-    name: "hint-reaches-own-never",
-    breaks: "a collect into a `String` of the crate's iterator's `char`s asks its hint not before it steps, as `Extend<char>` does (#733)",
-    file: "src/lower/iterators/knowing.rs",
-    find: "            return self.writes_size_hint(ty);\n",
-    replace: "            return false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
-  },
-  {
-    name: "hint-reaches-own-not-through-adapters",
-    breaks: "a collect into a `HashSet` of a `filter()` of the crate's iterator asks its hint not first, as hashbrown's `extend` does (#733)",
-    file: "src/lower/iterators/knowing.rs",
-    find: "            .is_some_and(|held| held.into_iter().any(|held| self.hint_reaches_own(held)))\n",
-    replace: "            .is_some_and(|_| false)\n",
-    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
-  },
-  {
     name: "dropping-skip-uncounted",
     breaks: "a `skip(n)` of items with a destructor, `$skipping(source, n, drop)`, isn't made knowing its back and its length, so an enumeration of the crate's iterator's `skip()` folded from its back is refused (#778)",
     file: "src/lower/iterators/knowing.rs",
@@ -872,14 +847,6 @@ export const mutations: Mutation[] = [
     find: "            .or_else(|| crate::lower::recognition::cloned_source(self.tcx, ty))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^back_folds_of_sources_made_knowing_their_back.rs$"],
-  },
-  {
-    name: "hint-unasked-of-a-caller",
-    breaks: "generic code's collect into a `String` of a type parameter's iterator asks no hint, so the crate's own its caller gives never runs, where std's `Extend<char>` asks it (#733)",
-    file: "src/lower/iterators/knowing.rs",
-    find: "        if self.is_unknown(ty) {\n            return true;\n        }\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
   },
   {
     name: "zip-not-made-knowing-its-back",

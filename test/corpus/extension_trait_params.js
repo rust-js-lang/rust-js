@@ -16,12 +16,12 @@ export function entry() {
   main();
 }
 
-const $iSorted = new WeakMap();
+const $iSorted = new Map();
 
-function iSorted(IIterator) {
-  return $traitImpl($iSorted, [IIterator], () => ({
+function iSorted(IIterator, IItemSize) {
+  return $traitImpl($iSorted, [IIterator, IItemSize], () => ({
     sorted(self, SelfItemOrd) {
-      const v = Array.from($roomForHint($given(self, IIterator, true), 0, false));
+      const v = Array.from($roomForHint($given(self, IIterator, true), IItemSize, false));
       $sort(v, SelfItemOrd.cmp);
       return v;
     },
@@ -68,8 +68,8 @@ function dynamic(s) {
   return s.impl.total(s.value);
 }
 function main() {
-  const CountSorted = iSorted({ next: countIterator_next });
-  const IntoIterSorted = iSorted({ next: $next });
+  const CountSorted = iSorted({ next: countIterator_next }, 1);
+  const IntoIterSorted = iSorted({ next: $next }, 4);
   console.log(
     `[${through($iter([5, 3, 9, 1]), IntoIterSorted, { cmp: $cmp }).join(
       ", ",

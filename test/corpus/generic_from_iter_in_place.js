@@ -29,14 +29,14 @@ function all(iter, IInPlace, IItemSize, IItemAlign, dropIItem) {
   return $collectsInPlace(IInPlace, IItemSize, IItemAlign)
     ? $foldToArray(Iterator.from(iter), dropIItem)
     : $collectDropping(
-        $roomForHint(Iterator.from(iter), 0, false, false, dropIItem),
+        $roomForHint(Iterator.from(iter), IItemSize, false, false, dropIItem),
         dropIItem,
         true,
       );
 }
 
-function sorted(iter, IItemOrd) {
-  const v = Array.from($roomForHint(Iterator.from(iter), 0, false));
+function sorted(iter, IItemOrd, IItemSize) {
+  const v = Array.from($roomForHint(Iterator.from(iter), IItemSize, false));
   $sort(v, IItemOrd.cmp);
   return v;
 }
@@ -58,7 +58,7 @@ function main() {
   } finally {
     $dropItems(v, dDrop_drop);
   }
-  console.log(`[${sorted($iter([3, 1, 2]), { cmp: $cmp }).join(", ")}]`);
+  console.log(`[${sorted($iter([3, 1, 2]), { cmp: $cmp }, 4).join(", ")}]`);
   // Of one whose map drops what it's given, a panic: what it collected
   // and what's left dropped, as std's in-place collect drops them.
   const r = $catchUnwind(() => {

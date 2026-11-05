@@ -24,7 +24,7 @@ function twiceIterator_next(twice, IIterator, IClone) {
   return next ?? fallback();
 }
 
-function twices(all, HItemIntoIterator, HItemIntoIterClone) {
+function twices(all, HItemIntoIterator, HItemIntoIterClone, TwiceSize) {
   return Array.from(
     $roomForHint(
       Iterator.from(all).map((items) => {
@@ -34,7 +34,7 @@ function twices(all, HItemIntoIterator, HItemIntoIterClone) {
           orig: iter,
         };
       }),
-      0,
+      TwiceSize,
       false,
     ),
   );
@@ -84,6 +84,7 @@ function main() {
     ]),
     intoIterator$1,
     clone$1,
+    16,
   )) {
     const firsts = Array.from(
       $iterator(
@@ -94,7 +95,7 @@ function main() {
     );
     console.log(`[${firsts.join(", ")}]`);
   }
-  for (const t of twices($iter([["a", "b"], ["c"]]), intoIterator, clone)) {
+  for (const t of twices($iter([["a", "b"], ["c"]]), intoIterator, clone, 32)) {
     const firsts = Array.from(
       $iterator(t, (iterator) => twiceIterator_next(iterator, { next: $next }, clone), true).take(
         3,

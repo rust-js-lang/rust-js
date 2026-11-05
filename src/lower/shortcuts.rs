@@ -163,6 +163,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.recognition().is_unknown(ty)
     }
 
+    /// Whether asking its hint may run the crate's own (#733, #796).
+    pub(super) fn hint_reaches_own(&self, ty: Ty<'tcx>) -> bool {
+        self.recognition().hint_reaches_own(ty)
+    }
+
     /// A trait rust-js compiled: the crate's own, or a library's (ADR 0100).
     pub(super) fn is_rust_trait(&self, id: DefId) -> bool {
         self.recognition().is_rust_trait(id)

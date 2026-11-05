@@ -83,7 +83,7 @@ pub(super) fn type_fact_params<'tcx>(
                         }
                     }
                 }
-                for (id, each) in in_place_asks(tcx, foreign, typing_env, drops, caller, (callee, args)) {
+                for (id, each) in collect_asks(recognition, typing_env, drops, caller, (callee, args)) {
                     asking.ask(id, each);
                 }
                 asking.of_call(tcx, foreign, given, fns, typing_env, caller, callee, args);
@@ -220,7 +220,7 @@ pub(super) fn type_fact_params<'tcx>(
                 asking.asked.insert((caller, index, TypeFact::Sort));
                 continue;
             }
-            for (id, each) in in_place_asks(tcx, foreign, typing_env, drops, caller, (callee, args)) {
+            for (id, each) in collect_asks(recognition, typing_env, drops, caller, (callee, args)) {
                 asking.ask(id, each);
             }
             asking.of_call(tcx, foreign, given, fns, typing_env, caller, callee, args);
@@ -410,23 +410,29 @@ impl<'tcx> ItemDrops<'_, 'tcx> {
     }
 }
 
-/// `in_place_asked` of `caller`'s call: of a trait's default, of each of
-/// the crate's impls that copies it, in its terms, of its own type
-/// parameters, `I` of `impl<I: Iterator> Sorted for I`, which its
-/// dictionary is given, as the copied default reads them (ADR 0049).
-fn in_place_asks<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+/// What `caller`'s call asks as a collect, `in_place_asked` and
+/// `grown_asked`: of a trait's default, of each of the crate's impls that
+/// copies it, in its terms, of its own type parameters, `I` of `impl<I:
+/// Iterator> Sorted for I`, which its dictionary is given, as the copied
+/// default reads them (ADR 0049).
+fn collect_asks<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     drops: ItemDrops<'_, 'tcx>,
     caller: DefId,
     (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
 ) -> Vec<(DefId, Asked<'tcx>)> {
+    let (tcx, foreign) = (recognition.tcx, recognition.foreign);
+    let asked_by = |typing_env: ty::TypingEnv<'tcx>, owner: DefId, args: ty::GenericArgsRef<'tcx>| {
+        let mut asked = in_place_asked(tcx, foreign, typing_env, drops, owner, (callee, args));
+        asked.extend(grown_asked(recognition, typing_env, owner, (callee, args)));
+        asked
+    };
     let default_of = tcx
         .trait_of_assoc(caller)
         .filter(|_| tcx.defaultness(caller).has_value());
     let Some(trait_id) = default_of else {
-        return (in_place_asked(tcx, foreign, typing_env, drops, caller, (callee, args)).into_iter())
+        return (asked_by(typing_env, caller, args).into_iter())
             .map(|asked| (caller, asked))
             .collect();
     };
@@ -450,14 +456,14 @@ fn in_place_asks<'tcx>(
         // Not what names the default's own parameters, which aren't the
         // impl's (`default_args`): its caller gives those (#804).
         let first = tcx.generics_of(imp).count() as u32;
-        for each in in_place_asked(tcx, foreign, impl_env, drops, imp, (callee, args)) {
+        for each in asked_by(impl_env, imp, args) {
             if !matches!(&each, Asked::Built(ty, ..) if names_params(*ty, |index| index >= first)) {
                 asked.push((imp, each));
             }
         }
     }
     // What names only its own, in its trait's terms, the default's own.
-    for each in in_place_asked(tcx, foreign, typing_env, drops, caller, (callee, args)) {
+    for each in asked_by(typing_env, caller, args) {
         let own = match &each {
             Asked::Built(ty, ..) => names_params(*ty, |index| index >= parents as u32),
             Asked::Slot(index, _) => *index >= parents as u32 && *index < own.len() as u32,
@@ -550,7 +556,7 @@ fn in_place_asked<'tcx>(
     (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
 ) -> Vec<Asked<'tcx>> {
     use crate::lower::recognition::{InPlaceSource, collected_items, fits_in_place, held_facts, in_place_source};
-    let Some((iter, dest)) = collected_items(tcx, typing_env, callee, args) else {
+    let Some((iter, _, dest)) = collected_items(tcx, typing_env, callee, args) else {
         return Vec::new();
     };
     if !drops.drop(typing_env, caller, dest) {
@@ -578,6 +584,35 @@ fn in_place_asked<'tcx>(
         }
     }
     asked
+}
+
+/// What a collect std grows as a `Vec`, `collect()` or `from_iter`, of
+/// `caller`'s asks of items whose size is a caller's, of an iterator whose
+/// hint may run the crate's own (`hint_reaches_own`): their size, a slot's
+/// `TSize` or a built type's, `(T, u8)`'s, by which std's `Vec` is full
+/// and asks the hint again (#796). As the lowering's collect reads it,
+/// `grown_item_size`, wherever it's called.
+fn grown_asked<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    caller: DefId,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Vec<Asked<'tcx>> {
+    let tcx = recognition.tcx;
+    let Some((iter, output, dest)) = crate::lower::recognition::collected_items(tcx, typing_env, callee, args) else {
+        return Vec::new();
+    };
+    // Its types as the lowering asks them, its opaque ones revealed.
+    let revealed = crate::lower::recognition::Recognition {
+        typing_env: typing_env.with_post_analysis_normalized(tcx),
+        ..*recognition
+    };
+    if !revealed.grows_as_vec(output) || !dest.has_param() || !revealed.hint_reaches_own(iter) {
+        return Vec::new();
+    }
+    let foreign = recognition.foreign;
+    let size = asked_of(tcx, foreign, typing_env, caller, (dest, TypeFact::Size), &None);
+    size.into_iter().collect()
 }
 
 /// What the bodies ask, as they're read.
@@ -810,7 +845,7 @@ impl<'tcx> Asking<'tcx> {
             }
             // A std trait's required method resolved to an impl, `Vec`'s
             // `from_iter`, asks what that impl's lowering asks
-            // (`in_place_asks`); only one called through a dictionary
+            // (`collect_asks`); only one called through a dictionary
             // carries what its declaration says (#794).
             let resolved = named.len() > 1;
             for (id, args) in named {

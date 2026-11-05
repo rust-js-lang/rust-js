@@ -59,8 +59,8 @@ function tag(l, LLabeled) {
   return `<${LLabeled.LabelDisplay().fmt(LLabeled.label(l))}>`;
 }
 
-function all(i) {
-  return Array.from($roomForHint(Iterator.from(i), 0, false));
+function all(i, IItemSize) {
+  return Array.from($roomForHint(Iterator.from(i), IItemSize, false));
 }
 
 function main() {
@@ -84,7 +84,12 @@ function main() {
   $assign(value$4, s$3.value);
   console.log(`${value$3} ${value$5}`);
   console.log(`${tag({ n: 7 }, countLabeled)} ${tag({ list: ["p", "q"] }, wordsLabeled)}`);
-  console.log(`[${all([1, 2].values().map((n) => (n * 10) >>> 0)).join(", ")}]`);
+  console.log(
+    `[${all(
+      [1, 2].values().map((n) => (n * 10) >>> 0),
+      4,
+    ).join(", ")}]`,
+  );
   const source = { value: { n: 2 }, impl: countSource };
   const nextItem = source.impl.nextItem(source);
   const value$6 = source.impl.nextItem(source);

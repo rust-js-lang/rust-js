@@ -43,7 +43,7 @@ function held(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, dr
           }
         })
       : $collectDropping(
-          $roomForHint(iter, 0, false, false, (held) => {
+          $roomForHint(iter, HeldSize, false, false, (held) => {
             try {
               heldDrop_drop(held, dropHItemIntoIter);
             } finally {
@@ -264,8 +264,8 @@ function main() {
         IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
       },
       undefined,
-      undefined,
-      undefined,
+      16,
+      4,
       undefined,
       $dropEach(dDrop_drop),
     );

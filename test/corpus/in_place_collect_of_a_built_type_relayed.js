@@ -12,6 +12,7 @@ import {
   $enumerate,
   $foldOf,
   $foldToArray,
+  $folded,
   $given,
   $givenDrop,
   $index,
@@ -52,7 +53,7 @@ function held(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, dr
           }
         })
       : $collectDropping(
-          $roomForHint(iter, 0, false, false, (held) => {
+          $roomForHint(iter, HeldSize, false, false, (held) => {
             try {
               heldDrop_drop(held, dropHItemIntoIter);
             } finally {
@@ -109,11 +110,54 @@ function relayed(options, JInPlace, HeldSize, HeldAlign, dropT, dropJ) {
 }
 
 /**
- * Of a source std never collects in place, whose layout it never reads,
- * and asks none of its caller.
+ * Of a source std never collects in place, whose in-place answer it never
+ * reads: only the layout `held`'s `Vec` grows by, which `held` reads
+ * wherever it's called (#796).
  */
-function ranged(t) {
+function ranged(t, HeldSize, HeldAlign) {
   const value = held(
+    $lazyRange(1, 3).map(() => t),
+    {
+      intoIter: (items) => $iter(items == null ? [] : [items]),
+      IntoIterIterator: () => ({ next: $next }),
+    },
+    undefined,
+    HeldSize,
+    HeldAlign,
+  );
+  const result = value.length;
+  $dropItems(value, heldDrop_drop);
+  return result;
+}
+
+/**
+ * Into a `LinkedList`, which std extends as each item comes, asking no
+ * room: its items' layout is asked as a `Vec`'s in place would be, and
+ * given only where the source's `IInPlace` is, never read.
+ */
+function listed(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, dropHItemIntoIter) {
+  const iter = $closing(Iterator.from(iters), dropH, false).map((i) => ({
+    iter: HItemIntoIterator.intoIter(i),
+  }));
+  return $collectDropping(
+    $folded(iter),
+    (held) => {
+      try {
+        heldDrop_drop(held, dropHItemIntoIter);
+      } finally {
+        dropHItemIntoIter?.(held.iter);
+      }
+    },
+    true,
+  );
+}
+
+/**
+ * Of `listed`, of a source std never collects in place, whose layout it
+ * never reads, and asks none of its caller.
+ */
+function listedRanged(t) {
+  const value = listed(
     $lazyRange(1, 3).map(() => t),
     {
       intoIter: (items) => $iter(items == null ? [] : [items]),
@@ -138,7 +182,7 @@ function holding(items, JInPlace, HeldSize, HeldAlign) {
     : $collectDropping(
         $roomForHint(
           Iterator.from(items).map((iter) => ({ iter })),
-          0,
+          HeldSize,
           false,
           false,
           heldDrop_drop,
@@ -157,7 +201,7 @@ function enumerated(items, IInPlace, UsizeIItemSize, UsizeIItemAlign, dropI, dro
           dropIItem?.(value[1]);
         })
       : $collectDropping(
-          $roomForHint(iter, 0, false, false, (value) => {
+          $roomForHint(iter, UsizeIItemSize, false, false, (value) => {
             dropIItem?.(value[1]);
           }),
           (value) => {
@@ -200,7 +244,7 @@ function tHolding(
                 }
               })
             : $collectDropping(
-                $roomForHint(iter, 0, false, false, (held) => {
+                $roomForHint(iter, HeldSize, false, false, (held) => {
                   try {
                     heldDrop_drop(held, dropTItemIntoIter);
                   } finally {
@@ -342,15 +386,70 @@ function main() {
     relayed(
       $iterator({ start: 1n, end: 2n }, $rangeInclusiveNext).map((n) => [n]),
       undefined,
-      undefined,
-      undefined,
+      16,
+      8,
       dDrop_drop,
     ),
   );
-  run("relayed, of nothing to drop", () => relayed($lazyRange(1, 3)));
-  run("ranged", () => ranged(7));
+  run("relayed, of nothing to drop", () => relayed($lazyRange(1, 3), undefined, 8, 4));
+  run("ranged", () => ranged(7, 2, 1));
+  run("listed", () => {
+    const value = listed(
+      $iter([[1n], undefined]),
+      {
+        intoIter: (items) => $iter(items == null ? [] : [items]),
+        IntoIterIterator: () => ({ next: $next }),
+      },
+      [16, 8],
+      16,
+      8,
+      (intoIter) => {
+        for (const item of intoIter) {
+          if (item != null) {
+            dDrop_drop(item);
+          }
+        }
+      },
+      $dropEach(dDrop_drop),
+    );
+    $dropItems(value, (item) => {
+      try {
+        heldDrop_drop(item, $dropEach(dDrop_drop));
+      } finally {
+        for (const item$1 of item.iter) {
+          dDrop_drop(item$1);
+        }
+      }
+    });
+    return value.length;
+  });
+  run("listed, not in place", () => {
+    const value = listed(
+      $iterator({ start: 1n, end: 2n }, $rangeInclusiveNext).map((n) => [n]),
+      {
+        intoIter: (items) => $iter(items == null ? [] : [items]),
+        IntoIterIterator: () => ({ next: $next }),
+      },
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      $dropEach(dDrop_drop),
+    );
+    $dropItems(value, (item) => {
+      try {
+        heldDrop_drop(item, $dropEach(dDrop_drop));
+      } finally {
+        for (const item$1 of item.iter) {
+          dDrop_drop(item$1);
+        }
+      }
+    });
+    return value.length;
+  });
+  run("listed, ranged", () => listedRanged(7));
   run("holding", () => {
-    const value = holding($iter([1, 2]));
+    const value = holding($iter([1, 2]), undefined, 1, 1);
     $dropItems(value, heldDrop_drop);
     return value.length;
   });
@@ -507,8 +606,8 @@ function main() {
     const held = tHolding(
       { next: $next, fold: $foldOf },
       undefined,
-      undefined,
-      undefined,
+      16,
+      4,
       undefined,
       $dropEach(dDrop_drop),
       dDrop_drop,

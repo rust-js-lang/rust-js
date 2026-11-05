@@ -56,9 +56,13 @@ function counterIterator_next(counter) {
   return counter.n;
 }
 
-function firsts(iter, n, IIterator, IClone, dropI, dropIItem) {
+function firsts(iter, n, IIterator, IClone, IItemSize, dropI, dropIItem) {
   const iter$1 = $cycleOf(iter, IClone.clone, IIterator.next, true, dropI).take(n);
-  return $collectDropping($roomForHint(iter$1, 0, false, false, dropIItem), dropIItem, true);
+  return $collectDropping(
+    $roomForHint(iter$1, IItemSize, false, false, dropIItem),
+    dropIItem,
+    true,
+  );
 }
 
 function two(iter, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
@@ -66,7 +70,7 @@ function two(iter, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
   try {
     return $collectsInPlace(IInPlace, IItemSize, IItemAlign)
       ? $foldToArray(iter$1, dropIItem)
-      : $collectDropping($roomForHint(iter$1, 0, false, false, dropIItem), dropIItem, true);
+      : $collectDropping($roomForHint(iter$1, IItemSize, false, false, dropIItem), dropIItem, true);
   } finally {
     iter$1.return();
   }
@@ -74,13 +78,14 @@ function two(iter, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
 
 function main() {
   const clone = { clone: (value) => [value[0]] };
-  console.log(`[${firsts([2], 5, { next: countdownIterator_next }, clone).join(", ")}]`);
+  console.log(`[${firsts([2], 5, { next: countdownIterator_next }, clone, 4).join(", ")}]`);
   console.log(
     `[${firsts(
       { start: 0, end: 3 },
       7,
       { next: $rangeNext },
       { clone: (value) => ({ start: value.start, end: value.end }) },
+      4,
     ).join(", ")}]`,
   );
   console.log(
@@ -89,6 +94,7 @@ function main() {
       3,
       { next: $next },
       { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
+      8,
     )
       .map((item) => $debugStr(item))
       .join(", ")}]`,
@@ -120,7 +126,7 @@ function main() {
       }),
   );
   console.log(`[${tags.join(", ")}]`);
-  const held = firsts([0], 3, { next: genIterator_next }, clone, undefined, loudDrop_drop);
+  const held = firsts([0], 3, { next: genIterator_next }, clone, 1, undefined, loudDrop_drop);
   console.log(`held ${held.length}`);
   for (const item of held) {
     loudDrop_drop(item);
@@ -133,9 +139,16 @@ function main() {
   );
   console.log(`[${counted.join(", ")}]`);
   console.log(
-    `[${firsts({ n: 1, tag: [2] }, 3, { next: counterIterator_next }, counterClone, (counter) => {
-      loudDrop_drop(counter.tag);
-    }).join(", ")}]`,
+    `[${firsts(
+      { n: 1, tag: [2] },
+      3,
+      { next: counterIterator_next },
+      counterClone,
+      1,
+      (counter) => {
+        loudDrop_drop(counter.tag);
+      },
+    ).join(", ")}]`,
   );
   const unstepped = $cycleOf(
     { n: 3, tag: [3] },

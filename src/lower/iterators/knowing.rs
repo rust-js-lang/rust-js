@@ -883,45 +883,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it as it is. `None` of one that has std's, `(0, None)`, which
     /// `$sizeHint` gives too.
     pub(super) fn own_size_hint(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Option<Expr>> {
-        if !self.writes_size_hint(ty) {
+        if !self.recognition().writes_size_hint(ty) {
             return Ok(None);
         }
         let iterator = std_item(self.tcx, StdItem::Iterator);
         Ok(Some(self.user_next(ty, iterator, "size_hint", span)?.0))
-    }
-
-    /// Whether the crate's iterator `ty`'s impl writes a `size_hint` of its
-    /// own, which rust-js compiled, not std's `(0, None)`. The one answer,
-    /// of what's given it and what may reach it (`hint_reaches_own`).
-    fn writes_size_hint(&self, ty: ty::Ty<'tcx>) -> bool {
-        let iterator = std_item(self.tcx, StdItem::Iterator);
-        let size_hint = trait_method(self.tcx, iterator, "size_hint");
-        let args = self.args_of(iterator, ty.peel_refs());
-        self.resolve_instance(size_hint, args)
-            .ok()
-            .flatten()
-            .is_some_and(|instance| instance.def_id() != size_hint && self.is_rust_fn(instance.def_id()))
-    }
-
-    /// Whether asking `size_hint` of an iterator of type `ty` may run what
-    /// the program can see: the crate's own `size_hint`, or one that std's
-    /// adapter of type `ty` asks, as each asks its source's (ADR 1092's
-    /// table). Where it can't, asking it changes nothing but the room a
-    /// collect asks, which is std's own (#733). Of a type only its caller
-    /// knows, a type parameter's or an associated type's, always: its
-    /// caller's may be the crate's own, whose hint `$given` passes on from
-    /// its dictionary, and where it's JS's own, asking it runs nothing (the
-    /// user's decision, ADR 1092).
-    pub(in crate::lower) fn hint_reaches_own(&self, ty: ty::Ty<'tcx>) -> bool {
-        let ty = self.reveal(ty.peel_refs());
-        if self.is_user_iterator(ty) {
-            return self.writes_size_hint(ty);
-        }
-        if self.is_unknown(ty) {
-            return true;
-        }
-        crate::lower::recognition::adapted_iterators(self.tcx, self.typing_env, ty)
-            .is_some_and(|held| held.into_iter().any(|held| self.hint_reaches_own(held)))
     }
 
     /// What steps a compiled std iterator's struct of type `ty` where it's

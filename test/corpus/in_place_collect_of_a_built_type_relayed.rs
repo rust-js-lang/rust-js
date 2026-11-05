@@ -6,6 +6,7 @@
 // stops it, in place it drops what it collected first, else what's left
 // (#672, #737), each item's iterator too, an associated type of the
 // default's own where clause (#798).
+use std::collections::LinkedList;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 struct D(u64);
@@ -39,10 +40,28 @@ fn relayed<T, J: Iterator<Item = Option<T>>>(options: J) -> usize {
     held(options).len()
 }
 
-/// Of a source std never collects in place, whose layout it never reads,
-/// and asks none of its caller.
+/// Of a source std never collects in place, whose in-place answer it never
+/// reads: only the layout `held`'s `Vec` grows by, which `held` reads
+/// wherever it's called (#796).
 fn ranged<T: Clone>(t: T) -> usize {
     held((1..=2).map(move |_| Some(t.clone()))).len()
+}
+
+/// Into a `LinkedList`, which std extends as each item comes, asking no
+/// room: its items' layout is asked as a `Vec`'s in place would be, and
+/// given only where the source's `IInPlace` is, never read.
+fn listed<H>(iters: H) -> LinkedList<Held<<H::Item as IntoIterator>::IntoIter>>
+where
+    H: Iterator,
+    H::Item: IntoIterator,
+{
+    iters.map(|i| Held { iter: i.into_iter() }).collect()
+}
+
+/// Of `listed`, of a source std never collects in place, whose layout it
+/// never reads, and asks none of its caller.
+fn listed_ranged<T: Clone>(t: T) -> usize {
+    listed((1..=2).map(move |_| Some(t.clone()))).len()
 }
 
 /// Of a type with a destructor of its own, holding an associated type of
@@ -107,6 +126,9 @@ fn main() {
     run("relayed, not in place", || relayed((1..=2).map(|n| Some(D(n)))));
     run("relayed, of nothing to drop", || relayed((1..=2).map(Some)));
     run("ranged", || ranged(7u8));
+    run("listed", || listed(vec![Some(D(1)), None].into_iter()).len());
+    run("listed, not in place", || listed((1..=2).map(|n| Some(D(n)))).len());
+    run("listed, ranged", || listed_ranged(7u8));
     run("holding", || holding([1u8, 2].into_iter()).len());
     run("enumerated", || {
         let pairs = enumerated(vec![D(8), D(9)].into_iter());

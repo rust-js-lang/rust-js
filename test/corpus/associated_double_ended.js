@@ -17,8 +17,8 @@ export function entry() {
   main();
 }
 
-function backwards(it) {
-  return Array.from($roomForHint($rev(it), 0, false));
+function backwards(it, IItemSize) {
+  return Array.from($roomForHint($rev(it), IItemSize, false));
 }
 
 function lastEven(it) {
@@ -59,7 +59,7 @@ function sliceDoubleEndedIterator_nextBack(slice) {
 }
 
 function main() {
-  console.log(`[${backwards($iter([1, 2, 3])).join(", ")}]`);
+  console.log(`[${backwards($iter([1, 2, 3]), 4).join(", ")}]`);
   const value = lastEven($iter([1, 2, 3, 4, 5]));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const value$1 = lastEven(

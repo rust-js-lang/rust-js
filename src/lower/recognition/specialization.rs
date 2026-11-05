@@ -326,14 +326,15 @@ pub(crate) fn in_place_source<'tcx>(
 
 /// A call of `callee` with `args` that collects an iterator into a `Vec`,
 /// or a `Result` or an `Option` of one, `collect()` or `from_iter`: the
-/// iterator's type, and the type of the items it collects, each `Ok`'s or
-/// `Some`'s (#672). Another collection's too, which the caller tells apart.
+/// iterator's type, the collection's, the `Ok`'s or the `Some`'s, and the
+/// type of the items it collects, each `Ok`'s or `Some`'s (#672, #796).
+/// Another collection's too, which the caller tells apart.
 pub(crate) fn collected_items<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     callee: DefId,
     args: ty::GenericArgsRef<'tcx>,
-) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+) -> Option<(Ty<'tcx>, Ty<'tcx>, Ty<'tcx>)> {
     let iterator = std_item(tcx, StdItem::Iterator);
     let projected = |trait_id: DefId, name: &str, of: Ty<'tcx>| {
         let ty = Ty::new_projection(tcx, ty::IsRigid::No, trait_method(tcx, trait_id, name), [of]);
@@ -355,10 +356,12 @@ pub(crate) fn collected_items<'tcx>(
     let item = projected(iterator, "Item", iter);
     let fallible = matches!(output.kind(), ty::Adt(adt, _)
         if [sym::Result, sym::Option].into_iter().any(|name| tcx.is_diagnostic_item(name, adt.did())));
-    match (fallible, item.kind()) {
-        (true, ty::Adt(_, item_args)) => Some((iter, item_args.types().next()?)),
-        (true, _) => None,
-        (false, _) => Some((iter, item)),
+    match (fallible, item.kind(), output.kind()) {
+        (true, ty::Adt(_, item_args), ty::Adt(_, output_args)) => {
+            Some((iter, output_args.types().next()?, item_args.types().next()?))
+        }
+        (true, ..) => None,
+        (false, ..) => Some((iter, output, item)),
     }
 }
 

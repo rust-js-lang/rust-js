@@ -40,14 +40,14 @@ function countdownDoubleEndedIterator_nextBack(countdown) {
   return countdownIterator_next(countdown);
 }
 
-function twice(iter, IIterator, IClone, IExactSizeIterator) {
+function twice(iter, IIterator, IClone, IExactSizeIterator, IItemSize) {
   const len = IExactSizeIterator.len(iter);
   return [
     len,
     Array.from(
       $roomForHint(
         $lazyChain($given(IClone.clone(iter), IIterator, true), $given(iter, IIterator, true)),
-        0,
+        IItemSize,
         false,
       ),
     ),
@@ -67,11 +67,13 @@ function size(k) {
   return k.len();
 }
 
-function passedOn(iter, IIterator, IClone, IDoubleEndedIterator, IExactSizeIterator) {
+function passedOn(iter, IIterator, IClone, IDoubleEndedIterator, IExactSizeIterator, IItemSize) {
   return [
     last($given(IClone.clone(iter), IIterator, true, IDoubleEndedIterator)),
     size($given(IClone.clone(iter), IIterator, true, undefined, IExactSizeIterator.len)),
-    Array.from($roomForHint($iterator(iter, IDoubleEndedIterator.next_back, true), 0, false)),
+    Array.from(
+      $roomForHint($iterator(iter, IDoubleEndedIterator.next_back, true), IItemSize, false),
+    ),
   ];
 }
 
@@ -83,8 +85,10 @@ function handedOn(iter, IIterator, IClone, IDoubleEndedIterator) {
   return first($given(iter, IIterator, true, IDoubleEndedIterator));
 }
 
-function backwards(iter, IIterator, IClone, IDoubleEndedIterator) {
-  return Array.from($roomForHint($iterator(iter, IDoubleEndedIterator.next_back, true), 0, false));
+function backwards(iter, IIterator, IClone, IDoubleEndedIterator, IItemSize) {
+  return Array.from(
+    $roomForHint($iterator(iter, IDoubleEndedIterator.next_back, true), IItemSize, false),
+  );
 }
 
 function after(iter, IIterator, IClone) {
@@ -101,20 +105,27 @@ function main() {
     len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)),
   };
   const clone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
-  const value = twice($iter([1, 2, 3]), { next: $next }, clone, exactSizeIterator);
+  const value = twice($iter([1, 2, 3]), { next: $next }, clone, exactSizeIterator, 4);
   console.log(`(${value[0]}, [${value[1].join(", ")}])`);
   const value$1 = twice(
     [2],
     { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
     countdownClone,
     countdownExactSizeIterator,
+    4,
   );
   console.log(`(${value$1[0]}, [${value$1[1].join(", ")}])`);
-  const value$2 = twice({ start: 0, end: 3 }, { next: $rangeNext }, rangeClone, { len: $rangeLen });
+  const value$2 = twice(
+    { start: 0, end: 3 },
+    { next: $rangeNext },
+    rangeClone,
+    { len: $rangeLen },
+    4,
+  );
   console.log(`(${value$2[0]}, [${value$2[1].join(", ")}])`);
   const it = $iter([4, 5, 6]);
   $next(it);
-  const value$3 = twice(it, { next: $next }, clone, exactSizeIterator);
+  const value$3 = twice(it, { next: $next }, clone, exactSizeIterator, 4);
   console.log(`(${value$3[0]}, [${value$3[1].join(", ")}])`);
 
   const value$4 = ends($iter(["a", "b", "c"]), { next: $next }, clone, { next_back: $nextBack });
@@ -144,6 +155,7 @@ function main() {
     clone,
     { next_back: $nextBack },
     exactSizeIterator,
+    4,
   );
   console.log(
     `(${value$7[0] == null ? "None" : `Some(${value$7[0]})`}, ${value$7[1]}, [${value$7[2].join(", ")}])`,
@@ -154,6 +166,7 @@ function main() {
     countdownClone,
     { next_back: countdownDoubleEndedIterator_nextBack },
     countdownExactSizeIterator,
+    4,
   );
   console.log(
     `(${value$8[0] == null ? "None" : `Some(${value$8[0]})`}, ${value$8[1]}, [${value$8[2].join(", ")}])`,
@@ -164,6 +177,7 @@ function main() {
     rangeClone,
     { next_back: $rangeNextBack, nthBack: $rangeNthBack },
     { len: $rangeLen },
+    4,
   );
   console.log(
     `(${value$9[0] == null ? "None" : `Some(${value$9[0]})`}, ${value$9[1]}, [${value$9[2].join(", ")}])`,
@@ -188,10 +202,14 @@ function main() {
       { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
       countdownClone,
       { next_back: countdownDoubleEndedIterator_nextBack },
-    ).join(", ")}] [${backwards({ start: 5, end: 7 }, { next: $rangeNext }, rangeClone, {
-      next_back: $rangeNextBack,
-      nthBack: $rangeNthBack,
-    }).join(", ")}]`,
+      4,
+    ).join(", ")}] [${backwards(
+      { start: 5, end: 7 },
+      { next: $rangeNext },
+      rangeClone,
+      { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+      4,
+    ).join(", ")}]`,
   );
   console.log(
     `[${after(

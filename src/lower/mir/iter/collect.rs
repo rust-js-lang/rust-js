@@ -405,6 +405,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call_helper("$collectsInPlace", vec![source, size, align]))
     }
 
+    /// The size of each of `item`s a `Vec` std makes of an iterator of
+    /// `iter_ty` grows by, which says when it's full and asks the hint
+    /// again (`$roomForHint`'s, #728): `room_item_size`; but of items whose
+    /// size is a caller's, a type parameter's or one built of them, `(T,
+    /// u8)`, where that hint may run the crate's own (`hint_reaches_own`),
+    /// so when it's asked is seen, the caller's, `TSize` (#796), as
+    /// `type_facts`' `grown_asked` asks it.
+    fn grown_item_size(&mut self, iter_ty: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Expr> {
+        if self.layout(item).is_some() || !self.hint_reaches_own(iter_ty) {
+            return Ok(self.room_item_size(item));
+        }
+        self.type_fact_value(item, crate::lower::recognition::TypeFact::Size, span)
+    }
+
     /// Of a collect into `output` of `item`s a panic may stop, of an
     /// iterator of type `iter_ty` whose steps may panic, that holds what has
     /// a destructor or gives items with one: how what it holds is dropped
@@ -790,7 +804,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         || self.compiled_struct_at(iter_ty, span) && !self.recognition().bounded_by_items(iter_ty)
                         || self.hint_reaches_own(iter_ty)) =>
             {
-                let size = self.room_item_size(item);
+                let size = self.grown_item_size(iter_ty, item, span)?;
                 let mut given = vec![it, size, callers_trusted.clone().unwrap_or_else(|| Expr::bool(trusted))];
                 // Of one not `TrustedLen`, whose first item std takes by
                 // `next` before it asks room, that item's drop, as a

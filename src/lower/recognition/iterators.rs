@@ -1259,8 +1259,13 @@ pub(crate) fn is_compiled_std_iterator(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 
 /// The iterators std's adapter of type `ty` steps, `std::iter`'s struct
 /// of them, `[I]` of a `Filter<I, P>`, `[A, B]` of a `Chain<A, B>`: each
-/// type it holds that's an iterator. `None` of another type, or of one of
-/// std's sources, `Repeat`'s, which holds none (#733).
+/// type it holds that its `Iterator` impl bounds as an iterator, `I:
+/// Iterator`, `I: DoubleEndedIterator` or a flat map's `U: IntoIterator`.
+/// Not a function it holds, a generic one's `F: Fn(&T) -> U`, nor an
+/// item, a `Repeat<T>`'s or a `Successors<T, F>`'s, which a type
+/// parameter's would be if any type it holds that rustc can't say isn't
+/// an iterator were taken for one (#796). `None` of another type, or of
+/// one of std's sources, which holds none (#733).
 pub(crate) fn adapted_iterators<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
@@ -1273,10 +1278,8 @@ pub(crate) fn adapted_iterators<'tcx>(
         return None;
     }
     let iterator = std_item(tcx, StdItem::Iterator);
-    let held: Vec<_> = (args.types())
-        // A function it holds is none, which a generic one's closure, whose
-        // impls rustc can't say here, would otherwise be.
-        .filter(|&held| !matches!(held.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))
+    let held: Vec<_> = (adapted_positions(tcx, adt.did()).into_iter())
+        .filter_map(|at| args.get(at)?.as_type())
         .filter(|&held| super::trait_holds_in(tcx, typing_env, held, iterator) != Some(false))
         .collect();
     (!held.is_empty()).then_some(held)

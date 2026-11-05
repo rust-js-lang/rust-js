@@ -10,7 +10,6 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rev,
-  $roomForHint,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -35,7 +34,7 @@ function reversed(range, f) {
     $mapEnds($iterator(range, $rangeNext, false, $rangeNextBack), (item) => f(item)),
   );
   const last = $next(back);
-  return [last, Array.from($roomForHint(back, 4, true))];
+  return [last, Array.from(back)];
 }
 
 function tripledBack(items, f) {

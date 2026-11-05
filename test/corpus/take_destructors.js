@@ -24,12 +24,12 @@ export function entry() {
 function nDrop_drop(n) {
   console.log(`drop ${n[0]}`);
 }
-function splitFirst(iter, k, dropI, dropIItem) {
+function splitFirst(iter, k, IItemSize, dropI, dropIItem) {
   $held(iter);
   let first;
   try {
     first = $collectDropping(
-      $roomForHint($lent(Iterator.from(iter)).take(k), 0, false, false, dropIItem),
+      $roomForHint($lent(Iterator.from(iter)).take(k), IItemSize, false, false, dropIItem),
       dropIItem,
       true,
     );
@@ -391,6 +391,7 @@ function main() {
       tmp$1 = splitFirst(
         $iter($range(80, 84).map((value) => [value])),
         1,
+        4,
         $dropEach(nDrop_drop),
         nDrop_drop,
       );

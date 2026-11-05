@@ -39,12 +39,12 @@ export function entry() {
   main();
 }
 
-function ends(it, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone) {
+function ends(it, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone, IItemSize) {
   const first = IIterator.next(it);
   const len = IExactSizeIterator.len(it);
   const copy = IClone.clone(it);
   const last = IDoubleEndedIterator.next_back(it);
-  const rest = Array.from($roomForHint($given(copy, IIterator, true), 0, false));
+  const rest = Array.from($roomForHint($given(copy, IIterator, true), IItemSize, false));
   return [len, first, last, IExactSizeIterator.len(it), rest];
 }
 
@@ -102,6 +102,7 @@ function main() {
     takeDoubleEndedIterator,
     takeExactSizeIterator,
     TakeClone,
+    4,
   );
   console.log(
     `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}, ${value[2] == null ? "None" : `Some(${value[2]})`}, ${value[3]}, [${value[4].join(", ")}])`,
@@ -141,6 +142,7 @@ function main() {
     },
     { len: (iterator) => enumerateExactSizeIterator_len(iterator, exactSizeIterator) },
     enumerateClone(clone),
+    8,
   );
   console.log(
     `(${value$1[0]}, ${value$1[1] == null ? "None" : `Some((${value$1[1][0]}, ${value$1[1][1]}))`}, ${value$1[2] == null ? "None" : `Some((${value$1[2][0]}, ${value$1[2][1]}))`}, ${value$1[3]}, [${value$1[4].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}])`,
@@ -191,6 +193,7 @@ function main() {
     },
     { len: (iterator) => enumerateExactSizeIterator_len(iterator, takeExactSizeIterator) },
     enumerateClone(TakeClone),
+    8,
   );
   console.log(
     `(${value$2[0]}, ${value$2[1] == null ? "None" : `Some((${value$2[1][0]}, ${value$2[1][1]}))`}, ${value$2[2] == null ? "None" : `Some((${value$2[2][0]}, ${value$2[2][1]}))`}, ${value$2[3]}, [${value$2[4].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}])`,

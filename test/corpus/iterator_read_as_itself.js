@@ -19,12 +19,12 @@ function countIterator_next(count) {
   }
 }
 
-function dup(it, IIterator, IClone, IDebug) {
+function dup(it, IIterator, IClone, IDebug, IItemSize) {
   IIterator.next(it);
   console.log(`${IDebug.fmt(it)}`);
   return [
-    Array.from($roomForHint($given(IClone.clone(it), IIterator, true), 0, false)),
-    Array.from($roomForHint($given(it, IIterator, true), 0, false)),
+    Array.from($roomForHint($given(IClone.clone(it), IIterator, true), IItemSize, false)),
+    Array.from($roomForHint($given(it, IIterator, true), IItemSize, false)),
   ];
 }
 
@@ -35,15 +35,24 @@ function main() {
     { next: countIterator_next },
     { clone: (value) => [value[0]] },
     countDebug,
+    4,
   );
   console.log(`([${value[0].join(", ")}], [${value[1].join(", ")}])`);
-  const value$1 = dup($iter([1, 2, 3]), { next: $next }, clone, {
-    fmt: (value) => `IntoIter([${value.items.slice(value.at, value.end).join(", ")}])`,
-  });
+  const value$1 = dup(
+    $iter([1, 2, 3]),
+    { next: $next },
+    clone,
+    { fmt: (value) => `IntoIter([${value.items.slice(value.at, value.end).join(", ")}])` },
+    4,
+  );
   console.log(`([${value$1[0].join(", ")}], [${value$1[1].join(", ")}])`);
-  const value$2 = dup($iter([4, 5, 6]), { next: $next }, clone, {
-    fmt: (value) => `Iter([${value.items.slice(value.at, value.end).join(", ")}])`,
-  });
+  const value$2 = dup(
+    $iter([4, 5, 6]),
+    { next: $next },
+    clone,
+    { fmt: (value) => `Iter([${value.items.slice(value.at, value.end).join(", ")}])` },
+    4,
+  );
   console.log(`([${value$2[0].join(", ")}], [${value$2[1].join(", ")}])`);
 }
 //# sourceMappingURL=case.js.map

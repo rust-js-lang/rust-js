@@ -921,3 +921,35 @@ pub(crate) fn in_std_dictionary(tcx: TyCtxt<'_>, id: DefId) -> bool {
         || tcx.trait_of_assoc(id).is_some_and(|tr| is_hasher(tcx, tr))
         || is_std_method(tcx, id, StdItem::Hash, "hash_slice")
 }
+
+/// Which of std's adapter `adapter`'s type arguments are iterators it
+/// steps, by their places: each its `Iterator` impl bounds by a trait that
+/// is or extends `Iterator`, or by `IntoIterator`, a flat map's inner.
+pub(super) fn adapted_positions(tcx: TyCtxt<'_>, adapter: DefId) -> Vec<usize> {
+    let iterator = std_item(tcx, StdItem::Iterator);
+    let into_iterator = std_item(tcx, StdItem::IntoIterator);
+    let iterates =
+        |bound: DefId| bound == into_iterator || ty::elaborate::supertrait_def_ids(tcx, bound).any(|id| id == iterator);
+    let mut positions = Vec::new();
+    for imp in tcx.all_impls(iterator) {
+        let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
+        let ty::Adt(of, self_args) = self_ty.kind() else {
+            continue;
+        };
+        if of.did() != adapter {
+            continue;
+        }
+        let bounded: Vec<Ty<'_>> = (tcx.clauses_of(imp).clauses.iter())
+            .filter_map(|&(clause, _)| clause.as_trait_clause())
+            .filter(|clause| iterates(clause.def_id()))
+            .map(|clause| clause.self_ty().skip_binder())
+            .collect();
+        for (at, arg) in self_args.iter().enumerate() {
+            if arg.as_type().is_some_and(|arg| bounded.contains(&arg)) && !positions.contains(&at) {
+                positions.push(at);
+            }
+        }
+    }
+    positions.sort_unstable();
+    positions
+}
