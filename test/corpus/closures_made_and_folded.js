@@ -36,16 +36,22 @@ function joined(f, g, dropFnMut, dropFnMut$1) {
 
 function foldWith(it, f, init, g, dropF, dropG) {
   const f$1 = joined(f, g, dropF, dropG);
-  const value = Iterator.from(it).reduce(f$1, init);
-  $dispose(f$1);
-  return value;
+  try {
+    return Iterator.from(it).reduce(f$1, init);
+  } finally {
+    $dispose(f$1);
+  }
 }
 
 function main() {
   console.log(`${$lazyRange(1, 5).reduce(counting(), 0)}`);
   const f = adder(["adder's"]);
-  const value = $lazyRange(1, 4).reduce(f, 0);
-  $dispose(f);
+  let value;
+  try {
+    value = $lazyRange(1, 4).reduce(f, 0);
+  } finally {
+    $dispose(f);
+  }
   console.log(`${value}`);
   const a = "f";
   const b = "g";

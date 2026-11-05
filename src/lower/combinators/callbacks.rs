@@ -152,6 +152,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         true
     }
 
+    /// What of `given`, a std call's arguments `dropped_given` drops, it
+    /// drops as a panic in the call unwinds: what it drops as it returns,
+    /// `when` none, a function it calls by `&mut` or `&`, a fold's
+    /// (`handled_argument`), which std's call took and drops as it unwinds
+    /// (#719); not one called by `FnOnce`, whose body drops what it took.
+    pub(in crate::lower) fn dropped_unwinding(
+        &mut self,
+        given: &[(Option<Unused>, Expr, Ty<'tcx>)],
+        span: Span,
+    ) -> R<Vec<Stmt>> {
+        let always = given.iter().filter(|(when, ..)| when.is_none()).cloned().collect();
+        let mut dropped = Vec::new();
+        self.dropped_given(None, always, span, &mut dropped)?;
+        Ok(dropped)
+    }
+
     /// Each argument `f`, of type `ty`, a std call was given, dropped where
     /// std drops it: as it returns, or where it's left unused, by the
     /// variant of its `subject` it's left on: `if (option == null) {

@@ -116,17 +116,16 @@ it, and otherwise after what it steps, as before.**
   as Rust drops a value once, and `ends` is once. A collect in place of
   items with nothing to drop is said so by its caller (`$foldToArray`'s
   `inPlace`), where a compiled `Map`'s fold would move its function.
-- Apart: a call std is given a closure by value, of std's compiled body,
-  drops it only as the call returns, so a panic in a compiled `Map`'s
-  closure leaks it under `--std-iterators`, where Rust drops it as it
-  unwinds (`test/corpus/closure_folded_by_value_panics.rs`, filed apart).
+- A panic in the closure under `--std-iterators` leaked it, where Rust
+  drops it as it unwinds: a call std is given a closure by value dropped it
+  only as the call returned. It drops as the call unwinds too, since #719
+  (ADR 0470, amended; `test/corpus/closure_folded_by_value_panics.rs`).
 
 `test/corpus/fold_drops_moved_function_first.rs` checks each consumer and
 adapter above against native Rust: by value, by `next`, by `&mut`, in
 place, two closures, a panic in what's left, as the crate builds it and
 with std's iterator structs (`test/iterator-forms.test.ts`);
-`closure_folded_by_value_panics.rs`, a panic in the closure, as the crate
-builds it. The
+`closure_folded_by_value_panics.rs`, a panic in the closure, in both. The
 mutations are `holding-moved-ignored`, `holding-before-after-swapped`,
 and `holding-alone-as-after`
 (`runtime/closing.ts`), `take-fold-closes-at-its-limit`

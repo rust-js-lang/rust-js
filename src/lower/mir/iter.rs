@@ -415,6 +415,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether a call of `def_id` at `span` is a `rev()`, an `enumerate()`
+    /// or a `map()` whose adapter a std iterator's method steps where it's
+    /// made, `body_queries::in_place_adapters` says: what the recognizers
+    /// make of it, not std's compiled one (ADR 0871).
+    pub(in crate::lower::mir) fn adapter_in_place(&self, def_id: rustc_span::def_id::DefId, span: Span) -> bool {
+        crate::lower::recognition::makes_held_compiled(self.tcx, def_id)
+            && self.frame.facts.in_place_adapters.contains(&span)
+    }
+
+    /// Whether a call of an iterator trait's method `def_id` at `span`, of
+    /// `generic_args`, steps a `Rev`, an `Enumerate` or a `Map` made in place,
+    /// `v.iter().map(f).rfold(..)`'s `rfold`: the recognizers', as what it
+    /// steps is theirs, not its compiled impl's (ADR 0871).
+    pub(in crate::lower::mir) fn steps_adapter_in_place(
+        &self,
+        def_id: rustc_span::def_id::DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        span: Span,
+    ) -> bool {
+        self.tcx
+            .trait_of_assoc(def_id)
+            .is_some_and(|tr| crate::lower::recognition::is_iterator_extension(self.tcx, tr))
+            && (generic_args.types().next()).is_some_and(|ty| crate::lower::recognition::is_held_compiled(self.tcx, ty))
+            && self.frame.facts.in_place_adapter_steps.contains(&span)
+    }
+
     /// Whether a value of `ty` the call at `span` takes is std's compiled
     /// struct, a compiled std iterator's (ADR 0561): not a `Rev`, an
     /// `Enumerate` or a `Map` it steps where it's made, which is what the recognizers

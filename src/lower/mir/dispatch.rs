@@ -784,30 +784,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let f = self.held_value(&mut values, at, "f", span, out)?;
             held.push((when, f, arg_tys[at]));
         }
+        let mut call = Vec::new();
         let value = self.mir_call_values_of(
             state,
             (def_id, generic_args),
             (values, arg_tys, nulled),
             output,
             span,
-            out,
+            &mut call,
         )?;
-        // What it gives, before what's dropped after it.
-        let value = match value {
-            Value::Expr(e) => Value::Expr(self.spill("value", e, out)),
-            value => value,
+        // What it gives, before what's dropped after it, and as a panic in
+        // the call unwinds (#719).
+        let (value, unwound) = match value {
+            Value::Expr(e) => (
+                Value::Expr(self.spill("value", e, &mut call)),
+                self.dropped_unwinding(&held, span)?,
+            ),
+            value => (value, Vec::new()),
         };
+        self.unwinding(call, unwound, self.js_span(span), out);
         self.dropped_given(subject, held, span, out)?;
         Ok(value)
-    }
-
-    /// Whether a call of `def_id` at `span` is a `rev()`, an `enumerate()`
-    /// or a `map()` whose adapter a std iterator's method steps where it's
-    /// made, `body_queries::in_place_adapters` says: what the recognizers
-    /// make of it, not std's compiled one (ADR 0871).
-    fn adapter_in_place(&self, def_id: rustc_span::def_id::DefId, span: Span) -> bool {
-        crate::lower::recognition::makes_held_compiled(self.tcx, def_id)
-            && self.frame.facts.in_place_adapters.contains(&span)
     }
 
     /// Whether a trait method's call of `def_id` at `span`, of
@@ -823,23 +820,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(self.tcx.trait_of_assoc(def_id).is_some()
             && self.resolves_to_crate(def_id, generic_args)?
             && !self.adapter_in_place(def_id, span))
-    }
-
-    /// Whether a call of an iterator trait's method `def_id` at `span`, of
-    /// `generic_args`, steps a `Rev`, an `Enumerate` or a `Map` made in place,
-    /// `v.iter().map(f).rfold(..)`'s `rfold`: the recognizers', as what it
-    /// steps is theirs, not its compiled impl's (ADR 0871).
-    fn steps_adapter_in_place(
-        &self,
-        def_id: rustc_span::def_id::DefId,
-        generic_args: ty::GenericArgsRef<'tcx>,
-        span: Span,
-    ) -> bool {
-        self.tcx
-            .trait_of_assoc(def_id)
-            .is_some_and(|tr| crate::lower::recognition::is_iterator_extension(self.tcx, tr))
-            && (generic_args.types().next()).is_some_and(|ty| crate::lower::recognition::is_held_compiled(self.tcx, ty))
-            && self.frame.facts.in_place_adapter_steps.contains(&span)
     }
 
     /// Whether a trait method's call of `def_id` at `span` is a std

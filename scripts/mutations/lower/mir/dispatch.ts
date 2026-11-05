@@ -808,17 +808,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^box_as_mut_and_ref.rs$"],
   },
   {
-    name: "rev-in-place-compiled",
-    breaks:
-      "a `rev()` stepped where it's made is std's compiled `rev()`, not the recognizers'",
-    file: "src/lower/mir/dispatch.rs",
-    find: "        crate::lower::recognition::makes_held_compiled(self.tcx, def_id)\n            && self.frame.facts.in_place_adapters.contains(&span)",
-    replace:
-      "        crate::lower::recognition::makes_held_compiled(self.tcx, def_id)\n            && self.frame.facts.in_place_adapters.contains(&span)\n            && false",
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
-  },
-  {
     name: "extension-step-of-in-place-compiled",
     breaks:
       "an in-place `map()`'s `rfold`, which the recognizers' JS iterator is, calls std's compiled `rfold` of a struct it isn't",
@@ -1077,5 +1066,13 @@ export const mutations: Mutation[] = [
     find: "            self.krate.nulled_params.record(caller, callee.0, &declared, &given_on);\n",
     replace: "            self.krate.nulled_params.record(caller, callee.0, &nulled, &given_on);\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "each call gives null or a value"],
+  },
+  {
+    name: "given-undropped-as-it-unwinds",
+    breaks: "a function std is given by value and calls by `&mut`, a `for_each`'s, isn't dropped as a panic in the call unwinds, and leaks what it holds (#719)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "                self.dropped_unwinding(&held, span)?,\n",
+    replace: "                Vec::new(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_folded_by_value_panics.rs$"],
   },
 ];

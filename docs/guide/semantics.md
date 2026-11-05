@@ -817,6 +817,10 @@ where Rust drops it: with the adapter, after what it steps,
 `sum()`'s, a `count()`'s, an `extend`'s or a collect's, before what a
 `take` left, as std's fold moves it into its source's
 ([0991](../decisions/0991-every-adapter-holding-a-function-drops-it.md), #710).
+A closure std is given by value and calls by `&` or `&mut`, a
+`for_each`'s, a `fold`'s or a `retain`'s, drops as the call returns and as
+a panic in it unwinds, `try { tmp.forEach(f); } finally { guardDrop(g); }`
+([0470](../decisions/0470-a-function-given-by-value-is-dropped-where-its-taker-drops-it.md), #719).
 A part whose destructor panics leaves the parts after it still dropped,
 as Rust's drop glue goes on: a struct's fields after its own `drop` and
 each other, a tuple's and a variant's, `try { boomDrop_drop(pair.first);

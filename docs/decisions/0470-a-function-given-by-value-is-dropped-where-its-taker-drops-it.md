@@ -55,3 +55,28 @@ strongest `Fn` bound.
 
 - **What compiles grows**: a closure that holds a value with a destructor,
   given by value to std or to a generic function, as itertools' are.
+
+## Amendment (2026-11-05): and as the call unwinds (#719)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change. A
+function called by `&` or `&mut` that std is given by value was dropped
+after the call returned, and never where the call panicked: a
+`for_each`'s, a `fold`'s, an `any`'s, a `position`'s, a `retain`'s or a
+`sort_by_key`'s closure whose own call panics leaked what it holds, and
+so did, under `--std-iterators`, a `map`'s that std's compiled `fold`
+moved into its source's (#710). Rust drops it as the panic unwinds: std's
+call owns it, and its frame drops it.
+
+**`mir_call_values_given` drops what it drops as the call returns as a
+panic in the call unwinds too**: the call made inside `unwinding`'s `try`,
+`catch (error) { loudDrop_drop(a); throw error; }`, which a body's tidy
+pass reads as the `finally` of the drop after. Only what's dropped
+whatever the call gives, a function called by `&` or `&mut`; not one std
+may leave unrun or unused (ADRs 0469, 0490), whose drop is a variant's,
+nor one called by `FnOnce`, whose body drops what it took. A drop that
+std's compiled fold already ran as it unwound, given as its `ends`, runs
+no more: `$dispose` and a `$holding`'s drop are once (ADR 0991, amended).
+
+`test/corpus/closure_folded_by_value_panics.rs` checks each against native
+Rust, as the crate builds it and with std's iterator structs. The
+mutation is `given-undropped-as-it-unwinds` (`lower/mir/dispatch.ts`).

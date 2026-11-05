@@ -20,14 +20,24 @@ function boom(n) {
 function main() {
   const kept = [1];
   const f = () => 7;
-  const returned = $catchUnwind(f);
-  console.log(`drop ${kept[0]}`);
+  let value;
+  try {
+    value = $catchUnwind(f);
+  } finally {
+    console.log(`drop ${kept[0]}`);
+  }
+  const returned = value;
   console.log(`returned ${returned.TAG === "Ok"}`);
 
   const unwound = [2];
   const f$1 = () => boom(3);
-  const thrown = $catchUnwind(f$1);
-  console.log(`drop ${unwound[0]}`);
+  let value$1;
+  try {
+    value$1 = $catchUnwind(f$1);
+  } finally {
+    console.log(`drop ${unwound[0]}`);
+  }
+  const thrown = value$1;
   console.log(`thrown ${thrown.TAG === "Err"}`);
 }
 //# sourceMappingURL=case.js.map

@@ -3,11 +3,14 @@
 import {
   $catchUnwind,
   $closing,
+  $cmp,
   $dropEach,
   $holding,
   $iter,
+  $position,
   $print,
   $range,
+  $retain,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -18,36 +21,43 @@ function dDrop_drop(d) {
   $print(`d${d[0]} `);
 }
 
-// What reads the guard the closure holds, so it's moved in whole.
+// What reads the guard a closure holds, so it's moved in whole.
 function zero(guard) {
   return 0;
 }
 
-function main() {
-  const guard = [9];
+function case$(name, run) {
+  $print(`${name}: `);
   const r = $catchUnwind(() => {
-    let guard$0$live = true;
+    run([9]);
+  });
+  console.log(`${r.TAG === "Err" ? "panicked" : ""}`);
+}
+
+function main() {
+  case$("a map's, folded", (g) => {
+    let g$live = true;
     let collect;
     try {
       collect = $range(1, 6).map((value) => [value]);
     } catch (error) {
-      dDrop_drop(guard);
+      dDrop_drop(g);
       throw error;
     }
     let tmp;
     try {
       tmp = $iter(collect);
     } catch (error) {
-      dDrop_drop(guard);
+      dDrop_drop(g);
       throw error;
     }
     let take;
     try {
       take = $closing(tmp, $dropEach(dDrop_drop)).take(3);
-      guard$0$live = false;
+      g$live = false;
     } catch (error) {
-      if (guard$0$live) {
-        dDrop_drop(guard);
+      if (g$live) {
+        dDrop_drop(g);
       }
       throw error;
     }
@@ -56,7 +66,7 @@ function main() {
         if (d[0] === 2) {
           throw new Error("two");
         }
-        return (d[0] + zero(guard)) >>> 0;
+        return (d[0] + zero(g)) >>> 0;
       } finally {
         dDrop_drop(d);
       }
@@ -64,7 +74,7 @@ function main() {
     const iter = $holding(
       take.map(f),
       () => {
-        dDrop_drop(guard);
+        dDrop_drop(g);
       },
       "after",
     );
@@ -75,8 +85,151 @@ function main() {
       iter.return();
     }
     const n = result;
-    $print(`| ${n} | `);
+    $print(`${n} `);
   });
-  console.log(`${r.TAG === "Err" ? "panicked" : ""}`);
+  case$("for_each", (g) => {
+    let g$1$live = true;
+    const value$1 = [1, 2, 3];
+    let tmp;
+    try {
+      tmp = $iter(value$1);
+      g$1$live = false;
+    } catch (error) {
+      if (g$1$live) {
+        dDrop_drop(g);
+      }
+      throw error;
+    }
+    function f(x) {
+      if ((x + zero(g)) >>> 0 === 2) {
+        throw new Error("assertion failed: x + zero(&g) != 2");
+      }
+    }
+    try {
+      const value = tmp.forEach(f);
+    } finally {
+      dDrop_drop(g);
+    }
+  });
+  case$("fold", (g) => {
+    let g$2$live = true;
+    const value = [1, 2, 3];
+    let tmp;
+    try {
+      tmp = $iter(value);
+      g$2$live = false;
+    } catch (error) {
+      if (g$2$live) {
+        dDrop_drop(g);
+      }
+      throw error;
+    }
+    function f(a, x) {
+      if (x === 2) {
+        throw new Error("assertion failed: x != 2");
+      }
+      return (((a + x) >>> 0) + zero(g)) >>> 0;
+    }
+    let value$1;
+    try {
+      value$1 = tmp.reduce(f, 0);
+    } finally {
+      dDrop_drop(g);
+    }
+    const n = value$1;
+    $print(`${n} `);
+  });
+  case$("any", (g) => {
+    const value = [1, 2, 3];
+    let value$1;
+    try {
+      function f(x) {
+        if (x === 2) {
+          throw new Error("assertion failed: x != 2");
+        }
+        return (x + zero(g)) >>> 0 === 9;
+      }
+      value$1 = value.some(f);
+    } finally {
+      dDrop_drop(g);
+    }
+    const n = value$1;
+    $print(`${n} `);
+  });
+  case$("retain", (g) => {
+    const v = [[1], [2], [3]];
+    function f(d) {
+      if (d[0] === 2) {
+        throw new Error("assertion failed: d.0 != 2");
+      }
+      return (d[0] + zero(g)) >>> 0 > 0;
+    }
+    try {
+      try {
+        const value = $retain(v, f, dDrop_drop);
+      } finally {
+        dDrop_drop(g);
+      }
+      $print(`${v.length} `);
+    } finally {
+      for (const item of v) {
+        dDrop_drop(item);
+      }
+    }
+  });
+  case$("sort_by_key", (g) => {
+    const v = [3, 1, 2];
+    function f(x) {
+      if (x === 2) {
+        throw new Error("assertion failed: x != 2");
+      }
+      return (x + zero(g)) >>> 0;
+    }
+    try {
+      const value = v.sort((a, b) => $cmp(f(a), f(b)));
+    } finally {
+      dDrop_drop(g);
+    }
+    $print(`[${v.join(", ")}] `);
+  });
+  case$("position", (g) => {
+    let value;
+    try {
+      function f(x) {
+        if (x === 2) {
+          throw new Error("assertion failed: x != 2");
+        }
+        return (x + zero(g)) >>> 0 === 9;
+      }
+      value = $position([1, 2, 3], f);
+    } finally {
+      dDrop_drop(g);
+    }
+    const p = value;
+    $print(`${p == null ? "None" : `Some(${p})`} `);
+  });
+  case$("ok no panic", (g) => {
+    let g$7$live = true;
+    const value = [1, 2];
+    let tmp;
+    try {
+      tmp = $iter(value);
+      g$7$live = false;
+    } catch (error) {
+      if (g$7$live) {
+        dDrop_drop(g);
+      }
+      throw error;
+    }
+    const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
+    let value$1;
+    try {
+      value$1 = tmp.reduce(f, 0);
+    } finally {
+      dDrop_drop(g);
+    }
+    const n = value$1;
+    $print(`${n} `);
+  });
 }
 //# sourceMappingURL=case.js.map

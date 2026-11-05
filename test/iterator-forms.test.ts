@@ -114,6 +114,8 @@ const few = [
   // An adapter's closure a fold by value moves, dropped before what its
   // source has left, by std's compiled fold too (#710).
   "fold_drops_moved_function_first.rs",
+  // And as a panic in it unwinds, a closure a std call is given (#719).
+  "closure_folded_by_value_panics.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);
