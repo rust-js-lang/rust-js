@@ -1218,6 +1218,20 @@ pub(crate) fn enumerated_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option
     counted_adapter(tcx, ty).and_then(|(kind, _, source)| (kind == Counted::Enumerate).then_some(source))
 }
 
+/// Whether `ty` is an `Enumerate` of std's struct compiled wherever it's
+/// made, a `Fuse`'s or a `Peekable`'s, not one the recognizers make in
+/// place (ADR 0871): `$enumerate` of the struct itself, whose `count` is
+/// its own (#655), which the crate makes knowing its back and its length
+/// where it's made wherever it's stepped from its back (`back_stepped`),
+/// as no form of it steps from its back. The one answer, of what's
+/// recorded and what's made (#712).
+pub(crate) fn enumerates_a_compiled_struct<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    enumerated_source(tcx, ty).is_some_and(|source| {
+        let source = source.peel_refs();
+        is_compiled_std_iterator(tcx, source) && !super::is_held_compiled(tcx, source)
+    })
+}
+
 /// A std adapter that keeps a count of its own: `Enumerate`'s, how many it's
 /// given; `Take`'s and `Skip`'s, `n`, how many it has left to take or skip.
 #[derive(Clone, Copy, PartialEq, Debug)]

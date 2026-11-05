@@ -1833,3 +1833,53 @@ Rust in both builds; it joins iterator-forms' few. The matrix took off
 (`runtime/last_dropping.ts`); `last-dropping-kept-dropped-twice`, which the
 catch no longer catches on the fold's path, is caught by a `Drain`'s in
 generic code, stepped here, added to `last_kept_drop_panics.rs`.
+
+## Amendment: an `enumerate()` of std's struct exact-sized and double-ended counts by its source too (2026-11-05, #712)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+The #655 amendment left out a source both exact-sized and double-ended, a
+`Vec`'s `peekable()` or the crate's `ExactSizeIterator +
+DoubleEndedIterator`'s: its enumeration stayed the map form, so
+`it.peek(); it.enumerate().count()` still dropped what it peeked at first,
+in the build the recognizers make. The map form was kept for one reader: a
+`rev()` made in place of the enumeration, which `as_double_ended` steps by
+making `$enumerate` of the map form's source knowing its back and length.
+
+The fact that reader needed is now said where the enumeration is made.
+`recognition::enumerates_a_compiled_struct` is the one answer to whether
+an `Enumerate`'s source is std's struct compiled wherever it's made, a
+`Fuse`'s or a `Peekable`'s, not an adapter the recognizers make in place.
+`back_stepped` (ADR 0545) records such an enumeration wherever it's stepped
+from its back: by a `rev()` made in place, a bound generic code asks, or
+its own `next_back()` and `rfold`, of whatever items. Where it's made, a
+recorded one is `$enumerate` of its source made knowing its back and
+length (`knowing_held`), as before; one not recorded is `$enumerate` of
+its source as it is, whose `count` is the source's compiled one
+(`counts_by_compiled_count`). An enumeration of a `skip()`, a `take()`, a
+`rev()` or a `map()` made in place keeps its map form, which
+`as_double_ended` reads.
+
+So a peeked `peekable()`'s enumeration counts as std's does, and one
+`rev()`'d in place, `it.enumerate().rev()` of a held, peeked `Vec`'s
+`peekable()`, compiles where it was refused. An `enumerate()` of a
+`peekable()` only counted is `$count($enumerate(it), drop)`, as one of a
+source not double-ended was. The same type reversed elsewhere in the crate
+is made knowing its back here too, as each type has one form.
+
+`enumerate_of_a_reversible_source.rs` holds a `Vec`'s and the crate's
+peeked `peekable()`s counted, a range's `fuse()` counted, a peeked
+`peekable()`'s enumeration reversed, and a `fuse()`'s stepped by
+`next_back()` and `rfold`; `enumerate_made_in_place_from_back.rs` the
+enumerations of a `skip()`, a `take()`, a `rev()` and a `map()` made in
+place, reversed, and a `Vec`'s items' enumeration held and stepped by
+`next_back()` beside one reversed. Each runs against native
+Rust in both builds. Mutations: `enumerate-reversible-compiled-count-unseen`
+and `enumerate-reversible-compiled-count-taken` (`lower/mir/iter/backs.ts`),
+`enumerate-of-compiled-struct-stepped-unrecorded` and
+`enumerate-of-compiled-struct-asked-unrecorded`
+(`lower/analysis/back_stepped.ts`),
+`enumerate-of-held-compiled-taken-for-compiled-struct`
+(`lower/recognition/iterators.ts`); `enumerate-compiled-count-unseen` and
+`enumerate-of-droppers-unrecorded` name their lines as they now read.

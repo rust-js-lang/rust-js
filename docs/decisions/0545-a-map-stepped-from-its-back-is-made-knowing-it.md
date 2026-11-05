@@ -351,3 +351,15 @@ flatten is, and made knowing its back where it's made.**
   type parameter's or a zip's `rev()` from its back that compiles either
   way, so the guard that leaves them out has no mutation: it keeps their
   forms as they were.
+
+## Amendment: an enumeration of std's struct is recorded too (2026-11-05, #712)
+
+`back_stepped` records an `Enumerate` of std's struct compiled wherever
+it's made, a `Fuse`'s or a `Peekable`'s
+(`recognition::enumerates_a_compiled_struct`), wherever it's stepped from
+its back, of whatever items: by a `rev()` made in place, a bound generic
+code asks, or its own `DoubleEndedIterator` methods. No form of such an
+enumeration steps from its back, as it's `$enumerate` of the struct, whose
+`count` is its source's; a recorded one is made knowing its back and
+length where it's made. [ADR 0465](0465-dropping-an-adapter-is-closing-it.md)'s
+#712 amendment says why.

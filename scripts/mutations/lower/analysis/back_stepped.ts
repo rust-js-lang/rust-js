@@ -7,13 +7,31 @@ export const mutations: Mutation[] = [
     breaks:
       "an enumeration of items with a destructor whose `next_back()` the crate calls isn't recorded stepped from its back: `rev()` of one beside it, flushed into a variable, is refused (#383)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "        return item\n            .is_some_and(&drops)\n",
-    replace: "        return item\n            .is_some_and(|_| false)\n",
+    find: "        return (item.is_some_and(&drops) || enumerates_a_compiled_struct(tcx, adapter))\n",
+    replace: "        return (item.is_some_and(|_| false) || enumerates_a_compiled_struct(tcx, adapter))\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
-      "^enumerate_of_droppers_from_back.rs$",
+      "^(enumerate_of_droppers_from_back|enumerate_made_in_place_from_back).rs$",
     ],
+  },
+  {
+    name: "enumerate-of-compiled-struct-stepped-unrecorded",
+    breaks:
+      "an enumeration of std's compiled `Fuse` of numbers whose own `next_back()` or `rfold` the crate calls isn't recorded stepped from its back: `$enumerate` of it, made knowing neither, is refused (#712)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "        return (item.is_some_and(&drops) || enumerates_a_compiled_struct(tcx, adapter))\n",
+    replace: "        return item.is_some_and(&drops)\n",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_reversible_source.rs$"],
+  },
+  {
+    name: "enumerate-of-compiled-struct-asked-unrecorded",
+    breaks:
+      "an enumeration of a held `peekable()` a `rev()` asks to be double-ended isn't made knowing its back where it's made: `$enumerate` of it is refused (#712)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                            || enumerates_a_compiled_struct(tcx, held)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_reversible_source.rs$"],
   },
   {
     name: "closing-map-asked-unrecorded",

@@ -216,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // std's compiled one (#655).
                     || self.recognition().nths_a_slice(output)
                     || self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure)
-                    || self.counts_by_compiled_count(iter_ty) =>
+                    || self.counts_by_compiled_count(iter_ty, output) =>
             {
                 // Of the crate's, what it can be made to know.
                 let back = self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);
@@ -426,13 +426,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
     }
 
-    /// Whether an `enumerate()` of an iterator of type `iter_ty` counts by
-    /// its source's `count`, std's compiled one, as `Enumerate::count` does:
-    /// a held `Peekable`'s keeps what it peeked at till its source's `count`
-    /// ends, or unwinds, then drops it (#655). Not of one exact-sized and
-    /// double-ended, whose enumeration a `rev()` made in place may step from
-    /// its back, which `as_double_ended` makes of its map form.
-    fn counts_by_compiled_count(&self, iter_ty: Ty<'tcx>) -> bool {
+    /// Whether an `enumerate()` of an iterator of type `iter_ty`, of type
+    /// `enumeration`, counts by its source's `count`, std's compiled one, as
+    /// `Enumerate::count` does: a held `Peekable`'s keeps what it peeked at
+    /// till its source's `count` ends, or unwinds, then drops it (#655). Of
+    /// one exact-sized and double-ended, whose enumeration a `rev()` made in
+    /// place may step from its back, only where it's std's struct compiled
+    /// wherever it's made (`enumerates_a_compiled_struct`), whose enumeration
+    /// `back_stepped` records where it's stepped from its back, made knowing
+    /// its back and length where it's made (#712); not another, which
+    /// `as_double_ended` makes of its map form.
+    fn counts_by_compiled_count(&self, iter_ty: Ty<'tcx>, enumeration: Ty<'tcx>) -> bool {
         let source = self.reveal(iter_ty);
         let traits = [
             self.recognition().double_ended_iterator(),
@@ -441,7 +445,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let reversible = traits
             .into_iter()
             .all(|tr| tr.is_some_and(|tr| self.recognition().implements_trait(source.peel_refs(), tr)));
-        !reversible && self.compiled_step(source, std_item(self.tcx, StdItem::Iterator), "count")
+        (!reversible || crate::lower::recognition::enumerates_a_compiled_struct(self.tcx, enumeration))
+            && self.compiled_step(source, std_item(self.tcx, StdItem::Iterator), "count")
     }
 
     pub(super) fn has_a_back(&self, iter_ty: Ty<'tcx>) -> bool {

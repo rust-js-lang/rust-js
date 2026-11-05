@@ -9,9 +9,9 @@
 
 use crate::lower::body_queries::strip;
 use crate::lower::recognition::{
-    Recognition, back_stepped_source, copied_source, enumerated_source, filter_mapped_source, filtered_source,
-    flattened_source, inspected_source, is_double_ended, is_exact_size, is_iter_adapter_def, mapped_source,
-    reversed_source,
+    Recognition, back_stepped_source, copied_source, enumerated_source, enumerates_a_compiled_struct,
+    filter_mapped_source, filtered_source, flattened_source, inspected_source, is_double_ended, is_exact_size,
+    is_iter_adapter_def, mapped_source, reversed_source,
 };
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::{ExprId, ExprKind};
@@ -118,6 +118,9 @@ pub(super) fn back_stepped<'tcx>(
                         // hold it in a variable before its `rev()`, past a
                         // call whose cleanup drops what's live (#702), but
                         // of items that are std's adapters.
+                        // And an enumeration of std's struct, `$enumerate` of
+                        // it, which no form of its own steps from the back
+                        // (#712).
                         if held != asked
                             || given
                             || held_rev
@@ -125,6 +128,7 @@ pub(super) fn back_stepped<'tcx>(
                             || dropping_items(recognition, held, &drops)
                             || closure_drops(tcx, held, &drops)
                             || flatten_of_known_items(recognition, held)
+                            || enumerates_a_compiled_struct(tcx, held)
                         {
                             let made_apart = given || held_rev || held_arg;
                             stepped.extend(back_stepped_adapter(tcx, recognition, held, made_apart, &drops));
@@ -225,11 +229,11 @@ fn back_stepped_adapter<'tcx>(
     // An enumeration of items with a destructor, held in a variable to drop
     // them, whose own `next_back()` the crate calls: std's compiled
     // `Enumerate` where it's held (ADR 0871), which steps its source by
-    // its dictionaries (#383).
+    // its dictionaries (#383). Or of std's struct compiled wherever it's
+    // made, `$enumerate` of it, of whatever items (#712).
     if enumerated_source(tcx, adapter).is_some() {
         let item = recognition.iterator_item(adapter);
-        return item
-            .is_some_and(&drops)
+        return (item.is_some_and(&drops) || enumerates_a_compiled_struct(tcx, adapter))
             .then(|| tcx.erase_and_anonymize_regions(adapter));
     }
     // An `inspect(f)` is made as a map, stepped from its back as one is.
