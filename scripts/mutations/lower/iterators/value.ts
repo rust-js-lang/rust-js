@@ -167,4 +167,28 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^unread_map_of_a_held_iterator.rs$"],
   },
+  {
+    name: "enumeration-source-unread",
+    breaks: "an enumerate's form is read as written",
+    file: "src/lower/iterators/value.rs",
+    find: "                && args[0] == enumerating() =>",
+    replace: "                && args[0] != enumerating() =>",
+    tests: ["test/corpus.test.ts", "-t", "^returned_slice_iters.rs$"],
+  },
+  {
+    name: "mir-enumerate-swapped",
+    breaks: "`enumerate` gives `(item, index)`, not `(index, item)`",
+    file: "src/lower/iterators/value.rs",
+    find: "    let pair = Expr::array(vec![Expr::var(\"i\"), Expr::var(\"x\")]);\n",
+    replace: "    let pair = Expr::array(vec![Expr::var(\"x\"), Expr::var(\"i\")]);\n",
+    tests: ["test/corpus.test.ts", "-t", "labeled_blocks"],
+  },
+  {
+    name: "enumerated-knowing-unmarked",
+    breaks: "`$enumerate(it)` isn't marked made knowing its back and its length, so a reversed enumeration's `len()` and its `next_back` read it again as what it isn't, and are refused (#764)",
+    file: "src/lower/iterators/value.rs",
+    find: "    e.facts = e.facts.with(Known::IterEnumerate);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_made_knowing_read_again.rs$"],
+  },
 ];

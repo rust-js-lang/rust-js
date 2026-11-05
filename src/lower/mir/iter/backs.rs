@@ -307,7 +307,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     None => self.closing(receiver.clone(), held, span)?,
                 };
-                Expr::call_helper("$enumerate", vec![it])
+                crate::lower::iterators::enumerated_knowing(it)
             }
             // A filter of one (ADR 0526), given its items' drop, of items with
             // a destructor, which drops each it doesn't keep as it passes it

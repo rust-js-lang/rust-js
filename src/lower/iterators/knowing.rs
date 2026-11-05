@@ -426,13 +426,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ));
         }
         // An enumeration made here of an array's items, `$enumerate` of their
-        // `$iter`, as `as_double_ended` makes it.
+        // `$iter`, as `as_double_ended` makes it; one made so, itself (#764).
         if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)
-            && self.steps_an_array(source.peel_refs())
-            && let Some(source_value) = crate::lower::iterators::enumeration_source(&value)
+            && let Some(enumerated) = crate::lower::iterators::enumerated_of(&value)
+            && (enumerated.form == crate::lower::iterators::EnumeratedForm::Made
+                || self.steps_an_array(source.peel_refs()))
         {
-            let items = self.std_iterator(source_value.clone(), source.peel_refs());
-            return Ok(Expr::call_helper("$enumerate", vec![items]));
+            if enumerated.form == crate::lower::iterators::EnumeratedForm::Made {
+                return Ok(value.clone());
+            }
+            let items = self.std_iterator(enumerated.source.clone(), source.peel_refs());
+            return Ok(crate::lower::iterators::enumerated_knowing(items));
         }
         // A map made here, `src.map(f)`: its source's, each `f`'s, as
         // `as_double_ended` makes it (ADR 0455). And an `inspect(f)`, made
@@ -662,14 +666,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // of its source made knowing its back and its length, whose index
         // from the back is where it is (ADR 0528): an array's items' `$iter`,
         // or another's, a `fuse()`'s of what drops (#383).
+        // One made so already, itself (#764).
         if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)
-            && let Some(source_value) = crate::lower::iterators::enumeration_source(&value)
+            && let Some(enumerated) = crate::lower::iterators::enumerated_of(&value)
         {
+            if enumerated.form == crate::lower::iterators::EnumeratedForm::Made {
+                return Ok(value.clone());
+            }
+            let source_value = enumerated.source;
             let items = match self.steps_an_array(source.peel_refs()) {
                 true => self.std_iterator(source_value.clone(), source.peel_refs()),
                 false => self.as_exact_size(source_value.clone(), source.peel_refs(), true, span)?,
             };
-            return Ok(Expr::call_helper("$enumerate", vec![items]));
+            return Ok(crate::lower::iterators::enumerated_knowing(items));
         }
         // A `step_by(n)` made here, `src.filter((_, i) => i % n === 0)`:
         // `$stepByEnds` of its source made knowing its back and its length,

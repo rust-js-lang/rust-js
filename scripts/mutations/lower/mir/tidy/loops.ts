@@ -333,9 +333,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `for` of a slice's first items with their indices steps `xs.entries().take(n)`, not the part's `entries()`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: '        && name == "take"\n        && let [n] = &args[..]\n        && let Some(items) = iterators::enumeration_source(it)\n',
-    replace:
-      '        && name == "take!"\n        && let [n] = &args[..]\n        && let Some(items) = iterators::enumeration_source(it)\n',
+    find: "        && name == \"take\"\n        && let [n] = &args[..]\n        && let Some(items) = iterators::enumerated_of(it)\n            .filter(|e| e.form == iterators::EnumeratedForm::Mapped)\n            .map(|e| e.source)\n",
+    replace: "        && name == \"take!\"\n        && let [n] = &args[..]\n        && let Some(items) = iterators::enumerated_of(it)\n            .filter(|e| e.form == iterators::EnumeratedForm::Mapped)\n            .map(|e| e.source)\n",
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",
@@ -347,9 +346,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `for` of a slice's items past some with their indices steps the part's `entries()`, `xs.slice(1).entries()`, whose indices start at 0",
     file: "src/lower/mir/tidy/loops.rs",
-    find: '        && name == "take"\n        && let [n] = &args[..]\n        && let Some(items) = iterators::enumeration_source(it)\n        && counted_chain(&Expr::call(Expr::member(items.clone(), "take"), vec![n.clone()]))\n    {\n        let part = sliced(&Expr::call(Expr::member(items.clone(), "take"), vec![n.clone()]));\n',
-    replace:
-      '        && (name == "take" || name == "drop")\n        && let [n] = &args[..]\n        && let Some(items) = iterators::enumeration_source(it)\n        && counted_chain(&Expr::call(Expr::member(items.clone(), name.as_str()), vec![n.clone()]))\n    {\n        let part = sliced(&Expr::call(Expr::member(items.clone(), name.as_str()), vec![n.clone()]));\n',
+    find: "        && name == \"take\"\n        && let [n] = &args[..]\n        && let Some(items) = iterators::enumerated_of(it)\n            .filter(|e| e.form == iterators::EnumeratedForm::Mapped)\n            .map(|e| e.source)\n        && counted_chain(&Expr::call(Expr::member(items.clone(), \"take\"), vec![n.clone()]))\n    {\n        let part = sliced(&Expr::call(Expr::member(items.clone(), \"take\"), vec![n.clone()]));\n",
+    replace: "        && (name == \"take\" || name == \"drop\")\n        && let [n] = &args[..]\n        && let Some(items) = iterators::enumerated_of(it)\n            .filter(|e| e.form == iterators::EnumeratedForm::Mapped)\n            .map(|e| e.source)\n        && counted_chain(&Expr::call(Expr::member(items.clone(), name.as_str()), vec![n.clone()]))\n    {\n        let part = sliced(&Expr::call(Expr::member(items.clone(), name.as_str()), vec![n.clone()]));\n",
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",

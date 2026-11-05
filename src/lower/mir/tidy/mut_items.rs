@@ -68,7 +68,9 @@ fn index_loop(stmt: &Stmt, mentions: &mut HashMap<String, usize>) -> Option<Vec<
         (_, js::Pattern::Name(handle)) if let Some(array) = items_of(iterable) => (array, handle.clone(), None, None),
         // Its `enumerate()`, `$iter($mutItems(a)).map((x, i) => [i, x])`.
         (_, js::Pattern::Array(parts))
-            if let Some(source) = crate::lower::iterators::enumeration_source(iterable)
+            if let Some(source) = crate::lower::iterators::enumerated_of(iterable)
+                .filter(|e| e.form == crate::lower::iterators::EnumeratedForm::Mapped)
+                .map(|e| e.source)
                 && let Some(items) = crate::lower::iterators::fresh_iter_source(source)
                 && let Some(array) = items_of(items)
                 && let [index, handle] = parts.as_slice() =>

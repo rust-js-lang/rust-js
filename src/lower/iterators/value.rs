@@ -130,7 +130,7 @@ impl IterValue {
 }
 
 /// Each fact `emit` marks a value's JS with.
-const VALUE_FACTS: [Known; 11] = [
+const VALUE_FACTS: [Known; 12] = [
     Known::IterStepped,
     Known::IterRange,
     Known::IterOwn,
@@ -142,6 +142,7 @@ const VALUE_FACTS: [Known; 11] = [
     Known::IterStepBy,
     Known::IterRepeatingN,
     Known::IterKnowsBack,
+    Known::IterEnumerate,
 ];
 
 /// Of `facts`, those `emit` marked a value's JS with: what a value made
@@ -247,6 +248,69 @@ pub(in crate::lower) fn gives_made_in_place(f: &Expr) -> bool {
 pub(in crate::lower) fn lazily_made(mut e: Expr) -> Expr {
     e.facts = e.facts.with(Known::Iterator);
     e
+}
+
+/// `it.enumerate()` made in place, each item and its index, `src.map((x, i)
+/// => [i, x])`, in place of which a callback that takes the pair apart is
+/// given each item and its index, of an array (`eager_chains`).
+pub(in crate::lower) fn enumerated(it: Expr) -> Expr {
+    Expr::call(Expr::member(it, "map"), vec![enumerating()])
+}
+
+/// `(x, i) => [i, x]`, what `enumerated` maps each item by.
+fn enumerating() -> Expr {
+    let pair = Expr::array(vec![Expr::var("i"), Expr::var("x")]);
+    Expr::arrow(
+        vec!["x".into(), "i".into()],
+        vec![js::StmtKind::Return(Some(pair)).at(js::Span::NONE)],
+    )
+}
+
+/// `$enumerate(it)`: an enumeration of `it`, made knowing its back and its
+/// length, whose index from the back is where it is (ADR 0528), marked so.
+pub(in crate::lower) fn enumerated_knowing(it: Expr) -> Expr {
+    let mut e = Expr::call_helper("$enumerate", vec![it]);
+    e.facts = e.facts.with(Known::IterEnumerate);
+    e
+}
+
+/// How an enumeration made here is written (`enumerated_of`): in place,
+/// `src.map((x, i) => [i, x])` (`enumerated`), or knowing its back and its
+/// length, `$enumerate(src)` (`enumerated_knowing`).
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(in crate::lower) enum EnumeratedForm {
+    Mapped,
+    Made,
+}
+
+/// An enumeration made here: what it enumerates, and how it's written.
+pub(in crate::lower) struct Enumerated<'e> {
+    pub(in crate::lower) source: &'e Expr,
+    pub(in crate::lower) form: EnumeratedForm,
+}
+
+/// What `e`, an enumeration made here, `enumerated`'s or
+/// `enumerated_knowing`'s, enumerates, and in which form: the one reader of
+/// either (#764).
+pub(in crate::lower) fn enumerated_of(e: &Expr) -> Option<Enumerated<'_>> {
+    match &e.kind {
+        js::ExprKind::Call(callee, args)
+            if let js::ExprKind::Member(source, method) = &callee.kind
+                && method == "map"
+                && args.len() == 1
+                && args[0] == enumerating() =>
+        {
+            Some(Enumerated {
+                source,
+                form: EnumeratedForm::Mapped,
+            })
+        }
+        js::ExprKind::Call(_, args) if e.facts.has(Known::IterEnumerate) && args.len() == 1 => Some(Enumerated {
+            source: &args[0],
+            form: EnumeratedForm::Made,
+        }),
+        _ => None,
+    }
 }
 
 /// `$rev(it)`: `it` stepped from its back (ADR 0516), marked so.

@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`next_back()` of an enumeration of an array's items made in place is refused, not stepped from its back by `$enumerate` (#395)",
     file: "src/lower/mir/iter.rs",
-    find: "        if crate::lower::iterators::enumeration_source(&it).is_some() {\n",
+    find: "        if crate::lower::iterators::enumerated_of(&it).is_some() {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_next_back_of_items.rs$"],
   },

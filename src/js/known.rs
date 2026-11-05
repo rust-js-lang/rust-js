@@ -257,4 +257,7 @@ pub enum Known {
     IterRepeatingN,
     /// A `rev()` its maker made knowing its back (`reversed_knowing`, ADR 0545).
     IterKnowsBack,
+    /// An enumeration made knowing its back and its length, `$enumerate(it)`
+    /// (value.rs's `enumerated_knowing`, #764).
+    IterEnumerate,
 }

@@ -27,9 +27,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`for (i, cell) in row.iter_mut().enumerate()` stays `$mutItems(row).entries()` and `cell.value = i`, not `row[i] = i` (#354)",
     file: "src/lower/mir/tidy/mut_items.rs",
-    find: "            if let Some(source) = crate::lower::iterators::enumeration_source(iterable)\n",
-    replace:
-      "            if false && let Some(source) = crate::lower::iterators::enumeration_source(iterable)\n",
+    find: "            if let Some(source) = crate::lower::iterators::enumerated_of(iterable)\n",
+    replace: "            if false && let Some(source) = crate::lower::iterators::enumerated_of(iterable)\n",
     tests,
     snapshots: true,
   },

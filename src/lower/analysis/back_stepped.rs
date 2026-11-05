@@ -264,10 +264,14 @@ fn back_stepped_adapter<'tcx>(
     // `Enumerate` where it's held (ADR 0871), which steps its source by
     // its dictionaries (#383). Or of std's struct compiled wherever it's
     // made, `$enumerate` of it, of whatever items (#712).
-    if enumerated_source(tcx, adapter).is_some() {
+    // And of a map or a filter of an array's items with a destructor, held
+    // in a variable to drop them though what it gives has none (#764).
+    if let Some(source) = enumerated_source(tcx, adapter) {
         let item = recognition.iterator_item(adapter);
-        return (item.is_some_and(&drops) || enumerates_a_compiled_struct(tcx, adapter))
-            .then(|| tcx.erase_and_anonymize_regions(adapter));
+        return (item.is_some_and(&drops)
+            || dropping_items(recognition, source.peel_refs(), &drops)
+            || enumerates_a_compiled_struct(tcx, adapter))
+        .then(|| tcx.erase_and_anonymize_regions(adapter));
     }
     // An `inspect(f)` is made as a map, stepped from its back as one is.
     let mapped = mapped_source(tcx, adapter).or_else(|| inspected_source(tcx, adapter));

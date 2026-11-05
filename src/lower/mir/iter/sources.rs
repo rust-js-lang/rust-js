@@ -159,7 +159,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.len_in_place(it, source, made);
         }
         if let Some(source) = r::enumerated_source(self.tcx, ty) {
-            let source_value = crate::lower::iterators::enumeration_source(it)?.clone();
+            let source_value = crate::lower::iterators::enumerated_of(it)?.source.clone();
             return self.len_in_place(&source_value, source, made);
         }
         // `source.map(f)`, `f` made and not called.

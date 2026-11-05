@@ -144,3 +144,34 @@ x])`, as a map, and called its function with the item alone.
 - `test/corpus/enumerate_next_back_of_items.rs` checks a `Vec`'s and a
   slice's against native Rust.
 - The mutation is `next-back-enumeration-refused`.
+
+## Amended (2026-11-06, #764): one reader of either form, and an enumeration of a dropping map
+
+An enumeration made here has two forms: in place, `src.map((x, i) => [i,
+x])`, and made knowing its back and its length, `$enumerate(src)`. Only
+the first was read, `enumeration_source`, so one made knowing them was
+taken for neither past its maker: `(1..9u32).skip(2).enumerate().rev().len()`,
+an enumeration of a `rev()` reversed again, and `map(f).enumerate()
+.next_back()` were refused, "`len()` of a lazy or generic `Rev`". **Value.rs
+owns both, `enumerated` and `enumerated_knowing`, which marks
+`$enumerate(src)` `Known::IterEnumerate`, and one reader, `enumerated_of`,
+of what it enumerates and in which form, `Mapped` or `Made`.** Tidy's
+readers, `for…of`'s and a `$mutItems` loop's, ask the `Mapped` form, as
+before; `len_in_place`, `next_back_made_here` and knowing.rs's two
+enumerate arms take either, one made knowing them as it is. The
+architecture test's lists of what value.rs alone writes and reads by name
+name `$enumerate`.
+
+And an enumeration of a map or a filter of a `Vec`'s items with a
+destructor, `ds().into_iter().map(f).enumerate()`, held in a variable to
+drop them though what it gives has none, is recorded stepped from its back
+where it is (`back_stepped_adapter`), so it's made knowing it where it's
+made.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; a
+refusal of valid Rust lifted. Held by corpus
+`enumerate_made_knowing_read_again`, against native Rust in both builds.
+No other snapshot changes. Mutations `enumerated-knowing-unmarked`
+(`iterators/value.ts`), `enumerate-of-a-dropping-map-unrecorded`
+(`analysis/back_stepped.ts`); ten others name their lines as they now
+read, two moved with their code to value.rs's list.

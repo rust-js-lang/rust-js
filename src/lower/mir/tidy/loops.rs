@@ -837,7 +837,11 @@ fn counted_to_length(
 /// is the function's one variable of it here, as the `i` a range's loop
 /// takes is; preparation names the counter apart from another's.
 fn counted_keys(iterable: &Expr, pattern: &js::Pattern, body: &[Stmt]) -> Option<(String, String, Expr)> {
-    let object = crate::lower::iterators::keys_in_source(crate::lower::iterators::enumeration_source(iterable)?)?;
+    let object = crate::lower::iterators::keys_in_source(
+        crate::lower::iterators::enumerated_of(iterable)
+            .filter(|e| e.form == crate::lower::iterators::EnumeratedForm::Mapped)
+            .map(|e| e.source)?,
+    )?;
     let js::Pattern::Array(parts) = pattern else {
         return None;
     };
@@ -931,7 +935,9 @@ fn taken_part(iterable: Expr) -> Expr {
         && let ExprKind::Member(it, name) = &callee.kind
         && name == "take"
         && let [n] = &args[..]
-        && let Some(items) = iterators::enumeration_source(it)
+        && let Some(items) = iterators::enumerated_of(it)
+            .filter(|e| e.form == iterators::EnumeratedForm::Mapped)
+            .map(|e| e.source)
         && counted_chain(&Expr::call(Expr::member(items.clone(), "take"), vec![n.clone()]))
     {
         let part = sliced(&Expr::call(Expr::member(items.clone(), "take"), vec![n.clone()]));

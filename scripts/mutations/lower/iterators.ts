@@ -211,23 +211,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
   {
-    name: "enumeration-source-unread",
-    breaks: "an enumerate's form is read as written",
-    file: "src/lower/iterators.rs",
-    find: "                && args[0] == enumerating() =>",
-    replace: "                && args[0] != enumerating() =>",
-    tests: ["test/corpus.test.ts", "-t", "^returned_slice_iters.rs$"],
-  },
-  {
-    name: "mir-enumerate-swapped",
-    breaks: "`enumerate` gives `(item, index)`, not `(index, item)`",
-    file: "src/lower/iterators.rs",
-    find: '    let pair = Expr::array(vec![Expr::var("i"), Expr::var("x")]);\n',
-    replace:
-      '    let pair = Expr::array(vec![Expr::var("x"), Expr::var("i")]);\n',
-    tests: ["test/corpus.test.ts", "-t", "labeled_blocks"],
-  },
-  {
     name: "sliced-not-made",
     breaks:
       "a slice's range in bounds, `items.slice(0, 3)`, isn't an array made here, so its `to_vec()` copies it again, `.slice(0, 3).slice()` (ADR 0806)",

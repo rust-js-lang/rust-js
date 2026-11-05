@@ -74,7 +74,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         made: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
-        if crate::lower::iterators::enumeration_source(&it).is_some() {
+        if crate::lower::iterators::enumerated_of(&it).is_some() {
             let back = self.as_double_ended(it, iter_ty, span)?;
             let next_back = if boxed { "$nextBackSome" } else { "$nextBack" };
             return Ok(Some(Expr::call_helper(next_back, vec![back])));

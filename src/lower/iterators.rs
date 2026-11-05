@@ -12,11 +12,11 @@ mod stepping;
 mod value;
 
 pub(in crate::lower) use self::value::{
-    Form, IterValue, bounds_of, bounds_read, closed, closed_parts, gives_in_place, gives_made_in_place,
-    held_by_its_owner, is_knowing, is_lent, is_range_stepped, is_reversed, iterator_parts, its_facts, lazily_made,
-    made_knowing_its_back, repeating_n, repeating_n_parts, reversed_by, reversed_of, stepped_every,
-    stepped_every_parts, stepped_from, stepped_range, stepped_value, steps, unlent, was_made_knowing_its_back,
-    zip_parts,
+    EnumeratedForm, Form, IterValue, bounds_of, bounds_read, closed, closed_parts, enumerated, enumerated_knowing,
+    enumerated_of, gives_in_place, gives_made_in_place, held_by_its_owner, is_knowing, is_lent, is_range_stepped,
+    is_reversed, iterator_parts, its_facts, lazily_made, made_knowing_its_back, repeating_n, repeating_n_parts,
+    reversed_by, reversed_of, stepped_every, stepped_every_parts, stepped_from, stepped_range, stepped_value, steps,
+    unlent, was_made_knowing_its_back, zip_parts,
 };
 pub(super) use self::{eager::*, in_place::*};
 
@@ -770,41 +770,9 @@ pub(super) fn array_stepped(items: Expr) -> Expr {
     Expr::call(Expr::helper("$iter"), vec![items])
 }
 
-/// `it.enumerate()`: each item and its index, `(x, i) => [i, x]`, in
-/// place of which a callback that takes the pair apart is given each item
-/// and its index, of an array (`eager_chains`).
-pub(in crate::lower) fn enumerated(it: Expr) -> Expr {
-    Expr::call(Expr::member(it, "map"), vec![enumerating()])
-}
-
-/// `(x, i) => [i, x]`, what `enumerated` maps each item by.
-fn enumerating() -> Expr {
-    let pair = Expr::array(vec![Expr::var("i"), Expr::var("x")]);
-    Expr::arrow(
-        vec!["x".into(), "i".into()],
-        vec![StmtKind::Return(Some(pair)).at(js::Span::NONE)],
-    )
-}
-
 /// Whether `e`, of a `Rev`, an `Enumerate` or a `Map`, is what the
 /// recognizers made of it in place, never std's struct, which one held is:
 /// as the call that took it marked it (`Known::InPlace`, ADR 0871).
 pub(in crate::lower) fn made_in_place(e: &Expr) -> bool {
     e.facts.has(js::Known::InPlace)
-}
-
-/// What `e`, an `enumerated` one, enumerates: `src` of `src.map((x, i) =>
-/// [i, x])`. The one reader of its form.
-pub(in crate::lower) fn enumeration_source(e: &Expr) -> Option<&Expr> {
-    match &e.kind {
-        js::ExprKind::Call(callee, args)
-            if let js::ExprKind::Member(source, method) = &callee.kind
-                && method == "map"
-                && args.len() == 1
-                && args[0] == enumerating() =>
-        {
-            Some(source)
-        }
-        _ => None,
-    }
 }

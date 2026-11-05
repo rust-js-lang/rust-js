@@ -404,18 +404,16 @@ export const mutations: Mutation[] = [
     name: "enumerate-of-array-no-back",
     breaks: "an enumerate of an array's items made here steps from its back",
     file: "src/lower/iterators/knowing.rs",
-    find: "        if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)\n            && let Some(source_value) = crate::lower::iterators::enumeration_source(&value)\n        {\n            let items = match",
-    replace:
-      "        if let Some(source) = None::<ty::Ty<'tcx>>\n            && let Some(source_value) = crate::lower::iterators::enumeration_source(&value)\n        {\n            let items = match",
+    find: "        if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)\n            && let Some(enumerated) = crate::lower::iterators::enumerated_of(&value)\n        {\n",
+    replace: "        if let Some(source) = None::<ty::Ty<'tcx>>\n            && let Some(enumerated) = crate::lower::iterators::enumerated_of(&value)\n        {\n",
     tests: ["test/corpus.test.ts", "-t", "^returned_slice_iters.rs$"],
   },
   {
     name: "exact-size-enumerate-unmade",
     breaks: "an enumerate of an array's items made here is exact-sized",
     file: "src/lower/iterators/knowing.rs",
-    find: "        // An enumeration made here of an array's items, `$enumerate` of their\n        // `$iter`, as `as_double_ended` makes it.\n        if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)\n            && self.steps_an_array(source.peel_refs())",
-    replace:
-      "        // An enumeration made here of an array's items, `$enumerate` of their\n        // `$iter`, as `as_double_ended` makes it.\n        if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)\n            && false",
+    find: "            && (enumerated.form == crate::lower::iterators::EnumeratedForm::Made\n                || self.steps_an_array(source.peel_refs()))\n",
+    replace: "            && false\n            && (enumerated.form == crate::lower::iterators::EnumeratedForm::Made\n                || self.steps_an_array(source.peel_refs()))\n",
     tests: ["test/corpus.test.ts", "-t", "^rposition_of_lazy.rs$"],
   },
   {

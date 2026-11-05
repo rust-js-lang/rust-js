@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an enumeration of items with a destructor whose `next_back()` the crate calls isn't recorded stepped from its back: `rev()` of one beside it, flushed into a variable, is refused (#383)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "        return (item.is_some_and(&drops) || enumerates_a_compiled_struct(tcx, adapter))\n",
-    replace: "        return (item.is_some_and(|_| false) || enumerates_a_compiled_struct(tcx, adapter))\n",
+    find: "        return (item.is_some_and(&drops)\n",
+    replace: "        return (item.is_some_and(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_rfold_closes_as_it_unwinds.rs$"],
   },
   {
@@ -16,8 +16,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an enumeration of std's compiled `Fuse` of numbers whose own `next_back()` or `rfold` the crate calls isn't recorded stepped from its back: `$enumerate` of it, made knowing neither, is refused (#712)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "        return (item.is_some_and(&drops) || enumerates_a_compiled_struct(tcx, adapter))\n",
-    replace: "        return item.is_some_and(&drops)\n",
+    find: "            || enumerates_a_compiled_struct(tcx, adapter))\n",
+    replace: "            || false)\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_reversible_source.rs$"],
   },
   {
@@ -382,5 +382,13 @@ export const mutations: Mutation[] = [
     find: "                || cloned_source(tcx, held).is_some()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_cloned_items_whose_clone_runs.rs$"],
+  },
+  {
+    name: "enumerate-of-a-dropping-map-unrecorded",
+    breaks: "an enumeration of a map of a `Vec`'s items with a destructor, held in a variable to drop them, isn't made knowing its back where it's made, and its `next_back` is refused (#764)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "            || dropping_items(recognition, source.peel_refs(), &drops)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_made_knowing_read_again.rs$"],
   },
 ];
