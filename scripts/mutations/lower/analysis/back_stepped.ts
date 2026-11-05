@@ -359,4 +359,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_from_its_back.rs$"],
   },
+  {
+    name: "inspect-of-a-dropping-closure-not-back-stepped",
+    breaks: "an `inspect()` whose closure owns a value with a destructor, held in a variable to drop it, isn't made knowing its back, and its `rfind` is refused (#780)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "    (mapped_source(tcx, adapter).is_some() || inspected_source(tcx, adapter).is_some())\n",
+    replace: "    mapped_source(tcx, adapter).is_some()\n",
+    tests: ["test/corpus.test.ts", "-t", "^move_closure_adapter_from_its_back.rs$"],
+  },
 ];

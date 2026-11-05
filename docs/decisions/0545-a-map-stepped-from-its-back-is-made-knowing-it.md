@@ -647,3 +647,36 @@ in-place chain whose sides are a filter, a map, an `inspect`, a
 way. It runs against native Rust in both builds. Mutations:
 `chain-sides-unstepped`, `chain-side-a-unstepped`;
 `stepped-sources-one-deep` names its line as it now reads.
+
+## Amended (2026-11-06, #780): an inspect of a dropping closure, and a map of a held `IntoIter`
+
+Two refusals of a `Vec`'s numbers mapped or inspected by a `move` closure,
+stepped from its back, in the default build, "a `Map<IntoIter<u32>, ..>`
+as a `DoubleEndedIterator`":
+
+- **An `inspect(f)` whose closure owns a value with a destructor**, `move
+  |d| { let _ = &h; .. }`: `closure_drops` asked a map's `F` alone, so the
+  inspect, held in a variable to drop its function (ADR 0991), looked like
+  one its own form steps from its back, and was never made knowing it.
+  It asks an inspect's `F` too, its second type as `Map`'s is, as each
+  other reading of this analysis takes an inspect for a map (#751).
+- **A map of a `move` closure that copies a field of a value with a
+  destructor**, `move |d| d + g.0`: the closure owns no destructor, so the
+  map steps from its back by its own form, `iter_locals.maps`' map of an
+  array's items, made again where `next_back` or `rfind` steps it. But the
+  field's read comes after the `Vec`'s `IntoIter` is made, so MIR's
+  pending `$iter(..)` is written to a variable first, and the map was
+  `it.map(f)`, which `is_items_map` doesn't read. **A map of a variable
+  of a type that steps an array is recorded too** (`mapped_var`): made
+  again there, it names the same variable, so no array is made twice and
+  nothing is moved.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; a
+refusal of valid Rust lifted. Held by corpus
+`move_closure_adapter_from_its_back`, against native Rust in both builds:
+`rfind`, `next_back` then `next` of one held, and a `rev()`. Mutations
+`inspect-of-a-dropping-closure-not-back-stepped`
+(`analysis/back_stepped.ts`) and `map-of-held-items-unrecorded`
+(`mir/assign.ts`). The map's variable is left declared where nothing reads
+it, `const map = value.map(f)`, as it is of a map of an array's items held
+already: a readability gap of its own.

@@ -446,6 +446,23 @@ pub(in crate::lower) fn is_items_map(e: &Expr) -> bool {
     }
 }
 
+/// `it.map(f)`, a map of what a variable holds, made and not yet stepped:
+/// the variable's name.
+pub(in crate::lower) fn mapped_var(e: &Expr) -> Option<&str> {
+    match &e.kind {
+        js::ExprKind::Call(callee, args)
+            if let [f] = args.as_slice()
+                && let js::ExprKind::Member(source, method) = &callee.kind
+                && let js::ExprKind::Var(name) = &source.kind
+                && method == "map"
+                && f.reads_only_vars() =>
+        {
+            Some(name)
+        }
+        _ => None,
+    }
+}
+
 pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
     fresh_iter_source(e).is_some()
 }

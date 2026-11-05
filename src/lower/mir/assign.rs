@@ -854,7 +854,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
             return Ok(());
         }
-        if place.projection.is_empty() && !state.locals.user[local] && crate::lower::iterators::is_items_map(&expr) {
+        // And one of a variable that holds an array's `$iter`, `it.map(f)`,
+        // as MIR holds a `Vec`'s `IntoIter` before a closure that copies a
+        // field of a value with a destructor is made (#780).
+        let of_held_items = || {
+            crate::lower::iterators::mapped_var(&expr).is_some_and(|name| {
+                (state.locals.names.iter_enumerated())
+                    .find(|(_, n)| *n == name)
+                    .is_some_and(|(source, _)| self.steps_an_array(state.body.local_decls[source].ty))
+            })
+        };
+        if place.projection.is_empty()
+            && !state.locals.user[local]
+            && (crate::lower::iterators::is_items_map(&expr) || of_held_items())
+        {
             state.iter_locals.maps.insert(local, expr.clone());
         }
         // The value is made before the place is reached, as Rust makes them:

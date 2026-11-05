@@ -1083,4 +1083,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(rev_made_knowing_its_back|own_iterator_flattened_from_its_back).rs$"],
   },
+  {
+    name: "map-of-held-items-unrecorded",
+    breaks: "a map of a variable that holds a `Vec`'s `IntoIter`, made where a `move` closure copies a field of a value with a destructor, isn't made again where it's stepped from its back, and its `rfind` is refused (#780)",
+    file: "src/lower/mir/assign.rs",
+    find: "            && (crate::lower::iterators::is_items_map(&expr) || of_held_items())\n",
+    replace: "            && crate::lower::iterators::is_items_map(&expr)\n",
+    tests: ["test/corpus.test.ts", "-t", "^move_closure_adapter_from_its_back.rs$"],
+  },
 ];

@@ -325,9 +325,11 @@ fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: HashSet<Ty<'tcx>>) -> 
 
 /// Whether `adapter` is a map whose closure has a destructor, `drops`'s:
 /// closed to drop it and held in a variable, so no form of its own steps
-/// it from its back or counts it (#385).
+/// it from its back or counts it (#385). An `inspect(f)`'s too, made as a
+/// map, `F` its second type as `Map`'s is (#780).
 fn closure_drops<'tcx>(tcx: TyCtxt<'tcx>, adapter: Ty<'tcx>, drops: impl Fn(Ty<'tcx>) -> bool) -> bool {
-    mapped_source(tcx, adapter).is_some() && matches!(adapter.kind(), ty::Adt(_, args) if drops(args.type_at(1)))
+    (mapped_source(tcx, adapter).is_some() || inspected_source(tcx, adapter).is_some())
+        && matches!(adapter.kind(), ty::Adt(_, args) if drops(args.type_at(1)))
 }
 
 /// Whether `adapter`, a map, an inspect or a filter, is of an array's
