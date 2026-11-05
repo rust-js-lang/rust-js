@@ -919,4 +919,13 @@ export const mutations: Mutation[] = [
     replace: "        crate::lower::recognition::counted_source(self.tcx, ty).is_some() && false\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
   },
+  {
+    name: "zip-ends-not-to-the-shorter",
+    breaks:
+      "a zip of droppers made knowing its back isn't told std folds it to the shorter's count of pairs, so its fold steps its first side once more (#812)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        let to_shorter = crate::lower::recognition::zip_folds_to_the_shorter(self.tcx, ty) == Some(false);\n",
+    replace: "        let to_shorter = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_of_droppers_from_its_back.rs$"],
+  },
 ];

@@ -396,7 +396,9 @@ fn closure_drops<'tcx>(tcx: TyCtxt<'tcx>, adapter: Ty<'tcx>, drops: impl Fn(Ty<'
 /// Whether `adapter`, a map, an inspect or a filter, is of an array's
 /// items whose drop runs, `drops`'s: an owning source closed to drop them
 /// (ADR 0465), or a `rev()` of one, which steps them from the other end
-/// (#646).
+/// (#646). Or a zip with a side of such items, held in a variable as it's
+/// made, std's `Zip` folding otherwise than it steps made in place where
+/// it's stepped from its back (#812).
 fn dropping_items<'tcx>(
     recognition: Recognition<'_, 'tcx>,
     adapter: Ty<'tcx>,
@@ -409,12 +411,16 @@ fn dropping_items<'tcx>(
         }
         source
     };
+    let array_of_drops = |source: Ty<'tcx>| {
+        recognition.array_source(source).is_some() && recognition.iterator_item(source).is_some_and(&drops)
+    };
+    if let Some((a, b)) = zipped_sources(tcx, adapter) {
+        return array_of_drops(a.peel_refs()) || array_of_drops(b.peel_refs());
+    }
     // An `inspect(f)`'s too, made as a map (#751).
     mapped_source(tcx, adapter)
         .or_else(|| inspected_source(tcx, adapter))
         .or_else(|| filtered_source(tcx, adapter))
         .map(|source| unreversed(source.peel_refs()))
-        .is_some_and(|source| {
-            recognition.array_source(source).is_some() && recognition.iterator_item(source).is_some_and(drops)
-        })
+        .is_some_and(array_of_drops)
 }

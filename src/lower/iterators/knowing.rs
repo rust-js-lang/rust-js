@@ -327,7 +327,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (None, false) => None,
         };
         let drop_b = item_drop(self, b_ty)?;
-        Ok(Some(value::zip_ends(zip.by_index, a, b, (drop_a, drop_b))))
+        // One std folds to the shorter's count of pairs, where its `next`
+        // steps `a` once more, `SpecFold`'s `TrustedLen` impl (ADR 0997).
+        let to_shorter = crate::lower::recognition::zip_folds_to_the_shorter(self.tcx, ty) == Some(false);
+        Ok(Some(value::zip_ends(zip.by_index, a, b, (drop_a, drop_b), to_shorter)))
     }
 
     /// Whether `ty` is a `skip(n)` or a `take(n)` the crate steps from its

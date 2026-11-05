@@ -364,10 +364,26 @@ pub(in crate::lower) fn zip_parts(e: &Expr) -> Option<ZipParts<'_>> {
 /// `$trustedZipEnds`: a zip of sides made knowing their backs and lengths,
 /// which knows its own, as std's `Zip` is double-ended and exact-sized
 /// where both its sides are; what its back trims of each dropped by its
-/// drop (#740).
-pub(in crate::lower) fn zip_ends(by_index: bool, a: Expr, b: Expr, drops: (Option<Expr>, Option<Expr>)) -> Expr {
+/// drop (#740). One std folds to the shorter's count of pairs, `SpecFold`'s
+/// `TrustedLen` impl, `to_shorter`, so: `$zipEnds(a, b, dropA, dropB,
+/// true)` (ADR 0997, #812).
+pub(in crate::lower) fn zip_ends(
+    by_index: bool,
+    a: Expr,
+    b: Expr,
+    drops: (Option<Expr>, Option<Expr>),
+    to_shorter: bool,
+) -> Expr {
     let mut args = vec![a, b];
     match drops {
+        _ if to_shorter && !by_index => {
+            let (drop_a, drop_b) = drops;
+            args.extend([
+                drop_a.unwrap_or_else(Expr::undefined),
+                drop_b.unwrap_or_else(Expr::undefined),
+                Expr::bool(true),
+            ]);
+        }
         (drop_a, Some(drop_b)) => args.extend([drop_a.unwrap_or_else(Expr::undefined), drop_b]),
         (drop_a, None) => args.extend(drop_a),
     }

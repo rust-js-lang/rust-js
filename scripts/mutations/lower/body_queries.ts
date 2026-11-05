@@ -548,4 +548,14 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^held_flat_map_of_maps_from_its_back.rs$"],
   },
+  {
+    name: "zip-folding-apart-held-from-its-back",
+    breaks:
+      "a zip std folds otherwise than it steps, of a `Vec`'s items with a destructor, given to `rev()` is std's compiled `Zip` with its dictionaries, not `$rev($zipEnds(..))` (#812)",
+    file: "src/lower/body_queries.rs",
+    find: "                && (!super::recognition::folds_apart(tcx, thir[arg].ty) || from_its_back(callee))\n",
+    replace: "                && !super::recognition::folds_apart(tcx, thir[arg].ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_of_droppers_from_its_back.rs$"],
+    snapshots: true,
+  },
 ];

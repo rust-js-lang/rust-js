@@ -427,4 +427,13 @@ export const mutations: Mutation[] = [
     replace: "                            (source, made) = (first, true);\n                            return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^held_beneath_adapters_from_its_back.rs$"],
   },
+  {
+    name: "zip-of-droppers-unrecorded",
+    breaks:
+      "a zip with a side of a `Vec`'s items with a destructor, made in place and held in a variable as it's made, isn't recorded as stepped from its back, so its `rev()` is refused (#812)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "        return array_of_drops(a.peel_refs()) || array_of_drops(b.peel_refs());\n",
+    replace: "        return false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
+  },
 ];

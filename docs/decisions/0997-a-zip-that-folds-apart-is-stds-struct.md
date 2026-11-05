@@ -107,3 +107,40 @@ collected and folded, against native Rust in both builds. The matrix's
 #654 list is empty. Mutations: `map-of-a-zip-folded-apart-made-in-place`
 and `enumerate-of-a-zip-folded-apart-made-in-place`
 (`lower/recognition/std_items.ts`).
+
+## Amendment: one stepped from its back is made knowing it, folding to the shorter (2026-11-06, #812)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R where a drop panics,
+else N. A zip that folds apart, a `Vec`'s items with a destructor say,
+given to `rev()` or to `DoubleEndedIterator`'s methods, was std's struct
+with its dictionaries, where one that doesn't fold apart is
+`$rev($zipEnds(..))` (#740).
+
+- **Made in place where what it's given to steps it from its back**
+  (`in_place_adapters`' `from_its_back`): a `rev()`'s `fold` is its
+  `rfold`, its `rfold` its `fold`, so it reaches its own `fold` only as a
+  `rev()`'s `rfold`.
+- **That `fold` is `SpecFold`'s `TrustedLen` impl's**: `$zipEnds(a, b,
+  dropA, dropB, true)`, of `zip_folds_to_the_shorter`'s `Some(false)`,
+  folds as many pairs as the shorter side has, never stepping its first
+  side once more as its `next` does. A mapped side's closure runs twice
+  where three pairs' worth would run it three times, and what's left is
+  dropped as the zip is: where that drop panics, the fold's result is
+  leaked as Rust leaks it (rust-lang/rust#47949), not dropped.
+- **Recorded as stepped from its back where it's held as it's made**
+  (`back_stepped`'s `dropping_items`, of a zip with a side of an array's
+  items with a destructor): made knowing its back there, as a `rev()` of
+  the variable it's spilled into couldn't be.
+
+`zip_from_its_back.js` and `adapters_own_work_that_panics.js` are 147
+lines shorter. The readability measure's `$iter` share grows, 95.1 to 95.7
+in ten thousand lines: the new case's own `$closing($iter(..))` sides and
+two of `zip_from_its_back`'s in place of std's struct; `renamed x$1`'s,
+553.7 to 554.2, is the new case's own, blessed so.
+
+`test/corpus/zip_of_droppers_from_its_back.rs`, against native Rust in
+both builds: `rev().rfold`, `rev().map(..).next()`, `rfind`, a mapped
+side whose closure counts its calls, and a drop that panics after the
+fold's last pair. Mutations: `zip-ends-folds-past-the-shorter`,
+`zip-ends-not-to-the-shorter`, `zip-folding-apart-held-from-its-back`,
+`zip-of-droppers-unrecorded`.

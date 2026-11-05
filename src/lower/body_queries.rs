@@ -870,6 +870,13 @@ fn in_place_adapters<'tcx>(
     // `cycle()`, which holds what it's given and clones it, as std's
     // `Cycle` does (ADR 0915).
     let cycle = super::recognition::trait_method(tcx, iterator_traits[0], "cycle");
+    // `rev()`, and what steps from the back alone, `DoubleEndedIterator`'s
+    // methods: given a zip that folds apart, each reaches its `fold` only as
+    // its `rfold`, which `$zipEnds` folds as std does (#812).
+    let rev = super::recognition::trait_method(tcx, iterator_traits[0], "rev");
+    let from_its_back = |callee: DefId| {
+        callee == rev || (tcx.trait_of_assoc(callee)).is_some_and(|tr| super::recognition::is_double_ended(tcx, tr))
+    };
     // Each call of a `rev()`, an `enumerate()` or a `map()` given, as what's called or
     // an argument, borrowed for it or not, to another call: its `fn_span`,
     // and the call's, its callee, and the argument's place.
@@ -903,10 +910,12 @@ fn in_place_adapters<'tcx>(
             // itself, a `map()`'s, made by its own maker (ADRs 0525, 0915).
             let held_to_clone =
                 (callee == cycle || cloned_apart(tcx, cloned, thir[e].ty)) && !cloned_apart(tcx, cloned, thir[arg].ty);
+            // Not a zip std folds otherwise than it steps (ADR 0997), but
+            // where what it's given to steps it from its back (#812).
             if let ty::FnDef(maker, _) = *thir[fun].ty.kind()
                 && super::recognition::makes_held_compiled(tcx, maker)
                 && !held_to_clone
-                && !super::recognition::folds_apart(tcx, thir[arg].ty)
+                && (!super::recognition::folds_apart(tcx, thir[arg].ty) || from_its_back(callee))
             {
                 given.push((fn_span, at, callee, index, maker));
             }

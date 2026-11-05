@@ -107,9 +107,29 @@ function $zipEndsOf(zipped, left, right, dropA, dropB) {
 }
 
 // `a.zip(b)`, `$lazyZip`'s, of sides made knowing their backs and lengths.
-function $zipEnds(a, b, dropA, dropB) {
+// One std folds by `SpecFold`'s `TrustedLen` impl, `toShorter`, of sides
+// both `TrustedLen` but not both `TrustedRandomAccess` (ADR 0997): its
+// `fold` takes as many pairs as the shorter side has, never stepping `a`
+// once more as its `next` does; what's left of each dropped as it's
+// closed, as std drops the zip (#812).
+function $zipEnds(a, b, dropA, dropB, toShorter) {
   const zipped = $lazyZip(a, b, dropA);
-  return $zipEndsOf(zipped, zipped.from[0], zipped.from[1], dropA, dropB);
+  const left = zipped.from[0];
+  const right = zipped.from[1];
+  if (toShorter) {
+    const fold = (init, f, unwind, ends) => {
+      let pairs = Math.min(left.len(), right.len());
+      const next = zipped.next;
+      zipped.next = () => (pairs-- > 0 ? next() : { done: true, value: undefined });
+      try {
+        return $Steps.prototype.fold.call(zipped, init, f, unwind, ends);
+      } finally {
+        zipped.next = next;
+      }
+    };
+    $forward(zipped, zipped, { fold });
+  }
+  return $zipEndsOf(zipped, left, right, dropA, dropB);
 }
 
 // `a.zip(b)` std reads by index, `$trustedZip`'s, of sides made knowing

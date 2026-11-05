@@ -12,7 +12,6 @@ import {
   $held,
   $iter,
   $iterator,
-  $knowing,
   $mapEnds,
   $next,
   $nextBack,
@@ -61,10 +60,6 @@ function boomDoubleEndedIterator_nextBack(boom) {
 
 function main() {
   const intoIterExactSizeIterator = { len: (iterator) => iterator.len() };
-  const vecIntoIterator = {
-    intoIter: (items) => $iter(items),
-    IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
-  };
   const v = [1, 2, 3];
   let r = Array.from(
     $rev(
@@ -264,22 +259,12 @@ function main() {
   }
   let tmp$8;
   try {
-    tmp$8 = iterator_zip(
-      tmp$6,
-      tmp$7,
-      { next: $next, advanceBy: $advanceSlice },
-      vecIntoIterator,
-      false,
-      false,
-      true,
-      false,
-      false,
-      true,
-      $dropEach(dDrop_drop),
-      $dropEach(dDrop_drop),
+    tmp$8 = $zipEnds(
+      $closing(tmp$6, $dropEach(dDrop_drop)),
+      $closing($iter(tmp$7), $dropEach(dDrop_drop)),
       dDrop_drop,
       dDrop_drop,
-      $dropEach(dDrop_drop),
+      true,
     );
   } catch (error) {
     for (const item of b) {
@@ -293,38 +278,12 @@ function main() {
   let pairs;
   try {
     pairs = $collectDropping(
-      $mapEnds(
-        $rev(
-          $knowing(
-            tmp$8,
-            (iterator) =>
-              zipDoubleEndedIterator_nextBack(
-                iterator,
-                { next: $next, advanceBy: $advanceSlice },
-                { next_back: $nextBack },
-                intoIterExactSizeIterator,
-                { next: $next, advanceBy: $advanceSlice },
-                { next_back: $nextBack },
-                intoIterExactSizeIterator,
-                false,
-                false,
-                false,
-                false,
-                $dropEach(dDrop_drop),
-                $dropEach(dDrop_drop),
-                dDrop_drop,
-                dDrop_drop,
-              ),
-            (iterator) => $exactLen($sizeHint(iterator)),
-          ),
-        ),
-        ([x, y]) => {
-          const result = [x[0], y[0]];
-          dDrop_drop(y);
-          dDrop_drop(x);
-          return result;
-        },
-      ),
+      $mapEnds($rev(tmp$8), ([x, y]) => {
+        const result = [x[0], y[0]];
+        dDrop_drop(y);
+        dDrop_drop(x);
+        return result;
+      }),
     );
   } catch (error) {
     for (const item of b) {
@@ -375,22 +334,12 @@ function main() {
   }
   let tmp$11;
   try {
-    tmp$11 = iterator_zip(
-      tmp$9,
-      tmp$10,
-      { next: $next, advanceBy: $advanceSlice },
-      vecIntoIterator,
-      false,
-      false,
-      true,
-      false,
-      false,
-      true,
-      $dropEach(dDrop_drop),
-      $dropEach(dDrop_drop),
+    tmp$11 = $zipEnds(
+      $closing(tmp$9, $dropEach(dDrop_drop)),
+      $closing($iter(tmp$10), $dropEach(dDrop_drop)),
       dDrop_drop,
       dDrop_drop,
-      $dropEach(dDrop_drop),
+      true,
     );
   } catch (error) {
     for (const item of b) {
@@ -403,38 +352,12 @@ function main() {
   }
   try {
     pairs = $collectDropping(
-      $mapEnds(
-        $rev(
-          $knowing(
-            tmp$11,
-            (iterator) =>
-              zipDoubleEndedIterator_nextBack(
-                iterator,
-                { next: $next, advanceBy: $advanceSlice },
-                { next_back: $nextBack },
-                intoIterExactSizeIterator,
-                { next: $next, advanceBy: $advanceSlice },
-                { next_back: $nextBack },
-                intoIterExactSizeIterator,
-                false,
-                false,
-                false,
-                false,
-                $dropEach(dDrop_drop),
-                $dropEach(dDrop_drop),
-                dDrop_drop,
-                dDrop_drop,
-              ),
-            (iterator) => $exactLen($sizeHint(iterator)),
-          ),
-        ),
-        ([x, y]) => {
-          const result = [x[0], y[0]];
-          dDrop_drop(y);
-          dDrop_drop(x);
-          return result;
-        },
-      ),
+      $mapEnds($rev(tmp$11), ([x, y]) => {
+        const result = [x[0], y[0]];
+        dDrop_drop(y);
+        dDrop_drop(x);
+        return result;
+      }),
     );
   } catch (error) {
     for (const item of b) {
@@ -490,7 +413,10 @@ function main() {
         tmp$12,
         tmp$13,
         { next: $next, advanceBy: $advanceSlice },
-        vecIntoIterator,
+        {
+          intoIter: (items) => $iter(items),
+          IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+        },
         false,
         false,
         true,
