@@ -181,6 +181,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let name = state.locals.names[local].clone();
             state.locals.declared[local] = true;
+            note_marks(state, local, &expr);
             made.push(StmtKind::Const(name, expr).at(js::Span::NONE));
         }
         state.pending = kept;
@@ -476,7 +477,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             "" => Ok(Value::Expr(Expr::undefined())),
             // A cell a pointer is taken to (ADR 0407): its `value`.
             name if state.facts.pointed().locals.contains(&local) => Ok(Value::Expr(Expr::held(Expr::var(name)))),
-            name => Ok(Value::Expr(state.facts.variable(local, name))),
+            name => {
+                let mut read = state.facts.variable(local, name);
+                if let Some(&marks) = state.iter_locals.marks.get(&local) {
+                    read.facts = read.facts.and(marks);
+                }
+                Ok(Value::Expr(read))
+            }
         }
     }
 
@@ -832,4 +839,30 @@ fn held_by_its_temporary(state: &State<'_, '_>, local: Local, mut value: Expr) -
         value.held_as = js::HeldAs(Some(std::sync::Arc::new(name.clone())));
     }
     value
+}
+
+/// What `emit()` marked `expr`, the value written to `local`'s variable,
+/// kept for its reads (`State::marks`).
+pub(super) fn note_marks(state: &mut State<'_, '_>, local: Local, expr: &Expr) {
+    let marks = crate::lower::iterators::its_facts(expr.facts);
+    match marks == js::Facts::NONE {
+        true => state.iter_locals.marks.remove(&local),
+        false => state.iter_locals.marks.insert(local, marks),
+    };
+}
+
+/// What each local holds of an iterator's value, beside its JS (ADR 1092,
+/// amended, #730): the value beside each local, its facts kept per local.
+#[derive(Default)]
+pub(super) struct IterLocals {
+    /// Each temporary a map of an array's items is made in, `$iter(v).map(f)`:
+    /// that, which `next_back` steps from its source's end.
+    pub(super) maps: HashMap<Local, Expr>,
+    /// What `emit()` marked the value written to each local's variable
+    /// (`iterators::its_facts`), given back where `read_local_value` reads
+    /// it by name. Recorded at `flush`'s `const` and `mir_store`'s `const` or
+    /// `let` of its value only. Not yet at a `let` assigned after, through a
+    /// ref or a place (`refs`, `places`), nor at a value `spill` names: a
+    /// read there has no marks (#730, step 8b).
+    pub(super) marks: HashMap<Local, js::Facts>,
 }

@@ -425,7 +425,7 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's map temporary isn't recorded, so `next_back` of it is refused",
     file: "src/lower/mir/assign.rs",
-    find: "            state.maps.insert(local, expr.clone());\n",
+    find: "            state.iter_locals.maps.insert(local, expr.clone());\n",
     replace: "",
     tests: ["test/lowering-iterators.test.ts", "-t", "next_back of a map"],
   },

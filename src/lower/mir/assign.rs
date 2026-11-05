@@ -844,6 +844,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(StmtKind::Const(name, cell).at(js_span));
                 return Ok(());
             }
+            super::temporaries::note_marks(state, local, &expr);
             out.push(
                 match state.locals.borrowed[local] {
                     true => StmtKind::Let(name, Some(expr)),
@@ -854,7 +855,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         }
         if place.projection.is_empty() && !state.locals.user[local] && crate::lower::iterators::is_items_map(&expr) {
-            state.maps.insert(local, expr.clone());
+            state.iter_locals.maps.insert(local, expr.clone());
         }
         // The value is made before the place is reached, as Rust makes them:
         // but of a variable's fields, the object JS reaches first is the

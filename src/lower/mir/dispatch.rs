@@ -1000,7 +1000,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Some(js::ExprKind::Var(name)) = exprs.first().map(|e| &e.kind)
                 && let Some((local, _)) = state.locals.names.iter_enumerated().find(|(_, n)| *n == name)
                 && state.locals.reads[local] == 1
-                && let Some(map) = state.maps.get(&local)
+                && let Some(map) = state.iter_locals.maps.get(&local)
             {
                 exprs[0] = map.clone();
             }

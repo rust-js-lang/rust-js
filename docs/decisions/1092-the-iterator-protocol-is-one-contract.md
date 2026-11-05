@@ -758,6 +758,20 @@ across a spill: recorded where it's written to a variable (`flush`,
 `mir_store`), given back where it's read (`read_local_value`). Step 6b needs
 the same, and they come together.
 
+Step 8b's first part carries each MIR local's value marks across a spill to
+its variable, `temporaries::IterLocals::marks`, the value beside each local
+as the user decided. It records them at `flush`'s `const` and at
+`mir_store`'s `const` or `let` of a local's value, and gives them back where
+`read_local_value` reads the variable by name. It doesn't cover yet:
+- a `let` assigned after;
+- a read through a ref or a place (`refs`, `places`), `it.rev().rfind(..)`'s
+  `&mut` receiver;
+- a value `spill` names, other than `spill_marked`'s.
+No reader asks a variable's marks yet. `as_double_ended` asking a `rev()`'s
+`IterKnowsBack` (step 8b's second part) waits on those paths: with only
+these two, `rev_made_knowing_its_back.rs` and
+`own_iterator_flattened_from_its_back.rs` lost the mark and were refused.
+
 ## Amendment: each adapter's `sizeHint`, and who asks it (2026-11-05, #733 steps 1–3)
 
 G10 closes in three steps. ADR 0262's case each time: results change, so

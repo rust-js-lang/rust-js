@@ -752,9 +752,8 @@ struct State<'m, 'tcx> {
     /// Each value read in place assigned before a drop instead, whose `let`
     /// the function's body declares first (ADR 0451).
     settled: Vec<Local>,
-    /// Each temporary a map of an array's items is made in, `$iter(v).map(f)`:
-    /// that, which `next_back` steps from its source's end.
-    maps: std::collections::HashMap<Local, Expr>,
+    /// What each local holds of an iterator's value (`temporaries::IterLocals`).
+    iter_locals: temporaries::IterLocals,
     /// Each local read by its name already, a subject a branch tests: made
     /// as a variable, never written where it's read.
     named: std::collections::HashSet<Local>,
@@ -1175,7 +1174,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             flattened: Default::default(),
             in_place: Default::default(),
             settled: Vec::new(),
-            maps: Default::default(),
+            iter_locals: Default::default(),
             named: Default::default(),
             parts: Default::default(),
             places: Default::default(),

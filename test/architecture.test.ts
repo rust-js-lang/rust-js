@@ -509,10 +509,10 @@ test("each group of a function's state is read and written by its owner", () => 
 // there: any module reads them, none changes them (the review's P3).
 const mirState: Record<string, string[]> = {
   "src/lower/mir/bounds.rs": ["at", "body"],
-  "src/lower/mir/assign.rs": ["binding_var", "body", "branches", "builders", "commented", "copy_backs", "cuts", "in_place", "locals", "maps", "named", "parts", "pending", "places", "refs", "writer"],
+  "src/lower/mir/assign.rs": ["binding_var", "body", "branches", "builders", "commented", "copy_backs", "cuts", "in_place", "iter_locals", "locals", "named", "parts", "pending", "places", "refs", "writer"],
   "src/lower/mir/calls.rs": ["at", "body", "flattened"],
   "src/lower/mir/closures.rs": ["at", "body", "locals"],
-  "src/lower/mir/dispatch.rs": ["at", "body", "defaults", "flattened", "locals", "maps"],
+  "src/lower/mir/dispatch.rs": ["at", "body", "defaults", "flattened", "iter_locals", "locals"],
   "src/lower/mir/drops.rs": ["body", "branches", "locals", "pending"],
   "src/lower/mir/entries.rs": ["body", "locals", "thrown_writes"],
   "src/lower/mir/hints.rs": ["locals"],
@@ -532,7 +532,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/scopes.rs": ["body", "locals"],
   "src/lower/mir/std_calls.rs": ["at", "body", "locals"],
   "src/lower/mir/structure.rs": ["at", "body", "commented", "copy_backs", "deferred", "in_place", "labels", "left", "locals", "pending", "statement", "unwind", "writer", "writes_captured"],
-  "src/lower/mir/temporaries.rs": ["body", "copy_backs", "in_place", "locals", "named", "own_names", "pending", "places", "refs", "settled", "unwind"],
+  "src/lower/mir/temporaries.rs": ["body", "copy_backs", "in_place", "iter_locals", "locals", "named", "own_names", "pending", "places", "refs", "settled", "unwind"],
   "src/lower/mir/writer.rs": ["body", "builders", "built", "thrown_writes", "writer", "writes_captured"],
 };
 test("each module of mir/ reads only the fields of mir.rs's state it's listed for", () => {
