@@ -7,24 +7,62 @@
 use super::*;
 
 /// The variables of `body` each assigned what reads nothing that changes
-/// just before a test reads it, and named nowhere else: MIR's binding of a
-/// pattern's value a guard reads, `x = b; if (odd(x))`, `(1, x) | (x, 1) if
-/// odd(x)`'s (#221), or `r$1 = o._0; if (!(r$1 > 1))` of a guard of
-/// `guards` that calls nothing, `Some(Circle(r) | Sphere(r)) if r > 1.0`
-/// (#523).
+/// just before a test reads it, past others so given, and named nowhere
+/// else: MIR's binding of a pattern's value a guard reads, `x = b; if
+/// (odd(x))`, `(1, x) | (x, 1) if odd(x)`'s (#221), or `r$1 = o._0; if
+/// (!(r$1 > 1))` of a guard of `guards` that calls nothing, `Some(Circle(r)
+/// | Sphere(r)) if r > 1.0` (#523); read in the `if`s MIR nests of the
+/// guard too, or by nothing, `x$1 = s[0]; y$1 = s[1]; if (g(c, y$1))`
+/// (#771).
 pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> HashSet<String> {
     let mut named: HashMap<&str, usize> = HashMap::new();
     js::visit_stmts(body, &mut |name| *named.entry(name).or_default() += 1);
     let mut given: HashMap<String, usize> = HashMap::new();
+    let binding = |s: &Stmt| match &s.kind {
+        StmtKind::Assign(target, value) => matches!(target.kind, ExprKind::Var(_)) && pure(value),
+        StmtKind::Const(_, value) => pure(value),
+        _ => false,
+    };
     js::each_list(body, &mut |list| {
-        for pair in list.windows(2) {
-            if let StmtKind::Assign(target, value) = &pair[0].kind
-                && let ExprKind::Var(name) = &target.kind
-                && let StmtKind::If(test, then, otherwise) = &pair[1].kind
-                && binds(name, value, test, then, otherwise.as_deref(), guards)
+        for (i, stmt) in list.iter().enumerate() {
+            // A `let` right before a block MIR made, read only by its
+            // tree's tests (`given_before`).
+            if let StmtKind::Let(name, Some(value)) = &stmt.kind
+                && let Some(StmtKind::Labeled(label, block)) = list.get(i + 1).map(|s| &s.kind)
+                && crate::lower::mir::is_block_label(label)
+                && pure(value)
+                && let Some(reads) = tested_reads(block, name).filter(|&n| n > 0)
             {
-                *given.entry(name.clone()).or_default() +=
-                    1 + js::mentions_in(&[StmtKind::Expr(test.clone()).at(pair[1].span)], name);
+                *given.entry(name.clone()).or_default() += reads;
+            }
+            // An assignment, or a `const` of another arm's binding of the
+            // name, `const x$3 = _6[1];`, whose reads are counted too, as
+            // they're the name's (#771).
+            let (name, value, set) = match &stmt.kind {
+                StmtKind::Assign(target, value) => match &target.kind {
+                    ExprKind::Var(name) => (name, value, 1),
+                    _ => continue,
+                },
+                StmtKind::Const(name, value) => (name, value, 0),
+                _ => continue,
+            };
+            let Some(at) = (i + 1..list.len()).find(|&j| !binding(&list[j])) else {
+                continue;
+            };
+            let StmtKind::If(test, then, otherwise) = &list[at].kind else {
+                continue;
+            };
+            let otherwise = otherwise.as_deref();
+            let unread = !test.mentions_var(name)
+                && pure(value)
+                && !value.mentions_var(name)
+                && only_tested(then, name)
+                && otherwise.is_none_or(|o| only_tested(o, name));
+            if unread || binds(name, value, test, then, otherwise, guards) {
+                let reads = js::mentions_in(&[StmtKind::Expr(test.clone()).at(list[at].span)], name)
+                    + tested_reads(then, name).unwrap_or(0)
+                    + otherwise.and_then(|o| tested_reads(o, name)).unwrap_or(0);
+                *given.entry(name.clone()).or_default() += set + reads;
             }
         }
     });
@@ -57,8 +95,175 @@ pub(super) fn binds(
         && !value.mentions_var(name)
         && (!pure(test) || guard())
         && test.mentions_var(name)
-        && js::mentions_in(then, name) == 0
-        && otherwise.is_none_or(|o| js::mentions_in(o, name) == 0)
+        && only_tested(then, name)
+        && otherwise.is_none_or(|o| only_tested(o, name))
+}
+
+/// What the `let`s right before a block MIR made give, `before`'s last,
+/// each a pure read that the block's tree alone reads, in its tests, and
+/// nothing after it: the binding of a guard's first alternative, `let x$1 =
+/// _4[0]; bb18: { if (h(c, x$1) == null) { .. x$1 = _4[0]; ..`, which the
+/// walk reads as its value, as it does the others' (#771).
+pub(super) fn given_before(before: &[Stmt], body: &[Stmt], after: &[Stmt]) -> Vec<(String, Expr)> {
+    let mut given = Vec::new();
+    for stmt in before.iter().rev() {
+        let (StmtKind::Let(name, Some(value)) | StmtKind::Const(name, value)) = &stmt.kind else {
+            break;
+        };
+        if !pure(value) || value.mentions_var(name) {
+            break;
+        }
+        // Given again in the tree, another alternative's binding: a `const
+        // x = v[i];` the tree only tests, `switch (x)`'s, reads as named.
+        if js::Writes::sets(body, name)
+            && tested_reads(body, name).is_some_and(|n| n > 0)
+            && js::mentions_in(after, name) == 0
+        {
+            given.push((name.clone(), value.clone()));
+        }
+    }
+    given.reverse();
+    given
+}
+
+/// Whether `stmts` read `name` only in their `if`s' tests (`tested_reads`).
+pub(super) fn only_tested(stmts: &[Stmt], name: &str) -> bool {
+    tested_reads(stmts, name).is_some()
+}
+
+/// How many times `stmts` read `name`, each in an `if`'s test, the `if`s
+/// MIR nests of a guard's `&&`, `if (g(c, x)) { if (x > 1) { .. } }`, up to
+/// where one of them declares it again, the arm's own binding, `const x =
+/// b;`, or gives it again, another alternative's, `x$1 = s[0];`: `None`
+/// where another statement reads it (#771).
+fn tested_reads(stmts: &[Stmt], name: &str) -> Option<usize> {
+    let mut reads = 0;
+    for stmt in stmts {
+        match &stmt.kind {
+            StmtKind::If(test, then, otherwise) => {
+                let mut read = 0;
+                test.visit_vars(&mut |v| read += usize::from(v == name));
+                reads += read
+                    + tested_reads(then, name)?
+                    + otherwise.as_deref().map_or(Some(0), |o| tested_reads(o, name))?;
+            }
+            StmtKind::Const(declared, value) | StmtKind::Let(declared, Some(value)) if declared == name => {
+                return (!value.mentions_var(name)).then_some(reads);
+            }
+            StmtKind::Let(declared, None) if declared == name => return Some(reads),
+            // Given again, another alternative's binding, `x$1 = s[0];`.
+            StmtKind::Assign(target, value)
+                if matches!(&target.kind, ExprKind::Var(v) if v == name) && !value.mentions_var(name) =>
+            {
+                return Some(reads);
+            }
+            _ if js::mentions_in(std::slice::from_ref(stmt), name) > 0 => return None,
+            _ => {}
+        }
+    }
+    Some(reads)
+}
+
+/// `test` with what each of `given` names in its place, the latest of a
+/// name's.
+fn given_in(test: &Expr, given: &[(String, Expr)]) -> Option<Expr> {
+    match given.iter().any(|(name, _)| test.mentions_var(name)) {
+        true => test.substitute(&|v| (given.iter().rev()).find(|(name, _)| name == v).map(|(_, e)| e.clone())),
+        false => Some(test.clone()),
+    }
+}
+
+impl<'s> Walk<'s, '_> {
+    /// The test of the tree `stmt` makes, `rest` after it in its list: an
+    /// `if` of what reads nothing that changes, or of a guard the program
+    /// wrote, which calls; and a guard's, `x = b; if (odd(x))`, values
+    /// given to what they alone read (`binds`), MIR's bindings of a
+    /// pattern for its guard, `const x = s[0]; const y = s[s.length - 1];
+    /// if (y * 2 > 1)`, each with its value in its place, `odd(b)`, in the
+    /// `if`s MIR nests of the guard too, `if (g(c, b)) { if (b > 1)`
+    /// (`given`, #771). Of each test, what `given` names is its value.
+    pub(super) fn test_at(&self, stmt: &'s Stmt, rest: &'s [Stmt], given: &[(String, Expr)]) -> Option<Test<'s>> {
+        let guard = |test: &Expr| {
+            let mut parts = Vec::new();
+            leaf_tests(test, js::Span::NONE, &mut parts);
+            // A `switch`'s guard is a test too, of a tree `chain` leaves to
+            // the `switch` (`switched_guard`).
+            (parts.iter()).all(|(part, span)| {
+                pure(part) || !span.is_none() && (self.told.guards.iter()).any(|g| within(*span, g.span))
+            })
+        };
+        if let StmtKind::If(test, then, otherwise) = &stmt.kind {
+            return guard(test).then(|| {
+                Some(Test {
+                    test: given_in(test, given)?,
+                    written: test,
+                    then,
+                    otherwise: otherwise.as_deref(),
+                    rest,
+                    given: Vec::new(),
+                    locals: Vec::new(),
+                })
+            })?;
+        }
+        // The run of bindings, each given what reads nothing that changes,
+        // then the `if`.
+        let binding = |s: &'s Stmt| match &s.kind {
+            StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => Some((name, value, true)),
+            StmtKind::Assign(target, value) => match &target.kind {
+                ExprKind::Var(name) if self.told.bound.contains(name) => Some((name, value, false)),
+                _ => None,
+            },
+            _ => None,
+        };
+        let mut run = vec![binding(stmt)?];
+        let mut rest = rest;
+        let (test, then, otherwise, written) = loop {
+            let (next, after) = rest.split_first()?;
+            rest = after;
+            match &next.kind {
+                StmtKind::If(test, then, otherwise) => break (test, then, otherwise.as_deref(), test),
+                _ => run.push(binding(next)?),
+            }
+        };
+        // Each read by the test alone, or by nothing, a binding the guard
+        // doesn't read, `const x = s[0];` of `&[x, .., y] if y * 2 > 1`; one
+        // at least by the test.
+        let read = |(name, value, local): &(&String, &Expr, bool)| {
+            let unread = !test.mentions_var(name)
+                && pure(value)
+                && !value.mentions_var(name)
+                && only_tested(then, name)
+                && otherwise.is_none_or(|o| only_tested(o, name));
+            (binds(name, value, test, then, otherwise, self.told.guards) || unread)
+                && !(run.iter()).any(|(other, value, _)| other != name && value.mentions_var(name))
+                && !(*local && js::mentions_in(rest, name) > 0)
+        };
+        // Or none read at all, a binding the arm doesn't read either, `(2,
+        // x) | (x, 0) if g(c, a * 2, 1) => break` (#771).
+        let dead = |(name, ..): &(&String, &Expr, bool)| {
+            tested_reads(then, name) == Some(0) && otherwise.is_none_or(|o| tested_reads(o, name) == Some(0))
+        };
+        let tested = run.iter().any(|(name, ..)| test.mentions_var(name)) || run.iter().all(dead);
+        if !run.iter().all(read) || !tested || !guard(test) {
+            return None;
+        }
+        let bound: Vec<(String, Expr)> = (run.iter())
+            .map(|(name, value, _)| Some(((*name).clone(), given_in(value, given)?)))
+            .collect::<Option<_>>()?;
+        let given = [given, &bound].concat();
+        Some(Test {
+            test: given_in(test, &given)?,
+            written,
+            then,
+            otherwise,
+            rest,
+            given: bound,
+            locals: (run.iter())
+                .filter(|(.., local)| *local)
+                .map(|(name, ..)| (*name).clone())
+                .collect(),
+        })
+    }
 }
 
 /// A guarded `|`'s bindings its arm reads, `(1, x) | (x, 1) if odd(x) =>

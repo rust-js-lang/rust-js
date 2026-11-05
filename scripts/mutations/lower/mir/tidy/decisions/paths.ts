@@ -120,4 +120,13 @@ export const mutations: Mutation[] = [
     replace: "        if false && !root.facts.has(js::Known::Part) {\n",
     tests: ["test/lowering-match-paths.test.ts", "-t", "a binding's index reads are tested in the order they're written"],
   },
+  {
+    name: "stronger-test-past-a-call",
+    breaks: "a later test of a value that says more, a guard's `x > 0` read after its call, takes the place of an earlier one before the call, `a > 0 && b === 0 && h(..)`, which fails where the tree makes the call, so `read_after_call`'s chain calls `h` once where the tree calls it twice and its block stays (#771)",
+    file: "src/lower/mir/tidy/decisions/paths.rs",
+    find: "                .take_while(|&j| pure(&out[j - 1]) || j - 1 == i)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
+    snapshots: true,
+  },
 ];

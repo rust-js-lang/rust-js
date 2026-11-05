@@ -22,15 +22,17 @@ mod guarded;
 mod paths;
 mod presence;
 mod tails;
+mod walk;
 
 use bodies::{longer_first, size};
 use calls::Model;
 pub(super) use defaults::default_values;
 pub(super) use guarded::bound;
-use guarded::{binds, bound_where_read};
+use guarded::{bound_where_read, given_before};
 use paths::{absorbed, failing, narrowed, said, simplified, unions, written_order};
 pub(super) use presence::presence_said;
 use tails::{breaks_ended, calls_in, tails};
+use walk::{Leaf, Test, Walk};
 
 /// More leaves than a match a person writes has: a tree of tests that
 /// aren't one.
@@ -100,8 +102,11 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>, told: &Told) {
         }
         let at = (label.as_str(), stmts[i].span);
         let after = &stmts[i + 1..];
-        let made = (bound_where_read(body, told).and_then(|body| chain(at, &body, after, told, told.kept)))
-            .or_else(|| chain(at, body, after, told, told.kept));
+        // What a guard's binding the `let`s before the block give, its tree
+        // the binding's only reader (`given_before`, #771).
+        let given = given_before(&stmts[..i], body, after);
+        let made = (bound_where_read(body, told).and_then(|body| chain(at, &body, after, told, (told.kept, &given))))
+            .or_else(|| chain(at, body, after, told, (told.kept, &given)));
         let Some((chain, takes_rest)) = made else {
             // A tree an arm ends with, its own `match`'s, whose leaves leave
             // the block: its chain there, and the block's again; a block no
@@ -109,7 +114,7 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>, told: &Told) {
             if told.kept
                 && let Some(tails) = tails(label, body, told)
             {
-                let made = chain(at, &tails, after, told, true);
+                let made = chain(at, &tails, after, told, (true, &given));
                 let left = names_break(&tails, label);
                 match made {
                     Some((chain, true)) => {
@@ -173,17 +178,6 @@ fn switched(tested: &[(&Expr, Expr)], told: &Told) -> bool {
     })
 }
 
-/// A leaf of the tree: the tests that hold on the way to it, in the order
-/// they're made, what it does then, and whether that goes on past the
-/// block.
-struct Leaf<'s> {
-    tests: Vec<Expr>,
-    body: Vec<&'s Stmt>,
-    out: bool,
-    /// Whether it ends with a loop whose own `break`s leave the block.
-    leaves_loop: bool,
-}
-
 /// The arms of the tree in `body`, the block `label` where it is, `after`
 /// it in its list: the statements in its place, and whether they take the
 /// place of `after` too.
@@ -194,7 +188,7 @@ fn chain(
     body: &[Stmt],
     after: &[Stmt],
     told: &Told,
-    kept: bool,
+    (kept, given): (bool, &[(String, Expr)]),
 ) -> Option<(Vec<Stmt>, bool)> {
     // A block a `return` of what it makes follows, `?`'s: its arms each
     // return, as `returned_in_branches` writes them.
@@ -213,14 +207,32 @@ fn chain(
     let mut leaves = Vec::new();
     let mut tested = Vec::new();
     let mut calls = Vec::new();
+    let mut declared = Vec::new();
+    let mut locals = Vec::new();
     let mut tree_walk = Walk {
         label,
         told,
         leaves: &mut leaves,
         tested: &mut tested,
         calls: &mut calls,
+        declared: &mut declared,
+        locals: &mut locals,
+        around: (body, after),
     };
-    tree_walk.walk(vec![tree], Vec::new())?;
+    tree_walk.walk(vec![tree], Vec::new(), given.to_vec())?;
+    // A variable a guard's binding declares, `let x = b;`, the walk read as
+    // its value, named by no leaf but where a leaf declares it again, `const
+    // x = b;` of the arm's own binding: one given again there, `x = b;`,
+    // would be left without its declaration (#771).
+    let named = |leaf: &Leaf, name: &str| {
+        let own = (leaf.body.iter())
+            .position(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if n == name))
+            .unwrap_or(leaf.body.len());
+        (leaf.body[..own].iter()).any(|s| js::mentions_in(std::slice::from_ref(*s), name) > 0)
+    };
+    if (locals.iter()).any(|name| leaves.iter().any(|leaf| named(leaf, name)) || js::mentions_in(after, name) > 0) {
+        return None;
+    }
     // A tree whose tests are a guard of a `match` that's a `switch`: the
     // `switch`'s, its guarded case falling through to the next (ADR 0905),
     // each arm's `if` its case's, not a chain of `name === "focusin" &&
@@ -581,7 +593,17 @@ fn chain(
         .chain([longest].into_iter().filter(|i| !empty.contains(i) || empty.len() != 1))
         .chain(others.into_iter().filter(|_| patterns))
         .find_map(|otherwise| arranged(otherwise, arms.clone(), bodies.clone()))?;
+    // Each declared once: a name the block declares first and again in
+    // its tree is two variables.
     let mut stmts: Vec<Stmt> = decls.to_vec();
+    for d in declared {
+        if let StmtKind::Let(name, None) = &d.kind
+            && (stmts.iter()).any(|s| matches!(&s.kind, StmtKind::Let(n, _) if n == name))
+        {
+            return None;
+        }
+        stmts.push(d.clone());
+    }
     stmts.extend(chain);
     Some((stmts, takes_rest))
 }
@@ -693,183 +715,6 @@ struct Arm<'s> {
     body: Vec<&'s Stmt>,
     out: bool,
     leaves_loop: bool,
-}
-
-/// A walk of a tree's tests to its leaves: the block it's in, and what it
-/// finds.
-struct Walk<'s, 'w> {
-    label: &'s str,
-    told: &'w Told<'w>,
-    leaves: &'w mut Vec<Leaf<'s>>,
-    /// Each test of the tree, once: the `if`'s, and what it tests, a
-    /// guard's of the value a binding gives in its place.
-    tested: &'w mut Vec<(&'s Expr, Expr)>,
-    /// Each part of a test that calls, a guard's (`Model`).
-    calls: &'w mut Vec<Expr>,
-}
-
-impl<'s> Walk<'s, '_> {
-    /// The leaves of `frames`, the rest of each list the walk is in,
-    /// innermost last, given that `tests` hold: `None` where one isn't a
-    /// tree's leaf.
-    fn walk(&mut self, mut frames: Vec<&'s [Stmt]>, tests: Vec<Expr>) -> Option<()> {
-        if self.leaves.len() > LEAVES {
-            return None;
-        }
-        while frames.last().is_some_and(|f| f.is_empty()) {
-            frames.pop();
-        }
-        let Some(frame) = frames.last_mut() else {
-            // Past the block's end, as its `break` goes.
-            self.leaves.push(Leaf {
-                tests,
-                body: Vec::new(),
-                out: true,
-                leaves_loop: false,
-            });
-            return Some(());
-        };
-        let current: &'s [Stmt] = frame;
-        let (stmt, rest) = current.split_first()?;
-        if let Some(Test {
-            test,
-            written,
-            then,
-            otherwise,
-            rest,
-        }) = self.test_at(stmt, rest)
-        {
-            *frame = rest;
-            if !self.tested.iter().any(|(t, _)| std::ptr::eq(*t, written)) {
-                self.tested.push((written, test.clone()));
-                let mut parts = Vec::new();
-                leaf_tests(&test, js::Span::NONE, &mut parts);
-                self.calls
-                    .extend(parts.into_iter().filter(|(t, _)| !pure(t)).map(|(t, _)| t.clone()));
-            }
-            let mut yes = frames.clone();
-            yes.push(then);
-            self.walk(yes, [tests.clone(), vec![test.clone()]].concat())?;
-            let mut no = frames;
-            if let Some(otherwise) = otherwise {
-                no.push(otherwise);
-            }
-            return self.walk(no, [tests, vec![test.negated_test()]].concat());
-        }
-        let label = self.label;
-        match &stmt.kind {
-            StmtKind::Break(Some(l)) if l == label => {
-                self.leaves.push(Leaf {
-                    tests,
-                    body: Vec::new(),
-                    out: true,
-                    leaves_loop: false,
-                });
-                Some(())
-            }
-            _ => {
-                // What's done from here on, to what ends it.
-                let mut body: Vec<&Stmt> = frames.iter().rev().flat_map(|f| f.iter()).collect();
-                if let Some(end) = body.iter().position(|s| ends(s)) {
-                    body.truncate(end + 1);
-                }
-                let out = match body.last().map(|s| &s.kind) {
-                    Some(StmtKind::Break(Some(l))) if l == label => {
-                        body.pop();
-                        true
-                    }
-                    Some(_) => !ends(body[body.len() - 1]),
-                    None => true,
-                };
-                // A `break` of the block can't be the chain's, but in a loop it
-                // ends with, the loop's own, which leaves to where the block does.
-                let breaks = |s: &Stmt| names_break(std::slice::from_ref(s), label);
-                let (out, leaves_loop) = match body.split_last() {
-                    Some((last, before)) if !before.iter().any(|s| breaks(s)) && breaks(last) => {
-                        let (StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. }) =
-                            &last.kind
-                        else {
-                            return None;
-                        };
-                        if !loop_breaks(body, label) {
-                            return None;
-                        }
-                        (true, true)
-                    }
-                    _ if body.iter().any(|s| breaks(s)) => return None,
-                    _ => (out, false),
-                };
-                self.leaves.push(Leaf {
-                    tests,
-                    body,
-                    out,
-                    leaves_loop,
-                });
-                Some(())
-            }
-        }
-    }
-
-    /// The test of the tree `stmt` makes, `rest` after it in its list: an
-    /// `if` of what reads nothing that changes, or of a guard the program
-    /// wrote, which calls; and a guard's, `x = b; if (odd(x))`, a value
-    /// given to what it alone reads (`binds`), with that value in its
-    /// place, `odd(b)`.
-    fn test_at(&self, stmt: &'s Stmt, rest: &'s [Stmt]) -> Option<Test<'s>> {
-        let guard = |test: &Expr| {
-            let mut parts = Vec::new();
-            leaf_tests(test, js::Span::NONE, &mut parts);
-            // A `switch`'s guard is a test too, of a tree `chain` leaves to
-            // the `switch` (`switched_guard`).
-            (parts.iter()).all(|(part, span)| {
-                pure(part) || !span.is_none() && (self.told.guards.iter()).any(|g| within(*span, g.span))
-            })
-        };
-        if let StmtKind::If(test, then, otherwise) = &stmt.kind {
-            return guard(test).then(|| Test {
-                test: test.clone(),
-                written: test,
-                then,
-                otherwise: otherwise.as_deref(),
-                rest,
-            });
-        }
-        let (name, value, local) = match &stmt.kind {
-            StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => (name, value, true),
-            StmtKind::Assign(target, value) => match &target.kind {
-                ExprKind::Var(name) if self.told.bound.contains(name) => (name, value, false),
-                _ => return None,
-            },
-            _ => return None,
-        };
-        let (next, rest) = rest.split_first()?;
-        let StmtKind::If(test, then, otherwise) = &next.kind else {
-            return None;
-        };
-        if !binds(name, value, test, then, otherwise.as_deref(), self.told.guards)
-            || local && js::mentions_in(rest, name) > 0
-            || !guard(test)
-        {
-            return None;
-        }
-        Some(Test {
-            test: test.substitute(&|v| (v == name).then(|| value.clone()))?,
-            written: test,
-            then,
-            otherwise: otherwise.as_deref(),
-            rest,
-        })
-    }
-}
-
-/// A test `Walk::test_at` finds: what it tests, the `if`'s own, its
-/// branches, and what follows it.
-struct Test<'s> {
-    test: Expr,
-    written: &'s Expr,
-    then: &'s [Stmt],
-    otherwise: Option<&'s [Stmt]>,
-    rest: &'s [Stmt],
 }
 
 /// Whether `inner` is where `outer` is.

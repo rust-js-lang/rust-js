@@ -697,8 +697,17 @@ pub(in crate::lower::mir::tidy) fn returned_unwritten(stmts: &mut Vec<Stmt>, nam
 /// or-pattern's first alternative taken (#247), where what `rest` declares
 /// isn't declared beside it; of an `if` that runs nothing either way, a
 /// drop flag's whose branch dropped nothing, `if (_2$live) {}`, its test
-/// where it does anything, else nothing.
+/// where it does anything, else nothing. A block whose `break`s were in
+/// what's gone, `bb16: { if (false) { break bb16; } .. }` of a guard's
+/// alternative a test before decides, is what it holds (`unlabeled`), as
+/// each stage that ends with this ensures (#771).
 pub(in crate::lower::mir::tidy) fn never_taken(stmts: &mut Vec<Stmt>) {
+    taken_away(stmts);
+    unlabeled(stmts);
+}
+
+/// `never_taken`'s `if`s, each in its place.
+fn taken_away(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
         let span = stmts[i].span;

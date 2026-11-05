@@ -106,27 +106,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-switch-symbols.test.ts", "-t", "a value some arms"],
   },
   {
-    name: "decisions-guard-call-a-leaf",
-    breaks:
-      "a guard that calls, `[n, ..] if below(*n)`, is no test of the tree, so `guarded_rows` keeps MIR's `bb25:` block each arm breaks out of (#221)",
-    file: "src/lower/mir/tidy/decisions.rs",
-    find: "                pure(part) || !span.is_none() && (self.told.guards.iter()).any(|g| within(*span, g.span))\n",
-    replace: "                pure(part)\n",
-    tests: CALLS,
-    snapshots: true,
-  },
-  {
-    name: "decisions-guard-binding-not-given",
-    breaks:
-      "a guard's `const n = row[0];` is what an arm does, not given in the guard's place, `below(row[0])`, so `guarded_rows` keeps its block (#221)",
-    file: "src/lower/mir/tidy/decisions.rs",
-    find: "            StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => (name, value, true),\n",
-    replace:
-      "            StmtKind::Const(..) | StmtKind::Let(..) => return None,\n",
-    tests: CALLS,
-    snapshots: true,
-  },
-  {
     name: "decisions-call-tree-tests-repeated",
     breaks:
       "a chain of a tree that calls counts `row.length >= 1` of each arm that reads it, more than the tree's, so `guarded_rows` keeps its block (#221)",
@@ -205,20 +184,6 @@ export const mutations: Mutation[] = [
     find: "    let takes_rest = going_on.len() == 1 && !after.is_empty();\n",
     replace: "    let takes_rest = false;\n",
     tests: chain,
-  },
-  {
-    name: "decisions-loop-exit-kept",
-    breaks:
-      "an arm ending in a loop that leaves the match keeps the match a labeled block",
-    file: "src/lower/mir/tidy/decisions.rs",
-    find: "                    if !loop_breaks(body, label) {\n",
-    replace: "                    if true {\n",
-    snapshots: true,
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(else_break_ends_loop|signed_counter)\\.rs$",
-    ],
   },
   {
     name: "decisions-returned-block-taken",
@@ -440,5 +405,31 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(ended) = breaks_ended(label, body) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(or_pattern_option_order).rs$"],
     snapshots: true,
+  },
+  {
+    name: "declared-between-tests-twice",
+    breaks: "a `let x;` between a tree's tests is declared before the chain beside the block's own `let x;`, so the chain declares `x` twice in one list and tidy's contract panics, `declared_first_and_between` (#771)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "            && (stmts.iter()).any(|s| matches!(&s.kind, StmtKind::Let(n, _) if n == name))\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "given-before-never",
+    breaks: "a guard's first alternative's binding MIR gives before the block, `let x$1 = _4[0]; bb18: { .. x$1 = _4[0]; ..`, isn't read as its value in the tree's tests, so `given_before_the_tree`'s alternatives are apart and its block stays (#771)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "        let given = given_before(&stmts[..i], body, after);\n",
+    replace: "        let given = Vec::new();\n",
+    tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "declared-binding-named-past-the-walk",
+    breaks: "a guard's binding the tree declares, `let x$4 = b$1;`, is read as its value though a branch gives it again, `x$4 = b$1;`, which the chain keeps without the declaration: `ReferenceError: x$4 is not defined` (#771)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "    if (locals.iter()).any(|name| leaves.iter().any(|leaf| named(leaf, name)) || js::mentions_in(after, name) > 0) {\n        return None;\n    }\n",
+    replace: "",
+    tests: ["test/match-trees.test.ts", "-t", "seed 8$"],
   },
 ];

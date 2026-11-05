@@ -382,4 +382,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^loop_exit_moves.rs$"],
     snapshots: true,
   },
+  {
+    name: "never-taken-labels-kept",
+    breaks: "a block whose only `break` was in an `if (false)` `never taken` takes away keeps its label, which `written`'s contract refuses, a panic: `decided_alternative`'s `(_, _) | (0, 2) if .. || a == 0` (#771)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "    taken_away(stmts);\n    unlabeled(stmts);\n",
+    replace: "    taken_away(stmts);\n",
+    tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
+    snapshots: true,
+  },
 ];

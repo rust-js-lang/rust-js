@@ -13,7 +13,7 @@ use super::{
 };
 
 /// Ways of the tests' coming out `Model` tries, at most.
-const WAYS: usize = 1 << 12;
+const WAYS: usize = 1 << 14;
 
 /// Paths of an arm `Model::fewest` tries in each order, at most.
 const ORDERED: usize = 4;
@@ -114,6 +114,25 @@ impl Model<'_> {
                 }
             }
         }
+        // And a test of what reads only values a `match` keeps, `a % 2 ===
+        // 0` of a guard `x % 2 == 0` whose `x` is `a`: kept by each that
+        // keeps them all, as no call can change what it reads (E0510, #771).
+        for j in 0..model.opaque.len() {
+            let mut places = Vec::new();
+            if !read_places(&model.opaque[j].0, &mut places) {
+                continue;
+            }
+            let kept = (places.iter()).try_fold(None::<Vec<js::Span>>, |kept, place| {
+                let (_, _, of) = model.subjects.iter().find(|(s, ..)| same_subject(s, place))?;
+                Some(Some(match kept {
+                    None => of.clone(),
+                    Some(kept) => kept.into_iter().filter(|m| of.contains(m)).collect(),
+                }))
+            });
+            if let Some(Some(kept)) = kept {
+                model.opaque[j].1.extend(kept);
+            }
+        }
         // Each value apart, of the runs of values its tests tell apart:
         // a test the chain makes of them, `n < 2` of `n >= 1` and `n === 2`,
         // passes all of one or none.
@@ -140,6 +159,9 @@ impl Model<'_> {
             .try_fold(1usize, |n, cells| n.checked_mul(cells))
             .and_then(|n| n.checked_shl(u32::try_from(model.opaque.len() + model.times.iter().sum::<usize>()).ok()?))
             .filter(|&n| n <= WAYS)?;
+        let compiled: Vec<(usize, Vec<Node>)> = (paths.iter())
+            .map(|(arm, path)| (*arm, path.iter().map(|test| model.compiled(test)).collect()))
+            .collect();
         for way in 0..ways {
             let mut rest = way;
             let cells: Vec<usize> = (model.subjects.iter())
@@ -152,11 +174,11 @@ impl Model<'_> {
             let at = Way { cells, bits: rest };
             // The one path whose tests each pass, tried as the tree tries them.
             let mut reached = None;
-            for (arm, path) in &paths {
+            for (arm, path) in &compiled {
                 let mut trace = Vec::new();
                 let mut passes = true;
                 for test in path.iter() {
-                    if !model.eval(test, &at, &mut trace, false)? {
+                    if !model.run(test, &at, &mut trace, false)? {
                         passes = false;
                         break;
                     }
@@ -180,16 +202,18 @@ impl Model<'_> {
     /// makes, and otherwise fails, having made only calls the tree makes
     /// first.
     fn tells(&self, arm: usize, steps: &[(usize, Expr)], test: &Expr) -> bool {
+        let steps: Vec<Node> = steps.iter().map(|(_, test)| self.compiled(test)).collect();
+        let test = self.compiled(test);
         self.outcomes.iter().all(|outcome| {
             let mut trace = Vec::new();
-            for (_, earlier) in steps {
-                match self.eval(earlier, &outcome.way, &mut trace, false) {
+            for earlier in &steps {
+                match self.run(earlier, &outcome.way, &mut trace, false) {
                     Some(true) => return true,
                     Some(false) => {}
                     None => return false,
                 }
             }
-            match self.eval(test, &outcome.way, &mut trace, false) {
+            match self.run(&test, &outcome.way, &mut trace, false) {
                 Some(true) => outcome.arm == arm && trace == outcome.calls,
                 Some(false) => outcome.arm != arm && outcome.calls.starts_with(&trace),
                 None => false,
@@ -201,11 +225,12 @@ impl Model<'_> {
     /// `otherwise`'s arm where none passes, does what the tree does, each
     /// way.
     pub(super) fn kept(&self, steps: &[(usize, Expr)], otherwise: usize) -> bool {
+        let steps: Vec<(usize, Node)> = steps.iter().map(|(i, test)| (*i, self.compiled(test))).collect();
         self.outcomes.iter().all(|outcome| {
             let mut trace = Vec::new();
             let mut arm = otherwise;
-            for (i, test) in steps {
-                match self.eval(test, &outcome.way, &mut trace, false) {
+            for (i, test) in &steps {
+                match self.run(test, &outcome.way, &mut trace, false) {
                     Some(true) => {
                         arm = *i;
                         break;
@@ -321,27 +346,29 @@ impl Model<'_> {
     /// before it and the `steps` before that failing, passes each way the
     /// tree's tests come out.
     fn says(&self, steps: &[(usize, Expr)], paths: &[Vec<Expr>], prefix: &[Expr], test: &Expr) -> bool {
+        let earlier: Vec<Node> = (steps.iter())
+            .map(|(_, t)| self.compiled(t))
+            .chain(paths.iter().cloned().map(|path| self.compiled(&all(path))))
+            .collect();
+        let prefix: Vec<Node> = prefix.iter().map(|t| self.compiled(t)).collect();
+        let test = self.compiled(test);
         self.outcomes.iter().all(|outcome| {
             let mut trace = Vec::new();
-            let earlier = steps
-                .iter()
-                .map(|(_, t)| t.clone())
-                .chain(paths.iter().cloned().map(all));
-            for earlier in earlier {
-                match self.eval(&earlier, &outcome.way, &mut trace, false) {
+            for earlier in &earlier {
+                match self.run(earlier, &outcome.way, &mut trace, false) {
                     Some(true) => return true,
                     Some(false) => {}
                     None => return false,
                 }
             }
-            for before in prefix {
-                match self.eval(before, &outcome.way, &mut trace, true) {
+            for before in &prefix {
+                match self.run(before, &outcome.way, &mut trace, true) {
                     Some(true) => {}
                     Some(false) => return true,
                     None => return false,
                 }
             }
-            self.eval(test, &outcome.way, &mut trace, true) == Some(true)
+            self.run(&test, &outcome.way, &mut trace, true) == Some(true)
         })
     }
 }
@@ -456,37 +483,66 @@ impl Model<'_> {
         Some(Read::Opaque(j, negated))
     }
 
-    /// Whether `test` passes the way `at`, with what it calls, in order,
-    /// in `trace`: `None` where it reads after a call what that call may
+    /// `test` as each way reads it (`Model::run`), what's read of each
+    /// part found once, not each way (#771).
+    fn compiled(&self, test: &Expr) -> Node {
+        match &test.kind {
+            ExprKind::Binary(Op::And, a, b) => Node::And(Box::new(self.compiled(a)), Box::new(self.compiled(b))),
+            ExprKind::Binary(Op::Or, a, b) => Node::Or(Box::new(self.compiled(a)), Box::new(self.compiled(b))),
+            ExprKind::Unary(UnaryOp::Not, a) => Node::Not(Box::new(self.compiled(a))),
+            _ => {
+                let read = self.read(test);
+                // Of each cell of the value it tests, whether it passes, fails
+                // or can't tell.
+                let cells = match &read {
+                    Some(Read::Subject(j, set)) => (self.subjects[*j].1.iter())
+                        .map(|cell| match (cell.within(set), cell.intersect(set).is_empty()) {
+                            (true, _) => Some(true),
+                            (false, true) => Some(false),
+                            (false, false) => None,
+                        })
+                        .collect(),
+                    _ => Vec::new(),
+                };
+                Node::Part {
+                    read,
+                    span: test.span,
+                    cells,
+                }
+            }
+        }
+    }
+
+    /// Whether `test`, `compiled`, passes the way `at`, with what it calls,
+    /// in order, in `trace`: `None` where it reads after a call what that call may
     /// change, or can't tell. `again`: a call made before on the way says
     /// what it said then, as what's known of it, not a call made again.
-    fn eval(&self, test: &Expr, at: &Way, trace: &mut Vec<Made>, again: bool) -> Option<bool> {
-        match &test.kind {
-            ExprKind::Binary(Op::And, a, b) => match self.eval(a, at, trace, again)? {
-                true => self.eval(b, at, trace, again),
+    fn run(&self, test: &Node, at: &Way, trace: &mut Vec<Made>, again: bool) -> Option<bool> {
+        match test {
+            Node::And(a, b) => match self.run(a, at, trace, again)? {
+                true => self.run(b, at, trace, again),
                 false => Some(false),
             },
-            ExprKind::Binary(Op::Or, a, b) => match self.eval(a, at, trace, again)? {
+            Node::Or(a, b) => match self.run(a, at, trace, again)? {
                 true => Some(true),
-                false => self.eval(b, at, trace, again),
+                false => self.run(b, at, trace, again),
             },
-            ExprKind::Unary(UnaryOp::Not, a) => self.eval(a, at, trace, again).map(|b| !b),
-            _ => {
+            Node::Not(a) => self.run(a, at, trace, again).map(|b| !b),
+            Node::Part { read, span, cells } => {
                 let bit = |k: usize| at.bits >> k & 1 == 1;
-                let read = self.read(test)?;
-                let kept = match &read {
+                let read = read.as_ref()?;
+                let kept = match read {
                     Read::Subject(j, _) => self.subjects[*j].2.as_slice(),
                     Read::Opaque(j, _) => self.opaque[*j].1.as_slice(),
                     _ => &[],
                 };
-                let in_its_guard =
-                    |c: usize| !test.span.is_none() && self.within_guard[c].is_some_and(|g| within(test.span, g));
+                let in_its_guard = |c: usize| !span.is_none() && self.within_guard[c].is_some_and(|g| within(*span, g));
                 if matches!(read, Read::Subject(..) | Read::Opaque(..))
                     && !(trace.iter()).all(|&(c, _)| self.made[c].is_some_and(|m| kept.contains(&m)) || in_its_guard(c))
                 {
                     return None;
                 }
-                match read {
+                match *read {
                     Read::Constant(b) => Some(b),
                     Read::Call(k, negated) => {
                         // Its first time on the way, its second: the call
@@ -503,19 +559,40 @@ impl Model<'_> {
                         Some(bit(first + time) != negated)
                     }
                     Read::Opaque(j, negated) => Some(bit(j) != negated),
-                    Read::Subject(j, set) => {
-                        let cell = &self.subjects[j].1[at.cells[j]];
-                        if cell.within(&set) {
-                            Some(true)
-                        } else if cell.intersect(&set).is_empty() {
-                            Some(false)
-                        } else {
-                            None
-                        }
-                    }
+                    Read::Subject(j, _) => cells[at.cells[j]],
                 }
             }
         }
+    }
+}
+
+/// A test as `Model::run` reads it each way: its `&&`s, `||`s and `!`s,
+/// and of each part, what's read of it, where it's written and, of a
+/// value's test, whether each cell of the value passes it.
+enum Node {
+    And(Box<Node>, Box<Node>),
+    Or(Box<Node>, Box<Node>),
+    Not(Box<Node>),
+    Part {
+        read: Option<Read>,
+        span: js::Span,
+        cells: Vec<Option<bool>>,
+    },
+}
+
+/// The places `test` reads, each variable, property or element, `a` of `a
+/// % 2 === 0`, into `out`; `false` where it reads what's neither a place
+/// nor a constant.
+fn read_places<'e>(test: &'e Expr, out: &mut Vec<&'e Expr>) -> bool {
+    match &test.kind {
+        ExprKind::Var(_) | ExprKind::Member(..) | ExprKind::Index(..) => {
+            out.push(test);
+            true
+        }
+        ExprKind::Num(_) | ExprKind::Bool(_) | ExprKind::Str(_) | ExprKind::Null | ExprKind::Undefined => true,
+        ExprKind::Binary(_, a, b) => read_places(a, out) && read_places(b, out),
+        ExprKind::Unary(_, a) => read_places(a, out),
+        _ => false,
     }
 }
 

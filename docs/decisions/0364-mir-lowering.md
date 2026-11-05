@@ -16,7 +16,7 @@ Amended: a value a block gives last is given first only where nothing can
 tell (issue #219, below); an `|` of two values' tests is a chain of its
 arms; no arm holds a copy of what follows the `match` (kj-switch); a
 chain's arm needs no more than that the arms before it failed (#221); a
-tree of a `switch`'s guard is the `switch`'s (rd619); a test of a value an or-pattern's alternatives after it each say is theirs (#617); paths alike but for one value's test are one, and a path no alternative of whose or-pattern holds is none (#631); an alternative's tests of a tuple's parts are in the order written (#632); a match of three values is the chain as written, a test whose failing says another path of its arm, or that the arms before it say, is none (#673); an or-pattern over `Option`s and enums tests as written, by the tuple's part each test reads, a part's own tests in MIR's order, and a path's `x != null` beside `x === k` goes of any tree no `switch` takes (#674). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
+tree of a `switch`'s guard is the `switch`'s (rd619); a test of a value an or-pattern's alternatives after it each say is theirs (#617); paths alike but for one value's test are one, and a path no alternative of whose or-pattern holds is none (#631); an alternative's tests of a tuple's parts are in the order written (#632); a match of three values is the chain as written, a test whose failing says another path of its arm, or that the arms before it say, is none (#673); an or-pattern over `Option`s and enums tests as written, by the tuple's part each test reads, a part's own tests in MIR's order, and a path's `x != null` beside `x === k` goes of any tree no `switch` takes (#674); the walk of a tree reads past a variable declared between its tests, a guard's run of bindings and an arm that leaves the block (#771). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -1353,3 +1353,86 @@ of a longer one", of React's shape; mutations `binding-arm-first-kept`,
 `binding-arm-of-any-body`, `binding-arm-of-a-field-set`,
 `binding-arm-after-one-as-long` and `binding-arm-of-a-made-value`
 (`decisions/bodies.ts`).
+
+## Amendment: the walk reads past a declaration, a run of bindings and an arm that leaves (#771, 2026-11-05)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The JS does what it
+did; only its form changes, toward #523's C1, a flat chain and no label
+the Rust doesn't write. `test/match-trees.ts` generates the shapes C1
+decided, and `test/match-trees.test.ts` runs seeds 1 to 24 against native
+Rust in the nightly; on `main` 439 of their 960 functions printed a
+`bbN:` label, `test/match-trees-labeled.txt` lists them, and the list only
+shrinks. This takes it to 283. Each rule is of `decisions`' walk of a
+tree, or what it reads:
+
+- **A guard's bindings are read as their values in the `if`s MIR nests
+  of its `&&`** (`given`, `Walk::test_at`, now in `decisions/guarded.rs`):
+  `(3, x) if x % 2 == 0 && g(c, x, 0)` is `x = l; if (x % 2 === 0) { if
+  (g(c, x, 0)) {`, its test `l % 2 === 0 && g(c, l, 0)`. A run of
+  bindings before a test is read so too, `&[x, .., y] if y * 2 > 1`'s
+  `const x = s[0]; const y = ..;`, each read by the test, by the nested
+  tests (`tested_reads`) or by nothing, and one at least by the test, or
+  none read at all, a binding nothing reads; and a guard's first
+  alternative's binding MIR gives before the block, `let x$1 = _4[0];`,
+  which the tree gives again (`given_before`). A `const x = v[i];` the
+  tree only tests, `switch (x)`'s, is read as named. A binding the tree
+  declares, `let x = b;`, is read as its value only where no leaf names
+  it, but past a declaration of its own, `const x = b;` of the arm's
+  binding: one given again, `x = b;`, would be left without the
+  declaration (`ReferenceError`).
+- **A variable MIR declares between the tree's tests is declared before
+  the chain** (`Walk::declared`): `let x;` of an or-pattern's binding,
+  where what's done from it is no leaf, a test past it leaving the block,
+  as `(x, 3) | (3, x) | (x, 0) if h(c, x).is_none() && x > 2` has; once,
+  and only where nothing outside what follows it names it, another
+  variable of its name, nor a `let` the block declares first.
+- **A way no value takes isn't walked**: `b === 1` once `b >= 1 && b <=
+  2` failed. A run of guarded `if`s each going on to the next was more
+  leaves than `LEAVES`.
+- **An arm's own `match` is chained past an arm that leaves the outer
+  one** (`tails`): `Some((0, 0)) => 6`'s `break` is before `const [op, v]
+  = e; ..` and the inner tree, so `tails` tries each statement that leaves
+  the block, not only the first, and the outer chain is then `else if
+  (e[0] === 0 && e[1] === 0) { tmp = 6; } else { const [op, v] = e; .. }`.
+  A tree past the first is chained only where it reads no test again:
+  std's `Skip::next_back`, `if (tmp !== value) { break bb6; } if (value >
+  0) { .. } return;`, keeps its block, not `tmp === value` read again in
+  each arm, a form no decision covers.
+- **A test of what a `match` keeps is kept after another guard's call**
+  (`calls::Model`): `(0, x) | (3, x) if a % 2 == 0` reads `a`, a value the
+  `match` tests, which no call can change (E0510); an opaque test is kept
+  by each `match` that keeps each place it reads (`read_places`). The
+  model tries 16,384 ways, not 4,096, and reads each test once, not once
+  each way (`Model::compiled`, `Model::run`): seed 15's 40 functions
+  compile in 2.6 s, as on `main`, where the model read each way again took
+  28 s.
+- **A later test of a value takes an earlier one's place only before a
+  call** (`paths::simplified`): `(0, x) | (x, 0) if h(..).is_none() && x >
+  0`'s `a !== 0 .. h(..) .. a > 0` kept `a > 0` where the `a !== 0` was,
+  before `h`, which then failed where the tree calls `h`.
+- **`never taken` unlabels a block whose `break`s it took away**: `(_, _)
+  | (0, 2) if h(..).is_none() || a == 0` left `bb16: { if (false) { break
+  bb16; } .. }`, and `written`'s contract panicked once the `if` went.
+
+Forms none of the user's decisions cover are none here: each is the flat
+chain of C1, A1's bindings, or the nesting a tree whose label stays
+already had.
+
+Corpus `match_trees_chained.rs`, against native Rust; generated match
+trees, 24 seeds, each agreeing with native Rust. Mutations
+`declared-between-tests-left`, `declared-between-tests-of-any-leaf`,
+`declared-between-tests-twice`, `ways-none-takes-walked`,
+`given-before-never`, `given-in-nested-tests-dropped`,
+`declared-binding-named-past-the-walk` (`decisions.ts`, the last of
+generated seed 8), `given-before-of-a-tested-const`,
+`nested-tests-unread`, `binding-runs-of-one`,
+`unread-binding-runs-refused` (`decisions/guarded.ts`),
+`stronger-test-past-a-call` (`decisions/paths.ts`),
+`calls-kept-places-unread`, `calls-fewer-ways` (`decisions/calls.ts`),
+`arm-trees-from-the-first-leaving`, `arm-trees-past-the-first-read-again`
+(`decisions/tails.ts`) and
+`never-taken-labels-kept` (`jumps/labels.ts`). Two guards no program
+reaches yet are kept and have none: a `let` named outside what follows it
+isn't declared before the chain, and `read_places` reads no place of an
+expression it doesn't know, so an opaque test of one is kept by no
+`match`; with either gone the 24 seeds and the corpus print as they do.

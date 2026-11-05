@@ -119,4 +119,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(guards_set_bindings).rs$"],
     snapshots: true,
   },
+  {
+    name: "calls-kept-places-unread",
+    breaks: "a test of what a `match` keeps, `a % 2 === 0`, read after another guard's call, is what that call may change, so the model refuses and `kept_read` keeps its labeled block (E0510, #771)",
+    file: "src/lower/mir/tidy/decisions/calls.rs",
+    find: "            if let Some(Some(kept)) = kept {\n                model.opaque[j].1.extend(kept);\n            }",
+    replace: "            drop(kept);",
+    tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "calls-fewer-ways",
+    breaks: "the model tries 4,096 ways, as before #771, so `kept_read`'s, of two values of seven and six cells, a test and six calls' times, are too many and its block stays",
+    file: "src/lower/mir/tidy/decisions/calls.rs",
+    find: "const WAYS: usize = 1 << 14;",
+    replace: "const WAYS: usize = 1 << 12;",
+    tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
+    snapshots: true,
+  },
 ];

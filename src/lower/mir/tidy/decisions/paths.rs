@@ -159,10 +159,16 @@ pub(super) fn simplified(tests: &[Expr], patterns: bool) -> Option<Vec<Expr>> {
     // 3 && a === 2) || (b === 2 && a === 3)` (#617), or those before it,
     // `b !== 1` after them, goes as the arm before them failing says it
     // (`said`, #631, #673).
+    // Not past a call: a guard's read after its call, `x > 0` of `(0, x) |
+    // (x, 0) if h(..).is_none() && x > 0`, read before it would fail where
+    // the tree makes the call (#771).
     let mut i = 0;
     while i < out.len() {
-        let stronger =
-            atom(&out[i]).and_then(|(subject, set)| (i + 1..out.len()).find(|&j| says_within(&out[j], &subject, &set)));
+        let stronger = atom(&out[i]).and_then(|(subject, set)| {
+            (i + 1..out.len())
+                .take_while(|&j| pure(&out[j - 1]) || j - 1 == i)
+                .find(|&j| says_within(&out[j], &subject, &set))
+        });
         // And a later test of it that says less, `c !== 1` after `c !== 0 &&
         // b === 0`: what both say, where the first is, its value read there
         // already (#673).

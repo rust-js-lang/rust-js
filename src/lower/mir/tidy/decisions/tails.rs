@@ -13,8 +13,11 @@ use super::*;
 /// the block goes where the list's end does, so that tree is a block's of
 /// its own, of nothing after it: its chain there, as long as it reads
 /// again only what does nothing, as the user decided for a tree whose
-/// label stays otherwise (C1, #523). The list with each so, inner first;
-/// `None` where none is.
+/// label stays otherwise (C1, #523); or from a later one, where the tree
+/// goes on past what an arm before it does, `const [op, v] = e; ..` of
+/// `Some((op, v)) => { .. match (op, l) { .. } }` after `Some((0, 0)) =>
+/// 6`'s `break` (#771). The list with each so, inner first; `None` where
+/// none is.
 pub(super) fn tails(label: &str, list: &[Stmt], told: &Told) -> Option<Vec<Stmt>> {
     tails_in(label, list, told, true)
 }
@@ -35,15 +38,16 @@ fn tails_in(label: &str, list: &[Stmt], told: &Told, whole: bool) -> Option<Vec<
     let declared = (list.iter())
         .take_while(|s| matches!(s.kind, StmtKind::Let(_, None)))
         .count();
-    let first = (list.iter()).position(|s| names_break(std::slice::from_ref(s), label));
-    if let Some(k) = first
-        && !(whole && k == declared)
-        && matches!(list[k].kind, StmtKind::If(..))
-        && let Some((chain, _)) = chain((label, list[k].span), &list[k..], &[], told, true)
-    {
-        list.truncate(k);
-        list.extend(chain);
-        changed = true;
+    let leaving = (0..list.len()).filter(|&k| names_break(std::slice::from_ref(&list[k]), label));
+    for (n, k) in leaving.enumerate() {
+        if !(whole && k == declared)
+            && matches!(list[k].kind, StmtKind::If(..))
+            && let Some((chain, _)) = chain((label, list[k].span), &list[k..], &[], told, (n == 0, &[]))
+        {
+            list.truncate(k);
+            list.extend(chain);
+            return Some(list);
+        }
     }
     changed.then_some(list)
 }
