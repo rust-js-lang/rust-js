@@ -191,7 +191,7 @@ function lentOf(src, dropI) {
     console.log(`sum ${total[0]}`);
     try {
       const acc = $foldBack(
-        $lent($lent(held)),
+        $lent(held),
         [0],
         (acc, x) => {
           acc[0] = (acc[0] + x[0]) >>> 0;
@@ -280,7 +280,7 @@ function main() {
     try {
       const foundIn = $iter(six());
       try {
-        const find = $findDropping(
+        const d = $findDropping(
           $lent($rev($lent($slicing(foundIn, dDrop_drop)))),
           (d) => d[0] === 4,
           dDrop_drop,
@@ -291,13 +291,13 @@ function main() {
           dDrop_drop(d);
           return result;
         }
-        const found = find != null ? map(find) : undefined;
+        const found = d != null ? map(d) : undefined;
         console.log(
           `found ${found == null ? "None" : `Some(${found})`} left ${foundIn.end - foundIn.at}`,
         );
         const nthOf = $iter(six());
         try {
-          const nth = $nthDropping(
+          const d = $nthDropping(
             $lent($rev($lent($slicing(nthOf, dDrop_drop)))),
             2,
             dDrop_drop,
@@ -308,7 +308,7 @@ function main() {
             dDrop_drop(d);
             return result;
           }
-          const value = nth != null ? map(nth) : undefined;
+          const value = d != null ? map(d) : undefined;
           console.log(`rev nth ${value == null ? "None" : `Some(${value})`}`);
           const generic = $iter(six());
           try {
@@ -316,15 +316,13 @@ function main() {
             console.log(`generic ${value == null ? "None" : `Some(${value})`}`);
             const skipped = $iter(six());
             try {
-              const next = $next(
-                $skipping($rev($lent($slicing(skipped, dDrop_drop))), 2, dDrop_drop),
-              );
+              const d = $next($skipping($rev($lent($slicing(skipped, dDrop_drop))), 2, dDrop_drop));
               function map(d) {
                 const result = d[0];
                 dDrop_drop(d);
                 return result;
               }
-              const value = next != null ? map(next) : undefined;
+              const value = d != null ? map(d) : undefined;
               console.log(`rev skip ${value == null ? "None" : `Some(${value})`}`);
               // Its length and hint, of a `Vec`'s and the crate's.
               const measured = $iter(ds());
@@ -334,9 +332,9 @@ function main() {
                 console.log(
                   `hint (${lentHint[0]}, ${lentHint[1] == null ? "None" : `Some(${lentHint[1]})`})`,
                 );
-                const d = $next(measured);
-                if (d != null) {
-                  dDrop_drop(d);
+                const next = $next(measured);
+                if (next != null) {
+                  dDrop_drop(next);
                 }
                 console.log(`len ${$lent(measured).len()} after one`);
                 const ownHinted = every(3);
@@ -433,7 +431,7 @@ function main() {
                               console.log("drop every");
                             },
                           );
-                          summed($slicing($iter($iter(ds())), dDrop_drop), $dropEach(dDrop_drop));
+                          summed($slicing($iter(ds()), dDrop_drop), $dropEach(dDrop_drop));
                           lentOf(
                             $iterator(
                               every(5),
@@ -451,8 +449,8 @@ function main() {
                               console.log("drop every");
                             },
                           );
-                          lentOf($slicing($iter($iter(ds())), dDrop_drop), $dropEach(dDrop_drop));
-                          mapped($slicing($iter($iter(ds())), dDrop_drop), $dropEach(dDrop_drop));
+                          lentOf($slicing($iter(ds()), dDrop_drop), $dropEach(dDrop_drop));
+                          mapped($slicing($iter(ds()), dDrop_drop), $dropEach(dDrop_drop));
                         } finally {
                           accDrop_drop(acc);
                         }
