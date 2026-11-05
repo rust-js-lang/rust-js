@@ -366,9 +366,8 @@ as a wrong answer is.
     cases or a sweep of seeds: in parallel processes (`xargs -P`, a `Promise.all` of
     `Bun.spawn`s), never a loop of one at a time.
   
-  Size the parts to the cores left free (`uptime`'s load against
-  `sysctl -n hw.ncpu`), so several agents don't oversubscribe the machine
-  (see "Run few agents at once" below). Where work still runs on one core
+  Size the parts to the machine's cores; with one agent per machine (below)
+  they're all yours. Where work still runs on one core
   and could be split, split it: give the tool a parallel form, or add it to
   the slow spots below with its cost and what would split it. A step is
   done when it uses the machine, not only when it passes.
@@ -389,10 +388,14 @@ as a wrong answer is.
 - **Build what the tests use.** The tests, `check:fast` and an app built
   from this checkout run the debug compiler, `target/debug/rust-js`
   (`bun run build`); `cargo build --release` builds one nothing here runs.
-- **Run few agents at once.** Each worktree builds its own `target/`
-  (about 4 GB) and runs the corpus on every core; four or five at a time
-  made every one of them two or three times slower, and timed-out tests
-  look like failures. Three at a time kept each near its usual.
+- **One agent per machine, one task at a time** (the user's rule,
+  2026-11-05). One agent running its corpus, mutations and builds on every
+  core beats several sharing them. Eight agents on one 12-core, 16 GB Mac
+  ran at a load of 50–60, each step three to five times slower, with
+  timeouts and reruns; four or five at a time made each two or three times
+  slower. A session doesn't spawn agents to work in parallel: it finishes
+  one issue, then starts the next. With three machines, three issues are
+  in flight.
 - **Keep the Mac awake** while work runs unattended (`caffeinate -dims` in
   a terminal): a sleeping Mac pauses every process, and `timeout` with
   them, so a five-minute command took hours and its tests failed on time.
