@@ -794,4 +794,20 @@ export const mutations: Mutation[] = [
     replace: "        is_compiled_std_iterator(tcx, source)\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_made_in_place_from_back.rs$"],
   },
+  {
+    name: "scan-not-closed-on-drop",
+    breaks: "a `scan()` isn't closed to drop what it holds, so a compiled one a consumer's fold took is dropped again by its fields, its source twice (#741, #748)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            \"std::iter::Scan\" => {\n",
+    replace: "            \"std::iter::Scan\" if false => {\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^scan_dropped_once.rs$|^scan_dropped_once with"],
+  },
+  {
+    name: "scan-state-not-closed",
+    breaks: "closing a `scan()` drops what its source holds and its function, not its state, so a compiled one of a state with a destructor over a range drops it twice (#741)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "                let own: Vec<Ty<'tcx>> = [function, state]\n",
+    replace: "                let own: Vec<Ty<'tcx>> = [function]\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^a scan's state and function drop once"],
+  },
 ];

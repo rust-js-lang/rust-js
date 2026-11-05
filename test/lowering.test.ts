@@ -636,29 +636,6 @@ pub fn run(again: bool) -> Vec<i32> {
   expect([again.exitCode === 0, again.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` yet")]);
 });
 
-// An iterator adapter over items with a destructor, \`v.into_iter().map(f)\`
-// dropped before it's stepped, is refused: a JS iterator has no fields to
-// drop them through, and its items would be left undropped.
-test("an adapter of items with a destructor dropped unstepped is refused", () => {
-  const dir = fixture("adapter-drops");
-  writeFileSync(join(dir, "lib.rs"), `pub struct Noisy(pub &'static str);
-impl Drop for Noisy {
-    fn drop(&mut self) {
-        println!("drop {}", self.0);
-    }
-}
-pub fn run() {
-    let v = vec![Noisy("a"), Noisy("b")];
-    drop(v.into_iter().scan(0, |_, n| Some(n)));
-}
-`);
-  const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
-    cwd: root,
-    stderr: "pipe",
-  });
-  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("with a destructor")]);
-});
-
 // What JS can't do soundly is refused: each compiled to output that ran
 // unlike Rust, found running them both.
 for (const [name, source, message] of [

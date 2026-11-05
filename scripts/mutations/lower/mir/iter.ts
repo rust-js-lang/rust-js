@@ -199,19 +199,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iterator_drop_consumed.rs$"],
   },
   {
-    name: "adapter-iterator-dropped",
-    breaks:
-      "an adapter of an iterator with a destructor, `scan(..)`, drops it as soon as it's made, though the adapter holds it",
-    file: "src/lower/mir/iter.rs",
-    find: "        let holds = crate::lower::mut_refs::holds_outside_projections(output, receiver);\n",
-    replace: "        let holds = false;\n",
-    tests: [
-      "test/diagnostics.test.ts",
-      "-t",
-      "an adapter of an iterator with a destructor",
-    ],
-  },
-  {
     name: "size-hint-of-projection-refused",
     breaks:
       "`size_hint()` of a generic `I::IntoIter` is refused, where a type parameter's is its JS value's",

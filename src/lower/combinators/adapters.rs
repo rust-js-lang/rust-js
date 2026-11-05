@@ -380,7 +380,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Lazy of a JS iterator, as Rust's is (ADR 0517).
             // Its state's `&mut` as `handles_mut` says, the object itself of
             // a struct or a tuple.
+            // Not of a state with a destructor, which `$lazyScan` never drops,
+            // where Rust drops it with the `Scan` (#741).
             IterComb::Scan => {
+                if let Some(state) = generic_args.types().nth(1)
+                    && self.drops(state) != crate::lower::drops::Drops::Nothing
+                {
+                    return Err(self.unsupported(span, "`scan` of a state with a destructor"));
+                }
                 let (init, f) = (next(), next());
                 let mut args = vec![items, init, f];
                 if generic_args

@@ -117,6 +117,9 @@ const few = [
   "fold_drops_moved_function_first.rs",
   // A consumer's own closure, dropped before what its fold leaves (#734).
   "consumer_closure_dropped_first.rs",
+  // A `scan()` of the crate's iterator with a destructor, dropped once
+  // where Rust drops the `Scan` (#741, #746, #748).
+  "scan_dropped_once.rs",
   // And as a panic in it unwinds, a closure a std call is given (#719).
   "closure_folded_by_value_panics.rs",
   // A `Vec`'s collect of what isn't `TrustedLen`: its first item by
@@ -400,6 +403,57 @@ fn main() {
   const compiled = compileJs(file, dir, "2024", false, {}, ["--std-iterators"]);
   if (!("js" in compiled)) throw new Error(compiled.error);
   const ran = runJs(runtimes[0][1], compiled.js, dir, "consumer-ends");
+  expect(ran.stdout).toBe(native.stdout);
+  expect(agree(ran, native)).toBe(true);
+}, 300_000);
+
+// A `scan()`'s state and function with a destructor, dropped with the
+// `Scan` after its source, once, by the build of std's structs: consumed by
+// value, collected, and held (#741). The build that rewrites adapters
+// refuses both.
+test("a scan's state and function drop once, with it", () => {
+  const dir = fixture("forms-scan-state");
+  const file = join(dir, "main.rs");
+  writeFileSync(
+    file,
+    `struct D(&'static str);
+
+impl Drop for D {
+    fn drop(&mut self) {
+        print!("drop {} ", self.0);
+    }
+}
+
+fn main() {
+    let n = (0..3u32).scan(D("st"), |_, x| Some(x)).count();
+    println!("| count {n}");
+    let v: Vec<u32> = (0..3u32).scan(D("st"), |_, x| Some(x)).collect();
+    println!("| collect {v:?}");
+    let g = D("f");
+    let n: u32 = (0..3u32)
+        .scan(0u32, move |s, x| {
+            let _g = &g;
+            *s += x;
+            Some(*s)
+        })
+        .sum();
+    println!("| sum {n}");
+    let g = D("f");
+    let mut held = (0..3u32).scan(D("st"), move |_, x| {
+        let _g = &g;
+        Some(x)
+    });
+    println!("| next {:?}", held.next());
+    drop(held);
+    println!("| dropped");
+}
+`,
+  );
+  const native = runNative(file, dir, "2024");
+  if (typeof native === "string") throw new Error(native);
+  const compiled = compileJs(file, dir, "2024", false, {}, ["--std-iterators"]);
+  if (!("js" in compiled)) throw new Error(compiled.error);
+  const ran = runJs(runtimes[0][1], compiled.js, dir, "scan-state");
   expect(ran.stdout).toBe(native.stdout);
   expect(agree(ran, native)).toBe(true);
 }, 300_000);

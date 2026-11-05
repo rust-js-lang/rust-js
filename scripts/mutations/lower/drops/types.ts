@@ -13,16 +13,6 @@ export const mutations: Mutation[] = [
     tests: ["test/iterator-forms.test.ts", "-t", "^flat_map_drops with"],
   },
   {
-    name: "compiled-struct-drops-refused",
-    breaks:
-      "std's struct compiled for this build, a `Scan` with std's structs alone, holding what has a destructor, is refused, `a std type holding a value with a destructor`, where its own `close` drops its fields (ADR 0934)",
-    file: "src/lower/drops/types.rs",
-    find: "                if crate::lower::recognition::is_compiled_std_iterator(tcx, ty)\n                    || crate::lower::recognition::has_compiled_bodies(tcx, adt.did()) =>\n",
-    replace:
-      "                if false && (crate::lower::recognition::is_compiled_std_iterator(tcx, ty)\n                    || crate::lower::recognition::has_compiled_bodies(tcx, adt.did())) =>\n",
-    tests: ["test/iterator-forms.test.ts", "-t", "^scan_lazy_drops with"],
-  },
-  {
     name: "uncounted-weak-drops",
     breaks:
       "an uncounted `Weak`'s drop is `$weakDrop` of the object itself, or of `null`, which throws (ADR 0843)",
@@ -197,19 +187,6 @@ export const mutations: Mutation[] = [
     replace:
       "            ty::Adt(..) if let Some(item) = self.recognition.owned_items(ty).filter(|_| false) => self.drops_in(item, walk),\n",
     tests: ["test/corpus.test.ts", "-t", "loop_drops"],
-  },
-  {
-    name: "adapter-drops-as-struct",
-    breaks:
-      "a `Map` of a `vec::IntoIter` of what has a destructor is dropped as a struct of fields JS doesn't have",
-    file: "src/lower/drops/types.rs",
-    find: "                        || (self.recognition.is_iter_adapter(ty) && !ty.has_non_region_param())\n",
-    replace: "",
-    tests: [
-      "test/lowering.test.ts",
-      "-t",
-      "adapter of items with a destructor",
-    ],
   },
   {
     name: "given-item-drop-unknown",

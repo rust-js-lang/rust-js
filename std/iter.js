@@ -4489,15 +4489,7 @@ export function scanIterator_fold(
     }
     return value._0;
   } finally {
-    try {
-      dropI?.(scan.iter);
-    } finally {
-      try {
-        dropF?.(scan.f);
-      } finally {
-        dropSt?.(scan.state);
-      }
-    }
+    scan.return();
   }
 }
 
@@ -8690,12 +8682,30 @@ export function iterator_scan(
   return $stdIterator(
     { iter: self, f, state: initialState },
     {
-      next: (iterator) =>
-        scanIterator_next(iterator, SelfIterator, dropB, dropSelf, dropSt, dropF, dropSelfItem),
-      hint: (iterator) =>
-        scanIterator_sizeHint(iterator, SelfIterator, dropB, dropSelf, dropSt, dropF, dropSelfItem),
-      fold: (iterator, init, f, unwind, ends) =>
-        scanIterator_fold(
+      next(iterator) {
+        return scanIterator_next(
+          iterator,
+          SelfIterator,
+          dropB,
+          dropSelf,
+          dropSt,
+          dropF,
+          dropSelfItem,
+        );
+      },
+      hint(iterator) {
+        return scanIterator_sizeHint(
+          iterator,
+          SelfIterator,
+          dropB,
+          dropSelf,
+          dropSt,
+          dropF,
+          dropSelfItem,
+        );
+      },
+      fold(iterator, init, f, unwind, ends) {
+        return scanIterator_fold(
           iterator,
           init,
           f,
@@ -8707,9 +8717,10 @@ export function iterator_scan(
           unwind,
           ends,
           dropSelfItem,
-        ),
-      tryFold: (iterator, init, f, broke, unwind) =>
-        scanIterator_tryFold(
+        );
+      },
+      tryFold(iterator, init, f, broke, unwind) {
+        return scanIterator_tryFold(
           iterator,
           init,
           f,
@@ -8723,8 +8734,20 @@ export function iterator_scan(
           undefined,
           undefined,
           dropSelfItem,
-        ),
+        );
+      },
       takes: ["fold"],
+      close(iterator) {
+        try {
+          dropSelf?.(iterator.iter);
+        } finally {
+          try {
+            dropF?.(iterator.f);
+          } finally {
+            dropSt?.(iterator.state);
+          }
+        }
+      },
     },
   );
 }
@@ -12757,15 +12780,7 @@ export function scanDebug(IDebug, StDebug, dropI, dropSt, dropF) {
       return scanDebug_fmt(arg0, arg1, IDebug, StDebug, dropI, dropSt, dropF);
     },
     $drop(scan) {
-      try {
-        dropI?.(scan.iter);
-      } finally {
-        try {
-          dropF?.(scan.f);
-        } finally {
-          dropSt?.(scan.state);
-        }
-      }
+      scan.return();
     },
   }));
 }

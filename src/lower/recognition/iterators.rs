@@ -332,6 +332,24 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // `take_while` of it (ADR 0518).
             | "std::iter::FilterMap"
             | "std::iter::MapWhile" => self.closing_source(sources.next()?)?,
+            // `scan`'s: its source's, then its function and its state, as
+            // `Scan { iter, f, state }` drops them, of each that drops
+            // something. Closed whole, std's compiled struct's, whose own fold
+            // closes it, so a consumer's drop after drops nothing again
+            // (#741, #748).
+            "std::iter::Scan" => {
+                let (source, state, function) = (sources.next()?, sources.next()?, sources.next()?);
+                let own: Vec<Ty<'tcx>> = [function, state]
+                    .into_iter()
+                    .filter(|ty| ty.needs_drop(self.tcx, self.typing_env))
+                    .collect();
+                let own = match own.as_slice() {
+                    [] => None,
+                    [one] => Some(*one),
+                    _ => Some(Ty::new_tup(self.tcx, &own)),
+                };
+                self.closing_both(source, own)
+            }
             "std::iter::Zip" | "std::iter::Chain" => {
                 let (a, b) = (sources.next()?, sources.next()?);
                 self.closing_both(a, self.closing_source(b)?)

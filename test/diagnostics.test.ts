@@ -116,8 +116,6 @@ for (const [name, source, message, crate] of [
   ["an iterator's own fold asking of its own type parameter", "struct Count(u32);\nimpl Iterator for Count {\n    type Item = u32;\n    fn next(&mut self) -> Option<u32> { if self.0 == 0 { None } else { self.0 -= 1; Some(self.0) } }\n    fn fold<B, F: FnMut(B, u32) -> B>(mut self, init: B, mut f: F) -> B { let mut acc = init; let _ = std::mem::size_of::<B>(); while let Some(x) = self.next() { acc = f(acc, x); } acc }\n}\npub fn f() -> u32 { Count(3).sum() }", "an iterator's own `fold` given a dictionary of its own type parameter"],
   // Nor its `io::Read`: what would call it is refused (ADR 0425).
   ["a read of a crate's reader", "use std::io::{self, Read};\npub struct S;\nimpl Read for S { fn read(&mut self, _: &mut [u8]) -> io::Result<usize> { Ok(0) } }\npub fn f() -> usize { let mut b = [0u8; 2]; S.read(&mut b).unwrap() }", "rust-js does not support calling `std::io::Read::read` yet"],
-  // An adapter holding an iterator with a destructor, which it drops (ADR 0098).
-  ["an adapter of an iterator with a destructor", "struct D(u32);\nimpl Iterator for D { type Item = u32; fn next(&mut self) -> Option<u32> { None } }\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f() -> Vec<u32> { D(1).scan(0, |s, x| { *s += x; Some(*s) }).collect() }", "`scan` of an iterator with a destructor"],
   ["ptr::eq of a number", "pub fn f(a: &u32, b: &u32) -> bool { std::ptr::eq(a, b) }", "does not support addressable memory yet: a raw pointer to this place"],
   ["ptr::eq of a number's pointer, copied", "pub fn f(a: &u32, b: *const u32) -> bool { let p = a as *const u32; let q = p; std::ptr::eq(q, b) }", "does not support addressable memory yet: a raw pointer to this place"],
   // A JS error is the string JS shows of it, `String(error)` (ADR 0271).
@@ -178,6 +176,8 @@ for (const [name, source, message, crate] of [
   ["a zip of a map stepped in generic code", 'fn first<A: Iterator<Item = u32>, B: Iterator<Item = u32>>(a: A, b: B) -> u32 { let mut n = 0; for (x, y) in a.zip(b) { n += x * y; } n }\npub fn f(v: &[u32], w: &[u32]) -> u32 { first(v.iter().map(|x| { println!("a"); *x }), w.iter().copied()) }', "giving generic code a zip it folds or steps, which std stops at its shorter side"],
   // A `scan` holds its state too, so a function it holds with a destructor isn't closed for (ADR 0991).
   ["a function with a destructor a lazy scan holds", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(v: &[u32], d: D) -> Vec<u32> { v.iter().scan(0, move |a, x| { let r = &d; *a += x + r.0; Some(*a) }).collect() }', "a function that holds a value with a destructor, kept by what it's given to"],
+  // And a state with a destructor, which `$lazyScan` never drops (ADR 0517, #741).
+  ["a state with a destructor a lazy scan holds", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(v: &[u32]) -> Vec<u32> { v.iter().scan(D(0), |d, x| Some(d.0 + x)).collect() }', "`scan` of a state with a destructor"],
   // A refused `len()` names its adapter's type, not its closures', which name where they're written.
   ["len of a step_by of a map", "pub fn f(v: &[u32]) -> usize { v.iter().map(|x| x + 1).step_by(2).len() }", "`len()` of a lazy or generic `std::iter::StepBy`, from its MIR"],
   // A compiled struct's hint is what it holds' (ADR 0561): of a filter made here, a JS iterator's,

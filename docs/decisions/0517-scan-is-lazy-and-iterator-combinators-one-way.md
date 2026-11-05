@@ -135,3 +135,53 @@ folds of `skip` stay, for how the JS reads; their mutations check
 snapshots. `test/corpus/range_steps_anywhere.rs` holds it, with eight mutations. The
 readability baseline's `Iterator.from` share grows by 0.1 in 10,000 lines,
 the case's generic function's.
+
+## Amendment: a `Scan` is closed whole, once (#741, #746, #748)
+
+The build of std's iterator structs dropped the crate's iterator a
+`scan()` held twice where something consumed the scan by value, `count`,
+`sum`, `fold`, `last` or `for_each` (#741, #748): std's `Scan` has only
+`try_fold`, so its `fold` is std's default, which takes the `Scan` and
+drops it, and the compiled struct's fold did, but the caller dropped it
+again, field by field, since `closed_on_drop`, the one list of what's
+closed to drop (ADR 0465), left `Scan` out. Of a panic in its closure, a
+collect dropped what it had collected before what was left of its source
+(#746), as a struct dropped by its fields isn't closed as a collect
+unwinds. The two are the one cause.
+
+`closed_on_drop` now has `Scan`: its source's, then its function and its
+state, as `Scan { iter, f, state }` drops them, of each that drops
+something. A compiled `Scan` is closed whole, by the drop of each field
+its `close` writes; one its fold took is closed already, so a consumer's
+drop after drops nothing again (ADR 0912); and a collect closes it as it
+unwinds, after the item the closure held.
+
+In the build that rewrites adapters, `$lazyScan` drops its source as it's
+closed, but never its state. A `scan` of a state with a destructor was
+compiled there, its state never dropped, though Rust drops it with the
+`Scan`; it's now refused, "`scan` of a state with a destructor", as one of
+a function with a destructor already was, and the build of std's structs
+drops it (results change: ADR 0262's third case). Giving `$lazyScan` the
+state's drop is left to do.
+
+A `scan` of the crate's iterator with a destructor, or of a `Vec`'s items
+dropped unstepped, is no longer refused in that build: closed to drop, its
+source is dropped as it's closed, as a `map`'s is. The refusal's tests,
+`lowering.test.ts`'s and `diagnostics.test.ts`'s, are gone. `scan` was
+the last adapter that reached three answers, whose mutations are taken
+out with their tests: `drops/types.rs`'s refusal of a std adapter holding
+what has a destructor that isn't closed to drop it
+(`adapter-drops-as-struct`) and its drop of std's struct compiled for
+this build by its fields (`compiled-struct-drops-refused`), and
+`mir/iter.rs`'s drop of the crate's iterator an adapter holds as it's made
+(`adapter-iterator-dropped`), beside its refusal of an adapter of one.
+Whether anything still reaches them is asked apart, and what nothing
+reaches is removed.
+A state that rust-js drops nothing of, a `Vec<u32>`, isn't refused.
+
+`test/corpus/scan_dropped_once.rs` checks each consumer by value, a held
+scan, a `Vec`'s dropped unstepped and after a step, a panic in a count and two in a collect, from the front and
+reversed, in both builds against native Rust; `iterator-forms.test.ts`
+checks a state and a function with a destructor in the build of std's
+structs. The mutations are `scan-not-closed-on-drop`,
+`scan-state-not-closed` and `scan-dropping-state-unrefused`.

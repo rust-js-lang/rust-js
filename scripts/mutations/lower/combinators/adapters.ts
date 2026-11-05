@@ -477,4 +477,12 @@ export const mutations: Mutation[] = [
     replace: "        let own_count = false && self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure);\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
   },
+  {
+    name: "scan-dropping-state-unrefused",
+    breaks: "a lazy `scan` of a state with a destructor is compiled, its state never dropped, where Rust drops it with the `Scan` (#741)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                    && self.drops(state) != crate::lower::drops::Drops::Nothing\n",
+    replace: "                    && false\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a state with a destructor a lazy scan holds"],
+  },
 ];
