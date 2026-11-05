@@ -213,13 +213,13 @@ function groupsFirstOfNext_firstOfNext(
     const inner = $someValue(next);
     const value$1 = $held(IItemIntoIterator.intoIter(inner));
     try {
-      const value$2 = IItemIntoIterator.IntoIterIterator().next(value$1);
-      const value = $someValue(value$2);
+      const option = IItemIntoIterator.IntoIterIterator().next(value$1);
+      const value = $someValue(option);
       function map(_2) {
         dropIItemItem?.(_2);
         return 1;
       }
-      result = value$2 != null ? map(value) : 0;
+      result = option != null ? map(value) : 0;
     } finally {
       dropIItemIntoIter?.(value$1);
     }

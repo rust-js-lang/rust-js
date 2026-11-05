@@ -164,33 +164,11 @@ function main() {
     console.log(`looped ${n}`);
   }
   console.log("after loop");
-  let fuse;
-  try {
-    fuse = iterator_fuse(["summed", 4], { next: loudIterator_next }, false, loudDrop_drop);
-  } catch (error) {
-    if (steady$live) {
-      steady.return();
-    }
-    if (loud$live) {
-      loud.return();
-    }
-    throw error;
-  }
-  let map;
-  try {
-    map = fuse.map((n) => (n * 10) >>> 0);
-  } catch (error) {
-    if (steady$live) {
-      steady.return();
-    }
-    if (loud$live) {
-      loud.return();
-    }
-    throw error;
-  }
   let total;
   try {
-    total = map.reduce((a, b) => (a + b) >>> 0, 0);
+    total = iterator_fuse(["summed", 4], { next: loudIterator_next }, false, loudDrop_drop)
+      .map((n) => (n * 10) >>> 0)
+      .reduce((a, b) => (a + b) >>> 0, 0);
   } catch (error) {
     if (steady$live) {
       steady.return();

@@ -100,13 +100,12 @@ function main() {
   console.log(`${n}`);
   let total = 0;
   const value$3 = [["a"], ["bb"]];
+  const total$2 = { value: total };
   try {
-    const collect = value$3.map(show);
-    const total$1 = { value: total };
     try {
-      tally(total$1, collect);
+      tally(total$2, value$3.map(show));
     } finally {
-      total = total$1.value;
+      total = total$2.value;
     }
   } finally {
     for (const item of value$3) {

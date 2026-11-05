@@ -18,9 +18,7 @@ function main() {
     console.log(`after statement [${ids(v).join(", ")}]`);
     const taken = $drain(v, 0, 2);
     try {
-      const value = ids(taken);
-      const value$1 = ids(v);
-      console.log(`taken [${value.join(", ")}] left [${value$1.join(", ")}]`);
+      console.log(`taken [${ids(taken).join(", ")}] left [${ids(v).join(", ")}]`);
       const iter = $iter($drain(v, 1));
       let tmp;
       while (true) {

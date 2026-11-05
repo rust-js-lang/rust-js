@@ -84,23 +84,9 @@ function case$(name, run) {
 function main() {
   case$("the issue's", (g) => {
     let g$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$live = false;
     } catch (error) {
       if (g$live) {
@@ -116,15 +102,15 @@ function main() {
       },
       "after",
     );
-    let tmp$2;
+    let tmp;
     try {
-      tmp$2 = ds();
+      tmp = ds();
     } catch (error) {
       map.return();
       throw error;
     }
     const v = $foldToArray(
-      $lazyChain(map, $closing($iter(tmp$2), $dropEach(dDrop_drop))),
+      $lazyChain(map, $closing($iter(tmp), $dropEach(dDrop_drop))),
       dDrop_drop,
       true,
     );
@@ -133,23 +119,9 @@ function main() {
   });
   case$("sum", (g) => {
     let g$1$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$1$live = false;
     } catch (error) {
       if (g$1$live) {
@@ -180,23 +152,9 @@ function main() {
   });
   case$("count", (g) => {
     let g$2$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$2$live = false;
     } catch (error) {
       if (g$2$live) {
@@ -226,23 +184,9 @@ function main() {
   });
   case$("last", (g) => {
     let g$3$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$3$live = false;
     } catch (error) {
       if (g$3$live) {
@@ -273,23 +217,9 @@ function main() {
   });
   case$("for_each", (g) => {
     let g$4$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$4$live = false;
     } catch (error) {
       if (g$4$live) {
@@ -327,23 +257,9 @@ function main() {
   });
   case$("fold", (g) => {
     let g$5$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$5$live = false;
     } catch (error) {
       if (g$5$live) {
@@ -374,23 +290,9 @@ function main() {
   });
   case$("max", (g) => {
     let g$6$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$6$live = false;
     } catch (error) {
       if (g$6$live) {
@@ -421,23 +323,9 @@ function main() {
   });
   case$("min_by_key", (g) => {
     let g$7$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$7$live = false;
     } catch (error) {
       if (g$7$live) {
@@ -465,23 +353,9 @@ function main() {
   });
   case$("reduce", (g) => {
     let g$8$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$8$live = false;
     } catch (error) {
       if (g$8$live) {
@@ -512,23 +386,9 @@ function main() {
   });
   case$("partition", (g) => {
     let g$9$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$9$live = false;
     } catch (error) {
       if (g$9$live) {
@@ -556,23 +416,9 @@ function main() {
   case$("extend", (g) => {
     let g$10$live = true;
     const v = [];
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$10$live = false;
     } catch (error) {
       if (g$10$live) {
@@ -602,23 +448,9 @@ function main() {
   });
   case$("collect", (g) => {
     let g$11$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$11$live = false;
     } catch (error) {
       if (g$11$live) {
@@ -651,23 +483,9 @@ function main() {
   });
   case$("collect a String", (g) => {
     let g$12$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$12$live = false;
     } catch (error) {
       if (g$12$live) {
@@ -700,23 +518,9 @@ function main() {
   });
   case$("collect a set", (g) => {
     let g$13$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$13$live = false;
     } catch (error) {
       if (g$13$live) {
@@ -747,23 +551,9 @@ function main() {
   });
   case$("chained first", (g) => {
     let g$14$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$14$live = false;
     } catch (error) {
       if (g$14$live) {
@@ -776,67 +566,34 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    const map = $holding(
+    const value = $holding(
       take.map(f),
       () => {
         dDrop_drop(g);
       },
       "after",
     );
-    let tmp$2;
+    let map;
     try {
-      tmp$2 = ds();
+      map = $closing($iter(ds()), $dropEach(dDrop_drop))
+        .take(1)
+        .map((d) => {
+          const result = d[0];
+          dDrop_drop(d);
+          return result;
+        });
     } catch (error) {
-      map.return();
+      value.return();
       throw error;
     }
-    let tmp$3;
-    try {
-      tmp$3 = $iter(tmp$2);
-    } catch (error) {
-      map.return();
-      throw error;
-    }
-    let tmp$4;
-    try {
-      tmp$4 = $closing(tmp$3, $dropEach(dDrop_drop)).take(1);
-    } catch (error) {
-      map.return();
-      throw error;
-    }
-    let tmp$5;
-    try {
-      tmp$5 = tmp$4.map((d) => {
-        const result = d[0];
-        dDrop_drop(d);
-        return result;
-      });
-    } catch (error) {
-      map.return();
-      throw error;
-    }
-    const n = $lazyChain(map, tmp$5).reduce((a, b) => (a + b) >>> 0, 0);
+    const n = $lazyChain(value, map).reduce((a, b) => (a + b) >>> 0, 0);
     $print(`| ${n} | `);
   });
   case$("chained second", (g) => {
     let g$15$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$15$live = false;
     } catch (error) {
       if (g$15$live) {
@@ -849,42 +606,23 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    const map = $holding(
-      take.map(f),
-      () => {
-        dDrop_drop(g);
-      },
-      "after",
-    );
-    const n = $lazyChain($lazyRange(0, 1), map).reduce((a, b) => (a + b) >>> 0, 0);
+    const n = $lazyChain(
+      $lazyRange(0, 1),
+      $holding(
+        take.map(f),
+        () => {
+          dDrop_drop(g);
+        },
+        "after",
+      ),
+    ).reduce((a, b) => (a + b) >>> 0, 0);
     $print(`| ${n} | `);
   });
   case$("skipped", (g) => {
     let g$16$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let skip;
-    try {
-      skip = $skipping($closing(tmp$1, $dropEach(dDrop_drop)), 1, dDrop_drop);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = skip.take(2);
+      take = $skipping($closing($iter(ds()), $dropEach(dDrop_drop)), 1, dDrop_drop).take(2);
       g$16$live = false;
     } catch (error) {
       if (g$16$live) {
@@ -915,30 +653,9 @@ function main() {
   });
   case$("skipped after a take", (g) => {
     let g$17$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let take;
-    try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(3);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let skip;
     try {
-      skip = $skipping(take, 1, dDrop_drop);
+      skip = $skipping($closing($iter(ds()), $dropEach(dDrop_drop)).take(3), 1, dDrop_drop);
       g$17$live = false;
     } catch (error) {
       if (g$17$live) {
@@ -969,24 +686,10 @@ function main() {
   });
   case$("taken while, then mapped", (g) => {
     let g$18$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let takeWhile;
     try {
       takeWhile = $lazyTakeWhile(
-        $closing(tmp$1, $dropEach(dDrop_drop)),
+        $closing($iter(ds()), $dropEach(dDrop_drop)),
         (d) => d[0] < 3,
         dDrop_drop,
       );
@@ -1020,23 +723,9 @@ function main() {
   });
   case$("enumerated", (g) => {
     let g$19$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$19$live = false;
     } catch (error) {
       if (g$19$live) {
@@ -1062,23 +751,9 @@ function main() {
   });
   case$("flat_map", (g) => {
     let g$20$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$20$live = false;
     } catch (error) {
       if (g$20$live) {
@@ -1110,22 +785,8 @@ function main() {
     let g$21$live = true;
     let tmp;
     try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$2;
-    try {
-      tmp$2 = iterator_take(
-        tmp$1,
+      tmp = iterator_take(
+        $iter(ds()),
         2,
         { next: $next, advanceBy: $advanceSlice },
         $dropEach(dDrop_drop),
@@ -1140,7 +801,7 @@ function main() {
     }
     const iter = iterator_peekable(
       iterator_map(
-        tmp$2,
+        tmp,
         (d) => {
           const result = (d[0] + zero(g)) >>> 0;
           dDrop_drop(d);
@@ -1172,24 +833,10 @@ function main() {
   });
   case$("fused", (g) => {
     let g$22$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
       take = iterator_take(
-        tmp$1,
+        $iter(ds()),
         2,
         { next: $next, advanceBy: $advanceSlice },
         $dropEach(dDrop_drop),
@@ -1263,25 +910,9 @@ function main() {
     let g$24$live = true;
     let h$live = true;
     const h = [8];
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(h);
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(h);
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$24$live = false;
     } catch (error) {
       dDrop_drop(h);
@@ -1332,25 +963,9 @@ function main() {
     let g$25$live = true;
     let h$1$live = true;
     const h = [8];
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(h);
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(h);
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$25$live = false;
     } catch (error) {
       dDrop_drop(h);
@@ -1399,23 +1014,9 @@ function main() {
   });
   case$("stepped, then summed", (g) => {
     let g$26$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(3);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(3);
       g$26$live = false;
     } catch (error) {
       if (g$26$live) {
@@ -1456,16 +1057,9 @@ function main() {
   });
   case$("a panic in what's left", (g) => {
     let g$27$live = true;
-    let tmp;
-    try {
-      tmp = $iter([[1], [2], [40], [5]]);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter([[1], [2], [40], [5]]), $dropEach(dDrop_drop)).take(2);
       g$27$live = false;
     } catch (error) {
       if (g$27$live) {
@@ -1497,23 +1091,9 @@ function main() {
   // Kept: what's left first.
   case$("collected in place", (g) => {
     let g$28$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$28$live = false;
     } catch (error) {
       if (g$28$live) {
@@ -1541,23 +1121,9 @@ function main() {
   });
   case$("collected in place, of numbers", (g) => {
     let g$29$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$29$live = false;
     } catch (error) {
       if (g$29$live) {
@@ -1582,23 +1148,9 @@ function main() {
   });
   case$("collected by next", (g) => {
     let g$30$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$30$live = false;
     } catch (error) {
       if (g$30$live) {
@@ -1626,23 +1178,9 @@ function main() {
   });
   case$("a for loop", (g) => {
     let g$31$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$31$live = false;
     } catch (error) {
       if (g$31$live) {
@@ -1673,23 +1211,9 @@ function main() {
   });
   case$("find", (g) => {
     let g$32$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(2);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$32$live = false;
     } catch (error) {
       if (g$32$live) {
@@ -1723,14 +1247,7 @@ function main() {
     let g$33$live = true;
     let tmp;
     try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
+      tmp = $iter(ds());
       g$33$live = false;
     } catch (error) {
       if (g$33$live) {
@@ -1744,7 +1261,7 @@ function main() {
       return result;
     }
     const n = $holding(
-      $closing(tmp$1, $dropEach(dDrop_drop)).map(f),
+      $closing(tmp, $dropEach(dDrop_drop)).map(f),
       () => {
         dDrop_drop(g);
       },
@@ -1758,14 +1275,7 @@ function main() {
     let g$34$live = true;
     let tmp;
     try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
+      tmp = $iter(ds());
       g$34$live = false;
     } catch (error) {
       if (g$34$live) {
@@ -1775,7 +1285,7 @@ function main() {
     }
     const f = (d) => d[0] < (3 + zero(g)) >>> 0;
     const iter = $holding(
-      $lazyTakeWhile($closing(tmp$1, $dropEach(dDrop_drop)), f, dDrop_drop),
+      $lazyTakeWhile($closing(tmp, $dropEach(dDrop_drop)), f, dDrop_drop),
       () => {
         dDrop_drop(g);
       },
@@ -1796,14 +1306,7 @@ function main() {
     let g$35$live = true;
     let tmp;
     try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
+      tmp = $iter(ds());
       g$35$live = false;
     } catch (error) {
       if (g$35$live) {
@@ -1818,7 +1321,7 @@ function main() {
       return result;
     }
     const iter = $holding(
-      $lazyMapWhile($closing(tmp$1, $dropEach(dDrop_drop)), f, (item) => item != null),
+      $lazyMapWhile($closing(tmp, $dropEach(dDrop_drop)), f, (item) => item != null),
       () => {
         dDrop_drop(g);
       },
@@ -1834,23 +1337,9 @@ function main() {
   });
   case$("skip_while", (g) => {
     let g$36$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(3);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(3);
       g$36$live = false;
     } catch (error) {
       if (g$36$live) {
@@ -1889,23 +1378,9 @@ function main() {
   });
   case$("step_by", (g) => {
     let g$37$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp$1, $dropEach(dDrop_drop)).take(3);
+      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(3);
       g$37$live = false;
     } catch (error) {
       if (g$37$live) {
@@ -1932,24 +1407,10 @@ function main() {
   });
   case$("zip", (g) => {
     let g$38$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
       take = iterator_take(
-        tmp$1,
+        $iter(ds()),
         2,
         { next: $next, advanceBy: $advanceSlice },
         $dropEach(dDrop_drop),
@@ -2004,24 +1465,10 @@ function main() {
   });
   case$("by_ref", (g) => {
     let g$39$live = true;
-    let tmp;
-    try {
-      tmp = ds();
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
       take = iterator_take(
-        tmp$1,
+        $iter(ds()),
         3,
         { next: $next, advanceBy: $advanceSlice },
         $dropEach(dDrop_drop),

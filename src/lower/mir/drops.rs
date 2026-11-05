@@ -931,8 +931,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-/// The cleanup a panic of a terminator unwinds to, if it drops
-/// anything there.
+/// The cleanup a panic of a terminator unwinds to, if it drops anything
+/// there: the first block of it that does anything, past those that drop
+/// nothing and write nothing, so calls whose cleanups differ only by what
+/// they don't drop, a temporary each moved on, `v.into_iter().enumerate()`'s
+/// beside a live `D`, unwind to one cleanup, and what's made between them
+/// stays made in place (#723).
 pub(super) fn cleans_up<'tcx>(
     body: &mir::Body<'tcx>,
     drops: Option<&Elaboration<'tcx>>,
@@ -941,19 +945,39 @@ pub(super) fn cleans_up<'tcx>(
     let (UnwindAction::Cleanup(start), Some(drops)) = (unwind, drops) else {
         return None;
     };
+    // Whether `block` writes nothing as it unwinds: no statement but a
+    // storage marker's, and no drop flag set.
+    let writes_nothing = |block: BasicBlock| {
+        let data = &body.basic_blocks[block];
+        let quiet = (data.statements.iter()).all(|s| {
+            matches!(
+                s.kind,
+                StatementKind::StorageDead(_) | StatementKind::StorageLive(_) | StatementKind::Nop
+            )
+        });
+        quiet
+            && (0..=data.statements.len())
+                .all(|statement_index| !(drops.sets).contains_key(&Location { block, statement_index }))
+    };
     let mut block = start;
+    // The first block that writes something, where the cleanup starts once
+    // something's dropped.
+    let mut first = None;
     loop {
+        if first.is_none() && !writes_nothing(block) {
+            first = Some(block);
+        }
         match body.basic_blocks[block].terminator().kind {
             TerminatorKind::Drop { place, target, .. } => {
                 if drops.drops(block, place) {
-                    return Some(start);
+                    return Some(first.unwrap_or(block));
                 }
                 block = target;
             }
             TerminatorKind::Goto { target } => block = target,
             TerminatorKind::UnwindResume | TerminatorKind::UnwindTerminate(_) => return None,
             // What `mir_unwind` says it doesn't support.
-            _ => return Some(start),
+            _ => return Some(first.unwrap_or(block)),
         }
     }
 }

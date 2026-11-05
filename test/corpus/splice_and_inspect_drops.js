@@ -28,17 +28,8 @@ function main() {
     }
     throw error;
   }
-  let tmp;
   try {
-    tmp = v.map((l) => l[0]);
-  } catch (error) {
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${tmp.join(", ")}]`);
+    console.log(`[${v.map((l) => l[0]).join(", ")}]`);
   } catch (error) {
     for (const item of v) {
       console.log(`drop ${item[0]}`);
@@ -46,18 +37,9 @@ function main() {
     throw error;
   }
   const value$1 = [[5], [6]];
-  let tmp$1;
-  try {
-    tmp$1 = $iter($splice(v, 1, v.length, value$1));
-  } catch (error) {
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
-    throw error;
-  }
   let removed;
   try {
-    removed = Array.from(tmp$1);
+    removed = $splice(v, 1, v.length, value$1).slice();
   } catch (error) {
     for (const item of v) {
       console.log(`drop ${item[0]}`);
@@ -75,13 +57,13 @@ function main() {
     }
     const it = $iter($splice(v, 0, 1, []));
     try {
-      const next = $next(it);
+      const l = $next(it);
       function map(l) {
         const result = l[0];
         console.log(`drop ${l[0]}`);
         return result;
       }
-      const value = next != null ? map(next) : undefined;
+      const value = l != null ? map(l) : undefined;
       console.log(`${value == null ? "None" : `Some(${value})`}`);
     } finally {
       for (const item of it) {

@@ -702,8 +702,9 @@ pub fn described() -> f64 {
   } finally {
     REENTRY = false;
   }`);
-  expect(js).toContain(`    for (let i = 0; i < tails.length; i++) {
-      const tail = tails[i];
+  // Its call read where the loop steps it, as nothing between them needs
+  // a cleanup of its own (#723).
+  expect(js).toContain(`    for (const tail of globalThis.tails()) {
       const kind = tail.kind;
       const size = tail.size;
       total += globalThis.work(kind) + size;

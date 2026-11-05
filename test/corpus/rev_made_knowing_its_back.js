@@ -74,13 +74,13 @@ function countDoubleEndedIterator_nextBack(count) {
 function nthBack(it, dropI) {
   const rev = $held($rev($closing(it, dropI, false)));
   try {
-    const nthBack = $nthBack(rev, 1, undefined, dDrop_drop);
+    const d = $nthBack(rev, 1, undefined, dDrop_drop);
     function map(d) {
       const result = d[0] + 0;
       dDrop_drop(d);
       return result;
     }
-    return nthBack != null ? map(nthBack) : undefined;
+    return d != null ? map(d) : undefined;
   } finally {
     rev.return();
   }
@@ -97,7 +97,7 @@ function ends(it, dropI) {
     ),
   );
   try {
-    const nextBack = revDoubleEndedIterator_nextBack(
+    const d = revDoubleEndedIterator_nextBack(
       r,
       { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
       dropI,
@@ -108,14 +108,14 @@ function ends(it, dropI) {
       dDrop_drop(d);
       return result;
     }
-    const a = nextBack != null ? map(nextBack) : undefined;
-    const next = $next(r);
+    const a = d != null ? map(d) : undefined;
+    const d$1 = $next(r);
     function map$1(d) {
       const result = d[0] + 0;
       dDrop_drop(d);
       return result;
     }
-    const b = next != null ? map$1(next) : undefined;
+    const b = d$1 != null ? map$1(d$1) : undefined;
     const option = a != null && b != null ? [a, b] : undefined;
     return option != null ? (((option[0] * 100) >>> 0) + option[1]) >>> 0 : undefined;
   } finally {
@@ -139,13 +139,13 @@ function rfold(it, dropI) {
 function rfind(it, dropI) {
   const rev = $held($rev($closing(it, dropI, false)));
   try {
-    const rfind = $findBack(rev, (d) => d[0] % 2 === 0, undefined, dDrop_drop);
+    const d = $findBack(rev, (d) => d[0] % 2 === 0, undefined, dDrop_drop);
     function map(d) {
       const result = d[0] + 0;
       dDrop_drop(d);
       return result;
     }
-    return rfind != null ? map(rfind) : undefined;
+    return d != null ? map(d) : undefined;
   } finally {
     rev.return();
   }

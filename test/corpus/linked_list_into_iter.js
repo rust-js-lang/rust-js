@@ -25,13 +25,13 @@ function main() {
   const value = $iter(ll);
   let first;
   try {
-    const next = $next(value);
+    const l = $next(value);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    first = next != null ? map(next) : undefined;
+    first = l != null ? map(l) : undefined;
   } finally {
     for (const item of value) {
       loudDrop_drop(item);
@@ -42,13 +42,13 @@ function main() {
   const value$1 = $iter(ll);
   let found;
   try {
-    const find = $findDropping($lent(value$1), (l) => l[0] === 41, loudDrop_drop, false);
+    const l = $findDropping($lent(value$1), (l) => l[0] === 41, loudDrop_drop, false);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    found = find != null ? map(find) : undefined;
+    found = l != null ? map(l) : undefined;
   } finally {
     for (const item of value$1) {
       loudDrop_drop(item);
@@ -67,13 +67,13 @@ function main() {
   const rev = $held($rev($closing($iter(ll), $dropEach(loudDrop_drop), false)));
   let back;
   try {
-    const loud = $next(rev);
+    const l = $next(rev);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    back = loud != null ? map(loud) : undefined;
+    back = l != null ? map(l) : undefined;
   } finally {
     rev.return();
   }

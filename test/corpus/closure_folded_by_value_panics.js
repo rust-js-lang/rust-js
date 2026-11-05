@@ -37,23 +37,9 @@ function case$(name, run) {
 function main() {
   case$("a map's, folded", (g) => {
     let g$live = true;
-    let collect;
-    try {
-      collect = $range(1, 6).map((value) => [value]);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
-    let tmp;
-    try {
-      tmp = $iter(collect);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp, $dropEach(dDrop_drop)).take(3);
+      take = $closing($iter($range(1, 6).map((value) => [value])), $dropEach(dDrop_drop)).take(3);
       g$live = false;
     } catch (error) {
       if (g$live) {

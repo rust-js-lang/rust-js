@@ -57,7 +57,7 @@ function main() {
       const borrow = $borrow($fieldCell(leaf.value, "parent"), true);
       let parent;
       try {
-        const upgrade = $upgrade(borrow.value);
+        const p = $upgrade(borrow.value);
         function map(p) {
           const result = p.value.name;
           $rcDrop(p, (value) => {
@@ -65,7 +65,7 @@ function main() {
           });
           return result;
         }
-        parent = (upgrade != null ? map(upgrade) : undefined) ?? "";
+        parent = (p != null ? map(p) : undefined) ?? "";
       } finally {
         $unborrow(borrow);
       }

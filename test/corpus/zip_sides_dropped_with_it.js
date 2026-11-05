@@ -36,18 +36,9 @@ function odd(l) {
 
 function endedByASide() {
   const [a, b] = sides();
-  let tmp;
-  try {
-    tmp = $iter(a);
-  } catch (error) {
-    for (const item of b) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
   let map;
   try {
-    map = $closing(tmp, $dropEach(loudDrop_drop)).map((l) => {
+    map = $closing($iter(a), $dropEach(loudDrop_drop)).map((l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
@@ -58,47 +49,26 @@ function endedByASide() {
     }
     throw error;
   }
-  let tmp$1;
+  let tmp;
   try {
-    tmp$1 = $iter(b);
+    tmp = $lazyTakeWhile($closing($iter(b), $dropEach(loudDrop_drop)), odd, loudDrop_drop).map(
+      (l) => {
+        const result = l[0];
+        loudDrop_drop(l);
+        return result;
+      },
+    );
   } catch (error) {
     map.return();
     throw error;
   }
-  let takeWhile;
-  try {
-    takeWhile = $lazyTakeWhile($closing(tmp$1, $dropEach(loudDrop_drop)), odd, loudDrop_drop);
-  } catch (error) {
-    map.return();
-    throw error;
-  }
-  let tmp$2;
-  try {
-    tmp$2 = takeWhile.map((l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    });
-  } catch (error) {
-    map.return();
-    throw error;
-  }
-  let got = $collectDropping($lazyZip(map, tmp$2));
+  let got = $collectDropping($lazyZip(map, tmp));
   console.log(`take_while [${got.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 
   const [a$1, b$1] = sides();
-  let tmp$3;
+  let tmp$1;
   try {
-    tmp$3 = $iter(a$1);
-  } catch (error) {
-    for (const item of b$1) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$4;
-  try {
-    tmp$4 = $closing(tmp$3, $dropEach(loudDrop_drop)).map((l) => {
+    tmp$1 = $closing($iter(a$1), $dropEach(loudDrop_drop)).map((l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
@@ -107,18 +77,11 @@ function endedByASide() {
     for (const item of b$1) {
       loudDrop_drop(item);
     }
-    throw error;
-  }
-  let tmp$5;
-  try {
-    tmp$5 = $iter(b$1);
-  } catch (error) {
-    tmp$4.return();
     throw error;
   }
   let scan;
   try {
-    scan = $lazyScan($closing(tmp$5, $dropEach(loudDrop_drop)), undefined, (_, l) => {
+    scan = $lazyScan($closing($iter(b$1), $dropEach(loudDrop_drop)), undefined, (_, l) => {
       try {
         return odd(l) ? l[0] : undefined;
       } finally {
@@ -126,25 +89,16 @@ function endedByASide() {
       }
     });
   } catch (error) {
-    tmp$4.return();
+    tmp$1.return();
     throw error;
   }
-  got = $collectDropping($lazyZip(tmp$4, scan));
+  got = $collectDropping($lazyZip(tmp$1, scan));
   console.log(`scan [${got.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 
   const [a$2, b$2] = sides();
-  let tmp$6;
+  let tmp$2;
   try {
-    tmp$6 = $iter(a$2);
-  } catch (error) {
-    for (const item of b$2) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$7;
-  try {
-    tmp$7 = $closing(tmp$6, $dropEach(loudDrop_drop)).map((l) => {
+    tmp$2 = $closing($iter(a$2), $dropEach(loudDrop_drop)).map((l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
@@ -155,17 +109,10 @@ function endedByASide() {
     }
     throw error;
   }
-  let tmp$8;
-  try {
-    tmp$8 = $iter(b$2);
-  } catch (error) {
-    tmp$7.return();
-    throw error;
-  }
   let mapWhile;
   try {
     mapWhile = $lazyMapWhile(
-      $closing(tmp$8, $dropEach(loudDrop_drop)),
+      $closing($iter(b$2), $dropEach(loudDrop_drop)),
       (l) => {
         try {
           return odd(l) ? l[0] : undefined;
@@ -176,25 +123,16 @@ function endedByASide() {
       (item) => item != null,
     );
   } catch (error) {
-    tmp$7.return();
+    tmp$2.return();
     throw error;
   }
-  got = $collectDropping($lazyZip(tmp$7, mapWhile));
+  got = $collectDropping($lazyZip(tmp$2, mapWhile));
   console.log(`map_while [${got.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 
   const [a$3, b$3] = sides();
-  let tmp$9;
+  let tmp$3;
   try {
-    tmp$9 = $iter(a$3);
-  } catch (error) {
-    for (const item of b$3) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$10;
-  try {
-    tmp$10 = $closing(tmp$9, $dropEach(loudDrop_drop)).map((l) => {
+    tmp$3 = $closing($iter(a$3), $dropEach(loudDrop_drop)).map((l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
@@ -205,54 +143,26 @@ function endedByASide() {
     }
     throw error;
   }
-  let tmp$11;
+  let tmp$4;
   try {
-    tmp$11 = $iter(b$3);
+    tmp$4 = $filterDropping($closing($iter(b$3), $dropEach(loudDrop_drop)), odd, loudDrop_drop)
+      .take(1)
+      .map((l) => {
+        const result = l[0];
+        loudDrop_drop(l);
+        return result;
+      });
   } catch (error) {
-    tmp$10.return();
+    tmp$3.return();
     throw error;
   }
-  let filter;
-  try {
-    filter = $filterDropping($closing(tmp$11, $dropEach(loudDrop_drop)), odd, loudDrop_drop);
-  } catch (error) {
-    tmp$10.return();
-    throw error;
-  }
-  let take;
-  try {
-    take = filter.take(1);
-  } catch (error) {
-    tmp$10.return();
-    throw error;
-  }
-  let tmp$12;
-  try {
-    tmp$12 = take.map((l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    });
-  } catch (error) {
-    tmp$10.return();
-    throw error;
-  }
-  got = $collectDropping($lazyZip(tmp$10, tmp$12));
+  got = $collectDropping($lazyZip(tmp$3, tmp$4));
   console.log(`take [${got.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 
   const [a$4, b$4] = sides();
-  let tmp$13;
+  let tmp$5;
   try {
-    tmp$13 = $iter(a$4);
-  } catch (error) {
-    for (const item of b$4) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$14;
-  try {
-    tmp$14 = $closing(tmp$13, $dropEach(loudDrop_drop)).map((l) => {
+    tmp$5 = $closing($iter(a$4), $dropEach(loudDrop_drop)).map((l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
@@ -263,56 +173,30 @@ function endedByASide() {
     }
     throw error;
   }
-  let tmp$15;
+  let tmp$6;
   try {
-    tmp$15 = $iter(b$4);
-  } catch (error) {
-    tmp$14.return();
-    throw error;
-  }
-  let tmp$16;
-  try {
-    tmp$16 = $lazyTakeWhile($closing(tmp$15, $dropEach(loudDrop_drop)), odd, loudDrop_drop);
-  } catch (error) {
-    tmp$14.return();
-    throw error;
-  }
-  let skip;
-  try {
-    skip = $skipping(tmp$16, 3, loudDrop_drop);
-  } catch (error) {
-    tmp$14.return();
-    throw error;
-  }
-  let tmp$17;
-  try {
-    tmp$17 = skip.map((l) => {
+    tmp$6 = $skipping(
+      $lazyTakeWhile($closing($iter(b$4), $dropEach(loudDrop_drop)), odd, loudDrop_drop),
+      3,
+      loudDrop_drop,
+    ).map((l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     });
   } catch (error) {
-    tmp$14.return();
+    tmp$5.return();
     throw error;
   }
-  got = $collectDropping($lazyZip(tmp$14, tmp$17));
+  got = $collectDropping($lazyZip(tmp$5, tmp$6));
   console.log(`skip [${got.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 }
 
 function heldToItsEnd() {
   const [a, b] = sides();
-  let tmp;
-  try {
-    tmp = $iter(a);
-  } catch (error) {
-    for (const item of b) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
   let filter;
   try {
-    filter = $filterDropping($closing(tmp, $dropEach(loudDrop_drop)), odd, loudDrop_drop);
+    filter = $filterDropping($closing($iter(a), $dropEach(loudDrop_drop)), odd, loudDrop_drop);
   } catch (error) {
     for (const item of b) {
       loudDrop_drop(item);
@@ -320,21 +204,14 @@ function heldToItsEnd() {
     throw error;
   }
   let b$live = false;
-  let tmp$1;
+  let tmp;
   try {
-    tmp$1 = $iter(b);
+    tmp = $filterDropping($closing($iter(b), $dropEach(loudDrop_drop)), odd, loudDrop_drop);
   } catch (error) {
     filter.return();
     throw error;
   }
-  let tmp$2;
-  try {
-    tmp$2 = $filterDropping($closing(tmp$1, $dropEach(loudDrop_drop)), odd, loudDrop_drop);
-  } catch (error) {
-    filter.return();
-    throw error;
-  }
-  const zipped = $held($lazyZip(filter, tmp$2, loudDrop_drop));
+  const zipped = $held($lazyZip(filter, tmp, loudDrop_drop));
   let zipped$live = true;
   let next;
   while (true) {

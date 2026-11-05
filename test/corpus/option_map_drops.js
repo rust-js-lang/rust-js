@@ -82,10 +82,9 @@ function main() {
   const value$1 = make(0);
   const none = value$1 != null ? [value$1] : undefined;
   console.log(`none ${none == null}`);
-  const value$2 = make(3);
   let generic;
   try {
-    generic = wrapped(value$2);
+    generic = wrapped(make(3));
   } catch (error) {
     if (none != null) {
       dDrop_drop(none[0]);
@@ -135,23 +134,23 @@ function main() {
       });
       console.log(`${nested != null}`);
       try {
-        const value = checked(1);
-        const ok = value.TAG === "Ok" ? { TAG: "Ok", _0: [value._0] } : value;
+        const result = checked(1);
+        const ok = result.TAG === "Ok" ? { TAG: "Ok", _0: [result._0] } : result;
         console.log(`ok ${ok.TAG === "Ok" ? ok._0[0][0] : 0}`);
         try {
-          const value = checked(12);
-          const value$1 = value.TAG === "Ok" ? { TAG: "Ok", _0: [value._0] } : value;
+          const result = checked(12);
+          const value = result.TAG === "Ok" ? { TAG: "Ok", _0: [result._0] } : result;
           let value$0$live = true;
-          if (value$1.TAG === "Ok") {
+          if (value.TAG === "Ok") {
             value$0$live = false;
-            console.log(`ok ${value$1._0[0][0]}`);
-            dDrop_drop(value$1._0[0]);
+            console.log(`ok ${value._0[0][0]}`);
+            dDrop_drop(value._0[0]);
           } else {
-            console.log(`err ${value$1._0}`);
+            console.log(`err ${value._0}`);
           }
-          if (value$1.TAG === "Ok") {
+          if (value.TAG === "Ok") {
             if (value$0$live) {
-              dDrop_drop(value$1._0[0]);
+              dDrop_drop(value._0[0]);
             }
           }
           value$0$live = false;

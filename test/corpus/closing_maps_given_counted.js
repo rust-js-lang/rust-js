@@ -71,9 +71,7 @@ function main() {
     },
   );
   console.log(
-    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}, ${
-      value[2] == null ? "None" : `Some(${value[2]})`
-    })`,
+    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}, ${value[2] == null ? "None" : `Some(${value[2]})`})`,
   );
   let n$live = true;
   const n = [6];
@@ -162,9 +160,7 @@ function main() {
     },
   );
   console.log(
-    `(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}, ${
-      value$1[2] == null ? "None" : `Some(${value$1[2]})`
-    })`,
+    `(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}, ${value$1[2] == null ? "None" : `Some(${value$1[2]})`})`,
   );
   console.log("end");
 }

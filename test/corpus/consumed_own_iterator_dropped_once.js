@@ -189,7 +189,7 @@ function main() {
     const value = it(80);
     try {
       try {
-        const find = $findDropping(
+        const d = $findDropping(
           $lent($iterator(value, itIterator_next)),
           (d) => d[0] === 81,
           dDrop_drop,
@@ -200,7 +200,7 @@ function main() {
           dDrop_drop(d);
           return result;
         }
-        const value$1 = find != null ? map(find) : undefined;
+        const value$1 = d != null ? map(d) : undefined;
         console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
       } finally {
         console.log("drop it");

@@ -29,13 +29,13 @@ function chainedNth(a, b, dropI) {
     $lazyChain($closing(Iterator.from(a), dropI, false), $closing(Iterator.from(b), dropI, false)),
   );
   try {
-    const nth = $nthDropping($lent(chain), 3, noisyDrop_drop, false);
+    const n = $nthDropping($lent(chain), 3, noisyDrop_drop, false);
     function map(n) {
       const result = n[0];
       noisyDrop_drop(n);
       return result;
     }
-    return nth != null ? map(nth) : undefined;
+    return n != null ? map(n) : undefined;
   } finally {
     chain.return();
   }
@@ -89,37 +89,16 @@ function main() {
     },
     noisyDrop_drop,
   );
-  let tmp$1;
-  try {
-    tmp$1 = noisy(2);
-  } catch (error) {
-    first.return();
-    throw error;
-  }
-  let tmp$2;
-  try {
-    tmp$2 = $iter(tmp$1);
-  } catch (error) {
-    first.return();
-    throw error;
-  }
-  let tmp$3;
-  try {
-    tmp$3 = iterator_rev(
-      tmp$2,
-      { next: $next, advanceBy: $advanceSlice },
-      { next_back: $nextBack },
-      $dropEach(noisyDrop_drop),
-      noisyDrop_drop,
-    );
-  } catch (error) {
-    first.return();
-    throw error;
-  }
   let second;
   try {
     second = iterator_skip(
-      tmp$3,
+      iterator_rev(
+        $iter(noisy(2)),
+        { next: $next, advanceBy: $advanceSlice },
+        { next_back: $nextBack },
+        $dropEach(noisyDrop_drop),
+        noisyDrop_drop,
+      ),
       0,
       { next: $next, fold: $foldOf },
       (rev) => {

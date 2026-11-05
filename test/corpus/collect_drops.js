@@ -33,8 +33,8 @@ function main() {
   console.log(`kept ${long.length}`);
 
   const w = [["x"], ["y"], ["z"]];
+  const skip = (n) => n[0] !== "y";
   try {
-    const skip = (n) => n[0] !== "y";
     const rest = $collectDropping(
       $lazySkipWhile($closing($iter(w), $dropEach(noisyDrop_drop)), (item) => {
         if (skip(item)) {
@@ -51,12 +51,12 @@ function main() {
     let fragments = [["f1"], ["f2"]];
     const old = fragments;
     fragments = [];
+    const skip$1 = () => true;
     try {
       try {
-        const skip = () => true;
         const none = Array.from(
           $lazySkipWhile($closing($iter(old), $dropEach(noisyDrop_drop)), (item) => {
-            if (skip(item)) {
+            if (skip$1(item)) {
               noisyDrop_drop(item);
               return true;
             }

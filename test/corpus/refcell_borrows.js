@@ -50,20 +50,20 @@ function main() {
   } finally {
     $unborrow(writing);
   }
-  const value = $tryBorrow(cell);
+  const result = $tryBorrow(cell);
   function map(v) {
     $unborrow(v);
     return v.length;
   }
-  const value$1 = value.TAG === "Ok" ? { TAG: "Ok", _0: map(value._0) } : value;
-  const value$2 = $tryBorrow(cell, true);
+  const value = result.TAG === "Ok" ? { TAG: "Ok", _0: map(result._0) } : result;
+  const value$1 = $tryBorrow(cell, true);
   try {
     console.log(
-      `${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$debugParseError(value$1._0, "BorrowError")})`} ${value$2.TAG === "Ok"}`,
+      `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugParseError(value._0, "BorrowError")})`} ${value$1.TAG === "Ok"}`,
     );
   } finally {
-    if (value$2.TAG === "Ok") {
-      $unborrow(value$2._0);
+    if (value$1.TAG === "Ok") {
+      $unborrow(value$1._0);
     }
   }
   $assign($borrowMut(cell), [7]);
@@ -180,16 +180,14 @@ function main() {
     }
     throw error;
   }
-  let tmp$2;
   try {
-    tmp$2 = [undefined, tmp$1, $cellReplace($borrowMut(shared), "")];
+    console.log(`${$debugStr(replace)} ${tmp$1} ${$cellReplace($borrowMut(shared), "")}`);
   } catch (error) {
     if (writing$live) {
       $unborrow(writing);
     }
     throw error;
   }
-  console.log(`${$debugStr(replace)} ${tmp$2[1]} ${tmp$2[2]}`);
   let reading;
   try {
     reading = $borrow(copy, true);
@@ -199,9 +197,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$3;
+  let tmp$2;
   try {
-    tmp$3 = $tryBorrow(copy, true);
+    tmp$2 = $tryBorrow(copy, true);
   } catch (error) {
     $unborrow(reading);
     if (writing$live) {
@@ -211,11 +209,11 @@ function main() {
   }
   try {
     console.log(
-      `RefCell { value: ${$showBorrowed(copy, (value) => $debugStr(value))} } ${$debugStr(reading.value)} ${tmp$3.TAG === "Err"}`,
+      `RefCell { value: ${$showBorrowed(copy, (value) => $debugStr(value))} } ${$debugStr(reading.value)} ${tmp$2.TAG === "Err"}`,
     );
   } catch (error) {
-    if (tmp$3.TAG === "Ok") {
-      $unborrow(tmp$3._0);
+    if (tmp$2.TAG === "Ok") {
+      $unborrow(tmp$2._0);
     }
     $unborrow(reading);
     if (writing$live) {
@@ -224,8 +222,8 @@ function main() {
     throw error;
   }
   try {
-    if (tmp$3.TAG === "Ok") {
-      $unborrow(tmp$3._0);
+    if (tmp$2.TAG === "Ok") {
+      $unborrow(tmp$2._0);
     }
   } catch (error) {
     $unborrow(reading);

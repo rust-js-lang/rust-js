@@ -14,6 +14,7 @@ import {
   $rcClone,
   $rcDrop,
   $tryUnwrap,
+  $unwrap,
   $unwrapOrClone,
   $upgrade,
   $weakClone,
@@ -62,6 +63,7 @@ function main() {
     throw error;
   }
   console.log(`converted ${converted.strong} ${other.value}`);
+  let again$live = false;
   try {
     $rcDrop(again, noisyDrop_drop);
   } catch (error) {
@@ -205,37 +207,12 @@ function main() {
     throw error;
   }
   const value$1 = [[1], [2, 3]];
-  let tmp$5;
-  try {
-    tmp$5 = $iter(value$1);
-  } catch (error) {
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
-  let map;
-  try {
-    map = tmp$5.map((x) => ({ value: x, strong: 1, weak: 0 }));
-  } catch (error) {
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
   let lists;
   try {
-    lists = $foldToArray(map, $rcDrop);
+    lists = $foldToArray(
+      value$1.values().map((x) => ({ value: x, strong: 1, weak: 0 })),
+      $rcDrop,
+    );
   } catch (error) {
     $rcDrop(fresh.title);
     $rcDrop(fresh.pages);
@@ -282,6 +259,9 @@ function main() {
       $rcDrop(doc.pages);
       $rcDrop(other);
       $rcDrop(converted);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
       throw error;
     }
     if (list == null) {
@@ -301,6 +281,9 @@ function main() {
       $rcDrop(doc.pages);
       $rcDrop(other);
       $rcDrop(converted);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
       throw error;
     }
     while (true) {
@@ -319,6 +302,9 @@ function main() {
         $rcDrop(doc.pages);
         $rcDrop(other);
         $rcDrop(converted);
+        if (again$live) {
+          $rcDrop(again, noisyDrop_drop);
+        }
         throw error;
       }
       if (item == null) {
@@ -342,6 +328,9 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   console.log(`${total} ${arg}`);
@@ -363,6 +352,9 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   try {
@@ -381,6 +373,9 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   try {
@@ -399,6 +394,9 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   let owned;
@@ -417,6 +415,9 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   const value$2 = other$1.value;
@@ -437,6 +438,9 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   try {
@@ -454,6 +458,9 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   let owner;
@@ -472,11 +479,14 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   let me;
   try {
-    me = $upgrade(owner.value.me);
+    me = $unwrap($upgrade(owner.value.me));
   } catch (error) {
     $rcDrop(owner, (value) => {
       $weakDrop(value.me);
@@ -493,25 +503,10 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
-    throw error;
-  }
-  if (me == null) {
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
     }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw new Error("called `Option::unwrap()` on a `None` value");
+    throw error;
   }
   console.log(`${me.value.name} ${owner.strong} ${owner.weak}`);
   try {
@@ -534,12 +529,15 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   const strong = owner.strong;
-  let upgrade;
+  let tmp$5;
   try {
-    upgrade = $upgrade(owner.value.me);
+    tmp$5 = $unwrap($upgrade(owner.value.me));
   } catch (error) {
     $rcDrop(owner, (value) => {
       $weakDrop(value.me);
@@ -556,29 +554,14 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
-  if (upgrade == null) {
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw new Error("called `Option::unwrap()` on a `None` value");
-  }
-  console.log(`${strong} ${owner === upgrade}`);
+  console.log(`${strong} ${owner === tmp$5}`);
   try {
-    $rcDrop(upgrade, (value) => {
+    $rcDrop(tmp$5, (value) => {
       $weakDrop(value.me);
     });
   } catch (error) {
@@ -597,6 +580,9 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   const defaulted = { value: 0, strong: 1, weak: 0 };
@@ -622,6 +608,9 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   console.log(`${defaulted.value} ${arg$2}`);
@@ -646,6 +635,9 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   console.log(`${defaulted.weak}`);
@@ -673,6 +665,9 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   let tmp$6;
@@ -696,6 +691,9 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   console.log(`${tmp$6.TAG === "Ok" ? `Ok(${tmp$6._0})` : `Err(${tmp$6._0.value})`}`);
@@ -721,6 +719,9 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   console.log(`${also.strong}`);
@@ -750,6 +751,9 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   alias.value.value = 5;
@@ -776,6 +780,9 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   $rcDrop(other$1);
@@ -792,6 +799,9 @@ function main() {
     $rcDrop(doc.pages);
     $rcDrop(other);
     $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
     throw error;
   }
   $rcDrop(fresh.title);
@@ -802,5 +812,6 @@ function main() {
   $rcDrop(doc.pages);
   $rcDrop(other);
   $rcDrop(converted);
+  again$live = false;
 }
 //# sourceMappingURL=case.js.map

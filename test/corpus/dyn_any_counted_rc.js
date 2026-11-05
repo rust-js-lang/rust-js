@@ -70,18 +70,18 @@ function main() {
         });
         throw error;
       }
-      const value =
+      const result =
         back.impl.typeId() === "lib::Loud" ? { TAG: "Ok", _0: back } : { TAG: "Err", _0: back };
-      let value$1;
-      if (value.TAG === "Ok") {
-        value$1 = value._0;
+      let value;
+      if (result.TAG === "Ok") {
+        value = result._0;
       } else {
-        value$1 = undefined;
-        $rcDrop(value._0, (value) => {
+        value = undefined;
+        $rcDrop(result._0, (value) => {
           value.impl.$drop?.(value.value);
         });
       }
-      const found = $unwrap(value$1);
+      const found = $unwrap(value);
       console.log(`${found.value[0]} ${found.strong}`);
       $rcDrop(found, loudDrop_drop);
       console.log(`${other.strong}`);

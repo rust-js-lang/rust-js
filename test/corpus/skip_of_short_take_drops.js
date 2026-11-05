@@ -44,13 +44,13 @@ function main() {
     ),
   );
   try {
-    const nth = $nthDropping($lent(skip), 2, dDrop_drop, false);
+    const d = $nthDropping($lent(skip), 2, dDrop_drop, false);
     function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    const value = nth != null ? map(nth) : undefined;
+    const value = d != null ? map(d) : undefined;
     console.log(`nth ${value == null ? "None" : `Some(${value})`}`);
   } finally {
     skip.return();
@@ -153,7 +153,7 @@ function main() {
     ),
   );
   try {
-    const value = $nthDropping(
+    const option = $nthDropping(
       $lent(enumerate),
       1,
       (value) => {
@@ -166,8 +166,8 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    const value$1 = value != null ? map(value) : undefined;
-    console.log(`enumerate ${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const value = option != null ? map(option) : undefined;
+    console.log(`enumerate ${value == null ? "None" : `Some(${value})`}`);
   } finally {
     enumerate.return();
   }

@@ -84,3 +84,38 @@ in an app, of every callback.
   what it drops; it's `tmp` now, as its two others were.
 - Tested by `test/lowering-moves.test.ts`, a library's setter given a
   closure of each callback, and by the corpus's drop cases.
+
+## Amendment: calls that unwind to the same drops share one cleanup (2026-11-05, #723)
+
+`drops::cleans_up`, the cleanup a call's panic unwinds to, answered with
+the cleanup chain's first block, even where that block and those after it
+drop nothing, a temporary each call moved on, and write nothing. So
+consecutive calls whose chains differ only by those blocks,
+`v.into_iter()`, its `enumerate()` and its `rev()` beside a live `D`,
+seemed to unwind to different cleanups. At each one, structure.rs made
+what was made before it a `const`, held apart from the call that reads
+it. A `rev()` then found `var _4`, no form of the enumeration left to read,
+and refused it. A peeked `peekable()` counted earlier in the function
+made the same happen, so the refusal depended on the order of unrelated
+statements (#723). The answer is now the first block of the chain that
+drops or writes something: one cleanup for calls that drop the same, and
+what's made between them stays made in place.
+
+Case N (ADR 0262): which block the cleanup starts at runs the same drops,
+so no program can tell. Only where temporaries are held changes. Of the
+corpus, 110 snapshots read differently: mostly a `let tmp; try { tmp = ds(); }
+catch ..` per call merged into one `try`, 1,410 lines fewer in all. Some
+read worse, filed as #769: a temporary named after its type, `l` or `d`,
+where it was named after its call, `next` or `nthBack`; a closure
+declared as `function map(d)` now `let map; .. map = (d) => ..` in a
+`try`; `$dispose($removeAt(handlers, 0))` now through a `const value`.
+
+It also showed a lowering that read its argument in place past an effect,
+`Option::insert`'s drop of the old value, right only where such a spurious
+flush held the argument first (#765, fixed before this).
+
+`back_steps_beside_a_live_drop` holds #723's shapes against native Rust
+in both builds: a `Vec`'s, an array's, a slice's and a range's
+`enumerate()`, `skip()` and `take()` stepped from the back, beside a live
+`D` and after a peeked count, and a panic through them. Mutation
+`cleanup-starts-at-its-chain` (`lower/mir/drops.ts`).

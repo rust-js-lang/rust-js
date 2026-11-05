@@ -108,10 +108,8 @@ function main() {
     });
     throw error;
   }
-  const strong = n2.strong;
-  let tmp$3;
   try {
-    tmp$3 = [undefined, strong, show(n2)];
+    console.log(`${id} ${n2.strong} ${show(n2)}`);
   } catch (error) {
     $rcDrop(b, (value) => {
       value.impl.$drop?.(value.value);
@@ -124,7 +122,6 @@ function main() {
     });
     throw error;
   }
-  console.log(`${id} ${tmp$3[1]} ${tmp$3[2]}`);
   let w;
   try {
     w = $downgrade(n1);
@@ -141,9 +138,19 @@ function main() {
     throw error;
   }
   const weak = a.weak;
-  let upgrade;
+  let n;
+  let map;
   try {
-    upgrade = $upgrade(w);
+    n = $upgrade(w);
+    map = (n) => {
+      try {
+        return n.impl.name(n.value);
+      } finally {
+        $rcDrop(n, (value) => {
+          value.impl.$drop?.(value.value);
+        });
+      }
+    };
   } catch (error) {
     $weakDrop(w);
     $rcDrop(b, (value) => {
@@ -157,18 +164,8 @@ function main() {
     });
     throw error;
   }
-  function map(n) {
-    try {
-      return n.impl.name(n.value);
-    } finally {
-      $rcDrop(n, (value) => {
-        value.impl.$drop?.(value.value);
-      });
-    }
-  }
-  let tmp$4;
   try {
-    tmp$4 = upgrade != null ? map(upgrade) : undefined;
+    console.log(`${weak} ${(n != null ? map(n) : undefined) ?? ""}`);
   } catch (error) {
     $weakDrop(w);
     $rcDrop(b, (value) => {
@@ -182,7 +179,6 @@ function main() {
     });
     throw error;
   }
-  console.log(`${weak} ${tmp$4 ?? ""}`);
   try {
     $rcDrop(n1, (value) => {
       value.impl.$drop?.(value.value);
@@ -217,17 +213,17 @@ function main() {
     $weakDrop(w);
     throw error;
   }
-  let tmp$5;
+  let upgrade;
   try {
-    tmp$5 = $upgrade(w);
+    upgrade = $upgrade(w);
   } catch (error) {
     $weakDrop(w);
     throw error;
   }
-  console.log(`${tmp$5 == null}`);
+  console.log(`${upgrade == null}`);
   try {
-    if (tmp$5 != null) {
-      $rcDrop(tmp$5, (value) => {
+    if (upgrade != null) {
+      $rcDrop(upgrade, (value) => {
         value.impl.$drop?.(value.value);
       });
     }

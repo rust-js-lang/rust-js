@@ -73,17 +73,8 @@ function main() {
         }
         throw error;
       }
-      let tmp$1;
       try {
-        tmp$1 = ids(tail);
-      } catch (error) {
-        for (const item of tail) {
-          noisyDrop_drop(item);
-        }
-        throw error;
-      }
-      try {
-        console.log(`[${tmp.join(", ")}] [${tmp$1.join(", ")}]`);
+        console.log(`[${tmp.join(", ")}] [${ids(tail).join(", ")}]`);
       } catch (error) {
         for (const item of tail) {
           noisyDrop_drop(item);
@@ -102,11 +93,11 @@ function main() {
         }
         throw error;
       }
+      let tmp$1;
       let tmp$2;
-      let tmp$3;
       try {
-        tmp$2 = ids(v);
-        tmp$3 = more;
+        tmp$1 = ids(v);
+        tmp$2 = more;
       } catch (error) {
         for (const item of more) {
           noisyDrop_drop(item);
@@ -117,7 +108,7 @@ function main() {
         throw error;
       }
       try {
-        console.log(`[${tmp$2.join(", ")}] ${tmp$3.length}`);
+        console.log(`[${tmp$1.join(", ")}] ${tmp$2.length}`);
       } catch (error) {
         for (const item of more) {
           noisyDrop_drop(item);
@@ -139,11 +130,11 @@ function main() {
       }
       taken = v;
       v = [];
+      let tmp$3;
       let tmp$4;
-      let tmp$5;
       try {
-        tmp$4 = ids(taken);
-        tmp$5 = v;
+        tmp$3 = ids(taken);
+        tmp$4 = v;
       } catch (error) {
         for (const item of taken) {
           noisyDrop_drop(item);
@@ -154,7 +145,7 @@ function main() {
         throw error;
       }
       try {
-        console.log(`taken [${tmp$4.join(", ")}] left ${tmp$5.length}`);
+        console.log(`taken [${tmp$3.join(", ")}] left ${tmp$4.length}`);
       } catch (error) {
         for (const item of taken) {
           noisyDrop_drop(item);

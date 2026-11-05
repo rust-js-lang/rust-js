@@ -432,25 +432,15 @@ function main() {
     }
     let tmp;
     try {
-      tmp = $flattenEnds(
-        $mapEnds(
-          $iterator([0, 3], foldsIterator_next, false, foldsDoubleEndedIterator_nextBack),
-          (d) => [[(d[0] * 10) >>> 0], d],
+      tmp = $rev(
+        $flattenEnds(
+          $mapEnds(
+            $iterator([0, 3], foldsIterator_next, false, foldsDoubleEndedIterator_nextBack),
+            (d) => [[(d[0] * 10) >>> 0], d],
+          ),
+          (item) => $closing($iter(item), $dropEach(dDrop_drop)),
         ),
-        (item) => $closing($iter(item), $dropEach(dDrop_drop)),
       );
-    } catch (error) {
-      if (last != null) {
-        dDrop_drop(last);
-      }
-      if (found != null) {
-        dDrop_drop(found);
-      }
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $rev(tmp);
     } catch (error) {
       if (last != null) {
         dDrop_drop(last);
@@ -462,7 +452,7 @@ function main() {
     }
     let s;
     try {
-      s = $foldBack(tmp$1, "", shown);
+      s = $foldBack(tmp, "", shown);
     } catch (error) {
       if (last != null) {
         dDrop_drop(last);
@@ -476,47 +466,13 @@ function main() {
       [0, 2],
       [4, 6],
     ];
-    let tmp$2;
-    try {
-      tmp$2 = $iter(value);
-    } catch (error) {
-      if (last != null) {
-        dDrop_drop(last);
-      }
-      if (found != null) {
-        dDrop_drop(found);
-      }
-      throw error;
-    }
-    let tmp$3;
-    try {
-      tmp$3 = $flattenEnds(tmp$2, (item) =>
-        $iterator(item, foldsIterator_next, false, foldsDoubleEndedIterator_nextBack),
-      );
-    } catch (error) {
-      if (last != null) {
-        dDrop_drop(last);
-      }
-      if (found != null) {
-        dDrop_drop(found);
-      }
-      throw error;
-    }
-    let tmp$4;
-    try {
-      tmp$4 = $rev(tmp$3);
-    } catch (error) {
-      if (last != null) {
-        dDrop_drop(last);
-      }
-      if (found != null) {
-        dDrop_drop(found);
-      }
-      throw error;
-    }
     let s$1;
     try {
-      s$1 = tmp$4.reduce(shown, s);
+      s$1 = $rev(
+        $flattenEnds($iter(value), (item) =>
+          $iterator(item, foldsIterator_next, false, foldsDoubleEndedIterator_nextBack),
+        ),
+      ).reduce(shown, s);
     } catch (error) {
       if (last != null) {
         dDrop_drop(last);

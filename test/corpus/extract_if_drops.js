@@ -33,9 +33,7 @@ function collected() {
       true,
     );
     try {
-      const value = ids(odd);
-      const value$1 = ids(v);
-      console.log(`odd [${value.join(", ")}] kept [${value$1.join(", ")}]`);
+      console.log(`odd [${ids(odd).join(", ")}] kept [${ids(v).join(", ")}]`);
     } finally {
       for (const item of odd) {
         loudDrop_drop(item);

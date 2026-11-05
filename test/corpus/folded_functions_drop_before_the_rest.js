@@ -126,12 +126,11 @@ function zero(guard) {
 function reachingItsOwnFold() {
   let g$live = true;
   const g = ["f"];
-  const value = own(4, "own");
   let take;
   try {
     take = $closing(
       $iterator(
-        value,
+        own(4, "own"),
         ownIterator_next,
         false,
         undefined,
@@ -158,12 +157,11 @@ function reachingItsOwnFold() {
   console.log(`take ${n}`);
   let g$1$live = true;
   const g$1 = ["f"];
-  const value$1 = own(4, "own");
   let skip;
   try {
     skip = $closing(
       $iterator(
-        value$1,
+        own(4, "own"),
         ownIterator_next,
         false,
         undefined,
@@ -190,11 +188,10 @@ function reachingItsOwnFold() {
   console.log(`skip ${n}`);
   let g$2$live = true;
   const g$2 = ["f"];
-  const value$2 = own(3, "own");
   let peekable;
   try {
     peekable = iterator_peekable(
-      value$2,
+      own(3, "own"),
       { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
       (own) => {
         dDrop_drop(own._held);
@@ -214,11 +211,10 @@ function reachingItsOwnFold() {
   console.log(`peekable ${n}`);
   let g$3$live = true;
   const g$3 = ["f"];
-  const value$3 = own(3, "own");
   let fuse;
   try {
     fuse = iterator_fuse(
-      value$3,
+      own(3, "own"),
       { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
       false,
       (own) => {
@@ -239,13 +235,12 @@ function reachingItsOwnFold() {
   console.log(`fuse ${n}`);
   let g$4$live = true;
   const g$4 = ["f"];
-  const value$4 = own(2, "own");
   let enumerate;
   try {
     enumerate = $enumerate(
       $closing(
         $iterator(
-          value$4,
+          own(2, "own"),
           ownIterator_next,
           false,
           ownDoubleEndedIterator_nextBack,
@@ -282,14 +277,14 @@ function reachingItsOwnFold() {
     },
   );
   const g$5 = ["f"];
-  const value$5 = own(2, "own");
-  const value$6 = own(1, "own2");
+  const value = own(2, "own");
+  const value$1 = own(1, "own2");
   let chain;
   try {
     chain = $lazyChain(
       $closing(
         $iterator(
-          value$5,
+          value,
           ownIterator_next,
           false,
           undefined,
@@ -304,7 +299,7 @@ function reachingItsOwnFold() {
       ),
       $closing(
         $iterator(
-          value$6,
+          value$1,
           ownIterator_next,
           false,
           undefined,
@@ -332,13 +327,12 @@ function reachingItsOwnFold() {
 function steppedToItsEnd() {
   let g$live = true;
   const g = ["map"];
-  const value = own(5, "own");
   let stepBy;
   try {
     stepBy = $stepBy(
       $closing(
         $iterator(
-          value,
+          own(5, "own"),
           ownIterator_next,
           false,
           undefined,
@@ -378,13 +372,12 @@ function steppedToItsEnd() {
   console.log(`step_by fold ${n}`);
   let g$1$live = true;
   const g$1 = ["map"];
-  const value$1 = own(5, "own");
   let tmp;
   try {
     tmp = $stepBy(
       $closing(
         $iterator(
-          value$1,
+          own(5, "own"),
           ownIterator_next,
           false,
           undefined,
@@ -586,23 +579,9 @@ function ofAVecReversed() {
   let g$live = true;
   const g = ["f"];
   const value = [["x"], ["y"]];
-  let tmp;
-  try {
-    tmp = $iter(value);
-  } catch (error) {
-    dDrop_drop(g);
-    throw error;
-  }
-  let rev;
-  try {
-    rev = $rev($closing(tmp, $dropEach(dDrop_drop)));
-  } catch (error) {
-    dDrop_drop(g);
-    throw error;
-  }
   let enumerate;
   try {
-    enumerate = $enumerate(rev);
+    enumerate = $enumerate($rev($closing($iter(value), $dropEach(dDrop_drop))));
     g$live = false;
   } catch (error) {
     if (g$live) {
@@ -629,16 +608,9 @@ function ofAVecReversed() {
   let g$1$live = true;
   const g$1 = ["f"];
   const value$1 = [["x"], ["y"]];
-  let tmp$1;
-  try {
-    tmp$1 = $iter(value$1);
-  } catch (error) {
-    dDrop_drop(g$1);
-    throw error;
-  }
   let map;
   try {
-    map = $mapEnds($closing(tmp$1, $dropEach(dDrop_drop)), (d) => {
+    map = $mapEnds($closing($iter(value$1), $dropEach(dDrop_drop)), (d) => {
       const result = $byteLen(d[0]);
       dDrop_drop(d);
       return result;
@@ -658,16 +630,9 @@ function ofAVecReversed() {
   let g$2$live = true;
   const g$2 = ["f"];
   const value$2 = [["x"], ["y"]];
-  let tmp$2;
+  let rev;
   try {
-    tmp$2 = $iter(value$2);
-  } catch (error) {
-    dDrop_drop(g$2);
-    throw error;
-  }
-  let tmp$3;
-  try {
-    tmp$3 = $rev($closing(tmp$2, $dropEach(dDrop_drop)));
+    rev = $rev($closing($iter(value$2), $dropEach(dDrop_drop)));
     g$2$live = false;
   } catch (error) {
     if (g$2$live) {
@@ -680,7 +645,7 @@ function ofAVecReversed() {
     dDrop_drop(d);
     return result;
   }
-  n = $consume(tmp$3, "rfold", 0, f$2, undefined, () => {
+  n = $consume(rev, "rfold", 0, f$2, undefined, () => {
     dDrop_drop(g$2);
   });
   console.log(`vec rev rfold ${n}`);
@@ -760,16 +725,9 @@ function reversedWithoutAPanic() {
   let g$3$live = true;
   const g$3 = ["f"];
   const value$4 = [[1, 2], [3]];
-  let tmp$1;
-  try {
-    tmp$1 = $iter(value$4);
-  } catch (error) {
-    dDrop_drop(g$3);
-    throw error;
-  }
   let flatten;
   try {
-    flatten = $flattenEnds(tmp$1, (item) => $iter(item));
+    flatten = $flattenEnds($iter(value$4), (item) => $iter(item));
     g$3$live = false;
   } catch (error) {
     if (g$3$live) {
@@ -823,11 +781,10 @@ function chainedUnderAMap() {
   let n = result;
   console.log(`chain map fold ${n}`);
   const g$1 = ["filter"];
-  const value$2 = plain(2, "a");
   let stepBy;
   try {
     stepBy = $stepBy(
-      $closing($iterator(value$2, plainIterator_next), (it) => {
+      $closing($iterator(plain(2, "a"), plainIterator_next), (it) => {
         dDrop_drop(it.of._held);
       }),
       1,
@@ -836,12 +793,12 @@ function chainedUnderAMap() {
     dDrop_drop(g$1);
     throw error;
   }
-  const value$3 = plain(1, "b");
+  const value$2 = plain(1, "b");
   let tmp;
   try {
     tmp = $lazyChain(
       stepBy,
-      $closing($iterator(value$3, plainIterator_next), (it) => {
+      $closing($iterator(value$2, plainIterator_next), (it) => {
         dDrop_drop(it.of._held);
       }),
     );

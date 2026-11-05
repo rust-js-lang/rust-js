@@ -86,13 +86,13 @@ function main() {
   run("rev rev nth", () => {
     const rev = $held($rev($rev($closing($iter(ds()), $dropEach(dDrop_drop)))));
     try {
-      const nth = $nthDropping($lent(rev), 1, dDrop_drop, false);
+      const d = $nthDropping($lent(rev), 1, dDrop_drop, false);
       function map(d) {
         const result = d[0] + 0;
         dDrop_drop(d);
         return result;
       }
-      return nth != null ? map(nth) : undefined;
+      return d != null ? map(d) : undefined;
     } finally {
       rev.return();
     }

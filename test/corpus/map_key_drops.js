@@ -7,7 +7,6 @@ import {
   $btreeMap,
   $btreeSet,
   $cmp,
-  $entry,
   $extendMap,
   $insert,
   $mutGet,
@@ -38,17 +37,17 @@ function main() {
     $insert(m, [1], 10, keyDrop_drop);
     const value = $insert(m, [1], 11, keyDrop_drop);
     console.log(`insert ${value == null ? "None" : `Some(${value})`}`);
-    const entry = $entry(m, [1], keyDrop_drop);
-    $orInsert(entry._0[0], entry._0[1], 0);
-    const orInsert = $mutGet(entry._0[0], entry._0[1]);
+    const key = [1];
+    $orInsert(m, key, 0, undefined, keyDrop_drop);
+    const orInsert = $mutGet(m, key);
     orInsert.value = (orInsert.value + 1) | 0;
-    const entry$1 = $entry(m, [2], keyDrop_drop);
-    $orInsert(entry$1._0[0], entry$1._0[1], 0);
-    const value$1 = $mutGet(entry$1._0[0], entry$1._0[1]);
+    const key$1 = [2];
+    $orInsert(m, key$1, 0, undefined, keyDrop_drop);
+    const value$1 = $mutGet(m, key$1);
     value$1.value = (value$1.value + 1) | 0;
-    const entry$2 = $entry(m, [2], keyDrop_drop);
-    $orInsertWith(entry$2._0[0], entry$2._0[1], () => 5);
-    const orInsertWith = $mutGet(entry$2._0[0], entry$2._0[1]);
+    const key$2 = [2];
+    $orInsertWith(m, key$2, () => 5, keyDrop_drop);
+    const orInsertWith = $mutGet(m, key$2);
     orInsertWith.value = (orInsertWith.value + 1) | 0;
     const value$2 = [2];
     try {
@@ -66,13 +65,13 @@ function main() {
     }
     const value$4 = [1];
     try {
-      const removeEntry = $removeEntry(m, value$4);
+      const option = $removeEntry(m, value$4);
       function map([k, v]) {
         const result = [k[0], v];
         keyDrop_drop(k);
         return result;
       }
-      const value = removeEntry != null ? map(removeEntry) : undefined;
+      const value = option != null ? map(option) : undefined;
       console.log(`removed ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
     } finally {
       keyDrop_drop(value$4);
@@ -106,23 +105,23 @@ function main() {
       keyDrop_drop(value);
     }
     $add(s, [4], keyDrop_drop);
-    const replace = $setReplace(s, [4]);
+    const k = $setReplace(s, [4]);
     function map(k) {
       const result = k[0];
       keyDrop_drop(k);
       return result;
     }
-    const value$1 = replace != null ? map(replace) : undefined;
+    const value$1 = k != null ? map(k) : undefined;
     console.log(`replace ${value$1 == null ? "None" : `Some(${value$1})`}`);
     const value$2 = [4];
     try {
-      const take = s.delete(value$2) ? value$2 : undefined;
+      const k = s.delete(value$2) ? value$2 : undefined;
       function map(k) {
         const result = k[0];
         keyDrop_drop(k);
         return result;
       }
-      const value = take != null ? map(take) : undefined;
+      const value = k != null ? map(k) : undefined;
       console.log(`take ${value == null ? "None" : `Some(${value})`}`);
     } finally {
       keyDrop_drop(value$2);

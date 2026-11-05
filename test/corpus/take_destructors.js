@@ -117,29 +117,19 @@ function main() {
       }
       throw error;
     }
+    let iter;
+    try {
+      iter = $skipping($closing($iter(s), $dropEach(nDrop_drop)), 2, nDrop_drop);
+    } catch (error) {
+      for (const item of all) {
+        nDrop_drop(item);
+      }
+      throw error;
+    }
     let tmp;
-    try {
-      tmp = $iter(s);
-    } catch (error) {
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      throw error;
-    }
-    let skip;
-    try {
-      skip = $skipping($closing(tmp, $dropEach(nDrop_drop)), 2, nDrop_drop);
-    } catch (error) {
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      throw error;
-    }
-    let iter = skip;
-    let tmp$1;
     while (true) {
       try {
-        tmp$1 = $next(iter);
+        tmp = $next(iter);
       } catch (error) {
         iter.return();
         for (const item of all) {
@@ -155,8 +145,8 @@ function main() {
         }
         throw error;
       }
-      if (tmp$1 != null) {
-        const n = tmp$1;
+      if (tmp != null) {
+        const n = tmp;
         console.log(`after skip ${n[0]}`);
         if (n[0] === 43) {
           nDrop_drop(n);
@@ -200,26 +190,9 @@ function main() {
       }
       throw error;
     }
-    let tmp$2;
-    try {
-      tmp$2 = $iter(unstepped);
-    } catch (error) {
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
-        }
-      }
-      if (t$live) {
-        t.return();
-      }
-      throw error;
-    }
     let skipped;
     try {
-      skipped = $skipping($closing(tmp$2, $dropEach(nDrop_drop)), 1, nDrop_drop);
+      skipped = $skipping($closing($iter(unstepped), $dropEach(nDrop_drop)), 1, nDrop_drop);
     } catch (error) {
       for (const item of all) {
         nDrop_drop(item);
@@ -269,60 +242,11 @@ function main() {
       }
       throw error;
     }
-    let tmp$3;
-    try {
-      tmp$3 = $iter(both);
-    } catch (error) {
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
-        }
-      }
-      if (t$live) {
-        t.return();
-      }
-      throw error;
-    }
-    let tmp$4;
-    try {
-      tmp$4 = $skipping($closing(tmp$3, $dropEach(nDrop_drop)), 1, nDrop_drop);
-    } catch (error) {
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
-        }
-      }
-      if (t$live) {
-        t.return();
-      }
-      throw error;
-    }
-    let take;
-    try {
-      take = tmp$4.take(2);
-    } catch (error) {
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
-        }
-      }
-      if (t$live) {
-        t.return();
-      }
-      throw error;
-    }
     let kept;
     try {
-      kept = Array.from(take);
+      kept = Array.from(
+        $skipping($closing($iter(both), $dropEach(nDrop_drop)), 1, nDrop_drop).take(2),
+      );
     } catch (error) {
       for (const item of all) {
         nDrop_drop(item);
@@ -457,9 +381,14 @@ function main() {
       }
       throw error;
     }
-    let collect;
+    let tmp$1;
     try {
-      collect = $range(80, 84).map((value) => [value]);
+      tmp$1 = splitFirst(
+        $iter($range(80, 84).map((value) => [value])),
+        1,
+        $dropEach(nDrop_drop),
+        nDrop_drop,
+      );
     } catch (error) {
       for (const item of kept) {
         nDrop_drop(item);
@@ -477,75 +406,12 @@ function main() {
       }
       throw error;
     }
-    let tmp$5;
-    try {
-      tmp$5 = $iter(collect);
-    } catch (error) {
-      for (const item of kept) {
-        nDrop_drop(item);
-      }
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
-        }
-      }
-      if (t$live) {
-        t.return();
-      }
-      throw error;
-    }
-    let tmp$6;
-    try {
-      tmp$6 = splitFirst(tmp$5, 1, $dropEach(nDrop_drop), nDrop_drop);
-    } catch (error) {
-      for (const item of kept) {
-        nDrop_drop(item);
-      }
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
-        }
-      }
-      if (t$live) {
-        t.return();
-      }
-      throw error;
-    }
-    const first = tmp$6[0];
-    const rest = tmp$6[1];
+    const first = tmp$1[0];
+    const rest = tmp$1[1];
     console.log(`first ${first.length} rest ${rest}`);
-    let tmp$7;
-    try {
-      tmp$7 = $range(90, 94).map((value) => [value]);
-    } catch (error) {
-      for (const item of first) {
-        nDrop_drop(item);
-      }
-      for (const item of kept) {
-        nDrop_drop(item);
-      }
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
-        }
-      }
-      if (t$live) {
-        t.return();
-      }
-      throw error;
-    }
     let owned;
     try {
-      owned = $iter(tmp$7);
+      owned = $iter($range(90, 94).map((value) => [value]));
     } catch (error) {
       for (const item of first) {
         nDrop_drop(item);
@@ -592,10 +458,10 @@ function main() {
       }
       throw error;
     }
-    let tmp$8;
+    let tmp$2;
     while (true) {
       try {
-        tmp$8 = $next(iter);
+        tmp$2 = $next(iter);
       } catch (error) {
         if (owned$live) {
           for (const item of owned) {
@@ -634,20 +500,21 @@ function main() {
         }
         throw error;
       }
-      if (tmp$8 == null) {
+      if (tmp$2 == null) {
         break;
       }
-      const n = tmp$8;
+      const n = tmp$2;
       console.log(`lent got ${n[0]}`);
       nDrop_drop(n);
     }
     owned$live = false;
-    let tmp$9;
     try {
-      tmp$9 = $closing(owned, $dropEach(nDrop_drop)).reduce((n, item) => {
-        nDrop_drop(item);
-        return n + 1;
-      }, 0);
+      console.log(
+        `left ${$closing(owned, $dropEach(nDrop_drop)).reduce((n, item) => {
+          nDrop_drop(item);
+          return n + 1;
+        }, 0)}`,
+      );
     } catch (error) {
       for (const item of first) {
         nDrop_drop(item);
@@ -681,7 +548,6 @@ function main() {
       }
       throw error;
     }
-    console.log(`left ${tmp$9}`);
     console.log("end");
     try {
       for (const item of first) {

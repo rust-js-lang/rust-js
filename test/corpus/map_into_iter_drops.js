@@ -76,27 +76,26 @@ function main() {
   map$live = false;
   const value = firstOver(map, 15);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = $iter([[1], [2], [3]]);
   const set = $treeFrom(
     new ($btreeSet((a, b) => $cmp(a[0], b[0]), $KeySet))(),
-    value$1,
+    $iter([[1], [2], [3]]),
     true,
     (a, b) => $cmp(a[0], b[0]),
     undefined,
     loudDrop_drop,
   );
-  const value$2 = $iter($sortedKeys(set, (a, b) => $cmp(a[0], b[0])));
+  const value$1 = $iter($sortedKeys(set, (a, b) => $cmp(a[0], b[0])));
   let found;
   try {
-    const find = $findDropping($lent(value$2), (l) => l[0] === 2, loudDrop_drop, false);
+    const l = $findDropping($lent(value$1), (l) => l[0] === 2, loudDrop_drop, false);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    found = find != null ? map(find) : undefined;
+    found = l != null ? map(l) : undefined;
   } finally {
-    for (const item of value$2) {
+    for (const item of value$1) {
       loudDrop_drop(item);
     }
   }

@@ -60,10 +60,10 @@ function main() {
     } finally {
       $assign(b, out.value);
     }
-    const write = bufWrite_write(b, [33, 33], 16);
-    const n = write.TAG === "Ok" ? write._0 : undefined;
-    const value = BufWrite.writeFmt({ value: b }, "1");
-    const writeAll = BufWrite.writeAll({ value: b }, [63]);
+    const result = bufWrite_write(b, [33, 33], 16);
+    const n = result.TAG === "Ok" ? result._0 : undefined;
+    BufWrite.writeFmt({ value: b }, "1");
+    BufWrite.writeAll({ value: b }, [63]);
     console.log(
       `${$unwrapOk($fromUtf8(b.bytes.slice(), true), undefined, (e) => $debugUtf8Error(e, true))} ${n == null ? "None" : `Some(${n})`}`,
     );

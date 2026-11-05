@@ -256,12 +256,16 @@ function main() {
       dDrop_drop(item);
     }
   }
-  const value$1 = $skipping(
-    $rev($closing($iter(ds()), $dropEach(dDrop_drop))).take(3),
-    2,
+  m = $extendMap(
+    new Map(),
+    $folded(
+      $skipping($rev($closing($iter(ds()), $dropEach(dDrop_drop))).take(3), 2, dDrop_drop).map(
+        (d) => [1, d],
+      ),
+    ),
+    false,
     dDrop_drop,
-  ).map((d) => [1, d]);
-  m = $extendMap(new Map(), $folded(value$1), false, dDrop_drop);
+  );
   try {
     console.log(
       `reversed [${Array.from(m.values())
@@ -273,16 +277,19 @@ function main() {
       dDrop_drop(item);
     }
   }
-  const value$2 = $skipping(
-    $rev($closing($iter(ds()), $dropEach(dDrop_drop))).take(3),
-    2,
-    dDrop_drop,
-  ).map((d) => {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  });
-  const s = $mapFrom(new Set(), $folded(value$2), true);
+  const s = $mapFrom(
+    new Set(),
+    $folded(
+      $skipping($rev($closing($iter(ds()), $dropEach(dDrop_drop))).take(3), 2, dDrop_drop).map(
+        (d) => {
+          const result = d[0];
+          dDrop_drop(d);
+          return result;
+        },
+      ),
+    ),
+    true,
+  );
   console.log(`set ${s.size}`);
   const list = $collectDropping(
     $folded(
@@ -326,8 +333,8 @@ function main() {
     dDrop_drop(d);
     return result;
   }
-  const value$3 = last != null ? map$1(last) : undefined;
-  console.log(`own last ${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const value$1 = last != null ? map$1(last) : undefined;
+  console.log(`own last ${value$1 == null ? "None" : `Some(${value$1})`}`);
   last = $lastDropping(
     $skipping(
       $lazyChain(
@@ -378,8 +385,8 @@ function main() {
     dDrop_drop(d);
     return result;
   }
-  const value$4 = last != null ? map$2(last) : undefined;
-  console.log(`chained own last ${value$4 == null ? "None" : `Some(${value$4})`}`);
+  const value$2 = last != null ? map$2(last) : undefined;
+  console.log(`chained own last ${value$2 == null ? "None" : `Some(${value$2})`}`);
   const it = $held(
     $skipping(
       $lazyTakeWhile(
@@ -392,13 +399,13 @@ function main() {
     ),
   );
   try {
-    const next = $next(it);
+    const d = $next(it);
     function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    const value = next != null ? map(next) : undefined;
+    const value = d != null ? map(d) : undefined;
     console.log(`next ${value == null ? "None" : `Some(${value})`}`);
   } finally {
     it.return();

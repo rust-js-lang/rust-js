@@ -307,7 +307,7 @@ function main() {
       { TAG: "Quiet", _0: [31] },
     ]);
     try {
-      const nthBack = $nthBack(
+      const option = $nthBack(
         $slicing(it, (item) => {
           if (item.TAG === "Quiet") {
             loudDrop_drop(item._0);
@@ -344,7 +344,7 @@ function main() {
         }
         return result;
       }
-      console.log(`nth_back ${nthBack != null ? map(nthBack) : 0}`);
+      console.log(`nth_back ${option != null ? map(option) : 0}`);
     } finally {
       $dropItems(it, (item) => {
         if (item.TAG === "Quiet") {

@@ -128,10 +128,9 @@ function main() {
   });
   case$("skip", (g) => {
     let g$4$live = true;
-    const value = It.new(3, "it");
     let skip;
     try {
-      skip = $closing($iterator(value, itIterator_next), (it) => {
+      skip = $closing($iterator(It.new(3, "it"), itIterator_next), (it) => {
         dDrop_drop(it.of._held);
       }).drop(1);
       g$4$live = false;
@@ -148,10 +147,9 @@ function main() {
   });
   case$("map", (g) => {
     let g$5$live = true;
-    const it = It.new(3, "it");
     let map;
     try {
-      map = $closing($iterator(it, itIterator_next), (it) => {
+      map = $closing($iterator(It.new(3, "it"), itIterator_next), (it) => {
         dDrop_drop(it.of._held);
       }).map((x) => (x * 2) >>> 0);
       g$5$live = false;
@@ -168,10 +166,9 @@ function main() {
   });
   case$("take", (g) => {
     let g$6$live = true;
-    const it = It.new(3, "it");
     let take;
     try {
-      take = $closing($iterator(it, itIterator_next), (it) => {
+      take = $closing($iterator(It.new(3, "it"), itIterator_next), (it) => {
         dDrop_drop(it.of._held);
       }).take(2);
       g$6$live = false;
@@ -210,10 +207,9 @@ function main() {
   });
   case$("taken past its end", (g) => {
     let g$8$live = true;
-    const it = It.new(3, "it");
     let take;
     try {
-      take = $closing($iterator(it, itIterator_next), (it) => {
+      take = $closing($iterator(It.new(3, "it"), itIterator_next), (it) => {
         dDrop_drop(it.of._held);
       }).take(5);
       g$8$live = false;
@@ -230,10 +226,9 @@ function main() {
   });
   case$("fused", (g) => {
     let g$9$live = true;
-    const it = It.new(3, "it");
     let iter;
     try {
-      iter = iterator_fuse(it, { next: itIterator_next }, false, (it) => {
+      iter = iterator_fuse(It.new(3, "it"), { next: itIterator_next }, false, (it) => {
         dDrop_drop(it._held);
       });
       g$9$live = false;
@@ -254,10 +249,9 @@ function main() {
   });
   case$("enumerate", (g) => {
     let g$10$live = true;
-    const it = It.new(2, "it");
     let enumerate;
     try {
-      enumerate = $closing($iterator(it, itIterator_next), (it) => {
+      enumerate = $closing($iterator(It.new(2, "it"), itIterator_next), (it) => {
         dDrop_drop(it.of._held);
       }).map((x, i) => [i, x]);
       g$10$live = false;
@@ -274,11 +268,10 @@ function main() {
   });
   case$("step_by", (g) => {
     let g$11$live = true;
-    const it = It.new(4, "it");
     let stepBy;
     try {
       stepBy = $stepBy(
-        $closing($iterator(it, itIterator_next), (it) => {
+        $closing($iterator(It.new(4, "it"), itIterator_next), (it) => {
           dDrop_drop(it.of._held);
         }),
         2,
@@ -297,10 +290,9 @@ function main() {
   });
   case$("peekable", (g) => {
     let g$12$live = true;
-    const it = It.new(3, "it");
     let iter;
     try {
-      iter = iterator_peekable(it, { next: itIterator_next }, (it) => {
+      iter = iterator_peekable(It.new(3, "it"), { next: itIterator_next }, (it) => {
         dDrop_drop(it._held);
       });
       g$12$live = false;
@@ -321,10 +313,9 @@ function main() {
   });
   case$("filter", (g) => {
     let g$13$live = true;
-    const it = It.new(3, "it");
     let filter;
     try {
-      filter = $closing($iterator(it, itIterator_next), (it) => {
+      filter = $closing($iterator(It.new(3, "it"), itIterator_next), (it) => {
         dDrop_drop(it.of._held);
       }).filter((x) => x > 0);
       g$13$live = false;
@@ -341,11 +332,10 @@ function main() {
   });
   case$("zip", (g) => {
     let g$14$live = true;
-    const it = It.new(3, "it");
     let zip;
     try {
       zip = $lazyZip(
-        $closing($iterator(it, itIterator_next), (it) => {
+        $closing($iterator(It.new(3, "it"), itIterator_next), (it) => {
           dDrop_drop(it.of._held);
         }),
         $lazyRange(0, 2),
@@ -364,10 +354,9 @@ function main() {
   });
   case$("rev", (g) => {
     let g$15$live = true;
-    const it = It.new(3, "it");
     let rev;
     try {
-      rev = $closing($iterator(it, itDoubleEndedIterator_nextBack), (it) => {
+      rev = $closing($iterator(It.new(3, "it"), itDoubleEndedIterator_nextBack), (it) => {
         dDrop_drop(it.of._held);
       });
       g$15$live = false;
@@ -384,11 +373,10 @@ function main() {
   });
   case$("skip_while", (g) => {
     let g$16$live = true;
-    const it = It.new(3, "it");
     let skipWhile;
     try {
       skipWhile = $lazySkipWhile(
-        $closing($iterator(it, itIterator_next), (it) => {
+        $closing($iterator(It.new(3, "it"), itIterator_next), (it) => {
           dDrop_drop(it.of._held);
         }),
         (x) => x > 1,
@@ -408,17 +396,10 @@ function main() {
   case$("flatten", (g) => {
     let g$17$live = true;
     const value = [It.new(2, "a"), It.new(1, "b")];
-    let tmp;
-    try {
-      tmp = $iter(value);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let flatten;
     try {
       flatten = $flatMap(
-        $closing(tmp, (intoIter) => {
+        $closing($iter(value), (intoIter) => {
           for (const item of intoIter) {
             dDrop_drop(item._held);
           }
@@ -443,16 +424,9 @@ function main() {
   case$("a vec's rest", (g) => {
     let g$18$live = true;
     const value = [["x"], ["y"]];
-    let tmp;
-    try {
-      tmp = $iter(value);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let take;
     try {
-      take = $closing(tmp, $dropEach(dDrop_drop)).take(1);
+      take = $closing($iter(value), $dropEach(dDrop_drop)).take(1);
       g$18$live = false;
     } catch (error) {
       if (g$18$live) {
@@ -518,16 +492,9 @@ function main() {
   case$("a panic in a reversed rfold", (g) => {
     let g$21$live = true;
     const value = [["x"], ["y"], ["z"]];
-    let tmp;
-    try {
-      tmp = $iter(value);
-    } catch (error) {
-      dDrop_drop(g);
-      throw error;
-    }
     let rev;
     try {
-      rev = $rev($closing(tmp, $dropEach(dDrop_drop)));
+      rev = $rev($closing($iter(value), $dropEach(dDrop_drop)));
       g$21$live = false;
     } catch (error) {
       if (g$21$live) {

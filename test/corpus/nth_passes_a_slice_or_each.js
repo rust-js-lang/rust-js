@@ -51,13 +51,13 @@ function seven() {
 function nthOf(it, k, dropI) {
   $held(it);
   try {
-    const nth = $nthDropping($lent(Iterator.from(it)), k, dDrop_drop, false);
+    const option = $nthDropping($lent(Iterator.from(it)), k, dDrop_drop, false);
     function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    return nth != null ? map(nth) : 0;
+    return option != null ? map(option) : 0;
   } finally {
     dropI?.(it);
   }
@@ -66,13 +66,13 @@ function nthOf(it, k, dropI) {
 function nthBackOf(it, k, dropI) {
   $held(it);
   try {
-    const nthBack = $nthBack(it, k, undefined, dDrop_drop);
+    const option = $nthBack(it, k, undefined, dDrop_drop);
     function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    return nthBack != null ? map(nthBack) : 0;
+    return option != null ? map(option) : 0;
   } finally {
     dropI?.(it);
   }
@@ -81,13 +81,13 @@ function nthBackOf(it, k, dropI) {
 function revNthOf(it, k, dropI) {
   const rev = $held($rev($closing(it, dropI, false)));
   try {
-    const nth = $nthDropping($lent(rev), k, dDrop_drop, false);
+    const option = $nthDropping($lent(rev), k, dDrop_drop, false);
     function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    return nth != null ? map(nth) : 0;
+    return option != null ? map(option) : 0;
   } finally {
     rev.return();
   }
@@ -126,13 +126,13 @@ const Holder = {
 function nthAndLen(it, k, dropI) {
   $held(it);
   try {
-    const nth = $nthDropping($lent(Iterator.from(it)), k, dDrop_drop, false);
+    const option = $nthDropping($lent(Iterator.from(it)), k, dDrop_drop, false);
     function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    const d = nth != null ? map(nth) : 0;
+    const d = option != null ? map(option) : 0;
     return (d + it.len()) >>> 0;
   } finally {
     dropI?.(it);
@@ -348,7 +348,7 @@ function main() {
             held(
               "held drain nth",
               2,
-              $iter($iter($drain(v$1, 0))),
+              $iter($drain(v$1, 0)),
               (it) => {
                 const option = $nthDropping($lent(it), 3, dDrop_drop, false);
                 function map(d) {
@@ -365,7 +365,7 @@ function main() {
               held(
                 "held drain nth_back",
                 6,
-                $iter($iter($drain(v, 0))),
+                $iter($drain(v, 0)),
                 (it) => {
                   const option = $nthBack(it, 3, undefined, dDrop_drop);
                   function map(d) {
@@ -382,7 +382,7 @@ function main() {
                 held(
                   "held drain rev nth",
                   6,
-                  $iter($iter($drain(v$1, 0))),
+                  $iter($drain(v$1, 0)),
                   (it) => {
                     const option = $nthDropping(
                       $lent($rev($closing(it, $dropEach(dDrop_drop), false))),
@@ -403,7 +403,7 @@ function main() {
                 run("vec nth", 2, () => {
                   const value = $iter(seven());
                   try {
-                    const nth = $nthDropping(
+                    const option = $nthDropping(
                       $lent($slicing(value, dDrop_drop)),
                       3,
                       dDrop_drop,
@@ -414,7 +414,7 @@ function main() {
                       dDrop_drop(d);
                       return result;
                     }
-                    return nth != null ? map(nth) : 0;
+                    return option != null ? map(option) : 0;
                   } finally {
                     $dropItems(value, dDrop_drop);
                   }
@@ -422,13 +422,13 @@ function main() {
                 run("vec by_ref skip next", 2, () => {
                   const it = $iter(seven());
                   try {
-                    const next = $next($skipping($lent($slicing(it, dDrop_drop)), 3, dDrop_drop));
+                    const option = $next($skipping($lent($slicing(it, dDrop_drop)), 3, dDrop_drop));
                     function map(d) {
                       const result = d[0];
                       dDrop_drop(d);
                       return result;
                     }
-                    const d = next != null ? map(next) : 0;
+                    const d = option != null ? map(option) : 0;
                     return (d + (it.end - it.at)) >>> 0;
                   } finally {
                     $dropItems(it, dDrop_drop);
@@ -457,13 +457,13 @@ function main() {
                 run("vec nth_back", 6, () => {
                   const value = $iter(seven());
                   try {
-                    const nthBack = $nthBack($slicing(value, dDrop_drop), 3, undefined, dDrop_drop);
+                    const option = $nthBack($slicing(value, dDrop_drop), 3, undefined, dDrop_drop);
                     function map(d) {
                       const result = d[0];
                       dDrop_drop(d);
                       return result;
                     }
-                    return nthBack != null ? map(nthBack) : 0;
+                    return option != null ? map(option) : 0;
                   } finally {
                     $dropItems(value, dDrop_drop);
                   }
@@ -481,13 +481,13 @@ function main() {
                     const drain = $iter($drain(v, 0));
                     let d;
                     try {
-                      const nth = $nthDropping($lent(drain), 3, dDrop_drop, false);
+                      const option = $nthDropping($lent(drain), 3, dDrop_drop, false);
                       function map(d) {
                         const result = d[0];
                         dDrop_drop(d);
                         return result;
                       }
-                      d = nth != null ? map(nth) : 0;
+                      d = option != null ? map(option) : 0;
                     } finally {
                       $dropItems(drain, dDrop_drop);
                     }
@@ -502,13 +502,13 @@ function main() {
                     const drain = $iter($drain(v, 0));
                     let d;
                     try {
-                      const nthBack = $nthBack(drain, 3, undefined, dDrop_drop);
+                      const option = $nthBack(drain, 3, undefined, dDrop_drop);
                       function map(d) {
                         const result = d[0];
                         dDrop_drop(d);
                         return result;
                       }
-                      d = nthBack != null ? map(nthBack) : 0;
+                      d = option != null ? map(option) : 0;
                     } finally {
                       $dropItems(drain, dDrop_drop);
                     }
@@ -525,13 +525,13 @@ function main() {
                     );
                     let d;
                     try {
-                      const nth = $nthDropping($lent(rev), 3, dDrop_drop, false);
+                      const option = $nthDropping($lent(rev), 3, dDrop_drop, false);
                       function map(d) {
                         const result = d[0];
                         dDrop_drop(d);
                         return result;
                       }
-                      d = nth != null ? map(nth) : 0;
+                      d = option != null ? map(option) : 0;
                     } finally {
                       rev.return();
                     }
@@ -543,7 +543,7 @@ function main() {
                 run("drain generic nth_back", 6, () => {
                   const v = seven();
                   try {
-                    const d = nthBackOf($iter($iter($drain(v, 0))), 3, $dropEach(dDrop_drop));
+                    const d = nthBackOf($iter($drain(v, 0)), 3, $dropEach(dDrop_drop));
                     return (d + v.length) >>> 0;
                   } finally {
                     $dropItems(v, dDrop_drop);
@@ -552,7 +552,7 @@ function main() {
                 run("drain generic rev nth", 6, () => {
                   const v = seven();
                   try {
-                    const d = revNthOf($iter($iter($drain(v, 0))), 3, $dropEach(dDrop_drop));
+                    const d = revNthOf($iter($drain(v, 0)), 3, $dropEach(dDrop_drop));
                     return (d + v.length) >>> 0;
                   } finally {
                     $dropItems(v, dDrop_drop);
@@ -570,13 +570,13 @@ function main() {
                 run("btree nth", 2, () => {
                   const value = $iter($sortedKeys(set(), (a, b) => $cmp(a[0], b[0])));
                   try {
-                    const nth = $nthDropping($lent(value), 3, dDrop_drop, false);
+                    const option = $nthDropping($lent(value), 3, dDrop_drop, false);
                     function map(d) {
                       const result = d[0];
                       dDrop_drop(d);
                       return result;
                     }
-                    return nth != null ? map(nth) : 0;
+                    return option != null ? map(option) : 0;
                   } finally {
                     $dropItems(value, dDrop_drop);
                   }
@@ -584,13 +584,13 @@ function main() {
                 run("btree nth_back", 6, () => {
                   const value = $iter($sortedKeys(set(), (a, b) => $cmp(a[0], b[0])));
                   try {
-                    const nthBack = $nthBack(value, 3, undefined, dDrop_drop);
+                    const option = $nthBack(value, 3, undefined, dDrop_drop);
                     function map(d) {
                       const result = d[0];
                       dDrop_drop(d);
                       return result;
                     }
-                    return nthBack != null ? map(nthBack) : 0;
+                    return option != null ? map(option) : 0;
                   } finally {
                     $dropItems(value, dDrop_drop);
                   }
@@ -606,13 +606,13 @@ function main() {
                     ),
                   );
                   try {
-                    const nth = $nthDropping($lent(rev), 3, dDrop_drop, false);
+                    const option = $nthDropping($lent(rev), 3, dDrop_drop, false);
                     function map(d) {
                       const result = d[0];
                       dDrop_drop(d);
                       return result;
                     }
-                    return nth != null ? map(nth) : 0;
+                    return option != null ? map(option) : 0;
                   } finally {
                     rev.return();
                   }

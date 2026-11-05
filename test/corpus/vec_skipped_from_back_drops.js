@@ -51,37 +51,37 @@ function main() {
     $skipping($rev($closing($iter(louds(5, 3)), $dropEach(loudDrop_drop))), 1, loudDrop_drop),
   );
   try {
-    const nth = $nthDropping($lent(skip), 2, loudDrop_drop, false);
+    const l = $nthDropping($lent(skip), 2, loudDrop_drop, false);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = nth != null ? map(nth) : undefined;
+    const value = l != null ? map(l) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } finally {
     skip.return();
   }
   const it = $iter(louds(8, 4));
   try {
-    const nthBack = $nthBack($slicing(it, loudDrop_drop), 2, undefined, loudDrop_drop);
+    const l = $nthBack($slicing(it, loudDrop_drop), 2, undefined, loudDrop_drop);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = nthBack != null ? map(nthBack) : undefined;
+    const value = l != null ? map(l) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
     const rev = $held($rev($closing($iter(louds(12, 4)), $dropEach(loudDrop_drop))));
     try {
-      const value = $nthDropping($lent(rev), 2, loudDrop_drop, false);
+      const l = $nthDropping($lent(rev), 2, loudDrop_drop, false);
       function map(l) {
         const result = l[0];
         loudDrop_drop(l);
         return result;
       }
-      const value$1 = value != null ? map(value) : undefined;
-      console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+      const value = l != null ? map(l) : undefined;
+      console.log(`${value == null ? "None" : `Some(${value})`}`);
     } finally {
       rev.return();
     }
@@ -130,14 +130,14 @@ function main() {
     const deque = louds(20, 4).slice();
     const value$1 = $held($rev($closing($iter(deque), $dropEach(loudDrop_drop))));
     try {
-      const value = $nthDropping($lent(value$1), 2, loudDrop_drop, false);
+      const l = $nthDropping($lent(value$1), 2, loudDrop_drop, false);
       function map(l) {
         const result = l[0];
         loudDrop_drop(l);
         return result;
       }
-      const value$2 = value != null ? map(value) : undefined;
-      console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+      const value = l != null ? map(l) : undefined;
+      console.log(`${value == null ? "None" : `Some(${value})`}`);
     } finally {
       value$1.return();
     }
@@ -145,14 +145,14 @@ function main() {
     try {
       const drain = $iter($drain(drained, 0));
       try {
-        const value = $nthBack(drain, 2, undefined, loudDrop_drop);
+        const l = $nthBack(drain, 2, undefined, loudDrop_drop);
         function map(l) {
           const result = l[0];
           loudDrop_drop(l);
           return result;
         }
-        const value$1 = value != null ? map(value) : undefined;
-        console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+        const value = l != null ? map(l) : undefined;
+        console.log(`${value == null ? "None" : `Some(${value})`}`);
       } finally {
         for (const item of drain) {
           loudDrop_drop(item);
@@ -223,14 +223,14 @@ function main() {
       console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
       const value$2 = $held($rev($closing($iter(louds(50, 3)), $dropEach(loudDrop_drop))).take(2));
       try {
-        const value = $nthDropping($lent(value$2), 4, loudDrop_drop, false);
+        const l = $nthDropping($lent(value$2), 4, loudDrop_drop, false);
         function map(l) {
           const result = l[0];
           loudDrop_drop(l);
           return result;
         }
-        const value$1 = value != null ? map(value) : undefined;
-        console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+        const value = l != null ? map(l) : undefined;
+        console.log(`${value == null ? "None" : `Some(${value})`}`);
       } finally {
         value$2.return();
       }

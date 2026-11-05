@@ -83,21 +83,21 @@ function main() {
     ),
   );
   try {
-    const next = $next(f);
+    const l = $next(f);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = next != null ? map(next) : undefined;
+    const value = l != null ? map(l) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-    const nth = $nthDropping($lent(f), 1, loudDrop_drop, false);
+    const l$1 = $nthDropping($lent(f), 1, loudDrop_drop, false);
     function map$1(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value$1 = nth != null ? map$1(nth) : undefined;
+    const value$1 = l$1 != null ? map$1(l$1) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   } finally {
     f.return();
@@ -200,7 +200,7 @@ function main() {
   console.log(`${c == null ? "None" : `Some(${c})`}`);
   const value$2 = firsts($iter(louds(3)), $dropEach(loudDrop_drop));
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const value$3 = backs($slicing($iter($iter(louds(3))), loudDrop_drop), $dropEach(loudDrop_drop));
+  const value$3 = backs($slicing($iter(louds(3)), loudDrop_drop), $dropEach(loudDrop_drop));
   console.log(`${value$3 == null ? "None" : `Some((${value$3[0]}, ${value$3[1]}))`}`);
   const held = $held(
     iterator_fuse(
@@ -220,15 +220,15 @@ function main() {
     ),
   );
   try {
-    const loud = $nthDropping($lent(held), 2, loudDrop_drop, false);
+    const l = $nthDropping($lent(held), 2, loudDrop_drop, false);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = loud != null ? map(loud) : undefined;
+    const value = l != null ? map(l) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-    const nextBack = fuseDoubleEndedIterator_nextBack(
+    const l$1 = fuseDoubleEndedIterator_nextBack(
       held,
       {
         next_back: (iterator) =>
@@ -282,7 +282,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value$1 = nextBack != null ? map$1(nextBack) : undefined;
+    const value$1 = l$1 != null ? map$1(l$1) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   } finally {
     held.return();

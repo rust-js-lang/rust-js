@@ -496,7 +496,8 @@ test("a library's generic function is its program's, alone or a dependency, and 
   // as the consumer asks it, of the facts it takes and its writers' options.
   expect(app).not.toContain("labelDebug =");
   expect(app).not.toContain("spotsFirst =");
-  expect(app).toContain('labelDebug_fmt(["x"], { width: 9, align: "Right" })');
+  // However the printer wraps it.
+  expect(app).toMatch(/labelDebug_fmt\(\["x"\], \{\s*width: 9,\s*align: "Right",?\s*\}\)/);
   expect(app).toContain("footprint([10], 4, loudDrop_drop)");
   expect(app).toContain("\nfunction digitHash_hash(digit, state, HHasher, dropH) {\n  HHasher.writeU32(state, digit[0] % 10);\n}\n");
   expect(app).toContain("\nfunction tagHash_hash(tag, state, HHasher, dropH) {\n");

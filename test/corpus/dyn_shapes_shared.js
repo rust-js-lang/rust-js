@@ -94,21 +94,12 @@ function main() {
     }
     throw error;
   }
-  let tmp;
-  try {
-    tmp = sorted.map((s) => [s.impl.kind(s.value), s.impl.area(s.value)]);
-  } catch (error) {
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
-    throw error;
-  }
   try {
     console.log(
-      `[${tmp.map((item) => `(${$debugStr(item[0])}, ${$debugF64(item[1])})`).join(", ")}]`,
+      `[${sorted
+        .map((s) => [s.impl.kind(s.value), s.impl.area(s.value)])
+        .map((item) => `(${$debugStr(item[0])}, ${$debugF64(item[1])})`)
+        .join(", ")}]`,
     );
   } catch (error) {
     for (const item of sorted) {
@@ -198,9 +189,8 @@ function main() {
     }
     throw error;
   }
-  let tmp$1;
   try {
-    tmp$1 = show(shown.impl.Debug().fmt(shown.value));
+    console.log(`${$displayF64(twice)} ${show(shown.impl.Debug().fmt(shown.value))}`);
   } catch (error) {
     for (const item of sorted) {
       $rcDrop(item);
@@ -210,7 +200,6 @@ function main() {
     }
     throw error;
   }
-  console.log(`${$displayF64(twice)} ${tmp$1}`);
   let byKind;
   try {
     byKind = new Map();
@@ -434,25 +423,13 @@ function main() {
     }
     throw error;
   }
-  let tmp$2;
   try {
-    tmp$2 = names.map((n) => $unwrap(ops.get(n), "no entry found for key")(2, 3));
-  } catch (error) {
-    for (const item of byKind.values()) {
-      for (const item$1 of item) {
-        $rcDrop(item$1);
-      }
-    }
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${tmp$2.map((item) => $debugF64(item)).join(", ")}]`);
+    console.log(
+      `[${names
+        .map((n) => $unwrap(ops.get(n), "no entry found for key")(2, 3))
+        .map((item) => $debugF64(item))
+        .join(", ")}]`,
+    );
   } catch (error) {
     for (const item of byKind.values()) {
       for (const item$1 of item) {

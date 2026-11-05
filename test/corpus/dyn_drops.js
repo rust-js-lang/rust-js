@@ -94,9 +94,8 @@ function main() {
     if (shape == null) {
       break;
     }
-    let tmp;
     try {
-      tmp = shape.impl.name(shape.value);
+      console.log(`${shape.impl.name(shape.value)}`);
     } catch (error) {
       if (all$live) {
         $dropItems(all, (item) => {
@@ -105,7 +104,6 @@ function main() {
       }
       throw error;
     }
-    console.log(`${tmp}`);
   }
   all$live = false;
   $dropItems(all, (item) => {
@@ -115,14 +113,12 @@ function main() {
 
   const lent = ["lent"];
   const borrowed = { value: lent, impl: noisyShape };
-  let tmp;
   try {
-    tmp = borrowed.impl.name(borrowed.value);
+    console.log(`${borrowed.impl.name(borrowed.value)}`);
   } catch (error) {
     noisyDrop_drop(lent);
     throw error;
   }
-  console.log(`${tmp}`);
   const loud = [3];
   const shown = loudDebug_fmt(loud);
   console.log(`${shown}`);

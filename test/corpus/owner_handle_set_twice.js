@@ -72,23 +72,16 @@ function render(name, other) {
   let request;
   try {
     request = createRequest(name, onReady);
-    const value = requestCell.value;
-    let tmp;
-    try {
-      tmp = $downgrade(request);
-    } catch (error) {
-      $rcDrop(request, (value) => {
-        $rcDrop(value.onReady, $dispose);
-      });
-      throw error;
-    }
-    const unset = value.value === undefined;
+    let value;
+    let unset;
     let set;
     try {
+      value = $downgrade(request);
+      unset = requestCell.value.value === undefined;
       if (unset) {
-        value.value = tmp;
+        requestCell.value.value = value;
       }
-      set = unset ? { TAG: "Ok" } : { TAG: "Err", _0: tmp };
+      set = unset ? { TAG: "Ok" } : { TAG: "Err", _0: value };
     } catch (error) {
       $rcDrop(request, (value) => {
         $rcDrop(value.onReady, $dispose);
@@ -105,23 +98,16 @@ function render(name, other) {
       });
       throw error;
     }
-    const value$1 = requestCell.value;
-    let tmp$1;
-    try {
-      tmp$1 = $downgrade(other);
-    } catch (error) {
-      $rcDrop(request, (value) => {
-        $rcDrop(value.onReady, $dispose);
-      });
-      throw error;
-    }
-    const unset$1 = value$1.value === undefined;
+    let value$1;
+    let unset$1;
     let second;
     try {
+      value$1 = $downgrade(other);
+      unset$1 = requestCell.value.value === undefined;
       if (unset$1) {
-        value$1.value = tmp$1;
+        requestCell.value.value = value$1;
       }
-      second = unset$1 ? { TAG: "Ok" } : { TAG: "Err", _0: tmp$1 };
+      second = unset$1 ? { TAG: "Ok" } : { TAG: "Err", _0: value$1 };
     } catch (error) {
       $rcDrop(request, (value) => {
         $rcDrop(value.onReady, $dispose);

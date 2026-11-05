@@ -73,23 +73,16 @@ function render(name) {
   let request;
   try {
     request = createRequest(name, onReady);
-    const value = requestCell.value;
-    let tmp;
-    try {
-      tmp = $downgrade(request);
-    } catch (error) {
-      $rcDrop(request, (value) => {
-        $rcDrop(value.onReady, $dispose);
-      });
-      throw error;
-    }
-    const unset = value.value === undefined;
+    let value;
+    let unset;
     let set;
     try {
+      value = $downgrade(request);
+      unset = requestCell.value.value === undefined;
       if (unset) {
-        value.value = tmp;
+        requestCell.value.value = value;
       }
-      set = unset ? { TAG: "Ok" } : { TAG: "Err", _0: tmp };
+      set = unset ? { TAG: "Ok" } : { TAG: "Err", _0: value };
     } catch (error) {
       $rcDrop(request, (value) => {
         $rcDrop(value.onReady, $dispose);

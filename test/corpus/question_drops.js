@@ -34,13 +34,13 @@ function climb(d) {
 function first(d) {
   const e = step(d);
   let result;
-  if (e != null) {
-    result = (e[0] + d[0]) >>> 0;
-    dDrop_drop(e);
+  if (e == null) {
+    result = undefined;
     dDrop_drop(d);
     return result;
   }
-  result = undefined;
+  result = (e[0] + d[0]) >>> 0;
+  dDrop_drop(e);
   dDrop_drop(d);
   return result;
 }
@@ -63,12 +63,12 @@ function fallible(d) {
 function go(d) {
   let result;
   try {
-    const value = fallible(d);
-    if (value.TAG !== "Err") {
-      const e = value._0;
+    const result$1 = fallible(d);
+    if (result$1.TAG !== "Err") {
+      const e = result$1._0;
       try {
-        if (value.TAG === "Err") {
-          dDrop_drop(value._0);
+        if (result$1.TAG === "Err") {
+          dDrop_drop(result$1._0);
         }
         result = { TAG: "Ok", _0: e[0] };
       } finally {
@@ -76,7 +76,7 @@ function go(d) {
       }
       return result;
     }
-    result = value;
+    result = result$1;
   } finally {
     dDrop_drop(d);
   }
@@ -91,38 +91,38 @@ function dCheckedDouble_checkedDouble(d) {
 }
 
 function twice(base, TCheckedDouble, dropT) {
-  let checkedDouble;
+  let value;
   try {
-    checkedDouble = TCheckedDouble.checkedDouble(base);
+    value = TCheckedDouble.checkedDouble(base);
   } catch (error) {
     dropT?.(base);
     throw error;
   }
-  if (checkedDouble != null) {
+  if (value != null) {
     try {
       dropT?.(base);
     } catch (error) {
-      base = checkedDouble;
+      base = value;
       dropT?.(base);
       throw error;
     }
-    base = checkedDouble;
-    let tmp;
+    base = value;
+    let value$1;
     try {
-      tmp = TCheckedDouble.checkedDouble(base);
+      value$1 = TCheckedDouble.checkedDouble(base);
     } catch (error) {
       dropT?.(base);
       throw error;
     }
-    if (tmp != null) {
+    if (value$1 != null) {
       try {
         dropT?.(base);
       } catch (error) {
-        base = tmp;
+        base = value$1;
         dropT?.(base);
         throw error;
       }
-      base = tmp;
+      base = value$1;
       return base;
     }
   }

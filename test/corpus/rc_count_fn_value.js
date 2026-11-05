@@ -10,17 +10,8 @@ function main() {
   const names = [{ value: "a", strong: 1, weak: 0 }];
   try {
     const more = names.map((item) => $rcClone(item));
-    let tmp;
     try {
-      tmp = names.map((x) => x.strong);
-    } catch (error) {
-      for (const item of more) {
-        $rcDrop(item);
-      }
-      throw error;
-    }
-    try {
-      console.log(`[${tmp.join(", ")}]`);
+      console.log(`[${names.map((x) => x.strong).join(", ")}]`);
     } catch (error) {
       for (const item of more) {
         $rcDrop(item);
@@ -59,23 +50,8 @@ function main() {
       }
       throw error;
     }
-    let tmp$1;
     try {
-      tmp$1 = w.map((x) => x.strong);
-    } catch (error) {
-      for (const item of w) {
-        $weakDrop(item);
-      }
-      for (const item of strs) {
-        $rcDrop(item);
-      }
-      for (const item of more) {
-        $rcDrop(item);
-      }
-      throw error;
-    }
-    try {
-      console.log(`[${collect.join(", ")}] [${tmp$1.join(", ")}]`);
+      console.log(`[${collect.join(", ")}] [${w.map((x) => x.strong).join(", ")}]`);
     } catch (error) {
       for (const item of w) {
         $weakDrop(item);

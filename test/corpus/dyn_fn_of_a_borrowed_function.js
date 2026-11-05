@@ -94,14 +94,12 @@ function main() {
   }
   console.log("borrowed box dropped");
   const value = $borrowed(greet);
-  let tmp$1;
   try {
-    tmp$1 = callOnce(value);
+    console.log(`${callOnce(value)}`);
   } catch (error) {
     $dispose(greet);
     throw error;
   }
-  console.log(`${tmp$1}`);
   console.log("once dropped");
   const count = counter("returned");
   const boxed = $borrowed(count);

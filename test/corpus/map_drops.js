@@ -3,7 +3,6 @@
 import {
   $BTreeMap,
   $cmp,
-  $entry,
   $insert,
   $orInsertWith,
   $rcClone,
@@ -60,8 +59,7 @@ function main() {
     if (value != null) {
       console.log(`drop ${value[0]}`);
     }
-    const entry = $entry(byName, "y");
-    $orInsertWith(entry._0[0], entry._0[1], () => ["y"]);
+    $orInsertWith(byName, "y", () => ["y"]);
     console.log(`${byName.size} ${byName.has("y")}`);
     const x = $remove(byName, "x");
     console.log(`${x != null}`);

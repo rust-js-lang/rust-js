@@ -694,13 +694,13 @@ function main() {
     const value = $held($rev($closing($iter(louds), $dropEach(loudDrop_drop))));
     let second;
     try {
-      const nth = $nthDropping($lent(value), 1, loudDrop_drop, false);
+      const l = $nthDropping($lent(value), 1, loudDrop_drop, false);
       function map(l) {
         const result = l[0];
         loudDrop_drop(l);
         return result;
       }
-      second = nth != null ? map(nth) : undefined;
+      second = l != null ? map(l) : undefined;
     } finally {
       value.return();
     }

@@ -4,7 +4,6 @@ import {
   $BTreeMap,
   $cmp,
   $drainAll,
-  $entry,
   $extendMap,
   $insert,
   $iter,
@@ -62,11 +61,9 @@ function main() {
         .map((v) => v[0])
         .join(", ")}]`,
     );
-    const entry = $entry(tree, 4);
-    const got = $orInsert(entry._0[0], entry._0[1], [41], noisyDrop_drop);
+    const got = $orInsert(tree, 4, [41], noisyDrop_drop);
     console.log(`got ${got[0]}`);
-    const entry$1 = $entry(tree, 8);
-    const new$ = $orInsert(entry$1._0[0], entry$1._0[1], [80], noisyDrop_drop);
+    const new$ = $orInsert(tree, 8, [80], noisyDrop_drop);
     console.log(`new ${new$[0]}`);
     for (const [, value] of $sortedEntries(tree, $cmp)) {
       noisyDrop_drop(value);
@@ -80,8 +77,7 @@ function main() {
       if (insert != null) {
         noisyDrop_drop(insert);
       }
-      const entry = $entry(hash, "a");
-      $orInsert(entry._0[0], entry._0[1], [2], noisyDrop_drop);
+      $orInsert(hash, "a", [2], noisyDrop_drop);
       $extendMap(hash, [["a", [3]]], false, noisyDrop_drop);
       $retainMap(hash, (_, v) => v[0] > 5, hash, false, noisyDrop_drop);
       console.log(`hash ${hash.size}`);

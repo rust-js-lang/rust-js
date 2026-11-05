@@ -99,17 +99,10 @@ function consume(n) {
   console.log(`skipped ${skipped}`);
   const value = $closing($iter(three()), $dropEach(loudDrop_drop)).take(n);
   const value$1 = [[30], [31]];
-  let tmp;
-  try {
-    tmp = $iter(value$1);
-  } catch (error) {
-    value.return();
-    throw error;
-  }
   const skip$1 = (l) => l[0] < 30;
   let skipWhile;
   try {
-    skipWhile = $lazySkipWhile($closing(tmp, $dropEach(loudDrop_drop)), (item) => {
+    skipWhile = $lazySkipWhile($closing($iter(value$1), $dropEach(loudDrop_drop)), (item) => {
       if (skip$1(item)) {
         loudDrop_drop(item);
         return true;
@@ -245,21 +238,14 @@ function consume(n) {
   const value$6 = limit();
   const value$7 = $closing(value$5, $dropEach(loudDrop_drop)).take(value$6);
   const value$8 = [[20]];
-  let tmp$1;
+  let tmp;
   try {
-    tmp$1 = $iter(value$8);
+    tmp = $closing($iter(value$8), $dropEach(loudDrop_drop)).take(0);
   } catch (error) {
     value$7.return();
     throw error;
   }
-  let tmp$2;
-  try {
-    tmp$2 = $closing(tmp$1, $dropEach(loudDrop_drop)).take(0);
-  } catch (error) {
-    value$7.return();
-    throw error;
-  }
-  const chain = $held($lazyChain(value$7, tmp$2));
+  const chain = $held($lazyChain(value$7, tmp));
   try {
     console.log(
       `chained ${$lent(chain).every((_2) => {
@@ -318,34 +304,27 @@ function consume(n) {
   console.log(`front ${front}`);
   const value$9 = $closing($iter(three()), $dropEach(loudDrop_drop)).take(n);
   const value$10 = [[20]];
-  let tmp$3;
+  let tmp$1;
   try {
-    tmp$3 = $iter(value$10);
+    tmp$1 = $closing($iter(value$10), $dropEach(loudDrop_drop)).take(0);
   } catch (error) {
     value$9.return();
     throw error;
   }
-  let tmp$4;
+  const stepped = $held($lazyChain(value$9, tmp$1));
   try {
-    tmp$4 = $closing(tmp$3, $dropEach(loudDrop_drop)).take(0);
-  } catch (error) {
-    value$9.return();
-    throw error;
-  }
-  const stepped = $held($lazyChain(value$9, tmp$4));
-  try {
-    const next = $next(stepped);
+    const l = $next(stepped);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = next != null ? map(next) : undefined;
+    const value = l != null ? map(l) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-    const loud = $next(stepped);
-    console.log(`${loud == null}`);
-    if (loud != null) {
-      loudDrop_drop(loud);
+    const next = $next(stepped);
+    console.log(`${next == null}`);
+    if (next != null) {
+      loudDrop_drop(next);
     }
     console.log("after");
     console.log(

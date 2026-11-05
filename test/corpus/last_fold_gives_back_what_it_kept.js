@@ -147,7 +147,7 @@ function main() {
   run("flattened, cloned", () => {
     const items = ds();
     try {
-      const last = $lastDropping(
+      const d = $lastDropping(
         $flatMap(
           items.values().map((x) => [[(x[0] + 10) >>> 0], x]),
           (item) => $closing($iter(item), $dropEach(dDrop_drop)),
@@ -159,7 +159,7 @@ function main() {
         dDrop_drop(d);
         return result;
       }
-      return last != null ? map(last) : undefined;
+      return d != null ? map(d) : undefined;
     } finally {
       $dropItems(items, dDrop_drop);
     }

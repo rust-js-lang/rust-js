@@ -82,16 +82,7 @@ function main() {
     const value = $iter(ds({ start: 60, end: 62 }));
     let tmp;
     try {
-      tmp = ds({ start: 62, end: 65 });
-    } catch (error) {
-      for (const item of value) {
-        dDrop_drop(item);
-      }
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
+      tmp = $iter(ds({ start: 62, end: 65 }));
     } catch (error) {
       for (const item of value) {
         dDrop_drop(item);
@@ -99,25 +90,25 @@ function main() {
       throw error;
     }
     const value$1 = boom(63);
-    let tmp$2;
+    let tmp$1;
     try {
-      tmp$2 = $mapEnds($closing(tmp$1, $dropEach(dDrop_drop)), value$1);
+      tmp$1 = $mapEnds($closing(tmp, $dropEach(dDrop_drop)), value$1);
     } catch (error) {
       for (const item of value) {
         dDrop_drop(item);
       }
       throw error;
     }
-    const chain = $held($lazyChain($closing(value, $dropEach(dDrop_drop)), tmp$2));
+    const chain = $held($lazyChain($closing(value, $dropEach(dDrop_drop)), tmp$1));
     try {
-      const tryFold = $tryFoldSome(chain, [], (acc, d) => push(acc, d), $dropEach(dDrop_drop));
+      const option = $tryFoldSome(chain, [], (acc, d) => push(acc, d), $dropEach(dDrop_drop));
       function map(v) {
         for (const item of v) {
           dDrop_drop(item);
         }
         return v.length;
       }
-      return tryFold != null ? map(tryFold) : 0;
+      return option != null ? map(option) : 0;
     } finally {
       chain.return();
     }
@@ -156,7 +147,7 @@ function main() {
     const value$1 = boom(82);
     const enumerate = $held($enumerate($mapEnds($closing(value, $dropEach(dDrop_drop)), value$1)));
     try {
-      const tryFold = $tryFoldSome(
+      const option = $tryFoldSome(
         enumerate,
         [],
         (acc, [, d]) => push(acc, d),
@@ -168,7 +159,7 @@ function main() {
         }
         return v.length;
       }
-      return tryFold != null ? map(tryFold) : 0;
+      return option != null ? map(option) : 0;
     } finally {
       enumerate.return();
     }
@@ -177,16 +168,7 @@ function main() {
     const value = $iter(ds({ start: 90, end: 92 }));
     let tmp;
     try {
-      tmp = ds({ start: 92, end: 95 });
-    } catch (error) {
-      for (const item of value) {
-        dDrop_drop(item);
-      }
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
+      tmp = $iter(ds({ start: 92, end: 95 }));
     } catch (error) {
       for (const item of value) {
         dDrop_drop(item);
@@ -196,7 +178,7 @@ function main() {
     const value$1 = boom(93);
     let map;
     try {
-      map = $mapEnds($closing(tmp$1, $dropEach(dDrop_drop)), value$1);
+      map = $mapEnds($closing(tmp, $dropEach(dDrop_drop)), value$1);
     } catch (error) {
       for (const item of value) {
         dDrop_drop(item);

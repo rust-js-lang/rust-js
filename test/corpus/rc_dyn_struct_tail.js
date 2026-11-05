@@ -46,9 +46,9 @@ function main() {
   const rc$1 = { value: { id: 2, label: "two" }, strong: 1, weak: 0 };
   $dynCell(rc$1.value, display);
   const one = rc$1;
-  let tmp$1;
+
   try {
-    tmp$1 = line(one.value);
+    console.log(`${line(one.value)}`);
   } catch (error) {
     $rcDrop(one, (value) => {
       value.impl.$drop?.(value.label);
@@ -61,8 +61,6 @@ function main() {
     });
     throw error;
   }
-  console.log(`${tmp$1}`);
-
   const rc$2 = { value: { id: 3, label: "c" }, strong: 1, weak: 0 };
   $dynCell(rc$2.value, display);
   const sent = rc$2;

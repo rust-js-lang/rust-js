@@ -34,13 +34,13 @@ function skipped(it, dropI) {
 function nthOf(it, dropI) {
   $held(it);
   try {
-    const nth = $nthDropping($lent(Iterator.from(it)), 1, noisyDrop_drop, false);
+    const n = $nthDropping($lent(Iterator.from(it)), 1, noisyDrop_drop, false);
     function map(n) {
       const result = n[0];
       noisyDrop_drop(n);
       return result;
     }
-    return nth != null ? map(nth) : undefined;
+    return n != null ? map(n) : undefined;
   } finally {
     dropI?.(it);
   }
@@ -51,13 +51,13 @@ function chainedNth(a, b, dropI) {
     $lazyChain($closing(Iterator.from(a), dropI, false), $closing(Iterator.from(b), dropI, false)),
   );
   try {
-    const nth = $nthDropping($lent(chain), 3, noisyDrop_drop, false);
+    const n = $nthDropping($lent(chain), 3, noisyDrop_drop, false);
     function map(n) {
       const result = n[0];
       noisyDrop_drop(n);
       return result;
     }
-    return nth != null ? map(nth) : undefined;
+    return n != null ? map(n) : undefined;
   } finally {
     chain.return();
   }
@@ -81,26 +81,12 @@ function main() {
   const value$1 = $rev($closing($iter(noisy(5)), $dropEach(noisyDrop_drop)));
   let tmp;
   try {
-    tmp = noisy(2);
+    tmp = $rev($closing($iter(noisy(2)), $dropEach(noisyDrop_drop)));
   } catch (error) {
     value$1.return();
     throw error;
   }
-  let tmp$1;
-  try {
-    tmp$1 = $iter(tmp);
-  } catch (error) {
-    value$1.return();
-    throw error;
-  }
-  let tmp$2;
-  try {
-    tmp$2 = $rev($closing(tmp$1, $dropEach(noisyDrop_drop)));
-  } catch (error) {
-    value$1.return();
-    throw error;
-  }
-  const value$2 = chainedNth(value$1, tmp$2, (rev) => {
+  const value$2 = chainedNth(value$1, tmp, (rev) => {
     rev.return();
   });
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);

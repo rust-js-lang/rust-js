@@ -32,13 +32,11 @@ function run(k) {
 
   const value = bump();
   const borrow = $borrow($fieldCell(tally, "n"), true);
-  let tmp;
   try {
-    tmp = [undefined, borrow, bumpIf(false), show()];
+    return `${value} ${borrow.value} ${bumpIf(false)} ${show()}`;
   } finally {
     $unborrow(borrow);
   }
-  return `${value} ${tmp[1].value} ${tmp[2]} ${tmp[3]}`;
 }
 
 function main() {

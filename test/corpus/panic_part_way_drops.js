@@ -839,10 +839,10 @@ function main() {
   });
   run("extend", () => {
     const v = [[80]];
+    function inspect(d) {
+      boom(d, 83);
+    }
     try {
-      function inspect(d) {
-        boom(d, 83);
-      }
       $extend(
         v,
         $closing($iter(ds({ start: 81, end: 85 })), $dropEach(dDrop_drop)).map((item) => {
@@ -936,7 +936,7 @@ function main() {
     console.log(`[${out.join(", ")}]`);
   });
   run("zip of maps", () => {
-    const map = iterator_map(
+    const value = iterator_map(
       $iter(ds({ start: 10, end: 13 })),
       (d) => {
         try {
@@ -954,24 +954,10 @@ function main() {
       undefined,
       dDrop_drop,
     );
-    let tmp;
+    let map;
     try {
-      tmp = ds({ start: 20, end: 23 });
-    } catch (error) {
-      map.return();
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $iter(tmp);
-    } catch (error) {
-      map.return();
-      throw error;
-    }
-    let tmp$2;
-    try {
-      tmp$2 = iterator_map(
-        tmp$1,
+      map = iterator_map(
+        $iter(ds({ start: 20, end: 23 })),
         (d) => {
           const result = d[0];
           dDrop_drop(d);
@@ -984,12 +970,12 @@ function main() {
         dDrop_drop,
       );
     } catch (error) {
-      map.return();
+      value.return();
       throw error;
     }
     const iter = iterator_zip(
+      value,
       map,
-      tmp$2,
       { next: $next, fold: $foldOf },
       { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next, fold: $foldOf }) },
       false,

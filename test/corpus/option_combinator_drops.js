@@ -106,36 +106,30 @@ function parsePair(a, b, both, BNamed, dropB) {
       return result;
     }
     const value = result$1._0;
-    let tmp;
-    let tmp$1;
+    let option$1;
     try {
-      tmp = BNamed.fromName(b);
-      tmp$1 = () => `unknown ${b}`;
+      option$1 = BNamed.fromName(b);
     } catch (error) {
       dropB?.(value);
       throw error;
     }
-    let okOrElse;
-    try {
-      okOrElse = tmp != null ? { TAG: "Ok", _0: tmp } : { TAG: "Err", _0: tmp$1() };
-    } catch (error) {
-      dropB?.(value);
-      throw error;
-    }
-    if (okOrElse.TAG !== "Err") {
-      pair = [value, okOrElse._0];
+    const result$2 =
+      option$1 != null ? { TAG: "Ok", _0: option$1 } : { TAG: "Err", _0: `unknown ${b}` };
+    if (result$2.TAG !== "Err") {
+      pair = [value, result$2._0];
     } else {
-      result = okOrElse;
+      result = result$2;
       dropB?.(value);
       return result;
     }
   } else {
     const option = BNamed.fromName(a);
-    const result = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: `unknown ${a}` };
-    if (result.TAG === "Err") {
-      return result;
+    const result$2 =
+      option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: `unknown ${a}` };
+    if (result$2.TAG === "Err") {
+      return result$2;
     }
-    pair = [result._0, undefined];
+    pair = [result$2._0, undefined];
   }
   return { TAG: "Ok", _0: pair };
 }
@@ -157,56 +151,56 @@ function main() {
   }
   const kept = kept$1;
   console.log(`kept ${kept != null}`);
-  const d = make(3);
+  const option$1 = make(3);
   try {
     let kept;
     try {
-      if (d != null && even(d)) {
-        kept = d;
+      if (option$1 != null && even(option$1)) {
+        kept = option$1;
       }
     } finally {
-      if (d != null && kept === undefined) {
-        dDrop_drop(d);
+      if (option$1 != null && kept === undefined) {
+        dDrop_drop(option$1);
       }
     }
     const dropped = kept;
     console.log(`dropped ${dropped == null}`);
-    const value = make(0);
+    const option = make(0);
     try {
       let kept;
       try {
-        if (value != null && even(value)) {
-          kept = value;
+        if (option != null && even(option)) {
+          kept = option;
         }
       } finally {
-        if (value != null && kept === undefined) {
-          dDrop_drop(value);
+        if (option != null && kept === undefined) {
+          dDrop_drop(option);
         }
       }
       console.log(`none ${kept == null}`);
       if (kept != null) {
         dDrop_drop(kept);
       }
-      const value$1 = make(5);
+      const option$1 = make(5);
       let kept$1;
       try {
-        if (value$1 != null && value$1[0] > 4) {
-          kept$1 = value$1;
+        if (option$1 != null && option$1[0] > 4) {
+          kept$1 = option$1;
         }
       } finally {
-        if (value$1 != null && kept$1 === undefined) {
-          dDrop_drop(value$1);
+        if (option$1 != null && kept$1 === undefined) {
+          dDrop_drop(option$1);
         }
       }
       const closure = kept$1;
       console.log(`closure ${closure?.[0] ?? 0}`);
       try {
-        const value = keep(make(6), (d) => d[0] > 9, dDrop_drop);
-        console.log(`generic ${value == null}`);
-        if (value != null) {
-          dDrop_drop(value);
+        const d = keep(make(6), (d) => d[0] > 9, dDrop_drop);
+        console.log(`generic ${d == null}`);
+        if (d != null) {
+          dDrop_drop(d);
         }
-        const value$1 = keep(
+        const value = keep(
           $some(make(7)),
           (d) => d != null,
           (option) => {
@@ -215,19 +209,19 @@ function main() {
             }
           },
         );
-        console.log(`generic ${value$1 != null}`);
-        if (value$1 != null) {
-          if ($someValue(value$1) != null) {
-            dDrop_drop($someValue(value$1));
+        console.log(`generic ${value != null}`);
+        if (value != null) {
+          if ($someValue(value) != null) {
+            dDrop_drop($someValue(value));
           }
         }
 
-        const value$2 = make(8);
+        const option = make(8);
         const fallback = "Nothing";
         let mapped;
-        if (value$2 != null) {
+        if (option != null) {
           try {
-            mapped = { TAG: "One", _0: value$2 };
+            mapped = { TAG: "One", _0: option };
           } finally {
             if (fallback.TAG === "One") {
               dDrop_drop(fallback._0);
@@ -240,13 +234,13 @@ function main() {
         if (one.TAG === "One") {
           console.log(`one ${one._0[0]}`);
         }
-        const value$3 = make(0);
+        const value$1 = make(0);
         const fallback$1 = { TAG: "One", _0: [9] };
         try {
           let mapped;
-          if (value$3 != null) {
+          if (value$1 != null) {
             try {
-              mapped = { TAG: "One", _0: value$3 };
+              mapped = { TAG: "One", _0: value$1 };
             } finally {
               if (fallback$1.TAG === "One") {
                 dDrop_drop(fallback$1._0);
@@ -257,23 +251,23 @@ function main() {
           }
           const nothing = mapped;
           console.log(`nothing ${nothing.TAG === "One"}`);
-          const value = make(10);
-          const value$1 = [11];
+          const option = make(10);
+          const fallback = [11];
           try {
             let mapped;
-            if (value != null) {
+            if (option != null) {
               try {
                 function map(d) {
                   const result = [(d[0] + 100) >>> 0];
                   dDrop_drop(d);
                   return result;
                 }
-                mapped = map(value);
+                mapped = map(option);
               } finally {
-                dDrop_drop(value$1);
+                dDrop_drop(fallback);
               }
             } else {
-              mapped = value$1;
+              mapped = fallback;
             }
             const read = mapped;
             console.log(`read ${read[0]}`);
@@ -285,11 +279,12 @@ function main() {
               console.log(`found ${value$1[0]}`);
               dDrop_drop(value$1);
 
-              const value$2 = make(15);
-              const ok = value$2 != null ? { TAG: "Ok", _0: value$2 } : { TAG: "Err", _0: "none" };
+              const option = make(15);
+              const ok = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "none" };
               console.log(`ok ${ok.TAG === "Ok" ? ok._0[0] : 0}`);
-              const value$3 = make(0);
-              const err = value$3 != null ? { TAG: "Ok", _0: value$3 } : { TAG: "Err", _0: "none" };
+              const option$1 = make(0);
+              const err =
+                option$1 != null ? { TAG: "Ok", _0: option$1 } : { TAG: "Err", _0: "none" };
               console.log(`err ${err.TAG === "Err"}`);
               try {
                 try {

@@ -207,10 +207,10 @@ function main() {
   console.log(`${v.length} ${seen}`);
   // Folded, an inspect's is its zip's fold too.
   let seen$1 = 0;
+  function inspect$1() {
+    seen$1 = (seen$1 + 1) | 0;
+  }
   try {
-    function value() {
-      seen$1 = (seen$1 + 1) | 0;
-    }
     const n = iterator_zip(
       iterator_rev(
         $iter(ds()),
@@ -235,12 +235,7 @@ function main() {
       dDrop_drop,
     )
       .map((item) => {
-        try {
-          value(item);
-        } catch (error) {
-          dDrop_drop(item[0]);
-          throw error;
-        }
+        inspect$1(item);
         return item;
       })
       .reduce((n, [d, m]) => {

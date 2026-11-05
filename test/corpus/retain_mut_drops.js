@@ -22,7 +22,7 @@ function main() {
       loudDrop_drop,
     );
     console.log(`[${v.map((l) => l[0]).join(", ")}]`);
-    const d = [[5], [6]];
+    const d = [[5], [6]].slice();
     try {
       $retainMut(d, (l) => l[0] === 6, false, loudDrop_drop);
       console.log(`${d.length}`);

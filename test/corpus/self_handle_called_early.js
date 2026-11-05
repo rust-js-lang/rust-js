@@ -10,6 +10,7 @@ import {
   $rcClone,
   $rcDrop,
   $unborrow,
+  $unwrap,
   $upgrade,
   $weakDrop,
 } from "@rust-js/runtime";
@@ -40,14 +41,10 @@ function steps() {
         const borrow = $borrow(this$$1.value, true);
         let steps;
         try {
-          steps = borrow.value != null ? $upgrade(borrow.value) : undefined;
+          steps = $unwrap(borrow.value != null ? $upgrade(borrow.value) : undefined);
         } catch (error) {
           $unborrow(borrow);
           throw error;
-        }
-        if (steps == null) {
-          $unborrow(borrow);
-          throw new Error("called `Option::unwrap()` on a `None` value");
         }
         try {
           $unborrow(borrow);

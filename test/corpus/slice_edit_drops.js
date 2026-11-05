@@ -143,17 +143,8 @@ function lend() {
     }
     throw error;
   }
-  let tmp;
   try {
-    tmp = ids(d);
-  } catch (error) {
-    for (const item of d) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`extended [${tmp.join(", ")}]`);
+    console.log(`extended [${ids(d).join(", ")}]`);
   } catch (error) {
     for (const item of d) {
       loudDrop_drop(item);

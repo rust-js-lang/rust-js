@@ -148,9 +148,17 @@ function main() {
     });
     throw error;
   }
-  let upgrade;
+  let p;
+  let map;
   try {
-    upgrade = $upgrade(tmp$1.value);
+    p = $upgrade(tmp$1.value);
+    map = (p) => {
+      const result = p.value.name;
+      $rcDrop(p, (value) => {
+        $weakDrop(value.parent);
+      });
+      return result;
+    };
   } catch (error) {
     $unborrow(tmp$1);
     $rcDrop(leaf, (value) => {
@@ -161,16 +169,8 @@ function main() {
     });
     throw error;
   }
-  function map(p) {
-    const result = p.value.name;
-    $rcDrop(p, (value) => {
-      $weakDrop(value.parent);
-    });
-    return result;
-  }
-  let tmp$2;
   try {
-    tmp$2 = upgrade != null ? map(upgrade) : undefined;
+    console.log(`${leaf.value.name} of ${(p != null ? map(p) : undefined) ?? ""}`);
   } catch (error) {
     $unborrow(tmp$1);
     $rcDrop(leaf, (value) => {
@@ -181,7 +181,6 @@ function main() {
     });
     throw error;
   }
-  console.log(`${leaf.value.name} of ${tmp$2 ?? ""}`);
   try {
     $unborrow(tmp$1);
   } catch (error) {
@@ -195,10 +194,10 @@ function main() {
   }
 
   const counter = { value: { value: { sum: 0 } }, strong: 1, weak: 0 };
-  let tmp$3;
+  let tmp$2;
   try {
-    tmp$3 = $rcClone(counter);
-    $dynCell(tmp$3.value, counterSink);
+    tmp$2 = $rcClone(counter);
+    $dynCell(tmp$2.value, counterSink);
   } catch (error) {
     $rcDrop(counter);
     $rcDrop(leaf, (value) => {
@@ -211,7 +210,7 @@ function main() {
   }
   const rc = { value: { value: { name: "loud" } }, strong: 1, weak: 0 };
   $dynCell(rc.value, loudSink);
-  const sinks = [tmp$3, rc];
+  const sinks = [tmp$2, rc];
   try {
     try {
       try {

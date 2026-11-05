@@ -51,16 +51,8 @@ function main() {
       }
       const innerTx = channel[0];
       const innerRx = channel[1];
-      let tmp;
       try {
-        tmp = $send(outerTx, innerTx);
-      } catch (error) {
-        $dropReceiver(innerRx);
-        $dropReceiver(outerRx, $dropSender);
-        throw error;
-      }
-      try {
-        $unwrapOk(tmp, undefined, (e) => "SendError { .. }");
+        $unwrapOk($send(outerTx, innerTx), undefined, (e) => "SendError { .. }");
       } catch (error) {
         $dropReceiver(innerRx);
         $dropReceiver(outerRx, $dropSender);

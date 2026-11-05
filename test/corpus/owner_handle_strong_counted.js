@@ -63,23 +63,16 @@ function counted(name) {
   let root;
   try {
     root = createContainer(name, onCommit);
-    const value = created.value;
-    let tmp;
-    try {
-      tmp = $rcClone(root);
-    } catch (error) {
-      $rcDrop(root, (value) => {
-        $rcDrop(value.onCommit, $dispose);
-      });
-      throw error;
-    }
-    const unset = value.value === undefined;
+    let value;
+    let unset;
     let set;
     try {
+      value = $rcClone(root);
+      unset = created.value.value === undefined;
       if (unset) {
-        value.value = tmp;
+        created.value.value = value;
       }
-      set = unset ? { TAG: "Ok" } : { TAG: "Err", _0: tmp };
+      set = unset ? { TAG: "Ok" } : { TAG: "Err", _0: value };
     } catch (error) {
       $rcDrop(root, (value) => {
         $rcDrop(value.onCommit, $dispose);

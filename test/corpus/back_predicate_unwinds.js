@@ -583,30 +583,30 @@ function main() {
     $filterEnds($closing($iter(ds()), $dropEach(dDrop_drop)), (d) => d[0] % 2 === 0, dDrop_drop),
   );
   try {
-    const value = $nextBack(kept);
+    const d = $nextBack(kept);
     function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    const value$1 = value != null ? map(value) : undefined;
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-    const next = $next(kept);
+    const value = d != null ? map(d) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const d$1 = $next(kept);
     function map$1(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    const value$2 = next != null ? map$1(next) : undefined;
-    console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-    const value$3 = $next(kept);
+    const value$1 = d$1 != null ? map$1(d$1) : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const d$2 = $next(kept);
     function map$2(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    const value$4 = value$3 != null ? map$2(value$3) : undefined;
-    console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
+    const value$2 = d$2 != null ? map$2(d$2) : undefined;
+    console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   } finally {
     kept.return();
   }

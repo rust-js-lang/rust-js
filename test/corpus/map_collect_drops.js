@@ -86,17 +86,27 @@ function main() {
           keyDrop_drop,
         );
         try {
-          const value = $iter([
-            [2, 0],
-            [2, 0],
-          ]);
-          const hs = $extendMap(new $KeySet(), value, true, undefined, keyDrop_drop);
+          const hs = $extendMap(
+            new $KeySet(),
+            $iter([
+              [2, 0],
+              [2, 0],
+            ]),
+            true,
+            undefined,
+            keyDrop_drop,
+          );
           try {
-            const value = $iter([
-              [[3, 0], [20]],
-              [[3, 0], [21]],
-            ]);
-            const km = $extendMap(new $KeyMap(), value, false, loudDrop_drop, keyDrop_drop);
+            const km = $extendMap(
+              new $KeyMap(),
+              $iter([
+                [[3, 0], [20]],
+                [[3, 0], [21]],
+              ]),
+              false,
+              loudDrop_drop,
+              keyDrop_drop,
+            );
             console.log(`${s.size} ${hs.size} ${km.size}`);
             for (const [key, value] of km) {
               keyDrop_drop(key);

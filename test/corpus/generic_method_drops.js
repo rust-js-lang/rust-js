@@ -30,8 +30,7 @@ const logStore = {
 };
 function logStore_put(log, item, TDebug, dropT) {
   try {
-    const value = TDebug.fmt(item);
-    log[0].push(value);
+    log[0].push(TDebug.fmt(item));
     console.log(`put ${log[0].length}`);
     return log[0].length;
   } finally {

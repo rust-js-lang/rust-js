@@ -4,6 +4,10 @@ export function entry() {
   main();
 }
 
+function noisyDrop_drop(noisy) {
+  console.log(`drop ${noisy[0]}`);
+}
+
 function made(n) {
   console.log(`made ${n}`);
   return [n];
@@ -21,13 +25,13 @@ function main() {
       old$1$0$live = false;
       const n = old;
       result = n[0];
-      console.log(`drop ${n[0]}`);
+      noisyDrop_drop(n);
     } else {
       result = 0;
     }
     if (old != null) {
       if (old$1$0$live) {
-        console.log(`drop ${old[0]}`);
+        noisyDrop_drop(old);
       }
     }
     return result;
@@ -47,7 +51,7 @@ function main() {
         console.log(`older ${value == null ? "None" : `Some(${value})`}`);
       } finally {
         if (older != null) {
-          console.log(`drop ${older[0]}`);
+          noisyDrop_drop(older);
         }
       }
       let taken;
@@ -70,38 +74,36 @@ function main() {
         try {
           try {
             if (pending != null) {
-              console.log(`drop ${pending[0]}`);
+              noisyDrop_drop(pending);
             }
           } finally {
             pending = noisy;
           }
           const value = made(5);
           if (pending != null) {
-            console.log(`drop ${pending[0]}`);
+            noisyDrop_drop(pending);
           }
           pending = value;
           const held = pending;
           console.log(`held ${held[0]}`);
-          const value$1 = made(6);
           if (pending == null) {
-            pending = value$1;
+            pending = made(6);
           } else {
-            console.log(`drop ${value$1[0]}`);
+            noisyDrop_drop(made(6));
           }
           const same = pending;
           console.log(`same ${same[0]}`);
           try {
             if (pending != null) {
-              console.log(`drop ${pending[0]}`);
+              noisyDrop_drop(pending);
             }
           } finally {
             pending = undefined;
           }
-          const value$2 = made(7);
           if (pending == null) {
-            pending = value$2;
+            pending = made(7);
           } else {
-            console.log(`drop ${value$2[0]}`);
+            noisyDrop_drop(made(7));
           }
           const fresh = pending;
           console.log(`fresh ${fresh[0]}`);
@@ -111,22 +113,22 @@ function main() {
           console.log("end");
         } finally {
           if (taken != null) {
-            console.log(`drop ${taken[0]}`);
+            noisyDrop_drop(taken);
           }
         }
       } finally {
         if (kept != null) {
-          console.log(`drop ${kept[0]}`);
+          noisyDrop_drop(kept);
         }
       }
     } finally {
       if (old != null) {
-        console.log(`drop ${old[0]}`);
+        noisyDrop_drop(old);
       }
     }
   } finally {
     if (pending != null) {
-      console.log(`drop ${pending[0]}`);
+      noisyDrop_drop(pending);
     }
   }
 }

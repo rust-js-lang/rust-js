@@ -71,15 +71,15 @@ function main() {
       ),
     );
     try {
-      const nth = $nthDropping($lent(it$1), 0, dDrop_drop, false);
+      const d = $nthDropping($lent(it$1), 0, dDrop_drop, false);
       function map(d) {
         const result = d[0];
         dDrop_drop(d);
         return result;
       }
-      const value = nth != null ? map(nth) : undefined;
+      const value = d != null ? map(d) : undefined;
       console.log(`nth ${value == null ? "None" : `Some(${value})`}`);
-      const nextBack = revDoubleEndedIterator_nextBack(
+      const d$1 = revDoubleEndedIterator_nextBack(
         it$1,
         { next: $next },
         (filter) => {
@@ -92,7 +92,7 @@ function main() {
         dDrop_drop(d);
         return result;
       }
-      const value$1 = nextBack != null ? map$1(nextBack) : undefined;
+      const value$1 = d$1 != null ? map$1(d$1) : undefined;
       console.log(`back ${value$1 == null ? "None" : `Some(${value$1})`}`);
     } finally {
       it$1.return();

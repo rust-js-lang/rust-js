@@ -138,19 +138,20 @@ function held() {
   }
   console.log("dropped");
   // Of a `Vec`'s items, dropped unstepped, and after a step.
-  $lazyScan($closing($iter(items()), $dropEach(itemDrop_drop)), 0, (_, x) => x).return();
+  const value = $lazyScan($closing($iter(items()), $dropEach(itemDrop_drop)), 0, (_, x) => x);
+  value.return();
   console.log("unstepped");
   const stepped = $held(
     $lazyScan($closing($iter(items()), $dropEach(itemDrop_drop)), 0, (_, x) => x),
   );
   try {
-    const next = $next(stepped);
+    const x = $next(stepped);
     function map(x) {
       const result = x[0];
       itemDrop_drop(x);
       return result;
     }
-    const value = next != null ? map(next) : undefined;
+    const value = x != null ? map(x) : undefined;
     console.log(`first ${value == null ? "None" : `Some(${value})`}`);
   } finally {
     stepped.return();

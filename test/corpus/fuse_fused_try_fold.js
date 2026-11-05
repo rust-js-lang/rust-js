@@ -140,13 +140,13 @@ function main() {
   );
   let first;
   try {
-    const find = $findDropping($lent(value$4), (loud) => loud[0] >= 30, loudDrop_drop, false);
+    const loud = $findDropping($lent(value$4), (loud) => loud[0] >= 30, loudDrop_drop, false);
     function map(loud) {
       const result = loud[0];
       loudDrop_drop(loud);
       return result;
     }
-    first = find != null ? map(find) : undefined;
+    first = loud != null ? map(loud) : undefined;
   } finally {
     value$4.return();
   }

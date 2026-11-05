@@ -58,12 +58,13 @@ function main() {
       if (insert != null) {
         $dispose(insert);
       }
-      const value = $insert(named, "a", adder("a2", 2));
-      if (value != null) {
-        $dispose(value);
+      const value$1 = $insert(named, "a", adder("a2", 2));
+      if (value$1 != null) {
+        $dispose(value$1);
       }
       console.log("replaced");
-      $dispose($removeAt(handlers, 0));
+      const value = $removeAt(handlers, 0);
+      $dispose(value);
       console.log("end");
     } finally {
       $dropItems(named.values(), $dispose);

@@ -124,13 +124,13 @@ function main() {
   const louds = [[1], [2], [3]];
   const held = $held($rev($closing($iter(louds), $dropEach(loudDrop_drop))));
   try {
-    const loud = $next(held);
+    const l = $next(held);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = loud != null ? map(loud) : undefined;
+    const value = l != null ? map(l) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } finally {
     held.return();

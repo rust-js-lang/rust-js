@@ -22,13 +22,13 @@ function dDrop_drop(d) {
 function second(items, dropI) {
   const skip = $held($skipping($closing(Iterator.from(items), dropI, false), 2, dDrop_drop));
   try {
-    const next = $next(skip);
+    const d = $next(skip);
     function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    return next != null ? map(next) : undefined;
+    return d != null ? map(d) : undefined;
   } finally {
     skip.return();
   }
@@ -41,13 +41,13 @@ function main() {
   ds = $range(1, 6).map((value) => [value]);
   const it = $held($skipping($rev($closing($iter(ds), $dropEach(dDrop_drop))), 1, dDrop_drop));
   try {
-    const next = $next(it);
+    const d = $next(it);
     function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    const value = next != null ? map(next) : undefined;
+    const value = d != null ? map(d) : undefined;
     console.log(`rev ${value == null ? "None" : `Some(${value})`}`);
   } finally {
     it.return();

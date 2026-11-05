@@ -75,24 +75,24 @@ function main() {
   console.log(`${r[0]}`);
 
   const e = ["e"];
-  let tmp;
   try {
-    tmp = callOnce(
-      () => {
-        const x = e;
-        const result = $byteLen(x[0]);
-        console.log(`drop ${x[0]}`);
-        return result;
-      },
-      (value) => {
-        console.log(`drop ${e[0]}`);
-      },
+    console.log(
+      `${callOnce(
+        () => {
+          const x = e;
+          const result = $byteLen(x[0]);
+          console.log(`drop ${x[0]}`);
+          return result;
+        },
+        (value) => {
+          console.log(`drop ${e[0]}`);
+        },
+      )}`,
     );
   } catch (error) {
     console.log(`drop ${r[0]}`);
     throw error;
   }
-  console.log(`${tmp}`);
   const f = "f";
   try {
     keep(
@@ -113,16 +113,16 @@ function main() {
     const held = g;
     return $byteLen(held[0]);
   }
-  let tmp$1;
+  let tmp;
   try {
-    tmp$1 = read();
+    tmp = read();
   } catch (error) {
     console.log(`drop ${g[0]}`);
     console.log(`drop ${r[0]}`);
     throw error;
   }
   try {
-    console.log(`${tmp$1} ${read()}`);
+    console.log(`${tmp} ${read()}`);
   } catch (error) {
     console.log(`drop ${g[0]}`);
     console.log(`drop ${r[0]}`);

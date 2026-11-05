@@ -71,17 +71,8 @@ function extended() {
     }
     throw error;
   }
-  let tmp;
   try {
-    tmp = v.map((d) => d[0]);
-  } catch (error) {
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${tmp.join(", ")}]`);
+    console.log(`[${v.map((d) => d[0]).join(", ")}]`);
   } catch (error) {
     for (const item of v) {
       console.log(`drop ${item[0]}`);
@@ -313,22 +304,12 @@ function splitOff() {
     }
     throw error;
   }
-  let tmp;
   try {
-    tmp = $sortedEntries(hi, $cmp).map((entry) => entry[0]);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(hi, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
-    if (m$live) {
-      for (const [, value] of $sortedEntries(m, $cmp)) {
-        console.log(`drop ${value[0]}`);
-      }
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${collect.join(", ")}] [${tmp.join(", ")}]`);
+    console.log(
+      `[${collect.join(", ")}] [${$sortedEntries(hi, $cmp)
+        .map((entry) => entry[0])
+        .join(", ")}]`,
+    );
   } catch (error) {
     for (const [, value] of $sortedEntries(hi, $cmp)) {
       console.log(`drop ${value[0]}`);

@@ -329,4 +329,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^drops_of_nothing_never_unwind.rs$"],
   },
+  {
+    name: "cleanup-starts-at-its-chain",
+    breaks: "a call's cleanup is its chain's first block, though it drops nothing and writes nothing, so calls that drop the same seem to unwind apart and what's made between them is held in a `const`: `vec![1, 2, 3, 4].into_iter().enumerate().rev()` beside a live `D` is refused (#723)",
+    file: "src/lower/mir/drops.rs",
+    find: "                if drops.drops(block, place) {\n                    return Some(first.unwrap_or(block));\n",
+    replace: "                if drops.drops(block, place) {\n                    let _ = first;\n                    return Some(start);\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_steps_beside_a_live_drop.rs$"],
+  },
 ];

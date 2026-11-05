@@ -16,17 +16,10 @@ function step(next) {
     console.log(`drop ${task.name}`);
     dropStep(task.step);
   }
-  let tmp;
-  try {
-    tmp = new Set();
-  } catch (error) {
-    if (next != null) {
-      dropTask(next);
-    }
-    throw error;
-  }
+  let tags;
   let seen;
   try {
+    tags = new Set();
     seen = new $BTreeSet();
   } catch (error) {
     if (next != null) {
@@ -36,7 +29,7 @@ function step(next) {
   }
   return {
     next,
-    tags: tmp,
+    tags,
     seen,
   };
 }
