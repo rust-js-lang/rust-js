@@ -983,6 +983,9 @@ pub enum Known {
     IterClosing,
     /// One lent, `$lent(it)`, which nothing past it closes.
     IterLent,
+    /// A `flat_map()`'s closure whose result is made in place, as the
+    /// `flat_map()` that's given it is (`body_queries::results_in_place`).
+    IterResultInPlace,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

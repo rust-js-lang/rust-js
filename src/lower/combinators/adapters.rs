@@ -160,6 +160,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `(item) => <inner_iterable of f(item)>`, of `f`'s returned value,
     /// where it needs making one; `None` where it's the value.
     fn iterable_of_each(&mut self, f: Option<Expr>, inner: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let marks = f
+            .as_ref()
+            .map_or(js::Facts::NONE, |f| crate::lower::iterators::its_facts(f.facts));
         let (param, value) = match f {
             Some(f) => match &f.kind {
                 js::ExprKind::Arrow(params, body)
@@ -189,13 +192,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             body.push(StmtKind::Const("inner".into(), held).at(js::Span::NONE));
         }
         body.push(StmtKind::Return(Some(iterable)).at(js::Span::NONE));
-        Ok(Some(Expr::arrow(vec![param.into()], body)))
+        let mut each = Expr::arrow(vec![param.into()], body);
+        each.facts = marks;
+        Ok(Some(each))
     }
 
     fn closed_inner(&mut self, f: Option<Expr>, inner: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let Some(drop) = self.closing_drop(inner, span)? else {
             return Ok(None);
         };
+        let marks = f
+            .as_ref()
+            .map_or(js::Facts::NONE, |f| crate::lower::iterators::its_facts(f.facts));
         let (param, value) = match f {
             Some(f) => match &f.kind {
                 js::ExprKind::Arrow(params, body)
@@ -218,10 +226,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => self.as_js_iterator(value, inner, span)?,
         };
         let closed = self.closed_by(it, drop, inner);
-        Ok(Some(Expr::arrow(
+        let mut each = Expr::arrow(
             vec![param.into()],
             vec![StmtKind::Return(Some(closed)).at(js::Span::NONE)],
-        )))
+        );
+        each.facts = marks;
+        Ok(Some(each))
     }
 
     /// `items.flatMap(each)` of inner iterators of type `inner`, made by

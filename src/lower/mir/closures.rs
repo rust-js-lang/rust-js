@@ -22,6 +22,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, "this closure, from its MIR"));
         };
         let closure = self.mir_closure_fn(state, ty, upvars, captured, span, out)?;
+        // One a `flat_map()` made in place is given, what it gives made in
+        // place too, its own fact (#716).
+        let closure = match self
+            .krate
+            .closures
+            .get(&def_id)
+            .is_some_and(|body| body.facts.result_in_place)
+        {
+            true => crate::lower::iterators::gives_in_place(closure),
+            false => closure,
+        };
         if !self.krate.closure_facts.clones_apart(def_id) {
             return self.closure_carrying_drop(closure, ty, span);
         }

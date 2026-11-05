@@ -130,12 +130,13 @@ impl IterValue {
 }
 
 /// Each fact `emit` marks a value's JS with.
-const VALUE_FACTS: [Known; 5] = [
+const VALUE_FACTS: [Known; 6] = [
     Known::IterStepped,
     Known::IterRange,
     Known::IterKnowing,
     Known::IterClosing,
     Known::IterLent,
+    Known::IterResultInPlace,
 ];
 
 /// Of `facts`, those `emit` marked a value's JS with: what a value made
@@ -218,6 +219,21 @@ pub(in crate::lower) fn stepped_value(e: &Expr) -> Option<Expr> {
         return None;
     }
     steps(e).cloned()
+}
+
+/// `f`, the closure a `flat_map()` made in place is given, marked as
+/// one whose result is made in place too (`body_queries::results_in_place`,
+/// #716): what makes it knowing its back reads that of it, never std's
+/// compiled adapter's back. Not one a held `flat_map()` is given, std's
+/// compiled `FlatMap`'s (#726).
+pub(in crate::lower) fn gives_in_place(mut f: Expr) -> Expr {
+    f.facts = f.facts.with(Known::IterResultInPlace);
+    f
+}
+
+/// Whether `f`, a closure, gives what's made in place (`gives_in_place`).
+pub(in crate::lower) fn gives_made_in_place(f: &Expr) -> bool {
+    f.facts.has(Known::IterResultInPlace)
 }
 
 /// A range's numbers as its maker wrote them (`Form::Range`), `$iterator({

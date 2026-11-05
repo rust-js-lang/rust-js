@@ -169,6 +169,10 @@ pub(super) struct BodyFacts<'tcx> {
     /// is, `in_place_adapters`'s.
     pub(super) in_place_adapters: HashSet<Span>,
     pub(super) in_place_adapter_steps: HashSet<Span>,
+    /// Of a closure a `flat_map()` made in place is given, that what it
+    /// gives is made in place too, `results_in_place`'s: its value's fact
+    /// (`Known::IterResultInPlace`).
+    pub(super) result_in_place: bool,
     /// Each value the body's patterns test and the `const` they name it by,
     /// where it's tested, `constant_patterns`'s (ADRs 0590, 0634).
     pub(super) constant_patterns: ConstantPatterns<'tcx>,
@@ -424,6 +428,7 @@ fn results_in_place<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>], c
         let (adapters, steps) = in_place_adapters(tcx, &body.thir, stepped_result, cloned);
         body.facts.in_place_adapters = adapters;
         body.facts.in_place_adapter_steps = steps;
+        body.facts.result_in_place = flat_mapped;
     }
 }
 

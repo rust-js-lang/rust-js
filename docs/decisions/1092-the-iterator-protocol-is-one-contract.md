@@ -683,3 +683,16 @@ today, so that is a change in what's decided, not a mechanical one. It is
 #730's later step, after iterC's knowing.rs work, proved against the corpus
 case by case.
 
+Step 7 makes what a `flat_map()`'s closure gives a fact of the closure's
+value. `body_queries::results_in_place`, the THIR owner, still decides it
+before lowering. The closure's lowering has to know it, and the closure is
+made before the `flat_map()` call it's given to. Its answer is now also
+`BodyFacts::result_in_place`. `mir_closure` marks that closure's arrow
+`Known::IterResultInPlace`, and `iterable_of_each` and `closed_inner` keep
+the mark on the arrows they make of it. knowing.rs's flatten branch asks the
+mark (`gives_made_in_place`) where it judged `made.is_some()` of the
+flatten's type (#716). A held `flat_map()`'s closure, std's compiled
+`FlatMap`'s, is never marked (#726). So step 9 doesn't refuse
+`results_in_place` itself, as the design first said: it is the THIR owner's
+question, and only its answer's carrier changed.
+

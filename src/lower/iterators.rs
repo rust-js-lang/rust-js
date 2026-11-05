@@ -12,8 +12,8 @@ mod stepping;
 mod value;
 
 pub(in crate::lower) use self::value::{
-    Form, IterValue, bounds_of, bounds_read, closed, closed_parts, is_lent, its_facts, stepped_from, stepped_range,
-    stepped_value, steps, unlent,
+    Form, IterValue, bounds_of, bounds_read, closed, closed_parts, gives_in_place, gives_made_in_place, is_lent,
+    its_facts, stepped_from, stepped_range, stepped_value, steps, unlent,
 };
 pub(super) use self::{eager::*, in_place::*};
 

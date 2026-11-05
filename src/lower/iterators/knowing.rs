@@ -443,7 +443,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // next)`, made knowing its back where it's given. Of std's
                 // adapter, a `map()`, made in place, as a closure `flat_map`
                 // is given makes what it gives (`body_queries::
-                // results_in_place`): its own fact, not this call's span,
+                // results_in_place`), which marks the closure so
+                // (`gives_made_in_place`): its own fact, not this call's span,
                 // which isn't the closure body's, so it's read by its form,
                 // never std's compiled `Map`'s back (#716); not what a
                 // `flatten()` gives as it is, nor a closure's variable.
@@ -451,7 +452,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if self.implements_iterator(inner)
                         && let Some((item, taken)) = returned_of(each) =>
                 {
-                    let made_here = made.is_some() && !matches!(taken.kind, js::ExprKind::Var(_));
+                    let made_here = crate::lower::iterators::gives_made_in_place(each)
+                        && !matches!(taken.kind, js::ExprKind::Var(_));
                     let taken = match made_here && crate::lower::recognition::is_held_compiled(self.tcx, inner) {
                         true => taken.clone().in_place(),
                         false => taken.clone(),
