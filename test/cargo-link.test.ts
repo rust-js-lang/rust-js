@@ -5,6 +5,7 @@ import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 import { parseManifest } from "../tooling/manifest.js";
 import { channel } from "../scripts/toolchain.ts";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildReact, 600_000);
 
@@ -68,7 +69,7 @@ test("a real Cargo dependency links functions and function values into JS", asyn
   writeFileSync(join(dir, "js/shared/lib.js"), "export function increment() { return 999; }");
   expect(() => run(command)).toThrow("dependency artifact changed");
   expect(readFileSync(output, "utf8")).toBe(previous);
-}, 120_000);
+}, underLoad(120_000));
 
 test("a library's generic and aggregate functions link too, from a sibling output", () => {
   const dir = fixture("sibling-library");
@@ -91,7 +92,7 @@ test("a library's generic and aggregate functions link too, from a sibling outpu
   writeFileSync(app, "pub fn run() -> u32 { shared::generic(1u32) + shared::pair().1 }");
   run(command);
   expect(result()).toBe("3");
-}, 120_000);
+}, underLoad(120_000));
 
 // ADR 0626: a library gives a crate a function holding a value with a
 // destructor only through its own types: a closure or `impl Fn` it makes,
@@ -334,7 +335,7 @@ pub fn merged<'a>(target: &'a js::Unknown, source: &js::Unknown) -> &'a js::Unkn
   // The crate's renamed one runs: it was a `merge` nothing declared, a
   // ReferenceError.
   expect((await import(join(dir, "own/renamed.js"))).merged({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
-}, 120_000);
+}, underLoad(120_000));
 
 // A `use` of a library's namespace, ADR 1037's unit struct, or of a module
 // of bindings places the import of what it names there too, as any `use`'s
@@ -379,7 +380,7 @@ pub fn run() -> u32 {
   run([compiler, join(dir, "app/lib.rs"), "-o", output, "--dependency", libraryManifest, "--", "--crate-name", "app", "--extern", `shared=${metadata}`, ...extern]);
   const imports = [...readFileSync(output, "utf8").matchAll(/^import .* from "(.*)";$/gm)].map((line) => line[1]);
   expect(imports).toEqual(["../shared/recon.js", "tools-pkg", "../shared/aaa.js"]);
-}, 120_000);
+}, underLoad(120_000));
 
 // A re-export is among the imports, where the source names what it's from
 // (ADR 1063, amended, rd620): React's reconciler's `use crate::react_portal;`
@@ -417,5 +418,5 @@ impl Reconciler {
   expect(readFileSync(join(dir, "reconciler.js"), "utf8")).toContain(
     'export { createPortal } from "./portal.js";\nimport { a } from "./aaa.js";\n\n/** Found by its name. */\nexport { find } from "./selectors.js";\n\n',
   );
-}, 120_000);
+}, underLoad(120_000));
 

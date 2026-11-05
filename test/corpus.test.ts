@@ -24,6 +24,7 @@ import { expected, same, type Outcome } from "./oracle";
 import { agree, compileJs, node, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, caseShard, compiler, firstPart, fixture, root, runtimeDir } from "./support";
 import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
+import { underLoad } from "../scripts/timing";
 
 /** The case's JS as a production build ships it: one file, bundled and
  * minified by Vite, with Rolldown and Oxc, as an app's is. */
@@ -210,7 +211,7 @@ firstPart("every snapshot in the corpus is the JS of a case that runs", () => {
 for (const name of caseShard(cases)) {
   test(name, async () => {
     expect(await check(join(corpus, name))).toEqual([]);
-  }, 120_000);
+  }, underLoad(120_000));
 }
 
 // Negative controls: each of these cases is wrong, and must be reported.
@@ -224,12 +225,12 @@ firstPart("a directive native Rust disagrees with is reported", async () => {
   const problems = await control("wrong-message", '//@ run-fail: attempt to divide by zero\nfn main() { panic!("another message") }\n');
   expect(problems).toEqual([expect.stringContaining("native Rust ended")]);
   expect(await control("unexpected-panic", "fn main() { let v: Vec<i32> = vec![]; v[0]; }\n")).toEqual([expect.stringContaining("native Rust ended")]);
-}, 120_000);
+}, underLoad(120_000));
 
 firstPart("an ignored case that passes is reported, so the list only shrinks", async () => {
   const problems = await control("passes", '//@ ignore-rust-js: a reason\nfn main() { println!("fine"); }\n');
   expect(problems).toEqual(["it passes now: remove `ignore-rust-js: a reason`"]);
-}, 120_000);
+}, underLoad(120_000));
 
 // A trait's generic method a consumer may give a value with a destructor
 // drops it as a library, where the program's own call gives none.
@@ -259,7 +260,7 @@ fn main() {
   expect(await said("library-same-said", '//@ library-differs\nfn main() { println!("fine"); }\n')).toEqual([
     expect.stringContaining("remove `//@ library-differs`"),
   ]);
-}, 120_000);
+}, underLoad(120_000));
 
 firstPart("a compile-fail case rust-js compiles, or rejects for another reason, is reported", async () => {
   expect(await control("compiles", "//@ compile-fail: does not support\nfn main() {}\n")).toEqual([
@@ -268,7 +269,7 @@ firstPart("a compile-fail case rust-js compiles, or rejects for another reason, 
   expect(await control("other-error", "//@ compile-fail: a text no error has\nfn main() { let x: usize = unsafe { std::mem::transmute(&1u32) }; println!(\"{}\", x); }\n")).toEqual([
     expect.stringContaining("rust-js's first error doesn't say"),
   ]);
-}, 120_000);
+}, underLoad(120_000));
 
 firstPart("unknown and repeated directives are reported", () => {
   expect(directives("//@ run-passes\nfn main() {}")).toContain("unknown or malformed directive");

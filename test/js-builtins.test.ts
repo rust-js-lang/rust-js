@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { runSync } from "./child";
 import { node } from "./programs";
 import { buildReact, compiler, fixture, performanceTrack, root, run, target } from "./support";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildReact, 600_000);
 // ADR 0643: `.unwrap()` of a throwing JS call is the call itself, its throw
@@ -134,7 +135,7 @@ pub fn dropped(first: bool) -> Option<&'static Unknown> {
   expect(described).toContain("desc = $unwrap(\n              didTruncate\n                ? JSON.stringify(");
   expect(described).toContain("                : JSON.stringify(value),\n");
   expect(described).not.toContain("$try");
-}, 60_000);
+}, underLoad(60_000));
 
 // ADR 0644: a function whose result is a throwing call's `Result`, each
 // return, is a throwing function, as React's `testStringCoercion` is: its

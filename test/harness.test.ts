@@ -10,6 +10,7 @@ import { join } from "node:path";
 
 import { ratchet, runTest, type Shard } from "../scripts/rustc-suite";
 import { buildCompiler, compiler, fixture, root, target, unlessUnchanged } from "./support";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildCompiler);
 
@@ -36,14 +37,14 @@ test("a compiler that crashes after the rejection a case expects fails it", () =
   expect(run.code).not.toBe(0);
   expect(run.output).toContain("rust-js crashed: thread 'rustc' panicked at src/lower.rs:1:1:");
   expect(run.output).toContain("`compile-fail` expects a rejection");
-}, 120_000);
+}, underLoad(120_000));
 
 test("a compiler that never ends is stopped, and fails the case", () => {
   const hanging = fake("hang", "sleep 60");
   const run = bunTest(["test/corpus.test.ts", "-t", "index_out_of_bounds"], { RUST_JS_COMPILER: hanging, RUST_JS_COMPILE_TIMEOUT: "1000" });
   expect(run.code).not.toBe(0);
   expect(run.output).toContain("rust-js crashed: didn't finish in 1s");
-}, 120_000);
+}, underLoad(120_000));
 
 // The real compiler's JS, with a line only the JS as compiled runs, not
 // the bundle Vite ships of it.
@@ -55,7 +56,7 @@ test("JS that's wrong in one way it's run only fails the case", () => {
   expect(run.code).not.toBe(0);
   expect(run.output).toMatch(/node stdout:\n\+ only unbundled/);
   expect(run.output).not.toContain("node, minified stdout:");
-}, 120_000);
+}, underLoad(120_000));
 
 test("a failing generated program is kept before it's reduced, and a reduction cut short says so", () => {
   const out = join(target, "fuzz");
@@ -102,7 +103,7 @@ test("shards that aren't one whole run aren't checked", () => {
   expect(whole.output).not.toContain("INCOMPLETE");
   expect(whole.output).toContain("PASSES\t");
   expect(whole.code).toBe(1);
-}, 120_000);
+}, underLoad(120_000));
 
 test("a test native Rust never ends has no answer, and isn't as listed", async () => {
   const ui = fixture("harness-ui");
@@ -113,7 +114,7 @@ test("a test native Rust never ends has no answer, and isn't as listed", async (
   expect(result).toEqual({ test: "forever.rs", status: "native", reason: "doesn't pass natively with overflow checks off: didn't finish in 10s" });
   if (result.status !== "native") throw new Error(`Expected native failure, got ${result.status}`);
   expect(ratchet([result], new Map(), new Map()).unanswered).toEqual([result]);
-}, 120_000);
+}, underLoad(120_000));
 
 // A batch of generated programs says which seeds: one that isn't a whole
 // number fails before any runs, not as a run of none. Found in review.
@@ -135,7 +136,7 @@ test("fuzz settings that aren't whole numbers fail the run", () => {
   const past = bunTest(["test/fuzz.test.ts"], { FUZZ_START: "4294967290", FUZZ_SEEDS: "10" });
   expect(past.code).toBe(1);
   expect(past.output).toContain("FUZZ_START=4294967290 FUZZ_SEEDS=10: the seeds end past 4294967296");
-}, 120_000);
+}, underLoad(120_000));
 
 // A test listed as printing what changes is run natively until it does, up
 // to 30 times: a coin flip, as a two-entry HashMap's order is, is the same
@@ -153,7 +154,7 @@ test("a test that prints what changes, listed so, is run until it does", async (
   for (let i = 0; i < 3; i++) {
     expect(await runTest(ui, file, listed)).toEqual({ test: "coin.rs", status: "native", reason: "prints what changes from run to run" });
   }
-}, 120_000);
+}, underLoad(120_000));
 
 /** The real compiler, with JS that prints the bytes FF 0A in its place,
  * which read as UTF-8 are "\u{FFFD}\n", as it prints to stderr. */
@@ -171,7 +172,7 @@ test("JS that prints other bytes than native Rust, reading the same, fails the c
   expect(run.code).not.toBe(0);
   expect(run.output).toContain("node stdout:");
   expect(run.output).not.toContain("stderr:");
-}, 120_000);
+}, underLoad(120_000));
 
 test("a rustc test whose JS prints other bytes, reading the same, fails, and one natively printing either changes", async () => {
   const ui = fixture("harness-bytes");
@@ -185,7 +186,7 @@ test("a rustc test whose JS prints other bytes, reading the same, fails, and one
     "//@ run-pass\nuse std::collections::hash_map::RandomState;\nuse std::hash::{BuildHasher, Hasher};\nuse std::io::Write;\nfn main() {\n    if RandomState::new().build_hasher().finish() % 2 == 0 {\n        std::io::stdout().write_all(&[0xff, b'\\n']).unwrap();\n    } else {\n        println!(\"\\u{FFFD}\");\n    }\n}\n",
   );
   expect(await runTest(ui, either, new Set(["either.rs"]))).toEqual({ test: "either.rs", status: "native", reason: "prints what changes from run to run" });
-}, 120_000);
+}, underLoad(120_000));
 
 // What's built from unchanged inputs isn't built again: the react, webapi and
 // js crates' metadata, which every test run asked for anew, three seconds of

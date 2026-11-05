@@ -7,6 +7,7 @@ import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import { chromium } from "@playwright/test";
 import { buildCompiler, cargoApp, compiler, fixture, root } from "./support";
+import { underLoad } from "../scripts/timing";
 
 // A Vite app is Vite's alone, its plugins React's and Tailwind's, and its
 // Rust is compiled by `rust-js build`, its own process (ADR 0412): Vite
@@ -110,7 +111,7 @@ pub fn App() -> JSX::Element {
     await browser?.close();
     await server.close();
   }
-}, 180_000);
+}, underLoad(180_000));
 
 // Tailwind reads class names in the JSX rust-js writes, and React Compiler
 // memoizes the component (ADR 0041). The `.rs` files aren't Tailwind's
@@ -164,7 +165,7 @@ pub fn App() -> JSX::Element {
     await browser?.close();
     await server.close();
   }
-}, 120_000);
+}, underLoad(120_000));
 
 // The generated JSX is committed, as ReScript recommends for its JS (ADR
 // 0041), and the source map isn't. So a checkout without rust-js still
@@ -187,7 +188,7 @@ pub fn App() -> JSX::Element {
   expect([none.code, none.output.trim()]).toEqual([1, `rust-js: no rust-js at ${missing}: install rust-js or build it with cargo build to compile the Rust`]);
   await build({ root: dir, configFile: false, plugins: [react()], logLevel: "silent" });
   expect(readFileSync(join(dir, "dist/index.html"), "utf8")).toContain("/assets/");
-}, 120_000);
+}, underLoad(120_000));
 
 // `rust-js build` writes the patch that tells the app's Cargo, and its
 // editor, where the crates its npm packages have are; a crate installed
@@ -223,7 +224,7 @@ pub fn App() -> JSX::Element {
   crate(join(dir, "node_modules", "@x", "b", "node_modules", "@x", "a"), "0.0.2");
   const twice = rustJs(dir);
   expect([twice.code, twice.output.includes("zz-a is installed twice")]).toEqual([1, true]);
-}, 120_000);
+}, underLoad(120_000));
 
 // A crate's checks (ADR 0117), of its Cargo build: `rust-js build` runs
 // each; what one says, of the Rust, is its own output.
@@ -247,7 +248,7 @@ check = [
   expect(checked.code).toBe(0);
   expect(existsSync(join(dir, "built"))).toBe(true);
   expect(checked.output).toMatch(/src\/App\.rs:\d+:\d+: \[sh\] a note/);
-}, 120_000);
+}, underLoad(120_000));
 
 // Fast Refresh keeps state under a context and in a memoized component
 // (ADR 0041). Building a module runs it again, so a context made in it is a
@@ -321,7 +322,7 @@ thread_local! {
     await browser?.close();
     await server.close();
   }
-}, 120_000);
+}, underLoad(120_000));
 
 // A Cargo workspace (ADR 0101), a full-stack app's: Cargo builds each crate,
 // rust-js as its workspace wrapper, of each member or the package `--package` names, and
@@ -395,4 +396,4 @@ pub fn App() -> JSX::Element {
     await browser?.close();
     await server.close();
   }
-}, 180_000);
+}, underLoad(180_000));

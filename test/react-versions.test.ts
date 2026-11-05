@@ -13,6 +13,7 @@ import { latest, releases } from "../react/cfg.js";
 import { bindings } from "../react/coverage";
 import versions from "../react/versions.json" with { type: "json" };
 import { buildCompiler, cargoApp, compiler, fixture, generatorOutput, root, run, target } from "./support";
+import { underLoad } from "../scripts/timing";
 
 type Exports = Record<string, Record<string, { since: string; removed?: string }>>;
 const exports = versions.exports as Exports;
@@ -53,7 +54,7 @@ test("every binding is in each React release the crate has it for", () => {
     }
   }
   expect(missing).toEqual([]);
-}, 120_000);
+}, underLoad(120_000));
 
 test("no binding is gated later than the first release that has it", () => {
   const late: string[] = [];
@@ -103,17 +104,17 @@ test("every export of the latest React is bound, or left out on purpose", () => 
 
 test("elements.rs is what react/generate.ts makes of versions.json", () => {
   expect(generatorOutput("react/generate.ts", "--elements")).toBe(readFileSync(join(root, "react/src/elements.rs"), "utf8"));
-}, 60_000);
+}, underLoad(60_000));
 
 // Each element's attributes, as @types/react types them (ADR 0208).
 test("attributes.rs is what react/attributes.ts makes of @types/react", () => {
   expect(generatorOutput("react/attributes.ts")).toBe(readFileSync(join(root, "react/src/attributes.rs"), "utf8"));
-}, 60_000);
+}, underLoad(60_000));
 
 // The strings an attribute of a few takes, which JSX checks a literal against (ADR 0228).
 test("literals.rs is what react/literals.ts makes of @types/react", () => {
   expect(generatorOutput("react/literals.ts")).toBe(readFileSync(join(root, "src/jsx_syntax/literals.rs"), "utf8"));
-}, 60_000);
+}, underLoad(60_000));
 
 // A program for React 18.2 can't use what React 19.2 added: it's a compile
 // error, which names the release it needs, not a crash in the browser.
@@ -143,7 +144,7 @@ test("React 18.2's crate rejects React 19.2's API at compile time", () => {
   expect(message).toContain("unresolved import `react::use_effect_event`");
   expect(message).toContain('#[cfg(react = "19.2")]');
   expect(compile("19.3.0").exitCode).toBe(0);
-}, 120_000);
+}, underLoad(120_000));
 
 test("rust-js build builds for the React a project has installed", () => {
   buildCompiler();
@@ -153,4 +154,4 @@ test("rust-js build builds for the React a project has installed", () => {
   cargoApp(dir, usesUseEffectEvent, { lib: "src/App.rs", react: true });
   const built = Bun.spawnSync([process.execPath, join(root, "tooling/cli.js"), "build"], { cwd: dir, env: { ...process.env, RUST_JS_COMPILER: compiler }, stdout: "pipe", stderr: "pipe" });
   expect([built.exitCode, built.stderr.toString().includes("this project has React 18.2.0")]).toEqual([1, true]);
-}, 120_000);
+}, underLoad(120_000));

@@ -2,6 +2,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { join } from "node:path";
 import { copyFileSync } from "node:fs";
 import { root, target, run, buildCompiler, buildReact, compiler } from "./support";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -44,7 +45,7 @@ test("React components are hand-written JSX, and React runs them", () => {
   const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.js", join(out, "react_app.test.jsx")], { cwd: root, stderr: "pipe" });
   const output = p.stdout.toString() + p.stderr.toString();
   expect([p.exitCode, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "3"]);
-}, 60_000);
+}, underLoad(60_000));
 
 test("JSX preparation preserves evaluation order, conditional execution and text", async () => {
   const { fixture, compiler } = await import("./support");
@@ -195,7 +196,7 @@ test("React's and React DOM's APIs are hand-written React, and they run", () => 
   const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.js", join(out, "apis.test.jsx")], { cwd: root, stderr: "pipe" });
   const output = p.stdout.toString() + p.stderr.toString();
   expect([p.exitCode, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "8"]);
-}, 120_000);
+}, underLoad(120_000));
 
 // ADR 0573: every name is camelCase in JS, React's and Rust's own alike: a
 // component's props, one spread into JSX and a hook, as React code names
@@ -385,4 +386,4 @@ thread_local! {
   run([compiler, input, "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   const js = require("node:fs").readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export const OnSave = createContext(() => {});\nexport const shouted = cache(shout);");
-}, 60_000);
+}, underLoad(60_000));

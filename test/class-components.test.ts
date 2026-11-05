@@ -9,6 +9,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildReact, 600_000);
 
@@ -205,7 +206,7 @@ test("it's a real class: React's and a JS subclass's", () => {
 });
 `);
   expect([ran.code, ran.passed], ran.output).toEqual([0, "3"]);
-}, 60_000);
+}, underLoad(60_000));
 
 test("what a class that extends one is refused says what to write", () => {
   const head = `#![allow(non_snake_case)]
@@ -293,7 +294,7 @@ impl Component<Q> for Both {
     }
 }
 `)).toContain("rust-js: a `#[rust_js::class]` extends one class, a binding's it implements, `impl Component<P> for Surface`, not two");
-}, 60_000);
+}, underLoad(60_000));
 
 test("a class component is in the module its impl is, which imports what it extends", () => {
   const dir = fixture("class-component-alone");
@@ -337,7 +338,7 @@ test("a class component is in the module its impl is, which imports what it exte
     }
 }
 `)).toContain("rust-js: a `#[rust_js::class]` implements the class it extends in the module its constructor is in, where its class is");
-}, 60_000);
+}, underLoad(60_000));
 
 // A class whose impl of `Component` is in another module than its struct
 // has no element `jsx!` can write: it's refused at the struct, saying to
@@ -372,7 +373,7 @@ pub fn shown() -> JSX::Element {
 `);
   expect(rendered).toContain(`rust-js: \`Gauge\` is an element of \`jsx!\` where it implements react's \`Component\` beside its struct: ${moved}`);
   expect(rendered).not.toContain("cannot find macro");
-}, 60_000);
+}, underLoad(60_000));
 
 // rd331i: a class component is an element of `jsx!`, as JSX's `<Surface
 // width={2} />` is `createElement(Surface, { width: 2 })`: its class, of its
@@ -467,7 +468,7 @@ test("React constructs each class it's given", () => {
 });
 `);
   expect([ran.code, ran.passed], ran.output).toEqual([0, "1"]);
-}, 60_000);
+}, underLoad(60_000));
 
 // `super(props)` is its constructor's first statement, before what the
 // constructor writes first, a comment too, as ReactART's Text's `super(props);
@@ -499,7 +500,7 @@ impl Component for Noted {
     // Said after it's made.
     console.log("made");
   }`);
-}, 60_000);
+}, underLoad(60_000));
 
 // rd331d: a tag that's a string, as ReactART's two are. A `&'static str` is
 // a DOM element's tag, as TypeScript's `string` tag is, `const Tag =
@@ -616,7 +617,7 @@ test("React DOM renders each tag, its ref the instance", () => {
 });
 `);
   expect([ran.code, ran.passed], ran.output).toEqual([0, "1"]);
-}, 60_000);
+}, underLoad(60_000));
 
 // A `ref` of a class component's element is its instance, as JSX's `<Gauge
 // ref={..} />` of a class is: React gives it the instance it made (ADR 1041,
@@ -699,7 +700,7 @@ pub fn Board() -> JSX::Element {
     jsx! { <Gauge ref={|_: Option<&'static HTMLElement>| {}} /> }
 }
 `)).toContain("expected closure signature `fn(Option<&'static Gauge>) -> _`");
-}, 60_000);
+}, underLoad(60_000));
 
 // rd331l: a class React constructs may hold an optional `OnceCell`, set
 // once, absent until then, as ReactART's Surface's `this._mountNode =
@@ -755,7 +756,7 @@ test("its cell is set as it mounts", () => {
 });
 `);
   expect([ran.code, ran.passed], ran.output).toEqual([0, "1"]);
-}, 60_000);
+}, underLoad(60_000));
 
 
 // The import of the class a class extends is where its `use` is, as any

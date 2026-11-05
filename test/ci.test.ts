@@ -84,6 +84,24 @@ test("check:fast's timeouts grow with the machine's load, to three times", () =>
   expect(loadScale(67, 12)).toBe(3);
 });
 
+// A test's own timeout is as long as the machine's load makes it,
+// `underLoad(n)`: a number written alone, `}, 60_000);`, is passed on a
+// loaded machine by a test that passes alone. Those past three minutes
+// are a hang's bound already.
+test("a test's written timeout of three minutes or less grows with the load", () => {
+  const fixed = readdirSync(join(root, "test"))
+    .filter((name) => name.endsWith(".test.ts"))
+    .flatMap((name) =>
+      readFileSync(join(root, "test", name), "utf8")
+        .split("\n")
+        .flatMap((line, i) => {
+          const ms = /^\s*\}, ([\d_]+)\);$/.exec(line)?.[1];
+          return ms !== undefined && Number(ms.replaceAll("_", "")) >= 1000 && Number(ms.replaceAll("_", "")) <= 180_000 ? [`test/${name}:${i + 1}`] : [];
+        }),
+    );
+  expect(fixed).toEqual([]);
+});
+
 test("each test file a push's suite runs, check:fast --all runs", () => {
   // As bun finds them, in test/ (bunfig.toml), and as scripts/test.ts runs
   // them: all but the nightly's.

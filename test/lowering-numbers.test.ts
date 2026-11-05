@@ -7,6 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, performanceTrack, run, target } from "./support";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildReact, 600_000);
 
@@ -1296,7 +1297,7 @@ pub fn first_of_some(keys: &[String]) -> String {
   const of = performanceTrack();
   expect(of("addObjectDiffToProperties")).toContain("properties[prevLength - 1][1] =");
   expect(of("addValueToProperties")).toContain('(propsLength === 1 && propsKeys[0] === "children" && key == null)');
-}, 60_000);
+}, underLoad(60_000));
 
 // React's ReactEventPriorities: `EventPriority`, a `#[repr(transparent)]`
 // `i32` whose order is derived, compared `a < b` as upstream's numbers

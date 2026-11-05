@@ -4,6 +4,7 @@ import { join, relative } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 import { root, target, run, buildCompiler, buildReact, compiler } from "./support";
 import { counts } from "./rust-js-tests";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(() => {
   buildCompiler();
@@ -106,7 +107,7 @@ test("in real browsers, with Playwright Test on Bun", () => {
   expect(failing.output).toContain("Error: assertion `left == right` failed\n      left: Point { x: 1, y: 2 }");
   // A promise it rejected that no one handled, found once it has run.
   expect(failing.output).toContain("rejected later");
-}, 120_000);
+}, underLoad(120_000));
 
 test("in real browsers, with Vitest's browser mode", () => {
   const { exit, output } = inBrowsers("vitest", [manifest("vitest-tests", "counter"), manifest("vitest-tests", "todo")]);
@@ -120,4 +121,4 @@ test("in real browsers, with Vitest's browser mode", () => {
   // Files for another runner are refused, saying which they're for.
   const other = inBrowsers("vitest", [manifest("browser-tests", "counter")]);
   expect(other.output).toContain('its tests are for node: Vitest runs those of `[package.metadata.rust-js.test] runner = "vitest"`');
-}, 120_000);
+}, underLoad(120_000));

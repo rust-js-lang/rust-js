@@ -6,6 +6,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, performanceTrack, run, target } from "./support";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildReact, 600_000);
 
@@ -73,7 +74,7 @@ test("React's addObjectDiffToProperties has no block MIR made", () => {
   expect(diff).toContain('          properties.push([REMOVED + line, "…"], [ADDED + line, "…"]);\n          isDeeplyEqual = false;\n          continue;\n        }\n');
   expect(diff).toContain("              if (!nestedEqual) {\n                isDeeplyEqual = false;\n              } else if (");
   expect(of("addValueToProperties")).not.toMatch(/\bbb\d+|desc: \{/);
-}, 60_000);
+}, underLoad(60_000));
 
 // React's getArrayKind (shared/ReactPerformanceTrackProperties.js) is a
 // loop of an `if`/`else` chain whose arms return. Its port's `match`, whose

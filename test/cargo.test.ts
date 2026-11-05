@@ -3,6 +3,7 @@ import { chmodSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { rustcShim } from "../tooling/cargo.js";
 import { fixture, root } from "./support";
+import { underLoad } from "../scripts/timing";
 
 // Every Cargo build with one compiler runs the same rustc shim, and each
 // writes it again. Rewritten in place while another's Cargo runs it, that
@@ -35,4 +36,4 @@ for (;;) {
     for (const w of writers) w.kill();
   }
   expect(failed.slice(0, 3)).toEqual([]);
-}, 60_000);
+}, underLoad(60_000));

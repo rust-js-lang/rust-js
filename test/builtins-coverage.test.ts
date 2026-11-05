@@ -9,6 +9,7 @@ import { join } from "node:path";
 
 import { measure, render } from "../builtins/coverage";
 import { generatorOutput, root } from "./support";
+import { underLoad } from "../scripts/timing";
 
 const baseline = join(root, "builtins/coverage.txt");
 
@@ -21,7 +22,7 @@ test("the js crate binds what it bound of TypeScript's ES library", async () => 
   expect(before.filter((x) => !covered.has(x))).toEqual([]);
   // And what's new is in the baseline, blessed.
   expect(render(now)).toBe(readFileSync(baseline, "utf8"));
-}, 60_000);
+}, underLoad(60_000));
 
 // The typed arrays are one shape over eleven element types, written once in
 // builtins/typed_arrays.ts: what's committed is what it writes.

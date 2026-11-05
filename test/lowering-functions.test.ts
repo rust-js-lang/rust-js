@@ -7,6 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildReact, 600_000);
 
@@ -823,7 +824,7 @@ test("a long function is lowered block by block", async () => {
   // A compile of 3,000 statements, 3 s alone on the M3 Max (54 billion
   // instructions): past 5 s beside check:fast's other jobs, and 9 to 30 s
   // beside the CI test job's other files.
-}, 60_000);
+}, underLoad(60_000));
 
 test("a closure's last `_` parameters are left out", async () => {
   const dir = fixture("mir-closure-wild-params");

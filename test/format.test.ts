@@ -3,6 +3,7 @@ import { chmodSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 import { decodeMappings, lookup } from "./sourcemap";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildReact, 600_000);
 
@@ -148,7 +149,7 @@ test("formatter check is read-only and invalid input prevents selected-file writ
   run([...command, file]);
   expect(readFileSync(file, "utf8")).toBe("fn view() {\n    jsx! {\n        <div />\n    }\n}\n");
   run([...command, "--check", file]);
-}, 30_000);
+}, underLoad(30_000));
 
 test("formatting preserves generated JSX and maps handlers to the formatted source", () => {
   const dir = fixture("format-map");

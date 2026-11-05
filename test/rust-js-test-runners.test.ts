@@ -9,6 +9,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildCompiler } from "./support";
 import { counts, rustJsTest, testCrate } from "./rust-js-tests";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -85,7 +86,7 @@ for (const runner of ["node", "bun", "vitest", "jest"]) {
     const units = join(dir, "node_modules/.cache/rust-js/test/wasm32-unknown-unknown/debug/deps/rust-js");
     const written = [...new Bun.Glob("app-*/lib.test.js").scanSync({ cwd: units })].map((file) => readFileSync(join(units, file), "utf8"));
     expect(written.map((js) => js.includes(`import { test } from "${modules[runner]}";`))).toEqual([true]);
-  }, 180_000);
+  }, underLoad(180_000));
 }
 
 test("a runner rust-js doesn't know is refused, naming the four", () => {

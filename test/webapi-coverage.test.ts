@@ -9,6 +9,7 @@ import { join } from "node:path";
 
 import { functionsAsObjects, measure, render } from "../webapi/coverage";
 import { generatorOutput, root } from "./support";
+import { underLoad } from "../scripts/timing";
 
 const baseline = join(root, "webapi/coverage.txt");
 
@@ -21,7 +22,7 @@ test("the webapi crate binds what it bound of TypeScript's DOM", async () => {
   expect(before.filter((x) => !covered.has(x))).toEqual([]);
   // And what's new is in the baseline, blessed.
   expect(render(now)).toBe(readFileSync(baseline, "utf8"));
-}, 60_000);
+}, underLoad(60_000));
 
 // The webapi crate is what webapi/generate.ts writes of WebIDL (ADR 0024),
 // each name as scripts/rust-names.ts names it (ADR 0376).
@@ -35,4 +36,4 @@ test("the webapi crate is what its generator writes", () => {
 // `Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>>`.
 test("a function the webapi crate reads is a dyn Fn of its signature, not a JsObject", async () => {
   expect(await functionsAsObjects()).toEqual([]);
-}, 60_000);
+}, underLoad(60_000));

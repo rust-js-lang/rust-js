@@ -4,6 +4,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildCompiler, buildSerde, compiler, contentDirectory, fixture, nativeBinary, run, writeWhole } from "./support";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(() => {
   buildCompiler();
@@ -436,7 +437,7 @@ test("serde: numbers are written and read as serde_json does", async () => {
 `);
   const expected = JSON.parse(run([native(dir)]));
   expect((await compiled(dir)).report()).toBe(expected);
-}, 120_000);
+}, underLoad(120_000));
 
 // serde_json's reader as a server's reads what a client sends it (ADR 0078):
 // each text, well formed or not, read as each of 34 types, and the `Value`
@@ -647,7 +648,7 @@ pub fn report() -> String {
 `);
   const expected = JSON.parse(run([native(dir)]));
   expect((await compiled(dir)).report()).toBe(expected);
-}, 120_000);
+}, underLoad(120_000));
 
 // A hand-written `Serialize` (ADR 0459): its serializer is the JSON writer,
 // a struct, a sequence or a map it begins the writer too, a value it hands

@@ -7,6 +7,7 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { open } from "@rust-js/typescript";
 import { fixture, root } from "./support";
+import { underLoad } from "../scripts/timing";
 
 const declarations = `import type { ReactNode } from "react";
 
@@ -191,7 +192,7 @@ test("read takes @types/react's element attributes apart", async () => {
   } finally {
     await ts.close();
   }
-}, 60_000);
+}, underLoad(60_000));
 
 // The model has no type-only name among values, so a list that names one is
 // text: @types/node's `export { type AllowSharedBuffer, Buffer }`. A list of

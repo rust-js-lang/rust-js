@@ -3,6 +3,7 @@ import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { root } from "./support";
+import { underLoad } from "../scripts/timing";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 // In name order, as macOS lists them and Linux, CI's, doesn't: a test that
@@ -239,7 +240,7 @@ test("each runtime helper is asked for, or needed by another", () => {
   const unasked = helpers.filter(name => !declared(name).some(own => writing.includes(`"${own}"`) || readBy(name, own)));
   expect(unasked).toEqual([]);
   // It reads every source and each helper's JS, 1 s alone: past 5 s beside check:fast's other jobs.
-}, 30_000);
+}, underLoad(30_000));
 
 // A helper is written as the runtime's, `Expr::helper("$cmp")`, which
 // checks the runtime has it and is asked for by being written (ADR 0103),
@@ -704,7 +705,7 @@ test("each owner and question the architecture names is there", () => {
   expect(asked.filter(name => isModule(name) ? !found(name) : !new RegExp(`\\b(?:fn|struct|enum|trait)\\s+${name}\\b`).test(code))).toEqual([]);
   expect(rows.flatMap(([, owner]) => names(owner)).filter(owner => !found(owner))).toEqual([]);
   // It reads every module the architecture names, 1 s alone: past 5 s beside check:fast's other jobs.
-}, 30_000);
+}, underLoad(30_000));
 
 // Each decision is in the index, once, and one superseded or replaced,
 // wholly or in part, says so there: 64 weren't in it, and five didn't say
@@ -1012,7 +1013,7 @@ test("a binding's optional argument is an Option of its one function", () => {
     "planted.rs:8 `push_state_with_url` is `push_state` with more: give `push_state` each as an `Option`",
   ]);
   // It reads every binding crate, 1 s alone: past 5 s beside check:fast's other jobs.
-}, 30_000);
+}, underLoad(30_000));
 
 // \`JSON.stringify(value)\` is \`json::stringify(value)\`, one way: not
 // \`stringify_with(value, None, 0)\`, of neither a replacer nor an
@@ -1065,7 +1066,7 @@ test("each std item is known by what std gives it", () => {
   expect(unknown).toEqual([]);
   // Its grep reads std's 77 MB of source: a second warm, past bun's 5 s
   // cold or beside other worktrees' builds.
-}, 30_000);
+}, underLoad(30_000));
 
 // An app's Rust is compiled one way, `rust-js build`, its own process
 // beside the app's own dev server or build (ADR 0412): no host's plugin,

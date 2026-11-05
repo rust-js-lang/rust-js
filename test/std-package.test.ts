@@ -9,6 +9,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { cpSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildCompiler, compiler, fixture, root, run, stdDir } from "./support";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -57,7 +58,7 @@ test("the committed @rust-js/std is std's bodies as the compiler compiles them",
   expect([pkg.name, pkg.version]).toEqual(["@rust-js/std", version]);
   // A compile of std's bodies, 6.2 s alone since std's iterator adapters
   // compile (ADRs 0908, 0917): past 30 s beside check:fast's other jobs.
-}, 120_000);
+}, underLoad(120_000));
 
 // What the compiler writes imports the package by its name, each module by
 // its path: `@rust-js/std/iter.js`, as `@rust-js/runtime` is imported. A

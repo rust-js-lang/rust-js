@@ -6,6 +6,7 @@ import { expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
+import { underLoad } from "../scripts/timing";
 import { expectSnapshot, root, run } from "./support";
 import { decodeMappings, lookup } from "./sourcemap";
 
@@ -224,4 +225,4 @@ pub fn App() -> JSX::Element { jsx! { <Tile text="Hello JSX" /> } }
     await browser.close();
     server.kill();
   }
-}, 180_000);
+}, underLoad(180_000));

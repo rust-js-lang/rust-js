@@ -11,6 +11,7 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, write
 import { dirname, join, relative } from "node:path";
 
 import { buildCompiler, compiler, fixture, root } from "./support";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildCompiler);
 
@@ -52,7 +53,7 @@ test("the same input is the same bytes, build after build", () => {
     expect([name, builds[2]]).toEqual([name, builds[0]]);
   }
   // Three builds of each example, through an installed launcher too.
-}, 60_000);
+}, underLoad(60_000));
 
 test("a crate is the same bytes wherever it's built", () => {
   const builds = ["here", join("deeper", "down", "there")].map((place) => {

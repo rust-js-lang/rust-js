@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium } from "playwright";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildReact, 600_000);
 
@@ -944,7 +945,7 @@ test("a fn field that may hold a host function is called with no this, in Chromi
   } finally {
     await browser.close();
   }
-}, 60_000);
+}, underLoad(60_000));
 
 // A \`Cell<fn()>\` field any other method of may write, \`swap\`'s, is held
 // first, read unbound: what it's set to isn't seen (#427).

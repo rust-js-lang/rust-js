@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium } from "playwright";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildReact, 300_000);
 const flags = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
@@ -117,7 +118,7 @@ pub fn wire(button: &HTMLButtonElement) { ${body} }
     expect(p.exitCode).not.toBe(0);
     expect(p.stderr.toString()).toContain(diagnostic);
   }
-}, 60_000);
+}, underLoad(60_000));
 
 test("event listeners dispatch and remove by identity in Chromium", async () => {
   const js = compileEvents();
@@ -148,7 +149,7 @@ test("event listeners dispatch and remove by identity in Chromium", async () => 
   } finally {
     await browser.close();
   }
-}, 60_000);
+}, underLoad(60_000));
 
 test("a listener JS gave, a function or a handleEvent object, is added and removed as it is in Chromium", async () => {
   const js = compileEvents();
@@ -177,7 +178,7 @@ test("a listener JS gave, a function or a handleEvent object, is added and remov
   } finally {
     await browser.close();
   }
-}, 60_000);
+}, underLoad(60_000));
 
 // rd192: an event handler property takes a Rust function or closure, or any
 // JS function value as it is, a promise's `resolve` and `reject` too; an
@@ -221,4 +222,4 @@ test("an event handler is a closure or any JS function, each as it is, in Chromi
   } finally {
     await browser.close();
   }
-}, 60_000);
+}, underLoad(60_000));

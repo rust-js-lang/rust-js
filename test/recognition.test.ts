@@ -2,6 +2,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { join } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
 import { buildCompiler, compiler, fixture, run } from "./support";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -33,4 +34,4 @@ pub fn comparisons() -> String {
   const compiled = await import(output);
   expect([compiled.userTypes(), compiled.standardTypes(), compiled.comparisons()]).toEqual(expected);
   expect(readFileSync(output, "utf8")).toContain("$debugParseError");
-}, 120_000);
+}, underLoad(120_000));

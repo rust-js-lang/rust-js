@@ -15,6 +15,7 @@ import { writePatch } from "../tooling/patch.js";
 import { runSync } from "./child";
 import { buildCompiler, buildSerde, compiler, fixture, root, run, runtimeDir } from "./support";
 import { channel } from "../scripts/toolchain.ts";
+import { underLoad } from "../scripts/timing";
 
 const checkout = join(root, "examples", "pilot");
 
@@ -188,7 +189,7 @@ test("the list loads from the server, and a search shows only what matches", asy
   await page.getByLabel("Search").fill("nobody");
   await page.getByText("No contacts match.").waitFor();
   await page.close();
-}, 60_000);
+}, underLoad(60_000));
 
 // A search's answer that comes after a newer one's must never show: the
 // older request is aborted.
@@ -210,7 +211,7 @@ test("a slow answer to an older search doesn't replace a newer one's", async () 
   expect(slow).toBe(1);
   expect(await names.allTextContents()).toEqual(["Alan Turing"]);
   await page.close();
-}, 60_000);
+}, underLoad(60_000));
 
 test("a contact is its own page, and one that doesn't exist says so", async () => {
   const page = await open();
@@ -223,7 +224,7 @@ test("a contact is its own page, and one that doesn't exist says so", async () =
   await page.goto(vite!.resolvedUrls!.local[0] + "#/nowhere");
   await page.getByText("There's no such page.").waitFor();
   await page.close();
-}, 60_000);
+}, underLoad(60_000));
 
 // The form checks what the server would, before it sends; what only the
 // server knows, a taken email, comes back by field; and a new contact is
@@ -259,7 +260,7 @@ test("the form checks as the server does, shows the server's errors, and adds a 
   await page.getByRole("link", { name: "Contacts", exact: true }).click();
   await page.getByRole("link", { name: "Katherine Johnson" }).waitFor();
   await page.close();
-}, 60_000);
+}, underLoad(60_000));
 
 // The server holds a request that isn't the form's to the same rules, and
 // JSON that isn't a contact is refused, each with the server's reason.
@@ -273,7 +274,7 @@ test("the server refuses invalid JSON and a contact breaking the rules", async (
   const invalid = await post('{"name":" ","email":"bo","age":5}');
   expect(invalid.status).toBe(422);
   expect((await invalid.json()).errors.map((e: { field: string }) => e.field)).toEqual(["name", "email", "age"]);
-}, 60_000);
+}, underLoad(60_000));
 
 // The Rust edited as the pilot runs: `list.rs`, its heading in it.
 /** `rust-js build --package frontend`, in the pilot, as the developer runs
@@ -314,7 +315,7 @@ test("a build of the Rust is a Fast Refresh, which keeps what's typed", async ()
   }
   await page.getByRole("heading", { name: "Contacts" }).waitFor();
   await page.close();
-}, 120_000);
+}, underLoad(120_000));
 
 // A compile error is rustc's, `rust-js build`'s, which writes nothing: the
 // app runs on as it last compiled, and the next build is the fix (M3.4).
@@ -334,7 +335,7 @@ test("a compile error is rust-js build's, and the app runs on until it's fixed",
   }
   await page.getByRole("heading", { name: "Contacts" }).waitFor();
   await page.close();
-}, 120_000);
+}, underLoad(120_000));
 
 // What the browser runs maps back to the Rust (M3.4): its devtools show
 // `list.rs`, as it was saved, and set its breakpoints there.
@@ -354,7 +355,7 @@ test("the client the browser runs maps back to its Rust", async () => {
   expect(at).toBeGreaterThanOrEqual(0);
   expect(map.sourcesContent[at]).toBe(listSource);
   await page.close();
-}, 60_000);
+}, underLoad(60_000));
 
 /** What the server answers a request for `path` as it's written, which
  * `fetch` would have made a URL of first: its status. */
@@ -414,4 +415,4 @@ test("the list says when the server can't answer, and tries again", async () => 
   await page.getByRole("button", { name: "Try again" }).click();
   await page.getByRole("link", { name: "Ada Lovelace" }).waitFor();
   await page.close();
-}, 60_000);
+}, underLoad(60_000));

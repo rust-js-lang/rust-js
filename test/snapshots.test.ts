@@ -110,4 +110,4 @@ test("the playground's own Rust is stable Rust", () => {
   // And it's clean under rustc's defaults, no `#[allow]` written for
   // rust-js's sake (AGENTS.md, ADRs 0439, 0440).
   expect(p.stderr.toString()).not.toContain("warning");
-}, 120_000);
+}, underLoad(120_000));

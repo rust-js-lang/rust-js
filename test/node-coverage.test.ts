@@ -9,6 +9,7 @@ import { join } from "node:path";
 
 import { measure, render } from "../node/coverage";
 import { root } from "./support";
+import { underLoad } from "../scripts/timing";
 
 const baseline = join(root, "node/coverage.txt");
 
@@ -22,4 +23,4 @@ test("the node crate binds what it bound of Node.js", async () => {
   expect(before.filter((x) => !boundNow.has(x))).toEqual([]);
   // And what's new is in the baseline, blessed.
   expect(render(now)).toBe(readFileSync(baseline, "utf8"));
-}, 120_000);
+}, underLoad(120_000));
