@@ -500,25 +500,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .iterator_item(receiver_ty.peel_refs())
                     .ok_or_else(|| self.unsupported(span, "this iterator's items"))?;
                 // Its items as they come, which the helper steps (#179).
-                let f = next();
-                match comb {
-                    IterComb::MaxBy(_) => {
-                        let helper = if max { "$maxBy" } else { "$minBy" };
-                        self.extreme_by(helper, vec![items, f], item, span)?
-                    }
-                    _ => {
-                        let key_ty = generic_args
+                let key = match comb {
+                    IterComb::MaxBy(_) => None,
+                    _ => Some(
+                        generic_args
                             .types()
                             .nth(1)
-                            .ok_or_else(|| self.unsupported(span, "this key"))?;
-                        if self.drops(key_ty) != crate::lower::drops::Drops::Nothing {
-                            return Err(self.unsupported(span, "a key with a destructor"));
-                        }
-                        let compare = self.cmp_fn(key_ty, false, span)?;
-                        let helper = if max { "$maxByKey" } else { "$minByKey" };
-                        self.extreme_by(helper, vec![items, f, compare], item, span)?
-                    }
-                }
+                            .ok_or_else(|| self.unsupported(span, "this key"))?,
+                    ),
+                };
+                self.extreme_by_call((max, key), (items, next()), item, None, span)?
             }
             IterComb::Product => {
                 let ty = generic_args

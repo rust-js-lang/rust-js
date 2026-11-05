@@ -61,18 +61,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^counted_adapters_given.rs$"],
   },
   {
-    name: "mir-max-is-min",
-    breaks: "`max()` of an iterator from MIR is its least item",
-    file: "src/lower/mir/iter.rs",
-    find: "self.extreme_of(m == IterMethod::Max, it, item, span)?,",
-    replace: "self.extreme_of(m == IterMethod::Min, it, item, span)?,",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "enum_order|opaque_iterators|generic_as_ref|returned_references",
-    ],
-  },
-  {
     name: "mir-mut-loop-items-unhandled",
     breaks:
       "`for x in &mut v` of numbers gives numbers, whose `value` writes nothing",

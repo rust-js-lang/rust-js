@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1745
-lines	188124
+files	1746
+lines	188470
 temporaries	0	0
 labeled blocks	0	0
-while (true)	144	7.7
-$iter	1703	90.5
+while (true)	144	7.6
+$iter	1706	90.5
 Iterator.from	166	8.8
 return;	239	12.7
-renamed x$1	10458	555.9
+renamed x$1	10537	559.1
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drop_past_a_panic.js	46	0	0	0	1	0	0	0
 test/corpus/adapter_drops.js	1872	0	0	1	18	3	1	98
@@ -554,7 +554,7 @@ test/corpus/fn_pointer_closure_borrows_held.js	29	0	0	0	0	0	0	0
 test/corpus/fn_pointer_eq.js	28	0	0	0	0	0	0	0
 test/corpus/fn_pointer_of_borrowed_struct.js	18	0	0	0	0	0	0	0
 test/corpus/fold_back_drops_what_it_takes.js	95	0	0	0	0	0	0	0
-test/corpus/fold_drops_moved_function_first.js	1512	0	0	0	42	0	0	121
+test/corpus/fold_drops_moved_function_first.js	1515	0	0	0	42	0	0	121
 test/corpus/fold_from_none.js	36	0	0	0	0	0	0	6
 test/corpus/folded_call_panic_drops.js	24	0	0	0	0	0	0	0
 test/corpus/folded_functions_drop_before_the_rest.js	873	0	0	1	6	0	1	150
@@ -900,6 +900,7 @@ test/corpus/matrix_chars.js	122	0	0	0	0	0	0	9
 test/corpus/matrix_floats.js	174	0	0	0	0	0	0	28
 test/corpus/matrix_integers.js	986	0	0	0	0	0	0	495
 test/corpus/matrix_strings.js	144	0	0	0	0	1	0	15
+test/corpus/max_by_drops_its_function_first.js	343	0	0	0	3	0	0	79
 test/corpus/maybe_uninit_pointer.js	47	0	0	0	0	0	0	3
 test/corpus/min_max_chains.js	34	0	0	0	0	0	0	0
 test/corpus/mixed_condition_around_inner_loop.js	97	0	0	0	0	0	0	0

@@ -84,15 +84,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "max-by-drops-none",
-    breaks: "`max_by` of items with a destructor drops none it passes over",
-    file: "src/lower/combinators/adapters.rs",
-    find: "                        self.extreme_by(helper, vec![items, f], item, span)?\n",
-    replace:
-      "                        Expr::call(Expr::helper(helper), vec![items, f])\n",
-    tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
-  },
-  {
     name: "step-by-passed-undropped",
     breaks: "what `step_by` steps over isn't dropped",
     file: "src/lower/combinators/adapters.rs",
@@ -310,15 +301,6 @@ export const mutations: Mutation[] = [
     find: "                if !self.recognition().is_fused_iterator(receiver_ty.peel_refs())\n",
     replace: "                if false\n",
     tests: ["test/corpus.test.ts", "-t", "^restarting_iterators.rs$"],
-  },
-  {
-    name: "extreme-by-listed",
-    breaks: "`max_by_key` lists every item before its key is made of the first",
-    file: "src/lower/combinators/adapters.rs",
-    find: "                // Its items as they come, which the helper steps (#179).\n                let f = next();\n",
-    replace:
-      '                let items = method(items, "toArray", Vec::new());\n                let f = next();\n',
-    tests: ["test/corpus.test.ts", "-t", "^consumers_step_each.rs$"],
   },
   {
     name: "nth-own-by-drop",

@@ -338,17 +338,20 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    const min = $minByKey(
-      $holding(
-        take.map(f),
-        () => {
-          dDrop_drop(g);
-        },
-        "after",
-      ),
-      (n) => n,
-      $cmp,
+    const iter = $holding(
+      take.map(f),
+      () => {
+        dDrop_drop(g);
+      },
+      "after",
     );
+    let result;
+    try {
+      result = $minByKey(iter, (n) => n, $cmp);
+    } finally {
+      iter.return();
+    }
+    const min = result;
     $print(`| ${min == null ? "None" : `Some(${min})`} | `);
   });
   case$("reduce", (g) => {

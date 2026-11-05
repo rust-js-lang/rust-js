@@ -482,6 +482,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | IterMethod::Count
                     | IterMethod::Max
                     | IterMethod::Min
+                    | IterMethod::MaxBy(_)
+                    | IterMethod::MaxByKey(_)
                     | IterMethod::Eq
                     | IterMethod::Ne
                     | IterMethod::Last

@@ -101,28 +101,59 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(item) if !self.is_primitive_ord(item) => {
                 let compare = self.cmp_fn(item, false, span)?;
                 let helper = if max { "$maxBy" } else { "$minBy" };
-                self.extreme_by(helper, vec![items, compare], item, span)?
+                self.extreme_by(helper, vec![items, compare], item, None, span)?
             }
             _ => Expr::call(Expr::helper(if max { "$max" } else { "$min" }), vec![items]),
         })
     }
 
+    /// `max_by(f)` or `min_by(f)` of `items`, of `item`s, `max`'s or not;
+    /// or `max_by_key(f)` or `min_by_key(f)`, of a `key`, made once for
+    /// each, as std's, compared by its `cmp`: each passed over dropped as
+    /// it's passed, of items with a destructor (ADR 0098); `ends`, the drop
+    /// of `f` where its fold drops it before what's left of `items` (#734).
+    /// The one form of each, the recognizers' and MIR's.
+    pub(in crate::lower) fn extreme_by_call(
+        &mut self,
+        (max, key): (bool, Option<ty::Ty<'tcx>>),
+        (items, f): (Expr, Expr),
+        item: ty::Ty<'tcx>,
+        ends: Option<Expr>,
+        span: Span,
+    ) -> R<Expr> {
+        let Some(key) = key else {
+            let helper = if max { "$maxBy" } else { "$minBy" };
+            return self.extreme_by(helper, vec![items, f], item, ends, span);
+        };
+        if self.drops(key) != crate::lower::drops::Drops::Nothing {
+            return Err(self.unsupported(span, "a key with a destructor"));
+        }
+        let compare = self.cmp_fn(key, false, span)?;
+        let helper = if max { "$maxByKey" } else { "$minByKey" };
+        self.extreme_by(helper, vec![items, f, compare], item, ends, span)
+    }
+
     /// `helper`, `$maxBy` or one of its kind, given `args`, then whether an
-    /// `item` is boxed where it may look like `None` (ADR 0051), and what
-    /// drops each passed over, of one with a destructor (ADR 0098).
-    pub(in crate::lower) fn extreme_by(
+    /// `item` is boxed where it may look like `None` (ADR 0051), what
+    /// drops each passed over, of one with a destructor (ADR 0098), and
+    /// `ends`, what drops with its function (#734).
+    fn extreme_by(
         &mut self,
         helper: &'static str,
         mut args: Vec<Expr>,
         item: ty::Ty<'tcx>,
+        ends: Option<Expr>,
         span: Span,
     ) -> R<Expr> {
         let boxed = self.boxed_payload(item);
         let drop = self.std_drop_function(item, span)?;
-        if boxed || drop.is_some() {
+        if boxed || drop.is_some() || ends.is_some() {
             args.push(Expr::bool(boxed));
         }
-        args.extend(drop);
+        match (drop, ends) {
+            (drop, Some(ends)) => args.extend([drop.unwrap_or_else(Expr::undefined), ends]),
+            (drop, None) => args.extend(drop),
+        }
         Ok(Expr::call(Expr::helper(helper), args))
     }
 

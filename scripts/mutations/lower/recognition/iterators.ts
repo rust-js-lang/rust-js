@@ -810,4 +810,12 @@ export const mutations: Mutation[] = [
     replace: "                let own: Vec<Ty<'tcx>> = [function]\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^a scan's state and function drop once"],
   },
+  {
+    name: "max-by-not-from-mir",
+    breaks: "`max_by` of the crate's iterator with a destructor isn't lowered from MIR, and is refused (#734)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            \"max_by\" => IterMethod::MaxBy(true),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^max_by_drops_its_function_first.rs$"],
+  },
 ];

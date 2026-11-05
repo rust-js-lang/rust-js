@@ -804,7 +804,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => return Ok(None),
             },
             // Of its items as they come, which the helper steps (#179).
-            Some(m @ (IterMethod::Max | IterMethod::Min)) => self.extreme_of(m == IterMethod::Max, it, item, span)?,
+            Some(m) if m.extreme() => self.extreme_called(it, (m, &mut arg), item, arg_tys, span)?,
             Some(IterMethod::Last) => self.last_called(it, iter_ty, item, span, made)?,
             Some(m @ (IterMethod::IsSorted | IterMethod::IsSortedBy | IterMethod::IsSortedByKey)) => match item {
                 Some(item) => self.sorted_called(it, (m, &mut arg, own), item, arg_tys, span)?,

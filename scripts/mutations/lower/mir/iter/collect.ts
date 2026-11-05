@@ -827,4 +827,24 @@ export const mutations: Mutation[] = [
     replace: "        let ends: Option<Expr> = None;\n        let mut args = vec![it, init, self.binary_callback(f, own)];\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
   },
+  {
+    name: "max-by-unconsumed",
+    breaks: "`max_by`'s function is dropped after the crate's iterator it's given, where std's `reduce` drops it first (#734)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                    | IterMethod::MaxBy(_)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^max_by_drops_its_function_first.rs$"],
+  },
+  {
+    name: "mir-max-is-min",
+    breaks: "`max()` of an iterator from MIR is its least item",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "return self.extreme_of(method == IterMethod::Max, it, item, span),",
+    replace: "return self.extreme_of(method == IterMethod::Min, it, item, span),",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "enum_order|opaque_iterators|generic_as_ref|returned_references",
+    ],
+  },
 ];

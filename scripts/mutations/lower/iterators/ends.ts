@@ -149,4 +149,28 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => Expr::call(Expr::member(it, \"filter\"), vec![test]),\n",
     tests: ["test/corpus.test.ts", "-t", "collect_drops"],
   },
+  {
+    name: "extreme-by-ends-lost",
+    breaks: "`max_by`'s and its kind's function that holds what has a destructor is given its helper nothing to drop it by, so it's never dropped (#734)",
+    file: "src/lower/iterators/ends.rs",
+    find: "            (drop, Some(ends)) => args.extend([drop.unwrap_or_else(Expr::undefined), ends]),\n",
+    replace: "            (drop, Some(_)) => args.extend(drop),\n",
+    tests: ["test/corpus.test.ts", "-t", "^max_by_drops_its_function_first.rs$"],
+  },
+  {
+    name: "max-by-drops-none",
+    breaks: "`max_by` of items with a destructor drops none it passes over",
+    file: "src/lower/iterators/ends.rs",
+    find: "            return self.extreme_by(helper, vec![items, f], item, ends, span);\n",
+    replace: "            return Ok(Expr::call(Expr::helper(helper), vec![items, f]));\n",
+    tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
+  },
+  {
+    name: "extreme-by-listed",
+    breaks: "`max_by_key` lists every item before its key is made of the first",
+    file: "src/lower/iterators/ends.rs",
+    find: "        if self.drops(key) != crate::lower::drops::Drops::Nothing {\n            return Err(self.unsupported(span, \"a key with a destructor\"));\n",
+    replace: "        let items = Expr::call(Expr::member(items, \"toArray\"), Vec::new());\n        if self.drops(key) != crate::lower::drops::Drops::Nothing {\n            return Err(self.unsupported(span, \"a key with a destructor\"));\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumers_step_each.rs$"],
+  },
 ];

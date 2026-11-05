@@ -644,6 +644,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "cloned" => IterMethod::Cloned,
             "max" => IterMethod::Max,
             "min" => IterMethod::Min,
+            "max_by" => IterMethod::MaxBy(true),
+            "min_by" => IterMethod::MaxBy(false),
+            "max_by_key" => IterMethod::MaxByKey(true),
+            "min_by_key" => IterMethod::MaxByKey(false),
             "last" => IterMethod::Last,
             "nth" => IterMethod::Nth,
             "__iterator_get_unchecked" => IterMethod::GetUnchecked,
@@ -1371,6 +1375,11 @@ pub(crate) enum IterMethod {
     Cloned,
     Max,
     Min,
+    /// `max_by(f)`, and `min_by(f)`, not `max`'s; `max_by_key(f)` and
+    /// `min_by_key(f)`: std's `reduce` of what it's given, which drops `f`
+    /// before what's left (#734).
+    MaxBy(bool),
+    MaxByKey(bool),
     Last,
     Nth,
     /// `advance_by(n)`, which std's own bodies call, unstable to the
@@ -1399,6 +1408,12 @@ impl IterMethod {
     /// (ADRs 0458, 0539).
     pub(crate) fn tries(self) -> bool {
         matches!(self, IterMethod::TryFold | IterMethod::TryForEach)
+    }
+
+    /// `max()` or `min()`, or one by a function, `max_by`'s kind.
+    pub(crate) fn extreme(self) -> bool {
+        use IterMethod::*;
+        matches!(self, Max | Min | MaxBy(_) | MaxByKey(_))
     }
 
     /// One comparing two iterators by their items' `Ordering`.

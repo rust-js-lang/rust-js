@@ -172,6 +172,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | IterMethod::ForEach
                     | IterMethod::Reduce
                     | IterMethod::IsSortedBy
+                    | IterMethod::MaxBy(_)
+                    | IterMethod::MaxByKey(_)
             )
         );
         let tried = matches!(method, Some(IterMethod::TryFold | IterMethod::TryRFold));
@@ -970,6 +972,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => self.is_sorted_call(it, item, span),
         }
+    }
+
+    /// `it.max()` or `it.min()`, `extreme_of`'s; `it.max_by(f)` and its
+    /// kind, `method`, of `item`s, `$maxBy`'s, of a function its `reduce`
+    /// moves into its fold given what drops with it, which drops before
+    /// what's left (#734); of a `_key` form, its key the type `f` gives.
+    pub(super) fn extreme_called(
+        &mut self,
+        it: Expr,
+        (method, arg): (IterMethod, &mut dyn FnMut() -> Expr),
+        item: Option<Ty<'tcx>>,
+        arg_tys: &[Ty<'tcx>],
+        span: Span,
+    ) -> R<Expr> {
+        let tcx = self.tcx;
+        let (max, key) = match method {
+            IterMethod::Max | IterMethod::Min => return self.extreme_of(method == IterMethod::Max, it, item, span),
+            IterMethod::MaxBy(max) => (max, None),
+            IterMethod::MaxByKey(max) => {
+                let sig = match *arg_tys[1].kind() {
+                    ty::Closure(_, args) => args.as_closure().sig(),
+                    _ => arg_tys[1].fn_sig(tcx),
+                };
+                (max, Some(tcx.instantiate_bound_regions_with_erased(sig).output()))
+            }
+            _ => unreachable!("only `max()` and its kind"),
+        };
+        let item = item.ok_or_else(|| self.unsupported(span, "this iterator's items"))?;
+        let f = arg();
+        let ends = self.consumed_ends(Some(method), arg_tys, &f, span)?;
+        // Not a key that drops over the crate's iterator, which its caller
+        // drops after: std's `Map` it pairs them by drops its source, then
+        // the key, where `reduce`'s first step ends, after that drop.
+        if key.is_some() && ends.is_some() && self.is_user_iterator(arg_tys[0]) {
+            let name = if max { "max_by_key" } else { "min_by_key" };
+            return Err(self.unsupported(
+                span,
+                &format!("`{name}` of a key function with a destructor over the crate's iterator with one"),
+            ));
+        }
+        // Given as it is: its helper calls it with Rust's arguments alone,
+        // `compare(kept, item)` or `key(item)`, as the recognizers' does.
+        self.extreme_by_call((max, key), (it, f), item, ends, span)
     }
 
     /// The drop of what a by-value consumer `method` of `arg_tys` moves into

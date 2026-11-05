@@ -197,3 +197,34 @@ the closure where std drops it first (#757, the one-`Chain` work); a
 where std's `SkipWhile::fold` and `try_fold` drop their `fold` before
 `init`, their parameters, and `try_fold` takes no `ends` (#768); and a
 map's function as a drop panics (#762).
+
+## Amendment: step 2, `max_by` and its kind (#734)
+
+`max_by`, `min_by`, `max_by_key` and `min_by_key` of the crate's iterator
+with a destructor were refused, "`max_by` of a value with a destructor":
+they were std calls only the recognizers wrote, which a whole iterator
+that drops something they don't close. They're std's iterator methods
+from MIR now, beside `max` and `min` (`IterMethod::MaxBy`, `MaxByKey`),
+through one builder of their helper's call, `extreme_by_call`, which the
+recognizers' arm asks too. Std writes each as a `reduce`, which moves its
+function into its fold: `consumed_function` says so of them, and their
+helper is given what drops with it, `ends`, which `$extremeBy` runs as
+`$consume`'s `reduce` does, before what's left. A `_key` form is std's
+`self.map(key).reduce(..)`: where `reduce`'s first step ends, or throws,
+the `Map` drops whole, its source and then its key, so `$extremeByKey`
+runs `ends` after what it steps there, before it once folding began.
+
+A key with a destructor over the crate's iterator, whose drop its caller
+runs after the call, is refused, "`max_by_key` of a key function with a
+destructor over the crate's iterator with one": where its first step
+ends, std drops the key after the iterator, which `ends` can't, run
+within the call. That's valid Rust, refused; left to do (#776).
+
+`test/corpus/max_by_drops_its_function_first.rs` checks each against
+native Rust in both builds: a closure that drops over the crate's
+iterator, a plain one over it, one over a range and a `Vec`'s, empty, as
+a panic in it unwinds and of items with a destructor. The mutations are
+`extreme-by-ends-lost`, `max-by-not-from-mir`, `max-by-unconsumed`,
+`extreme-by-ends-unrun` and `extreme-by-key-ends-before-its-source`.
+`eq_by`, `cmp_by` and `partial_cmp_by` are unstable, `iter_order_by`, so
+no stable program calls them.
