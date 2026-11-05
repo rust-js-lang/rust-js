@@ -35,7 +35,7 @@ use getters::{marked_getter, reads_as_getter, trait_getter, trait_getter_misuse}
 pub(in crate::lower) use namespaces::exported_by_property;
 pub(crate) use namespaces::{names_namespace, taken_apart, unread_namespaces};
 pub(crate) use prototypes::{Prototypes, place_prototypes, with_prototype_members};
-use receivers::body_receiver;
+pub(in crate::lower) use receivers::body_receiver;
 pub(crate) use receivers::{Receiver, receiver};
 use states::spread_state;
 pub(crate) use states::{flattened_parameter, new_of_state};

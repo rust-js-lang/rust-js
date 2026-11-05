@@ -161,6 +161,52 @@ impl<'tcx> JsSignature<'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// How many parameters an impl's method's JS function declares, as
+    /// `mir_signature` and `lower_fn_mir` write them: one for each of its
+    /// Rust inputs but a `self` its body takes as `this` or not at all
+    /// (`classes::body_receiver`, `receiver_as_this`'s) and a writer's
+    /// `Formatter`, that `Formatter`'s `options` where the crate gives
+    /// them, then one for each of its `evidence_slots`. `None` of one whose last gathers what it's given
+    /// past the rest, `#[rust_js::rest]`, C-variadic or rest arguments as a
+    /// value, and of any other function, a free one's unnamed last
+    /// parameters left out (ADR 0678): what a dictionary's entry may pass a
+    /// caller's arguments on to as they are (#801).
+    pub(in crate::lower) fn declared_arity(&self, def_id: DefId) -> Option<usize> {
+        if self.tcx.def_kind(def_id) != DefKind::AssocFn
+            || super::recognition::is_c_variadic(self.tcx, def_id)
+            || self.takes_rest(def_id)
+        {
+            return None;
+        }
+        let inputs = self.tcx.fn_sig(def_id).skip_binder().inputs().skip_binder();
+        if inputs
+            .last()
+            .is_some_and(|&last| super::bindings::is_rest_value(self.tcx, last))
+        {
+            return None;
+        }
+        let receiver = !inputs.is_empty() && super::classes::body_receiver(self.tcx, def_id) != Receiver::First;
+        let formatter = self.formatter_param(def_id).is_some();
+        let options = formatter && self.writers_take_options();
+        let evidence = self.evidence_slots(def_id, Scope::Whole).len();
+        Some(inputs.len() - usize::from(receiver) - usize::from(formatter) + usize::from(options) + evidence)
+    }
+
+    /// What `lower_fn_mir` wrote of an impl's method, its `count` of
+    /// parameters, is what `declared_arity` says, which a dictionary's entry
+    /// passes a caller's arguments on to: each compile in a debug build
+    /// holds the two equal (#801).
+    pub(in crate::lower) fn holds_declared_arity(&self, def_id: DefId, count: usize) {
+        if let Some(declared) = self.declared_arity(def_id) {
+            debug_assert_eq!(
+                declared,
+                count,
+                "`declared_arity` of {} isn't its parameters' count",
+                self.tcx.def_path_str(def_id)
+            );
+        }
+    }
+
     /// What `function`'s JS takes and gives, as a JS caller calls it.
     pub(in crate::lower) fn js_signature(&self, function: DefId) -> JsSignature<'tcx> {
         let tcx = self.tcx;

@@ -261,6 +261,21 @@ pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwardi
     })
 }
 
+/// `g` of `f`, an arrow that passes on its first `declared` parameters, in
+/// order, to `g`, a function of that many, as its owner says
+/// (`FnCx::declared_arity`): what a caller gives `f` past them `g` never
+/// names, as `f` didn't pass it on. A dictionary's entry of a fact its
+/// trait carries that its impl doesn't read, `(arg0, TIntoIterInPlace) =>
+/// bagFromIteratorU32_fromIter(arg0)`, is the impl's method (#801).
+pub(in crate::lower) fn passed_on_first(f: &Expr, declared: usize) -> Option<Expr> {
+    let js::ExprKind::Arrow(params, body) = &f.kind else {
+        return None;
+    };
+    let first = params.get(..declared).filter(|_| declared < params.len())?;
+    let callee = js::passes_on(first, body, false)?;
+    matches!(callee.kind, js::ExprKind::Var(_)).then(|| callee.clone())
+}
+
 /// Of `method`, whose body is `thir`, a `#[rust_js::namespace]`'s method
 /// (ADR 1037) or a constructor function's prototype's (ADR 0761): the
 /// function of the crate's that it only passes its parameters on to, past

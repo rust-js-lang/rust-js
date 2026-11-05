@@ -29,9 +29,7 @@ function bagDebug_fmt(bag) {
   return `Bag([${bag[0].join(", ")}])`;
 }
 
-export const bagFromIteratorU32 = {
-  fromIter: (arg0, TIntoIterInPlace) => bagFromIteratorU32_fromIter(arg0),
-};
+export const bagFromIteratorU32 = { fromIter: bagFromIteratorU32_fromIter };
 function bagFromIteratorU32_fromIter(items) {
   return [
     Array.from(

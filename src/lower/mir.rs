@@ -864,6 +864,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => Vec::new(),
         };
         params.extend(evidence);
+        self.holds_declared_arity(def_id, params.len());
         // The drops it used, which its callers give it (ADR 0300).
         self.note_drop_uses(def_id);
         Ok(LoweredFn {

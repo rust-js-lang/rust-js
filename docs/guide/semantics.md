@@ -1260,6 +1260,11 @@ React and JSX are [their own pages](README.md#react).
     closure is the function itself, so adding it twice to one target and
     event makes one listener, where two closures were two (ADR 0262,
     amended, the user's decision, rd196, rd212, accepted 2026-10-31).
+    And a dictionary's entry that passes on its first parameters, in
+    order, to its impl's method, which declares just those, is the
+    method, `fromIter: bagFromIteratorU32_fromIter`, its `.length` the
+    method's: what a caller gives past them the method never names
+    (ADR 0262, amended, #801).
     Held by a `let`, it's that function where the variable is read,
     `addEventListener("navigatesuccess", handleNavigateComplete)` (rd284).
     And a closure that passes all it's given, in order, to a namespace's

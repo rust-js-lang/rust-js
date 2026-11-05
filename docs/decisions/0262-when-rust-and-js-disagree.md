@@ -111,6 +111,19 @@ react.dev's TopNav passes the same closure instead.
   2026-11-02, rd575, ADR 1064): a JS caller sees the function itself,
   `===` it, its `name` and `length` the function's. Listed in the
   guide's differences (`semantics.md`, 45).
+  And a dictionary's entry that passes on its first parameters, in
+  order, to its impl's method, which declares just those as its owner
+  says (`declared_arity`: its inputs, a writer's `options`, its evidence;
+  none of a rest parameter's), `fromIter: (arg0, TIntoIterInPlace) =>
+  bagFromIteratorU32_fromIter(arg0)` of a fact its trait carries and the
+  impl doesn't read, is the method, `fromIter:
+  bagFromIteratorU32_fromIter` (#801, assigned for the user by m6-react,
+  2026-11-06). Case none for every caller rust-js writes, which calls
+  the entry and reads nothing else of it: what it gives past them the
+  method never names, as the entry didn't pass it on, and a method reads
+  no `this`. A JS reader of an exported dictionary would see the
+  method's `length` and identity, a forwarding closure's difference.
+  Listed in the guide's differences (`semantics.md`, 27).
 - **A binding getter's function unwrapped where it's called is the read**,
   the user's decision (2026-11-02, rd519, ADR 1066):
   `console::create_task().unwrap()(name)` is `console.createTask(name)`

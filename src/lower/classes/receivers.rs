@@ -29,7 +29,7 @@ pub(crate) enum Receiver {
 /// A trait of classes' default is lowered of its first parameter, into its
 /// impl's dictionary, before each prototype takes it as `this`
 /// (`defaults::prototype_defaults`).
-pub(super) fn body_receiver(tcx: TyCtxt<'_>, function: DefId) -> Receiver {
+pub(in crate::lower) fn body_receiver(tcx: TyCtxt<'_>, function: DefId) -> Receiver {
     match member(tcx, function) {
         Some(Member::Namespace) => Receiver::Absent,
         Some(Member::Method | Member::Getter | Member::Own) => Receiver::This,

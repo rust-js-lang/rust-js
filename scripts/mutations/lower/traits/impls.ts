@@ -635,4 +635,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^class_trait_methods.rs$"],
     snapshots: true,
   },
+  {
+    name: "entry-wrapper-kept",
+    breaks:
+      "a dictionary's entry that passes its first parameters on to its impl's method, which declares just those, wraps it, `(arg0, TIntoIterInPlace) => bagFromIteratorU32_fromIter(arg0)`, where it's the method itself (#801)",
+    file: "src/lower/traits/impls.rs",
+    find: "            let first = (self.declared_arity(method)).and_then(|declared| passed_on_first(&arrow, declared));\n",
+    replace: "            let first = (self.declared_arity(method)).and_then(|declared| passed_on_first(&arrow, declared)).filter(|_| false);\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect.rs$"],
+    snapshots: true,
+  },
 ];

@@ -566,9 +566,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             });
             let arrow = Expr::arrow(patterns.collect(), body);
             // One that passes on just what it's given, in order, is the method.
-            let value = match made {
-                true => passed_on(&arrow, Taker::Made, &[]).unwrap_or(arrow),
-                false => arrow,
+            // Or one that passes on its first, to a method that declares just
+            // those: what a caller gives past them it never names, a fact the
+            // trait carries that the impl doesn't read (#801).
+            let first = (self.declared_arity(method)).and_then(|declared| passed_on_first(&arrow, declared));
+            let value = match (made, first) {
+                (true, Some(method)) => method,
+                (true, None) => passed_on(&arrow, Taker::Made, &[]).unwrap_or(arrow),
+                (false, _) => arrow,
             };
             props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), value));
         }

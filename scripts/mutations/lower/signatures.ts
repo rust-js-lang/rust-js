@@ -141,4 +141,13 @@ export const mutations: Mutation[] = [
     replace: "                || !self.is_callable(bound.self_ty())\n                || !bound.self_ty().to_string().starts_with(\"impl \")\n",
     tests: ["test/declarations-impl-fn.test.ts", "-t", "bound by Fn"],
   },
+  {
+    name: "declared-arity-with-receiver",
+    breaks:
+      "`declared_arity` counts a class method's `self`, which its body takes as `this`, so it says one more than the writer declares, a dictionary's entry could be the method where a caller's argument lands in a parameter it didn't pass; the writer's debug assertion stops the compile (#801)",
+    file: "src/lower/signatures.rs",
+    find: "        Some(inputs.len() - usize::from(receiver) - usize::from(formatter) + usize::from(options) + evidence)\n",
+    replace: "        Some(inputs.len() - usize::from(formatter) + usize::from(options) + evidence + usize::from(receiver) * 0)\n",
+    tests: ["test/corpus.test.ts", "-t", "^class_bool_methods.rs$"],
+  },
 ];

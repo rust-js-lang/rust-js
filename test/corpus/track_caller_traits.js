@@ -39,7 +39,7 @@ function unitTracked_tagged(unit, tag, location, TDisplay) {
 const flagTracked = {
   fromDefault: flagTracked_fromDefault,
   inherited: flagTracked_inherited,
-  onlyImpl: (arg0, location) => flagTracked_onlyImpl(arg0),
+  onlyImpl: flagTracked_onlyImpl,
   boxed: flagTracked_boxed,
   unread: flagTracked_unread,
   tagged: (arg0, arg1, location, TDisplay) => flagTracked_tagged(arg0, arg1, TDisplay),

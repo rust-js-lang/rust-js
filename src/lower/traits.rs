@@ -16,7 +16,7 @@ pub(super) use self::{calls::GivenEvidence, drop_params::*, evidence::*, given::
 use super::bindings;
 use super::display::Pretty;
 use super::drops::Drops;
-use super::passed_on::{Taker, passed_on};
+use super::passed_on::{Taker, passed_on, passed_on_first};
 use super::recognition::{
     Recognition, Std, StdItem, TraitCall, TypeFact, any_trait, error_default, in_std_dictionary,
     into_iter_by_dictionary, io_write_default, is_clone_from, is_hasher, is_std_def, is_std_method, is_writer_default,
