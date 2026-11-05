@@ -3,6 +3,25 @@ import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "block-around-a-loop-inside-it",
+    breaks:
+      "a block the program labeled around a loop, `'done: { for &x in row { if x == 7 { break 'done; } } .. }`, stays where MIR's structure put it, in the loop, `const iter = row.values(); while (true) { const x = iter.next().value; done: { .. continue; } .. break; }` (#777)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "    js::statement_lists(body, &mut |stmts| around_loops(stmts, blocks));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^labeled_block_around_a_loop.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "block-around-a-loop-without-its-iterator",
+    breaks: "the iterator of a loop a labeled block is around stays before the block, `const iter = row.values(); done: { while ((x = iter.next().value) != null)`, so the loop is no `for` (#777)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "        let first = if read_after { i } else { first };\n",
+    replace: "        let first = if read_after || true { i } else { first };\n",
+    tests: ["test/corpus.test.ts", "-t", "^labeled_block_around_a_loop.rs$"],
+    snapshots: true,
+  },
+  {
     name: "exit-after-held-unwritten",
     breaks:
       "a block MIR made, no span of its own, at an inner loop's way out isn't taken as written after the loop, though what it holds is: `while (true) { .. if (!found) { .. } break bb31; }` stays, not `while ((c = xs[k]) != null) { .. }` and the `if` after it (rd141c)",

@@ -191,3 +191,49 @@ comment of the written empty `else` is placed after the function's last
 statement (left to comment placement). Held by
 `test/corpus/or_guard_written_first.rs`, against native Rust; mutation
 `or-block-written-then-last`.
+
+## Amendment: a block written around a loop is around it (#777, 2026-11-05)
+
+`for row in rows { 'done: { for &x in row { if x == 7 { break 'done; } }
+.. } out.push("-"); }`: MIR's structure put the block the program
+labeled in the inner loop, as what follows the block, `out.push("-");
+continue bb2;`, leaves that loop: `const iter = row.values(); while (true)
+{ const x = iter.next().value; done: { if (x != null) { if (x === 7) {
+break done; } continue; } .. } break; }`, the block's statements after the
+loop in its way out. **A block the program labeled, whose place holds the
+loop it's in, is around that loop** (`around_loops`, `jumps/labels.rs`):
+the loop's statements before it, its own, then the block's, each of whose
+ways ends in a jump MIR wrote, `break row` where it ends; what's written in
+the block before the loop, its iterator, `$iter(row)`, in it too; and what
+followed the block after it. Only where what follows it never goes on to
+the loop's next turn, names no jump of it, and reads nothing the loop
+declares before the block. The passes after make the loop the `for` it
+is, and the block's statements after it its way out:
+
+```js
+done: {
+  for (let j = 0; j < row.length; j++) {
+    const x = row[j];
+    if (x === 7) {
+      break done;
+    }
+  }
+  let label;
+  ..
+}
+out.push("-");
+```
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; the
+paths are the same. The label is the program's, so it stays (#523's
+rule: a label only where the Rust wrote one). Held by the corpus case
+`labeled_block_around_a_loop.rs` against native Rust, and the mutations
+`block-around-a-loop-inside-it` and `block-around-a-loop-without-its-iterator`
+(`jumps/labels.ts`). That what follows the block and each way of the block
+end in a jump holds of every block MIR made where `written_blocks` runs,
+which writes each way's jump, so no case makes them fail; they're checked
+so that a pass before it that ends a way otherwise can't make the loop go
+round again. The readability table's `$iter` share grows by one: labeled_blocks'
+`for n in 1..` in its block is now the `for` of the range,
+`$iterator({ start: 1 }, $rangeFromStep(..))`, as each such loop is, where
+it was `$rangeFromNext` in a `while (true)`.

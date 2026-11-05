@@ -535,6 +535,74 @@ pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: 
             }
         }
     });
+    js::statement_lists(body, &mut |stmts| around_loops(stmts, blocks));
+}
+
+/// A block the program labeled around a loop, `'row: { for &x in row { if
+/// x == 0 { break 'row; } } sum = ..; }`, that MIR's structure puts in the
+/// loop it's written around, `bb10: while (true) { const _21 = $next(..);
+/// row: { .. continue bb10; } sums.push(sum); continue bb2; }`, as what
+/// follows the block leaves the loop: around it, as written, `row: { bb10:
+/// while (true) { .. } }`, each of its ways a jump MIR wrote, what's
+/// written in it before the loop, the loop's iterator, in it too,
+/// and what follows it after it (#777). Only where what follows never goes
+/// on to the loop's next turn, names no jump of it, and reads nothing the
+/// loop's body declares before the block; and each way of the block ends
+/// in a jump, which MIR writes of each here, so none goes round again.
+fn around_loops(stmts: &mut Vec<Stmt>, blocks: &[LabeledBlock]) {
+    let written_around = |block: &Stmt, at: js::Span| {
+        !at.is_none()
+            && block.span != at
+            && matches!(block.kind, StmtKind::Labeled(..))
+            && (blocks.iter()).any(|b| b.span == block.span && b.span.lo <= at.lo && at.hi <= b.span.hi)
+    };
+    let mut i = 0;
+    while i < stmts.len() {
+        let at = stmts[i].span;
+        let found = match &stmts[i].kind {
+            StmtKind::While {
+                label: Some(l), body, ..
+            } => body.iter().position(|s| written_around(s, at)).filter(|&k| {
+                let after = &body[k + 1..];
+                after.last().is_some_and(ends)
+                    && matches!(&body[k].kind, StmtKind::Labeled(_, b) if b.last().is_some_and(ends))
+                    && !js::names_jump(after, l)
+                    && !declared(&body[..k]).any(|name| js::mentions_in(after, name) > 0)
+            }),
+            _ => None,
+        };
+        let Some(k) = found else {
+            i += 1;
+            continue;
+        };
+        let StmtKind::While { body, .. } = &mut stmts[i].kind else {
+            unreachable!("matched")
+        };
+        let after = body.split_off(k + 1);
+        let Some(Stmt {
+            kind: StmtKind::Labeled(label, block),
+            span,
+        }) = body.pop()
+        else {
+            unreachable!("found")
+        };
+        body.extend(block);
+        // What's written in the block before the loop, its iterator made,
+        // `$iter(row)`: in the block, where nothing after reads what it
+        // declares.
+        let within = |s: &Stmt| !s.span.is_none() && span.lo <= s.span.lo && s.span.hi <= span.hi;
+        let first = i - (stmts[..i].iter().rev()).take_while(|s| within(s)).count();
+        let read_after = (declared(&stmts[first..i]))
+            .any(|name| js::mentions_in(&after, name) > 0 || js::mentions_in(&stmts[i + 1..], name) > 0);
+        let first = if read_after { i } else { first };
+        let inside: Vec<Stmt> = stmts.drain(first..=i).collect();
+        let n = after.len();
+        stmts.splice(
+            first..first,
+            std::iter::once(StmtKind::Labeled(label, inside).at(span)).chain(after),
+        );
+        i = first + 1 + n;
+    }
 }
 
 /// Whether `inner`, in place of the statement at `i` of `stmts`, declares
