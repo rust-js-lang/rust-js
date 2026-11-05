@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/comparisons.rs",
     find: "    let text = |x: &Expr| matches!(x.kind, ExprKind::Str(_));\n",
     replace: "    let text = |_: &Expr| false;\n",
-    tests: ["test/snapshots.test.ts", "-t", "lexer"],
+    tests: ["test/lowering-branches.test.ts", "-t", "a negated comparison of text is the other comparison"],
   },
   {
     name: "turned-of-floats",

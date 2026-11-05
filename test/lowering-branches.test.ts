@@ -1473,3 +1473,24 @@ pub fn chained(n: u32) -> fn(u32) -> u32 {
   expect([lib.picked(4), lib.local(true, 2), lib.local(false, 2), lib.chained(1)(1)]).toEqual([8, 5, 9, 3]);
   expect(globals.rustJsFast).toBeUndefined();
 });
+
+// A negated comparison of text with a literal, a `char`'s or a `&str`'s, is
+// the other comparison, `c < "a"` of `!(c >= 'a')`, as JS orders strings by
+// code units as Rust orders them; a float's isn't, `NaN` (ADR 0371).
+test("a negated comparison of text is the other comparison", async () => {
+  const dir = fixture("negated-text");
+  writeFileSync(join(dir, "lib.rs"), `pub fn below(c: char) -> bool {
+    !(c >= 'a')
+}
+
+pub fn before(s: &str) -> bool {
+    !(s >= "m")
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  return c < "a";\n');
+  expect(js).toContain('  return s < "m";\n');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.below("A"), lib.below("q"), lib.before("apple"), lib.before("zebra")]).toEqual([true, false, true, false]);
+});
