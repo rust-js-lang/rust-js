@@ -17,6 +17,7 @@ import {
   $iter,
   $knowing,
   $lent,
+  $mapEnds,
   $next,
   $nextBack,
   $nthDropping,
@@ -241,5 +242,9 @@ function main() {
     ).take(2),
   );
   console.log(`[${ranged.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
+  // And of a slice's map, which isn't an array's items either: its
+  // source made knowing its back and its length where it's asked.
+  const mapped = Array.from($rev($enumerate($mapEnds($iter([1, 2, 3]), (x) => (x + 1) >>> 0))));
+  console.log(`[${mapped.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

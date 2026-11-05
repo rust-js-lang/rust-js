@@ -33,4 +33,8 @@ fn main() {
     println!("{back:?}");
     let ranged: Vec<(usize, u32)> = (5..9u32).fuse().enumerate().rev().take(2).collect();
     println!("{ranged:?}");
+    // And of a slice's map, which isn't an array's items either: its
+    // source made knowing its back and its length where it's asked.
+    let mapped: Vec<(usize, u32)> = [1u32, 2, 3].iter().map(|x| x + 1).enumerate().rev().collect();
+    println!("{mapped:?}");
 }
