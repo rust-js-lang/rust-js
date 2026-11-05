@@ -42,11 +42,11 @@ export const mutations: Mutation[] = [
   {
     name: "decisions-stronger-test-not-first",
     breaks:
-      "`(2, 2)`'s path is `a !== 1 && b === 2 && a === 2`, longer than the tree, which stays",
+      "a test of a value a later one says more of stays where it is, so `(1, _, _, _) | (_, 1, _, _) | ..`'s arm is `if (a === 1)` and then `if (b !== 1 && c !== 1 && d !== 1)`, not one `if (a === 1 || b === 1 || ..)`",
     file: "src/lower/mir/tidy/decisions/paths.rs",
     find: "            (Some(j), _) => out[i] = out.remove(j),\n",
     replace: "            (Some(_), _) => i += 1,\n",
-    tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(or_pattern_three_values|or_pattern_paths_absorbed).rs$"],
     snapshots: true,
   },
   {
