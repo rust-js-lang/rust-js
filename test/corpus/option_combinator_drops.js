@@ -157,8 +157,8 @@ function main() {
   }
   const kept = kept$1;
   console.log(`kept ${kept != null}`);
+  const d = make(3);
   try {
-    const d = make(3);
     let kept;
     try {
       if (d != null && even(d)) {
@@ -171,8 +171,8 @@ function main() {
     }
     const dropped = kept;
     console.log(`dropped ${dropped == null}`);
+    const value = make(0);
     try {
-      const value = make(0);
       let kept;
       try {
         if (value != null && even(value)) {
@@ -240,26 +240,26 @@ function main() {
         if (one.TAG === "One") {
           console.log(`one ${one._0[0]}`);
         }
+        const value$3 = make(0);
+        const fallback$1 = { TAG: "One", _0: [9] };
         try {
-          const value = make(0);
-          const fallback = { TAG: "One", _0: [9] };
           let mapped;
-          if (value != null) {
+          if (value$3 != null) {
             try {
-              mapped = { TAG: "One", _0: value };
+              mapped = { TAG: "One", _0: value$3 };
             } finally {
-              if (fallback.TAG === "One") {
-                dDrop_drop(fallback._0);
+              if (fallback$1.TAG === "One") {
+                dDrop_drop(fallback$1._0);
               }
             }
           } else {
-            mapped = fallback;
+            mapped = fallback$1;
           }
           const nothing = mapped;
           console.log(`nothing ${nothing.TAG === "One"}`);
+          const value = make(10);
+          const value$1 = [11];
           try {
-            const value = make(10);
-            const value$1 = [11];
             let mapped;
             if (value != null) {
               try {
@@ -288,10 +288,10 @@ function main() {
               const value$2 = make(15);
               const ok = value$2 != null ? { TAG: "Ok", _0: value$2 } : { TAG: "Err", _0: "none" };
               console.log(`ok ${ok.TAG === "Ok" ? ok._0[0] : 0}`);
+              const value$3 = make(0);
+              const err = value$3 != null ? { TAG: "Ok", _0: value$3 } : { TAG: "Err", _0: "none" };
+              console.log(`err ${err.TAG === "Err"}`);
               try {
-                const value = make(0);
-                const err = value != null ? { TAG: "Ok", _0: value } : { TAG: "Err", _0: "none" };
-                console.log(`err ${err.TAG === "Err"}`);
                 try {
                   const value = parse("16", dNamed);
                   let value$0$live$1 = true;

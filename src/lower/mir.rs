@@ -21,6 +21,7 @@ mod cfg;
 mod closures;
 mod dispatch;
 mod drops;
+pub(in crate::lower) use drops::dead_drops;
 mod entries;
 mod fields_read;
 mod hints;

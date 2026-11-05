@@ -79,32 +79,13 @@ function main() {
   const value = make(2);
   const kept = value != null ? [value] : undefined;
   console.log(`kept ${kept?.[0][0] ?? 0}`);
-  let tmp;
-  try {
-    tmp = make(0);
-  } catch (error) {
-    if (kept != null) {
-      dDrop_drop(kept[0]);
-    }
-    throw error;
-  }
-  const none = tmp != null ? [tmp] : undefined;
+  const value$1 = make(0);
+  const none = value$1 != null ? [value$1] : undefined;
   console.log(`none ${none == null}`);
-  let tmp$1;
-  try {
-    tmp$1 = make(3);
-  } catch (error) {
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    if (kept != null) {
-      dDrop_drop(kept[0]);
-    }
-    throw error;
-  }
+  const value$2 = make(3);
   let generic;
   try {
-    generic = wrapped(tmp$1);
+    generic = wrapped(value$2);
   } catch (error) {
     if (none != null) {
       dDrop_drop(none[0]);

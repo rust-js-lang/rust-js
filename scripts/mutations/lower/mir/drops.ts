@@ -311,4 +311,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_tried.rs$"],
     snapshots: true,
   },
+  {
+    name: "moved-out-drops-there",
+    breaks: "a `Drop` of what's surely moved out is taken to drop it, so what gives a temporary on may unwind (#717)",
+    file: "src/lower/mir/drops.rs",
+    find: "        if !there {\n            dead.insert(block);\n        }\n",
+    replace: "",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^drops_of_nothing_never_unwind.rs$"],
+  },
+  {
+    name: "quiet-drops-there",
+    breaks: "a `Drop` of what JS drops nothing of is taken to drop it, so what drops one may unwind (#717)",
+    file: "src/lower/mir/drops.rs",
+    find: "                if !drops(place.ty(&body.local_decls, tcx).ty))\n        })\n        .map(|(block, _)| block)\n        .collect();\n    // Of no other",
+    replace: "                if false && !drops(place.ty(&body.local_decls, tcx).ty))\n        })\n        .map(|(block, _)| block)\n        .collect();\n    // Of no other",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^drops_of_nothing_never_unwind.rs$"],
+  },
 ];

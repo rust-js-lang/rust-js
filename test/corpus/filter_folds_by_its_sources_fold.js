@@ -51,18 +51,9 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
   let result;
   try {
     try {
-      let next;
       while (true) {
-        try {
-          next = ownIterator_next(own);
-        } catch (error) {
-          if (acc$live) {
-            dropB?.(acc);
-          }
-          throw error;
-        }
-        if (next != null) {
-          const d = next;
+        const d = ownIterator_next(own);
+        if (d != null) {
           acc$live = false;
           const value = f(acc, d);
           acc$live = true;
@@ -70,8 +61,8 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
           continue;
         }
         try {
-          if (next != null) {
-            dDrop_drop(next);
+          if (d != null) {
+            dDrop_drop(d);
           }
         } catch (error) {
           if (acc$live) {

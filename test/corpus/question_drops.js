@@ -15,26 +15,14 @@ function step(d) {
 }
 
 function climb(d) {
-  let tmp;
-  try {
-    tmp = step(d);
-  } catch (error) {
+  const value = step(d);
+  if (value != null) {
     dDrop_drop(d);
-    throw error;
-  }
-  if (tmp != null) {
-    dDrop_drop(d);
-    d = tmp;
-    let tmp$1;
-    try {
-      tmp$1 = step(d);
-    } catch (error) {
+    d = value;
+    const value$1 = step(d);
+    if (value$1 != null) {
       dDrop_drop(d);
-      throw error;
-    }
-    if (tmp$1 != null) {
-      dDrop_drop(d);
-      d = tmp$1;
+      d = value$1;
       return d;
     }
   }
@@ -44,18 +32,16 @@ function climb(d) {
 }
 
 function first(d) {
+  const e = step(d);
   let result;
-  try {
-    const e = step(d);
-    if (e != null) {
-      result = (e[0] + d[0]) >>> 0;
-      dDrop_drop(e);
-      return result;
-    }
-    result = undefined;
-  } finally {
+  if (e != null) {
+    result = (e[0] + d[0]) >>> 0;
+    dDrop_drop(e);
     dDrop_drop(d);
+    return result;
   }
+  result = undefined;
+  dDrop_drop(d);
   return result;
 }
 

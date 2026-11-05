@@ -351,53 +351,36 @@ function main() {
   });
   run("chain", [9, 0], () => {
     const value = once(9);
-    let tmp;
-    try {
-      tmp = once(8);
-    } catch (error) {
-      dDrop_drop(value._held);
-      throw error;
-    }
+    const value$1 = once(8);
     return $collectDropping(
       $lazyChain(
         $closing($iterator(value, onceIterator_next), (it) => {
           dDrop_drop(it.of._held);
         }),
-        $closing($iterator(tmp, onceIterator_next), (it) => {
+        $closing($iterator(value$1, onceIterator_next), (it) => {
           dDrop_drop(it.of._held);
         }),
       ),
     ).length;
   });
-  run("flatten", [7, 0], () => {
-    let tmp$1;
-    const value = once(7);
-    let value$4$live = true;
-    let tmp;
-    try {
-      tmp = once(6);
-      value$4$live = false;
-      tmp$1 = [value, tmp];
-    } catch (error) {
-      if (value$4$live) {
-        dDrop_drop(value._held);
-      }
-      throw error;
-    }
-    return $collectDropping(
-      $flatMap(
-        $closing($iter(tmp$1), (intoIter) => {
-          $dropItems(intoIter, (item) => {
-            dDrop_drop(item._held);
-          });
-        }),
-        (item) =>
-          $closing($iterator(item, onceIterator_next), (it) => {
-            dDrop_drop(it.of._held);
+  run(
+    "flatten",
+    [7, 0],
+    () =>
+      $collectDropping(
+        $flatMap(
+          $closing($iter([once(7), once(6)]), (intoIter) => {
+            $dropItems(intoIter, (item) => {
+              dDrop_drop(item._held);
+            });
           }),
-      ),
-    ).length;
-  });
+          (item) =>
+            $closing($iterator(item, onceIterator_next), (it) => {
+              dDrop_drop(it.of._held);
+            }),
+        ),
+      ).length,
+  );
   run("flatten of a map", [107, 0], () => {
     const collect = $collectDropping(
       $flatMap(
@@ -435,22 +418,16 @@ function main() {
   run("none panics", [0, 0], () => {
     const v = ds();
     try {
-      const value = v.values().map((item) => dClone_clone(item));
-      const value$1 = once(7);
-      let tmp;
-      try {
-        tmp = once(8);
-      } catch (error) {
-        dDrop_drop(value$1._held);
-        throw error;
-      }
+      const value$1 = v.values().map((item) => dClone_clone(item));
+      const value = once(7);
+      const value$2 = once(8);
       const zipped = $lazyZip(
-        value,
+        value$1,
         $lazyChain(
-          $closing($iterator(value$1, onceIterator_next), (it) => {
+          $closing($iterator(value, onceIterator_next), (it) => {
             dDrop_drop(it.of._held);
           }),
-          $closing($iterator(tmp, onceIterator_next), (it) => {
+          $closing($iterator(value$2, onceIterator_next), (it) => {
             dDrop_drop(it.of._held);
           }),
         ),

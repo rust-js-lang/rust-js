@@ -31,4 +31,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^closure_stages_that_never_unwind.rs$"],
     snapshots: true,
   },
+  {
+    name: "drop-never-steps-on",
+    breaks: "a `Drop` that drops nothing is taken to may unwind, so a call of a function that gives a temporary on is wrapped in a `try` that only rethrows (#717)",
+    file: "src/lower/analysis/unwinding.rs",
+    find: "            TerminatorKind::Drop { .. } => dead.contains(&at),\n",
+    replace: "            TerminatorKind::Drop { .. } => false,\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^drops_of_nothing_never_unwind.rs$"],
+  },
 ];

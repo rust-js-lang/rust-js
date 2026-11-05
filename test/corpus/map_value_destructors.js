@@ -3,7 +3,6 @@
 import {
   $BTreeMap,
   $cmp,
-  $collectDropping,
   $drainAll,
   $entry,
   $extendMap,
@@ -27,13 +26,7 @@ function noisyDrop_drop(noisy) {
 function main() {
   const tree = $treeFrom(
     new $BTreeMap(),
-    $collectDropping(
-      $lazyRange(1, 7).map((k) => [k, [(k * 10) >>> 0]]),
-      (value) => {
-        noisyDrop_drop(value[1]);
-      },
-      true,
-    ),
+    $lazyRange(1, 7).map((k) => [k, [(k * 10) >>> 0]]),
     false,
     $cmp,
     noisyDrop_drop,

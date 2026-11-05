@@ -72,21 +72,15 @@ function main() {
   console.log(`from temp ${fromTemp.x[0]} ${fromTemp.y[0]} ${fromTemp.n}`);
 
   const noisy = [22];
+  const value = partialDefault_default();
+  const defaults = { x: noisy, y: value.y, n: value.n };
+  console.log(`drop ${value.x[0]}`);
+  console.log(`defaults ${defaults.x[0]} ${defaults.y[0]}`);
+
   try {
     try {
       try {
         try {
-          let tmp;
-          try {
-            tmp = partialDefault_default();
-          } catch (error) {
-            console.log(`drop ${noisy[0]}`);
-            throw error;
-          }
-          const defaults = { x: noisy, y: tmp.y, n: tmp.n };
-          console.log(`drop ${tmp.x[0]}`);
-          console.log(`defaults ${defaults.x[0]} ${defaults.y[0]}`);
-
           try {
             try {
               const value = rebuild({ x: [10], y: [11], n: 4 }, true);

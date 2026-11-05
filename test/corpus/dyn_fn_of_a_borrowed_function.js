@@ -103,13 +103,7 @@ function main() {
   }
   console.log(`${tmp$1}`);
   console.log("once dropped");
-  let count;
-  try {
-    count = counter("returned");
-  } catch (error) {
-    $dispose(greet);
-    throw error;
-  }
+  const count = counter("returned");
   const boxed = $borrowed(count);
   try {
     try {

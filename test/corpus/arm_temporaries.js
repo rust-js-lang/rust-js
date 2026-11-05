@@ -95,17 +95,17 @@ function first(k) {
   let result;
   if (k != null) {
     const held = ["held"];
+    const l = make(k, true);
+    l$0$live = true;
+    if (l != null) {
+      l$0$live = false;
+      console.log(`got ${l[0]} with ${held[0]}`);
+      result = $byteLen(l[0]);
+      loudDrop_drop(l);
+    } else {
+      result = 0;
+    }
     try {
-      const l = make(k, true);
-      l$0$live = true;
-      if (l != null) {
-        l$0$live = false;
-        console.log(`got ${l[0]} with ${held[0]}`);
-        result = $byteLen(l[0]);
-        loudDrop_drop(l);
-      } else {
-        result = 0;
-      }
       if (l != null) {
         if (l$0$live) {
           loudDrop_drop(l);

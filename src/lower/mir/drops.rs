@@ -116,6 +116,70 @@ fn quiet_drops<'tcx>(
         .collect()
 }
 
+/// rustc's dataflow of what `flow` may have there before each location, of
+/// `move_data`'s paths, as its `ElaborateDrops` asks it.
+fn maybe_inits<'a, 'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    flow: &'a mir::Body<'tcx>,
+    move_data: &'a MoveData<'tcx>,
+) -> rustc_mir_dataflow::ResultsCursor<'a, 'tcx, MaybeInitializedPlaces<'a, 'tcx>> {
+    MaybeInitializedPlaces::new(tcx, flow, move_data)
+        .exclude_inactive_in_otherwise()
+        .skipping_unreachable_unwind()
+        .iterate_to_fixpoint(tcx, flow, None)
+        .into_results_cursor(flow)
+}
+
+/// The blocks of the crate's `body` whose `Drop` drops nothing: of what JS
+/// drops nothing of, `drops` false, or of what's surely moved out by then,
+/// a temporary given on, `Style::Dead`'s, as rustc's elaboration drops
+/// neither. So it runs nothing and can't panic, which `never_unwinding`
+/// asks of each drop it meets (#717). The one answer of both, the
+/// dataflow `elaborated` reads.
+pub(in crate::lower) fn dead_drops<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    body: &mir::Body<'tcx>,
+    drops: &impl Fn(Ty<'tcx>) -> bool,
+) -> HashSet<BasicBlock> {
+    let quiet: HashSet<BasicBlock> = (body.basic_blocks.iter_enumerated())
+        .filter(|(_, data)| {
+            matches!(&data.terminator().kind, TerminatorKind::Drop { place, .. }
+                if !drops(place.ty(&body.local_decls, tcx).ty))
+        })
+        .map(|(block, _)| block)
+        .collect();
+    // Of no other `Drop`, no dataflow to run; nor of a body whose locals'
+    // facts aren't the crate's, a `const fn`'s read for a pattern, whose
+    // others are taken to drop what's there.
+    let others = (body.basic_blocks.iter_enumerated())
+        .any(|(block, data)| matches!(data.terminator().kind, TerminatorKind::Drop { .. }) && !quiet.contains(&block));
+    let local = (body.local_decls.iter()).all(|decl| matches!(decl.local_info, mir::ClearCrossCrate::Set(_)));
+    if !others || !local {
+        return quiet;
+    }
+    let move_data = MoveData::gather_moves(body, tcx, drops);
+    let unwinding = quiet_drops(tcx, body, drops);
+    let pruned = (!unwinding.is_empty()).then(|| without_unwinds(body, &unwinding));
+    let flow = pruned.as_ref().unwrap_or(body);
+    let mut inits = maybe_inits(tcx, flow, &move_data);
+    let mut dead = quiet;
+    for (block, data) in body.basic_blocks.iter_enumerated() {
+        let TerminatorKind::Drop { place, .. } = &data.terminator().kind else {
+            continue;
+        };
+        let LookupResult::Exact(path) = move_data.rev_lookup.find(place.as_ref()) else {
+            continue;
+        };
+        inits.seek_before_primary_effect(body.terminator_loc(block));
+        let mut there = false;
+        on_all_children_bits(&move_data, path, |child| there |= inits.get().contains(child));
+        if !there {
+            dead.insert(block);
+        }
+    }
+    dead
+}
+
 /// `body` with no unwind from the `Drop` ending each of `quiet`.
 fn without_unwinds<'tcx>(body: &mir::Body<'tcx>, quiet: &HashSet<BasicBlock>) -> mir::Body<'tcx> {
     let mut body = body.clone();
@@ -242,11 +306,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let pruned = (!quiet.is_empty()).then(|| without_unwinds(body, &quiet));
         let flow = pruned.as_ref().unwrap_or(body);
         let mut cursors = (!elaborated).then(|| {
-            let inits = MaybeInitializedPlaces::new(tcx, flow, &move_data)
-                .exclude_inactive_in_otherwise()
-                .skipping_unreachable_unwind()
-                .iterate_to_fixpoint(tcx, flow, None)
-                .into_results_cursor(flow);
+            let inits = maybe_inits(tcx, flow, &move_data);
             let uninits = MaybeUninitializedPlaces::new(tcx, flow, &move_data)
                 .mark_inactive_variants_as_uninit()
                 .iterate_to_fixpoint(tcx, flow, None)

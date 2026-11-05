@@ -77,13 +77,7 @@ function main() {
       dropList(list._1);
     }
   }
-  let tmp;
-  try {
-    tmp = many(10);
-  } catch (error) {
-    throw error;
-  }
-  const _two = [undefined, tmp];
+  const _two = [undefined, many(10)];
   console.log("two made");
   dropTwo(_two);
   const _first = [many(20), undefined];

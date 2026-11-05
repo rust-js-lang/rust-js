@@ -125,7 +125,7 @@ function main() {
     loudDrop_drop(item);
   }
 
-  const counted = $collectDropping(
+  const counted = Array.from(
     $cycleOf({ n: 2, tag: [1] }, counterClone_clone, counterIterator_next, false, (counter) => {
       loudDrop_drop(counter.tag);
     }).take(5),

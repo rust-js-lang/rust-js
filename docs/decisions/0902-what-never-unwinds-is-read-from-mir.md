@@ -112,7 +112,34 @@ own drops behind closures that can't panic. Mutations:
 (`lower/recognition/iterators.ts`); a closure of a generic function taken
 for a candidate is no mutation, as nothing shows it.
 
-One limit stays: `steps_on` refuses each `drop` terminator, a moved-out
+One limit stayed: `steps_on` refused each `drop` terminator, a moved-out
 temporary's too, so a function or a closure that builds a value of a type
-with a destructor from another, `Once { held: D(n), left: 1 }`, is taken
-for one that may unwind.
+with a destructor from another, `Once { held: D(n), left: 1 }`, was taken
+for one that may unwind; it steps on since #717 (below).
+
+## Amendment (2026-11-05): a drop that drops nothing (#717)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; the JS read worse.
+`steps_on` refused each `Drop` terminator, so a function that builds a
+value of a type with a destructor from a temporary it gives on, or
+drops what JS drops nothing of, was taken for one that may unwind, and its
+callers wrapped each call of it, `let tmp; try { tmp = many(10); } catch
+(error) { throw error; }`, or collected through it by `$collectDropping`.
+
+**A `Drop` that drops nothing steps on**: of a type whose drop JS runs
+nothing of, the analysis's `runs` (`ItemDrops`, the lowering's answer of
+the same), or of what's surely moved out by then, a temporary given on,
+as rustc's `MaybeInitializedPlaces` says before it. `mir::dead_drops` is
+the one answer, beside the lowering's elaboration, whose dataflow
+(`maybe_inits`) it shares, so both ask rustc's the same way. A body whose
+locals' facts aren't the crate's, a `const fn`'s read for a pattern,
+runs no dataflow, its drops of what's there taken to drop it; one with no
+other `Drop` runs none either.
+
+`test/corpus/drops_of_nothing_never_unwind.rs` checks both, a `String`
+given and dropped and a value given on, beside a value with a destructor,
+whose calls take no `try`. Otherwise what changes is the JS alone: 15 corpus
+cases lose the `try` around such calls, `const _two = [undefined, many(10)];`, the user's decision to
+drop them as no-ops. The mutations are `drop-never-steps-on`
+(`lower/analysis/unwinding.ts`) and `moved-out-drops-there` and
+`quiet-drops-there` (`lower/mir/drops.ts`).

@@ -4,6 +4,7 @@ import {
   $closing,
   $collectDropping,
   $dropEach,
+  $extendMap,
   $foldToArray,
   $folded,
   $held,
@@ -260,7 +261,7 @@ function main() {
     2,
     dDrop_drop,
   ).map((d) => [1, d]);
-  m = $mapFrom(new Map(), $folded(value$1), false, dDrop_drop);
+  m = $extendMap(new Map(), $folded(value$1), false, dDrop_drop);
   try {
     console.log(
       `reversed [${Array.from(m.values())

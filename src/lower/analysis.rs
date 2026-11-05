@@ -1321,7 +1321,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let type_facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given, &recognition, item_drops);
     let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
     let throwing = throwing::throwing_fns(tcx, &recognition, all_bodies);
-    let never_unwinding = unwinding::never_unwinding(tcx, &recognition, all_bodies);
+    let never_unwinding = unwinding::never_unwinding(tcx, &recognition, all_bodies, &runs);
     let caller_locations = caller_locations::caller_location_fns(tcx, all_bodies, &foreign);
     // A scope struct whose methods are given nothing besides their
     // arguments, no dictionary, fact, drop or location, as a function

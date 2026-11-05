@@ -14,7 +14,6 @@ import {
   $extendMap,
   $iter,
   $lazyRange,
-  $mapFrom,
   $range,
   $skipping,
   $sortedEntries,
@@ -49,7 +48,7 @@ function limit() {
 }
 
 function byNumber() {
-  return $mapFrom(
+  return $extendMap(
     new Map(),
     $lazyRange(0, 3).map((i) => [i, [i]]),
     false,
@@ -58,7 +57,7 @@ function byNumber() {
 }
 
 function byLoud() {
-  return $mapFrom(
+  return $extendMap(
     new $KeyMap(),
     $lazyRange(0, 3).map((i) => [[i], i]),
     false,
@@ -120,13 +119,7 @@ function main() {
 
   let tree = $treeFrom(
     new $BTreeMap(),
-    $collectDropping(
-      $lazyRange(0, 3).map((i) => [i, [i]]),
-      (value) => {
-        loudDrop_drop(value[1]);
-      },
-      true,
-    ),
+    $lazyRange(0, 3).map((i) => [i, [i]]),
     false,
     $cmp,
     loudDrop_drop,
@@ -190,13 +183,7 @@ function main() {
   console.log(`keys skipped [${skippedKeys.join(", ")}] ${arg$9}`);
   tree = $treeFrom(
     new $BTreeMap(),
-    $collectDropping(
-      $lazyRange(0, 3).map((i) => [i, [i]]),
-      (value) => {
-        loudDrop_drop(value[1]);
-      },
-      true,
-    ),
+    $lazyRange(0, 3).map((i) => [i, [i]]),
     false,
     $cmp,
     loudDrop_drop,

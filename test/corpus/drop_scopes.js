@@ -115,15 +115,7 @@ function main() {
     }
     throw error;
   }
-  let kept;
-  try {
-    kept = made("kept");
-  } catch (error) {
-    if (maybe$live) {
-      noisyDrop_drop(maybe);
-    }
-    throw error;
-  }
+  const kept = made("kept");
   let slot = ["old"];
   const noisy = ["new"];
   noisyDrop_drop(slot);

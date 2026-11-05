@@ -23,16 +23,23 @@ pub(super) fn never_unwinding<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: &Recognition<'_, 'tcx>,
     bodies: &[&Body<'tcx>],
+    runs: &dyn Fn(Ty<'tcx>, DefId) -> bool,
 ) -> HashSet<DefId> {
-    let candidates: Vec<(DefId, &mir::Body<'tcx>)> = (bodies.iter())
+    // Each one's `Drop`s that drop nothing, of what JS drops nothing of or
+    // of what's moved out by then (`mir::dead_drops`, #717).
+    let candidates: Vec<(DefId, &mir::Body<'tcx>, HashSet<mir::BasicBlock>)> = (bodies.iter())
         .filter(|body| candidate(tcx, body.def_id))
-        .filter_map(|body| Some((body.def_id, &body.mir.as_ref()?.body)))
+        .filter_map(|body| {
+            let mir = &body.mir.as_ref()?.body;
+            let dead = crate::lower::mir::dead_drops(tcx, mir, &|ty| runs(ty, body.def_id));
+            Some((body.def_id, mir, dead))
+        })
         .collect();
-    let mut never: HashSet<DefId> = candidates.iter().map(|&(id, _)| id).collect();
+    let mut never: HashSet<DefId> = candidates.iter().map(|&(id, ..)| id).collect();
     loop {
         let unwinding: Vec<DefId> = (candidates.iter())
-            .filter(|(id, mir)| never.contains(id) && !steps_on(tcx, recognition, &never, mir))
-            .map(|&(id, _)| id)
+            .filter(|(id, mir, dead)| never.contains(id) && !steps_on(tcx, recognition, &never, (mir, dead)))
+            .map(|&(id, ..)| id)
             .collect();
         if unwinding.is_empty() {
             return never;
@@ -61,32 +68,39 @@ fn candidate(tcx: TyCtxt<'_>, id: DefId) -> bool {
 }
 
 /// Whether each block of `mir` but its cleanup goes on without a panic:
-/// a jump, a test, a return, or a call of one of `never`'s or of std's
-/// formatting and printing of what can't fail to show. Not an assert, a
-/// bound's or a divisor's, nor a drop, nor what's unreachable.
+/// a jump, a test, a return, a `Drop` of `dead`'s, which drops nothing
+/// (#717), or a call of one of `never`'s or of std's formatting and
+/// printing of what can't fail to show. Not an assert, a bound's or a
+/// divisor's, nor another drop, nor what's unreachable.
 fn steps_on<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: &Recognition<'_, 'tcx>,
     never: &HashSet<DefId>,
-    mir: &mir::Body<'tcx>,
+    (mir, dead): (&mir::Body<'tcx>, &HashSet<mir::BasicBlock>),
 ) -> bool {
-    mir.basic_blocks.iter().filter(|block| !block.is_cleanup).all(|block| {
-        let Some(terminator) = &block.terminator else {
-            return true;
-        };
-        match &terminator.kind {
-            TerminatorKind::Goto { .. }
-            | TerminatorKind::SwitchInt { .. }
-            | TerminatorKind::Return
-            | TerminatorKind::FalseEdge { .. }
-            | TerminatorKind::FalseUnwind { .. } => true,
-            TerminatorKind::Call { func, .. } => match func.const_fn_def() {
-                Some((callee, args)) => never.contains(&callee) || std_never_unwinds(tcx, recognition, callee, args),
-                None => false,
-            },
-            _ => false,
-        }
-    })
+    mir.basic_blocks
+        .iter_enumerated()
+        .filter(|(_, block)| !block.is_cleanup)
+        .all(|(at, block)| {
+            let Some(terminator) = &block.terminator else {
+                return true;
+            };
+            match &terminator.kind {
+                TerminatorKind::Drop { .. } => dead.contains(&at),
+                TerminatorKind::Goto { .. }
+                | TerminatorKind::SwitchInt { .. }
+                | TerminatorKind::Return
+                | TerminatorKind::FalseEdge { .. }
+                | TerminatorKind::FalseUnwind { .. } => true,
+                TerminatorKind::Call { func, .. } => match func.const_fn_def() {
+                    Some((callee, args)) => {
+                        never.contains(&callee) || std_never_unwinds(tcx, recognition, callee, args)
+                    }
+                    None => false,
+                },
+                _ => false,
+            }
+        })
 }
 
 /// Whether std's `callee`, given `args`, never panics as rust-js runs it:
