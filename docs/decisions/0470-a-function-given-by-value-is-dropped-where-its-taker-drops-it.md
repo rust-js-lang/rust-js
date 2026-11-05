@@ -281,3 +281,29 @@ Mutations: `max-by-key-drop-unpassed` (`lower/iterators/ends.ts`), and
 `extreme-passed-drop-panic-drops-kept` (`runtime/max_by.ts`).
 `max-by-drops-none` and `extreme-by-listed` name their lines as they now
 read. Kind: missing case, both. Area: iterators.
+
+## Amended (2026-11-06, #789): a dropping key over the crate's iterator, closed
+
+Step 2's refusal, "`max_by_key` of a key function with a destructor over
+the crate's iterator with one", is gone. Std's `max_by_key` is
+`self.map(key).reduce(..)`: its fold drops the key, then what's left of the
+iterator, but where `reduce`'s first `next` gives nothing, or the key it
+calls panics, the `Map` drops whole, the iterator, then the key. The
+crate's iterator was dropped by its caller after the call, so the empty
+case's order couldn't be std's. **The iterator is given to `$maxByKey`
+closed, `$closing($iterator(it, next), drop)`**, as a `Vec`'s source is:
+`$consume` drops the key, then closes it, at the fold's end, and
+`$extremeByKey`'s `after` runs the key's drop after it closes, where the
+first step ends. One answer, `keyed_consumer_closes` (`mir/iter/collect.rs`,
+beside `consumed_function`, which it asks): `extreme_called` closes the iterator, and
+`dropped_after` drops nothing after the call. The user's decision, through
+m6-react: an existing form, no other changed.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's order is kept; a refusal of valid Rust lifted. Held by corpus
+`max_by_key_of_a_dropping_key_over_its_iterator`, against native Rust in
+both builds: `max_by_key` and `min_by_key`, empty and not, a key that
+panics on the first item and on a later one. Mutations
+`keyed-extreme-unclosed` (`mir/iter/collect.ts`) and
+`keyed-extreme-dropped-after` (`mir/iter.ts`). The guide's limitation is
+gone.

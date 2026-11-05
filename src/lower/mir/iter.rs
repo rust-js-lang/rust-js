@@ -47,7 +47,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let receiver_ty = arg_tys.first().copied().unwrap_or(self.tcx.types.unit);
         if !receiver_ty.is_ref()
             && (is_std_def(self.tcx, trait_id, StdItem::Iterator) || self.recognition().rfolds_what_it_consumes(def_id))
-            && self.dropped_after(def_id, receiver_ty, output, !values.is_empty(), span)?
+            && self.dropped_after(def_id, (receiver_ty, arg_tys), output, !values.is_empty(), span)?
         {
             let held = self.spill_marked(values.remove(0), made);
             values.insert(0, held.clone());
@@ -516,7 +516,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn dropped_after(
         &mut self,
         def_id: DefId,
-        receiver: Ty<'tcx>,
+        (receiver, arg_tys): (Ty<'tcx>, &[Ty<'tcx>]),
         output: Ty<'tcx>,
         given: bool,
         span: Span,
@@ -530,7 +530,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let iter_ty = self.reveal(receiver);
         let dropping =
             (self.iterator_item(iter_ty)).is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing);
-        if self.consumer_closes(self.recognition().iterator_method(def_id), iter_ty, false, dropping) {
+        let method = self.recognition().iterator_method(def_id);
+        if self.consumer_closes(method, iter_ty, false, dropping) || self.keyed_consumer_closes(method, arg_tys) {
             return Ok(false);
         }
         // What the crate's own `fold` is called by: it takes the iterator

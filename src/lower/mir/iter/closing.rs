@@ -222,7 +222,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether closing a `ty` drops what it holds, `closing_drop`'s: one
     /// that owns items with a destructor, a generic one whose drop its
     /// caller gives, or the crate's own with one.
-    fn closes_to_drop(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn closes_to_drop(&self, ty: Ty<'tcx>) -> bool {
         match self.recognition().owned_into_items(ty) {
             Some(item) => self.drops(item) != crate::lower::drops::Drops::Nothing,
             None => {

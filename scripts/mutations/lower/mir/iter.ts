@@ -579,8 +579,8 @@ export const mutations: Mutation[] = [
     name: "consumed-closed-dropped-again",
     breaks: "an iterator its consumer closes, the crate's with a `Drop` over items with one, is dropped after its `fold`, `for_each`, `count` or `last` too, so twice (#637)",
     file: "src/lower/mir/iter.rs",
-    find: "        if self.consumer_closes(self.recognition().iterator_method(def_id), iter_ty, false, dropping) {\n",
-    replace: "        if false && self.consumer_closes(self.recognition().iterator_method(def_id), iter_ty, false, dropping) {\n",
+    find: "        if self.consumer_closes(method, iter_ty, false, dropping) || self.keyed_consumer_closes(method, arg_tys) {\n",
+    replace: "        if false && self.consumer_closes(method, iter_ty, false, dropping) {\n",
     tests: ["test/corpus.test.ts", "-t", "^consumed_own_iterator_dropped_once.rs$"],
   },
   {
@@ -719,5 +719,13 @@ export const mutations: Mutation[] = [
     find: "                    || source_ty.is_some_and(|ty| self.adapted_hint_known(ty))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^lengths_and_backs_given_on.rs$|^adapter_size_hints.rs$"],
+  },
+  {
+    name: "keyed-extreme-dropped-after",
+    breaks: "`max_by_key` of a key that drops over the crate's iterator, given it closed, drops it after the call too, twice (#789)",
+    file: "src/lower/mir/iter.rs",
+    find: "        if self.consumer_closes(method, iter_ty, false, dropping) || self.keyed_consumer_closes(method, arg_tys) {\n",
+    replace: "        if self.consumer_closes(method, iter_ty, false, dropping) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^max_by_key_of_a_dropping_key_over_its_iterator.rs$"],
   },
 ];

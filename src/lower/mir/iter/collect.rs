@@ -143,6 +143,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || recognition.iterator_method(method) == Some(IterMethod::Collect) && self.collects_by_fold(output)
     }
 
+    /// Whether a keyed extreme, `max_by_key`'s or `min_by_key`'s, of the
+    /// crate's iterator with a destructor, `arg_tys[0]`, closes it, as
+    /// `consumer_closes` (closing.rs) says of what it answers: of a key moved into its
+    /// fold with a destructor (`consumed_function`), std's `Map` the key's
+    /// `reduce` folds drops the iterator, then the key, where its first step
+    /// ends, after the fold its key drops before what's left, so its drop is
+    /// the consumer's, there (#789).
+    pub(in crate::lower::mir) fn keyed_consumer_closes(
+        &self,
+        method: Option<IterMethod>,
+        arg_tys: &[Ty<'tcx>],
+    ) -> bool {
+        matches!(method, Some(IterMethod::MaxByKey(_)))
+            && arg_tys
+                .first()
+                .is_some_and(|&iter| self.is_user_iterator(iter) && self.closes_to_drop(iter))
+            && self.consumed_function(method, arg_tys)
+    }
+
     /// Whether std's consumer `method` of an `iter_ty` moves the function
     /// it's given last, of type `f`, into the fold it runs, which drops it
     /// before what's left of the iterator, as `fold(self, init, f)` drops
@@ -1065,16 +1084,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let item = item.ok_or_else(|| self.unsupported(span, "this iterator's items"))?;
         let f = arg();
         let ends = self.consumed_ends(Some(method), arg_tys, &f, span)?;
-        // Not a key that drops over the crate's iterator, which its caller
-        // drops after: std's `Map` it pairs them by drops its source, then
-        // the key, where `reduce`'s first step ends, after that drop.
-        if key.is_some() && ends.is_some() && self.is_user_iterator(arg_tys[0]) {
-            let name = if max { "max_by_key" } else { "min_by_key" };
-            return Err(self.unsupported(
-                span,
-                &format!("`{name}` of a key function with a destructor over the crate's iterator with one"),
-            ));
-        }
+        // Of a key that drops, over the crate's iterator with a destructor:
+        // closed, its drop the consumer's, which std's `Map` the key's
+        // `reduce` folds drops before the key where its first step ends,
+        // and after it where its fold does (`keyed_consumer_closes`, #789).
+        let it = match self.keyed_consumer_closes(Some(method), arg_tys) {
+            true => self.closing(it, arg_tys[0], span)?,
+            false => it,
+        };
         // Given as it is: its helper calls it with Rust's arguments alone,
         // `compare(kept, item)` or `key(item)`, as the recognizers' does.
         self.extreme_by_call((max, key), (it, f), item, ends, span)

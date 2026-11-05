@@ -906,4 +906,12 @@ export const mutations: Mutation[] = [
     replace: "        let stepped = given;\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_panic_drops_collected.rs$"],
   },
+  {
+    name: "keyed-extreme-unclosed",
+    breaks: "`max_by_key` of a key that drops over the crate's iterator with a destructor isn't given it closed, and nothing drops the iterator (#789)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            true => self.closing(it, arg_tys[0], span)?,\n",
+    replace: "            true => it,\n",
+    tests: ["test/corpus.test.ts", "-t", "^max_by_key_of_a_dropping_key_over_its_iterator.rs$"],
+  },
 ];
