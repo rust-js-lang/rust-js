@@ -483,9 +483,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the method's end drops it and JS doesn't: consumed, `collect()`, then
     /// dropped, by its own drop, the crate's own, arrayvec's `Drain`, or its
     /// caller's, a generic iterator's it's given (ADRs 0421, 0464). One whose
-    /// result holds it, `map(f)`, is the result's to drop, closed to drop it
-    /// (ADR 0465), or refused; of a generic one given no drop, its callers
-    /// give none with a destructor (ADR 0190).
+    /// result holds it, `map(f)`, is the result's to drop, closed to drop it,
+    /// as each std adapter is (ADR 0465); of a generic one given no drop, its
+    /// callers give none with a destructor (ADR 0190).
     fn dropped_after(
         &mut self,
         def_id: DefId,
@@ -559,12 +559,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if params_only {
             self.require_consumed_drops_none(receiver, output);
-        } else if self.is_user_iterator(receiver) && given && self.recognition().closed_on_drop(output).is_none() {
-            let name = self.tcx.item_name(def_id);
-            return Err(self.unsupported(
-                span,
-                &format!("`{name}` of an iterator with a destructor, from its MIR"),
-            ));
         }
         Ok(false)
     }

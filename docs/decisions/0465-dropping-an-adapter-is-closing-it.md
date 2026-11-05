@@ -2034,3 +2034,30 @@ that the line they mutate is the filter's `next` alone,
 (`runtime/find_dropping.ts`). An `inspect()` of items with a destructor
 can't be stepped from its back in the default build yet (#751), so the
 case has no `inspect().rfind`.
+
+## Amendment: what no adapter reaches any more is removed
+
+Once `scan` was closed to drop what it holds (ADR 0517's #741
+amendment), `closed_on_drop` names every std adapter that holds what it
+steps, and three answers lost their mutations' tests: they were asked
+whether anything still reaches them, by a build that marked each where it
+answered, over the corpus with each build and both iterator tables whole
+(ADRs 1090, 1092).
+
+- `mir/iter.rs`'s refusal of an adapter of the crate's iterator with a
+  destructor, "`{name}` of an iterator with a destructor, from its MIR",
+  where the adapter isn't closed to drop it: reached nowhere, removed.
+- `drops/types.rs`'s answer for an iterator adapter holding what has a
+  destructor that isn't closed to drop it, "a std type holding a value
+  with a destructor": reached nowhere, removed; a `LazyCell`'s and a type
+  with its own drop's stay.
+- `drops/types.rs`'s drop of std's struct compiled for this build by its
+  fields, and `mir/iter.rs`'s drop of an iterator after what holds it,
+  `holds`: both reached, thousands of times, and kept; what falls through
+  without them answers the same in each place reached, so the mutations
+  `compiled-struct-drops-refused` and `adapter-iterator-dropped` stay out,
+  as no test can tell them apart. So do `compiled-bodies-part-drops-refused`
+  and `closed-iterator-drops-unknown`, of `FlattenCompat`'s fields and an
+  adapter closed to drop what it holds: without them, what they answer
+  fell through to the refusal removed here; it falls through to the
+  struct's fields now, which drop the same.

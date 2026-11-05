@@ -3,16 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "compiled-bodies-part-drops-refused",
-    breaks:
-      "a private struct std's compiled struct holds, `FlattenCompat` of a `Flatten`, holding what has a destructor, is refused where its fields are what drops (ADR 0934)",
-    file: "src/lower/drops/types.rs",
-    find: "                    || crate::lower::recognition::has_compiled_bodies(tcx, adt.did()) =>\n",
-    replace:
-      "                    || false && crate::lower::recognition::has_compiled_bodies(tcx, adt.did()) =>\n",
-    tests: ["test/iterator-forms.test.ts", "-t", "^flat_map_drops with"],
-  },
-  {
     name: "uncounted-weak-drops",
     breaks:
       "an uncounted `Weak`'s drop is `$weakDrop` of the object itself, or of `null`, which throws (ADR 0843)",
@@ -124,9 +114,8 @@ export const mutations: Mutation[] = [
     name: "refcell-drops-refused",
     breaks: "a `RefCell` of a `Weak` is refused",
     file: "src/lower/drops/types.rs",
-    find: "                        || std(StdItem::LazyCell) =>",
-    replace:
-      "                        || std(StdItem::LazyCell) || std(StdItem::RefCell) =>",
+    find: "                    _ if own.is_some() || std(StdItem::LazyCell) =>",
+    replace: "                    _ if own.is_some() || std(StdItem::LazyCell) || std(StdItem::RefCell) =>",
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
   },
   {
@@ -196,15 +185,6 @@ export const mutations: Mutation[] = [
     find: "            ty::Alias(_, alias) if self.slot_of(*alias).is_some() => Drops::Runs,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
-  },
-  {
-    name: "closed-iterator-drops-unknown",
-    breaks:
-      "a `repeat` of a value with a destructor is a std type holding one, refused",
-    file: "src/lower/drops/types.rs",
-    find: "            ty::Adt(..) if let Some(held) = self.recognition.closed_on_drop(ty) => self.drops_in(held, walk),\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
   },
   {
     name: "dyn-drop-kept-of-rust-traits-only",
@@ -315,9 +295,9 @@ export const mutations: Mutation[] = [
     name: "cell-drops-refused",
     breaks: "a `Cell` or a `OnceCell` of a value with a destructor is refused",
     file: "src/lower/drops/types.rs",
-    find: "                        || std(StdItem::LazyCell) =>",
+    find: "                    _ if own.is_some() || std(StdItem::LazyCell) =>",
     replace:
-      "                        || std(StdItem::LazyCell) || std(StdItem::Cell) || std(StdItem::OnceCell) =>",
+      "                    _ if own.is_some() || std(StdItem::LazyCell) || std(StdItem::Cell) || std(StdItem::OnceCell) =>",
     tests: ["test/corpus.test.ts", "-t", "^cell_drops.rs$"],
   },
   {
