@@ -331,7 +331,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let` first assigned in a labeled block is declared before the loop around it",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "        StmtKind::Labeled(label, body) => {\n            alone && assigned_first(body, name, &within(past, label, true))\n                || assigned_on(&stmts[at..], name, false, past)\n        }\n",
+    find: "        StmtKind::Labeled(_, body) => {\n            alone && assigned_first(body, name, past) || assigned_on(&stmts[at..], name, false, past)\n        }\n",
     replace: "",
     tests: [
       "test/corpus.test.ts",
@@ -417,9 +417,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a labeled block MIR made of an `if` chain, each way out of which sets a `let`, isn't known to set it, so the `let` is hoisted out of the loop",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "            alone && assigned_first(body, name, &within(past, label, true))\n                || assigned_on(&stmts[at..], name, false, past)\n",
-    replace:
-      "            alone && assigned_first(body, name, &within(past, label, true))\n",
+    find: "            alone && assigned_first(body, name, past) || assigned_on(&stmts[at..], name, false, past)\n",
+    replace: "            alone && assigned_first(body, name, past)\n",
     tests: [
       "test/lowering-loops.test.ts",
       "-t",
@@ -439,17 +438,6 @@ export const mutations: Mutation[] = [
       "-t",
       "a let a loop's body declares",
     ],
-  },
-  {
-    name: "sunk-let-own-break-unknown",
-    breaks:
-      "a labeled block all that names a `let` sets, its `break` past where nothing reads it, isn't known to go there, so the `let` is hoisted out of the loop",
-    file: "src/lower/mir/tidy/bindings.rs",
-    find: "            alone && assigned_first(body, name, &within(past, label, true))\n",
-    replace:
-      "            alone && assigned_first(body, name, &within(past, label, false))\n",
-    tests: ["test/corpus.test.ts", "-t", "^or_bindings.rs$"],
-    snapshots: true,
   },
   {
     name: "sunk-let-loop-unset",

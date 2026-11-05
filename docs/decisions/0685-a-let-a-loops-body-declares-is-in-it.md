@@ -80,7 +80,24 @@ block's `break` goes where nothing reads it, as before.
 - `test/lowering-loops.test.ts`, "a let a loop's body declares, set in a
   chain's block, is in the body", run.
 - Mutations: `sunk-let-block-unset`, `sunk-let-if-falls-through-unset`,
-  `sunk-let-own-break-unknown`, `sunk-let-loop-unset`. A `break` past what
+  `sunk-let-loop-unset` (`sunk-let-own-break-unknown` went, below). A `break` past what
   reads a variable before it's set has none: Rust's own check that a
   variable is set before it's read leaves no program whose JS goes there,
   so it guards the rule, not a program.
+
+## Amendment: a labeled block's own `break`, which goes where nothing reads it, needs no entry in `past` (2026-11-05)
+
+`assigned_first`'s labeled block, all that names its `let`, read its body
+with the block's label added to `past` as going where nothing reads it,
+`within(past, label, true)`. That entry says nothing: `assigned_on`'s
+`break` of a label `past` doesn't name goes where it's fine too, and only
+an entry that goes where it's read unset, `false`, ever stops a way. The
+body is read with `past` as it is. The mutation `sunk-let-own-break-unknown`,
+the entry made `false`, survived main's check from 36d7f5184 on, and with
+it the whole corpus, every other test file a push runs and 420 generated
+programs (seeds 1000 to 1419) compile to the same JS. That is the case the
+paragraph above names: Rust's own check that a variable is set before it's
+read leaves no program whose JS goes there. The mutation goes with the
+entry (ADR 0093). The block's other way, every way out of it setting the
+`let` (`assigned_on`), is still held by `sunk-let-block-unset`. Without
+the whole first alternative, 9 of those 420 programs print other JS. Case: N.

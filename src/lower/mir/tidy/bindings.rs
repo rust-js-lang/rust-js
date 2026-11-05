@@ -984,12 +984,11 @@ pub(super) fn assigned_first(stmts: &[Stmt], name: &str, past: &[(String, bool)]
             alone && !looped_reads(&stmts[at], name) && assigned_first(body, name, past)
         }
         // A labeled block, all that names it, that does so, its `break`
-        // going where nothing reads it; or one each of whose ways out does,
-        // a `let`'s value MIR made in it, `l: { if (a) { x = 1; break l; } x
-        // = 2; } f(x)`.
-        StmtKind::Labeled(label, body) => {
-            alone && assigned_first(body, name, &within(past, label, true))
-                || assigned_on(&stmts[at..], name, false, past)
+        // going where nothing reads it, as one of a label `past` doesn't
+        // name does; or one each of whose ways out does, a `let`'s value
+        // MIR made in it, `l: { if (a) { x = 1; break l; } x = 2; } f(x)`.
+        StmtKind::Labeled(_, body) => {
+            alone && assigned_first(body, name, past) || assigned_on(&stmts[at..], name, false, past)
         }
         _ => false,
     }
