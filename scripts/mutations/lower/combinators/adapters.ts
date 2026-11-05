@@ -473,4 +473,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^scan_drops_its_function_and_state.rs$"],
   },
+  {
+    name: "step-by-in-place-of-panicking-steps",
+    breaks: "a `step_by()` of a source whose steps may panic is made in place as a filter by index, whose first step is inside its source's fold, so a panic there drops the accumulator before the consumer's closure, where std's `StepBy` drops the closure first (#773)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                    || self.steps_may_panic(receiver_ty.peel_refs())\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
+  },
 ];

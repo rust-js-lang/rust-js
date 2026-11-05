@@ -471,6 +471,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .is_some()
                         && (self.iterator_item(receiver_ty.peel_refs()))
                             .is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing)
+                    // And of a source whose steps may panic: std's `StepBy`
+                    // takes its first `next` while its fold's frame holds only
+                    // its parameters, so what drops with the consumer's `f`
+                    // drops before the accumulator, `$stepBy`'s
+                    // `$stepHolding`, where a filter's first step is inside
+                    // its source's fold, which drops the accumulator first
+                    // (#773).
+                    || self.steps_may_panic(receiver_ty.peel_refs())
                 {
                     let mut list = vec![items, n];
                     list.extend(self.item_drop_of(receiver_ty, span)?);

@@ -136,6 +136,23 @@ fn main() {
         });
     }));
     println!("step_by try_fold panicked {}", r.is_err());
+    // Of a `map()` whose function may panic, which the build that rewrites
+    // adapters would make in place as a filter by index (#773).
+    let r = catch_unwind(AssertUnwindSafe(|| {
+        let g = D("f");
+        vec![D("1"), D("2"), D("3")]
+            .into_iter()
+            .map(|x| {
+                assert!(x.0 != "1", "first");
+                x
+            })
+            .step_by(2)
+            .fold(D("acc"), move |a, _| {
+                let _g = &g;
+                a
+            });
+    }));
+    println!("mapped step_by fold panicked {}", r.is_err());
 
     // A panic of a `map()` past it, inside the source's fold: the
     // accumulator first.

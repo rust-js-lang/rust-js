@@ -422,8 +422,8 @@ function main() {
       boom(d, 4);
     }
     const x = $foldDropping(
-      $closing($iter(ds({ start: 0, end: 8 })), $dropEach(dDrop_drop))
-        .map((item) => {
+      $stepBy(
+        $closing($iter(ds({ start: 0, end: 8 })), $dropEach(dDrop_drop)).map((item) => {
           try {
             inspect(item);
           } catch (error) {
@@ -431,14 +431,10 @@ function main() {
             throw error;
           }
           return item;
-        })
-        .filter((item, i) => {
-          if (i % 2 === 0) {
-            return true;
-          }
-          dDrop_drop(item);
-          return false;
         }),
+        2,
+        dDrop_drop,
+      ),
       [],
       push,
       $dropEach(dDrop_drop),

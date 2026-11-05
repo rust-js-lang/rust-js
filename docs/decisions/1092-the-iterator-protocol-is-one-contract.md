@@ -642,8 +642,16 @@ closure was dropped after the call, outside the fold, and std's compiled
   its accumulator has a destructor that a stage's panic may strand
   (`stranded_drop`'s condition). Only then is the order of the two drops
   observable, and only the fold knows it.
-- **Still open:** the default build's in-place `step_by()`, a filter by
-  index, never reaches `$stepBy` (#773).
+- **The default build's in-place `step_by()` (#773).** It was a filter by
+  index, whose first step is inside its source's fold, so it never
+  reached `$stepBy`. Now `IterComb::StepBy` makes it `$stepBy` wherever
+  its source's steps may panic (`steps_may_panic`): the adapter is made
+  before its consumer is known, so it can't ask whether a fold strands an
+  accumulator. Of the corpus, `panic_mid_fold_drops.js`'s collect of a
+  `map(..).step_by(2)` changes form so. It's 4 lines fewer, which moves
+  the readability gate's like-for-like `$iter` and `renamed x$1` shares
+  up by 0.1 and 0.2 in 10,000 lines, blessed for this. Case: results
+  change.
 - Case: results change (ADR 0262). Held by
   `test/corpus/skip_while_first_step_unwinds.rs` in both builds, and by the
   conformance table's `skip_while | fold holding` and `skip_while |

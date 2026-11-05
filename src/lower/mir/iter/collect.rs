@@ -451,7 +451,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// type holds whose steps no JS shows, `unseen_steps_may_panic`'s; or
     /// what a std iterator does itself as it's stepped, a drop or a clone
     /// that may panic, `std_work_may_panic`'s.
-    pub(in crate::lower::mir) fn steps_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
+    pub(in crate::lower) fn steps_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
         self.panicking_steps(iter_ty) > 0 || self.unseen_steps_may_panic(iter_ty) || self.std_work_may_panic(iter_ty)
     }
 

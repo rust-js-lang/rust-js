@@ -369,6 +369,48 @@ function main() {
     }
   });
   console.log(`step_by try_fold panicked ${r.TAG === "Err"}`);
+  // Of a `map()` whose function may panic, which the build that rewrites
+  // adapters would make in place as a filter by index (#773).
+  r = $catchUnwind(() => {
+    let g$9$live = true;
+    const g = ["f"];
+    const value = [["1"], ["2"], ["3"]];
+    let stepBy;
+    let d;
+    try {
+      stepBy = $stepBy(
+        $closing($iter(value), $dropEach(dDrop_drop)).map((x) => {
+          if (x[0] === "1") {
+            try {
+              throw new Error("first");
+            } catch (error) {
+              dDrop_drop(x);
+              throw error;
+            }
+          }
+          return x;
+        }),
+        2,
+        dDrop_drop,
+      );
+      d = ["acc"];
+      g$9$live = false;
+    } catch (error) {
+      if (g$9$live) {
+        dDrop_drop(g);
+      }
+      throw error;
+    }
+    function f(a, _3) {
+      dDrop_drop(_3);
+      return a;
+    }
+    const value$1 = $consume(stepBy, "fold", d, f, dDrop_drop, () => {
+      dDrop_drop(g);
+    });
+    dDrop_drop(value$1);
+  });
+  console.log(`mapped step_by fold panicked ${r.TAG === "Err"}`);
 
   // A panic of a `map()` past it, inside the source's fold: the
   // accumulator first.
