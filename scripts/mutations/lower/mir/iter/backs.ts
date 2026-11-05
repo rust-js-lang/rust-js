@@ -12,19 +12,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^zip_by_index_of_holding_maps.rs$"],
   },
   {
-    name: "back-stepped-enumerate-fuse-unwrapped",
-    breaks:
-      "`rev()` of an enumeration of std's compiled `Fuse` the crate steps from its back gives `$enumerate` the struct as it is: `TypeError: enumerated.iter.len is not a function` (#383)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "                    None if self.stepped_from_its_back(output)\n                        && let Some(knowing)",
-    replace: "                    None if false\n                        && let Some(knowing)",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^enumerate_of_droppers_from_back.rs$",
-    ],
-  },
-  {
     name: "enumerate-of-a-slice-nth-mapped",
     breaks:
       "an `enumerate()` of a reversed `Vec` is a JS `map`, whose `nth` steps each item back to front, not the source's one slice (#277)",

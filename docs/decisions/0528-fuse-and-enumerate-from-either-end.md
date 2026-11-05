@@ -168,6 +168,17 @@ drop them though what it gives has none, is recorded stepped from its back
 where it is (`back_stepped_adapter`), so it's made knowing it where it's
 made.
 
+#383's rule, an enumeration of items with a destructor recorded stepped
+from its back, is gone, and so is backs.rs's arm giving one of a compiled
+`Fuse` `knowing_held` of it, which `as_exact_size`, the next arm, asks
+first. #383's shape, `rev()` of an enumeration of a `Vec<Loud>`'s `fuse()`
+beside one held in a variable, flushed into a variable of its own
+(`enumerate_of_droppers_from_back`), is `$enumerate(src)` read as one
+where it's reversed, made knowing its back where it's made. Each rule
+removed changed no answer; `enumerate_made_in_place_from_back`'s
+`rev().map(f)` reads `$rev($enumerate(..)).map(f)` in place of
+`$mapEnds($rev($enumerate(..)), f)` (decision 1: no code no case needs).
+
 Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; a
 refusal of valid Rust lifted. Held by corpus
 `enumerate_made_knowing_read_again`, against native Rust in both builds.
