@@ -569,3 +569,17 @@ Step 1 adds the value, and its makers write through it: `stepped_ends`,
 `stepped_range_by`, `given_js_iterator`, `knowing_held`, `closed_by` and
 `lent_iterator`. No reader changes yet, and the JS is byte-identical.
 `$holding`'s maker, `closing_function`, stays m6-lily's.
+
+Step 2 reads a range's bounds through the value. `stepped_range` and
+`stepped_from` move to value.rs and answer only of a call `emit()` marked
+`Known::IterRange`. A range's bounds read, `it.of`, is value.rs's
+`bounds_of`, and tidy's `reversed_step` folds it through `bounds_read`, never
+by matching a member named `of`. Tidy's rewrites that make a range stepped
+from its end, `reversed_inward`'s and `reversed_step`'s `.drop(n)`, make it
+through `stepped_range_by`, so what they make is marked as the lowering's is.
+A value made again of the same call keeps what its maker marked it
+(value.rs's `its_facts`): `iterated`, `from_iterator` and tidy's `unarrayed`
+rebuild the call they're given without what else was known of it, and had
+dropped the marks with it. Then a `for` over `(a..b).rev()` was no longer
+the `for` that counts down.
+

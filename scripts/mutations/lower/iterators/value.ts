@@ -21,4 +21,48 @@ export const mutations: Mutation[] = [
     replace: "            let _ = passes_each;\n",
     tests: ["test/corpus.test.ts", "-t", "^(nth_passes_a_slice_or_each|rfold_and_rev_close_what_they_step|linked_list_into_iter|skip_drops_what_it_passes_first).rs$"],
   },
+  {
+    name: "range-from-uncounted",
+    breaks:
+      "`for i in 0.. { let Some(&x) = v.get(i) else { break }; .. }` stays `for (const i of $iterator({ start: 0 }, ..)) { if (v[i] == null) { break; } .. }`, not `for (let i = 0; i < v.length; i++)` (rd260)",
+    file: "src/lower/iterators/value.rs",
+    find: "        (_, [_, _]) if e.facts.has(Known::IterRange) => (e, 1),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^stepped_index_to_length.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "mir-range-inclusive-lazy",
+    breaks:
+      "`(1..=n).collect()` from MIR stays `Array.from($iterator(\u2026, $rangeInclusiveNext))`, not `$range(1, n + 1)`",
+    file: "src/lower/iterators/value.rs",
+    find: "    let (inclusive, back) = [(false, false), (false, true), (true, false), (true, true)]\n",
+    replace:
+      "    let (inclusive, back) = [(false, false), (false, true), (true, true)]\n",
+    tests: [
+      "test/lowering-iterators.test.ts",
+      "-t",
+      "a range mapped and collected",
+    ],
+  },
+  {
+    name: "range-unmarked",
+    breaks:
+      "a range's numbers aren't marked so where they're made, so what reads their bounds, `(0..n).rev().nth(k)`'s `$rangeNthBack`, a `for` that counts, `$lazyRange(a, b)`, never finds them",
+    file: "src/lower/iterators/value.rs",
+    find: "                made(\"$iterator\", vec![range, step], &[Known::IterStepped, Known::IterRange])\n",
+    replace: "                made(\"$iterator\", vec![range, step], &[Known::IterStepped])\n",
+    tests: ["test/corpus.test.ts", "-t", "^(range_own_steps|range_steps_known|stepped_index_to_length).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "value-facts-dropped-where-remade",
+    breaks:
+      "a value made again of the same call, `for (x of e)`'s `e`, loses what its maker marked it, so `for (const i of $iterator({ start, end }, $rangeNextBack))` isn't the `for` that counts down",
+    file: "src/lower/iterators/value.rs",
+    find: "        .filter(|&fact| facts.has(fact))\n",
+    replace: "        .filter(|&fact| facts.has(fact) && false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(rev_loops|range_rev_from_computed).rs$"],
+    snapshots: true,
+  },
 ];

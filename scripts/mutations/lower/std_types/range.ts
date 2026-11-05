@@ -233,9 +233,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a reversed range made in place is read through its `$iterator`'s `.of`, not its bounds",
     file: "src/lower/std_types/range.rs",
-    find: '        js::ExprKind::Member(made, field) if field == "of" => {\n',
-    replace:
-      '        js::ExprKind::Member(made, field) if field == "of" && false => {\n',
+    find: "    if let Some(range) = crate::lower::iterators::bounds_read(e) {\n",
+    replace: "    if let Some(range) = crate::lower::iterators::bounds_read(e).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
     snapshots: true,
   },
@@ -286,8 +285,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a held reversed range's bounds are read as one made in place's, `.of`",
     file: "src/lower/std_types/range.rs",
-    find: '                true => "of",\n                false => "iter",',
-    replace: '                true => "of",\n                false => "of",',
+    find: '                false => Expr::member(first.clone(), "iter"),',
+    replace: "                false => crate::lower::iterators::bounds_of(first.clone()),",
     tests: ["test/corpus.test.ts", "-t", "^std_rev.rs$"],
   },
   {

@@ -955,7 +955,7 @@ pub(super) fn unarrayed(e: Expr) -> Expr {
             args.pop().expect("one")
         }
         kind => Expr {
-            facts: js::Facts::NONE,
+            facts: crate::lower::iterators::its_facts(e.facts),
             kind,
             span: e.span,
         },

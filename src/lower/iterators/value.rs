@@ -5,7 +5,8 @@
 //! closed, lent or a range's numbers is what its maker said, not what a
 //! helper's name looks like.
 
-use crate::js::{Expr, Known};
+use crate::js::{self, Expr, Known};
+use crate::lower::std_types::range::RangeKind;
 
 /// What a JS iterator is made as, each its maker's.
 pub(in crate::lower) enum Form {
@@ -128,10 +129,128 @@ impl IterValue {
     }
 }
 
+/// Each fact `emit` marks a value's JS with.
+const VALUE_FACTS: [Known; 5] = [
+    Known::IterStepped,
+    Known::IterRange,
+    Known::IterKnowing,
+    Known::IterClosing,
+    Known::IterLent,
+];
+
+/// Of `facts`, those `emit` marked a value's JS with: what a value made
+/// again of the same call keeps, `for (x of e)`'s `e` without what else was
+/// known of it (`iterated`).
+pub(in crate::lower) fn its_facts(facts: js::Facts) -> js::Facts {
+    (VALUE_FACTS.into_iter())
+        .filter(|&fact| facts.has(fact))
+        .fold(js::Facts::NONE, js::Facts::with)
+}
+
+/// A range's numbers as its maker wrote them (`Form::Range`), `$iterator({
+/// start: a, end: b }, $rangeNext)`: its bounds, made where it's stepped,
+/// whether its end is in it, `a..=b`'s, whether it's stepped from its end,
+/// and its step.
+pub(in crate::lower) struct SteppedRange<'e> {
+    /// The range itself, `{ start: a, end: b }`.
+    pub(in crate::lower) range: &'e Expr,
+    pub(in crate::lower) start: &'e Expr,
+    pub(in crate::lower) end: &'e Expr,
+    pub(in crate::lower) step: &'e Expr,
+    pub(in crate::lower) inclusive: bool,
+    pub(in crate::lower) back: bool,
+}
+
+/// `e`'s range, where it's a range's numbers its maker wrote
+/// (`Known::IterRange`), of an `a..b` or an `a..=b` made there, stepped from
+/// either end by its kind's step (`RangeKind::step`). `None` of another, or
+/// of a range a variable holds.
+pub(in crate::lower) fn stepped_range(e: &Expr) -> Option<SteppedRange<'_>> {
+    if !e.facts.has(Known::IterRange) {
+        return None;
+    }
+    let js::ExprKind::Call(_, args) = &e.kind else {
+        return None;
+    };
+    let [range, step] = &args[..] else {
+        return None;
+    };
+    let (js::ExprKind::Object(bounds, ..), Some(next)) = (&range.kind, step.helper_name()) else {
+        return None;
+    };
+    let [js::Prop::Field(s, start), js::Prop::Field(f, end)] = &bounds[..] else {
+        return None;
+    };
+    let (inclusive, back) = [(false, false), (false, true), (true, false), (true, true)]
+        .into_iter()
+        .find(|&(inclusive, back)| {
+            let kind = if inclusive {
+                RangeKind::Inclusive
+            } else {
+                RangeKind::Exclusive
+            };
+            kind.step(back) == Some(next)
+        })?;
+    ((s.as_str(), f.as_str()) == ("start", "end")).then_some(SteppedRange {
+        range,
+        start,
+        end,
+        step,
+        inclusive,
+        back,
+    })
+}
+
+/// What `it`, a range's numbers, steps, its bounds, as the runtime's
+/// iterator holds them, `it.of` (ADR 0545's #721 note): what a range's own
+/// `nth`, `last` and `count` are of, of one stepped from its end.
+pub(in crate::lower) fn bounds_of(it: Expr) -> Expr {
+    Expr::member(it, "of")
+}
+
+/// The range a `bounds_of` reads, of a range's numbers made there: what a
+/// read of its bounds is, the bounds themselves.
+pub(in crate::lower) fn bounds_read(e: &Expr) -> Option<SteppedRange<'_>> {
+    match &e.kind {
+        js::ExprKind::Member(made, field) if field == "of" => stepped_range(made),
+        _ => None,
+    }
+}
+
+/// Of `(s..).step_by(n)`, made where it's stepped, `$stepBy($iterator({
+/// start: s }, $rangeFromStep(..)), n)`: `s` and `n`, a whole number from
+/// 1 up, which every step adds (rd260); of `s..` itself, `$iterator({
+/// start: s }, $rangeFromStep(..))`, `s` and 1.
+pub(in crate::lower) fn stepped_from(e: &Expr) -> Option<(&Expr, i128)> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    let (made, n) = match (callee.helper_name(), &args[..]) {
+        (Some("$stepBy"), [made, n]) => (made, n.as_int().filter(|&n| n >= 1)?),
+        (_, [_, _]) if e.facts.has(Known::IterRange) => (e, 1),
+        _ => return None,
+    };
+    let js::ExprKind::Call(_, parts) = &made.kind else {
+        return None;
+    };
+    let ([range, next], true) = (&parts[..], made.facts.has(Known::IterRange)) else {
+        return None;
+    };
+    let js::ExprKind::Call(stepper, _) = &next.kind else {
+        return None;
+    };
+    let (js::ExprKind::Object(bounds, ..), Some("$rangeFromStep")) = (&range.kind, stepper.helper_name()) else {
+        return None;
+    };
+    let [js::Prop::Field(s, start)] = &bounds[..] else {
+        return None;
+    };
+    (s == "start").then_some((start, n))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::js;
 
     fn var(name: &str) -> Expr {
         Expr::var(name)

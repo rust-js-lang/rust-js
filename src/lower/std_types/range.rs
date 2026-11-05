@@ -151,11 +151,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // std's `Rev`, what it holds, `iter` (ADR 0871).
         if reversed.is_some() {
             let first = values.first_mut()?;
-            let bounds = match self.frame.facts.in_place_adapter_steps.contains(&span) {
-                true => "of",
-                false => "iter",
+            *first = match self.frame.facts.in_place_adapter_steps.contains(&span) {
+                true => crate::lower::iterators::bounds_of(first.clone()),
+                false => Expr::member(first.clone(), "iter"),
             };
-            *first = Expr::member(first.clone(), bounds);
         }
         Some(Expr::call_helper(name, values))
     }
@@ -656,14 +655,10 @@ pub(in crate::lower) fn range_steps(e: &mut Expr) {
 /// end is a number, not a BigInt `n` isn't; and `.step_by(n)` of it, its
 /// numbers from its end, `$lazyRangeBack(a, b, n)` (#163).
 fn reversed_step(e: &Expr) -> Option<Expr> {
+    if let Some(range) = crate::lower::iterators::bounds_read(e) {
+        return Some(range.range.clone());
+    }
     match &e.kind {
-        js::ExprKind::Member(made, field) if field == "of" => {
-            crate::lower::iterators::stepped_range(made)?;
-            let js::ExprKind::Call(_, args) = &made.kind else {
-                unreachable!("a stepped range is a call")
-            };
-            Some(args[0].clone())
-        }
         // `step_by(n)` of one, `$stepBy(range, n)`: its numbers from its end,
         // `n` apart (#231).
         js::ExprKind::Call(callee, args)
@@ -691,14 +686,11 @@ fn reversed_step(e: &Expr) -> Option<Expr> {
                 (Some(end), Some(n)) => Expr::int(end - n),
                 _ => Expr::bin(Op::Sub, range.end.clone(), n.clone()),
             };
-            let js::ExprKind::Call(stepper, made_args) = &made.kind else {
-                unreachable!("a stepped range is a call")
-            };
             let bounds = Expr::object(vec![
                 Prop::Field("start".to_string(), range.start.clone()),
                 Prop::Field("end".to_string(), end),
             ]);
-            Some(Expr::call((**stepper).clone(), vec![bounds, made_args[1].clone()]))
+            Some(crate::lower::iterators::stepped_range_by(bounds, range.step.clone()))
         }
         _ => None,
     }

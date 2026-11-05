@@ -620,7 +620,7 @@ fn reversed_inward(e: &Expr) -> Option<Expr> {
             false => crate::lower::std_types::range::RangeKind::Exclusive,
         };
         let back = Expr::helper(kind.step(true)?);
-        return Some(Expr::call((**callee).clone(), vec![args[0].clone(), back]));
+        return Some(crate::lower::iterators::stepped_range_by(range.range.clone(), back));
     }
     let js::ExprKind::Member(base, method) = &callee.kind else {
         return None;

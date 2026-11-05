@@ -11,7 +11,9 @@ mod knowing;
 mod stepping;
 mod value;
 
-pub(in crate::lower) use self::value::{Form, IterValue};
+pub(in crate::lower) use self::value::{
+    Form, IterValue, bounds_of, bounds_read, its_facts, stepped_from, stepped_range,
+};
 pub(super) use self::{eager::*, in_place::*};
 
 use super::calls::Call;
@@ -581,7 +583,7 @@ pub(super) fn from_iterator(e: Expr) -> Result<Expr, Expr> {
     match e.kind {
         js::ExprKind::Call(_, mut args) if from => Ok(args.pop().expect("one")),
         kind => Err(Expr {
-            facts: js::Facts::NONE,
+            facts: its_facts(e.facts),
             kind,
             span: e.span,
         }),
@@ -635,47 +637,6 @@ pub(in crate::lower) fn reversal<'e>(e: &'e Expr, range_back: Option<&str>) -> O
     }
 }
 
-/// A range's numbers as `stepped_by` steps them, `$iterator({ start: a,
-/// end: b }, $rangeNext)`: its bounds, whether its end is in it, `a..=b`'s,
-/// and whether it's stepped from its end.
-pub(in crate::lower) struct SteppedRange<'e> {
-    pub(in crate::lower) start: &'e Expr,
-    pub(in crate::lower) end: &'e Expr,
-    pub(in crate::lower) inclusive: bool,
-    pub(in crate::lower) back: bool,
-}
-
-/// Of `(s..).step_by(n)`, made where it's stepped, `$stepBy($iterator({
-/// start: s }, $rangeFromStep(..)), n)`: `s` and `n`, a whole number from
-/// 1 up, which every step adds (rd260); of `s..` itself, `$iterator({
-/// start: s }, $rangeFromStep(..))`, `s` and 1.
-pub(in crate::lower) fn stepped_from(e: &Expr) -> Option<(&Expr, i128)> {
-    let js::ExprKind::Call(callee, args) = &e.kind else {
-        return None;
-    };
-    let (made, n) = match (callee.helper_name(), &args[..]) {
-        (Some("$stepBy"), [made, n]) => (made, n.as_int().filter(|&n| n >= 1)?),
-        (Some("$iterator"), [_, _]) => (e, 1),
-        _ => return None,
-    };
-    let js::ExprKind::Call(iterator, parts) = &made.kind else {
-        return None;
-    };
-    let (Some("$iterator"), [range, next]) = (iterator.helper_name(), &parts[..]) else {
-        return None;
-    };
-    let js::ExprKind::Call(stepper, _) = &next.kind else {
-        return None;
-    };
-    let (js::ExprKind::Object(bounds, ..), Some("$rangeFromStep")) = (&range.kind, stepper.helper_name()) else {
-        return None;
-    };
-    let [js::Prop::Field(s, start)] = &bounds[..] else {
-        return None;
-    };
-    (s == "start").then_some((start, n))
-}
-
 /// Of `it.step_by(n)`, made where it's stepped, `$stepBy(it, n)`: `it`
 /// and `n`, a whole number from 1 up to `2^31`, which every step adds.
 pub(in crate::lower) fn stepped_by(e: &Expr) -> Option<(&Expr, i128)> {
@@ -689,37 +650,6 @@ pub(in crate::lower) fn stepped_by(e: &Expr) -> Option<(&Expr, i128)> {
     Some((it, n))
 }
 
-pub(in crate::lower) fn stepped_range(e: &Expr) -> Option<SteppedRange<'_>> {
-    let js::ExprKind::Call(callee, args) = &e.kind else {
-        return None;
-    };
-    let (Some(iterator), [range, next]) = (callee.helper_name(), &args[..]) else {
-        return None;
-    };
-    let (js::ExprKind::Object(bounds, ..), Some(next)) = (&range.kind, next.helper_name()) else {
-        return None;
-    };
-    let [js::Prop::Field(s, start), js::Prop::Field(f, end)] = &bounds[..] else {
-        return None;
-    };
-    let (inclusive, back) = [(false, false), (false, true), (true, false), (true, true)]
-        .into_iter()
-        .find(|&(inclusive, back)| {
-            let kind = if inclusive {
-                RangeKind::Inclusive
-            } else {
-                RangeKind::Exclusive
-            };
-            kind.step(back) == Some(next)
-        })?;
-    (iterator == "$iterator" && (s.as_str(), f.as_str()) == ("start", "end")).then_some(SteppedRange {
-        start,
-        end,
-        inclusive,
-        back,
-    })
-}
-
 /// What `for (x of e)` steps through of `e`, `$iter(xs)`'s or
 /// `Iterator.from(xs)`'s: `xs` itself.
 pub(in crate::lower) fn iterated(e: Expr) -> Expr {
@@ -729,7 +659,7 @@ pub(in crate::lower) fn iterated(e: Expr) -> Expr {
             args.pop().expect("one")
         }
         kind => Expr {
-            facts: js::Facts::NONE,
+            facts: its_facts(e.facts),
             kind,
             span: e.span,
         },
