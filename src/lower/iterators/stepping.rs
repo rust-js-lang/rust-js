@@ -571,4 +571,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (self.krate.cloned.iter())
                 .any(|&cloned| adapter(cloned) && self.instance_of(generic_closures(cloned), generic_closures(ty)))
     }
+
+    /// `value` of type `ty`, a `step_by(n)` made here, `src.filter((_, i) =>
+    /// i % n === 0)` or by its source's `nth`, `$stepBy(src, n)`, a range's
+    /// (#231), or `filter` of what drops each it passes over (#718):
+    /// `$stepByEnds` of its source made knowing its back and its
+    /// length, which it finds its last and counts by, as std's `StepBy`
+    /// does, double-ended and exact-sized where its source is exact-sized.
+    /// Of a `Vec`'s items with a destructor, `$closing` of their `$iter`,
+    /// each it passes over dropped as std's `nth_back` of its source drops
+    /// it (#718). `None` of another.
+    pub(super) fn step_by_knowing(&mut self, value: &Expr, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let Some(source) = crate::lower::recognition::stepped_by_source(self.tcx, ty) else {
+            return Ok(None);
+        };
+        let parts = match (&value.kind, crate::lower::iterators::stepped_every_parts(value)) {
+            (_, Some([source_value, step])) => Some((source_value.clone(), step.clone())),
+            (js::ExprKind::Call(callee, args), None)
+                if let js::ExprKind::Member(source_value, method) = &callee.kind
+                    && method == "filter"
+                    && let [f] = args.as_slice() =>
+            {
+                crate::lower::std_types::range::every_nth(f).map(|step| ((**source_value).clone(), step))
+            }
+            _ => None,
+        };
+        let Some((source_value, step)) = parts else {
+            return Ok(None);
+        };
+        let source = source.peel_refs();
+        let source_value = crate::lower::iterators::stepped_value(&source_value).unwrap_or(source_value);
+        let source_value = self.as_exact_size(source_value, source, true, span)?;
+        Ok(Some(Expr::call_helper("$stepByEnds", vec![source_value, step])))
+    }
 }

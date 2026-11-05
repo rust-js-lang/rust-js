@@ -13,10 +13,10 @@ mod value;
 
 pub(in crate::lower) use self::value::{
     EnumeratedForm, Form, IterValue, bounds_of, bounds_read, closed, closed_parts, enumerated, enumerated_knowing,
-    enumerated_of, gives_in_place, gives_made_in_place, held_by_its_owner, is_knowing, is_lent, is_range_stepped,
-    is_reversed, iterator_parts, its_facts, lazily_made, made_knowing_its_back, repeating_n, repeating_n_parts,
-    reversed_by, reversed_of, stepped_every, stepped_every_parts, stepped_from, stepped_range, stepped_value, steps,
-    unlent, was_made_knowing_its_back, zip_parts,
+    enumerated_of, gives_in_place, gives_made_in_place, held_by_its_owner, held_of, is_knowing, is_lent,
+    is_range_stepped, is_reversed, iterator_parts, its_facts, lazily_made, made_knowing_its_back, repeating_n,
+    repeating_n_parts, reversed_by, reversed_of, stepped_every, stepped_every_parts, stepped_from, stepped_range,
+    stepped_value, steps, unlent, was_made_knowing_its_back, zip_parts,
 };
 pub(super) use self::{eager::*, in_place::*};
 

@@ -390,4 +390,12 @@ export const mutations: Mutation[] = [
     replace: '                let method = "lt";\n',
     tests: ["test/corpus.test.ts", "-t", "^range_is_empty_ordered.rs$"],
   },
+  {
+    name: "every-nth-of-droppers-unread",
+    breaks: "`step_by(n)`'s filter of items with a destructor, which drops each it passes over, isn't read as one, so its back step is refused (#718)",
+    file: "src/lower/std_types/range.rs",
+    find: "        ] if matches!(passed.kind, js::ExprKind::Bool(false))\n",
+    replace: "        ] if false && matches!(passed.kind, js::ExprKind::Bool(false))\n",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_stepped_from_its_back.rs$"],
+  },
 ];

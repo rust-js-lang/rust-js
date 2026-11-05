@@ -354,15 +354,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^rev_chain.rs$"],
   },
   {
-    name: "step-by-made-unstepped",
-    breaks: "`rev()` of a `step_by` made in place is refused",
-    file: "src/lower/iterators/knowing.rs",
-    find: "            && let Some(step) = crate::lower::std_types::range::every_nth(f)\n",
-    replace:
-      "            && let Some(step) = crate::lower::std_types::range::every_nth(f).filter(|_| false)\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_step_by.rs$"],
-  },
-  {
     name: "flatten-not-double-ended",
     breaks:
       "a flatten stepped from its back is refused, not made `$flattenEnds`",
@@ -511,15 +502,6 @@ export const mutations: Mutation[] = [
     replace:
       '                Some(back) if false && self.compiled_step(ty, back, "nth_back") => {\n',
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
-  },
-  {
-    name: "step-by-made-by-nth-backless",
-    breaks:
-      "a range's `step_by(n).rev()`, `$stepBy(range, n)`, isn't made knowing its back, and is refused (#231)",
-    file: "src/lower/iterators/knowing.rs",
-    find: "            && let Some([source_value, step]) = crate::lower::iterators::stepped_every_parts(&value)\n",
-    replace: "            && let Some([source_value, step]) = crate::lower::iterators::stepped_every_parts(&value).filter(|_| false)\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_step_by.rs$"],
   },
   {
     name: "compiled-rev-closes-nothing",
@@ -927,5 +909,13 @@ export const mutations: Mutation[] = [
     find: "        let to_shorter = crate::lower::recognition::zip_folds_to_the_shorter(self.tcx, ty) == Some(false);\n",
     replace: "        let to_shorter = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_droppers_from_its_back.rs$"],
+  },
+  {
+    name: "step-by-made-uncounted",
+    breaks: "a `step_by(n)` made here isn't made knowing its length where it's counted, and an `enumerate()` of it folded from its back is refused (#718)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        // A `step_by(n)` made here, as `as_double_ended` makes it (#718).\n        if let Some(stepped) = self.step_by_knowing(&value, ty, span)? {\n",
+    replace: "        // A `step_by(n)` made here, as `as_double_ended` makes it (#718).\n        if let Some(stepped) = None::<Expr> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_stepped_from_its_back.rs$"],
   },
 ];

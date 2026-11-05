@@ -3529,10 +3529,10 @@ export function $stepBy(it, step, drop) {
 }
 
 // `it.step_by(step)` of a JS iterator that knows its back and its length,
-// which knows its back too, as Rust's `StepBy` is double-ended where its
-// source is exact-sized: `$stepBy`'s from the front; from the back, the
-// last of those, found by the source's length, as std's `next_back_index`
-// finds it.
+// which knows them too, as Rust's `StepBy` is double-ended and exact-sized
+// where its source is exact-sized: `$stepBy`'s from the front; from the
+// back, the last of those, found by the source's length, as std's
+// `next_back_index` finds it; its length its exact hint (#718).
 export function $stepByEnds(it, step) {
   const stepped = $stepBy(it, step);
   // Std's `next_back_index`: how many its back passes over first.
@@ -3541,6 +3541,8 @@ export function $stepByEnds(it, step) {
     return stepped.first ? (rem === 0 ? step - 1 : rem - 1) : rem;
   };
   stepped.back = () => stepped.skip(backIndex(), "back");
+  // Std's `StepBy::len`, its exact hint, of a source that knows its length.
+  stepped.len = () => stepped.sizeHint()[0];
   // Std's `nth_back(n)`: its source's, past `n` steps and its back's index,
   // one call, the crate's own where it writes one (#245).
   $forward(stepped, it, { nthBack: (n) => stepped.skip(n * step + backIndex(), "back") });

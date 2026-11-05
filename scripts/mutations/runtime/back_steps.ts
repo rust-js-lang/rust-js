@@ -645,4 +645,12 @@ export const mutations: Mutation[] = [
     replace: "      return $Steps.prototype.count.call(filter, drop);\n",
     tests: ["test/corpus.test.ts", "-t", "^map_ends_size_hint.rs$"],
   },
+  {
+    name: "step-by-ends-uncounted",
+    breaks: "`$stepByEnds` knows no length, so an `enumerate()` of a `step_by(n)` folded from its back throws `iter.len is not a function` (#718)",
+    file: "src/runtime/back_steps.js",
+    find: "  stepped.len = () => stepped.sizeHint()[0];\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_stepped_from_its_back.rs$"],
+  },
 ];

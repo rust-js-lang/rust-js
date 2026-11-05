@@ -724,4 +724,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(back_predicate_unwinds|held_back_folds_by_try_rfold).rs$"],
     snapshots: true,
   },
+  {
+    name: "back-stepped-temporary-held-unread",
+    breaks: "a `step_by(n)` its owner holds, `$held(it)`, which a temporary a back step takes holds, isn't made knowing its back where it's made, and its `nth_back` is refused (#718)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "        if let Some(held) = crate::lower::iterators::held_of(&value) {\n",
+    replace: "        if let Some(held) = None::<&Expr> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_stepped_from_its_back.rs$"],
+  },
 ];

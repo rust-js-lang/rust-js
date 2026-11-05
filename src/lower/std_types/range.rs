@@ -750,7 +750,10 @@ fn range_step(e: &Expr) -> Option<Expr> {
     }
 }
 
-/// `n` of `(_, i) => i % n === 0`, `step_by(n)`'s filter of what it keeps.
+/// `n` of `(_, i) => i % n === 0`, `step_by(n)`'s filter of what it keeps;
+/// and of items with a destructor, `(item, i) => { if (i % n === 0) {
+/// return true; } drop(item); return false; }`, each it passes over
+/// dropped (#718).
 pub(in crate::lower) fn every_nth(f: &Expr) -> Option<Expr> {
     let js::ExprKind::Arrow(params, body) = &f.kind else {
         return None;
@@ -758,14 +761,32 @@ pub(in crate::lower) fn every_nth(f: &Expr) -> Option<Expr> {
     let [js::Pattern::Name(_), js::Pattern::Name(i)] = params.as_slice() else {
         return None;
     };
-    let [
-        js::Stmt {
-            kind: js::StmtKind::Return(Some(test)),
-            ..
-        },
-    ] = body.as_slice()
-    else {
-        return None;
+    let test = match body.as_slice() {
+        [
+            js::Stmt {
+                kind: js::StmtKind::Return(Some(test)),
+                ..
+            },
+        ] => test,
+        [
+            js::Stmt {
+                kind: js::StmtKind::If(test, kept, None),
+                ..
+            },
+            js::Stmt {
+                kind: js::StmtKind::Expr(_),
+                ..
+            },
+            js::Stmt {
+                kind: js::StmtKind::Return(Some(passed)),
+                ..
+            },
+        ] if matches!(passed.kind, js::ExprKind::Bool(false))
+            && matches!(kept.as_slice(), [js::Stmt { kind: js::StmtKind::Return(Some(t)), .. }] if matches!(t.kind, js::ExprKind::Bool(true))) =>
+        {
+            test
+        }
+        _ => return None,
     };
     let js::ExprKind::Binary(Op::Eq, rem, zero) = &test.kind else {
         return None;

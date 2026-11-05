@@ -871,3 +871,39 @@ Mutations `back-stepped-temporary-unrecorded` (`mir/temporaries.ts`),
 `next-back-of-marked-unread`, `take-made-unmarked-in-place` (`mir/iter.ts`),
 `skip-made-unmarked-in-place` (`mir/iter/closing.ts`),
 `next-back-asks-no-back` (`recognition/iterators.ts`).
+
+## Amended (2026-11-06, #718): a `step_by(n)` of a `Vec`'s items with a destructor, and one counted
+
+A `step_by(n)` of a `Vec`'s items with a destructor is made
+`src.filter((item, i) => { if (i % n === 0) { return true; } drop(item);
+return false; })`, each it passes over dropped. `every_nth`, the reader
+of `step_by`'s filter, read only the filter of items with none, so its
+`rev()`, `rfold`, `nth_back`, `next_back` and `rfind` were refused, "a
+`StepBy<IntoIter<L>>` as a `DoubleEndedIterator`" (guide limitations.md).
+It reads both now. And a `step_by(n)` couldn't be counted at all:
+`as_exact_size` had no arm for it, and `$stepByEnds` no `len`, so an
+`enumerate()` of one folded from its back was refused, of numbers too.
+
+**One maker, `step_by_knowing` (stepping.rs), for both questions:**
+`as_double_ended`
+and `as_exact_size` ask it, of either form, the filter or `$stepBy(src,
+n)`: `$stepByEnds` of its source made knowing its back and its length,
+whose `len` is std's exact hint. Of a `Vec`'s items with a destructor, its
+source, `$closing($iter(v), $dropEach(drop))`, drops what `nth_back` passes
+over as std's `vec::IntoIter::nth_back` does, front to back; 256 generated
+programs of 1 to 10 items, steps 1 to 4 and mixes of `next`, `next_back`,
+`nth_back`, `rfind` and `rfold` print as native Rust does. One its owner
+holds, `$held(it)` (#206), which a temporary a back step takes holds, is
+made so inside and held again (`held_of`, value.rs).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; a
+refusal of valid Rust lifted. Held by corpus
+`step_by_stepped_from_its_back`, against native Rust in both builds; no
+other snapshot changes, and both iterator slices pass. Mutations
+`every-nth-of-droppers-unread` (`std_types/range.ts`), `step-by-made-uncounted`
+(`iterators/knowing.ts`), `back-stepped-temporary-held-unread`
+(`mir/iter/backs.ts`), `step-by-ends-uncounted` (`runtime/back_steps.ts`);
+`step-by-made-unstepped` and `step-by-made-by-nth-backless` name their
+lines as they now read, in `iterators/stepping.ts` with their code.
+Still refused: `len()` of a `step_by(n)` of a slice's items made in
+place, which `len_in_place` counts only of a range.

@@ -368,4 +368,21 @@ export const mutations: Mutation[] = [
     replace: "        self.is_user_iterator(self.reveal(given))\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
+  {
+    name: "step-by-made-unstepped",
+    breaks: "`rev()` of a `step_by` made in place is refused",
+    file: "src/lower/iterators/stepping.rs",
+    find: "                crate::lower::std_types::range::every_nth(f).map(|step| ((**source_value).clone(), step))\n",
+    replace: "                crate::lower::std_types::range::every_nth(f).filter(|_| false).map(|step| ((**source_value).clone(), step))\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_step_by.rs$"],
+  },
+  {
+    name: "step-by-made-by-nth-backless",
+    breaks:
+      "a range's `step_by(n).rev()`, `$stepBy(range, n)`, isn't made knowing its back, and is refused (#231)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "            (_, Some([source_value, step])) => Some((source_value.clone(), step.clone())),\n",
+    replace: "            (_, Some([source_value, step])) if false => Some((source_value.clone(), step.clone())),\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_step_by.rs$"],
+  },
 ];

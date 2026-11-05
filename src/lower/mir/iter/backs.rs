@@ -358,6 +358,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// what it holds, std's struct (#718).
     pub(in crate::lower::mir) fn made_knowing_where_held(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let ty = self.reveal(ty);
+        // Held by its owner, which drops it, `$held(it)` (#206): what it
+        // holds made so, held again.
+        if let Some(held) = crate::lower::iterators::held_of(&value) {
+            let made = self.made_knowing_where_held(held.clone(), ty, span)?;
+            return Ok(crate::lower::iterators::held_by_its_owner(made));
+        }
         let counted = crate::lower::recognition::counted_source(self.tcx, ty).is_some()
             || crate::lower::recognition::stepped_by_source(self.tcx, ty).is_some();
         if !counted || !crate::lower::iterators::made_in_place(&value) {

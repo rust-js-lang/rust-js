@@ -457,6 +457,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let items = self.std_iterator(enumerated.source.clone(), source.peel_refs());
             return Ok(crate::lower::iterators::enumerated_knowing(items));
         }
+        // A `step_by(n)` made here, as `as_double_ended` makes it (#718).
+        if let Some(stepped) = self.step_by_knowing(&value, ty, span)? {
+            return Ok(stepped);
+        }
         // A map made here, `src.map(f)`: its source's, each `f`'s, as
         // `as_double_ended` makes it (ADR 0455). And an `inspect(f)`, made
         // so, and a `cloned()` of what isn't a number, `src.map(clone)` (#778).
@@ -699,28 +703,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             return Ok(crate::lower::iterators::enumerated_knowing(items));
         }
-        // A `step_by(n)` made here, `src.filter((_, i) => i % n === 0)`:
-        // `$stepByEnds` of its source made knowing its back and its length,
-        // which it finds its last by, as std's `StepBy` does.
-        if let Some(source) = crate::lower::recognition::stepped_by_source(self.tcx, ty)
-            && let js::ExprKind::Call(callee, args) = &value.kind
-            && let js::ExprKind::Member(source_value, method) = &callee.kind
-            && method == "filter"
-            && let [f] = args.as_slice()
-            && let Some(step) = crate::lower::std_types::range::every_nth(f)
-        {
-            let source_value = stepped_value(source_value).unwrap_or_else(|| (**source_value).clone());
-            let source_value = self.as_exact_size(source_value, source.peel_refs(), true, span)?;
-            return Ok(Expr::call_helper("$stepByEnds", vec![source_value, step]));
-        }
-        // One made here by its source's `nth`, `$stepBy(src, n)`, a range's
-        // (#231): as the filter's, `$stepByEnds` of its source.
-        if let Some(source) = crate::lower::recognition::stepped_by_source(self.tcx, ty)
-            && let Some([source_value, step]) = crate::lower::iterators::stepped_every_parts(&value)
-        {
-            let source_value = stepped_value(source_value).unwrap_or_else(|| source_value.clone());
-            let source_value = self.as_exact_size(source_value, source.peel_refs(), true, span)?;
-            return Ok(Expr::call_helper("$stepByEnds", vec![source_value, step.clone()]));
+        if let Some(stepped) = self.step_by_knowing(&value, ty, span)? {
+            return Ok(stepped);
         }
         // A filter made here, `src.filter(p)`, or of items with a
         // destructor `$filterDropping(src, p, drop)` (#651): its source's

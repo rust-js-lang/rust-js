@@ -471,6 +471,14 @@ pub(in crate::lower) fn held_by_its_owner(e: Expr) -> Expr {
     }
 }
 
+/// What `e`, `held_by_its_owner`'s, holds: `it` of `$held(it)`.
+pub(in crate::lower) fn held_of(e: &Expr) -> Option<&Expr> {
+    match &e.kind {
+        js::ExprKind::Call(callee, of) if callee.helper_name() == Some("$held") && of.len() == 1 => Some(&of[0]),
+        _ => None,
+    }
+}
+
 /// Whether `e` was made knowing its back (`made_knowing_its_back`).
 pub(in crate::lower) fn was_made_knowing_its_back(e: &Expr) -> bool {
     e.facts.has(Known::IterKnowsBack)
