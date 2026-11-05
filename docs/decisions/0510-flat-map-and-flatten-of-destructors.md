@@ -63,7 +63,7 @@ worked out.
 
 ## Amendment: `$flatMap` wherever what it closes or gives drops, and its `last` is std's (2026-11-04, #644, #645)
 
-The iterator matrix (ADR 1092) found two drop orders this decision got
+The iterator matrix (ADR 1090) found two drop orders this decision got
 wrong, by ADR 0262's "results change" case, so Rust's is kept:
 
 - **The close order (#644).** `$flatMap` was chosen only where

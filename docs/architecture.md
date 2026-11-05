@@ -453,6 +453,42 @@ which passes on every argument a step takes, an item's drop and an
 accumulator's `unwind` ([ADR 1089](decisions/1089-an-iterators-steps-are-passed-on-by-one-combinator.md));
 `test/architecture.test.ts` rejects a step assigned anywhere else.
 
+### The iterator protocol
+
+[ADR 1092](decisions/1092-the-iterator-protocol-is-one-contract.md) is the
+contract every iterator step is checked against. Each rule cites std's
+source.
+
+- **Steps.** Each JS step is one std method: `next`, `back`, `fold`,
+  `tryFold`, `rfold`, `tryRfold`, `nth`, `nthBack`, `advanceBy`,
+  `advanceBackBy`, `count`, `last`, `len`, `hint` and `return()`. A step
+  by `&mut` closes nothing. A step by value takes its receiver and drops,
+  at its end and as it unwinds, in std's frame order: `f` (`ends`) before
+  what's left, the accumulator (`unwind`) first as a step unwinds.
+- **`return()`** drops an adapter's fields once, in std's declaration
+  order.
+- **Which step of what it holds each adapter asks** is std's
+  specialization, and the `OwnStep` catalog's (`recognition/own_steps.rs`).
+- **The facts a value carries.** Its own steps (`own*`), `dropItem`,
+  `held`, `of`, a `Vec`'s slice, a compiled struct's `$steps`, and which
+  owner makes and reads each.
+- **The lowering's answers for each value.** Who closes it, what it
+  holds, whether it slices, whether it knows its back, what it's given.
+
+The structure that enforces the contract has three parts:
+
+- **one runtime primitive** that consumes by value and owns S2's drop order
+  (m6-lily, #734);
+- **one lowering-side iterator value** that carries each value's facts, so
+  no recognizer reads them from `Expr` shapes, spans or runtime properties
+  (#730);
+- **std's compiled adapters (`--std-iterators`) as the oracle** that the
+  hand-written runtime is proved against.
+
+The conformance table (`test/iterator-conformance.test.ts`, ADR 1090's
+generator) runs each adapter through each step, in both builds, against
+native Rust.
+
 ## Publication
 
 `src/manifest.rs` is the compiler/host contract; `tooling/manifest.js` validates
