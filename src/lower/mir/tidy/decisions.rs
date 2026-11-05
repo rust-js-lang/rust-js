@@ -29,9 +29,9 @@ use calls::Model;
 pub(super) use defaults::default_values;
 pub(super) use guarded::bound;
 use guarded::{bound_where_read, given_before};
-use paths::{absorbed, failing, narrowed, said, simplified, unions, written_order};
+use paths::{absorbed, failing, narrowed, present_failing, present_said_by, said, simplified, unions, written_order};
 pub(super) use presence::presence_said;
-use tails::{breaks_ended, calls_in, tails};
+use tails::{breaks_ended, calls_in, nested, tails};
 use walk::{Leaf, Test, Walk};
 
 /// More leaves than a match a person writes has: a tree of tests that
@@ -123,12 +123,19 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>, told: &Told) {
                     }
                     Some((chain, false)) => drop(stmts.splice(i..i + 1, chain)),
                     None if !left => drop(stmts.splice(i..i + 1, tails)),
-                    None => {
-                        if let StmtKind::Labeled(_, body) = &mut stmts[i].kind {
-                            *body = tails;
+                    None => match nested(label, &tails) {
+                        Some(nested) => drop(stmts.splice(i..i + 1, nested)),
+                        None => {
+                            if let StmtKind::Labeled(_, body) = &mut stmts[i].kind {
+                                *body = tails;
+                            }
                         }
-                    }
+                    },
                 }
+            } else if told.kept
+                && let Some(nested) = nested(label, body)
+            {
+                stmts.splice(i..i + 1, nested);
             }
             continue;
         };
@@ -494,10 +501,17 @@ fn chain(
                 true => (steps.iter()).flat_map(|(_, test)| failing(test)).collect(),
                 false => Vec::new(),
             };
+            // And what they say is there, `e` once `e == null`'s arm is
+            // tried (#791).
+            let present: Vec<Expr> = match patterns {
+                true => (steps.iter()).flat_map(|(_, test)| present_failing(test)).collect(),
+                false => Vec::new(),
+            };
+            let said = |t: &Expr| said(&known, t) || present_said_by(&present, t);
             if model.is_none() {
                 for path in &mut paths {
-                    if path.iter().any(|t| !said(&known, t)) {
-                        path.retain(|t| !said(&known, t));
+                    if path.iter().any(|t| !said(t)) {
+                        path.retain(|t| !said(t));
                     }
                     // Of a tree no `switch` takes, each test of what the arms
                     // before say in part, of the rest: `c !== 2` of `c !== 1

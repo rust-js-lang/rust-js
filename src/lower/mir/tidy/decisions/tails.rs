@@ -40,16 +40,88 @@ fn tails_in(label: &str, list: &[Stmt], told: &Told, whole: bool) -> Option<Vec<
         .count();
     let leaving = (0..list.len()).filter(|&k| names_break(std::slice::from_ref(&list[k]), label));
     for (n, k) in leaving.enumerate() {
+        // What a guard's binding the `let`s before it give, its tree the
+        // binding's only reader (`given_before`).
+        let given = given_before(&list[..k], &list[k..], &[]);
         if !(whole && k == declared)
             && matches!(list[k].kind, StmtKind::If(..))
-            && let Some((chain, _)) = chain((label, list[k].span), &list[k..], &[], told, (n == 0, &[]))
+            && let Some((chain, _)) = chain((label, list[k].span), &list[k..], &[], told, (n == 0, &given))
         {
             list.truncate(k);
             list.extend(chain);
+            // A `let` the chain read as its value, read nowhere else: gone.
+            for (name, _) in &given {
+                let own = |s: &Stmt| matches!(&s.kind, StmtKind::Let(n, Some(_)) if n == name);
+                if let Some(at) = list[..k].iter().rposition(own) {
+                    let others = [&list[..at], &list[at + 1..]].concat();
+                    if js::mentions_in(&others, name) == 0 {
+                        list.remove(at);
+                    }
+                }
+            }
             return Some(list);
         }
     }
     changed.then_some(list)
+}
+
+/// `list`, the block `label`'s, where no chain is, each `if` that leaves
+/// the block from a list it ends with, `if (c) { .. break bb6; } ..`, the
+/// `if` of what follows it, there going where the `break` does: `if (c) {
+/// .. } else { .. }`, and of one that only leaves, `if (!c) { .. }`, as the
+/// user decided for std's `Skip::next_back`, `if (tmp === value) { if
+/// (value > 0) { .. } return; }`, not the chain reading `tmp === value`
+/// again in each arm (#771), the nesting of #523's decisions 1 and 5.
+/// `None` where a `break` of the block is left, in a loop or a branch that
+/// goes on.
+pub(super) fn nested(label: &str, list: &[Stmt]) -> Option<Vec<Stmt>> {
+    fn nest(list: &mut Vec<Stmt>, label: &str) {
+        // Where the list ends, its `break` goes nowhere else.
+        if matches!(list.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l == label) {
+            list.pop();
+        }
+        if let Some(StmtKind::If(_, then, otherwise)) = list.last_mut().map(|s| &mut s.kind) {
+            nest(then, label);
+            if let Some(otherwise) = otherwise {
+                nest(otherwise, label);
+            }
+        }
+        for k in (0..list.len()).rev() {
+            let StmtKind::If(_, then, _) = &list[k].kind else {
+                continue;
+            };
+            if !matches!(then.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l == label) {
+                continue;
+            }
+            // What follows declares in a scope of its own then: none of it
+            // named before, a closure's read of what's declared later.
+            let named_before = (list[k + 1..].iter())
+                .flat_map(js::declared_here)
+                .any(|name| js::mentions_in(&list[..=k], &name) > 0);
+            if named_before {
+                continue;
+            }
+            let rest = list.split_off(k + 1);
+            let stmt = list.pop().expect("the `if` at k");
+            let StmtKind::If(test, mut then, otherwise) = stmt.kind else {
+                unreachable!("the `if` at k")
+            };
+            then.pop();
+            nest(&mut then, label);
+            // Its `else` goes on to what follows, there now.
+            let mut rest = [otherwise.unwrap_or_default(), rest].concat();
+            nest(&mut rest, label);
+            let kind = match (then.is_empty(), rest.is_empty()) {
+                (_, true) => StmtKind::If(test, then, None),
+                (true, false) => StmtKind::If(test.negated_test(), rest, None),
+                (false, false) => StmtKind::If(test, then, Some(rest)),
+            };
+            list.push(kind.at(stmt.span));
+        }
+    }
+    let mut list = list.to_vec();
+    nest(&mut list, label);
+    (!names_break(&list, label)).then_some(list)
 }
 
 /// Whether a test of `body`'s `if`s is a guard's that calls (`Told::guards`).

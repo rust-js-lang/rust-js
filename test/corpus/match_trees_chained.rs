@@ -10,7 +10,13 @@
 // test before decides, `(_, _) | (0, 2) if .. || a == 0`; a guard's read
 // after its call, kept after it; a guard of what the `match` keeps, read
 // after another guard's call; and a binding nothing reads. Each guard's
-// calls are made as often, and in the order, as natively.
+// calls are made as often, and in the order, as natively. An arm's own
+// `match` whose value is given between arms that return, no chain then,
+// each `if` that leaves the block nesting what follows it (the user's
+// decision, #771); a guard's binding MIR declares, `let x = a;`, read as
+// its value, of the block and of an arm's own tree past its first leaving;
+// and a presence test read once, past the arm of its negation, but
+// another value's read where it was (#791).
 use std::cell::Cell;
 
 fn g(c: &Cell<u32>, n: u32, k: u32) -> bool {
@@ -215,6 +221,50 @@ fn declared_first_and_between(c: &Cell<u32>, a: u32, b: u32) -> u32 {
     }
 }
 
+fn value_between_returns(c: &Cell<u32>, e: Option<(u32, u32)>) -> Result<u32, u32> {
+    Ok(match e {
+        None => 5,
+        Some((0, 0)) => 6,
+        Some((op, v)) => {
+            let l = step(c, v)?;
+            match (op, l) {
+                (3, x) => x * 2 + 2,
+                (1, 0) => return Err(13),
+                (0, x) => return Err(x * 2 + 1),
+                (o, l) => return Err(o * 100 + l),
+            }
+        }
+    })
+}
+
+fn either_end(s: &[u32]) -> u32 {
+    let mut level = 7;
+    match s {
+        &[x, ..] | &[.., x] if x * 2 % 4 == 0 => level = 0,
+        &[_, 3, ..] | &[] if level > 3 => level = 4,
+        _ => level = 99,
+    }
+    level
+}
+
+fn given_twice(c: &Cell<u32>, a: u32, b: u32) -> u32 {
+    match (a, b) {
+        (_, 1) if 2 + a > 1 => 2 * 2,
+        (x, 2) | (x, 2) | (2, x) if x > 3 || g(c, b, 1) => 2,
+        (1, _) | (_, 0) | (1, _) if !g(c, b * 2, 2) => 0,
+        _ => 99,
+    }
+}
+
+fn presence_of_another(o: Option<u32>, p: Option<(u32, u32)>) -> Result<u32, u32> {
+    Ok(match (o, p) {
+        (None, _) => 5,
+        (_, Some((0, 0))) => 6,
+        (Some(a), Some((x, y))) if a > 1 => x + y,
+        (Some(a), _) => return Err(a),
+    })
+}
+
 const SLICES: &[&[u32]] = &[
     &[],
     &[1],
@@ -235,15 +285,23 @@ fn main() {
             println!("read_twice {:?}", read_twice(c, Some((op, v))));
             println!("declared_outside {:?}", declared_outside(c, Some((op, v))));
             println!("inner_after_an_arm {:?}", inner_after_an_arm(c, Some((op, v))));
+            println!("value_between_returns {:?}", value_between_returns(c, Some((op, v))));
         }
     }
     println!("read_twice {:?}", read_twice(c, None));
     println!("declared_outside {:?}", declared_outside(c, None));
     println!("inner_after_an_arm {:?}", inner_after_an_arm(c, None));
+    println!("value_between_returns {:?}", value_between_returns(c, None));
+    for o in [None, Some(0), Some(2)] {
+        for p in [None, Some((0, 0)), Some((1, 2))] {
+            println!("presence_of_another {:?}", presence_of_another(o, p));
+        }
+    }
     for s in SLICES {
         println!("one_read {}", one_read(s));
         println!("given_again {}", given_again(c, s));
         println!("made_again {}", made_again(c, s));
+        println!("either_end {}", either_end(s));
     }
     for a in 0..4u32 {
         for b in 0..4u32 {
@@ -255,6 +313,7 @@ fn main() {
             println!("ways_none_takes {}", ways_none_takes(c, a, b));
             println!("given_before_the_tree {}", given_before_the_tree(c, a, b));
             println!("declared_first_and_between {}", declared_first_and_between(c, a, b));
+            println!("given_twice {}", given_twice(c, a, b));
         }
     }
 }

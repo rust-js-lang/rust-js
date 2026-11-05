@@ -93,4 +93,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
     snapshots: true,
   },
+  {
+    name: "let-bindings-uncounted",
+    breaks: "a guard's binding MIR declares, `let x = s[0];`, given again for the other alternative, `x = s[s.length - 1];`, isn't counted as the guard's, so `either_end` keeps its labeled block (#771)",
+    file: "src/lower/mir/tidy/decisions/guarded.rs",
+    find: "                StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => (name, value, 0),\n",
+    replace: "                StmtKind::Const(name, value) => (name, value, 0),\n",
+    tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
+    snapshots: true,
+  },
 ];

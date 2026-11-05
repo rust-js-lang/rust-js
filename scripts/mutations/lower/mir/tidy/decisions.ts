@@ -424,12 +424,4 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
     snapshots: true,
   },
-  {
-    name: "declared-binding-named-past-the-walk",
-    breaks: "a guard's binding the tree declares, `let x$4 = b$1;`, is read as its value though a branch gives it again, `x$4 = b$1;`, which the chain keeps without the declaration: `ReferenceError: x$4 is not defined` (#771)",
-    file: "src/lower/mir/tidy/decisions.rs",
-    find: "    if (locals.iter()).any(|name| leaves.iter().any(|leaf| named(leaf, name)) || js::mentions_in(after, name) > 0) {\n        return None;\n    }\n",
-    replace: "",
-    tests: ["test/match-trees.test.ts", "-t", "seed 8$"],
-  },
 ];

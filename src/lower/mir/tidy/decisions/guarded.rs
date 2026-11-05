@@ -43,7 +43,7 @@ pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> Has
                     ExprKind::Var(name) => (name, value, 1),
                     _ => continue,
                 },
-                StmtKind::Const(name, value) => (name, value, 0),
+                StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => (name, value, 0),
                 _ => continue,
             };
             let Some(at) = (i + 1..list.len()).find(|&j| !binding(&list[j])) else {

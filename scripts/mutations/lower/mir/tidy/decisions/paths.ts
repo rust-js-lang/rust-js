@@ -129,4 +129,21 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
     snapshots: true,
   },
+  {
+    name: "presence-past-its-negation-unsaid",
+    breaks: "a presence test past the arm of its negation is read again, `if (e == null) { .. } else if (e != null && e[0] === 0 ..`, `inner_after_an_arm`'s (#791)",
+    file: "src/lower/mir/tidy/decisions/paths.rs",
+    find: "            present.iter().any(|p| same_subject(p, subject))\n",
+    replace: "            present.iter().any(|p| same_subject(p, subject)) && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "presence-said-of-any-subject",
+    breaks: "any presence test past the arm of another's negation is dropped, `presence_of_another`'s `p != null` once `o == null` failed, which reads `p[0]` of a `None` (#791)",
+    file: "src/lower/mir/tidy/decisions/paths.rs",
+    find: "            present.iter().any(|p| same_subject(p, subject))\n",
+    replace: "            !present.is_empty()\n",
+    tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
+  },
 ];

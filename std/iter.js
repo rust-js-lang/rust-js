@@ -6219,24 +6219,21 @@ export function skipDoubleEndedIterator_nextBack(
   const value = Math.max(_11 - skip.n, 0);
   let tmp$1;
   let tmp$2;
-  bb6: {
-    let tmp;
-    if (_12 == null) {
-      tmp = undefined;
-      tmp$1 = tmp;
-      tmp$2 = value;
-      break bb6;
-    }
+  let tmp;
+  if (_12 == null) {
+    tmp = undefined;
+    tmp$1 = tmp;
+    tmp$2 = value;
+  } else {
     tmp = Math.max(_12 - skip.n, 0);
     tmp$1 = tmp;
     tmp$2 = value;
-    if (tmp !== value) {
-      break bb6;
+    if (tmp === value) {
+      if (value > 0) {
+        return IDoubleEndedIterator.next_back(skip.iter);
+      }
+      return;
     }
-    if (value > 0) {
-      return IDoubleEndedIterator.next_back(skip.iter);
-    }
-    return;
   }
   $assertFailed(
     "Eq",
@@ -6257,43 +6254,40 @@ export function skipDoubleEndedIterator_nthBack(
   const value = Math.max(_17 - skip.n, 0);
   let tmp$1;
   let tmp$2;
-  bb10: {
-    let tmp;
-    let len;
-    if (_18 == null) {
-      tmp = undefined;
-      len = value;
-      tmp$1 = tmp;
-      tmp$2 = value;
-      break bb10;
-    }
+  let tmp;
+  let len;
+  if (_18 == null) {
+    tmp = undefined;
+    len = value;
+    tmp$1 = tmp;
+    tmp$2 = value;
+  } else {
     tmp = Math.max(_18 - skip.n, 0);
     len = value;
     tmp$1 = tmp;
     tmp$2 = value;
-    if (tmp !== value) {
-      break bb10;
-    }
-    if (n < value) {
-      return $nthBack(
-        $given(skip.iter, IIterator, true, IDoubleEndedIterator),
-        n,
-        $some,
-        dropIItem,
-      );
-    }
-    if (value > 0) {
-      const nthBack = $nthBack(
-        $given(skip.iter, IIterator, true, IDoubleEndedIterator),
-        (value - 1) >>> 0,
-        $some,
-        dropIItem,
-      );
-      if (nthBack != null) {
-        dropIItem?.($someValue(nthBack));
+    if (tmp === value) {
+      if (n < value) {
+        return $nthBack(
+          $given(skip.iter, IIterator, true, IDoubleEndedIterator),
+          n,
+          $some,
+          dropIItem,
+        );
       }
+      if (value > 0) {
+        const nthBack = $nthBack(
+          $given(skip.iter, IIterator, true, IDoubleEndedIterator),
+          (value - 1) >>> 0,
+          $some,
+          dropIItem,
+        );
+        if (nthBack != null) {
+          dropIItem?.($someValue(nthBack));
+        }
+      }
+      return;
     }
-    return;
   }
   $assertFailed(
     "Eq",
@@ -6325,69 +6319,66 @@ export function skipDoubleEndedIterator_tryRfold(
     dropAcc?.(init);
     throw error;
   }
-  const value$1 = sizeHint[1];
-  const value$2 = Math.max(sizeHint[0] - skip.n, 0);
+  const value = sizeHint[1];
+  const value$1 = Math.max(sizeHint[0] - skip.n, 0);
   let tmp$1;
   let tmp$2;
-  bb12: {
-    let tmp;
-    let n;
-    if (value$1 == null) {
-      tmp = undefined;
-      n = value$2;
-      tmp$1 = tmp;
-      tmp$2 = value$2;
-      break bb12;
-    }
-    tmp = Math.max(value$1 - skip.n, 0);
-    n = value$2;
+  let tmp;
+  let n;
+  if (value == null) {
+    tmp = undefined;
+    n = value$1;
     tmp$1 = tmp;
-    tmp$2 = value$2;
-    if (tmp !== value$2) {
-      break bb12;
-    }
-    if (value$2 === 0) {
-      tmp$3 = false;
-      try {
-        return RTry.fromOutput(init);
-      } finally {
-        dropFold?.(fold);
+    tmp$2 = value$1;
+  } else {
+    tmp = Math.max(value - skip.n, 0);
+    n = value$1;
+    tmp$1 = tmp;
+    tmp$2 = value$1;
+    if (tmp === value$1) {
+      if (value$1 === 0) {
+        tmp$3 = false;
+        try {
+          return RTry.fromOutput(init);
+        } finally {
+          dropFold?.(fold);
+        }
       }
+      tmp$3 = false;
+      tmp$4 = false;
+      let tmp = value$1;
+      const value$2 = $dropping(
+        (acc, x) => {
+          tmp = (tmp - 1) >>> 0;
+          const r = fold(acc, x);
+          if (tmp === 0) {
+            return { TAG: "Break", _0: r };
+          }
+          const value = RTry.branch(r);
+          if (value.TAG === "Continue") {
+            return { TAG: "Continue", _0: value._0 };
+          }
+          return { TAG: "Break", _0: RTry.FromResidual().fromResidual(value._0) };
+        },
+        () => {
+          dropFold?.(fold);
+        },
+      );
+      const value = $tryFoldInto(
+        $rev($given(skip.iter, IIterator, true, IDoubleEndedIterator)),
+        init,
+        (a, b) => value$2(a, b),
+        $controlFlowTry,
+        dropAcc,
+        () => {
+          $dispose(value$2);
+        },
+      );
+      if (value.TAG === "Continue") {
+        return RTry.fromOutput(value._0);
+      }
+      return value._0;
     }
-    tmp$3 = false;
-    tmp$4 = false;
-    let tmp$5 = value$2;
-    const value$3 = $dropping(
-      (acc, x) => {
-        tmp$5 = (tmp$5 - 1) >>> 0;
-        const r = fold(acc, x);
-        if (tmp$5 === 0) {
-          return { TAG: "Break", _0: r };
-        }
-        const value = RTry.branch(r);
-        if (value.TAG === "Continue") {
-          return { TAG: "Continue", _0: value._0 };
-        }
-        return { TAG: "Break", _0: RTry.FromResidual().fromResidual(value._0) };
-      },
-      () => {
-        dropFold?.(fold);
-      },
-    );
-    const value = $tryFoldInto(
-      $rev($given(skip.iter, IIterator, true, IDoubleEndedIterator)),
-      init,
-      (a, b) => value$3(a, b),
-      $controlFlowTry,
-      dropAcc,
-      () => {
-        $dispose(value$3);
-      },
-    );
-    if (value.TAG === "Continue") {
-      return RTry.fromOutput(value._0);
-    }
-    return value._0;
   }
   try {
     $assertFailed(

@@ -72,6 +72,32 @@ pub(super) fn failing(test: &Expr) -> Vec<(Expr, Set)> {
     }
 }
 
+/// What `test` failing says is there, as `failing` says of a constant's
+/// tests: `e` of `e == null`, and of each alternative of an `||` (#791).
+pub(super) fn present_failing(test: &Expr) -> Vec<Expr> {
+    match &test.kind {
+        ExprKind::Binary(Op::Or, a, b) => [present_failing(a), present_failing(b)].concat(),
+        ExprKind::Binary(Op::LooseEq, subject, none)
+            if matches!(none.kind, ExprKind::Null | ExprKind::Undefined) && is_subject(subject) =>
+        {
+            vec![(**subject).clone()]
+        }
+        _ => Vec::new(),
+    }
+}
+
+/// Whether `test` is a presence test, `e != null`, of what `present` says
+/// is there: always true there, `if (e == null) { .. } else if (e[0] ===
+/// 0)`, not `e != null && e[0] === 0` (#791).
+pub(super) fn present_said_by(present: &[Expr], test: &Expr) -> bool {
+    match &test.kind {
+        ExprKind::Binary(Op::LooseNe, subject, none) if matches!(none.kind, ExprKind::Null | ExprKind::Undefined) => {
+            present.iter().any(|p| same_subject(p, subject))
+        }
+        _ => false,
+    }
+}
+
 /// Whether `known` says `test`: true of each value its value can be there.
 pub(super) fn said(known: &[(Expr, Set)], test: &Expr) -> bool {
     atom(test).is_some_and(|(subject, set)| {

@@ -16,7 +16,7 @@ Amended: a value a block gives last is given first only where nothing can
 tell (issue #219, below); an `|` of two values' tests is a chain of its
 arms; no arm holds a copy of what follows the `match` (kj-switch); a
 chain's arm needs no more than that the arms before it failed (#221); a
-tree of a `switch`'s guard is the `switch`'s (rd619); a test of a value an or-pattern's alternatives after it each say is theirs (#617); paths alike but for one value's test are one, and a path no alternative of whose or-pattern holds is none (#631); an alternative's tests of a tuple's parts are in the order written (#632); a match of three values is the chain as written, a test whose failing says another path of its arm, or that the arms before it say, is none (#673); an or-pattern over `Option`s and enums tests as written, by the tuple's part each test reads, a part's own tests in MIR's order, and a path's `x != null` beside `x === k` goes of any tree no `switch` takes (#674); the walk of a tree reads past a variable declared between its tests, a guard's run of bindings and an arm that leaves the block (#771). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
+tree of a `switch`'s guard is the `switch`'s (rd619); a test of a value an or-pattern's alternatives after it each say is theirs (#617); paths alike but for one value's test are one, and a path no alternative of whose or-pattern holds is none (#631); an alternative's tests of a tuple's parts are in the order written (#632); a match of three values is the chain as written, a test whose failing says another path of its arm, or that the arms before it say, is none (#673); an or-pattern over `Option`s and enums tests as written, by the tuple's part each test reads, a part's own tests in MIR's order, and a path's `x != null` beside `x === k` goes of any tree no `switch` takes (#674); the walk of a tree reads past a variable declared between its tests, a guard's run of bindings and an arm that leaves the block (#771); a block no chain is made of nests what follows each `if` that leaves it, and a presence test past the arm of its negation is said (#771, #791). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -1436,3 +1436,63 @@ reaches yet are kept and have none: a `let` named outside what follows it
 isn't declared before the chain, and `read_places` reads no place of an
 expression it doesn't know, so an opaque test of one is kept by no
 `match`; with either gone the 24 seeds and the corpus print as they do.
+
+## Amendment: a block no chain is made of nests what follows each `if` that leaves it (#771, the user's decision; #791, 2026-11-05)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The JS does what it
+did; only its form changes.
+
+- **Where no chain is, an `if` that leaves the block holds what follows
+  it** (`decisions/tails.rs`'s `nested`, of the last pass's, `kept`
+  trees). std's `Skip::next_back`, `assert_eq!`'s `match` of the size
+  hint before `if self.len() > 0`, kept `bb6: { .. if (tmp !== value) {
+  break bb6; } if (value > 0) { .. } return; }`: its chain read `tmp ===
+  value` again in each arm, a form no decision covered, so cf57 left the
+  block. The user decided the nesting, beside #523's decisions 1 and 5:
+  `if (tmp === value) { if (value > 0) { .. } return; }`. In a list the
+  block ends with, what follows the block is where both the `break` and
+  the end of the list go, so `if (c) { .. break l; } rest` is `if (c) {
+  .. } else { rest }` (an `else` the `if` had, first in it), and of one
+  that only leaves, `if (!c) { rest }`; a `break` the list ends with goes,
+  each list nested again, the last `if`'s branches first. Only where no
+  `break` of the block is left, so a block is what it holds or stays as
+  it was; and not where what follows declares a name read before it,
+  which a scope of its own would hide (no program reaches it).
+  `Skip::next_back`, `nth_back` and `try_rfold` are then `if (_12 ==
+  null) { .. } else { ..; if (tmp === value) { .. } }` with no label,
+  and an arm's own `match` whose arm gives the value between arms that
+  return, `(3, x) => x * 2 + 2, (1, 0) => return Err(13), ..`, `if (op
+  === 3) { .. } else { if (op === 1 && l === 0) { return ..; } .. }`.
+- **A guard's binding MIR declares, `let x = a;`, is a binding as a
+  `const` is** (`guarded::bound`): `&[x, ..] | &[.., x] if x * 2 % 4 ==
+  0`'s `let x = s[0]; .. x = s[s.length - 1];`, read as its value. And
+  an arm's own tree past the block's first leaving reads as their values
+  the `let`s right before it (`given_before`), a `let` then read nowhere
+  else gone: `(x, 2) | (x, 2) | (2, x) if x > 3 || g(c, b, 1)` is `if (a
+  > 3 || g(c, b, 1) || a > 3 || g(c, b, 1))`, the guard made again of
+  each alternative as decision 2 has it, not `let x = a; if (x > 3 || ..
+  || a > 3 || ..)`, one binding by two names.
+- **A presence test past the arm of its negation is said** (#791,
+  `paths::present_failing`, `present_said_by`): an earlier arm's `e ==
+  null`, or an alternative of its `||`, failing says `e` is there, so a
+  later path's `e != null` goes, as `said` drops a constant's test the
+  arms before say (#696): `if (e == null) { .. } else if (e[0] === 0 &&
+  e[1] === 0) { .. }`, not `e != null && e[0] === 0 ..`. Of a tree of
+  pure tests, as `said` is.
+
+Corpus `match_trees_chained.rs` (`value_between_returns`, `either_end`,
+`given_twice`, `inner_after_an_arm`) and the corpus of std's `Skip`
+from its back (`held_back_folds_by_try_rfold.rs`,
+`lengths_and_backs_given_on.rs`, ..), against native Rust; generated
+match trees, 24 seeds, each agreeing with native Rust, 257 labeled of
+960 functions, from 284, seed 17's `m26` among those that lost theirs.
+std/ regenerated. Mutations `leaving-ifs-unnested`,
+`leaving-ifs-of-a-branch-unnested`, `leaving-if-else-dropped`,
+`tails-given-never`, `tails-given-let-kept` (`decisions/tails.ts`),
+`let-bindings-uncounted` (`decisions/guarded.ts`), `presence-past-its-negation-unsaid` and
+`presence-said-of-any-subject` (`decisions/paths.ts`). A seed 8
+function, `let x$4 = b$1;` given again, was the one program that reached
+the walk's check of a `let` a leaf names (`declared-binding-named-past-the-walk`);
+a `let` binding is `bound`'s now, read where it's given, so no program
+reaches the check, and with it gone the 24 seeds and the corpus print as
+they do: it stays, and its mutation is removed.

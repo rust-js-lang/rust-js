@@ -192,7 +192,7 @@ function innerAfterAnArm(c, e) {
   let tmp;
   if (e == null) {
     tmp = 5;
-  } else if (e != null && e[0] === 0 && e[1] === 0) {
+  } else if (e[0] === 0 && e[1] === 0) {
     tmp = 6;
   } else {
     const [op, v] = e;
@@ -383,6 +383,91 @@ function declaredFirstAndBetween(c, a, b) {
   return b * 3;
 }
 
+function valueBetweenReturns(c, e) {
+  let tmp;
+  if (e == null) {
+    tmp = 5;
+  } else if (e[0] === 0 && e[1] === 0) {
+    tmp = 6;
+  } else {
+    const [op, v] = e;
+    const result = step(c, v);
+    if (result.TAG === "Err") {
+      return result;
+    }
+    const l = result._0;
+    if (op === 3) {
+      const x = l;
+      tmp = (((x * 2) >>> 0) + 2) >>> 0;
+    } else {
+      if (op === 1 && l === 0) {
+        return { TAG: "Err", _0: 13 };
+      }
+      if (op === 0) {
+        const x = l;
+        return { TAG: "Err", _0: (((x * 2) >>> 0) + 1) >>> 0 };
+      }
+      const o = op;
+      return { TAG: "Err", _0: (((o * 100) >>> 0) + l) >>> 0 };
+    }
+  }
+  return { TAG: "Ok", _0: tmp };
+}
+
+function eitherEnd(s) {
+  let level = 7;
+  if (s.length >= 1 && (((s[s.length - 1] * 2) >>> 0) % 4 === 0 || ((s[0] * 2) >>> 0) % 4 === 0)) {
+    level = 0;
+    return level;
+  }
+  if (((s.length >= 2 && s[1] === 3) || s.length === 0) && level > 3) {
+    level = 4;
+    return level;
+  }
+  level = 99;
+  return level;
+}
+
+function givenTwice(c, a, b) {
+  if (b === 1 && 2 + a > 1) {
+    return 2 * 2;
+  }
+  if (b === 2) {
+    if (a > 3 || g(c, b, 1) || a > 3 || g(c, b, 1)) {
+      return 2;
+    }
+  }
+  if (a !== 2 || (b <= 3 && !g(c, b, 1))) {
+    if (
+      (a === 2 && b === 0 && !g(c, b * 2, 2)) ||
+      (a === 1 && !g(c, b * 2, 2)) ||
+      (a === 1 && b === 0 && !g(c, b * 2, 2)) ||
+      (a === 1 && !g(c, b * 2, 2)) ||
+      (a !== 1 && a !== 2 && b === 0 && !g(c, b * 2, 2))
+    ) {
+      return 0;
+    }
+    return 99;
+  }
+  return 2;
+}
+
+function presenceOfAnother(o, p) {
+  let tmp;
+  if (o == null) {
+    tmp = 5;
+  } else if (p != null && p[0] === 0 && p[1] === 0) {
+    tmp = 6;
+  } else if (o > 1 && p != null) {
+    const [x, y] = p;
+    tmp = (x + y) >>> 0;
+  } else {
+    const a = o;
+    return { TAG: "Err", _0: a };
+  }
+  return { TAG: "Ok", _0: tmp };
+}
+
 const SLICES = [[], [1], [2], [1, 1], [2, 2], [1, 2], [2, 1], [3, 1, 2], [1, 3, 1], [0, 1, 2, 3]];
 
 function main() {
@@ -399,6 +484,10 @@ function main() {
       console.log(
         `inner_after_an_arm ${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${value$2._0})`}`,
       );
+      const value$3 = valueBetweenReturns(c, [op, v]);
+      console.log(
+        `value_between_returns ${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${value$3._0})`}`,
+      );
     }
   }
   const value = readTwice(c);
@@ -411,11 +500,24 @@ function main() {
   console.log(
     `inner_after_an_arm ${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${value$2._0})`}`,
   );
+  const value$3 = valueBetweenReturns(c);
+  console.log(
+    `value_between_returns ${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${value$3._0})`}`,
+  );
+  for (const o of [undefined, 0, 2]) {
+    for (const p of [undefined, [0, 0], [1, 2]]) {
+      const value = presenceOfAnother(o, p);
+      console.log(
+        `presence_of_another ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}`,
+      );
+    }
+  }
   for (let i = 0; i < SLICES.length; i++) {
     const s = SLICES[i];
     console.log(`one_read ${oneRead(s)}`);
     console.log(`given_again ${givenAgain(c, s)}`);
     console.log(`made_again ${madeAgain(c, s)}`);
+    console.log(`either_end ${eitherEnd(s)}`);
   }
   for (let a = 0; a < 4; a++) {
     for (let b = 0; b < 4; b++) {
@@ -427,6 +529,7 @@ function main() {
       console.log(`ways_none_takes ${waysNoneTakes(c, a, b)}`);
       console.log(`given_before_the_tree ${givenBeforeTheTree(c, a, b)}`);
       console.log(`declared_first_and_between ${declaredFirstAndBetween(c, a, b)}`);
+      console.log(`given_twice ${givenTwice(c, a, b)}`);
     }
   }
 }
