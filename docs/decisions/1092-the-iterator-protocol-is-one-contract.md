@@ -737,6 +737,14 @@ Step 11 gives value.rs the accessors the last named reads lacked.
 Step 9's list of named reads is now empty. No iterator helper is read by its
 name outside value.rs.
 
+Tidy's `stepped_in_place` reads `$knowing($iter(xs))` as `$iter(xs)`. Since
+step 1, `emit()` is the one writer of `$knowing`, and its one maker,
+`knowing_held`, writes it only of std's compiled struct, never of an array's
+iterator. Tidy makes that shape itself, though: stepping what `$knowing` is
+given in place, a `fuse()` given no drops is its source, and that is an
+array's iterator. `fused_iterator.rs` is that case. Its two halves are held
+by `knowing-unread` and `knowing-of-items-kept`.
+
 ## Amendment: each adapter's `sizeHint`, and who asks it (2026-11-05, #733 steps 1–3)
 
 G10 closes in three steps. ADR 0262's case each time: results change, so

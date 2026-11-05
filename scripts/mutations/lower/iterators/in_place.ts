@@ -87,4 +87,14 @@ export const mutations: Mutation[] = [
     replace: "        .filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
+  {
+    name: "knowing-of-items-kept",
+    breaks:
+      "a `$knowing` tidy's `stepped_in_place` left an array's iterator inside, a `fuse()` of one dropped to its source, stays `$knowing($iter(xs), ..)` where the array's iterator knows its back and length already",
+    file: "src/lower/iterators/in_place.rs",
+    find: "        _ if knowing && is_stepped_items(&given[0]) => given[0].clone(),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fused_iterator.rs$"],
+    snapshots: true,
+  },
 ];
