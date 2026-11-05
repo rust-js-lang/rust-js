@@ -80,3 +80,67 @@ no more: `$dispose` and a `$holding`'s drop are once (ADR 0991, amended).
 `test/corpus/closure_folded_by_value_panics.rs` checks each against native
 Rust, as the crate builds it and with std's iterator structs. The
 mutation is `given-undropped-as-it-unwinds` (`lower/mir/dispatch.ts`).
+
+## Amendment (2026-11-05): a by-value fold drops it first, `$consume` (#734)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, with no
+panic. `It(3).fold(0, move |a, x| { let _g = &g; a + x })`, of the
+crate's iterator `It` with a `Drop`, printed "drop it, drop f", where
+Rust prints "drop f, drop it". The same held through each adapter whose
+fold reaches it, a `skip`'s, `map`'s, `take`'s, `step_by`'s, `chain`'s,
+`enumerate`'s, `peekable`'s, `fuse`'s, `filter`'s, `zip`'s, a `rev()`'s,
+and of `for_each`, `rfold` and `reduce`. `fold(self, init, f)` drops `f`,
+the closure, before what's left of `self`, at its end and as it unwinds
+(iterator.rs:2660). The lowering dropped the closure after the call
+(`dropped_given`), outside the iterator's own drop and what its fold
+closed.
+
+**A by-value consumer's own function, where its drop is seen, is moved
+into the fold: `$consume(it, step, init, f, unwind, ends)`.**
+
+- `ends`, the function's drop, is given to the fold `it` runs, which drops
+  it before what it has left (ADR 0991's protocol), then dropped by
+  `$consume` once, then `it` is closed, at its end and as it unwinds.
+  `step` is "fold", "rfold" or "reduce" (whose `init` says its `Some` is
+  boxed); `for_each` is a fold. The iterator's own drop stays its
+  caller's, `dropped_consumed`'s, after the call, under its guards: **the
+  user's decision**, the visible form `try { return $consume($iterator(
+  iter, itIterator_next), "fold", 0, f, undefined, () => {
+  dDrop_drop(g); }); } finally { dDrop_drop(iter._held); }`, its `rest`
+  in the outer `finally`, where the first proposal had it inside
+  `$consume`.
+- `consumed_function` (`mir/iter/collect.rs`) alone says which:
+  `fold`'s, `rfold`'s, `for_each`'s and `reduce`'s last argument, of a
+  function whose drop drops something, over an iterator that drops
+  something after it or whose fold moves a function an adapter holds; and
+  in std's compiled body, the `F` it was given or a closure that carries
+  its drop, as #710's `ends` was. `consumed_ends` makes its drop, and
+  `dropped_given` skips it. **The user's decision**: elsewhere the form is
+  as it was, `.reduce(f, 0)`, `.forEach(f)`, where nothing it drops is
+  seen in its order. Not a `&mut`'s, which `try_fold`s, nor where the
+  crate's own `fold` is reached, which drops what it's given itself.
+- What `$consume` folds is held (`hold()`), so it closes as `$consume`
+  closes it, after `ends`, never as it's stepped to its end, a `step_by`'s
+  or a `take`'s source's: std's fold drops `self` whole after `f`.
+- Each runtime fold and `rfold` that takes an `unwind` takes `ends` too,
+  and passes it on where std passes its `f` by value: `$lazyChain`'s to its
+  second side alone, as `Chain::fold` gives its first `&mut f`, and
+  `$chainEnds`' `rfold` to its first; `$stepBy`'s, `$enumerate`'s,
+  `$lazySkipWhile`'s, `$lazyScan`'s, `$skipping`'s and `$taking`'s
+  `rfold`, `$foldBack` and `$iterator`'s and `$foldOf`'s entries. A
+  flatten's drops it after its parts, as `FlattenCompat::fold` folds them
+  by `&mut fold`. An architecture test refuses a runtime fold that takes
+  `(init, f, unwind)` alone.
+
+`test/corpus/consumer_closure_dropped_first.rs` checks each consumer and
+adapter above, a `Vec`'s rest, a flatten, a `by_ref()`, and a panic in
+the closure, against native Rust, as the crate builds it and with std's
+iterator structs; `iterator-forms.test.ts`' "a consumer's closure folded
+over a reversed adapter", a `skip()`, `chain()` and `filter()` reversed,
+which the build that rewrites adapters refuses. Architecture tests:
+"every runtime fold takes what drops with its f" and "a consumer's
+closure folded by value is dropped by $consume alone". The mutations are
+`consume-unheld`, `chain-fold-ends-lost`, `step-by-fold-ends-after`,
+`skip-while-fold-ends-lost`, `iterator-rfold-ends-lost`,
+`consumed-function-never`, `consumed-rfold-not-by-value` and
+`consumed-function-dropped-after`.

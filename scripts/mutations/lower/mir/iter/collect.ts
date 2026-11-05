@@ -171,8 +171,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`fold(None, f)`'s `reduce(f, undefined)` loses its start, so an empty slice's throws and another's starts from its first item",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        crate::lower::calls::given_to_js(&mut args);\n        // `$foldDropping(it, init, f, drop)`",
-    replace: "        // `$foldDropping(it, init, f, drop)`",
+    find: "        crate::lower::calls::given_to_js(&mut args);\n        args.swap(0, 1);\n",
+    replace: "        args.swap(0, 1);\n",
     tests: ["test/corpus.test.ts", "-t", "fold_from_none"],
   },
   {
@@ -725,16 +725,16 @@ export const mutations: Mutation[] = [
     name: "fold-given-no-ends",
     breaks: "a compiled `Map::fold` gives the fold it asks no drop of the closure it moved into it, so its function drops after what the `take` left (#710)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            Some(&ty) if self.carries_its_drop(ty) || compiled && self.given_drop(ty).is_some() => {\n",
-    replace: "            Some(&ty) if false && self.carries_its_drop(ty) => {\n",
+    find: "            return self.carries_its_drop(f) || self.given_drop(f).is_some();\n",
+    replace: "            return false;\n",
     tests: ["test/std-package.test.ts"],
   },
   {
     name: "fold-given-no-ends-of-a-param",
     breaks: "a compiled `Skip::fold` gives the fold it asks no drop of the `F` it was given, so a `map`'s function over it drops after what the `take` left (#710)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            Some(&ty) if self.carries_its_drop(ty) || compiled && self.given_drop(ty).is_some() => {\n",
-    replace: "            Some(&ty) if self.carries_its_drop(ty) => {\n",
+    find: "            return self.carries_its_drop(f) || self.given_drop(f).is_some();\n",
+    replace: "            return self.carries_its_drop(f);\n",
     tests: ["test/std-package.test.ts"],
   },
   {
@@ -753,5 +753,21 @@ export const mutations: Mutation[] = [
     replace: "                Expr::call_helper(\"$collectDropping\", args)\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_of_a_value_given_as_it_is.rs$"],
     snapshots: true,
+  },
+  {
+    name: "consumed-function-never",
+    breaks: "no by-value consumer's closure is dropped by its fold, so it drops after what the fold closed (#734)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        if !by_value || iter_ty.is_mutable_ptr() {\n            return false;\n        }\n",
+    replace: "        if true || !by_value || iter_ty.is_mutable_ptr() {\n            return false;\n        }\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_closure_dropped_first.rs$"],
+  },
+  {
+    name: "consumed-rfold-not-by-value",
+    breaks: "an `rfold`'s closure isn't taken to be moved into its fold, so it drops after the crate's iterator (#734)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            Some(IterMethod::Fold | IterMethod::RFold | IterMethod::ForEach | IterMethod::Reduce)\n",
+    replace: "            Some(IterMethod::Fold | IterMethod::ForEach | IterMethod::Reduce)\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_closure_dropped_first.rs$"],
   },
 ];

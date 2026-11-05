@@ -1075,4 +1075,12 @@ export const mutations: Mutation[] = [
     replace: "                Vec::new(),\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_folded_by_value_panics.rs$"],
   },
+  {
+    name: "consumed-function-dropped-after",
+    breaks: "a closure `$consume` drops is dropped again after the call, twice (#734)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            if !(when.is_none() && consumed) {\n",
+    replace: "            if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_closure_dropped_first.rs$"],
+  },
 ];

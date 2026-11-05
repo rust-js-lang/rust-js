@@ -35,9 +35,10 @@ function $lazyScan(items, init, f, handle = true) {
   };
   // Its `fold`, std's: its `try_fold`, never stopped but by a `None`, then
   // dropped with what it steps (#214).
-  const fold = (init, g, unwind) => {
-    const folded = $consumed(scanning, () => scanning.tryFold(init, g, () => false, unwind));
-    scanning.return();
+  // What drops with `g`, `ends`, first (#734).
+  const fold = (init, g, unwind, ends) => {
+    const folded = $consumed(scanning, () => scanning.tryFold(init, g, () => false, unwind), ends);
+    $closedAfter(ends, () => scanning.return());
     return folded;
   };
   $forward(scanning, source, { tryFold, fold });

@@ -46,9 +46,10 @@ function $taking(iter, n, drop) {
       return !(len > taking.n && $nthBackOf(taking.iter, len - taking.n - 1, drop).done);
     };
     // Consumed, its source done with after (#225).
-    const rfold = (init, f, unwind) => {
-      const folded = taking.n === 0 || !trimmed() ? init : $foldBack(taking.iter, init, f, unwind);
-      $closed(taking.iter);
+    // What drops with `f`, `ends`, its source's `rfold`'s, first (#734).
+    const rfold = (init, f, unwind, ends) => {
+      const folded = taking.n === 0 || !trimmed() ? init : $foldBack(taking.iter, init, f, unwind, ends);
+      $closedAfter(ends, () => $closed(taking.iter));
       return folded;
     };
     const tryRfold = (init, f, broke, unwind) =>

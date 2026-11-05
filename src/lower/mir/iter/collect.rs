@@ -139,6 +139,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || recognition.iterator_method(method) == Some(IterMethod::Collect) && self.collects_by_fold(output)
     }
 
+    /// Whether std's consumer `method` of an `iter_ty` moves the function
+    /// it's given last, of type `f`, into the fold it runs, which drops it
+    /// before what's left of the iterator, as `fold(self, init, f)` drops
+    /// `f` first, where that's seen (#734): `fold`'s, `rfold`'s, `for_each`'s
+    /// and `reduce`'s, of a
+    /// function that drops, over an iterator that drops something after it,
+    /// its rest or itself, or whose fold moves a function an adapter holds
+    /// (`folds_held_function`), the user's decision; and in std's compiled
+    /// body, of the `F` it was given or a closure that carries its drop
+    /// (#710). Not where the crate's own `fold` is reached, which drops what
+    /// it's given itself. Its drop is the fold's `ends`, `$consume`'s, not
+    /// `dropped_given`'s after the call: the one answer of both.
+    pub(in crate::lower) fn consumed_function(
+        &self,
+        method: Option<IterMethod>,
+        iter_ty: Ty<'tcx>,
+        f: Ty<'tcx>,
+    ) -> bool {
+        let recognition = self.recognition();
+        let by_value = matches!(
+            method,
+            Some(IterMethod::Fold | IterMethod::RFold | IterMethod::ForEach | IterMethod::Reduce)
+        );
+        if !by_value || iter_ty.is_mutable_ptr() {
+            return false;
+        }
+        if crate::lower::recognition::is_compiled_std(self.tcx, self.frame.owner) {
+            return self.carries_its_drop(f) || self.given_drop(f).is_some();
+        }
+        self.drops(f) != crate::lower::drops::Drops::Nothing
+            && !recognition.reaches_its_own(iter_ty, OwnStep::Fold, Reach::May)
+            && (self.drops(iter_ty) != crate::lower::drops::Drops::Nothing || self.folds_held_function(iter_ty))
+    }
+
     /// `it`, an iterator of type `iter_ty`, as a consumer std routes through
     /// `fold` takes it: where that reaches the crate's own `fold` (#162), or
     /// may, of a type parameter, which `$folded` asks at run time (#521), or
@@ -800,28 +834,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// first item (ADR 0330).
     pub(super) fn folded(
         &mut self,
-        it: Expr,
+        (it, method): (Expr, DefId),
         (init, f): (Option<Expr>, Expr),
         (arg_tys, item): (&[Ty<'tcx>], Option<Ty<'tcx>>),
         span: Span,
     ) -> R<Expr> {
         let own = arg_tys.last().is_some_and(|ty| self.is_called_as_written(*ty));
-        // A closure it's given by value that carries its drop, `$dropping`'s,
-        // std's `Map::fold`'s `map_fold(f, g)` of compiled code: its drop,
-        // `ends`, given to the fold, which drops it before what's left of
-        // what it folds, as `fold(self, init, f)` drops `f` first (#710).
-        // Dropped after the call too, which then does nothing (`$dispose`).
-        // And of std's compiled body, a `Skip::fold`'s, the `F` it was given
-        // to fold by, whose drop is its caller's `ends`, which drops once.
-        let compiled = crate::lower::recognition::is_compiled_std(self.tcx, self.frame.owner);
-        let ends = match arg_tys.last() {
-            Some(&ty) if self.carries_its_drop(ty) || compiled && self.given_drop(ty).is_some() => {
-                let mut dropped = Vec::new();
-                self.drop_value(f.clone(), ty, span, &mut dropped)?;
-                Some(Expr::arrow(Vec::new(), dropped))
-            }
-            _ => None,
-        };
+        let ends = self.consumed_ends(self.recognition().iterator_method(method), arg_tys, &f, span)?;
         let callback = self.binary_callback(f, own);
         let acc = match init {
             Some(_) => arg_tys.get(1).copied(),
@@ -833,8 +852,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let Some(init) = init else {
             // `reduce(f)`: from its first item, `None` of none (ADR 0479).
-            let mut args = vec![it, callback];
             let boxed = item.is_some_and(|item| self.boxed_payload(item));
+            // Of a function it moves into its fold, `$consume`'s (#734).
+            if let Some(ends) = ends {
+                let unwind = unwind.unwrap_or_else(Expr::undefined);
+                let args = vec![it, Expr::str("reduce"), Expr::bool(boxed), callback, unwind, ends];
+                return Ok(Expr::call_helper("$consume", args));
+            }
+            let mut args = vec![it, callback];
             if boxed || unwind.is_some() {
                 args.push(Expr::bool(boxed));
             }
@@ -843,17 +868,66 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut args = vec![callback, init];
         crate::lower::calls::given_to_js(&mut args);
-        // `$foldDropping(it, init, f, drop)`, which passes it on (#423), and
-        // what drops with `f` (#710).
-        if unwind.is_some() || ends.is_some() {
-            args.swap(0, 1);
+        args.swap(0, 1);
+        // What drops with `f`, its drop, `$consume(it, init, f, unwind,
+        // ends)`, which drops it before what's left (#734).
+        if let Some(ends) = ends {
             let unwind = unwind.unwrap_or_else(Expr::undefined);
+            let step = vec![it, Expr::str("fold")];
+            return Ok(Expr::call_helper("$consume", [step, args, vec![unwind, ends]].concat()));
+        }
+        // `$foldDropping(it, init, f, drop)`, which passes it on (#423).
+        if let Some(unwind) = unwind {
             return Ok(Expr::call_helper(
                 "$foldDropping",
-                [vec![it], args, vec![unwind], Vec::from_iter(ends)].concat(),
+                [vec![it], args, vec![unwind]].concat(),
             ));
         }
+        args.swap(0, 1);
         Ok(Expr::call(Expr::member(it, "reduce"), args))
+    }
+
+    /// `it.for_each(f)`, `it.forEach(f)`; of a function it moves into its
+    /// fold, `$consume`'s, a fold of `f` of each, which drops it before
+    /// what's left (#734).
+    pub(super) fn for_each_called(
+        &mut self,
+        it: Expr,
+        (f, own): (Expr, bool),
+        arg_tys: &[Ty<'tcx>],
+        span: Span,
+    ) -> R<Expr> {
+        let Some(ends) = self.consumed_ends(Some(IterMethod::ForEach), arg_tys, &f, span)? else {
+            let f = self.unary_callback(f, own);
+            return Ok(Expr::call(Expr::member(it, "forEach"), vec![f]));
+        };
+        let each = Expr::arrow(
+            vec!["_".into(), "x".into()],
+            vec![StmtKind::Expr(Expr::call(f, vec![Expr::var("x")])).at(js::Span::NONE)],
+        );
+        let args = vec![it, Expr::str("fold"), Expr::undefined(), each, Expr::undefined(), ends];
+        Ok(Expr::call_helper("$consume", args))
+    }
+
+    /// The drop of what a by-value consumer `method` of `arg_tys` moves into
+    /// its fold, `f`, its last argument, as an arrow, its fold's `ends`,
+    /// where `consumed_function` says (#734).
+    pub(super) fn consumed_ends(
+        &mut self,
+        method: Option<IterMethod>,
+        arg_tys: &[Ty<'tcx>],
+        f: &Expr,
+        span: Span,
+    ) -> R<Option<Expr>> {
+        let (Some(&receiver), Some(&ty)) = (arg_tys.first(), arg_tys.last()) else {
+            return Ok(None);
+        };
+        if !self.consumed_function(method, receiver, ty) {
+            return Ok(None);
+        }
+        let mut dropped = Vec::new();
+        self.drop_value(f.clone(), ty, span, &mut dropped)?;
+        Ok(Some(Expr::arrow(Vec::new(), dropped)))
     }
 
     /// `it.try_fold(init, f)` into `output`, an `Option` or a `Result`: each

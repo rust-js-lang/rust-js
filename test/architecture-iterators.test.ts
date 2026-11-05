@@ -93,3 +93,34 @@ test("an adapter that holds a function is $holding alone", () => {
   const pinned = [...files("test").filter((file) => file.endsWith(".js")), ...files("docs/guide")];
   expect(pinned.filter((file) => old.test(read(file)))).toEqual([]);
 });
+
+// A fold by value drops what drops with its `f`, `ends`, before what's left
+// of what it folds, as std's `fold(self, init, f)` drops `f` first (#710,
+// #734): every runtime `fold` and `rfold` that takes an `unwind` takes
+// `ends` after it and passes it on or drops it there; one that took
+// `(init, f, unwind)` alone lost it, and a consumer's closure dropped after
+// what that fold closed.
+test("every runtime fold takes what drops with its f", () => {
+  const without = /\b(r?fold)\s*(=|:)\s*(\w+(\.\w+)?\s*&&\s*)?\(+\s*init, \w+, unwind\)\s*=>|^\s*r?fold\(init, \w+, unwind\)\s*\{|\(init, \w+, unwind\) => r?fold\(/m;
+  expect(without.test("  const fold = (init, f, unwind) => {")).toBe(true);
+  expect(without.test("  const fold = (init, f, unwind, ends) => {")).toBe(false);
+  const lacking = files("src/runtime")
+    .filter((file) => file.endsWith(".js"))
+    .filter((file) => read(file).split("\n").some((line) => !line.trimStart().startsWith("//") && without.test(line)));
+  expect(lacking).toEqual([]);
+});
+
+// A by-value consumer's own function, where its drop is seen, is dropped by
+// `$consume`, which its fold is given (#734): `consumed_function` alone says
+// which, `consumed_ends` alone makes its drop, and `dropped_given` skips it.
+// No other lowering writes `$consume`, so a consumer that dropped its
+// closure after the call, around what the call closed, can't come back.
+test("a consumer's closure folded by value is dropped by $consume alone", () => {
+  const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
+  const writing = lowering.filter((file) => read(file).includes('"$consume"'));
+  for (const file of writing) expect(read(file), file).toContain("consumed_ends(");
+  expect(writing.sort()).toEqual(["src/lower/mir/iter/backs.rs", "src/lower/mir/iter/collect.rs"]);
+  const asking = lowering.filter((file) => read(file).includes("consumed_function("));
+  expect(asking.sort()).toEqual(["src/lower/mir/dispatch.rs", "src/lower/mir/iter/collect.rs"]);
+  expect(read("src/runtime/fold_of.js")).toContain("function $consume(it, step, init, f, unwind, ends)");
+});

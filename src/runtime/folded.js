@@ -12,10 +12,10 @@
 // (#494).
 function $folded(it, firstByNext = false) {
   if (it.fold === undefined) return it;
-  const foldOf = (init, f, unwind) => {
-    if (!firstByNext) return it.fold(init, f, unwind);
+  const foldOf = (init, f, unwind, ends) => {
+    if (!firstByNext) return it.fold(init, f, unwind, ends);
     const first = it.next();
-    return first.done ? init : it.fold(f(init, first.value), f, unwind);
+    return first.done ? init : it.fold(f(init, first.value), f, unwind, ends);
   };
   let items;
   const listed = () =>
@@ -25,6 +25,6 @@ function $folded(it, firstByNext = false) {
     }).values());
   const folded = Iterator.from({ next: () => listed().next() });
   return $forward(folded, it, {
-    fold: (init, f, unwind) => (items === undefined ? foldOf(init, f, unwind) : listed().reduce(f, init)),
+    fold: (init, f, unwind, ends) => (items === undefined ? foldOf(init, f, unwind, ends) : listed().reduce(f, init)),
   });
 }

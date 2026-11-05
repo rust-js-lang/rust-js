@@ -110,8 +110,8 @@ export const mutations: Mutation[] = [
     name: "chain-fold-unclosed",
     breaks: "a `chain` whose first side's stage panics inside a fold leaves its second side undropped (#423)",
     file: "src/runtime/lazy_chain.js",
-    find: "  const fold = (init, f, unwind) =>\n    $consumed(chained, () => {",
-    replace: "  const fold = (init, f, unwind) =>\n    ((run) => run())(() => {",
+    find: "  const fold = (init, f, unwind, ends) =>\n    $consumed(\n      chained,\n      () => {",
+    replace: "  const fold = (init, f, unwind, ends) =>\n    ((_, run) => run())(\n      chained,\n      () => {",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
   },
   {
@@ -145,5 +145,13 @@ export const mutations: Mutation[] = [
     find: "  const last = () =>\n    $consumed(chained, () => {\n",
     replace: "  const last = () =>\n    ((_, run) => run())(chained, () => {\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_side_panics_drops_the_other.rs$"],
+  },
+  {
+    name: "chain-fold-ends-lost",
+    breaks: "a chain's fold gives its second side's fold nothing of what drops with `f`, so the consumer's closure drops after that side's rest (#734)",
+    file: "src/runtime/lazy_chain.js",
+    find: "        folded = $foldDropping(second, folded, f, unwind, ends);\n",
+    replace: "        folded = $foldDropping(second, folded, f, unwind);\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_closure_dropped_first.rs$"],
   },
 ];

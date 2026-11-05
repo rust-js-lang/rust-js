@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "fold-of-unwind-lost",
     breaks: "a dictionary's `fold` of std's struct, `$foldOf`, gives it no `unwind`: generic code's fold of a `copied()` of the crate's own behind a `fuse()`, whose `next` panics, drops none of what it folded (#615)",
     file: "src/runtime/fold_of.js",
-    find: "function $foldOf(it, init, f, unwind) {\n  return it.fold(init, f, unwind);\n",
+    find: "function $foldOf(it, init, f, unwind, ends) {\n  return it.fold(init, f, unwind, ends);\n",
     replace: "function $foldOf(it, init, f, unwind) {\n  return it.fold(init, f);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_unwind_given_on.rs$"],
   },
@@ -90,5 +90,13 @@ export const mutations: Mutation[] = [
     find: "    if (inPlace && typeof it.tryFold === \"function\") {\n",
     replace: "    if (false) {\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^fold_drops_moved_function_first with std"],
+  },
+  {
+    name: "consume-unheld",
+    breaks: "what `$consume` folds closes itself as it's stepped to its end, a `step_by`'s source, before the consumer's closure drops (#734)",
+    file: "src/runtime/fold_of.js",
+    find: "  it.hold?.();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_closure_dropped_first.rs$"],
   },
 ];

@@ -756,7 +756,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of items with a destructor, each it skips dropped as it's
             // skipped, as Rust's `nth` drops it (ADRs 0422, 0465).
             Some(IterMethod::Skip) => self.skipped(it, arg(), dropping, span)?,
-            Some(IterMethod::ForEach) => method("forEach", it, vec![self.unary_callback(arg(), own)]),
+            Some(IterMethod::ForEach) => self.for_each_called(it, (arg(), own), arg_tys, span)?,
             Some(IterMethod::Any) => method("some", it, vec![self.unary_callback(arg(), own)]),
             Some(IterMethod::All) => method("every", it, vec![self.unary_callback(arg(), own)]),
             // Of what looks like `None`: the first kept, boxed.
@@ -782,8 +782,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Some(IterMethod::Enumerate) => crate::lower::iterators::enumerated(it),
             Some(m) if m.compares() => self.iterators_cmp((it, arg()), (item, arg_tys[1]), m, span)?,
-            Some(IterMethod::Fold) => self.folded(it, (Some(arg()), arg()), (arg_tys, item), span)?,
-            Some(IterMethod::Reduce) => self.folded(it, (None, arg()), (arg_tys, item), span)?,
+            Some(IterMethod::Fold) => self.folded((it, def_id), (Some(arg()), arg()), (arg_tys, item), span)?,
+            Some(IterMethod::Reduce) => self.folded((it, def_id), (None, arg()), (arg_tys, item), span)?,
             Some(m) if m.tries() => self.try_folded(it, m, &mut arg, (own, output), arg_tys, span)?,
             Some(IterMethod::Count) => self.counted(it, item, (def_id, iter_ty), span)?,
             Some(IterMethod::Sum | IterMethod::Product) => {

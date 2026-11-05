@@ -1,9 +1,10 @@
 // `it.fold(init, f)` of a JS iterator whose `fold` is std's adapter's over
 // the crate's own, as a dictionary's `fold` is called, of the value it's of
 // (#214); given `unwind`, what a stage's panic strands, `$foldDropping`'s,
-// its own fold's to pass on (#423).
-function $foldOf(it, init, f, unwind) {
-  return it.fold(init, f, unwind);
+// its own fold's to pass on (#423); and `ends`, what drops with `f`, which
+// its fold drops before what it has left (#734).
+function $foldOf(it, init, f, unwind, ends) {
+  return it.fold(init, f, unwind, ends);
 }
 
 // `it.fold(init, f)` of an accumulator with a destructor that a stage's
@@ -39,6 +40,43 @@ function $foldDropping(it, init, f, unwind, ends) {
       throw error;
     }
   }
+}
+
+// Rust's by-value `fold(self, init, f)`, `rfold`, and `reduce(self, f)`,
+// its first `next` inside, `step` "fold", "rfold" or "reduce", where the
+// consumer's own function drops something: `f` of each item from `init` (of
+// a `reduce`, whether its `Some` is boxed); then, at its end and as it
+// unwinds, in std's order (iterator.rs:2660), `unwind(acc)` where a stage's
+// panic strands it, then what drops with `f`, `ends`, once, given to the
+// fold it runs, which drops it before what it has left, then what's left of
+// `it`, closed. The value's own drop is its caller's, after (#734).
+function $consume(it, step, init, f, unwind, ends) {
+  let dropped = false;
+  const once = () => {
+    if (!dropped) {
+      dropped = true;
+      ends();
+    }
+  };
+  // Held, so what it steps closes as `$consume` closes it, after `ends`, not
+  // as it's stepped to its end, a `step_by`'s or a `take`'s source's: std's
+  // fold drops `self` whole after `f` (ADR 0570's statement end).
+  it.hold?.();
+  let folded;
+  try {
+    if (step === "rfold") folded = $foldBack(it, init, f, unwind, once);
+    else if (step === "fold") folded = $foldDropping(it, init, f, unwind, once);
+    else {
+      const first = it.next();
+      folded = first.done ? undefined : $foldDropping(it, first.value, f, unwind, once);
+      if (init && !first.done) folded = $some(folded);
+    }
+  } catch (error) {
+    $closedAfter(once, () => it.return?.());
+    throw error;
+  }
+  $closedAfter(once, () => it.return?.());
+  return folded;
 }
 
 // `collect()` into a `Vec` of a `TrustedLen` iterator, as std's

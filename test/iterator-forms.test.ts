@@ -115,6 +115,8 @@ const few = [
   // An adapter's closure a fold by value moves, dropped before what its
   // source has left, by std's compiled fold too (#710).
   "fold_drops_moved_function_first.rs",
+  // A consumer's own closure, dropped before what its fold leaves (#734).
+  "consumer_closure_dropped_first.rs",
   // And as a panic in it unwinds, a closure a std call is given (#719).
   "closure_folded_by_value_panics.rs",
   // A `Vec`'s collect of what isn't `TrustedLen`: its first item by
@@ -323,6 +325,76 @@ fn main() {
   const compiled = compileJs(file, dir, "2024", false, {}, ["--std-iterators"]);
   if (!("js" in compiled)) throw new Error(compiled.error);
   const ran = runJs(runtimes[0][1], compiled.js, dir, "take-rev");
+  expect(ran.stdout).toBe(native.stdout);
+  expect(agree(ran, native)).toBe(true);
+}, 300_000);
+
+// A consumer's own closure that holds what has a destructor, given by value
+// to a fold of what the build that rewrites adapters can't step from its
+// back, a `skip()`, a `chain()` or a `filter()` reversed: dropped before what
+// its fold leaves, as std's `fold(self, init, f)` drops `f` first, a
+// `chain()`'s before its second side's rest (#734).
+test("a consumer's closure folded over a reversed adapter drops before what's left", () => {
+  const dir = fixture("forms-consumer-ends");
+  const file = join(dir, "main.rs");
+  writeFileSync(
+    file,
+    `struct D(&'static str);
+
+impl Drop for D {
+    fn drop(&mut self) {
+        print!("drop {} ", self.0);
+    }
+}
+
+struct It {
+    left: u32,
+    _held: D,
+}
+
+impl Iterator for It {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<u32> {
+        (self.left > 0).then(|| {
+            self.left -= 1;
+            self.left
+        })
+    }
+}
+
+impl DoubleEndedIterator for It {
+    fn next_back(&mut self) -> Option<u32> {
+        self.next()
+    }
+}
+
+fn it(left: u32, name: &'static str) -> It {
+    It { left, _held: D(name) }
+}
+
+fn zero(_guard: &D) -> u32 {
+    0
+}
+
+fn main() {
+    let g = D("f");
+    let n = vec![D("x"), D("y"), D("z")].into_iter().skip(1).rev().fold(0, move |a, _| a + 1 + zero(&g));
+    println!("| {n}");
+    let g = D("f");
+    let n = it(2, "it").chain(it(1, "it2")).rev().fold(0, move |a, x| a + x + zero(&g));
+    println!("| {n}");
+    let g = D("f");
+    let n = it(3, "it").filter(|&x| x > 0).rev().fold(0, move |a, x| a + x + zero(&g));
+    println!("| {n}");
+}
+`,
+  );
+  const native = runNative(file, dir, "2024");
+  if (typeof native === "string") throw new Error(native);
+  const compiled = compileJs(file, dir, "2024", false, {}, ["--std-iterators"]);
+  if (!("js" in compiled)) throw new Error(compiled.error);
+  const ran = runJs(runtimes[0][1], compiled.js, dir, "consumer-ends");
   expect(ran.stdout).toBe(native.stdout);
   expect(agree(ran, native)).toBe(true);
 }, 300_000);

@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "scan-fold-by-next",
     breaks: "a `scan`'s fold steps it by `next`, not std's `try_fold`, so a `skip` inside asks the crate's own `nth(n)` (#216)",
     file: "src/runtime/scan.js",
-    find: "    const folded = $consumed(scanning, () => scanning.tryFold(init, g, () => false, unwind));\n",
+    find: "    const folded = $consumed(scanning, () => scanning.tryFold(init, g, () => false, unwind), ends);\n",
     replace: "    const folded = $Steps.prototype.fold.call(scanning, init, g, unwind);\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },

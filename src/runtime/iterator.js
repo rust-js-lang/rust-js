@@ -40,7 +40,7 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
     fold:
       fold === undefined
         ? rangeFold && ((init, f) => rangeFold(iterator, init, f, () => false))
-        : (init, f, unwind) => fold(iterator, init, f, unwind),
+        : (init, f, unwind, ends) => fold(iterator, init, f, unwind, ends),
     tryRfold:
       tryRfold === undefined
         ? rangeRfold && ((init, f, broke) => rangeRfold(iterator, init, f, broke))
@@ -48,7 +48,7 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
     rfold:
       rfold === undefined
         ? rangeRfold && ((init, f) => rangeRfold(iterator, init, f, () => false))
-        : (init, f, unwind) => rfold(iterator, init, f, unwind),
+        : (init, f, unwind, ends) => rfold(iterator, init, f, unwind, ends),
     nth: nth && ((k) => step(nth(iterator, k))),
     last: last && (() => step(last(iterator))),
     nthBack: nthBack && ((k) => step(nthBack(iterator, k))),

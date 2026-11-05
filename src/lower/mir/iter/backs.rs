@@ -359,6 +359,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => self.closing(it, iter_ty, span)?,
                 false => it,
             };
+            // Of a function it moves into its fold, `$consume`'s (#734).
+            let values: Vec<Expr> = values.collect();
+            if let Some(f) = values.last()
+                && let Some(ends) = self.consumed_ends(Some(method), arg_tys, f, span)?
+            {
+                let mut given = vec![it, Expr::str("rfold")];
+                given.extend(values);
+                given.push(unwind.unwrap_or_else(Expr::undefined));
+                given.push(ends);
+                return Ok(Some(Expr::call_helper("$consume", given)));
+            }
             let mut given = vec![it];
             given.extend(values);
             given.extend(unwind);

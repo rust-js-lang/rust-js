@@ -164,9 +164,10 @@ function $skipping(iter, n, drop) {
   // Consumed, its source done with after (#225), and though it throws, a
   // panic, as `rfold(self)` drops the `Skip` as it unwinds: a `$rev`'s
   // source's `try_fold` drops nothing of what's left as it throws.
-  const rfold = (init, f, unwind) => {
-    const folded = $consumed(skipping, () => skipping.tryRfold(init, f, () => false, unwind));
-    $closed(skipping.iter);
+  // What drops with `f`, `ends`, first, as its `try_rfold` drops `f` (#734).
+  const rfold = (init, f, unwind, ends) => {
+    const folded = $consumed(skipping, () => skipping.tryRfold(init, f, () => false, unwind), ends);
+    $closedAfter(ends, () => $closed(skipping.iter));
     return folded;
   };
   $forward(skipping, iter, {

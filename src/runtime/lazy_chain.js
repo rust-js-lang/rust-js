@@ -26,18 +26,24 @@ function $lazyChain(a, b) {
   );
   // Closed though a fold throws, a panic, `b` with what's left of `a`, as
   // std's `Chain::fold` drops itself as it unwinds (#423).
-  const fold = (init, f, unwind) =>
-    $consumed(chained, () => {
-      let folded = init;
-      if (first !== undefined) {
-        folded = $foldDropping(first, folded, f, unwind);
-        first.return?.();
-        first = undefined;
-      }
-      folded = $foldDropping(second, folded, f, unwind);
-      second.return?.();
-      return folded;
-    });
+  // What drops with `f`, `ends`, given to `b`'s fold alone, as
+  // `Chain::fold` gives `a`'s `&mut f` and `b`'s `f` (#734).
+  const fold = (init, f, unwind, ends) =>
+    $consumed(
+      chained,
+      () => {
+        let folded = init;
+        if (first !== undefined) {
+          folded = $foldDropping(first, folded, f, unwind);
+          first.return?.();
+          first = undefined;
+        }
+        folded = $foldDropping(second, folded, f, unwind, ends);
+        $closedAfter(ends, () => second.return?.());
+        return folded;
+      },
+      ends,
+    );
   // Std's `Chain::last`: `a`'s `last`, then `b`'s, both asked, `b`'s where
   // it has one; closed though `a`'s throws, a panic, `b` with it, as
   // `last(self)` drops what it holds as it unwinds (#647).

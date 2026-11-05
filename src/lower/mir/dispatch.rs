@@ -780,9 +780,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => None,
         };
         let mut held = Vec::new();
+        // Not a function a by-value consumer moves into its fold, which
+        // `$consume` drops before what's left (`consumed_function`, #734).
+        let method = self.recognition().iterator_method(def_id);
         for (at, when) in given {
+            let consumed = at + 1 == arg_tys.len() && self.consumed_function(method, arg_tys[0], arg_tys[at]);
             let f = self.held_value(&mut values, at, "f", span, out)?;
-            held.push((when, f, arg_tys[at]));
+            if !(when.is_none() && consumed) {
+                held.push((when, f, arg_tys[at]));
+            }
         }
         let mut call = Vec::new();
         let value = self.mir_call_values_of(

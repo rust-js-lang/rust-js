@@ -44,19 +44,25 @@ function $lazySkipWhile(items, skip) {
   // crate's where it writes one (#214); then closed, as `fold(self)` drops
   // what it has left at its end, though its first step found none (#242).
   // Closed though it throws, a panic (#423).
-  const fold = (init, f, unwind) =>
-    $consumed(skipped, () => {
-      let folded = init;
-      if (skipping) {
-        const step = first(folded, unwind);
-        if (step.done) {
-          skipped.return();
-          return folded;
+  // What drops with `f`, `ends`, its source's fold's, which `SkipWhile::fold`
+  // gives `fold` by value, or first where it stops (#734).
+  const fold = (init, f, unwind, ends) =>
+    $consumed(
+      skipped,
+      () => {
+        let folded = init;
+        if (skipping) {
+          const step = first(folded, unwind);
+          if (step.done) {
+            $closedAfter(ends, () => skipped.return());
+            return folded;
+          }
+          folded = f(folded, step.value);
         }
-        folded = f(folded, step.value);
-      }
-      return source.fold !== undefined ? source.fold(folded, f, unwind) : source.reduce(f, folded);
-    });
+        return source.fold !== undefined ? source.fold(folded, f, unwind, ends) : source.reduce(f, folded);
+      },
+      ends,
+    );
   $forward(skipped, source, { tryFold, fold });
   skipped.from = [source];
   return skipped;
