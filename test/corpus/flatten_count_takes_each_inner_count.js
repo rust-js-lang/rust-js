@@ -62,6 +62,18 @@ function holdingIterator_count(holding) {
   return result;
 }
 
+function keptIterator_next(kept) {
+  if (kept.left === 0) {
+    return;
+  }
+  kept.left = (kept.left - 1) >>> 0;
+  return kept.left;
+}
+
+function kept(held, left) {
+  return { _held: [held], left };
+}
+
 function counted(it, dropI, dropIItem) {
   const iter = it;
   try {
@@ -278,6 +290,33 @@ function main() {
       ),
     )}`,
   );
+  console.log(
+    `kept ${$flatMap(
+      $closing($iter([kept(40, 2), kept(41, 1)]), (intoIter) => {
+        for (const item of intoIter) {
+          dDrop_drop(item._held);
+        }
+      }),
+      (item) =>
+        $closing($iterator(item, keptIterator_next), (it) => {
+          dDrop_drop(it.of._held);
+        }),
+    ).reduce((n) => n + 1, 0)}`,
+  );
+  const value$2 = Array.from(
+    $flatMap(
+      $closing($iter([kept(42, 2), kept(43, 1)]), (intoIter) => {
+        for (const item of intoIter) {
+          dDrop_drop(item._held);
+        }
+      }),
+      (item) =>
+        $closing($iterator(item, keptIterator_next), (it) => {
+          dDrop_drop(it.of._held);
+        }),
+    ),
+  ).at(-1);
+  console.log(`kept last ${value$2 == null ? "None" : `Some(${value$2})`}`);
   let r = $catchUnwind(() =>
     $count(
       $flatMap($closing($iter([[20], [13], [21]]), $dropEach(dDrop_drop)), (item) =>

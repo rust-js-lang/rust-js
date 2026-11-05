@@ -5,8 +5,9 @@
 // generic code, held in a variable, fused, skipped and stepped part-way
 // first, from both ends too, its back inner's own `count` last; of inner
 // iterators that hold what has a destructor, dropped as
-// each is counted; and one whose inner iterator's own `count` panics
-// drops what's left of its source.
+// each is counted, the crate's iterator with a destructor and std's
+// `count` and `last` too, whose drop is its value's (#766); and one whose
+// inner iterator's own `count` panics drops what's left of its source.
 use std::panic::catch_unwind;
 
 struct D(u32);
@@ -62,6 +63,27 @@ impl Iterator for Holding {
     }
 }
 
+/// Holds a `D` and counts down from `left`, with std's `count` and `last`.
+struct Kept {
+    _held: D,
+    left: u32,
+}
+
+impl Iterator for Kept {
+    type Item = u32;
+    fn next(&mut self) -> Option<u32> {
+        if self.left == 0 {
+            return None;
+        }
+        self.left -= 1;
+        Some(self.left)
+    }
+}
+
+fn kept(held: u32, left: u32) -> Kept {
+    Kept { _held: D(held), left }
+}
+
 fn counted<I: Iterator>(it: I) -> usize {
     it.count()
 }
@@ -96,6 +118,8 @@ fn main() {
     println!("mapped {}", vec![2u32, 3].into_iter().flat_map(|n| Own(n).map(|x| x + 1)).count());
     println!("vecs {}", vec![vec![D(1), D(2)], vec![D(3)]].into_iter().flatten().count());
     println!("holding {}", vec![4u32, 5].into_iter().map(|n| Holding(D(n))).flatten().count());
+    println!("kept {}", vec![kept(40, 2), kept(41, 1)].into_iter().flatten().count());
+    println!("kept last {:?}", vec![kept(42, 2), kept(43, 1)].into_iter().flatten().last());
     let r = catch_unwind(|| vec![D(20), D(13), D(21)].into_iter().flat_map(|d| Own(d.0)).count());
     println!("panicked {}", r.is_err());
     let r = catch_unwind(|| counted(vec![D(22), D(13), D(23)].into_iter().flat_map(|d| Own(d.0))));

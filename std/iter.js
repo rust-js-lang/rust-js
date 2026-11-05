@@ -18,6 +18,7 @@ import {
   $fromFn,
   $getUnchecked,
   $given,
+  $givenDrop,
   $held,
   $intoIter,
   $lastDropping,
@@ -10226,7 +10227,13 @@ export function flattenCompatIUIterator_last(
   return FlattenCompat.iterFold(
     flattenCompat,
     undefined,
-    (a, b) => flattenCompatIUIterator_last_last(a, $given(b, UIterator, true), dropU, dropUItem),
+    (a, b) =>
+      flattenCompatIUIterator_last_last(
+        a,
+        $given(b, UIterator, true),
+        (it) => $givenDrop(it, dropU),
+        dropUItem,
+      ),
     IIterator,
     IItemIntoIterator,
     dropI,
@@ -10327,7 +10334,13 @@ export function flattenCompatIUIterator_count(
   return FlattenCompat.iterFold(
     flattenCompat,
     0,
-    (a, b) => flattenCompatIUIterator_count_count(a, $given(b, UIterator, true), dropU, dropUItem),
+    (a, b) =>
+      flattenCompatIUIterator_count_count(
+        a,
+        $given(b, UIterator, true),
+        (it) => $givenDrop(it, dropU),
+        dropUItem,
+      ),
     IIterator,
     IItemIntoIterator,
     dropI,

@@ -299,7 +299,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => return false,
         };
         let given = args.type_at(param.index as usize);
-        self.is_user_iterator(self.reveal(given))
+        // The crate's own, `$iterator`'s, or a type parameter's, `$given`'s
+        // (#766).
+        (self.is_user_iterator(self.reveal(given)) || matches!(given.kind(), ty::Param(_)))
             && self.reveal(ty) == self.reveal(given)
             && self.given_as_iterator(callee, ty::Ty::new_param(self.tcx, param.index, param.name), given)
     }

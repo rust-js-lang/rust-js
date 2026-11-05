@@ -254,4 +254,12 @@ export const mutations: Mutation[] = [
     replace: "        : (init, f, unwind) => rfold(iterator, init, f, unwind),\n",
     tests: ["test/iterator-forms.test.ts", "-t", "consumer"],
   },
+  {
+    name: "given-drop-of-the-wrapper",
+    breaks: "`$givenDrop` drops the JS iterator `$given` made of the value, not the value, a `TypeError` (#766)",
+    file: "src/runtime/iterator.js",
+    find: "  drop?.(it.given === true ? it.of : it);\n",
+    replace: "  drop?.(it);\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^flatten_count_takes_each_inner_count with"],
+  },
 ];

@@ -370,4 +370,12 @@ export const mutations: Mutation[] = [
     replace: "                *value = held;\n",
     tests: ["test/corpus.test.ts", "-t", "^(nth_passes_a_slice_or_each|nth_passed_drops_unwind).rs$"],
   },
+  {
+    name: "given-param-drop-unwrapped",
+    breaks: "a type parameter's value generic code gives on as `$given` made it is dropped by the drop of the value, given the JS iterator, a `TypeError` (#766)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "        (self.is_user_iterator(self.reveal(given)) || matches!(given.kind(), ty::Param(_)))\n",
+    replace: "        self.is_user_iterator(self.reveal(given))\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

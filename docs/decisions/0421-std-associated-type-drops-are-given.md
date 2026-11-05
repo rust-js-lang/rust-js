@@ -105,3 +105,26 @@ too: `drops::functions`' `std_drop_call`, which `insert`'s,
 `option_insert_given_drops.rs` and `flatten_from_its_back.rs` of std's
 structs against native Rust and the mutation `given-drop-called-as-there`
 (`lower/drops/functions.ts`).
+
+## Amendment: a type parameter's value given as a JS iterator (#766)
+
+Generic code takes a type parameter's iterator as a JS iterator; its
+caller makes one of the crate's own, `$iterator(value, next)`, and gives
+it a drop of the iterator's `of`, `held_drop_function`'s. Generic code
+that passes a value of its own type parameter on to generic code as one
+made it by `$given(value, IIterator)`, and gave its own drop of the value
+on as it was: std's compiled `FlattenCompat::count` and `last`, whose
+inner `count(acc, iter: U)` dropped `$given`'s JS iterator by `dropU`, a
+drop of the `U` itself. `vec![once(6)].into_iter().flatten().count()`, of
+the crate's iterator with a destructor, threw a `TypeError` in the build
+of std's iterator structs, where native Rust drops it (a regression of
+#736's f73daa2c5). Results change, so Rust's behavior is kept (ADR 0262).
+
+`iterated_slot` says so of a type parameter given too, and
+`held_drop_function`, the one answer of what drops a value generic code
+holds, gives it `(it) => $givenDrop(it, dropU)`: the value `$given` made
+the JS iterator of, its `of`, or the value itself where `$given` gave it
+as it is, its dictionary's steps its own, which no type says. Held by
+`flatten_count_takes_each_inner_count.rs`'s `Kept`, counted and its
+`last` asked, against native Rust in both builds, and the mutations
+`given-param-drop-unwrapped` and `given-drop-of-the-wrapper`.

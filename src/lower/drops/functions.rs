@@ -155,10 +155,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The function that drops what generic code holds of a `ty`: `ty`'s
     /// drop function, or where its caller made it a JS iterator, `iterated`,
-    /// `$iterator(value, next)`, one that drops `value`, its `of` (ADR 0421).
+    /// `$iterator(value, next)`, one that drops `value`, its `of` (ADR 0421);
+    /// of a type parameter, `$given`'s, which is the value itself where its
+    /// dictionary's steps are its own, `$givenDrop`, the drop of the value
+    /// it was made of, or of it (#766).
     pub(in crate::lower) fn held_drop_function(&mut self, ty: Ty<'tcx>, iterated: bool, span: Span) -> R<Option<Expr>> {
         if !iterated || !self.has_drops(ty) {
             return self.drop_function(ty, span);
+        }
+        if matches!(ty.kind(), ty::Param(_)) {
+            let Some(drop) = self.drop_function(ty, span)? else {
+                return Ok(None);
+            };
+            let param = self.fresh("it");
+            let dropped = Expr::call_helper("$givenDrop", vec![Expr::var(&param), drop]);
+            return Ok(Some(Expr::arrow(
+                vec![param.into()],
+                vec![StmtKind::Return(Some(dropped)).at(js::Span::NONE)],
+            )));
         }
         let param = self.fresh("it");
         let mut body = Vec::new();

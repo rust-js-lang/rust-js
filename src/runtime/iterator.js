@@ -179,6 +179,14 @@ function $took(step, it) {
   return name === undefined || it[$ownStep(name)] === true || it.$steps?.takes?.includes(name) === true;
 }
 
+// The drop of `it`, a value of a type parameter generic code was given,
+// `$given`'s, by `drop`, the value's, if it has one: where `$given` made a
+// JS iterator of the value, the value's, its `of`; else the value
+// itself's (#766).
+function $givenDrop(it, drop) {
+  drop?.(it.given === true ? it.of : it);
+}
+
 // A clone of `it`, what generic code's `copied()` of a value it was given
 // is, `$given`'s, by `clone`, the value's `Clone` (#384): where `$given`
 // made a JS iterator of the value, another of the value's clone, stepped
