@@ -456,3 +456,19 @@ mutation `held-flat-map-results-in-place`, `lower/body_queries.ts`).
 Still apart: a `map(|g| g.iter().map(f)).flatten()`
 stepped from its back is refused, and the flattens of std's adapters that
 `back_stepped` leaves out (#702's amendment) stay as they were (#718).
+
+## Amendment (2026-11-05): what a flatten's function strands as it panics (#744)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change.
+`vec![D(1), D(2), D(3)].into_iter().flat_map(f).rfold(Acc(0), g)`, whose
+`f` panics as it makes its second inner, leaked the accumulator: `drop acc
+16` was never printed, where Rust drops it as the panic unwinds, then what
+the source has left. `$flattenEnds`' fold and `rfold` called the function
+that makes each inner, `each`, unstaged, where `$Steps`' `flatMap` and
+`$flatMap` stage it. Its `folding` now calls it through `$staged`, which
+drops what the fold holds by its `unwind` where `each` throws, as std's
+fold closure drops its accumulator. The forward fold of the same shape was
+right already, `$flatMap`'s; both ends of `$flattenEnds` share the fix.
+`test/corpus/flatten_fold_closure_panics.rs` checks an `rfold`, a `fold`
+and an `rfold` after a `next_back()` against native Rust in both builds;
+the mutation is `flatten-ends-made-unstaged` (`runtime/back_steps.ts`).

@@ -549,4 +549,12 @@ export const mutations: Mutation[] = [
     replace: "    stepped.return();\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_closure_dropped_first.rs$"],
   },
+  {
+    name: "flatten-ends-made-unstaged",
+    breaks: "a flatten folded from its back calls the function that makes each inner unstaged, so where it panics the accumulator its fold holds is leaked (#744)",
+    file: "src/runtime/back_steps.js",
+    find: "    const made = unwind === undefined ? (x) => each(x) : (x, a) => $staged(each, x, undefined, a, unwind);\n",
+    replace: "    const made = (x) => each(x);\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_fold_closure_panics.rs$"],
+  },
 ];

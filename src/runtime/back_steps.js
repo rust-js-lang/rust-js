@@ -528,8 +528,12 @@ function $flattenEnds(it, each) {
     typeof stepped.fold === "function" ? stepped.fold(init, f, unwind) : $foldDropping(stepped, init, f, unwind);
   // What drops with `f`, `ends`, after its parts, as `FlattenCompat::fold`
   // folds them by `&mut fold`, dropped as it returns (#734).
+  // Where the function that makes each inner throws, a panic, the
+  // accumulator it strands dropped by `unwind`, as std's stage of it does
+  // (#744).
   const folding = (fold, own, other) => (init, f, unwind, ends) => {
     const inners = (stepped, a) => fold(stepped, a, f, unwind);
+    const made = unwind === undefined ? (x) => each(x) : (x, a) => $staged(each, x, undefined, a, unwind);
     try {
       let folded = init;
       const first = inner[own];
@@ -537,7 +541,7 @@ function $flattenEnds(it, each) {
       if (first !== undefined) folded = inners(first, folded);
       if (!ended) {
         ended = true;
-        folded = fold(it, folded, (a, x) => inners($iter(each(x)), a), unwind);
+        folded = fold(it, folded, (a, x) => inners($iter(made(x, a)), a), unwind);
       }
       const last = inner[other];
       inner[other] = undefined;
