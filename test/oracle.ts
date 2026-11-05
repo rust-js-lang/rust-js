@@ -9,7 +9,15 @@
 // say, is the generated JS going wrong, so it's an `error`, which no native
 // outcome is.
 
-import { $isPanic } from "@rust-js/runtime";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+
+import { runtimeDir } from "./packages-of.ts";
+
+// The runtime the generated JS imports, a runtime mutant's own in its
+// target (#720): one module, so a panic it throws is one its `$isPanic`
+// knows, an `$Unwinding` of its own class.
+const { $isPanic } = (await import(pathToFileURL(join(runtimeDir, "index.js")).href)) as { $isPanic: (e: unknown) => boolean };
 
 export type Outcome = { value: unknown } | { panic: string } | { error: string };
 

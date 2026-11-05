@@ -6,7 +6,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { node } from "./programs";
-import { buildCompiler, compiler, fixture, root, run } from "./support";
+import { buildCompiler, compiler, fixture, root, run, runtimeDir } from "./support";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -14,11 +14,11 @@ beforeAll(buildCompiler, 600_000);
 // the compiler, so it can't drift from what the compiler's imports name.
 test("the committed @rust-js/runtime is the compiler's helpers, each exported once", () => {
   const printed = run([compiler, "--runtime-module"]);
-  expect(readFileSync(join(root, "runtime", "index.js"), "utf8")).toBe(printed);
+  expect(readFileSync(join(runtimeDir, "index.js"), "utf8")).toBe(printed);
   const names = [...printed.matchAll(/^export (?:async )?(?:function\*?|class|const|let) (\$[\w$]+)/gm)].map((m) => m[1]);
   expect(names.length).toBeGreaterThan(100);
   expect(new Set(names).size).toBe(names.length);
-  const pkg = JSON.parse(readFileSync(join(root, "runtime", "package.json"), "utf8"));
+  const pkg = JSON.parse(readFileSync(join(runtimeDir, "package.json"), "utf8"));
   const version = readFileSync(join(root, "Cargo.toml"), "utf8").match(/^version = "([^"]+)"/m)![1];
   expect([pkg.name, pkg.version]).toEqual(["@rust-js/runtime", version]);
 });
@@ -117,7 +117,7 @@ test("@rust-js/runtime loads in a host with none of the web's APIs", () => {
   const web = ["TextDecoder", "TextEncoder", "URL", "URLSearchParams", "fetch", "crypto", "performance", "navigator",
     "structuredClone", "queueMicrotask", "setTimeout", "setInterval", "atob", "btoa", "Intl", "WebAssembly", "process"];
   const removed = web.map((name) => `delete globalThis.${name};`).join(" ");
-  const script = `${removed} const runtime = await import(${JSON.stringify(join(root, "runtime/index.js"))}); console.log(Object.keys(runtime).length);`;
+  const script = `${removed} const runtime = await import(${JSON.stringify(join(runtimeDir, "index.js"))}); console.log(Object.keys(runtime).length);`;
   const count = Number(run([node ?? "node", "--input-type=module", "--eval", script]).trim());
   expect(count).toBeGreaterThan(300);
 });

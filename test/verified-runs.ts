@@ -12,7 +12,7 @@ import { join, relative } from "node:path";
 
 import { markUsed } from "./kept";
 import { node } from "./programs";
-import { root, run, target } from "./support";
+import { root, run, runtimeDir, stdDir, target } from "./support";
 
 /** Where the corpus's verified runs are kept. */
 export const verifiedRuns = join(target, "corpus-cache");
@@ -70,7 +70,7 @@ let sharedKey: string | undefined;
 export function shared(): string {
   if (sharedKey === undefined) {
     const harness = ["corpus.test.ts", "corpus-cases.ts", "corpus-run.ts", "oracle.ts", "programs.ts", "child.ts", "verified-runs.ts"].map((file) => join(root, "test", file));
-    const files = [...jsFiles(join(root, "runtime")), ...jsFiles(join(root, "std")), ...harness];
+    const files = [...jsFiles(runtimeDir), ...jsFiles(stdDir), ...harness];
     const vite = JSON.parse(readFileSync(join(root, "node_modules", "vite", "package.json"), "utf8")).version;
     sharedKey = runKey([
       `node ${run([node ?? "node", "--version"]).trim()}`,

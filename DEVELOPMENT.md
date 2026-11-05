@@ -300,8 +300,10 @@ What keeps them there:
   and a target of its own (`--jobs=N` says how many). Each one's build and
   tests are timed: CI's summary shows them, and each shard uploads
   `mutation-timings-<shard>`, each a share of its build. A runtime helper's
-  mutation, whose tests the checkout's `runtime/index.js` serves, runs its
-  tests while no other's run.
+  mutation has its own runtime too, installed in its tests' target
+  (`node_modules/@rust-js/` there, `test/packages-of.ts`), which the JS its
+  tests write imports. So its tests run beside the others', and the
+  checkout's `runtime/index.js` is never rewritten (#720).
 - **Mutations are built up to 32 to a compiler** (ADR 1031), each chosen
   by the name of its copy of it: on CI, where one built alone took 28 s, a
   build of many takes about as long as one. `--batch=1` builds each alone.
@@ -478,16 +480,16 @@ the workflow's 2 machines; `--shards=4` splits it across four.
   crates' paths differ; copy none, as it's tens of GB ([slow spots](#slow-spots-still-to-fix)).
 - **A red run is the change's.** Fix it at once, on `main`, and say what
   broke, with the failing job's log.
-- **Never run a runtime mutation and `check:fast` at once in one
-  checkout.** A mutation of a runtime helper (`src/runtime/*.js`, its
-  entries in `scripts/mutations/runtime/`) runs its tests with the
-  checkout's `runtime/index.js` rewritten to its mutant's runtime, and
-  puts the original back after (`withRuntime` in `scripts/mutations.ts`).
-  A `check:fast` in the same checkout meanwhile runs its corpus parts
-  against the mutant's runtime, and fails with "x is not a function"
-  where nothing is wrong, most often of a change that adds runtime
-  mutations. Run one after the other, or the other in another worktree,
-  which is a checkout of its own.
+- **A runtime mutation runs beside `check:fast` in one checkout.** A
+  mutation of a runtime helper (`src/runtime/*.js`, its entries in
+  `scripts/mutations/runtime/`) runs its tests with its mutant's runtime
+  installed in their own target (`ownRuntime` in `scripts/mutations.ts`,
+  `test/packages-of.ts`), and the checkout's `runtime/index.js` is never
+  rewritten. It was rewritten until #720, and a `check:fast` beside one
+  ran its corpus parts and other test files against the mutant's runtime.
+  A test that reads the runtime or std by path reads `runtimeDir` and
+  `stdDir` (`test/support.ts`), so it reads the run's own, never
+  `join(root, "runtime")`.
 - **`runtime/index.js` and `std/iter.js` are generated, and committed.**
   `bun run runtime` writes `runtime/index.js`; `bun run std` writes
   `std/iter.js`, its `std/iter.js.map` and `std/manifest.json`; each

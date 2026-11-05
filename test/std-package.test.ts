@@ -8,7 +8,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { cpSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildCompiler, compiler, fixture, root, run } from "./support";
+import { buildCompiler, compiler, fixture, root, run, stdDir } from "./support";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -17,7 +17,7 @@ beforeAll(buildCompiler, 600_000);
 test("the committed @rust-js/std is std's bodies as the compiler compiles them", () => {
   const dir = fixture("std-package");
   mkdirSync(join(dir, "std"), { recursive: true });
-  cpSync(join(root, "std", "lib.rs"), join(dir, "std", "lib.rs"));
+  cpSync(join(stdDir, "lib.rs"), join(dir, "std", "lib.rs"));
   run([
     compiler,
     join(dir, "std", "lib.rs"),
@@ -32,7 +32,7 @@ test("the committed @rust-js/std is std's bodies as the compiler compiles them",
     "rust_js_std",
   ]);
   const manifest = JSON.parse(readFileSync(join(dir, "std", "manifest.json"), "utf8"));
-  const committed = JSON.parse(readFileSync(join(root, "std", "manifest.json"), "utf8"));
+  const committed = JSON.parse(readFileSync(join(stdDir, "manifest.json"), "utf8"));
   // The library contract, what the compiler builds in, and each module's
   // file, relative: the same wherever the checkout is, but for the crate's
   // hash, which rustc makes of where its source is.
@@ -47,12 +47,12 @@ test("the committed @rust-js/std is std's bodies as the compiler compiles them",
   // the command did, `std/lib.rs` of `bun run std`.
   const body = (file: string) => readFileSync(file, "utf8").split("\n").slice(1).join("\n");
   for (const { file } of manifest.modules) {
-    expect(body(join(dir, "std", file)), file).toBe(body(join(root, "std", file)));
+    expect(body(join(dir, "std", file)), file).toBe(body(join(stdDir, file)));
   }
   // Each item is std's: keyed as rustc keys it, in a module of the package.
   expect(committed.library.items.length).toBeGreaterThan(4);
   expect(committed.library.items.every((item: { rust_path: string }) => item.rust_path.includes("core::iter"))).toBe(true);
-  const pkg = JSON.parse(readFileSync(join(root, "std", "package.json"), "utf8"));
+  const pkg = JSON.parse(readFileSync(join(stdDir, "package.json"), "utf8"));
   const version = readFileSync(join(root, "Cargo.toml"), "utf8").match(/^version = "([^"]+)"/m)![1];
   expect([pkg.name, pkg.version]).toEqual(["@rust-js/std", version]);
   // A compile of std's bodies, 6.2 s alone since std's iterator adapters
@@ -72,7 +72,7 @@ test("a Peekable is made by std's own peekable, imported from @rust-js/std, and 
   expect(js).toContain('import { iterator_peekable } from "@rust-js/std/iter.js"');
   expect(js).toContain("$next(p)");
   expect(js).not.toContain("peekableIterator_next");
-  const std = readFileSync(join(root, "std", "iter.js"), "utf8");
+  const std = readFileSync(join(stdDir, "iter.js"), "utf8");
   expect(std).toContain("return $stdIterator(\n    { iter: self },\n    {\n      next(iterator) {");
   // Its hint asks what it steps by the dictionary it's given (ADR 0561).
   expect(std).toContain("hint(peekable) {\n        return $peekableHint(peekable, SelfIterator);\n      },");
@@ -83,7 +83,7 @@ test("a Peekable is made by std's own peekable, imported from @rust-js/std, and 
 // its early return of it, which can't hold, is gone, as is a `bool`
 // temporary tested once, and a tail written into two branches.
 test("a std body's JS has no test its early return decided, no once-read bool, no tail written twice", () => {
-  const std = readFileSync(join(root, "std", "iter.js"), "utf8");
+  const std = readFileSync(join(stdDir, "iter.js"), "utf8");
   const nextBack = std.slice(std.indexOf("export function peekableDoubleEndedIterator_nextBack("), std.indexOf("export function peekableDoubleEndedIterator_rfold("));
   // Its `or_else`, which a `core` built to unwind keeps a call of, its
   // closure's unwinding too costly to inline (#424): `??` of it, the

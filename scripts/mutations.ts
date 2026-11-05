@@ -21,6 +21,7 @@ import { availableParallelism, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
 import { run, runSync, stopped, type Exit } from "../test/child";
+import { installPackages } from "../test/packages-of";
 import { caseParts, shard, shardArg } from "./shard";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
@@ -519,34 +520,42 @@ async function build(files?: Map<string, string>, slot = 0): Promise<string | { 
   return kept;
 }
 
-/** `run`, with the checkout's `@rust-js/runtime` the one `compiler` writes:
- * the JS imports its helpers from the package (ADR 0103), so a helper's
- * mutation is the package's too. The checkout's is put back after. One
- * that writes none, as the control that compiles nothing, runs with the
- * checkout's. */
-async function withRuntime<T>(compiler: string, work: () => Promise<T>): Promise<T> {
-  const file = join(root, "runtime", "index.js");
-  const original = readFileSync(file, "utf8");
+/** `own`, a mutant's tests' target, given the `@rust-js/runtime` `compiler`
+ * writes, where it isn't the checkout's: the JS imports its helpers from
+ * the package (ADR 0103), so a helper's mutation is the package's too. It
+ * is the target's own, as the compiler is the mutant's own, and every
+ * program its tests write there imports it. So the mutant's tests run
+ * beside any others, and the checkout's `runtime/index.js` is never
+ * rewritten: a `check:fast` beside them read the mutant's (#720). One that
+ * writes none, as the control that compiles nothing, runs with the
+ * checkout's. One whose runtime couldn't be asked is that ask's exit, which
+ * says nothing of the mutant: run with the checkout's runtime, a runtime
+ * mutant's tests pass, and it would be said to survive. */
+async function ownRuntime(compiler: string, own: string): Promise<Exit | undefined> {
   const written = await runtimeOf(compiler);
-  if (written === undefined || written === original) return work();
-  writeFileSync(file, written);
-  try {
-    return await work();
-  } finally {
-    writeFileSync(file, original);
-  }
+  if (typeof written !== "string") return written;
+  if (written !== "" && written !== readFileSync(join(root, "runtime", "index.js"), "utf8")) installPackages(own, written);
+  return undefined;
 }
 
-/** The `@rust-js/runtime` `compiler` writes, or none: asked once of each,
- * and never in a way that stops the run, as a `runSync` of each of 8,000
- * mutants' did, its tests waiting while it was asked. */
-const runtimes = new Map<string, Promise<string | undefined>>();
-function runtimeOf(compiler: string): Promise<string | undefined> {
+/** The `@rust-js/runtime` `compiler` writes, or none (`""`), or, where it
+ * couldn't be asked, the exit of the last ask: asked once of each, and never
+ * in a way that stops the run, as a `runSync` of each of 8,000 mutants' did,
+ * its tests waiting while it was asked. An ask killed by a signal is asked
+ * again, up to three times: a whole run of the 1,114 runtime mutations here
+ * saw ten of them killed by SIGKILL as it began, under a load of 24. */
+const runtimes = new Map<string, Promise<string | Exit>>();
+function runtimeOf(compiler: string): Promise<string | Exit> {
   let written = runtimes.get(compiler);
   if (written === undefined) {
-    written = run([compiler, "--runtime-module"], root, buildTimeout).then((p) =>
-      p.code !== 0 || stopped(p, buildTimeout) ? undefined : p.stdout,
-    );
+    written = (async () => {
+      for (let attempt = 1; ; attempt++) {
+        const p = await run([compiler, "--runtime-module"], root, buildTimeout);
+        if (p.signal && attempt < 3) continue;
+        if (stopped(p, buildTimeout)) return p;
+        return p.code === 0 ? p.stdout : "";
+      }
+    })();
     runtimes.set(compiler, written);
   }
   return written;
@@ -591,32 +600,36 @@ async function test(
   const own = join(work, "tests", `${basename(compiler)}-${++testRuns}`);
   rmSync(own, { recursive: true, force: true });
   mkdirSync(own, { recursive: true });
-  const p = await withRuntime(compiler, () =>
-    // The first failure is the answer: a mutant is caught by any test, and
-    // a control passes only where none fails (ADR 1031). Each test has the
-    // minute the suite gives it (`test/setup.ts`, `test:serial`): files run
-    // one after another have Bun's five seconds each, which a JSX test of
-    // three seconds alone ran past on a nightly's machine of two workers,
-    // and its mutation was inconclusive.
-    run([process.execPath, "test", "--timeout=60000", ...(bail ? ["--bail"] : []), ...tests], root, testTimeout, {
-      ...env,
-      RUST_JS_COMPILER: compiler,
-      // Which mutation of a build of many it is, for a test that runs a
-      // copy of the compiler under another name.
-      RUST_JS_MUTANT: basename(compiler),
-      RUST_JS_TARGET: own,
-      // A compile that takes long, as an exponential one, is stopped, and
-      // its test fails, before the runner runs out of time on it, which
-      // would say nothing: a corpus case compiles in a second or two.
-      RUST_JS_COMPILE_TIMEOUT: "60000",
-      ...(snapshots ? {} : { RUST_JS_SNAPSHOTS: "ignore" }),
-      // On GitHub's machines bun test writes a failure as an annotation, one
-      // line of its whole diff, which a run cut short as it exited, leaving no
-      // `(fail)` to judge by: "inconclusive" of what was caught. Its plain
-      // output is the same everywhere.
-      GITHUB_ACTIONS: undefined,
-    }),
-  );
+  const unasked = await ownRuntime(compiler, own);
+  if (unasked) {
+    rmSync(own, { recursive: true, force: true });
+    const output = `its runtime couldn't be asked: ${compiler} --runtime-module ${stopped(unasked, buildTimeout)}\n${unasked.stderr}`;
+    return { passed: false, ran: 0, output, exit: unasked };
+  }
+  // The first failure is the answer: a mutant is caught by any test, and
+  // a control passes only where none fails (ADR 1031). Each test has the
+  // minute the suite gives it (`test/setup.ts`, `test:serial`): files run
+  // one after another have Bun's five seconds each, which a JSX test of
+  // three seconds alone ran past on a nightly's machine of two workers,
+  // and its mutation was inconclusive.
+  const p = await run([process.execPath, "test", "--timeout=60000", ...(bail ? ["--bail"] : []), ...tests], root, testTimeout, {
+    ...env,
+    RUST_JS_COMPILER: compiler,
+    // Which mutation of a build of many it is, for a test that runs a
+    // copy of the compiler under another name.
+    RUST_JS_MUTANT: basename(compiler),
+    RUST_JS_TARGET: own,
+    // A compile that takes long, as an exponential one, is stopped, and
+    // its test fails, before the runner runs out of time on it, which
+    // would say nothing: a corpus case compiles in a second or two.
+    RUST_JS_COMPILE_TIMEOUT: "60000",
+    ...(snapshots ? {} : { RUST_JS_SNAPSHOTS: "ignore" }),
+    // On GitHub's machines bun test writes a failure as an annotation, one
+    // line of its whole diff, which a run cut short as it exited, leaving no
+    // `(fail)` to judge by: "inconclusive" of what was caught. Its plain
+    // output is the same everywhere.
+    GITHUB_ACTIONS: undefined,
+  });
   rmSync(own, { recursive: true, force: true });
   const output = p.stdout + p.stderr;
   const { pass, fail } = summary(output);
@@ -771,37 +784,22 @@ async function main() {
   const queue: Sited[][] = [...batches(sited, size), ...sited.filter((s) => s.site === undefined).map((s) => [s])];
   // What each took, its build's share and its tests, in seconds.
   const took = new Map<Mutation, { build: number; tests: number }>();
-  const original = readFileSync(join(root, "runtime", "index.js"), "utf8");
-  // A mutant whose compiler writes another runtime, which the checkout's
-  // `runtime/index.js` holds while its tests run, runs while no other's do.
+  // As many mutants' tests at once as there are cores, `--tests=N`: a test
+  // run is a core's, where a build is two or three of them. A mutant whose
+  // compiler writes another runtime runs beside the others too, as its
+  // runtime is its target's own (`ownRuntime`, #720).
   let testing = 0;
-  let alone = false;
-  let waitingAlone = 0;
   const waiters: (() => void)[] = [];
   const wake = () => waiters.splice(0).forEach((resume) => resume());
   const turn = () => new Promise<void>((resume) => waiters.push(resume));
-  // And as many mutants' tests at once as there are cores, `--tests=N`:
-  // a test run is a core's, where a build is two or three of them.
   const testsAtOnce = Number(args.find((arg) => arg.startsWith("--tests="))?.slice("--tests=".length)) || availableParallelism();
   const beside = async <T>(work: () => Promise<T>) => {
-    while (alone || waitingAlone > 0 || testing >= testsAtOnce) await turn();
+    while (testing >= testsAtOnce) await turn();
     testing++;
     try {
       return await work();
     } finally {
       testing--;
-      wake();
-    }
-  };
-  const byItself = async <T>(work: () => Promise<T>) => {
-    waitingAlone++;
-    while (alone || testing > 0) await turn();
-    waitingAlone--;
-    alone = true;
-    try {
-      return await work();
-    } finally {
-      alone = false;
       wake();
     }
   };
@@ -835,9 +833,8 @@ async function main() {
       } catch {
         cpSync(kept, mutant);
       }
-      const own = (await runtimeOf(mutant)) !== original;
       let started = 0;
-      const { ran, output, exit } = await (own ? byItself : beside)(() => {
+      const { ran, output, exit } = await beside(() => {
         started = performance.now();
         return test(mutation.tests, mutant, mutation.snapshots);
       });

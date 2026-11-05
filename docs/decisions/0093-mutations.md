@@ -219,3 +219,34 @@ passed (`checkedSince`), or one that failed elsewhere while each of its
 unrelated reasons, so only requiring a fully green run would let the
 baseline lag far behind. `test/ci.test.ts` holds both. Found by a review
 on 2026-10-25.
+
+## Amendment: a runtime mutant's runtime is its tests' own
+
+A mutation of a runtime helper changes what `--runtime-module` writes,
+and the JS its tests run imports the helpers from `@rust-js/runtime`
+(ADR 0103). The runner used to write the mutant's runtime over the
+checkout's `runtime/index.js` while its tests ran, then put it back, and
+ran no other mutant's tests meanwhile. Anything else that ran in the
+checkout then, the corpus parts and other test files of a `check:fast`,
+imported the mutant's runtime. That can fail a check that should pass, or
+pass a case under the wrong runtime (#720).
+
+Now each such mutant's runtime is installed in its tests' own target, as
+its compiler is its own: `node_modules/@rust-js/runtime` there, with a
+copy of the checkout's std beside it, as Node resolves a module's
+imports from its real path (`test/packages-of.ts`). Every program its
+tests write in that target imports them, and so does the oracle, whose
+`$isPanic` must be the same module's to know its panics. A test that
+reads the runtime or std by path reads `runtimeDir` and `stdDir`. The
+checkout's `runtime/index.js` is never rewritten, so these mutants' tests
+run beside the others'. All 1,114 runtime mutations ran in 7 minutes on
+the Mac. One survived, `collect-dropping-keeps-collected`, as it does with
+the old runner. `test/mutations.test.ts` holds the resolution, and that no
+test reads the checkout's runtime or std by path.
+
+A mutant whose `--runtime-module` can't be asked would run its tests with
+the checkout's runtime, pass, and be said to survive. That was true before
+this change as well. Asked for all 1,114 at once under a load of 24, ten
+of the asks were killed by SIGKILL, and their mutants "survived". An ask
+killed by a signal is now asked again, up to three times. One that still
+can't be asked makes its mutant inconclusive, not a survivor.

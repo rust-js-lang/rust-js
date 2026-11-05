@@ -13,7 +13,7 @@ import { build, createServer, type ViteDevServer } from "vite";
 import { checkCargo } from "../tooling/cargo.js";
 import { writePatch } from "../tooling/patch.js";
 import { runSync } from "./child";
-import { buildCompiler, buildSerde, compiler, fixture, root, run } from "./support";
+import { buildCompiler, buildSerde, compiler, fixture, root, run, runtimeDir } from "./support";
 import { channel } from "../scripts/toolchain.ts";
 
 const checkout = join(root, "examples", "pilot");
@@ -39,7 +39,7 @@ function install() {
   }
   // rust-js's JS packages, and the libraries, as this checkout has them.
   const linked: [string, string][] = [
-    ["@rust-js/runtime", join(root, "runtime")],
+    ["@rust-js/runtime", runtimeDir],
     ["@rust-js/build", join(root, "tooling")],
     ...["react", "react-dom", "sonner", "vite", "@vitejs/plugin-react"].map((name): [string, string] => [name, join(root, "node_modules", name)]),
   ];

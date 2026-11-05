@@ -7,11 +7,13 @@ import { runSync, stopped } from "./child";
 import { markUsed } from "./kept";
 import { reactLibs } from "../tooling/crates.js";
 import { shard } from "../scripts/shard";
+import { runtimeDir, stdDir, target } from "./packages-of";
 
 export const root = join(import.meta.dir, "..");
-// With `RUST_JS_TARGET`, another: a mutant's tests', which build the
-// crates with its compiler where no other test reads them (ADR 0093).
-export const target = process.env.RUST_JS_TARGET ? resolve(process.env.RUST_JS_TARGET) : join(root, "target");
+// The tests' target, a mutant's tests' own with `RUST_JS_TARGET`, and the
+// `@rust-js/runtime` and `@rust-js/std` the JS written in it imports: the
+// checkout's, or a runtime mutant's own in its target (#720).
+export { runtimeDir, stdDir, target };
 // This checkout's debug build, or with `RUST_JS_COMPILER`, another, as the
 // rustc tests workflow's build job makes one for its machines to share.
 const given = process.env.RUST_JS_COMPILER;
@@ -284,8 +286,8 @@ export function cargoApp(dir: string, rust: string, { lib = "src/lib.rs", react 
  * 0103, 0561). */
 export function installRuntime(app: string) {
   mkdirSync(join(app, "node_modules", "@rust-js"), { recursive: true });
-  symlinkSync(join(root, "runtime"), join(app, "node_modules", "@rust-js", "runtime"));
-  symlinkSync(join(root, "std"), join(app, "node_modules", "@rust-js", "std"));
+  symlinkSync(runtimeDir, join(app, "node_modules", "@rust-js", "runtime"));
+  symlinkSync(stdDir, join(app, "node_modules", "@rust-js", "std"));
 }
 
 // Each test's own directory, in `target/fixtures/<pid>-<id>/`, its test
