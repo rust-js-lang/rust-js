@@ -120,8 +120,8 @@ function $closing(it, drop, slices = true) {
     return folded;
   };
   // Its `try_fold`, its iterator's, done with where it isn't stopped.
-  const tryFold = (init, f, broke, unwind) => {
-    const folded = $lent(it).tryFold(init, f, broke, unwind);
+  const tryFold = (init, f, broke, unwind, ends) => {
+    const folded = $lent(it).tryFold(init, f, broke, unwind, ends);
     if (!broke(folded) && !closing.held) close();
     return folded;
   };

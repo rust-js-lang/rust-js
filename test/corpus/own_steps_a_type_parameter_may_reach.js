@@ -245,7 +245,7 @@ function peekedReversed(it, dropI) {
           dDrop_drop,
         ),
       undefined,
-      (iterator, init, f, broke, unwind) =>
+      (iterator, init, f, broke, unwind, ends) =>
         peekableDoubleEndedIterator_tryRfold(
           iterator,
           init,
@@ -255,7 +255,7 @@ function peekedReversed(it, dropI) {
           $tryOf(broke),
           dropI,
           unwind,
-          undefined,
+          ends,
           undefined,
           dDrop_drop,
         ),
@@ -464,7 +464,7 @@ function main() {
             dDrop_drop,
           ),
         undefined,
-        (iterator, init, f, broke, unwind) =>
+        (iterator, init, f, broke, unwind, ends) =>
           peekableDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -474,7 +474,7 @@ function main() {
             $tryOf(broke),
             stepsDrop_drop,
             unwind,
-            undefined,
+            ends,
             undefined,
             dDrop_drop,
           ),
@@ -525,7 +525,7 @@ function main() {
               dDrop_drop,
             ),
           undefined,
-          (iterator, init, f, broke, unwind) =>
+          (iterator, init, f, broke, unwind, ends) =>
             peekableDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -535,7 +535,7 @@ function main() {
               $tryOf(broke),
               breaksDrop_drop,
               unwind,
-              undefined,
+              ends,
               undefined,
               dDrop_drop,
             ),

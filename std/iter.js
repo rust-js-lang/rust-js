@@ -1119,17 +1119,16 @@ export function peekableIterator_tryFold(
   }
   let value;
   try {
-    try {
-      value = $tryFoldInto(
-        $given(peekable.iter, IIterator, true),
-        tmp$2,
-        (a, b) => f(a, b),
-        RTry,
-        dropB,
-      );
-    } finally {
-      dropF?.(f);
-    }
+    value = $tryFoldInto(
+      $given(peekable.iter, IIterator, true),
+      tmp$2,
+      (a, b) => f(a, b),
+      RTry,
+      dropB,
+      () => {
+        dropF?.(f);
+      },
+    );
     result = value;
   } catch (error) {
     if (tmp) {
@@ -1327,17 +1326,17 @@ export function peekableDoubleEndedIterator_tryRfold(
     return result;
   }
   tmp = false;
-  try {
-    return $tryFoldInto(
-      $rev($given(peekable.iter, IIterator, true, IDoubleEndedIterator)),
-      init,
-      (a, b) => f(a, b),
-      RTry,
-      dropB,
-    );
-  } finally {
-    dropF?.(f);
-  }
+  const value = $tryFoldInto(
+    $rev($given(peekable.iter, IIterator, true, IDoubleEndedIterator)),
+    init,
+    (a, b) => f(a, b),
+    RTry,
+    dropB,
+    () => {
+      dropF?.(f);
+    },
+  );
+  return value;
 }
 
 export function peekableClone_clone(peekable, IClone, IIterator = { next: $next }, IItemClone) {
@@ -1533,12 +1532,16 @@ export function fuseFuseImplI_tryFold(
     const iter = $someValue(fuse.iter);
     tmp = false;
     tmp$1 = false;
-    let value;
-    try {
-      value = $tryFoldInto($given(iter, IIterator, true), acc, (a, b) => fold(a, b), RTry, dropAcc);
-    } finally {
-      dropFold?.(fold);
-    }
+    const value = $tryFoldInto(
+      $given(iter, IIterator, true),
+      acc,
+      (a, b) => fold(a, b),
+      RTry,
+      dropAcc,
+      () => {
+        dropFold?.(fold);
+      },
+    );
     const value$1 = RTry.branch(value);
     if (value$1.TAG === "Continue") {
       const value = value$1._0;
@@ -1596,12 +1599,16 @@ export function fuseFuseImplIFusedIterator_tryFold(
   if (fuse.iter != null) {
     const iter = $someValue(fuse.iter);
     tmp = false;
-    let value;
-    try {
-      value = $tryFoldInto($given(iter, IIterator, true), _2, (a, b) => fold(a, b), RTry, dropAcc);
-    } finally {
-      dropFold?.(fold);
-    }
+    const value = $tryFoldInto(
+      $given(iter, IIterator, true),
+      _2,
+      (a, b) => fold(a, b),
+      RTry,
+      dropAcc,
+      () => {
+        dropFold?.(fold);
+      },
+    );
     const value$1 = RTry.branch(value);
     if (value$1.TAG === "Continue") {
       _2 = value$1._0;
@@ -2018,17 +2025,17 @@ export function revIterator_tryFold(
   dropR,
   dropIItem,
 ) {
-  try {
-    return $tryFoldInto(
-      $rev($given(rev.iter, IIterator, true, IDoubleEndedIterator)),
-      init,
-      (a, b) => f(a, b),
-      RTry,
-      dropB,
-    );
-  } finally {
-    dropF?.(f);
-  }
+  const value = $tryFoldInto(
+    $rev($given(rev.iter, IIterator, true, IDoubleEndedIterator)),
+    init,
+    (a, b) => f(a, b),
+    RTry,
+    dropB,
+    () => {
+      dropF?.(f);
+    },
+  );
+  return value;
 }
 
 export function revDoubleEndedIterator_nextBack(
@@ -2094,11 +2101,17 @@ export function revDoubleEndedIterator_tryRfold(
   dropR,
   dropIItem,
 ) {
-  try {
-    return $tryFoldInto($given(rev.iter, IIterator, true), init, (a, b) => f(a, b), RTry, dropB);
-  } finally {
-    dropF?.(f);
-  }
+  const value = $tryFoldInto(
+    $given(rev.iter, IIterator, true),
+    init,
+    (a, b) => f(a, b),
+    RTry,
+    dropB,
+    () => {
+      dropF?.(f);
+    },
+  );
+  return value;
 }
 
 export function revDoubleEndedIterator_rfind(
@@ -2249,17 +2262,17 @@ export function enumerateIterator_tryFold(
       dropFold?.(fold);
     },
   );
-  try {
-    return $tryFoldInto(
-      $given(enumerate.iter, IIterator, true),
-      init,
-      (a, b) => f(a, b),
-      RTry,
-      dropAcc,
-    );
-  } finally {
-    $dispose(f);
-  }
+  const value = $tryFoldInto(
+    $given(enumerate.iter, IIterator, true),
+    init,
+    (a, b) => f(a, b),
+    RTry,
+    dropAcc,
+    () => {
+      $dispose(f);
+    },
+  );
+  return value;
 }
 
 export function enumerateIterator_advanceBy(
@@ -2409,17 +2422,16 @@ export function enumerateDoubleEndedIterator_tryRfold(
       dropFold?.(fold);
     },
   );
-  try {
-    return $tryFoldInto(
-      $rev($given(enumerate.iter, IIterator, true, IDoubleEndedIterator)),
-      init,
-      (a, b) => value(a, b),
-      RTry,
-      dropAcc,
-    );
-  } finally {
-    $dispose(value);
-  }
+  return $tryFoldInto(
+    $rev($given(enumerate.iter, IIterator, true, IDoubleEndedIterator)),
+    init,
+    (a, b) => value(a, b),
+    RTry,
+    dropAcc,
+    () => {
+      $dispose(value);
+    },
+  );
 }
 
 export function enumerateExactSizeIterator_len(enumerate, IExactSizeIterator, dropI, dropIItem) {
@@ -2561,11 +2573,17 @@ export function mapIterator_tryFold(
       dropG?.(g);
     },
   );
-  try {
-    return $tryFoldInto($given(map.iter, IIterator, true), init, (a, b) => f(a, b), RTry, dropAcc);
-  } finally {
-    $dispose(f);
-  }
+  const value = $tryFoldInto(
+    $given(map.iter, IIterator, true),
+    init,
+    (a, b) => f(a, b),
+    RTry,
+    dropAcc,
+    () => {
+      $dispose(f);
+    },
+  );
+  return value;
 }
 
 export function mapDoubleEndedIterator_nextBack(
@@ -2673,17 +2691,17 @@ export function mapDoubleEndedIterator_tryRfold(
       dropG?.(g);
     },
   );
-  try {
-    return $tryFoldInto(
-      $rev($given(map.iter, IIterator, true, IDoubleEndedIterator)),
-      init,
-      (a, b) => f(a, b),
-      RTry,
-      dropAcc,
-    );
-  } finally {
-    $dispose(f);
-  }
+  const value = $tryFoldInto(
+    $rev($given(map.iter, IIterator, true, IDoubleEndedIterator)),
+    init,
+    (a, b) => f(a, b),
+    RTry,
+    dropAcc,
+    () => {
+      $dispose(f);
+    },
+  );
+  return value;
 }
 
 export function mapExactSizeIterator_len(map, IExactSizeIterator, dropB, dropI, dropF, dropIItem) {
@@ -2869,17 +2887,17 @@ export function filterIterator_tryFold(
       dropFold?.(fold);
     },
   );
-  try {
-    return $tryFoldInto(
-      $given(filter.iter, IIterator, true),
-      init,
-      (a, b) => f(a, b),
-      RTry,
-      dropAcc,
-    );
-  } finally {
-    $dispose(f);
-  }
+  const value = $tryFoldInto(
+    $given(filter.iter, IIterator, true),
+    init,
+    (a, b) => f(a, b),
+    RTry,
+    dropAcc,
+    () => {
+      $dispose(f);
+    },
+  );
+  return value;
 }
 
 export function filterDoubleEndedIterator_nextBack(
@@ -3001,17 +3019,17 @@ export function filterDoubleEndedIterator_tryRfold(
       dropFold?.(fold);
     },
   );
-  try {
-    return $tryFoldInto(
-      $rev($given(filter.iter, IIterator, true, IDoubleEndedIterator)),
-      init,
-      (a, b) => f(a, b),
-      RTry,
-      dropAcc,
-    );
-  } finally {
-    $dispose(f);
-  }
+  const value = $tryFoldInto(
+    $rev($given(filter.iter, IIterator, true, IDoubleEndedIterator)),
+    init,
+    (a, b) => f(a, b),
+    RTry,
+    dropAcc,
+    () => {
+      $dispose(f);
+    },
+  );
+  return value;
 }
 
 export function filterClone_clone(filter, IClone, PClone) {
@@ -3110,11 +3128,17 @@ export function copiedIterator_tryFold(
       dropF?.(f);
     },
   );
-  try {
-    return $tryFoldInto($given(copied.it, IIterator, true), init, (a, b) => f$1(a, b), RTry, dropB);
-  } finally {
-    $dispose(f$1);
-  }
+  const value = $tryFoldInto(
+    $given(copied.it, IIterator, true),
+    init,
+    (a, b) => f$1(a, b),
+    RTry,
+    dropB,
+    () => {
+      $dispose(f$1);
+    },
+  );
+  return value;
 }
 
 export function copiedIterator_nth(copied, n, IIterator = { next: $next }, TCopy, dropI) {
@@ -3233,17 +3257,17 @@ export function copiedDoubleEndedIterator_tryRfold(
       dropF?.(f);
     },
   );
-  try {
-    return $tryFoldInto(
-      $rev($given(copied.it, IIterator, true, IDoubleEndedIterator)),
-      init,
-      (a, b) => f$1(a, b),
-      RTry,
-      dropB,
-    );
-  } finally {
-    $dispose(f$1);
-  }
+  const value = $tryFoldInto(
+    $rev($given(copied.it, IIterator, true, IDoubleEndedIterator)),
+    init,
+    (a, b) => f$1(a, b),
+    RTry,
+    dropB,
+    () => {
+      $dispose(f$1);
+    },
+  );
+  return value;
 }
 
 export function copiedDoubleEndedIterator_advanceBackBy(
@@ -3388,11 +3412,17 @@ export function clonedIterator_tryFold(
       dropF?.(f);
     },
   );
-  try {
-    return $tryFoldInto($given(cloned.it, IIterator, true), init, (a, b) => f$1(a, b), RTry, dropB);
-  } finally {
-    $dispose(f$1);
-  }
+  const value = $tryFoldInto(
+    $given(cloned.it, IIterator, true),
+    init,
+    (a, b) => f$1(a, b),
+    RTry,
+    dropB,
+    () => {
+      $dispose(f$1);
+    },
+  );
+  return value;
 }
 
 export function clonedDoubleEndedIterator_nextBack(
@@ -3504,17 +3534,17 @@ export function clonedDoubleEndedIterator_tryRfold(
       dropF?.(f);
     },
   );
-  try {
-    return $tryFoldInto(
-      $rev($given(cloned.it, IIterator, true, IDoubleEndedIterator)),
-      init,
-      (a, b) => f$1(a, b),
-      RTry,
-      dropB,
-    );
-  } finally {
-    $dispose(f$1);
-  }
+  const value = $tryFoldInto(
+    $rev($given(cloned.it, IIterator, true, IDoubleEndedIterator)),
+    init,
+    (a, b) => f$1(a, b),
+    RTry,
+    dropB,
+    () => {
+      $dispose(f$1);
+    },
+  );
+  return value;
 }
 
 export function clonedExactSizeIterator_len(cloned, IExactSizeIterator, TClone, dropI, dropT) {
@@ -3639,17 +3669,17 @@ export function filterMapIterator_tryFold(
       dropFold?.(fold);
     },
   );
-  try {
-    return $tryFoldInto(
-      $given(filterMap.iter, IIterator, true),
-      init,
-      (a, b) => f(a, b),
-      RTry,
-      dropAcc,
-    );
-  } finally {
-    $dispose(f);
-  }
+  const value = $tryFoldInto(
+    $given(filterMap.iter, IIterator, true),
+    init,
+    (a, b) => f(a, b),
+    RTry,
+    dropAcc,
+    () => {
+      $dispose(f);
+    },
+  );
+  return value;
 }
 
 export function filterMapDoubleEndedIterator_nextBack(
@@ -3674,6 +3704,8 @@ export function filterMapDoubleEndedIterator_nextBack(
       return { TAG: "Continue" };
     },
     $controlFlowTry,
+    undefined,
+    () => {},
   );
   let result;
   if (tryRfold.TAG === "Continue") {
@@ -3778,17 +3810,17 @@ export function filterMapDoubleEndedIterator_tryRfold(
       dropFold?.(fold);
     },
   );
-  try {
-    return $tryFoldInto(
-      $rev($given(filterMap.iter, IIterator, true, IDoubleEndedIterator)),
-      init,
-      (a, b) => f(a, b),
-      RTry,
-      dropAcc,
-    );
-  } finally {
-    $dispose(f);
-  }
+  const value = $tryFoldInto(
+    $rev($given(filterMap.iter, IIterator, true, IDoubleEndedIterator)),
+    init,
+    (a, b) => f(a, b),
+    RTry,
+    dropAcc,
+    () => {
+      $dispose(f);
+    },
+  );
+  return value;
 }
 
 export function filterMapClone_clone(filterMap, IClone, FClone) {
@@ -3905,18 +3937,16 @@ export function takeWhileIterator_tryFold(
       dropFold?.(fold);
     },
   );
-  let value;
-  try {
-    value = $tryFoldInto(
-      $given(takeWhile.iter, IIterator, true),
-      init,
-      (a, b) => value$1(a, b),
-      $controlFlowTry,
-      dropAcc,
-    );
-  } finally {
-    $dispose(value$1);
-  }
+  const value = $tryFoldInto(
+    $given(takeWhile.iter, IIterator, true),
+    init,
+    (a, b) => value$1(a, b),
+    $controlFlowTry,
+    dropAcc,
+    () => {
+      $dispose(value$1);
+    },
+  );
   if (value.TAG === "Continue") {
     return RTry.fromOutput(value._0);
   }
@@ -3934,18 +3964,24 @@ export function takeWhileIterator_fold(
   dropFFF,
   dropIItem,
 ) {
-  const value = $dropping(
+  const value$1 = $dropping(
     (a, b) => fold(a, b),
     () => {
       dropFFF?.(fold);
     },
   );
   try {
-    try {
-      return $tryFoldInto(takeWhile, init, (a, b) => value(a, b), $neverShortCircuitTry, dropAAA);
-    } finally {
-      $dispose(value);
-    }
+    const value = $tryFoldInto(
+      takeWhile,
+      init,
+      (a, b) => value$1(a, b),
+      $neverShortCircuitTry,
+      dropAAA,
+      () => {
+        $dispose(value$1);
+      },
+    );
+    return value;
   } finally {
     takeWhile.return();
   }
@@ -4173,17 +4209,17 @@ export function skipWhileIterator_tryFold(
     }
   }
   tmp = false;
-  try {
-    return $tryFoldInto(
-      $given(skipWhile.iter, IIterator, true),
-      init,
-      (a, b) => fold(a, b),
-      RTry,
-      dropAcc,
-    );
-  } finally {
-    dropFold?.(fold);
-  }
+  const value = $tryFoldInto(
+    $given(skipWhile.iter, IIterator, true),
+    init,
+    (a, b) => fold(a, b),
+    RTry,
+    dropAcc,
+    () => {
+      dropFold?.(fold);
+    },
+  );
+  return value;
 }
 
 export function skipWhileClone_clone(skipWhile, IClone, PClone) {
@@ -4294,18 +4330,24 @@ export function mapWhileIterator_fold(
   dropFFF,
   dropIItem,
 ) {
-  const value = $dropping(
+  const value$1 = $dropping(
     (a, b) => fold(a, b),
     () => {
       dropFFF?.(fold);
     },
   );
   try {
-    try {
-      return $tryFoldInto(mapWhile, init, (a, b) => value(a, b), $neverShortCircuitTry, dropAAA);
-    } finally {
-      $dispose(value);
-    }
+    const value = $tryFoldInto(
+      mapWhile,
+      init,
+      (a, b) => value$1(a, b),
+      $neverShortCircuitTry,
+      dropAAA,
+      () => {
+        $dispose(value$1);
+      },
+    );
+    return value;
   } finally {
     mapWhile.return();
   }
@@ -4411,18 +4453,16 @@ export function scanIterator_tryFold(
       dropFold?.(fold);
     },
   );
-  let value;
-  try {
-    value = $tryFoldInto(
-      $given(scan.iter, IIterator, true),
-      init,
-      (a, b) => f$1(a, b),
-      $controlFlowTry,
-      dropAcc,
-    );
-  } finally {
-    $dispose(f$1);
-  }
+  const value = $tryFoldInto(
+    $given(scan.iter, IIterator, true),
+    init,
+    (a, b) => f$1(a, b),
+    $controlFlowTry,
+    dropAcc,
+    () => {
+      $dispose(f$1);
+    },
+  );
   if (value.TAG === "Continue") {
     return RTry.fromOutput(value._0);
   }
@@ -4484,17 +4524,16 @@ export function scanIterator_fold(
   );
   let value;
   try {
-    try {
-      value = $tryFoldInto(
-        $given(scan.iter, IIterator, true),
-        init,
-        (a, b) => value$1(a, b),
-        $controlFlowTry,
-        dropAAA,
-      );
-    } finally {
-      $dispose(value$1);
-    }
+    value = $tryFoldInto(
+      $given(scan.iter, IIterator, true),
+      init,
+      (a, b) => value$1(a, b),
+      $controlFlowTry,
+      dropAAA,
+      () => {
+        $dispose(value$1);
+      },
+    );
     return value._0;
   } finally {
     scan.return();
@@ -4611,17 +4650,17 @@ export function inspectIterator_tryFold(
       dropFold?.(fold);
     },
   );
-  try {
-    return $tryFoldInto(
-      $given(inspect.iter, IIterator, true),
-      init,
-      (a, b) => f(a, b),
-      RTry,
-      dropAcc,
-    );
-  } finally {
-    $dispose(f);
-  }
+  const value = $tryFoldInto(
+    $given(inspect.iter, IIterator, true),
+    init,
+    (a, b) => f(a, b),
+    RTry,
+    dropAcc,
+    () => {
+      $dispose(f);
+    },
+  );
+  return value;
 }
 
 export function inspectDoubleEndedIterator_nextBack(
@@ -4716,17 +4755,17 @@ export function inspectDoubleEndedIterator_tryRfold(
       dropFold?.(fold);
     },
   );
-  try {
-    return $tryFoldInto(
-      $rev($given(inspect.iter, IIterator, true, IDoubleEndedIterator)),
-      init,
-      (a, b) => f(a, b),
-      RTry,
-      dropAcc,
-    );
-  } finally {
-    $dispose(f);
-  }
+  const value = $tryFoldInto(
+    $rev($given(inspect.iter, IIterator, true, IDoubleEndedIterator)),
+    init,
+    (a, b) => f(a, b),
+    RTry,
+    dropAcc,
+    () => {
+      $dispose(f);
+    },
+  );
+  return value;
 }
 
 export function inspectExactSizeIterator_len(inspect, IExactSizeIterator, dropI, dropF, dropIItem) {
@@ -5435,7 +5474,7 @@ export function flatMapDoubleEndedIterator_nextBack(
               ends,
               dropIItem,
             ),
-          tryRfold: (iterator, init, f, broke, unwind) =>
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
             mapDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -5447,7 +5486,7 @@ export function flatMapDoubleEndedIterator_nextBack(
               dropI,
               dropF,
               unwind,
-              undefined,
+              ends,
               undefined,
               dropIItem,
             ),
@@ -5488,7 +5527,7 @@ export function flatMapDoubleEndedIterator_nextBack(
               ends,
               dropIItem,
             ),
-          tryRfold: (iterator, init, f, broke, unwind) =>
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
             mapDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -5500,7 +5539,7 @@ export function flatMapDoubleEndedIterator_nextBack(
               dropI,
               dropF,
               unwind,
-              undefined,
+              ends,
               undefined,
               dropIItem,
             ),
@@ -5565,7 +5604,7 @@ export function flatMapDoubleEndedIterator_rfold(
               ends,
               dropIItem,
             ),
-          tryRfold: (iterator, init, f, broke, unwind) =>
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
             mapDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -5577,7 +5616,7 @@ export function flatMapDoubleEndedIterator_rfold(
               dropI,
               dropF,
               unwind,
-              undefined,
+              ends,
               undefined,
               dropIItem,
             ),
@@ -5621,7 +5660,7 @@ export function flatMapDoubleEndedIterator_rfold(
               ends,
               dropIItem,
             ),
-          tryRfold: (iterator, init, f, broke, unwind) =>
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
             mapDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -5633,7 +5672,7 @@ export function flatMapDoubleEndedIterator_rfold(
               dropI,
               dropF,
               unwind,
-              undefined,
+              ends,
               undefined,
               dropIItem,
             ),
@@ -5703,7 +5742,7 @@ export function flatMapDoubleEndedIterator_tryRfold(
               ends,
               dropIItem,
             ),
-          tryRfold: (iterator, init, f, broke, unwind) =>
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
             mapDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -5715,7 +5754,7 @@ export function flatMapDoubleEndedIterator_tryRfold(
               dropI,
               dropF,
               unwind,
-              undefined,
+              ends,
               undefined,
               dropIItem,
             ),
@@ -5762,7 +5801,7 @@ export function flatMapDoubleEndedIterator_tryRfold(
               ends,
               dropIItem,
             ),
-          tryRfold: (iterator, init, f, broke, unwind) =>
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
             mapDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -5774,7 +5813,7 @@ export function flatMapDoubleEndedIterator_tryRfold(
               dropI,
               dropF,
               unwind,
-              undefined,
+              ends,
               undefined,
               dropIItem,
             ),
@@ -6093,17 +6132,17 @@ export function skipIterator_tryFold(
     }
   }
   tmp = false;
-  try {
-    return $tryFoldInto(
-      $given(skip.iter, IIterator, true),
-      init,
-      (a, b) => fold(a, b),
-      RTry,
-      dropAcc,
-    );
-  } finally {
-    dropFold?.(fold);
-  }
+  const value = $tryFoldInto(
+    $given(skip.iter, IIterator, true),
+    init,
+    (a, b) => fold(a, b),
+    RTry,
+    dropAcc,
+    () => {
+      dropFold?.(fold);
+    },
+  );
+  return value;
 }
 
 export function skipIterator_advanceBy(skip, n, IIterator = { next: $next }, dropI, dropIItem) {
@@ -6335,18 +6374,16 @@ export function skipDoubleEndedIterator_tryRfold(
         dropFold?.(fold);
       },
     );
-    let value;
-    try {
-      value = $tryFoldInto(
-        $rev($given(skip.iter, IIterator, true, IDoubleEndedIterator)),
-        init,
-        (a, b) => value$3(a, b),
-        $controlFlowTry,
-        dropAcc,
-      );
-    } finally {
-      $dispose(value$3);
-    }
+    const value = $tryFoldInto(
+      $rev($given(skip.iter, IIterator, true, IDoubleEndedIterator)),
+      init,
+      (a, b) => value$3(a, b),
+      $controlFlowTry,
+      dropAcc,
+      () => {
+        $dispose(value$3);
+      },
+    );
     if (value.TAG === "Continue") {
       return RTry.fromOutput(value._0);
     }
@@ -6545,18 +6582,16 @@ export function takeIterator_tryFold(
       dropFold?.(fold);
     },
   );
-  let value;
-  try {
-    value = $tryFoldInto(
-      $given(take.iter, IIterator, true),
-      init,
-      (a, b) => value$1(a, b),
-      $controlFlowTry,
-      dropAcc,
-    );
-  } finally {
-    $dispose(value$1);
-  }
+  const value = $tryFoldInto(
+    $given(take.iter, IIterator, true),
+    init,
+    (a, b) => value$1(a, b),
+    $controlFlowTry,
+    dropAcc,
+    () => {
+      $dispose(value$1);
+    },
+  );
   if (value.TAG === "Continue") {
     return RTry.fromOutput(value._0);
   }
@@ -6694,25 +6729,24 @@ export function takeIDoubleEndedIterator_tryRfold(
         }
       }
       tmp = false;
-      try {
-        return $tryFoldInto(
-          $rev($given(take.iter, IIterator, true, IDoubleEndedIterator)),
-          init,
-          (a, b) => fold(a, b),
-          RTry,
-          dropAcc,
-        );
-      } finally {
-        dropFold?.(fold);
-      }
-    } else {
-      tmp = false;
-      try {
-        result = RTry.fromOutput(init);
-      } catch (error) {
-        dropFold?.(fold);
-        throw error;
-      }
+      const value = $tryFoldInto(
+        $rev($given(take.iter, IIterator, true, IDoubleEndedIterator)),
+        init,
+        (a, b) => fold(a, b),
+        RTry,
+        dropAcc,
+        () => {
+          dropFold?.(fold);
+        },
+      );
+      return value;
+    }
+    tmp = false;
+    try {
+      result = RTry.fromOutput(init);
+    } catch (error) {
+      dropFold?.(fold);
+      throw error;
     }
   }
   try {
@@ -6737,11 +6771,17 @@ export function takeRepeatTDoubleEndedIterator_tryRfold(
   dropFold,
   dropR,
 ) {
-  try {
-    return $tryFoldInto(take, init, (a, b) => fold(a, b), RTry, dropAcc);
-  } finally {
-    dropFold?.(fold);
-  }
+  const value = $tryFoldInto(
+    take,
+    init,
+    (a, b) => fold(a, b),
+    RTry,
+    dropAcc,
+    () => {
+      dropFold?.(fold);
+    },
+  );
+  return value;
 }
 
 export function takeIDoubleEndedIterator_rfold(
@@ -7284,12 +7324,16 @@ export function chainIterator_tryFold(
   if (chain.b != null) {
     const b = $someValue(chain.b);
     tmp = false;
-    let value;
-    try {
-      value = $tryFoldInto($given(b, BIterator, true), acc, (a, b) => f(a, b), RTry, dropAcc);
-    } finally {
-      dropF?.(f);
-    }
+    const value = $tryFoldInto(
+      $given(b, BIterator, true),
+      acc,
+      (a, b) => f(a, b),
+      RTry,
+      dropAcc,
+      () => {
+        dropF?.(f);
+      },
+    );
     const value$1 = RTry.branch(value);
     if (value$1.TAG === "Continue") {
       acc = value$1._0;
@@ -7647,18 +7691,16 @@ export function chainDoubleEndedIterator_tryRfold(
   if (chain.a != null) {
     const a = $someValue(chain.a);
     tmp = false;
-    let value;
-    try {
-      value = $tryFoldInto(
-        $rev($given(a, AIterator, true, ADoubleEndedIterator)),
-        acc,
-        (a, b) => f(a, b),
-        RTry,
-        dropAcc,
-      );
-    } finally {
-      dropF?.(f);
-    }
+    const value = $tryFoldInto(
+      $rev($given(a, AIterator, true, ADoubleEndedIterator)),
+      acc,
+      (a, b) => f(a, b),
+      RTry,
+      dropAcc,
+      () => {
+        dropF?.(f);
+      },
+    );
     const value$1 = RTry.branch(value);
     if (value$1.TAG === "Continue") {
       acc = value$1._0;
@@ -8003,7 +8045,7 @@ export function iterator_peekable(self, SelfIterator = { next: $next }, dropSelf
           dropSelfItem,
         );
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return peekableIterator_tryFold(
           iterator,
           init,
@@ -8012,7 +8054,7 @@ export function iterator_peekable(self, SelfIterator = { next: $next }, dropSelf
           $tryOf(broke),
           dropSelf,
           unwind,
-          undefined,
+          ends,
           undefined,
           dropSelfItem,
         );
@@ -8073,7 +8115,7 @@ export function iterator_fuse(
           dropSelfItem,
         );
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return fuseIterator_tryFold(
           iterator,
           init,
@@ -8083,7 +8125,7 @@ export function iterator_fuse(
           SelfFused,
           dropSelf,
           unwind,
-          undefined,
+          ends,
           undefined,
           dropSelfItem,
         );
@@ -8140,7 +8182,7 @@ export function iterator_rev(
           dropSelfItem,
         );
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return revIterator_tryFold(
           iterator,
           init,
@@ -8150,7 +8192,7 @@ export function iterator_rev(
           $tryOf(broke),
           dropSelf,
           unwind,
-          undefined,
+          ends,
           undefined,
           dropSelfItem,
         );
@@ -8194,7 +8236,7 @@ export function iterator_enumerate(self, SelfIterator = { next: $next }, dropSel
           dropSelfItem,
         );
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return enumerateIterator_tryFold(
           iterator,
           init,
@@ -8203,7 +8245,7 @@ export function iterator_enumerate(self, SelfIterator = { next: $next }, dropSel
           $tryOf(broke),
           dropSelf,
           unwind,
-          undefined,
+          ends,
           undefined,
           dropSelfItem,
         );
@@ -8251,7 +8293,7 @@ export function iterator_map(
           dropSelfItem,
         );
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return mapIterator_tryFold(
           iterator,
           init,
@@ -8262,7 +8304,7 @@ export function iterator_map(
           dropSelf,
           dropF,
           unwind,
-          undefined,
+          ends,
           undefined,
           dropSelfItem,
         );
@@ -8309,7 +8351,7 @@ export function iterator_filter(
           dropSelfItem,
         );
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return filterIterator_tryFold(
           iterator,
           init,
@@ -8319,7 +8361,7 @@ export function iterator_filter(
           dropSelf,
           dropP,
           unwind,
-          undefined,
+          ends,
           undefined,
           dropSelfItem,
         );
@@ -8361,7 +8403,7 @@ export function iterator_copied(self, SelfIterator = { next: $next }, TCopy, dro
       fold(iterator, init, f, unwind, ends) {
         return copiedIterator_fold(iterator, init, f, SelfIterator, TCopy, dropSelf, unwind, ends);
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return copiedIterator_tryFold(
           iterator,
           init,
@@ -8371,6 +8413,7 @@ export function iterator_copied(self, SelfIterator = { next: $next }, TCopy, dro
           $tryOf(broke),
           dropSelf,
           unwind,
+          ends,
         );
       },
       count(iterator) {
@@ -8407,7 +8450,7 @@ export function iterator_cloned(self, SelfIterator = { next: $next }, TClone, dr
           ends,
         );
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return clonedIterator_tryFold(
           iterator,
           init,
@@ -8418,6 +8461,7 @@ export function iterator_cloned(self, SelfIterator = { next: $next }, TClone, dr
           dropSelf,
           dropT,
           unwind,
+          ends,
         );
       },
       takes: ["fold"],
@@ -8467,7 +8511,7 @@ export function iterator_filterMap(
           dropSelfItem,
         );
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return filterMapIterator_tryFold(
           iterator,
           init,
@@ -8478,7 +8522,7 @@ export function iterator_filterMap(
           dropSelf,
           dropF,
           unwind,
-          undefined,
+          ends,
           undefined,
           dropSelfItem,
         );
@@ -8525,7 +8569,7 @@ export function iterator_takeWhile(
           dropSelfItem,
         );
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return takeWhileIterator_tryFold(
           iterator,
           init,
@@ -8535,7 +8579,7 @@ export function iterator_takeWhile(
           dropSelf,
           dropP,
           unwind,
-          undefined,
+          ends,
           undefined,
           dropSelfItem,
         );
@@ -8582,7 +8626,7 @@ export function iterator_skipWhile(
           dropSelfItem,
         );
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return skipWhileIterator_tryFold(
           iterator,
           init,
@@ -8592,7 +8636,7 @@ export function iterator_skipWhile(
           dropSelf,
           dropP,
           unwind,
-          undefined,
+          ends,
           undefined,
           dropSelfItem,
         );
@@ -8648,7 +8692,7 @@ export function iterator_mapWhile(
           dropSelfItem,
         );
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return mapWhileIterator_tryFold(
           iterator,
           init,
@@ -8659,7 +8703,7 @@ export function iterator_mapWhile(
           dropSelf,
           dropP,
           unwind,
-          undefined,
+          ends,
           undefined,
           dropSelfItem,
         );
@@ -8727,7 +8771,7 @@ export function iterator_scan(
           dropSelfItem,
         );
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return scanIterator_tryFold(
           iterator,
           init,
@@ -8739,7 +8783,7 @@ export function iterator_scan(
           dropSt,
           dropF,
           unwind,
-          undefined,
+          ends,
           undefined,
           dropSelfItem,
         );
@@ -8790,7 +8834,7 @@ export function iterator_inspect(
           dropSelfItem,
         );
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return inspectIterator_tryFold(
           iterator,
           init,
@@ -8800,7 +8844,7 @@ export function iterator_inspect(
           dropSelf,
           dropF,
           unwind,
-          undefined,
+          ends,
           undefined,
           dropSelfItem,
         );
@@ -8890,7 +8934,7 @@ export function iterator_flatten(
           dropSelfItemItem,
         );
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return flattenIterator_tryFold(
           iterator,
           init,
@@ -8904,7 +8948,7 @@ export function iterator_flatten(
           dropSelf,
           dropSelfItemIntoIter,
           unwind,
-          undefined,
+          ends,
           undefined,
           dropSelfItem,
           dropSelfItemItem,
@@ -9033,7 +9077,7 @@ export function iterator_flatMap(
                 dropU,
               );
             },
-            tryFold(iterator, init, f, broke, unwind) {
+            tryFold(iterator, init, f, broke, unwind, ends) {
               return fuseIterator_tryFold(
                 iterator,
                 init,
@@ -9045,7 +9089,7 @@ export function iterator_flatMap(
                   map.return();
                 },
                 unwind,
-                undefined,
+                ends,
                 undefined,
                 dropU,
               );
@@ -9129,7 +9173,7 @@ export function iterator_flatMap(
           dropUIntoIter,
         );
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return flatMapIterator_tryFold(
           iterator,
           init,
@@ -9142,7 +9186,7 @@ export function iterator_flatMap(
           dropU,
           dropF,
           unwind,
-          undefined,
+          ends,
           undefined,
           dropSelfItem,
           dropUItem,
@@ -9213,7 +9257,7 @@ export function iterator_skip(self, n, SelfIterator = { next: $next }, dropSelf,
           dropSelfItem,
         );
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return skipIterator_tryFold(
           iterator,
           init,
@@ -9222,7 +9266,7 @@ export function iterator_skip(self, n, SelfIterator = { next: $next }, dropSelf,
           $tryOf(broke),
           dropSelf,
           unwind,
-          undefined,
+          ends,
           undefined,
           dropSelfItem,
         );
@@ -9266,7 +9310,7 @@ export function iterator_take(self, n, SelfIterator = { next: $next }, dropSelf,
           dropSelfItem,
         );
       },
-      tryFold(iterator, init, f, broke, unwind) {
+      tryFold(iterator, init, f, broke, unwind, ends) {
         return takeIterator_tryFold(
           iterator,
           init,
@@ -9275,7 +9319,7 @@ export function iterator_take(self, n, SelfIterator = { next: $next }, dropSelf,
           $tryOf(broke),
           dropSelf,
           unwind,
-          undefined,
+          ends,
           undefined,
           dropSelfItem,
         );
@@ -9320,7 +9364,7 @@ export function iterator_stepBy(
         dropSelfItem,
       );
     },
-    tryFold(iterator, init, f, broke, unwind) {
+    tryFold(iterator, init, f, broke, unwind, ends) {
       return stepByIterator_tryFold(
         iterator,
         init,
@@ -9329,7 +9373,7 @@ export function iterator_stepBy(
         $tryOf(broke),
         dropSelf,
         unwind,
-        undefined,
+        ends,
         undefined,
         dropSelfItem,
       );
@@ -9431,7 +9475,7 @@ export function iterator_chain(
             dropSelfItem,
           );
         },
-        tryFold(iterator, init, f, broke, unwind) {
+        tryFold(iterator, init, f, broke, unwind, ends) {
           return chainIterator_tryFold(
             iterator,
             init,
@@ -9442,7 +9486,7 @@ export function iterator_chain(
             dropSelf,
             dropUIntoIter,
             unwind,
-            undefined,
+            ends,
             undefined,
             dropSelfItem,
           );
@@ -9597,18 +9641,16 @@ export function fuseFuseImplI_tryRfold(
     const iter = $someValue(fuse.iter);
     tmp = false;
     tmp$1 = false;
-    let value;
-    try {
-      value = $tryFoldInto(
-        $rev($given(iter, IIterator, true, IDoubleEndedIterator)),
-        acc,
-        (a, b) => fold(a, b),
-        RTry,
-        dropAcc,
-      );
-    } finally {
-      dropFold?.(fold);
-    }
+    const value = $tryFoldInto(
+      $rev($given(iter, IIterator, true, IDoubleEndedIterator)),
+      acc,
+      (a, b) => fold(a, b),
+      RTry,
+      dropAcc,
+      () => {
+        dropFold?.(fold);
+      },
+    );
     const value$1 = RTry.branch(value);
     if (value$1.TAG === "Continue") {
       const value = value$1._0;
@@ -9667,18 +9709,16 @@ export function fuseFuseImplIFusedIterator_tryRfold(
   if (fuse.iter != null) {
     const iter = $someValue(fuse.iter);
     tmp = false;
-    let value;
-    try {
-      value = $tryFoldInto(
-        $rev($given(iter, IIterator, true, IDoubleEndedIterator)),
-        _2,
-        (a, b) => fold(a, b),
-        RTry,
-        dropAcc,
-      );
-    } finally {
-      dropFold?.(fold);
-    }
+    const value = $tryFoldInto(
+      $rev($given(iter, IIterator, true, IDoubleEndedIterator)),
+      _2,
+      (a, b) => fold(a, b),
+      RTry,
+      dropAcc,
+      () => {
+        dropFold?.(fold);
+      },
+    );
     const value$1 = RTry.branch(value);
     if (value$1.TAG === "Continue") {
       _2 = value$1._0;
@@ -10902,18 +10942,24 @@ export function takeSpecTake_specFold(
   dropF,
   dropIItem,
 ) {
-  const value = $dropping(
+  const value$1 = $dropping(
     (a, b) => f(a, b),
     () => {
       dropF?.(f);
     },
   );
   try {
-    try {
-      return $tryFoldInto(take, init, (a, b) => value(a, b), $neverShortCircuitTry, dropB);
-    } finally {
-      $dispose(value);
-    }
+    const value = $tryFoldInto(
+      take,
+      init,
+      (a, b) => value$1(a, b),
+      $neverShortCircuitTry,
+      dropB,
+      () => {
+        $dispose(value$1);
+      },
+    );
+    return value;
   } finally {
     take.return();
   }
@@ -11155,16 +11201,22 @@ export function stepByStepByImplI_specTryFold(
   }
   const captured = stepBy.iter;
   const captured$1 = stepBy.stepMinusOne;
-  const value = $fromFn(
+  const value$1 = $fromFn(
     () => $nthDropping($lent($given(captured, IIterator, true)), captured$1, dropIItem, true),
     true,
   );
   tmp = false;
-  try {
-    return $tryFoldInto(value, acc, (a, b) => f(a, b), RTry, dropAcc);
-  } finally {
-    dropF?.(f);
-  }
+  const value = $tryFoldInto(
+    value$1,
+    acc,
+    (a, b) => f(a, b),
+    RTry,
+    dropAcc,
+    () => {
+      dropF?.(f);
+    },
+  );
+  return value;
 }
 
 export function stepByStepByBackImplI_specNextBack(
@@ -11340,10 +11392,10 @@ export function stepByStepByBackImplI_specTryRfold(
     throw error;
   }
   if (tmp.TAG === "Continue") {
-    const value$1 = tmp._0;
+    const value$2 = tmp._0;
     const captured = stepBy.iter;
     const captured$1 = stepBy.stepMinusOne;
-    const value = $fromFn(
+    const value$1 = $fromFn(
       () =>
         $nthBack(
           $given(captured, IIterator, true, IDoubleEndedIterator),
@@ -11354,11 +11406,17 @@ export function stepByStepByBackImplI_specTryRfold(
       true,
     );
     tmp$1 = false;
-    try {
-      return $tryFoldInto(value, value$1, (a, b) => f(a, b), RTry, dropAcc);
-    } finally {
-      dropF?.(f);
-    }
+    const value = $tryFoldInto(
+      value$1,
+      value$2,
+      (a, b) => f(a, b),
+      RTry,
+      dropAcc,
+      () => {
+        dropF?.(f);
+      },
+    );
+    return value;
   }
   try {
     result = RTry.FromResidual().fromResidual(tmp._0);

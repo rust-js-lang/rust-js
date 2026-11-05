@@ -72,9 +72,9 @@ fixed order: `(init, f, [broke,] unwind, ends)`.
 | `next()` | `next` | `&mut` | required, `iter/traits/iterator.rs:78` |
 | `back()` | `next_back` | `&mut` | required, `iter/traits/double_ended.rs:97` |
 | `fold(init, f, unwind, ends)` | `fold` | by value | `next` until `None`, `iterator.rs:2660` |
-| `tryFold(init, f, broke, unwind)` | `try_fold` | `&mut` | `next` until `None` or a break, `iterator.rs:2482` |
+| `tryFold(init, f, broke, unwind, ends)` | `try_fold` | `&mut` | `next` until `None` or a break, `iterator.rs:2482` |
 | `rfold(init, f, unwind, ends)` | `rfold` | by value | `next_back` until `None`, `double_ended.rs:353` |
-| `tryRfold(init, f, broke, unwind)` | `try_rfold` | `&mut` | `next_back` until a break, `double_ended.rs:282` |
+| `tryRfold(init, f, broke, unwind, ends)` | `try_rfold` | `&mut` | `next_back` until a break, `double_ended.rs:282` |
 | `nth(k, drop)` | `nth` | `&mut` | `advance_by(k)`, then `next`, `iterator.rs:388` |
 | `nthBack(k, drop)` | `nth_back` | `&mut` | `advance_back_by(k)`, then `next_back`, `double_ended.rs:243` |
 | `advanceBy(m, drop)` | `advance_by` | `&mut` | `try_fold` counting down, for a `Sized` iterator, `iterator.rs:328` |
@@ -589,3 +589,60 @@ Step 3 counts what a value made in place has left through the value.
 `Known::IterStepped`. #745's `NaN`, a held `Rev` counted as its range, was
 fixed first on its own (d9dfd1cff), so this step changes no JS.
 
+
+
+## Amendment: a first step taken while a fold's frame holds only its parameters drops `f` before the accumulator (#768)
+
+S2's step that runs before `init` has moved into a local covers three
+adapters, in both `fold` and `try_fold`:
+
+- `SkipWhile::fold(mut self, mut init, mut fold)` and `try_fold(&mut self,
+  mut init, mut fold)` (`iter/adapters/skip_while.rs`), with their first
+  step, the predicate's `find`;
+- `Skip::fold` and `try_fold`, with their `nth(n - 1)`;
+- `StepBy`'s `spec_fold` and `spec_try_fold`, with their first `next()`.
+
+Each takes its step while its frame holds only its parameters. A panic
+there drops `fold` first, then `init`, then (of `fold`) `self`. Past that
+step, the source's own fold holds the accumulator in a local, which drops
+first. In both builds the JS dropped the accumulator first. The consumer's
+closure was dropped after the call, outside the fold, and std's compiled
+`try_fold` was given no drop of its `F`.
+
+- **`tryFold` and `tryRfold` take `ends` too**, `(init, f, broke, unwind,
+  ends)`, as the table above now says. Every runtime `tryFold` and
+  `tryRfold` takes it and passes it on where std moves `f` into its
+  source's: a map's, a filter's, a take's, an enumerate's and a scan's.
+  `$flatMap`'s and `$Steps`' `flatMap`'s don't pass it on, as `FlattenCompat` folds
+  its source by a closure that borrows `fold`. `$Steps`' default leaves it
+  to its caller.
+  - An architecture test holds this, as it holds fold's (#734). The chain's
+    are left to iterD's merged `Chain` (`$lazyChain`, `$chainEnds`), which
+    leave that test's list once they take it.
+- **The owners.**
+  - `$tryFoldSome`, `$tryFoldOk` and `$tryFoldInto` give `ends` through
+    `$endsAfter(ends, run)`. It drops `ends` once, at the call's end and
+    as it unwinds, as `try_fold` drops `f` then, or earlier where an
+    adapter runs it first (`$onceOf`).
+  - The first step is `$stepHolding(step, init, unwind, ends)`'s. It runs
+    `ends`, then `unwind`, the second though the first throws. It's used
+    by `$lazySkipWhile`, `$skipping` and `$stepBy`.
+  - `$skipping`'s `fold` and `try_fold` are std's of any source with an
+    `nth`, not only one with its own.
+  - `$stdIterator` passes `ends` on to a compiled `try_fold` and
+    `try_rfold`, whose `F`'s drop it is (`compiled_try_fold`), as a
+    compiled `fold`'s `ends` is. A compiled body gives its own `try_fold`
+    the `F` it was given.
+- **Which consumer's closure goes with its fold is `consumed_function`'s
+  one answer**, for `ends` and for the call's own drop after it
+  (`dropped_given`). It now also answers yes for `fold`, `rfold`,
+  `try_fold` and `try_rfold` when two things hold: the closure drops, and
+  its accumulator has a destructor that a stage's panic may strand
+  (`stranded_drop`'s condition). Only then is the order of the two drops
+  observable, and only the fold knows it.
+- **Still open:** the default build's in-place `step_by()`, a filter by
+  index, never reaches `$stepBy` (#773).
+- Case: results change (ADR 0262). Held by
+  `test/corpus/skip_while_first_step_unwinds.rs` in both builds, and by the
+  conformance table's `skip_while | fold holding` and `skip_while |
+  try_fold holding` cases at `stage`, taken off its list.

@@ -706,8 +706,8 @@ export const mutations: Mutation[] = [
     breaks:
       "std's compiled `try_fold` of its struct, `TakeWhile`'s, which its `fold` is, is given no drop of its accumulator: a stage's panic leaves it undropped (#423)",
     file: "src/lower/iterators/knowing.rs",
-    find: '                drops: &[(acc, Expr::var("unwind"))],\n',
-    replace: '                drops: &[(acc, Expr::var("unwind"))][..0],\n',
+    find: '                drops: &[(acc, Expr::var("unwind")), (acc + 1, Expr::var("ends"))],\n',
+    replace: '                drops: &[(acc + 1, Expr::var("ends"))],\n',
     tests: [
       "test/std-package.test.ts",
       "test/iterator-forms.test.ts",
@@ -806,5 +806,18 @@ export const mutations: Mutation[] = [
     find: "                        true => taken.clone().in_place(),\n",
     replace: "                        true => taken.clone(),\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_of_maps_from_its_back.rs$"],
+  },
+  {
+    name: "compiled-try-fold-given-no-ends",
+    breaks: "std's compiled `try_fold` of its struct, `SkipWhile`'s, is given no drop of its `F`, so a panic in its first step drops the accumulator first (#768)",
+    file: "src/lower/iterators/knowing.rs",
+    find: '                drops: &[(acc, Expr::var("unwind")), (acc + 1, Expr::var("ends"))],\n',
+    replace: '                drops: &[(acc, Expr::var("unwind"))],\n',
+    tests: [
+      "test/std-package.test.ts",
+      "test/iterator-forms.test.ts",
+      "-t",
+      "the committed @rust-js/std is std|^skip_while_first_step_unwinds with",
+    ],
   },
 ];

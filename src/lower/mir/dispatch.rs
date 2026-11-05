@@ -789,7 +789,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `$consume` drops before what's left (`consumed_function`, #734).
         let method = self.recognition().iterator_method(def_id);
         for (at, when) in given {
-            let consumed = at + 1 == arg_tys.len() && self.consumed_function(method, arg_tys[0], arg_tys[at]);
+            let consumed = at + 1 == arg_tys.len() && self.consumed_function(method, arg_tys);
             let f = self.held_value(&mut values, at, "f", span, out)?;
             if !(when.is_none() && consumed) {
                 held.push((when, f, arg_tys[at]));

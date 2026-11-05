@@ -64,7 +64,10 @@ function $flatMap(it, f) {
   };
   // Its `try_fold`, std's: the rest of the one it's in, then its source's
   // of each one's, the one it stops in kept for its next step.
-  const tryFold = (init, g, broke, unwind) => {
+  // What drops with `g`, `ends`, isn't passed on: std's `FlattenCompat`
+  // folds its source by a closure that borrows `fold`, so its source's
+  // frame never drops it; its caller drops it after (#768).
+  const tryFold = (init, g, broke, unwind, ends) => {
     let folded = init;
     if (inner !== undefined) {
       folded = $lent(inner).tryFold(folded, g, broke, unwind);

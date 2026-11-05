@@ -69,16 +69,15 @@ function $skipping(iter, n, drop) {
   // dropped by `unwind`, as std's `fold(self, init, ..)` drops it as it
   // unwinds, then, of its `fold` and `count`, which take it, it closed, as
   // that drops `self` (#423, rd767).
-  const skipped = (k, init, unwind) =>
-    unwind === undefined
-      ? skipping.iter.nth(k - 1, drop)
-      : $staged(() => skipping.iter.nth(k - 1, drop), undefined, undefined, init, unwind);
+  // What drops with `f`, `ends`, first, as that frame holds only its
+  // parameters (`$stepHolding`, #768).
+  const skipped = (k, init, unwind, ends) => $stepHolding(() => skipping.iter.nth(k - 1, drop), init, unwind, ends);
   // What drops with `f`, `ends`, before what's left (#710).
   const fold = (init, f, unwind, ends) => {
     if (skipping.n > 0) {
       const k = skipping.n;
       skipping.n = 0;
-      const step = $consumed(skipping, () => skipped(k, init, unwind), ends);
+      const step = $consumed(skipping, () => skipped(k, init, unwind, ends), ends);
       if (step.done) {
         $closedAfter(ends, () => skipping.return());
         return init;
@@ -90,15 +89,15 @@ function $skipping(iter, n, drop) {
     return folded;
   };
   // And its `try_fold`, the same first step, then its source's.
-  const tryFold = (init, f, broke, unwind) => {
+  const tryFold = (init, f, broke, unwind, ends) => {
     if (skipping.n > 0) {
       const k = skipping.n;
       skipping.n = 0;
-      const step = skipped(k, init, unwind);
+      const step = skipped(k, init, unwind, ends);
       if (step.done) return init;
       drop?.(step.value);
     }
-    return skipping.iter.tryFold(init, f, broke, unwind);
+    return skipping.iter.tryFold(init, f, broke, unwind, ends);
   };
   // What std's `Skip::last` steps after its `nth(n - 1)?`: its source, what
   // it skips dropped, or `undefined` where that found none (#232).
@@ -156,10 +155,10 @@ function $skipping(iter, n, drop) {
   };
   // Its `try_rfold` and `rfold`, std's: its source's, stopped after what it
   // gives.
-  const tryRfold = (init, f, broke, unwind) => {
+  const tryRfold = (init, f, broke, unwind, ends) => {
     let left = skipping.len();
     if (left === 0) return init;
-    return skipping.iter.tryRfold(init, (a, x) => (left--, f(a, x)), (a) => left === 0 || broke(a), unwind);
+    return skipping.iter.tryRfold(init, (a, x) => (left--, f(a, x)), (a) => left === 0 || broke(a), unwind, ends);
   };
   // Consumed, its source done with after (#225), and though it throws, a
   // panic, as `rfold(self)` drops the `Skip` as it unwinds: a `$rev`'s
@@ -173,8 +172,10 @@ function $skipping(iter, n, drop) {
   $forward(skipping, iter, {
     advanceBy,
     count: iter.ownNth || iter.ownCount ? count : undefined,
-    fold: iter.ownNth || Object.hasOwn(iter, "fold") ? fold : undefined,
-    tryFold: iter.ownNth ? tryFold : undefined,
+    // Std's `fold` and `try_fold` of any source with an `nth`: its first
+    // step taken while their frame holds only `init` and `f` (#768).
+    fold: iter.nth !== undefined ? fold : undefined,
+    tryFold: iter.nth !== undefined ? tryFold : undefined,
     nth: iter.ownNth ? nth : undefined,
     nthBack: iter.nthBack !== undefined ? nthBack : undefined,
     tryRfold: iter.tryRfold !== undefined ? tryRfold : undefined,

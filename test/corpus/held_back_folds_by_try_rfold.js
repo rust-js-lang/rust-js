@@ -112,7 +112,7 @@ function main() {
         },
         countExactSizeIterator,
       ),
-    tryRfold: (iterator, init, f, broke, unwind) =>
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
       takeIDoubleEndedIterator_tryRfold(
         iterator,
         init,
@@ -127,6 +127,7 @@ function main() {
         $tryOf(broke),
         undefined,
         unwind,
+        ends,
       ),
   };
   const held = $rev(
@@ -185,7 +186,7 @@ function main() {
           { next: $next, fold: $foldOf },
           takeDoubleEndedIterator,
         ),
-      (iterator, init, f, broke, unwind) =>
+      (iterator, init, f, broke, unwind, ends) =>
         skipDoubleEndedIterator_tryRfold(
           iterator,
           init,
@@ -195,6 +196,7 @@ function main() {
           $tryOf(broke),
           undefined,
           unwind,
+          ends,
         ),
     ),
     (x) => x % 2 === 0,

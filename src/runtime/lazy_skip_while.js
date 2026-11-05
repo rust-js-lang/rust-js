@@ -20,25 +20,20 @@ function $lazySkipWhile(items, skip) {
     () => source.return?.(),
   );
   // Where its first step's `skip` throws, a panic, what it's given dropped
-  // by `unwind`, as std's `fold(self, init)` drops its own (#423).
-  const first = (init, unwind) => {
-    if (unwind === undefined) return skipped.next();
-    try {
-      return skipped.next();
-    } catch (error) {
-      unwind(init);
-      throw error;
-    }
-  };
-  const tryFold = (init, f, broke, unwind) => {
+  // as std's `fold(self, init, fold)` and `try_fold(&mut self, init, fold)`
+  // drop their own, which hold nothing else then: what drops with `f`,
+  // `ends`, where it's given, then `init`, by `unwind`, the second though
+  // the first throws (#423, #768).
+  const first = (init, unwind, ends) => $stepHolding(() => skipped.next(), init, unwind, ends);
+  const tryFold = (init, f, broke, unwind, ends) => {
     let folded = init;
     if (skipping) {
-      const step = first(folded, unwind);
+      const step = first(folded, unwind, ends);
       if (step.done) return folded;
       folded = f(folded, step.value);
       if (broke(folded)) return folded;
     }
-    return $lent(source).tryFold(folded, f, broke, unwind);
+    return $lent(source).tryFold(folded, f, broke, unwind, ends);
   };
   // Its `fold`, std's: its first step, then its source's own fold, the
   // crate's where it writes one (#214); then closed, as `fold(self)` drops
@@ -46,13 +41,13 @@ function $lazySkipWhile(items, skip) {
   // Closed though it throws, a panic (#423).
   // What drops with `f`, `ends`, its source's fold's, which `SkipWhile::fold`
   // gives `fold` by value, or first where it stops (#734).
-  const fold = (init, f, unwind, ends) =>
-    $consumed(
+  const fold = (init, f, unwind, ends) => {
+    return $consumed(
       skipped,
       () => {
         let folded = init;
         if (skipping) {
-          const step = first(folded, unwind);
+          const step = first(folded, unwind, ends);
           if (step.done) {
             $closedAfter(ends, () => skipped.return());
             return folded;
@@ -63,6 +58,7 @@ function $lazySkipWhile(items, skip) {
       },
       ends,
     );
+  };
   $forward(skipped, source, { tryFold, fold });
   skipped.from = [source];
   return skipped;

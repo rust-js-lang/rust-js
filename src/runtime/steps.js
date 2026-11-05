@@ -119,8 +119,10 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     });
   }
   // Std's `try_fold`: `f` of each item, given what it gave, until `broke`
-  // says what it gave stops it, as `?` would, which it gives back.
-  tryFold(init, f, broke, unwind) {
+  // says what it gave stops it, as `?` would, which it gives back. What
+  // drops with `f`, `ends`, is its caller's to drop after, as std's holds
+  // the accumulator in its body, which drops first (S2, #768).
+  tryFold(init, f, broke, unwind, ends) {
     let folded = init;
     const next = () => (unwind === undefined ? this.next() : $staged(() => this.next(), undefined, undefined, folded, unwind));
     for (let step = next(); !step.done; step = next()) {
@@ -255,7 +257,10 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     };
     // Its `try_fold`, std's: the rest of the one it's in, then its source's
     // of each one's, the one it stops in kept for its next step.
-    const tryFold = (init, g, broke, unwind) => {
+    // What drops with `g`, `ends`, isn't passed on: std's `FlattenCompat`
+    // folds its source by a closure that borrows `fold`, so its source's
+    // frame never drops it; its caller drops it after (#768).
+    const tryFold = (init, g, broke, unwind, ends) => {
       let folded = init;
       if (inner !== undefined) {
         folded = $lent(inner).tryFold(folded, g, broke, unwind);
@@ -324,7 +329,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     // `next` closes it (ADR 0570, #225, #242).
     // Not closed at its limit, `kept`, by its fold, which closes it after
     // what drops with its `f` (#710).
-    const tryFoldOf = (init, g, broke, unwind, kept) => {
+    const tryFoldOf = (init, g, broke, unwind, kept, ends) => {
       if (n === 0) {
         if (!taken.held && !kept) this.return();
         return init;
@@ -340,11 +345,12 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
         },
         (a) => (stopped = broke(a)) || full,
         unwind,
+        ends,
       );
       if (full && !stopped && !taken.held && !kept) this.return();
       return folded;
     };
-    const tryFold = (init, g, broke, unwind) => tryFoldOf(init, g, broke, unwind, false);
+    const tryFold = (init, g, broke, unwind, ends) => tryFoldOf(init, g, broke, unwind, false, ends);
     // Its `fold`, std's: its `try_fold`, never stopped, so a `Skip`'s
     // inside asks its source's `nth(n - 1)`, then its source dropped with it
     // (#213), after what drops with `g`, `ends` (#710).
@@ -457,4 +463,53 @@ function $closedAfter(ends, close) {
   } finally {
     close();
   }
+}
+
+// `ends`, what drops with a fold's `f`, run once however often it's asked:
+// where an adapter's step runs it first and the fold that took it after
+// (#768). `undefined` of none.
+function $onceOf(ends) {
+  if (ends === undefined) return undefined;
+  let dropped = false;
+  return () => dropped || ((dropped = true), ends());
+}
+
+// `step()`, an adapter's step taken while its fold's frame holds nothing
+// but its parameters, `init` and `f`, std's `SkipWhile`'s first `find`,
+// `Skip`'s `nth(n - 1)` and `StepBy`'s first `next`: where it throws, a
+// panic, what drops with `f`, `ends`, then `init`, by `unwind`, the
+// parameters' reverse order, the second though the first throws (S2,
+// #768). Past it, std's own fold holds the accumulator in its body, which
+// drops first, `$staged`'s. `ends` is once where it's made, `$consume`'s
+// and `$endsAfter`'s, so the fold that runs it again after drops nothing.
+function $stepHolding(step, init, unwind, ends) {
+  if (unwind === undefined && ends === undefined) return step();
+  try {
+    return step();
+  } catch (error) {
+    try {
+      ends?.();
+    } finally {
+      unwind?.(init);
+    }
+    throw error;
+  }
+}
+
+// `run(once)`, a `try_fold(&mut self, init, f)` given what drops with `f`,
+// `ends`: then `ends`, once, at its end and as it unwinds, as `try_fold`
+// drops `f` then; or before, where `run` runs `once` itself, an adapter
+// whose frame drops `f` before the accumulator it holds (#768).
+function $endsAfter(ends, run) {
+  if (ends === undefined) return run(undefined);
+  const once = $onceOf(ends);
+  let made;
+  try {
+    made = run(once);
+  } catch (error) {
+    once();
+    throw error;
+  }
+  once();
+  return made;
 }

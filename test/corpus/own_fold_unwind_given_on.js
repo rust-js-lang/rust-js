@@ -274,7 +274,7 @@ function main() {
             { next_back: numsDoubleEndedIterator_nextBack },
             false,
           ),
-        tryRfold: (iterator, init, f, broke, unwind) =>
+        tryRfold: (iterator, init, f, broke, unwind, ends) =>
           fuseDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -285,6 +285,7 @@ function main() {
             false,
             undefined,
             unwind,
+            ends,
           ),
       },
       fuseClone({

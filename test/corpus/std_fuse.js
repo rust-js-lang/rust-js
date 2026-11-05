@@ -105,7 +105,7 @@ function ends(it, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone, I
           ),
         (iterator, k) =>
           fuseDoubleEndedIterator_nthBack(iterator, k, IIterator, IDoubleEndedIterator, IFused),
-        (iterator, init, f, broke, unwind) =>
+        (iterator, init, f, broke, unwind, ends) =>
           fuseDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -116,6 +116,7 @@ function ends(it, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone, I
             IFused,
             undefined,
             unwind,
+            ends,
           ),
       ),
     ),

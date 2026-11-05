@@ -89,6 +89,9 @@ const few = [
   "panic_in_own_next_drops.rs",
   "panic_in_own_rfold_drops.rs",
   "panic_mid_fold_drops.rs",
+  // A fold's first step taken while its frame holds only its parameters,
+  // a compiled `SkipWhile`'s, `Skip`'s and `StepBy`'s (#768).
+  "skip_while_first_step_unwinds.rs",
   "panic_mid_iteration_drops.rs",
   "panic_part_way_drops.rs",
   "passed_item_drops_that_panic.rs",

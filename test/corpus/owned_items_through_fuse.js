@@ -149,7 +149,7 @@ function main() {
             $dropEach(loudDrop_drop),
             loudDrop_drop,
           ),
-        (iterator, init, f, broke, unwind) =>
+        (iterator, init, f, broke, unwind, ends) =>
           fuseDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -160,7 +160,7 @@ function main() {
             true,
             $dropEach(loudDrop_drop),
             unwind,
-            undefined,
+            ends,
             undefined,
             loudDrop_drop,
           ),
@@ -257,7 +257,7 @@ function main() {
             $dropEach(loudDrop_drop),
             loudDrop_drop,
           ),
-        tryRfold: (iterator, init, f, broke, unwind) =>
+        tryRfold: (iterator, init, f, broke, unwind, ends) =>
           revDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -266,7 +266,7 @@ function main() {
             $tryOf(broke),
             $dropEach(loudDrop_drop),
             unwind,
-            undefined,
+            ends,
             undefined,
             loudDrop_drop,
           ),

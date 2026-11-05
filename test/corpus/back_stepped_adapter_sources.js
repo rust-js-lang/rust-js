@@ -64,7 +64,7 @@ function main() {
         unwind,
         ends,
       ),
-    tryRfold: (iterator, init, f, broke, unwind) =>
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
       mapDoubleEndedIterator_tryRfold(
         iterator,
         init,
@@ -76,6 +76,7 @@ function main() {
         undefined,
         undefined,
         unwind,
+        ends,
       ),
   });
   let first = $next(odd);
@@ -143,7 +144,7 @@ function main() {
             { next_back: $nextBack },
             true,
           ),
-        (iterator, init, f, broke, unwind) =>
+        (iterator, init, f, broke, unwind, ends) =>
           fuseDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -154,6 +155,7 @@ function main() {
             true,
             undefined,
             unwind,
+            ends,
           ),
       ),
       (x) => x % 2 === 1,

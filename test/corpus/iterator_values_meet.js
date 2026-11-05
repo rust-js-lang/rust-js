@@ -138,7 +138,7 @@ function main() {
           (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
           undefined,
           undefined,
-          (iterator, init, f, broke, unwind) =>
+          (iterator, init, f, broke, unwind, ends) =>
             mapDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -150,6 +150,7 @@ function main() {
               undefined,
               undefined,
               unwind,
+              ends,
             ),
         ),
       ),

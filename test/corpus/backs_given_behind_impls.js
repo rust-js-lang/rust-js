@@ -98,7 +98,7 @@ function main() {
         { next_back: $nextBack },
         iterExactSizeIterator,
       ),
-    tryRfold: (iterator, init, f, broke, unwind) =>
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
       takeIDoubleEndedIterator_tryRfold(
         iterator,
         init,
@@ -109,6 +109,7 @@ function main() {
         $tryOf(broke),
         undefined,
         unwind,
+        ends,
       ),
   };
   const v = [1, 2, 3];
@@ -134,7 +135,7 @@ function main() {
               { next: $next, fold: $foldOf },
               takeDoubleEndedIterator,
             ),
-          (iterator, init, f, broke, unwind) =>
+          (iterator, init, f, broke, unwind, ends) =>
             chainDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -147,6 +148,7 @@ function main() {
               undefined,
               undefined,
               unwind,
+              ends,
             ),
         ),
       ),
@@ -168,7 +170,7 @@ function main() {
             (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
             undefined,
             undefined,
-            (iterator, init, f, broke, unwind) =>
+            (iterator, init, f, broke, unwind, ends) =>
               mapDoubleEndedIterator_tryRfold(
                 iterator,
                 init,
@@ -180,6 +182,7 @@ function main() {
                 undefined,
                 undefined,
                 unwind,
+                ends,
               ),
           ),
         ),
@@ -213,7 +216,7 @@ function main() {
           unwind,
           ends,
         ),
-      tryRfold: (iterator, init, f, broke, unwind) =>
+      tryRfold: (iterator, init, f, broke, unwind, ends) =>
         mapDoubleEndedIterator_tryRfold(
           iterator,
           init,
@@ -225,6 +228,7 @@ function main() {
           undefined,
           undefined,
           unwind,
+          ends,
         ),
     },
   );
@@ -242,7 +246,7 @@ function main() {
         (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
         undefined,
         undefined,
-        (iterator, init, f, broke, unwind) =>
+        (iterator, init, f, broke, unwind, ends) =>
           mapDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -254,6 +258,7 @@ function main() {
             undefined,
             undefined,
             unwind,
+            ends,
           ),
       ),
     ),

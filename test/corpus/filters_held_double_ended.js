@@ -76,7 +76,7 @@ function main() {
         unwind,
         ends,
       ),
-    tryRfold: (iterator, init, f, broke, unwind) =>
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
       mapDoubleEndedIterator_tryRfold(
         iterator,
         init,
@@ -88,6 +88,7 @@ function main() {
         undefined,
         undefined,
         unwind,
+        ends,
       ),
   };
   const evens = Array.from(

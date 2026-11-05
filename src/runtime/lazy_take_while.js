@@ -23,13 +23,14 @@ function $lazyTakeWhile(items, keep, drop) {
   // Where `keep` throws, a panic, the accumulator dropped by `unwind`
   // (#423), and where the drop of the one it stops at does, not, as
   // `$kept` says (#651).
-  const tryFold = (init, f, broke, unwind) => {
+  const tryFold = (init, f, broke, unwind, ends) => {
     if (ended) return init;
     const folded = $lent(source).tryFold(
       init,
       (a, x) => ($kept(keep, drop, x, undefined, a, unwind) ? f(a, x) : ((ended = true), a)),
       (a) => ended || broke(a),
       unwind,
+      ends,
     );
     return folded;
   };
@@ -62,7 +63,7 @@ function $lazyMapWhile(items, f, present) {
     () => source.return?.(),
   );
   mapping.from = [source];
-  const tryFold = (init, g, broke, unwind) => {
+  const tryFold = (init, g, broke, unwind, ends) => {
     let stopped = false;
     const folded = $lent(source).tryFold(
       init,
@@ -74,6 +75,7 @@ function $lazyMapWhile(items, f, present) {
       },
       (a) => stopped || broke(a),
       unwind,
+      ends,
     );
     return folded;
   };

@@ -758,8 +758,8 @@ export const mutations: Mutation[] = [
     name: "consumed-function-never",
     breaks: "no by-value consumer's closure is dropped by its fold, so it drops after what the fold closed (#734)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        if !by_value || iter_ty.is_mutable_ptr() {\n            return false;\n        }\n",
-    replace: "        if true || !by_value || iter_ty.is_mutable_ptr() {\n            return false;\n        }\n",
+    find: "        if !(by_value || tried) || iterator.is_mutable_ptr() {\n            return false;\n        }\n",
+    replace: "        if true || !(by_value || tried) || iterator.is_mutable_ptr() {\n            return false;\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_closure_dropped_first.rs$"],
   },
   {
@@ -774,8 +774,8 @@ export const mutations: Mutation[] = [
     name: "consumer-own-fold-excluded",
     breaks: "a consumer's closure folded by value over what reaches the crate's own `fold`, a `take()` of it, drops after what's left, where std's `fold(self, init, f)` drops it first (#734)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        self.drops(f) != crate::lower::drops::Drops::Nothing\n            && (self.drops(iter_ty)",
-    replace: "        self.drops(f) != crate::lower::drops::Drops::Nothing\n            && !self.recognition().reaches_its_own(iter_ty, OwnStep::Fold, Reach::May)\n            && (self.drops(iter_ty)",
+    find: "            || (by_value\n                && (self.drops(iter_ty)",
+    replace: "            || (by_value\n                && !self.recognition().reaches_its_own(iter_ty, OwnStep::Fold, Reach::May)\n                && (self.drops(iter_ty)",
     tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
   },
   {
@@ -810,5 +810,21 @@ export const mutations: Mutation[] = [
     find: "                args[0] = unroomed;\n",
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_collect_drops_rest_first with"],
+  },
+  {
+    name: "consumed-function-not-stranded",
+    breaks: "a fold whose accumulator a stage's panic may strand, of a source that drops nothing, isn't given what drops with `f`, so a `skip_while()`'s first step drops the accumulator first (#768)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        stranded\n            || (by_value\n",
+    replace: "        false\n            || (by_value\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
+  },
+  {
+    name: "try-fold-given-no-ends",
+    breaks: "a `try_fold` isn't given what drops with `f`, so a `skip_while()`'s first step drops the accumulator first (#768)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        let ends = self.consumed_ends(Some(method), arg_tys, &f, span)?;\n        let mut args = vec![it, init, self.binary_callback(f, own)];\n",
+    replace: "        let ends: Option<Expr> = None;\n        let mut args = vec![it, init, self.binary_callback(f, own)];\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
   },
 ];

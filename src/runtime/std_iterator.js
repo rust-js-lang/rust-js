@@ -59,7 +59,8 @@ function $stdIterator(struct, steps) {
   $forward(it, steps, {
     // What drops with `f`, `ends`, its body's drop of its `F` (#710).
     fold: steps.fold && ((init, f, unwind, ends) => taking("fold", () => steps.fold(it, init, f, unwind, ends))),
-    tryFold: steps.tryFold && ((init, f, broke, unwind) => steps.tryFold(it, init, f, broke, unwind)),
+    // And its `try_fold`'s, given (#768).
+    tryFold: steps.tryFold && ((init, f, broke, unwind, ends) => steps.tryFold(it, init, f, broke, unwind, ends)),
     count: steps.count && ((drop) => taking("count", () => steps.count(it, drop))),
     advanceBy: steps.advanceBy === undefined ? advance : (m, drop) => steps.advanceBy(it, m, drop),
     nth: steps.nth && ((k) => step(steps.nth(it, k))),
@@ -85,7 +86,7 @@ function $stdIterator(struct, steps) {
           }
         }),
       nthBack: nthBack && ((k) => step(nthBack(it, k))),
-      tryRfold: tryRfold && ((init, f, broke, unwind) => tryRfold(it, init, f, broke, unwind)),
+      tryRfold: tryRfold && ((init, f, broke, unwind, ends) => tryRfold(it, init, f, broke, unwind, ends)),
     });
   };
   // Its fields, the struct's, are what a move copies and what a write of

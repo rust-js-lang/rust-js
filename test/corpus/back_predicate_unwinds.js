@@ -394,7 +394,7 @@ function main() {
           undefined,
           dDrop_drop,
         ),
-      tryRfold: (iterator, init, f, broke, unwind) =>
+      tryRfold: (iterator, init, f, broke, unwind, ends) =>
         takeIDoubleEndedIterator_tryRfold(
           iterator,
           init,
@@ -405,7 +405,7 @@ function main() {
           $tryOf(broke),
           undefined,
           unwind,
-          undefined,
+          ends,
           undefined,
           dDrop_drop,
         ),
@@ -445,7 +445,7 @@ function main() {
             undefined,
             dDrop_drop,
           ),
-        (iterator, init, f, broke, unwind) =>
+        (iterator, init, f, broke, unwind, ends) =>
           skipDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -455,7 +455,7 @@ function main() {
             $tryOf(broke),
             undefined,
             unwind,
-            undefined,
+            ends,
             undefined,
             dDrop_drop,
           ),

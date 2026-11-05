@@ -1112,9 +1112,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Std's compiled `try_fold` of std's struct `ty`, as its steps'
-    /// `tryFold`, `(iterator, init, f, broke, unwind) => ..`: of any `R`,
-    /// whose `Try` is `$tryOf(broke)`, as a JS iterator's `tryFold` folds
-    /// (ADR 0913), given `unwind` as `compiled_fold`'s is (#423).
+    /// `tryFold`, `(iterator, init, f, broke, unwind, ends) => ..`: of any
+    /// `R`, whose `Try` is `$tryOf(broke)`, as a JS iterator's `tryFold`
+    /// folds (ADR 0913), given `unwind` as `compiled_fold`'s is (#423), and
+    /// `ends`, what drops with `f`, as its `F`'s drop, which its body drops
+    /// where std's does, a `SkipWhile`'s before the accumulator (#768).
     /// Given no drops of what it folds, as `fold` is, so its `B` is `()`,
     /// its `F` a function of it and its `R` a `ControlFlow<(), ()>`, which
     /// nothing drops. `None` where std's isn't compiled. Of `method`, a
@@ -1153,7 +1155,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::TraitRef::new(tcx, try_trait, [tried]),
             Expr::call_helper("$tryOf", vec![Expr::var("broke")]),
         )];
-        // Given `unwind`, as its `B`'s drop, as `compiled_fold` is.
+        // Given `unwind`, as its `B`'s drop, and `ends`, as its `F`'s, as
+        // `compiled_fold` is.
         let acc = tcx.generics_of(instance.def_id()).parent_count as u32;
         let mut values = ["iterator", "init", "f"].map(Expr::var).to_vec();
         let location = self.caller_location(span);
@@ -1163,13 +1166,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             location,
             crate::lower::traits::GivenEvidence {
                 bounds: &given,
-                drops: &[(acc, Expr::var("unwind"))],
+                drops: &[(acc, Expr::var("unwind")), (acc + 1, Expr::var("ends"))],
             },
             span,
         )?);
         let call = Expr::call(self.fn_ref(instance.def_id()), values);
         Ok(Some(Expr::arrow(
-            ["iterator", "init", "f", "broke", "unwind"].map(Into::into).to_vec(),
+            ["iterator", "init", "f", "broke", "unwind", "ends"]
+                .map(Into::into)
+                .to_vec(),
             vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
         )))
     }

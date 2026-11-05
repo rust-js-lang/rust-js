@@ -108,7 +108,7 @@ function fusedBack(it, IFused) {
             { next_back: $nextBack, rfold: $foldBack },
             IFused,
           ),
-        (iterator, init, f, broke, unwind) =>
+        (iterator, init, f, broke, unwind, ends) =>
           fuseDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -119,6 +119,7 @@ function fusedBack(it, IFused) {
             IFused,
             undefined,
             unwind,
+            ends,
           ),
       ),
     ),

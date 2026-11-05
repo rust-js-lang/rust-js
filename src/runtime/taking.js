@@ -52,8 +52,8 @@ function $taking(iter, n, drop) {
       $closedAfter(ends, () => $closed(taking.iter));
       return folded;
     };
-    const tryRfold = (init, f, broke, unwind) =>
-      taking.n === 0 || !trimmed() ? init : $tryRfoldOf(taking.iter, init, f, broke, unwind);
+    const tryRfold = (init, f, broke, unwind, ends) =>
+      taking.n === 0 || !trimmed() ? init : $tryRfoldOf(taking.iter, init, f, broke, unwind, ends);
     $forward(taking, iter, { nthBack, rfold, tryRfold });
   }
   return taking;

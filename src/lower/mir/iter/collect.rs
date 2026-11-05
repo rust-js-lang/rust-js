@@ -152,12 +152,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `ends` as its `F`'s drop (`fold_entry`, #734). Its drop is the fold's
     /// `ends`, `$consume`'s, not `dropped_given`'s after the call: the one
     /// answer of both.
-    pub(in crate::lower) fn consumed_function(
-        &self,
-        method: Option<IterMethod>,
-        iter_ty: Ty<'tcx>,
-        f: Ty<'tcx>,
-    ) -> bool {
+    ///
+    /// And of `fold`'s, `rfold`'s, `try_fold`'s and `try_rfold`'s function
+    /// that drops, whose accumulator has a destructor a stage's panic may
+    /// strand (`stranded_drop`'s): which of the two drops first as it
+    /// unwinds is the fold's, an adapter's whose frame holds both, a
+    /// `skip_while`'s first step, `f` first, where std's own fold holds the
+    /// accumulator in its body, it first (#768). `arg_tys` are the call's,
+    /// the iterator's first, `f`'s last, the accumulator's second.
+    pub(in crate::lower) fn consumed_function(&self, method: Option<IterMethod>, arg_tys: &[Ty<'tcx>]) -> bool {
+        let (Some(&iter_ty), Some(&f)) = (arg_tys.first(), arg_tys.last()) else {
+            return false;
+        };
         let by_value = matches!(
             method,
             Some(
@@ -168,14 +174,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | IterMethod::IsSortedBy
             )
         );
-        if !by_value || iter_ty.is_mutable_ptr() {
+        let tried = matches!(method, Some(IterMethod::TryFold | IterMethod::TryRFold));
+        // `try_fold(&mut self, ..)`'s receiver is a `&mut` of the iterator.
+        let iterator = if tried { iter_ty.peel_refs() } else { iter_ty };
+        if !(by_value || tried) || iterator.is_mutable_ptr() {
             return false;
         }
         if crate::lower::recognition::is_compiled_std(self.tcx, self.frame.owner) {
             return self.carries_its_drop(f) || self.given_drop(f).is_some();
         }
-        self.drops(f) != crate::lower::drops::Drops::Nothing
-            && (self.drops(iter_ty) != crate::lower::drops::Drops::Nothing || self.folds_held_function(iter_ty))
+        if self.drops(f) == crate::lower::drops::Drops::Nothing {
+            return false;
+        }
+        let stranded = matches!(
+            method,
+            Some(IterMethod::Fold | IterMethod::RFold | IterMethod::TryFold | IterMethod::TryRFold)
+        ) && arg_tys.len() == 3
+            && self.steps_may_panic(iterator)
+            && self.drops(arg_tys[1]) != crate::lower::drops::Drops::Nothing;
+        stranded
+            || (by_value
+                && (self.drops(iter_ty) != crate::lower::drops::Drops::Nothing || self.folds_held_function(iter_ty)))
     }
 
     /// `it`, an iterator of type `iter_ty`, as a consumer std routes through
@@ -963,10 +982,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         f: &Expr,
         span: Span,
     ) -> R<Option<Expr>> {
-        let (Some(&receiver), Some(&ty)) = (arg_tys.first(), arg_tys.last()) else {
+        let Some(&ty) = arg_tys.last() else {
             return Ok(None);
         };
-        if !self.consumed_function(method, receiver, ty) {
+        if !self.consumed_function(method, arg_tys) {
             return Ok(None);
         }
         let mut dropped = Vec::new();
@@ -1029,10 +1048,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => None,
         };
+        // What drops with `f`, where the fold says which of it and the
+        // accumulator drops first, its `ends`, `$endsAfter`'s (#768).
+        let ends = self.consumed_ends(Some(method), arg_tys, &f, span)?;
         let mut args = vec![it, init, self.binary_callback(f, own)];
         crate::lower::calls::given_to_js(&mut args);
         args.extend(tried);
-        args.extend(unwind);
+        match ends {
+            Some(ends) => args.extend([unwind.unwrap_or_else(Expr::undefined), ends]),
+            None => args.extend(unwind),
+        }
         Ok(Expr::call_helper(helper, args))
     }
 }

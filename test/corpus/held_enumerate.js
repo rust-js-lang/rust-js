@@ -84,7 +84,7 @@ function positionsDoubleEndedIterator_nextBack(
             IExactSizeIterator,
             IDoubleEndedIterator,
           ),
-        (iterator, init, f, broke, unwind) =>
+        (iterator, init, f, broke, unwind, ends) =>
           enumerateDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -95,6 +95,7 @@ function positionsDoubleEndedIterator_nextBack(
             $tryOf(broke),
             undefined,
             unwind,
+            ends,
           ),
       ),
     ),

@@ -107,7 +107,7 @@ function main() {
               dDrop_drop,
             ),
           undefined,
-          (iterator, init, f, broke, unwind) =>
+          (iterator, init, f, broke, unwind, ends) =>
             peekableDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -117,7 +117,7 @@ function main() {
               $tryOf(broke),
               $dropEach(dDrop_drop),
               unwind,
-              undefined,
+              ends,
               undefined,
               dDrop_drop,
             ),
@@ -171,7 +171,7 @@ function main() {
               { next_back: $rangeNextBack, nthBack: $rangeNthBack },
               true,
             ),
-          (iterator, init, f, broke, unwind) =>
+          (iterator, init, f, broke, unwind, ends) =>
             fuseDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -182,6 +182,7 @@ function main() {
               true,
               undefined,
               unwind,
+              ends,
             ),
         ),
       ),
@@ -232,7 +233,7 @@ function main() {
               dDrop_drop,
             ),
           undefined,
-          (iterator, init, f, broke, unwind) =>
+          (iterator, init, f, broke, unwind, ends) =>
             peekableDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -242,7 +243,7 @@ function main() {
               $tryOf(broke),
               $dropEach(dDrop_drop),
               unwind,
-              undefined,
+              ends,
               undefined,
               dDrop_drop,
             ),
@@ -270,7 +271,7 @@ function main() {
           (iterator) => $exactLen($sizeHint(iterator)),
           undefined,
           undefined,
-          (iterator, init, f, broke, unwind) =>
+          (iterator, init, f, broke, unwind, ends) =>
             peekableDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -280,6 +281,7 @@ function main() {
               $tryOf(broke),
               undefined,
               unwind,
+              ends,
             ),
         ),
       ),
@@ -306,7 +308,7 @@ function main() {
             { next_back: $rangeNextBack, nthBack: $rangeNthBack },
             true,
           ),
-        (iterator, init, f, broke, unwind) =>
+        (iterator, init, f, broke, unwind, ends) =>
           fuseDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -317,6 +319,7 @@ function main() {
             true,
             undefined,
             unwind,
+            ends,
           ),
       ),
     ),
@@ -342,7 +345,7 @@ function main() {
             { next_back: $rangeNextBack, nthBack: $rangeNthBack },
             true,
           ),
-        (iterator, init, f, broke, unwind) =>
+        (iterator, init, f, broke, unwind, ends) =>
           fuseDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -353,6 +356,7 @@ function main() {
             true,
             undefined,
             unwind,
+            ends,
           ),
       ),
     ),

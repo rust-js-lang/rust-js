@@ -96,8 +96,10 @@ function $findBack(it, p, found = (item) => item, drop) {
 // std's, of its `next_back`, stopped where `broke` holds of what it's made.
 // Given `unwind`, the drop of an accumulator a step's panic strands, passed
 // on, or run where a step throws, as `$Steps`' `tryFold` does (#423, rd767).
-function $tryRfoldOf(it, init, f, broke, unwind) {
-  if (it.tryRfold !== undefined) return it.tryRfold(init, f, broke, unwind);
+// And `ends`, what drops with `f`, passed on, its caller's to drop after
+// where std's default holds the accumulator in its body (S2, #768).
+function $tryRfoldOf(it, init, f, broke, unwind, ends) {
+  if (it.tryRfold !== undefined) return it.tryRfold(init, f, broke, unwind, ends);
   let folded = init;
   const back = () => (unwind === undefined ? it.back() : $staged(() => it.back(), undefined, undefined, folded, unwind));
   for (let step = back(); !step.done; step = back()) {
@@ -265,12 +267,14 @@ function $stepBy(it, step, drop) {
   };
   // Where a step throws, a stage's panic, what it folded dropped by
   // `unwind` (#423).
-  const tryFold = (init, f, broke, unwind) => {
+  // Its first `next`, while std's frame holds only its parameters, drops
+  // what drops with `f`, `ends`, first (`$stepHolding`, #768).
+  const tryFold = (init, f, broke, unwind, ends) => {
     let folded = init;
     const stepping = (run) => (unwind === undefined ? run() : $staged(run, undefined, undefined, folded, unwind));
     if (stepped.first) {
       stepped.first = false;
-      const head = stepping(() => it.next());
+      const head = $stepHolding(() => it.next(), folded, unwind, ends);
       if (head.done) return folded;
       folded = f(folded, head.value);
       if (broke(folded)) return folded;
@@ -284,9 +288,10 @@ function $stepBy(it, step, drop) {
   };
   // Its `fold`, its `try_fold` never stopped, then closed, as `fold(self)`
   // drops what it has left at its end (#242), and though it throws.
-  // What drops with `f`, `ends`, first (#734).
+  // What drops with `f`, `ends`, first (#734): its first step's, or at
+  // its end.
   const fold = (init, f, unwind, ends) => {
-    const folded = $consumed(stepped, () => stepped.tryFold(init, f, () => false, unwind), ends);
+    const folded = $consumed(stepped, () => stepped.tryFold(init, f, () => false, unwind, ends), ends);
     $closedAfter(ends, () => stepped.return());
     return folded;
   };
@@ -351,7 +356,9 @@ function $filterEnds(it, p, drop) {
       fold: "fold",
       tryFold: "tryFold",
       rfold: back ? (init, f, unwind, ends) => $foldBack(it, init, folding(f, unwind), unwind, ends) : undefined,
-      tryRfold: back ? (init, f, broke, unwind) => $tryRfoldOf(it, init, folding(f, unwind), broke, unwind) : undefined,
+      tryRfold: back
+        ? (init, f, broke, unwind, ends) => $tryRfoldOf(it, init, folding(f, unwind), broke, unwind, ends)
+        : undefined,
     },
     folding,
   );
@@ -396,17 +403,17 @@ function $enumerate(iter) {
   // step's panic strands, as std's passes its closure on (#423, rd767).
   const fold = (init, f, unwind, ends) =>
     enumerated.iter.fold(init, (a, x) => f(a, [enumerated.count++, x]), unwind, ends);
-  const tryFold = (init, f, broke, unwind) =>
-    $lent(enumerated.iter).tryFold(init, (a, x) => f(a, [enumerated.count++, x]), broke, unwind);
+  const tryFold = (init, f, broke, unwind, ends) =>
+    $lent(enumerated.iter).tryFold(init, (a, x) => f(a, [enumerated.count++, x]), broke, unwind, ends);
   // Std's `rfold`, `try_rfold` and `nth_back`: its source's, each counted
   // from where it is, the crate's own where they reach it (#220).
   const rfold = (init, f, unwind, ends) => {
     let at = enumerated.count + enumerated.iter.len();
     return enumerated.iter.rfold(init, (a, x) => f(a, [--at, x]), unwind, ends);
   };
-  const tryRfold = (init, f, broke, unwind) => {
+  const tryRfold = (init, f, broke, unwind, ends) => {
     let at = enumerated.count + enumerated.iter.len();
-    return $tryRfoldOf(enumerated.iter, init, (a, x) => f(a, [--at, x]), broke, unwind);
+    return $tryRfoldOf(enumerated.iter, init, (a, x) => f(a, [--at, x]), broke, unwind, ends);
   };
   const nthBack = (k) => {
     const step = enumerated.iter.nthBack(k);

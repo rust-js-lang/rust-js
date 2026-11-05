@@ -30,7 +30,7 @@ function $lazyScan(items, init, f, handle = true, drop = undefined) {
   );
   // Its `try_fold`, its source's, stopped at a `None`.
   // Where `f` throws, a panic, the accumulator dropped by `unwind` (#423).
-  const tryFold = (init, g, broke, unwind) => {
+  const tryFold = (init, g, broke, unwind, ends) => {
     let stopped = false;
     const folded = $lent(source).tryFold(
       init,
@@ -42,6 +42,7 @@ function $lazyScan(items, init, f, handle = true, drop = undefined) {
       },
       (a) => stopped || broke(a),
       unwind,
+      ends,
     );
     return folded;
   };

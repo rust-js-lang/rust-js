@@ -183,7 +183,7 @@ function main() {
         unwind,
         ends,
       ),
-    tryRfold: (iterator, init, f, broke, unwind) =>
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
       mapDoubleEndedIterator_tryRfold(
         iterator,
         init,
@@ -195,6 +195,7 @@ function main() {
         undefined,
         undefined,
         unwind,
+        ends,
       ),
   };
   const value = nthBack($slicing($iter([[1], [2], [3], [4]]), dDrop_drop), $dropEach(dDrop_drop));

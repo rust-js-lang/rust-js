@@ -167,7 +167,7 @@ function main() {
               false,
               countDrop_drop,
             ),
-          (iterator, init, f, broke, unwind) =>
+          (iterator, init, f, broke, unwind, ends) =>
             fuseDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -186,6 +186,7 @@ function main() {
               false,
               countDrop_drop,
               unwind,
+              ends,
             ),
         ),
         (x) => (x * 2) | 0,
@@ -250,7 +251,7 @@ function main() {
               false,
               countDrop_drop,
             ),
-          (iterator, init, f, broke, unwind) =>
+          (iterator, init, f, broke, unwind, ends) =>
             fuseDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -269,6 +270,7 @@ function main() {
               false,
               countDrop_drop,
               unwind,
+              ends,
             ),
         ),
         2,
@@ -405,7 +407,7 @@ function main() {
             false,
             countDrop_drop,
           ),
-        (iterator, init, f, broke, unwind) =>
+        (iterator, init, f, broke, unwind, ends) =>
           fuseDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -420,6 +422,7 @@ function main() {
             false,
             countDrop_drop,
             unwind,
+            ends,
           ),
       ),
       (x) => x % 2 === 1,
@@ -584,7 +587,7 @@ function main() {
             false,
             countDrop_drop,
           ),
-        (iterator, init, f, broke, unwind) =>
+        (iterator, init, f, broke, unwind, ends) =>
           fuseDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -599,6 +602,7 @@ function main() {
             false,
             countDrop_drop,
             unwind,
+            ends,
           ),
       ),
     ),

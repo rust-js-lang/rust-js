@@ -242,7 +242,7 @@ function main() {
                 undefined,
                 dDrop_drop,
               ),
-            (iterator, init, f, broke, unwind) =>
+            (iterator, init, f, broke, unwind, ends) =>
               revDoubleEndedIterator_tryRfold(
                 iterator,
                 init,
@@ -251,7 +251,7 @@ function main() {
                 $tryOf(broke),
                 undefined,
                 unwind,
-                undefined,
+                ends,
                 undefined,
                 dDrop_drop,
               ),

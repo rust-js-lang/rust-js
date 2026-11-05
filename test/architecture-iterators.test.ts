@@ -111,6 +111,27 @@ test("every runtime fold takes what drops with its f", () => {
   expect(lacking).toEqual([]);
 });
 
+// So does every runtime `tryFold` and `tryRfold`, `(init, f, broke, unwind,
+// ends)`: a `try_fold` drops its `f` at its end, its caller's `$endsAfter`,
+// but an adapter whose first step runs while its frame holds only its
+// parameters, `SkipWhile`'s, `Skip`'s, `StepBy`'s and a `take`'s back,
+// drops `f` before the accumulator as it unwinds (`$stepHolding`), so each
+// takes `ends` and passes it on where std moves `f` into its source's
+// (#768). One that took `(init, f, broke, unwind)` alone lost it. The
+// chain's are iterD's, merging `$chainEnds` into `$lazyChain`: the merged
+// `Chain` takes `ends` too, and leaves this list then.
+test("every runtime tryFold takes what drops with its f", () => {
+  const without = /\b(try(Fold|Rfold))\s*(=|:)\s*(\w+(\.\w+)?\s*(&&|\?)\s*)?\(+\s*init, \w+, broke, unwind\)\s*=>|^\s*try(Fold|Rfold)\(init, \w+, broke, unwind\)\s*\{|\(init, \w+, broke, unwind\) => try(Fold|Rfold)\(/m;
+  expect(without.test("  const tryFold = (init, f, broke, unwind) => {")).toBe(true);
+  expect(without.test("  tryFold(init, f, broke, unwind) {")).toBe(true);
+  expect(without.test("  const tryFold = (init, f, broke, unwind, ends) => {")).toBe(false);
+  const chain = ["src/runtime/back_steps.js", "src/runtime/lazy_chain.js"];
+  const lacking = files("src/runtime")
+    .filter((file) => file.endsWith(".js"))
+    .filter((file) => read(file).split("\n").some((line) => !line.trimStart().startsWith("//") && without.test(line)));
+  expect(lacking).toEqual(chain);
+});
+
 // A by-value consumer's own function, where its drop is seen, is dropped by
 // `$consume`, which its fold is given (#734): `consumed_function` alone says
 // which, `consumed_ends` alone makes its drop, and `dropped_given` skips it.

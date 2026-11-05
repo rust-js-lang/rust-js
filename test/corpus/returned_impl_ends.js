@@ -67,7 +67,7 @@ function main() {
   }
 
   console.log(
-    `[${Array.from($rev($knowing(oddSquares(), mapDoubleEndedIterator_nextBack, undefined, undefined, undefined, (iterator, init, f, broke, unwind) => mapDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, $tryOf(broke), undefined, undefined, undefined, unwind)))).join(", ")}]`,
+    `[${Array.from($rev($knowing(oddSquares(), mapDoubleEndedIterator_nextBack, undefined, undefined, undefined, (iterator, init, f, broke, unwind, ends) => mapDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, $tryOf(broke), undefined, undefined, undefined, unwind, ends)))).join(", ")}]`,
   );
   console.log(`[${Array.from($rev(evens())).join(", ")}]`);
   const e = evens();
@@ -85,7 +85,7 @@ function main() {
           (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
           undefined,
           undefined,
-          (iterator, init, f, broke, unwind) =>
+          (iterator, init, f, broke, unwind, ends) =>
             mapDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -97,6 +97,7 @@ function main() {
               undefined,
               undefined,
               unwind,
+              ends,
             ),
         ),
       ),
@@ -115,7 +116,7 @@ function main() {
             (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
             undefined,
             undefined,
-            (iterator, init, f, broke, unwind) =>
+            (iterator, init, f, broke, unwind, ends) =>
               mapDoubleEndedIterator_tryRfold(
                 iterator,
                 init,
@@ -127,6 +128,7 @@ function main() {
                 undefined,
                 undefined,
                 unwind,
+                ends,
               ),
           ),
         ),
@@ -142,7 +144,7 @@ function main() {
     `[${Array.from($iterator(ranged(), $rangeNextBack).filter((_, i) => i % 2 === 0)).join(", ")}]`,
   );
   console.log(
-    `[${Array.from($rev($knowing(chained(), chainDoubleEndedIterator_nextBack, undefined, undefined, chainDoubleEndedIterator_nthBack, (iterator, init, f, broke, unwind) => chainDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, { next: $next }, { next_back: $nextBack }, $tryOf(broke), undefined, undefined, unwind))).take(3)).join(", ")}]`,
+    `[${Array.from($rev($knowing(chained(), chainDoubleEndedIterator_nextBack, undefined, undefined, chainDoubleEndedIterator_nthBack, (iterator, init, f, broke, unwind, ends) => chainDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, { next: $next }, { next_back: $nextBack }, $tryOf(broke), undefined, undefined, unwind, ends))).take(3)).join(", ")}]`,
   );
   const value$1 = $findBack(
     $knowing(
@@ -151,7 +153,7 @@ function main() {
       undefined,
       undefined,
       chainDoubleEndedIterator_nthBack,
-      (iterator, init, f, broke, unwind) =>
+      (iterator, init, f, broke, unwind, ends) =>
         chainDoubleEndedIterator_tryRfold(
           iterator,
           init,
@@ -164,6 +166,7 @@ function main() {
           undefined,
           undefined,
           unwind,
+          ends,
         ),
     ),
     (x) => x % 3 === 0,
@@ -177,7 +180,7 @@ function main() {
       (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
       undefined,
       undefined,
-      (iterator, init, f, broke, unwind) =>
+      (iterator, init, f, broke, unwind, ends) =>
         mapDoubleEndedIterator_tryRfold(
           iterator,
           init,
@@ -189,6 +192,7 @@ function main() {
           undefined,
           undefined,
           unwind,
+          ends,
         ),
     ),
     (x) => x === 4,

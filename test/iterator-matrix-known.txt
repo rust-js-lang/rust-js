@@ -10,9 +10,6 @@
 // generator 13cf57ce0f18
 // generator conformance 65f45efb5849
 
-// generator 13cf57ce0f18
-// generator conformance 65f45efb5849
-
 #646 P0 (matrix): an adapter stepped from its back is JS's own, with no back: skip/take().copied().rfold(), rev().filter().rev() throw `it.back is not a function`
 plain 398-400,6672-6674,20303-20304,23051-23052,23399-23400,79592-79596,81170-81173,85107-85110
 std 24334-24335
@@ -44,7 +41,3 @@ conformance:plain 702,712,2571,2595,2605,17908,17918
 #757 P0: a chain the crate steps from its back, folded by value with a closure that drops, never drops its first side (default build; regression of 1c23afa16)
 plain 102144,102154,102156,102158,102415,105063,105073,105075,105077
 conformance:plain 724-725,730-731,2617-2618,2623-2624,15743-15745,15751-15753
-
-#768 P0: a skip_while's predicate that panics before its source's fold drops the consumer's closure after the accumulator, where std's SkipWhile::fold and try_fold drop their parameters, `fold` before `init`
-conformance:plain 1219,1227,4587,4593,5871,5877,7544,7554,9555,9565,11594,11604,13980,13990,16355,16365,18425,18433,20729,20739
-conformance:std 1227,4587,4593,5871,5877,7554,9565,11604,13990,16365,18433,20739

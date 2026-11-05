@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "try-fold-ok-by-next",
     breaks: "try_fold into a Result is its iterator's tryFold",
     file: "src/runtime/try_fold_ok.js",
-    find: "  return $lent(it).tryFold(\n    { TAG: \"Ok\"",
-    replace: "  return new $Steps(() => it.next()).tryFold(\n    { TAG: \"Ok\"",
+    find: "    $lent(it).tryFold(\n      { TAG: \"Ok\"",
+    replace: "    new $Steps(() => it.next()).tryFold(\n      { TAG: \"Ok\"",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
   },
   {
@@ -33,5 +33,13 @@ export const mutations: Mutation[] = [
     find: "    unwind && ((made) => unwind(made._0)),\n",
     replace: "    undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
+  },
+  {
+    name: "try-fold-ok-ends-kept",
+    breaks: "a `try_fold` into a `Result` doesn't give what it folds what drops with `f`, so a `skip_while()`'s first step drops the accumulator first (#768)",
+    file: "src/runtime/try_fold_ok.js",
+    find: "      unwind && ((made) => unwind(made._0)),\n      once,\n",
+    replace: "      unwind && ((made) => unwind(made._0)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
   },
 ];

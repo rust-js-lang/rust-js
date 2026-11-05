@@ -37,12 +37,16 @@ function $tryOf(broke) {
 // `it.try_fold(init, f)` into an `R` of its `Try`, `tried`: `f` of what's
 // made so far and each item in turn, till what it gives breaks, which it
 // gives, the rest left to step; else what the last gave. It's `it`'s
-// `tryFold`, as std's adapters route it, in `R`'s terms.
-function $tryFoldInto(it, init, f, tried, unwind) {
-  return $lent(it).tryFold(
-    tried.fromOutput(init),
-    (made, x) => f(tried.branch(made)._0, x),
-    (made) => tried.branch(made).TAG === "Break",
-    unwind && ((made) => unwind(tried.branch(made)._0)),
+// `tryFold`, as std's adapters route it, in `R`'s terms; given `ends`,
+// what drops with `f`, dropped at its end, `$endsAfter`'s (#768).
+function $tryFoldInto(it, init, f, tried, unwind, ends) {
+  return $endsAfter(ends, (once) =>
+    $lent(it).tryFold(
+      tried.fromOutput(init),
+      (made, x) => f(tried.branch(made)._0, x),
+      (made) => tried.branch(made).TAG === "Break",
+      unwind && ((made) => unwind(tried.branch(made)._0)),
+      once,
+    ),
   );
 }

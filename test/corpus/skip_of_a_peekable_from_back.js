@@ -80,7 +80,7 @@ function main() {
         { next_back: countDoubleEndedIterator_nextBack },
         countExactSizeIterator,
       ),
-    tryRfold: (iterator, init, f, broke, unwind) =>
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
       takeIDoubleEndedIterator_tryRfold(
         iterator,
         init,
@@ -91,6 +91,7 @@ function main() {
         $tryOf(broke),
         undefined,
         unwind,
+        ends,
       ),
   };
   const v = Array.from(
@@ -102,7 +103,7 @@ function main() {
           (iterator) => $exactLen($sizeHint(iterator)),
           undefined,
           undefined,
-          (iterator, init, f, broke, unwind) =>
+          (iterator, init, f, broke, unwind, ends) =>
             peekableDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -112,6 +113,7 @@ function main() {
               $tryOf(broke),
               undefined,
               unwind,
+              ends,
             ),
         ),
         1,
@@ -131,7 +133,7 @@ function main() {
           (iterator) => $exactLen($sizeHint(iterator)),
           undefined,
           undefined,
-          (iterator, init, f, broke, unwind) =>
+          (iterator, init, f, broke, unwind, ends) =>
             peekableDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -141,6 +143,7 @@ function main() {
               $tryOf(broke),
               undefined,
               unwind,
+              ends,
             ),
         ),
         2,
@@ -156,7 +159,7 @@ function main() {
         (iterator) => $exactLen($sizeHint(iterator)),
         undefined,
         undefined,
-        (iterator, init, f, broke, unwind) =>
+        (iterator, init, f, broke, unwind, ends) =>
           peekableDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -166,6 +169,7 @@ function main() {
             $tryOf(broke),
             undefined,
             unwind,
+            ends,
           ),
       ),
       1,
@@ -188,7 +192,7 @@ function main() {
           (iterator) => $exactLen($sizeHint(iterator)),
           undefined,
           undefined,
-          (iterator, init, f, broke, unwind) =>
+          (iterator, init, f, broke, unwind, ends) =>
             peekableDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -198,6 +202,7 @@ function main() {
               $tryOf(broke),
               undefined,
               unwind,
+              ends,
             ),
         ),
         1,
@@ -220,7 +225,7 @@ function main() {
           (iterator) => $exactLen($sizeHint(iterator)),
           undefined,
           undefined,
-          (iterator, init, f, broke, unwind) =>
+          (iterator, init, f, broke, unwind, ends) =>
             peekableDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -230,6 +235,7 @@ function main() {
               $tryOf(broke),
               undefined,
               unwind,
+              ends,
             ),
         ),
         1,
@@ -245,7 +251,7 @@ function main() {
         (iterator) => $exactLen($sizeHint(iterator)),
         undefined,
         undefined,
-        (iterator, init, f, broke, unwind) =>
+        (iterator, init, f, broke, unwind, ends) =>
           peekableDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -255,6 +261,7 @@ function main() {
             $tryOf(broke),
             undefined,
             unwind,
+            ends,
           ),
       ),
       1,
@@ -273,7 +280,7 @@ function main() {
             (iterator) => $exactLen($sizeHint(iterator)),
             undefined,
             undefined,
-            (iterator, init, f, broke, unwind) =>
+            (iterator, init, f, broke, unwind, ends) =>
               peekableDoubleEndedIterator_tryRfold(
                 iterator,
                 init,
@@ -283,6 +290,7 @@ function main() {
                 $tryOf(broke),
                 undefined,
                 unwind,
+                ends,
               ),
           ),
           1,

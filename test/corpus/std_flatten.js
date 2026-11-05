@@ -229,7 +229,7 @@ function main() {
           undefined,
           undefined,
           undefined,
-          (iterator, init, f, broke, unwind) =>
+          (iterator, init, f, broke, unwind, ends) =>
             flattenDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -245,6 +245,7 @@ function main() {
               undefined,
               undefined,
               unwind,
+              ends,
             ),
         ),
       ),

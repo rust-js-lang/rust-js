@@ -558,7 +558,7 @@ function main() {
             false,
             loudDrop_drop,
           ),
-        (iterator, init, f, broke, unwind) =>
+        (iterator, init, f, broke, unwind, ends) =>
           fuseDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -569,6 +569,7 @@ function main() {
             false,
             loudDrop_drop,
             unwind,
+            ends,
           ),
       ),
     ).reduce((a, b) => (a + b) | 0, 0)}`,
@@ -690,7 +691,7 @@ function main() {
             },
             false,
           ),
-        (iterator, init, f, broke, unwind) =>
+        (iterator, init, f, broke, unwind, ends) =>
           fuseDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -705,6 +706,7 @@ function main() {
             false,
             undefined,
             unwind,
+            ends,
           ),
       ),
     ).reduce((a, b) => (a + b) | 0, 0)}`,
@@ -768,7 +770,7 @@ function main() {
                 },
                 false,
               ),
-            (iterator, init, f, broke, unwind) =>
+            (iterator, init, f, broke, unwind, ends) =>
               fuseDoubleEndedIterator_tryRfold(
                 iterator,
                 init,
@@ -783,6 +785,7 @@ function main() {
                 false,
                 undefined,
                 unwind,
+                ends,
               ),
           ),
           5,
@@ -830,7 +833,7 @@ function main() {
             unwind,
             ends,
           ),
-        tryRfold: (iterator, init, f, broke, unwind) =>
+        tryRfold: (iterator, init, f, broke, unwind, ends) =>
           mapDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -846,6 +849,7 @@ function main() {
             undefined,
             undefined,
             unwind,
+            ends,
           ),
       },
     )}`,
@@ -898,7 +902,7 @@ function main() {
                 },
                 false,
               ),
-            (iterator, init, f, broke, unwind) =>
+            (iterator, init, f, broke, unwind, ends) =>
               fuseDoubleEndedIterator_tryRfold(
                 iterator,
                 init,
@@ -913,6 +917,7 @@ function main() {
                 false,
                 undefined,
                 unwind,
+                ends,
               ),
           ),
           (x) => x % 2 === 1,

@@ -53,7 +53,7 @@ function main() {
         (iterator) => $exactLen($sizeHint(iterator)),
         undefined,
         skipDoubleEndedIterator_nthBack,
-        (iterator, init, f, broke, unwind) =>
+        (iterator, init, f, broke, unwind, ends) =>
           skipDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -63,6 +63,7 @@ function main() {
             $tryOf(broke),
             undefined,
             unwind,
+            ends,
           ),
       ),
     ).take(2),

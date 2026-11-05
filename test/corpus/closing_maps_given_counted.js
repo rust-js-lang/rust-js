@@ -135,7 +135,7 @@ function main() {
               { next_back: $nextBack },
               true,
             ),
-          (iterator, init, f, broke, unwind) =>
+          (iterator, init, f, broke, unwind, ends) =>
             fuseDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -146,6 +146,7 @@ function main() {
               true,
               undefined,
               unwind,
+              ends,
             ),
         ),
         f$2,

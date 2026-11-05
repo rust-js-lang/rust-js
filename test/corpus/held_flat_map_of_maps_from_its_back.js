@@ -69,7 +69,7 @@ function main() {
         unwind,
         ends,
       ),
-    tryRfold: (iterator, init, f, broke, unwind) =>
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
       mapDoubleEndedIterator_tryRfold(
         iterator,
         init,
@@ -81,6 +81,7 @@ function main() {
         undefined,
         undefined,
         unwind,
+        ends,
       ),
   };
   const enumerateDoubleEndedIterator = {
@@ -99,7 +100,7 @@ function main() {
       ),
     nthBack: (iterator, k) =>
       enumerateDoubleEndedIterator_nthBack(iterator, k, { next: $next }, iterExactSizeIterator),
-    tryRfold: (iterator, init, f, broke, unwind) =>
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
       enumerateDoubleEndedIterator_tryRfold(
         iterator,
         init,
@@ -110,6 +111,7 @@ function main() {
         $tryOf(broke),
         undefined,
         unwind,
+        ends,
       ),
   };
   const groups = [[1, 2], [], [3, 4, 5]];
@@ -197,7 +199,7 @@ function main() {
           unwind,
           ends,
         ),
-      tryRfold: (iterator, init, f, broke, unwind) =>
+      tryRfold: (iterator, init, f, broke, unwind, ends) =>
         mapDoubleEndedIterator_tryRfold(
           iterator,
           init,
@@ -209,6 +211,7 @@ function main() {
           undefined,
           undefined,
           unwind,
+          ends,
         ),
     },
     true,

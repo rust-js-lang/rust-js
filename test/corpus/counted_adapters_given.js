@@ -80,7 +80,7 @@ function main() {
         { next_back: $nextBack },
         exactSizeIterator,
       ),
-    tryRfold: (iterator, init, f, broke, unwind) =>
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
       takeIDoubleEndedIterator_tryRfold(
         iterator,
         init,
@@ -91,6 +91,7 @@ function main() {
         $tryOf(broke),
         undefined,
         unwind,
+        ends,
       ),
   };
   const v = [10, 20, 30, 40, 50];
@@ -123,7 +124,7 @@ function main() {
         ),
       nthBack: (iterator, k) =>
         enumerateDoubleEndedIterator_nthBack(iterator, k, { next: $next }, exactSizeIterator),
-      tryRfold: (iterator, init, f, broke, unwind) =>
+      tryRfold: (iterator, init, f, broke, unwind, ends) =>
         enumerateDoubleEndedIterator_tryRfold(
           iterator,
           init,
@@ -134,6 +135,7 @@ function main() {
           $tryOf(broke),
           undefined,
           unwind,
+          ends,
         ),
     },
     { len: (iterator) => enumerateExactSizeIterator_len(iterator, exactSizeIterator) },
@@ -172,7 +174,7 @@ function main() {
           takeExactSizeIterator,
           takeDoubleEndedIterator,
         ),
-      tryRfold: (iterator, init, f, broke, unwind) =>
+      tryRfold: (iterator, init, f, broke, unwind, ends) =>
         enumerateDoubleEndedIterator_tryRfold(
           iterator,
           init,
@@ -183,6 +185,7 @@ function main() {
           $tryOf(broke),
           undefined,
           unwind,
+          ends,
         ),
     },
     { len: (iterator) => enumerateExactSizeIterator_len(iterator, takeExactSizeIterator) },
@@ -209,7 +212,7 @@ function main() {
           undefined,
           (iterator, k) =>
             enumerateDoubleEndedIterator_nthBack(iterator, k, { next: $next }, exactSizeIterator),
-          (iterator, init, f, broke, unwind) =>
+          (iterator, init, f, broke, unwind, ends) =>
             enumerateDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -220,6 +223,7 @@ function main() {
               $tryOf(broke),
               undefined,
               unwind,
+              ends,
             ),
         ),
         f,
