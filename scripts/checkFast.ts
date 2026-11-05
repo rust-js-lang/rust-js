@@ -13,7 +13,7 @@
 // check.yml, each command its jobs run one of `jobs`' or one `leftToCi`
 // names, and each test file its suite runs one a job here runs (#732).
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { availableParallelism } from "node:os";
+import { availableParallelism, loadavg } from "node:os";
 import { join } from "node:path";
 import { pruneKept } from "../test/kept";
 import { touchesIterators } from "./iteratorSlice";
@@ -33,6 +33,17 @@ export type Job = { name: string; cmd: string[]; env: Record<string, string>; ti
 export type Scope = { all: boolean; changed: string[]; added: string[]; extra: string[]; cores: number };
 
 const job = (name: string, cmd: string[], more: Partial<Job> = {}): Job => ({ name, cmd, env: {}, timeout: 290, ...more });
+
+/** How many times its timeout a job is given on a machine as loaded as
+ * this, its load average over its cores, from 1 to 3: with six or seven
+ * agents at once, a load of 20 to 67 on the M3 Max's 12, every corpus
+ * part, the other files and the readability passes passed 290 s and were
+ * stopped, each passing when run alone after (2026-11-05). Each agent ran
+ * them again, which cost more than stopping them saved. A hang still ends,
+ * at three times its timeout at most. */
+export function loadScale(load: number, cores: number): number {
+  return Math.min(3, Math.max(1, load / cores));
+}
 
 /** What check.yml runs that `check:fast --all` leaves to CI, by the start
  * of its command, each with why: `test/ci.test.ts` fails on a command of
@@ -156,9 +167,10 @@ export function jobs({ all, changed, added, extra, cores }: Scope): { jobs: Job[
 /** Each of `list` at once, each given the compiler just built: one that
  * builds its own, as each test file and fmt does, links it again, and
  * races the others. Each is said as it ends, against its usual. */
-function run(list: Job[], compiler: string) {
+function run(list: Job[], compiler: string, scale: number) {
   return Promise.all(
-    list.map(async ({ name, cmd, env, timeout }) => {
+    list.map(async ({ name, cmd, env, timeout: usual }) => {
+      const timeout = Math.round(usual * scale);
       const start = Date.now();
       const p = Bun.spawn(cmd, {
         cwd: root,
@@ -226,7 +238,14 @@ if (import.meta.main) {
   console.log(timed("node bindings build", (Date.now() - binding) / 1000));
 
   const check = jobs({ all, changed, added, extra, cores: availableParallelism() });
-  const results = [...(await run(check.jobs, compiler)), ...(await run(check.after, compiler))];
+  // Each phase's timeouts are of the load it starts under.
+  const scaled = () => {
+    const [load] = loadavg();
+    const scale = loadScale(load, availableParallelism());
+    if (scale > 1) console.log(`a load of ${load.toFixed(0)} on ${availableParallelism()} cores: each job's timeout ×${scale.toFixed(1)}`);
+    return scale;
+  };
+  const results = [...(await run(check.jobs, compiler, scaled())), ...(await run(check.after, compiler, scaled()))];
   const failed = results.filter((r) => r.code !== 0);
   for (const { name, log } of failed) console.log(`\n── ${name} ──\n${log.slice(-3000)}`);
   // From its start, its build too.

@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, timingsRun } from "../scripts/ci";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf } from "../scripts/crate-corpus";
 import { batches, type Change, changedLines, changedMutations, enclosingFunction, schema, setPasses, site, type Sited, testBlocks, testResults, testSet } from "../scripts/mutations";
-import { jobs, leftToCi } from "../scripts/checkFast";
+import { jobs, leftToCi, loadScale } from "../scripts/checkFast";
 import { jobs as localNightly } from "../scripts/nightly";
 import { caseParts, caseShardParts, nightly, shard } from "../scripts/shard";
 import { fixture, root } from "./support";
@@ -70,6 +70,15 @@ test("each command a push's check runs is check:fast --all's, or left to CI by n
   expect(commands.filter((command) => !known.some((start) => starts(command, start)))).toEqual([]);
   expect(leftToCi.filter((left) => !commands.some((command) => starts(command, left.run))).map((left) => left.run)).toEqual([]);
   expect(starts("bun run test:rustc", "bun run test")).toBe(false);
+});
+
+// A job's timeout is of the load it starts under, as its usual on a
+// machine as loaded as its cores, at most three times it: a fixed 290 s
+// stopped every corpus part at a load of 20 or more on 12 cores.
+test("check:fast's timeouts grow with the machine's load, to three times", () => {
+  expect(loadScale(6, 12)).toBe(1);
+  expect(loadScale(18, 12)).toBe(1.5);
+  expect(loadScale(67, 12)).toBe(3);
 });
 
 test("each test file a push's suite runs, check:fast --all runs", () => {

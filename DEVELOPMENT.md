@@ -254,6 +254,16 @@ What keeps them there:
   (2026-11-04). Each job
   is given the compiler it built, `RUST_JS_COMPILER`: one that builds its
   own links it again, and races the others.
+- **A job's timeout is scaled by the load it starts under** (`loadScale`):
+  its usual timeout, 290 s for most, times the load average over the
+  cores, from 1 to 3. With six or seven agents at once the M3 Max sat at a
+  load of 20 to 67 on its 12 cores, and a fixed 290 s stopped every corpus
+  part, the other files and the readability passes in most runs, each of
+  which passed alone afterwards, the corpus in six parts in 239 to 341 s
+  (2026-11-05). Each agent then ran them again by hand, which cost more
+  than stopping them saved and lost the timings `check:fast` keeps. A hang
+  still ends, at three times its usual timeout at most, and the run says
+  the scale it used.
 - **The node bindings are built before the jobs**, by support.ts's
   `buildNode`, whose stamp skips it where nothing changed: built by the
   first test that asked, under the corpus's load, it outran bun's 5 s
@@ -413,7 +423,6 @@ checked:
 | A mutant's tests that don't end on CI's machines, `mir-tidy-named-temporaries-off` (nightly of 2026-10-27, its run stopped at 20 min) and `spill-hyphenated-name` (2026-10-30, 2 min 28 s over 7 JSX files, no test failed) | A nightly red with an inconclusive mutation; each is caught here in seconds | Their log's end is now printed with the verdict: read it the next time, and fix what it waited on |
 | `test/node-bindings.test.ts`'s "node's modules are imported, and its globals called" | Builds the node crate in its own body, `buildNode()`, inside bun's 5 s: 7.8 s cold alone on the M3 Max (2026-11-02), 1.1 s once it's built; flaky in `check:fast` runs that start with no node crate built | `buildNode` in the file's `beforeAll`, as `buildReact` is, with a timeout that fits it |
 | `test/architecture.test.ts`'s "each runtime helper is asked for, or needed by another" | 0.8 s alone; past bun's 5 s beside `check:fast`'s other jobs, failing runs that passed with it alone, until its timeout was raised to 30 s; it reads every source and each helper's JS on each run | The sources read once for the file, shared by its tests, not again per test |
-| `check:fast`'s corpus parts while other agents' worktrees build and test | Each part is killed at `checkFast.ts`'s 290 s, failing the run with no case failed: every job starts at once, its parts as many as the Mac's cores, beside the other agents' jobs (load 14–20 on the 12-core M3 Max, 2026-11-03). The same corpus passes run by hand in six parts, three at a time, all 1,518 cases (alien-signals run 4), so an agent runs the corpus apart and loses the timings `check:fast` keeps | Parts sized to the cores the machine's load leaves free, not all of them, or a part's timeout scaled by the load it started under; the corpus's cases' usual times kept, so a part killed says which case was slow |
 | `test/runtime-package.test.ts`'s "room asked of a length, a resize's, a collect's or a hash table's, ends where wasm32's std ends it" | 2.5 s alone on the M3 Max (2026-11-02); killed at bun's 5 s in a loaded `check:fast --all`, its Node run reserving 117 MB | A timeout that fits it, as the snapshot tests declare |
 | The iterator matrix in full on the Mac, `ITERATOR_MATRIX=all` (ADR 1090) | 2,970 s in 4 parts at a load of 15–60 (2026-11-04), about 3.3 CPU-hours: 1,700 programs of 60 cases, each built natively and twice by the debug compiler, its compile the most of it | The release compiler for its builds, or a compile of a batch's two builds in one rust-js process; the nightly runs it on six machines |
 | Which Prettier and plugins lay out an app's JS, of each build's `rustc -vV` line (ADR 1003, #692) | 0.4 s of each build of React's port (17 packages) on the M3 Max, 2026-11-04, and of each editor check: `resolveConfig` of every module's `.js` and `.jsx` | Each config file's plugins read once, its `overrides` with them, not asked again per module |
