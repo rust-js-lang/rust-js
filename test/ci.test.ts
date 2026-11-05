@@ -94,13 +94,14 @@ test("each test file a push's suite runs, check:fast --all runs", () => {
 // `bun run nightly` runs what the nightly does, here: each of nightly.yml's
 // jobs and of the check it calls, check.yml's, by name, but `plan`, which
 // picks the mutations a branch's check runs, `seeds`, the day's number, and
-// `issue`, which files a red night as an issue.
+// `issue`, which files a red night as an issue; and `iterators`, the iterator
+// matrix's slice, which the nightly skips, as its `matrix` runs every batch.
 test("the nightly, here, has each job the nightly has", () => {
   const ids = (file: string) => {
     const text = readFileSync(join(root, ".github/workflows", file), "utf8");
     return [...text.slice(text.indexOf("\njobs:")).matchAll(/^  ([a-z-]+):$/gm)].map((m) => m[1]);
   };
-  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue"].includes(id));
+  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators"].includes(id));
   expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 

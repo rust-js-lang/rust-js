@@ -83,8 +83,8 @@ branch's one running, and no branch's run touches another's.
 | Each corpus case after each of tidy's stages and without each of preparation's rewrites that changed it, `test/tidy-stages.test.ts` (ADR 1087) | its nine cases, in `check:fast` when tidy or preparation changes: 90 s on the Mac, its runs kept | its nine cases, the read cases and six generated programs, **Readability passes** workflow, of a push that changes tidy or preparation | its nine cases in the suite; every case, on 6 machines |
 | The day's 600 generated programs through the same, `TIDY_STAGES=programs` | | | yes (`programs`, 6 machines of 100) |
 | What JS made, read as often as Rust reads it in every variant, `test/getter-reads.test.ts` (ADR 1087) | in `check:fast` when tidy or preparation changes: 16 s on the Mac | with the stages' sample | in the suite |
-| The iterator conformance matrix, `test/iterator-matrix.test.ts` (ADR 1090): every source, chain, consumer and panic site in both builds against native Rust | `bun test test/iterator-matrix.test.ts` (8 batches) when a change touches iterators; `ITERATOR_MATRIX=all RUST_JS_CASES=i/n` for all of them | **Iterator matrix** workflow, of a push that changes `src/runtime/`, `src/lower/iterators/` or `src/lower/mir/iter/`: the day's 8 batches | every case, on 6 machines (`matrix`) |
-| The iterator conformance table, `ITERATOR_TABLE=conformance` of the same test (ADR 1092): each adapter alone through each step of the contract, from either end, with closures that hold a destructor, in both builds against native Rust | `ITERATOR_TABLE=conformance bun test test/iterator-matrix.test.ts` (8 batches) when a change touches a step; `ITERATOR_MATRIX=all` for all 360 | the same workflow: the day's 8 batches of it too | every case, on 2 machines (`conformance`) |
+| The iterator conformance matrix, `test/iterator-matrix.test.ts` (ADR 1090): every source, chain, consumer and panic site in both builds against native Rust, and closures that capture what drops, and a type stepped from its back beside its forward consumers | its slice, 64 fixed batches, `bun scripts/iteratorSlice.ts run`, in `check:fast` when a change touches the iterators' code (`iteratorPaths`) and in `--all`: 119 s alone in 4 parts at a load of 20; `ITERATOR_MATRIX=all RUST_JS_CASES=i/n` for all of them | the slice, **check**'s `iterators` job, where `plan` says the change is the iterators' code | every case, on 6 machines (`matrix`) |
+| The iterator conformance table, `ITERATOR_TABLE=conformance` of the same test (ADR 1092): each adapter alone through each step of the contract, from either end, with closures that hold a destructor, in both builds against native Rust | its slice, 43 fixed batches, with the matrix's by `bun scripts/iteratorSlice.ts run`, as the matrix's; `ITERATOR_TABLE=conformance ITERATOR_MATRIX=all` for all 360 | the same job: its slice after the matrix's | every case, on 2 machines (`conformance`) |
 | Release qualification | | | yes |
 | react.dev port: its JS against what it committed, `bun run port measure`; its build's 823 pages, `bun run port compare` | yes: the port is private | | |
 | React's port, react-in-rust at `ports/react-in-rust.pin`: `cargo check` of it, `bun scripts/react-in-rust.ts check` | when a change touches a binding | **React port** workflow, of a push that changes `builtins/`, `webapi/`, `node/` or `react/` | |
@@ -528,12 +528,13 @@ Its jobs run at once:
 
 | Job | What | Time, about |
 |---|---|---|
-| `plan` | of a push, the commit its mutations are since, `main`'s last check whose mutations passed, and their machines | 1 min |
+| `plan` | of a push, the commit its mutations are since, `main`'s last check whose mutations passed, or a check started by hand's `since`; their machines; and whether the change is the iterators' code (`scripts/iteratorSlice.ts`'s `iteratorPaths`) | 1 min |
 | `lint` | typecheck, fmt, clippy, `cargo test` | 10 min |
 | `test` | `bun run test`, or a shard of it, balanced by the last run's timings, `timings-*`, the corpus in parts beside it; a bless patch on failure | 9–14 min in 2 shards (run 40881358992), where the corpus in one file took 13–24 |
 | `examples` | the Vite example's build | 10 min |
 | `wasm` | build `rust-js.wasm`, then the snapshot and playground tests with it | 30 min |
 | `rustc` | rustc's suite, a release build, then 6 shards and a report; a lists patch on failure | 20 min |
+| `iterators` | of a change to the iterators' code, the iterator matrix's slice (ADR 1090, #731): 64 fixed batches, of every source, adapter, consumer and panic site, of closures capturing what drops, and of a type stepped from its back beside its forward consumers, in both builds against native Rust, 4 parts on one machine, after a release build; skipped otherwise, and by the nightly, whose `matrix` runs every batch | see TESTS.md |
 | `mutations` | `--changed=<since>`: the mutations in a function the change touches, or of a test or corpus case it touches, and those it adds or edits (ADR 0093), on 1–16 machines, about twenty a machine, as the `plan` job counts them | 0–15 min |
 
 ### `rustc-tests.yml`, by hand, and called by `check.yml`
@@ -599,23 +600,25 @@ Mac, the nine cases took 90 s with their runs kept, six programs 150 s and
 the read cases 16 s (2026-11-04, a debug build, the load near 13). Started
 by hand too: `gh workflow run readability-passes.yml`.
 
-### `iterator-matrix.yml`, the iterator matrix's sample, of a push that changes the iterators
+### The iterator matrix's slice, check.yml's `iterators`, of a change to the iterators' code
 
-8 of the iterator matrix's 1,700 batches (ADR 1090), the day's number
-saying which (`ITERATOR_MATRIX_SEED`), in 4 parts on one machine, of a
-push to `main` whose `paths` are the iterators' runtime helpers and
-lowering: `src/runtime/`, `src/lower/iterators/`, `src/lower/mir/iter/`
-and their module files. It runs beside the push's check, not in it; the
-nightly's `matrix` runs every batch. A case that differs from native Rust,
+64 of the iterator matrix's 1,787 batches (ADR 1090, amended for #731),
+fixed by the cases alone (`slice()` in `test/iterator-matrix.ts`): the
+fewest that hold every pairing of a source, an adapter, a consumer and a
+panic site, of closures that capture a `D` and of a type stepped from its
+back by `rfold`, `nth_back` or `rfind` beside its forward consumers. It
+runs where the check's `plan` says what changed since the last good check
+is the iterators' code, `iteratorPaths` in `scripts/iteratorSlice.ts`, the
+one list, which `test/architecture-iterators.test.ts` holds to the
+architecture's owners of iterators; and in `check:fast` where the change
+is, and in `--all`. A case that differs from native Rust, in either build,
 and isn't in `test/iterator-matrix-known.txt`, fails it; one listed that
 passes fails it until `bun test/iterator-matrix.ts take-off` takes it off.
-Its 8 batches took 21 s on the Mac in 4 parts (2026-11-04), after the build.
 `ITERATOR_MATRIX=#<issue>` runs the batches that hold one issue's known
-cases, 27 to 908 of the 1,700, for its fixer, then `take-off`. Started by hand too: `gh workflow run iterator-matrix.yml`.
-It then runs 8 of the conformance table's 360 batches the same way
-(`ITERATOR_TABLE=conformance`, ADR 1092), whose known cases are rows of the
-same list, `conformance:plain` and `conformance:std`, taken off by the same
-`take-off`.
+cases, for its fixer, then `take-off`. It then runs the conformance
+table's slice the same way, 43 of its 360 batches (`ITERATOR_TABLE=conformance`,
+ADR 1092), whose known cases are rows of the same list, `conformance:plain`
+and `conformance:std`, taken off by the same `take-off`.
 
 ### `react-in-rust.yml`, the React port, of a push that changes a binding
 

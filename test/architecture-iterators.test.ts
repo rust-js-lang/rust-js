@@ -5,6 +5,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { iteratorPaths, touchesIterators } from "../scripts/iteratorSlice";
 import { root } from "./support";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
@@ -123,4 +124,22 @@ test("a consumer's closure folded by value is dropped by $consume alone", () => 
   const asking = lowering.filter((file) => read(file).includes("consumed_function("));
   expect(asking.sort()).toEqual(["src/lower/mir/dispatch.rs", "src/lower/mir/iter/collect.rs"]);
   expect(read("src/runtime/fold_of.js")).toContain("function $consume(it, step, init, f, unwind, ends)");
+});
+
+// What the iterators' code is, which runs the iterator matrix's slice in a
+// push's check and in check:fast (#731), is `iteratorPaths` alone: each
+// module docs/architecture.md says owns a rule of iterators or their steps
+// is one of its paths, and each of its paths is a file there is.
+test("the iterator matrix's slice runs of each module that owns a rule of iterators", () => {
+  const owners = read("docs/architecture.md")
+    .split("\n")
+    .filter((line) => line.startsWith("| ") && /iterat|step/i.test(line.split("|")[1] ?? ""))
+    .flatMap((line) => [...(line.split("|")[2] ?? "").matchAll(/`([\w/]+(?:\.rs|\.js|\/))`/g)].map((m) => m[1]))
+    .map((module) => (module.startsWith("src/") ? module : `src/lower/${module}`))
+    .map((module) => (module.endsWith("/") ? `${module}x.rs` : module));
+  expect(owners).toContain("src/lower/recognition/own_steps.rs");
+  expect(owners.filter((module) => !touchesIterators([module]))).toEqual([]);
+  const tracked = Bun.spawnSync(["git", "ls-files", "--cached", "--others", "--exclude-standard"], { cwd: root }).stdout.toString().split("\n");
+  expect(iteratorPaths.filter((path) => !tracked.some((file) => new Bun.Glob(path).match(file)))).toEqual([]);
+  expect(touchesIterators(["src/lower/jsx.rs", "docs/guide/README.md"])).toBe(false);
 });

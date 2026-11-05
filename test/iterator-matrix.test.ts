@@ -6,10 +6,11 @@
 // program each; a case rust-js refuses is its answer, and left out of its
 // batch's JS.
 //
-//   bun test test/iterator-matrix.test.ts                                        # a sample, ITERATOR_MATRIX_SEED's batches
+//   bun test test/iterator-matrix.test.ts                                        # its slice, of every source, adapter, consumer and panic site
 //   ITERATOR_MATRIX=all RUST_JS_CASES=1/8 bun test test/iterator-matrix.test.ts  # an eighth of every batch
 //   ITERATOR_MATRIX=#651 bun test test/iterator-matrix.test.ts                   # the batches holding #651's known cases
 //   ITERATOR_TABLE=conformance bun test test/iterator-matrix.test.ts             # the conformance table's (ADR 1092), each likewise
+//   bun scripts/iteratorSlice.ts run                                             # both tables' slices, in parts at once (#731)
 //
 // A case that doesn't run as Rust does fails its batch, but those
 // test/iterator-matrix-known.txt lists, each under its issue, which only
@@ -32,8 +33,8 @@ import {
   ofTable,
   program,
   readKnown,
-  sample,
   segments,
+  slice,
   table,
   version,
   type Case,
@@ -44,33 +45,24 @@ import { shard } from "../scripts/shard";
 
 beforeAll(buildCompiler);
 
-/** A setting that's a whole number, or `otherwise`. */
-function whole(name: string, otherwise: number): number {
-  const value = process.env[name];
-  if (value === undefined) return otherwise;
-  if (!/^\d+$/.test(value)) throw new Error(`${name}=${value}: a whole number is a setting`);
-  return Number(value);
-}
-
 const which = process.env.ITERATOR_MATRIX;
 const issue = /^#(\d+)$/.exec(which ?? "")?.[1];
 if (which !== undefined && which !== "all" && issue === undefined) {
-  throw new Error(`ITERATOR_MATRIX=${which}: \`all\`, \`#<issue>\` for the batches of an issue's known cases, or unset for a sample`);
+  throw new Error(`ITERATOR_MATRIX=${which}: \`all\`, \`#<issue>\` for the batches of an issue's known cases, or unset for its slice`);
 }
 const list = readKnown();
 const known = knownCases(list);
 const every = casesOf(table);
 const all = batches(every);
-// A sample is whole batches, so each case is in the same program as in a
+// A slice is whole batches, so each case is in the same program as in a
 // run of all of them, and judged the same.
-const seed = whole("ITERATOR_MATRIX_SEED", 1);
 const indexes = all.map((_, i) => i);
 const perBatch = all[0].length;
 const ofIssue = [...known]
   .filter(([name, n]) => String(n) === issue && ofTable(name.split(" ")[0]))
   .map(([name]) => Math.floor(Number(name.split(" ")[1]) / perBatch));
 const chosen =
-  which === "all" ? indexes : issue !== undefined ? [...new Set(ofIssue)].sort((a, b) => a - b) : sample(indexes, seed, whole("ITERATOR_MATRIX_BATCHES", 8));
+  which === "all" ? indexes : issue !== undefined ? [...new Set(ofIssue)].sort((a, b) => a - b) : slice(all);
 if (issue !== undefined && chosen.length === 0) throw new Error(`ITERATOR_MATRIX=${which}: no known case is under #${issue}`);
 const [part, parts] = (process.env.RUST_JS_CASES ?? "1/1").split("/").map(Number);
 const mine = shard(

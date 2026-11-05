@@ -13,6 +13,7 @@
 import { mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
+import { touchesIterators } from "./iteratorSlice";
 import { changedSince } from "./mutations";
 import { shardTimings } from "./shard";
 import { timed, timings } from "./timing";
@@ -161,14 +162,18 @@ async function check(branch: string, shards: string | undefined, since?: string)
   console.log(`started ${workflow} of ${branch} at ${local.slice(0, 10)}, the suite on ${on}, the ${count} mutations of what changed since ${base.slice(0, 10)} on ${machines}: bun run ci:status`);
 }
 
-/** Of a push, in CI: what its mutations are of, what changed since `main`'s
- * last check whose mutations passed, or the commit before, and how many machines they
- * take, as GitHub's step outputs. */
-async function plan() {
-  let since = "HEAD~1";
-  try {
-    since = checkedSince(runs(), "main", runMutationsPassed) ?? since;
-  } catch {}
+/** Of a check, in CI: what its mutations are of, what changed since `main`'s
+ * last check whose mutations passed, or the commit before, or since `given`,
+ * a check started by hand's; how many machines they take; and whether what
+ * changed is the iterators' code, which runs the iterator matrix's slice
+ * (scripts/iteratorSlice.ts): as GitHub's step outputs. */
+async function plan(given?: string) {
+  let since = given ?? "HEAD~1";
+  if (given === undefined) {
+    try {
+      since = checkedSince(runs(), "main", runMutationsPassed) ?? since;
+    } catch {}
+  }
   let count = 0;
   try {
     count = (await changedSince(since)).length;
@@ -176,8 +181,10 @@ async function plan() {
     since = "HEAD~1";
     count = (await changedSince(since)).length;
   }
+  const changed = Bun.spawnSync(["git", "diff", "--name-only", since, "HEAD"], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
   console.log(`since=${since}`);
   console.log(`shards=${mutationShards(count)}`);
+  console.log(`iterators=${touchesIterators(changed)}`);
 }
 
 /** An artifact a run uploaded, as GitHub lists them, the newest first. */
@@ -247,7 +254,7 @@ if (import.meta.main) {
     if (command === "status") status();
     else if (command === "check") await check(branch, shards, since);
     else if (command === "bless") bless(branch);
-    else if (command === "plan") await plan();
+    else if (command === "plan") await plan(since);
     else if (command === "timings") fetchTimings();
     else {
       console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan | timings");

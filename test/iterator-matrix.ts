@@ -7,7 +7,11 @@
 // A combination that isn't Rust isn't made: each adapter says what it
 // takes and makes (an item, double-ended, exact-sized), each consumer what
 // item it takes, and each panic site where it can be. Nothing is skipped
-// by a list.
+// by a list. After those, of chains of none or one adapter, two variants
+// (#731): each closure capturing a `D` of its own by move, which drops with
+// it, and a type stepped from its back by `rfold`, `nth_back` or `rfind`
+// beside a forward consumer of the same type, as a crate-wide fact of it
+// (#721) is decided by every use in the crate.
 //
 // It makes two tables of the same sources, adapters and consumers, which
 // one harness runs (ITERATOR_TABLE): the matrix, every chain of none to two
@@ -350,7 +354,20 @@ export const consumers: Consumer[] = [
   },
 ];
 
-export type Case = { n: number; id: string; source: Source; chain: Adapter[]; consumer: Consumer; site: Site };
+/** What a crate steps from the back of a type, which may decide how the
+ * crate makes it everywhere (ADR 0545): a paired case steps its type so
+ * first. */
+export type Setter = "rfold" | "nth_back" | "rfind";
+export const setters: Setter[] = ["rfold", "nth_back", "rfind"];
+
+/** A case as the matrix began, `plain`; with each closure of its chain and
+ * consumer capturing a `D` of its own by move, so it drops with the
+ * closure, `captures`; or with its iterator's type first stepped from its
+ * back elsewhere in the case, by `setter`, a crate-wide fact beside the
+ * forward consumer of the same type, `paired` (#731). */
+export type Variant = { kind: "plain" } | { kind: "captures" } | { kind: "paired"; setter: Setter };
+
+export type Case = { n: number; id: string; source: Source; chain: Adapter[]; consumer: Consumer; site: Site; variant: Variant };
 
 /** The chains of none, one or two adapters that apply to `from`, and
  * the shape each makes. */
@@ -385,24 +402,99 @@ function applies(site: Site, source: Source, chain: Adapter[], consumer: Consume
   }
 }
 
-/** Every case of the matrix, in one order, each id its own. */
+/** Each chain of `source`, as `each` takes it, with its shapes. */
+function eachChain(source: Source, each: (chain: Adapter[], shape: Shape, shapes: Shape[]) => void) {
+  for (const [chain, shape] of chains(source.shape)) {
+    const shapes = [source.shape];
+    for (const a of chain) shapes.push(a.shape(shapes.at(-1)!)!);
+    each(chain, shape, shapes);
+  }
+}
+
+/** Whether a case's chain or consumer has a closure to capture with. */
+const hasClosure = (chain: Adapter[], consumer: Consumer) => chain.some((a) => a.closure) || (consumer.closure && consumer.name !== "for");
+
+/** The forward consumers a paired case runs beside its setter: what read
+ * a type's facts the crate decided by its back (#721). */
+const forward = ["count", "last", "nth", "vec", "fold"];
+
+/** Every case of the matrix, in one order, each id its own: the plain
+ * cases first, as they were before the variants, so their numbers are
+ * test/iterator-matrix-known.txt's still; then, of chains of none or one
+ * adapter, the captures, and the pairs. */
 export function allCases(): Case[] {
   const out: Case[] = [];
+  const add = (source: Source, chain: Adapter[], consumer: Consumer, site: Site, variant: Variant) => {
+    const tail = variant.kind === "plain" ? "" : variant.kind === "captures" ? " | captures" : ` | after ${variant.setter}`;
+    const id = `${source.name} | ${chain.map((a) => a.name).join(".") || "-"} | ${consumer.name} | ${site}${tail}`;
+    out.push({ n: out.length, id, source, chain, consumer, site, variant });
+  };
   for (const source of sources) {
-    for (const [chain, shape] of chains(source.shape)) {
-      const shapes = [source.shape];
-      for (const a of chain) shapes.push(a.shape(shapes.at(-1)!)!);
+    eachChain(source, (chain, shape, shapes) => {
       for (const consumer of consumers) {
         if (!consumer.takes(shape)) continue;
-        for (const site of sites) {
-          if (!applies(site, source, chain, consumer, shapes)) continue;
-          const id = `${source.name} | ${chain.map((a) => a.name).join(".") || "-"} | ${consumer.name} | ${site}`;
-          out.push({ n: out.length, id, source, chain, consumer, site });
+        for (const site of sites) if (applies(site, source, chain, consumer, shapes)) add(source, chain, consumer, site, { kind: "plain" });
+      }
+    });
+  }
+  for (const source of sources) {
+    eachChain(source, (chain, shape, shapes) => {
+      if (chain.length > 1) return;
+      for (const consumer of consumers) {
+        if (!consumer.takes(shape) || !hasClosure(chain, consumer)) continue;
+        for (const site of ["none", "stage", "consumer"] as Site[]) {
+          if (applies(site, source, chain, consumer, shapes)) add(source, chain, consumer, site, { kind: "captures" });
         }
       }
-    }
+    });
+  }
+  for (const source of sources) {
+    if (source.generic) continue;
+    eachChain(source, (chain, shape) => {
+      if (chain.length > 1 || chain.some((a) => a.name === "peekable") || !shape.back) return;
+      for (const consumer of consumers) {
+        if (!forward.includes(consumer.name)) continue;
+        for (const setter of setters) add(source, chain, consumer, "none", { kind: "paired", setter });
+      }
+    });
   }
   return out;
+}
+
+/** Of a case's closures, each an argument, `(|x| body)` or `(init, |a, x|
+ * body)`, made to capture a guard of its own by move, `move |x| { let _g =
+ * &g1; body }`, its body to the `,` or `)` that ends the argument; and how
+ * many guards. */
+function capturing(text: string): { text: string; guards: number } {
+  let out = "";
+  let guards = 0;
+  let i = 0;
+  const starts = /(?<=\(|, )\|[^|]*\| /g;
+  for (let start = starts.exec(text); start; start = starts.exec(text)) {
+    const body = start.index + start[0].length;
+    let end = body;
+    for (let depth = 0; depth > 0 || !(text[end] === ")" || text[end] === ","); end++) {
+      if ("([{".includes(text[end])) depth++;
+      if (")]}".includes(text[end])) depth--;
+    }
+    guards++;
+    out += `${text.slice(i, start.index)}move ${start[0]}{ let _g = &g${guards}; ${text.slice(body, end)} }`;
+    i = end;
+    starts.lastIndex = end;
+  }
+  return { text: out + text.slice(i), guards };
+}
+
+/** What a paired case's setter does to `it`, of its type. */
+function setterText(setter: Setter, it: string): string {
+  switch (setter) {
+    case "rfold":
+      return `let r = ${it}.rfold(0, |a, x| a + x.v());\n    println!("rfold first {r}");`;
+    case "nth_back":
+      return `let r = ${it}.nth_back(1).map(|x| x.v());\n    println!("nth_back first {r:?}");`;
+    case "rfind":
+      return `let r = ${it}.rfind(|x| x.v() % 2 == 0).map(|x| x.v());\n    println!("rfind first {r:?}");`;
+  }
 }
 
 // The conformance table (ADR 1092, #730): each adapter of std's alone,
@@ -590,7 +682,7 @@ export function conformanceCases(): Case[] {
         for (const site of sites) {
           if (!applies(site, source, chain, consumer, shapes)) continue;
           const id = `${source.name} | ${chain.map((a) => a.name).join(".") || "-"} | ${consumer.name} | ${site}`;
-          out.push({ n: out.length, id, source, chain, consumer, site });
+          out.push({ n: out.length, id, source, chain, consumer, site, variant: { kind: "plain" } });
         }
       }
     }
@@ -615,6 +707,47 @@ export function sample<T>(items: T[], seed: number, count: number): T[] {
   const picked: number[] = [];
   while (picked.length < count && pool.length > 0) picked.push(pool.splice(int(pool.length), 1)[0]);
   return picked.sort((a, b) => a - b).map((i) => items[i]);
+}
+
+/** What a slice of the matrix covers, of a case, each a pairing: of a
+ * plain case, its source, each adapter of its chain and where it panics,
+ * each with its consumer, and its source and consumer with where it
+ * panics; of a capturing one, each adapter with its consumer, and its
+ * source and consumer with where it panics; of a paired one, its setter
+ * with its source and chain, and with its consumer. */
+function strata(c: Case): string[] {
+  const { source, chain, consumer, site, variant } = c;
+  const kind = variant.kind === "paired" ? `after ${variant.setter}` : variant.kind;
+  if (variant.kind === "paired") return [`${kind} | source ${source.name} | chain ${chain.map((a) => a.name).join(".")}`, `${kind} | consumer ${consumer.name}`];
+  return [
+    `${kind} | source ${source.name} | consumer ${consumer.name}`,
+    `${kind} | source ${source.name} | site ${site}`,
+    `${kind} | consumer ${consumer.name} | site ${site}`,
+    ...chain.flatMap((a) => [`${kind} | adapter ${a.name} | consumer ${consumer.name}`, ...(variant.kind === "plain" ? [`plain | adapter ${a.name} | site ${site}`] : [])]),
+  ];
+}
+
+/** The matrix's slice, which a push that changes the iterators runs
+ * (scripts/iterators.ts): the fewest whole batches, picked greedily, the
+ * first of equals, whose cases between them have every stratum any case
+ * has, each pairing of a source, an adapter, a consumer and a panic site
+ * (`strata`), so every adapter and consumer runs in both builds. Fixed by
+ * the cases alone, so a failure is found again by running it again. */
+export function slice(all: Case[][]): number[] {
+  const covers = all.map((batch) => new Set(batch.flatMap(strata)));
+  const left = new Set(covers.flatMap((strata) => [...strata]));
+  const picked: number[] = [];
+  while (left.size > 0) {
+    let best = 0;
+    let most = 0;
+    covers.forEach((strata, i) => {
+      const count = [...strata].filter((s) => left.has(s)).length;
+      if (count > most) [best, most] = [i, count];
+    });
+    picked.push(best);
+    for (const s of covers[best]) left.delete(s);
+  }
+  return picked.sort((a, b) => a - b);
 }
 
 /** A case's function, `case_<n>`, and for a generic source the generic
@@ -648,7 +781,21 @@ function caseFn(c: Case, n: number): string {
     }
     shape = a.shape(shape)!;
   }
+  const { variant } = c;
+  if (variant.kind === "paired") {
+    // Of the same type: of a chain with a closure, each closure a type of
+    // its own, by one closure that makes it; else the chain written again.
+    if (chain.some((a) => a.closure)) {
+      body.push(`let make = || ${expr};`);
+      expr = "make()";
+    }
+    body.push(setterText(variant.setter, expr));
+  }
   body.push(consumer.text(expr, site === "consumer"));
+  if (variant.kind === "captures") {
+    const captured = capturing(body.join("\n    "));
+    body.splice(0, body.length, ...Array.from({ length: captured.guards }, (_, k) => `let g${k + 1} = D(${91 + k});`), captured.text);
+  }
   const inner = body.map((line) => `    ${line}`).join("\n");
   if (source.generic) {
     lines.push(`fn ${name}() {\n    ${name}_of(${source.expr(site)});\n}`);

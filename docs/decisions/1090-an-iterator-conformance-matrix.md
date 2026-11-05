@@ -126,3 +126,60 @@ std's structs alone, and compares each case's lines.**
   15 to 60 (about 3.3 CPU-hours): the nightly's, on six machines of four
   parts, about a quarter of an hour each after the compiler's build. A
   push's sample of 8 batches takes about a minute after the build.
+
+## Amendment: a per-push slice, differential, with captures and pairs (#731, 2026-11-05)
+
+The user's decision. A push's sample of 8 batches was the day's (a seed),
+in a workflow of its own beside the check. It missed #721 (a regression
+of #702 found in the nightly's batch 258) and #722, and the matrix's
+closures captured nothing, which is how #710, #719 and #734 got through.
+
+- **Two variants, appended after the plain cases**, so the plain cases'
+  numbers, and test/iterator-matrix-known.txt's, are as before (its
+  generator line moved to the cases' new version, `13cf57ce0f18`). Of
+  chains of none or one adapter: `captures`, each closure of the chain
+  and the consumer capturing a `D` of its own by move (3,999 cases); and
+  `paired`, the type first stepped from its back by `rfold`, `nth_back`
+  or `rfind` beside the forward consumers `count`, `last`, `nth`, `vec`
+  and `fold` of the same type, written again where its chain has no
+  closure and made by one closure where it has (1,200 cases). A pair puts
+  a crate-wide fact, which #702's knowing decides by every use in the
+  crate, next to what reads it. 107,172 cases in 1,787 programs.
+- **The slice is fixed**, `slice()` in test/iterator-matrix.ts: the fewest
+  whole batches, picked greedily, the first of equals, that hold every
+  stratum any case has: of a plain case, its source, each adapter and its
+  panic site, each with its consumer, and its source and consumer with its
+  panic site; of a capturing one, each adapter with its consumer, and its
+  source and consumer with its panic site; of a paired one, its setter
+  with its source and chain, and with its consumer. 64 batches: 22 plain,
+  22 capturing, 20 paired. A failure is found again by running it again.
+- **Both builds against native Rust, as before:** a build that differs
+  from native fails unless that build's case is listed, so a difference
+  between the builds where native agrees with one fails the other.
+- **It runs in each push's check**, check.yml's `iterators` job, where
+  `plan` says the change since the last good check is the iterators'
+  code, and in `check:fast` where the change is. What that code is,
+  `iteratorPaths` in scripts/iteratorSlice.ts, is said there alone;
+  test/architecture-iterators.test.ts holds it to docs/architecture.md's
+  owners of iterators and their steps. iterator-matrix.yml is removed.
+- **What it found at once:** of the 10,398 new case-builds, 1,304 differ
+  from native. #734 holds 1,226 of them (a closure given by value dropped
+  after what's left of its iterator), and #739 holds 14. Three new P0s
+  were filed: #752 (a chain's `nth_back` never drops what it skips, 16),
+  #753 (`--std-iterators`: a `step_by`'s `rfold` drops its closure twice,
+  22) and #754 (a `rev().rfold()` whose closure panics never drops it,
+  26). Within the hour, the fixes of #734 and #754 (1c23afa16, b0f7dfa22)
+  took 1,063 of them off, #753's 22 among them. The slice's next run found
+  #757, a regression of 1c23afa16: a chain the crate steps from its back,
+  folded with a closure that drops, never drops its first side. 242 of
+  the variants' case-builds stay listed.
+- **Proved:** with #721's fix reverted, the slice fails on
+  `plain: range | rev | count | none | after rfold` and its neighbours.
+  With #719's fix reverted, the capturing cases are refused. Without the
+  pairs, a cover of 61 plain batches passed with #721's fix reverted.
+- **The conformance table's too** (ADR 1092), whose per-push 8 batches it
+  replaces: `slice()` of its 360 batches is 43, run after the matrix's by
+  the same `bun scripts/iteratorSlice.ts run`, each table in 4 parts.
+- **Its cost:** on the M3 Max, in 4 parts at a load of 14 to 20, with the
+  debug compiler, the matrix's 64 batches took 119 to 145 s and the
+  conformance table's 43 took 98 to 119 s.

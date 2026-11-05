@@ -16,6 +16,7 @@ import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
 import { pruneKept } from "../test/kept";
+import { touchesIterators } from "./iteratorSlice";
 import { browsers, caseParts, nightly } from "./shard";
 import { elapsed, timed } from "./timing";
 
@@ -69,6 +70,9 @@ export function jobs({ all, changed, added, extra, cores }: Scope): { jobs: Job[
   // A change to what a `&mut` is, or to an operation on one, runs the `&mut`
   // matrix's sample against native Rust (ADR 1086).
   const mutRefs = all || changed.some((file) => /^src\/lower\/(representation\/mut_ref|mut_refs|mir\/(assign|entries|places|rvalues|closures)|std_types\/cell)\.rs$/.test(file));
+  // A change to the iterators' code runs the iterator matrix's slice, as a
+  // push's check does (scripts/iteratorSlice.ts, #731).
+  const iterators = all || touchesIterators(changed);
 
   // Each part of a file of cases, a process of its own (scripts/shard.ts).
   const parts = caseParts(cores);
@@ -138,6 +142,8 @@ export function jobs({ all, changed, added, extra, cores }: Scope): { jobs: Job[
       ...(all ? [everyFile] : suites),
       ...(tidy ? [job("readability passes", ["bun", "test", "test/tidy-stages.test.ts", "test/getter-reads.test.ts"])] : []),
       ...(mutRefs ? [job("the `&mut` matrix's sample", ["bun", "test", "test/mut-ref-matrix.test.ts"])] : []),
+      // 64 batches in 4 parts: 119 s alone at a load of 20 (2026-11-05).
+      ...(iterators ? [job("the iterator matrix's slice", ["bun", "scripts/iteratorSlice.ts", "run", String(parts)], { timeout: 600, ci: "bun scripts/iteratorSlice.ts run" })] : []),
       ...(added.length > 0 ? [job("mutations the change adds", ["bun", "scripts/mutations.ts", ...new Set(added)])] : []),
       ...extra.map((file) => job(file, ["bun", "test", file])),
     ],

@@ -62,8 +62,8 @@ export const browsers = ["browser", "next", "playground", "pilot", "vite", "weba
  * harness's own checks. Each is CPU a push's corpus waits on, guards no
  * mutation or a few, and failed none of the 80 red checks before it was
  * moved: a mutation that names one still runs it. And the iterator
- * matrix's sample, which a push that changes the iterators runs on its own
- * (iterator-matrix.yml, ADR 1090). */
+ * matrix, whose slice a check whose change is the iterators' code runs
+ * on its own (check.yml's `iterators`, scripts/iteratorSlice.ts, ADR 1090). */
 export const nightly = [
   "tidy-stages",
   "getter-reads",

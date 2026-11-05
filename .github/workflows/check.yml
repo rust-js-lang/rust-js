@@ -55,8 +55,9 @@ concurrency:
 
 jobs:
   # Which mutations, those of what changed since `main`'s last check whose
-  # mutations passed, a cancelled or failed one's changes too, and on how
-  # many machines.
+  # mutations passed, a cancelled or failed one's changes too, or since a
+  # check started by hand's `since`, and on how many machines; and whether
+  # what changed is the iterators' code (scripts/iteratorSlice.ts).
   plan:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -66,6 +67,7 @@ jobs:
     outputs:
       since: ${{ steps.plan.outputs.since }}
       shards: ${{ steps.plan.outputs.shards }}
+      iterators: ${{ steps.plan.outputs.iterators }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -76,7 +78,43 @@ jobs:
       - id: plan
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bun scripts/ci.ts plan >> "$GITHUB_OUTPUT"
+        run: bun scripts/ci.ts plan ${{ inputs.since && format('--since={0}', inputs.since) || '' }} >> "$GITHUB_OUTPUT"
+
+  # The iterator matrix's slice (ADR 1090, #731), of a check whose change
+  # is the iterators' code, as `plan` says (scripts/iteratorSlice.ts's
+  # `iteratorPaths`, its one list): its fixed batches, of every source,
+  # adapter, consumer and panic site, of closures that capture what drops,
+  # and of a type stepped from its back beside its forward consumers, each
+  # in both builds against native Rust, a part on each core. The nightly's
+  # `matrix` runs every batch.
+  iterators:
+    name: iterator matrix slice
+    needs: plan
+    if: ${{ !inputs.nightly && needs.plan.outputs.iterators == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run the slice
+        env:
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+        run: bun scripts/iteratorSlice.ts run
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: iterator-matrix-slice
+          path: target/iterator-matrix
+          if-no-files-found: ignore
+          retention-days: 14
 
   lint:
     runs-on: ubuntu-latest
@@ -251,5 +289,5 @@ jobs:
     uses: ./.github/workflows/rustc-tests.yml
     with:
       mutations: true
-      mutation_args: ${{ !inputs.nightly && format('--changed={0}', inputs.since || needs.plan.outputs.since) || '' }}
+      mutation_args: ${{ !inputs.nightly && format('--changed={0}', needs.plan.outputs.since) || '' }}
       mutation_shards: ${{ inputs.nightly && '16' || inputs.mutation_shards || needs.plan.outputs.shards }}

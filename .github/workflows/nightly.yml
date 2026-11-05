@@ -176,8 +176,8 @@ jobs:
 
   # The iterator conformance matrix (ADR 1090): every case, each source,
   # chain, consumer and panic site, in both builds against native Rust, but
-  # those test/iterator-matrix-known.txt lists; a push that changes the
-  # iterators' runtime or lowering runs a sample (iterator-matrix.yml).
+  # those test/iterator-matrix-known.txt lists; a check whose change is the
+  # iterators' code runs its slice (check.yml's `iterators`, #731).
   matrix:
     name: iterator matrix (${{ matrix.machine }}/6)
     runs-on: ubuntu-latest
