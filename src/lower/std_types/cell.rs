@@ -275,7 +275,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let sets = storage.written_in_place(
                     &object,
                     next,
-                    &mut |value, out| self.spill("state", value, out),
+                    &mut |name, value, out| self.spill(name, value, out),
                     js_span,
                 );
                 out.extend(sets.expect("a flattened state's storage"));
@@ -363,7 +363,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let sets = storage.written_in_place(
                         &object,
                         next,
-                        &mut |value, out| self.spill("state", value, out),
+                        &mut |name, value, out| self.spill(name, value, out),
                         js_span,
                     );
                     out.extend(sets.expect("a flattened state's storage"));
@@ -511,7 +511,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let write = |cx: &mut Self, side: &Swapped, value: Expr, out: &mut Vec<Stmt>| match side {
                     Swapped::InPlace(object, storage) => {
-                        let spill = &mut |value, out: &mut Vec<Stmt>| cx.spill("state", value, out);
+                        let spill = &mut |name: &str, value, out: &mut Vec<Stmt>| cx.spill(name, value, out);
                         let sets = storage.written_in_place(object, value, spill, js_span);
                         out.extend(sets.expect("a flattened state's storage"));
                     }

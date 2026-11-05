@@ -23,12 +23,19 @@ impl Storage {
     /// and each of its fields set there, as written, a `None` `undefined`,
     /// so a key an earlier variant set and it hasn't stays, as upstream's
     /// do; of any other value, each key of it, once it's computed, held
-    /// where that's needed, `spill`'s. `None` of any other storage.
+    /// where that's needed, `spill`'s, given the name it's held by.
+    /// `None` of any other storage.
+    ///
+    /// Rust computes the whole value before it writes any of it: a field
+    /// that computes, `reason: thrown(error)`, or reads what a key set
+    /// before it may change, is held first, `const reason = ..`, each in
+    /// the order written, and only a field that reads nothing but
+    /// variables is set as it is (#779).
     pub fn written_in_place(
         self,
         place: &Expr,
         value: Expr,
-        spill: &mut dyn FnMut(Expr, &mut Vec<Stmt>) -> Expr,
+        spill: &mut dyn FnMut(&str, Expr, &mut Vec<Stmt>) -> Expr,
         at: Span,
     ) -> Option<Vec<Stmt>> {
         let Storage::InPlace(keys) = self else { return None };
@@ -39,16 +46,24 @@ impl Storage {
                 .iter()
                 .all(|prop| matches!(prop, Prop::Field(name, _) if keys.contains(&name.as_str())))
         {
-            let sets = props.iter().map(|prop| match prop {
-                Prop::Field(name, value) => set(name, value.clone()),
-                _ => unreachable!("an object of fields"),
-            });
-            return Some(sets.collect());
+            let mut out = Vec::new();
+            let fields: Vec<(&str, Expr)> = props
+                .iter()
+                .map(|prop| match prop {
+                    Prop::Field(name, value) if value.is_constant() || value.reads_only_vars() => {
+                        (name.as_str(), value.clone())
+                    }
+                    Prop::Field(name, value) => (name.as_str(), spill(name, value.clone(), &mut out)),
+                    _ => unreachable!("an object of fields"),
+                })
+                .collect();
+            out.extend(fields.into_iter().map(|(name, value)| set(name, value)));
+            return Some(out);
         }
         let mut out = Vec::new();
         let of = match value.reads_same() && !value.has_effects() {
             true => value,
-            false => spill(value, &mut out),
+            false => spill("state", value, &mut out),
         };
         out.extend(keys.iter().map(|key| set(key, Expr::member(of.clone(), *key))));
         Some(out)

@@ -555,37 +555,7 @@ fn written_as_stored(body: &mut Vec<Stmt>, storage_of: &dyn Fn(&Expr) -> Option<
 /// alone: of one that computes, `a[f()]`, the setter would compute it after
 /// `v`, where the place itself is computed before.
 pub(super) fn handles_in_place(body: &mut Vec<Stmt>) {
-    // A flattened state written whole through its handle, each of its keys
-    // set on the object it's in (ADR 1044), before the handle is its place.
-    // Each a name of its own, as two such writes may be in one list (#687).
-    let mut taken = std::collections::HashSet::new();
-    js::names_in(body, &mut taken);
-    // A closure's write too (#482).
-    js::each_block_mut(body, &mut |stmts| {
-        let mut out = Vec::with_capacity(stmts.len());
-        for stmt in std::mem::take(stmts) {
-            if let StmtKind::Assign(target, value) = &stmt.kind
-                && let ExprKind::Member(of, key) = &target.kind
-                && key == js::HELD
-                && let ExprKind::Handle(place, storage) = &of.kind
-                && let Some(sets) = storage.written_in_place(
-                    place,
-                    value.clone(),
-                    &mut |value, out| {
-                        let fresh = crate::names::fresh_in(&mut taken, "state");
-                        out.push(StmtKind::Const(fresh.clone(), value).at(stmt.span));
-                        Expr::var(&fresh)
-                    },
-                    stmt.span,
-                )
-            {
-                out.extend(sets);
-                continue;
-            }
-            out.push(stmt);
-        }
-        *stmts = out;
-    });
+    written_whole_in_place(body);
     // What's assigned through one, `({ get value() .., set value(v) { o.f =
     // v ?? null; } }).value = undefined`, is written as its storage stores
     // it, a nullable field's `None` `null`, before it's the place (ADR 0772,
@@ -609,6 +579,43 @@ pub(super) fn handles_in_place(body: &mut Vec<Stmt>) {
                 ..(**place).clone()
             };
         }
+    });
+}
+
+/// A flattened state written whole through its handle, each of its keys
+/// set on the object it's in (ADR 1044, `Storage::written_in_place`),
+/// before the handle is its place: `handles_in_place`'s, and
+/// `read_handles`' where it makes one of a declared handle, which may be
+/// where tidy's stages run again, after `handles_in_place` (#779).
+fn written_whole_in_place(body: &mut Vec<Stmt>) {
+    // Each a name of its own, as two such writes may be in one list (#687).
+    let mut taken = std::collections::HashSet::new();
+    js::names_in(body, &mut taken);
+    // A closure's write too (#482).
+    js::each_block_mut(body, &mut |stmts| {
+        let mut out = Vec::with_capacity(stmts.len());
+        for stmt in std::mem::take(stmts) {
+            if let StmtKind::Assign(target, value) = &stmt.kind
+                && let ExprKind::Member(of, key) = &target.kind
+                && key == js::HELD
+                && let ExprKind::Handle(place, storage) = &of.kind
+                && let Some(sets) = storage.written_in_place(
+                    place,
+                    value.clone(),
+                    &mut |name, value, out| {
+                        let fresh = crate::names::fresh_in(&mut taken, name);
+                        out.push(StmtKind::Const(fresh.clone(), value).at(stmt.span));
+                        Expr::var(&fresh)
+                    },
+                    stmt.span,
+                )
+            {
+                out.extend(sets);
+                continue;
+            }
+            out.push(stmt);
+        }
+        *stmts = out;
     });
 }
 
@@ -716,6 +723,7 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::L
             }
         };
         js::each_expr_mut(body, substitute);
+        written_whole_in_place(body);
     }
     handles
         .retain(|(name, _, _, storage)| !(matches!(storage, js::Storage::InPlace(_)) && written_whole.contains(name)));

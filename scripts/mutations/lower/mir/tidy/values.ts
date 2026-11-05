@@ -441,8 +441,8 @@ export const mutations: Mutation[] = [
     breaks:
       "two whole writes through a flattened state's handle in one list each spill what they write as `state`, declared twice (#687)",
     file: "src/lower/mir/tidy/values.rs",
-    find: "                        let fresh = crate::names::fresh_in(&mut taken, \"state\");\n",
-    replace: "                        let fresh = String::from(\"state\");\n",
+    find: "                        let fresh = crate::names::fresh_in(&mut taken, name);\n",
+    replace: "                        let fresh = String::from(name);\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell_swapped.rs$"],
   },
   {
@@ -453,5 +453,14 @@ export const mutations: Mutation[] = [
     replace: "            i += 1;\n            let _ = function;\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_fold_closure_panics.rs$"],
     snapshots: true,
+  },
+  {
+    name: "declared-handle-written-whole-left",
+    breaks: "a declared flattened state's handle written whole where tidy's stages run again is left a handle, printed as a setter of the variable holding the chunk (#779)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        js::each_expr_mut(body, substitute);\n        written_whole_in_place(body);\n",
+    replace: "        js::each_expr_mut(body, substitute);\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_written_whole_after_its_fields.rs$"],
   },
 ];

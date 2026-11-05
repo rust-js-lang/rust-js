@@ -644,3 +644,60 @@ holds its value whatever else has its type". Mutations
 `checked-guard-unchecked` (`mir/local_facts.ts`); `quiet-guard-released`,
 `drop_place`'s skip, now of a checked guard alone, is held by
 `refcell_vec_bounds`'s snapshot.
+
+## Amended (2026-11-05, #779): its whole write computes its fields first
+
+A whole write of a variant whose field computes, React's Flight client's
+`*errored_chunk.state.borrow_mut() = ChunkState::Errored { reason:
+thrown(&*error) }`, set its keys in order with each field as given:
+
+```js
+erroredChunk.status = "rejected";
+erroredChunk.reason = thrown(error);
+```
+
+Rust computes the value before it writes any of it, so where `thrown`
+panics, the chunk keeps the state it had; the JS left it `"rejected"`, a
+caught panic seeing `rejected undefined` where Rust's sees `pending
+Some(2)`. Since 78372e8ba (#723) shared one cleanup between the calls,
+the field reached `written_in_place` as the call, no longer the
+temporary MIR held it in, and the port's `initializeModuleChunk` shipped
+so. **`Storage::written_in_place` holds each field that doesn't read
+only variables (`reads_only_vars`) first, in the order written, named
+after its key**, then sets the keys:
+
+```js
+const reason = thrown(error);
+erroredChunk.status = "rejected";
+erroredChunk.reason = reason;
+```
+
+as upstream writes it. Its `spill` is given the name, a key's or
+`state` for a value written whole, by each caller: tidy's, the `Cell`
+calls' and preparation's setter (which spills nothing).
+
+And beside a guard whose drop ends the function, `initializeModelChunk`'s
+`RestoreInitializing`, tidy's stages run again once `scopes` holds a
+`catch_unwind`'s `catch` apart (ADR 0705). There, `read_handles`
+("declared handles") made a second whole write through a declared
+handle of the state, and `handles_in_place`, in the `written` stage
+that isn't run again, never set its keys, so preparation printed its
+setter, `({ get value() { return erroredChunk; }, set value(value) { ..
+} }).value = { status: "rejected", reason: thrown(error) }`. **The
+handle's whole write is written in place where `read_handles` makes
+it**: `written_whole_in_place`, the one rewrite `handles_in_place` runs
+first too.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's order is kept. A regression (P0); kind: a rule applied by one
+pass that a stage run again skipped, and a value's order taken from its
+form where it was a temporary.
+
+Held by corpus `flattened_state_written_whole_after_its_fields`, against
+native Rust in both builds: the write with and without a guard, and
+its cell's `replace`, which gives `written_in_place` the variant as made,
+each field's panic caught. Mutations `in-place-fields-set-before-computed`
+(`js/storage.ts`) and `declared-handle-written-whole-left`
+(`mir/tidy/values.ts`). `bun scripts/react-in-rust.ts regen
+react-client` gives the pin's `initializeModelChunk` again, and
+`initializeModuleChunk`'s field held before its tag is set.

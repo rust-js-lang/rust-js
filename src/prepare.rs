@@ -1048,7 +1048,7 @@ fn expr(e: &mut Expr) {
         // A flattened state's, each of its keys set on its object (ADR 1044).
         let sets = match &e.kind {
             ExprKind::Handle(_, storage) => {
-                storage.written_in_place(place, Expr::var(&param), &mut |value, _| value, place.span)
+                storage.written_in_place(place, Expr::var(&param), &mut |_, value, _| value, place.span)
             }
             _ => None,
         };

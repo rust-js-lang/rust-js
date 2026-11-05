@@ -48,8 +48,8 @@ export const mutations: Mutation[] = [
     name: "in-place-tag-left",
     breaks: "a whole write of a flattened state sets its variant's fields but not its tag, so it still reads as the variant it was (rd380)",
     file: "src/js/storage.rs",
-    find: "            let sets = props.iter().map(|prop| match prop {",
-    replace: "            let sets = props.iter().skip(1).map(|prop| match prop {",
+    find: "            out.extend(fields.into_iter().map(|(name, value)| set(name, value)));\n",
+    replace: "            out.extend(fields.into_iter().skip(1).map(|(name, value)| set(name, value)));\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
   },
   {
@@ -67,5 +67,13 @@ export const mutations: Mutation[] = [
     find: "                    Box::new(self.written_alike(*no)),\n",
     replace: "                    no,\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local nothing reads apart"],
+  },
+  {
+    name: "in-place-fields-set-before-computed",
+    breaks: "a flattened state's whole write sets its tag before a field that computes, `thrown(error)`, runs, so where it panics the chunk is rejected where Rust's keeps its state (#779)",
+    file: "src/js/storage.rs",
+    find: "                    Prop::Field(name, value) if value.is_constant() || value.reads_only_vars() => {\n",
+    replace: "                    Prop::Field(name, value) if true => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_written_whole_after_its_fields.rs$"],
   },
 ];
