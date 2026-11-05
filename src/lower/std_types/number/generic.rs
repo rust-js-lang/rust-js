@@ -236,8 +236,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 crate::lower::traits::item_fact_key(self.tcx, *def_id, fact),
             ));
         }
-        // A std associated type's of a type parameter, `IItemMap` (ADR 0466).
-        if let ty::Alias(..) = of.kind()
+        // A std associated type's of a type parameter, `IItemMap` (ADR 0466),
+        // or a type built of them whose layout it's given, `Held<J>` (#737).
+        if (matches!(of.kind(), ty::Alias(..)) || !matches!(of.kind(), ty::Param(_)) && of.has_param())
             && let Some(given) = self.given_fact_of(of, fact)
         {
             return Ok(given);

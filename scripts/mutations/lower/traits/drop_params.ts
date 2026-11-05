@@ -60,4 +60,30 @@ export const mutations: Mutation[] = [
     replace: ";\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_item_drops.rs$"],
   },
+  {
+    name: "built-layout-gate-inverted",
+    breaks:
+      "a caller gives a built slot's layout only where each of its gates' sources is never collected in place, so a collect that is in place reads `undefined`, and a panic drops what's left first where Rust drops what it collected (#737)",
+    file: "src/lower/traits/drop_params.rs",
+    find: "            || built.gates.iter().any(|&gate| {\n",
+    replace: "            || !built.gates.iter().any(|&gate| {\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type.rs$"],
+  },
+  {
+    name: "built-slot-misplaced",
+    breaks: "a built slot's index names the next one of its function's, or none (#737)",
+    file: "src/lower/traits/drop_params.rs",
+    find: "        Some(slots) => slots.get(at).cloned(),\n",
+    replace: "        Some(slots) => slots.get(at + 1).cloned(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type.rs$"],
+  },
+  {
+    name: "built-tuple-unnamed",
+    breaks: "a built tuple's layout is named as rustc prints it, `(usize, I::Item)Size`, which is no JS name (#737)",
+    file: "src/lower/traits/drop_params.rs",
+    find: "        ty::Tuple(parts) => (parts.iter())\n",
+    replace: "        ty::Tuple(parts) if false => (parts.iter())\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
+    snapshots: true,
+  },
 ];

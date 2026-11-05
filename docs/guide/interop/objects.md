@@ -465,8 +465,11 @@ of it: `size_of::<T>()`, `align_of::<T>()`, `type_name::<T>()`, its
 its items, or, of an iterator collected into a `Vec` of items with a
 destructor, whether std collects it in place, `IInPlace`, which picks what a
 panic drops first ([ADR 0465](../../decisions/0465-dropping-an-adapter-is-closing-it.md),
-amended). Then it takes that fact after its arguments, `size(TSize)`, which
-only a Rust caller knows ([ADR 0145](../../decisions/0145-type-facts.md)).
+amended), and the layout of those items where their type is built of its
+type parameters, `HeldSize` of a `Vec<Held<I::IntoIter>>`. Then it takes
+that fact after its arguments, `size(TSize)`, which only a Rust caller
+knows ([ADR 0145](../../decisions/0145-type-facts.md), amended); a built
+type's layout only where the `IInPlace` it gives isn't `undefined`.
 
 ## `dyn Trait` is a value and its dictionary
 

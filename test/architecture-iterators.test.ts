@@ -305,3 +305,22 @@ test("back_stepped's set is read where a value is made, or as a type's question"
     expected,
   ]);
 });
+
+// Whether a collect's items drop, by which generic code asks its caller
+// what std collects in place, is the lowering's own drops' answer,
+// `drops::drops_given`, the analysis's too: `ItemDrops` asked
+// `drop_runs`, which says an associated type of no dictionary may drop,
+// unsupported, where the lowering's drops say a `G<J::Item>` with a `Drop`
+// of its own runs, so it asked nothing and the lowering's collect was
+// refused (#737).
+test("whether a collect's items drop is asked of the lowering's drops", () => {
+  expect(read("src/lower/analysis/type_facts.rs")).not.toMatch(/drop_runs|runs_where/);
+  const analysis = read("src/lower/analysis.rs");
+  const made = analysis.slice(analysis.indexOf("let item_drops = type_facts::ItemDrops"));
+  expect(made.slice(0, made.indexOf("};"))).toContain("drops: &items_drop");
+  expect(analysis).toContain("super::drops::drops_given(");
+  // It asks the walk `FnCx::drops` asks, of the drops its function is given.
+  const drops = read("src/lower/drops.rs");
+  const given = drops.slice(drops.indexOf("pub(super) fn drops_given"));
+  expect(given.slice(0, given.indexOf("\n}\n"))).toMatch(/state\.give\([\s\S]*\.drops\(ty\) != Drops::Nothing/);
+});

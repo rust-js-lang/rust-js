@@ -221,3 +221,59 @@ refused it (`the buffer std collects an iterator in place in`, or `size_of`
 of a type parameter, as itertools' `sorted_by` refused). It reads `T` now,
 so the caller gives `IInPlace`, `TSize` and `TAlign` as it does of
 `collect()`.
+
+## Amendment (2026-11-05): the layout of a type built of the slots (#737)
+
+A collect into a `Vec` in generic code whose items are a type built of
+its type parameters, `Held<<H::Item as IntoIterator>::IntoIter>`, as
+itertools' `multi_cartesian_product` collects `MultiProductIter`s, compares
+that type's layout with its source's (#672). No bound names the type, so
+no caller could derive it as it derives `drop_items`, and the lowering
+refused it, "`size_of` of a type parameter".
+
+**Each function has built slots, after its type parameters' and their
+associated types': each type built of them whose size or alignment it
+asks, which rustc can't say there.** The type-facts analysis finds them
+where a collect asks its items' layout, or where a callee's fact of a
+slot, or of a built slot, is of such a type in the caller's terms,
+`Held<IntoIter<T>>` of a `relayed<T>`, and numbers each function's in the
+order of the types' names (`traits::drop_slot`, `built_slot`). A caller
+gives the layout as it gives any fact, `HeldSize`, `HeldAlign`, of the
+type made of what it gives; the callee reads it as it reads an
+associated type's (`type_fact_value`).
+
+A built slot's layout is read only by a collect that may be in place, so
+it has **gates**: the slots whose `IInPlace` its collect reads. A caller
+giving each gate a source std never collects in place, `undefined`, gives
+the layout none: `undefined`, or nothing at the end of the call
+(`gives_slot`, the user's decision). A generic caller passes the gates on
+in its own terms, and asks nothing where each is never in place.
+
+A library's manifest says each built slot's type as a template of the
+function's slots, `TypeTemplate`: a slot by its index, a struct or an
+enum by rustc's `DefPathHash`, a tuple, a reference, an array or a
+primitive, with its gates. A shape the template can't say, a const
+argument, is refused where the library is compiled. This is **library ABI
+16**.
+
+Two more of the same family: a caller giving an impl's dictionary for a
+type of its slots that isn't one of its type parameters,
+`impl<T: Iterator> Itertools for T` of an `<I as IntoIterator>::IntoIter`,
+asks what that impl asks, as of a call (#794's itertools part). And the
+analysis's answer to whether a collect's items drop is the lowering's,
+`drops::drops_given`: it asked `drop_runs`, which says a `G<J::Item>`'s
+associated type may drop, unsupported, where the lowering's drops say
+`G`'s own `Drop` runs; so a library's `pub fn` collecting those asked
+nothing, and its lowering refused it.
+
+- Held by `test/corpus/in_place_collect_of_a_built_type.rs` and
+  `in_place_collect_of_a_built_type_relayed.rs`, against native Rust in
+  both builds: in place, not in place and a range's map; relayed through a
+  generic caller; a trait's default copied into a blanket impl; a tuple
+  built of a slot; the blanket impl given `I::IntoIter`. And by
+  `test/crates/pairs/built_layout_of_a_library`, a library's `held` and
+  `tagged` its consumer calls through the manifest's templates. Mutations
+  `built-layout-*`, `built-slot-misplaced`, `built-tuple-unnamed`,
+  `impl-of-a-slot-type-unasked`, `copied-default-own-clauses-unknown`,
+  `built-template-*` and
+  `items-drop-asked-*`.

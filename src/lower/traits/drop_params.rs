@@ -66,26 +66,68 @@ pub(in crate::lower) fn own_drop_params<'tcx>(
     indices
 }
 
-/// The type a function's drop `index` drops, in its own terms: its type
+/// The type a function's slot `index` is, in its own terms: its type
 /// parameter's, `T`, below its generics' count, and from there each
 /// associated type of a type parameter's bound by a trait no dictionary
 /// carries, a std trait's, `<I as IntoIterator>::IntoIter`, in its bounds'
 /// order (ADR 0421). Its callers know its bounds, so they and it agree, a
 /// library's consumers too. One a bound names, `IntoIterator<Item = T>`,
-/// is that type's, and isn't one.
+/// is that type's, and isn't one. Past those, each type built of them its
+/// layout is asked of, `Held<<H::Item as IntoIterator>::IntoIter>`, which
+/// no bound says: the crate's own as `built` lists them, a library's as
+/// its manifest does (`built_slot`, #737).
 pub(in crate::lower) fn drop_slot<'tcx>(
     tcx: TyCtxt<'tcx>,
-    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    (foreign, built): (&crate::lower::library::Foreign<'_, 'tcx>, &BuiltSlots<'tcx>),
     id: DefId,
     index: u32,
 ) -> Ty<'tcx> {
     let generics = tcx.generics_of(id);
-    match index.checked_sub(generics.count() as u32) {
+    let Some(at) = index.checked_sub(generics.count() as u32) else {
+        let param = generics.param_at(index as usize, tcx);
+        return Ty::new_param(tcx, param.index, param.name);
+    };
+    let items = drop_items(tcx, foreign, id);
+    match items.get(at as usize) {
+        Some(&item) => item,
         None => {
-            let param = generics.param_at(index as usize, tcx);
-            Ty::new_param(tcx, param.index, param.name)
+            (built_slot(tcx, (foreign, built), id, index))
+                .expect("a slot past the associated types is a built one")
+                .ty
         }
-        Some(at) => drop_items(tcx, foreign, id)[at as usize],
+    }
+}
+
+/// A type built of a function's slots that it asks the layout of, a
+/// collect's items' in place, `Held<J>` of a `Vec<Held<J>>` (#737): no
+/// bound names it, so its callers read which it is of its own list, the
+/// crate's analysis's or a library's manifest's. Where `gates` lists any,
+/// it's asked only where one of those slots' `IInPlace`, which says whether
+/// its collect may be in place, is given: a caller that gives each of them
+/// `undefined` gives it none.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(in crate::lower) struct BuiltSlot<'tcx> {
+    pub(in crate::lower) ty: Ty<'tcx>,
+    pub(in crate::lower) gates: Vec<u32>,
+}
+
+/// Each of the crate's functions' built slots, in their slots' order, after
+/// its associated types' (`drop_slot`).
+pub(in crate::lower) type BuiltSlots<'tcx> = HashMap<DefId, Vec<BuiltSlot<'tcx>>>;
+
+/// `id`'s built slot `index`, if it's one: the crate's own function's, as
+/// `built` lists them, or a library's, as its manifest says.
+pub(in crate::lower) fn built_slot<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (foreign, built): (&crate::lower::library::Foreign<'_, 'tcx>, &BuiltSlots<'tcx>),
+    id: DefId,
+    index: u32,
+) -> Option<BuiltSlot<'tcx>> {
+    let first = (tcx.generics_of(id).count() + drop_items(tcx, foreign, id).len()) as u32;
+    let at = index.checked_sub(first)? as usize;
+    match built.get(&id) {
+        Some(slots) => slots.get(at).cloned(),
+        None => foreign.built_slot(id, index),
     }
 }
 
@@ -161,7 +203,12 @@ fn drop_items_of<'tcx>(
 pub(in crate::lower) fn drop_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
     match ty.kind() {
         ty::Param(param) => param_word(param.name),
-        _ => evidence_word(tcx, ty),
+        // A type built of a function's slots (#737): a tuple's of its
+        // parts', `UsizeSelfItem` of `(usize, Self::Item)`; any's a name.
+        ty::Tuple(parts) => (parts.iter())
+            .map(|part| crate::lower::upper_first(&drop_word(tcx, part)))
+            .collect(),
+        _ => js_word(&evidence_word(tcx, ty)),
     }
 }
 
@@ -193,11 +240,34 @@ pub(in crate::lower) fn item_drop_key(tcx: TyCtxt<'_>, item: DefId) -> String {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What resolves a function's slots (`drop_slot`): its bounds, and the
+    /// built slots the crate's analysis and its libraries' manifests list.
+    pub(in crate::lower) fn slots(&self) -> (&'a crate::lower::library::Foreign<'a, 'tcx>, &'a BuiltSlots<'tcx>) {
+        (self.krate.foreign, self.krate.built_slots)
+    }
+
+    /// Whether a call of `id` with `args` gives its slot `index`'s facts:
+    /// each but a built slot's whose every gate's `IInPlace` is
+    /// `undefined` there, a source std never collects in place, whose
+    /// collect then never reads its layout (#737).
+    pub(in crate::lower) fn gives_slot(&self, id: DefId, index: u32, args: ty::GenericArgsRef<'tcx>) -> bool {
+        let Some(built) = built_slot(self.tcx, self.slots(), id, index) else {
+            return true;
+        };
+        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);
+        built.gates.is_empty()
+            || built.gates.iter().any(|&gate| {
+                let of = self.drop_slot_of(id, gate, args);
+                crate::lower::recognition::in_place_source(self.tcx, typing_env, of)
+                    != Some(crate::lower::recognition::InPlaceSource::Never)
+            })
+    }
+
     /// The type `id`'s drop `index` drops, of the arguments it's called with
     /// here: the one given for its type parameter, or that type's associated
     /// type, as it's known here (ADR 0421).
     pub(in crate::lower) fn drop_slot_of(&self, id: DefId, index: u32, args: ty::GenericArgsRef<'tcx>) -> Ty<'tcx> {
-        let ty = ty::EarlyBinder::bind(self.tcx, drop_slot(self.tcx, self.krate.foreign, id, index))
+        let ty = ty::EarlyBinder::bind(self.tcx, drop_slot(self.tcx, self.slots(), id, index))
             .instantiate(self.tcx, args)
             .skip_normalization();
         // In a copied default, in the impl's terms, where its bounds and the

@@ -83,6 +83,33 @@ pub(in crate::lower) struct TypeDrops<'tcx> {
     pub(super) unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
 }
 
+impl<'tcx> TypeDrops<'tcx> {
+    /// The std associated types of the function's type parameters a caller
+    /// would give a drop for, `drop_items` (ADR 0489).
+    pub(super) fn set_slots(&mut self, slots: impl IntoIterator<Item = Ty<'tcx>>) {
+        self.slots = (slots.into_iter())
+            .filter_map(|ty| match *ty.kind() {
+                ty::Alias(_, alias) => Some(alias),
+                _ => None,
+            })
+            .collect();
+    }
+
+    /// The function is given a drop `index` of `ty`: its type parameter's
+    /// (ADR 0098), or a std trait's associated type of one (ADR 0421).
+    pub(super) fn give(&mut self, index: u32, ty: Ty<'tcx>) {
+        let TypeDrops { given, items, .. } = self;
+        match ty.kind() {
+            ty::Alias(_, alias) => {
+                items.insert(*alias, index);
+            }
+            _ => {
+                given.insert(index);
+            }
+        }
+    }
+}
+
 /// What a type drops, and what a pattern moves, asked of types, the
 /// crate's facts and the function's (ADRs 0098, 0178): which of its type
 /// parameters have drops, and the bounds of the dictionaries it's given.

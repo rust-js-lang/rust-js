@@ -87,8 +87,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a consumer's generic function that passes its `T` to a library's that asks its size doesn't ask it",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                        self.asked.insert((caller, at, fact));\n",
-    replace: "",
+    find: "(slot, fact, &gates)) {\n                        self.ask(caller, each);\n",
+    replace: "(slot, fact, &gates)) {\n                        let _ = each;\n",
     tests: ["test/crates.test.ts", "-t", "size of its consumer's type"],
   },
   {
@@ -200,8 +200,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what a callee asks of a slot its caller's is given, `self.map(f).counts()`'s, isn't asked of the caller",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                    changed |= asked.insert((caller, at, fact));\n",
-    replace: "",
+    find: "                    changed |= ask((&mut asked, &mut built), caller, each);\n",
+    replace: "                    let _ = each;\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
   },
   {
@@ -273,9 +273,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a library function's fact of a std associated type of a caller's parameter, `I::IntoIter`'s `IFused`, isn't asked",
     file: "src/lower/analysis/type_facts.rs",
-    find: "        .filter_map(|(of, fact)| Some((slot_of(tcx, foreign, caller, of)?, fact)))\n",
-    replace:
-      "        .filter_map(|(of, fact)| Some((slot_of(tcx, foreign, caller, of).filter(|_| matches!(of.kind(), ty::Param(_)))?, fact)))\n",
+    find: "    if let Some(slot) = slot_of(tcx, foreign, caller, of) {\n",
+    replace: "    if let Some(slot) = slot_of(tcx, foreign, caller, of).filter(|_| matches!(of.kind(), ty::Param(_))) {\n",
     tests: ["test/corpus.test.ts", "-t", "^std_fuse.rs$"],
   },
   {
@@ -335,8 +334,8 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's `src.map(f).collect()` of items with a destructor asks its caller nothing of `I`, so it's refused, \"the buffer std collects an iterator in place in of a type parameter\" (#672)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "    let mut asked = held_facts(tcx, typing_env, iter, TypeFact::InPlace);\n",
-    replace: "    let mut asked = Vec::new();\n",
+    find: "    let source = held_facts(tcx, typing_env, iter, TypeFact::InPlace);\n",
+    replace: "    let source = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
   },
   {
@@ -344,8 +343,8 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's collect into a `Vec<T>` asks its caller no `TSize` or `TAlign`, so it's refused, \"`size_of` of a type parameter\" (#672)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "        asked.extend([(dest, TypeFact::Size), (dest, TypeFact::Align)]);\n",
-    replace: "",
+    find: "            asked.extend(asked_of(tcx, foreign, typing_env, caller, (dest, fact), &gates));\n",
+    replace: "            let _ = (dest, fact, &gates);\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
   },
   {
@@ -353,8 +352,65 @@ export const mutations: Mutation[] = [
     breaks:
       "a trait's default that collects `self` into a `Vec`, `sorted(self)`, compiled as a library, asks its blanket impl's dictionary nothing of `I`, so it's refused, \"the buffer std collects an iterator in place in of a type parameter\" (#672)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "            asked.push((imp, index, fact));\n",
-    replace: "",
+    find: "            asked.push((imp, each));\n",
+    replace: "            let _ = each;\n",
     tests: ["test/corpus.test.ts", "-t", "^extension_trait_params.rs$"],
+  },
+  {
+    name: "built-layout-unasked",
+    breaks:
+      "a collect's items of a type built of its function's type parameters, `Held<<H::Item as IntoIterator>::IntoIter>`, ask no caller their layout, and the collect is refused, `size_of` of a type parameter, as itertools' `multi_cartesian_product` was (#737)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        && tcx.layout_of(typing_env.as_query_input(ty)).is_err()\n",
+    replace: "        && tcx.layout_of(typing_env.as_query_input(ty)).is_err()\n        && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type.rs$"],
+  },
+  {
+    name: "built-layout-ungated",
+    breaks:
+      "a built type's layout is read wherever its function is called, not only where its source's `IInPlace` is given, so a caller giving `undefined` gives constants no collect reads (#737)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        .filter(|gates| !gates.is_empty());\n",
+    replace: "        .filter(|_| false);\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "built-layout-asked-though-never-read",
+    breaks:
+      "a generic caller giving a built slot's every gate a source std never collects in place still asks the layout of its own caller, which no collect reads (#737)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                (false, true) => return Vec::new(),\n",
+    replace: "                (false, true) => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "built-layout-unrelayed",
+    breaks:
+      "a generic caller of a function asking a built type's layout, of a type built of its own slots, `Held<IntoIter<T>>`, asks its own caller none, and its call is refused (#737)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        .filter_map(|each| asked_of(tcx, foreign, typing_env, caller, each, &gates))\n",
+    replace:
+      "        .filter_map(|(of, fact)| Some(Asked::Slot(slot_of(tcx, foreign, caller, of)?, fact)).filter(|_| !gates.is_some()))\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
+  },
+  {
+    name: "impl-of-a-slot-type-unasked",
+    breaks:
+      "a caller giving an impl's dictionary for a type of its slots that isn't one of its type parameters, `impl<T: Iterator> Itertools for T` of `<I as IntoIterator>::IntoIter`, asks none of what the impl asks, and is refused, as itertools' `free::sorted` and semver's were (#794)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                true => self.calls.push((caller, impl_id, impl_args)),\n",
+    replace: "                true => {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
+  },
+  {
+    name: "copied-default-own-clauses-unknown",
+    breaks:
+      "a trait's default copied into an impl collects in the impl's terms without its own where clauses, `T::Item: IntoIterator`, so what it collects isn't known there and asks nothing, and the collect is refused (#737)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        let bounds = impl_env.param_env.caller_bounds().iter().chain(own_clauses);\n",
+    replace: "        let bounds = impl_env.param_env.caller_bounds().iter().chain(own_clauses.filter(|_| false));\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
   },
 ];

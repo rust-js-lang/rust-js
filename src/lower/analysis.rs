@@ -545,6 +545,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Each generic function's type parameters it's given a size, an
     /// alignment or a name of (ADR 0145), by their indices.
     pub type_facts: HashMap<DefId, Vec<(u32, TypeFact)>>,
+    /// The types built of each one's slots it's given a layout of, past its
+    /// associated types' slots (#737).
+    pub built_slots: crate::lower::traits::BuiltSlots<'tcx>,
     /// The functions that may return `Err(fmt::Error)` (ADR 0187).
     pub failing: HashSet<DefId>,
     /// The throwing functions, whose result is a throwing JS call's (ADR 0644).
@@ -1314,11 +1317,26 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         unboxed: &unboxed,
         js_given: &js_given,
     };
+    // Whether a collect's items drop, as the lowering's drops answer it
+    // where they're held, given the drops their function is (#737).
+    let items_drop = |typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>, owner: DefId, taken: &[u32]| {
+        let recognition = Recognition {
+            typing_env,
+            ..recognition
+        };
+        super::drops::drops_given(
+            recognition,
+            (library, &closure_facts),
+            &counted,
+            (&foreign, owner, taken),
+            ty,
+        )
+    };
     let item_drops = type_facts::ItemDrops {
-        runs: &runs,
+        drops: &items_drop,
         taken: &drop_params,
     };
-    let type_facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given, &recognition, item_drops);
+    let (type_facts, built_slots) = type_fact_params(tcx, all_bodies, &fns, &foreign, given, &recognition, item_drops);
     let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
     let throwing = throwing::throwing_fns(tcx, &recognition, all_bodies);
     let never_unwinding = unwinding::never_unwinding(tcx, &recognition, all_bodies, &runs);
@@ -1383,6 +1401,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         js_given,
         stepped,
         type_facts,
+        built_slots,
         failing,
         throwing,
         never_unwinding,

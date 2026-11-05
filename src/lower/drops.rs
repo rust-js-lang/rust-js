@@ -60,6 +60,31 @@ pub(super) fn drop_runs<'tcx>(
     without_dictionaries(recognition, (library, closure_facts), counted, &state).drops(ty) == Drops::Runs
 }
 
+/// Whether dropping `ty` in `owner` runs anything, where it's given the
+/// drops `taken` of its slots (`traits::drop_slot`) and no dictionaries:
+/// the lowering's `FnCx::drops` of it there, `!= Drops::Nothing`, asked
+/// before any body is lowered, by what a collect's facts are asked of
+/// (#737). The one answer of both: its type's own drop, `Held<J>`'s, runs
+/// whatever `J`'s caller gives.
+pub(super) fn drops_given<'tcx>(
+    recognition: super::recognition::Recognition<'_, 'tcx>,
+    (library, closure_facts): (bool, &super::analysis::ClosureFacts),
+    counted: &super::analysis::Counted<'tcx>,
+    (foreign, owner, taken): (&super::library::Foreign<'_, 'tcx>, DefId, &[u32]),
+    ty: Ty<'tcx>,
+) -> bool {
+    let tcx = recognition.tcx;
+    let mut state = TypeDrops::default();
+    state.set_slots(super::traits::drop_items(tcx, foreign, owner));
+    for &index in taken {
+        state.give(
+            index,
+            super::traits::drop_slot(tcx, (foreign, &Default::default()), owner, index),
+        );
+    }
+    without_dictionaries(recognition, (library, closure_facts), counted, &state).drops(ty) != Drops::Nothing
+}
+
 /// What drops, asked in `recognition`'s typing environment with no
 /// dictionaries given: a type parameter's drop is a maybe.
 fn without_dictionaries<'a, 'tcx>(

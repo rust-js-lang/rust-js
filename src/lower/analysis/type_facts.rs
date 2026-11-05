@@ -8,11 +8,12 @@ use crate::lower::recognition::{
     StdItem, TypeFact, bound_by_any, debug_named, fact_specialization, map_of_param, phantom_named, pointer_target,
     points_at_dyn_any, points_at_dyn_debug, std_item, trait_method, type_facts, unstable_sort_items,
 };
-use crate::lower::traits::{Given, bounds, evidence_impl};
+use crate::lower::traits::{BuiltSlot, BuiltSlots, Given, bounds, drop_items, evidence_impl};
 use crate::lower::{Body, FnInfo, fn_def};
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty;
 use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::TypeVisitableExt;
 use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_span::def_id::DefId;
 use std::collections::{HashMap, HashSet};
@@ -38,7 +39,7 @@ pub(super) fn type_fact_params<'tcx>(
     given: Given<'_>,
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     drops: ItemDrops<'_, 'tcx>,
-) -> HashMap<DefId, Vec<(u32, TypeFact)>> {
+) -> (HashMap<DefId, Vec<(u32, TypeFact)>>, BuiltSlots<'tcx>) {
     let iterator = std_item(tcx, StdItem::Iterator);
     // What `std_iterator_steps` steps a compiled std iterator's struct by.
     let steps = crate::lower::recognition::STRUCT_STEPS.map(|name| trait_method(tcx, iterator, name));
@@ -82,9 +83,9 @@ pub(super) fn type_fact_params<'tcx>(
                         }
                     }
                 }
-                asking
-                    .asked
-                    .extend(in_place_asks(tcx, foreign, typing_env, drops, caller, (callee, args)));
+                for (id, each) in in_place_asks(tcx, foreign, typing_env, drops, caller, (callee, args)) {
+                    asking.ask(id, each);
+                }
                 asking.of_call(tcx, foreign, given, fns, typing_env, caller, callee, args);
             }
             continue;
@@ -219,14 +220,15 @@ pub(super) fn type_fact_params<'tcx>(
                 asking.asked.insert((caller, index, TypeFact::Sort));
                 continue;
             }
-            asking
-                .asked
-                .extend(in_place_asks(tcx, foreign, typing_env, drops, caller, (callee, args)));
+            for (id, each) in in_place_asks(tcx, foreign, typing_env, drops, caller, (callee, args)) {
+                asking.ask(id, each);
+            }
             asking.of_call(tcx, foreign, given, fns, typing_env, caller, callee, args);
         }
     }
     let Asking {
         mut asked,
+        mut built,
         mut carried,
         passed_carried,
         passed,
@@ -277,13 +279,22 @@ pub(super) fn type_fact_params<'tcx>(
         }
         for &(caller, callee, args) in &calls {
             let typing_env = ty::TypingEnv::non_body_analysis(tcx, caller);
-            let facts: Vec<(u32, TypeFact)> = (asked.iter())
+            let no_built = Default::default();
+            let mut facts: Vec<(ty::Ty<'tcx>, TypeFact, Gates)> = (asked.iter())
                 .filter(|&&(id, _, _)| id == callee)
-                .map(|&(_, index, fact)| (index, fact))
+                .map(|&(_, index, fact)| {
+                    let slot = crate::lower::traits::drop_slot(tcx, (foreign, &no_built), callee, index);
+                    (slot, fact, None)
+                })
                 .collect();
-            for (index, fact) in facts {
-                for (at, fact) in asked_of_caller(tcx, foreign, typing_env, (caller, callee, args), (index, fact)) {
-                    changed |= asked.insert((caller, at, fact));
+            // And the layouts of the types built of its slots it asks (#737).
+            for ((_, of), (asked_facts, gates)) in built.iter().filter(|((id, _), _)| *id == callee) {
+                facts.extend(asked_facts.iter().map(|&fact| (*of, fact, gates.clone())));
+            }
+            for (slot, fact, gates) in facts {
+                let relayed = (caller, callee, args);
+                for each in asked_of_caller(tcx, foreign, typing_env, relayed, (slot, fact, &gates)) {
+                    changed |= ask((&mut asked, &mut built), caller, each);
                 }
             }
         }
@@ -349,37 +360,53 @@ pub(super) fn type_fact_params<'tcx>(
     for (assoc, fact) in carried {
         params.entry(assoc).or_default().push((0, fact));
     }
+    // Each one's built slots, after its associated types', in the order of
+    // their types' names, which its callers read by index (`drop_slot`).
+    let mut built_slots: BuiltSlots<'tcx> = HashMap::new();
+    let mut each_built: Vec<_> = (built.into_iter())
+        .map(|((id, ty), asked)| ((tcx.def_path_hash(id), format!("{ty:?}")), id, ty, asked))
+        .collect();
+    each_built.sort_by(|a, b| a.0.cmp(&b.0));
+    for (_, id, ty, (facts, gates)) in each_built {
+        let slots = built_slots.entry(id).or_default();
+        let index = (tcx.generics_of(id).count() + drop_items(tcx, foreign, id).len() + slots.len()) as u32;
+        slots.push(BuiltSlot {
+            ty,
+            gates: gates.into_iter().flatten().collect(),
+        });
+        params
+            .entry(id)
+            .or_default()
+            .extend(facts.into_iter().map(|fact| (index, fact)));
+    }
     for facts in params.values_mut() {
         facts.sort();
         facts.dedup();
     }
-    params
+    (params, built_slots)
 }
 
-/// Whether dropping a value of a type runs code where a function is,
-/// `analysis::runs_where`'s, and the drops each function is given, by its
-/// slots (ADR 0421): what a collect's items drop, which the lowering's
-/// drops answer the same.
+/// Whether dropping a value of a type runs anything where a function is,
+/// given the drops it's given, by its slots (ADR 0421): what a collect's
+/// items drop, `drops::drops_given`, the lowering's drops of them
+/// there (#737).
 #[derive(Clone, Copy)]
 pub(super) struct ItemDrops<'a, 'tcx> {
-    pub(super) runs: &'a dyn Fn(ty::Ty<'tcx>, DefId) -> bool,
+    pub(super) drops: &'a ItemsDrop<'a, 'tcx>,
     pub(super) taken: &'a HashMap<DefId, Vec<u32>>,
 }
 
+/// Whether a type held in a function, in a typing environment, given the
+/// drops of those of its slots it's given them of, drops anything.
+pub(super) type ItemsDrop<'a, 'tcx> = dyn Fn(ty::TypingEnv<'tcx>, ty::Ty<'tcx>, DefId, &[u32]) -> bool + 'a;
+
 impl<'tcx> ItemDrops<'_, 'tcx> {
-    /// Whether a `ty` `caller` holds has a drop it runs: its own, or one of a
-    /// type parameter's, or an associated type's, it's given.
-    fn drop(
-        &self,
-        tcx: TyCtxt<'tcx>,
-        foreign: &crate::lower::library::Foreign<'_, 'tcx>,
-        caller: DefId,
-        ty: ty::Ty<'tcx>,
-    ) -> bool {
+    /// Whether a `ty` `caller` holds, in `typing_env`, has a drop it runs:
+    /// its own, or one of a type parameter's, or an associated type's, it's
+    /// given.
+    fn drop(&self, typing_env: ty::TypingEnv<'tcx>, caller: DefId, ty: ty::Ty<'tcx>) -> bool {
         let taken = self.taken.get(&caller).map_or(&[][..], Vec::as_slice);
-        (self.runs)(ty, caller)
-            || (ty.walk().filter_map(|part| part.as_type()))
-                .any(|part| slot_of(tcx, foreign, caller, part).is_some_and(|slot| taken.contains(&slot)))
+        (self.drops)(typing_env, ty, caller, taken)
     }
 }
 
@@ -394,13 +421,13 @@ fn in_place_asks<'tcx>(
     drops: ItemDrops<'_, 'tcx>,
     caller: DefId,
     (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
-) -> Vec<(DefId, u32, TypeFact)> {
+) -> Vec<(DefId, Asked<'tcx>)> {
     let default_of = tcx
         .trait_of_assoc(caller)
         .filter(|_| tcx.defaultness(caller).has_value());
     let Some(trait_id) = default_of else {
         return (in_place_asked(tcx, foreign, typing_env, drops, caller, (callee, args)).into_iter())
-            .map(|(index, fact)| (caller, index, fact))
+            .map(|asked| (caller, asked))
             .collect();
     };
     let parents = tcx.generics_of(caller).parent_count;
@@ -417,12 +444,75 @@ fn in_place_asks<'tcx>(
         let args = ty::EarlyBinder::bind(tcx, args)
             .instantiate(tcx, in_impl)
             .skip_normalization();
+        // The impl's bounds, and the default's own where clauses in its
+        // terms, `T::Item: IntoIterator` of `Self::Item: IntoIterator`, by
+        // which what it collects is known there, as the lowering's
+        // `impl_typing_env` knows it (#737).
         let impl_env = ty::TypingEnv::post_analysis(tcx, imp);
-        for (index, fact) in in_place_asked(tcx, foreign, impl_env, drops, imp, (callee, args)) {
-            asked.push((imp, index, fact));
+        let own_clauses = (tcx.clauses_of(caller).clauses.iter()).map(|&(clause, _)| {
+            ty::EarlyBinder::bind(tcx, clause)
+                .instantiate(tcx, in_impl)
+                .skip_normalization()
+        });
+        let bounds = impl_env.param_env.caller_bounds().iter().chain(own_clauses);
+        let param_env = ty::ParamEnv::new(tcx.mk_clauses_from_iter(bounds));
+        let impl_env = ty::TypingEnv::new(param_env, impl_env.typing_mode());
+        for each in in_place_asked(tcx, foreign, impl_env, drops, imp, (callee, args)) {
+            asked.push((imp, each));
         }
     }
     asked
+}
+
+/// A fact a function asks: of one of its slots, a type parameter's or an
+/// associated type's, by its index; or the layout of a type built of them,
+/// `Held<J>` of a `Vec<Held<J>>` collected in place, by the type, its
+/// index decided once every one of its function's is found (#737), and
+/// whether one of its gates' `IInPlace` must be given for it to be read.
+#[derive(Clone, Debug)]
+enum Asked<'tcx> {
+    Slot(u32, TypeFact),
+    Built(ty::Ty<'tcx>, TypeFact, Gates),
+}
+
+/// What a built slot's layout is read where: `None` wherever its function
+/// is called; else only where one of these slots' `IInPlace`, whether its
+/// collect may be in place, isn't `undefined` (`traits::BuiltSlot`).
+type Gates = Option<std::collections::BTreeSet<u32>>;
+
+/// `a` and `b` together: read where either is.
+fn either_gates(a: &Gates, b: &Gates) -> Gates {
+    match (a, b) {
+        (Some(a), Some(b)) => Some(a.union(b).copied().collect()),
+        _ => None,
+    }
+}
+
+/// Whether `ty`, of no slot of its own, is built of a function's, a type
+/// whose layout rustc can't say there, as only its caller knows it,
+/// `Held<J>`: a fact asked of it, its size or alignment, is its caller's.
+fn built_of<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: ty::Ty<'tcx>, fact: TypeFact) -> bool {
+    matches!(fact, TypeFact::Size | TypeFact::Align)
+        && !crate::lower::recognition::known_by_bounds(ty)
+        && ty.has_param()
+        && tcx.layout_of(typing_env.as_query_input(ty)).is_err()
+}
+
+/// Where `caller` asks `(of, fact)`, `of` in its own terms: a slot's, or
+/// a built type's (`built_of`), read where `gates` says; none of a type it
+/// knows.
+fn asked_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    caller: DefId,
+    (of, fact): (ty::Ty<'tcx>, TypeFact),
+    gates: &Gates,
+) -> Option<Asked<'tcx>> {
+    if let Some(slot) = slot_of(tcx, foreign, caller, of) {
+        return Some(Asked::Slot(slot, fact));
+    }
+    built_of(tcx, typing_env, of, fact).then(|| Asked::Built(tcx.erase_and_anonymize_regions(of), fact, gates.clone()))
 }
 
 /// What a collect into a `Vec`, `collect()` or `from_iter`, of `caller`'s
@@ -430,8 +520,10 @@ fn in_place_asks<'tcx>(
 /// its iterator in, in place, where the adapters keep a type parameter's
 /// iterator, `IInPlace`, and the items' layout where it's a type
 /// parameter's, `TSize` and `TAlign`, by which a panic drops what it
-/// collected first or what's left (#672). As the lowering's
-/// `rest_dropped_first` asks, both of `recognition::in_place_source`.
+/// collected first or what's left (#672); or a type's built of them,
+/// `Held<J>`'s, read only where the source's `IInPlace` isn't `undefined`
+/// (#737). As the lowering's `rest_dropped_first` asks, both of
+/// `recognition::in_place_source`.
 fn in_place_asked<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
@@ -439,12 +531,12 @@ fn in_place_asked<'tcx>(
     drops: ItemDrops<'_, 'tcx>,
     caller: DefId,
     (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
-) -> Vec<(u32, TypeFact)> {
+) -> Vec<Asked<'tcx>> {
     use crate::lower::recognition::{InPlaceSource, collected_items, fits_in_place, held_facts, in_place_source};
     let Some((iter, dest)) = collected_items(tcx, typing_env, callee, args) else {
         return Vec::new();
     };
-    if !drops.drop(tcx, foreign, caller, dest) {
+    if !drops.drop(typing_env, caller, dest) {
         return Vec::new();
     }
     match in_place_source(tcx, typing_env, iter) {
@@ -452,19 +544,31 @@ fn in_place_asked<'tcx>(
         Some(InPlaceSource::Items(src)) if fits_in_place(tcx, typing_env, src, dest).is_none() => {}
         _ => return Vec::new(),
     }
-    let mut asked = held_facts(tcx, typing_env, iter, TypeFact::InPlace);
+    let source = held_facts(tcx, typing_env, iter, TypeFact::InPlace);
+    // The destination's layout is read where the source's `IInPlace` isn't
+    // `undefined`: where each of its facts is a slot's `IInPlace`, those
+    // slots'; else, of a source's items' layout, known or not, wherever.
+    let gates: Gates = (source.iter())
+        .map(|&(of, fact)| (fact == TypeFact::InPlace).then(|| slot_of(tcx, foreign, caller, of))?)
+        .collect::<Gates>()
+        .filter(|gates| !gates.is_empty());
+    let mut asked: Vec<Asked<'tcx>> = (source.into_iter())
+        .filter_map(|each| asked_of(tcx, foreign, typing_env, caller, each, &None))
+        .collect();
     if fits_in_place(tcx, typing_env, dest, dest).is_none() {
-        asked.extend([(dest, TypeFact::Size), (dest, TypeFact::Align)]);
+        for fact in [TypeFact::Size, TypeFact::Align] {
+            asked.extend(asked_of(tcx, foreign, typing_env, caller, (dest, fact), &gates));
+        }
     }
-    (asked.into_iter())
-        .filter_map(|(of, fact)| slot_of(tcx, foreign, caller, of).map(|slot| (slot, fact)))
-        .collect()
+    asked
 }
 
 /// What the bodies ask, as they're read.
 #[derive(Default)]
 struct Asking<'tcx> {
     asked: HashSet<(DefId, u32, TypeFact)>,
+    /// The layouts each asks of a type built of its slots (`Asked::Built`).
+    built: BuiltAsks<'tcx>,
     /// What a trait's dictionaries carry of its associated type, asked of
     /// `<A as Array>::Item` (ADR 0145), and a caller's projection passed on
     /// as a callee's type parameter.
@@ -478,7 +582,39 @@ struct Asking<'tcx> {
     calls: Vec<(DefId, DefId, ty::GenericArgsRef<'tcx>)>,
 }
 
+/// Each function's built types it asks a layout of, by the type: the facts,
+/// and where they're read.
+type BuiltAsks<'tcx> = HashMap<(DefId, ty::Ty<'tcx>), (std::collections::BTreeSet<TypeFact>, Gates)>;
+
+/// `caller` asks `asked`: whether that's new.
+fn ask<'tcx>(
+    (asked, built): (&mut HashSet<(DefId, u32, TypeFact)>, &mut BuiltAsks<'tcx>),
+    caller: DefId,
+    each: Asked<'tcx>,
+) -> bool {
+    match each {
+        Asked::Slot(index, fact) => asked.insert((caller, index, fact)),
+        Asked::Built(ty, fact, gates) => match built.get_mut(&(caller, ty)) {
+            Some((facts, read)) => {
+                let wider = either_gates(read, &gates);
+                let changed = facts.insert(fact) || wider != *read;
+                *read = wider;
+                changed
+            }
+            None => {
+                built.insert((caller, ty), ([fact].into(), gates));
+                true
+            }
+        },
+    }
+}
+
 impl<'tcx> Asking<'tcx> {
+    /// `caller` asks `asked`.
+    fn ask(&mut self, caller: DefId, each: Asked<'tcx>) {
+        ask((&mut self.asked, &mut self.built), caller, each);
+    }
+
     /// What `caller` asks by naming `callee` with `args`: a std function's
     /// facts, what the impls it gives dictionaries of ask, a library's as its
     /// manifest says, and a crate function's, followed once all are read.
@@ -566,6 +702,34 @@ impl<'tcx> Asking<'tcx> {
                     }
                 }
             }
+            // Of one given a type of the caller's slots that isn't one of its
+            // type parameters, `impl<T: Iterator> Itertools for T` of an
+            // `<I as IntoIterator>::IntoIter`: what the impl asks of that,
+            // as of a call's (#794).
+            let of_slots = |at: usize| {
+                impl_args
+                    .get(at)
+                    .and_then(|arg| arg.as_type())
+                    .is_some_and(|ty| !matches!(ty.kind(), ty::Param(_)) && ty.has_param())
+            };
+            if !(0..impl_args.len()).any(of_slots) {
+                continue;
+            }
+            match impl_id.is_local() {
+                true => self.calls.push((caller, impl_id, impl_args)),
+                false => {
+                    for (at, fact) in foreign.type_facts(impl_id) {
+                        if !of_slots(at as usize) {
+                            continue;
+                        }
+                        let slot = crate::lower::traits::drop_slot(tcx, (foreign, &Default::default()), impl_id, at);
+                        let relayed = (caller, impl_id, impl_args);
+                        for each in asked_of_caller(tcx, foreign, typing_env, relayed, (slot, fact, &None)) {
+                            self.ask(caller, each);
+                        }
+                    }
+                }
+            }
         }
         // A library's function, which asks what its manifest says: of a
         // caller's type parameter given it, or a std associated type of one,
@@ -607,8 +771,10 @@ impl<'tcx> Asking<'tcx> {
             }
             for (id, args) in named {
                 for (index, fact) in foreign.type_facts(id) {
-                    for (at, fact) in asked_of_caller(tcx, foreign, typing_env, (caller, id, args), (index, fact)) {
-                        self.asked.insert((caller, at, fact));
+                    let slot = crate::lower::traits::drop_slot(tcx, (foreign, &Default::default()), id, index);
+                    let gates = foreign_gates(foreign, id, index);
+                    for each in asked_of_caller(tcx, foreign, typing_env, (caller, id, args), (slot, fact, &gates)) {
+                        self.ask(caller, each);
                     }
                 }
             }
@@ -655,27 +821,77 @@ fn carries(foreign: &crate::lower::library::Foreign<'_, '_>, assoc: DefId, fact:
     assoc.is_local() || foreign.carried(assoc).contains(&fact)
 }
 
-/// The slots of its own a caller has what its call of `callee` with `args`
-/// asks a fact of, at `index`, a type parameter's or an associated type's
-/// slot (`drop_slot`), `I::Item`'s of a flatten's `ConstSize` (ADR 0899),
-/// or each's a type is the facts of, `I`'s `TrustedLen` of a `&mut I` (ADR
-/// 0975): none of a type it knows.
+/// Where a library's function's slot `index` is read, as its manifest says:
+/// a built slot's gates (#737).
+fn foreign_gates(foreign: &crate::lower::library::Foreign<'_, '_>, id: DefId, index: u32) -> Gates {
+    (foreign.built_slot(id, index))
+        .map(|built| built.gates.into_iter().collect())
+        .filter(|gates: &std::collections::BTreeSet<u32>| !gates.is_empty())
+}
+
+/// What a caller asks of its own where its call of `callee` with `args`
+/// asks a fact of `slot`, of `callee`'s in its own terms, a type
+/// parameter, an associated type (`drop_slot`) or a type built of them:
+/// its slots', `I::Item`'s of a flatten's `ConstSize` (ADR 0899), or each's
+/// a type is the facts of, `I`'s `TrustedLen` of a `&mut I` (ADR 0975), or
+/// a type's built of them (#737); none of a type it knows. A built slot's,
+/// read where `gates` says in `callee`'s, is read where the caller's slots
+/// given for them say; none where each is given a source std never collects
+/// in place, whose `IInPlace` is `undefined`.
 fn asked_of_caller<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     (caller, callee, args): (DefId, DefId, ty::GenericArgsRef<'tcx>),
-    (index, fact): (u32, TypeFact),
-) -> Vec<(u32, TypeFact)> {
-    let slot = crate::lower::traits::drop_slot(tcx, foreign, callee, index);
-    let of = ty::EarlyBinder::bind(tcx, slot)
-        .instantiate(tcx, args)
-        .skip_normalization();
-    let of = tcx
-        .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(of))
-        .unwrap_or(of);
-    (crate::lower::recognition::held_facts(tcx, typing_env, of, fact).into_iter())
-        .filter_map(|(of, fact)| Some((slot_of(tcx, foreign, caller, of)?, fact)))
+    (slot, fact, gates): (ty::Ty<'tcx>, TypeFact, &Gates),
+) -> Vec<Asked<'tcx>> {
+    use crate::lower::recognition::{InPlaceSource, held_facts, in_place_source};
+    let here = |ty: ty::Ty<'tcx>| {
+        let ty = ty::EarlyBinder::bind(tcx, ty)
+            .instantiate(tcx, args)
+            .skip_normalization();
+        tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
+            .unwrap_or(ty)
+    };
+    let gates: Gates = match gates {
+        None => None,
+        Some(callee_gates) => {
+            let mut read = std::collections::BTreeSet::new();
+            let mut always = false;
+            for &gate in callee_gates {
+                let gate = here(crate::lower::traits::drop_slot(
+                    tcx,
+                    (foreign, &Default::default()),
+                    callee,
+                    gate,
+                ));
+                if in_place_source(tcx, typing_env, gate) == Some(InPlaceSource::Never) {
+                    continue;
+                }
+                let held = held_facts(tcx, typing_env, gate, TypeFact::InPlace);
+                always |= held.is_empty();
+                for (of, fact) in held {
+                    match (fact == TypeFact::InPlace)
+                        .then(|| slot_of(tcx, foreign, caller, of))
+                        .flatten()
+                    {
+                        Some(at) => {
+                            read.insert(at);
+                        }
+                        None => always = true,
+                    }
+                }
+            }
+            match (always, read.is_empty()) {
+                (true, _) => None,
+                // Of a source never collected in place, never read.
+                (false, true) => return Vec::new(),
+                (false, false) => Some(read),
+            }
+        }
+    };
+    (held_facts(tcx, typing_env, here(slot), fact).into_iter())
+        .filter_map(|each| asked_of(tcx, foreign, typing_env, caller, each, &gates))
         .collect()
 }
 

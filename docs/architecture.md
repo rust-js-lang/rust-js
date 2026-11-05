@@ -199,7 +199,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Crate facts and validation | `analysis.rs`, `analysis/` |
 | Body facts and integer ranges | `body_queries.rs`, `body_queries/`, `body_queries/ranges/` (a condition's narrowing, `ranges/narrowing.rs`) |
 | std recognition and coverage | `recognition.rs`, `recognition/`, `shortcuts.rs`, `std_coverage.rs` |
-| Function contexts, assembly and source capture, and which module may load before another | `bodies.rs`, `pipeline.rs`, `pipeline/`, `reexports.rs`, `sources.rs`, `library.rs`, `load_order.rs` |
+| Function contexts, assembly and source capture, and which module may load before another | `bodies.rs`, `pipeline.rs`, `pipeline/`, `reexports.rs`, `sources.rs`, `library.rs`, `library/built_types.rs` (a type built of a function's slots as a library's manifest says it, #737), `load_order.rs` |
 | Which of a library's functions and impls the crate compiles itself, from the MIR its metadata keeps, and where (ADR 0914, amended) | `instances.rs` |
 | MIR lowering, control flow, calls, places, temporaries and drops | `mir.rs`, `mir/`, `mir/iter/` |
 | Body readability passes | `mir/tidy.rs`, `mir/tidy/`, `mir/tidy/decisions/`, `mir/tidy/jumps/`, `mir/tidy/logicals/`, `mir/tidy/switches/` |

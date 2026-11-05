@@ -88,4 +88,22 @@ export const mutations: Mutation[] = [
     replace: "                own && adt.all_fields().any(|field| {\n",
     tests: ["test/corpus.test.ts", "-t", "^passed_item_drops_that_panic.rs$"],
   },
+  {
+    name: "items-drop-asked-without-associated-types",
+    breaks:
+      "the analysis asks whether a collect's items drop as `drop_runs` does, of no associated type's drop, where the lowering's drops say a `G<J::Item>` with a `Drop` of its own runs: it asks no `IInPlace`, and the lowering's collect is refused (#737)",
+    file: "src/lower/drops.rs",
+    find: "    without_dictionaries(recognition, (library, closure_facts), counted, &state).drops(ty) != Drops::Nothing\n",
+    replace: "    drop_runs(recognition, (library, closure_facts), counted, ty) || state.given.is_empty() && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
+  },
+  {
+    name: "items-drop-asked-ungiven",
+    breaks:
+      "the analysis asks whether a collect's items drop as if their function were given no drops, so a `Vec<T>` of a type parameter's items asks no `IInPlace`, and the lowering's collect is refused (#672, #737)",
+    file: "src/lower/drops.rs",
+    find: "    for &index in taken {\n        state.give(\n",
+    replace: "    for &index in taken.iter().filter(|_| false) {\n        state.give(\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
+  },
 ];

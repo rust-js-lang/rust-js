@@ -30,8 +30,19 @@ export function parseManifest(text) {
   // by its index; each part absent where it asks none of it.
   // ADR 0906: a fact set, each by its name, of the names this ABI knows.
   const facts = (value, known) => value === undefined || Array.isArray(value) && value.every(fact => known.includes(fact));
+  // #737: a type built of a function's slots, by what it's made of.
+  const template = value => object(value) && Object.keys(value).length === 1 && (
+    Number.isInteger(value.slot)
+    || object(value.adt) && typeof value.adt.key === "string" && Array.isArray(value.adt.args) && value.adt.args.every(template)
+    || Array.isArray(value.tuple) && value.tuple.every(template)
+    || object(value.ref) && typeof value.ref.mutable === "boolean" && template(value.ref.to)
+    || object(value.array) && Number.isInteger(value.array.len) && template(value.array.of)
+    || typeof value.primitive === "string");
+  const built = value => value === undefined || object(value) && template(value.of)
+    && (value.gates === undefined || Array.isArray(value.gates) && value.gates.every(Number.isInteger));
   const typeParam = value => object(value) && Number.isInteger(value.index) && facts(value.marks, ["drop", "copy", "clone", "no_drop", "unboxed"])
-    && (value.facts === undefined || strings(value.facts)) && (value.stepped === undefined || strings(value.stepped));
+    && (value.facts === undefined || strings(value.facts)) && (value.stepped === undefined || strings(value.stepped))
+    && built(value.built);
   const fingerprint = value => object(value) && path(value.file)
     && typeof value.hash === "string" && /^[0-9a-f]{16}$/.test(value.hash);
   // Where a file names another's, by the compiler's parse of it (ADR 0101):
@@ -48,7 +59,7 @@ export function parseManifest(text) {
   if (result.library !== undefined) {
     const library = result.library;
     // ADR 0100: each item another crate can reach, by rustc's key for it.
-    if (!object(library) || library.version !== 15 || typeof library.name !== "string" || !library.name
+    if (!object(library) || library.version !== 16 || typeof library.name !== "string" || !library.name
         || typeof library.crate_hash !== "string" || !library.crate_hash
         || !Array.isArray(library.inputs) || !library.inputs.every(fingerprint)
         || !strings(library.impls) || !strings(library.libraries)

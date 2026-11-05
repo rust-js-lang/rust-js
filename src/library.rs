@@ -36,8 +36,10 @@ use std::path::Path;
 /// call, `quiet_by_return`, which a consumer's closures given them read
 /// as the variable, never `None` (ADR 0317, amended, rd621). 15: its enums
 /// told apart by their keys, `keyed`, which a consumer makes and tests so,
-/// and flattens into a struct (ADR 1071).
-pub const VERSION: u32 = 15;
+/// and flattens into a struct (ADR 1071). 16: a type built of a function's
+/// slots it asks the layout of, `built`, a template of its type parameters
+/// and their associated types, past them by index (ADR 0145, amended, #737).
+pub const VERSION: u32 = 16;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -171,6 +173,36 @@ pub struct TypeParam {
     /// the trait's key: `Iterator`'s or an extension's (ADRs 0411, 0548).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub stepped: Vec<String>,
+    /// Of a slot past its type parameters' and their associated types', the
+    /// type built of them it is, `Held<<H::Item as IntoIterator>::IntoIter>`,
+    /// whose layout it asks (ADR 0145, amended, #737).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub built: Option<BuiltType>,
+}
+
+/// A type built of a function's slots, which no bound of it names (#737):
+/// a consumer makes it of the types its call gives them, and gives its
+/// layout where one of `gates`' `IInPlace` it gives isn't `undefined`, or
+/// where `gates` is empty.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BuiltType {
+    pub of: TypeTemplate,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub gates: Vec<u32>,
+}
+
+/// A type of a function's slots, by what it's made of: a slot by its
+/// index, a struct or an enum by rustc's `DefPathHash` of it and its type
+/// arguments, a tuple, a reference, an array, or a primitive by its name.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TypeTemplate {
+    Slot(u32),
+    Adt { key: String, args: Vec<TypeTemplate> },
+    Tuple(Vec<TypeTemplate>),
+    Ref { mutable: bool, to: Box<TypeTemplate> },
+    Array { len: u64, of: Box<TypeTemplate> },
+    Primitive(String),
 }
 
 /// A fact of one of a library's function's type parameters its consumers'

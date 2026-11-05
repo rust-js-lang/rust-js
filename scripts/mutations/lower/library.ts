@@ -687,4 +687,13 @@ export const mutations: Mutation[] = [
     replace: "        None::<()>?;\n",
     tests: ["test/rust-js-test-programs.test.ts", "-t", "makes a dyn of the program's trait"],
   },
+  {
+    name: "built-template-unwritten",
+    breaks:
+      "a library's function asking the layout of a type built of its type parameters is refused, as its manifest can't say the type to its consumers (#737)",
+    file: "src/lower/library.rs",
+    find: "        let Some(of) = built_types::template(tcx, foreign, id, slot.ty) else {\n",
+    replace: "        let Some(of) = built_types::template(tcx, foreign, id, slot.ty).filter(|_| false) else {\n",
+    tests: ["test/crates.test.ts", "-t", "built_layout_of_a_library"],
+  },
 ];

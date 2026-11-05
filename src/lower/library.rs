@@ -1,6 +1,8 @@
 //! Translate checked Rust identities to the library contract (ADR 0100): the
 //! items a library exports, and the ones a consumer imports.
 
+mod built_types;
+
 use super::bindings::HeldBinding;
 use super::{FnInfo, module_path};
 use crate::library::{Dependencies, Held, HeldImport, Imported, Item, ItemFact, Library, RcShape, Reexported, VERSION};
@@ -67,6 +69,9 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) failing: &'a HashSet<DefId>,
     pub(super) no_drops: &'a HashMap<DefId, BTreeSet<u32>>,
     pub(super) type_facts: &'a HashMap<DefId, Vec<(u32, super::recognition::TypeFact)>>,
+    /// The types built of each one's slots it asks the layout of, which
+    /// its manifest says by a template of them (#737).
+    pub(super) built_slots: (&'a Foreign<'a, 'tcx>, &'a super::traits::BuiltSlots<'tcx>),
     /// Those that take their caller's location (ADR 0427).
     pub(super) caller_locations: &'a HashSet<DefId>,
     /// Those that read `js::arguments()` (rd332), and the parameters'
@@ -124,7 +129,7 @@ pub(super) struct Contracts<'a, 'tcx> {
 /// What `id` asks of each of its type parameters that it asks anything of,
 /// by index, as its contract says them: a `dropT`, no destructor, type
 /// facts, and the traits it steps one by.
-fn type_params(tcx: TyCtxt<'_>, id: DefId, contracts: &Contracts<'_, '_>) -> Vec<crate::library::TypeParam> {
+fn type_params<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, contracts: &Contracts<'_, 'tcx>) -> Vec<crate::library::TypeParam> {
     use crate::library::{ParamFact, TypeParam};
     let mut params: std::collections::BTreeMap<u32, TypeParam> = Default::default();
     fn param(params: &mut std::collections::BTreeMap<u32, TypeParam>, index: u32) -> &mut TypeParam {
@@ -155,6 +160,24 @@ fn type_params(tcx: TyCtxt<'_>, id: DefId, contracts: &Contracts<'_, '_>) -> Vec
     }
     for &(_, index, by) in contracts.given.stepped.iter().filter(|&&(of, _, _)| of == id) {
         param(&mut params, index).stepped.push(key(tcx, by));
+    }
+    // Each built slot's type, of its others, which its consumers make of
+    // what they give them (#737); refused where a template can't say it.
+    let (foreign, built) = contracts.built_slots;
+    let first = (tcx.generics_of(id).count() + super::traits::drop_items(tcx, foreign, id).len()) as u32;
+    for (at, slot) in built.get(&id).into_iter().flatten().enumerate() {
+        let Some(of) = built_types::template(tcx, foreign, id, slot.ty) else {
+            super::refusal::refuse(
+                tcx,
+                tcx.def_span(id),
+                super::refusal::Refused::Type("a library's function asking the layout of a type", slot.ty),
+            );
+            continue;
+        };
+        param(&mut params, first + at as u32).built = Some(crate::library::BuiltType {
+            of,
+            gates: slot.gates.clone(),
+        });
     }
     let mut params: Vec<_> = params.into_values().collect();
     for param in &mut params {
@@ -257,6 +280,7 @@ pub(super) fn exports<'tcx>(
         drop_params: _,
         no_drops: _,
         type_facts: _,
+        built_slots: _,
         given: _,
         failing,
         caller_locations,
@@ -775,6 +799,16 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             .flatten()
             .filter_map(|word| super::recognition::TypeFact::of_word(word))
             .collect()
+    }
+
+    /// A library's function's built slot `index`, as its manifest's
+    /// template says it, in the function's terms (#737).
+    pub(in crate::lower) fn built_slot(&self, id: DefId, index: u32) -> Option<super::traits::BuiltSlot<'tcx>> {
+        let built = self.item(id)?.calling.param(index)?.built.as_ref()?;
+        Some(super::traits::BuiltSlot {
+            ty: built_types::made(self.tcx, self, id, &built.of)?,
+            gates: built.gates.clone(),
+        })
     }
 
     pub(super) fn type_facts(&self, id: DefId) -> Vec<(u32, super::recognition::TypeFact)> {

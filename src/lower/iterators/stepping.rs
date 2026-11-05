@@ -289,7 +289,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         args: ty::GenericArgsRef<'tcx>,
         ty: ty::Ty<'tcx>,
     ) -> bool {
-        let slot = crate::lower::traits::drop_slot(self.tcx, self.krate.foreign, callee, index);
+        let slot = crate::lower::traits::drop_slot(self.tcx, self.slots(), callee, index);
         let param = match *slot.kind() {
             ty::Param(param) => param,
             ty::Alias(_, alias) => match *alias.self_ty().kind() {

@@ -274,13 +274,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     name
                 }
                 Slot::Fact(index, fact) => {
-                    let of = drop_slot(self.tcx, self.krate.foreign, id, index);
+                    let of = drop_slot(self.tcx, self.slots(), id, index);
                     let name = self.fresh(&format!("{}{}", drop_word(self.tcx, of), fact.word()));
                     self.given.type_facts.push((of, fact, Expr::var(&name)));
                     name
                 }
                 Slot::Drop(index) => {
-                    let ty = drop_slot(self.tcx, self.krate.foreign, id, index);
+                    let ty = drop_slot(self.tcx, self.slots(), id, index);
                     let name = self.fresh(&format!("drop{}", drop_word(self.tcx, ty)));
                     self.give_drop_param(index, name.clone(), ty);
                     name

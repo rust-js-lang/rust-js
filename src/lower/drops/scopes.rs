@@ -57,26 +57,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The std associated types of the function being lowered's type
     /// parameters a caller would give a drop for, `drop_items` (ADR 0489).
     pub(in crate::lower) fn give_drop_slots(&mut self, slots: impl IntoIterator<Item = Ty<'tcx>>) {
-        self.drop_state.types.slots = (slots.into_iter())
-            .filter_map(|ty| match *ty.kind() {
-                ty::Alias(_, alias) => Some(alias),
-                _ => None,
-            })
-            .collect();
+        self.drop_state.types.set_slots(slots);
     }
 
     /// The function being lowered is given a drop `index`, named `name`, of
     /// `ty`: its type parameter's (ADR 0098), or a std trait's associated
     /// type of one (ADR 0421).
     pub(in crate::lower) fn give_drop_param(&mut self, index: u32, name: String, ty: Ty<'tcx>) {
-        match ty.kind() {
-            ty::Alias(_, alias) => {
-                self.drop_state.types.items.insert(*alias, index);
-            }
-            _ => {
-                self.drop_state.types.given.insert(index);
-            }
-        }
+        self.drop_state.types.give(index, ty);
         self.drop_state.param_drops.insert(index, name);
     }
 

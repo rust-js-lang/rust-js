@@ -451,7 +451,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut drop_names = Vec::new();
             let mut replaced = Vec::new();
             for &index in &own_drops {
-                let ty = drop_slot(self.tcx, foreign, item.def_id, index);
+                let ty = drop_slot(self.tcx, self.slots(), item.def_id, index);
                 let name = self.fresh(&format!("drop{}", drop_word(self.tcx, ty)));
                 replaced.push(self.lend_drop_param(index, name.clone(), ty));
                 drop_names.push(name);
@@ -467,7 +467,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let fact_mark = self.given.type_facts.len();
             let mut fact_names = Vec::new();
             for (index, fact) in own_facts {
-                let of = drop_slot(self.tcx, self.krate.foreign, item.def_id, index);
+                let of = drop_slot(self.tcx, self.slots(), item.def_id, index);
                 if self.given.type_facts.iter().any(|&(at, _, _)| at == of) {
                     return Err(self.unsupported(span, "a trait method's type parameter's fact here"));
                 }
@@ -888,7 +888,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if index < generics.parent_count as u32 {
                 continue;
             }
-            let of = drop_slot(self.tcx, self.krate.foreign, id, index);
+            let of = drop_slot(self.tcx, self.slots(), id, index);
             if self
                 .given
                 .type_facts

@@ -379,6 +379,8 @@ struct CrateFacts<'a, 'tcx> {
     given: traits::Given<'a>,
     /// Each generic function's type parameters it's given a fact of (ADR 0145).
     type_facts: &'a HashMap<DefId, Vec<(u32, TypeFact)>>,
+    /// The types built of each one's slots it's given a layout of (#737).
+    built_slots: &'a traits::BuiltSlots<'tcx>,
     /// The functions that take their caller's location (ADR 0427).
     caller_locations: &'a HashSet<DefId>,
     /// The functions that may return `Err(fmt::Error)`, and whether any of
