@@ -658,3 +658,8 @@ name. The readers are knowing.rs's remakes of a closed or lent value
 (#223, #225), `slicing`, a trusted-length `eq`, `positioned`, `range_items`,
 eager chains and `found_index`.
 
+Step 5 reads what a value steps through the value for the rest of its
+readers. `stepped_form` goes: its readers ask value.rs's `steps`.
+`stepped_value`, `steps` of what isn't made in place, moves to value.rs.
+Its readers are knowing.rs's `as_exact_size` and `as_double_ended`, and
+eager.rs's `consumed_into_iters`.

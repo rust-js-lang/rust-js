@@ -207,6 +207,19 @@ pub(in crate::lower) fn is_lent(e: &Expr) -> bool {
     !std::ptr::eq(unlent(e), e)
 }
 
+/// What `e` steps (`steps`), held: a map's source made a JS iterator
+/// before it's asked its back, `$iterator(range, $rangeNext)`, is stepped
+/// again from what it steps, not from the JS iterator (ADR 0535). Not of
+/// one made in place (`made_in_place`): a `rev()` of the crate's iterator,
+/// `$iterator(it, nextBack)`, is its own form, which only `steps` reads into
+/// (#257).
+pub(in crate::lower) fn stepped_value(e: &Expr) -> Option<Expr> {
+    if super::made_in_place(e) {
+        return None;
+    }
+    steps(e).cloned()
+}
+
 /// A range's numbers as its maker wrote them (`Form::Range`), `$iterator({
 /// start: a, end: b }, $rangeNext)`: its bounds, made where it's stepped,
 /// whether its end is in it, `a..=b`'s, whether it's stepped from its end,

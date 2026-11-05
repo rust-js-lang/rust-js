@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators.rs",
     find: "            _ if is_stepped_items(e) => true,\n",
     replace:
-      "            _ if is_stepped_items(e) || stepped_form(e).is_some() => true,\n",
+      "            _ if is_stepped_items(e) || steps(e).is_some() => true,\n",
     tests: [
       "test/diagnostics.test.ts",
       "-t",
@@ -236,19 +236,6 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "slice_ranges_known"],
     snapshots: true,
-  },
-  {
-    name: "in-place-form-peeled",
-    breaks:
-      "a `rev()` of the crate's iterator made in place is peeled to the iterator it reverses, which a `step_by` then steps forward",
-    file: "src/lower/iterators.rs",
-    find: "    if made_in_place(e) {\n        return None;\n    }\n    stepped_form(e).cloned()\n",
-    replace: "    stepped_form(e).cloned()\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(rev_in_place_through_adapters).rs$",
-    ],
   },
   {
     name: "alias-into-iter-not-held",

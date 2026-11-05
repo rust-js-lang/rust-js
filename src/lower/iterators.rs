@@ -13,7 +13,7 @@ mod value;
 
 pub(in crate::lower) use self::value::{
     Form, IterValue, bounds_of, bounds_read, closed, closed_parts, is_lent, its_facts, stepped_from, stepped_range,
-    steps, unlent,
+    stepped_value, steps, unlent,
 };
 pub(super) use self::{eager::*, in_place::*};
 
@@ -142,28 +142,6 @@ pub(in crate::lower) fn is_range_stepped(e: &Expr) -> bool {
     matches!(&e.kind, js::ExprKind::Call(callee, args)
         if callee.helper_name() == Some("$iterator")
             && args.get(1).and_then(Expr::helper_name).is_some_and(|next| next.starts_with("$range")))
-}
-
-/// What a JS iterator `stepped_ends` made steps, `value` of `$iterator(value,
-/// next, ..)`. A map's source made a JS iterator before it's asked its back,
-/// `$iterator(range, $rangeNext)`, is stepped again from what it steps, not
-/// from the JS iterator (ADR 0535). Not one made in place (`made_in_place`):
-/// a `rev()` of the crate's iterator, `$iterator(it, nextBack)`, is its own
-/// form, which only `stepped_form` reads into (#257).
-pub(in crate::lower) fn stepped_value(e: &Expr) -> Option<Expr> {
-    if made_in_place(e) {
-        return None;
-    }
-    stepped_form(e).cloned()
-}
-
-/// `value` of `$iterator(value, next, ..)` or `$given(value, ..)`, whatever
-/// it stands for: the one reader of its form.
-pub(in crate::lower) fn stepped_form(e: &Expr) -> Option<&Expr> {
-    let js::ExprKind::Call(callee, args) = &e.kind else {
-        return None;
-    };
-    matches!(callee.helper_name(), Some("$iterator" | "$given")).then(|| args.first())?
 }
 
 /// Whether a bound of `tr` reads its value as its own type, `Clone`'s or

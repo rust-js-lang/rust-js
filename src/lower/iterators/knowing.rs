@@ -749,7 +749,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Of the form it's made in, `$iterator(it, nextBack)`: not one a
         // variable holds, whose form isn't there to be made again.
-        let Some(value) = crate::lower::iterators::stepped_form(&value).cloned() else {
+        let Some(value) = crate::lower::iterators::steps(&value).cloned() else {
             return Err(self.unsupported(
                 span,
                 &format!("a `rev()` of a `{ty}` a variable holds, stepped from its back past what's made of it"),

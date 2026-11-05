@@ -564,9 +564,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable's `rev()` of the crate's iterator, whose form isn't there, is made again as if it were the iterator itself: a wrong answer, not refused",
     file: "src/lower/iterators/knowing.rs",
-    find: "        let Some(value) = crate::lower::iterators::stepped_form(&value).cloned() else {\n",
+    find: "        let Some(value) = crate::lower::iterators::steps(&value).cloned() else {\n",
     replace:
-      "        let Some(value) = crate::lower::iterators::stepped_form(&value).cloned().or(Some(value)) else {\n",
+      "        let Some(value) = crate::lower::iterators::steps(&value).cloned().or(Some(value)) else {\n",
     tests: ["test/diagnostics.test.ts", "-t", "held rev of the crate"],
   },
   {

@@ -97,4 +97,17 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(panic_mid_fold_drops|rfold_and_rev_close_what_they_step|map_into_iter_drops).rs$"],
     snapshots: true,
   },
+  {
+    name: "in-place-form-peeled",
+    breaks:
+      "a `rev()` of the crate's iterator made in place is peeled to the iterator it reverses, which a `step_by` then steps forward",
+    file: "src/lower/iterators/value.rs",
+    find: "    if super::made_in_place(e) {\n        return None;\n    }\n    steps(e).cloned()\n",
+    replace: "    steps(e).cloned()\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(rev_in_place_through_adapters).rs$",
+    ],
+  },
 ];
