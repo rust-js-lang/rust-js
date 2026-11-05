@@ -401,10 +401,29 @@ checked:
   reason to bless: it's counted once anything else is blessed),
   corpus snapshots with `bun run bless`; the decision index merges by
   union, and the architecture test names a line left twice.
-- **After a rebase, check again only what the incoming commits touch**:
-  their `src/` changes need the change's checks again; docs and other
-  agents' tests don't. A full re-run for every commit that landed meanwhile
-  is a loop that never ends.
+- **After a rebase, check again only what the incoming commits touch**.
+  With several agents pushing, `main` moves about as often as a
+  `check:fast --all` takes (about 10 minutes under load), so a full re-run
+  for every commit that landed meanwhile is a loop that never ends. Once
+  your change's whole check has passed:
+  - If an incoming commit touches the code your change works with, run the
+    whole check again. For an iterator change that means any of
+    `src/lower/mir/iter`, `src/lower/iterators`,
+    `src/lower/analysis/back_stepped.rs`, `src/runtime`, `std/`,
+    `test/corpus` or `test/iterator-matrix-known.txt`.
+  - Otherwise, and when the rebase applied with no conflict: rebuild and
+    regenerate (`cargo build`, `bun run runtime && bun run std`), then run
+    both iterator slices (`bun scripts/iteratorSlice.ts run matrix` and
+    `run conformance`) and the corpus cases your change touches, and push.
+  - Never build or regenerate while a rebase is stopped on a conflict: a
+    binary or bundle built from a half-applied tree fails, or passes, for
+    no reason of its own. That once sent several agents after a red `main`
+    that wasn't.
+- **Commit what the change regenerates**: `runtime/index.js` and `std/`
+  are committed, so a change to `src/runtime` or `std`'s sources commits
+  them regenerated. Reset neither to `main`'s copy to tidy a diff: the
+  runtime-package test fails on `main` once the committed bundle lags the
+  compiler, and every other agent's check fails with it.
 - **ADR numbers**: `bun run adr:next`, and `bun run adr:renumber` when
   `main` took yours.
 
