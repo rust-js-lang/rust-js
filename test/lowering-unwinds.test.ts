@@ -1311,7 +1311,7 @@ test("a stage read again is its own in tidy's trace", () => {
     "again/chains",
   ]);
   expect(at("scopes/tested unwraps")).toBe(at(again[0]) - 1);
-  expect(at("finish/temporaries named")).toBe(at(again.at(-1)!) + 1);
+  expect(at("finish/closures out of tries")).toBe(at(again.at(-1)!) + 1);
   const dir = fixture("tidy-again");
   const after = (pass?: string) => {
     const out = join(dir, `${pass?.replaceAll(/[/ ]/g, "_") ?? "all"}.js`);
