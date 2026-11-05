@@ -3934,10 +3934,14 @@ export function $nextBackSome(it) {
 // and a step after steps on, as Rust's `Scan`, which isn't fused, does, of
 // an array's (ADR 0517). What it steps is closed as it's closed, where
 // Rust drops it, not at a `None`, so a zip's other side drops first. The state's `&mut` is a box of it where it's a `handle`, a
-// number's, else the state itself, an object `f` changes in place.
-export function $lazyScan(items, init, f, handle = true) {
+// number's, else the state itself, an object `f` changes in place. Given
+// `drop`, what drops its function, then its state, given its state: run
+// once it's closed, after what it steps, as `Scan { iter, f, state }` drops
+// its fields (#760).
+export function $lazyScan(items, init, f, handle = true, drop = undefined) {
   const state = handle ? { value: init } : init;
   const source = $stepsOf(items);
+  let dropped = drop === undefined;
   const scanning = new $Steps(
     () => {
       const step = source.next();
@@ -3945,7 +3949,15 @@ export function $lazyScan(items, init, f, handle = true) {
       if (next !== undefined) return { done: false, value: next };
       return { done: true, value: undefined };
     },
-    () => source.return?.(),
+    () =>
+      $closedAfter(
+        () => source.return?.(),
+        () => {
+          if (dropped) return;
+          dropped = true;
+          drop(handle ? state.value : state);
+        },
+      ),
   );
   // Its `try_fold`, its source's, stopped at a `None`.
   // Where `f` throws, a panic, the accumulator dropped by `unwind` (#423).

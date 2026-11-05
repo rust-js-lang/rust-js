@@ -185,3 +185,28 @@ reversed, in both builds against native Rust; `iterator-forms.test.ts`
 checks a state and a function with a destructor in the build of std's
 structs. The mutations are `scan-not-closed-on-drop`,
 `scan-state-not-closed` and `scan-dropping-state-unrefused`.
+
+## Amendment: `$lazyScan` drops its function and its state (#760)
+
+The build that rewrites adapters refused a `scan` of a state with a
+destructor, which `$lazyScan` never dropped (#741's amendment), and one of
+a function with a destructor, "kept by what it's given to". Both are
+compiled now. `$lazyScan(items, init, f, handle, drop)` is given what
+drops its function, then its state, given the state: run once, as it's
+closed, after what it steps, as `Scan { iter, f, state }` drops its
+fields. That is where Rust drops a `Scan`: at a consumer's end, after the
+consumer's own closure, `ends` (ADR 0470), as a collect closes it, as a
+panic unwinds and where it's held and dropped; and a state the closure
+replaces is dropped by the write, the one left at the end by `drop`. A
+scan's function isn't refused as kept by what it's given to:
+`closed_on_drop` says the scan drops it as it's closed (`given_unused`).
+The results changed where it was compiled, and it's refused no more: ADR
+0262's third case.
+
+`test/corpus/scan_drops_its_function_and_state.rs` checks each against
+native Rust in both builds. Mutations: `lazy-scan-state-undropped`,
+`lazy-scan-function-undropped`, `scan-kept-function-refused`,
+`lazy-scan-drops-before-source` and `lazy-scan-drops-twice`. The
+diagnostics test's refusal of a function a lazy scan holds is now one of
+`from_fn`'s, which nothing closes to drop it; the guide's limitations
+page lists the state's refusal no more.

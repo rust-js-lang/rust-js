@@ -380,24 +380,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Lazy of a JS iterator, as Rust's is (ADR 0517).
             // Its state's `&mut` as `handles_mut` says, the object itself of
             // a struct or a tuple.
-            // Not of a state with a destructor, which `$lazyScan` never drops,
-            // where Rust drops it with the `Scan` (#741).
+            // And of a function or a state with a destructor, what drops
+            // them, given its state, once it's closed, after its source, as
+            // `Scan { iter, f, state }` drops its fields (#760).
             IterComb::Scan => {
-                if let Some(state) = generic_args.types().nth(1)
-                    && self.drops(state) != crate::lower::drops::Drops::Nothing
-                {
-                    return Err(self.unsupported(span, "`scan` of a state with a destructor"));
-                }
                 let (init, f) = (next(), next());
-                let mut args = vec![items, init, f];
-                if generic_args
-                    .types()
-                    .nth(1)
-                    .is_some_and(|state| !self.handles_mut(state))
-                {
-                    args.push(Expr::bool(false));
+                let (state_ty, function_ty) = (generic_args.types().nth(1), generic_args.types().nth(3));
+                let drops =
+                    |ty: Option<Ty<'tcx>>| ty.filter(|&ty| self.drops(ty) != crate::lower::drops::Drops::Nothing);
+                let (state_drops, function_drops) = (drops(state_ty), drops(function_ty));
+                let f = match (&f.kind, function_drops) {
+                    (js::ExprKind::Var(_), _) | (_, None) => f,
+                    _ => self.spill("f", f, out),
+                };
+                let mut dropped = Vec::new();
+                if let Some(function) = function_drops {
+                    self.drop_value(f.clone(), function, span, &mut dropped)?;
                 }
-                unboxed(Expr::call(Expr::helper("$lazyScan"), args), generic_args.types().nth(2))
+                if let Some(state) = state_drops {
+                    self.drop_value(Expr::var("state"), state, span, &mut dropped)?;
+                }
+                let handle = state_ty.is_none_or(|state| self.handles_mut(state));
+                let mut args = vec![items, init, f];
+                if !handle || !dropped.is_empty() {
+                    args.push(Expr::bool(handle));
+                }
+                if !dropped.is_empty() {
+                    let param = if state_drops.is_some() { "state" } else { "_" };
+                    args.push(Expr::arrow(vec![param.into()], dropped));
+                }
+                // Each `Some` taken out of its box, as `unboxed` does.
+                let scanned = Expr::call(Expr::helper("$lazyScan"), args);
+                match generic_args.types().nth(2).is_some_and(|ty| self.boxed_payload(ty)) {
+                    true => method(scanned, "map", vec![Expr::helper("$someValue")]),
+                    false => scanned,
+                }
             }
             // Of items with a destructor, each it steps over dropped as it's
             // passed, as std's `nth` drops it (ADR 0465).

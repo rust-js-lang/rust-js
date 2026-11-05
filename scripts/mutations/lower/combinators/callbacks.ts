@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/diagnostics.test.ts",
       "-t",
-      "a function with a destructor a lazy scan holds",
+      "a function with a destructor from_fn keeps",
     ],
   },
   {
@@ -191,5 +191,13 @@ export const mutations: Mutation[] = [
       "-t",
       "^called_once_closure_drops_after.rs$",
     ],
+  },
+  {
+    name: "scan-kept-function-refused",
+    breaks: "a `scan()`'s function with a destructor is refused, though the scan closes to drop it (#760)",
+    file: "src/lower/combinators/callbacks.rs",
+    find: "                && kept\n                && (self.recognition().closed_on_drop(output))\n",
+    replace: "                && kept\n                && false && (self.recognition().closed_on_drop(output))\n",
+    tests: ["test/corpus.test.ts", "-t", "^scan_drops_its_function_and_state.rs$"],
   },
 ];

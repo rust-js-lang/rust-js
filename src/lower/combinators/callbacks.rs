@@ -45,6 +45,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if when.is_none() && kept && dropped_anywhere {
                 continue;
             }
+            // Kept by an adapter closed to drop it, `scan(f)`'s, which drops
+            // it as it's closed (`closed_on_drop`, #760).
+            if when.is_none()
+                && kept
+                && (self.recognition().closed_on_drop(output))
+                    .is_some_and(|held| held.walk().any(|part| part.as_type() == Some(ty)))
+            {
+                continue;
+            }
             if when.is_none() && kept {
                 return Err(self.unsupported(
                     span,

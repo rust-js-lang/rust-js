@@ -202,9 +202,8 @@ export const mutations: Mutation[] = [
     name: "scan-kept-boxed",
     breaks: "what `scan` keeps that looks like `None` stays in its box",
     file: "src/lower/combinators/adapters.rs",
-    find: '                unboxed(Expr::call(Expr::helper("$lazyScan"), args), generic_args.types().nth(2))\n',
-    replace:
-      '                unboxed(Expr::call(Expr::helper("$lazyScan"), args), None)\n',
+    find: "                match generic_args.types().nth(2).is_some_and(|ty| self.boxed_payload(ty)) {\n",
+    replace: "                match generic_args.types().nth(2).is_some_and(|ty| false && self.boxed_payload(ty)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^scan_lazy_drops.rs$"],
   },
   {
@@ -248,9 +247,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`scan` of a struct's or a tuple's state gives its closure a box of it, which it reads as the state, `acc.sum` of the box",
     file: "src/lower/combinators/adapters.rs",
-    find: "                    .is_some_and(|state| !self.handles_mut(state))\n",
-    replace:
-      "                    .is_some_and(|state| false && !self.handles_mut(state))\n",
+    find: "                let handle = state_ty.is_none_or(|state| self.handles_mut(state));\n",
+    replace: "                let handle = state_ty.is_none_or(|state| true || self.handles_mut(state));\n",
     tests: ["test/corpus.test.ts", "-t", "^scan_object_state.rs$"],
   },
   {
@@ -478,11 +476,19 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
   },
   {
-    name: "scan-dropping-state-unrefused",
-    breaks: "a lazy `scan` of a state with a destructor is compiled, its state never dropped, where Rust drops it with the `Scan` (#741)",
+    name: "lazy-scan-state-undropped",
+    breaks: "a lazy `scan()`'s state with a destructor is never dropped, where Rust drops it with the `Scan` (#760)",
     file: "src/lower/combinators/adapters.rs",
-    find: "                    && self.drops(state) != crate::lower::drops::Drops::Nothing\n",
-    replace: "                    && false\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a state with a destructor a lazy scan holds"],
+    find: "                if let Some(state) = state_drops {\n                    self.drop_value(Expr::var(\"state\"), state, span, &mut dropped)?;\n                }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^scan_drops_its_function_and_state.rs$"],
+  },
+  {
+    name: "lazy-scan-function-undropped",
+    breaks: "a lazy `scan()`'s function with a destructor is never dropped, where Rust drops it with the `Scan` (#760)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                if let Some(function) = function_drops {\n                    self.drop_value(f.clone(), function, span, &mut dropped)?;\n                }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^scan_drops_its_function_and_state.rs$"],
   },
 ];
