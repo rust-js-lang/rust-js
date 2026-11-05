@@ -112,12 +112,10 @@ pub(super) fn back_stepped<'tcx>(
                         // A held `Rev`'s, of an array's items too, which no
                         // form of the caller's reverses once it's held.
                         // And a map whose closure has a destructor, held in a
-                        // variable too. And a flatten, which no form of its own
-                        // steps from the back, made `$flattenEnds` where it's
-                        // asked anyway: made so where it's made, as MIR may
-                        // hold it in a variable before its `rev()`, past a
-                        // call whose cleanup drops what's live (#702), but
-                        // of items that are std's adapters.
+                        // variable too. Not a flatten the `rev()` asks itself,
+                        // which stays made in place up to its `rev()`, past
+                        // calls that unwind to the same cleanup (#723), and is
+                        // made `$flattenEnds` there.
                         // And an enumeration of std's struct, `$enumerate` of
                         // it, which no form of its own steps from the back
                         // (#712).
@@ -127,7 +125,6 @@ pub(super) fn back_stepped<'tcx>(
                             || held_arg
                             || dropping_items(recognition, held, &drops)
                             || closure_drops(tcx, held, &drops)
-                            || flatten_of_known_items(recognition, held)
                             || enumerates_a_compiled_struct(tcx, held)
                         {
                             let made_apart = given || held_rev || held_arg;
@@ -265,20 +262,6 @@ fn back_stepped_adapter<'tcx>(
         && !dropping_items(recognition, adapter, &drops)
         && !closure_drops(tcx, adapter, &drops);
     (!native).then(|| tcx.erase_and_anonymize_regions(adapter))
-}
-
-/// Whether `adapter` is a flatten whose items are made knowing their backs
-/// alike where it's made and where it's stepped: an array's, a `Vec`'s or
-/// the crate's own iterators. Not std's adapters a closure gives,
-/// `flat_map(|g| g.iter().map(f))`'s, whose JS chain where the flatten is
-/// made is taken for std's struct, which steps nothing of it (#702).
-fn flatten_of_known_items<'tcx>(recognition: Recognition<'_, 'tcx>, adapter: Ty<'tcx>) -> bool {
-    let tcx = recognition.tcx;
-    let Some((source, made)) = flattened_source(tcx, adapter) else {
-        return false;
-    };
-    let item = made.or_else(|| recognition.iterator_item(source.peel_refs()));
-    !item.is_some_and(|item| matches!(item.peel_refs().kind(), ty::Adt(a, _) if is_iter_adapter_def(tcx, a.did())))
 }
 
 /// `stepped`, the types stepped from their back, and each map or filter

@@ -472,3 +472,20 @@ right already, `$flatMap`'s; both ends of `$flattenEnds` share the fix.
 `test/corpus/flatten_fold_closure_panics.rs` checks an `rfold`, a `fold`
 and an `rfold` after a `next_back()` against native Rust in both builds;
 the mutation is `flatten-ends-made-unstaged` (`runtime/back_steps.ts`).
+
+## Amendment: a flatten a `rev()` asks is made in place up to it (2026-11-05, #718)
+
+#702 made a flatten a `rev()` asks to be double-ended knowing its back
+where it's made, as MIR held it in a variable before its `rev()`, past a
+call whose cleanup seemed to differ, and its form was gone; but not of
+items that are std's adapters a closure gives (`flatten_of_known_items`),
+whose JS chain was taken for std's compiled `Map`. Both are redundant
+now. #716 reads a `flat_map()`'s closure's chain by its own fact, and
+#723 makes calls that unwind to the same drops share one cleanup, so the
+flatten stays made in place up to its `rev()` and `as_double_ended`
+makes it `$flattenEnds` there, as before. Their mutations,
+`flatten-of-adapters-recorded` and `flatten-asked-unrecorded`, both
+survived on main, and both rules are gone with them. A flatten inside
+what's asked, a map's source, say, is still recorded with the rest
+(`back_stepped_adapter`). The corpus, as the crate builds it and with
+std's iterator structs, runs as before; no snapshot changed.

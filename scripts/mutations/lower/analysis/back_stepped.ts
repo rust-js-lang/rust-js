@@ -293,24 +293,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
   },
   {
-    name: "flatten-asked-unrecorded",
-    breaks:
-      "a flatten a `rev()` asks to be double-ended isn't made knowing its back where it's made: one MIR holds in a variable before its `rev()`, past a call whose cleanup drops what's live beside it, is refused (#702)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                            || flatten_of_known_items(recognition, held)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
-  },
-  {
-    name: "flatten-of-adapters-recorded",
-    breaks:
-      "a `flat_map` whose closure gives std's adapter, `groups.iter().flat_map(|g| g.iter().map(f)).rev()`, is made knowing its back where it's made, its JS `.map` taken for std's struct: its `rev().collect()` is empty (#702)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "    !item.is_some_and(|item| matches!(item.peel_refs().kind(), ty::Adt(a, _) if is_iter_adapter_def(tcx, a.did())))\n",
-    replace: "    item.is_some() || true\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_of_iterators_from_back.rs$"],
-  },
-  {
     name: "chain-of-droppers-asked-unrecorded",
     breaks:
       "a chain of items with a destructor a `rev()` asks to be double-ended isn't made knowing its back where it's made: MIR holds it in a variable to drop them, so its `rev().fold()` is refused (#718)",
