@@ -205,6 +205,16 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       { fold: "fold", tryFold: "tryFold" },
       (g, unwind) => (a, x) => ($kept(keep, drop, x, i++, a, unwind) ? g(a, x) : a),
     );
+    // Std's `Filter::size_hint`, none to its source's upper bound.
+    kept.sizeHint = () => $upperOnly(this);
+    // Std's `Filter::count`: its source's hint asked first, then each kept
+    // counted (filter.rs:135).
+    $forward(kept, this, {
+      count: (drop) => {
+        $sizeHint(this);
+        return $Steps.prototype.count.call(kept, drop);
+      },
+    });
     return kept;
   }
   // Std's `FlatMap`: each item of what `f` makes of each of its source's,
@@ -229,7 +239,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
             ended = true;
             return step;
           }
-          inner = Iterator.from(f(step.value, i++));
+          inner = Iterator.from($innerOf(f(step.value, i++)));
         }
       },
       // Its source, then the inner it's in, in `FlattenCompat`'s field
@@ -274,7 +284,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       folded = this.tryFold(
         folded,
         (a, x) => {
-          inner = Iterator.from(unwind === undefined ? f(x, i++) : $staged(f, x, i++, a, unwind));
+          inner = Iterator.from($innerOf(unwind === undefined ? f(x, i++) : $staged(f, x, i++, a, unwind)));
           const made = $lent(inner).tryFold(a, g, broke, unwind);
           if (!broke(made)) inner = undefined;
           return made;
@@ -286,6 +296,11 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       return folded;
     };
     $forward(flat, this, { fold, tryFold });
+    // Std's `FlattenCompat::size_hint` (flatten.rs:534): the one it's in's,
+    // then its source's, fused, none of a source it's done with; where its
+    // source may give more, each of which may give any number, no upper
+    // bound.
+    flat.sizeHint = () => $flatHint(inner, ended ? undefined : this);
     return flat;
   }
   // Std's `Take`: each of its `n` steps steps its source, a `None` too.
@@ -380,6 +395,8 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       return counted;
     };
     $forward(taken, this, { nth, tryFold, fold, advanceBy, count });
+    // Std's `Take::size_hint`, of what it has left to take.
+    taken.sizeHint = () => $takeHint(this, n);
     return taken;
   }
   // Std's `Skip`, JS's name for it: the one `Skip`, `$skipping`'s, of its
@@ -394,6 +411,13 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
 // held chain's `b` is its owner's to drop (#243); else its iterator.
 function $stepsOf(items) {
   return items instanceof $Steps ? items : items[Symbol.iterator]();
+}
+
+// What a flatten steps of each item of its source, `made`: of an array,
+// its `$iter`, which knows how many it has left, as a `Vec`'s `IntoIter`
+// does, so the flatten's hint is std's (#733); else what it is.
+function $innerOf(made) {
+  return Array.isArray(made) ? $iter(made) : made;
 }
 
 // `it.filter(keep)` of items with a destructor, each it doesn't keep

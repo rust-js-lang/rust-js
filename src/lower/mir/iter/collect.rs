@@ -737,6 +737,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 },
             }
         } else if self.is_lang_adt(output, LangItem::String) {
+            // Of `char`s, its hint asked first, as std's `Extend<char>`
+            // reserves by it (string.rs:2507); of strings, none.
+            let chars = item.is_some_and(|item| item.peel_refs().is_char());
+            let it = match chars {
+                true => self.reserved_by_hint(it, iter_ty, None),
+                false => it,
+            };
             let items = match self.unwinding_collect(output, item, iter_ty, span)? {
                 // By its fold, as std's `String::extend` steps it,
                 // `for_each`'s: where a panic stops it, each adapter's fold
@@ -764,6 +771,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A panic that may stop it: a B-tree's, which std collects as a
             // `Vec` first, collected so; another's, which extends a new one,
             // `$mapFrom`, what's left then what it holds dropped (#423).
+            // Of a hash table's, its hint asked first, as hashbrown's
+            // `extend` reserves by it; a B-tree's is its `Vec`'s.
+            let it = match self.is_sorted(output) {
+                true => it,
+                false => self.reserved_by_hint(it, iter_ty, item),
+            };
             let unwinding = self.unwinding_collect(output, item, iter_ty, span)?;
             let (it, unwinds) = match unwinding {
                 Some(unwinding) if self.is_sorted(output) => (unwinding.collected(it, None), false),
@@ -779,6 +792,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             return Err(self.unsupported(span, &format!("`collect` into a `{output}`, from its MIR")));
         })
+    }
+
+    /// `it`, of type `iter_ty`, asked its `size_hint` before it's stepped,
+    /// as std's `extend` of a new `String` or hash table asks it, and room
+    /// for its lower bound reserved, `$reserveHint(it, size, align)`: of a
+    /// `String`'s bytes, `entry` none, else of a table's entries of type
+    /// `entry`, of a type parameter's of its count alone, as
+    /// `table_room_for` asks it. Only where asking it may run what the
+    /// program sees (`hint_reaches_own`), as std's own hints change
+    /// nothing but that room, which no JS string or table reaches (#733).
+    fn reserved_by_hint(&self, it: Expr, iter_ty: Option<Ty<'tcx>>, entry: Option<Ty<'tcx>>) -> Expr {
+        if !iter_ty.is_some_and(|iter_ty| self.hint_reaches_own(iter_ty)) {
+            return it;
+        }
+        let mut args = vec![it];
+        match entry {
+            None => args.push(Expr::int(1)),
+            Some(entry) => {
+                let (size, align) = match self.layout(entry) {
+                    Some(layout) => (i128::from(layout.size.bytes()), i128::from(layout.align.abi.bytes())),
+                    None => (0, 1),
+                };
+                args.extend([Expr::int(size), Expr::int(align)]);
+            }
+        }
+        Expr::call_helper("$reserveHint", args)
     }
 
     /// `items` made a collection of the crate's own, `output`, by its

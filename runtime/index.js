@@ -1663,6 +1663,16 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       { fold: "fold", tryFold: "tryFold" },
       (g, unwind) => (a, x) => ($kept(keep, drop, x, i++, a, unwind) ? g(a, x) : a),
     );
+    // Std's `Filter::size_hint`, none to its source's upper bound.
+    kept.sizeHint = () => $upperOnly(this);
+    // Std's `Filter::count`: its source's hint asked first, then each kept
+    // counted (filter.rs:135).
+    $forward(kept, this, {
+      count: (drop) => {
+        $sizeHint(this);
+        return $Steps.prototype.count.call(kept, drop);
+      },
+    });
     return kept;
   }
   // Std's `FlatMap`: each item of what `f` makes of each of its source's,
@@ -1687,7 +1697,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
             ended = true;
             return step;
           }
-          inner = Iterator.from(f(step.value, i++));
+          inner = Iterator.from($innerOf(f(step.value, i++)));
         }
       },
       // Its source, then the inner it's in, in `FlattenCompat`'s field
@@ -1732,7 +1742,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       folded = this.tryFold(
         folded,
         (a, x) => {
-          inner = Iterator.from(unwind === undefined ? f(x, i++) : $staged(f, x, i++, a, unwind));
+          inner = Iterator.from($innerOf(unwind === undefined ? f(x, i++) : $staged(f, x, i++, a, unwind)));
           const made = $lent(inner).tryFold(a, g, broke, unwind);
           if (!broke(made)) inner = undefined;
           return made;
@@ -1744,6 +1754,11 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       return folded;
     };
     $forward(flat, this, { fold, tryFold });
+    // Std's `FlattenCompat::size_hint` (flatten.rs:534): the one it's in's,
+    // then its source's, fused, none of a source it's done with; where its
+    // source may give more, each of which may give any number, no upper
+    // bound.
+    flat.sizeHint = () => $flatHint(inner, ended ? undefined : this);
     return flat;
   }
   // Std's `Take`: each of its `n` steps steps its source, a `None` too.
@@ -1838,6 +1853,8 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       return counted;
     };
     $forward(taken, this, { nth, tryFold, fold, advanceBy, count });
+    // Std's `Take::size_hint`, of what it has left to take.
+    taken.sizeHint = () => $takeHint(this, n);
     return taken;
   }
   // Std's `Skip`, JS's name for it: the one `Skip`, `$skipping`'s, of its
@@ -1852,6 +1869,13 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
 // held chain's `b` is its owner's to drop (#243); else its iterator.
 export function $stepsOf(items) {
   return items instanceof $Steps ? items : items[Symbol.iterator]();
+}
+
+// What a flatten steps of each item of its source, `made`: of an array,
+// its `$iter`, which knows how many it has left, as a `Vec`'s `IntoIter`
+// does, so the flatten's hint is std's (#733); else what it is.
+export function $innerOf(made) {
+  return Array.isArray(made) ? $iter(made) : made;
 }
 
 // `it.filter(keep)` of items with a destructor, each it doesn't keep
@@ -2600,6 +2624,8 @@ export function $closing(it, drop, slices = true) {
   // Its length, its iterator's, where it knows it: what an `enumerate`
   // stepped from its back counts by (#211).
   if (it.len !== undefined) closing.len = () => it.len();
+  // Its hint, what it steps', as dropping it adds no step (#733).
+  closing.sizeHint = () => $sizeHint(it);
   // Its `nth`, its iterator's, the crate's own where it writes one, or a
   // compiled std struct's, which drops what it passes itself, `ownNth`, as
   // a `step_by` over it asks it (#261), given the items' drop, which std's
@@ -3032,10 +3058,8 @@ export function $taking(iter, n, drop) {
   );
   taking.iter = iter;
   taking.n = n;
-  taking.sizeHint = () => {
-    const [low, high] = $sizeHint(taking.iter);
-    return [Math.min(low, taking.n), high === undefined ? taking.n : Math.min(high, taking.n)];
-  };
+  // Std's `Take::size_hint`, of what it has left to take.
+  taking.sizeHint = () => $takeHint(taking.iter, taking.n);
   // Std's `Take::next_back`: its source's `nth_back` past what it won't
   // give, the crate's own where it reaches it (#220).
   taking.back = () => {
@@ -4006,6 +4030,8 @@ export function $lazyScan(items, init, f, handle = true, drop = undefined) {
     return folded;
   };
   $forward(scanning, source, { tryFold, fold });
+  // Std's `Scan::size_hint`, none to its source's upper bound.
+  scanning.sizeHint = () => $upperOnly(source);
   scanning.from = [source];
   return scanning;
 }
@@ -8626,6 +8652,23 @@ export function $roomForHint(it, size, trusted, endless = false, drop) {
   return steps;
 }
 
+// `it`, asked its hint before it's stepped, as std's `extend` of a new
+// `String` or hash table asks it, and room reserved for its lower bound
+// (string.rs:2507, hashbrown's `extend`): of a `String`'s bytes, no
+// `align`, else of a table's entries of `size` bytes aligned to `align`.
+// Where that throws, a panic, `it` is closed, as `extend` drops it (#733).
+export function $reserveHint(it, size, align) {
+  try {
+    const [lower] = $sizeHint(it);
+    if (align === undefined) $roomFor(lower, size);
+    else $tableRoomFor(lower, size, align);
+  } catch (error) {
+    it.return?.();
+    throw error;
+  }
+  return it;
+}
+
 // `s.reserve(additional)` of a `String`: room for its bytes and as many
 // more, its bytes counted only where they may not fit, as each of its
 // UTF-16 units is at most three.
@@ -11788,6 +11831,48 @@ export function $sizeHint(it, iterator) {
   return left === undefined ? [0, undefined] : [left, left];
 }
 
+// Std's hint of an adapter that may give fewer than its source, none at
+// all: `(0, upper)`, its source's upper bound, as `Filter`, `FilterMap`,
+// `SkipWhile`, `TakeWhile`, `MapWhile` and `Scan` give it (filter.rs:118,
+// filter_map.rs:126, skip_while.rs:65, take_while.rs:59, map_while.rs:49,
+// scan.rs:51).
+export function $upperOnly(source) {
+  return [0, $sizeHint(source)[1]];
+}
+
+// Std's `Take::size_hint` of what it has left to take, `n`, of `source`
+// (take.rs:73): none, without asking `source`, where it has none left;
+// else the fewer of its source's and `n`, both ways, `n` its upper bound
+// where its source has none.
+export function $takeHint(source, n) {
+  if (n === 0) return [0, 0];
+  const [low, high] = $sizeHint(source);
+  return [Math.min(low, n), high === undefined ? n : Math.min(high, n)];
+}
+
+// Two hints' sum, std's `Chain`'s and `Peekable`'s (chain.rs:182,
+// peekable.rs:76): the lower bounds' a `usize`'s `saturating_add`, the
+// upper ones' its `checked_add`, none past `usize::MAX` or where either
+// has none.
+export function $hintSum([aLow, aHigh], [bLow, bHigh]) {
+  const max = 2 ** 32 - 1;
+  const high = aHigh === undefined || bHigh === undefined || aHigh + bHigh > max ? undefined : aHigh + bHigh;
+  return [Math.min(aLow + bLow, max), high];
+}
+
+// Std's `FlattenCompat::size_hint` (flatten.rs:534): what's left of the
+// inner iterators it's in, `front` and `back`, each asked where it has
+// one, then its source's, `source`, fused, so `undefined` once it's done
+// with it. Where its source may give more, each of which may give any
+// number, no upper bound.
+export function $flatHint(front, source, back) {
+  const none = [0, 0];
+  const [low, high] = $hintSum(front === undefined ? none : $sizeHint(front), back === undefined ? none : $sizeHint(back));
+  if (source === undefined) return [low, high];
+  const [sourceLow, sourceHigh] = $sizeHint(source);
+  return [low, sourceLow === 0 && sourceHigh === 0 ? high : undefined];
+}
+
 // UTF-8 as Rust validates it (`core::str::validations`): the first bad
 // sequence from `from`, `[at, length]`, its length `undefined` where the
 // bytes end inside one, or `undefined` where there's none.
@@ -13004,6 +13089,12 @@ export function $lazyChain(a, b) {
   }
   // Its sides, `a` let go as it's taken, as std's `last` takes them
   // (`$lastDropping`, #232).
+  // Std's `Chain::size_hint` (chain.rs:182): of the side it has left, or
+  // of both, summed, its first side asked first; of none, none.
+  chained.sizeHint = () => {
+    if (first === undefined) return second === undefined ? [0, 0] : $sizeHint(second);
+    return second === undefined ? $sizeHint(first) : $hintSum($sizeHint(first), $sizeHint(second));
+  };
   chained.sides = () => {
     const a = first;
     first = undefined;
@@ -13130,7 +13221,7 @@ export function $flatMap(it, f) {
           it.return?.();
           return outer;
         }
-        inner = $stepsOf(f(outer.value));
+        inner = $stepsOf($innerOf(f(outer.value)));
       }
     },
     // Its inner iterator dropped though its source's drop throws, a panic,
@@ -13185,7 +13276,7 @@ export function $flatMap(it, f) {
     folded = $lent(it).tryFold(
       folded,
       (a, x) => {
-        inner = $stepsOf(unwind === undefined ? f(x) : $staged(f, x, undefined, a, unwind));
+        inner = $stepsOf($innerOf(unwind === undefined ? f(x) : $staged(f, x, undefined, a, unwind)));
         const made = $lent(inner).tryFold(a, g, broke, unwind);
         if (!broke(made)) inner = undefined;
         return made;
@@ -13223,6 +13314,9 @@ export function $flatMap(it, f) {
   // What std's `Flatten::last` takes, its inner iterator stepped part-way,
   // its source, unless it's ended, fused as std's is, and `f`, which make
   // the rest, let go as they're taken (`$lastDropping`, #645).
+  // Std's `FlattenCompat::size_hint`, of the one it's in, then its
+  // source, fused.
+  flat.sizeHint = () => $flatHint(inner, ended ? undefined : it);
   flat.inners = () => {
     const front = inner;
     const source = ended ? undefined : it;
@@ -13347,6 +13441,9 @@ export function $lazyTakeWhile(items, keep, drop) {
     return folded;
   };
   $forward(taking, source, { tryFold, fold });
+  // Std's `TakeWhile::size_hint`: none once its predicate failed, else none
+  // to its source's upper bound (take_while.rs:59).
+  taking.sizeHint = () => (ended ? [0, 0] : $upperOnly(source));
   return taking;
 }
 
@@ -13391,6 +13488,8 @@ export function $lazyMapWhile(items, f, present) {
     return folded;
   };
   $forward(mapping, source, { tryFold, fold });
+  // Std's `MapWhile::size_hint`, none to its source's upper bound.
+  mapping.sizeHint = () => $upperOnly(source);
   return mapping;
 }
 
@@ -13455,6 +13554,9 @@ export function $lazySkipWhile(items, skip) {
     );
   };
   $forward(skipped, source, { tryFold, fold });
+  // Std's `SkipWhile::size_hint`, none to its source's upper bound, once
+  // it's done skipping too (skip_while.rs:65).
+  skipped.sizeHint = () => $upperOnly(source);
   skipped.from = [source];
   return skipped;
 }
@@ -14051,6 +14153,8 @@ export function $folded(it, firstByNext = false) {
       return list;
     }).values());
   const folded = Iterator.from({ next: () => listed().next() });
+  // Its hint, before it's folded, what it folds' (#733).
+  folded.sizeHint = () => (items === undefined ? $sizeHint(it) : [0, undefined]);
   return $forward(folded, it, {
     fold: (init, f, unwind, ends) => (items === undefined ? foldOf(init, f, unwind, ends) : listed().reduce(f, init)),
   });

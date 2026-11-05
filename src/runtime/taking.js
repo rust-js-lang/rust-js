@@ -14,10 +14,8 @@ function $taking(iter, n, drop) {
   );
   taking.iter = iter;
   taking.n = n;
-  taking.sizeHint = () => {
-    const [low, high] = $sizeHint(taking.iter);
-    return [Math.min(low, taking.n), high === undefined ? taking.n : Math.min(high, taking.n)];
-  };
+  // Std's `Take::size_hint`, of what it has left to take.
+  taking.sizeHint = () => $takeHint(taking.iter, taking.n);
   // Std's `Take::next_back`: its source's `nth_back` past what it won't
   // give, the crate's own where it reaches it (#220).
   taking.back = () => {

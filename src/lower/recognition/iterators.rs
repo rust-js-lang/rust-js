@@ -1251,6 +1251,31 @@ pub(crate) fn is_compiled_std_iterator(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     }))
 }
 
+/// The iterators std's adapter of type `ty` steps, `std::iter`'s struct
+/// of them, `[I]` of a `Filter<I, P>`, `[A, B]` of a `Chain<A, B>`: each
+/// type it holds that's an iterator. `None` of another type, or of one of
+/// std's sources, `Repeat`'s, which holds none (#733).
+pub(crate) fn adapted_iterators<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    ty: Ty<'tcx>,
+) -> Option<Vec<Ty<'tcx>>> {
+    let ty::Adt(adt, args) = ty.peel_refs().kind() else {
+        return None;
+    };
+    if !std_path(tcx, adt.did()).starts_with("std::iter::") {
+        return None;
+    }
+    let iterator = std_item(tcx, StdItem::Iterator);
+    let held: Vec<_> = (args.types())
+        // A function it holds is none, which a generic one's closure, whose
+        // impls rustc can't say here, would otherwise be.
+        .filter(|&held| !matches!(held.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))
+        .filter(|&held| super::trait_holds_in(tcx, typing_env, held, iterator) != Some(false))
+        .collect();
+    (!held.is_empty()).then_some(held)
+}
+
 /// What std's `Enumerate` adapter of type `ty` counts, `I` of `Enumerate<I>`.
 pub(crate) fn enumerated_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     counted_adapter(tcx, ty).and_then(|(kind, _, source)| (kind == Counted::Enumerate).then_some(source))

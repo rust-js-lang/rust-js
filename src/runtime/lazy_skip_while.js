@@ -60,6 +60,9 @@ function $lazySkipWhile(items, skip) {
     );
   };
   $forward(skipped, source, { tryFold, fold });
+  // Std's `SkipWhile::size_hint`, none to its source's upper bound, once
+  // it's done skipping too (skip_while.rs:65).
+  skipped.sizeHint = () => $upperOnly(source);
   skipped.from = [source];
   return skipped;
 }

@@ -18,3 +18,45 @@ function $sizeHint(it, iterator) {
   const left = Array.isArray(it.items) ? it.end - it.at : undefined;
   return left === undefined ? [0, undefined] : [left, left];
 }
+
+// Std's hint of an adapter that may give fewer than its source, none at
+// all: `(0, upper)`, its source's upper bound, as `Filter`, `FilterMap`,
+// `SkipWhile`, `TakeWhile`, `MapWhile` and `Scan` give it (filter.rs:118,
+// filter_map.rs:126, skip_while.rs:65, take_while.rs:59, map_while.rs:49,
+// scan.rs:51).
+function $upperOnly(source) {
+  return [0, $sizeHint(source)[1]];
+}
+
+// Std's `Take::size_hint` of what it has left to take, `n`, of `source`
+// (take.rs:73): none, without asking `source`, where it has none left;
+// else the fewer of its source's and `n`, both ways, `n` its upper bound
+// where its source has none.
+function $takeHint(source, n) {
+  if (n === 0) return [0, 0];
+  const [low, high] = $sizeHint(source);
+  return [Math.min(low, n), high === undefined ? n : Math.min(high, n)];
+}
+
+// Two hints' sum, std's `Chain`'s and `Peekable`'s (chain.rs:182,
+// peekable.rs:76): the lower bounds' a `usize`'s `saturating_add`, the
+// upper ones' its `checked_add`, none past `usize::MAX` or where either
+// has none.
+function $hintSum([aLow, aHigh], [bLow, bHigh]) {
+  const max = 2 ** 32 - 1;
+  const high = aHigh === undefined || bHigh === undefined || aHigh + bHigh > max ? undefined : aHigh + bHigh;
+  return [Math.min(aLow + bLow, max), high];
+}
+
+// Std's `FlattenCompat::size_hint` (flatten.rs:534): what's left of the
+// inner iterators it's in, `front` and `back`, each asked where it has
+// one, then its source's, `source`, fused, so `undefined` once it's done
+// with it. Where its source may give more, each of which may give any
+// number, no upper bound.
+function $flatHint(front, source, back) {
+  const none = [0, 0];
+  const [low, high] = $hintSum(front === undefined ? none : $sizeHint(front), back === undefined ? none : $sizeHint(back));
+  if (source === undefined) return [low, high];
+  const [sourceLow, sourceHigh] = $sizeHint(source);
+  return [low, sourceLow === 0 && sourceHigh === 0 ? high : undefined];
+}

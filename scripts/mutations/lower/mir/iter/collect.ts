@@ -439,9 +439,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `collect` into a `String` a panic may stop leaves what's left of its owning source undropped (#423)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        } else if self.is_lang_adt(output, LangItem::String) {\n            let items = match self.unwinding_collect(output, item, iter_ty, span)? {",
-    replace:
-      "        } else if self.is_lang_adt(output, LangItem::String) {\n            let items = match None::<UnwindingCollect> {",
+    find: "            };\n            let items = match self.unwinding_collect(output, item, iter_ty, span)? {",
+    replace: "            };\n            let items = match None::<UnwindingCollect> {",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
@@ -846,5 +845,21 @@ export const mutations: Mutation[] = [
       "-t",
       "enum_order|opaque_iterators|generic_as_ref|returned_references",
     ],
+  },
+  {
+    name: "string-collect-asks-no-hint",
+    breaks: "a collect into a `String` of `char`s asks no hint before it steps, as std's `Extend<char>` does (#733)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                true => self.reserved_by_hint(it, iter_ty, None),\n",
+    replace: "                true => it,\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
+  {
+    name: "table-collect-asks-no-hint",
+    breaks: "a collect into a `HashSet` asks no hint before it steps, as hashbrown's `extend` does (#733)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                false => self.reserved_by_hint(it, iter_ty, item),\n",
+    replace: "                false => it,\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
   },
 ];

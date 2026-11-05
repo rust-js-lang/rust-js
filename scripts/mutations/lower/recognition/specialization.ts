@@ -93,4 +93,12 @@ export const mutations: Mutation[] = [
     replace: "        return Some(InPlaceSource::Never);\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
   },
+  {
+    name: "from-iter-iterator-its-items",
+    breaks: "`Vec::from_iter(iter)` of a type parameter's iterator asks its caller nothing, so it's refused, `the buffer std collects an iterator in place in` (#737)",
+    file: "src/lower/recognition/specialization.rs",
+    find: '        (projected(into_iter, "IntoIter", args.type_at(2)), args.type_at(0))\n',
+    replace: '        (projected(into_iter, "IntoIter", args.type_at(1)), args.type_at(0))\n',
+    tests: ["test/corpus.test.ts", "-t", "^generic_from_iter_in_place.rs$"],
+  },
 ];

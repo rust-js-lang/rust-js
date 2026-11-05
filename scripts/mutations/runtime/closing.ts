@@ -292,4 +292,12 @@ export const mutations: Mutation[] = [
     replace: "  const holding = $closing(it, (it) => {\n    it.return();\n    own();\n  });\n",
     tests: ["test/corpus.test.ts", "-t", "^parts_close_past_a_panic.rs$"],
   },
+  {
+    name: "closing-hint-dropped",
+    breaks: "what's closed where it's dropped, a `Vec`'s of what drops, has no hint, so its `rev().filter()`'s is `(0, None)` (#733)",
+    file: "src/runtime/closing.js",
+    find: "  closing.sizeHint = () => $sizeHint(it);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
 ];

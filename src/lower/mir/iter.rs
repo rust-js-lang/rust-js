@@ -94,6 +94,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     fn size_hint_of(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, span: Span, made: &mut Vec<Stmt>) -> R<Expr> {
+        // Of a string's `char`s, whose hint is of the bytes it has left,
+        // `(bytes.div_ceil(4), Some(bytes))` (str/iter.rs:100), not of how
+        // many it has, which its JS counted (#733): std's struct's,
+        // compiled, or refused.
+        let of_text = (iter_ty.walk().filter_map(|held| held.as_type())).any(|held| {
+            let text = self.recognition();
+            text.is_str_chars(held) || text.is_char_indices(held) || text.is_string_drain(held)
+        });
+        if of_text && !self.struct_hint_known(iter_ty) {
+            return Err(self.unsupported(span, &format!("`size_hint()` of a `{iter_ty}`, of a string's `char`s")));
+        }
         // Of one made here that `$sizeHint` can't ask, a JS helper's, a
         // slice's `skip(1)` say, counted where it's made, `len_in_place`'s:
         // that both ways, `(n, Some(n))`, as Rust's `ExactSizeIterator`
@@ -132,13 +143,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let known = match mapped {
             true => {
                 // Or of a type parameter's, its JS iterator's, `$given`'s, which
-                // has its dictionary's `size_hint` (#385).
+                // has its dictionary's `size_hint` (#385), or of std's adapter
+                // of one whose hint is std's (`adapted_hint_known`). Or where a
+                // `map` made of another adapter, an `enumerate()`'s, passes on
+                // its source's, as that adapter does (#733).
                 crate::lower::iterators::is_stepped_items(&it)
-                    || source_ty.is_some_and(|ty| {
-                        self.is_user_iterator(ty) || self.maps_the_crates_own(ty) || self.is_unknown(ty)
-                    })
+                    || source_ty.is_none() && self.adapted_hint_known(iter_ty)
+                    || source_ty.is_some_and(|ty| self.adapted_hint_known(ty))
             }
-            false => self.hints_its_size(iter_ty),
+            // Or of std's adapters of those, each a `$Steps` with std's
+            // hint (#733).
+            false => self.hints_its_size(iter_ty) || self.adapted_hint_known(iter_ty),
         };
         if !known {
             return Err(self.unsupported(span, &format!("`size_hint()` of a `{iter_ty}`, from its MIR")));
@@ -905,7 +920,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let inners_own = self
             .recognition()
             .reaches_its_own(revealed, OwnStep::Count, Reach::Sure);
+        // And a filter's, std's `Filter::count`, which asks its source's
+        // hint first, where that may reach what the program sees (#733).
+        let filter_asks = crate::lower::recognition::filtered_source(self.tcx, revealed)
+            .is_some_and(|source| !self.compiled_struct_at(revealed, span) && self.hint_reaches_own(source));
         let own_count = matches!(revealed.kind(), ty::Param(_))
+            || filter_asks
             || self.compiled_step(revealed, iterator, "count") && (!in_place_flatten || inners_own);
         if own_count {
             let mut given = vec![it];
@@ -951,13 +971,5 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.is_unknown(iter_ty)
             || self.explicit_adapter(iter_ty)
             || self.struct_hint_known(iter_ty)
-    }
-
-    /// Whether `iter_ty` is a `map` of the crate's own iterator, or of one
-    /// of those: a `$Steps`'s `map`, whose hint is its source's, as std's
-    /// `Map` passes it on.
-    fn maps_the_crates_own(&self, iter_ty: Ty<'tcx>) -> bool {
-        crate::lower::recognition::mapped_source(self.tcx, iter_ty.peel_refs())
-            .is_some_and(|source| self.is_user_iterator(source) || self.maps_the_crates_own(source))
     }
 }

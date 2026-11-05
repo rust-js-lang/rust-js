@@ -55,6 +55,8 @@ function $lazyScan(items, init, f, handle = true, drop = undefined) {
     return folded;
   };
   $forward(scanning, source, { tryFold, fold });
+  // Std's `Scan::size_hint`, none to its source's upper bound.
+  scanning.sizeHint = () => $upperOnly(source);
   scanning.from = [source];
   return scanning;
 }

@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "      const step = first(folded, unwind);\n      if (step.done) return folded;\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
   },
+  {
+    name: "skip-while-hint-dropped",
+    breaks: "a `skip_while()`'s hint is `(0, None)`, not its source's upper bound (#733)",
+    file: "src/runtime/lazy_skip_while.js",
+    find: "  skipped.sizeHint = () => $upperOnly(source);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
 ];

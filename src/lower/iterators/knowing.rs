@@ -116,6 +116,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.struct_hint_known(ty)
     }
 
+    /// Whether `size_hint()` of an iterator of type `ty` is std's where the
+    /// recognizers make it in place: what `held_hint_known` finds, of no
+    /// array's items, whose adapters are JS's own, which know no hint; or a
+    /// std adapter of such iterators, each a `$Steps`, whose `sizeHint` is
+    /// std's (ADR 1092's table), not of a type parameter's, whose JS
+    /// adapters may be JS's own (#733). A flatten asked its hint is std's
+    /// struct, compiled, whose hint of `[T; N]` is `N` times its source's.
+    pub(in crate::lower) fn adapted_hint_known(&self, ty: ty::Ty<'tcx>) -> bool {
+        let ty = ty.peel_refs();
+        if self.array_source(ty).is_some() {
+            return false;
+        }
+        if self.held_hint_known(ty) {
+            return true;
+        }
+        // Not of a type parameter's, which its caller may give as JS's own
+        // iterator, an array's, whose JS adapters know no hint.
+        crate::lower::recognition::adapted_iterators(self.tcx, self.typing_env, ty).is_some_and(|held| {
+            (held.into_iter()).all(|held| !self.is_unknown(held.peel_refs()) && self.adapted_hint_known(held))
+        })
+    }
+
     /// Whether a compiled std iterator of type `ty` knows its hint, its
     /// struct's own, of what it holds: where each iterator it holds is one
     /// whose size `held_hint_known` finds.
@@ -785,16 +807,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it as it is. `None` of one that has std's, `(0, None)`, which
     /// `$sizeHint` gives too.
     pub(super) fn own_size_hint(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        if !self.writes_size_hint(ty) {
+            return Ok(None);
+        }
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        Ok(Some(self.user_next(ty, iterator, "size_hint", span)?.0))
+    }
+
+    /// Whether the crate's iterator `ty`'s impl writes a `size_hint` of its
+    /// own, which rust-js compiled, not std's `(0, None)`. The one answer,
+    /// of what's given it and what may reach it (`hint_reaches_own`).
+    fn writes_size_hint(&self, ty: ty::Ty<'tcx>) -> bool {
         let iterator = std_item(self.tcx, StdItem::Iterator);
         let size_hint = trait_method(self.tcx, iterator, "size_hint");
         let args = self.args_of(iterator, ty.peel_refs());
-        let own = self
-            .resolve_instance(size_hint, args)?
-            .is_some_and(|instance| instance.def_id() != size_hint && self.is_rust_fn(instance.def_id()));
-        if !own {
-            return Ok(None);
+        self.resolve_instance(size_hint, args)
+            .ok()
+            .flatten()
+            .is_some_and(|instance| instance.def_id() != size_hint && self.is_rust_fn(instance.def_id()))
+    }
+
+    /// Whether asking `size_hint` of an iterator of type `ty` may run what
+    /// the program can see: the crate's own `size_hint`, or one that std's
+    /// adapter of type `ty` asks, as each asks its source's (ADR 1092's
+    /// table). Where it can't, asking it changes nothing but the room a
+    /// collect asks, which is std's own (#733). Not yet a type parameter's
+    /// or a `dyn Iterator`'s, which its caller's may be: generic code's JS
+    /// adapters of what it's given may be JS's own, which ask no hint, so
+    /// asking it there would change no answer.
+    pub(in crate::lower) fn hint_reaches_own(&self, ty: ty::Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        if self.is_user_iterator(ty) {
+            return self.writes_size_hint(ty);
         }
-        Ok(Some(self.user_next(ty, iterator, "size_hint", span)?.0))
+        crate::lower::recognition::adapted_iterators(self.tcx, self.typing_env, ty)
+            .is_some_and(|held| held.into_iter().any(|held| self.hint_reaches_own(held)))
     }
 
     /// What steps a compiled std iterator's struct of type `ty` where it's

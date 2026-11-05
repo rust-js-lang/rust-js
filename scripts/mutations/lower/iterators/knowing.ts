@@ -264,8 +264,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an iterator of the crate's with std's `size_hint` is given it as its own, a call of the provided method",
     file: "src/lower/iterators/knowing.rs",
-    find: "            .is_some_and(|instance| instance.def_id() != size_hint && self.is_rust_fn(instance.def_id()));\n",
-    replace: "            .is_some_and(|_| true);\n",
+    find: "            .is_some_and(|instance| instance.def_id() != size_hint && self.is_rust_fn(instance.def_id()))\n",
+    replace: "            .is_some_and(|_| true)\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
   },
   {
@@ -819,5 +819,37 @@ export const mutations: Mutation[] = [
       "-t",
       "the committed @rust-js/std is std|^skip_while_first_step_unwinds with",
     ],
+  },
+  {
+    name: "adapted-hint-of-params",
+    breaks: "`size_hint()` of a `filter()` of what generic code is given is `(0, None)` where its caller gives an array's iterator, not refused (#733)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "!self.is_unknown(held.peel_refs()) && self.adapted_hint_known(held)",
+    replace: "self.adapted_hint_known(held)",
+    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a filter of a type parameter's"],
+  },
+  {
+    name: "adapted-hint-of-arrays",
+    breaks: "`size_hint()` of JS's own `filter` of a slice's items is `(0, None)`, not refused (#733)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if self.array_source(ty).is_some() {\n            return false;\n        }\n        if self.held_hint_known(ty) {\n",
+    replace: "        if self.held_hint_known(ty) {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "the size hint of a peekable filter made here"],
+  },
+  {
+    name: "hint-reaches-own-never",
+    breaks: "a collect into a `String` of the crate's iterator's `char`s asks its hint not before it steps, as `Extend<char>` does (#733)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            return self.writes_size_hint(ty);\n",
+    replace: "            return false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
+  {
+    name: "hint-reaches-own-not-through-adapters",
+    breaks: "a collect into a `HashSet` of a `filter()` of the crate's iterator asks its hint not first, as hashbrown's `extend` does (#733)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            .is_some_and(|held| held.into_iter().any(|held| self.hint_reaches_own(held)))\n",
+    replace: "            .is_some_and(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
   },
 ];

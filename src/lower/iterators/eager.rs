@@ -587,7 +587,7 @@ pub(in crate::lower) fn consumed_into_iters(body: &mut Vec<Stmt>, fuse: Option<&
                 iterable, keys: false, ..
             } = &mut stmt.kind
             {
-                stepped_in_place(iterable, true, fuse);
+                stepped_through(iterable, true, fuse);
             }
         }
     });
@@ -601,20 +601,48 @@ pub(in crate::lower) fn consumed_into_iters(body: &mut Vec<Stmt>, fuse: Option<&
             && matches!(&array.kind, js::ExprKind::Var(v) if v == "Array")
             && let [it] = &mut args[..]
         {
-            stepped_in_place(it, false, fuse);
+            stepped_through(it, false, fuse);
         } else if let js::ExprKind::Member(object, method) = &mut callee.kind
-            && STEPPED_TILL_DONE.contains(&method.as_str())
+            && CONSUMED_TILL_DONE.contains(&method.as_str())
         {
-            // The crate's iterator a `map` steps keeps its `size_hint`,
-            // which the `map`'s is, as std's `Map` passes it on.
-            if method == "map" && crate::lower::iterators::stepped_value(object).is_some() {
-                return;
-            }
-            stepped_in_place(object, false, fuse);
-        } else if callee.helper_name().is_some_and(steps_all)
+            stepped_through(object, false, fuse);
+        } else if callee
+            .helper_name()
+            .is_some_and(|name| steps_all(name) || LAST_HELPERS.contains(&name))
             && let Some(first) = args.first_mut()
         {
-            stepped_in_place(first, false, fuse);
+            stepped_through(first, false, fuse);
         }
     });
+}
+
+/// `e`, stepped in place by what asks no `size_hint` of it, and each
+/// adapter's source under it, which its adapter steps so too: down from its
+/// consumer only, as a chain held, or asked its hint, `$sizeHint(..)` or
+/// `$roomForHint(..)`'s, keeps what its hint asks (#733).
+fn stepped_through(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
+    stepped_in_place(e, by_for, fuse);
+    let js::ExprKind::Call(callee, args) = &mut e.kind else {
+        return;
+    };
+    if callee
+        .helper_name()
+        .is_some_and(|name| ADAPTING_HELPERS.contains(&name))
+        && let Some(source) = args.first_mut()
+    {
+        stepped_through(source, false, fuse);
+        return;
+    }
+    let js::ExprKind::Member(object, method) = &mut callee.kind else {
+        return;
+    };
+    if !ADAPTED_TILL_DONE.contains(&method.as_str()) {
+        return;
+    }
+    // The crate's iterator a `map` steps keeps its `size_hint`, which the
+    // `map`'s is, as std's `Map` passes it on.
+    if method == "map" && crate::lower::iterators::stepped_value(object).is_some() {
+        return;
+    }
+    stepped_through(object, false, fuse);
 }

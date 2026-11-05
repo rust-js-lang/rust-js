@@ -133,6 +133,23 @@ function $roomForHint(it, size, trusted, endless = false, drop) {
   return steps;
 }
 
+// `it`, asked its hint before it's stepped, as std's `extend` of a new
+// `String` or hash table asks it, and room reserved for its lower bound
+// (string.rs:2507, hashbrown's `extend`): of a `String`'s bytes, no
+// `align`, else of a table's entries of `size` bytes aligned to `align`.
+// Where that throws, a panic, `it` is closed, as `extend` drops it (#733).
+function $reserveHint(it, size, align) {
+  try {
+    const [lower] = $sizeHint(it);
+    if (align === undefined) $roomFor(lower, size);
+    else $tableRoomFor(lower, size, align);
+  } catch (error) {
+    it.return?.();
+    throw error;
+  }
+  return it;
+}
+
 // `s.reserve(additional)` of a `String`: room for its bytes and as many
 // more, its bytes counted only where they may not fit, as each of its
 // UTF-16 units is at most three.

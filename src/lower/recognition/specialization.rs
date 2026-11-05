@@ -345,8 +345,10 @@ pub(crate) fn collected_items<'tcx>(
     } else if tcx.trait_of_assoc(callee) == Some(std_item(tcx, StdItem::FromIterator))
         && tcx.item_name(callee).as_str() == "from_iter"
     {
+        // `<C as FromIterator<A>>::from_iter::<T>`'s `T`, what it's given,
+        // not `A`, its items (#737).
         let into_iter = std_item(tcx, StdItem::IntoIterator);
-        (projected(into_iter, "IntoIter", args.type_at(1)), args.type_at(0))
+        (projected(into_iter, "IntoIter", args.type_at(2)), args.type_at(0))
     } else {
         return None;
     };

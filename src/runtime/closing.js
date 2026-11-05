@@ -51,6 +51,8 @@ function $closing(it, drop, slices = true) {
   // Its length, its iterator's, where it knows it: what an `enumerate`
   // stepped from its back counts by (#211).
   if (it.len !== undefined) closing.len = () => it.len();
+  // Its hint, what it steps', as dropping it adds no step (#733).
+  closing.sizeHint = () => $sizeHint(it);
   // Its `nth`, its iterator's, the crate's own where it writes one, or a
   // compiled std struct's, which drops what it passes itself, `ownNth`, as
   // a `step_by` over it asks it (#261), given the items' drop, which std's

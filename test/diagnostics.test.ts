@@ -188,6 +188,12 @@ for (const [name, source, message, crate] of [
   ["a map's key looked up through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(m: &std::collections::HashMap<Name, i32>) -> Option<&i32> { m.get(\"a\") }", "`std::collections::HashMap::<K, V, S, A>::get` of a `Name` as what its own `Borrow` gives"],
   ["items joined through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(v: &[Name]) -> String { v.join(\",\") }", "`std::slice::<impl [T]>::join` of a `Name` as what its own `Borrow` gives"],
   ["size_hint of an iterator whose hint isn't exact", "pub fn f(s: &str) -> usize { s.chars().size_hint().0 }", "`size_hint()` of a `std::str::Chars<'_>`"],
+  // Of what's made of a string's `chars()`, whose hint is of its bytes, not of how many it has,
+  // which its JS counted: `(5, Some(5))` where Rust gives `(2, Some(6))` (#733).
+  ["size_hint of a map of a string's chars", "pub fn f(s: &str) -> (usize, Option<usize>) { s.chars().map(|c| c as u32).size_hint() }", "of a string's `char`s"],
+  // An adapter of what generic code is given, whose JS may be JS's own adapter of an array's
+  // iterator, which knows no hint: `(0, None)` where Rust gives `(0, Some(3))` (#733).
+  ["size_hint of a filter of a type parameter's", "pub fn f<I: Iterator<Item = u32>>(it: I) -> (usize, Option<usize>) { it.filter(|x| *x > 1).size_hint() }", "`size_hint()` of a `std::iter::Filter<I, "],
   // A path's components are an array of them (ADR 0716), which keeps no path of what's left.
   ["what's left of a path's components", "use std::path::Path;\npub fn f(a: &Path) -> &Path { let mut c = a.components(); c.next(); c.as_path() }", "calling `std::path::Components::<'a>::as_path`"],
   ["a user impl of a std trait", 'pub struct C;\nimpl std::net::ToSocketAddrs for C { type Iter = std::vec::IntoIter<std::net::SocketAddr>; fn to_socket_addrs(&self) -> std::io::Result<Self::Iter> { Ok(Vec::new().into_iter()) } }', "user implementations of `std::net::ToSocketAddrs`"],

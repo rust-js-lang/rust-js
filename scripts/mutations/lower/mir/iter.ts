@@ -21,15 +21,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^enumerate_next_back_of_items.rs$"],
   },
   {
-    name: "generic-map-hint-refused",
-    breaks:
-      "`size_hint()` of a map of what's given as it is, `I: Clone`'s, is refused (#385)",
-    file: "src/lower/mir/iter.rs",
-    find: "self.is_user_iterator(ty) || self.maps_the_crates_own(ty) || self.is_unknown(ty)\n",
-    replace: "self.is_user_iterator(ty) || self.maps_the_crates_own(ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "^lengths_and_backs_given_on.rs$"],
-  },
-  {
     name: "copied-items-mapped-lengthless",
     breaks:
       "a `copied()` that knows its length, of items copied as it steps, is JS's `map` of them, whose `len()` throws (#387)",
@@ -421,14 +412,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
   {
-    name: "map-hint-of-own-refused",
-    breaks: "a map of the crate's iterator has its size_hint",
-    file: "src/lower/mir/iter.rs",
-    find: "                        self.is_user_iterator(ty) || self.maps_the_crates_own(ty) || self.is_unknown(ty)\n",
-    replace: "                        self.is_unknown(ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
-  },
-  {
     name: "identity-map-dropped-over-own-steps",
     breaks:
       "an identity `map` over the crate's iterator is dropped, so a `skip` and `last()` past it reach its own `nth` and `last`, which std's `Map` hides (#235)",
@@ -688,5 +671,53 @@ export const mutations: Mutation[] = [
     replace: "        let _ = span;\n        false\n",
     tests: ["test/corpus.test.ts", "-t", "^(rev_in_place_through_adapters|flat_map_of_maps_from_its_back|range_own_steps).rs$"],
     snapshots: true,
+  },
+  {
+    name: "adapter-hint-refused",
+    breaks: "`size_hint()` of std's adapter of the crate's iterator, `own.filter(f)`'s, is refused where its JS has std's (#733)",
+    file: "src/lower/mir/iter.rs",
+    find: "            false => self.hints_its_size(iter_ty) || self.adapted_hint_known(iter_ty),\n",
+    replace: "            false => self.hints_its_size(iter_ty),\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
+  {
+    name: "mapped-adapter-hint-refused",
+    breaks: "`size_hint()` of an `enumerate()` of the crate's iterator, made a `map`, is refused (#733)",
+    file: "src/lower/mir/iter.rs",
+    find: "                    || source_ty.is_none() && self.adapted_hint_known(iter_ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
+  {
+    name: "chars-hint-counted",
+    breaks: "`size_hint()` of a map of a string's `chars()` is how many it has, `(5, Some(5))`, where Rust's is of its bytes, `(2, Some(6))` (#733)",
+    file: "src/lower/mir/iter.rs",
+    find: "        if of_text && !self.struct_hint_known(iter_ty) {\n",
+    replace: "        if false {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a map of a string's chars"],
+  },
+  {
+    name: "chars-struct-hint-refused",
+    breaks: "`size_hint()` of std's compiled flatten of `chars()`, held, is refused, though its struct's hint is std's",
+    file: "src/lower/mir/iter.rs",
+    find: "        if of_text && !self.struct_hint_known(iter_ty) {\n",
+    replace: "        if of_text {\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_flatten.rs$"],
+  },
+  {
+    name: "filter-count-asks-no-hint",
+    breaks: "a `filter()`'s `count()` of the crate's iterator asks its source's hint not first, as std's `Filter::count` does (#733)",
+    file: "src/lower/mir/iter.rs",
+    find: "            || filter_asks\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
+  {
+    name: "mapped-hint-refused",
+    breaks: "`size_hint()` of a map of the crate's iterator, or of what's given as it is, `I: Clone`'s, is refused (#385, #733)",
+    file: "src/lower/mir/iter.rs",
+    find: "                    || source_ty.is_some_and(|ty| self.adapted_hint_known(ty))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^lengths_and_backs_given_on.rs$|^adapter_size_hints.rs$"],
   },
 ];

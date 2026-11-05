@@ -186,4 +186,12 @@ export const mutations: Mutation[] = [
     replace: "          throw error;\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
   },
+  {
+    name: "reserve-hint-unasked",
+    breaks: "a collect into a `String` of the crate's iterator asks its hint not before it steps, as `Extend<char>` does (#733)",
+    file: "src/runtime/capacity.js",
+    find: "    const [lower] = $sizeHint(it);\n    if (align === undefined) $roomFor(lower, size);\n",
+    replace: "    const lower = 0;\n    if (align === undefined) $roomFor(lower, size);\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
 ];

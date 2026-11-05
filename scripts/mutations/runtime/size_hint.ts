@@ -50,4 +50,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
   },
+  {
+    name: "upper-only-unbounded",
+    breaks: "a `filter()`'s hint is `(0, None)`, not `(0, Some(5))`, its source's upper bound (#733)",
+    file: "src/runtime/size_hint.js",
+    find: "  return [0, $sizeHint(source)[1]];\n",
+    replace: "  return [0, undefined];\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
+  {
+    name: "take-zero-asks-source",
+    breaks: "a `take(0)`'s hint asks its source, which std's `Take` doesn't (#733)",
+    file: "src/runtime/size_hint.js",
+    find: "  if (n === 0) return [0, 0];\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
 ];

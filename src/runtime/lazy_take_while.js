@@ -43,6 +43,9 @@ function $lazyTakeWhile(items, keep, drop) {
     return folded;
   };
   $forward(taking, source, { tryFold, fold });
+  // Std's `TakeWhile::size_hint`: none once its predicate failed, else none
+  // to its source's upper bound (take_while.rs:59).
+  taking.sizeHint = () => (ended ? [0, 0] : $upperOnly(source));
   return taking;
 }
 
@@ -87,5 +90,7 @@ function $lazyMapWhile(items, f, present) {
     return folded;
   };
   $forward(mapping, source, { tryFold, fold });
+  // Std's `MapWhile::size_hint`, none to its source's upper bound.
+  mapping.sizeHint = () => $upperOnly(source);
   return mapping;
 }

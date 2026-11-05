@@ -713,3 +713,61 @@ so does a gone one until its entry goes. They are the `$rev`, `$stepBy` and
 `$repeatingN` readers, whose makers aren't in value.rs yet (step 10), and the
 `$iterator`/`$knowing` readers of `OwnMethods` and tidy's `stepped_in_place`.
 
+## Amendment: each adapter's `sizeHint`, and who asks it (2026-11-05, #733 steps 1–3)
+
+G10 closes in three steps. ADR 0262's case each time: results change, so
+Rust's behavior is kept.
+
+**The runtime's adapters each have std's `sizeHint`**, beside their other
+steps, of the table above. Shared arithmetic sits in size_hint.js, one
+helper each, which the adapters call: `$upperOnly` (`Filter`, `FilterMap`,
+`SkipWhile`, `TakeWhile`, `MapWhile`, `Scan`), `$takeHint` (`$Steps.take`
+and `$taking`, none asked of its source at `n == 0`), `$hintSum`
+(`$lazyChain`, a gone side not asked), and `$flatHint` (`$Steps.flatMap`
+and `$flatMap`: front, then back, then the source, fused, no upper bound
+while the source may give more). `$closing` passes on what it steps', as
+dropping adds no step, and `$folded` what it folds', before it's folded. A flatten's inner `Vec` is stepped as `$iter`
+(`$innerOf`), so what it has left is known, as a `Vec`'s `IntoIter` knows.
+
+**`size_hint()` reaches `$sizeHint`** of std's adapters of what's a `$Steps`
+with std's hint: the crate's own, a range, an explicit adapter, a compiled
+struct, a type parameter. `knowing.rs`'s `adapted_hint_known` is that one
+answer, over `recognition::adapted_iterators`. Still refused:
+
+- a chain of an array's items, whose adapters are JS's own (the
+  coordinator's choice B);
+- a string's `chars()` and what it makes, whose hint is of its bytes,
+  `(bytes.div_ceil(4), Some(bytes))`, where its JS counted the `char`s and
+  gave a wrong answer.
+
+A flatten asked its hint is std's struct, compiled where it's made, whose
+hint of `[T; N]` is `N` times its source's.
+
+A `$iterator`'s `size_hint` argument is left off only down from a consumer
+that asks no hint (a `for`, `Array.from`, `reduce`, `forEach`, `some`,
+`every`, `find`, the helpers that step all), through the JS adapters
+(`stepped_through`). Before, any `take`, `drop`, `filter` or `flatMap`
+stripped it, so `own.take(3).size_hint()` lost the crate's hint.
+
+**What asks the hint asks it where std does**, wherever it may run what
+the program sees: `knowing.rs`'s `hint_reaches_own(ty)`, of the crate's own
+`size_hint`, a type parameter's, a `dyn`'s, or what std's adapters ask of
+those. Elsewhere the hint is std's own and changes only room no JS string
+or table reaches.
+
+- A collect into a `String` of `char`s, or into a `HashMap` or `HashSet`,
+  is given `$reserveHint(it, size, align)`. It asks the hint once, before
+  stepping, and reserves room for its lower bound, as `Extend<char>`
+  (string.rs:2507) and hashbrown's `extend` do. A `BTreeMap`'s is its
+  `Vec`'s.
+- A `filter()`'s `count()` asks its source's hint first, std's
+  `Filter::count` (filter.rs:135), as `$Steps.filter`'s own `count`.
+
+Generic code's collects ask none yet: its JS adapters of what it's given
+may be JS's own, of an array's iterator, which ask no hint, so the caller's
+hint isn't reached. Their cases stay listed under #733 until the caller's
+dictionary gives the hint through `$given`, the next step.
+
+A collect into a `Vec` asks it as it grows (`$roomForHint`) only of std's
+compiled structs still. Giving it to the recognizers' chains, step 4,
+changes the default build's output and is the user's decision.

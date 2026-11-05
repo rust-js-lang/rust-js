@@ -663,7 +663,12 @@ What's refused is in [the limitations](limitations.md).
   crate's runs from both ends by its own `next_back`, `rev()` included, and
   its `len()` is its `size_hint()`, checked ([0164](../decisions/0164-double-ended-iterators.md)).
   `size_hint()` is Rust's where it's known: std's `(0, None)` of one of the
-  crate's, a std `ExactSizeIterator`'s length ([0170](../decisions/0170-size-hint.md)).
+  crate's, a std `ExactSizeIterator`'s length ([0170](../decisions/0170-size-hint.md)),
+  and each std adapter's of the crate's iterator or a range, which asks
+  its source's where std's does. A collect into a `String` of `char`s or a
+  hash table asks the crate's hint once before it steps, as their `extend`
+  reserves by it, `$reserveHint(it, 1)`, and a `filter()`'s `count()` its
+  source's first ([1092](../decisions/1092-the-iterator-protocol-is-one-contract.md)).
 - **`len()` of an iterator made where it's asked is counted, not
   stepped:** each adapter's is its source's, as std's: `v.iter().map(f).len()`
   is `v.length`, and `f` isn't called; `take(n)`'s is `Math.min(len, n)`,

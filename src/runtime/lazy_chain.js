@@ -237,6 +237,12 @@ function $lazyChain(a, b) {
   }
   // Its sides, `a` let go as it's taken, as std's `last` takes them
   // (`$lastDropping`, #232).
+  // Std's `Chain::size_hint` (chain.rs:182): of the side it has left, or
+  // of both, summed, its first side asked first; of none, none.
+  chained.sizeHint = () => {
+    if (first === undefined) return second === undefined ? [0, 0] : $sizeHint(second);
+    return second === undefined ? $sizeHint(first) : $hintSum($sizeHint(first), $sizeHint(second));
+  };
   chained.sides = () => {
     const a = first;
     first = undefined;

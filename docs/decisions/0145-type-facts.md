@@ -209,3 +209,15 @@ collected or what's left first. Asked of the type parameter whose
 iterator the adapters keep, and given by its caller, of the same
 `recognition::in_place_source`; of a type that holds one, `Map<J, F>`'s,
 `J`'s ([0465](0465-dropping-an-adapter-is-closing-it.md), amended).
+
+## Amendment (2026-11-05): `from_iter`'s iterator is its `T` (#737)
+
+The analysis reads what a call collects of `recognition::collected_items`,
+the one answer the lowering's `rest_dropped_first` reads too. Of
+`<C as FromIterator<A>>::from_iter::<T>`, it read the iterator off `A`, the
+items, not `T`, what it's given. So `Vec::from_iter(iter)` of a type
+parameter's iterator asked its caller for nothing, and the lowering
+refused it (`the buffer std collects an iterator in place in`, or `size_of`
+of a type parameter, as itertools' `sorted_by` refused). It reads `T` now,
+so the caller gives `IInPlace`, `TSize` and `TAlign` as it does of
+`collect()`.

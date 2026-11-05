@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "    return it.fold(init, f, unwind);\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
   },
+  {
+    name: "folded-hint-dropped",
+    breaks: "a collect into a `String` of what's folded by its own `fold` asks its hint not before it folds, as `Extend<char>` does (#733)",
+    file: "src/runtime/folded.js",
+    find: "  folded.sizeHint = () => (items === undefined ? $sizeHint(it) : [0, undefined]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
 ];

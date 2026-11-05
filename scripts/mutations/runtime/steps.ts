@@ -459,4 +459,20 @@ export const mutations: Mutation[] = [
     replace: "    } catch (error) {\n      throw error;\n      if (!failed) {\n",
     tests: ["test/corpus.test.ts", "-t", "^parts_close_past_a_panic.rs$"],
   },
+  {
+    name: "filter-count-hint-unasked",
+    breaks: "a `filter()`'s `count()` asks its source's hint not first, as std's `Filter::count` does (#733)",
+    file: "src/runtime/steps.js",
+    find: "        $sizeHint(this);\n        return $Steps.prototype.count.call(kept, drop);\n",
+    replace: "        return $Steps.prototype.count.call(kept, drop);\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
+  {
+    name: "steps-take-hint-dropped",
+    breaks: "a `take(3)` of the crate's iterator gives `(0, None)`, not its source's fewer and `n` (#733)",
+    file: "src/runtime/steps.js",
+    find: "    taken.sizeHint = () => $takeHint(this, n);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
 ];

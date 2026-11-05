@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^scan_drops_its_function_and_state.rs$"],
   },
+  {
+    name: "scan-hint-dropped",
+    breaks: "a `scan()`'s hint is `(0, None)`, not its source's upper bound (#733)",
+    file: "src/runtime/scan.js",
+    find: "  scanning.sizeHint = () => $upperOnly(source);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
 ];

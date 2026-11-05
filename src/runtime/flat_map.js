@@ -25,7 +25,7 @@ function $flatMap(it, f) {
           it.return?.();
           return outer;
         }
-        inner = $stepsOf(f(outer.value));
+        inner = $stepsOf($innerOf(f(outer.value)));
       }
     },
     // Its inner iterator dropped though its source's drop throws, a panic,
@@ -80,7 +80,7 @@ function $flatMap(it, f) {
     folded = $lent(it).tryFold(
       folded,
       (a, x) => {
-        inner = $stepsOf(unwind === undefined ? f(x) : $staged(f, x, undefined, a, unwind));
+        inner = $stepsOf($innerOf(unwind === undefined ? f(x) : $staged(f, x, undefined, a, unwind)));
         const made = $lent(inner).tryFold(a, g, broke, unwind);
         if (!broke(made)) inner = undefined;
         return made;
@@ -118,6 +118,9 @@ function $flatMap(it, f) {
   // What std's `Flatten::last` takes, its inner iterator stepped part-way,
   // its source, unless it's ended, fused as std's is, and `f`, which make
   // the rest, let go as they're taken (`$lastDropping`, #645).
+  // Std's `FlattenCompat::size_hint`, of the one it's in, then its
+  // source, fused.
+  flat.sizeHint = () => $flatHint(inner, ended ? undefined : it);
   flat.inners = () => {
     const front = inner;
     const source = ended ? undefined : it;

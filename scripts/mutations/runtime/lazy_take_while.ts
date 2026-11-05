@@ -66,4 +66,20 @@ export const mutations: Mutation[] = [
     replace: "    const folded = mapping.tryFold(init, g, () => false, unwind);",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
   },
+  {
+    name: "take-while-ended-hint-of-source",
+    breaks: "a `take_while()` whose predicate failed gives its source's upper bound, not `(0, Some(0))` (#733)",
+    file: "src/runtime/lazy_take_while.js",
+    find: "(ended ? [0, 0] : $upperOnly(source))",
+    replace: "$upperOnly(source)",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
+  {
+    name: "map-while-hint-dropped",
+    breaks: "a `map_while()`'s hint is `(0, None)`, not its source's upper bound (#733)",
+    file: "src/runtime/lazy_take_while.js",
+    find: "  mapping.sizeHint = () => $upperOnly(source);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
 ];

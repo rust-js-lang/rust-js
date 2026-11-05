@@ -3,11 +3,20 @@
 
 use super::*;
 
-/// What a JS iterator's own methods step till its first `done`, and no more:
-/// its helpers and its consumers; and `Array.from`, `collect()`'s.
-pub(super) const STEPPED_TILL_DONE: [&str; 10] = [
-    "map", "filter", "take", "drop", "flatMap", "reduce", "forEach", "some", "every", "find",
-];
+/// What a JS iterator's own consumers step till its first `done`, and no
+/// more, asking no `size_hint`; and `Array.from`, `collect()`'s.
+pub(super) const CONSUMED_TILL_DONE: [&str; 5] = ["reduce", "forEach", "some", "every", "find"];
+
+/// The JS iterator's own adapters, each stepping its source as it's
+/// stepped, and asking its hint only where it's asked its own.
+pub(super) const ADAPTED_TILL_DONE: [&str; 5] = ["map", "filter", "take", "drop", "flatMap"];
+
+/// The runtime's helpers that adapt their first argument so, `$stepBy`'s.
+pub(super) const ADAPTING_HELPERS: [&str; 1] = ["$stepBy"];
+
+/// The runtime's helpers that step their first argument to its end by
+/// its `last`, asking no hint (#733).
+pub(super) const LAST_HELPERS: [&str; 2] = ["$last", "$lastSome"];
 
 /// What the runtime's helpers step their first argument till its first
 /// `done` with, each item as it comes (#179): the extremes', `partition`'s

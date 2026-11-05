@@ -818,4 +818,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^max_by_drops_its_function_first.rs$"],
   },
+  {
+    name: "adapted-iterators-of-functions",
+    breaks: "a generic function's closure a `filter()` holds is taken for an iterator it steps, so `size_hint()` of it is refused (#733)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "        .filter(|&held| !matches!(held.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+  },
 ];
