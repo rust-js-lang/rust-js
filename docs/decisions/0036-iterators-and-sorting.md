@@ -277,3 +277,22 @@ panic thrown where Rust's is, with its message, and what's held dropped
 as it was (case N, ADR 0262). Held by the corpus's
 `for_returning_in_an_if`, run against native Rust, and the mutation
 `returned-loops-off` (`mir/tidy/stages.ts`).
+
+## Amendment: an iterator's `is_sorted_by` and `is_sorted_by_key` (#763)
+
+A slice's `is_sorted_by` and `is_sorted_by_key` were compiled; an
+iterator's were refused, "calling `std::iter::Iterator::is_sorted_by`".
+They're std iterator methods from MIR now, beside `is_sorted`:
+`is_sorted_by(f)` is `$isSortedBy(it, f)`, `f` of each two in a row up to
+the first out of order, as std's steps them; `is_sorted_by_key(f)` is
+std's `self.map(f).is_sorted()`, `$isSortedBy(it.map(f), ..)`, each item's
+key made once and compared by its `PartialOrd`. A key with a destructor
+is refused, "`is_sorted_by_key` of a key with a destructor": valid Rust,
+whose keys std drops as each is passed, which `$isSortedBy` of a JS
+iterator's `map` doesn't; left to do. A function that holds what has a destructor drops where std's
+does: `is_sorted_by`'s before the iterator, as its `all` drops it, given
+to `$isSortedBy` as what drops with it (`consumed_function`, ADR 0470);
+`is_sorted_by_key`'s after, as the `Map` it asks drops its fields.
+`test/corpus/iterator_is_sorted_by.rs` checks them against native Rust in
+both builds; mutations `is-sorted-by-ends-lost`, `is-sorted-by-unconsumed`,
+`is-sorted-by-key-unmapped` and `is-sorted-by-ends-unrun`.

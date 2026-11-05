@@ -160,7 +160,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> bool {
         let by_value = matches!(
             method,
-            Some(IterMethod::Fold | IterMethod::RFold | IterMethod::ForEach | IterMethod::Reduce)
+            Some(
+                IterMethod::Fold
+                    | IterMethod::RFold
+                    | IterMethod::ForEach
+                    | IterMethod::Reduce
+                    | IterMethod::IsSortedBy
+            )
         );
         if !by_value || iter_ty.is_mutable_ptr() {
             return false;
@@ -906,6 +912,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         );
         let args = vec![it, Expr::str("fold"), Expr::undefined(), each, Expr::undefined(), ends];
         Ok(Expr::call_helper("$consume", args))
+    }
+
+    /// `it.is_sorted()`, `is_sorted_call`'s; `it.is_sorted_by(f)`,
+    /// `$isSortedBy(it, f)`, given what drops with `f`, which std's `all`
+    /// drops before what's left (#734); `it.is_sorted_by_key(f)`, std's
+    /// `self.map(f).is_sorted()`, `$isSortedBy(it.map(f), ..)` of each
+    /// key, the type `f` gives, by its `PartialOrd` (#763).
+    pub(super) fn sorted_called(
+        &mut self,
+        it: Expr,
+        (method, arg, own): (IterMethod, &mut dyn FnMut() -> Expr, bool),
+        item: Ty<'tcx>,
+        arg_tys: &[Ty<'tcx>],
+        span: Span,
+    ) -> R<Expr> {
+        match method {
+            IterMethod::IsSortedBy => {
+                let f = arg();
+                let ends = self.consumed_ends(Some(method), arg_tys, &f, span)?;
+                let mut args = vec![it, self.binary_callback(f, own)];
+                args.extend(ends);
+                Ok(Expr::call_helper("$isSortedBy", args))
+            }
+            IterMethod::IsSortedByKey => {
+                let tcx = self.tcx;
+                let sig = match *arg_tys[1].kind() {
+                    ty::Closure(_, args) => args.as_closure().sig(),
+                    _ => arg_tys[1].fn_sig(tcx),
+                };
+                let key = tcx.instantiate_bound_regions_with_erased(sig).output();
+                if self.drops(key) != crate::lower::drops::Drops::Nothing {
+                    return Err(self.unsupported(span, "`is_sorted_by_key` of a key with a destructor"));
+                }
+                let keys = Expr::call(Expr::member(it, "map"), vec![self.unary_callback(arg(), own)]);
+                self.is_sorted_call(keys, key, span)
+            }
+            _ => self.is_sorted_call(it, item, span),
+        }
     }
 
     /// The drop of what a by-value consumer `method` of `arg_tys` moves into

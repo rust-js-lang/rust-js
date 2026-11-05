@@ -650,6 +650,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "advance_by" => IterMethod::AdvanceBy,
             "partition" => IterMethod::Partition,
             "is_sorted" => IterMethod::IsSorted,
+            "is_sorted_by" => IterMethod::IsSortedBy,
+            "is_sorted_by_key" => IterMethod::IsSortedByKey,
             "cmp" => IterMethod::Cmp,
             "partial_cmp" => IterMethod::PartialCmp,
             "lt" => IterMethod::Lt,
@@ -1310,6 +1312,11 @@ pub(crate) enum IterMethod {
     GetUnchecked,
     /// `is_sorted()`: each item at most the next, by its `PartialOrd`.
     IsSorted,
+    /// `is_sorted_by(f)`: `f` of each two in a row, `true` of all; and
+    /// `is_sorted_by_key(f)`, std's `self.map(f).is_sorted()`, of each
+    /// item's key made once (#763).
+    IsSortedBy,
+    IsSortedByKey,
     /// `cmp` and `partial_cmp` of two iterators, and `lt`, `le`, `gt` and
     /// `ge`, by their items' `Ordering`.
     Cmp,

@@ -282,4 +282,12 @@ export const mutations: Mutation[] = [
     replace: "out.push(...(copy === undefined ? v : v.map(copy)));",
     tests: ["test/corpus.test.ts", "-t", "^runtime_long_writes.rs$"],
   },
+  {
+    name: "is-sorted-by-ends-unrun",
+    breaks: "`$isSortedBy` never runs what drops with its function (#763)",
+    file: "src/runtime/slice_ops.js",
+    find: "    ends?.();\n  }\n}",
+    replace: "  }\n}",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_is_sorted_by.rs$"],
+  },
 ];
