@@ -762,7 +762,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || (self.tcx.trait_of_assoc(def_id).is_some() && self.std_iterator_call(def_id, generic_args, span)?);
         let given = match std {
             true => {
-                let known = self.known_trait_call(def_id, generic_args);
+                let known = self.recognition().classify(def_id, generic_args);
                 self.given_unused(known, (arg_tys, output), span)?
             }
             false => {
@@ -1026,7 +1026,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A trait's method: its impl's, a dictionary's, or what rust-js
         // writes itself, `==` of a struct say (ADRs 0049, 0052).
-        let known = self.known_trait_call(def_id, generic_args);
+        let known = self.recognition().classify(def_id, generic_args);
         let rust_impl = self.calls_rust_impl(def_id, generic_args, span)?;
         // A `&mut` to a number is boxed for the crate's own trait or impl;
         // std's, `write!` to a `String` say, takes its place below.

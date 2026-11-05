@@ -123,8 +123,6 @@ pub(super) type DefaultDrops<'tcx> = (
     HashMap<u32, (Ty<'tcx>, &'static str)>,
     HashMap<ty::AliasTy<'tcx>, u32>,
     HashSet<ty::AliasTy<'tcx>>,
-    ty::GenericArgsRef<'tcx>,
-    Vec<(Ty<'tcx>, String)>,
 );
 
 /// What a body inside another, a closure's or a copied default's, takes
@@ -146,14 +144,10 @@ struct SwappedDrops<'tcx> {
     given: HashSet<u32>,
     items: HashMap<ty::AliasTy<'tcx>, u32>,
     slots: HashSet<ty::AliasTy<'tcx>>,
-    self_args: Option<(ty::GenericArgsRef<'tcx>, ty::TypingEnv<'tcx>, ty::GenericArgsRef<'tcx>)>,
     used: HashSet<u32>,
     unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
     cache: HashMap<Ty<'tcx>, Drops<'tcx>>,
     sizes: HashMap<Ty<'tcx>, usize>,
-    /// What the default's own drops added to these, the function's, by index,
-    /// to take out as it ends (`impl_owned`), each by its name.
-    lent: Vec<(u32, Option<ty::AliasTy<'tcx>>, String)>,
 }
 
 /// A drop `lend_drop_param` lent: under which index, of which associated
@@ -189,9 +183,6 @@ pub(super) struct DropState<'tcx> {
     /// The drop functions made here whose body never throws, so a part
     /// dropped by one needs no `finally` for those after it (#416).
     quiet: HashSet<String>,
-    /// Of the copied default last left, its own drops it used as the
-    /// function's (`impl_owned`), by name.
-    lent_used: HashSet<String>,
 }
 
 /// A body's drop functions, each of a type inside itself or with a long

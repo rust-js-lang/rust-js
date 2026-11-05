@@ -18,8 +18,13 @@ const $iPull = new WeakMap();
 
 function iPull(IIterator) {
   return $traitImpl($iPull, [IIterator], () => ({
-    pull: (arg0) => iPull_pull(arg0.value, IIterator),
-    pullTwo: (self) => [iPull_pull(self.value, IIterator), iPull_pull(self.value, IIterator)],
+    pull(arg0) {
+      return iPull_pull(arg0.value, IIterator);
+    },
+    pullTwo(boxed) {
+      const self = boxed.value;
+      return [iPull_pull(self, IIterator), iPull_pull(self, IIterator)];
+    },
   }));
 }
 function iPull_pull(self, IIterator) {
@@ -38,11 +43,13 @@ const $enumeratedPull = new WeakMap();
 
 function enumeratedPull(PPull) {
   return $traitImpl($enumeratedPull, [PPull], () => ({
-    pull: (arg0) => enumeratedPull_pull(arg0.value, PPull),
-    pullTwo: (self) => [
-      enumeratedPull_pull(self.value, PPull),
-      enumeratedPull_pull(self.value, PPull),
-    ],
+    pull(arg0) {
+      return enumeratedPull_pull(arg0.value, PPull);
+    },
+    pullTwo(self) {
+      const enumerated = self.value;
+      return [enumeratedPull_pull(enumerated, PPull), enumeratedPull_pull(enumerated, PPull)];
+    },
   }));
 }
 function enumeratedPull_pull(enumerated, PPull) {

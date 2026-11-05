@@ -75,11 +75,6 @@ pub(in crate::lower) struct TypeDrops<'tcx> {
     /// Each one a caller would give a drop for, given one or not: one none
     /// gives one drops nothing, as no caller's has one (ADR 0489).
     pub(super) slots: HashSet<ty::AliasTy<'tcx>>,
-    /// A copied default's impl's arguments for its trait's parameters, and
-    /// the impl's typing environment, whose body names a slot in the trait's
-    /// terms, `Self::Item` of the impl's `T::Item` (ADR 0421); and the
-    /// default's own parameters, which those terms name alone.
-    pub(super) self_args: Option<(ty::GenericArgsRef<'tcx>, ty::TypingEnv<'tcx>, ty::GenericArgsRef<'tcx>)>,
     pub(super) unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
 }
 
@@ -186,12 +181,9 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
     }
 
     /// The index of the drop given for `alias`, a std associated type of a
-    /// type parameter (ADR 0421), named as it's keyed or, in a copied
-    /// default, in its trait's terms: the one place asked.
+    /// type parameter (ADR 0421): the one place asked.
     pub(in crate::lower) fn slot_of(&self, alias: ty::AliasTy<'tcx>) -> Option<u32> {
-        let items = &self.state.items;
-        let index = items.get(&alias).or_else(|| items.get(&self.in_impl_terms(alias)?));
-        index.copied()
+        self.state.items.get(&alias).copied()
     }
 
     /// `ty`, an associated type, normalized where its bounds say what it is.
@@ -202,47 +194,9 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
     }
 
     /// Whether `alias` is one a caller would give a drop for, given one or
-    /// not (ADR 0489), named as `slot_of` names it.
+    /// not (ADR 0489).
     fn is_slot(&self, alias: ty::AliasTy<'tcx>) -> bool {
         self.state.slots.contains(&alias)
-            || self
-                .in_impl_terms(alias)
-                .is_some_and(|alias| self.state.slots.contains(&alias))
-    }
-
-    /// `alias`, of a copied default's trait's terms, in its impl's,
-    /// normalized there: `<Holder<I> as Iterator>::Item` of `Self::Item` is
-    /// `I::Item`.
-    fn in_impl_terms(&self, alias: ty::AliasTy<'tcx>) -> Option<ty::AliasTy<'tcx>> {
-        let tcx = self.recognition.tcx;
-        let ty::AliasTy {
-            kind: ty::Projection { def_id },
-            args,
-            ..
-        } = alias
-        else {
-            return None;
-        };
-        let (self_args, impl_env, own) = self.state.self_args?;
-        // One in the trait's terms names the default's own parameters alone:
-        // not `<I as Iterator>::Item`, in the impl's already.
-        let in_trait_terms = (args.iter().flat_map(|arg| arg.walk())).all(|part| match part.kind() {
-            ty::GenericArgKind::Type(t) => !matches!(t.kind(), ty::Param(_)) || own.contains(&part),
-            ty::GenericArgKind::Const(c) => !matches!(c.kind(), ty::ConstKind::Param(_)) || own.contains(&part),
-            ty::GenericArgKind::Lifetime(_) => true,
-        });
-        if !in_trait_terms {
-            return None;
-        }
-        let ty = Ty::new_projection(tcx, ty::IsRigid::No, def_id, args);
-        let ty = ty::EarlyBinder::bind(tcx, ty)
-            .instantiate(tcx, self_args)
-            .skip_normalization();
-        let ty = (tcx.try_normalize_erasing_regions(impl_env, ty::Unnormalized::new_wip(ty))).unwrap_or(ty);
-        match *ty.kind() {
-            ty::Alias(_, alias) => Some(alias),
-            _ => None,
-        }
     }
 
     /// Is an associated type's drop given, in a dictionary this function has?

@@ -12,12 +12,14 @@ const tallyCounter = {
     return tallyCounter_set(arg0.value, arg1);
   },
   bump(self, by) {
-    const next = (tallyCounter_get(self.value) + by) | 0;
-    tallyCounter_set(self.value, next);
+    const tally = self.value;
+    const next = (tallyCounter_get(tally) + by) | 0;
+    tallyCounter_set(tally, next);
     return next;
   },
   replaceWith(self, other) {
-    self.value = other;
+    const tally = self.value;
+    $assign(tally, other);
   },
 };
 function tallyCounter_get(tally) {

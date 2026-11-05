@@ -24,7 +24,7 @@ function squareShape_name(square) {
 const rectShape = {
   area: rectShape_area,
   grow: (arg0, arg1) => rectShape_grow(arg0.value, arg1),
-  name: (self) => "shape",
+  name: (rect) => "shape",
 };
 function rectShape_area(rect) {
   return Math.imul(rect.w, rect.h) >>> 0;

@@ -13,6 +13,7 @@ import {
   $foldOf,
   $foldToArray,
   $given,
+  $givenDrop,
   $index,
   $intoIter,
   $iter,
@@ -186,9 +187,9 @@ function tHolding(
     [TIterator, TInPlace, HeldSize, HeldAlign, dropT, dropTItem, dropTItemItem, dropTItemIntoIter],
     () => ({
       heldAll(self, SelfItemIntoIterator) {
-        const iter = $closing($given(self, TIterator, true), dropT, false).map((i) => ({
-          iter: SelfItemIntoIterator.intoIter(i),
-        }));
+        const iter = $closing($given(self, TIterator, true), (it) => $givenDrop(it, dropT)).map(
+          (i) => ({ iter: SelfItemIntoIterator.intoIter(i) }),
+        );
         try {
           return $collectsInPlace(TInPlace, HeldSize, HeldAlign)
             ? $foldToArray(iter, (held) => {

@@ -114,4 +114,13 @@ export const mutations: Mutation[] = [
     replace: "        let _ = (clauses, param_env);\n",
     tests: ["test/corpus.test.ts", "-t", "^default_where_clause_item_drops.rs$"],
   },
+  {
+    name: "default-where-clause-unnormalized",
+    breaks:
+      "a copied default's where clause of a non-blanket impl, `<Wrapper<I> as Iterator>::Item: IntoIterator`, isn't in the impl's terms as its body is, `I::Item`, so its `Held`'s `iter` is never dropped (#803)",
+    file: "src/lower/traits/drop_params.rs",
+    find: "                (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(clause))).unwrap_or(clause)\n",
+    replace: "                clause\n",
+    tests: ["test/corpus.test.ts", "-t", "^(default_of_a_non_blanket_impl_steps_its_self).rs$"],
+  },
 ];

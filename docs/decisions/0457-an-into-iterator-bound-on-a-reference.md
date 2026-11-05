@@ -124,3 +124,10 @@ chain of `&mut`s of the crate's iterator, beside a `Vec`'s `&mut` and `&`,
 against native Rust in both builds; the mutations are
 `ref-iterator-into-iter-by-collection` and `ref-iterator-not-itself`
 (`lower/traits/dictionaries.ts`).
+
+## Amended by #803
+
+`known_trait_call`'s two exceptions are gone with it: a copied default's
+body is in its impl's terms (ADR 0495, amended), so what recognition knows
+of an `into_iter` call is `classify`'s answer alone, the corpus's cases of
+this ADR's unchanged.

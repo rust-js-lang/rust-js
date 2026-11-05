@@ -32,9 +32,10 @@ const cBump = {
   },
   get: cBump_get,
   bumpedTwice(self) {
-    cBump_bump(self.value);
-    cBump_bump(self.value);
-    return cBump_get(self.value);
+    const c = self.value;
+    cBump_bump(c);
+    cBump_bump(c);
+    return cBump_get(c);
   },
 };
 function cBump_bump(c) {

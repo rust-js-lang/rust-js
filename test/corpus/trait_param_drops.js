@@ -54,9 +54,9 @@ const $wrapTakeNoisy = new WeakMap();
 
 function wrapTakeNoisy(TDefault, dropT) {
   return $traitImpl($wrapTakeNoisy, [TDefault, dropT], () => ({
-    take(self, a) {
+    take(wrap, a) {
       console.log("default");
-      noisyDrop_drop?.(a);
+      noisyDrop_drop(a);
       return 0;
     },
     make(arg0) {

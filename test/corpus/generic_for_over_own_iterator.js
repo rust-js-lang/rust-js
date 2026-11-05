@@ -147,6 +147,38 @@ function wrapperCounted_counted(wrapper, IIterator, dropI, dropIItem) {
   return n;
 }
 
+const $wrapperTallying = new WeakMap();
+
+function wrapperTallying(IIterator, dropI, dropIItem) {
+  return $traitImpl($wrapperTallying, [IIterator, dropI, dropIItem], () => ({
+    tally(wrapper) {
+      let n = 0;
+      const iter = wrapper;
+      try {
+        let value;
+        while ((value = wrapperIterator_next(iter, IIterator, dropI, dropIItem)) != null) {
+          n = (n + 1) >>> 0;
+          dropIItem?.($someValue(value));
+        }
+      } finally {
+        try {
+          console.log(`drop ${iter[1]}`);
+        } finally {
+          dropI?.(iter[0]);
+        }
+      }
+      return n;
+    },
+    $drop(wrapper) {
+      try {
+        console.log(`drop ${wrapper[1]}`);
+      } finally {
+        dropI?.(wrapper[0]);
+      }
+    },
+  }));
+}
+
 function main() {
   console.log(`${looped([{ start: 0, end: 3 }, "range"], { next: $rangeNext })}`);
   console.log(`${dropping([$iter([1, 2, 3]), "vec"], { next: $next })}`);
@@ -159,6 +191,14 @@ function main() {
   console.log(`${items.length}`);
   try {
     console.log(`${wrapperCounted_counted([$iter(Array.from("ab")), "counted"], { next: $next })}`);
+    const wrapper = [$iter([[9]]), "tally"];
+    console.log(
+      `${wrapperTallying(
+        { next: $next, advanceBy: $advanceSlice },
+        $dropEach(dDrop_drop),
+        dDrop_drop,
+      ).tally(wrapper)}`,
+    );
   } finally {
     for (const item of items) {
       dDrop_drop(item);

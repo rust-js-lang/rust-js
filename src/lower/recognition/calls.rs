@@ -741,10 +741,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // iterator (ADR 0061), never a collection of the crate's (ADR 0160).
         if tcx.is_diagnostic_item(sym::IntoIterator, trait_)
             && tcx.item_name(def_id).as_str() == "into_iter"
-            && (ty.peel_refs().is_array()
-                || ty.peel_refs().is_slice()
-                || self.is_vec_like(ty.peel_refs())
-                || self.is_given_iterable(ty.peel_refs()))
+            && (ty.peel_refs().is_array() || ty.peel_refs().is_slice() || self.is_vec_like(ty.peel_refs()))
         {
             return Some(Std::Same);
         }

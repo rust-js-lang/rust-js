@@ -37,7 +37,7 @@ const sqShape = {
   area: sqShape_area,
   scale: sqShape_scale,
   kind: sqShape_kind,
-  twice: (self) => sqShape_area(self) * 2,
+  twice: (sq) => sqShape_area(sq) * 2,
 };
 function sqShape_area(sq) {
   return sq[0] * sq[0];
@@ -52,8 +52,8 @@ const ciShape = {
   Debug: () => ciDebug,
   area: ciShape_area,
   scale: ciShape_scale,
-  kind: (self) => "shape",
-  twice: (self) => ciShape_area(self) * 2,
+  kind: (ci) => "shape",
+  twice: (ci) => ciShape_area(ci) * 2,
 };
 function ciShape_area(ci) {
   return 3 * ci[0] * ci[0];

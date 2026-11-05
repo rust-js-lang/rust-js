@@ -12,14 +12,14 @@ function tSliceIndexId_index(self, index) {
 
 const fixedAutomaton = {
   ids: fixedAutomaton_ids,
-  each(self, f) {
-    for (const id of fixedAutomaton_ids(self)) {
+  each(fixed, f) {
+    for (const id of fixedAutomaton_ids(fixed)) {
       f(id);
     }
   },
-  replaceAll(self, replaceWith, BAsRefStr) {
+  replaceAll(fixed, replaceWith, BAsRefStr) {
     let dst = "";
-    fixedAutomaton.each(self, (id) => {
+    fixedAutomaton.each(fixed, (id) => {
       dst += BAsRefStr.asRef(tSliceIndexId_index(replaceWith, id));
     });
     return dst;

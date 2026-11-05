@@ -9,9 +9,6 @@ use crate::lower::mut_refs::{Within, adapted_part};
 struct EntryForms<'tcx> {
     /// Of each parameter, how many boxes' `value` it's taken out of.
     unboxed: Vec<usize>,
-    /// Its `Self` is a `&mut` its caller gives in a box, an impl for `&mut
-    /// Bag`'s (ADRs 0454, 0457), which `unboxed` counts too.
-    self_held: bool,
     /// Of each parameter, what's within it past its own `&mut` (#686).
     within: Vec<Option<Within<'tcx>>>,
     /// The result's own `&mut` is made generic code's box, an in-place
@@ -19,22 +16,6 @@ struct EntryForms<'tcx> {
     result_cell: bool,
     /// What's within the result past its own `&mut` (#686).
     result_within: Option<Within<'tcx>>,
-}
-
-impl EntryForms<'_> {
-    /// Whether the entry makes more of what it's given or gives back than a
-    /// call of the method where its type is known does, which takes each
-    /// argument's own `&mut` out of a box its callee doesn't take, as the
-    /// callee's parameter says (`boxed_args`, ADR 0099): its `Self` held in
-    /// a box, a `&mut` within what it takes, `Option<&mut Self>`'s, or what
-    /// it gives back, generic code's box, which a call has as the impl
-    /// gives it (#690).
-    fn beyond_a_call(&self) -> bool {
-        self.self_held
-            || self.within.iter().flatten().any(Within::changes)
-            || self.result_cell
-            || self.result_within.as_ref().is_some_and(Within::changes)
-    }
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -61,28 +42,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Ok(Expr::var(&name))
-    }
-
-    /// What recognition knows of a call of the trait method `def_id`, of
-    /// `generic_args`: nothing of `into_iter` of a `&C` or a `&mut C`, which
-    /// its bound's dictionary gives (ADR 0457), in its impl's terms where
-    /// it's a copied default. Nothing but a bound makes one `IntoIterator`:
-    /// a `&mut I` of an `I: Iterator` is an iterator, stepped as it is.
-    pub(in crate::lower) fn known_trait_call(
-        &self,
-        def_id: DefId,
-        generic_args: ty::GenericArgsRef<'tcx>,
-    ) -> Option<Std> {
-        // Nor of one whose `IntoIter` is held as it is, its dictionary's
-        // (ADR 0552).
-        if let Some(trait_id) = self.tcx.trait_of_assoc(def_id)
-            && let self_ty = self.in_impl_terms(generic_args).type_at(0)
-            && (into_iter_by_dictionary(self.tcx, trait_id, self_ty)
-                || (is_std_def(self.tcx, trait_id, StdItem::IntoIterator) && self.holds_into_iter(self_ty)))
-        {
-            return None;
-        }
-        self.recognition().classify(def_id, generic_args)
     }
 
     /// Whether generic code holds a value of `self_ty` in a box: a `&mut` to
@@ -426,7 +385,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect();
             // What it takes and gives as its caller through the dictionary
             // has them, made its own (`entry_forms`).
-            let forms = self.entry_forms(item.def_id, (method, instance.args), args, count);
+            let forms = self.entry_forms(item.def_id, (method, instance.args), args, count, None);
             for (i, value) in values.iter_mut().enumerate() {
                 for _ in 0..forms.unboxed[i] {
                     *value = Expr::held(std::mem::replace(value, Expr::undefined()));
@@ -663,14 +622,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// caller through the dictionary gives `method`, the impl's, given
     /// `instance_args`, for the trait's `args`, of its first `count` values,
     /// and of what `method` gives back (ADRs 0099, 0454, 1086): the one
-    /// answer of what the entry adapts, and of whether a copied default's
-    /// call of it goes through the entry (`through_entry`, #690).
+    /// answer of what the entry adapts. Of a default copied into
+    /// `copied_into`, what its body takes is in that impl's terms
+    /// (`default_args`, #803).
     fn entry_forms(
         &self,
         item: DefId,
         (method, instance_args): (DefId, ty::GenericArgsRef<'tcx>),
         args: ty::GenericArgsRef<'tcx>,
         count: usize,
+        copied_into: Option<DefId>,
     ) -> EntryForms<'tcx> {
         // What its caller gives in a box for each: a generic `&mut Self` (ADR
         // 0099), and a `Self` that's a `&mut` to an object, an impl for `&mut
@@ -679,10 +640,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Money`'s: what's in each box more.
         let tr = ty::TraitRef::from_assoc(self.tcx, self.tcx.parent(item), args);
         let self_held = self.held_in_box(tr.self_ty());
+        // What the method takes, as it's lowered: a copied default's in its
+        // impl's terms, where its body is (`default_args`).
+        let takes_box = |i: usize| match copied_into {
+            Some(imp) => {
+                let env = default_typing_env(self.tcx, imp, item, instance_args);
+                self.param_form_of(item, instance_args, env.param_env, i)
+                    .is_some_and(crate::lower::representation::MutRefForm::is_cell)
+            }
+            None => self.param_is_box(method, i),
+        };
         let unboxed = (0..count)
             .map(|i| {
                 let given = usize::from(self.param_is_box(item, i)) + usize::from(i == 0 && self_held);
-                given.saturating_sub(usize::from(self.param_is_box(method, i)))
+                given.saturating_sub(usize::from(takes_box(i)))
             })
             .collect();
         // And a `&mut` within what it takes past its own, `Option<&mut
@@ -713,46 +684,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let result_cell = self.boxed_in_call(item, declared_sig.output(), args).is_some();
         EntryForms {
             unboxed,
-            self_held,
             within: within_params,
             result_cell,
             result_within: within(Some(&declared_sig.output()), Some(&impl_sig.output())),
         }
-    }
-
-    /// Whether a call of `id`, a method of a trait of the crate's, given
-    /// `generic_args` in the impl's terms (`in_impl_terms`), in a copied
-    /// default, which resolves to its impl's
-    /// method, goes through the impl's dictionary's entry: where the entry
-    /// makes the impl's forms of a `&mut` what generic code has, which the
-    /// copied default's body does, past what a call of the method adapts
-    /// itself (`EntryForms::beyond_a_call`, #690). The one answer of what
-    /// the call takes, gives and calls.
-    pub(in crate::lower) fn through_entry(&self, id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> R<bool> {
-        if !self.in_copied_default()
-            || !(self.tcx.trait_of_assoc(id)).is_some_and(|trait_id| self.is_rust_trait(trait_id))
-            || !self
-                .tcx
-                .generics_of(id)
-                .own_params
-                .iter()
-                .all(|p| matches!(p.kind, ty::GenericParamDefKind::Lifetime))
-        {
-            return Ok(false);
-        }
-        let Some(instance) = self.resolve_self_instance(id, generic_args)? else {
-            return Ok(false);
-        };
-        if !self.is_rust_fn(instance.def_id()) || self.tcx.trait_of_assoc(instance.def_id()).is_some() {
-            return Ok(false);
-        }
-        let count = (self.tcx.fn_sig(id).instantiate_identity())
-            .skip_normalization()
-            .skip_binder()
-            .inputs()
-            .len();
-        let forms = self.entry_forms(id, (instance.def_id(), instance.args), generic_args, count);
-        Ok(forms.beyond_a_call())
     }
 
     fn default_method(&mut self, imp: DefId, id: DefId, args: ty::GenericArgsRef<'tcx>) -> R<Expr> {
@@ -792,110 +727,62 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Point<S>`: a call on the impl's types, which the body's resolve
         // to, is given them.
         specialized.extend(self.given.evidence.iter().cloned());
-        // Its trait's type parameters, `Self` among them, drop as the impl's
-        // arguments for them do, with the impl's drops (ADR 0098): each is
-        // made here, and the body is given it by name.
-        let mut made = Vec::new();
-        let mut drops = HashMap::new();
-        // One rust-js can't make is an error only if the body drops one.
-        let mut unsupported = HashMap::new();
-        let generics = self.tcx.generics_of(id);
-        for (index, arg) in args.iter().enumerate().take(generics.parent_count) {
-            let Some(ty) = arg.as_type() else {
-                continue;
-            };
-            match self.drops(ty) {
-                Drops::Nothing => continue,
-                Drops::Unsupported(t, what) => {
-                    unsupported.insert(index as u32, (t, what));
-                    continue;
-                }
-                Drops::Runs => {}
-            }
-            let Some(drop) = self.drop_function(ty, span)? else {
-                continue;
-            };
-            let name = match &drop.kind {
-                js::ExprKind::Var(name) => name.clone(),
-                _ => {
-                    let name = self.fresh(&format!("drop{}", param_word(generics.param_at(index, self.tcx).name)));
-                    made.push((index as u32, StmtKind::Const(name.clone(), drop).at(js::Span::NONE)));
-                    name
-                }
-            };
-            drops.insert(index as u32, name);
-        }
-        // And each drop of a std associated type the impl's given, `dropTItem`
-        // of `T::Item`, as the body asks in the impl's terms (ADR 0421), and
-        // each it could be given (ADR 0489).
+        // Its body is in the impl's terms (`default_args`), so it drops as
+        // the impl does, with the impl's drops (ADR 0098); and its own type
+        // parameters with those its caller gives after its dictionaries, as
+        // the trait declares them (ADR 0163, #802), each under its number in
+        // those terms, past the impl's (#804), an associated type's of them
+        // under an index none of the impl's has.
+        let (mut drops, unsupported, impl_items, mut slots) = self.impl_drops_for_default();
+        // The impl's associated types' under indices past every parameter's,
+        // its own and the default's numbered after them, as the impl's are
+        // after its parameters (`drop_slot`).
+        let mut past = u32::MAX / 2;
         let mut items = HashMap::new();
-        let past = generics
-            .count()
-            .max(self.tcx.generics_of(imp).count() + generics.own_params.len());
-        for (at, (alias, name)) in self.given_item_drops().into_iter().enumerate() {
-            let index = (past + at) as u32;
-            drops.insert(index, name);
-            items.insert(alias, index);
+        for (alias, index) in impl_items {
+            if let Some(name) = drops.remove(&index) {
+                drops.insert(past, name);
+            }
+            items.insert(alias, past);
+            past += 1;
         }
-        // Its own type parameters' drops, and their std associated types',
-        // its caller gives after its dictionaries, as the trait declares them
-        // (ADR 0163): not the impl's of a parameter numbered as one is, which
-        // its own isn't (#802, #804). Each of an associated type's under an
-        // index of its own, past the impl's.
-        // And in the impl's terms, as a call's arguments name them, here
-        // and of the impl's drops (`with_impl_drops`).
         let mut own_drops = Vec::new();
-        let mut impl_owned = Vec::new();
-        let past = generics
-            .count()
-            .max(self.tcx.generics_of(imp).count() + generics.own_params.len()) as u32;
         for index in self.own_drops_taken(id, id) {
             let ty = drop_slot(self.tcx, self.slots(), id, index);
             let name = self.fresh(&format!("drop{}", drop_word(self.tcx, ty)));
             let in_impl = ty::EarlyBinder::bind(self.tcx, ty)
                 .instantiate(self.tcx, args)
                 .skip_normalization();
-            let keys = match (*ty.kind(), *in_impl.kind()) {
-                (ty::Param(param), ty::Param(there)) => {
-                    drops.insert(param.index, name.clone());
-                    drops.insert(there.index, name.clone());
-                    vec![param.index, there.index]
+            let key = match *in_impl.kind() {
+                ty::Param(there) => there.index,
+                ty::Alias(_, there) => {
+                    past += 1;
+                    items.insert(there, past - 1);
+                    past - 1
                 }
-                (ty::Alias(_, alias), ty::Alias(_, there)) => {
-                    let at = past + items.len() as u32;
-                    drops.insert(at, name.clone());
-                    items.insert(alias, at);
-                    items.insert(there, at);
-                    vec![at]
-                }
-                _ => Vec::new(),
+                _ => continue,
             };
-            impl_owned.push((in_impl, name.clone()));
-            own_drops.push((index, name, keys));
+            drops.insert(key, name.clone());
+            own_drops.push((index, name, key));
         }
-        let slots: HashSet<ty::AliasTy<'tcx>> = (drop_items(self.tcx, self.krate.foreign, id).into_iter())
-            .filter_map(|own| {
-                match *ty::EarlyBinder::bind(self.tcx, own)
-                    .instantiate(self.tcx, args)
-                    .skip_normalization()
-                    .kind()
-                {
-                    ty::Alias(_, alias) => Some(alias),
-                    _ => None,
-                }
-            })
-            .collect();
-        // Its trait's const parameters are the impl's arguments for them, `10`
-        // of `Scaled<10>` or the impl's own `K`, and its own are given after
-        // its arguments (ADR 0135).
-        let mut consts = Vec::new();
+        // And each it could be given, of its own where clause too (ADR 0489).
+        slots.extend(
+            (drop_items(self.tcx, self.krate.foreign, id).into_iter()).filter_map(|own| match *ty::EarlyBinder::bind(
+                self.tcx, own,
+            )
+            .instantiate(self.tcx, args)
+            .skip_normalization()
+            .kind()
+            {
+                ty::Alias(_, alias) => Some(alias),
+                _ => None,
+            }),
+        );
+        // Its body in the impl's terms names the impl's const parameters,
+        // `CAP` of an `ArrayVec<T, CAP>`, the impl's, and its own, given after
+        // its arguments, numbered after the impl's (ADR 0135, `default_args`).
+        let mut consts = self.impl_const_params();
         let generics = self.tcx.generics_of(id);
-        for index in 0..generics.parent_count {
-            let param = generics.param_at(index, self.tcx);
-            if matches!(param.kind, ty::GenericParamDefKind::Const { .. }) {
-                consts.push((param.index, self.const_arg(args.const_at(index), span)?));
-            }
-        }
         // A C-variadic default's own, which can't come after what it's given
         // past the rest (ADR 0428).
         if crate::lower::recognition::is_c_variadic(self.tcx, id)
@@ -906,33 +793,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut const_names = Vec::new();
         for index in own_const_params(self.tcx, id) {
             let name = self.fresh(generics.param_at(index as usize, self.tcx).name.as_str());
-            consts.push((index, Expr::var(&name)));
-            // And numbered as the impl's terms number it (`default_args`).
+            // As the impl's terms number it (`default_args`).
             if let Some(there) = args.get(index as usize).and_then(|arg| arg.as_const())
                 && let ty::ConstKind::Param(there) = there.kind()
-                && there.index != index
             {
                 consts.push((there.index, Expr::var(&name)));
             }
             const_names.push((index, name));
-        }
-        // And the impl's, which its type, `Self`, names: `CAP` of an
-        // `ArrayVec<T, CAP>`. One numbered as one of the trait's is would
-        // be either: refused, as a method's own is (above).
-        let names_const = |index: u32| {
-            args.iter().any(|arg| {
-                arg.walk()
-                    .any(|part| matches!(part.as_const().map(|c| c.kind()), Some(ty::ConstKind::Param(p)) if p.index == index))
-            })
-        };
-        for (index, value) in self.given.const_params.clone() {
-            match consts.iter().any(|&(at, _)| at == index) {
-                true if names_const(index) => {
-                    return Err(self.unsupported(span, "a trait default's const parameter numbered as its impl's"));
-                }
-                true => {}
-                false => consts.push((index, value)),
-            }
         }
         // The facts its caller gives of its own type parameters, `KMap`,
         // after its dictionaries (ADR 0466).
@@ -986,7 +853,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             unsupported,
             items,
             slots,
-            impl_owned,
         };
         let mut rest = Vec::new();
         // From its MIR (ADR 0364), a constant's initializer of nothing, its
@@ -996,29 +862,100 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A trait of classes' default, its class's prototype's method, as
         // the class has it: `Self` the class, and each method its impl
         // gives a field by that field, read in place (rd283).
-        let class_default = (body.mir.as_ref())
-            .filter(|_| crate::lower::classes::is_class_trait(self.tcx, self.tcx.parent(id)))
-            .map(|mir| {
-                let mut mir = mir.instantiated(self.tcx, args);
+        let class_default = (body.mir.as_ref()).map(|mir| {
+            let mut mir = default_mir(self.tcx, mir, args, default_typing_env(self.tcx, imp, id, args));
+            if crate::lower::classes::is_class_trait(self.tcx, self.tcx.parent(id)) {
                 mir.read_fields(self.tcx, ty::TypingEnv::fully_monomorphized());
-                mir
-            });
-        let ((signature, used), hoisted) = self.lowered_in(body, id, nested, |cx| {
+            }
+            mir
+        });
+        // What its caller through the dictionary gives, in its trait's forms,
+        // made what its body, in the impl's terms, takes (`entry_forms`):
+        // `self.value` of a `&mut Self` generic code has in a box (#803).
+        // Of a method: a constant's initializer takes nothing.
+        let forms = match self.tcx.def_kind(id) {
+            DefKind::AssocFn => {
+                let count = (self.tcx.fn_sig(id).instantiate_identity())
+                    .skip_normalization()
+                    .skip_binder()
+                    .inputs()
+                    .len();
+                Some(self.entry_forms(id, (id, args), args, count, Some(imp)))
+            }
+            _ => None,
+        };
+        if (forms.as_ref())
+            .is_some_and(|forms| forms.result_cell || forms.result_within.as_ref().is_some_and(Within::changes))
+        {
+            return Err(self.unsupported(span, "a copied default giving back a `&mut` its impl holds otherwise"));
+        }
+        // Each parameter it makes another's: named in its body's names, before
+        // its body is, so no name of its body's is one of them, a box of a
+        // `self` as the naming owner names one (`self_box_name`).
+        let count = forms.as_ref().map_or(0, |forms| forms.unboxed.len());
+        let words: Vec<Option<&str>> = (0..count)
+            .map(|i| {
+                let forms = forms.as_ref()?;
+                let made = forms.unboxed[i] > 0
+                    || (forms.within[i].as_ref())
+                        .is_some_and(|within| within.adapted(&Expr::undefined(), true).is_some());
+                let receiver = || {
+                    let sig = self.tcx.fn_sig(id).instantiate(self.tcx, args).skip_normalization();
+                    sig.skip_binder().inputs()[0]
+                };
+                made.then(|| match i {
+                    0 => crate::lower::analysis::self_box_name(self.tcx, receiver()),
+                    _ => "arg",
+                })
+            })
+            .collect();
+        let ((signature, used, given_names), hoisted) = self.lowered_in(body, id, nested, |cx| {
+            let given_names: Vec<Option<String>> = (words.iter()).map(|word| word.map(|word| cx.fresh(word))).collect();
             let signature = match class_default.as_ref().or(body.mir.as_ref()) {
                 Some(mir) => cx.mir_signature(body, mir, &mut rest)?,
                 None => return Err(cx.unsupported(span, "this default, without its MIR")),
             };
-            Ok((signature, cx.used_drops()))
+            Ok((signature, cx.used_drops(), given_names))
         })?;
         // After its arguments, what its caller gives of its own, in
         // `evidence_slots`' order, as `own_evidence` gives them: of its
         // trait's parameters no drops, which its impl's are, made here.
         let (mut params, is_async) = signature;
+        let mut prologue = Vec::new();
+        for (i, param) in params.iter_mut().enumerate().take(count) {
+            let (Some(forms), Some(given)) = (forms.as_ref(), given_names[i].clone()) else {
+                continue;
+            };
+            let js::Pattern::Name(name) = param else {
+                continue;
+            };
+            let mut value = Expr::var(&given);
+            for _ in 0..forms.unboxed[i] {
+                value = Expr::held(value);
+            }
+            if let Some(made) = (forms.within[i].as_ref()).and_then(|within| within.adapted(&value, true)) {
+                value = made;
+            }
+            if value != Expr::var(&given) {
+                // A `const` but of a parameter its body assigns again, `mut`.
+                let mutable = (class_default.as_ref()).is_some_and(|mir| {
+                    mir.body.local_decls[rustc_middle::mir::Local::from_usize(i + 1)].mutability
+                        == rustc_hir::Mutability::Mut
+                });
+                prologue.push(
+                    match mutable {
+                        true => StmtKind::Let(name.clone(), Some(value)),
+                        false => StmtKind::Const(name.clone(), value),
+                    }
+                    .at(js::Span::NONE),
+                );
+                *param = given.into();
+            }
+        }
         let named = |names: &[(u32, String)], at: u32| names.iter().find(|&&(i, _)| i == at).map(|(_, n)| n.clone());
         // Its own drops last, those after the last it uses left out, as its
         // caller's `undefined`s at the end are.
-        let lent = self.lent_drops_used();
-        let own_used = |name: &str, keys: &[u32]| lent.contains(name) || keys.iter().any(|key| used.contains(key));
+        let own_used = |key: u32| used.contains(&key);
         let mut unused = 0;
         for slot in self.evidence_slots(id, Scope::Own) {
             let name = match slot {
@@ -1031,10 +968,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .map(|(_, name)| name.clone()),
                 Slot::Drop(index) => {
                     // None, of a crate whose values drop nothing.
-                    let Some((_, name, keys)) = own_drops.iter().find(|(at, _, _)| *at == index) else {
+                    let Some((_, name, key)) = own_drops.iter().find(|(at, _, _)| *at == index) else {
                         continue;
                     };
-                    unused = match own_used(name, keys) {
+                    unused = match own_used(*key) {
                         true => 0,
                         false => unused + 1,
                     };
@@ -1045,11 +982,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         params.truncate(params.len() - unused);
         rest.splice(0..0, hoisted);
-        let mut out: Vec<_> = made
-            .into_iter()
-            .filter(|(index, _)| used.contains(index))
-            .map(|(_, stmt)| stmt)
-            .collect();
+        let mut out = prologue;
         out.extend(rest);
         Ok(if is_async {
             Expr::async_arrow(params, out)

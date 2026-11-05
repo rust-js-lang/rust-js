@@ -468,4 +468,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^whole_thread_locals.rs$"],
     snapshots: true,
   },
+  {
+    name: "borrow-mut-of-a-sequence-boxed",
+    breaks:
+      "`v.borrow_mut()` of a `Vec` as a slice, its type known, reads generic code's box of it, `v.value`, and throws (#807)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "                && tcx.item_name(method).as_str() == \"borrow_mut\"\n",
+    replace: "                && tcx.item_name(method).as_str() == \"borrow_mut\"\n                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^(borrow_mut_of_a_vec_as_a_slice|borrow_mut_supertrait).rs$"],
+  },
 ];

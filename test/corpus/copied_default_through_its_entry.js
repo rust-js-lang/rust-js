@@ -35,35 +35,42 @@ export const clicksTouch = {
     return given != null ? $cellOf(given) : undefined;
   },
   renewEnds(items) {
-    const value = clicksTouch_fresh();
-    clicksTouch.lastOf(items).value = value;
-    const r = clicksTouch.firstOf(items);
+    const clicks = clicksTouch_fresh();
+    $assign(clicksTouch_lastOf(items), clicks);
+    const r = clicksTouch_firstOf(items);
     if (r != null) {
-      r.value = clicksTouch_fresh();
+      $assign(r, clicksTouch_fresh());
     }
   },
   viaMe(self) {
-    const r = clicksTouch.me(self);
-    r.value = clicksTouch_fresh();
-    clicksTouch.touchSome(r);
+    const clicks = self.value;
+    const r = clicksTouch_me(clicks);
+    $assign(r, clicksTouch_fresh());
+    clicksTouch_touchSome(r);
   },
   viaMaybe(self) {
-    const r = clicksTouch.maybe(self, true);
+    const clicks = self.value;
+    const r = clicksTouch_maybe(clicks, true);
     if (r != null) {
-      r.value = clicksTouch_fresh();
+      $assign(r, clicksTouch_fresh());
       return true;
     } else {
       return false;
     }
   },
-  twiceSome(self, other) {
-    clicksTouch.touchSome(self, other);
-    clicksTouch.touchSome(self, other);
-    clicksTouch.touchSome(self);
+  twiceSome(self, arg) {
+    const clicks = self.value;
+    const other = arg.value;
+    clicksTouch_touchSome(clicks, other);
+    const r = other;
+    clicksTouch_touchSome(clicks, r);
+    clicksTouch_touchSome(clicks);
   },
-  twice(self, other) {
-    clicksTouch_touch(self.value, other.value);
-    clicksTouch_touch(self.value, other.value);
+  twice(self, arg) {
+    const clicks = self.value;
+    const other = arg.value;
+    clicksTouch_touch(clicks, other);
+    clicksTouch_touch(clicks, other);
   },
 };
 function clicksTouch_me(clicks) {
@@ -196,38 +203,42 @@ export function holderTouch(TTouch) {
       return given != null ? $cellOf(given) : undefined;
     },
     renewEnds(items) {
-      const HolderTouch = holderTouch(TTouch);
-      const value = holderTouch_fresh(TTouch);
-      HolderTouch.lastOf(items).value = value;
-      const r = HolderTouch.firstOf(items);
+      const holder = holderTouch_fresh(TTouch);
+      $assign(holderTouch_lastOf(items, TTouch), holder);
+      const r = holderTouch_firstOf(items, TTouch);
       if (r != null) {
-        r.value = holderTouch_fresh(TTouch);
+        $assign(r, holderTouch_fresh(TTouch));
       }
     },
     viaMe(self) {
-      const HolderTouch = holderTouch(TTouch);
-      const r = HolderTouch.me(self);
-      r.value = holderTouch_fresh(TTouch);
-      HolderTouch.touchSome(r);
+      const holder = self.value;
+      const r = holderTouch_me(holder, TTouch);
+      $assign(r, holderTouch_fresh(TTouch));
+      holderTouch_touchSome(r, undefined, TTouch);
     },
     viaMaybe(self) {
-      const r = holderTouch(TTouch).maybe(self, true);
+      const holder = self.value;
+      const r = holderTouch_maybe(holder, true, TTouch);
       if (r != null) {
-        r.value = holderTouch_fresh(TTouch);
+        $assign(r, holderTouch_fresh(TTouch));
         return true;
       } else {
         return false;
       }
     },
-    twiceSome(self, other) {
-      const HolderTouch = holderTouch(TTouch);
-      HolderTouch.touchSome(self, other);
-      HolderTouch.touchSome(self, other);
-      HolderTouch.touchSome(self);
+    twiceSome(self, arg) {
+      const holder = self.value;
+      const other = arg.value;
+      holderTouch_touchSome(holder, other, TTouch);
+      const r = other;
+      holderTouch_touchSome(holder, r, TTouch);
+      holderTouch_touchSome(holder, undefined, TTouch);
     },
-    twice(self, other) {
-      holderTouch_touch(self.value, other.value, TTouch);
-      holderTouch_touch(self.value, other.value, TTouch);
+    twice(self, arg) {
+      const holder = self.value;
+      const other = arg.value;
+      holderTouch_touch(holder, other, TTouch);
+      holderTouch_touch(holder, other, TTouch);
     },
   }));
 }

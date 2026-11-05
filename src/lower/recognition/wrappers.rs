@@ -288,7 +288,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// itself: `x.borrow()` of std's `Borrow`, as its dictionary's is (ADR
     /// 0167); and `v.as_mut()` of std's `AsMut` of a sequence as a slice or
     /// text as a `str`, of a type known here, the value its `&mut` is, as
-    /// its dictionary's is of the cell generic code has (ADRs 0454, 0550). A
+    /// its dictionary's is of the cell generic code has (ADRs 0454, 0550),
+    /// and `v.borrow_mut()` of std's `BorrowMut` of a sequence as a slice. A
     /// type parameter's is its dictionary's.
     pub(super) fn views_itself(
         &self,
@@ -304,6 +305,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             || (is_std_def(tcx, trait_, StdItem::AsMut)
                 && !known_by_bounds(ty.peel_refs())
                 && self.as_mut_is_itself(ty, args.type_at(1)))
+            // And `v.borrow_mut()` of std's `BorrowMut`, a sequence as a slice
+            // or text as a `str`, as `as_mut()` is, its dictionary's the
+            // same (ADR 0483): not generic code's box of it.
+            || (is_std_def(tcx, trait_, StdItem::BorrowMut)
+                && tcx.item_name(method).as_str() == "borrow_mut"
+                && !known_by_bounds(ty.peel_refs())
+                && self.views_as_itself(ty, args.type_at(1)))
     }
 
     /// Is std's `Borrow<to>` of a `from` the same JS value (ADR 0167): a

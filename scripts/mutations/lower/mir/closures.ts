@@ -330,4 +330,13 @@ export const mutations: Mutation[] = [
     replace: "            true => closure,\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_of_maps_from_its_back.rs$"],
   },
+  {
+    name: "default-closure-in-trait-terms",
+    breaks:
+      "a closure in a copied default is lowered in its trait's terms where its maker is in the impl's, so a `HashMap<Self::Item, _>` it fills drops its key with no drop given (#803)",
+    file: "src/lower/mir/closures.rs",
+    find: "                inlined = crate::lower::traits::default_mir(self.tcx, mir, args, self.typing_env);\n",
+    replace: "                inlined = mir.instantiated(self.tcx, ty::GenericArgs::identity_for_item(self.tcx, def_id));\n                let _ = args;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(item_keyed_map).rs$"],
+  },
 ];

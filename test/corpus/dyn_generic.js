@@ -9,7 +9,7 @@ export function entry() {
 const squareShape = {
   area: squareShape_area,
   scale: (arg0, arg1) => squareShape_scale(arg0.value, arg1),
-  name: (self) => "shape",
+  name: (square) => "shape",
 };
 function squareShape_area(square) {
   return square[0] * square[0];

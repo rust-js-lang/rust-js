@@ -2,7 +2,8 @@
 // `for x in w` of a `Wrapper<I>`, steps it by its own `next`, as std's
 // blanket `impl<I: Iterator> IntoIterator for I` gives it back as it is
 // (#806). So does an impl's method of `impl<I: Iterator> Trait for
-// Wrapper<I>` looping `for x in self`.
+// Wrapper<I>` looping `for x in self`, and a trait's default copied into
+// one, in the impl's terms (#803).
 
 struct D(u32);
 
@@ -72,10 +73,26 @@ impl<I: Iterator> Counted for Wrapper<I> {
     }
 }
 
+trait Tallying: Iterator {
+    fn tally(self) -> usize
+    where
+        Self: Sized,
+    {
+        let mut n = 0;
+        for _ in self {
+            n += 1;
+        }
+        n
+    }
+}
+
+impl<I: Iterator> Tallying for Wrapper<I> {}
+
 fn main() {
     println!("{}", looped(Wrapper(0..3, "range")));
     println!("{}", dropping(Wrapper(vec![1, 2, 3].into_iter(), "vec")));
     let items = of_items(Wrapper(vec![D(7), D(8)].into_iter(), "items"));
     println!("{}", items.len());
     println!("{}", Wrapper("ab".chars(), "counted").counted());
+    println!("{}", Wrapper(vec![D(9)].into_iter(), "tally").tally());
 }

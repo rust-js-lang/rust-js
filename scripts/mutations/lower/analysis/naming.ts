@@ -980,4 +980,14 @@ export const mutations: Mutation[] = [
     replace: "    if false\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "self-box-named-as-its-value",
+    breaks:
+      "a box of a `self` that keeps its name, of no struct, is named `self` as its value is, which is then `self$1` (#803)",
+    file: "src/lower/analysis/naming.rs",
+    find: "        None => \"boxed\",\n",
+    replace: "        None => \"self\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^(blanket_iterator_trait|borrow_mut_supertrait).rs$"],
+    snapshots: true,
+  },
 ];

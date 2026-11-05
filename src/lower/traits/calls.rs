@@ -369,7 +369,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let known_here = !generic_args.has_non_region_param();
         // In a copied default, `Self` is the impl's type: a call on it
         // resolves to the impl's method, called directly.
-        let generic_args = self.in_impl_terms(generic_args);
         let tr = ty::TraitRef::from_assoc(self.tcx, trait_id, generic_args);
         // Rest arguments as a value read, `args.iter()` through the js
         // crate's `Deref` of them: the array itself (ADR 0851).
@@ -508,10 +507,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.eq_by_address(tr.self_ty());
         // A library's function the call resolves to: an impl's method, or
         // a std trait's provided method compiled into `@rust-js/std`, which
-        // is a function over `Self` (ADR 0185, 0561). Not one a copied
-        // default calls through its entry, its dictionary's below (#690).
+        // is a function over `Self` (ADR 0185, 0561).
         if !identity
-            && !self.through_entry(id, generic_args)?
             && let Some(instance) = self.resolve_self_instance(id, generic_args)?
             && self.is_rust_fn(instance.def_id())
             && (self.tcx.trait_of_assoc(instance.def_id()).is_none()
@@ -530,7 +527,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.given_iterators(instance.def_id(), &mut values, &given, span, out)?;
             // Its arguments in the impl's terms, a copied default's, asked of
             // the impl's drops (ADR 0495).
-            values.extend(self.with_impl_drops(|cx| cx.evidence_args(instance.def_id(), instance.args, span))?);
+            values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);
             let called = Expr::call(self.fn_ref(instance.def_id()), values);
             return Ok(Some(self.fmt_result_value(instance.def_id(), instance.args, called)));
         }
@@ -599,16 +596,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let called = Expr::call(entry, values);
                 return Ok(Some(self.fmt_result_value(instance.def_id(), instance.args, called)));
             }
-            // In a copied default, the call is the trait's, of `Self`, which std's
-            // path doesn't see as the number it is here: `self - Self::one()`.
-            if self.given.self_args.is_some()
-                && let Some(op) = crate::lower::recognition::value_operator(self.tcx, trait_id)
-                && self.primitive_operands(tr)
-            {
-                let mut values = values.into_iter();
-                let a = values.next().expect("an operand");
-                return Ok(Some(self.number_operator(op, a, values.next(), tr, span)?));
-            }
             return Ok(None);
         }
         // Not an `IntoIterator` whose `IntoIter` is held as it is, its
@@ -631,7 +618,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if operational(self.tcx, self.krate.foreign, trait_id) {
             // Of the impl's terms, in a copied default (ADR 0495).
-            let dictionary = self.with_impl_drops(|cx| cx.dictionary(tr, span))?;
+            let dictionary = self.dictionary(tr, span)?;
             let mut values = values;
             // A range or an iterator of the crate's, or one given as it is,
             // where a method's own generic `IntoIterator` goes, a JS iterator,
@@ -643,7 +630,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .to_vec();
             self.given_iterators(id, &mut values, &given, span, out)?;
             let location = self.caller_location(span);
-            values.extend(self.with_impl_drops(|cx| cx.own_evidence(id, generic_args, Some(location), span))?);
+            values.extend(self.own_evidence(id, generic_args, Some(location), span)?);
             return Ok(Some(Expr::call(
                 Expr::member(dictionary, bindings::fn_name(self.tcx, id)),
                 values,

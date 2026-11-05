@@ -3,15 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "through-entry-call-resolved",
-    breaks:
-      "a copied default's call its entry adapts gives generic code's forms to the impl's method itself, `clicksTouch_me(self)` of a box (#690)",
-    file: "src/lower/traits/calls.rs",
-    find: "            && !self.through_entry(id, generic_args)?\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^copied_default_through_its_entry.rs$"],
-  },
-  {
     name: "default-dictionaries-kept",
     breaks:
       "a compiled std function's call writes each default dictionary it takes where it's given none, `{ next: $next }`, at its end (ADR 0995)",
@@ -58,7 +49,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`SShape.describe(s, label)` in generic code isn't given `T`'s `Display`, and the entry reads `undefined`",
     file: "src/lower/traits/calls.rs",
-    find: "            let location = self.caller_location(span);\n            values.extend(self.with_impl_drops(|cx| cx.own_evidence(id, generic_args, Some(location), span))?);\n",
+    find: "            let location = self.caller_location(span);\n            values.extend(self.own_evidence(id, generic_args, Some(location), span)?);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "generic_trait_methods"],
   },
@@ -345,25 +336,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_from.rs$"],
   },
   {
-    name: "impl-call-default-drops",
-    breaks:
-      "a copied default's call of its impl's own method gives it its trait's `Self`'s drop for the impl's `I`, whose index they share",
-    file: "src/lower/traits/calls.rs",
-    find: "            values.extend(self.with_impl_drops(|cx| cx.evidence_args(instance.def_id(), instance.args, span))?);\n",
-    replace:
-      "            values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);\n",
-    tests: ["test/corpus.test.ts", "-t", "^copied_default_impl_drops.rs$"],
-  },
-  {
-    name: "impl-dictionary-default-drops",
-    breaks:
-      "a copied default's call of another through its impl's dictionary makes it with its trait's `Self`'s drop for the impl's `I`",
-    file: "src/lower/traits/calls.rs",
-    find: "            let dictionary = self.with_impl_drops(|cx| cx.dictionary(tr, span))?;\n",
-    replace: "            let dictionary = self.dictionary(tr, span)?;\n",
-    tests: ["test/corpus.test.ts", "-t", "^copied_default_impl_drops.rs$"],
-  },
-  {
     name: "dyn-mut-self-always-pair",
     breaks:
       "a `&mut dyn` of a trait that extends `Iterator` is given its pair, which its dictionary steps as the value",
@@ -400,16 +372,6 @@ export const mutations: Mutation[] = [
     replace:
       "        [tr.self_ty()]\n            .into_iter()\n            .all(|t| crate::lower::representation::Num::of(t.peel_refs()).is_some() || t.peel_refs().is_bool())",
     tests: ["test/corpus.test.ts", "-t", "generic_operators"],
-  },
-  {
-    name: "number-op-in-default-unknown",
-    breaks:
-      "`self - Self::one()` in a default copied into an `f64`'s impl is an error",
-    file: "src/lower/traits/calls.rs",
-    find: "            if self.given.self_args.is_some()\n                && let Some(op) = crate::lower::recognition::value_operator(self.tcx, trait_id)",
-    replace:
-      "            if false\n                && let Some(op) = crate::lower::recognition::value_operator(self.tcx, trait_id)",
-    tests: ["test/corpus.test.ts", "-t", "trait_default_bounds"],
   },
   {
     name: "known-assign-through-dictionary",

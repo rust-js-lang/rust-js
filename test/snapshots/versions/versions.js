@@ -29,8 +29,8 @@ import {
 
 export const dogDescribe = {
   name: dogDescribe_name,
-  describe: (self) => `<${dogDescribe_name(self)}>`,
-  shout: (self) => dogDescribe.describe(self).toUpperCase(),
+  describe: (dog) => `<${dogDescribe_name(dog)}>`,
+  shout: (dog) => dogDescribe.describe(dog).toUpperCase(),
 };
 function dogDescribe_name(dog) {
   return "dog";
@@ -38,7 +38,7 @@ function dogDescribe_name(dog) {
 export const catDescribe = {
   name: catDescribe_name,
   describe: catDescribe_describe,
-  shout: (self) => catDescribe_describe(self).toUpperCase(),
+  shout: (cat) => catDescribe_describe(cat).toUpperCase(),
 };
 function catDescribe_name(cat) {
   return `cat${cat.lives}`;

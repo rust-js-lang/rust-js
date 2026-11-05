@@ -17,21 +17,44 @@ function holderTouch(TTouch, dropT) {
       return holderTouch_count(arg0, TTouch, dropT);
     },
     twice(self) {
-      holderTouch_touch(self.value, TTouch, dropT);
-      holderTouch_touch(self.value, TTouch, dropT);
+      const holder = self.value;
+      holderTouch_touch(holder, TTouch, dropT);
+      holderTouch_touch(holder, TTouch, dropT);
     },
     four(self) {
+      const holder = self.value;
       const HolderTouch = holderTouch(TTouch, dropT);
-      HolderTouch.twice(self);
-      HolderTouch.twice(self);
+      const self$1 = { value: holder };
+      try {
+        HolderTouch.twice(self$1);
+      } finally {
+        $assign(holder, self$1.value);
+      }
+      const self$2 = { value: holder };
+      try {
+        HolderTouch.twice(self$2);
+      } finally {
+        $assign(holder, self$2.value);
+      }
     },
     maybeFour(self, go) {
+      const holder = self.value;
       const HolderTouch = holderTouch(TTouch, dropT);
       if (go) {
-        HolderTouch.twice(self);
-        HolderTouch.twice(self);
+        const self$1 = { value: holder };
+        try {
+          HolderTouch.twice(self$1);
+        } finally {
+          $assign(holder, self$1.value);
+        }
+        const self$2 = { value: holder };
+        try {
+          HolderTouch.twice(self$2);
+        } finally {
+          $assign(holder, self$2.value);
+        }
       }
-      return holderTouch_count(self.value, TTouch, dropT);
+      return holderTouch_count(holder, TTouch, dropT);
     },
     $drop(holder) {
       dropT?.(holder.t);
@@ -147,8 +170,9 @@ function slotRenew(TDefault, dropT) {
       return slotRenew_renew(arg0.value, TDefault, dropT);
     },
     renewTwice(self) {
-      slotRenew_renew(self.value, TDefault, dropT);
-      slotRenew_renew(self.value, TDefault, dropT);
+      const slot = self.value;
+      slotRenew_renew(slot, TDefault, dropT);
+      slotRenew_renew(slot, TDefault, dropT);
     },
     $drop(slot) {
       dropT?.(slot.value);

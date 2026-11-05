@@ -10,13 +10,13 @@ export const vecPoolIndex = {
   BorrowMut() {
     return { borrowMut: (value) => value, Borrow: () => ({ borrow: (value) => value }) };
   },
-  len(self) {
-    return self.length;
+  len(vec) {
+    return vec.length;
   },
   first(self) {
-    const value = self.value;
-    value[0] = (value[$at(value, 0)] + 1) >>> 0;
-    return $index(self.value, 0);
+    const vec = self.value;
+    vec[0] = (vec[$at(vec, 0)] + 1) >>> 0;
+    return $index(vec, 0);
   },
 };
 
@@ -30,10 +30,10 @@ export function _usize__K_PoolIndex(K) {
     len(self) {
       return self.length;
     },
-    first(self) {
-      const value = self.value;
-      value[0] = (value[$at(value, 0)] + 1) >>> 0;
-      return $index(self.value, 0);
+    first(boxed) {
+      const self = boxed.value;
+      self[0] = (self[$at(self, 0)] + 1) >>> 0;
+      return $index(self, 0);
     },
   }));
 }

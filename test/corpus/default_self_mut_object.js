@@ -5,9 +5,9 @@ export function entry() {
 }
 
 const xCh = {
-  change(self) {
-    xCh_set(self, 5);
-    return self;
+  change(x) {
+    xCh_set(x, 5);
+    return x;
   },
   set(arg0, arg1) {
     return xCh_set(arg0.value, arg1);

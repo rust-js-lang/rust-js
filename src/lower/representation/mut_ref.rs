@@ -334,15 +334,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What `fn_id`'s parameter `i` is, a `&mut`'s form in `fn_id`'s own
     /// terms; `None` of a parameter that's no `&mut`.
     pub(in crate::lower) fn param_form(&self, fn_id: DefId, i: usize) -> Option<MutRefForm> {
-        let inputs = self
-            .tcx
-            .fn_sig(fn_id)
-            .instantiate_identity()
+        let args = ty::GenericArgs::identity_for_item(self.tcx, fn_id);
+        self.param_form_of(fn_id, args, self.tcx.param_env(fn_id), i)
+    }
+
+    /// What `fn_id`'s parameter `i` is, given `args`, where `param_env`
+    /// says what they are: a copied default's in its impl's terms
+    /// (`traits::default_args`); `None` of a parameter that's no `&mut`.
+    pub(in crate::lower) fn param_form_of(
+        &self,
+        fn_id: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        param_env: ty::ParamEnv<'tcx>,
+        i: usize,
+    ) -> Option<MutRefForm> {
+        let inputs = (self.tcx.fn_sig(fn_id).instantiate(self.tcx, args))
             .skip_normalization()
             .skip_binder()
             .inputs();
         match inputs.get(i).map(|input| *input.kind()) {
-            Some(ty::Ref(_, inner, Mutability::Mut)) => Some(self.mut_ref_form_in(inner, self.tcx.param_env(fn_id))),
+            Some(ty::Ref(_, inner, Mutability::Mut)) => Some(self.mut_ref_form_in(inner, param_env)),
             _ => None,
         }
     }

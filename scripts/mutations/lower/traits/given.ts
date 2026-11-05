@@ -153,48 +153,39 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^default_own_param_numbered_as_the_impls.rs$"],
   },
   {
-    name: "default-own-bounds-not-in-its-env",
-    breaks:
-      "a copied default's type naming the trait method's own const parameter is asked about where only the impl's are, and rustc crashes",
-    file: "src/lower/traits/given.rs",
-    find: "        .chain(own.param_env.caller_bounds().iter())\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^array_defaults.rs$"],
-  },
-  {
-    name: "default-sized-not-impls",
-    breaks:
-      "a default's `Self: Sized` isn't the impl's `T: Sized`, and its trait on an adapter of `Self` is refused",
-    file: "src/lower/traits/given.rs",
-    find: "            (clause.as_trait_clause()).is_some_and(|tr| tcx.is_lang_item(tr.def_id(), LangItem::Sized))\n                || names_only(",
-    replace: "            false\n                || names_only(",
-    tests: ["test/corpus.test.ts", "-t", "^default_on_an_adapter_of_self.rs$"],
-  },
-  {
-    name: "default-own-params-unbound-in-impl-terms",
-    breaks:
-      "a copied default's own parameter, numbered after the impl's, has none of its bounds there, so `Holder<T>` of its `T: Iterator<Item = Vec<u32>>` is cloned sharing its `Vec` (#804)",
-    file: "src/lower/traits/given.rs",
-    find: "                || names_only(clause, |index| index >= trait_count)\n",
-    replace: "\n",
-    tests: ["test/corpus.test.ts", "-t", "^default_method_clones.rs$"],
-  },
-  {
     name: "default-env-without-impls-bounds",
     breaks:
       "a copied default is lowered where only its own bounds hold, not its impl's, so a call of the impl's terms resolves to no impl: `Index<Id> for [T]` of its `[B]`, `Holder<I>`'s `Iterator`, `Map<T, F>: Counting`",
     file: "src/lower/traits/given.rs",
-    find: "    let bounds = (ty::TypingEnv::post_analysis(tcx, imp).param_env.caller_bounds().iter())\n",
+    find: "    let bounds = (impl_env.param_env.caller_bounds().iter())\n",
     replace: "    let bounds = (ty::List::<ty::Clause<'tcx>>::empty().iter())\n",
     tests: ["test/corpus.test.ts", "-t", "^(default_crate_index|copied_iterator_defaults|generic_maps|const_param_drops).rs$"],
   },
   {
-    name: "default-impl-terms-twice",
+    name: "default-env-without-its-own-clauses",
     breaks:
-      "what a copied default makes in its impl's terms, asked of the impl's drops, is put in those terms again, its own parameter numbered past the impl's read as one of the trait's, and rustc crashes (#804)",
+      "a copied default is lowered where its own where clause doesn't hold, `T::Item: IntoIterator` of its `Self::Item: IntoIterator`, its own parameters' bounds, its `Self: Sized`, so the `Map<T, F>` it counts with resolves to no impl, and its own `T`'s `Holder<T>` clones sharing its `Vec` (#803, #804)",
     file: "src/lower/traits/given.rs",
-    find: "        match self.given.self_args.filter(|_| !self.in_impl_drops()) {\n",
-    replace: "        match self.given.self_args {\n",
-    tests: ["test/iterator-forms.test.ts", "-t", "default_own_param_numbered_as_the_impls"],
+    find: "        .chain(in_impl)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(generic_maps|default_method_clones|default_on_an_adapter_of_self|array_defaults).rs$"],
+  },
+  {
+    name: "default-env-clauses-unnormalized",
+    breaks:
+      "a copied default's where clause of a non-blanket impl isn't in the impl's terms as its body is, `<Wrapper<I> as Iterator>::Item: IntoIterator`, so its `Held`'s drop resolves to nothing (#803)",
+    file: "src/lower/traits/given.rs",
+    find: "        (tcx.try_normalize_erasing_regions(impl_env, ty::Unnormalized::new_wip(clause))).unwrap_or(clause)\n",
+    replace: "        clause\n",
+    tests: ["test/corpus.test.ts", "-t", "^(default_of_a_non_blanket_impl_steps_its_self).rs$"],
+  },
+  {
+    name: "default-mir-unnormalized",
+    breaks:
+      "a copied default's MIR in its impl's terms isn't normalized there, so `<Enumerated<P> as Pull>::Out` is refused (#803)",
+    file: "src/lower/traits/given.rs",
+    find: "        ty_op: |t: Ty<'tcx>| match t.has_aliases() && !t.has_escaping_bound_vars() {\n",
+    replace: "        ty_op: |t: Ty<'tcx>| match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(blanket_iterator_trait|generic_associated_types).rs$"],
   },
 ];

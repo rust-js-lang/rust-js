@@ -4,6 +4,7 @@ import { iterator_fuse } from "@rust-js/std/iter.js";
 import {
   $count,
   $foldOf,
+  $given,
   $iter,
   $lastSome,
   $next,
@@ -30,7 +31,9 @@ function hint(it, IFused) {
 const $tExt = new WeakMap();
 
 function tExt(TIterator) {
-  return $traitImpl($tExt, [TIterator], () => ({ hinted: (self) => hint(self, false) }));
+  return $traitImpl($tExt, [TIterator], () => ({
+    hinted: (self) => hint($given(self, TIterator, true), false),
+  }));
 }
 
 function main() {

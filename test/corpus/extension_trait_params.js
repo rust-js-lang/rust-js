@@ -28,20 +28,20 @@ function iSorted(IIterator) {
   }));
 }
 const countSummed = {
-  total(self) {
+  total(count) {
     let n = 0;
     let x;
-    while ((x = countIterator_next(self)) != null) {
+    while ((x = countIterator_next(count)) != null) {
       n = (n + x) >>> 0;
     }
     return n;
   },
 };
 const intoIterSummed = {
-  total(self) {
+  total(intoIter) {
     let n = 0;
     let x;
-    while ((x = $next(self)) != null) {
+    while ((x = $next(intoIter)) != null) {
       n = (n + x) >>> 0;
     }
     return n;

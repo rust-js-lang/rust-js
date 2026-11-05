@@ -8,8 +8,8 @@ export function entry() {
 
 const numbersSecond = {
   items: numbersSecond_items,
-  second(self) {
-    const items = numbersSecond_items(self);
+  second(numbers) {
+    const items = numbersSecond_items(numbers);
     const it = items.values();
     it.next().value;
     return it.next().value ?? 0;

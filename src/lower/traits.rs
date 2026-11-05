@@ -31,7 +31,7 @@ use rustc_hir::def::DefKind;
 use rustc_middle::mir::{BinOp, UnOp};
 use rustc_middle::traits::{BuiltinImplSource, ImplSource};
 use rustc_middle::ty::elaborate::supertrait_def_ids;
-use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable, TypeVisitableExt, Upcast};
+use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, Upcast};
 use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
 use std::collections::{HashMap, HashSet};

@@ -9,11 +9,11 @@ function circleShape_area(circle) {
 function circleShape_name(circle) {
   return "circle";
 }
-export const squareShape = { area: squareShape_area, name: (self) => "shape" };
+export const squareShape = { area: squareShape_area, name: (square) => "shape" };
 function squareShape_area(square) {
   return square[0] * square[0];
 }
-export const blobShape = { area: blobShape_area, name: (self) => "shape" };
+export const blobShape = { area: blobShape_area, name: (blob) => "shape" };
 function blobShape_area(blob) {
   return 0;
 }
@@ -26,7 +26,7 @@ const $vecShape = new WeakMap();
 export function vecShape(TShape) {
   return $traitImpl($vecShape, [TShape], () => ({
     area: (arg0) => vecShape_area(arg0, TShape),
-    name: (self) => "shape",
+    name: (vec) => "shape",
   }));
 }
 function vecShape_area(vec, TShape) {
@@ -34,7 +34,7 @@ function vecShape_area(vec, TShape) {
 }
 export const circleLabeled = {
   Shape: () => circleShape,
-  label: (self) => `${circleShape_name(self)} of area ${$displayF64(circleShape_area(self))}`,
+  label: (circle) => `${circleShape_name(circle)} of area ${$displayF64(circleShape_area(circle))}`,
 };
 
 export function total(shapes, TShape) {

@@ -5,7 +5,7 @@ export function entry() {
 }
 
 const unitTracked = {
-  fromDefault: (self, location) => location,
+  fromDefault: (unit, location) => location,
   inherited: unitTracked_inherited,
   onlyImpl: (
     arg0,

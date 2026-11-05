@@ -28,16 +28,13 @@ const $pairedCounting = new WeakMap();
 
 function pairedCounting(dropI, dropU, dropIItem) {
   return $traitImpl($pairedCounting, [dropI, dropU, dropIItem], () => ({
-    countedWith(self, extra, dropU$1, dropUItem, dropUIntoIter) {
-      function dropSelf(paired) {
+    countedWith(paired, extra, dropU$1, dropUItem, dropUIntoIter) {
+      try {
         try {
           dropI?.(paired[0]);
         } finally {
           dropU?.(paired[1]);
         }
-      }
-      try {
-        dropSelf?.(self);
       } catch (error) {
         dropU$1?.(extra);
         throw error;
@@ -52,32 +49,20 @@ function pairedCounting(dropI, dropU, dropIItem) {
         dropUIntoIter?.(iter);
       }
     },
-    droppedWith(self, extra, dropU$1) {
-      function dropSelf(paired) {
-        try {
-          dropI?.(paired[0]);
-        } finally {
-          dropU?.(paired[1]);
-        }
-      }
+    droppedWith(paired, extra, dropU$1) {
       try {
         dropU$1?.(extra);
         console.log("dropped extra");
       } finally {
-        dropSelf?.(self);
-      }
-      return 0;
-    },
-    heldWith(self, extra, dropU$1) {
-      function dropSelf(paired) {
-        // Held by a type with a destructor of its own, whose drop's evidence is
-        // asked of the impl's drops.
         try {
           dropI?.(paired[0]);
         } finally {
           dropU?.(paired[1]);
         }
       }
+      return 0;
+    },
+    heldWith(paired, extra, dropU$1) {
       try {
         try {
           console.log("drop held");
@@ -85,21 +70,21 @@ function pairedCounting(dropI, dropU, dropIItem) {
           dropU$1?.(extra);
         }
       } finally {
-        dropSelf?.(self);
-      }
-      return 1;
-    },
-    collectedWith(self, extra, USize, UAlign, HeldSize, HeldAlign, dropU$1) {
-      function dropSelf(paired) {
-        // Collected, in place, into what holds each.
         try {
           dropI?.(paired[0]);
         } finally {
           dropU?.(paired[1]);
         }
       }
+      return 1;
+    },
+    collectedWith(paired, extra, USize, UAlign, HeldSize, HeldAlign, dropU$1) {
       try {
-        dropSelf?.(self);
+        try {
+          dropI?.(paired[0]);
+        } finally {
+          dropU?.(paired[1]);
+        }
       } catch (error) {
         $dropItems(extra, (item) => {
           dropU$1?.(item);

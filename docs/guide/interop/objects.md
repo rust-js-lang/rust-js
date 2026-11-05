@@ -280,7 +280,7 @@ import { $displayF64 } from "@rust-js/runtime";
 
 export const circleShape = {
   area: circleShape_area,
-  describe: (self) => `a shape of area ${$displayF64(circleShape_area(self))}`,
+  describe: (circle) => `a shape of area ${$displayF64(circleShape_area(circle))}`,
 };
 function circleShape_area(circle) {
   return Math.PI * circle.radius * circle.radius;

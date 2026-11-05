@@ -10,7 +10,7 @@ export const mutations: Mutation[] = [
     find: "            params: std::mem::replace(&mut self.drop_state.param_drops, drops),\n",
     replace:
       "            params: { drop(drops); self.drop_state.param_drops.clone() },\n",
-    tests: ["test/corpus.test.ts", "-t", "drop_impl_indirect"],
+    tests: ["test/corpus.test.ts", "-t", "^(drop_impl_indirect|default_own_param_drops).rs$"],
   },
   {
     name: "hoisted-drops-lost",
@@ -29,14 +29,5 @@ export const mutations: Mutation[] = [
     find: "            ty::Alias(_, alias) => self.drop_query().slot_of(*alias)?,\n",
     replace: "            ty::Alias(..) => return None,\n",
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
-  },
-  {
-    name: "impl-drops-not-exchanged",
-    breaks:
-      "what's in a copied default's impl's terms is asked of its trait's drops",
-    file: "src/lower/drops/scopes.rs",
-    find: "        self.exchange_drops(&mut outer);\n        let made = f(self);\n        self.exchange_drops(&mut outer);\n",
-    replace: "        let made = f(self);\n",
-    tests: ["test/corpus.test.ts", "-t", "^copied_default_impl_drops.rs$"],
   },
 ];

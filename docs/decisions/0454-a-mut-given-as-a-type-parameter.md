@@ -511,3 +511,10 @@ refused.
   (`traits/impls.ts`), `through-entry-call-resolved`
   (`traits/calls.ts`), and `through-entry-args-for-the-impl`
   (`items.ts`).
+
+## Amended by #803
+
+`through_entry` is gone: a copied default's body is in its impl's terms
+(ADR 0495, amended), so it calls the impl's method as the impl's own
+methods do, `clicksTouch_me(clicks)`, its `&mut self` taken out of generic
+code's box once, at its top.

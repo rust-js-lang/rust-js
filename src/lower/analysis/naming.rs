@@ -1370,6 +1370,17 @@ fn items_in(tcx: TyCtxt<'_>, module: DefId) -> Vec<DefId> {
         .collect()
 }
 
+/// What a function names the box it's given of a method's `self`, which
+/// it takes the value out of, a dictionary's entry of a copied default
+/// (#803): `self`, but `boxed` where the value keeps that name, a `self` of
+/// no struct (`receiver_name`), as a box is never named as what it holds.
+pub(crate) fn self_box_name<'tcx>(tcx: TyCtxt<'tcx>, receiver: ty::Ty<'tcx>) -> &'static str {
+    match receiver_name(tcx, receiver) {
+        Some(_) => "self",
+        None => "boxed",
+    }
+}
+
 /// A method's `self`'s JS name, after its type's, `counter` of a
 /// `Counter`'s, a pointer's too, `self: &Rc<Self>`, `Box<Self>` or
 /// `Pin<&mut Self>`, as `&self`'s (ADR 0047, rd345): the name its body

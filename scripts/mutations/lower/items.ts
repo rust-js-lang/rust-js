@@ -3,15 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "through-entry-args-for-the-impl",
-    breaks:
-      "a copied default's call through the entry is given what the impl's method takes, `clicksTouch.me(self.value)`, which the entry takes out of its box again (#690)",
-    file: "src/lower/items.rs",
-    find: "        if self.through_entry(id, generic_args)? {\n",
-    replace: "        if false && self.through_entry(id, generic_args)? {\n",
-    tests: ["test/corpus.test.ts", "-t", "^copied_default_through_its_entry.rs$"],
-  },
-  {
     name: "type-constant-read-by-name",
     breaks: "an exported impl constant's use reads its object, `ReactiveFlags.MUTABLE`, where TypeScript's `const enum` and every other impl constant is its value (#498)",
     file: "src/lower/items.rs",
@@ -214,16 +205,6 @@ export const mutations: Mutation[] = [
     find: "            Std::GuardValue { mutable } => self.guard_value(x, input, mutable),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^guard_deref_dictionary.rs$"],
-  },
-  {
-    name: "crate-resolution-trait-terms",
-    breaks:
-      "a copied default's `self.next()` of the crate's iterator isn't seen to be its impl's",
-    file: "src/lower/items.rs",
-    find: "        let resolved = self.resolve_self_instance(def_id, self.in_impl_terms(generic_args))?;\n",
-    replace:
-      "        let resolved = self.resolve_self_instance(def_id, generic_args)?;\n",
-    tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
   },
   {
     name: "fused-specialization-not-crates",

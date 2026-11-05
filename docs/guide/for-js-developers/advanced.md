@@ -492,7 +492,7 @@ import { $displayF64, $index, $toFixed } from "@rust-js/runtime";
 
 export const circleShape = {
   area: circleShape_area,
-  describe: (self) => `a shape of area ${$toFixed(circleShape_area(self), 1)}`,
+  describe: (circle) => `a shape of area ${$toFixed(circleShape_area(circle), 1)}`,
 };
 function circleShape_area(circle) {
   return Math.PI * circle.radius * circle.radius;

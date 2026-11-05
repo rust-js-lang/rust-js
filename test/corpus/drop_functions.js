@@ -30,7 +30,7 @@ function list(n) {
 
 const sevenMake = {
   size: sevenMake_size,
-  make(self) {
+  make(seven) {
     function dropList(list) {
       if (list.TAG === "Cons") {
         console.log(`drop ${list._0[0]}`);
@@ -39,7 +39,7 @@ const sevenMake = {
     }
     const made = {
       TAG: "Cons",
-      _0: [sevenMake_size(self)],
+      _0: [sevenMake_size(seven)],
       _1: { TAG: "Cons", _0: [2], _1: "Nil" },
     };
     const result = made.TAG === "Cons" ? (made._1.TAG === "Cons" ? 1 : 0) : 0;

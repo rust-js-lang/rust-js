@@ -4,6 +4,7 @@ import {
   $closing,
   $collectDropping,
   $given,
+  $givenDrop,
   $held,
   $iter,
   $lent,
@@ -83,7 +84,9 @@ function tTotals(TIterator, dropT) {
       }
     },
     doubled(self) {
-      const iter = $closing($given(self, TIterator), dropT, false).map((x) => (x * 2) & 255);
+      const iter = $closing($given(self, TIterator), (it) => $givenDrop(it, dropT)).map(
+        (x) => (x * 2) & 255,
+      );
       return $collectDropping($roomForHint(iter, 1, false));
     },
     looped(self) {
@@ -114,16 +117,16 @@ const $holderPeeled = new WeakMap();
 
 function holderPeeled(IIterator, dropI, dropIItem) {
   return $traitImpl($holderPeeled, [IIterator, dropI, dropIItem], () => ({
-    dropFirst(self) {
-      const next = holderIterator_next(self, IIterator, dropI, dropIItem);
+    dropFirst(holder) {
+      const next = holderIterator_next(holder, IIterator, dropI, dropIItem);
       if (next != null) {
         dropIItem?.($someValue(next));
       }
     },
-    dropTwo(self) {
+    dropTwo(holder) {
       const HolderPeeled = holderPeeled(IIterator, dropI, dropIItem);
-      HolderPeeled.dropFirst(self);
-      HolderPeeled.dropFirst(self);
+      HolderPeeled.dropFirst(holder);
+      HolderPeeled.dropFirst(holder);
     },
     $drop(holder) {
       dropI?.(holder[0]);
@@ -135,7 +138,7 @@ const $holderNamed = new WeakMap();
 
 function holderNamed(dropI, dropIItem) {
   return $traitImpl($holderNamed, [dropI, dropIItem], () => ({
-    name(self) {
+    name(holder) {
       return "holder";
     },
     $drop(holder) {

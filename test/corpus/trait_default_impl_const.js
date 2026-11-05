@@ -12,8 +12,9 @@ function holderCapacity(CAP) {
   return $traitImpl($holderCapacity, [CAP], () => ({
     len: (arg0) => holderCapacity_len(arg0, CAP),
     capacity: (arg0) => holderCapacity_capacity(arg0, CAP),
-    remaining: (self) => (holderCapacity_capacity(self, CAP) - holderCapacity_len(self, CAP)) >>> 0,
-    full: (self) => holderCapacity(CAP).remaining(self) === 0,
+    remaining: (holder) =>
+      (holderCapacity_capacity(holder, CAP) - holderCapacity_len(holder, CAP)) >>> 0,
+    full: (holder) => holderCapacity(CAP).remaining(holder) === 0,
   }));
 }
 function holderCapacity_len(holder, CAP) {

@@ -8,7 +8,7 @@ export function entry() {
 
 const metersConvertF64 = {
   convert: metersConvertF64_convert,
-  twice: (self) => [metersConvertF64_convert(self), metersConvertF64_convert(self)],
+  twice: (meters) => [metersConvertF64_convert(meters), metersConvertF64_convert(meters)],
 };
 function metersConvertF64_convert(meters) {
   return meters[0];
@@ -16,7 +16,7 @@ function metersConvertF64_convert(meters) {
 
 const metersConvertString = {
   convert: metersConvertString_convert,
-  twice: (self) => [metersConvertString_convert(self), metersConvertString_convert(self)],
+  twice: (meters) => [metersConvertString_convert(meters), metersConvertString_convert(meters)],
 };
 function metersConvertString_convert(meters) {
   return `${$displayF64(meters[0])} m`;
@@ -73,7 +73,7 @@ function metersLabelString_label(meters) {
 const metersBoth = {
   LabelU32: () => metersLabelU32,
   LabelString: () => metersLabelString,
-  both: (self) => [metersLabelU32_label(self), metersLabelString_label(self)],
+  both: (meters) => [metersLabelU32_label(meters), metersLabelString_label(meters)],
 };
 
 const metersPairU32String = { LabelA: () => metersLabelU32, LabelB: () => metersLabelString };
@@ -88,14 +88,14 @@ function number(b, BBoth) {
 
 const metersWrapF64 = {
   Convert: () => metersConvertF64,
-  wrapped: (self) => [metersConvertF64_convert(self)],
+  wrapped: (meters) => [metersConvertF64_convert(meters)],
 };
 
 function unwrapped(x, XWrapT) {
   return XWrapT.Convert().convert(x);
 }
 
-const metersGreetStr = { greet: (self) => "hi" };
+const metersGreetStr = { greet: (meters) => "hi" };
 
 const metersGreeter = { Greet: () => metersGreetStr };
 

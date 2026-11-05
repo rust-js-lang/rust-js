@@ -1186,7 +1186,7 @@ test("format! writes its arguments in place, in the order Rust runs them", async
   expect(js).toContain("  const value = tick(c);\n  return `${tick(c)} ${value} ${value} ${c.value}`;");
   // And a call in one doesn't make the call before it a `const`.
   const traits = await Bun.file(join(root, "test/snapshots/traits/traits.js")).text();
-  expect(traits).toContain("label: (self) => `${circleShape_name(self)} of area ${$displayF64(circleShape_area(self))}`");
+  expect(traits).toContain("label: (circle) => `${circleShape_name(circle)} of area ${$displayF64(circleShape_area(circle))}`");
 });
 
 // ADR 0057: an `Ordering` is -1, 0 or 1; derived, the fields in turn with `||`.

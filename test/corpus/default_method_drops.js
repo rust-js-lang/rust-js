@@ -16,14 +16,14 @@ function noisyDrop_drop(noisy) {
 
 const personGreet = {
   id: personGreet_id,
-  greet(self) {
+  greet(person) {
     const noisy = [1];
     if (noisy != null) {
       console.log("hello");
       noisyDrop_drop(noisy);
     }
   },
-  parts(self) {
+  parts(person) {
     const first = [2];
     noisyDrop_drop([3]);
     const shown = noisyDebug_fmt(first);
@@ -39,7 +39,7 @@ const personGreet = {
     }
     return result;
   },
-  lists(self, long) {
+  lists(person, long) {
     function dropList(list) {
       noisyDrop_drop(list.item);
       if (list.next != null) {

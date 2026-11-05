@@ -8,7 +8,6 @@ import {
   $iterator,
   $nextSome,
   $rangeNext,
-  $someAt,
   $someValue,
   $successors,
 } from "@rust-js/runtime";
@@ -18,42 +17,27 @@ export function entry() {
 }
 
 const shelfContainer = {
-  ItemDebug() {
-    return { fmt: (value) => $debugStr(value) };
-  },
+  ItemDebug: () => ({ fmt: (value) => $debugStr(value) }),
   items: shelfContainer_items,
-  last(self) {
-    const items = Array.from(shelfContainer_items(self));
-    return $someAt(items, items.length - 1);
-  },
+  last: (shelf) => Array.from(shelfContainer_items(shelf)).at(-1),
 };
 function shelfContainer_items(shelf) {
   return $iter(shelf.books);
 }
 
 const countsContainer = {
-  ItemDebug() {
-    return { fmt: (value) => String(value) };
-  },
+  ItemDebug: () => ({ fmt: (value) => String(value) }),
   items: countsContainer_items,
-  last(self) {
-    const items = Array.from(countsContainer_items(self));
-    return $someAt(items, items.length - 1);
-  },
+  last: (counts) => Array.from(countsContainer_items(counts)).at(-1),
 };
 function countsContainer_items(counts) {
   return $iter(counts[0]);
 }
 
 const countdownContainer = {
-  ItemDebug() {
-    return { fmt: (value) => String(value) };
-  },
+  ItemDebug: () => ({ fmt: (value) => String(value) }),
   items: countdownContainer_items,
-  last(self) {
-    const items = Array.from(countdownContainer_items(self));
-    return $someAt(items, items.length - 1);
-  },
+  last: (countdown) => Array.from(countdownContainer_items(countdown)).at(-1),
 };
 function countdownContainer_items(countdown) {
   return $successors(countdown[0], (n) => $checked(n - 1, 0, 4294967295));

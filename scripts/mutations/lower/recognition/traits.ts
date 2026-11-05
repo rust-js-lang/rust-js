@@ -202,7 +202,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/traits.rs",
     find: '!matches!(name.as_str(), "partial_cmp" | "lt" | "le" | "gt" | "ge")',
     replace: '!matches!(name.as_str(), "partial_cmp")',
-    tests: ["test/corpus.test.ts", "-t", "trait_default_bounds"],
+    tests: ["test/corpus.test.ts", "-t", "^(trait_default_bounds|range_values|clock).rs$"],
   },
   {
     name: "projection-not-unknown",

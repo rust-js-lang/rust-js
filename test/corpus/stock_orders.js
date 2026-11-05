@@ -74,8 +74,8 @@ function stockErrorDisplay_fmt(stockError, options) {
 const linePriced = {
   unitCents: linePriced_unitCents,
   quantity: linePriced_quantity,
-  totalCents: (self) =>
-    BigInt.asUintN(64, BigInt(linePriced_unitCents(self)) * BigInt(linePriced_quantity(self))),
+  totalCents: (line) =>
+    BigInt.asUintN(64, BigInt(linePriced_unitCents(line)) * BigInt(linePriced_quantity(line))),
 };
 function linePriced_unitCents(line) {
   return line.unitCents;

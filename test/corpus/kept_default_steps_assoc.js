@@ -12,7 +12,9 @@ function iDigits(IIterator) {
   return $traitImpl($iDigits, [IIterator], () => ({
     digitIter: iDigits_digitIter,
     digitSum: (self) =>
-      $given(iDigits_digitIter(self), IIterator).reduce((s, d) => (s + d) >>> 0, 0),
+      $given(iDigits_digitIter(self), IIterator)
+        .map((d) => d)
+        .reduce((s, d) => (s + d) >>> 0, 0),
   }));
 }
 function iDigits_digitIter(self) {

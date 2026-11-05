@@ -269,10 +269,13 @@ fn slot_bounds<'tcx>(tcx: TyCtxt<'tcx>, id: DefId) -> Vec<(Vec<ty::Clause<'tcx>>
         // impl's, and its caller gives the drops of.
         let clauses: Vec<ty::Clause<'tcx>> = (tcx.clauses_of(item.def_id).clauses.iter())
             .filter(|&&(clause, _)| names_only(clause, |index| index < trait_count))
+            // As the impl's bounds name them, as its body has them: `I::Item`
+            // of a `Wrapper<I>`'s `Self::Item` (#803).
             .map(|&(clause, _)| {
-                ty::EarlyBinder::bind(tcx, clause)
+                let clause = ty::EarlyBinder::bind(tcx, clause)
                     .instantiate(tcx, args)
-                    .skip_normalization()
+                    .skip_normalization();
+                (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(clause))).unwrap_or(clause)
             })
             .collect();
         if clauses.is_empty() {

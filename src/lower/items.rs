@@ -637,17 +637,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The crate's own impl method a trait method call resolves to, if it
-    /// does: in a copied default, `Self` is the impl's type (ADR 0049), but
-    /// not one called through its entry there (`through_entry`, #690).
+    /// does: in a copied default, in its impl's terms (ADR 0049).
     pub(super) fn impl_method(
         &self,
         id: DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
     ) -> R<Option<(DefId, ty::GenericArgsRef<'tcx>)>> {
-        let generic_args = self.in_impl_terms(generic_args);
-        if self.through_entry(id, generic_args)? {
-            return Ok(None);
-        }
         Ok(self
             .resolve_self_instance(id, generic_args)?
             .filter(|instance| {
@@ -666,19 +661,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `count`: its struct is a JS iterator, stepped as one, and sized by
         // the hint it carries; but a provided method compiled, `fuse()`'s,
         // of one too (ADR 0561).
-        if super::recognition::stepped_as_js_iterator(self.tcx, def_id, self.in_impl_terms(generic_args)) {
+        if super::recognition::stepped_as_js_iterator(self.tcx, def_id, generic_args) {
             return Ok(false);
         }
-        let resolved = self.resolve_self_instance(def_id, self.in_impl_terms(generic_args))?;
+        let resolved = self.resolve_self_instance(def_id, generic_args)?;
         // A std-private trait's method whose impl the caller's type picks,
         // `FuseImpl::next`'s: the impls' methods, compiled (ADR 0561).
         if resolved.is_none()
-            && let Some(spec) = super::recognition::fact_specialization(
-                self.tcx,
-                self.typing_env,
-                def_id,
-                self.in_impl_terms(generic_args),
-            )
+            && let Some(spec) = super::recognition::fact_specialization(self.tcx, self.typing_env, def_id, generic_args)
         {
             return Ok(spec.methods().all(|method| self.is_rust_fn(method)));
         }

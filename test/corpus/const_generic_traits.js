@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-const sevenRepeat = { repeat: sevenRepeat_repeat, twice: (self) => sevenRepeat_repeat(self, 2) };
+const sevenRepeat = { repeat: sevenRepeat_repeat, twice: (seven) => sevenRepeat_repeat(seven, 2) };
 function sevenRepeat_repeat(seven, N) {
   return new Array(N).fill(7);
 }
@@ -15,12 +15,12 @@ function three(r, RRepeat) {
   return RRepeat.repeat(r, 3);
 }
 
-const metersScaled10 = { scaled: metersScaled10_scaled, factor: (self) => 10 };
+const metersScaled10 = { scaled: metersScaled10_scaled, factor: (meters) => 10 };
 function metersScaled10_scaled(meters) {
   return (meters[0] * 10) >>> 0;
 }
 
-const metersScaled100 = { scaled: metersScaled100_scaled, factor: (self) => 100 };
+const metersScaled100 = { scaled: metersScaled100_scaled, factor: (meters) => 100 };
 function metersScaled100_scaled(meters) {
   return (meters[0] * 100) >>> 0;
 }
@@ -30,7 +30,7 @@ const $anyScaled = new Map();
 function anyScaled(K) {
   return $traitImpl($anyScaled, [K], () => ({
     scaled: (arg0) => anyScaled_scaled(arg0, K),
-    factor: (self) => K,
+    factor: (any) => K,
   }));
 }
 function anyScaled_scaled(any, K) {

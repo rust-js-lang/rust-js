@@ -78,14 +78,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "write_to_string"],
   },
   {
-    name: "generic-into-iter-refused",
-    breaks: "`items.into_iter()` of a generic `I: IntoIterator` is an error",
-    file: "src/lower/recognition/calls.rs",
-    find: "                || self.is_vec_like(ty.peel_refs())\n                || self.is_given_iterable(ty.peel_refs()))",
-    replace: "                || self.is_vec_like(ty.peel_refs()))",
-    tests: ["test/corpus.test.ts", "-t", "hrtb_into_iter"],
-  },
-  {
     name: "user-write-char-unrouted",
     breaks:
       "`w.write_char(c)` of a writer that keeps std's is an error, not its `write_str`",

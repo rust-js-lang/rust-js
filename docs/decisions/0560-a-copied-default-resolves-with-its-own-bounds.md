@@ -33,3 +33,10 @@ are unchanged.
 ## Consequences
 
 - A mutation resolves in the impl's environment alone.
+
+## Amended by #804 and #803
+
+`impl_typing_env` is gone: a copied default is lowered in
+`default_typing_env`, the impl's bounds and its own, in both terms, the one
+environment of its lowering and of the analysis of what it asks (ADR 0495,
+amended).

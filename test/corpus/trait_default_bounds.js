@@ -51,7 +51,8 @@ function wrappingOne(TOne, WrappingMul) {
   return $traitImpl($wrappingOne, [TOne, WrappingMul], () => ({
     Mul: () => WrappingMul,
     one: () => wrappingOne_one(TOne, WrappingMul),
-    isOne: (self, SelfPartialEq) => SelfPartialEq.eq(self, wrappingOne_one(TOne, WrappingMul)),
+    isOne: (wrapping, SelfPartialEq) =>
+      SelfPartialEq.eq(wrapping, wrappingOne_one(TOne, WrappingMul)),
   }));
 }
 function wrappingOne_one(TOne, WrappingMul) {

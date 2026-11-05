@@ -99,8 +99,6 @@ for (const [name, source, message, crate] of [
   ["a width for a dyn Debug", 'pub fn f(v: u8) -> String { let d: &dyn std::fmt::Debug = &v; format!("{:5?}", d) }', "options for a"],
   // `ptr::eq` of a Rust value: an unchanged copy is one JS object, and a
   // number is its value, so a place's address isn't JS's (ADR 0285).
-  // A trait default's own const parameter numbered as one its impl's `Self` names (ADR 0135).
-  ["a default's const parameter numbered as its impl's", "pub trait Scaled<const N: usize> { fn base(&self) -> usize; fn scaled(&self) -> usize { self.base() * N } }\npub struct S<T, const K: usize>(T);\nimpl<T, const K: usize> Scaled<3> for S<T, K> { fn base(&self) -> usize { K } }\npub fn f(s: &S<u8, 4>) -> usize { s.scaled() }", "a trait default's const parameter numbered as its impl's"],
   // Text's `as_ptr()` is a copy's: compared, it'd be another's (ADR 0407).
   ["text's pointer compared", "pub fn f(a: &str, b: &str) -> bool { a.as_ptr() == b.as_ptr() }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
   // A crate's own `Future` is never lowered: no JS promise is one (ADR 0425).

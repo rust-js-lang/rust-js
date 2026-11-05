@@ -311,10 +311,6 @@ enum Nested<'tcx> {
         /// (ADR 0489).
         items: HashMap<ty::AliasTy<'tcx>, u32>,
         slots: HashSet<ty::AliasTy<'tcx>>,
-        /// Its own type parameters' drops, and their associated types', in
-        /// the impl's terms (`default_args`), which the impl's drops have
-        /// while it's lowered (`with_impl_drops`, #804).
-        impl_owned: Vec<(Ty<'tcx>, String)>,
     },
 }
 

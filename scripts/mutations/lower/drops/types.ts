@@ -256,15 +256,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "slot-in-trait-terms-unfound",
-    breaks:
-      "a copied default's `Self::Item`, its trait's terms, finds no drop its impl's `T::Item` is given, and is refused",
-    file: "src/lower/drops/types.rs",
-    find: "        let index = items.get(&alias).or_else(|| items.get(&self.in_impl_terms(alias)?));\n",
-    replace: "        let index = items.get(&alias);\n",
-    tests: ["test/corpus.test.ts", "-t", "^item_keyed_map.rs$"],
-  },
-  {
     name: "operator-output-drop-unseen",
     breaks:
       "a generic `a + b`'s `Output` with a destructor isn't dropped by its dictionary's `$dropOutput`, and is refused",
@@ -272,15 +263,6 @@ export const mutations: Mutation[] = [
     find: "        (!tcx.is_impl_trait_in_trait(def_id)).then(|| (alias.trait_ref(tcx), def_id))\n",
     replace: "        None\n",
     tests: ["test/corpus.test.ts", "-t", "^operator_output_drops.rs$"],
-  },
-  {
-    name: "slot-unnormalized",
-    breaks:
-      "a copied default's `Self::Item` of `Holder<I>` isn't seen to be `I::Item`, whose drop it's given",
-    file: "src/lower/drops/types.rs",
-    find: "        let ty = (tcx.try_normalize_erasing_regions(impl_env, ty::Unnormalized::new_wip(ty))).unwrap_or(ty);\n",
-    replace: "        let _ = impl_env;\n",
-    tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
   },
   {
     name: "extract-if-drops-items",
@@ -319,15 +301,6 @@ export const mutations: Mutation[] = [
     replace:
       "            || false && crate::lower::recognition::given_back(self.recognition.tcx, closure)\n",
     tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
-  },
-  {
-    name: "default-alias-put-in-impl-terms-twice",
-    breaks:
-      "an associated type in a copied default's impl's terms, `<I as Iterator>::Item`, is put in them again, and rustc panics",
-    file: "src/lower/drops/types.rs",
-    find: "        if !in_trait_terms {\n            return None;\n        }\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^copied_default_own_params.rs$"],
   },
   {
     name: "any-dyn-drops-by-the-crate",

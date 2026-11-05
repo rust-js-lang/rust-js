@@ -116,12 +116,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // std's `flatten::<U, Acc>`'s in `FlattenCompat::rfold`: its body
         // read in its maker's terms, as its captures are (ADR 0899).
         let inlined;
-        let mir = match self.inlined_closure_args(def_id, ty) {
-            Some(args) => {
+        // Of a trait's default copied into an impl, in the impl's terms, as
+        // its body is (`traits::default_args`, #803).
+        let mir = match (self.inlined_closure_args(def_id, ty), self.copied_default_args()) {
+            (Some(args), _) => {
                 inlined = mir.instantiated(self.tcx, args);
                 &inlined
             }
-            None => mir,
+            (None, Some(args)) => {
+                inlined = crate::lower::traits::default_mir(self.tcx, mir, args, self.typing_env);
+                &inlined
+            }
+            (None, None) => mir,
         };
         // One rustc infers `Fn` or `FnMut` that a binding calls once, as its
         // `call_once` runs it, dropping what it took (ADR 1020).

@@ -16,8 +16,9 @@ const cCounter = {
   },
   get: cCounter_get,
   twice(self) {
-    cCounter_bump(self.value);
-    cCounter_bump(self.value);
+    const c = self.value;
+    cCounter_bump(c);
+    cCounter_bump(c);
   },
 };
 function cCounter_bump(c) {

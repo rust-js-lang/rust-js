@@ -58,8 +58,8 @@ function optionGetterT(TClone) {
     get(arg0) {
       return optionGetterT_get(arg0, TClone);
     },
-    twice(self) {
-      const x = optionGetterT_get(self, TClone);
+    twice(option) {
+      const x = optionGetterT_get(option, TClone);
       return [TClone.clone(x), x];
     },
   }));
@@ -74,7 +74,9 @@ function iDigits(IIterator) {
   return $traitImpl($iDigits, [IIterator], () => ({
     digitIter: iDigits_digitIter,
     digitSum: (self) =>
-      $given(iDigits_digitIter(self), IIterator).reduce((s, d) => (s + d) >>> 0, 0),
+      $given(iDigits_digitIter(self), IIterator)
+        .map((d) => d)
+        .reduce((s, d) => (s + d) >>> 0, 0),
   }));
 }
 function iDigits_digitIter(self) {
@@ -104,9 +106,10 @@ function pointMovableS(SClone, SAdd) {
       return pointPositionedS(SClone);
     },
     translate(self, dx) {
-      const before = pointPositionedS_x(self.value, SClone);
-      const x = SAdd.add(pointPositionedS_x(self.value, SClone), dx);
-      pointPositionedS_setX(self.value, x, SClone);
+      const point = self.value;
+      const before = pointPositionedS_x(point, SClone);
+      const x = SAdd.add(pointPositionedS_x(point, SClone), dx);
+      pointPositionedS_setX(point, x, SClone);
       return before;
     },
   }));

@@ -30,7 +30,10 @@ const Scale = {
 
 const countCounter = {
   get: countCounter_get,
-  bump: (self, ...args) => (countCounter_get(self.value) + args.shift()) | 0,
+  bump(self, ...args) {
+    const count = self.value;
+    return (countCounter_get(count) + args.shift()) | 0;
+  },
 };
 function countCounter_get(count) {
   return count[0];
