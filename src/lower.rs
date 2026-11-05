@@ -311,6 +311,10 @@ enum Nested<'tcx> {
         /// (ADR 0489).
         items: HashMap<ty::AliasTy<'tcx>, u32>,
         slots: HashSet<ty::AliasTy<'tcx>>,
+        /// Its own type parameters' drops, and their associated types', in
+        /// the impl's terms (`default_args`), which the impl's drops have
+        /// while it's lowered (`with_impl_drops`, #804).
+        impl_owned: Vec<(Ty<'tcx>, String)>,
     },
 }
 
@@ -628,9 +632,6 @@ struct Given<'tcx> {
     /// In a trait's default body copied into an impl (ADR 0049): the impl's
     /// arguments for the trait's parameters, `Self` among them.
     self_args: Option<ty::GenericArgsRef<'tcx>>,
-    /// And the impl's typing environment, where what its arguments name
-    /// resolves: the body's own is its trait's.
-    self_env: Option<ty::TypingEnv<'tcx>>,
     /// Of a function that tracks its caller (ADR 0427): the location it's
     /// given, and the function, whose own body reads it.
     caller_location: Option<(DefId, Expr)>,

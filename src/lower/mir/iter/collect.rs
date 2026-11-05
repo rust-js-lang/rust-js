@@ -353,7 +353,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// copied default, in its impl's terms, whose dictionary is given what
     /// its own type parameters are (ADR 0049).
     fn collected_in_impl(&self, iter_ty: Ty<'tcx>, item: Ty<'tcx>) -> (Ty<'tcx>, Ty<'tcx>, ty::TypingEnv<'tcx>) {
-        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);
+        let typing_env = self.typing_env;
         (self.impl_type(iter_ty), self.impl_type(item), typing_env)
     }
 

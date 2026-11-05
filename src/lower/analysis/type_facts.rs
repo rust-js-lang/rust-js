@@ -438,30 +438,47 @@ fn in_place_asks<'tcx>(
         if tcx.impl_item_implementor_ids(imp).contains_key(&caller) {
             continue;
         }
-        // The default's own arguments after the impl's for its trait's.
+        // In the impl's terms as the lowering has them, and where they're
+        // known as it knows them (`default_args`, `default_typing_env`).
         let trait_args = tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization().args;
         let in_impl = tcx.mk_args_from_iter(trait_args.iter().chain(own.iter().skip(parents)));
+        let in_impl = crate::lower::traits::default_args(tcx, imp, caller, in_impl);
         let args = ty::EarlyBinder::bind(tcx, args)
             .instantiate(tcx, in_impl)
             .skip_normalization();
-        // The impl's bounds, and the default's own where clauses in its
-        // terms, `T::Item: IntoIterator` of `Self::Item: IntoIterator`, by
-        // which what it collects is known there, as the lowering's
-        // `impl_typing_env` knows it (#737).
-        let impl_env = ty::TypingEnv::post_analysis(tcx, imp);
-        let own_clauses = (tcx.clauses_of(caller).clauses.iter()).map(|&(clause, _)| {
-            ty::EarlyBinder::bind(tcx, clause)
-                .instantiate(tcx, in_impl)
-                .skip_normalization()
-        });
-        let bounds = impl_env.param_env.caller_bounds().iter().chain(own_clauses);
-        let param_env = ty::ParamEnv::new(tcx.mk_clauses_from_iter(bounds));
-        let impl_env = ty::TypingEnv::new(param_env, impl_env.typing_mode());
+        let impl_env = crate::lower::traits::default_typing_env(tcx, imp, caller, in_impl);
+        // Not what names the default's own parameters, which aren't the
+        // impl's (`default_args`): its caller gives those (#804).
+        let first = tcx.generics_of(imp).count() as u32;
         for each in in_place_asked(tcx, foreign, impl_env, drops, imp, (callee, args)) {
-            asked.push((imp, each));
+            if !matches!(&each, Asked::Built(ty, ..) if names_params(*ty, |index| index >= first)) {
+                asked.push((imp, each));
+            }
+        }
+    }
+    // What names only its own, in its trait's terms, the default's own.
+    for each in in_place_asked(tcx, foreign, typing_env, drops, caller, (callee, args)) {
+        let own = match &each {
+            Asked::Built(ty, ..) => names_params(*ty, |index| index >= parents as u32),
+            Asked::Slot(index, _) => *index >= parents as u32 && *index < own.len() as u32,
+        };
+        if own {
+            asked.push((caller, each));
         }
     }
     asked
+}
+
+/// Whether `ty` names a type parameter, and each it names is one `which`
+/// says of, by index.
+fn names_params(ty: ty::Ty<'_>, which: impl Fn(u32) -> bool) -> bool {
+    let params: Vec<u32> = (ty.walk())
+        .filter_map(|part| match part.as_type()?.kind() {
+            ty::Param(param) => Some(param.index),
+            _ => None,
+        })
+        .collect();
+    !params.is_empty() && params.into_iter().all(which)
 }
 
 /// A fact a function asks: of one of its slots, a type parameter's or an
@@ -962,7 +979,9 @@ fn slot_of<'tcx>(
     ty: ty::Ty<'tcx>,
 ) -> Option<u32> {
     match ty.kind() {
-        ty::Param(param) => Some(param.index),
+        // One of its own, not another's numbered past them, a copied
+        // default's own in its impl's terms (#804).
+        ty::Param(param) => (param.index < tcx.generics_of(id).count() as u32).then_some(param.index),
         ty::Alias(..) => {
             let alias = crate::lower::traits::alias_of(ty)?;
             let at = (crate::lower::traits::drop_items(tcx, foreign, id).into_iter())

@@ -148,12 +148,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// trait's type parameters, `Self` among them (ADR 0049): each is what the
     /// impl's argument for it drops, with the impl's own drops. What was
     /// there, and what was found with it, is given back by `restore_drops`.
-    fn swap_drops(&mut self, (drops, unsupported, items, slots, self_args): DefaultDrops<'tcx>) -> SwappedDrops<'tcx> {
+    fn swap_drops(
+        &mut self,
+        (drops, unsupported, items, slots, self_args, impl_owned): DefaultDrops<'tcx>,
+    ) -> SwappedDrops<'tcx> {
         let cache = std::mem::take(&mut *self.drop_state.types.cache.borrow_mut());
         let sizes = std::mem::take(&mut *self.drop_state.sizes.borrow_mut());
         let given = (drops.keys().copied())
             .filter(|index| !items.values().any(|at| at == index))
             .collect();
+        // The default's own, in the impl's terms, the function's while it's
+        // lowered, under indices none of the function's has (#804).
+        let mut lent = Vec::new();
+        let past = (self.drop_state.param_drops.keys().copied())
+            .max()
+            .map_or(0, |last| last + 1);
+        for (at, (ty, name)) in impl_owned.into_iter().enumerate() {
+            match *ty.kind() {
+                ty::Param(param) if !self.drop_state.param_drops.contains_key(&param.index) => {
+                    self.drop_state.param_drops.insert(param.index, name.clone());
+                    self.drop_state.types.given.insert(param.index);
+                    lent.push((param.index, None, name));
+                }
+                ty::Alias(_, alias) if !self.drop_state.types.items.contains_key(&alias) => {
+                    let index = past.max(u32::MAX / 2) + at as u32;
+                    self.drop_state.param_drops.insert(index, name.clone());
+                    self.drop_state.types.items.insert(alias, index);
+                    lent.push((index, Some(alias), name));
+                }
+                _ => {}
+            }
+        }
         SwappedDrops {
             params: std::mem::replace(&mut self.drop_state.param_drops, drops),
             given: std::mem::replace(&mut self.drop_state.types.given, given),
@@ -163,19 +188,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // type in its trait's terms names.
             self_args: (self.drop_state.types.self_args).replace((
                 self_args,
-                self.impl_typing_env().unwrap_or(self.typing_env),
+                self.typing_env,
                 ty::GenericArgs::identity_for_item(self.tcx, self.frame.owner),
             )),
             used: std::mem::take(&mut self.drop_state.used_drops),
             unsupported: std::mem::replace(&mut self.drop_state.types.unsupported, unsupported),
             cache,
             sizes,
+            lent,
         }
     }
 
     /// The type parameters whose drops the body being lowered has used.
     pub(in crate::lower) fn used_drops(&self) -> HashSet<u32> {
         self.drop_state.used_drops.clone()
+    }
+
+    /// Of the copied default last left, its own drops it used as the
+    /// function's, by name (`impl_owned`).
+    pub(in crate::lower) fn lent_drops_used(&mut self) -> HashSet<String> {
+        std::mem::take(&mut self.drop_state.lent_used)
     }
 
     /// What `f` makes of what's in the impl's terms, in a copied default:
@@ -194,6 +226,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         made
     }
 
+    /// Whether the drops asked are a copied default's own, not the
+    /// function's it's lowered in, which `with_impl_drops` asks.
+    pub(in crate::lower) fn default_drops_asked(&self) -> bool {
+        self.drop_state.types.self_args.is_some()
+    }
+
     /// The function's drops and `other`'s, each in the other's place.
     fn exchange_drops(&mut self, other: &mut SwappedDrops<'tcx>) {
         let state = &mut self.drop_state;
@@ -209,12 +247,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     fn restore_drops(&mut self, swapped: SwappedDrops<'tcx>) {
-        self.drop_state.param_drops = swapped.params;
-        self.drop_state.types.given = swapped.given;
-        self.drop_state.types.items = swapped.items;
+        let (mut params, mut given, mut items, mut used) = (swapped.params, swapped.given, swapped.items, swapped.used);
+        self.drop_state.lent_used.clear();
+        for (index, alias, name) in swapped.lent {
+            params.remove(&index);
+            given.remove(&index);
+            if let Some(alias) = alias {
+                items.remove(&alias);
+            }
+            if used.remove(&index) {
+                self.drop_state.lent_used.insert(name);
+            }
+        }
+        self.drop_state.param_drops = params;
+        self.drop_state.types.given = given;
+        self.drop_state.types.items = items;
         self.drop_state.types.slots = swapped.slots;
         self.drop_state.types.self_args = swapped.self_args;
-        self.drop_state.used_drops = swapped.used;
+        self.drop_state.used_drops = used;
         self.drop_state.types.unsupported = swapped.unsupported;
         *self.drop_state.types.cache.borrow_mut() = swapped.cache;
         *self.drop_state.sizes.borrow_mut() = swapped.sizes;

@@ -467,14 +467,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // And where rustc resolves its default, as it does a `default fn`
         // specialized on a marker, `SpecFold`'s of a zip on `TrustedLen`,
         // which a fact picks all the same (#380).
-        if let Some(spec) = crate::lower::recognition::fact_specialization(
-            self.tcx,
-            self.impl_typing_env().unwrap_or(self.typing_env),
-            id,
-            generic_args,
-        ) && self
-            .resolve_self_instance(id, generic_args)?
-            .is_none_or(|instance| instance.def_id() == spec.selected.0)
+        if let Some(spec) = crate::lower::recognition::fact_specialization(self.tcx, self.typing_env, id, generic_args)
+            && self
+                .resolve_self_instance(id, generic_args)?
+                .is_none_or(|instance| instance.def_id() == spec.selected.0)
         {
             let (selected, impl_args) = spec.selected;
             // The method's own arguments after its impl's, as the call gives

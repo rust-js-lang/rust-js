@@ -61,16 +61,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
   },
   {
-    name: "default-drops-asked-in-trait",
-    breaks:
-      "a copied default's type in its impl's terms, `Buffer<SIZE>`, is asked about where the trait's method is, which hasn't `SIZE`, and rustc crashes",
-    file: "src/lower/drops.rs",
-    find: "        if let Some(typing_env) = self.impl_typing_env() {\n",
-    replace:
-      "        if let Some(typing_env) = None::<ty::TypingEnv<'tcx>> {\n",
-    tests: ["test/corpus.test.ts", "-t", "^const_param_drops.rs$"],
-  },
-  {
     name: "drop-function-quiet-unknown",
     breaks:
       "a call of a drop function made here whose body never throws is taken as one that may, each part after it in a `finally` of its own (#416)",

@@ -405,15 +405,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
   },
   {
-    name: "copied-default-own-clauses-unknown",
-    breaks:
-      "a trait's default copied into an impl collects in the impl's terms without its own where clauses, `T::Item: IntoIterator`, so what it collects isn't known there and asks nothing, and the collect is refused (#737)",
-    file: "src/lower/analysis/type_facts.rs",
-    find: "        let bounds = impl_env.param_env.caller_bounds().iter().chain(own_clauses);\n",
-    replace: "        let bounds = impl_env.param_env.caller_bounds().iter().chain(own_clauses.filter(|_| false));\n",
-    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
-  },
-  {
     name: "std-method-facts-unrelayed",
     breaks:
       "the analysis asks a std callee only its manifest's facts, none of std's, so `impl Extend for Either`'s `inner.extend(iter)` through `L: Extend<A>` asks its `T::IntoIter`'s in-place buffer of no caller, refused (#794)",
@@ -440,5 +431,51 @@ export const mutations: Mutation[] = [
     find: "                if bound.def_id == from_iterator && Some(callee) == collect_of(tcx) {\n",
     replace: "                if false && bound.def_id == from_iterator && Some(callee) == collect_of(tcx) {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_accumulations.rs$"],
+  },
+  {
+    name: "copied-default-analysed-in-its-own-env",
+    breaks:
+      "a trait's default copied into an impl collects in the impl's terms where only the impl's bounds hold, so what it collects isn't known there and asks nothing, and the collect is refused (#737)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        let impl_env = crate::lower::traits::default_typing_env(tcx, imp, caller, in_impl);\n",
+    replace: "        let impl_env = ty::TypingEnv::post_analysis(tcx, imp);\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
+  },
+  {
+    name: "copied-default-analysed-in-trait-numbers",
+    breaks:
+      "the analysis numbers a copied default's own parameters as its trait does, where its lowering numbers them after the impl's, so what it asks of them is another's (#804)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        let in_impl = crate::lower::traits::default_args(tcx, imp, caller, in_impl);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(in_place_collect_of_a_built_type_relayed|default_own_param_drops|default_own_param_numbered_as_the_impls).rs$"],
+  },
+  {
+    name: "copied-default-own-asks-the-impls",
+    breaks:
+      "what a copied default asks of its own parameter, numbered after the impl's, is asked of the impl, which hasn't it, and rustc crashes (#804)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            if !matches!(&each, Asked::Built(ty, ..) if names_params(*ty, |index| index >= first)) {\n",
+    replace: "            if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_own_param_numbered_as_the_impls.rs$"],
+  },
+  {
+    name: "copied-default-own-asks-unasked",
+    breaks:
+      "what a copied default asks of its own parameter, the layout of a `Held<U>` it collects in place, is asked of no one, and the collect is refused (#804)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        if own {\n            asked.push((caller, each));\n",
+    replace: "        if own && false {\n            asked.push((caller, each));\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_own_param_numbered_as_the_impls.rs$"],
+  },
+  {
+    name: "slot-of-another-functions-param",
+    breaks:
+      "a type parameter not of the function, a copied default's own numbered past the impl's, is taken for the impl's slot of its number (#804)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        ty::Param(param) => (param.index < tcx.generics_of(id).count() as u32).then_some(param.index),\n",
+    replace: "        ty::Param(param) => Some(param.index),\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_own_param_numbered_as_the_impls.rs$"],
+    snapshots: true,
   },
 ];

@@ -169,7 +169,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Some(own) => self.impl_const_getter(own, span)?,
                         // The trait's default, copied into the impl as a default
                         // method is, `Self` the impl's type (ADR 0049).
-                        None => self.default_method(item.def_id, tr.args)?,
+                        None => self.default_method(id, item.def_id, tr.args)?,
                     };
                     let name = bindings::fn_name(self.tcx, item.def_id);
                     // A literal, `"shape"`, is the value itself: nothing to compute.
@@ -354,7 +354,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, &format!("trait method `{}`", self.tcx.def_path_str(method))));
             }
             if !library_default && self.tcx.trait_of_assoc(method).is_some() {
-                let value = self.default_method(method, instance.args)?;
+                let value = self.default_method(id, method, instance.args)?;
                 props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), value));
                 continue;
             }
@@ -437,17 +437,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // The drops its caller gives for its own type parameters, which it
             // passes on as the method's, where the method takes them (ADR 0163).
-            let foreign = self.krate.foreign;
-            let own_drops: Vec<u32> = match self.krate.drop_params.get(&method) {
-                Some(taken)
-                    if own_drop_params(self.tcx, foreign, method)
-                        .iter()
-                        .any(|i| taken.contains(i)) =>
-                {
-                    own_drop_params(self.tcx, foreign, item.def_id)
-                }
-                _ => Vec::new(),
-            };
+            let own_drops = self.own_drops_taken(method, item.def_id);
             let mut drop_names = Vec::new();
             let mut replaced = Vec::new();
             for &index in &own_drops {
@@ -765,8 +755,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(forms.beyond_a_call())
     }
 
-    fn default_method(&mut self, id: DefId, args: ty::GenericArgsRef<'tcx>) -> R<Expr> {
+    fn default_method(&mut self, imp: DefId, id: DefId, args: ty::GenericArgsRef<'tcx>) -> R<Expr> {
         let span = self.tcx.def_span(id);
+        let args = default_args(self.tcx, imp, id, args);
         let mut specialized = Vec::new();
         // A generic default's own evidence is its caller's, after its
         // arguments (ADR 0106); the rest is the impl's, made here.
@@ -809,7 +800,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // One rust-js can't make is an error only if the body drops one.
         let mut unsupported = HashMap::new();
         let generics = self.tcx.generics_of(id);
-        for (index, arg) in args.iter().enumerate() {
+        for (index, arg) in args.iter().enumerate().take(generics.parent_count) {
             let Some(ty) = arg.as_type() else {
                 continue;
             };
@@ -838,10 +829,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // of `T::Item`, as the body asks in the impl's terms (ADR 0421), and
         // each it could be given (ADR 0489).
         let mut items = HashMap::new();
+        let past = generics
+            .count()
+            .max(self.tcx.generics_of(imp).count() + generics.own_params.len());
         for (at, (alias, name)) in self.given_item_drops().into_iter().enumerate() {
-            let index = (generics.count() + at) as u32;
+            let index = (past + at) as u32;
             drops.insert(index, name);
             items.insert(alias, index);
+        }
+        // Its own type parameters' drops, and their std associated types',
+        // its caller gives after its dictionaries, as the trait declares them
+        // (ADR 0163): not the impl's of a parameter numbered as one is, which
+        // its own isn't (#802, #804). Each of an associated type's under an
+        // index of its own, past the impl's.
+        // And in the impl's terms, as a call's arguments name them, here
+        // and of the impl's drops (`with_impl_drops`).
+        let mut own_drops = Vec::new();
+        let mut impl_owned = Vec::new();
+        let past = generics
+            .count()
+            .max(self.tcx.generics_of(imp).count() + generics.own_params.len()) as u32;
+        for index in self.own_drops_taken(id, id) {
+            let ty = drop_slot(self.tcx, self.slots(), id, index);
+            let name = self.fresh(&format!("drop{}", drop_word(self.tcx, ty)));
+            let in_impl = ty::EarlyBinder::bind(self.tcx, ty)
+                .instantiate(self.tcx, args)
+                .skip_normalization();
+            let keys = match (*ty.kind(), *in_impl.kind()) {
+                (ty::Param(param), ty::Param(there)) => {
+                    drops.insert(param.index, name.clone());
+                    drops.insert(there.index, name.clone());
+                    vec![param.index, there.index]
+                }
+                (ty::Alias(_, alias), ty::Alias(_, there)) => {
+                    let at = past + items.len() as u32;
+                    drops.insert(at, name.clone());
+                    items.insert(alias, at);
+                    items.insert(there, at);
+                    vec![at]
+                }
+                _ => Vec::new(),
+            };
+            impl_owned.push((in_impl, name.clone()));
+            own_drops.push((index, name, keys));
         }
         let slots: HashSet<ty::AliasTy<'tcx>> = (drop_items(self.tcx, self.krate.foreign, id).into_iter())
             .filter_map(|own| {
@@ -877,6 +907,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for index in own_const_params(self.tcx, id) {
             let name = self.fresh(generics.param_at(index as usize, self.tcx).name.as_str());
             consts.push((index, Expr::var(&name)));
+            // And numbered as the impl's terms number it (`default_args`).
+            if let Some(there) = args.get(index as usize).and_then(|arg| arg.as_const())
+                && let ty::ConstKind::Param(there) = there.kind()
+                && there.index != index
+            {
+                consts.push((there.index, Expr::var(&name)));
+            }
             const_names.push((index, name));
         }
         // And the impl's, which its type, `Self`, names: `CAP` of an
@@ -925,7 +962,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if concrete != of {
                 facts.push((concrete, fact, Expr::var(&name)));
             }
-            fact_names.push((index, name));
+            fact_names.push(((index, fact), name));
         }
         // A method's, or a constant's initializer, a trait's default (ADR 0176).
         let body = match self.krate.bodies.get(&id) {
@@ -944,11 +981,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 caller_location: location.as_ref().map(|name| (id, Expr::var(name))),
                 type_facts: facts,
             }),
-            typing_env: ty::TypingEnv::post_analysis(self.tcx, id),
+            typing_env: default_typing_env(self.tcx, imp, id, args),
             drops,
             unsupported,
             items,
             slots,
+            impl_owned,
         };
         let mut rest = Vec::new();
         // From its MIR (ADR 0364), a constant's initializer of nothing, its
@@ -973,20 +1011,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Ok((signature, cx.used_drops()))
         })?;
         // After its arguments, what its caller gives of its own, in
-        // `evidence_slots`' order, as `own_evidence` gives them: no drops,
-        // which its caller gives the impl's, made here.
+        // `evidence_slots`' order, as `own_evidence` gives them: of its
+        // trait's parameters no drops, which its impl's are, made here.
         let (mut params, is_async) = signature;
         let named = |names: &[(u32, String)], at: u32| names.iter().find(|&&(i, _)| i == at).map(|(_, n)| n.clone());
+        // Its own drops last, those after the last it uses left out, as its
+        // caller's `undefined`s at the end are.
+        let lent = self.lent_drops_used();
+        let own_used = |name: &str, keys: &[u32]| lent.contains(name) || keys.iter().any(|key| used.contains(key));
+        let mut unused = 0;
         for slot in self.evidence_slots(id, Scope::Own) {
             let name = match slot {
                 Slot::Location => location.clone(),
                 Slot::Const(index) => named(&const_names, index),
                 Slot::Bound(bound) => own_params.iter().find(|&&(b, _)| b == bound).map(|(_, n)| n.clone()),
-                Slot::Fact(index, _) => named(&fact_names, index),
-                Slot::Drop(_) => continue,
+                // By its fact too: a parameter's `Size` and `Align` are two.
+                Slot::Fact(index, fact) => (fact_names.iter())
+                    .find(|&&(at, _)| at == (index, fact))
+                    .map(|(_, name)| name.clone()),
+                Slot::Drop(index) => {
+                    // None, of a crate whose values drop nothing.
+                    let Some((_, name, keys)) = own_drops.iter().find(|(at, _, _)| *at == index) else {
+                        continue;
+                    };
+                    unused = match own_used(name, keys) {
+                        true => 0,
+                        false => unused + 1,
+                    };
+                    Some(name.clone())
+                }
             };
             params.push(name.expect("each of a default's own slots named").into());
         }
+        params.truncate(params.len() - unused);
         rest.splice(0..0, hoisted);
         let mut out: Vec<_> = made
             .into_iter()

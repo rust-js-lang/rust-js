@@ -675,7 +675,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if resolved.is_none()
             && let Some(spec) = super::recognition::fact_specialization(
                 self.tcx,
-                self.impl_typing_env().unwrap_or(self.typing_env),
+                self.typing_env,
                 def_id,
                 self.in_impl_terms(generic_args),
             )

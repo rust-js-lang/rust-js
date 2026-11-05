@@ -23,8 +23,13 @@ const logStore = {
   putAll(arg0, arg1, dropI, dropIIntoIter) {
     return logStore_putAll(arg0.value, arg1, dropI, dropIIntoIter);
   },
-  keep(self, item, TDebug) {
-    logStore_put(self.value, `kept ${TDebug.fmt(item)}`, { fmt: (value) => $debugStr(value) });
+  keep(self, item, TDebug, dropT) {
+    try {
+      logStore_put(self.value, `kept ${TDebug.fmt(item)}`, { fmt: (value) => $debugStr(value) });
+    } catch (error) {
+      dropT?.(item);
+      throw error;
+    }
     return item;
   },
 };

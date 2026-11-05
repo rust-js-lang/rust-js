@@ -124,6 +124,7 @@ pub(super) type DefaultDrops<'tcx> = (
     HashMap<ty::AliasTy<'tcx>, u32>,
     HashSet<ty::AliasTy<'tcx>>,
     ty::GenericArgsRef<'tcx>,
+    Vec<(Ty<'tcx>, String)>,
 );
 
 /// What a body inside another, a closure's or a copied default's, takes
@@ -150,6 +151,9 @@ struct SwappedDrops<'tcx> {
     unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
     cache: HashMap<Ty<'tcx>, Drops<'tcx>>,
     sizes: HashMap<Ty<'tcx>, usize>,
+    /// What the default's own drops added to these, the function's, by index,
+    /// to take out as it ends (`impl_owned`), each by its name.
+    lent: Vec<(u32, Option<ty::AliasTy<'tcx>>, String)>,
 }
 
 /// A drop `lend_drop_param` lent: under which index, of which associated
@@ -185,6 +189,9 @@ pub(super) struct DropState<'tcx> {
     /// The drop functions made here whose body never throws, so a part
     /// dropped by one needs no `finally` for those after it (#416).
     quiet: HashSet<String>,
+    /// Of the copied default last left, its own drops it used as the
+    /// function's (`impl_owned`), by name.
+    lent_used: HashSet<String>,
 }
 
 /// A body's drop functions, each of a type inside itself or with a long
@@ -214,7 +221,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// impl is, as it may name the impl's own parameters, `SIZE` of a
     /// `WriteBuffer<SIZE>`, which the trait's method doesn't have.
     pub(in crate::lower) fn drops(&self, ty: Ty<'tcx>) -> Drops<'tcx> {
-        self.impl_drop_query().drops(self.impl_type(ty))
+        self.drop_query().drops(self.impl_type(ty))
     }
 
     /// Whether dropping a `ty` may panic: a `Drop` of the crate's that isn't
@@ -252,21 +259,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(in crate::lower) fn has_drops(&self, ty: Ty<'tcx>) -> bool {
-        self.impl_drop_query().has_drops(self.impl_type(ty))
+        self.drop_query().has_drops(self.impl_type(ty))
     }
 
     fn drops_itself(&self, ty: Ty<'tcx>) -> bool {
-        self.impl_drop_query().drops_itself(self.impl_type(ty))
-    }
-
-    /// `drop_query`, in a copied default asked where its types in the
-    /// impl's terms are known (`impl_typing_env`).
-    fn impl_drop_query(&self) -> DropQuery<'_, 'tcx> {
-        let mut query = self.drop_query();
-        if let Some(typing_env) = self.impl_typing_env() {
-            query.recognition.typing_env = typing_env;
-        }
-        query
+        self.drop_query().drops_itself(self.impl_type(ty))
     }
 
     /// A call of `callee` of `args`: the type parameters it takes no

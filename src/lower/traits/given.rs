@@ -9,7 +9,6 @@ use super::*;
 pub(in crate::lower) struct GivenScope<'tcx> {
     evidence: Vec<(ty::TraitRef<'tcx>, Expr)>,
     self_args: Option<ty::GenericArgsRef<'tcx>>,
-    self_env: Option<ty::TypingEnv<'tcx>>,
     const_params: Vec<(u32, Expr)>,
     caller_location: Option<(DefId, Expr)>,
     facts: usize,
@@ -25,6 +24,94 @@ pub(in crate::lower) struct DefaultGiven<'tcx> {
     pub(in crate::lower) const_params: Vec<(u32, Expr)>,
     pub(in crate::lower) caller_location: Option<(DefId, Expr)>,
     pub(in crate::lower) type_facts: Vec<(Ty<'tcx>, TypeFact, Expr)>,
+}
+
+/// The arguments a trait's default, `default`, is copied into the impl
+/// `imp` with (ADR 0049), of `args`, its trait's parameters the impl's
+/// arguments for them: its own parameters, each the parameter itself,
+/// numbered after the impl's, as in the impl's terms none of them is one of
+/// the impl's numbered as it is, `U` of `fn counted_with<U>` and the impl's
+/// `V` of `Paired<I, V>` (#804). The one mapping of a default into an
+/// impl's terms: its body's, its slots' (`slot_bounds`), its drops'.
+pub(in crate::lower) fn default_args<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    imp: DefId,
+    default: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> ty::GenericArgsRef<'tcx> {
+    let generics = tcx.generics_of(default);
+    let (parent, first) = (generics.parent_count, tcx.generics_of(imp).count());
+    tcx.mk_args_from_iter(args.iter().enumerate().map(|(at, arg)| {
+        if at < parent {
+            return arg;
+        }
+        let param = generics.param_at(at, tcx);
+        let index = (first + at - parent) as u32;
+        match param.kind {
+            ty::GenericParamDefKind::Lifetime => arg,
+            ty::GenericParamDefKind::Type { .. } => Ty::new_param(tcx, index, param.name).into(),
+            ty::GenericParamDefKind::Const { .. } => {
+                ty::Const::new_param(tcx, ty::ParamConst::new(index, param.name)).into()
+            }
+        }
+    }))
+}
+
+/// Where a trait's default, `default`, copied into the impl `imp` with
+/// `args` (`default_args`), is lowered, and its types in the impl's terms
+/// are known (ADR 0107): the impl's bounds; the default's own, in its
+/// trait's terms, which its body names; its `Self: Sized` in the impl's,
+/// `T: Sized`, which `Enumerate<T>` asks of an impl over `?Sized` types
+/// (ADR 0541); and each bound of its own parameters alone in the impl's
+/// terms, which a type its body has made the impl's names, `Holder<T>` of
+/// its `T: Iterator<Item = Vec<u32>>` (#804). No other of its trait's
+/// parameters in the impl's terms, which would be chosen over the impl that
+/// meets it. The one environment of a copied default: its lowering's, and
+/// the analysis's of what it asks (`type_facts`).
+pub(in crate::lower) fn default_typing_env<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    imp: DefId,
+    default: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> ty::TypingEnv<'tcx> {
+    let own = ty::TypingEnv::post_analysis(tcx, default);
+    let trait_count = tcx.generics_of(default).parent_count as u32;
+    let in_impl = (own.param_env.caller_bounds().iter())
+        .filter(|&clause| {
+            (clause.as_trait_clause()).is_some_and(|tr| tcx.is_lang_item(tr.def_id(), LangItem::Sized))
+                || names_only(clause, |index| index >= trait_count)
+        })
+        .map(|clause| {
+            ty::EarlyBinder::bind(tcx, clause)
+                .instantiate(tcx, args)
+                .skip_normalization()
+        });
+    let mut seen = HashSet::new();
+    let bounds = (ty::TypingEnv::post_analysis(tcx, imp).param_env.caller_bounds().iter())
+        .chain(own.param_env.caller_bounds().iter())
+        .chain(in_impl)
+        .filter(|&clause| seen.insert(clause));
+    let param_env = ty::ParamEnv::new(tcx.mk_clauses_from_iter(bounds));
+    ty::TypingEnv::new(param_env, own.typing_mode())
+}
+
+/// Whether `clause`, a trait's bound or an associated type's equality,
+/// names only type and const parameters `named` says of, by index: of a
+/// default's, its trait's alone, the impl's in its terms, or its own alone
+/// (`default_args`). Any other clause, none.
+pub(in crate::lower) fn names_only<'tcx>(clause: ty::Clause<'tcx>, named: impl Fn(u32) -> bool) -> bool {
+    let parts: Vec<ty::GenericArg<'tcx>> = match clause.kind().skip_binder() {
+        ty::ClauseKind::Trait(bound) => bound.trait_ref.args.to_vec(),
+        ty::ClauseKind::Projection(equal) => (equal.projection_term.args.iter())
+            .chain(equal.term.as_type().map(Into::into))
+            .collect(),
+        _ => return false,
+    };
+    (parts.iter().flat_map(|part| part.walk())).all(|part| match part.kind() {
+        ty::GenericArgKind::Type(t) => !matches!(t.kind(), ty::Param(p) if !named(p.index)),
+        ty::GenericArgKind::Const(c) => !matches!(c.kind(), ty::ConstKind::Param(p) if !named(p.index)),
+        ty::GenericArgKind::Lifetime(_) => true,
+    })
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -45,7 +132,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         GivenScope {
             evidence: std::mem::replace(&mut self.given.evidence, evidence),
             self_args: self.given.self_args.replace(self_args),
-            self_env: self.given.self_env.replace(self.typing_env),
             const_params: std::mem::replace(&mut self.given.const_params, const_params),
             caller_location: std::mem::replace(&mut self.given.caller_location, caller_location),
             facts,
@@ -56,7 +142,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn leave_default(&mut self, scope: GivenScope<'tcx>) {
         self.given.evidence = scope.evidence;
         self.given.self_args = scope.self_args;
-        self.given.self_env = scope.self_env;
         self.given.const_params = scope.const_params;
         self.given.caller_location = scope.caller_location;
         self.given.type_facts.truncate(scope.facts);
@@ -74,11 +159,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.given = given;
     }
 
+    /// Whether what's being made in a copied default is in its impl's terms
+    /// already, its impl's drops asked (`with_impl_drops`): a type of them
+    /// isn't put in those terms again, as its parameters are the impl's,
+    /// not its trait's (#804).
+    pub(in crate::lower) fn in_impl_drops(&self) -> bool {
+        self.in_copied_default() && !self.default_drops_asked()
+    }
+
     /// `value` in the impl's terms, in a copied default: its trait's
     /// parameters, `Self` among them, replaced by the impl's arguments for
-    /// them (ADR 0049). Anywhere else, `value` itself.
+    /// them (ADR 0049). Anywhere else, or of what's in those terms already,
+    /// asked of the impl's drops (`in_impl_drops`), `value` itself.
     pub(in crate::lower) fn in_impl_terms<T: TypeFoldable<TyCtxt<'tcx>>>(&self, value: T) -> T {
-        match self.given.self_args {
+        match self.given.self_args.filter(|_| !self.in_impl_drops()) {
             Some(args) => ty::EarlyBinder::bind(self.tcx, value)
                 .instantiate(self.tcx, args)
                 .skip_normalization(),
@@ -86,34 +180,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// `ty` of a copied default's body in the impl's terms, normalized there
-    /// where it can be: its `Self::Item<'a>` the impl's `&String`.
-    /// Where a copied default's types in its impl's terms are known: both
-    /// the impl's parameters and the method's own, `Buffer<SIZE>` or the
-    /// method's `N`, the bounds of each (ADR 0107). `None` elsewhere.
-    pub(in crate::lower) fn impl_typing_env(&self) -> Option<ty::TypingEnv<'tcx>> {
-        let impl_env = self.given.self_env?;
-        // The default's own, in its trait's terms, which its body names; and
-        // its `Self: Sized` in the impl's, `T: Sized`, which `Enumerate<T>`
-        // asks of an impl over `?Sized` types (ADR 0541). No other: one in
-        // the impl's terms would be chosen over the impl that meets it.
-        let own = self.typing_env.param_env.caller_bounds().iter();
-        let sized = (own.clone())
-            .filter(|clause| {
-                (clause.as_trait_clause()).is_some_and(|tr| self.tcx.is_lang_item(tr.def_id(), LangItem::Sized))
-            })
-            .map(|clause| self.in_impl_terms(clause));
-        let bounds = (impl_env.param_env.caller_bounds().iter()).chain(own).chain(sized);
-        let param_env = ty::ParamEnv::new(self.tcx.mk_clauses_from_iter(bounds));
-        Some(ty::TypingEnv::new(param_env, impl_env.typing_mode()))
-    }
-
     pub(in crate::lower) fn impl_type(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
         if self.given.self_args.is_none() {
             return ty;
         }
         let ty = self.in_impl_terms(ty);
-        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);
+        let typing_env = self.typing_env;
         self.tcx
             .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
             .unwrap_or(ty)
@@ -129,7 +201,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> Result<Option<ty::Instance<'tcx>>, rustc_span::ErrorGuaranteed> {
         // The impl's, with the default's own bounds, which its own type
         // parameters need, `[B]: Index<PatternID>` (ADR 0560).
-        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);
+        let typing_env = self.typing_env;
         crate::lower::items::resolve_instance_in(self.tcx, typing_env, def_id, args)
     }
 

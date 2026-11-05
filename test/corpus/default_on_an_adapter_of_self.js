@@ -8,7 +8,6 @@ import {
   $iter,
   $iterator,
   $next,
-  $nextSome,
   $nth,
   $some,
   $someValue,
@@ -34,9 +33,9 @@ function tExt(TIterator) {
       return best;
     },
     positionMax(self, SelfItemOrd) {
-      const widest = tExt({ next: $nextSome, fold: $foldOf }).widest(
+      const widest = tExt({ next: $next, fold: $foldOf }).widest(
         iterator_map(iterator_enumerate(self, TIterator), ([i, x]) => [x, i], {
-          next: $nextSome,
+          next: $next,
           fold: $foldOf,
           nth: $nth,
           count: $count,

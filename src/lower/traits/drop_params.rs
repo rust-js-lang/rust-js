@@ -263,25 +263,12 @@ fn slot_bounds<'tcx>(tcx: TyCtxt<'tcx>, id: DefId) -> Vec<(Vec<ty::Clause<'tcx>>
             ty::GenericParamDefKind::Lifetime => tcx.lifetimes.re_erased.into(),
             _ => tcx.mk_param_from_def(param),
         });
+        let args = default_args(tcx, id, item.def_id, args);
         // A trait's bound or an associated type's equality, of the impl's
-        // parameters alone: none of the default's own, which, in the impl's
-        // terms, would be numbered as the impl's.
-        let of_the_impl = |clause: ty::Clause<'tcx>| {
-            let parts: Vec<ty::GenericArg<'tcx>> = match clause.kind().skip_binder() {
-                ty::ClauseKind::Trait(bound) => bound.trait_ref.args.to_vec(),
-                ty::ClauseKind::Projection(equal) => (equal.projection_term.args.iter())
-                    .chain(equal.term.as_type().map(Into::into))
-                    .collect(),
-                _ => return false,
-            };
-            (parts.iter().flat_map(|part| part.walk())).all(|part| match part.kind() {
-                ty::GenericArgKind::Type(t) => !matches!(t.kind(), ty::Param(p) if p.index >= trait_count),
-                ty::GenericArgKind::Const(c) => !matches!(c.kind(), ty::ConstKind::Param(p) if p.index >= trait_count),
-                ty::GenericArgKind::Lifetime(_) => true,
-            })
-        };
+        // parameters alone: none of the default's own, which aren't the
+        // impl's, and its caller gives the drops of.
         let clauses: Vec<ty::Clause<'tcx>> = (tcx.clauses_of(item.def_id).clauses.iter())
-            .filter(|&&(clause, _)| of_the_impl(clause))
+            .filter(|&&(clause, _)| names_only(clause, |index| index < trait_count))
             .map(|&(clause, _)| {
                 ty::EarlyBinder::bind(tcx, clause)
                     .instantiate(tcx, args)
@@ -385,6 +372,26 @@ pub(in crate::lower) fn item_drop_key(tcx: TyCtxt<'_>, item: DefId) -> String {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The drops a trait method's own type parameters are given, as `method`
+    /// takes them, its own drops' places (`own_drop_params`): each, where
+    /// any is given one, as its caller gives them all; none, where none is,
+    /// as of a crate whose values drop nothing (ADR 0163). Of the impl's
+    /// method the dictionary's entry calls, or a default copied into it
+    /// (#802).
+    pub(in crate::lower) fn own_drops_taken(&self, method: DefId, at: DefId) -> Vec<u32> {
+        let foreign = self.krate.foreign;
+        match self.krate.drop_params.get(&method) {
+            Some(taken)
+                if own_drop_params(self.tcx, foreign, method)
+                    .iter()
+                    .any(|i| taken.contains(i)) =>
+            {
+                own_drop_params(self.tcx, foreign, at)
+            }
+            _ => Vec::new(),
+        }
+    }
+
     /// What resolves a function's slots (`drop_slot`): its bounds, and the
     /// built slots the crate's analysis and its libraries' manifests list.
     pub(in crate::lower) fn slots(&self) -> (&'a crate::lower::library::Foreign<'a, 'tcx>, &'a BuiltSlots<'tcx>) {
@@ -399,7 +406,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(built) = built_slot(self.tcx, self.slots(), id, index) else {
             return true;
         };
-        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);
+        let typing_env = self.typing_env;
         built.gates.is_empty()
             || built.gates.iter().any(|&gate| {
                 let of = self.drop_slot_of(id, gate, args);
@@ -417,7 +424,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .skip_normalization();
         // In a copied default, in the impl's terms, where its bounds and the
         // default's hold.
-        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);
+        let typing_env = self.typing_env;
         self.tcx
             .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
             .unwrap_or(ty)

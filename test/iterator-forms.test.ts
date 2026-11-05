@@ -160,6 +160,10 @@ const few = [
   // what `max_by` keeps leaked as what it passes over panics as it drops
   // (#776, #783, #785).
   "keys_with_a_destructor_drop_where_std_drops_them.rs",
+  // A copied default's own parameter numbered after the impl's: what's in
+  // the impl's terms already, asked of the impl's drops, isn't put in them
+  // again, as std's `vec::IntoIter` struct asks (#804).
+  "default_own_param_numbered_as_the_impls.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus")

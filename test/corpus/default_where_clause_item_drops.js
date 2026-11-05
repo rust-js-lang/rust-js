@@ -11,6 +11,7 @@ import {
   $foldOf,
   $given,
   $held,
+  $intoIter,
   $iter,
   $iterator,
   $lastSome,
@@ -118,38 +119,95 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
     $tJoining,
     [TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter],
     () => ({
-      heldWith(self, extra, SelfItemIntoIterator) {
+      heldWith(self, extra, SelfItemIntoIterator, dropU, dropUItem, dropUIntoIter) {
+        let extra$live = true;
         const all = [];
         const iter = self;
-        try {
-          let tmp;
-          while (true) {
-            try {
-              tmp = TIterator.next(iter);
-            } catch (error) {
-              dropT?.(iter);
-              throw error;
+        let tmp;
+        while (true) {
+          try {
+            tmp = TIterator.next(iter);
+          } catch (error) {
+            dropT?.(iter);
+            $dropItems(all, (item) => {
+              try {
+                heldDrop_drop(item, dropTItemIntoIter);
+              } finally {
+                dropTItemIntoIter?.(item.iter);
+              }
+            });
+            if (extra$live) {
+              dropU?.(extra);
             }
-            if (tmp == null) {
-              dropT?.(iter);
-              break;
-            }
-            const i = $someValue(tmp);
-            let iter$1;
-            try {
-              iter$1 = SelfItemIntoIterator.intoIter(i);
-            } catch (error) {
-              dropT?.(iter);
-              throw error;
-            }
-            try {
-              all.push({ iter: iter$1 });
-            } catch (error) {
-              dropT?.(iter);
-              throw error;
-            }
+            throw error;
           }
-          return (all.length + Iterator.from(extra).reduce((n) => n + 1, 0)) >>> 0;
+          if (tmp == null) {
+            try {
+              dropT?.(iter);
+            } catch (error) {
+              $dropItems(all, (item) => {
+                try {
+                  heldDrop_drop(item, dropTItemIntoIter);
+                } finally {
+                  dropTItemIntoIter?.(item.iter);
+                }
+              });
+              if (extra$live) {
+                dropU?.(extra);
+              }
+              throw error;
+            }
+            break;
+          }
+          const i = $someValue(tmp);
+          let iter$1;
+          try {
+            iter$1 = SelfItemIntoIterator.intoIter(i);
+          } catch (error) {
+            dropT?.(iter);
+            $dropItems(all, (item) => {
+              try {
+                heldDrop_drop(item, dropTItemIntoIter);
+              } finally {
+                dropTItemIntoIter?.(item.iter);
+              }
+            });
+            if (extra$live) {
+              dropU?.(extra);
+            }
+            throw error;
+          }
+          try {
+            all.push({ iter: iter$1 });
+          } catch (error) {
+            dropT?.(iter);
+            $dropItems(all, (item) => {
+              try {
+                heldDrop_drop(item, dropTItemIntoIter);
+              } finally {
+                dropTItemIntoIter?.(item.iter);
+              }
+            });
+            if (extra$live) {
+              dropU?.(extra);
+            }
+            throw error;
+          }
+        }
+        const length = all.length;
+        extra$live = false;
+        try {
+          const iter = $intoIter(extra);
+          let result;
+          try {
+            result = iter.reduce((n, item) => {
+              dropUItem?.(item);
+              return n + 1;
+            }, 0);
+          } finally {
+            dropUIntoIter?.(iter);
+          }
+          return (length + result) >>> 0;
         } finally {
           $dropItems(all, (item) => {
             try {

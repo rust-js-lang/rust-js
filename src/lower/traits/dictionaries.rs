@@ -131,13 +131,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .tcx
             .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(tr))
             .unwrap_or(tr);
-        let tr = match self.impl_typing_env() {
-            Some(typing_env) => self
-                .tcx
-                .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(tr))
-                .unwrap_or(tr),
-            None => tr,
-        };
         // serde's: the function that writes or reads the type (ADR 0081).
         match crate::lower::serde::serde_trait(self.tcx, tr.def_id) {
             Some(true) => return self.json_writer(tr.self_ty(), span),
@@ -816,7 +809,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // (ADR 0914, amended): in a copied default, of the impl's terms, where
         // its bounds and the default's hold, `Map<T, F>: Counting` of a
         // blanket impl's.
-        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);
+        let typing_env = self.typing_env;
         if let Some((impl_id, impl_args)) = evidence_impl(self.tcx, typing_env, tr)
             && (self.krate.trait_impls.contains(&impl_id)
                 || self.krate.foreign.item(impl_id).is_some()

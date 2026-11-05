@@ -313,7 +313,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic impl's trait default constant of `Self`, `Self::A + 1`, is refused, where it's its initializer copied in",
     file: "src/lower/traits/impls.rs",
-    find: "                        None => self.default_method(item.def_id, tr.args)?,",
+    find: "                        None => self.default_method(id, item.def_id, tr.args)?,",
     replace:
       '                        None => return Err(self.unsupported(span, "a generic impl\'s default constant of its parameters")),',
     tests: [
@@ -549,8 +549,8 @@ export const mutations: Mutation[] = [
     name: "default-own-facts-untaken",
     breaks: "a copied default takes none of the facts its caller gives",
     file: "src/lower/traits/impls.rs",
-    find: "                Slot::Fact(index, _) => named(&fact_names, index),\n",
-    replace: "                Slot::Fact(..) => continue,\n",
+    find: "                Slot::Fact(index, fact) => (fact_names.iter())\n",
+    replace: "                Slot::Fact(..) => continue,\n                Slot::Fact(index, fact) => (fact_names.iter())\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
   },
   {
@@ -644,5 +644,42 @@ export const mutations: Mutation[] = [
     replace: "                Some(own).filter(|_| false)\n            });\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect.rs$"],
     snapshots: true,
+  },
+  {
+    name: "default-own-drops-not-taken",
+    breaks:
+      "a copied default takes none of its own type parameters' drops its caller gives, and never drops what it's given of them (#802)",
+    file: "src/lower/traits/impls.rs",
+    find: "        for index in self.own_drops_taken(id, id) {\n",
+    replace: "        for index in Vec::<u32>::new() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_own_param_drops.rs$"],
+  },
+  {
+    name: "default-own-drops-not-lent",
+    breaks:
+      "a copied default's own drops aren't the impl's while it's lowered, so a `Held<U::IntoIter>` it drops, whose `Drop` impl's evidence is asked of the impl's drops, is refused (#802)",
+    file: "src/lower/traits/impls.rs",
+    find: "            impl_owned.push((in_impl, name.clone()));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^default_own_param_drops.rs$"],
+  },
+  {
+    name: "default-own-drops-unused-kept",
+    breaks:
+      "a copied default takes each of its own drops after the last it uses, which nothing reads (#802)",
+    file: "src/lower/traits/impls.rs",
+    find: "        params.truncate(params.len() - unused);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^default_method_clones.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "default-own-facts-named-by-index",
+    breaks:
+      "a copied default's own facts are named by their parameter alone, so its `U`'s `Size` and `Align` are one name twice, which JS refuses (#804)",
+    file: "src/lower/traits/impls.rs",
+    find: "                    .find(|&&(at, _)| at == (index, fact))\n",
+    replace: "                    .find(|&&(at, _)| at.0 == index)\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_own_param_numbered_as_the_impls.rs$"],
   },
 ];

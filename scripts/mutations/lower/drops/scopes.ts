@@ -31,16 +31,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
   },
   {
-    name: "slot-default-env",
-    breaks:
-      "a copied default's slots are normalized in the trait's typing environment, which can't see `Holder<I>`'s impl",
-    file: "src/lower/drops/scopes.rs",
-    find: "                self.impl_typing_env().unwrap_or(self.typing_env),\n                ty::GenericArgs::identity_for_item",
-    replace:
-      "                self.typing_env,\n                ty::GenericArgs::identity_for_item",
-    tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
-  },
-  {
     name: "impl-drops-not-exchanged",
     breaks:
       "what's in a copied default's impl's terms is asked of its trait's drops",

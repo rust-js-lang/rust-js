@@ -42,3 +42,37 @@ skip_one: (self) => {
 
 - **A default's body's own types are still asked in its trait's terms,
   `dropSelf`**; only what it makes in the impl's is the impl's.
+
+## Amendment: a default's own parameters are its own, numbered after the impl's (#802, #804)
+
+A copied default's own type parameters, `U` of `fn counted_with<U>`, were in
+the impl's terms numbered as in the trait's, after `Self`, which the impl's
+own parameter of that number is too: `V` of `impl<I, V> Counting for
+Paired<I, V>`. So a `U` was given `V`'s drop, the impl's argument of its
+index (#804). And none of its own drops, which its caller gives after its
+dictionaries as the trait declares them (ADR 0163), was taken: what it was
+given of a `U` was never dropped (#802). Case C of ADR 0262.
+
+- **One mapping puts a default in its impl's terms, `traits::default_args`**:
+  its trait's parameters the impl's arguments for them, its own each a
+  parameter numbered after the impl's. Its lowering, its slots
+  (`slot_bounds`, ADR 0478) and the analysis of what it asks (`type_facts`,
+  #737) all ask it; `test/architecture-traits.test.ts` holds it.
+- **One environment, `traits::default_typing_env`, where its body is
+  lowered**: the impl's bounds, its own in its trait's terms, and those of
+  its own parameters alone, and its `Self: Sized`, in the impl's. It
+  replaces `impl_typing_env`, a second environment beside the body's, and
+  the analysis's own.
+- **Its own drops are its caller's**, as an impl's generic method's entry
+  takes them (`own_drops_taken`), under its own parameters' numbers in
+  both terms, and the impl's while it's lowered (`with_impl_drops` asks
+  them there, `impl_owned`); those after the last it uses left out.
+
+```js
+counted_with(self, extra, dropU, dropUItem, dropUIntoIter) { ... }
+```
+
+Held by `test/corpus/default_own_param_drops.rs` and
+`default_own_param_numbered_as_the_impls.rs`, with native Rust. A default
+whose `Self`, of an impl that isn't a blanket one, is stepped as a JS
+iterator is #803's.

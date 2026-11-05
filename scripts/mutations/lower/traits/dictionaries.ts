@@ -394,25 +394,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^as_ref_bytes.rs$"],
   },
   {
-    name: "default-impl-resolved-in-trait-env",
-    breaks:
-      "a copied default resolves an impl of the impl's terms in its trait's environment, `Map<T, F>: Counting`",
-    file: "src/lower/traits/dictionaries.rs",
-    find: "        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);\n        if let Some((impl_id, impl_args)) = evidence_impl(self.tcx, typing_env, tr)\n",
-    replace:
-      "        let typing_env = self.typing_env;\n        if let Some((impl_id, impl_args)) = evidence_impl(self.tcx, typing_env, tr)\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
-  },
-  {
-    name: "default-bound-unnormalized",
-    breaks:
-      "a copied default's bound of the impl's terms isn't normalized, `<Map<T, F> as Iterator>::Item: Hash`",
-    file: "src/lower/traits/dictionaries.rs",
-    find: "        let tr = match self.impl_typing_env() {\n",
-    replace: "        let tr = match None::<ty::TypingEnv<'tcx>> {\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
-  },
-  {
     name: "std-product-dictionary-sums",
     breaks: "std's `Product` dictionary of a number sums",
     file: "src/lower/traits/dictionaries.rs",

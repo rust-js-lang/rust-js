@@ -30,7 +30,7 @@ const $iExt = new WeakMap();
 
 function iExt(IIterator) {
   return $traitImpl($iExt, [IIterator], () => ({
-    nextPair: (self, TCollect) => TCollect.fromIterNoBuf($given(self, IIterator, true)),
+    nextPair: (self, TCollect) => TCollect.fromIterNoBuf($given(self, IIterator)),
   }));
 }
 
