@@ -261,15 +261,10 @@ test("in_place_adapter_steps is read by steps_in_place alone", () => {
   expect(found).toEqual(expected);
 });
 
-// Each read of an iterator's helper by its name outside value.rs, per file and
-// helper, with its reason and what removes it. The list only shrinks: a new
-// read fails here, and one gone fails until its entry goes too.
-test("an iterator helper is read by its name only where the list says, until value.rs owns its form", () => {
-  const allowed: Record<string, [number, string]> = {
-    "src/lower/iterators.rs $iterator": [3, `\`behind_a_dyn\` and \`is_range_stepped\` ask an \`$iterator\`'s own steps, and \`reversal\` a range stepped from its end: value.rs has no accessor for it yet, a fact of \`Form::Own\`'s steps and \`Form::Range\`'s step`],
-    "src/lower/iterators/in_place.rs $iterator": [1, `tidy's \`stepped_in_place\`, an \`$iterator\`'s hint dropped: value.rs has no accessor for it yet, a fact of \`Form::Own\`'s steps`],
-    "src/lower/iterators/in_place.rs $knowing": [2, "tidy's `stepped_in_place` sees through `$knowing`: a value.rs reader of `IterKnowing`"],
-  };
+// No iterator helper is read by its name outside value.rs: each reader asks
+// value.rs's accessor of the fact `emit()` marked (steps 1 to 11). A new read
+// fails here, with the owner to add the accessor to.
+test("no iterator helper is read by its name outside value.rs", () => {
   const helpers = "closing|iterator|given|lent|stepBy|rev|repeatingN|knowing";
   const read_ = new RegExp(`Some\\("\\$(${helpers})"`);
   const literal = new RegExp(`"\\$(${helpers})"`, "g");
@@ -282,6 +277,5 @@ test("an iterator helper is read by its name only where the list says, until val
       }
     }
   }
-  const expected = Object.fromEntries(Object.entries(allowed).map(([key, [count]]) => [key, count]));
-  expect([owned("a read of an iterator helper by its name"), found]).toEqual([owned("a read of an iterator helper by its name"), expected]);
+  expect([owned("a read of an iterator helper by its name"), found]).toEqual([owned("a read of an iterator helper by its name"), {}]);
 });

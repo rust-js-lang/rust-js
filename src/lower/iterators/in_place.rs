@@ -55,16 +55,17 @@ pub(in crate::lower) fn item_drop_given<'e>(name: &str, args: &'e [Expr]) -> Opt
 /// of an array's iterator, which knows its back and length already, the
 /// iterator (ADR 0561); through `$rev` of one.
 pub(super) fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
-    let reversed = is_reversed(e);
+    let (reversed, knowing) = (is_reversed(e), is_knowing(e));
+    let own_steps = iterator_parts(e).is_some_and(|given| given.len() >= 6);
     let js::ExprKind::Call(callee, given) = &mut e.kind else {
         return;
     };
-    if (reversed || callee.helper_name() == Some("$knowing")) && !given.is_empty() {
+    if (reversed || knowing) && !given.is_empty() {
         stepped_in_place(&mut given[0], false, fuse);
     }
     // An iterator of the crate's stepped till it ends, which nothing asks
     // its size: given no `size_hint`, nor the places before it it needs.
-    if callee.helper_name() == Some("$iterator") && given.len() >= 6 {
+    if own_steps {
         given[5] = Expr::undefined();
         fewest_iterator_args(given);
         return;
@@ -73,7 +74,7 @@ pub(super) fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
     let replacement = match callee.helper_name() {
         Some("$intoIter") if by_for => given[0].clone(),
         Some("$intoIter") => Expr::call(Expr::member(Expr::var("Iterator"), "from"), given.clone()),
-        Some("$knowing") if is_stepped_items(&given[0]) => given[0].clone(),
+        _ if knowing && is_stepped_items(&given[0]) => given[0].clone(),
         // A `fuse()` given no drops, its dictionary and its fact alone, the
         // drops it doesn't use left off (ADR 0300): its source. One given
         // its source's drop stays, which drops what it didn't give as it's

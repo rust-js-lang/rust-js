@@ -725,6 +725,18 @@ named reads left are the `$iterator` readers of an own iterator's steps and
 of a range stepped from its end, and tidy's `$knowing` reader, each listed
 with the accessor value.rs doesn't give yet.
 
+Step 11 gives value.rs the accessors the last named reads lacked.
+- `emit()` marks an `$iterator` of the crate's own or a dictionary's steps
+  `Known::IterOwn`.
+- `iterator_parts` gives an `$iterator`'s arguments, not `$given`'s. It is
+  read by `behind_a_dyn`, by tidy's `stepped_in_place` dropping a hint, and
+  by `reversal`'s range stepped from its end.
+- `is_range_stepped` moves to value.rs.
+- `is_knowing` reads `IterKnowing`, for tidy's `stepped_in_place`.
+
+Step 9's list of named reads is now empty. No iterator helper is read by its
+name outside value.rs.
+
 ## Amendment: each adapter's `sizeHint`, and who asks it (2026-11-05, #733 steps 1–3)
 
 G10 closes in three steps. ADR 0262's case each time: results change, so

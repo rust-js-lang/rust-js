@@ -46,9 +46,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an iterator of the crate's stepped till it ends keeps a `size_hint` nothing asks, `$iterator(x, next, false, undefined, undefined, hint)`",
     file: "src/lower/iterators/in_place.rs",
-    find: '    if callee.helper_name() == Some("$iterator") && given.len() >= 6 {\n',
-    replace:
-      '    if false && callee.helper_name() == Some("$iterator") && given.len() >= 6 {\n',
+    find: "    if own_steps {\n",
+    replace: "    if false && own_steps {\n",
     tests: [
       "test/corpus.test.ts",
       "-t",

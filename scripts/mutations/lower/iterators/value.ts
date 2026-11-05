@@ -120,4 +120,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(rev_of_rev_last_folds|rev_of_rev_folds_its_source|len_made_in_place|rev_range_counted_beside_its_rfold).rs$"],
     snapshots: true,
   },
+  {
+    name: "own-iterator-unmarked",
+    breaks:
+      "an iterator of the crate's isn't marked its own steps' `$iterator`, so one stepped till it ends keeps a `size_hint` nothing asks, and one behind a `dyn` keeps its own `nth`",
+    file: "src/lower/iterators/value.rs",
+    find: "                made(\"$iterator\", args, &[Known::IterStepped, Known::IterOwn])\n",
+    replace: "                made(\"$iterator\", args, &[Known::IterStepped])\n",
+    tests: ["test/corpus.test.ts", "-t", "^(fused_iterators|double_ended_iterators|own_fold_and_nth|own_steps_behind_adapters_unwind).rs$"],
+    snapshots: true,
+  },
 ];

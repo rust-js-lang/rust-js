@@ -94,7 +94,7 @@ impl IterValue {
             Form::Own { value, next, given } => {
                 let mut args = vec![value, next];
                 args.extend(given);
-                made("$iterator", args, &[Known::IterStepped])
+                made("$iterator", args, &[Known::IterStepped, Known::IterOwn])
             }
             Form::Range { range, step } => {
                 made("$iterator", vec![range, step], &[Known::IterStepped, Known::IterRange])
@@ -130,9 +130,10 @@ impl IterValue {
 }
 
 /// Each fact `emit` marks a value's JS with.
-const VALUE_FACTS: [Known; 9] = [
+const VALUE_FACTS: [Known; 10] = [
     Known::IterStepped,
     Known::IterRange,
+    Known::IterOwn,
     Known::IterKnowing,
     Known::IterClosing,
     Known::IterLent,
@@ -289,6 +290,35 @@ pub(in crate::lower) fn repeating_n_parts(e: &Expr) -> Option<&[Expr]> {
         js::ExprKind::Call(_, args) if e.facts.has(Known::IterRepeatingN) => Some(args.as_slice()),
         _ => None,
     }
+}
+
+/// What `e`, an `$iterator` `emit()` wrote (`Form::Own` or `Form::Range`),
+/// is given, its value and its step first: what's asked of its own steps,
+/// `nth` or `size_hint` (`behind_a_dyn`, tidy's `stepped_in_place`), and of
+/// a range's step, from either end. Not `$given`'s.
+pub(in crate::lower) fn iterator_parts(e: &Expr) -> Option<&[Expr]> {
+    match &e.kind {
+        js::ExprKind::Call(_, args) if e.facts.has(Known::IterOwn) || e.facts.has(Known::IterRange) => {
+            Some(args.as_slice())
+        }
+        _ => None,
+    }
+}
+
+/// Whether `e` is a range's numbers, an `$iterator` stepped by a range's
+/// step, however it's stepped and whatever it's given beside: one std's
+/// steps give what its defaults do, which a `Rev` hides nothing of.
+pub(in crate::lower) fn is_range_stepped(e: &Expr) -> bool {
+    iterator_parts(e)
+        .and_then(|args| args.get(1))
+        .and_then(Expr::helper_name)
+        .is_some_and(|next| next.starts_with("$range"))
+}
+
+/// Whether `e` is std's compiled struct given what a use site knows,
+/// `$knowing(it, ..)` (`Form::Knowing`).
+pub(in crate::lower) fn is_knowing(e: &Expr) -> bool {
+    e.facts.has(Known::IterKnowing)
 }
 
 /// A range's numbers as its maker wrote them (`Form::Range`), `$iterator({

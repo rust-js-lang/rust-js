@@ -977,6 +977,9 @@ pub enum Known {
     IterStepped,
     /// Of those, a range's numbers, `$iterator(range, step)`.
     IterRange,
+    /// Of those, the crate's own or a dictionary's steps, `$iterator(value,
+    /// next, ..)`, not `$given`'s.
+    IterOwn,
     /// Std's compiled struct given what a use site knows, `$knowing(it, ..)`.
     IterKnowing,
     /// One closed to drop what it hasn't given, `$closing(it, drop)`.

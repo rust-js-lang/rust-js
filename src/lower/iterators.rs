@@ -12,9 +12,9 @@ mod stepping;
 mod value;
 
 pub(in crate::lower) use self::value::{
-    Form, IterValue, bounds_of, bounds_read, closed, closed_parts, gives_in_place, gives_made_in_place, is_lent,
-    is_reversed, its_facts, repeating_n, repeating_n_parts, reversed_by, reversed_of, stepped_every,
-    stepped_every_parts, stepped_from, stepped_range, stepped_value, steps, unlent,
+    Form, IterValue, bounds_of, bounds_read, closed, closed_parts, gives_in_place, gives_made_in_place, is_knowing,
+    is_lent, is_range_stepped, is_reversed, iterator_parts, its_facts, repeating_n, repeating_n_parts, reversed_by,
+    reversed_of, stepped_every, stepped_every_parts, stepped_from, stepped_range, stepped_value, steps, unlent,
 };
 pub(super) use self::{eager::*, in_place::*};
 
@@ -45,9 +45,9 @@ pub(in crate::lower) fn stepped(value: Expr, next: Expr, boxed: bool, back: Opti
 /// std's `Box<I>` and `&mut I` give `nth` to its own, but `fold` is std's,
 /// of `next`, which `$iterator` isn't given then (#162).
 pub(in crate::lower) fn behind_a_dyn(mut it: Expr) -> Expr {
-    if let js::ExprKind::Call(callee, given) = &mut it.kind
-        && callee.helper_name() == Some("$iterator")
-        && given.len() > 6
+    let own = iterator_parts(&it).is_some_and(|given| given.len() > 6);
+    if let js::ExprKind::Call(_, given) = &mut it.kind
+        && own
     {
         given[6] = Expr::undefined();
         fewest_iterator_args(given);
@@ -134,15 +134,6 @@ pub(in crate::lower) fn stepped_ends(
 /// `step`, its kind's (`range_stepper`).
 pub(in crate::lower) fn stepped_range_by(range: Expr, step: Expr) -> Expr {
     IterValue::of(Form::Range { range, step }).emit()
-}
-
-/// Whether `e` is a range's numbers, `$iterator({ start, end }, $rangeNext,
-/// ..)`, however it's stepped and whatever it's given beside: one std's
-/// steps give what its defaults do, which a `Rev` hides nothing of.
-pub(in crate::lower) fn is_range_stepped(e: &Expr) -> bool {
-    matches!(&e.kind, js::ExprKind::Call(callee, args)
-        if callee.helper_name() == Some("$iterator")
-            && args.get(1).and_then(Expr::helper_name).is_some_and(|next| next.starts_with("$range")))
 }
 
 /// Whether a bound of `tr` reads its value as its own type, `Clone`'s or
@@ -597,10 +588,13 @@ pub(in crate::lower) fn reversal<'e>(e: &'e Expr, range_back: Option<&str>) -> O
     if let Some(it) = reversed_of(e) {
         return Some(Reversal::Stepped(it));
     }
+    if let Some([range, step]) = iterator_parts(e)
+        && range_back.is_some()
+        && step.helper_name() == range_back
+    {
+        return Some(Reversal::Range(range));
+    }
     match (callee.helper_name(), args.as_slice()) {
-        (Some("$iterator"), [range, step]) if range_back.is_some() && step.helper_name() == range_back => {
-            Some(Reversal::Range(range))
-        }
         _ if is_stepped_items(e) => Some(Reversal::Items),
         _ => of_items(e).then_some(Reversal::Chain),
     }
