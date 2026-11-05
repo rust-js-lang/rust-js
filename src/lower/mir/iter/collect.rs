@@ -114,8 +114,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         }
         let it = self.as_js_iterator(items, given, span)?;
-        let item = self.iterator_item(given);
-        Ok(Some(self.collected_into(it, output, item, Some(given), span)?))
+        // What std steps of it, a type parameter's `IntoIter`, and its items,
+        // `Vec::from_iter(iter)`'s: what a panic that stops it asks the
+        // in-place facts of, and drops what it collected of (#800).
+        let stepped = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, given);
+        let item = self.iterator_item(stepped);
+        Ok(Some(self.collected_into(it, output, item, Some(stepped), span)?))
     }
 
     /// Whether std's `collect` into an `output` takes its items by `fold`,
@@ -729,7 +733,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // By its fold, which drops what it holds as it unwinds itself
             // (`folded_unwinding`), first.
-            match self.mapped_range(&it, iter_ty, item) {
+            // A range's `map`, an array's `map` (ADR 0063), only where a panic
+            // that stops it has nothing to drop: one of items with a
+            // destructor drops what it made as it unwinds (#800).
+            let mapped = match self.mapped_range(&it, iter_ty, item) {
+                Some(items) if self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none() => Some(items),
+                _ => None,
+            };
+            match mapped {
                 Some(items) => items,
                 None if folded && self.steps_lent_inclusive(iter_ty) => {
                     let args = self.folded_unwinding(it, output, item, iter_ty, span)?;

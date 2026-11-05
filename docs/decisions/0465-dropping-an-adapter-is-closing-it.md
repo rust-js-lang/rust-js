@@ -2106,3 +2106,34 @@ part's drop panics, against native Rust in both builds. Mutations:
 `flat-map-inner-kept-as-source-drop-throws` name their lines as they read
 now. `$Steps.flatMap`'s close, which drops its inner before its source, is
 left as it is: its items drop nothing (ADR 0510).
+
+## Amendment: every collect into a `Vec` a panic stops drops what it collected (2026-11-06, #800)
+
+Two collects into a `Vec` whose steps may panic dropped nothing they had
+collected where a step panicked, though `unwinding_collect` says how a
+collect does: `(1..=3).map(made).collect::<Vec<_>>()`, of a range, was an
+array's `map`, `$range(1, 4).map(made)` (ADR 0063), tried before the
+collect asked it; and a generic `Vec::from_iter(iter)` of a type
+parameter's `IntoIterator` was collected of `I` itself, which has no items,
+so no drop was asked, `Array.from(Iterator.from(iter))`. Native prints
+`drop 1`, `drop 2`; the JS printed neither, a wrong answer.
+
+**A range's `map` is an array's only where the collect has nothing a panic
+would leave** (`unwinding_collect` is `None`), else `$collectDropping` of
+it, as any other iterator's; and **`collected_from` collects a type
+parameter's `IntoIterator` as what std steps of it**, its `IntoIter`
+(`recognition::iterator_type_of`), whose items are dropped and whose
+in-place facts its caller gives: `$collectsInPlace(IIntoIterInPlace, 4, 4)
+? $foldToArray(Iterator.from(iter), dDrop_drop) :
+$collectDropping(.., dDrop_drop, true)`. Case
+([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's.
+Its JS steps `Iterator.from(iter)` in each arm, as a collect whose
+in-place answer is its caller's writes it (#672), where it was one
+`Array.from(Iterator.from(iter))` that dropped nothing: readability's
+`Iterator.from` share went from 8.6 to 8.8 in 10,000 lines, blessed so.
+Held by `test/corpus/collect_panic_drops_collected.rs` (a range's map
+returned and held, a generic `from_iter` of a range's map and of a `Vec`'s
+iterator, a `Vec`'s own), by the panic halves of
+`from_iter_impl_of_dropping` and of `test/libraries.test.ts`' library
+pair, each against native Rust, and by the mutations
+`mapped-range-unwinding-unasked` and `from-iter-stepped-as-given`.

@@ -667,8 +667,8 @@ test("imports are in the order of the uses that make them, a binding's and a lib
 // declaration carries, its iterator's in-place buffer, the same in both
 // crates (`std_method_facts`), so the second's impl, which asks it, is
 // given it, not `undefined`: the buffer by which a panic partway through
-// the in-place collect drops what it collected and what's left. (That drop
-// itself is #800's: the panic's run against native waits for it.)
+// the in-place collect drops what it collected and what's left, as Rust
+// does (#800).
 test("a std trait's generic method's dictionary carries the same facts in each library", () => {
   const dir = fixture("std-method-facts");
   writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["items", "reqs", "app"]\nresolver = "3"\n');
@@ -706,6 +706,10 @@ pub fn run() {
     let req: Req = gather(vec![D(1), D(2), D(3)], 0);
     println!("gathered {}", req.cs.len());
     drop(req);
+    let caught = std::panic::catch_unwind(|| {
+        let _: Req = gather(vec![D(1), D(2), D(3), D(4)], 3);
+    });
+    println!("caught {}", caught.is_err());
 }
 `],
   ];
@@ -729,7 +733,7 @@ pub fn run() {
   writeFileSync(join(native, "main.rs"), "fn main() {\n    app::run();\n}\n");
   run(["rustc", "--edition=2024", join(native, "main.rs"), "-o", join(native, "program"), "--extern", `app=${join(native, "libapp.rlib")}`, "-L", `dependency=${native}`]);
   const nativeRun = runSync([join(native, "program")], dir, 30_000).stdout;
-  expect(nativeRun).toContain("gathered 3");
+  expect(nativeRun).toContain("caught true");
   expect(build(join(dir, "app")).stderr).toBe("");
   // The library's generic collect, compiled without the other's impl, gives
   // a `Vec`'s iterator's in-place buffer through the dictionary, and so does

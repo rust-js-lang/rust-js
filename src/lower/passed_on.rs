@@ -261,19 +261,20 @@ pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwardi
     })
 }
 
-/// `g` of `f`, an arrow that passes on its first `declared` parameters, in
-/// order, to `g`, a function of that many, as its owner says
-/// (`FnCx::declared_arity`): what a caller gives `f` past them `g` never
-/// names, as `f` didn't pass it on. A dictionary's entry of a fact its
-/// trait carries that its impl doesn't read, `(arg0, TIntoIterInPlace) =>
-/// bagFromIteratorU32_fromIter(arg0)`, is the impl's method (#801).
-pub(in crate::lower) fn passed_on_first(f: &Expr, declared: usize) -> Option<Expr> {
+/// `g` of `f`, an arrow that passes on its first parameters, in order, to
+/// `g`, and how many: a dictionary's entry of a fact its trait carries that
+/// its impl doesn't read, `(arg0, TIntoIterInPlace) =>
+/// bagFromIteratorU32_fromIter(arg0)`, `bagFromIteratorU32_fromIter` of 1,
+/// which is the impl's method where that declares just those
+/// (`FnCx::declared_arity`, #801).
+pub(in crate::lower) fn passed_on_first(f: &Expr) -> Option<(Expr, usize)> {
     let js::ExprKind::Arrow(params, body) = &f.kind else {
         return None;
     };
-    let first = params.get(..declared).filter(|_| declared < params.len())?;
-    let callee = js::passes_on(first, body, false)?;
-    matches!(callee.kind, js::ExprKind::Var(_)).then(|| callee.clone())
+    (0..params.len()).find_map(|first| {
+        let callee = js::passes_on(&params[..first], body, false)?;
+        matches!(callee.kind, js::ExprKind::Var(_)).then(|| (callee.clone(), first))
+    })
 }
 
 /// Of `method`, whose body is `thir`, a `#[rust_js::namespace]`'s method

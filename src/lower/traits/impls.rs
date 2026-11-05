@@ -568,8 +568,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // One that passes on just what it's given, in order, is the method.
             // Or one that passes on its first, to a method that declares just
             // those: what a caller gives past them it never names, a fact the
-            // trait carries that the impl doesn't read (#801).
-            let first = (self.declared_arity(method)).and_then(|declared| passed_on_first(&arrow, declared));
+            // trait carries that the impl doesn't read (#801). Of one whose
+            // last gathers the rest, none. As entries are built, a method an
+            // entry passes a prefix to declares just that many.
+            let first = passed_on_first(&arrow).and_then(|(own, passed)| {
+                let declared = self.declared_arity(method)?;
+                debug_assert_eq!(
+                    declared, passed,
+                    "an entry passes on a prefix of what its method declares"
+                );
+                Some(own)
+            });
             let value = match (made, first) {
                 (true, Some(method)) => method,
                 (true, None) => passed_on(&arrow, Taker::Made, &[]).unwrap_or(arrow),

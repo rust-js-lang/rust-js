@@ -4,7 +4,7 @@
 // method, so a call of it through `FromIterator`'s dictionary, a generic
 // `collect`, gives the facts of its own `I` it asks, its iterator's
 // in-place buffer, as a crate trait's own generic method's are (ADR 0466).
-// Each item dropped where Rust drops it. (A step's panic is #800's.)
+// Each item dropped where Rust drops it, a step's panic's too (#800).
 
 struct D(i32);
 
@@ -52,4 +52,14 @@ fn main() {
     let from_relay: Req = relayed(vec![D(6), D(7)]);
     println!("relayed {}", from_relay.cs.len());
     drop(from_relay);
+    let caught = std::panic::catch_unwind(|| {
+        let _: Req = (1..=3)
+            .map(|n| if n == 3 { panic!("at {n}") } else { D(n) })
+            .collect();
+    });
+    println!("{}", caught.is_err());
+    let through = std::panic::catch_unwind(|| {
+        let _: Req = collected_vec(vec![D(8), D(9), D(10)].into_iter().map(|d| if d.0 == 10 { panic!("at 10") } else { d }).collect());
+    });
+    println!("{}", through.is_err());
 }
