@@ -907,3 +907,27 @@ other snapshot changes, and both iterator slices pass. Mutations
 lines as they now read, in `iterators/stepping.ts` with their code.
 Still refused: `len()` of a `step_by(n)` of a slice's items made in
 place, which `len_in_place` counts only of a range.
+
+## Amended (2026-11-06, #718): a `rev()` of a type parameter given as it is
+
+A type parameter a struct holds is given as it is (ADR 0411), its value
+the caller's, stepped by its dictionaries. Its `rev()` was
+`$iterator(it, IDoubleEndedIterator.next_back)`, which knows no back, so
+one the crate steps from its back, `self.0.rev().nth_back(1)` of `impl<I:
+DoubleEndedIterator> Held<I>`, was refused. **It's made knowing its back
+where it's made (`rev_called`): `$rev` of the JS iterator its dictionaries
+step, `given_js_iterator`'s `$given(it, IIterator, boxed,
+IDoubleEndedIterator)`**, which `$rev` steps from its back by its forward
+steps, `nth_back` its `nth`, the crate's own where it writes one, as std's
+`Rev` passes them on, closed to drop it as `Rev` drops it. What its
+closing drops needed the fix of the same day to ADR 0421: of a `Vec`'s
+items with a destructor, what its `nth` passes over is dropped as one
+slice. The issue's note that `$given` gives no `of` is `$givenDrop`'s
+(#766).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; a
+refusal of valid Rust lifted. Held by corpus
+`rev_of_a_type_parameter_held_as_it_is`, of numbers, a map, a `Vec`'s
+items with a destructor and the crate's iterator whose `nth` is its own,
+against native Rust in both builds; mutation
+`rev-of-given-param-unknowing` (`mir/iter/backs.ts`).

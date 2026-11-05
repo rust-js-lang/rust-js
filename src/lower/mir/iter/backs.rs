@@ -51,6 +51,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let unsupported = |cx: &Self| cx.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR"));
         let reversed = match self.range_kind(iter_ty) {
             _ if self.is_user_iterator(iter_ty) => self.reversed_user(receiver, receiver_ty, span)?,
+            // Of a type parameter given as it is that the crate steps from
+            // its back (`reversed_made_knowing`): `$rev` of the JS iterator
+            // its dictionaries step, its back theirs, which `$rev` steps it
+            // forward by, `nth_back` its `nth`, as std's `Rev` does, closed
+            // to drop it as `Rev` drops it (`$givenDrop`, #718).
+            None if self.reversed_made_knowing(output)
+                && let Some(given) = self.given_js_iterator(receiver.clone(), iter_ty, true, false) =>
+            {
+                crate::lower::iterators::reversed_by(self.closing(given, receiver_ty, span)?)
+            }
             None if let Some(reversed) = self.reversed(&receiver, iter_ty) => reversed,
             Some(kind) if let Some(step) = kind.step(true) => self.stepped_by(receiver, Expr::helper(step)),
             Some(_) => return Err(unsupported(self)),

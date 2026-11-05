@@ -144,7 +144,6 @@ depends on what the program does:
 - `HashMap::get_disjoint_mut`: `let mut m: std::collections::HashMap<&str, i32> = [("a", 1), ("b", 2)].into(); let [a, b] = m.get_disjoint_mut(["a", "b"]); println!("{:?} {:?}", a, b);`
 - `rposition` of a `skip()` or a `take()`, or of a `map()` of a range or of the crate's iterator, which rust-js can't count yet: `let v = vec![1, 2, 3]; println!("{:?}", v.iter().skip(1).rposition(|&x| x == 2));`
 - `rposition` of a `skip()` or a `take()` made in place, which rust-js can't count where it's stepped yet (#718): `let v = vec![1, 2, 3]; println!("{:?}", v.iter().skip(1).rposition(|x| *x > 1));`
-- Stepping from its back, by `nth_back`, `rfold` or `rfind`, a `rev()` of a type parameter a struct holds, which is given as it is (#718): `struct Held<I>(I); impl<I: DoubleEndedIterator<Item = u32>> Held<I> { fn second_last(self) -> Option<u32> { self.0.rev().nth_back(1) } } println!("{:?}", Held(vec![1, 2, 3].into_iter()).second_last());`
 
 ## Numbers and text
 

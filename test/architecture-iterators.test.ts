@@ -291,8 +291,8 @@ test("back_stepped's set is read where a value is made, or as a type's question"
     "src/lower/mir/iter.rs": [1, "`cloned_apart_call`, the maker of a map or a filter cloned apart"],
     "src/lower/mir/std_calls.rs": [1, "`mir_iter_std_call`, the maker of a std adapter made in place"],
     "src/lower/mir/iter/backs.rs": [
-      3,
-      "`back_kept`, the maker of an enumeration, a `skip(n)` or a `take(n)` it steps from its back, and `rev_called`, a `rev()`'s",
+      4,
+      "`back_kept`, the maker of an enumeration, a `skip(n)` or a `take(n)` it steps from its back, and `rev_called`, a `rev()`'s, twice: of a type parameter given as it is, and of what `rev_items` makes",
     ],
     "src/lower/iterators/knowing.rs": [
       9,

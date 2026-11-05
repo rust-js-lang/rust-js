@@ -732,4 +732,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(held) = None::<&Expr> {\n",
     tests: ["test/corpus.test.ts", "-t", "^step_by_stepped_from_its_back.rs$"],
   },
+  {
+    name: "rev-of-given-param-unknowing",
+    breaks: "`rev()` of a type parameter a struct holds, given as it is, stepped from its back, is made by its dictionary's `next_back` alone, which knows no back, and its `nth_back` is refused (#718)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            None if self.reversed_made_knowing(output)\n",
+    replace: "            None if false && self.reversed_made_knowing(output)\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_of_a_type_parameter_held_as_it_is.rs$"],
+  },
 ];

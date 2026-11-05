@@ -16,8 +16,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `rfold`, `nth_back` or `rfind` called (ADR 0545), of a source whose
     /// `rev()` is made here, the crate's iterator, a range or a std
     /// adapter, or a type parameter, `$rev` of the JS iterator it's given
-    /// made knowing its back (`rev_items`, #718), refused of one given as it
-    /// is, stepped by its dictionary (`reversed`); a zip's, `$rev` of its
+    /// made knowing its back (`rev_items`, #718), or of one given as it is,
+    /// of the JS iterator its dictionaries step (`rev_called`, #718); a
+    /// zip's, `$rev` of its
     /// `$zipEnds` (#740). So one made in place that MIR
     /// holds in a variable
     /// before it's stepped, past a call or a cleanup that drops it, or lends
