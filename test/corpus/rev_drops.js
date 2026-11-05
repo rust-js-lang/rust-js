@@ -13,13 +13,13 @@ function main() {
   const v = [[1], [2], [3]];
   const r = $held($rev($closing($iter(v), $dropEach(loudDrop_drop))));
   try {
-    const l = $next(r);
+    const next = $next(r);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = l != null ? map(l) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } finally {
     r.return();
@@ -39,9 +39,9 @@ function main() {
   console.log("end");
   try {
     const held = $iter([[10], [11], [12], [13]]);
-    let next;
+    let loud;
     try {
-      next = $next(held);
+      loud = $next(held);
     } catch (error) {
       for (const item of held) {
         loudDrop_drop(item);
@@ -49,8 +49,8 @@ function main() {
       throw error;
     }
     try {
-      if (next != null) {
-        loudDrop_drop(next);
+      if (loud != null) {
+        loudDrop_drop(loud);
       }
     } catch (error) {
       for (const item of held) {
@@ -60,13 +60,13 @@ function main() {
     }
     const back = $held($rev($closing(held, $dropEach(loudDrop_drop))));
     try {
-      const l = $next(back);
+      const next = $next(back);
       function map(l) {
         const result = l[0];
         loudDrop_drop(l);
         return result;
       }
-      const value = l != null ? map(l) : undefined;
+      const value = next != null ? map(next) : undefined;
       console.log(`${value == null ? "None" : `Some(${value})`}`);
     } finally {
       back.return();

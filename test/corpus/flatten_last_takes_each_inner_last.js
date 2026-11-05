@@ -235,15 +235,14 @@ function main() {
     console.log(`got ${d[0]}`);
     dDrop_drop(d);
   }
-  let option;
-  let map;
+  let next;
+  function map(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
+  }
   try {
-    option = $next(it$1);
-    map = (d) => {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    };
+    next = $next(it$1);
   } catch (error) {
     if (it$1$live) {
       it$1.return();
@@ -284,7 +283,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`after ${option != null ? map(option) : 0}`);
+    console.log(`after ${next != null ? map(next) : 0}`);
   } catch (error) {
     if (it$1$live) {
       it$1.return();
@@ -325,15 +324,14 @@ function main() {
     throw error;
   }
   it$1$live = false;
-  let option$1;
-  let map$1;
+  let option;
+  function map$1(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
+  }
   try {
-    option$1 = $lastDropping(it$1, dDrop_drop);
-    map$1 = (d) => {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    };
+    option = $lastDropping(it$1, dDrop_drop);
   } catch (error) {
     if (last$5$live) {
       if (last$4 != null) {
@@ -371,7 +369,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`last ${option$1 != null ? map$1(option$1) : 0}`);
+    console.log(`last ${option != null ? map$1(option) : 0}`);
   } catch (error) {
     if (last$5$live) {
       if (last$4 != null) {

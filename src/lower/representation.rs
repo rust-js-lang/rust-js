@@ -221,7 +221,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let subject = match self.named_discriminant(subject, adt, big) {
             Ok(named) => return named,
-            Err(subject) => subject,
+            Err(subject) => *subject,
         };
         let mut variants: Vec<(VariantIdx, i128)> = (adt.variants().indices())
             .zip(super::discriminants(self.tcx, adt))
@@ -253,7 +253,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         subject: Expr,
         adt: ty::AdtDef<'tcx>,
         big: bool,
-    ) -> Result<Expr, Expr> {
+    ) -> Result<Expr, Box<Expr>> {
         let tcx = self.tcx;
         // A numbered enum's value is its discriminant (ADR 0722).
         if bindings::numbered(tcx, adt) {
@@ -274,7 +274,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             Expr::member(subject, &key)
         } else {
-            return Err(subject);
+            return Err(Box::new(subject));
         };
         let discriminants = super::discriminants(tcx, adt);
         let counting = discriminants.iter().enumerate().all(|(i, &(_, d))| d == i as i128);

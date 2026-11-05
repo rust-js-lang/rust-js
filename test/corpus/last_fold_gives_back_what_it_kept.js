@@ -59,7 +59,7 @@ function run(name, f) {
 
 function main() {
   run("filtered", () => {
-    const option = $lastDropping(
+    const last = $lastDropping(
       $filterDropping(
         iterator_zip(
           $iter(ds()),
@@ -90,10 +90,10 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return option != null ? map(option) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("filtered, in place", () => {
-    const d = $lastDropping(
+    const last = $lastDropping(
       $filterDropping(
         $closing($iter(ds()), $dropEach(dDrop_drop)),
         (d) => d[0] % 2 === 0,
@@ -106,10 +106,10 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("taken from a flatten", () => {
-    const d = $lastDropping(
+    const last = $lastDropping(
       $flatMap(
         $closing($iter(ds()), $dropEach(dDrop_drop)).map((x) => [[(x[0] + 10) >>> 0], x]),
         (item) => $closing($iter(item), $dropEach(dDrop_drop)),
@@ -121,10 +121,10 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("zipped with a flatten", () => {
-    const option = $lastDropping(
+    const last = $lastDropping(
       $lazyZip(
         $flatMap(
           $closing($iter(ds()), $dropEach(dDrop_drop)).map((x) => [[(x[0] + 10) >>> 0], x]),
@@ -142,12 +142,12 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return option != null ? map(option) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("flattened, cloned", () => {
     const items = ds();
     try {
-      const d = $lastDropping(
+      const last = $lastDropping(
         $flatMap(
           items.values().map((x) => [[(x[0] + 10) >>> 0], x]),
           (item) => $closing($iter(item), $dropEach(dDrop_drop)),
@@ -159,13 +159,13 @@ function main() {
         dDrop_drop(d);
         return result;
       }
-      return d != null ? map(d) : undefined;
+      return last != null ? map(last) : undefined;
     } finally {
       $dropItems(items, dDrop_drop);
     }
   });
   run("a stage panics", () => {
-    const d = $lastDropping(
+    const last = $lastDropping(
       $filterDropping(
         $closing($iter([[1], [2], [4], [5]]), $dropEach(dDrop_drop)),
         (d) => {
@@ -183,10 +183,10 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("a step panics", () => {
-    const d = $lastDropping(
+    const last = $lastDropping(
       $filterDropping(
         $iterator({ at: 0, n: 4 }, panicsIterator_next),
         (d) => d[0] % 2 === 0,
@@ -199,7 +199,7 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
 }
 //# sourceMappingURL=case.js.map

@@ -1483,3 +1483,15 @@ test("whether a tree sets a variable is js::Writes' alone", () => {
   expect(found.filter((site) => !shapes.includes(site))).toEqual([]);
   expect(shapes.filter((site) => !found.includes(site))).toEqual([]);
 });
+
+// A value read in place knows the name its temporary is given,
+// `Expr::held_as` (ADR 0569, #769): set where a pending temporary is taken,
+// `mir/temporaries.rs`, and read by the spill of a subject alone,
+// `spill_subject`, there too. Every other expression is made with none.
+test("a temporary's name a value carries is set and read in one place each", () => {
+  const files = [...new Bun.Glob("src/**/*.rs").scanSync(root)].filter((file) => file !== "src/js.rs");
+  const with_ = (pattern: RegExp) => files.filter((file) => pattern.test(read(file))).sort();
+  expect(with_(/HeldAs\(Some/)).toEqual(["src/lower/mir/temporaries.rs"]);
+  expect(with_(/\.held_as\.0/)).toEqual(["src/lower/mir/temporaries.rs"]);
+  expect(read("src/lower/mir/temporaries.rs").match(/\.held_as\.0/g)?.length).toBe(1);
+});

@@ -50,8 +50,8 @@ function scaledOrLast() {
   } else {
     const end = same(4);
     for (let i = 0; i < end; i++) {}
-    const e = [same(-2n), same(5n)].at(-1);
-    const last = e != null ? BigInt.asIntN(64, e * same(7n)) : undefined;
+    const copied = [same(-2n), same(5n)].at(-1);
+    const last = copied != null ? BigInt.asIntN(64, copied * same(7n)) : undefined;
   }
   const end = same(3);
   for (let i = 0; i < end; i++) {}

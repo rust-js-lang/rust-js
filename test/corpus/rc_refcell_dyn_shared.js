@@ -148,17 +148,16 @@ function main() {
     });
     throw error;
   }
-  let p;
-  let map;
+  let upgrade;
+  function map(p) {
+    const result = p.value.name;
+    $rcDrop(p, (value) => {
+      $weakDrop(value.parent);
+    });
+    return result;
+  }
   try {
-    p = $upgrade(tmp$1.value);
-    map = (p) => {
-      const result = p.value.name;
-      $rcDrop(p, (value) => {
-        $weakDrop(value.parent);
-      });
-      return result;
-    };
+    upgrade = $upgrade(tmp$1.value);
   } catch (error) {
     $unborrow(tmp$1);
     $rcDrop(leaf, (value) => {
@@ -170,7 +169,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${leaf.value.name} of ${(p != null ? map(p) : undefined) ?? ""}`);
+    console.log(`${leaf.value.name} of ${(upgrade != null ? map(upgrade) : undefined) ?? ""}`);
   } catch (error) {
     $unborrow(tmp$1);
     $rcDrop(leaf, (value) => {

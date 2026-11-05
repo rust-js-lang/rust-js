@@ -63,7 +63,7 @@ function main() {
     ),
   );
   try {
-    const option = enumerateDoubleEndedIterator_nextBack(
+    const nextBack = enumerateDoubleEndedIterator_nextBack(
       it,
       { len: (iterator) => iterator.len() },
       { next_back: $nextBack },
@@ -75,7 +75,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const last = option != null ? map(option) : undefined;
+    const last = nextBack != null ? map(nextBack) : undefined;
     console.log(`last ${last == null ? "None" : `Some((${last[0]}, ${last[1]}))`}`);
     const r = $collectDropping(
       $mapEnds(

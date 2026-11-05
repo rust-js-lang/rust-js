@@ -138,19 +138,18 @@ function main() {
     throw error;
   }
   const weak = a.weak;
-  let n;
-  let map;
+  let upgrade;
+  function map(n) {
+    try {
+      return n.impl.name(n.value);
+    } finally {
+      $rcDrop(n, (value) => {
+        value.impl.$drop?.(value.value);
+      });
+    }
+  }
   try {
-    n = $upgrade(w);
-    map = (n) => {
-      try {
-        return n.impl.name(n.value);
-      } finally {
-        $rcDrop(n, (value) => {
-          value.impl.$drop?.(value.value);
-        });
-      }
-    };
+    upgrade = $upgrade(w);
   } catch (error) {
     $weakDrop(w);
     $rcDrop(b, (value) => {
@@ -165,7 +164,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${weak} ${(n != null ? map(n) : undefined) ?? ""}`);
+    console.log(`${weak} ${(upgrade != null ? map(upgrade) : undefined) ?? ""}`);
   } catch (error) {
     $weakDrop(w);
     $rcDrop(b, (value) => {
@@ -213,17 +212,17 @@ function main() {
     $weakDrop(w);
     throw error;
   }
-  let upgrade;
+  let tmp$3;
   try {
-    upgrade = $upgrade(w);
+    tmp$3 = $upgrade(w);
   } catch (error) {
     $weakDrop(w);
     throw error;
   }
-  console.log(`${upgrade == null}`);
+  console.log(`${tmp$3 == null}`);
   try {
-    if (upgrade != null) {
-      $rcDrop(upgrade, (value) => {
+    if (tmp$3 != null) {
+      $rcDrop(tmp$3, (value) => {
         value.impl.$drop?.(value.value);
       });
     }

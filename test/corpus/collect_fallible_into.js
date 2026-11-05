@@ -29,10 +29,10 @@ function parseKv(s) {
       .values()
       .filter((p) => p !== "")
       .map((pair) => {
-        const option = $splitOnce(pair, "=");
+        const splitOnce = $splitOnce(pair, "=");
         const result =
-          option != null
-            ? { TAG: "Ok", _0: option }
+          splitOnce != null
+            ? { TAG: "Ok", _0: splitOnce }
             : { TAG: "Err", _0: `no = in ${$debugStr(pair)}` };
         if (result.TAG === "Err") {
           return result;

@@ -165,6 +165,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             facts: js::Facts::NONE,
             kind: js::ExprKind::Object(flat, layout),
             span: made.span,
+            held_as: Default::default(),
         }
     }
 

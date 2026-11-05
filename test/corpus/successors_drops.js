@@ -23,13 +23,13 @@ function main() {
   const value = $held($successors([2], tripled, false, loudDrop_drop));
   let firstBig;
   try {
-    const l = $findDropping($lent(value), (l) => l[0] > 5, loudDrop_drop, false);
+    const find = $findDropping($lent(value), (l) => l[0] > 5, loudDrop_drop, false);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    firstBig = l != null ? map(l) : undefined;
+    firstBig = find != null ? map(find) : undefined;
   } finally {
     value.return();
   }

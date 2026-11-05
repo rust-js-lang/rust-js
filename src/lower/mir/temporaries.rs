@@ -4,6 +4,32 @@
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `value`, a subject its call reads more than once, `o.map(f)`'s, in a
+    /// `const` named after `base`, as `spill` holds it; but of a value read
+    /// in place that knows the name its temporary is given, `held_as`, by
+    /// that, `next` of `r.next()` (ADR 0569), not after what reads it,
+    /// `option` or a closure's parameter (#769).
+    /// Not one the program's own has, `make$1` of `make(2)` beside its
+    /// `make`: `base` then; but another of a call it named so, `nth$1`.
+    /// Of an `Option`'s, `named`; a `Result`'s is a result, which its call
+    /// names worse, `catchUnwind`, `parse`.
+    pub(in crate::lower) fn spill_subject(
+        &mut self,
+        base: &str,
+        value: Expr,
+        named: bool,
+        out: &mut Vec<Stmt>,
+    ) -> Expr {
+        let held = (value.held_as.0.as_deref().filter(|_| named))
+            .filter(|name| !self.names.contains(*name) || self.locals.mir.subjects.contains(*name))
+            .cloned();
+        let Some(held) = held else {
+            return self.spill(base, value, out);
+        };
+        self.locals.mir.subjects.insert(held.clone());
+        self.spill(&held, value, out)
+    }
+
     /// `value` held in a `const` named after `name`, as `spill` holds it,
     /// a temporary of MIR's lowering's (`Made::fixed`), which tidy reads in
     /// place where it's read once: a place fixed (`fixed_place_of`), or an
@@ -430,7 +456,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if state.pending.iter().any(|(l, _)| *l == local) && self.admit(state, &[local], true, out)? {
             let at = state.pending.iter().position(|(l, _)| *l == local).expect("admitted");
             return Ok(match state.pending.remove(at).1 {
-                Value::Expr(e) => Value::Expr(state.facts.value(local, e)),
+                Value::Expr(e) => Value::Expr(state.facts.value(local, held_by_its_temporary(state, local, e))),
                 value => value,
             });
         }
@@ -503,7 +529,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             values.push(match pend.filter(|_| admitted) {
                 Some(local) => {
                     let at = state.pending.iter().position(|(l, _)| *l == local).expect("pending");
-                    let read = state.pending.remove(at).1;
+                    let read = match state.pending.remove(at).1 {
+                        Value::Expr(e) => Value::Expr(held_by_its_temporary(state, local, e)),
+                        read => read,
+                    };
                     super::operands::none_read(state, operand, read)
                 }
                 None => self.mir_operand(state, operand, out)?,
@@ -784,4 +813,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
         held.then(|| (**holder).clone())
     }
+}
+
+/// `value`, a temporary's made and not yet used, `local`'s, taken to be
+/// read in place: of what a call the source writes by its name made, one
+/// that names it, `Locals::called`'s (`named_by_their_call`, ADR 0569), knowing its
+/// temporary, `held_as`, so what spills it as a subject names it as
+/// `temporaries_names` names it, `next` of `r.next()`, not after what
+/// reads it, `option` or a closure's parameter (#769).
+fn held_by_its_temporary(state: &State<'_, '_>, local: Local, mut value: Expr) -> Expr {
+    if value.has_effects()
+        && tidy::is_temporary(&state.locals.names[local])
+        && let Some(name) = state.locals.called.get(&local)
+    {
+        value.held_as = js::HeldAs(Some(std::sync::Arc::new(name.clone())));
+    }
+    value
 }

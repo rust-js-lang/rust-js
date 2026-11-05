@@ -445,4 +445,13 @@ export const mutations: Mutation[] = [
     replace: "                        let fresh = String::from(\"state\");\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell_swapped.rs$"],
   },
+  {
+    name: "closures-left-in-tries",
+    breaks: "a closure made between calls one `try` covers stays a `let` set in it, `map = (d) => ..`, not a function where its `let` is (#769)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "            stmts[i] = StmtKind::Function(Box::new(function)).at(span);\n            i += 1;\n",
+    replace: "            i += 1;\n            let _ = function;\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_fold_closure_panics.rs$"],
+    snapshots: true,
+  },
 ];

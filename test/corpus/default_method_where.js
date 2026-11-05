@@ -19,8 +19,8 @@ const namesSource = {
     return namesSource_next(arg0.value);
   },
   firstCloned(self, SelfItemDeref, SelfItemTargetClone) {
-    const x = namesSource_next(self);
-    return x != null ? $some(SelfItemDeref.deref($someValue(x))) : undefined;
+    const next = namesSource_next(self);
+    return next != null ? $some(SelfItemDeref.deref($someValue(next))) : undefined;
   },
   label: namesSource_label,
 };

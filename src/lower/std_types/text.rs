@@ -239,7 +239,7 @@ pub(in crate::lower) enum TextOp {
 /// `s.length`, which counts them, as JS reads a string's length (ADR
 /// 0632). `None` of what's held, which a `next()` may have stepped.
 pub(in crate::lower) fn utf16_length(units: &Expr) -> Option<Expr> {
-    let units = crate::lower::iterators::from_iterator(units.clone()).unwrap_or_else(|units| units);
+    let units = crate::lower::iterators::from_iterator(units.clone()).unwrap_or_else(|units| *units);
     let ExprKind::Call(callee, args) = &units.kind else {
         return None;
     };
@@ -732,6 +732,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     kind,
                     span: range.span,
                     facts: js::Facts::NONE,
+                    held_as: Default::default(),
                 },
                 Expr::int(0),
             ],

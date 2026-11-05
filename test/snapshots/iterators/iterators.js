@@ -46,8 +46,8 @@ export function indexed(words) {
 // place: a `find` keeps its pairs, which its `map` takes apart.
 export function placed(words) {
   const fits = words.some((w, i) => $byteLen(w) === i);
-  const option = words.map((x, i) => [i, x]).find(([i, w]) => $byteLen(w) > (2 + i) >>> 0);
-  const long = option?.[0];
+  const find = words.map((x, i) => [i, x]).find(([i, w]) => $byteLen(w) > (2 + i) >>> 0);
+  const long = find?.[0];
   return [fits, long];
 }
 

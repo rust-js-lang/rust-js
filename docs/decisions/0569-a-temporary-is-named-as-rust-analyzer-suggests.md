@@ -203,3 +203,42 @@ Held by the corpus's `temporary_names` (a `Cell<Option<Point>>` held
 apart from a field made of a closure's `map`, `const point`), against
 native Rust, and the mutations `cell-box-captured-as-value`
 (`mir/temporaries.rs`) and `temporary-cell-unnamed` (`mir/hints.rs`).
+
+## Amendment: a value read in place is named after its call where it's spilled (#769)
+
+#723 (ADR 0800, amended) keeps what's made between calls that unwind to
+one cleanup in place, where each call's value had been a temporary
+written at its call, `const _16 = $next(r)`, which this ADR names after
+its call, `next`. Read in place, such a value was spilled by what reads
+it twice, under that reader's name: an `Option`'s subject `option`, an
+`Option::map`'s its closure's parameter, `l` or `d`. So `const next =
+$next(r)` read `const l = $next(r)`, and `nth`, `nthBack`, `last`,
+`find` read `option` or `d`.
+
+The value carries the name its temporary is given, `js::Expr::held_as`,
+set where a pending temporary is taken to be read in place, of what a
+call the source writes by its name made (`named_by_their_call`, the same
+`call_name` and `variable_name` as `temporaries_names`, through one
+`calls_named_in_source`, `mir/hints/calls.rs`). `FnCx::spill_subject`, beside it in `mir/temporaries.rs`, the spill of a subject read
+more than once, an `Option`'s and `Option::map`'s, alone reads it; a
+`Result`'s stays `result`, which its call names worse, `catchUnwind`,
+`parse`. A name the program's own has is left to the reader's, never
+`make$1` beside its `make`; another of a call it named so is `nth$1`.
+`HeldAs` is never part of what an expression is: two alike but for it
+are equal, and every expression made of new parts has none, so no shape
+decision sees it. And a closure made between calls one `try` covers, set
+once there, `let map; try { .. map = (d) => { .. }; .. }`, is written
+where its `let` is, `function map(d)`, as it was where the calls unwound
+apart (tidy's `finish/closures out of tries`); never one that reads a name
+declared in that `try`, which isn't there before it.
+
+93 snapshots read differently, every one a rename, each checked name by
+name against the commit before #723's: as good or better there, `d` →
+`last`, `option` → `nth`, `getMut`, `splitOnce`, `l` → `next`. Where an
+earlier subject now takes a call's name, a temporary named later falls
+back, `next` → `value` in `nested_item_drops.js` and `std_rev.js`,
+`upgrade` → `tmp$3` in `rc_counts.js`, as before #723: **the user's
+decision is to accept these as they are**, with no numbered call name,
+`next$1`, tried first. Mutations: `subject-not-named-by-its-call`,
+`subject-name-taken-from-the-program`, `in-place-value-unnamed`,
+`result-subject-named-by-its-call`, `closures-left-in-tries`.

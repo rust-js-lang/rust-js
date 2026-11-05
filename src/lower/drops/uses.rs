@@ -243,6 +243,7 @@ pub(super) fn dyn_dropped(dictionary: Expr, value: Expr, js_span: js::Span) -> S
         facts: js::Facts::NONE,
         kind: js::ExprKind::OptionalCall(Box::new(drop), vec![value]),
         span: js_span,
+        held_as: Default::default(),
     })
     .at(js_span)
 }

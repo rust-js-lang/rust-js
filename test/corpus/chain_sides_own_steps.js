@@ -148,13 +148,13 @@ function main() {
   }
   const value$8 = $held($lazyChain(value$7, $closing($iter(tmp$4), $dropEach(loudDrop_drop))));
   try {
-    const l = $nthDropping($lent(value$8), 2, loudDrop_drop, false);
+    const nth = $nthDropping($lent(value$8), 2, loudDrop_drop, false);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = l != null ? map(l) : undefined;
+    const value = nth != null ? map(nth) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } finally {
     value$8.return();

@@ -42,16 +42,19 @@ function run(name, f) {
 
 function main() {
   run("rev rev", () => {
-    const d = $lastDropping($rev($rev($closing($iter(ds()), $dropEach(dDrop_drop)))), dDrop_drop);
+    const last = $lastDropping(
+      $rev($rev($closing($iter(ds()), $dropEach(dDrop_drop)))),
+      dDrop_drop,
+    );
     function map(d) {
       const result = d[0] + 0;
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("rev rev skip", () => {
-    const d = $lastDropping(
+    const last = $lastDropping(
       $skipping($rev($rev($closing($iter(ds()), $dropEach(dDrop_drop)))), 1, dDrop_drop),
       dDrop_drop,
     );
@@ -60,10 +63,10 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("rev rev chain", () => {
-    const d = $lastDropping(
+    const last = $lastDropping(
       $lazyChain(
         $rev($rev($closing($iter(ds()), $dropEach(dDrop_drop)))),
         $closing($iter([[6]]), $dropEach(dDrop_drop)),
@@ -75,7 +78,7 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("rev rev count", () =>
     $rev($rev($closing($iter(ds()), $dropEach(dDrop_drop)))).reduce((n, item) => {
@@ -86,13 +89,13 @@ function main() {
   run("rev rev nth", () => {
     const rev = $held($rev($rev($closing($iter(ds()), $dropEach(dDrop_drop)))));
     try {
-      const d = $nthDropping($lent(rev), 1, dDrop_drop, false);
+      const nth = $nthDropping($lent(rev), 1, dDrop_drop, false);
       function map(d) {
         const result = d[0] + 0;
         dDrop_drop(d);
         return result;
       }
-      return d != null ? map(d) : undefined;
+      return nth != null ? map(nth) : undefined;
     } finally {
       rev.return();
     }
@@ -103,13 +106,13 @@ function main() {
     return collect.length;
   });
   run("rev", () => {
-    const d = $lastDropping($rev($closing($iter(ds()), $dropEach(dDrop_drop))), dDrop_drop);
+    const last = $lastDropping($rev($closing($iter(ds()), $dropEach(dDrop_drop))), dDrop_drop);
     function map(d) {
       const result = d[0] + 0;
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
 }
 //# sourceMappingURL=case.js.map

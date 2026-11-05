@@ -26,13 +26,13 @@ function noisy(ns) {
 function main() {
   let it = $iter(noisy([1, 2, 3]));
   try {
-    const n = $nthBack($slicing(it, noisyDrop_drop), 1, undefined, noisyDrop_drop);
+    const nthBack = $nthBack($slicing(it, noisyDrop_drop), 1, undefined, noisyDrop_drop);
     function map(n) {
       const result = n[0];
       noisyDrop_drop(n);
       return result;
     }
-    const value = n != null ? map(n) : undefined;
+    const value = nthBack != null ? map(nthBack) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
     console.log(`left ${it.end - it.at}`);
   } finally {
@@ -42,13 +42,13 @@ function main() {
   }
   it = $iter(noisy([4, 5, 6]));
   try {
-    const n = $findBack(it, (n) => n[0] === 4, undefined, noisyDrop_drop);
+    const rfind = $findBack(it, (n) => n[0] === 4, undefined, noisyDrop_drop);
     function map(n) {
       const result = n[0];
       noisyDrop_drop(n);
       return result;
     }
-    const value = n != null ? map(n) : undefined;
+    const value = rfind != null ? map(rfind) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
     console.log(
       `${$foldBack($closing($iter(noisy([7, 8])), $dropEach(noisyDrop_drop)), 0, (sum, n) => {

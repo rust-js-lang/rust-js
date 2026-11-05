@@ -22,8 +22,8 @@ function main() {
     `${made === "NotPresent" ? "environment variable not found" : `environment variable was not valid unicode: ${$debugStr(made._0)}`} ${made === "NotPresent" ? "NotPresent" : `NotUnicode(${$debugStr(made._0)})`}`,
   );
   console.log(`${$vars().some(([key]) => key === "PATH")}`);
-  const option = $vars().find(([key]) => key === "PATH");
-  const path = option?.[1];
+  const find = $vars().find(([key]) => key === "PATH");
+  const path = find?.[1];
   const result = $var("PATH");
   console.log(`${path == (result.TAG === "Ok" ? result._0 : undefined)}`);
   const all = $vars();

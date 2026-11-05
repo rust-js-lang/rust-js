@@ -524,7 +524,7 @@ function main() {
     undefined,
     dDrop_drop,
   );
-  const option = enumerateDoubleEndedIterator_nextBack(
+  const nextBack = enumerateDoubleEndedIterator_nextBack(
     counted,
     { len: (iterator) => $exactLen(hintsIterator_sizeHint(iterator)) },
     { next_back: hintsDoubleEndedIterator_nextBack },
@@ -536,7 +536,7 @@ function main() {
     dDrop_drop(d);
     return result;
   }
-  const value$1 = option != null ? map$1(option) : undefined;
+  const value$1 = nextBack != null ? map$1(nextBack) : undefined;
   console.log(`${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
   const last = $nextBack(
     $enumerate(
@@ -583,29 +583,29 @@ function main() {
     $filterEnds($closing($iter(ds()), $dropEach(dDrop_drop)), (d) => d[0] % 2 === 0, dDrop_drop),
   );
   try {
-    const d = $nextBack(kept);
+    const nextBack = $nextBack(kept);
     function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    const value = d != null ? map(d) : undefined;
+    const value = nextBack != null ? map(nextBack) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-    const d$1 = $next(kept);
+    const next = $next(kept);
     function map$1(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    const value$1 = d$1 != null ? map$1(d$1) : undefined;
+    const value$1 = next != null ? map$1(next) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-    const d$2 = $next(kept);
+    const next$1 = $next(kept);
     function map$2(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    const value$2 = d$2 != null ? map$2(d$2) : undefined;
+    const value$2 = next$1 != null ? map$2(next$1) : undefined;
     console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   } finally {
     kept.return();

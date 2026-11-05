@@ -96,7 +96,7 @@ function main() {
     );
   });
   run("last", () => {
-    const d = $lastDropping(
+    const last = $lastDropping(
       $closing($iterator(it(30), itIterator_next), (it) => {
         console.log("drop it");
         for (const item of it.of.items) {
@@ -110,7 +110,7 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    const value = d != null ? map(d) : undefined;
+    const value = last != null ? map(last) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   });
   run("sum", () => {
@@ -189,7 +189,7 @@ function main() {
     const value = it(80);
     try {
       try {
-        const d = $findDropping(
+        const find = $findDropping(
           $lent($iterator(value, itIterator_next)),
           (d) => d[0] === 81,
           dDrop_drop,
@@ -200,7 +200,7 @@ function main() {
           dDrop_drop(d);
           return result;
         }
-        const value$1 = d != null ? map(d) : undefined;
+        const value$1 = find != null ? map(find) : undefined;
         console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
       } finally {
         console.log("drop it");

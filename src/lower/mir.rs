@@ -12,6 +12,8 @@
 //!
 //! The function's THIR is beside it, for its shape: names and spans.
 
+mod made;
+pub(super) use made::Made;
 mod alternatives;
 mod assign;
 mod awaits;
@@ -448,18 +450,6 @@ enum Value<'tcx> {
 /// binds each name the pattern binds to.
 type ParamPattern = (usize, js::Pattern, Vec<(Local, String)>);
 
-/// The `const`s MIR's lowering made of a body, tidy's temporaries, read where used where nothing between tells.
-#[derive(Default)]
-pub(super) struct Made {
-    /// Of what an element made ahead of a branch reads (`capture_jsx`).
-    pub(super) captured: HashSet<String>,
-    /// Of what it held to read in place where that's once (`held_in_place`), a place it fixed,
-    /// `const item = $unwrap(resource.state);`, or an `Option` its items read twice.
-    pub(super) fixed: HashSet<String>,
-    /// Of what holds a `&mut`'s handle on a nullable place, the place (#541).
-    pub(super) handles: HashMap<String, Expr>,
-}
-
 /// What lowering a body from its MIR found of its variables, which goes
 /// with them where a body inside it is lowered (`Locals`): each read and
 /// written here alone, and asked of by the rest, `alike_local`.
@@ -496,6 +486,10 @@ pub(super) struct Found {
     /// Of a body lowered from its MIR, the `const`s it made that tidy
     /// reads in place where it can, as its temporaries.
     pub(super) made: Made,
+    /// Each name `spill_subject` gave a subject after its call, `nth`: another
+    /// of it is `nth$1`, which tidy writes `nth` where their scopes are apart.
+    pub(in crate::lower) subjects: HashSet<String>,
+
     /// Of a body lowered from its MIR, each literal its patterns name by
     /// a `const`, named once tidy's done (`FnCx::named_text`, ADR 0590,
     /// amended).
@@ -618,6 +612,9 @@ struct Locals {
     given_name: IndexVec<Local, bool>,
     /// Each one a `String`, which `push_str` appends to by `+`.
     text: IndexVec<Local, bool>,
+    /// Each temporary a call the source writes by its name makes, by the
+    /// name `temporaries_names` gives it (ADR 0569, #769).
+    called: std::collections::HashMap<Local, String>,
 }
 
 impl Locals {

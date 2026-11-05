@@ -21,8 +21,8 @@ export function entry() {
 }
 
 function doubledIterator_next(doubled, IIterator) {
-  const x = IIterator.next(doubled.inner);
-  return x != null ? (x * 2) | 0 : undefined;
+  const next = IIterator.next(doubled.inner);
+  return next != null ? (next * 2) | 0 : undefined;
 }
 
 const Doubled = {

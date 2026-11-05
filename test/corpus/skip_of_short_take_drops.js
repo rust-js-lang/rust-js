@@ -44,13 +44,13 @@ function main() {
     ),
   );
   try {
-    const d = $nthDropping($lent(skip), 2, dDrop_drop, false);
+    const nth = $nthDropping($lent(skip), 2, dDrop_drop, false);
     function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    const value = d != null ? map(d) : undefined;
+    const value = nth != null ? map(nth) : undefined;
     console.log(`nth ${value == null ? "None" : `Some(${value})`}`);
   } finally {
     skip.return();
@@ -88,7 +88,7 @@ function main() {
       return result;
     }, 0)}`,
   );
-  const d = $lastDropping(
+  const last = $lastDropping(
     $skipping(
       iterator_fuse(
         $iter(ds()),
@@ -107,7 +107,7 @@ function main() {
     dDrop_drop(d);
     return result;
   }
-  const value = d != null ? map(d) : undefined;
+  const value = last != null ? map(last) : undefined;
   console.log(`last ${value == null ? "None" : `Some(${value})`}`);
   const value$1 = $held(
     $skipping(
@@ -153,7 +153,7 @@ function main() {
     ),
   );
   try {
-    const option = $nthDropping(
+    const nth = $nthDropping(
       $lent(enumerate),
       1,
       (value) => {
@@ -166,7 +166,7 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    const value = option != null ? map(option) : undefined;
+    const value = nth != null ? map(nth) : undefined;
     console.log(`enumerate ${value == null ? "None" : `Some(${value})`}`);
   } finally {
     enumerate.return();
@@ -185,13 +185,13 @@ function main() {
     ),
   );
   try {
-    const d = $nthDropping($lent(value$2), 0, dDrop_drop, false);
+    const nth = $nthDropping($lent(value$2), 0, dDrop_drop, false);
     function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    const value = d != null ? map(d) : undefined;
+    const value = nth != null ? map(nth) : undefined;
     console.log(`within ${value == null ? "None" : `Some(${value})`}`);
   } finally {
     value$2.return();

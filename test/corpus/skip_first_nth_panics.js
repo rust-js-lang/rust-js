@@ -49,13 +49,13 @@ function main() {
       }).drop(2),
     );
     try {
-      const a = $tryFoldSome(skip, [0], (a) => a, accDrop_drop);
+      const tryFold = $tryFoldSome(skip, [0], (a) => a, accDrop_drop);
       function map(a) {
         const result = a[0];
         accDrop_drop(a);
         return result;
       }
-      return a != null ? map(a) : undefined;
+      return tryFold != null ? map(tryFold) : undefined;
     } finally {
       skip.return();
     }

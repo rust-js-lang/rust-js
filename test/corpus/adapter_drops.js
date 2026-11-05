@@ -193,23 +193,23 @@ function main() {
         loudDrop_drop(pair[1]);
       }
     }
-    const option = $next(zipped);
+    const next = $next(zipped);
     function map([a, b]) {
       const result = [a[0], b[0]];
       loudDrop_drop(b);
       loudDrop_drop(a);
       return result;
     }
-    const value = option != null ? map(option) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`zip ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
-    const option$1 = $next(zipped);
+    const next$1 = $next(zipped);
     function map$1([a, b]) {
       const result = [a[0], b[0]];
       loudDrop_drop(b);
       loudDrop_drop(a);
       return result;
     }
-    const value$1 = option$1 != null ? map$1(option$1) : undefined;
+    const value$1 = next$1 != null ? map$1(next$1) : undefined;
     console.log(`zip ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
   } finally {
     zipped.return();
@@ -233,13 +233,13 @@ function main() {
   );
   let chained$live;
   try {
-    const l = $next(chained);
+    const next = $next(chained);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = l != null ? map(l) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`chain ${value == null ? "None" : `Some(${value})`}`);
     chained$live = false;
   } finally {
@@ -262,13 +262,13 @@ function main() {
   );
   let kept$live;
   try {
-    const l = $next(kept);
+    const next = $next(kept);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = l != null ? map(l) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`filter ${value == null ? "None" : `Some(${value})`}`);
     kept$live = false;
   } finally {
@@ -280,13 +280,13 @@ function main() {
   );
   let numbered$live;
   try {
-    const option = $next(numbered);
+    const next = $next(numbered);
     function map([i, l]) {
       const result = [i, l[0]];
       loudDrop_drop(l);
       return result;
     }
-    const value = option != null ? map(option) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`enumerate ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
     numbered$live = false;
   } finally {
@@ -305,13 +305,13 @@ function main() {
   );
   let skipping$live;
   try {
-    const l = $next(skipping);
+    const next = $next(skipping);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = l != null ? map(l) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`skip_while ${value == null ? "None" : `Some(${value})`}`);
     skipping$live = false;
   } finally {
@@ -328,18 +328,18 @@ function main() {
   let ended;
   let taking$live;
   try {
-    const l = $next(taking);
+    const next = $next(taking);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = l != null ? map(l) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`take_while ${value == null ? "None" : `Some(${value})`}`);
-    const next = $next(taking);
-    ended = next == null;
-    if (next != null) {
-      loudDrop_drop(next);
+    const loud = $next(taking);
+    ended = loud == null;
+    if (loud != null) {
+      loudDrop_drop(loud);
     }
     taking$live = false;
   } finally {
@@ -358,21 +358,21 @@ function main() {
   );
   let stepped$live;
   try {
-    const l = $next(stepped);
+    const next = $next(stepped);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = l != null ? map(l) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`step_by ${value == null ? "None" : `Some(${value})`}`);
-    const l$1 = $next(stepped);
+    const next$1 = $next(stepped);
     function map$1(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value$1 = l$1 != null ? map$1(l$1) : undefined;
+    const value$1 = next$1 != null ? map$1(next$1) : undefined;
     console.log(`step_by ${value$1 == null ? "None" : `Some(${value$1})`}`);
     stepped$live = false;
   } finally {
@@ -406,13 +406,13 @@ function main() {
   );
   let fused$live;
   try {
-    const l = $next(fused);
+    const next = $next(fused);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = l != null ? map(l) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`fuse ${value == null ? "None" : `Some(${value})`}`);
     fused$live = false;
   } finally {
@@ -619,16 +619,15 @@ function main() {
     }
     throw error;
   }
-  let option;
-  let map;
+  let next;
+  function map([a, b]) {
+    const result = [a[0], b[0]];
+    loudDrop_drop(b);
+    loudDrop_drop(a);
+    return result;
+  }
   try {
-    option = $next(z);
-    map = ([a, b]) => {
-      const result = [a[0], b[0]];
-      loudDrop_drop(b);
-      loudDrop_drop(a);
-      return result;
-    };
+    next = $next(z);
   } catch (error) {
     z.return();
     if (fused$live) {
@@ -661,7 +660,7 @@ function main() {
     throw error;
   }
   try {
-    const value = option != null ? map(option) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`generic zip ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
   } catch (error) {
     z.return();
@@ -839,15 +838,14 @@ function main() {
     }
     throw error;
   }
-  let l;
-  let map$1;
+  let next$1;
+  function map$1(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
   try {
-    l = $next(c);
-    map$1 = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
+    next$1 = $next(c);
   } catch (error) {
     c.return();
     if (fused$live) {
@@ -880,7 +878,7 @@ function main() {
     throw error;
   }
   try {
-    const value = l != null ? map$1(l) : undefined;
+    const value = next$1 != null ? map$1(next$1) : undefined;
     console.log(`generic chain ${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     c.return();
@@ -1026,15 +1024,14 @@ function main() {
     }
     throw error;
   }
-  let l$1;
-  let map$2;
+  let next$2;
+  function map$2(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
   try {
-    l$1 = $next(counted);
-    map$2 = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
+    next$2 = $next(counted);
   } catch (error) {
     counted.return();
     if (fused$live) {
@@ -1067,7 +1064,7 @@ function main() {
     throw error;
   }
   try {
-    const value = l$1 != null ? map$2(l$1) : undefined;
+    const value = next$2 != null ? map$2(next$2) : undefined;
     console.log(`generic chain of its own ${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     counted.return();
@@ -1207,15 +1204,14 @@ function main() {
     }
     throw error;
   }
-  let l$2;
-  let map$3;
+  let next$3;
+  function map$3(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
   try {
-    l$2 = $next(own);
-    map$3 = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
+    next$3 = $next(own);
   } catch (error) {
     own.return();
     if (fused$live) {
@@ -1248,7 +1244,7 @@ function main() {
     throw error;
   }
   try {
-    const value = l$2 != null ? map$3(l$2) : undefined;
+    const value = next$3 != null ? map$3(next$3) : undefined;
     console.log(`chain of its own ${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     own.return();
@@ -1346,15 +1342,14 @@ function main() {
     }
     throw error;
   }
-  let l$3;
-  let map$4;
+  let next$4;
+  function map$4(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
   try {
-    l$3 = $next(t);
-    map$4 = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
+    next$4 = $next(t);
   } catch (error) {
     t.return();
     if (fused$live) {
@@ -1387,7 +1382,7 @@ function main() {
     throw error;
   }
   try {
-    const value = l$3 != null ? map$4(l$3) : undefined;
+    const value = next$4 != null ? map$4(next$4) : undefined;
     console.log(`generic take ${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     t.return();

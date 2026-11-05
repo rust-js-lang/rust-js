@@ -12,8 +12,8 @@ function pointDebug_fmt(point) {
 
 function tree() {
   const tree = new $BTreeMap([["demo", { balance: 0 }]]);
-  const option = tree.get("demo");
-  const result = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "missing" };
+  const getMut = tree.get("demo");
+  const result = getMut != null ? { TAG: "Ok", _0: getMut } : { TAG: "Err", _0: "missing" };
   if (result.TAG === "Err") {
     return result;
   }
@@ -23,8 +23,8 @@ function tree() {
 
 function hash() {
   const hash = new Map([["demo", { balance: 0 }]]);
-  const option = hash.get("demo");
-  const result = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "missing" };
+  const getMut = hash.get("demo");
+  const result = getMut != null ? { TAG: "Ok", _0: getMut } : { TAG: "Err", _0: "missing" };
   if (result.TAG === "Err") {
     return result;
   }
@@ -98,8 +98,8 @@ function copyInMap() {
   const p = { x: 0 };
   const map = new Map([[1, { ...p }]]);
   const q = { ...$unwrap(map.get(1), "no entry found for key") };
-  const option = map.get(1);
-  const result = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "missing" };
+  const getMut = map.get(1);
+  const result = getMut != null ? { TAG: "Ok", _0: getMut } : { TAG: "Err", _0: "missing" };
   if (result.TAG === "Err") {
     return result;
   }

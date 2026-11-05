@@ -34,7 +34,7 @@ function tExt(TIterator) {
       return best;
     },
     positionMax(self, SelfItemOrd) {
-      const option = tExt({ next: $nextSome, fold: $foldOf }).widest(
+      const widest = tExt({ next: $nextSome, fold: $foldOf }).widest(
         iterator_map(iterator_enumerate(self, TIterator), ([i, x]) => [x, i], {
           next: $nextSome,
           fold: $foldOf,
@@ -43,7 +43,7 @@ function tExt(TIterator) {
         }),
         { cmp: (a, b) => SelfItemOrd.cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
       );
-      return option?.[1];
+      return widest?.[1];
     },
   }));
 }

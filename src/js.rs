@@ -657,6 +657,22 @@ pub struct Expr {
     /// What its owner knows of it that its kind doesn't say, each a
     /// `Known`, kept where it's rebuilt of new parts.
     pub facts: Facts,
+    /// The name the MIR temporary whose value it is, read in place, is
+    /// given, `next` of `r.next()` (`temporaries_names`, ADR 0569): what a
+    /// `const` of it a subject's reader makes is named (#769). None of one
+    /// made of new parts.
+    pub held_as: HeldAs,
+}
+
+/// `Expr::held_as`: the name a temporary is given, never part of what an
+/// expression is, so two alike but for it are equal.
+#[derive(Clone, Default)]
+pub struct HeldAs(pub Option<std::sync::Arc<String>>);
+
+impl PartialEq for HeldAs {
+    fn eq(&self, _: &HeldAs) -> bool {
+        true
+    }
 }
 
 /// What the lowering knows of an expression, each of `Known`'s: a set, so

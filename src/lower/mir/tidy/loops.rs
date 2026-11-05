@@ -958,6 +958,7 @@ pub(super) fn unarrayed(e: Expr) -> Expr {
             facts: crate::lower::iterators::its_facts(e.facts),
             kind,
             span: e.span,
+            held_as: Default::default(),
         },
     }
 }

@@ -60,19 +60,19 @@ function main() {
     `${value$4 == null ? "None" : `Some([${value$4.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($sliceGet(v, 5))}`,
   );
   const splitFirst = v.length === 0 ? undefined : [v[0], v.slice(1)];
-  const splitLast = v.length === 0 ? undefined : [v[v.length - 1], v.slice(0, -1)];
+  const value$5 = v.length === 0 ? undefined : [v[v.length - 1], v.slice(0, -1)];
   const items = v.slice(0, 0);
   console.log(
-    `${splitFirst == null ? "None" : `Some((${splitFirst[0]}, [${splitFirst[1].join(", ")}]))`} ${splitLast == null ? "None" : `Some((${splitLast[0]}, [${splitLast[1].join(", ")}]))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, [${value[1].join(", ")}]))`))(items.length === 0 ? undefined : [items[0], items.slice(1)])}`,
+    `${splitFirst == null ? "None" : `Some((${splitFirst[0]}, [${splitFirst[1].join(", ")}]))`} ${value$5 == null ? "None" : `Some((${value$5[0]}, [${value$5[1].join(", ")}]))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, [${value[1].join(", ")}]))`))(items.length === 0 ? undefined : [items[0], items.slice(1)])}`,
   );
-  const value$5 = total(v);
-  const option = words.length === 0 ? undefined : [words[words.length - 1], words.slice(0, -1)];
-  const value$6 = option != null ? [$byteLen(option[0]), option[1].length] : undefined;
-  console.log(`${value$5} ${value$6 == null ? "None" : `Some((${value$6[0]}, ${value$6[1]}))`}`);
+  const value$6 = total(v);
+  const splitLast = words.length === 0 ? undefined : [words[words.length - 1], words.slice(0, -1)];
+  const value$7 = splitLast != null ? [$byteLen(splitLast[0]), splitLast[1].length] : undefined;
+  console.log(`${value$6} ${value$7 == null ? "None" : `Some((${value$7[0]}, ${value$7[1]}))`}`);
   const one = [9];
-  const value$7 = one.length === 0 ? undefined : [one[0], one.slice(1)];
+  const value$8 = one.length === 0 ? undefined : [one[0], one.slice(1)];
   console.log(
-    `${value$7 == null ? "None" : `Some((${value$7[0]}, [${value$7[1].join(", ")}]))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, [${value[1].join(", ")}]))`))(one.length === 0 ? undefined : [one[one.length - 1], one.slice(0, -1)])}`,
+    `${value$8 == null ? "None" : `Some((${value$8[0]}, [${value$8[1].join(", ")}]))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, [${value[1].join(", ")}]))`))(one.length === 0 ? undefined : [one[one.length - 1], one.slice(0, -1)])}`,
   );
   const tail = $sliceGet(words, 1);
   if (tail != null) {

@@ -87,13 +87,13 @@ function main() {
   const value$1 = $iter($sortedKeys(set, (a, b) => $cmp(a[0], b[0])));
   let found;
   try {
-    const l = $findDropping($lent(value$1), (l) => l[0] === 2, loudDrop_drop, false);
+    const find = $findDropping($lent(value$1), (l) => l[0] === 2, loudDrop_drop, false);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    found = l != null ? map(l) : undefined;
+    found = find != null ? map(find) : undefined;
   } finally {
     for (const item of value$1) {
       loudDrop_drop(item);

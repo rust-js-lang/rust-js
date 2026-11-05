@@ -313,18 +313,18 @@ function consume(n) {
   }
   const stepped = $held($lazyChain(value$9, tmp$1));
   try {
-    const l = $next(stepped);
+    const next = $next(stepped);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = l != null ? map(l) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-    const next = $next(stepped);
-    console.log(`${next == null}`);
-    if (next != null) {
-      loudDrop_drop(next);
+    const loud = $next(stepped);
+    console.log(`${loud == null}`);
+    if (loud != null) {
+      loudDrop_drop(loud);
     }
     console.log("after");
     console.log(

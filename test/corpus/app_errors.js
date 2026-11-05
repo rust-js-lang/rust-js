@@ -51,9 +51,9 @@ function appErrorFromParseIntError_from(e) {
 }
 
 function field(config, key) {
-  const option = config.get(key);
+  const get = config.get(key);
   const result =
-    option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: { TAG: "Missing", _0: key } };
+    get != null ? { TAG: "Ok", _0: get } : { TAG: "Err", _0: { TAG: "Missing", _0: key } };
   if (result.TAG === "Err") {
     return result;
   }

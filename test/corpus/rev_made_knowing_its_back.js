@@ -97,7 +97,7 @@ function ends(it, dropI) {
     ),
   );
   try {
-    const d = revDoubleEndedIterator_nextBack(
+    const nextBack = revDoubleEndedIterator_nextBack(
       r,
       { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
       dropI,
@@ -108,14 +108,14 @@ function ends(it, dropI) {
       dDrop_drop(d);
       return result;
     }
-    const a = d != null ? map(d) : undefined;
-    const d$1 = $next(r);
+    const a = nextBack != null ? map(nextBack) : undefined;
+    const next = $next(r);
     function map$1(d) {
       const result = d[0] + 0;
       dDrop_drop(d);
       return result;
     }
-    const b = d$1 != null ? map$1(d$1) : undefined;
+    const b = next != null ? map$1(next) : undefined;
     const option = a != null && b != null ? [a, b] : undefined;
     return option != null ? (((option[0] * 100) >>> 0) + option[1]) >>> 0 : undefined;
   } finally {

@@ -288,6 +288,7 @@ impl Expr {
             facts: self.facts,
             kind,
             span: self.span,
+            held_as: Default::default(),
         })
     }
 
@@ -378,6 +379,7 @@ impl Expr {
                         facts: Facts::NONE,
                         kind: ExprKind::Binary(Op::And, Box::new(a), Box::new(b)),
                         span,
+                        held_as: Default::default(),
                     })
                     .expect("a part")
             }
@@ -385,6 +387,7 @@ impl Expr {
                 facts: Facts::NONE,
                 kind: ExprKind::Binary(*op, Box::new(a.tested()), Box::new(b.tested())),
                 span: self.span,
+                held_as: Default::default(),
             },
             ExprKind::Binary(Op::Coalesce, x, fallback) if fallback.is_falsy_constant() => x.tested(),
             _ => self.clone(),

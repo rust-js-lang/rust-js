@@ -123,6 +123,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             user: IndexVec::from_elem_n(false, n),
             given_name: IndexVec::from_elem_n(false, n),
             text: IndexVec::from_elem_n(false, n),
+            called: self.named_by_their_call(body),
         };
         // A scope struct's method's `self`, the variable its function
         // closes over (ADR 1043).

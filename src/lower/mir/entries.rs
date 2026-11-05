@@ -39,6 +39,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         facts: crate::lower::iterators::its_facts(entry.facts),
                         kind,
                         span: entry.span,
+                        held_as: Default::default(),
                     },
                     out,
                 );

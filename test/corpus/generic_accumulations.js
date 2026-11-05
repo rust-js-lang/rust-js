@@ -15,14 +15,14 @@ export function entry() {
 }
 
 function sum1(it, SSumIItem) {
-  const first = $nextSome(it);
-  return first != null ? SSumIItem.sum($lazyChain($iter([$someValue(first)]), it)) : undefined;
+  const next = $nextSome(it);
+  return next != null ? SSumIItem.sum($lazyChain($iter([$someValue(next)]), it)) : undefined;
 }
 
 function product1(it, PProductIItem) {
-  const first = $nextSome(it);
-  return first != null
-    ? PProductIItem.product($lazyChain($iter([$someValue(first)]), it))
+  const next = $nextSome(it);
+  return next != null
+    ? PProductIItem.product($lazyChain($iter([$someValue(next)]), it))
     : undefined;
 }
 

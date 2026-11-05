@@ -34,22 +34,22 @@ function plainIterator_next(plain) {
   return plain.at < 5 ? value() : undefined;
 }
 function third(it) {
-  const n = $nthDropping($lent(Iterator.from(it)), 2, noisyDrop_drop, false);
+  const nth = $nthDropping($lent(Iterator.from(it)), 2, noisyDrop_drop, false);
   function map(n) {
     const result = n[0];
     noisyDrop_drop(n);
     return result;
   }
-  return n != null ? map(n) : undefined;
+  return nth != null ? map(nth) : undefined;
 }
 function finalOne(it) {
-  const n = $lastDropping(Iterator.from(it), noisyDrop_drop);
+  const last = $lastDropping(Iterator.from(it), noisyDrop_drop);
   function map(n) {
     const result = n[0];
     noisyDrop_drop(n);
     return result;
   }
-  return n != null ? map(n) : undefined;
+  return last != null ? map(last) : undefined;
 }
 function main() {
   const value = third(

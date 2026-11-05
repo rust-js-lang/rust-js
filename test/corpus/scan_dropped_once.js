@@ -145,13 +145,13 @@ function held() {
     $lazyScan($closing($iter(items()), $dropEach(itemDrop_drop)), 0, (_, x) => x),
   );
   try {
-    const x = $next(stepped);
+    const next = $next(stepped);
     function map(x) {
       const result = x[0];
       itemDrop_drop(x);
       return result;
     }
-    const value = x != null ? map(x) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`first ${value == null ? "None" : `Some(${value})`}`);
   } finally {
     stepped.return();

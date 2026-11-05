@@ -141,6 +141,7 @@ fn marked_absent(args: &mut Vec<Expr>, absent: impl Fn(usize, &Expr) -> bool, to
                 kind: js::ExprKind::Undefined,
                 span: arg.span,
                 facts: arg.facts.with(js::Known::Absent),
+                held_as: Default::default(),
             };
             continue;
         }

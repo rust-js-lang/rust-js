@@ -555,6 +555,7 @@ fn imported(stmts: &mut [Stmt]) {
                 facts: js::Facts::NONE,
                 kind: ExprKind::Await(import.clone()),
                 span: value.span,
+                held_as: Default::default(),
             },
             mutable: false,
         };
@@ -1087,6 +1088,7 @@ fn expr(e: &mut Expr) {
             facts: js::Facts::NONE,
             kind: ExprKind::Var("Boolean".into()),
             span: e.span,
+            held_as: Default::default(),
         };
         return;
     }

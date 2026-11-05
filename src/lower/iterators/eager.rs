@@ -9,37 +9,37 @@ use super::*;
 /// => ..)` (ADR 0217); `reduce`'s, its pair the callback's second
 /// parameter, `.reduce((acc, w, i) => .., start)`. Not `filter` or `find`,
 /// which give back the pairs. `Err` gives back the callback, of any other.
-pub(super) fn indexed_callback(items: &Expr, name: &str, f: Expr) -> Result<(Expr, Expr), Expr> {
+pub(super) fn indexed_callback(items: &Expr, name: &str, f: Expr) -> Result<(Expr, Expr), Box<Expr>> {
     // What the callback is given before each item, `reduce`'s accumulator.
     let before = match name {
         "map" | "forEach" | "some" | "every" | "flatMap" => 0,
         "reduce" => 1,
-        _ => return Err(f),
+        _ => return Err(Box::new(f)),
     };
     let js::ExprKind::Call(callee, args) = &items.kind else {
-        return Err(f);
+        return Err(Box::new(f));
     };
     let js::ExprKind::Member(source, method) = &callee.kind else {
-        return Err(f);
+        return Err(Box::new(f));
     };
     if method != "map" || !matches!(&args[..], [pairing] if is_enumerate_pairing(pairing)) {
-        return Err(f);
+        return Err(Box::new(f));
     }
     let js::ExprKind::Arrow(params, body) = &f.kind else {
-        return Err(f);
+        return Err(Box::new(f));
     };
     let (leading, [js::Pattern::Array(parts)]) = params.split_at(before.min(params.len())) else {
-        return Err(f);
+        return Err(Box::new(f));
     };
     // `|(i, _)|`'s, its item left out: `[i]`.
     let (index, item) = match &parts[..] {
         [index, item] => (index, item),
         [index] => (index, &None),
-        _ => return Err(f),
+        _ => return Err(Box::new(f)),
     };
     let index = match index {
         Some(js::Pattern::Name(index)) => Some(index.clone()),
-        Some(_) => return Err(f),
+        Some(_) => return Err(Box::new(f)),
         None => None,
     };
     // The item, taken apart as it was, `({ name }, i)`; `_` where only the
@@ -289,7 +289,7 @@ pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
                 false => eager_items(chain, true, Some(f)),
             }
             .map(|(items, _)| {
-                let (items, f) = indexed_callback(&items, "reduce", f.clone()).unwrap_or_else(|f| (items, f));
+                let (items, f) = indexed_callback(&items, "reduce", f.clone()).unwrap_or_else(|f| (items, *f));
                 Expr::call(Expr::member(items, "reduce"), vec![f, init.clone()])
             }),
             // Whether any item is a literal, which `===` and `includes` agree

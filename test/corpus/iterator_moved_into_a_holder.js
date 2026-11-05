@@ -30,27 +30,27 @@ function main() {
     ),
   );
   try {
-    const l = $next(kept.it);
+    const next = $next(kept.it);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const first = l != null ? map(l) : undefined;
-    const l$1 = $next(kept.it);
+    const first = next != null ? map(next) : undefined;
+    const next$1 = $next(kept.it);
     function map$1(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const second = l$1 != null ? map$1(l$1) : undefined;
-    const l$2 = $next(kept.it);
+    const second = next$1 != null ? map$1(next$1) : undefined;
+    const next$2 = $next(kept.it);
     function map$2(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const past = l$2 != null ? map$2(l$2) : undefined;
+    const past = next$2 != null ? map$2(next$2) : undefined;
     console.log(
       `kept ${first == null ? "None" : `Some(${first})`} ${second == null ? "None" : `Some(${second})`} ${past == null ? "None" : `Some(${past})`}`,
     );
@@ -66,20 +66,20 @@ function main() {
       ),
     );
     try {
-      const l = $next(twice.it.it);
+      const next = $next(twice.it.it);
       function map(l) {
         const result = l[0];
         loudDrop_drop(l);
         return result;
       }
-      const only = l != null ? map(l) : undefined;
-      const l$1 = $next(twice.it.it);
+      const only = next != null ? map(next) : undefined;
+      const next$1 = $next(twice.it.it);
       function map$1(l) {
         const result = l[0];
         loudDrop_drop(l);
         return result;
       }
-      const after = l$1 != null ? map$1(l$1) : undefined;
+      const after = next$1 != null ? map$1(next$1) : undefined;
       console.log(
         `twice ${only == null ? "None" : `Some(${only})`} ${after == null ? "None" : `Some(${after})`}`,
       );

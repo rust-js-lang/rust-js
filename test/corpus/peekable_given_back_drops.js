@@ -69,15 +69,15 @@ function main() {
     ),
   );
   try {
-    const d = $peek(p);
-    console.log(`${d?.[0] ?? 0}`);
-    const d$1 = $next(p);
+    const peek = $peek(p);
+    console.log(`${peek?.[0] ?? 0}`);
+    const next = $next(p);
     function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    console.log(`${(d$1 != null ? map(d$1) : undefined) ?? 0}`);
+    console.log(`${(next != null ? map(next) : undefined) ?? 0}`);
     console.log("end");
   } finally {
     p.return();

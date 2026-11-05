@@ -154,8 +154,8 @@ function price(v) {
   if (p == null) {
     return;
   }
-  const option = Value.get(v, "qty");
-  return p * ((option != null ? Value.asNum(option) : undefined) ?? 1);
+  const get = Value.get(v, "qty");
+  return p * ((get != null ? Value.asNum(get) : undefined) ?? 1);
 }
 
 function cloneValue(value) {
@@ -195,13 +195,13 @@ export function tree() {
   Value.pretty(v, 0, out$1);
   p = out$1.value;
   out += `${p}\n`;
-  const option = Value.get(v, "name");
-  const s = option != null ? Value.asStr(option) : undefined;
-  const name = s?.toUpperCase();
+  const get = Value.get(v, "name");
+  const andThen = get != null ? Value.asStr(get) : undefined;
+  const name = andThen?.toUpperCase();
   const value = price(v);
   const depth = Value.depth(v);
-  const option$1 = Value.get(v, "missing");
-  out += `${value == null ? "None" : `Some(${$debugF64(value)})`} ${name == null ? "None" : `Some(${$debugStr(name)})`} ${depth} ${option$1 == null || Value.isNull(option$1)}\n`;
+  const get$1 = Value.get(v, "missing");
+  out += `${value == null ? "None" : `Some(${$debugF64(value)})`} ${name == null ? "None" : `Some(${$debugStr(name)})`} ${depth} ${get$1 == null || Value.isNull(get$1)}\n`;
   const copy = cloneValue(v);
   out += `${$eq(copy, v)} ${$eq({ TAG: "Num", _0: 1 }, { TAG: "Num", _0: 1 })}\n`;
   return out;

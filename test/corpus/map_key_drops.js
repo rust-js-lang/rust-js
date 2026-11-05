@@ -65,13 +65,13 @@ function main() {
     }
     const value$4 = [1];
     try {
-      const option = $removeEntry(m, value$4);
+      const removeEntry = $removeEntry(m, value$4);
       function map([k, v]) {
         const result = [k[0], v];
         keyDrop_drop(k);
         return result;
       }
-      const value = option != null ? map(option) : undefined;
+      const value = removeEntry != null ? map(removeEntry) : undefined;
       console.log(`removed ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
     } finally {
       keyDrop_drop(value$4);
@@ -105,23 +105,23 @@ function main() {
       keyDrop_drop(value);
     }
     $add(s, [4], keyDrop_drop);
-    const k = $setReplace(s, [4]);
+    const replace = $setReplace(s, [4]);
     function map(k) {
       const result = k[0];
       keyDrop_drop(k);
       return result;
     }
-    const value$1 = k != null ? map(k) : undefined;
+    const value$1 = replace != null ? map(replace) : undefined;
     console.log(`replace ${value$1 == null ? "None" : `Some(${value$1})`}`);
     const value$2 = [4];
     try {
-      const k = s.delete(value$2) ? value$2 : undefined;
+      const take = s.delete(value$2) ? value$2 : undefined;
       function map(k) {
         const result = k[0];
         keyDrop_drop(k);
         return result;
       }
-      const value = k != null ? map(k) : undefined;
+      const value = take != null ? map(take) : undefined;
       console.log(`take ${value == null ? "None" : `Some(${value})`}`);
     } finally {
       keyDrop_drop(value$2);

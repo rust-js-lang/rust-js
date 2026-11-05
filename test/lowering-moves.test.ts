@@ -181,7 +181,7 @@ pub fn has_big(source: &Unknown) -> bool {
     count(source).is_some_and(|n| n > 1)
 }
 `);
-  expect(js).toContain("  const option = source.count;\n  return option != null && option > 1 ? option : undefined;\n");
+  expect(js).toContain("  const count = source.count;\n  return count != null && count > 1 ? count : undefined;\n");
   let reads = 0;
   const source = {
     get count() {

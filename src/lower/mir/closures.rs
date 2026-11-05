@@ -398,6 +398,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             facts: js::Facts::NONE,
             kind: js::ExprKind::ItemHole(id.index.as_u32()),
             span: js::Span::NONE,
+            held_as: Default::default(),
         };
         let hole = StmtKind::Expr(hole).at(js::Span::NONE);
         let name = &self.krate.fns[&id].name;

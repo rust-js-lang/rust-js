@@ -124,8 +124,8 @@ export function kind(s) {
 
 /** String literals inside other patterns: an option, a tuple. */
 export function tagged(s) {
-  const option = $splitOnce(s, "/");
-  const top = option?.[0];
+  const splitOnce = $splitOnce(s, "/");
+  const top = splitOnce?.[0];
   const n = top === "ab" ? 1 : top === "" && s.endsWith("/") ? 2 : top == null ? 3 : 4;
   return [n, top === "a" || top === "src"];
 }

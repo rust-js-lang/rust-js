@@ -186,6 +186,7 @@ impl<'a> Cx<'a> {
                     kind,
                     span: f.span,
                     facts: js::Facts::NONE,
+                    held_as: Default::default(),
                 };
                 let get = js::Prop::Method("get".to_owned(), at(js::ExprKind::Arrow(Vec::new(), f.body.clone())));
                 let descriptor = at(js::ExprKind::Object(vec![get], js::ObjectLayout::default()));
@@ -212,6 +213,7 @@ impl<'a> Cx<'a> {
                     kind: js::ExprKind::Function(Box::new(function)),
                     span: f.span,
                     facts: js::Facts::NONE,
+                    held_as: Default::default(),
                 },
             };
             // Each other class that shares it assigned the same function,

@@ -24,13 +24,13 @@ function main() {
       .filter((item) => item != null),
   );
   try {
-    const l = $next(it);
+    const next = $next(it);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = l != null ? map(l) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } finally {
     it.return();

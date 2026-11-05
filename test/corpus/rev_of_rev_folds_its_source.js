@@ -158,13 +158,13 @@ function lastsDoubleEndedIterator_nextBack(lasts) {
 }
 
 function lastOf(items) {
-  const d = $lastDropping($rev($rev(items)), dDrop_drop);
+  const last = $lastDropping($rev($rev(items)), dDrop_drop);
   function map(d) {
     const result = d[0];
     dDrop_drop(d);
     return result;
   }
-  return d != null ? map(d) : undefined;
+  return last != null ? map(last) : undefined;
 }
 
 function countOf(items) {
@@ -179,7 +179,7 @@ function own() {
 }
 
 function main() {
-  const d = $lastDropping(
+  const last = $lastDropping(
     $rev(
       $closing(
         $iterator(
@@ -206,7 +206,7 @@ function main() {
     dDrop_drop(d);
     return result;
   }
-  const value = d != null ? map(d) : undefined;
+  const value = last != null ? map(last) : undefined;
   console.log(`last ${value == null ? "None" : `Some(${value})`}`);
   console.log(
     `count ${$rev(
@@ -287,13 +287,13 @@ function main() {
   );
   console.log(`enumerate rev rfold ${n}`);
   const v = $range(1, 4).map((value) => [value]);
-  const d$1 = $lastDropping($rev($rev($closing($iter(v), $dropEach(dDrop_drop)))), dDrop_drop);
+  const last$1 = $lastDropping($rev($rev($closing($iter(v), $dropEach(dDrop_drop)))), dDrop_drop);
   function map$1(d) {
     const result = d[0];
     dDrop_drop(d);
     return result;
   }
-  const value$2 = d$1 != null ? map$1(d$1) : undefined;
+  const value$2 = last$1 != null ? map$1(last$1) : undefined;
   console.log(`vec last ${value$2 == null ? "None" : `Some(${value$2})`}`);
 }
 //# sourceMappingURL=case.js.map

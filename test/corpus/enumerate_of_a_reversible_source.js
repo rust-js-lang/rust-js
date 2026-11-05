@@ -72,14 +72,14 @@ function main() {
       dDrop_drop,
     ),
   );
-  let d;
+  let peek;
   try {
-    d = $peek(it);
+    peek = $peek(it);
   } catch (error) {
     it.return();
     throw error;
   }
-  const value = d?.[0];
+  const value = peek?.[0];
   console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
   console.log(
     `count ${$count(
@@ -136,14 +136,14 @@ function main() {
       dDrop_drop,
     ),
   );
-  let d$1;
+  let peek$1;
   try {
-    d$1 = $peek(it);
+    peek$1 = $peek(it);
   } catch (error) {
     it.return();
     throw error;
   }
-  const value$1 = d$1?.[0];
+  const value$1 = peek$1?.[0];
   console.log(`peeked ${value$1 == null ? "None" : `Some(${value$1})`}`);
   console.log(
     `count ${$count($enumerate(it), (value) => {
@@ -198,14 +198,14 @@ function main() {
       dDrop_drop,
     ),
   );
-  let d$2;
+  let peek$2;
   try {
-    d$2 = $peek(it);
+    peek$2 = $peek(it);
   } catch (error) {
     it.return();
     throw error;
   }
-  const value$2 = d$2?.[0];
+  const value$2 = peek$2?.[0];
   console.log(`peeked ${value$2 == null ? "None" : `Some(${value$2})`}`);
   let back = $collectDropping(
     $rev(

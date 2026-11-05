@@ -33,8 +33,8 @@ function main() {
       ),
     );
     try {
-      const d = $peek(it);
-      const value = d?.[0];
+      const peek = $peek(it);
+      const value = peek?.[0];
       console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
     } finally {
       it.return();

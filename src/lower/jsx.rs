@@ -713,6 +713,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 facts: js::Facts::NONE,
                 kind: js::ExprKind::Array(items),
                 span: value.span,
+                held_as: Default::default(),
             };
         }
         let js::ExprKind::Cond(test, shown, none) = &value.kind else {
@@ -726,6 +727,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             facts: js::Facts::NONE,
             kind: js::ExprKind::Binary(js::Op::And, Box::new(test), shown.clone()),
             span: value.span,
+            held_as: Default::default(),
         }
     }
 

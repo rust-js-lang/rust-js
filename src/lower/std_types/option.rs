@@ -355,7 +355,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let option = match &option.kind {
                             js::ExprKind::Var(_) => option,
                             _ if self.plain_field(&option) => option,
-                            _ => self.spill(&base, option, out),
+                            _ => self.spill_subject(&base, option, true, out),
                         };
                         let present = Expr::presence(option.clone(), true);
                         (option, present)
@@ -413,6 +413,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         facts: js::Facts::NONE,
                         kind: js::ExprKind::Cond(Box::new(present), value, none),
                         span,
+                        held_as: Default::default(),
                     },
                     chain => chain,
                 }

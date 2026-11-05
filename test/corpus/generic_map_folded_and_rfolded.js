@@ -25,8 +25,8 @@ function taggedDebug_fmt(tagged, TDebug) {
 }
 
 function wrapIterator_next(wrap, IIterator) {
-  const value = IIterator.next(wrap.inner);
-  return value != null ? [$someValue(value)] : undefined;
+  const next = IIterator.next(wrap.inner);
+  return next != null ? [$someValue(next)] : undefined;
 }
 
 function wrapIterator_fold(wrap, init, f, IIterator) {
@@ -37,8 +37,8 @@ function wrapIterator_fold(wrap, init, f, IIterator) {
 }
 
 function wrapDoubleEndedIterator_nextBack(wrap, IDoubleEndedIterator) {
-  const value = IDoubleEndedIterator.next_back(wrap.inner);
-  return value != null ? [$someValue(value)] : undefined;
+  const nextBack = IDoubleEndedIterator.next_back(wrap.inner);
+  return nextBack != null ? [$someValue(nextBack)] : undefined;
 }
 
 function wrapDoubleEndedIterator_rfold(wrap, init, f, IIterator, IDoubleEndedIterator) {

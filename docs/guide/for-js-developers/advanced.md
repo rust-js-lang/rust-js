@@ -768,9 +768,11 @@ function configErrorFromParseIntError_from(e) {
 }
 
 export function port(line) {
-  const option = $stripPrefix(line, "port=");
+  const stripPrefix = $stripPrefix(line, "port=");
   const result =
-    option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: { TAG: "Missing", _0: "port" } };
+    stripPrefix != null
+      ? { TAG: "Ok", _0: stripPrefix }
+      : { TAG: "Err", _0: { TAG: "Missing", _0: "port" } };
   if (result.TAG === "Err") {
     return result;
   }

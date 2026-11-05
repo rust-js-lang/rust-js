@@ -41,13 +41,13 @@ function main() {
     }),
   );
   try {
-    const n = $next(stepBy);
+    const next = $next(stepBy);
     function map(n) {
       const result = n[0];
       noisyDrop_drop(n);
       return result;
     }
-    const value = n != null ? map(n) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } finally {
     stepBy.return();

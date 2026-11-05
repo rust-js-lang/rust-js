@@ -46,6 +46,7 @@ pub(super) fn entries_written_out(e: &Expr) -> Option<Expr> {
         facts: js::Facts::NONE,
         kind: ExprKind::Object(fields, js::ObjectLayout::default()),
         span: e.span,
+        held_as: Default::default(),
     })
 }
 

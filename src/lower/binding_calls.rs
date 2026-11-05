@@ -828,6 +828,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             facts: js::Facts::NONE,
             kind: js::ExprKind::Function(Box::new(function)),
             span: closure.span,
+            held_as: Default::default(),
         })
     }
 }

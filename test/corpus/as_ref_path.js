@@ -12,8 +12,8 @@ function nameAsRefPath_asRef(name) {
 }
 
 function ext(p, PAsRefPath) {
-  const option = $pathExtension(PAsRefPath.asRef(p));
-  return option != null ? option : undefined;
+  const extension = $pathExtension(PAsRefPath.asRef(p));
+  return extension != null ? extension : undefined;
 }
 
 function main() {

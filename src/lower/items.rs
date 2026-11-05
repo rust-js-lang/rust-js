@@ -95,6 +95,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 facts: js::Facts::NONE,
                 kind: js::ExprKind::ItemHole(def_id.index.as_u32()),
                 span: js::Span::NONE,
+                held_as: Default::default(),
             };
         }
         self.own_fn_ref(def_id, None)
@@ -135,6 +136,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             facts: js::Facts::NONE,
             kind: js::ExprKind::Symbol(super::module_symbol(module, js::NAMESPACE)),
             span: js::Span::NONE,
+            held_as: Default::default(),
         };
         Some(namespace.item())
     }
@@ -168,6 +170,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 facts: js::Facts::NONE,
                 kind: js::ExprKind::Symbol(super::module_symbol(module, js::NAMESPACE)),
                 span: js::Span::NONE,
+                held_as: Default::default(),
             };
             return Expr::member(namespace, export).item();
         }
@@ -242,6 +245,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             facts: js::Facts::NONE,
             kind: js::ExprKind::Symbol(super::module_symbol(target.module, export)),
             span: js::Span::NONE,
+            held_as: Default::default(),
         };
         // Through its namespace, by what its module exports it as, a copy
         // by its name (ADR 0051, amended).
@@ -337,6 +341,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     facts: js::Facts::NONE,
                     kind: js::ExprKind::Symbol(super::module_symbol(*module, &read.name)),
                     span: js::Span::NONE,
+                    held_as: Default::default(),
                 }
             }
             Holder::Library(from) => {

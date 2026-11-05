@@ -14,12 +14,12 @@ export function parse(hash) {
     case "/new":
       return "New";
     default: {
-      const option = $stripPrefix(path, "/contacts/");
+      const stripPrefix = $stripPrefix(path, "/contacts/");
       function then(id) {
         const result = $parseInt(id, 0, 4294967295);
         return result.TAG === "Ok" ? result._0 : undefined;
       }
-      const id = option != null ? then(option) : undefined;
+      const id = stripPrefix != null ? then(stripPrefix) : undefined;
       return id != null ? { TAG: "Contact", _0: id } : "NotFound";
     }
   }

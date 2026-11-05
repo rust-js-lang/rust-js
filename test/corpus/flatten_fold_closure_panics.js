@@ -124,11 +124,15 @@ function main() {
         $dropEach(dDrop_drop),
       ),
     );
-    let d;
-    let map;
+    let nextBack;
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
     let back;
     try {
-      d = flatMapDoubleEndedIterator_nextBack(
+      nextBack = flatMapDoubleEndedIterator_nextBack(
         it,
         { next: $next, advanceBy: $advanceSlice },
         { next_back: $nextBack },
@@ -143,12 +147,7 @@ function main() {
         dDrop_drop,
         $dropEach(dDrop_drop),
       );
-      map = (d) => {
-        const result = d[0];
-        dDrop_drop(d);
-        return result;
-      };
-      back = d != null ? map(d) : undefined;
+      back = nextBack != null ? map(nextBack) : undefined;
     } catch (error) {
       it.return();
       throw error;

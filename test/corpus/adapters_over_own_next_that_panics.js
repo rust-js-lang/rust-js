@@ -800,14 +800,14 @@ function main() {
       ),
     );
     try {
-      const option = $tryFoldSome(fuse, [], (acc, d) => push(acc, d), $dropEach(dDrop_drop));
+      const tryFold = $tryFoldSome(fuse, [], (acc, d) => push(acc, d), $dropEach(dDrop_drop));
       function map(v) {
         for (const item of v) {
           dDrop_drop(item);
         }
         return v.length;
       }
-      return option != null ? map(option) : 0;
+      return tryFold != null ? map(tryFold) : 0;
     } finally {
       fuse.return();
     }

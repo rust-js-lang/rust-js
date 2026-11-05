@@ -53,8 +53,8 @@ function countdownIterator_sizeHint(countdown) {
 }
 
 function countdownDoubleEndedIterator_nextBack(countdown) {
-  const n = countdownIterator_next(countdown);
-  return n != null ? (n + 100) >>> 0 : undefined;
+  const next = countdownIterator_next(countdown);
+  return next != null ? (next + 100) >>> 0 : undefined;
 }
 
 function double(x) {

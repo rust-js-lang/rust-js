@@ -7,6 +7,7 @@
 use super::*;
 use crate::lower::body_queries::{self, PatternValue};
 
+mod calls;
 mod clones;
 pub(super) use clones::{Clones, kept_captures};
 mod constants;
@@ -1256,11 +1257,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         mir_body: &mir::Body<'tcx>,
         state: &State<'_, 'tcx>,
     ) -> std::collections::HashMap<String, Vec<String>> {
-        // Each call the source writes by its name, `a.trailing_zeros()`: not
-        // one a macro writes, `vec![..]`'s, nor an operator's, `a[i]`'s, nor a
-        // closure's, `f(x)`'s `call_mut`.
-        let source = self.tcx.sess.source_map();
-        let mut called: std::collections::HashMap<Local, rustc_span::def_id::DefId> = std::collections::HashMap::new();
+        let called = self.calls_named_in_source(mir_body);
         let mut taken_from: std::collections::HashMap<Local, Local> = std::collections::HashMap::new();
         for data in mir_body.basic_blocks.iter() {
             for statement in &data.statements {
@@ -1272,20 +1269,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     taken_from.insert(local, from);
                 }
-            }
-            if let TerminatorKind::Call {
-                func,
-                destination,
-                fn_span,
-                ..
-            } = &data.terminator().kind
-                && destination.projection.is_empty()
-                && let Some((def_id, _)) = func.const_fn_def()
-                && !fn_span.from_expansion()
-                && let Ok(written) = source.span_to_snippet(*fn_span)
-                && written.starts_with(self.tcx.item_name(def_id).as_str())
-            {
-                called.insert(destination.local, def_id);
             }
         }
         (state.locals.names.iter_enumerated())

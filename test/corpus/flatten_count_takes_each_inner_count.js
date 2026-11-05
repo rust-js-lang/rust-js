@@ -44,8 +44,8 @@ function ownIterator_count(own) {
 }
 
 function ownDoubleEndedIterator_nextBack(own) {
-  const n = ownIterator_next(own);
-  return n != null ? (n + 100) >>> 0 : undefined;
+  const next = ownIterator_next(own);
+  return next != null ? (next + 100) >>> 0 : undefined;
 }
 
 function holdingIterator_next(holding) {

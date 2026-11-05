@@ -248,13 +248,13 @@ function summed(src, dropI) {
 }
 
 function backOf(it) {
-  const d = $nthBack(it, 2, undefined, dDrop_drop);
+  const nthBack = $nthBack(it, 2, undefined, dDrop_drop);
   function map(d) {
     const result = d[0];
     dDrop_drop(d);
     return result;
   }
-  return d != null ? map(d) : undefined;
+  return nthBack != null ? map(nthBack) : undefined;
 }
 
 function six() {
@@ -280,7 +280,7 @@ function main() {
     try {
       const foundIn = $iter(six());
       try {
-        const d = $findDropping(
+        const find = $findDropping(
           $lent($rev($lent($slicing(foundIn, dDrop_drop)))),
           (d) => d[0] === 4,
           dDrop_drop,
@@ -291,13 +291,13 @@ function main() {
           dDrop_drop(d);
           return result;
         }
-        const found = d != null ? map(d) : undefined;
+        const found = find != null ? map(find) : undefined;
         console.log(
           `found ${found == null ? "None" : `Some(${found})`} left ${foundIn.end - foundIn.at}`,
         );
         const nthOf = $iter(six());
         try {
-          const d = $nthDropping(
+          const nth = $nthDropping(
             $lent($rev($lent($slicing(nthOf, dDrop_drop)))),
             2,
             dDrop_drop,
@@ -308,7 +308,7 @@ function main() {
             dDrop_drop(d);
             return result;
           }
-          const value = d != null ? map(d) : undefined;
+          const value = nth != null ? map(nth) : undefined;
           console.log(`rev nth ${value == null ? "None" : `Some(${value})`}`);
           const generic = $iter(six());
           try {
@@ -316,13 +316,15 @@ function main() {
             console.log(`generic ${value == null ? "None" : `Some(${value})`}`);
             const skipped = $iter(six());
             try {
-              const d = $next($skipping($rev($lent($slicing(skipped, dDrop_drop))), 2, dDrop_drop));
+              const next = $next(
+                $skipping($rev($lent($slicing(skipped, dDrop_drop))), 2, dDrop_drop),
+              );
               function map(d) {
                 const result = d[0];
                 dDrop_drop(d);
                 return result;
               }
-              const value = d != null ? map(d) : undefined;
+              const value = next != null ? map(next) : undefined;
               console.log(`rev skip ${value == null ? "None" : `Some(${value})`}`);
               // Its length and hint, of a `Vec`'s and the crate's.
               const measured = $iter(ds());
@@ -332,9 +334,9 @@ function main() {
                 console.log(
                   `hint (${lentHint[0]}, ${lentHint[1] == null ? "None" : `Some(${lentHint[1]})`})`,
                 );
-                const next = $next(measured);
-                if (next != null) {
-                  dDrop_drop(next);
+                const d = $next(measured);
+                if (d != null) {
+                  dDrop_drop(d);
                 }
                 console.log(`len ${$lent(measured).len()} after one`);
                 const ownHinted = every(3);

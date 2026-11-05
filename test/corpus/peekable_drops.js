@@ -112,7 +112,7 @@ function main() {
     );
     try {
       $peek(back);
-      const l = peekableDoubleEndedIterator_nextBack(
+      const nextBack = peekableDoubleEndedIterator_nextBack(
         back,
         { next_back: $nextBack },
         $dropEach(loudDrop_drop),
@@ -123,9 +123,9 @@ function main() {
         loudDrop_drop(l);
         return result;
       }
-      const value = l != null ? map(l) : undefined;
+      const value = nextBack != null ? map(nextBack) : undefined;
       console.log(`${value == null ? "None" : `Some(${value})`}`);
-      const l$1 = peekableDoubleEndedIterator_nextBack(
+      const nextBack$1 = peekableDoubleEndedIterator_nextBack(
         back,
         { next_back: $nextBack },
         $dropEach(loudDrop_drop),
@@ -136,9 +136,9 @@ function main() {
         loudDrop_drop(l);
         return result;
       }
-      const value$1 = l$1 != null ? map$1(l$1) : undefined;
+      const value$1 = nextBack$1 != null ? map$1(nextBack$1) : undefined;
       console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-      const l$2 = peekableDoubleEndedIterator_nextBack(
+      const nextBack$2 = peekableDoubleEndedIterator_nextBack(
         back,
         { next_back: $nextBack },
         $dropEach(loudDrop_drop),
@@ -149,7 +149,7 @@ function main() {
         loudDrop_drop(l);
         return result;
       }
-      const value$2 = l$2 != null ? map$2(l$2) : undefined;
+      const value$2 = nextBack$2 != null ? map$2(nextBack$2) : undefined;
       console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
       more();
       console.log("end");

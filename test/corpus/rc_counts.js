@@ -71,22 +71,21 @@ function main() {
     throw error;
   }
   const value = a.weak;
-  let n;
-  let map;
+  let upgrade;
+  function map(n) {
+    const result = n.value;
+    $rcDrop(n);
+    return result;
+  }
   try {
-    n = $upgrade(weak);
-    map = (n) => {
-      const result = n.value;
-      $rcDrop(n);
-      return result;
-    };
+    upgrade = $upgrade(weak);
   } catch (error) {
     $weakDrop(weak);
     $rcDrop(a);
     throw error;
   }
   try {
-    const value$1 = n != null ? map(n) : undefined;
+    const value$1 = upgrade != null ? map(upgrade) : undefined;
     console.log(`${value} ${value$1 == null ? "None" : `Some(${value$1})`}`);
   } catch (error) {
     $weakDrop(weak);
@@ -142,9 +141,9 @@ function main() {
     $rcDrop(a);
     throw error;
   }
-  let upgrade;
+  let tmp$3;
   try {
-    upgrade = $upgrade(weak);
+    tmp$3 = $upgrade(weak);
   } catch (error) {
     $weakDrop(weak);
     $rcDrop(a);
@@ -153,11 +152,11 @@ function main() {
   try {
     try {
       console.log(
-        `${upgrade == null ? "None" : `Some(${upgrade.value})`} ${((value) => (value == null ? "None" : `Some(${value})`))($intoInner(a))}`,
+        `${tmp$3 == null ? "None" : `Some(${tmp$3.value})`} ${((value) => (value == null ? "None" : `Some(${value})`))($intoInner(a))}`,
       );
     } finally {
-      if (upgrade != null) {
-        $rcDrop(upgrade);
+      if (tmp$3 != null) {
+        $rcDrop(tmp$3);
       }
     }
     const value = $upgrade(weak);
@@ -183,13 +182,13 @@ function main() {
     try {
       const borrow = $borrow($fieldCell(leaf.value, "parent"), true);
       try {
-        const p = $upgrade(borrow.value);
+        const upgrade = $upgrade(borrow.value);
         function map(p) {
           const result = p.value.name;
           $rcDrop(p, dropNode);
           return result;
         }
-        const value = p != null ? map(p) : undefined;
+        const value = upgrade != null ? map(upgrade) : undefined;
         console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
       } finally {
         $unborrow(borrow);
@@ -224,13 +223,13 @@ function main() {
         $unborrow(borrowMut);
         const value$1 = $borrow($fieldCell(leaf.value, "parent"), true);
         try {
-          const p = $upgrade(value$1.value);
+          const upgrade = $upgrade(value$1.value);
           function map(p) {
             const result = p.value.name;
             $rcDrop(p, dropNode);
             return result;
           }
-          const value = p != null ? map(p) : undefined;
+          const value = upgrade != null ? map(upgrade) : undefined;
           console.log(
             `${value == null ? "None" : `Some(${$debugStr(value)})`} ${branch.strong} ${branch.weak} ${branch.value.children.length}`,
           );
@@ -243,13 +242,13 @@ function main() {
       }
       const value = $borrow($fieldCell(leaf.value, "parent"), true);
       try {
-        const p = $upgrade(value.value);
+        const upgrade = $upgrade(value.value);
         function map(p) {
           const result = p.value.name;
           $rcDrop(p, dropNode);
           return result;
         }
-        const value$1 = p != null ? map(p) : undefined;
+        const value$1 = upgrade != null ? map(upgrade) : undefined;
         console.log(`${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`} ${leaf.strong}`);
       } finally {
         $unborrow(value);

@@ -95,10 +95,10 @@ const Inventory = {
   },
 
   reserve(inventory, sku, wanted) {
-    const option = inventory.items.get(sku);
+    const getMut = inventory.items.get(sku);
     const result =
-      option != null
-        ? { TAG: "Ok", _0: option }
+      getMut != null
+        ? { TAG: "Ok", _0: getMut }
         : { TAG: "Err", _0: { TAG: "UnknownSku", _0: sku } };
     if (result.TAG === "Err") {
       return result;
@@ -266,9 +266,9 @@ function main() {
   console.log(`log: ${inventory.log.join("; ")}`);
   const mean = Number(totals.reduce((a, b) => BigInt.asUintN(64, a + b), 0n)) / totals.length / 100;
   const length = totals.length;
-  const c = $max(totals);
+  const max = $max(totals);
   console.log(
-    `orders: ${length}, mean ${$toFixed(mean, 2)}, max ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(c != null ? money(c) : undefined)}`,
+    `orders: ${length}, mean ${$toFixed(mean, 2)}, max ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(max != null ? money(max) : undefined)}`,
   );
 
   const seen = new Set();

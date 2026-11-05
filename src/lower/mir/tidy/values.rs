@@ -1102,6 +1102,101 @@ fn read_by_closures(body: &[Stmt], name: &str, appended: bool) -> bool {
     read
 }
 
+/// `let map; try { .. map = (d) => { .. }; .. } catch ..`, a closure made
+/// between calls one `try` covers, set once there and read after: made
+/// where its `let` is, `function map(d) { .. }`, as it's written where
+/// calls unwind apart. Making a closure neither throws nor reads anything, and a
+/// closure reads what it captures where it's called, so it's made earlier
+/// alike; but not one that reads a name declared in that `try`, which isn't
+/// there before it (#769).
+pub(super) fn arrows_out_of_tries(body: &mut Vec<Stmt>) {
+    js::statement_lists(body, &mut |stmts| {
+        let mut i = 0;
+        while i < stmts.len() {
+            let StmtKind::Let(name, None) = &stmts[i].kind else {
+                i += 1;
+                continue;
+            };
+            let name = name.clone();
+            // Set once, there alone.
+            let mut sets = 0;
+            js::each_list(&stmts[i + 1..], &mut |list| {
+                for stmt in list {
+                    if let StmtKind::Assign(target, _) | StmtKind::Compound(_, target, _) = &stmt.kind
+                        && matches!(&target.kind, ExprKind::Var(v) if *v == name)
+                    {
+                        sets += 1;
+                    }
+                }
+            });
+            if sets != 1 {
+                i += 1;
+                continue;
+            }
+            let Some(j) = (i + 1..stmts.len()).find(|&j| js::mentions_in(std::slice::from_ref(&stmts[j]), &name) > 0)
+            else {
+                i += 1;
+                continue;
+            };
+            let (StmtKind::Try(block, _) | StmtKind::TryCatch(block, _, _)) = &stmts[j].kind else {
+                i += 1;
+                continue;
+            };
+            let Some(k) = block
+                .iter()
+                .position(|s| js::mentions_in(std::slice::from_ref(s), &name) > 0)
+            else {
+                i += 1;
+                continue;
+            };
+            let StmtKind::Assign(target, value) = &block[k].kind else {
+                i += 1;
+                continue;
+            };
+            let arrow = matches!(&target.kind, ExprKind::Var(v) if *v == name)
+                && matches!(value.kind, ExprKind::Arrow(..) | ExprKind::AsyncArrow(..));
+            // What the `try` declares, which the closure mustn't read.
+            let mut declared: Vec<String> = Vec::new();
+            let mut others = block.clone();
+            others.remove(k);
+            js::each_declared(&others, &mut |n| declared.push(n.to_string()));
+            if !arrow || declared.iter().any(|d| value.mentions_var(d)) {
+                i += 1;
+                continue;
+            }
+            let (StmtKind::Try(block, _) | StmtKind::TryCatch(block, _, _)) = &mut stmts[j].kind else {
+                unreachable!("matched")
+            };
+            let StmtKind::Assign(_, value) = block.remove(k).kind else {
+                unreachable!("matched")
+            };
+            let span = stmts[i].span;
+            let (params, body, is_async) = match value.kind {
+                ExprKind::Arrow(params, body) => (params, body, false),
+                ExprKind::AsyncArrow(params, body) => (params, body, true),
+                _ => unreachable!("matched"),
+            };
+            let function = js::Function {
+                name: name.clone(),
+                params,
+                body,
+                export: false,
+                is_async,
+                noinline: false,
+                span: value.span,
+                name_span: span,
+                param_spans: Vec::new(),
+                set_apart: false,
+            };
+            // Where its `let` was, not between the `try` and what's before
+            // it, which a `try` after may be merged with; it reads what it
+            // captures where it's called, inside the `try`.
+            stmts[i] = StmtKind::Function(Box::new(function)).at(span);
+            i += 1;
+        }
+    });
+}
+
 /// `const tick = () => { … }; useEffect(tick, [count]);`, a closure only a
 /// hook's function is: written there, a function its `let` names, `function
 /// tick() { … }`, unless it reads that name (ADR 0297).
@@ -1151,6 +1246,7 @@ pub(super) fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &HashSet<String>
                         facts: js::Facts::NONE,
                         kind: ExprKind::Function(Box::new(function)),
                         span: e.span,
+                        held_as: Default::default(),
                     };
                 }
             });

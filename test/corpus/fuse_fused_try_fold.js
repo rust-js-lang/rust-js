@@ -140,13 +140,13 @@ function main() {
   );
   let first;
   try {
-    const loud = $findDropping($lent(value$4), (loud) => loud[0] >= 30, loudDrop_drop, false);
+    const find = $findDropping($lent(value$4), (loud) => loud[0] >= 30, loudDrop_drop, false);
     function map(loud) {
       const result = loud[0];
       loudDrop_drop(loud);
       return result;
     }
-    first = loud != null ? map(loud) : undefined;
+    first = find != null ? map(find) : undefined;
   } finally {
     value$4.return();
   }
@@ -185,13 +185,13 @@ function main() {
     ),
   );
   try {
-    const loud = $findDropping($lent(value$6), (loud) => loud[0] >= 40, loudDrop_drop, false);
+    const find = $findDropping($lent(value$6), (loud) => loud[0] >= 40, loudDrop_drop, false);
     function map(loud) {
       const result = loud[0];
       loudDrop_drop(loud);
       return result;
     }
-    const value = loud != null ? map(loud) : undefined;
+    const value = find != null ? map(find) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } finally {
     value$6.return();

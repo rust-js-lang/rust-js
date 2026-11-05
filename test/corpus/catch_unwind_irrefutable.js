@@ -117,8 +117,8 @@ function hoisted(n) {
   function twice(n) {
     return n * 2;
   }
-  const option = x.impl.typeId() === "&str" ? x.value : undefined;
-  const len = option != null ? $byteLen(option) : 0;
+  const downcastRef = x.impl.typeId() === "&str" ? x.value : undefined;
+  const len = downcastRef != null ? $byteLen(downcastRef) : 0;
   return (((len + first) >>> 0) + twice(1)) >>> 0;
 }
 
@@ -154,8 +154,8 @@ function dropped(early) {
     const guard = "guard";
     const x = $unwound(thrown);
     try {
-      const option = x.impl.typeId() === "&str" ? x.value : undefined;
-      const len = option != null ? $byteLen(option) : 0;
+      const downcastRef = x.impl.typeId() === "&str" ? x.value : undefined;
+      const len = downcastRef != null ? $byteLen(downcastRef) : 0;
       console.log(`len ${len}`);
       if (early) {
         return 0;
@@ -182,8 +182,8 @@ function looped() {
         continue;
       }
       const x = $unwound(thrown);
-      const option = x.impl.typeId() === "&str" ? x.value : undefined;
-      const len = option != null ? $byteLen(option) : 0;
+      const downcastRef = x.impl.typeId() === "&str" ? x.value : undefined;
+      const len = downcastRef != null ? $byteLen(downcastRef) : 0;
       if (i === 3) {
         break;
       }

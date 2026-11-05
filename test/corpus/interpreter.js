@@ -466,9 +466,8 @@ function run(src) {
     } else if (e.TAG === "Str") {
       value = { TAG: "Str", _0: e._0 };
     } else if (e.TAG === "Var") {
-      const option = Env.get(env, e._0);
-      const result =
-        option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: `unbound ${e._0}` };
+      const get = Env.get(env, e._0);
+      const result = get != null ? { TAG: "Ok", _0: get } : { TAG: "Err", _0: `unbound ${e._0}` };
       if (result.TAG === "Err") {
         return result;
       }

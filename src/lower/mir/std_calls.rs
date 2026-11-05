@@ -321,6 +321,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             facts: crate::lower::iterators::its_facts(place.facts),
                             kind,
                             span: place.span,
+                            held_as: Default::default(),
                         },
                     };
                     crate::lower::display::append_written(&place, value, false, this.js_span(span), out);

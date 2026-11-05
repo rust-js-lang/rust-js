@@ -280,6 +280,7 @@ fn shown_children(e: &mut Expr, booleans: &HashSet<String>) {
                     facts: js::Facts::NONE,
                     span: child.span,
                     kind: ExprKind::Binary(Op::And, Box::new(test), shown.clone()),
+                    held_as: Default::default(),
                 };
             }
         }
@@ -963,6 +964,7 @@ mod tests {
                 .filter_map(|n| n.strip_prefix("finish/"))
                 .collect::<Vec<_>>(),
             [
+                "closures out of tries",
                 "temporaries named",
                 "flags named",
                 "kept trees",

@@ -10,6 +10,7 @@ impl Expr {
             kind,
             span: Span::NONE,
             facts: Facts::NONE,
+            held_as: Default::default(),
         }
     }
 
@@ -697,6 +698,7 @@ impl Expr {
                     kind: ExprKind::Sequence(items),
                     span: self.span,
                     facts: self.facts,
+                    held_as: Default::default(),
                 }
             }
             // Of integers, the converse: `!(n < 0)` is `n >= 0`.
@@ -711,6 +713,7 @@ impl Expr {
                     kind: ExprKind::Binary(converse, a, b),
                     span: self.span,
                     facts: self.facts,
+                    held_as: Default::default(),
                 }
             }
             kind => Expr::unary(
@@ -719,6 +722,7 @@ impl Expr {
                     facts: self.facts,
                     kind,
                     span: self.span,
+                    held_as: Default::default(),
                 },
             ),
         }
@@ -753,6 +757,7 @@ impl Expr {
                 facts: arg.facts.of_presence().and(arg.facts.of_evaluation()),
                 kind: ExprKind::Binary(ne, a.clone(), b.clone()),
                 span: arg.span,
+                held_as: Default::default(),
             };
         }
         Expr::new(ExprKind::Unary(op, Box::new(arg)))

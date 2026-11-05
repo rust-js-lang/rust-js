@@ -53,7 +53,7 @@ function main() {
     ),
   );
   try {
-    const option = enumerateDoubleEndedIterator_nextBack(
+    const nextBack = enumerateDoubleEndedIterator_nextBack(
       it,
       {
         len: (iterator) =>
@@ -121,15 +121,15 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const last = option != null ? map(option) : undefined;
+    const last = nextBack != null ? map(nextBack) : undefined;
     console.log(`last ${last == null ? "None" : `Some((${last[0]}, ${last[1]}))`}`);
-    const option$1 = $next(it);
+    const next = $next(it);
     function map$1([i, l]) {
       const result = [i, l[0]];
       loudDrop_drop(l);
       return result;
     }
-    const first = option$1 != null ? map$1(option$1) : undefined;
+    const first = next != null ? map$1(next) : undefined;
     console.log(`first ${first == null ? "None" : `Some((${first[0]}, ${first[1]}))`}`);
     const w = [4, 5, 6];
     const e = iterator_enumerate(iterator_fuse($iter(w), { next: $next }, true), {
@@ -137,7 +137,7 @@ function main() {
       fold: $foldOf,
       getUnchecked: fuseIterator___iteratorGetUnchecked,
     });
-    const nextBack = enumerateDoubleEndedIterator_nextBack(
+    const value = enumerateDoubleEndedIterator_nextBack(
       e,
       { len: (iterator) => fuseExactSizeIterator_len(iterator, exactSizeIterator) },
       {
@@ -177,9 +177,9 @@ function main() {
           ),
       },
     );
-    const value = $next(e);
+    const value$1 = $next(e);
     console.log(
-      `${nextBack == null ? "None" : `Some((${nextBack[0]}, ${nextBack[1]}))`} ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`,
+      `${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`} ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`,
     );
     const r = $collectDropping(
       $rev(

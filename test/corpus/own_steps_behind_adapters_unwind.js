@@ -455,7 +455,7 @@ function main() {
     return fold.length;
   });
   run("plain try_fold option", () => {
-    const option = $tryFoldSome(
+    const tryFold = $tryFoldSome(
       $iterator({ n: 0, at: 3 }, plainIterator_next),
       [],
       (acc, n) => push(acc, n),
@@ -467,7 +467,7 @@ function main() {
       }
       return v.length;
     }
-    return option != null ? map(option) : 0;
+    return tryFold != null ? map(tryFold) : 0;
   });
 }
 //# sourceMappingURL=case.js.map

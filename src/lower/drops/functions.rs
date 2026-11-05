@@ -41,6 +41,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 facts: js::Facts::NONE,
                 kind: js::ExprKind::OptionalCall(Box::new(drop), vec![value]),
                 span: js::Span::NONE,
+                held_as: Default::default(),
             },
             false => apply(drop, vec![value]),
         }))

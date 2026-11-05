@@ -101,14 +101,14 @@ function main() {
     }
     const chain = $held($lazyChain($closing(value, $dropEach(dDrop_drop)), tmp$1));
     try {
-      const option = $tryFoldSome(chain, [], (acc, d) => push(acc, d), $dropEach(dDrop_drop));
+      const tryFold = $tryFoldSome(chain, [], (acc, d) => push(acc, d), $dropEach(dDrop_drop));
       function map(v) {
         for (const item of v) {
           dDrop_drop(item);
         }
         return v.length;
       }
-      return option != null ? map(option) : 0;
+      return tryFold != null ? map(tryFold) : 0;
     } finally {
       chain.return();
     }
@@ -147,7 +147,7 @@ function main() {
     const value$1 = boom(82);
     const enumerate = $held($enumerate($mapEnds($closing(value, $dropEach(dDrop_drop)), value$1)));
     try {
-      const option = $tryFoldSome(
+      const tryFold = $tryFoldSome(
         enumerate,
         [],
         (acc, [, d]) => push(acc, d),
@@ -159,7 +159,7 @@ function main() {
         }
         return v.length;
       }
-      return option != null ? map(option) : 0;
+      return tryFold != null ? map(tryFold) : 0;
     } finally {
       enumerate.return();
     }

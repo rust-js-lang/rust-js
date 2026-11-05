@@ -212,14 +212,14 @@ function peekedReversed(it, dropI) {
       dDrop_drop,
     ),
   );
-  let d;
+  let peek;
   try {
-    d = $peek(it);
+    peek = $peek(it);
   } catch (error) {
     it.return();
     throw error;
   }
-  const value = d?.[0];
+  const value = peek?.[0];
   console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
   return $rev(
     $knowing(
@@ -430,14 +430,14 @@ function main() {
   const it = $held(
     iterator_peekable([0, 3], { next: stepsIterator_next }, stepsDrop_drop, dDrop_drop),
   );
-  let d;
+  let peek;
   try {
-    d = $peek(it);
+    peek = $peek(it);
   } catch (error) {
     it.return();
     throw error;
   }
-  const value = d?.[0];
+  const value = peek?.[0];
   console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
   console.log(
     `${$rev(
@@ -491,14 +491,14 @@ function main() {
     const it = $held(
       iterator_peekable([0, 4], { next: breaksIterator_next }, breaksDrop_drop, dDrop_drop),
     );
-    let d;
+    let peek;
     try {
-      d = $peek(it);
+      peek = $peek(it);
     } catch (error) {
       it.return();
       throw error;
     }
-    const value = d?.[0];
+    const value = peek?.[0];
     console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
     return totalOf(
       $rev(

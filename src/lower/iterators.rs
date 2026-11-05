@@ -578,15 +578,16 @@ pub(in crate::lower) fn iterator_from(e: &Expr) -> Option<&Expr> {
 
 /// What `Iterator.from(x)` makes a JS iterator of, `x`: `Ok` of it, or
 /// `Err` of `e` itself, of anything else.
-pub(super) fn from_iterator(e: Expr) -> Result<Expr, Expr> {
+pub(super) fn from_iterator(e: Expr) -> Result<Expr, Box<Expr>> {
     let from = iterator_from(&e).is_some();
     match e.kind {
         js::ExprKind::Call(_, mut args) if from => Ok(args.pop().expect("one")),
-        kind => Err(Expr {
+        kind => Err(Box::new(Expr {
             facts: its_facts(e.facts),
             kind,
             span: e.span,
-        }),
+            held_as: Default::default(),
+        })),
     }
 }
 
@@ -662,6 +663,7 @@ pub(in crate::lower) fn iterated(e: Expr) -> Expr {
             facts: its_facts(e.facts),
             kind,
             span: e.span,
+            held_as: Default::default(),
         },
     }
 }

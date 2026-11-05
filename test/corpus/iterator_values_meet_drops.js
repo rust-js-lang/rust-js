@@ -93,13 +93,13 @@ function main() {
         loudDrop_drop(first);
       }
     }
-    const l = $next(it);
+    const next = $next(it);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = l != null ? map(l) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
 
     let back = $held(
@@ -112,13 +112,13 @@ function main() {
       ),
     );
     try {
-      const l = $next(back);
+      const next = $next(back);
       function map(l) {
         const result = l[0];
         loudDrop_drop(l);
         return result;
       }
-      const value = l != null ? map(l) : undefined;
+      const value = next != null ? map(next) : undefined;
       console.log(`${value == null ? "None" : `Some(${value})`}`);
       const old = refill(
         back,
@@ -138,13 +138,13 @@ function main() {
         old.return();
       }
       console.log("old dropped");
-      const l$1 = $next(back);
+      const next$1 = $next(back);
       function map$1(l) {
         const result = l[0];
         loudDrop_drop(l);
         return result;
       }
-      const value$1 = l$1 != null ? map$1(l$1) : undefined;
+      const value$1 = next$1 != null ? map$1(next$1) : undefined;
       console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     } finally {
       back.return();
@@ -160,13 +160,13 @@ function main() {
       ),
     );
     try {
-      const l = $next(back);
+      const next = $next(back);
       function map(l) {
         const result = l[0];
         loudDrop_drop(l);
         return result;
       }
-      const value = l != null ? map(l) : undefined;
+      const value = next != null ? map(next) : undefined;
       console.log(`${value == null ? "None" : `Some(${value})`}`);
       put(
         back,
@@ -181,13 +181,13 @@ function main() {
           rev.return();
         },
       );
-      const l$1 = $next(back);
+      const next$1 = $next(back);
       function map$1(l) {
         const result = l[0];
         loudDrop_drop(l);
         return result;
       }
-      const value$1 = l$1 != null ? map$1(l$1) : undefined;
+      const value$1 = next$1 != null ? map$1(next$1) : undefined;
       console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
       const mapped = $held(
         iterator_map(
@@ -201,13 +201,13 @@ function main() {
         ),
       );
       try {
-        const l = $next(mapped);
+        const next = $next(mapped);
         function map(l) {
           const result = l[0];
           loudDrop_drop(l);
           return result;
         }
-        const value = l != null ? map(l) : undefined;
+        const value = next != null ? map(next) : undefined;
         console.log(`${value == null ? "None" : `Some(${value})`}`);
         put(
           mapped,
@@ -224,13 +224,13 @@ function main() {
             map.return();
           },
         );
-        const l$1 = $next(mapped);
+        const next$1 = $next(mapped);
         function map$1(l) {
           const result = l[0];
           loudDrop_drop(l);
           return result;
         }
-        const value$1 = l$1 != null ? map$1(l$1) : undefined;
+        const value$1 = next$1 != null ? map$1(next$1) : undefined;
         console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
         let taken = $held(
           iterator_take(
@@ -242,9 +242,9 @@ function main() {
           ),
         );
         try {
-          const next = $next(taken);
-          if (next != null) {
-            loudDrop_drop(next);
+          const loud = $next(taken);
+          if (loud != null) {
+            loudDrop_drop(loud);
           }
           let other = $held(
             iterator_take(
@@ -259,13 +259,13 @@ function main() {
           taken = other;
           other = t;
           try {
-            const l = $next(other);
+            const next = $next(other);
             function map(l) {
               const result = l[0];
               loudDrop_drop(l);
               return result;
             }
-            const value = l != null ? map(l) : undefined;
+            const value = next != null ? map(next) : undefined;
             console.log(`${value == null ? "None" : `Some(${value})`}`);
             console.log("end");
           } finally {

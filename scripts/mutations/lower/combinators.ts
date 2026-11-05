@@ -849,4 +849,13 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(Expr::call_helper(\"$extend\", vec![collection, items]));\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
+  {
+    name: "result-subject-named-by-its-call",
+    breaks: "a `Result` read twice is named after its call, `catchUnwind`, `parse`, not `result` (#769)",
+    file: "src/lower/combinators.rs",
+    find: "            self.spill_subject(base, subject, self.option_of(subject_ty).is_some(), out)\n",
+    replace: "            self.spill_subject(base, subject, true, out)\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_payload_where_read.rs$"],
+    snapshots: true,
+  },
 ];

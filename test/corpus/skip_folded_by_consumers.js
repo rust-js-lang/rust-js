@@ -399,13 +399,13 @@ function main() {
     ),
   );
   try {
-    const d = $next(it);
+    const next = $next(it);
     function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    const value = d != null ? map(d) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`next ${value == null ? "None" : `Some(${value})`}`);
   } finally {
     it.return();

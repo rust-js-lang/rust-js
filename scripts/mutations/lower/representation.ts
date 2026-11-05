@@ -293,7 +293,7 @@ export const mutations: Mutation[] = [
       "a tagged enum's cast, `light as i32`, is refused, not looked up by its tag",
     file: "src/lower/representation.rs",
     find: "            Expr::member(subject, &key)\n",
-    replace: "            return Err(subject);\n",
+    replace: "            return Err(Box::new(subject));\n",
     tests: ["test/corpus.test.ts", "-t", "^tagged_enum_values.rs$"],
   },
   {

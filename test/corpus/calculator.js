@@ -283,11 +283,9 @@ const Calculator = {
     if (expr.TAG === "Num") {
       powf = expr._0;
     } else if (expr.TAG === "Var") {
-      const option = calculator.vars.get(expr._0);
+      const get = calculator.vars.get(expr._0);
       const result =
-        option != null
-          ? { TAG: "Ok", _0: option }
-          : { TAG: "Err", _0: { TAG: "Unknown", _0: expr._0 } };
+        get != null ? { TAG: "Ok", _0: get } : { TAG: "Err", _0: { TAG: "Unknown", _0: expr._0 } };
       if (result.TAG === "Err") {
         return result;
       }
@@ -324,11 +322,9 @@ const Calculator = {
         powf = $powf(a, b);
       }
     } else {
-      const option = calculator.functions.get(expr._0);
+      const get = calculator.functions.get(expr._0);
       const result =
-        option != null
-          ? { TAG: "Ok", _0: option }
-          : { TAG: "Err", _0: { TAG: "Unknown", _0: expr._0 } };
+        get != null ? { TAG: "Ok", _0: get } : { TAG: "Err", _0: { TAG: "Unknown", _0: expr._0 } };
       if (result.TAG === "Err") {
         return result;
       }

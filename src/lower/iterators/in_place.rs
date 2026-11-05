@@ -115,7 +115,7 @@ pub(super) fn nth_of(e: &Expr) -> Option<(&Expr, &Expr)> {
 /// `items.name(f)`, of an array, `f` taking each enumerated pair apart
 /// given each item and its index, as `indexed_callback` has it.
 pub(super) fn array_method(items: Expr, name: &str, f: Expr) -> Expr {
-    let (items, f) = indexed_callback(&items, name, f).unwrap_or_else(|f| (items, f));
+    let (items, f) = indexed_callback(&items, name, f).unwrap_or_else(|f| (items, *f));
     Expr::call(Expr::member(items, name), vec![f])
 }
 

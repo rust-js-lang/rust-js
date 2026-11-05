@@ -70,6 +70,7 @@ pub(super) fn plain_chain(value: &Expr) -> Option<Expr> {
         kind: ExprKind::Cond(t.clone(), q.clone(), Box::new(rest)),
         span: value.span,
         facts: value.facts,
+        held_as: Default::default(),
     })
 }
 

@@ -146,7 +146,7 @@ function main() {
   );
   console.log(`${r.TAG === "Err"}`);
   r = $catchUnwind(() => {
-    const d = $lastDropping(
+    const last = $lastDropping(
       $lazyChain(
         $iterator([0], ownIterator_next),
         $closing($iter([[6], [7]]), $dropEach(dDrop_drop)),
@@ -158,11 +158,11 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   console.log(`${r.TAG === "Err"}`);
   r = $catchUnwind(() => {
-    const d = $lastDropping(
+    const last = $lastDropping(
       $lazyChain(
         $closing($iter([[8], [9]]), $dropEach(dDrop_drop)),
         $iterator([0], ownIterator_next),
@@ -174,7 +174,7 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   console.log(`${r.TAG === "Err"}`);
   r = $catchUnwind(() =>

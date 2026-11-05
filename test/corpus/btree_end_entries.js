@@ -56,8 +56,8 @@ function main() {
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
       .join(", ")}}`,
   );
-  const e = $endEntry(counts, $cmp, false);
-  const value$1 = e != null ? $entryRemove(e) : undefined;
+  const firstEntry = $endEntry(counts, $cmp, false);
+  const value$1 = firstEntry != null ? $entryRemove(firstEntry) : undefined;
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   console.log(
     `{${Array.from($sortedEntries(counts, $cmp))

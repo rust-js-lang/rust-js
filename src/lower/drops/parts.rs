@@ -233,6 +233,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         facts: js::Facts::NONE,
                         kind: js::ExprKind::OptionalCall(Box::new(drop), vec![value]),
                         span: js_span,
+                        held_as: Default::default(),
                     })
                     .at(js_span),
                 );
@@ -252,6 +253,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         facts: js::Facts::NONE,
                         kind: js::ExprKind::OptionalCall(Box::new(drop), vec![value]),
                         span: js_span,
+                        held_as: Default::default(),
                     })
                     .at(js_span),
                 );

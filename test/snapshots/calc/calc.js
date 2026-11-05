@@ -115,15 +115,14 @@ function eval$(src) {
       continue;
     }
     if (t.TAG === "Op") {
-      const option = st.pop();
-      const result = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "underflow" };
+      const pop = st.pop();
+      const result = pop != null ? { TAG: "Ok", _0: pop } : { TAG: "Err", _0: "underflow" };
       if (result.TAG === "Err") {
         return result;
       }
       const b = result._0;
-      const option$1 = st.pop();
-      const result$1 =
-        option$1 != null ? { TAG: "Ok", _0: option$1 } : { TAG: "Err", _0: "underflow" };
+      const pop$1 = st.pop();
+      const result$1 = pop$1 != null ? { TAG: "Ok", _0: pop$1 } : { TAG: "Err", _0: "underflow" };
       if (result$1.TAG === "Err") {
         return result$1;
       }
@@ -145,8 +144,8 @@ function eval$(src) {
       return { TAG: "Err", _0: "paren" };
     }
   }
-  const option = st.pop();
-  return option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "empty" };
+  const pop = st.pop();
+  return pop != null ? { TAG: "Ok", _0: pop } : { TAG: "Err", _0: "empty" };
 }
 
 export function wordFreq(text) {

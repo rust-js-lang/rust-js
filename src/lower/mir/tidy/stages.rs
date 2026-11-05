@@ -981,6 +981,10 @@ pub(super) const STAGES: &[Stage] = &[
     Stage {
         name: "finish",
         passes: &[
+            // A closure made between calls one `try` covers, set once there,
+            // where nothing before made it the `try`'s own: a function where
+            // its `let` is (#769).
+            pass("closures out of tries", |b, _| values::arrows_out_of_tries(b)),
             pass("temporaries named", |b, h| {
                 bindings::readable_temporaries(&h.params.borrow(), b, h.suggested)
             }),

@@ -20,8 +20,8 @@ function main() {
   const value$5 = $stripCircumfix("[", "[", "[");
   console.log(`${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`}`);
   const quoted = "«héllo»";
-  const s = $stripCircumfix(quoted, "«", "»");
-  const value$6 = s != null ? $byteLen(s) : undefined;
+  const stripCircumfix = $stripCircumfix(quoted, "«", "»");
+  const value$6 = stripCircumfix != null ? $byteLen(stripCircumfix) : undefined;
   console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
 }
 //# sourceMappingURL=case.js.map

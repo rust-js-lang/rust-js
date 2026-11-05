@@ -111,6 +111,7 @@ pub(super) fn null_for_none(made: &Expr) -> Option<Expr> {
                 Box::new(null_for_none(no)?),
             ),
             span: made.span,
+            held_as: Default::default(),
         }),
         _ => None,
     }

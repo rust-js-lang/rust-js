@@ -117,16 +117,16 @@ function main() {
   const [a, b] = tee($iter([1, 2, 3]));
   try {
     try {
-      const next = teeIterator_next(a, { next: $next }, clone);
       const value = teeIterator_next(a, { next: $next }, clone);
-      const value$1 = teeIterator_next(b, { next: $next }, clone);
+      const value$1 = teeIterator_next(a, { next: $next }, clone);
+      const value$2 = teeIterator_next(b, { next: $next }, clone);
       console.log(
-        `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+        `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
       );
       const [c, d] = tee($iter([[1], [2]]), $dropEach(loudDrop_drop), loudDrop_drop);
       try {
         try {
-          const l = teeIterator_next(
+          const next = teeIterator_next(
             c,
             { next: $next, advanceBy: $advanceSlice },
             clone,
@@ -138,7 +138,7 @@ function main() {
             loudDrop_drop(l);
             return result;
           }
-          const value = l != null ? map(l) : undefined;
+          const value = next != null ? map(next) : undefined;
           console.log(`${value == null ? "None" : `Some(${value})`}`);
         } finally {
           $rcDrop(d.rcbuffer, (value) => {
@@ -151,7 +151,7 @@ function main() {
           });
         }
         console.log("d dropped");
-        const l = teeIterator_next(
+        const next = teeIterator_next(
           c,
           { next: $next, advanceBy: $advanceSlice },
           clone,
@@ -163,7 +163,7 @@ function main() {
           loudDrop_drop(l);
           return result;
         }
-        const value = l != null ? map(l) : undefined;
+        const value = next != null ? map(next) : undefined;
         console.log(`${value == null ? "None" : `Some(${value})`}`);
       } finally {
         $rcDrop(c.rcbuffer, (value) => {

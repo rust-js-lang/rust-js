@@ -47,8 +47,8 @@ function countdownIterator_next(countdown) {
 }
 
 function countdownDoubleEndedIterator_nextBack(countdown) {
-  const n = countdownIterator_next(countdown);
-  return n != null ? (n + 100) >>> 0 : undefined;
+  const next = countdownIterator_next(countdown);
+  return next != null ? (next + 100) >>> 0 : undefined;
 }
 
 function loudDrop_drop(loud) {
@@ -72,11 +72,11 @@ function main() {
     { next: countdownIterator_next },
     { next_back: countdownDoubleEndedIterator_nextBack },
   );
-  const next = $next(r);
-  const nextBack = revDoubleEndedIterator_nextBack(r, { next: countdownIterator_next });
   const value = $next(r);
+  const nextBack = revDoubleEndedIterator_nextBack(r, { next: countdownIterator_next });
+  const value$1 = $next(r);
   console.log(
-    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   const c = revClone_clone(r, { clone: (value) => [value[0]] });
   console.log(`${revDebug_fmt(c, undefined, countdownDebug)}`);
@@ -84,19 +84,19 @@ function main() {
 
   const v = [1, 2, 3, 4, 5, 6];
   const back = iterator_rev($iter(v));
-  const value$1 = revDoubleEndedIterator_nextBack(back);
+  const value$2 = revDoubleEndedIterator_nextBack(back);
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${revExactSizeIterator_len(back, { len: (iterator) => iterator.len() })} ${((value) => (value == null ? "None" : `Some(${value})`))(revDoubleEndedIterator_nthBack(back, 1))}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${revExactSizeIterator_len(back, { len: (iterator) => iterator.len() })} ${((value) => (value == null ? "None" : `Some(${value})`))(revDoubleEndedIterator_nthBack(back, 1))}`,
   );
   console.log(
     `${revDoubleEndedIterator_rfold(revClone_clone(back, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }), 0, (a, x) => (((a * 10) >>> 0) + x) >>> 0)}`,
   );
-  const value$2 = revDoubleEndedIterator_rfind(back, (x) => x > 3);
+  const value$3 = revDoubleEndedIterator_rfind(back, (x) => x > 3);
   console.log(
-    `${value$2 == null ? "None" : `Some(${value$2})`} ${revDebug_fmt(back, undefined, iterDebug)}`,
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${revDebug_fmt(back, undefined, iterDebug)}`,
   );
 
-  const value$3 = lastOf(
+  const value$4 = lastOf(
     reversed(
       [3],
       { next: countdownIterator_next },
@@ -104,11 +104,11 @@ function main() {
     ),
     { next: countdownIterator_next },
   );
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
-  const value$4 = lastOf(reversed($iter(v), { next: $next }, { next_back: $nextBack }), {
+  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
+  const value$5 = lastOf(reversed($iter(v), { next: $next }, { next_back: $nextBack }), {
     next: $next,
   });
-  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
+  console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
 
   const range = iterator_rev(
     { start: 0, end: 4294967295 },
@@ -116,21 +116,21 @@ function main() {
     { next_back: $rangeNextBack, nthBack: $rangeNthBack },
   );
   const nth = $rangeNthBack(range.iter, 4000000000);
-  const value$5 = revDoubleEndedIterator_nextBack(range, { next: $rangeNext });
+  const value$6 = revDoubleEndedIterator_nextBack(range, { next: $rangeNext });
   console.log(
-    `${nth == null ? "None" : `Some(${nth})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
+    `${nth == null ? "None" : `Some(${nth})`} ${value$6 == null ? "None" : `Some(${value$6})`}`,
   );
 
   const louds = [[1], [2], [3]];
   const held = $held($rev($closing($iter(louds), $dropEach(loudDrop_drop))));
   try {
-    const l = $next(held);
+    const next = $next(held);
     function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value = l != null ? map(l) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } finally {
     held.return();
@@ -156,13 +156,13 @@ function main() {
     ).join(", ")}]`,
   );
   // Its own impl's, of what it's made into where it's made.
-  const value$6 = $nextBack($iter(v.toReversed()));
+  const value$7 = $nextBack($iter(v.toReversed()));
   console.log(
-    `${value$6 == null ? "None" : `Some(${value$6})`} ${$sizeHint($iterator([5], countdownDoubleEndedIterator_nextBack, false, countdownIterator_next))[0]}`,
+    `${value$7 == null ? "None" : `Some(${value$7})`} ${$sizeHint($iterator([5], countdownDoubleEndedIterator_nextBack, false, countdownIterator_next))[0]}`,
   );
   // Shown or cloned where it's made, by its own compiled impl.
   const rev = iterator_rev($iter(v));
-  const value$7 = $foldToArray(
+  const value$8 = $foldToArray(
     $roomForHint(
       revClone_clone(
         iterator_rev(
@@ -176,6 +176,6 @@ function main() {
       true,
     ),
   );
-  console.log(`${revDebug_fmt(rev, undefined, iterDebug)} [${value$7.join(", ")}]`);
+  console.log(`${revDebug_fmt(rev, undefined, iterDebug)} [${value$8.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

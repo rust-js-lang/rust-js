@@ -114,7 +114,7 @@ function main() {
   );
   let e;
   try {
-    const option = $nthDropping(
+    const nth = $nthDropping(
       $lent(rev),
       1,
       (value) => {
@@ -127,7 +127,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    e = option != null ? map(option) : undefined;
+    e = nth != null ? map(nth) : undefined;
   } finally {
     rev.return();
   }

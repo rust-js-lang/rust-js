@@ -70,16 +70,16 @@ function run(name, f) {
 
 function main() {
   run("in place", () => {
-    const d = $lastDropping($closing($iter(ds()), $dropEach(dDrop_drop)), dDrop_drop);
+    const last = $lastDropping($closing($iter(ds()), $dropEach(dDrop_drop)), dDrop_drop);
     function map(d) {
       const result = d[0] + 0;
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("skipped", () => {
-    const d = $lastDropping(
+    const last = $lastDropping(
       $skipping($closing($iter(ds()), $dropEach(dDrop_drop)), 1, dDrop_drop),
       dDrop_drop,
     );
@@ -88,10 +88,10 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("chained", () => {
-    const d = $lastDropping(
+    const last = $lastDropping(
       $lazyChain(
         $closing($iter(ds()), $dropEach(dDrop_drop)),
         $closing($iter([[6]]), $dropEach(dDrop_drop)),
@@ -103,10 +103,10 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("chained, b's last panics", () => {
-    const d = $lastDropping(
+    const last = $lastDropping(
       $lazyChain(
         $closing($iter([[1]]), $dropEach(dDrop_drop)),
         $closing($iter([[2], [3], [4]]), $dropEach(dDrop_drop)),
@@ -118,7 +118,7 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("fused", () => {
     const iter = iterator_fuse(
@@ -150,14 +150,14 @@ function main() {
         dDrop_drop,
       ),
     );
-    let d;
+    let peek;
     try {
-      d = $peek(it);
+      peek = $peek(it);
     } catch (error) {
       it.return();
       throw error;
     }
-    const value = d != null ? d[0] + 0 : undefined;
+    const value = peek != null ? peek[0] + 0 : undefined;
     console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
     const iter = it;
     const result = $lastDropping(iter, dDrop_drop);
@@ -204,7 +204,7 @@ function main() {
     return r;
   });
   run("flattened", () => {
-    const d = $lastDropping(
+    const last = $lastDropping(
       $flatMap(
         $closing($iter(ds()), $dropEach(dDrop_drop)).map((x) => [[(x[0] + 10) >>> 0], x]),
         (item) => $closing($iter(item), $dropEach(dDrop_drop)),
@@ -216,10 +216,10 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("flat-mapped, an inner's last panics", () => {
-    const d = $lastDropping(
+    const last = $lastDropping(
       $flatMap(
         $closing($iter([[[1], [2]], [[3], [4]], [[5]]]), (intoIter) => {
           $dropItems(intoIter, (item) => {
@@ -235,7 +235,7 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("flattened, mid-way", () => {
     const it = $held(
@@ -244,33 +244,32 @@ function main() {
         (item) => $closing($iter(item), $dropEach(dDrop_drop)),
       ),
     );
-    let d;
-    let map;
+    let next;
+    function map(d) {
+      const result = d[0] + 0;
+      dDrop_drop(d);
+      return result;
+    }
     try {
-      d = $next(it);
-      map = (d) => {
-        const result = d[0] + 0;
-        dDrop_drop(d);
-        return result;
-      };
+      next = $next(it);
     } catch (error) {
       it.return();
       throw error;
     }
     try {
-      const value = d != null ? map(d) : undefined;
+      const value = next != null ? map(next) : undefined;
       console.log(`first ${value == null ? "None" : `Some(${value})`}`);
     } catch (error) {
       it.return();
       throw error;
     }
-    const d$1 = $lastDropping(it, dDrop_drop);
+    const last = $lastDropping(it, dDrop_drop);
     function map$1(d) {
       const result = d[0] + 0;
       dDrop_drop(d);
       return result;
     }
-    return d$1 != null ? map$1(d$1) : undefined;
+    return last != null ? map$1(last) : undefined;
   });
   run("flattened, the one it's in panics", () => {
     const it = $held(
@@ -282,33 +281,32 @@ function main() {
         (item) => $closing($iter(item), $dropEach(dDrop_drop)),
       ),
     );
-    let d;
-    let map;
+    let next;
+    function map(d) {
+      const result = d[0] + 0;
+      dDrop_drop(d);
+      return result;
+    }
     try {
-      d = $next(it);
-      map = (d) => {
-        const result = d[0] + 0;
-        dDrop_drop(d);
-        return result;
-      };
+      next = $next(it);
     } catch (error) {
       it.return();
       throw error;
     }
     try {
-      const value = d != null ? map(d) : undefined;
+      const value = next != null ? map(next) : undefined;
       console.log(`first ${value == null ? "None" : `Some(${value})`}`);
     } catch (error) {
       it.return();
       throw error;
     }
-    const d$1 = $lastDropping(it, dDrop_drop);
+    const last = $lastDropping(it, dDrop_drop);
     function map$1(d) {
       const result = d[0] + 0;
       dDrop_drop(d);
       return result;
     }
-    return d$1 != null ? map$1(d$1) : undefined;
+    return last != null ? map$1(last) : undefined;
   });
   run("flat-mapped, the one it's in panics", () => {
     const it = $held(
@@ -321,36 +319,35 @@ function main() {
         (v) => $closing($iter(v), $dropEach(dDrop_drop)),
       ),
     );
-    let d;
-    let map;
+    let next;
+    function map(d) {
+      const result = d[0] + 0;
+      dDrop_drop(d);
+      return result;
+    }
     try {
-      d = $next(it);
-      map = (d) => {
-        const result = d[0] + 0;
-        dDrop_drop(d);
-        return result;
-      };
+      next = $next(it);
     } catch (error) {
       it.return();
       throw error;
     }
     try {
-      const value = d != null ? map(d) : undefined;
+      const value = next != null ? map(next) : undefined;
       console.log(`first ${value == null ? "None" : `Some(${value})`}`);
     } catch (error) {
       it.return();
       throw error;
     }
-    const d$1 = $lastDropping(it, dDrop_drop);
+    const last = $lastDropping(it, dDrop_drop);
     function map$1(d) {
       const result = d[0] + 0;
       dDrop_drop(d);
       return result;
     }
-    return d$1 != null ? map$1(d$1) : undefined;
+    return last != null ? map$1(last) : undefined;
   });
   run("flat-mapped, its function panics", () => {
-    const d = $lastDropping(
+    const last = $lastDropping(
       $flatMap(
         $closing($iter([[[1]], [[2]], [[4]]]), (intoIter) => {
           $dropItems(intoIter, (item) => {
@@ -389,19 +386,19 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("none panics", () => {
-    const d = $lastDropping($closing($iter([[1], [2], [4]]), $dropEach(dDrop_drop)), dDrop_drop);
+    const last = $lastDropping($closing($iter([[1], [2], [4]]), $dropEach(dDrop_drop)), dDrop_drop);
     function map(d) {
       const result = d[0] + 0;
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("array", () => {
-    const d = $lastDropping(
+    const last = $lastDropping(
       $closing($iter([[1], [2], [3], [4], [5]]), $dropEach(dDrop_drop)),
       dDrop_drop,
     );
@@ -410,19 +407,19 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("deque", () => {
-    const d = $lastDropping($closing($iter(ds().slice()), $dropEach(dDrop_drop)), dDrop_drop);
+    const last = $lastDropping($closing($iter(ds().slice()), $dropEach(dDrop_drop)), dDrop_drop);
     function map(d) {
       const result = d[0] + 0;
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("heap", () => {
-    const d = $lastDropping(
+    const last = $lastDropping(
       $closing($iter($heapFrom(ds(), (a, b) => $cmp(a[0], b[0]))), $dropEach(dDrop_drop), false),
       dDrop_drop,
     );
@@ -431,18 +428,18 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return last != null ? map(last) : undefined;
   });
   run("heap nth_back", () => {
     const value = $iter($heapFrom([[10], [20], [30], [40], [50]], (a, b) => $cmp(a[0], b[0])));
     try {
-      const d = $nthBack(value, 2, undefined, dDrop_drop);
+      const nthBack = $nthBack(value, 2, undefined, dDrop_drop);
       function map(d) {
         const result = d[0] + 0;
         dDrop_drop(d);
         return result;
       }
-      return d != null ? map(d) : undefined;
+      return nthBack != null ? map(nthBack) : undefined;
     } finally {
       $dropItems(value, dDrop_drop);
     }

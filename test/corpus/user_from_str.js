@@ -50,8 +50,8 @@ function pointErrorDisplay_fmt(pointError) {
 export const pointFromStr = { fromStr: pointFromStr_fromStr };
 
 function pointFromStr_fromStr(s) {
-  const option = $splitOnce(s, ",");
-  const result = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "Shape" };
+  const splitOnce = $splitOnce(s, ",");
+  const result = splitOnce != null ? { TAG: "Ok", _0: splitOnce } : { TAG: "Err", _0: "Shape" };
   if (result.TAG === "Err") {
     return result;
   }

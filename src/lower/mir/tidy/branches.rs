@@ -572,6 +572,7 @@ pub(super) fn negated_bools(e: Expr, booleans: &HashSet<String>) -> Expr {
                 facts: crate::lower::iterators::its_facts(e.facts),
                 kind,
                 span: e.span,
+                held_as: Default::default(),
             },
         ),
     }
@@ -754,6 +755,7 @@ pub(super) fn or_all(a: Expr, b: Expr) -> Expr {
                 facts: crate::lower::iterators::its_facts(b.facts),
                 kind,
                 span: b.span,
+                held_as: Default::default(),
             },
         ),
     }

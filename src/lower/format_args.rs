@@ -256,7 +256,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         vec![line],
                     )
                     .never_throws(),
-                    Err(text) => Expr::call(Expr::helper(if error { "$eprint" } else { "$print" }), vec![text]),
+                    Err(text) => Expr::call(Expr::helper(if error { "$eprint" } else { "$print" }), vec![*text]),
                 }
             }
             StreamOp::WriteBytes { error } | StreamOp::Written { error } => {
@@ -359,7 +359,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec![line],
                 )
                 .never_throws(),
-                Err(text) => Expr::call(Expr::helper(if error { "$eprint" } else { "$print" }), vec![text]),
+                Err(text) => Expr::call(Expr::helper(if error { "$eprint" } else { "$print" }), vec![*text]),
             },
             Std::FmtStr => arg(),
             Std::FmtDisplay => {
@@ -381,18 +381,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// `"a\n"`, `` `a ${x}\n` `` or `"a" + "b\n"`: the line, `"a"`, without the
 /// newline `println!` ends it with. Anything else is given back.
-pub(super) fn without_newline(mut text: Expr) -> Result<Expr, Expr> {
+pub(super) fn without_newline(mut text: Expr) -> Result<Expr, Box<Expr>> {
     let last = match &mut text.kind {
         js::ExprKind::Str(s) => s,
         js::ExprKind::Template(texts, ..) => texts.last_mut().expect("a template has a last text"),
         js::ExprKind::Written(pieces) => &mut pieces.last_mut().expect("a written string's pieces").text,
-        _ => return Err(text),
+        _ => return Err(Box::new(text)),
     };
     match last.ends_with('\n') {
         true => {
             last.pop();
             Ok(text)
         }
-        false => Err(text),
+        false => Err(Box::new(text)),
     }
 }

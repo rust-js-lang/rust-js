@@ -37,14 +37,14 @@ function main() {
   const it = $held(
     iterator_peekable(Items.new(0), { next: itemsIterator_next }, itemsDrop_drop, dDrop_drop),
   );
-  let d;
+  let peek;
   try {
-    d = $peek(it);
+    peek = $peek(it);
   } catch (error) {
     it.return();
     throw error;
   }
-  const value = d?.[0];
+  const value = peek?.[0];
   console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
   console.log(
     `count ${$count($enumerate(it), (value) => {
@@ -57,14 +57,14 @@ function main() {
     const it = $held(
       iterator_peekable(Items.new(3), { next: itemsIterator_next }, itemsDrop_drop, dDrop_drop),
     );
-    let d;
+    let peek;
     try {
-      d = $peek(it);
+      peek = $peek(it);
     } catch (error) {
       it.return();
       throw error;
     }
-    const value = d?.[0];
+    const value = peek?.[0];
     console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
     const n = $count($enumerate(it), (value) => {
       dDrop_drop(value[1]);
