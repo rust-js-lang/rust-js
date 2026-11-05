@@ -371,9 +371,8 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `IntoIterator` of a `&mut Vec`, a `&[T]`, a `&mut Option` or a `&mut BTreeMap` has no dictionary",
     file: "src/lower/traits/dictionaries.rs",
-    find: "        if is_std_def(self.tcx, tr.def_id, StdItem::IntoIterator)\n            && matches!(ty.kind(), ty::Ref(..))\n",
-    replace:
-      "        if false\n            && matches!(ty.kind(), ty::Ref(..))\n",
+    find: "        if self.ref_into_iter_of_collection(tr) {\n",
+    replace: "        if false && self.ref_into_iter_of_collection(tr) {\n",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
   },
   {
@@ -607,5 +606,21 @@ export const mutations: Mutation[] = [
       "-t",
       "a JS class's Deref to the class it extends is no JS",
     ],
+  },
+  {
+    name: "ref-iterator-into-iter-by-collection",
+    breaks: "a `&mut` of the crate's iterator given where std asks `IntoIterator` is taken for a collection's, and has no evidence, so std's compiled `flatten()` of `&mut`s is refused (#742)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            && !self.recognition().iterates_as_itself(ty)\n            && !self.has_user_impl(tr.def_id, ty)\n",
+    replace: "            && !self.has_user_impl(tr.def_id, ty)\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^mut_ref_iterators_into_iter with std"],
+  },
+  {
+    name: "ref-iterator-not-itself",
+    breaks: "a `&mut` of the crate's iterator isn't taken as it is where std's impl for every iterator takes it, so it has no evidence (#742)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            && (!matches!(ty.kind(), ty::Ref(..)) || self.recognition().iterates_as_itself(ty))\n",
+    replace: "            && !matches!(ty.kind(), ty::Ref(..))\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^mut_ref_iterators_into_iter with std"],
   },
 ];

@@ -486,10 +486,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // is known, given what generic code has, a `&mut` to an object in a
         // box (ADR 0454): a handle on each item of a `&mut`, as `for x in &mut
         // v` makes, or std's own of what it's given.
-        if is_std_def(self.tcx, tr.def_id, StdItem::IntoIterator)
-            && matches!(ty.kind(), ty::Ref(..))
-            && !self.has_user_impl(tr.def_id, ty)
-        {
+        if self.ref_into_iter_of_collection(tr) {
             return self.ref_into_iter_dictionary(tr, self.held_in_box(ty), span);
         }
         // std's `IntoIterator` of one of the function's own type parameters
@@ -518,7 +515,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Of one only bounds know, an iterator's, std's for every iterator:
         // itself, stepped by the dictionary its bounds give.
         if is_std_def(self.tcx, tr.def_id, StdItem::IntoIterator)
-            && !matches!(ty.kind(), ty::Ref(..))
+            && (!matches!(ty.kind(), ty::Ref(..)) || self.recognition().iterates_as_itself(ty))
             && (!crate::lower::recognition::known_by_bounds(ty) || self.recognition().iterates_as_itself(ty))
             && !self.has_user_impl(tr.def_id, ty)
         {
@@ -918,6 +915,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Ok(steps)
+    }
+
+    /// Whether `tr`, std's `IntoIterator` of a reference, is a collection's,
+    /// `&C`'s or `&mut C`'s, which `ref_into_iter_dictionary` makes: not a
+    /// `&mut I` of an iterator, which std's impl for every iterator takes as
+    /// it is, as rustc's selection says (`iterates_as_itself`, #742), nor
+    /// one the crate implements. The one answer, of a bound's dictionary
+    /// and of a type parameter given one, `zip`'s `U`.
+    pub(in crate::lower) fn ref_into_iter_of_collection(&self, tr: ty::TraitRef<'tcx>) -> bool {
+        let ty = tr.self_ty();
+        is_std_def(self.tcx, tr.def_id, StdItem::IntoIterator)
+            && matches!(ty.kind(), ty::Ref(..))
+            && !self.recognition().iterates_as_itself(ty)
+            && !self.has_user_impl(tr.def_id, ty)
     }
 
     /// std's `IntoIterator` of a `&C` or a `&mut C`, `tr`, as generic code

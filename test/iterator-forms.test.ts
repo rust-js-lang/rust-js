@@ -131,6 +131,9 @@ const few = [
   // A flatten's `count`, each inner iterator's own, by std's compiled
   // `Flatten::count` and `FlatMap::count` (#736).
   "flatten_count_takes_each_inner_count.rs",
+  // A `&mut` of the crate's iterator, std's `IntoIterator` of every
+  // iterator, as rustc selects it (#742).
+  "mut_ref_iterators_into_iter.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus")

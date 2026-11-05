@@ -165,10 +165,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // A type parameter bound by `IntoIterator` given a `&C`
                     // or a `&mut C`, `zip`'s `U`, held as it is, never in a
                     // box (ADR 0976).
-                    let as_it_is = matches!(declared.self_ty().kind(), ty::Param(_))
-                        && is_std_def(self.tcx, bound.def_id, StdItem::IntoIterator)
-                        && matches!(bound.self_ty().kind(), ty::Ref(..))
-                        && !self.has_user_impl(bound.def_id, bound.self_ty());
+                    let as_it_is =
+                        matches!(declared.self_ty().kind(), ty::Param(_)) && self.ref_into_iter_of_collection(bound);
                     match given
                         .iter()
                         .find(|(of, _)| self.tcx.erase_and_anonymize_regions(*of) == erased)

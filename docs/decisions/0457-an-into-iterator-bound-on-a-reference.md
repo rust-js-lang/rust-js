@@ -100,3 +100,27 @@ double_all(c, { into_iter: (cell) => $iter($mutItems(cell.value)) });
 - A function with such a bound takes one more argument: `total(v, {
   into_iter: (x) => $iter(x) })` where it was `total(v)`.
 - either compiles.
+
+## Amendment (2026-11-05): a `&mut` of an iterator is std's every iterator's (#742)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; valid Rust was
+refused with std's iterator structs. `vec![&mut a, &mut b].into_iter()
+.flatten().count()`, of the crate's iterators, and `(0..5).zip(&mut c)`
+and `(10..12).chain(&mut d)` asked std's `IntoIterator` of a `&mut Own`,
+which went to this decision's dictionary of a collection's `&C` or `&mut
+C` by its type's shape, a reference, and had none: "implementation
+evidence for `<&mut Own as std::iter::IntoIterator>`". rustc selects std's
+impl for every iterator there, `impl<I: Iterator> IntoIterator for I`, of
+`I = &mut Own`.
+
+**What a reference's `IntoIterator` is follows rustc's selection**:
+`ref_into_iter_of_collection` is the one answer, of a bound's dictionary and of
+a type parameter given one, `zip`'s and `chain`'s `U` (ADR 0976). A
+reference is a collection's where std's blanket impl isn't the one
+selected (`iterates_as_itself`); one where it is, a `&mut` of an iterator,
+is given as it is, ADR 0552's dictionary, its steps the `&mut I`'s.
+`test/corpus/mut_ref_iterators_into_iter.rs` checks a flatten, a zip and a
+chain of `&mut`s of the crate's iterator, beside a `Vec`'s `&mut` and `&`,
+against native Rust in both builds; the mutations are
+`ref-iterator-into-iter-by-collection` and `ref-iterator-not-itself`
+(`lower/traits/dictionaries.ts`).
