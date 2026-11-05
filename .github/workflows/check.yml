@@ -107,7 +107,7 @@ jobs:
       - name: Run the slice
         env:
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: bun scripts/iteratorSlice.ts run
+        run: bun scripts/iteratorSlice.ts run matrix
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
@@ -115,6 +115,63 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+
+  # Of the same change, the conformance table's slice (ADR 1092), 43 of
+  # its 360 batches, on a machine of its own beside the matrix's.
+  iterator-conformance:
+    name: iterator conformance slice
+    needs: plan
+    if: ${{ !inputs.nightly && needs.plan.outputs.iterators == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run the slice
+        env:
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+        run: bun scripts/iteratorSlice.ts run conformance
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: iterator-conformance-slice
+          path: target/iterator-matrix
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # Of the same change, every corpus case built with std's iterator structs
+  # alone (ADR 0908, `ITERATOR_FORMS=corpus`), against native Rust, on a
+  # machine of its own beside the slice's: a regression only that build
+  # shows, #766's, reached `main` where only the nightly's `forms` ran it.
+  iterator-forms:
+    name: iterator forms of the corpus
+    needs: plan
+    if: ${{ !inputs.nightly && needs.plan.outputs.iterators == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run the corpus with std's iterator structs
+        env:
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+        run: bun scripts/iteratorSlice.ts run forms
 
   lint:
     runs-on: ubuntu-latest

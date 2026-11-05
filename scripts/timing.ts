@@ -7,6 +7,7 @@
 //
 // A step records itself, `timed(step, seconds)`, and says how it compares.
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { availableParallelism, loadavg } from "node:os";
 import { join } from "node:path";
 
 const root = join(import.meta.dir, "..");
@@ -58,6 +59,23 @@ export function shown(seconds: number): string {
  * less is noise. */
 export function slower(seconds: number, usual: number): boolean {
   return seconds > usual * 1.25 && seconds - usual > 5;
+}
+
+/** How many times its usual a timeout is on a machine as loaded as this,
+ * its load average over its cores, from 1 to 3: check:fast's jobs' (290 s
+ * for most) and each test's under Bun (test/setup.ts, `underLoad`). With six
+ * or seven agents at once, a load of 20 to 67 on the M3 Max's 12, every
+ * corpus part, the other files and the readability passes passed 290 s and
+ * were stopped, and tests a minute or two, each passing when run alone
+ * after (2026-11-05). Each agent ran them again, which cost more than
+ * stopping them saved. A hang still ends, at three times its usual at most. */
+export function loadScale(load: number, cores: number): number {
+  return Math.min(3, Math.max(1, load / cores));
+}
+
+/** `ms` as long as this machine's load makes it, `loadScale` of it now. */
+export function underLoad(ms: number): number {
+  return Math.round(ms * loadScale(loadavg()[0], availableParallelism()));
 }
 
 /** `seconds` against the step's last ten runs: `38 s (usual 36 s)`, and a

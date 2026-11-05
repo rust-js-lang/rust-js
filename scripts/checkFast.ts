@@ -16,9 +16,9 @@ import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, sta
 import { availableParallelism, loadavg } from "node:os";
 import { join } from "node:path";
 import { pruneKept } from "../test/kept";
-import { touchesIterators } from "./iteratorSlice";
+import { runs, touchesIterators } from "./iteratorSlice";
 import { browsers, caseParts, nightly } from "./shard";
-import { elapsed, timed } from "./timing";
+import { elapsed, loadScale, timed } from "./timing";
 
 const root = join(import.meta.dir, "..");
 
@@ -28,22 +28,13 @@ const root = join(import.meta.dir, "..");
  * `test/ci.test.ts` matches it to check.yml's. */
 export type Job = { name: string; cmd: string[]; env: Record<string, string>; timeout: number; ci?: string };
 
-/** What the check is of: `--all`, or the files the change touches, the
- * mutations it adds and the files named; and the machine's cores. */
-export type Scope = { all: boolean; changed: string[]; added: string[]; extra: string[]; cores: number };
+/** What the check is of: `--all`, or the files the change touches, those
+ * the branch changed since `main`, the mutations it adds and the files
+ * named; and the machine's cores. */
+export type Scope = { all: boolean; changed: string[]; branch: string[]; added: string[]; extra: string[]; cores: number };
 
 const job = (name: string, cmd: string[], more: Partial<Job> = {}): Job => ({ name, cmd, env: {}, timeout: 290, ...more });
 
-/** How many times its timeout a job is given on a machine as loaded as
- * this, its load average over its cores, from 1 to 3: with six or seven
- * agents at once, a load of 20 to 67 on the M3 Max's 12, every corpus
- * part, the other files and the readability passes passed 290 s and were
- * stopped, each passing when run alone after (2026-11-05). Each agent ran
- * them again, which cost more than stopping them saved. A hang still ends,
- * at three times its timeout at most. */
-export function loadScale(load: number, cores: number): number {
-  return Math.min(3, Math.max(1, load / cores));
-}
 
 /** What check.yml runs that `check:fast --all` leaves to CI, by the start
  * of its command, each with why: `test/ci.test.ts` fails on a command of
@@ -70,7 +61,7 @@ export const leftToCi: { run: string; why: string }[] = [
  * `--all`, what a push's check runs (check.yml); else the suites the
  * change can touch, as it touches them, `shared` saying whether that's what
  * the snapshots and the diagnostics read. */
-export function jobs({ all, changed, added, extra, cores }: Scope): { jobs: Job[]; after: Job[]; shared: boolean } {
+export function jobs({ all, changed, branch, added, extra, cores }: Scope): { jobs: Job[]; after: Job[]; shared: boolean } {
   // What the snapshots and the diagnostics read: the compiler and the runtime.
   const shared = all || changed.some((file) => file.startsWith("src/") || file.startsWith("runtime/"));
   const jsx = all || changed.some((file) => /^src\/(lower\/jsx|jsx_syntax)|^react\//.test(file));
@@ -81,9 +72,12 @@ export function jobs({ all, changed, added, extra, cores }: Scope): { jobs: Job[
   // A change to what a `&mut` is, or to an operation on one, runs the `&mut`
   // matrix's sample against native Rust (ADR 1086).
   const mutRefs = all || changed.some((file) => /^src\/lower\/(representation\/mut_ref|mut_refs|mir\/(assign|entries|places|rvalues|closures)|std_types\/cell)\.rs$/.test(file));
-  // A change to the iterators' code runs the iterator matrix's slice, as a
-  // push's check does (scripts/iteratorSlice.ts, #731).
-  const iterators = all || touchesIterators(changed);
+  // A change to the iterators' code, the working tree's or the branch's
+  // since `main`, runs the iterator matrix's and the conformance table's
+  // slices and the corpus with std's iterator structs, as a push's check
+  // does (scripts/iteratorSlice.ts, #731, #766): with `--all` too, which is
+  // what the push's check runs, these where its change is the iterators'.
+  const iterators = touchesIterators([...changed, ...branch]);
 
   // Each part of a file of cases, a process of its own (scripts/shard.ts).
   const parts = caseParts(cores);
@@ -153,8 +147,15 @@ export function jobs({ all, changed, added, extra, cores }: Scope): { jobs: Job[
       ...(all ? [everyFile] : suites),
       ...(tidy ? [job("readability passes", ["bun", "test", "test/tidy-stages.test.ts", "test/getter-reads.test.ts"])] : []),
       ...(mutRefs ? [job("the `&mut` matrix's sample", ["bun", "test", "test/mut-ref-matrix.test.ts"])] : []),
-      // 64 batches in 4 parts: 119 s alone at a load of 20 (2026-11-05).
-      ...(iterators ? [job("the iterator matrix's slice", ["bun", "scripts/iteratorSlice.ts", "run", String(parts)], { timeout: 600, ci: "bun scripts/iteratorSlice.ts run" })] : []),
+      // The slices: 64 and 43 batches in 4 parts, 119-145 s and 63-119 s
+      // alone at a load of 14-20; the corpus's every case (2026-11-05).
+      ...(iterators
+        ? [
+            ...(["matrix", "conformance", "forms"] as const).map((of) =>
+              job(runs[of][0].name, ["bun", "scripts/iteratorSlice.ts", "run", of, String(parts)], { timeout: 600, ci: `bun scripts/iteratorSlice.ts run ${of}` }),
+            ),
+          ]
+        : []),
       ...(added.length > 0 ? [job("mutations the change adds", ["bun", "scripts/mutations.ts", ...new Set(added)])] : []),
       ...extra.map((file) => job(file, ["bun", "test", file])),
     ],
@@ -167,10 +168,13 @@ export function jobs({ all, changed, added, extra, cores }: Scope): { jobs: Job[
 /** Each of `list` at once, each given the compiler just built: one that
  * builds its own, as each test file and fmt does, links it again, and
  * races the others. Each is said as it ends, against its usual. */
-function run(list: Job[], compiler: string, scale: number) {
-  return Promise.all(
+function run(list: Job[], compiler: string) {
+  // The highest the load has been since the phase began, as the run's own
+  // jobs raise it: a load of 7 as one began was 53 a minute on (2026-11-05).
+  let scale = loadScale(loadavg()[0], availableParallelism());
+  const watching = setInterval(() => (scale = Math.max(scale, loadScale(loadavg()[0], availableParallelism()))), 5000);
+  const ran = Promise.all(
     list.map(async ({ name, cmd, env, timeout: usual }) => {
-      const timeout = Math.round(usual * scale);
       const start = Date.now();
       const p = Bun.spawn(cmd, {
         cwd: root,
@@ -178,16 +182,21 @@ function run(list: Job[], compiler: string, scale: number) {
         stdout: "pipe",
         stderr: "pipe",
       });
-      const stop = setTimeout(() => p.kill(), timeout * 1000);
+      let timeout = usual;
+      const stop = setInterval(() => {
+        timeout = Math.round(usual * scale);
+        if (Date.now() - start > timeout * 1000) p.kill();
+      }, 1000);
       const [out, err] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text()]);
       const code = await p.exited;
-      clearTimeout(stop);
+      clearInterval(stop);
       const seconds = (Date.now() - start) / 1000;
-      const stopped = code !== 0 && seconds >= timeout ? `, stopped at its ${timeout} s` : "";
+      const stopped = code !== 0 && seconds >= timeout ? `, stopped at its ${timeout} s (×${scale.toFixed(1)} for the load)` : "";
       console.log(code === 0 ? `ok   ${timed(`check:fast ${name}`, seconds)}` : `FAIL ${name} (${seconds.toFixed(0)}s${stopped})`);
       return { name, code, log: out + err };
     }),
   );
+  return ran.finally(() => clearInterval(watching));
 }
 
 if (import.meta.main) {
@@ -197,6 +206,10 @@ if (import.meta.main) {
 
   const git = (gitArgs: string[]) => Bun.spawnSync(["git", ...gitArgs], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
   const changed = [...git(["diff", "--name-only", "HEAD"]), ...git(["ls-files", "--others", "--exclude-standard"])];
+  // And, of what only a push's check runs where it touches it, the
+  // iterators', what the branch changed since it left `main`.
+  const since = git(["merge-base", "HEAD", "origin/main"])[0];
+  const branch = since === undefined ? [] : git(["diff", "--name-only", since, "HEAD"]);
 
   // The mutations the change adds or changes: each `name` its lists' diff adds.
   const diff = Bun.spawnSync(["git", "diff", "HEAD", "--", "scripts/mutations"], { cwd: root }).stdout.toString();
@@ -259,15 +272,8 @@ if (import.meta.main) {
   if (node.exitCode !== 0) process.exit(1);
   console.log(timed("node bindings build", (Date.now() - binding) / 1000));
 
-  const check = jobs({ all, changed, added, extra, cores: availableParallelism() });
-  // Each phase's timeouts are of the load it starts under.
-  const scaled = () => {
-    const [load] = loadavg();
-    const scale = loadScale(load, availableParallelism());
-    if (scale > 1) console.log(`a load of ${load.toFixed(0)} on ${availableParallelism()} cores: each job's timeout ×${scale.toFixed(1)}`);
-    return scale;
-  };
-  const results = [...(await run(check.jobs, compiler, scaled())), ...(await run(check.after, compiler, scaled()))];
+  const check = jobs({ all, changed, branch, added, extra, cores: availableParallelism() });
+  const results = [...(await run(check.jobs, compiler)), ...(await run(check.after, compiler))];
   const failed = results.filter((r) => r.code !== 0);
   for (const { name, log } of failed) console.log(`\n── ${name} ──\n${log.slice(-3000)}`);
   // From its start, its build too.

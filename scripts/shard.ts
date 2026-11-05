@@ -89,3 +89,48 @@ export const nightly = [
   "history",
   "limitations",
 ].map((name) => `test/${name}.test.ts`);
+
+/** A part of a test file that a setting of its environment selects, and
+ * where it runs: `push`, by `by`, a workflow each push to `main` starts or
+ * a script one runs, which sets it; or `nightly`, by the nightly alone,
+ * with why. The corpus with std's iterator structs ran only at night, and a
+ * regression only it showed reached `main` (#766). */
+export type Part = { setting: string; value: string; runs: "push" | "nightly"; by: string; why?: string };
+
+/** Each part a setting selects, of every setting a test file reads but
+ * `harness`'s: test/ci.test.ts fails on a setting that's neither, and on a
+ * part whose `by` doesn't set it. */
+export const parts: Part[] = [
+  { setting: "ITERATOR_TABLE", value: "matrix", runs: "push", by: "scripts/iteratorSlice.ts" },
+  { setting: "ITERATOR_TABLE", value: "conformance", runs: "push", by: "scripts/iteratorSlice.ts" },
+  { setting: "ITERATOR_FORMS", value: "corpus", runs: "push", by: "scripts/iteratorSlice.ts" },
+  { setting: "TIDY_STAGES", value: "programs", runs: "push", by: ".github/workflows/readability-passes.yml" },
+  { setting: "FUZZ_START", value: "1", runs: "push", by: ".github/workflows/readability-passes.yml" },
+  { setting: "FUZZ_SEEDS", value: "6", runs: "push", by: ".github/workflows/readability-passes.yml" },
+  { setting: "RUST_JS_REQUIRE_WASM", value: "1", runs: "push", by: ".github/workflows/check.yml" },
+  { setting: "ITERATOR_MATRIX", value: "all", runs: "nightly", by: ".github/workflows/nightly.yml", why: "every case, about 4 CPU-hours: a push runs its slice" },
+  { setting: "TIDY_STAGES", value: "corpus", runs: "nightly", by: ".github/workflows/nightly.yml", why: "every corpus case after each of tidy's stages: a push of tidy runs nine" },
+  { setting: "MUT_REF_MATRIX", value: "all", runs: "nightly", by: ".github/workflows/nightly.yml", why: "all 72 programs: check:fast runs seven where a `&mut` changes" },
+  { setting: "RUST_JS_DISTRIBUTION", value: "dist", runs: "nightly", by: "scripts/qualify.ts", why: "a release's packaged binary, which only qualification builds" },
+];
+
+/** The settings test files read that select no part: the harness's own,
+ * what a test sets for a child it runs, and a report's. */
+export const harness = [
+  "BLESS",
+  "BUN_TEST_WORKER_ID",
+  "CHILD_LEFT_OUT",
+  "FUZZ_REPORT",
+  "ITERATOR_MATRIX_REPORT",
+  "PATH",
+  "PILOT_API",
+  "RUSTC_BOOTSTRAP",
+  "RUST_JS_CASES",
+  "RUST_JS_COMPILE_TIMEOUT",
+  "RUST_JS_COMPILER",
+  "RUST_JS_KEEP_FIXTURES",
+  "RUST_JS_LIBRARIES",
+  "RUST_JS_SNAPSHOTS",
+  "RUST_JS_TARGET",
+  "RUST_JS_TEST_VALUE",
+];

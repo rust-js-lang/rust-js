@@ -178,8 +178,13 @@ closures captured nothing, which is how #710, #719 and #734 got through.
   With #719's fix reverted, the capturing cases are refused. Without the
   pairs, a cover of 61 plain batches passed with #721's fix reverted.
 - **The conformance table's too** (ADR 1092), whose per-push 8 batches it
-  replaces: `slice()` of its 360 batches is 43, run after the matrix's by
-  the same `bun scripts/iteratorSlice.ts run`, each table in 4 parts.
+  replaces: `slice()` of its 360 batches is 43, `bun
+  scripts/iteratorSlice.ts run conformance`, in 4 parts.
 - **Its cost:** on the M3 Max, in 4 parts at a load of 14 to 20, with the
   debug compiler, the matrix's 64 batches took 119 to 145 s and the
-  conformance table's 43 took 98 to 119 s.
+  conformance table's 43 took 98 to 119 s. On CI, in 4 parts after a 116 s
+  release build, 89 s and 62 s (run 41969266534).
+- **Each in a job of its own**, the user's choice of 2026-11-05, beside the
+  corpus with std's iterator structs (ADR 0908, amended): `iterators`,
+  `iterator-conformance` and `iterator-forms`, about 5 minutes wall each,
+  at once, beside the suite.

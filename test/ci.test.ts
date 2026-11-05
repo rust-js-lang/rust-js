@@ -7,9 +7,10 @@ import { join } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, timingsRun } from "../scripts/ci";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf } from "../scripts/crate-corpus";
 import { batches, type Change, changedLines, changedMutations, enclosingFunction, schema, setPasses, site, type Sited, testBlocks, testResults, testSet } from "../scripts/mutations";
-import { jobs, leftToCi, loadScale } from "../scripts/checkFast";
+import { jobs, leftToCi } from "../scripts/checkFast";
+import { loadScale } from "../scripts/timing";
 import { jobs as localNightly } from "../scripts/nightly";
-import { caseParts, caseShardParts, nightly, shard } from "../scripts/shard";
+import { caseParts, caseShardParts, harness, nightly, parts, shard } from "../scripts/shard";
 import { fixture, root } from "./support";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
@@ -54,7 +55,9 @@ test("the files only the nightly runs are test files, which its check runs", () 
 // or one `leftToCi` says why it leaves to CI, and each of those is still
 // check.yml's. `cargo test` and the pilot's committed JS, run by the check
 // alone, went red on `main` unseen (801d40c55, 336984bff).
-const checkJobs = jobs({ all: true, changed: [], added: [], extra: [], cores: 4 });
+// Of a change to the iterators' code, whose jobs check.yml runs where its
+// change is one (scripts/iteratorSlice.ts).
+const checkJobs = jobs({ all: true, changed: [], branch: ["src/runtime/steps.js"], added: [], extra: [], cores: 4 });
 const ranHere = [...checkJobs.jobs, ...checkJobs.after];
 
 test("each command a push's check runs is check:fast --all's, or left to CI by name", () => {
@@ -100,17 +103,45 @@ test("each test file a push's suite runs, check:fast --all runs", () => {
   expect(suite.filter((file) => !ranHere.some((job) => runs(job.cmd, file)))).toEqual([]);
 });
 
+// A part of a test file a setting selects runs per push or at night, where
+// `parts` says (#766): each setting a test file reads is a part's or the
+// harness's, and each part's `by` sets it, a push's by what a push runs.
+test("each part of a test file a setting selects runs where `parts` says", () => {
+  const read = readdirSync(join(root, "test"))
+    .filter((name) => /\.tsx?$/.test(name))
+    .flatMap((name) => [...readFileSync(join(root, "test", name), "utf8").matchAll(/process\.env\.([A-Z][A-Z0-9_]*)/g)].map((m) => m[1]));
+  const named = new Set([...harness, ...parts.map((part) => part.setting)]);
+  expect([...new Set(read)].filter((setting) => !named.has(setting)).sort()).toEqual([]);
+  // What a file runs, not what its comments say.
+  const text = (file: string) =>
+    readFileSync(join(root, file), "utf8")
+      .split("\n")
+      .filter((line) => !/^\s*(\/\/|#|\/?\*)/.test(line))
+      .join("\n");
+  const check = text(".github/workflows/check.yml");
+  const onPush = (file: string) =>
+    file.startsWith(".github/workflows/") ? Object.keys((Bun.YAML.parse(text(file)) as { on: Record<string, unknown> }).on).includes("push") : check.includes(`bun ${file}`);
+  for (const part of parts) {
+    const sets = new RegExp(`${part.setting}["']?\\s*[:=]\\s*["']?${part.value}\\b`);
+    expect(sets.test(text(part.by)), `${part.by} sets ${part.setting}=${part.value}`).toBe(true);
+    if (part.runs === "push") expect(onPush(part.by), `${part.by} runs per push`).toBe(true);
+    else expect(part.why, `why ${part.setting}=${part.value} is the nightly's`).toBeTruthy();
+  }
+});
+
 // `bun run nightly` runs what the nightly does, here: each of nightly.yml's
 // jobs and of the check it calls, check.yml's, by name, but `plan`, which
 // picks the mutations a branch's check runs, `seeds`, the day's number, and
-// `issue`, which files a red night as an issue; and `iterators`, the iterator
-// matrix's slice, which the nightly skips, as its `matrix` runs every batch.
+// `issue`, which files a red night as an issue; and `iterators`,
+// `iterator-conformance` and `iterator-forms`, the two tables' slices and
+// the corpus with std's iterator structs, which the nightly skips, as its
+// `matrix`, `conformance` and `forms` run all of each.
 test("the nightly, here, has each job the nightly has", () => {
   const ids = (file: string) => {
     const text = readFileSync(join(root, ".github/workflows", file), "utf8");
     return [...text.slice(text.indexOf("\njobs:")).matchAll(/^  ([a-z-]+):$/gm)].map((m) => m[1]);
   };
-  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators"].includes(id));
+  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators", "iterator-conformance", "iterator-forms"].includes(id));
   expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 

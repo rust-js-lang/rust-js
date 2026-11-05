@@ -84,7 +84,7 @@ branch's one running, and no branch's run touches another's.
 | The day's 600 generated programs through the same, `TIDY_STAGES=programs` | | | yes (`programs`, 6 machines of 100) |
 | What JS made, read as often as Rust reads it in every variant, `test/getter-reads.test.ts` (ADR 1087) | in `check:fast` when tidy or preparation changes: 16 s on the Mac | with the stages' sample | in the suite |
 | The iterator conformance matrix, `test/iterator-matrix.test.ts` (ADR 1090): every source, chain, consumer and panic site in both builds against native Rust, and closures that capture what drops, and a type stepped from its back beside its forward consumers | its slice, 64 fixed batches, `bun scripts/iteratorSlice.ts run`, in `check:fast` when a change touches the iterators' code (`iteratorPaths`) and in `--all`: 119 s alone in 4 parts at a load of 20; `ITERATOR_MATRIX=all RUST_JS_CASES=i/n` for all of them | the slice, **check**'s `iterators` job, where `plan` says the change is the iterators' code | every case, on 6 machines (`matrix`) |
-| The iterator conformance table, `ITERATOR_TABLE=conformance` of the same test (ADR 1092): each adapter alone through each step of the contract, from either end, with closures that hold a destructor, in both builds against native Rust | its slice, 43 fixed batches, with the matrix's by `bun scripts/iteratorSlice.ts run`, as the matrix's; `ITERATOR_TABLE=conformance ITERATOR_MATRIX=all` for all 360 | the same job: its slice after the matrix's | every case, on 2 machines (`conformance`) |
+| The iterator conformance table, `ITERATOR_TABLE=conformance` of the same test (ADR 1092): each adapter alone through each step of the contract, from either end, with closures that hold a destructor, in both builds against native Rust | its slice, 43 fixed batches, with the matrix's by `bun scripts/iteratorSlice.ts run`, as the matrix's; `ITERATOR_TABLE=conformance ITERATOR_MATRIX=all` for all 360 | its slice, check's `iterator-conformance`, beside the matrix's | every case, on 2 machines (`conformance`) |
 | Release qualification | | | yes |
 | react.dev port: its JS against what it committed, `bun run port measure`; its build's 823 pages, `bun run port compare` | yes: the port is private | | |
 | React's port, react-in-rust at `ports/react-in-rust.pin`: `cargo check` of it, `bun scripts/react-in-rust.ts check` | when a change touches a binding | **React port** workflow, of a push that changes `builtins/`, `webapi/`, `node/` or `react/` | |
@@ -254,9 +254,13 @@ What keeps them there:
   (2026-11-04). Each job
   is given the compiler it built, `RUST_JS_COMPILER`: one that builds its
   own links it again, and races the others.
-- **A job's timeout is scaled by the load it starts under** (`loadScale`):
-  its usual timeout, 290 s for most, times the load average over the
-  cores, from 1 to 3. With six or seven agents at once the M3 Max sat at a
+- **A job's timeout is scaled by the machine's load** (`loadScale` in
+  `scripts/timing.ts`): its usual timeout, 290 s for most, times the
+  highest load average over the cores since its phase began, from 1 to 3,
+  as the run's own jobs raise it (a load of 7 as one began was 53 a minute
+  on). A test's under Bun is too, its minute's default (`test/setup.ts`)
+  and the snapshots' two (`underLoad`): at a load of 43, inbox's snapshot
+  passed 120 s and a tidy stage's test its 60 s, each a few seconds alone. With six or seven agents at once the M3 Max sat at a
   load of 20 to 67 on its 12 cores, and a fixed 290 s stopped every corpus
   part, the other files and the readability passes in most runs, each of
   which passed alone afterwards, the corpus in six parts in 239 to 341 s
@@ -427,6 +431,7 @@ checked:
 | The iterator matrix in full on the Mac, `ITERATOR_MATRIX=all` (ADR 1090) | 2,970 s in 4 parts at a load of 15–60 (2026-11-04), about 3.3 CPU-hours: 1,700 programs of 60 cases, each built natively and twice by the debug compiler, its compile the most of it | The release compiler for its builds, or a compile of a batch's two builds in one rust-js process; the nightly runs it on six machines |
 | Which Prettier and plugins lay out an app's JS, of each build's `rustc -vV` line (ADR 1003, #692) | 0.4 s of each build of React's port (17 packages) on the M3 Max, 2026-11-04, and of each editor check: `resolveConfig` of every module's `.js` and `.jsx` | Each config file's plugins read once, its `overrides` with them, not asked again per module |
 | An app's `node_modules/.cache/rust-js`, React's port's above all | 26–32 GB in react-in-rust (2026-11-04): each build of the compiler is another `rustc -vV` line, so another `-C metadata` and another copy of every crate, never removed, 50 of `shared`'s; 15 GB of it rustc's `incremental/`, 3.8 GB `deps/`; a worktree that copies it copies all of it, for nothing, as its crates' paths differ and Cargo builds them again | The builds of other compilers' lines removed after a build (Cargo's own cache GC is unstable), and rustc's incremental cache off for the crates rust-js compiles whole anyway |
+| A test's own timeout, written in its file, `}, 300_000)` (about 540 of them) | Fixed, where a test's minute's default and the snapshots' grow with the machine's load (`underLoad`): one of them can still pass its number at a load of 40 or more and fail a run that passes alone | Each written as `underLoad(n)`, or `test` given a default that's `underLoad` of what it says, as the default is |
 | `test/lowering-functions.test.ts`'s "a long function is lowered block by block" | 3 s alone on the M3 Max, 54 billion instructions for 3,000 `v.push(..)`s (24 billion for 1,500), the same at b80aedb1e and 707d7eea0 (2026-11-04); on CI 9 s, then 17 s, then past its 30 s timeout beside the test job's other files, so its timeout is 60 s | A lowering of a long straight-line body that costs less per statement: profile where its 18 million instructions a statement go |
 
 ## Working on `main`
@@ -543,7 +548,7 @@ Its jobs run at once:
 | `examples` | the Vite example's build | 10 min |
 | `wasm` | build `rust-js.wasm`, then the snapshot and playground tests with it | 30 min |
 | `rustc` | rustc's suite, a release build, then 6 shards and a report; a lists patch on failure | 20 min |
-| `iterators` | of a change to the iterators' code, the iterator matrix's slice (ADR 1090, #731): 64 fixed batches, of every source, adapter, consumer and panic site, of closures capturing what drops, and of a type stepped from its back beside its forward consumers, in both builds against native Rust, 4 parts on one machine, after a release build; skipped otherwise, and by the nightly, whose `matrix` runs every batch | see TESTS.md |
+| `iterators`, `iterator-conformance`, `iterator-forms` | of a change to the iterators' code (`plan`'s `iterators`), each on a machine of its own, after a release build, the user's choice of 2026-11-05: the iterator matrix's slice (ADR 1090, #731), 64 fixed batches, of every source, adapter, consumer and panic site, of closures capturing what drops, and of a type stepped from its back beside its forward consumers; the conformance table's slice, 43 batches (ADR 1092); and every corpus case built with std's iterator structs (`ITERATOR_FORMS=corpus`, ADR 0908, #766); each in both builds against native Rust where it has two, 4 parts on one machine; skipped otherwise, and by the nightly, whose `matrix`, `conformance` and `forms` run all of each | 5 min each, wall: a 116 s build, then 89 s (matrix) and 62 s (conformance) on CI (run 41969266534) |
 | `mutations` | `--changed=<since>`: the mutations in a function the change touches, or of a test or corpus case it touches, and those it adds or edits (ADR 0093), on 1–16 machines, about twenty a machine, as the `plan` job counts them | 0–15 min |
 
 ### `rustc-tests.yml`, by hand, and called by `check.yml`
@@ -609,25 +614,38 @@ Mac, the nine cases took 90 s with their runs kept, six programs 150 s and
 the read cases 16 s (2026-11-04, a debug build, the load near 13). Started
 by hand too: `gh workflow run readability-passes.yml`.
 
-### The iterator matrix's slice, check.yml's `iterators`, of a change to the iterators' code
+### Of a change to the iterators' code: check.yml's `iterators`, `iterator-conformance` and `iterator-forms`
 
-64 of the iterator matrix's 1,787 batches (ADR 1090, amended for #731),
-fixed by the cases alone (`slice()` in `test/iterator-matrix.ts`): the
-fewest that hold every pairing of a source, an adapter, a consumer and a
-panic site, of closures that capture a `D` and of a type stepped from its
-back by `rfold`, `nth_back` or `rfind` beside its forward consumers. It
-runs where the check's `plan` says what changed since the last good check
-is the iterators' code, `iteratorPaths` in `scripts/iteratorSlice.ts`, the
-one list, which `test/architecture-iterators.test.ts` holds to the
-architecture's owners of iterators; and in `check:fast` where the change
-is, and in `--all`. A case that differs from native Rust, in either build,
-and isn't in `test/iterator-matrix-known.txt`, fails it; one listed that
-passes fails it until `bun test/iterator-matrix.ts take-off` takes it off.
-`ITERATOR_MATRIX=#<issue>` runs the batches that hold one issue's known
-cases, for its fixer, then `take-off`. It then runs the conformance
-table's slice the same way, 43 of its 360 batches (`ITERATOR_TABLE=conformance`,
-ADR 1092), whose known cases are rows of the same list, `conformance:plain`
-and `conformance:std`, taken off by the same `take-off`.
+Three jobs at once, each on a machine of its own beside the suite, where
+the check's `plan` says what changed since the last good check is the
+iterators' code (`iteratorPaths` in `scripts/iteratorSlice.ts`, the one
+list, which `test/architecture-iterators.test.ts` holds to the
+architecture's owners of iterators); and in `check:fast` where the change
+or the branch's since `main` is. The user's choice of 2026-11-05: all three
+per push, each in a job of its own.
+
+- **The matrix's slice**, 64 of its 1,787 batches (ADR 1090, amended for
+  #731), fixed by the cases alone (`slice()` in `test/iterator-matrix.ts`):
+  the fewest that hold every pairing of a source, an adapter, a consumer
+  and a panic site, of closures that capture a `D` and of a type stepped
+  from its back by `rfold`, `nth_back` or `rfind` beside its forward
+  consumers. 89 s on CI in 4 parts.
+- **The conformance table's slice** the same way, 43 of its 360 batches
+  (`ITERATOR_TABLE=conformance`, ADR 1092), whose known cases are rows of
+  the same list, `conformance:plain` and `conformance:std`. 62 s on CI.
+- **Every corpus case built with std's iterator structs alone**
+  (`ITERATOR_FORMS=corpus`, ADR 0908), but those `differs` lists: #766, a
+  regression only that build showed, reached `main` where only the
+  nightly's `forms` ran it. 183 s on the Mac in 4 parts at a load of 20–30.
+
+Each job is about 5 minutes wall, its release build 116 s of it (run
+41969266534). A case that differs from native Rust, in either build, and
+isn't listed fails it; one listed that passes fails it until `bun
+test/iterator-matrix.ts take-off` takes it off. `ITERATOR_MATRIX=#<issue>`
+runs the batches that hold one issue's known cases, for its fixer.
+`test/ci.test.ts` holds each setting a test file reads (`parts` in
+`scripts/shard.ts`) to where it runs, per push or at night, so a part like
+`ITERATOR_FORMS=corpus` can't be left to the nightly unsaid again.
 
 ### `react-in-rust.yml`, the React port, of a push that changes a binding
 

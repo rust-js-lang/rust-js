@@ -46,3 +46,21 @@ step is a way to see what that meaning does alone.
     recognizers made (`it.back is not a function`, `f[$cloneKey]`), or
     print otherwise.
 - No program's JS changes.
+
+## Amendment: every corpus case per push of the iterators' code (#766, 2026-11-05)
+
+The corpus built with std's iterator structs alone (`ITERATOR_FORMS=corpus`)
+ran only in the nightly's `forms`, and a regression only that build showed,
+#766 (from f73daa2c5), reached `main`. The user chose to run it per push of
+the iterators' code: check.yml's `iterator-forms`, `bun
+scripts/iteratorSlice.ts run forms`, every case in 4 parts on a machine of
+its own, beside the iterator matrix's and the conformance table's slices
+(ADR 1090, amended), where `plan` says the change touches `iteratorPaths`;
+and `check:fast` where the change does. It took 183 s on the M3 Max in 4
+parts at a load of 20 to 30. Its first run found #770, a filter's collect
+whose dropped item's drop panics, which `differs` lists.
+
+`test/ci.test.ts` now holds each setting a test file reads, `parts` in
+`scripts/shard.ts`, to where its part runs: per push, by a file that sets it
+and that a push runs, or at night, with why. A part like this one can't be
+left to the nightly unsaid again (ADR 1093, amended).

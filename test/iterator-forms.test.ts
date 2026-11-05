@@ -148,7 +148,11 @@ const chosen = which === "corpus" ? caseShard(cases) : few;
 /** The cases whose std-struct build doesn't run as native Rust yet, each
  * with why: what's left to do, which only shrinks. One that runs as Rust
  * does is taken off. */
-const differs: Record<string, string> = {};
+const differs: Record<string, string> = {
+  // A `filter()`'s collect into a `Vec` whose dropped item's drop panics:
+  // std's compiled collect drops what it gathered, which rustc leaks (#770).
+  "generic_collect_drops_rest_first.rs": "#770",
+};
 
 test("the cases a run of a few names are the corpus's, and each listed difference is one", () => {
   for (const name of [...few, ...Object.keys(differs)])

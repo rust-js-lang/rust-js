@@ -82,3 +82,23 @@ machine's setup; the run's own planning; and the bless patch of a red run.
   the jobs say which `check.yml` command each one runs, `leftToCi` says
   why each other command isn't run, and the test compares both with the
   workflow.
+
+## Amendment: each part a setting selects runs somewhere (#766, 2026-11-05)
+
+The drift tests held each test file to a job, not each part of one. The
+corpus built with std's iterator structs (`ITERATOR_FORMS=corpus`) is a
+part of test/iterator-forms.test.ts that only the nightly ran, and #766
+reached `main` through it. Now `parts` in `scripts/shard.ts` names each part
+a setting selects, with where it runs:
+- `push`, by a file that sets it and that a push runs: a workflow with an
+  `on: push`, or a script check.yml runs;
+- `nightly`, with why.
+`harness` names the settings that select no part. A third test in
+`test/ci.test.ts` fails on a setting a test file reads that is in neither,
+on a part whose file doesn't set it (comments aside), and on a push part
+whose file no push runs.
+
+With `--all`, check:fast runs the iterator jobs (both slices and the
+corpus with std's structs) where the change or the branch's since `main`
+touches `iteratorPaths`, as the push's check does. A push of other code
+runs none of them.

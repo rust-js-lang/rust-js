@@ -6,6 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { rmSync } from "node:fs";
 import { basename, join } from "node:path";
+import { underLoad } from "../scripts/timing";
 import { buildCompiler, buildReact, buildSerde, compiler, expectSnapshot, root, run, target } from "./support";
 
 type Crate = "web" | "react" | "serde";
@@ -87,8 +88,9 @@ for (const [name, input, crates] of cases) {
     // A compile of a crate of serde's, `inbox`'s, takes past bun's 5 s on a
     // loaded machine, the wasm job's too: its compile's time, not a hang.
     // Beside `check:fast`'s rebuilds of a change's ten mutations, its 15 s
-    // alone took past 60 s.
-  }, 120_000);
+    // alone took past 60 s, and at a load of 43 on 12 cores past 120 s:
+    // longer as the machine's load is (`underLoad`).
+  }, underLoad(120_000));
 }
 
 // The playground's own bindings declare JS types as a program does, and a

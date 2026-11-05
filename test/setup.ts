@@ -2,6 +2,7 @@
 // once before all of them one after another.
 import { setDefaultTimeout } from "bun:test";
 
+import { underLoad } from "../scripts/timing";
 import { asNode } from "./node-surface";
 import { buildCompiler } from "./support";
 
@@ -13,8 +14,10 @@ asNode();
 // Bun's five seconds when the files run side by side. One after another,
 // Bun sets each file's back to five seconds, so `bun run test:serial` gives
 // `--timeout` the same minute; a bare `bun test` has Bun's five, which a
-// test fits alone.
-setDefaultTimeout(60_000);
+// test fits alone. On a loaded machine it's longer, as check:fast's jobs'
+// are (`underLoad`): at a load of 43 on 12 cores, a tidy stage's test
+// passed its minute and failed, where alone it takes seconds.
+setDefaultTimeout(underLoad(60_000));
 
 // The compiler, before any file's tests. `bun run test` builds it before
 // Bun starts and gives it to every process from the start, which is what
