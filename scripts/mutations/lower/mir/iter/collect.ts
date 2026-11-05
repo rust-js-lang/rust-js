@@ -683,15 +683,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
   },
   {
-    name: "in-place-default-in-trait-terms",
-    breaks:
-      "a trait's default copied into its blanket impl, compiled as a library, asks what std collects `self` in of `Self`, not the impl's `I` its dictionary is given, so it's refused (#672)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "        (self.impl_type(iter_ty), self.impl_type(item), typing_env)\n",
-    replace: "        (iter_ty, item, typing_env)\n",
-    tests: ["test/corpus.test.ts", "-t", "^extension_trait_params.rs$"],
-  },
-  {
     name: "in-place-by-caller-by-next",
     breaks:
       "generic code's `src.filter(p).collect()` of a `Vec`'s `IntoIter`, which std collects in place by its fold, whose discarded item's drop panics, steps it by `next`, so it drops what it collected, which std leaks (#672, #681)",

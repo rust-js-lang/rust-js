@@ -47,11 +47,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "                || self.stepped_from_its_back(ty);\n",
     replace: ";\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^enumerate_of_droppers_from_back.rs$",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^(enumerate_of_droppers_from_back|enumerate_made_knowing_read_again|enumerate_of_a_reversible_source).rs$"],
+    snapshots: true,
   },
   {
     name: "stepped-range-restepped",
@@ -210,7 +207,8 @@ export const mutations: Mutation[] = [
     find: "            return (self.knows_its_back(source) || self.user_double_ended(source))\n",
     replace:
       "            return false && (self.knows_its_back(source) || self.user_double_ended(source))\n",
-    tests: ["test/corpus.test.ts", "-t", "^fuse_enumerate_ends.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(fuse_enumerate_ends|own_back_through_adapters|filter_folds_by_its_sources_fold).rs$"],
+    snapshots: true,
   },
   {
     name: "memchr-iter-backless",

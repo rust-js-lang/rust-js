@@ -341,20 +341,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn collects_in_place(&self, iter_ty: Option<Ty<'tcx>>, item: Option<Ty<'tcx>>) -> Option<bool> {
         use crate::lower::recognition::{InPlaceSource, fits_in_place, in_place_source};
         let (iter_ty, item) = iter_ty.zip(item)?;
-        let (iter_ty, item, typing_env) = self.collected_in_impl(iter_ty, item);
+        let typing_env = self.typing_env;
         match in_place_source(self.tcx, typing_env, iter_ty)? {
             InPlaceSource::Never => Some(false),
             InPlaceSource::Items(src) => fits_in_place(self.tcx, typing_env, src, item),
             InPlaceSource::Of(_) => None,
         }
-    }
-
-    /// A collect's iterator type and items, and where they're asked: of a
-    /// copied default, in its impl's terms, whose dictionary is given what
-    /// its own type parameters are (ADR 0049).
-    fn collected_in_impl(&self, iter_ty: Ty<'tcx>, item: Ty<'tcx>) -> (Ty<'tcx>, Ty<'tcx>, ty::TypingEnv<'tcx>) {
-        let typing_env = self.typing_env;
-        (self.impl_type(iter_ty), self.impl_type(item), typing_env)
     }
 
     /// The `restFirst` of a collect into `output` of `item`s, of an iterator
@@ -396,7 +388,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// against the items' (#672). Refused where the adapters don't tell.
     fn caller_in_place(&mut self, iter_ty: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Expr> {
         use crate::lower::recognition::{InPlaceSource, TypeFact, in_place_source};
-        let (iter_ty, item, typing_env) = self.collected_in_impl(iter_ty, item);
+        let typing_env = self.typing_env;
         let source = match in_place_source(self.tcx, typing_env, iter_ty) {
             Some(InPlaceSource::Of(_) | InPlaceSource::Items(_)) => {
                 self.type_fact_value(iter_ty, TypeFact::InPlace, span)?

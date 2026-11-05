@@ -10,7 +10,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/value.rs",
     find: '            e = made("$lent", vec![e], &[Known::IterLent]);',
     replace: '            e = Expr::call(Expr::member(Expr::var("Iterator"), "from"), vec![e]);',
-    tests: ["test/corpus.test.ts", "-t", "lent_iterators"],
+    tests: ["test/corpus.test.ts", "-t", "^(lent_iterators|by_ref_lends|by_ref_chains).rs$"],
   },
   {
     name: "closing-drops-each-as-one-slice",

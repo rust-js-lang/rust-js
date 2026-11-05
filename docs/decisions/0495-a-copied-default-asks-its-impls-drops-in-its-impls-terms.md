@@ -130,3 +130,13 @@ Held by `test/corpus/default_of_a_non_blanket_impl_steps_its_self.rs`, with
 native Rust, its `for _ in self` too, as generic code's `for` over a
 `Wrapper<I>` is since #806; about 40 snapshots move (the user's approval,
 through m6-react).
+
+## Amendment: a collect in a copied default asks its types as they are (2026-11-06, #799)
+
+Since #803 a copied default's MIR is the impl's, normalized where
+`default_typing_env` knows it, so what std collects in place in, of its
+iterator and items, is asked of them as they are: `collected_in_impl`,
+which put them in the impl's terms, is gone, and its mutation,
+`in-place-default-in-trait-terms`, with it. No case's JS changed, as a
+program or a library (case N).
+
