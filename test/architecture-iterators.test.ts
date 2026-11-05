@@ -207,3 +207,91 @@ test("an adapter's parts are closed in turn by $inTurn alone", () => {
   expect(by).toEqual([]);
   expect(read("src/runtime/steps.js")).toContain("function $inTurn(...runs)");
 });
+
+// An iterator value's facts are written once, by lower/iterators/value.rs's
+// `emit()`, and read only through value.rs, which reads the `Known` facts
+// `emit()` marks its JS with (ADR 1092, amended, #730 phase 3). A reader that
+// took a helper's name, a call's shape or a span for a fact met a value of
+// another form and answered wrongly: `.of` (#721), a closure's result judged
+// by another call's span (#716, #726), a length off an assumed shape (#745).
+// A new fact goes to value.rs: `emit()` marks it, and value.rs gives the
+// reader its accessor.
+const valueOwner = "src/lower/iterators/value.rs";
+const owned = (what: string) =>
+  `${what} outside value.rs: ${valueOwner} owns an iterator value's form; add a fact \`emit()\` marks, and an accessor there`;
+const loweringSources = () => ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
+const linesOf = (file: string) => read(file).split("\n").filter((line) => !line.trimStart().startsWith("//"));
+const outsideValue = (pattern: RegExp) =>
+  loweringSources()
+    .filter((file) => file !== valueOwner)
+    .flatMap((file) => linesOf(file).filter((line) => pattern.test(line)).map((line) => `${file}: ${line.trim()}`));
+
+test("an iterator value's readers are defined in value.rs alone", () => {
+  const readers =
+    /\bfn (closed_parts|stepped_form|stepped_value|unlent|is_lent|stepped_range|stepped_from|bounds_read|its_facts|gives_made_in_place)\b/;
+  expect([owned("a reader of an iterator value"), outsideValue(readers)]).toEqual([owned("a reader of an iterator value"), []]);
+});
+
+test("$iterator, $given, $knowing, $closing and $lent are written by value.rs's emit() alone", () => {
+  const written = /(call_helper|Expr::helper)\("\$(iterator|given|knowing|closing|lent)"/;
+  expect([owned("a write of an iterator value's helper"), outsideValue(written)]).toEqual([owned("a write of an iterator value's helper"), []]);
+});
+
+test("no iterator fact is read off a member's name, `.of`, `.at`, `.end`, `.iter` or `.items`, outside value.rs", () => {
+  const member = /Member\([^)]*\)\s*if\s+\w+\s*==\s*"(of|at|end|iter|items)"|Member\(_,\s*"(of|at|end|iter|items)"/;
+  expect([owned("a member read as an iterator's fact"), outsideValue(member)]).toEqual([owned("a member read as an iterator's fact"), []]);
+});
+
+// Whether a call steps an adapter made in place is body_queries' answer, read
+// by mir/iter.rs's `steps_in_place` alone, the maker of each value's in-place
+// mark (step 6). It's still keyed by the call's span, which #730's step 6b
+// removes, each in-place adapter's maker marking what it makes.
+test("in_place_adapter_steps is read by steps_in_place alone", () => {
+  const allowed: Record<string, [number, string]> = {
+    "src/lower/body_queries.rs": [4, "its owner, which makes it of the THIR"],
+    "src/lower/analysis.rs": [1, "the `--std-iterators` build's switch, which makes no adapter in place"],
+    "src/lower/mir/iter.rs": [1, "`steps_in_place`, its one reader, until #730's step 6b"],
+  };
+  const found: Record<string, number> = {};
+  for (const file of loweringSources()) {
+    const count = linesOf(file).filter((line) => line.includes("in_place_adapter_steps")).length;
+    if (count > 0) found[file] = count;
+  }
+  const expected = Object.fromEntries(Object.entries(allowed).map(([file, [count]]) => [file, count]));
+  expect(found).toEqual(expected);
+});
+
+// Each read of an iterator's helper by its name outside value.rs, per file and
+// helper, with its reason and what removes it. The list only shrinks: a new
+// read fails here, and one gone fails until its entry goes too.
+test("an iterator helper is read by its name only where the list says, until value.rs owns its form", () => {
+  const maker = "its maker isn't in value.rs yet";
+  const allowed: Record<string, [number, string]> = {
+    "src/lower/iterators.rs $iterator": [3, `\`behind_a_dyn\`, \`is_range_stepped\` and \`reversal\`'s range: ${maker} (\`OwnMethods\`), step 10`],
+    "src/lower/iterators.rs $rev": [1, `\`reversal\`'s \`$rev(it)\`: ${maker}, step 10`],
+    "src/lower/iterators.rs $stepBy": [1, `\`stepped_by\`, tidy's \`(a..b).step_by(n)\` loop: ${maker}, step 10`],
+    "src/lower/iterators/in_place.rs $iterator": [1, `tidy's \`stepped_in_place\`, an \`$iterator\`'s hint dropped: ${maker} (\`OwnMethods\`), step 10`],
+    "src/lower/iterators/in_place.rs $knowing": [2, "tidy's `stepped_in_place` sees through `$knowing`: a reader of `IterKnowing`, step 10"],
+    "src/lower/iterators/in_place.rs $rev": [1, `tidy's \`stepped_in_place\` sees through \`$rev\`: ${maker}, step 10`],
+    "src/lower/iterators/knowing.rs $stepBy": [1, `\`as_double_ended\`'s \`step_by\` by its source's \`nth\`: ${maker}, step 10, then step 8`],
+    "src/lower/mir/iter/backs.rs $rev": [4, `tidy's \`reversed_in_place\` rewrites of \`$rev\`: ${maker}, step 10`],
+    "src/lower/mir/iter/sources.rs $repeatingN": [1, `\`len_in_place\`'s \`repeat_n\`: ${maker}, step 10`],
+    "src/lower/mir/iter/sources.rs $rev": [1, `\`len_in_place\`'s reversed source: ${maker}, step 10`],
+    "src/lower/mir/iter/sources.rs $stepBy": [1, `\`len_in_place\`'s \`step_by\`: ${maker}, step 10`],
+    "src/lower/std_types/range.rs $stepBy": [2, `tidy's \`range_step\` and \`reversed_step\`, a range's \`step_by\` folded: ${maker}, step 10`],
+  };
+  const helpers = "closing|iterator|given|lent|stepBy|rev|repeatingN|knowing";
+  const read_ = new RegExp(`Some\\("\\$(${helpers})"`);
+  const literal = new RegExp(`"\\$(${helpers})"`, "g");
+  const found: Record<string, number> = {};
+  for (const file of loweringSources().filter((file) => file !== valueOwner)) {
+    for (const line of linesOf(file).filter((line) => read_.test(line))) {
+      for (const [, helper] of line.matchAll(literal)) {
+        const key = `${file} $${helper}`;
+        found[key] = (found[key] ?? 0) + 1;
+      }
+    }
+  }
+  const expected = Object.fromEntries(Object.entries(allowed).map(([key, [count]]) => [key, count]));
+  expect([owned("a read of an iterator helper by its name"), found]).toEqual([owned("a read of an iterator helper by its name"), expected]);
+});

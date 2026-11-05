@@ -696,3 +696,20 @@ flatten's type (#716). A held `flat_map()`'s closure, std's compiled
 `results_in_place` itself, as the design first said: it is the THIR owner's
 question, and only its answer's carrier changed.
 
+Step 9 holds what steps 1 to 7 made true, in
+test/architecture-iterators.test.ts. Each failure names value.rs as the
+owner, where a new fact goes. Outside value.rs, the test refuses:
+
+- a definition of an iterator value's readers;
+- a write of `$iterator`, `$given`, `$knowing`, `$closing` or `$lent`;
+- an iterator fact read off a member's name (`of`, `at`, `end`, `iter`,
+  `items`);
+- a read of `in_place_adapter_steps` but by body_queries, its owner,
+  `--std-iterators`' switch, and `steps_in_place`.
+
+The reads of an iterator helper by its name that remain are listed per file
+and helper, each with its reason and what removes it. A new one fails, and
+so does a gone one until its entry goes. They are the `$rev`, `$stepBy` and
+`$repeatingN` readers, whose makers aren't in value.rs yet (step 10), and the
+`$iterator`/`$knowing` readers of `OwnMethods` and tidy's `stepped_in_place`.
+
