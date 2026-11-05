@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1728
-lines	184816
+files	1729
+lines	185042
 temporaries	0	0
 labeled blocks	0	0
 while (true)	143	7.7
-$iter	1624	87.9
+$iter	1631	88.1
 Iterator.from	162	8.8
 return;	235	12.7
-renamed x$1	10519	569.2
+renamed x$1	10528	569
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drop_past_a_panic.js	46	0	0	0	1	0	0	0
 test/corpus/adapter_drops.js	1976	0	0	1	18	3	1	134
@@ -260,7 +260,7 @@ test/corpus/const_returned_copied.js	31	0	0	0	0	0	0	0
 test/corpus/const_too_large.js	13	0	0	0	0	0	0	0
 test/corpus/consumed_adapter_drops.js	33	0	0	0	3	0	0	0
 test/corpus/consumed_own_iterator_dropped_once.js	418	0	0	0	0	1	0	8
-test/corpus/consumer_closure_dropped_first.js	538	0	0	0	2	0	0	45
+test/corpus/consumer_closure_dropped_first.js	579	0	0	0	3	0	0	48
 test/corpus/consumer_drops_what_is_left.js	612	0	0	0	20	0	0	55
 test/corpus/consumers_step_each.js	58	0	0	0	0	0	0	0
 test/corpus/contains_guarded_borrow.js	28	0	0	0	0	0	0	0
@@ -494,6 +494,7 @@ test/corpus/flat_map_inner_iterables.js	42	0	0	0	0	0	0	0
 test/corpus/flat_map_of_maps_from_its_back.js	57	0	0	0	8	0	0	0
 test/corpus/flatten_boxed_options.js	76	0	0	0	0	0	0	0
 test/corpus/flatten_closed_part_way_drops_source_first.js	290	0	0	1	15	0	0	0
+test/corpus/flatten_fold_closure_panics.js	185	0	0	0	6	0	0	6
 test/corpus/flatten_folds_reach_its_sources_own.js	457	0	0	2	10	0	0	0
 test/corpus/flatten_from_both_ends.js	213	0	0	0	8	0	4	35
 test/corpus/flatten_from_both_ends_drops_its_inners.js	195	0	0	0	7	0	0	8

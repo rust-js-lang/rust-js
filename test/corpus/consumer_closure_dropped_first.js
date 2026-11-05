@@ -15,6 +15,7 @@ import {
   $lazyZip,
   $lent,
   $print,
+  $rev,
   $stepBy,
 } from "@rust-js/runtime";
 
@@ -513,6 +514,46 @@ function main() {
     } finally {
       dDrop_drop(iter._held);
     }
+  });
+  case$("a panic in a reversed rfold", (g) => {
+    let g$21$live = true;
+    const value = [["x"], ["y"], ["z"]];
+    let tmp;
+    try {
+      tmp = $iter(value);
+    } catch (error) {
+      dDrop_drop(g);
+      throw error;
+    }
+    let rev;
+    try {
+      rev = $rev($closing(tmp, $dropEach(dDrop_drop)));
+      g$21$live = false;
+    } catch (error) {
+      if (g$21$live) {
+        dDrop_drop(g);
+      }
+      throw error;
+    }
+    return $consume(
+      rev,
+      "rfold",
+      0,
+      (a, d) => {
+        try {
+          if (d[0] === "y") {
+            throw new Error("y");
+          }
+          return (((a + 1) >>> 0) + zero(g)) >>> 0;
+        } finally {
+          dDrop_drop(d);
+        }
+      },
+      undefined,
+      () => {
+        dDrop_drop(g);
+      },
+    );
   });
   case$("a panic in reduce", (g) => {
     const iter = It.new(3, "it");

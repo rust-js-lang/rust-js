@@ -333,7 +333,8 @@ fn main() {
 // to a fold of what the build that rewrites adapters can't step from its
 // back, a `skip()`, a `chain()` or a `filter()` reversed: dropped before what
 // its fold leaves, as std's `fold(self, init, f)` drops `f` first, a
-// `chain()`'s before its second side's rest (#734).
+// `chain()`'s before its second side's rest (#734); and a `step_by()`'s
+// `rfold`'s, once (#753).
 test("a consumer's closure folded over a reversed adapter drops before what's left", () => {
   const dir = fixture("forms-consumer-ends");
   const file = join(dir, "main.rs");
@@ -386,6 +387,9 @@ fn main() {
     println!("| {n}");
     let g = D("f");
     let n = it(3, "it").filter(|&x| x > 0).rev().fold(0, move |a, x| a + x + zero(&g));
+    println!("| {n}");
+    let g = D("f");
+    let n = (1..6u32).step_by(2).rfold(0, move |a, x| a + x + zero(&g));
     println!("| {n}");
 }
 `,

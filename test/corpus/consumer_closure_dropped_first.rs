@@ -3,7 +3,7 @@
 // left of what it consumes, as `fold(self, init, f)` drops `f` first: the
 // crate's iterator with a `Drop`, an adapter's rest, a chain's second side;
 // a flatten's after its parts, which it folds by `&mut`; and as a panic in
-// it unwinds (#734).
+// it unwinds (#734), a reversed `rfold`'s too (#754).
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 struct D(&'static str);
@@ -132,6 +132,12 @@ fn main() {
         It::new(3, "it").fold(0, move |a, x| {
             assert!(x != 1, "one");
             a + x + zero(&g)
+        })
+    });
+    case("a panic in a reversed rfold", |g| {
+        vec![D("x"), D("y"), D("z")].into_iter().rev().rfold(0, move |a, d| {
+            assert!(d.0 != "y", "y");
+            a + 1 + zero(&g)
         })
     });
     case("a panic in reduce", |g| {
