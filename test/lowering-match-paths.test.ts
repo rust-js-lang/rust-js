@@ -209,3 +209,43 @@ pub fn index_alts(o: &Unknown) -> bool {
   expect(lib.indexAlts(object([3, 5, 7, 1]))).toBe(true);
   expect(reads[0]).toBe(3);
 });
+
+// React's renderFunctionComponent: `Some(stacks) if js::truthy(Some(stacks))
+// => Some(stacks)`, then `_ => { .. set .. }`. The chain's first arm only
+// binds, the other is longer: the longer first, of the test negated, `if
+// (!stacks$1) { stacks = []; .. } else { stacks = stacks$1; }`, as upstream
+// writes it (#774, the user's decision).
+test("an arm that only binds is the else of a longer one", async () => {
+  const dir = fixture("binding-arm-after-the-longer");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+pub fn stacks_of(tracked: &'static Unknown, dev: bool) -> Option<&'static Unknown> {
+    let stacks: Option<&'static Unknown> = if dev {
+        match js::get(tracked, "_stacks") {
+            Some(stacks) if js::truthy(Some(stacks)) => Some(stacks),
+            _ => {
+                let stacks = js::unknown_of(Vec::<u32>::new());
+                js::set(tracked, "_stacks", stacks);
+                Some(stacks)
+            }
+        }
+    } else {
+        None
+    };
+    stacks
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    "    if (!stacks$1) {\n      stacks = [];\n      tracked._stacks = stacks;\n    } else {\n      stacks = stacks$1;\n    }\n",
+  );
+  const lib = await import(join(dir, "lib.js"));
+  const kept = [1];
+  expect(lib.stacksOf({ _stacks: kept }, true)).toBe(kept);
+  const tracked: { _stacks?: unknown } = { _stacks: 0 };
+  const made = lib.stacksOf(tracked, true);
+  expect(made).toEqual([]);
+  expect(tracked._stacks).toBe(made);
+  expect(lib.stacksOf(tracked, false)).toBeUndefined();
+});

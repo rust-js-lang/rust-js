@@ -1324,3 +1324,32 @@ of these shapes, agree with native Rust. Mutations `calls-made-again-once`,
 (`decisions/paths.ts`) and `kept-trees-unrun` (`stages.ts`);
 `calls-alike-refused`, `calls-no-fewer` and
 `guard-read-after-its-call-refused` follow the code they mutate.
+
+## Amendment: an arm that only binds is the `else` of a longer one (#774, the user's decision, 2026-11-05)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The JS does what it
+did; only which branch is first changes.
+
+React's renderFunctionComponent, `match js::get(tracked, "_stacks") {
+Some(stacks) if js::truthy(Some(stacks)) => Some(stacks), _ => { .. set
+.. } }`, printed `if (stacks$1) { stacks = stacks$1; } else { stacks = [];
+trackedThenables._stacks = stacks; }` once #523's C1 chained its tree:
+the arm whose test is longest, the `_`'s, is the chain's `else`. Upstream
+and the port's committed JS read `if (!stacks$1) { .. } else { stacks =
+stacks$1; }`. The user decided to fix it toward upstream, beside the #523
+decisions above: **of a chain of two arms, where the first only binds,
+each statement a `const` or a variable given what's read, `const
+stacks$1 = _5; stacks = stacks$1;`, and the other is longer, the longer
+is first, of the test negated** (`decisions/bodies.rs`'s `longer_first`, read in `chain`). An arm that
+does more, `log.push(stacks); ..`, sets a field, `last.value = stacks`,
+or gives a constant, `stacks = 1`, keeps its place, as does one whose
+other arm is no longer. Of `chain`'s trees alone: an `if` the other passes
+make of a `match`, `if (given != null && given[0] > given[1]) { const a
+= given[0]; n = a; } else { .. }`, is as it was.
+
+Corpus `binding_arm_after_the_longer.rs`, against native Rust;
+`test/lowering-match-paths.test.ts`, "an arm that only binds is the else
+of a longer one", of React's shape; mutations `binding-arm-first-kept`,
+`binding-arm-of-any-body`, `binding-arm-of-a-field-set`,
+`binding-arm-after-one-as-long` and `binding-arm-of-a-made-value`
+(`decisions/bodies.ts`).

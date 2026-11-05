@@ -15,6 +15,7 @@ use crate::lower::mir::hints::{Constant, Guard, Switch};
 
 use super::{ends, first_written, made_where, names_break};
 
+mod bodies;
 mod calls;
 mod defaults;
 mod guarded;
@@ -22,6 +23,7 @@ mod paths;
 mod presence;
 mod tails;
 
+use bodies::{longer_first, size};
 use calls::Model;
 pub(super) use defaults::default_values;
 pub(super) use guarded::bound;
@@ -534,6 +536,18 @@ fn chain(
             None => tests.map(atoms).sum(),
         };
         let tests_made = count(&mut steps.iter().map(|(_, test)| test));
+        // Of two arms, the first only binding, the longer first (#774).
+        if let [(i, _)] = steps.as_slice()
+            && let Some(other) = &chain
+            && longer_first(&bodies[*i], other)
+            && let Some((i, test)) = steps.pop()
+        {
+            let then = std::mem::take(&mut bodies[i]);
+            let longer = chain.take().unwrap_or_default();
+            chain = Some(vec![
+                StmtKind::If(test.negated_test(), longer, Some(then)).at(made_where(block, tree)),
+            ]);
+        }
         for (k, (i, test)) in steps.into_iter().enumerate().rev() {
             let then = std::mem::take(&mut bodies[i]);
             // The chain's first `if` where the block is, of one MIR made where
@@ -931,20 +945,6 @@ fn pure(e: &Expr) -> bool {
         ExprKind::Binary(_, a, b) => pure(a) && pure(b),
         ExprKind::Cond(a, b, c) => pure(a) && pure(b) && pure(c),
         _ => false,
-    }
-}
-
-/// How many statements `stmt` is, with those inside it.
-fn size(stmt: &Stmt) -> usize {
-    let list = |stmts: &[Stmt]| stmts.iter().map(size).sum::<usize>();
-    1 + match &stmt.kind {
-        StmtKind::If(_, a, b) => list(a) + b.as_deref().map_or(0, list),
-        StmtKind::While { body, .. }
-        | StmtKind::ForOf { body, .. }
-        | StmtKind::For { body, .. }
-        | StmtKind::Labeled(_, body) => list(body),
-        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => list(a) + list(b),
-        _ => 0,
     }
 }
 
