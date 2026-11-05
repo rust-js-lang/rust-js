@@ -5,7 +5,9 @@ import {
   $advanceSlice,
   $catchUnwind,
   $closing,
+  $drain,
   $dropEach,
+  $dropItems,
   $iter,
   $lastDropping,
   $next,
@@ -94,5 +96,13 @@ function main() {
     ),
   );
   run("last kept", () => last($slicing($iter([[3], [1]]), dDrop_drop), $dropEach(dDrop_drop)));
+  run("generic drained", () => {
+    const v = [[1], [2], [3]];
+    try {
+      return last($iter($drain(v, 0)), $dropEach(dDrop_drop));
+    } finally {
+      $dropItems(v, dDrop_drop);
+    }
+  });
 }
 //# sourceMappingURL=case.js.map

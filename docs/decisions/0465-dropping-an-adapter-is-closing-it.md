@@ -1783,3 +1783,53 @@ which folds, against native Rust in both builds, and leaves
 100. Mutations: `slicing-last-folds`, `slicing-last-leaves-the-rest`
 (`runtime/closing.ts`), `last-dropping-own-given-no-drop`
 (`runtime/last_dropping.ts`).
+
+## Amendment: what `last`'s fold has in hand as a later drop panics is leaked (2026-11-05, #648)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. What's dropped as a
+drop panics changes, so Rust's behavior is kept.
+
+`$lastDropping` folds what has no `last` of its own, its kept item the
+fold's accumulator, and gives the fold `unwind`, which drops that item
+where std's fold drops it as a panic unwinds: a stage's panic, a
+predicate's or a map's, and a step's, before what's left (#423). It also
+dropped the item in a catch of its own around the fold, so it was dropped
+where std's isn't, after the fold had given it back:
+
+- **A `filter()`'s discarded item whose drop panics.** Std's
+  `filter_fold` closure moves the accumulator into what it gives back,
+  then drops the item at its end, so the accumulator is leaked
+  (`$kept`, rust-lang/rust#47949, #651).
+  `ds().into_iter().zip(10..13).filter(odd).last()`, D(3)'s drop
+  panicking, dropped 1, 3, 4 and 5 natively and leaked D(2); the JS
+  dropped D(2) after.
+- **A `take()`'s source dropped once the fold has all it takes.** Std's
+  `Take::fold` gives back its result, then drops itself, its `Flatten`
+  source, whose rest panics: the result is leaked, as rustc doesn't drop
+  what a function gives back as a later drop unwinds.
+
+- **What a default fold steps has left, dropped at its end.** A `zip()`'s
+  `$Steps` has no `fold` of its own, so `$lastDropping` stepped it by
+  JS's own steps, which close it inside the last step, a panic there
+  dropping the item kept. Std's default `fold` drops `self` once it has
+  given back its accumulator: `flatten().zip(10..13).last()` leaks D(12)
+  as the flatten's rest's D(3) panics.
+
+A fold given `unwind` owns the accumulator now. The catch is only the
+path where `$lastDropping` steps the iterator itself, by `next`, as
+std's default `fold` holds its accumulator in its own frame, and closes
+it after, outside the catch. The same
+holds `Flatten::last`, `iter.last().or(last)`: the one kept is given up
+before it's dropped as an inner iterator's `last` replaces it, so a drop
+that panics isn't dropped again as the panic unwinds, and the new one,
+what `or` gives back, is leaked.
+
+Corpus case `last_fold_gives_back_what_it_kept.rs` holds a `zip().filter()`'s
+and a `filter()`'s, a flatten's `take()`'s and `zip()`'s, a `cloned()` flatten's, and a
+stage's and a step's panic, whose kept item is dropped, against native
+Rust in both builds; it joins iterator-forms' few. The matrix took off
+#648's last 36. Mutations: `last-dropping-fold-drops-what-it-gave-back`,
+`last-dropping-flatten-kept-dropped-twice`, `last-dropping-steps-closing-at-end`
+(`runtime/last_dropping.ts`); `last-dropping-kept-dropped-twice`, which the
+catch no longer catches on the fold's path, is caught by a `Drain`'s in
+generic code, stepped here, added to `last_kept_drop_panics.rs`.

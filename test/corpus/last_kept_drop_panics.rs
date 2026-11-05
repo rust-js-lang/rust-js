@@ -2,7 +2,7 @@
 // dropped as the next replaces it, and where that drop panics it isn't
 // dropped again as the panic unwinds; the one it was to keep in its place
 // is the closure's, which std's `last` leaks there (#648). In place, of a
-// `fuse()`, and in generic code.
+// `fuse()`, and in generic code, of a `Drain` too, which it steps itself.
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 struct D(u32);
@@ -31,4 +31,8 @@ fn main() {
     run("generic", || last(vec![D(1), D(2), D(3)].into_iter()));
     run("generic enumerated", || last(vec![D(1), D(2), D(3)].into_iter().enumerate().map(|(_, d)| d)));
     run("last kept", || last(vec![D(3), D(1)].into_iter()));
+    run("generic drained", || {
+        let mut v = vec![D(1), D(2), D(3)];
+        last(v.drain(..))
+    });
 }

@@ -108,6 +108,9 @@ const few = [
   // one slice, asked by std's compiled `Skip`, `Chain`, `Fuse` and
   // `Peekable` (#648).
   "vec_last_takes_its_back.rs",
+  // What `last`'s fold has in hand as a later drop panics, a `filter`'s
+  // discarded item's or a `take`'s source's, leaked, not dropped (#648).
+  "last_fold_gives_back_what_it_kept.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);

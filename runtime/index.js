@@ -2188,7 +2188,11 @@ export function $lastDropping(it, drop, boxed) {
         throw error;
       }
       if (last === undefined) return;
-      if (kept !== undefined) drop?.($someValue(kept));
+      // The one kept given up before it's dropped: where its drop panics,
+      // it isn't dropped again as the panic unwinds, and `last`, what
+      // `or` gives back, is leaked, as rustc doesn't drop what a function
+      // gives back as a later drop unwinds (#648).
+      unwind();
       kept = last;
     };
     if (front !== undefined) {
@@ -2234,25 +2238,32 @@ export function $lastDropping(it, drop, boxed) {
   };
   // Std's default `last`, its `fold`: an adapter's own, a `take_while`'s of
   // a `skip`'s `try_fold`, which asks `nth(n - 1)` where its `next` asks
-  // `nth(n)` (#299). A `$Steps`' `fold` closes it at its end, and where a
-  // stage throws, a panic, before the one kept is dropped here (#423).
-  try {
-    // The one kept dropped where a stage throws, as std's fold closure
-    // drops the accumulator it holds, before what's left (#423).
+  // `nth(n)` (#299). The fold holds the one kept, its accumulator, and
+  // drops it by `unwind` where std's does as a panic unwinds: a stage's
+  // or a step's, before what's left (#423); not a discarded item's drop
+  // that panics, after which a `filter`'s closure gives back what it held
+  // (`$kept`, #651), nor what the fold drops of its own once it has
+  // folded it all, a `take`'s source, as rustc doesn't drop what a
+  // function gives back as a later drop unwinds (#648).
+  if (Object.hasOwn(it, "fold")) {
     const unwind = () => {
       if (seen) {
         seen = false;
         drop?.(last);
       }
     };
-    if (Object.hasOwn(it, "fold")) {
-      it.fold(undefined, (_, item) => keep(item), drop && unwind);
-      return seen ? some(last) : undefined;
-    }
-    for (const item of it) keep(item);
+    it.fold(undefined, (_, item) => keep(item), drop && unwind);
+    return seen ? some(last) : undefined;
+  }
+  // Else std's default `fold`, stepped here: where a step throws, a panic,
+  // the one kept, then what's left, as the fold drops its own as it
+  // unwinds, then what it took. Not by JS's own steps, which close it at
+  // its end inside its last step: what's left is dropped once the fold has
+  // given back the one kept, so where that drop panics, it's leaked, as a
+  // `zip`'s side's rest is (#648).
+  try {
+    for (let step = it.next(); !step.done; step = it.next()) keep(step.value);
   } catch (error) {
-    // The one kept, then what's left, as std's `fold` drops its own as it
-    // unwinds, then what it took.
     try {
       if (seen) drop?.(last);
     } finally {
