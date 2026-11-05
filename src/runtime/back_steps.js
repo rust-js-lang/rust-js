@@ -550,6 +550,25 @@ function $flattenEnds(it, each) {
       ends?.();
     }
   };
-  $forward(flat, it, { fold: folding(front, "next", "back"), rfold: folding($foldBack, "back", "next") });
+  // Std's `FlattenCompat::count`: the front inner's own `count`, then its
+  // source's fold of each item's inner's, then the back inner's, the
+  // crate's where it writes one, each given the items' drop (#736). What
+  // takes it closes it as one throws, a panic, what it still holds.
+  const count = (drop) => {
+    let counted = 0;
+    const first = inner.next;
+    inner.next = undefined;
+    if (first !== undefined) counted = $count(first, drop);
+    if (!ended) {
+      ended = true;
+      counted = front(it, counted, (n, x) => n + $count($iter(each(x)), drop));
+    }
+    const last = inner.back;
+    inner.back = undefined;
+    return last === undefined ? counted : counted + $count(last, drop);
+  };
+  $forward(flat, it, { fold: folding(front, "next", "back"), rfold: folding($foldBack, "back", "next"), count });
+  // Its `count` its own, which what holds it passes on, as `$flatMap`'s is.
+  flat.ownCount = true;
   return flat;
 }

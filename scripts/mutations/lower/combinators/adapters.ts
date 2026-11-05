@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`flatten` of inner iterators that drop, of a `map`'s source that drops too, closes the inner one first, as JS's `flatMap` does (#644)",
     file: "src/lower/combinators/adapters.rs",
-    find: "        match closed || self.drops(gives) != crate::lower::drops::Drops::Nothing {\n",
+    find: "        match own || self.drops(gives) != crate::lower::drops::Drops::Nothing {\n",
     replace: "        match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_closed_part_way_drops_source_first.rs$"],
   },
@@ -149,8 +149,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`flat_map` of the crate's iterators that give items with a destructor is JS's `flatMap`, whose `last` drops each as the next comes, not each inner one's own `last` (#645)",
     file: "src/lower/combinators/adapters.rs",
-    find: "        match closed || self.drops(gives) != crate::lower::drops::Drops::Nothing {\n",
-    replace: "        match closed {\n",
+    find: "        match own || self.drops(gives) != crate::lower::drops::Drops::Nothing {\n",
+    replace: "        match own {\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_last_takes_each_inner_last.rs$"],
   },
   {
@@ -468,5 +468,13 @@ export const mutations: Mutation[] = [
     find: "                    || crate::lower::recognition::flattened_source(self.tcx, self.reveal(receiver_ty.peel_refs()))\n",
     replace: "                    || false && crate::lower::recognition::flattened_source(self.tcx, self.reveal(receiver_ty.peel_refs()))\n",
     tests: ["test/corpus.test.ts", "-t", "^step_by_of_a_flatten_unwinds.rs$"],
+  },
+  {
+    name: "flat-map-own-count-js",
+    breaks: "a flatten of inner iterators whose own `count` it reaches is JS's `flatMap`, which has no `count`, so each is counted by `next` (#736)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "        let own_count = self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure);\n",
+    replace: "        let own_count = false && self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure);\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
   },
 ];

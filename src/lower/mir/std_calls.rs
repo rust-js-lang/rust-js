@@ -915,7 +915,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         this.flush(state, out)?;
                         this.dropping_discarded(comb == IterComb::SkipWhile, item, &mut exprs, span, out)?;
                     }
-                    let made = this.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, span, out)?;
+                    let made =
+                        this.iter_comb(comb, it, exprs.into_iter(), generic_args, (iter_ty, output), span, out)?;
                     // A flatten the crate steps from its back, made knowing it
                     // (ADR 0545): `$flattenEnds`, of what the recognizers made
                     // in place, so marked, not std's struct (ADR 0899). A

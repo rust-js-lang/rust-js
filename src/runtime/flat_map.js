@@ -89,7 +89,27 @@ function $flatMap(it, f) {
     }
     return folded;
   };
-  $forward(flat, it, { fold, tryFold });
+  // Its `count`, std's `FlattenCompat::count`: the own `count` of the one
+  // it's in, then its source's fold of each one's own, the crate's where
+  // one writes it, each given the items' drop (#736). What takes it closes
+  // it as one throws, a panic, its source unless it's folded it, which
+  // closes itself.
+  const count = (drop) => {
+    let counted = 0;
+    if (inner !== undefined) {
+      const front = inner;
+      inner = undefined;
+      counted = $count(front, drop);
+    }
+    if (ended) return counted;
+    ended = true;
+    const each = (n, x) => n + $count($stepsOf(f(x)), drop);
+    return typeof it.fold === "function" ? it.fold(counted, each) : $foldDropping(it, counted, each);
+  };
+  $forward(flat, it, { fold, tryFold, count });
+  // Its `count` its own, which what holds it passes on, a `skip()`'s, as
+  // std's `Skip::count` asks its source's.
+  flat.ownCount = true;
   // What std's `Flatten::last` takes, its inner iterator stepped part-way,
   // its source, unless it's ended, fused as std's is, and `f`, which make
   // the rest, let go as they're taken (`$lastDropping`, #645).

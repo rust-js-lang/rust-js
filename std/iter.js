@@ -4950,6 +4950,39 @@ export function flattenIterator_last(
       );
 }
 
+export function flattenIterator_count(
+  flatten,
+  IIterator = { next: $next },
+  IItemIntoIterator,
+  UIterator = { next: $next },
+  UOneShot,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  return UOneShot
+    ? flattenCompatIUIterator2_count(
+        flatten.inner,
+        IIterator,
+        IItemIntoIterator,
+        dropI,
+        dropU,
+        dropIItem,
+        dropUItem,
+      )
+    : flattenCompatIUIterator_count(
+        flatten.inner,
+        IIterator,
+        IItemIntoIterator,
+        UIterator,
+        dropI,
+        dropU,
+        dropIItem,
+        dropUItem,
+      );
+}
+
 export function flattenDoubleEndedIterator_nextBack(
   flatten,
   IDoubleEndedIterator = { next_back: $nextBack },
@@ -5309,6 +5342,43 @@ export function flatMapIterator_last(
         dropUItem,
       )
     : flattenCompatIUIterator_last(
+        flatMap.inner,
+        { next: $nextSome, fold: $foldOf },
+        UIntoIterator,
+        UIntoIterator.IntoIterIterator(),
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropU,
+        dropUItem,
+      );
+}
+
+export function flatMapIterator_count(
+  flatMap,
+  UIntoIterator,
+  UIntoIterOneShot,
+  dropI,
+  dropU,
+  dropF,
+  dropIItem,
+  dropUItem,
+  dropUIntoIter,
+) {
+  return UIntoIterOneShot
+    ? flattenCompatIUIterator2_count(
+        flatMap.inner,
+        { next: $nextSome, fold: $foldOf },
+        UIntoIterator,
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropU,
+        dropUItem,
+      )
+    : flattenCompatIUIterator_count(
         flatMap.inner,
         { next: $nextSome, fold: $foldOf },
         UIntoIterator,
@@ -8808,7 +8878,20 @@ export function iterator_flatten(
           dropSelfItemItem,
         );
       },
-      takes: ["last", "fold"],
+      count(iterator) {
+        return flattenIterator_count(
+          iterator,
+          SelfIterator,
+          SelfItemIntoIterator,
+          SelfItemIntoIterator.IntoIterIterator(),
+          SelfItemIntoIterOneShot,
+          dropSelf,
+          dropSelfItemIntoIter,
+          dropSelfItem,
+          dropSelfItemItem,
+        );
+      },
+      takes: ["last", "fold", "count"],
       close(iterator) {
         try {
           iterator.inner.iter.return();
@@ -9034,7 +9117,20 @@ export function iterator_flatMap(
           dropUIntoIter,
         );
       },
-      takes: ["last", "fold"],
+      count(iterator) {
+        return flatMapIterator_count(
+          iterator,
+          UIntoIterator,
+          UIntoIterOneShot,
+          dropSelf,
+          dropU,
+          dropF,
+          dropSelfItem,
+          dropUItem,
+          dropUIntoIter,
+        );
+      },
+      takes: ["last", "fold", "count"],
       close(iterator) {
         try {
           iterator.inner.iter.return();
@@ -9866,7 +9962,7 @@ export function flattenCompatIUIterator2_fold(
       try {
         next = IItemIntoIterator.IntoIterIterator().next(tmp);
       } catch (error) {
-        IItemIntoIterator.$dropIntoIter?.(tmp);
+        dropU?.(tmp);
         dropAcc?.(acc);
         throw error;
       }
@@ -9877,7 +9973,7 @@ export function flattenCompatIUIterator2_fold(
         try {
           result$1 = fold(acc, item);
         } catch (error) {
-          IItemIntoIterator.$dropIntoIter?.(tmp);
+          dropU?.(tmp);
           throw error;
         }
       } else {
@@ -9885,7 +9981,7 @@ export function flattenCompatIUIterator2_fold(
         result$1 = acc;
       }
       try {
-        IItemIntoIterator.$dropIntoIter?.(tmp);
+        dropU?.(tmp);
       } catch (error) {
         if (tmp$1) {
           dropAcc?.(acc);
@@ -10008,7 +10104,7 @@ export function flattenCompatIUIterator2_tryFold(
             try {
               next = IItemIntoIterator.IntoIterIterator().next(tmp);
             } catch (error) {
-              IItemIntoIterator.$dropIntoIter?.(tmp);
+              dropU?.(tmp);
               dropAcc?.(acc);
               throw error;
             }
@@ -10019,7 +10115,7 @@ export function flattenCompatIUIterator2_tryFold(
               try {
                 result = fold(acc, item);
               } catch (error) {
-                IItemIntoIterator.$dropIntoIter?.(tmp);
+                dropU?.(tmp);
                 throw error;
               }
             } else {
@@ -10027,12 +10123,12 @@ export function flattenCompatIUIterator2_tryFold(
               try {
                 result = RTry.fromOutput(acc);
               } catch (error) {
-                IItemIntoIterator.$dropIntoIter?.(tmp);
+                dropU?.(tmp);
                 throw error;
               }
             }
             try {
-              IItemIntoIterator.$dropIntoIter?.(tmp);
+              dropU?.(tmp);
             } catch (error) {
               if (tmp$1) {
                 dropAcc?.(acc);
@@ -10070,7 +10166,7 @@ export function flattenCompatIUIterator2_tryFold(
             try {
               next = IItemIntoIterator.IntoIterIterator().next(tmp);
             } catch (error) {
-              IItemIntoIterator.$dropIntoIter?.(tmp);
+              dropU?.(tmp);
               dropAcc?.(acc);
               throw error;
             }
@@ -10081,7 +10177,7 @@ export function flattenCompatIUIterator2_tryFold(
               try {
                 result = fold(acc, item);
               } catch (error) {
-                IItemIntoIterator.$dropIntoIter?.(tmp);
+                dropU?.(tmp);
                 throw error;
               }
             } else {
@@ -10089,12 +10185,12 @@ export function flattenCompatIUIterator2_tryFold(
               try {
                 result = RTry.fromOutput(acc);
               } catch (error) {
-                IItemIntoIterator.$dropIntoIter?.(tmp);
+                dropU?.(tmp);
                 throw error;
               }
             }
             try {
-              IItemIntoIterator.$dropIntoIter?.(tmp);
+              dropU?.(tmp);
             } catch (error) {
               if (tmp$1) {
                 dropAcc?.(acc);
@@ -10196,6 +10292,95 @@ export function flattenCompatIUIterator2_last(
                 dropUItem?.($someValue(option));
               }
             },
+            () => {},
+          );
+        } finally {
+          if (!$took(IIterator.fold, iter)) {
+            dropI?.(iter);
+          }
+        }
+        result = result$1;
+      }
+    } finally {
+      if (flattenCompat.frontiter != null) {
+        dropU?.($someValue(flattenCompat.frontiter));
+      }
+    }
+  } finally {
+    if (flattenCompat.backiter != null) {
+      dropU?.($someValue(flattenCompat.backiter));
+    }
+  }
+  return result;
+}
+
+export function flattenCompatIUIterator_count(
+  flattenCompat,
+  IIterator = { next: $next },
+  IItemIntoIterator,
+  UIterator = { next: $next },
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  return FlattenCompat.iterFold(
+    flattenCompat,
+    0,
+    (a, b) => flattenCompatIUIterator_count_count(a, $given(b, UIterator, true), dropU, dropUItem),
+    IIterator,
+    IItemIntoIterator,
+    dropI,
+    dropU,
+    undefined,
+    undefined,
+    dropIItem,
+    dropUItem,
+  );
+}
+
+export function flattenCompatIUIterator2_count(
+  flattenCompat,
+  IIterator = { next: $next },
+  IItemIntoIterator,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  const value = flattenCompat.iter.iter;
+  let result = 0;
+  try {
+    try {
+      if (value != null) {
+        const captured = (x) =>
+          intoItem(
+            $given(IItemIntoIterator.intoIter(x), IItemIntoIterator.IntoIterIterator(), true),
+            dropIItem,
+            dropUItem,
+            dropU,
+          );
+        function captured$1(accum, elem) {
+          const result$1 = (accum + 1) >>> 0;
+          dropUItem?.(elem);
+          return result$1;
+        }
+        const iter = $someValue(value);
+        let result$1;
+        try {
+          result$1 = $consume(
+            $given(iter, IIterator, true),
+            "fold",
+            result,
+            (acc, item) => {
+              const value = captured(item);
+              if (value != null) {
+                const x = $someValue(value);
+                return captured$1(acc, x);
+              }
+              return acc;
+            },
+            undefined,
             () => {},
           );
         } finally {
@@ -10393,7 +10578,7 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
       try {
         next = IItemIntoIterator.IntoIterIterator().next(tmp);
       } catch (error) {
-        IItemIntoIterator.$dropIntoIter?.(tmp);
+        dropU?.(tmp);
         dropAcc?.(acc);
         throw error;
       }
@@ -10404,7 +10589,7 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
         try {
           result$1 = fold(acc, item);
         } catch (error) {
-          IItemIntoIterator.$dropIntoIter?.(tmp);
+          dropU?.(tmp);
           throw error;
         }
       } else {
@@ -10412,7 +10597,7 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
         result$1 = acc;
       }
       try {
-        IItemIntoIterator.$dropIntoIter?.(tmp);
+        dropU?.(tmp);
       } catch (error) {
         if (tmp$1) {
           dropAcc?.(acc);
@@ -10552,7 +10737,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
             try {
               next = IItemIntoIterator.IntoIterIterator().next(tmp);
             } catch (error) {
-              IItemIntoIterator.$dropIntoIter?.(tmp);
+              dropU?.(tmp);
               dropAcc?.(acc);
               throw error;
             }
@@ -10563,7 +10748,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
               try {
                 result = fold(acc, item);
               } catch (error) {
-                IItemIntoIterator.$dropIntoIter?.(tmp);
+                dropU?.(tmp);
                 throw error;
               }
             } else {
@@ -10571,12 +10756,12 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
               try {
                 result = RTry.fromOutput(acc);
               } catch (error) {
-                IItemIntoIterator.$dropIntoIter?.(tmp);
+                dropU?.(tmp);
                 throw error;
               }
             }
             try {
-              IItemIntoIterator.$dropIntoIter?.(tmp);
+              dropU?.(tmp);
             } catch (error) {
               if (tmp$1) {
                 dropAcc?.(acc);
@@ -10615,7 +10800,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
             try {
               next = IItemIntoIterator.IntoIterIterator().next(tmp);
             } catch (error) {
-              IItemIntoIterator.$dropIntoIter?.(tmp);
+              dropU?.(tmp);
               dropAcc?.(acc);
               throw error;
             }
@@ -10626,7 +10811,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
               try {
                 result = fold(acc, item);
               } catch (error) {
-                IItemIntoIterator.$dropIntoIter?.(tmp);
+                dropU?.(tmp);
                 throw error;
               }
             } else {
@@ -10634,12 +10819,12 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
               try {
                 result = RTry.fromOutput(acc);
               } catch (error) {
-                IItemIntoIterator.$dropIntoIter?.(tmp);
+                dropU?.(tmp);
                 throw error;
               }
             }
             try {
-              IItemIntoIterator.$dropIntoIter?.(tmp);
+              dropU?.(tmp);
             } catch (error) {
               if (tmp$1) {
                 dropAcc?.(acc);
@@ -12150,6 +12335,18 @@ export function iterator_last_some(_1, x, dropT) {
     dropT?.($someValue(_1));
   }
   return result;
+}
+
+export function flattenCompatIUIterator_count_count(acc, iter, dropU, dropUItem) {
+  let result;
+  try {
+    result = $count(Iterator.from(iter), dropUItem);
+  } finally {
+    if (!iter.ownFold && !iter.ownCount) {
+      dropU?.(iter);
+    }
+  }
+  return (acc + result) >>> 0;
 }
 
 export function zipSpecFold_specFold(

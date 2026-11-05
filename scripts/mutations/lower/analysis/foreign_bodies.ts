@@ -5,20 +5,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "inlined-closures-unfound",
-    breaks:
-      "a closure only a local of a std body holds, `sum`'s in `Filter::count` of a `core` built to unwind, is never collected, so the body is refused (#424)",
-    file: "src/lower/analysis/foreign_bodies.rs",
-    find: "                if let rustc_middle::ty::Closure(closure, _) = *part.kind() {\n                    closures.0.push(closure);\n",
-    replace:
-      "                if let rustc_middle::ty::Closure(closure, _) = *part.kind() {\n                    let _ = closure;\n",
-    tests: [
-      "test/std-package.test.ts",
-      "-t",
-      "the committed @rust-js/std is std",
-    ],
-  },
-  {
     name: "foreign-const-without-mir",
     breaks:
       "a library's impl's constant has no MIR, as its metadata keeps one only for evaluation, so a library that compiles arrayvec's `ArrayVecImpl` impl is refused at its `CAPACITY = CAP` (#468, ADR 0176, amended)",
@@ -26,5 +12,13 @@ export const mutations: Mutation[] = [
     find: "            (!is_type_const && tcx.defaultness(def_id).has_value()).then(|| tcx.mir_for_ctfe(def_id))\n",
     replace: "            (!is_type_const && tcx.defaultness(def_id).has_value() && false).then(|| tcx.mir_for_ctfe(def_id))\n",
     tests: ["test/crates.test.ts", "-t", "three crates: generic_impl_const_of_instance"],
+  },
+  {
+    name: "closure-in-constant-type-unfound",
+    breaks: "a closure a constant's type holds, not the constant itself, `Iterator::count`'s in the `fold` std's `FlattenCompat::count` calls, is never collected, so the body is refused (#736)",
+    file: "src/lower/analysis/foreign_bodies.rs",
+    find: "                for part in constant.ty().walk().filter_map(|part| part.as_type()) {\n",
+    replace: "                for part in std::iter::once(constant.ty()) {\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
 ];

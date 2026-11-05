@@ -138,3 +138,69 @@ as an equivalent mutant: a flatten's `last` takes its parts now, and
 drops its kept item itself before what's left of the source, and every
 other consumer that steps it by `next` closes it as it throws, its rest
 first, so closing the source earlier changes nothing it prints.
+
+## Amendment: a flatten's `count` is each inner iterator's own (2026-11-05, #736)
+
+std's `FlattenCompat::count` is `iter_fold(0, |acc, inner| acc +
+inner.count())`: the own `count` of the inner iterator it's in, then of
+each its source makes, then of the one at its back. Both builds counted
+each inner iterator by `next`, so the crate's own `count` never ran: of
+`vec![2, 3].into_iter().flat_map(Own).count()` native Rust prints `own
+count 2`, `own count 3`, the JS printed neither. Results change, so
+Rust's behavior is kept (ADR 0262):
+
+- **One catalog says it** (ADR 1089): `OwnStep::Count` of a `Flatten` or
+  a `FlatMap` asks `INNERS`, each inner iterator it makes,
+  `<U as IntoIterator>::IntoIter` (`Recognition::flattened_inner`),
+  not one of its type arguments. Where that reaches the crate's own
+  `count`, or a type parameter's, the flatten made in place is
+  `$flatMap`, as one of inner iterators that drop is, and a `count` of it
+  is `$count`; one whose inners' `count` is std's stays JS's `flatMap`
+  counted by `reduce`, byte for byte as before.
+- **The runtime's flattens count as std's does.** `$flatMap` and
+  `$flattenEnds` have a `count`, given by `$forward`: the front inner's
+  `$count`, then its source's fold of each item's inner one's, then, of
+  `$flattenEnds`, its back inner's, each given the items' drop. A panic
+  in an inner `count` leaves what's left to what takes it, which closes it
+  as it throws, as `count(self)` drops it: what it still holds, its source
+  unless its fold has it, which closes itself. (A `$consumed` of it,
+  closing it there too, was an equivalent mutant.) Each says its `count` is its own,
+  `ownCount`, so a `skip()` of it asks it, as std's `Skip::count` asks
+  its source's.
+- **std's build.** `Flatten::count` and `FlatMap::count` are compiled into
+  `@rust-js/std`, so a held one, and every one in `--std-iterators`, asks
+  std's own: a held one's `count()` is `$count(counted)`, where it was
+  `counted.reduce((n) => n + 1, 0)`, std's default by `next`
+  (`held_flat_map_of_maps_from_its_back`). That needed two things of
+  compiled bodies: a closure a
+  constant's type holds, not only a constant of the closure's type,
+  `Iterator::count`'s inlined into `FlattenCompat::count`'s `OneShot`
+  impl, is collected (`foreign_bodies`); and an associated type whose
+  bounds say it's another, `<FilterMap<Fuse<I>, F> as Iterator>::Item`
+  of that closure read in its maker's terms, `<U as Iterator>::Item`, is
+  dropped as that one, by the drop its caller gives (`drops/types.rs`,
+  `drops/parts.rs`). The same reading makes `FlattenCompat`'s `OneShot`
+  folds drop an inner iterator by `dropU`, the drop given for `U`, where
+  they read `IItemIntoIterator.$dropIntoIter`, the same function. The walk
+  of each constant's type finds what the walk of each local's type found,
+  `sum`'s in `Filter::count` (#424), so that walk is gone, and its
+  mutation, `inlined-closures-unfound`, which survived as an equivalent.
+
+A `&mut` inner iterator's `count` is std's default, by `next`, as std's
+`&mut I` passes only `nth` on (ADR 1089); `--std-iterators` refuses a
+flatten of `&mut` of the crate's iterator for its `IntoIterator`
+evidence, which is filed apart.
+
+`flatten_count_takes_each_inner_count` holds each against native Rust in
+both builds. Mutations: `flatten-count-asks-no-inner` and
+`flatten-inners-are-its-source` (`recognition/own_steps.ts`),
+`flat-map-own-count-js` (`combinators/adapters.ts`),
+`flatten-count-by-reduce` and `flatten-count-always-own`
+(`mir/iter.ts`), `flat-map-count-by-next`, `flat-map-count-skips-front`
+and `flat-map-count-not-passed-on`
+(`runtime/flat_map.ts`), `flatten-ends-count-by-next`,
+`flatten-ends-count-skips-back` and `flatten-ends-count-not-passed-on`
+(`runtime/back_steps.ts`), `flatten-count-uncompiled`
+(`recognition/std_items.ts`), `projection-drop-unnormalized`,
+`projection-dropped-unnormalized` (`drops/`) and
+`closure-in-constant-type-unfound` (`analysis/foreign_bodies.ts`).

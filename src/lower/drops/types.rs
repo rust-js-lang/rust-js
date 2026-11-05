@@ -167,6 +167,13 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         index.copied()
     }
 
+    /// `ty`, an associated type, normalized where its bounds say what it is.
+    fn normalized(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        (self.recognition.tcx)
+            .try_normalize_erasing_regions(self.recognition.typing_env, ty::Unnormalized::new_wip(ty))
+            .ok()
+    }
+
     /// Whether `alias` is one a caller would give a drop for, given one or
     /// not (ADR 0489), named as `slot_of` names it.
     fn is_slot(&self, alias: ty::AliasTy<'tcx>) -> bool {
@@ -475,6 +482,16 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             // theirs has one, as of a type parameter none's given for (ADR
             // 0489).
             ty::Alias(_, alias) if self.is_slot(*alias) => Drops::Nothing,
+            // One its bounds say is another, whose drop may be given: what a
+            // closure of a body rustc inlined holds in its maker's terms,
+            // `<FilterMap<Fuse<I>, F> as Iterator>::Item` of `Iterator::count`'s
+            // in `FlattenCompat::count`, `<U as Iterator>::Item` (#736).
+            ty::Alias(..)
+                if let Some(normal) = self.normalized(ty)
+                    && normal != ty =>
+            {
+                self.drops_in(normal, walk)
+            }
             ty::Alias(
                 _,
                 ty::AliasTy {

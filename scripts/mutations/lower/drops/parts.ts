@@ -238,4 +238,12 @@ export const mutations: Mutation[] = [
     replace: "        let _ = js_span;\n        Ok(each.into_iter().flatten().collect())\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
+  {
+    name: "projection-dropped-unnormalized",
+    breaks: "an associated type its bounds say is another isn't dropped as that one, so `Iterator::count`'s closure inlined in std's `FlattenCompat::count` can't drop its item, and std's bodies don't compile (#736)",
+    file: "src/lower/drops/parts.rs",
+    find: "                    && normal != ty =>\n            {\n                self.drop_in(value, normal, span, made, out)?;\n",
+    replace: "                    && normal != ty\n                    && false =>\n            {\n                self.drop_in(value, normal, span, made, out)?;\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

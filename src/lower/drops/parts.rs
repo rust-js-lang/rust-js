@@ -237,6 +237,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .at(js_span),
                 );
             }
+            // One its bounds say is another, `drops`' (#736): that one's.
+            ty::Alias(..)
+                if let Ok(normal) =
+                    (self.tcx).try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))
+                    && normal != ty =>
+            {
+                self.drop_in(value, normal, span, made, out)?;
+            }
             // `ZZone.$dropOffset?.(value)`: its impl's, if its type has one (ADR 0178).
             ty::Alias(..) if let Some(drop) = self.item_drop(ty) => {
                 out.push(

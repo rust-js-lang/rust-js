@@ -877,10 +877,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // one, a `Take`'s, which advances its source and asks no `nth`
         // (#213, ADR 0913), a `Skip`'s, whose `nth` drops a reversed `Vec`'s
         // as one slice (#261), and a type parameter's, which its caller's
-        // iterator may have, `Take`'s in std's `Skip::count`.
+        // iterator may have, `Take`'s in std's `Skip::count`. A flatten made
+        // in place has one where its inner iterators' own count is reached,
+        // `$flatMap`'s (#736); JS's `flatMap` has none.
         let iterator = std_item(self.tcx, StdItem::Iterator);
-        let own_count = matches!(self.reveal(iter_ty).kind(), ty::Param(_))
-            || self.compiled_step(self.reveal(iter_ty), iterator, "count");
+        let revealed = self.reveal(iter_ty);
+        let in_place_flatten = crate::lower::recognition::flattened_source(self.tcx, revealed).is_some()
+            && !self.compiled_struct_at(revealed, span);
+        let inners_own = self
+            .recognition()
+            .reaches_its_own(revealed, OwnStep::Count, Reach::Sure);
+        let own_count = matches!(revealed.kind(), ty::Param(_))
+            || self.compiled_step(revealed, iterator, "count") && (!in_place_flatten || inners_own);
         if own_count {
             let mut given = vec![it];
             if let Some(item) = item

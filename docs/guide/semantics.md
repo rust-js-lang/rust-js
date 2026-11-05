@@ -628,7 +628,11 @@ What's refused is in [the limitations](limitations.md).
   is; a flatten's, and a flat map's, counts what's left of its items, an
   array's `N` each. Each folds, tries, counts and advances by std's own
   methods, a `take()` over a `skip()` asking the `skip`'s source
-  `nth(n - 1)` once as Rust's `fold` does; dropped, it's closed once,
+  `nth(n - 1)` once as Rust's `fold` does, and a flatten's `count()` each
+  inner iterator's own `count`, the crate's where it writes one, as
+  `FlattenCompat::count` does, one made in place then `$count($flatMap(src,
+  f))` ([0510](../decisions/0510-flat-map-and-flatten-of-destructors.md),
+  amended); dropped, it's closed once,
   `it.return()`; one a `cycle()` or a clone holds to clone is std's struct
   too ([0561](../decisions/0561-std-bodies.md),
   [0871](../decisions/0871-rev-is-stds.md),

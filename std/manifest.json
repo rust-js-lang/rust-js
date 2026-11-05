@@ -8,7 +8,7 @@
   "library": {
     "version": 15,
     "name": "rust_js_std",
-    "crate_hash": "d1354dc6b7240d0511dc8b8d80920f9f",
+    "crate_hash": "240c5632d99cea2d27a790ac273a804b",
     "items": [
       {
         "key": "core::iter::adapters::filter::{impl#9}::assume_count_le_upper_bound",
@@ -2950,6 +2950,56 @@
         ]
       },
       {
+        "key": "core::iter::adapters::flatten::{impl#3}::count",
+        "rust_path": "rust_js_std::<core::iter::FlatMap<I, U, F> as core::iter::Iterator>::count",
+        "module": [
+          "iter"
+        ],
+        "export": "flatMapIterator_count",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "OneShot"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::flatten::{impl#3}::fold",
         "rust_path": "rust_js_std::<core::iter::FlatMap<I, U, F> as core::iter::Iterator>::fold",
         "module": [
@@ -3405,6 +3455,50 @@
           },
           {
             "index": 6,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::flatten::{impl#11}::count",
+        "rust_path": "rust_js_std::<core::iter::Flatten<I> as core::iter::Iterator>::count",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenIterator_count",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "OneShot"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
             "marks": [
               "drop"
             ]
@@ -10708,6 +10802,108 @@
         ]
       },
       {
+        "key": "core::iter::adapters::flatten::{impl#20}::count",
+        "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::iter::Iterator>::count",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenCompatIUIterator_count",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::flatten::{impl#46}::count",
+        "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::iter::Iterator>::count",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenCompatIUIterator2_count",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::flatten::{impl#20}::count::count",
+        "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::iter::Iterator>::count::count",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenCompatIUIterator_count_count",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::flatten::{impl#20}::fold",
         "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::iter::Iterator>::fold",
         "module": [
@@ -12738,6 +12934,7 @@
         "flattenIterator_fold",
         "flattenIterator_tryFold",
         "flattenIterator_last",
+        "flattenIterator_count",
         "flattenDoubleEndedIterator_nextBack",
         "flattenDoubleEndedIterator_rfold",
         "flattenDoubleEndedIterator_tryRfold",
@@ -12746,6 +12943,7 @@
         "flatMapIterator_fold",
         "flatMapIterator_tryFold",
         "flatMapIterator_last",
+        "flatMapIterator_count",
         "flatMapDoubleEndedIterator_nextBack",
         "flatMapDoubleEndedIterator_rfold",
         "flatMapDoubleEndedIterator_tryRfold",
@@ -12851,6 +13049,8 @@
         "flattenCompatIUIterator2_tryFold",
         "flattenCompatIUIterator_last",
         "flattenCompatIUIterator2_last",
+        "flattenCompatIUIterator_count",
+        "flattenCompatIUIterator2_count",
         "flattenCompatIUDoubleEndedIterator_nextBack",
         "flattenCompatIUDoubleEndedIterator2_nextBack",
         "flattenCompatIUDoubleEndedIterator_rfold",
@@ -12890,6 +13090,7 @@
         "flattenCompatIUIterator_last_last",
         "intoItem",
         "iterator_last_some",
+        "flattenCompatIUIterator_count_count",
         "zipSpecFold_specFold",
         "zipSpecFoldTrustedLenTrustedLen_specFold",
         "tSpecRangeSetupT_setup",
@@ -12937,7 +13138,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "deae3fe82c9d540e"
+      "hash": "b1dc186995598dae"
     },
     {
       "file": "iter.js.map",

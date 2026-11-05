@@ -128,6 +128,9 @@ const few = [
   // `Cloned`'s `__iterator_get_unchecked`, or steps by `next` beside a
   // `chain()` (#727).
   "adapters_own_work_that_panics.rs",
+  // A flatten's `count`, each inner iterator's own, by std's compiled
+  // `Flatten::count` and `FlatMap::count` (#736).
+  "flatten_count_takes_each_inner_count.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus")

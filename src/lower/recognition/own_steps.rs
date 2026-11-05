@@ -19,6 +19,11 @@ pub(in crate::lower) enum OwnStep {
     Count,
 }
 
+/// Of what an adapter asks a step of (`OwnStep::asked_of`), not one of its
+/// type arguments but each inner iterator it makes of its items, a
+/// flatten's (`Recognition::flattened_inner`).
+const INNERS: usize = usize::MAX;
+
 /// What a type parameter's answer is, whose caller's type may write the
 /// step: `Sure`, of what drops nothing after, or gives a compiled body
 /// nothing, as the crate's own took it, which says no but of a step whose
@@ -74,7 +79,9 @@ impl OwnStep {
     /// `rfold` or `try_rfold`; a `skip`'s `rfold` its `try_rfold`; a
     /// peekable's `rfold` its source's, after what it peeked at (#649),
     /// and its `try_rfold`, as a fuse's is, its source's (#697); a flatten's
-    /// `rfold` its source's, as its `fold` is (#649).
+    /// `rfold` its source's, as its `fold` is (#649), and its `count` each
+    /// inner iterator's own, `INNERS`, as `FlattenCompat::count` folds them
+    /// (#736).
     fn asked_of(self, adapter: &str) -> &'static [(usize, OwnStep)] {
         use OwnStep::*;
         let own: &'static [(usize, OwnStep)] = match self {
@@ -112,6 +119,7 @@ impl OwnStep {
             (NthBack, "Skip" | "Take" | "Enumerate" | "Fuse") => own,
             (Last, "Skip" | "Fuse" | "Peekable" | "Copied" | "Cloned") => own,
             (Count, "Skip" | "Fuse" | "Peekable" | "Enumerate" | "Copied" | "Cloned") => own,
+            (Count, "Flatten" | "FlatMap") => &[(INNERS, Count)],
             _ => &[],
         }
     }
@@ -144,17 +152,27 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return false;
         };
         (step.asked_of(adapter).iter()).any(|&(at, asked)| {
-            args.types()
-                .nth(at)
+            self.asked_source(ty, args, at)
                 .is_some_and(|source| self.reaches_its_own(source, asked, reach))
         })
+    }
+
+    /// The source `at` of an adapter of type `ty`, of type arguments
+    /// `args`, that `OwnStep::asked_of` names: its type argument, or each
+    /// inner iterator it makes, `INNERS`'s.
+    fn asked_source(&self, ty: Ty<'tcx>, args: ty::GenericArgsRef<'tcx>, at: usize) -> Option<Ty<'tcx>> {
+        match at {
+            INNERS => self.flattened_inner(ty),
+            at => args.types().nth(at),
+        }
     }
 
     /// What std's `step` of a `ty`, one of std's adapters, asks of what it
     /// holds, `OwnStep::asked_of`'s: each source and the step it asks of it;
     /// none of another.
     pub(in crate::lower) fn asked_sources(&self, ty: Ty<'tcx>, step: OwnStep) -> Vec<(Ty<'tcx>, OwnStep)> {
-        let ty::Adt(adt, args) = self.reveal(ty).kind() else {
+        let ty = self.reveal(ty);
+        let ty::Adt(adt, args) = ty.kind() else {
             return Vec::new();
         };
         let path = std_path(self.tcx, adt.did());
@@ -162,7 +180,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Vec::new();
         };
         (step.asked_of(adapter).iter())
-            .filter_map(|&(at, asked)| Some((args.types().nth(at)?, asked)))
+            .filter_map(|&(at, asked)| Some((self.asked_source(ty, args, at)?, asked)))
             .collect()
     }
 

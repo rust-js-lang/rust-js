@@ -409,3 +409,13 @@ Mutations: `zip-drops-no-items`, `zip-drops-first-side-alone`,
 #710, the order a fold that takes a `map()` by value drops its closure
 and what its source has left, is no question of what may panic: it's
 left to its own fix.
+
+## Amendment: what an adapter asks of its inner iterators (2026-11-05, #736)
+
+`OwnStep::asked_of` names a source by its index among the adapter's type
+arguments, or `INNERS`, each inner iterator a flatten makes of its items,
+which no type argument is: `(Count, Flatten | FlatMap)` asks each one's
+own `count`, as std's `FlattenCompat::count` does
+([ADR 0510](0510-flat-map-and-flatten-of-destructors.md), amended).
+`reaches_its_own` and `asked_sources` read `INNERS` through one answer,
+`Recognition::flattened_inner`.

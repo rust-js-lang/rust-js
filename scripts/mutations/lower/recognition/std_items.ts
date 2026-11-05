@@ -471,4 +471,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_mapped_collect_folds.rs$"],
   },
+  {
+    name: "flatten-count-uncompiled",
+    breaks: "std's `Flatten::count` isn't compiled, so a held one, and every one in the build of std's structs, is counted by std's default, each inner iterator stepped by `next`, not by its own `count` (#736)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "    (\"FlatMap\", Some(\"Iterator\"), \"count\"),\n",
+    replace: "",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

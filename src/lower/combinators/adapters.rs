@@ -225,16 +225,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `items.flatMap(each)` of inner iterators of type `inner`, made by
-    /// `each`, `closed` where each closes to drop what it holds; else, or
-    /// of items with a destructor, `$flatMap(items, each)`: its source
+    /// `each`; where `own` says, each closing to drop what it holds or one
+    /// whose `count` is the crate's own (#736), or of items with a
+    /// destructor, `$flatMap(items, each)`: its source
     /// closed first, as Rust drops a `Flatten`'s fields, its source before
     /// the inner iterator it's in, where JS's `flatMap` closes the inner one
     /// first, whatever the source is, an adapter of what it drops too
-    /// (#644); and its `last` std's, each inner iterator's own, which drops
-    /// what it passes before the one kept before (#645) (ADR 0510).
-    fn flat_mapped(&self, items: Expr, each: Expr, inner: Ty<'tcx>, closed: bool) -> Expr {
+    /// (#644); its `last` std's, each inner iterator's own, which drops
+    /// what it passes before the one kept before (#645) (ADR 0510); and its
+    /// `count` std's, each inner iterator's own.
+    fn flat_mapped(&self, items: Expr, each: Expr, inner: Ty<'tcx>, own: bool) -> Expr {
         let gives = self.iterable_item(inner);
-        match closed || self.drops(gives) != crate::lower::drops::Drops::Nothing {
+        match own || self.drops(gives) != crate::lower::drops::Drops::Nothing {
             true => Expr::call_helper("$flatMap", vec![items, each]),
             false => Expr::call(Expr::member(items, "flatMap"), vec![each]),
         }
@@ -266,10 +268,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         items: Expr,
         mut rest: std::vec::IntoIter<Expr>,
         generic_args: ty::GenericArgsRef<'tcx>,
-        receiver_ty: Ty<'tcx>,
+        (receiver_ty, output): (Ty<'tcx>, Ty<'tcx>),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        // A flatten's, whose `count` is each inner iterator's own, the
+        // crate's where one writes it (#736): `$flatMap`, which counts them so.
+        let own_count = self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure);
         let mut next = || rest.next().expect("rustc checked the arguments");
         let method = |items: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(items, name), list);
         // Whether the item is `Some`, `item != null`, whatever it holds
@@ -311,8 +316,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     match self.closed_inner(Some(f.clone()), returned, span)? {
                         Some(each) => self.flat_mapped(items, each, returned, true),
                         None => match self.iterable_of_each(Some(f.clone()), returned, span)? {
-                            Some(each) => self.flat_mapped(items, each, returned, false),
-                            None => self.flat_mapped(items, f, returned, false),
+                            Some(each) => self.flat_mapped(items, each, returned, own_count),
+                            None => self.flat_mapped(items, f, returned, own_count),
                         },
                     }
                 }
@@ -341,10 +346,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         vec!["item".into()],
                         vec![StmtKind::Return(Some(stepped)).at(js::Span::NONE)],
                     );
-                    self.flat_mapped(items, each, item, false)
+                    self.flat_mapped(items, each, item, own_count)
                 }
                 Some(item) if let Some(each) = self.iterable_of_each(None, item, span)? => {
-                    self.flat_mapped(items, each, item, false)
+                    self.flat_mapped(items, each, item, own_count)
                 }
                 _ => {
                     let each = Expr::arrow(

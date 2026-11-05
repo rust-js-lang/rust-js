@@ -23,7 +23,10 @@ pub(in crate::lower) fn foreign_bodies(tcx: TyCtxt<'_>, mut ids: Vec<DefId>) -> 
             continue;
         };
         // Made of what it captures, or, capturing nothing, named as a
-        // constant.
+        // constant, or held by a constant's type, a function's it calls, of
+        // a body rustc inlined into this one: `sum`'s in `Filter::count` of
+        // a std built to unwind (#424), `Iterator::count`'s in
+        // `FlattenCompat::count` (#736).
         struct Closures(Vec<DefId>);
         impl<'tcx> rustc_middle::mir::visit::Visitor<'tcx> for Closures {
             fn visit_rvalue(&mut self, rvalue: &rustc_middle::mir::Rvalue<'tcx>, _: rustc_middle::mir::Location) {
@@ -38,22 +41,15 @@ pub(in crate::lower) fn foreign_bodies(tcx: TyCtxt<'_>, mut ids: Vec<DefId>) -> 
                 constant: &rustc_middle::mir::ConstOperand<'tcx>,
                 _: rustc_middle::mir::Location,
             ) {
-                if let rustc_middle::ty::Closure(closure, _) = *constant.ty().kind() {
-                    self.0.push(closure);
+                for part in constant.ty().walk().filter_map(|part| part.as_type()) {
+                    if let rustc_middle::ty::Closure(closure, _) = *part.kind() {
+                        self.0.push(closure);
+                    }
                 }
             }
         }
         let mut closures = Closures(Vec::new());
         rustc_middle::mir::visit::Visitor::visit_body(&mut closures, body);
-        // And each a local holds, of a body rustc inlined into this one,
-        // `sum`'s in `Filter::count` of a std built to unwind (#424).
-        for decl in &body.local_decls {
-            for part in decl.ty.walk().filter_map(|part| part.as_type()) {
-                if let rustc_middle::ty::Closure(closure, _) = *part.kind() {
-                    closures.0.push(closure);
-                }
-            }
-        }
         for closure in closures.0 {
             if !ids.contains(&closure) {
                 ids.push(closure);

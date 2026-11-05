@@ -312,4 +312,20 @@ export const mutations: Mutation[] = [
     // collected (the Nightly of 3c71ee8f9).
     snapshots: true,
   },
+  {
+    name: "flatten-count-asks-no-inner",
+    breaks: "a flatten's `count` asks nothing of its inner iterators, so it's JS's `flatMap` counted by `next`, not each inner iterator's own `count` as std's `FlattenCompat::count` asks (#736)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "            (Count, \"Flatten\" | \"FlatMap\") => &[(INNERS, Count)],\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
+  },
+  {
+    name: "flatten-inners-are-its-source",
+    breaks: "what a flatten asks of its inner iterators is asked of its source, whose `count` is std's, so a flatten's `count` never reaches each inner one's own (#736)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "            INNERS => self.flattened_inner(ty),\n",
+    replace: "            INNERS => args.types().next(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
+  },
 ];

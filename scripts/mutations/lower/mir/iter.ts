@@ -516,9 +516,9 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Skip::count` counts its `Take` by folding it, not its own `count`, so a reversed `Vec`'s items are dropped back to front, not as one slice (ADR 0913)",
     file: "src/lower/mir/iter.rs",
-    find: "        let own_count = matches!(self.reveal(iter_ty).kind(), ty::Param(_))\n",
+    find: "        let own_count = matches!(revealed.kind(), ty::Param(_))\n",
     replace:
-      "        let own_count = false && matches!(self.reveal(iter_ty).kind(), ty::Param(_))\n",
+      "        let own_count = false && matches!(revealed.kind(), ty::Param(_))\n",
     tests: [
       "test/std-package.test.ts",
       "-t",
@@ -677,5 +677,22 @@ export const mutations: Mutation[] = [
       "        crate::lower::recognition::makes_held_compiled(self.tcx, def_id)\n            && self.frame.facts.in_place_adapters.contains(&span)\n            && false",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
+  },
+  {
+    name: "flatten-count-by-reduce",
+    breaks: "a flatten made in place is counted by `reduce`, never by `$count`, so the inner iterators' own `count` that `$flatMap` asks is never reached (#736)",
+    file: "src/lower/mir/iter.rs",
+    find: '            || self.compiled_step(revealed, iterator, "count") && (!in_place_flatten || inners_own);\n',
+    replace: '            || self.compiled_step(revealed, iterator, "count") && !in_place_flatten;\n',
+    tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
+  },
+  {
+    name: "flatten-count-always-own",
+    breaks: "every flatten made in place is counted by `$count`, where JS's `flatMap` of inner iterators with no own `count` reads as `reduce` (#736)",
+    file: "src/lower/mir/iter.rs",
+    find: '            || self.compiled_step(revealed, iterator, "count") && (!in_place_flatten || inners_own);\n',
+    replace: '            || self.compiled_step(revealed, iterator, "count");\n',
+    tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
+    snapshots: true,
   },
 ];

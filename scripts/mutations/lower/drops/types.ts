@@ -415,4 +415,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^cell_const.rs$"],
     snapshots: true,
   },
+  {
+    name: "projection-drop-unnormalized",
+    breaks: "an associated type its bounds say is another is never read as that one, so `Iterator::count`'s closure inlined in std's `FlattenCompat::count` is refused its item's drop, and std's bodies don't compile (#736)",
+    file: "src/lower/drops/types.rs",
+    find: "                if let Some(normal) = self.normalized(ty)\n                    && normal != ty =>\n",
+    replace: "                if let Some(normal) = self.normalized(ty)\n                    && normal != ty\n                    && false =>\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

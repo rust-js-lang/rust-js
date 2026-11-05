@@ -522,6 +522,20 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .ok()
     }
 
+    /// Of a `Flatten<I>` or a `FlatMap<I, U, F>` of type `ty`, the inner
+    /// iterator it makes of each item, `<U as IntoIterator>::IntoIter`, a
+    /// `Flatten`'s `U` its source's item: what std's `FlattenCompat` steps
+    /// and asks its own `count` of (#736).
+    pub(in crate::lower) fn flattened_inner(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let (source, made) = flattened_source(self.tcx, ty)?;
+        let iterable = made.or_else(|| self.iterator_item(source))?;
+        let into_iter = trait_method(self.tcx, std_item(self.tcx, StdItem::IntoIterator), "IntoIter");
+        let projection = Ty::new_projection(self.tcx, ty::IsRigid::No, into_iter, [iterable]);
+        (self.tcx)
+            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projection))
+            .ok()
+    }
+
     /// A B-tree's `iter()`, `keys()`, `range()` and the like: its items in
     /// order, an array's (ADR 0059), `$treeRange`'s of a range (ADR 0325). Not its `extract_if()`, which takes them as it's
     /// stepped, `$mapExtractIf`'s.

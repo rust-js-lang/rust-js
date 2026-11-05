@@ -16,6 +16,7 @@ import {
   mapIterator___iteratorGetUnchecked,
 } from "@rust-js/std/iter.js";
 import {
+  $count,
   $flattenEnds,
   $foldOf,
   $iter,
@@ -235,6 +236,6 @@ function main() {
     true,
     false,
   );
-  console.log(`${counted.reduce((n) => n + 1, 0)}`);
+  console.log(`${$count(counted)}`);
 }
 //# sourceMappingURL=case.js.map
