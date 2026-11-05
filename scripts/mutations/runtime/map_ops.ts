@@ -196,7 +196,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/map_ops.js",
     find: "  if (there) dropKey?.(key);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^map_key_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^map_entry_held_drops_its_key.rs$"],
   },
   {
     name: "retain-key-undropped",

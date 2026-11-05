@@ -219,7 +219,7 @@ export const mutations: Mutation[] = [
     find: "            js::ExprKind::Var(_) => callee.helper_name().is_none(),\n",
     replace: "            js::ExprKind::Var(_) => true,\n",
     snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^str_circumfix.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^std_function_values.rs$"],
   },
   {
     name: "called-arrow-wrapped",

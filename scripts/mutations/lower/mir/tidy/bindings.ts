@@ -457,7 +457,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "    renames.sort_by_key(|(from, ..)| first.get(from).copied().unwrap_or(usize::MAX));\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^loop_drops.rs$"],
     snapshots: true,
   },
   {

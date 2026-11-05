@@ -685,7 +685,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/stages.rs",
     find: '            pass("holed lists", |b, _| holed_lists(b)),\n',
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^debug_options.rs$"],
     snapshots: true,
   },
   {

@@ -121,7 +121,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/entries.rs",
     find: "            Some(key) if fused => self.std_drop_function(key, span)?,\n",
     replace: "            Some(key) => self.std_drop_function(key, span)?,\n",
-    tests: ["test/corpus.test.ts", "-t", "^map_key_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^map_entry_held_drops_its_key.rs$"],
   },
   {
     name: "or-insert-with-function-ungiven",
