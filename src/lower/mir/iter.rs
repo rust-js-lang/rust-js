@@ -451,7 +451,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// that reads it (`made_in_place`).
     fn spill_marked(&mut self, value: Expr, made: &mut Vec<Stmt>) -> Expr {
         let in_place = value.facts.has(js::Known::InPlace);
-        let held = self.spill("iter", value, made);
+        let marks = crate::lower::iterators::its_facts(value.facts);
+        let mut held = self.spill("iter", value, made);
+        held.facts = held.facts.and(marks);
         match in_place {
             true => held.in_place(),
             false => held,

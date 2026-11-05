@@ -778,17 +778,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `rev()` made knowing its back where it's made is read by its form where it's stepped: the crate's iterator's, held in a variable past `mk()`, is refused, `a rev() of a Folds a variable holds` (#702)",
     file: "src/lower/iterators/knowing.rs",
-    find: "        if self.reversed_made_knowing(ty) && made_in_place(&value) {\n            return Ok(value);\n        }\n",
+    find: "        if was_made_knowing_its_back(&value) {\n            return Ok(value);\n        }\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
-  },
-  {
-    name: "rev-made-knowing-of-a-held-struct",
-    breaks:
-      "a `rev()` the crate steps from its back is taken as it is wherever it's stepped, std's struct a `Vec` holds too, which has no back: its flatten folds nothing (#702)",
-    file: "src/lower/iterators/knowing.rs",
-    find: "        if self.reversed_made_knowing(ty) && made_in_place(&value) {\n",
-    replace: "        if self.reversed_made_knowing(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
   },
   {
@@ -796,7 +787,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `rev()` of the crate's iterator the crate steps from its back is made by its forms, not by its own `next`: its `$iterator(it, nextBack)` has no back, refused where it's made (#702)",
     file: "src/lower/iterators/knowing.rs",
-    find: "            return self.reversed_user_knowing(value, source, (true, true), span);\n",
+    find: "            return self\n                .reversed_user_knowing(value, source, (true, true), span)\n                .map(made_knowing_its_back);\n",
     replace: "            return Ok(value);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
   },

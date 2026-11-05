@@ -98,7 +98,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     state.named.insert(place.local);
                     match state.facts.pointed().locals.contains(&place.local) {
                         true => Expr::held(Expr::var(name)),
-                        false => state.facts.variable(place.local, name),
+                        false => super::temporaries::read_by_name(state, place.local, name),
                     }
                 }
             }

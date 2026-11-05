@@ -130,7 +130,7 @@ impl IterValue {
 }
 
 /// Each fact `emit` marks a value's JS with.
-const VALUE_FACTS: [Known; 10] = [
+const VALUE_FACTS: [Known; 11] = [
     Known::IterStepped,
     Known::IterRange,
     Known::IterOwn,
@@ -141,6 +141,7 @@ const VALUE_FACTS: [Known; 10] = [
     Known::IterRev,
     Known::IterStepBy,
     Known::IterRepeatingN,
+    Known::IterKnowsBack,
 ];
 
 /// Of `facts`, those `emit` marked a value's JS with: what a value made
@@ -319,6 +320,31 @@ pub(in crate::lower) fn is_range_stepped(e: &Expr) -> bool {
 /// `$knowing(it, ..)` (`Form::Knowing`).
 pub(in crate::lower) fn is_knowing(e: &Expr) -> bool {
     e.facts.has(Known::IterKnowing)
+}
+
+/// `e`, a `rev()` its maker made knowing its back (`reversed_knowing`),
+/// marked so: what's asked of it past its maker reads the mark, not the
+/// type's set (back_stepped, ADR 0545).
+pub(in crate::lower) fn made_knowing_its_back(mut e: Expr) -> Expr {
+    e.facts = e.facts.with(Known::IterKnowsBack);
+    e
+}
+
+/// `$held(e)`, an iterator its owner drops held (#206): the same iterator,
+/// so what's known of its value, not of its JS's form, is kept on it, made
+/// knowing its back (`made_knowing_its_back`).
+pub(in crate::lower) fn held_by_its_owner(e: Expr) -> Expr {
+    let knows_back = was_made_knowing_its_back(&e);
+    let held = Expr::call_helper("$held", vec![e]);
+    match knows_back {
+        true => made_knowing_its_back(held),
+        false => held,
+    }
+}
+
+/// Whether `e` was made knowing its back (`made_knowing_its_back`).
+pub(in crate::lower) fn was_made_knowing_its_back(e: &Expr) -> bool {
+    e.facts.has(Known::IterKnowsBack)
 }
 
 /// A range's numbers as its maker wrote them (`Form::Range`), `$iterator({

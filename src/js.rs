@@ -984,8 +984,7 @@ pub enum Known {
     IterStepped,
     /// Of those, a range's numbers, `$iterator(range, step)`.
     IterRange,
-    /// Of those, the crate's own or a dictionary's steps, `$iterator(value,
-    /// next, ..)`, not `$given`'s.
+    /// Of those, the crate's own or a dictionary's steps, not `$given`'s.
     IterOwn,
     /// Std's compiled struct given what a use site knows, `$knowing(it, ..)`.
     IterKnowing,
@@ -993,8 +992,7 @@ pub enum Known {
     IterClosing,
     /// One lent, `$lent(it)`, which nothing past it closes.
     IterLent,
-    /// A `flat_map()`'s closure whose result is made in place, as the
-    /// `flat_map()` that's given it is (`body_queries::results_in_place`).
+    /// A `flat_map()`'s closure whose result is made in place, as its `flat_map()` is.
     IterResultInPlace,
     /// One stepped from its back, `$rev(it)`.
     IterRev,
@@ -1002,6 +1000,8 @@ pub enum Known {
     IterStepBy,
     /// `repeat_n(x, n)`'s, `$repeatingN(x, n, ..)`.
     IterRepeatingN,
+    /// A `rev()` its maker made knowing its back (`reversed_knowing`, ADR 0545).
+    IterKnowsBack,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

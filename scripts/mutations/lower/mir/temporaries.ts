@@ -585,4 +585,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^option_combinator_drops.rs$"],
     snapshots: true,
   },
+  {
+    name: "local-marks-dropped",
+    breaks:
+      "a local's read by its name lacks what its value's maker marked it, so a `rev()` made knowing its back, held in a variable before it's stepped from its back, is refused (#730)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "        read.facts = read.facts.and(marks);\n",
+    replace: "        let _ = marks;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(rev_made_knowing_its_back|own_iterator_flattened_from_its_back).rs$"],
+  },
 ];

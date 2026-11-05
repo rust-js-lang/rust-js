@@ -772,6 +772,41 @@ No reader asks a variable's marks yet. `as_double_ended` asking a `rev()`'s
 these two, `rev_made_knowing_its_back.rs` and
 `own_iterator_flattened_from_its_back.rs` lost the mark and were refused.
 
+Step 8b's second part finishes the carrier and moves that read onto the mark.
+- **Recorded at every whole write** of a local's variable (`note_marks`):
+  `flush`'s `const`, and `mir_store`'s `const`, `let` and assignment, the
+  `let` a body declares first for its cleanup and assigns after.
+- **Only of a local MIR writes once**, by an assignment or as a call's
+  destination (`IterLocals::once`). One written again keeps none, since a
+  read may be of either value, a loop's. A whole `&mut` to it,
+  `it.rev().rfind(..)`'s receiver, isn't a write here: a value made in
+  place is given only to what steps it (`in_place_adapters`), which never
+  writes it whole; one given elsewhere is std's struct, which no maker of
+  a mark makes.
+- **Given back on every read by name** (`read_by_name`): `read_local_value`'s
+  and a place's base (`place_expr`), which the `&mut` receiver is read
+  through. A value read in place, through a ref or a place (`in_place`,
+  `refs`, `places`), is the value's own JS and keeps its marks already.
+- **Kept across the two spills of an iterator**: `$held(..)`, the iterator
+  its owner drops (`held_by_its_owner`, #206), keeps `IterKnowsBack`, as it
+  is the same iterator; `spill_marked`'s `iter` keeps all of `its_facts`.
+
+`reversed_knowing` marks both its results `Known::IterKnowsBack`
+(`made_knowing_its_back`), and `as_double_ended` asks the value
+(`was_made_knowing_its_back`), not the type's set. The mark is given only
+where the type's set says so, so the read is never looser than the type's
+answer. A value of that type a field, a capture or a return gives has no
+mark, but it isn't made in place either: it is std's struct (ADR 0871),
+which the read never took. So the read's second question, `made_in_place`,
+goes: the recognizers' `rev()` is the mark's one maker, and it makes none
+std's struct, which a field, a compiled body or a `let` read past
+`Iterator`'s methods holds (`in_place_adapters`). The whole
+corpus and the corpus with std's iterator structs pass without it, so
+`rev-made-knowing-of-a-held-struct`, which removed it, goes too. The corpus,
+both slices and the corpus with std's iterator structs are byte-identical.
+back_stepped's set has no read of a value past its maker left, and
+knowing.rs's row of step 8's list drops it.
+
 ## Amendment: each adapter's `sizeHint`, and who asks it (2026-11-05, #733 steps 1–3)
 
 G10 closes in three steps. ADR 0262's case each time: results change, so

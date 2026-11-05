@@ -291,10 +291,7 @@ test("back_stepped's set is read where a value is made, or as a type's question"
     "src/lower/mir/iter.rs": [1, "`cloned_apart_call`, the maker of a map or a filter cloned apart"],
     "src/lower/mir/std_calls.rs": [1, "`mir_iter_std_call`, the maker of a std adapter made in place"],
     "src/lower/mir/iter/backs.rs": [3, "`back_kept`, the maker of a map or a filter it steps from its back, and `rev_called`, a `rev()`'s"],
-    "src/lower/iterators/knowing.rs": [
-      9,
-      "`reversed_made_knowing` and `reversed_knowing`, a `rev()`'s maker; `knows_its_back` and `knows_its_length`, a type's questions; and `as_double_ended`'s one read of a value, until #730's step 8b carries the maker's mark across a spill",
-    ],
+    "src/lower/iterators/knowing.rs": [8, "`reversed_made_knowing` and `reversed_knowing`, a `rev()`'s maker; `knows_its_back` and `knows_its_length`, a type's questions"],
   };
   const reader = /\.(stepped_from_its_back|reversed_made_knowing)\(/;
   const found: Record<string, number> = {};

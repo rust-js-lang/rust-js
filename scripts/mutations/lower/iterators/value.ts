@@ -140,4 +140,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^fused_iterator.rs$"],
     snapshots: true,
   },
+  {
+    name: "rev-made-knowing-unmarked",
+    breaks:
+      "a `rev()` made knowing its back isn't marked so by its maker, so where it's stepped from its back, past a variable or a `&mut`, it's refused as one rust-js can't step from its back (#730)",
+    file: "src/lower/iterators/value.rs",
+    find: "    e.facts = e.facts.with(Known::IterKnowsBack);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(rev_made_knowing_its_back|own_iterator_flattened_from_its_back).rs$"],
+  },
+  {
+    name: "held-iterator-unmarked",
+    breaks:
+      "an iterator its owner drops, `$held(..)`, loses what its maker marked it, so a `rev()` made knowing its back and dropped as it unwinds is refused where it's stepped from its back (#730)",
+    file: "src/lower/iterators/value.rs",
+    find: "        true => made_knowing_its_back(held),\n",
+    replace: "        true => held,\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_made_knowing_its_back.rs$"],
+  },
 ];

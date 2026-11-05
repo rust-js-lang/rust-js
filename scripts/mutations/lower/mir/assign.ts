@@ -1074,4 +1074,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^cell_binding_read_once.rs$"],
     snapshots: true,
   },
+  {
+    name: "assigned-local-unmarked",
+    breaks:
+      "a local declared before it's assigned, one dropped as its body unwinds, keeps nothing its value's maker marked it, so a `rev()` made knowing its back held so is refused where it's stepped from its back (#730)",
+    file: "src/lower/mir/assign.rs",
+    find: "        if place.projection.is_empty() {\n            super::temporaries::note_marks(state, local, &value);\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(rev_made_knowing_its_back|own_iterator_flattened_from_its_back).rs$"],
+  },
 ];

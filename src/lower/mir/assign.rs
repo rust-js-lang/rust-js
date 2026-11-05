@@ -936,6 +936,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out.push(StmtKind::Assign(option.clone(), some).at(js_span));
             return Ok(());
         }
+        if place.projection.is_empty() {
+            super::temporaries::note_marks(state, local, &value);
+        }
         out.push(StmtKind::Assign(target, value).at(js_span));
         Ok(())
     }

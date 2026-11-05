@@ -43,10 +43,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let source = crate::lower::recognition::reversed_source(self.tcx, ty).expect("a `rev()`");
         if self.is_user_iterator(source) {
-            return self.reversed_user_knowing(value, source, (true, true), span);
+            return self
+                .reversed_user_knowing(value, source, (true, true), span)
+                .map(made_knowing_its_back);
         }
         match self.reversal_knowing(&value, source, span)? {
-            Some(knowing) => Ok(knowing),
+            Some(knowing) => Ok(made_knowing_its_back(knowing)),
             None => Err(self.unsupported(
                 span,
                 &format!("a `{ty}` stepped from its back, made in a form rust-js can't step from its back"),
@@ -438,11 +440,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `dyn`'s or a type parameter's, itself.
     pub(in crate::lower) fn as_double_ended(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
         let ty = self.reveal(ty);
-        // A `rev()` made in place, knowing its back where it's made
-        // (`reversed_made_knowing`): itself, wherever MIR holds it. Not one
-        // a variable or a field holds, std's struct (ADR 0871), which
-        // `knowing_held` gives its back below.
-        if self.reversed_made_knowing(ty) && made_in_place(&value) {
+        // A `rev()` made in place, knowing its back where it's made, as its
+        // maker marked it (`made_knowing_its_back`): itself, wherever MIR
+        // holds it, the mark carried by its local. Its maker makes none a
+        // variable or a field holds, std's struct (ADR 0871), so that has
+        // no mark, and `knowing_held` gives its back below.
+        if was_made_knowing_its_back(&value) {
             return Ok(value);
         }
         // A `rev()` of the crate's iterator made in place, of its form, as

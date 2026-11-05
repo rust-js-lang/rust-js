@@ -763,7 +763,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     // An iterator its owner drops, held (#206).
                     Value::Expr(e) if self.holds_dropped_iterator(state, *destination) => {
-                        Value::Expr(Expr::call_helper("$held", vec![e]))
+                        Value::Expr(crate::lower::iterators::held_by_its_owner(e))
                     }
                     value => value,
                 };

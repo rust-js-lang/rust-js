@@ -477,13 +477,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             "" => Ok(Value::Expr(Expr::undefined())),
             // A cell a pointer is taken to (ADR 0407): its `value`.
             name if state.facts.pointed().locals.contains(&local) => Ok(Value::Expr(Expr::held(Expr::var(name)))),
-            name => {
-                let mut read = state.facts.variable(local, name);
-                if let Some(&marks) = state.iter_locals.marks.get(&local) {
-                    read.facts = read.facts.and(marks);
-                }
-                Ok(Value::Expr(read))
-            }
+            name => Ok(Value::Expr(read_by_name(state, local, name))),
         }
     }
 
@@ -841,10 +835,25 @@ fn held_by_its_temporary(state: &State<'_, '_>, local: Local, mut value: Expr) -
     value
 }
 
-/// What `emit()` marked `expr`, the value written to `local`'s variable,
-/// kept for its reads (`State::marks`).
+/// `local`'s variable, `name`, read: what its value's maker marked it
+/// (`IterLocals::marks`) on the name, as on the value written to it. The one
+/// read of a local by its name, its place's (`place_expr`) too.
+pub(super) fn read_by_name(state: &State<'_, '_>, local: Local, name: &str) -> Expr {
+    let mut read = state.facts.variable(local, name);
+    if let Some(&marks) = state.iter_locals.marks.get(&local) {
+        read.facts = read.facts.and(marks);
+    }
+    read
+}
+
+/// What `emit()` marked `expr`, the value written whole to `local`'s
+/// variable, kept for its reads (`IterLocals::marks`): of a local written
+/// once (`IterLocals::once`), else none.
 pub(super) fn note_marks(state: &mut State<'_, '_>, local: Local, expr: &Expr) {
-    let marks = crate::lower::iterators::its_facts(expr.facts);
+    let marks = match state.iter_locals.once.contains(&local) {
+        true => crate::lower::iterators::its_facts(expr.facts),
+        false => js::Facts::NONE,
+    };
     match marks == js::Facts::NONE {
         true => state.iter_locals.marks.remove(&local),
         false => state.iter_locals.marks.insert(local, marks),
@@ -853,16 +862,54 @@ pub(super) fn note_marks(state: &mut State<'_, '_>, local: Local, expr: &Expr) {
 
 /// What each local holds of an iterator's value, beside its JS (ADR 1092,
 /// amended, #730): the value beside each local, its facts kept per local.
-#[derive(Default)]
 pub(super) struct IterLocals {
     /// Each temporary a map of an array's items is made in, `$iter(v).map(f)`:
     /// that, which `next_back` steps from its source's end.
     pub(super) maps: HashMap<Local, Expr>,
     /// What `emit()` marked the value written to each local's variable
-    /// (`iterators::its_facts`), given back where `read_local_value` reads
-    /// it by name. Recorded at `flush`'s `const` and `mir_store`'s `const` or
-    /// `let` of its value only. Not yet at a `let` assigned after, through a
-    /// ref or a place (`refs`, `places`), nor at a value `spill` names: a
-    /// read there has no marks (#730, step 8b).
+    /// (`iterators::its_facts`), given back where it's read by its name
+    /// (`read_by_name`). Recorded wherever its value is written whole to
+    /// its variable (`note_marks`): `flush`'s `const`, `mir_store`'s
+    /// `const`, `let` and assignment. A value read in place, through a
+    /// reference or a place (`in_place`, `refs`, `places`), is the value's
+    /// own JS, its marks on it.
     pub(super) marks: HashMap<Local, js::Facts>,
+    /// Each local MIR writes whole once, by an assignment or as a call's
+    /// destination: the one value its variable holds, so what its maker
+    /// marked it is what each read of it reads. Not one written again,
+    /// whose read may be of either, a loop's say. A whole `&mut` to it,
+    /// `rev().rfind(..)`'s receiver, writes nothing here: a value made in
+    /// place is given only to what steps it, never writing it whole
+    /// (`body_queries::in_place_adapters`).
+    once: HashSet<Local>,
+}
+
+impl IterLocals {
+    /// Of `body`, before its first statement is lowered.
+    pub(super) fn of(body: &mir::Body<'_>) -> IterLocals {
+        let mut writes: IndexVec<Local, usize> = IndexVec::from_elem_n(0, body.local_decls.len());
+        for data in body.basic_blocks.iter() {
+            for statement in &data.statements {
+                if let mir::StatementKind::Assign(assign) = &statement.kind
+                    && assign.0.projection.is_empty()
+                {
+                    writes[assign.0.local] += 1;
+                }
+            }
+            if let mir::TerminatorKind::Call { destination, .. } = &data.terminator().kind
+                && destination.projection.is_empty()
+            {
+                writes[destination.local] += 1;
+            }
+        }
+        let once = (writes.iter_enumerated())
+            .filter(|&(_, &n)| n == 1)
+            .map(|(local, _)| local)
+            .collect();
+        IterLocals {
+            maps: HashMap::new(),
+            marks: HashMap::new(),
+            once,
+        }
+    }
 }
