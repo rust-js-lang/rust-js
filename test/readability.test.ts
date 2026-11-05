@@ -57,21 +57,12 @@ test("the generated JS reads no worse than it read: no shape's share grew", () =
 // `outer:`, as React DOM writes `outer: while (true)` (ReactDOMSelection.js
 // :75): never one MIR makes, `bb5:`, a JS label the Rust doesn't have
 // being no accepted difference (D1, the user's decision, 2026-11-04;
-// ADR 0629, amended). The files that still have one, each with its issue:
-// a list that only shrinks.
-const compilerLabels: Record<string, string> = {
-  "test/corpus/guards_that_call.js": "#523",
-  "test/corpus/interpreter.js": "#523",
-  "test/corpus/or_bindings.js": "#523",
-  "test/corpus/or_pattern_unreachable_alternative.js": "#523",
-  "test/snapshots/lexer/lexer.js": "#523",
-};
-
+// ADR 0629, amended). No file has one (C1, #523).
 test("a label in the generated JS is one its Rust wrote", () => {
   const labeled = committed()
     .filter((file) => /^\s*bb\d+: /m.test(readFileSync(file, "utf8")))
     .map((file) => file.slice(root.length + 1));
-  expect(labeled.sort()).toEqual(Object.keys(compilerLabels).sort());
+  expect(labeled).toEqual([]);
 });
 
 // Like for like: a case added moves no share, whatever it has; one more of

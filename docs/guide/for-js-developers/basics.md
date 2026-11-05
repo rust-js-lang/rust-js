@@ -1806,10 +1806,18 @@ that calls made where Rust makes it and no other time, `[n, ..] if
 below(*n)`'s `row.length >= 1 && below(row[0])`, `(1, x) | (x, 1) if
 odd(x)`'s `(a === 1 && odd(b)) || (b === 1 && odd(a))`, a guard each
 alternative tests alike tested once, `Some(1) | None if on(x)`'s `(value
-== null || value === 1) && on(x)`, a guard of `&&`s one `if`, `"B" if keep &&
+== null || value === 1) && on(x)`, and one each alternative that matches
+makes again made again, `(1, _) | (_, 1) if odd(a + b)`'s `(a === 1 &&
+odd(a + b)) || (b === 1 && odd(a + b))`; the arm's binding each
+alternative gives its own value set in the guard, `(1, x) | (x, 1) if
+odd(x) => x * 10`'s `if ((a === 1 && odd((x = b))) || (b === 1 && odd((x
+= a)))) { level = x * 10; }`, or first, `((x = b), odd(a + b))`, `let x;`
+declared before; a guard of `&&`s one `if`, `"B" if keep &&
 more`'s `if (name === "B") { if (keep && more) { .. } }`
 ([ADR 0636](../../decisions/0636-a-guarded-arm-is-a-case.md), amended)
-([ADR 0364](../../decisions/0364-mir-lowering.md), amended); and one
+([ADR 0364](../../decisions/0364-mir-lowering.md), amended). An arm's own
+`match` is that arm's chain, and no `match` leaves a label MIR made, `bb5:`
+(C1, the user's decision); and one
 whose value is read in place, `f(match n { .. })`, is a `?:`, as JS has
 no `switch` expression. An arm that names a `const` tests it by its name,
 where its `match` or `let` writes it, so two constants of one value, a

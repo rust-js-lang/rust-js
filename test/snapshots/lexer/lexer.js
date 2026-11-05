@@ -66,48 +66,32 @@ export const Lexer = {
       if (c == null) {
         break;
       }
-      bb67: {
-        if (c === "\n") {
-          lexer.line = (lexer.line + 1) >>> 0;
-        } else if (!/^\p{White_Space}$/u.test(c)) {
-          if (c >= "0" && c <= "9") {
-            const n = Lexer.number(lexer, c);
-            out.push({ TAG: "Num", _0: n });
-          } else {
-            bb20: {
-              if ((c < "a" || c > "z") && (c < "A" || c > "Z")) {
-                if (c === "_") {
-                  break bb20;
-                }
-                if (c === '"') {
-                  let s = "";
-                  while (true) {
-                    const ch = $next(lexer.chars);
-                    if (ch == null) {
-                      return { TAG: "Err", _0: `line ${lexer.line}: unterminated string` };
-                    }
-                    if (ch === '"') {
-                      break;
-                    }
-                    s += ch;
-                  }
-                  out.push({ TAG: "Str", _0: s });
-                  break bb67;
-                }
-                if (c === "/" && $nextIf(lexer.chars, (item) => item === "/") != null) {
-                  while (true) {
-                    if ($nextIf(lexer.chars, (c) => c !== "\n") == null) {
-                      break bb67;
-                    }
-                  }
-                }
-                out.push({ TAG: "Sym", _0: c });
-                break bb67;
-              }
+      if (c === "\n") {
+        lexer.line = (lexer.line + 1) >>> 0;
+      } else if (!/^\p{White_Space}$/u.test(c)) {
+        if (c >= "0" && c <= "9") {
+          const n = Lexer.number(lexer, c);
+          out.push({ TAG: "Num", _0: n });
+        } else if ((c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_") {
+          const w = Lexer.word(lexer, c);
+          out.push({ TAG: "Ident", _0: w });
+        } else if (c === '"') {
+          let s = "";
+          while (true) {
+            const ch = $next(lexer.chars);
+            if (ch == null) {
+              return { TAG: "Err", _0: `line ${lexer.line}: unterminated string` };
             }
-            const w = Lexer.word(lexer, c);
-            out.push({ TAG: "Ident", _0: w });
+            if (ch === '"') {
+              break;
+            }
+            s += ch;
           }
+          out.push({ TAG: "Str", _0: s });
+        } else if (c === "/" && $nextIf(lexer.chars, (item) => item === "/") != null) {
+          while ($nextIf(lexer.chars, (c) => c !== "\n") != null) {}
+        } else {
+          out.push({ TAG: "Sym", _0: c });
         }
       }
     }

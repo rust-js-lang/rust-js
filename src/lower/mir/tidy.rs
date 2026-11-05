@@ -965,6 +965,7 @@ mod tests {
             [
                 "temporaries named",
                 "flags named",
+                "kept trees",
                 "condition lets",
                 "shadows",
                 "given last",

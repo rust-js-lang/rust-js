@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1724
-lines	184113
+files	1727
+lines	184278
 temporaries	0	0
-labeled blocks	8	0.4
-while (true)	144	7.8
-$iter	1622	88.1
+labeled blocks	0	0
+while (true)	143	7.8
+$iter	1622	88
 Iterator.from	162	8.8
 return;	235	12.8
-renamed x$1	10483	569.4
+renamed x$1	10474	568.4
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drop_past_a_panic.js	46	0	0	0	1	0	0	0
 test/corpus/adapter_drops.js	1976	0	0	1	18	3	1	134
@@ -651,7 +651,8 @@ test/corpus/guarded_arms_nested_break.js	75	0	0	0	0	0	0	0
 test/corpus/guarded_bindings.js	76	0	0	0	0	0	0	0
 test/corpus/guarded_continue_ending_turn.js	75	0	0	0	0	0	0	0
 test/corpus/guarded_match_ends_function.js	136	0	0	0	0	0	0	0
-test/corpus/guards_that_call.js	280	0	2	0	0	0	0	0
+test/corpus/guards_set_bindings.js	93	0	0	0	0	0	0	0
+test/corpus/guards_that_call.js	265	0	0	0	0	0	0	0
 test/corpus/handle_named_value.js	32	0	0	0	0	0	0	0
 test/corpus/hash_hashers.js	238	0	0	0	0	0	0	12
 test/corpus/hash_phantom_data.js	252	0	0	0	0	0	0	11
@@ -725,7 +726,7 @@ test/corpus/integer_bits.js	99	0	0	0	0	0	0	2
 test/corpus/integer_families.js	114	0	0	0	0	0	0	23
 test/corpus/integer_truth.js	89	0	0	0	0	0	0	0
 test/corpus/integers_128.js	172	0	0	0	0	0	0	14
-test/corpus/interpreter.js	642	0	1	6	2	0	1	51
+test/corpus/interpreter.js	624	0	0	6	2	0	1	51
 test/corpus/into_a_bound_target.js	60	0	0	0	0	0	0	0
 test/corpus/into_iter_arguments.js	46	0	0	0	1	0	0	0
 test/corpus/into_iter_held_as_it_is.js	103	0	0	0	5	1	0	7
@@ -873,6 +874,7 @@ test/corpus/match_breaks_its_loop.js	200	0	0	1	0	0	0	0
 test/corpus/match_call_once.js	72	0	0	0	0	0	0	2
 test/corpus/match_clone_nested_results.js	103	0	0	0	0	0	0	0
 test/corpus/match_guard_of_ands.js	112	0	0	0	0	0	0	0
+test/corpus/match_in_loop_continue_break.js	47	0	0	0	0	0	0	0
 test/corpus/match_index.js	73	0	0	0	0	0	0	0
 test/corpus/match_last_arm_else.js	87	0	0	0	0	0	0	0
 test/corpus/match_of_a_length.js	56	0	0	0	0	0	0	0
@@ -1004,7 +1006,7 @@ test/corpus/option_switch_default.js	78	0	0	0	0	0	0	0
 test/corpus/optional_callbacks.js	72	0	0	0	0	0	0	0
 test/corpus/options_handed_on.js	101	0	0	0	0	0	0	9
 test/corpus/or_before_a_returning_loop.js	45	0	0	1	0	0	0	0
-test/corpus/or_bindings.js	149	0	2	0	0	0	1	12
+test/corpus/or_bindings.js	129	0	0	0	0	0	1	3
 test/corpus/or_guard_written_first.js	48	0	0	0	0	0	0	0
 test/corpus/or_pattern_constant_alternative.js	34	0	0	0	0	0	0	3
 test/corpus/or_pattern_guard.js	32	0	0	0	0	0	0	4
@@ -1016,7 +1018,7 @@ test/corpus/or_pattern_part_moves.js	197	0	0	0	0	0	0	18
 test/corpus/or_pattern_paths_absorbed.js	143	0	0	0	0	0	0	4
 test/corpus/or_pattern_ref_mut.js	45	0	0	0	0	0	1	0
 test/corpus/or_pattern_three_values.js	269	0	0	0	0	0	0	0
-test/corpus/or_pattern_unreachable_alternative.js	96	0	1	0	0	0	0	0
+test/corpus/or_pattern_unreachable_alternative.js	92	0	0	0	0	0	0	0
 test/corpus/ordered_searches.js	27	0	0	0	0	0	0	2
 test/corpus/overflowing_literals.js	18	0	0	0	0	0	0	0
 test/corpus/own_back_methods_given_dictionaries.js	268	0	0	0	0	0	0	2
@@ -1342,6 +1344,7 @@ test/corpus/size_hint_into_iter.js	27	0	0	0	0	1	0	3
 test/corpus/size_hints_made_in_place.js	27	0	0	0	1	0	0	11
 test/corpus/size_of.js	23	0	0	0	0	0	0	2
 test/corpus/skip_drops_what_it_passes_first.js	72	0	0	0	2	1	0	2
+test/corpus/skip_first_nth_panics.js	98	0	0	0	0	0	0	0
 test/corpus/skip_folded_by_consumers.js	408	0	0	1	4	0	4	10
 test/corpus/skip_of_a_peekable_from_back.js	298	0	0	0	5	0	0	0
 test/corpus/skip_of_short_take_drops.js	201	0	0	0	7	0	0	8
@@ -1694,7 +1697,7 @@ test/snapshots/inbox/inbox.js	2343	0	0	0	0	0	0	1066
 test/snapshots/inventory/inventory.js	226	0	0	0	0	0	0	0
 test/snapshots/iterators/iterators.js	159	0	0	0	0	0	0	0
 test/snapshots/jsx/module-resolution/lib.js	5	0	0	0	0	0	0	0
-test/snapshots/lexer/lexer.js	155	0	2	4	4	0	0	0
+test/snapshots/lexer/lexer.js	139	0	0	3	4	0	0	0
 test/snapshots/methods/methods.js	79	0	0	0	0	0	0	0
 test/snapshots/modules/geometry/area.js	24	0	0	0	0	0	0	3
 test/snapshots/modules/geometry/util.js	7	0	0	0	0	0	0	0

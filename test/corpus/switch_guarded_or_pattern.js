@@ -185,10 +185,10 @@ function present(value) {
  * twice where the first fails.
  */
 function eitherOne(a, b) {
-  if (a === 1 && on("either", (a + b) >>> 0 > 2)) {
-    return 10;
-  }
-  if (b === 1 && on("either", (a + b) >>> 0 > 2)) {
+  if (
+    (a === 1 && on("either", (a + b) >>> 0 > 2)) ||
+    (b === 1 && on("either", (a + b) >>> 0 > 2))
+  ) {
     return 10;
   }
   return 20;

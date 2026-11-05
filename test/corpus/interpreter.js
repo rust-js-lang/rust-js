@@ -461,116 +461,98 @@ function run(src) {
 
   function eval$(e, env) {
     let value;
-    bb195: {
-      if (e.TAG === "Num") {
-        value = { TAG: "Num", _0: e._0 };
-      } else if (e.TAG === "Str") {
-        value = { TAG: "Str", _0: e._0 };
-      } else if (e.TAG === "Var") {
-        const option = Env.get(env, e._0);
-        const result =
-          option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: `unbound ${e._0}` };
-        if (result.TAG === "Err") {
-          return result;
-        }
-        value = result._0;
-      } else if (e.TAG === "Binary") {
-        const result = eval$(e._1, env);
-        if (result.TAG === "Err") {
-          return result;
-        }
-        const l = result._0;
-        const result$1 = eval$(e._2, env);
-        if (result$1.TAG === "Err") {
-          return result$1;
-        }
-        const r = result$1._0;
-        if (e._0 === "+") {
-          if (l.TAG === "Num") {
-            if (r.TAG === "Num") {
-              const a = l._0;
-              const b = r._0;
-              value = { TAG: "Num", _0: a + b };
-              break bb195;
-            }
-          } else if (l.TAG === "Str") {
-            const a = l._0;
-            const b = r;
-            value = { TAG: "Str", _0: a + valueDisplay_fmt(b) };
-            break bb195;
-          }
-        } else if (e._0 === "-") {
-          if (l.TAG === "Num" && r.TAG === "Num") {
-            const a = l._0;
-            const b = r._0;
-            value = { TAG: "Num", _0: a - b };
-            break bb195;
-          }
-        } else if (e._0 === "*") {
-          if (l.TAG === "Num" && r.TAG === "Num") {
-            const a = l._0;
-            const b = r._0;
-            value = { TAG: "Num", _0: a * b };
-            break bb195;
-          }
-        } else if (e._0 === "/") {
-          if (l.TAG === "Num" && r.TAG === "Num") {
-            if (r._0 === 0) {
-              return { TAG: "Err", _0: "division by zero" };
-            }
-            const a = l._0;
-            const b = r._0;
-            value = { TAG: "Num", _0: a / b };
-            break bb195;
-          }
-        } else if (e._0 === "<" && l.TAG === "Num" && r.TAG === "Num") {
-          const a = l._0;
-          const b = r._0;
-          value = { TAG: "Bool", _0: a < b };
-          break bb195;
-        }
+    if (e.TAG === "Num") {
+      value = { TAG: "Num", _0: e._0 };
+    } else if (e.TAG === "Str") {
+      value = { TAG: "Str", _0: e._0 };
+    } else if (e.TAG === "Var") {
+      const option = Env.get(env, e._0);
+      const result =
+        option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: `unbound ${e._0}` };
+      if (result.TAG === "Err") {
+        return result;
+      }
+      value = result._0;
+    } else if (e.TAG === "Binary") {
+      const result = eval$(e._1, env);
+      if (result.TAG === "Err") {
+        return result;
+      }
+      const l = result._0;
+      const result$1 = eval$(e._2, env);
+      if (result$1.TAG === "Err") {
+        return result$1;
+      }
+      const r = result$1._0;
+      if (e._0 === "+" && l.TAG === "Num" && r.TAG === "Num") {
+        const a = l._0;
+        const b = r._0;
+        value = { TAG: "Num", _0: a + b };
+      } else if (e._0 === "+" && l.TAG === "Str") {
+        const a = l._0;
+        const b = r;
+        value = { TAG: "Str", _0: a + valueDisplay_fmt(b) };
+      } else if (e._0 === "-" && l.TAG === "Num" && r.TAG === "Num") {
+        const a = l._0;
+        const b = r._0;
+        value = { TAG: "Num", _0: a - b };
+      } else if (e._0 === "*" && l.TAG === "Num" && r.TAG === "Num") {
+        const a = l._0;
+        const b = r._0;
+        value = { TAG: "Num", _0: a * b };
+      } else if (e._0 === "/" && l.TAG === "Num" && r.TAG === "Num" && r._0 === 0) {
+        return { TAG: "Err", _0: "division by zero" };
+      } else if (e._0 === "/" && l.TAG === "Num" && r.TAG === "Num" && r._0 !== 0) {
+        const a = l._0;
+        const b = r._0;
+        value = { TAG: "Num", _0: a / b };
+      } else if (e._0 === "<" && l.TAG === "Num" && r.TAG === "Num") {
+        const a = l._0;
+        const b = r._0;
+        value = { TAG: "Bool", _0: a < b };
+      } else {
         const op = e._0;
         const a = l;
         const b = r;
         return { TAG: "Err", _0: `cannot ${op} ${valueDisplay_fmt(a)} and ${valueDisplay_fmt(b)}` };
-      } else if (e.TAG !== "Lambda") {
-        const result = eval$(e._0, env);
+      }
+    } else if (e.TAG === "Lambda") {
+      value = { TAG: "Closure", _0: e._0, _1: e._1, _2: env };
+    } else {
+      const result = eval$(e._0, env);
+      if (result.TAG === "Err") {
+        return result;
+      }
+      const f = result._0;
+      const result$1 = $collectResults(e._1.values().map((a) => eval$(a, env)));
+      if (result$1.TAG === "Err") {
+        return result$1;
+      }
+      const args = result$1._0;
+      calls = (calls + 1) >>> 0;
+      if (f.TAG === "Closure") {
+        if (f._0.length !== args.length) {
+          return { TAG: "Err", _0: `expected ${f._0.length} arguments, got ${args.length}` };
+        }
+        const scope = Env.child(f._2);
+        for (const [p, a] of $lazyZip($iter(f._0), args)) {
+          Env.set(scope, p, a);
+        }
+        depth = (depth + 1) >>> 0;
+        const result = eval$(f._1, scope);
+        depth = (depth - 1) >>> 0;
         if (result.TAG === "Err") {
           return result;
         }
-        const f = result._0;
-        const result$1 = $collectResults(e._1.values().map((a) => eval$(a, env)));
-        if (result$1.TAG === "Err") {
-          return result$1;
+        value = result._0;
+      } else if (f.TAG === "Builtin") {
+        const result = f._1(args);
+        if (result.TAG === "Err") {
+          return result;
         }
-        const args = result$1._0;
-        calls = (calls + 1) >>> 0;
-        if (f.TAG === "Closure") {
-          if (f._0.length !== args.length) {
-            return { TAG: "Err", _0: `expected ${f._0.length} arguments, got ${args.length}` };
-          }
-          const scope = Env.child(f._2);
-          for (const [p, a] of $lazyZip($iter(f._0), args)) {
-            Env.set(scope, p, a);
-          }
-          depth = (depth + 1) >>> 0;
-          const result = eval$(f._1, scope);
-          depth = (depth - 1) >>> 0;
-          if (result.TAG === "Err") {
-            return result;
-          }
-          value = result._0;
-        } else if (f.TAG === "Builtin") {
-          const result = f._1(args);
-          if (result.TAG === "Err") {
-            return result;
-          }
-          value = result._0;
-        } else {
-          return { TAG: "Err", _0: `${valueDisplay_fmt(f)} is not a function` };
-        }
+        value = result._0;
       } else {
-        value = { TAG: "Closure", _0: e._0, _1: e._1, _2: env };
+        return { TAG: "Err", _0: `${valueDisplay_fmt(f)} is not a function` };
       }
     }
     return { TAG: "Ok", _0: value };

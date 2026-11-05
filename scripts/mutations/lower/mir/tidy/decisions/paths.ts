@@ -103,4 +103,13 @@ export const mutations: Mutation[] = [
     replace: "            (p.len() > 1).then_some((j, *k, s, set))\n",
     tests: ["test/lowering-match-paths.test.ts", "-t", "three values' or-pattern"],
   },
+  {
+    name: "narrowed-never",
+    breaks: "a test of a value isn't narrowed to what the arms before don't say, `c !== 1 && c !== 2` stays after `c === 1`'s arm, and the `match` in the loop keeps its labeled block (#696)",
+    file: "src/lower/mir/tidy/decisions/paths.rs",
+    find: "    (atoms(&fewer) < atoms(test)).then_some(Expr {\n",
+    replace: "    (false && atoms(&fewer) < atoms(test)).then_some(Expr {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(match_in_loop_continue_break).rs$"],
+    snapshots: true,
+  },
 ];

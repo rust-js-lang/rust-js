@@ -80,6 +80,20 @@ pub(super) fn said(known: &[(Expr, Set)], test: &Expr) -> bool {
     })
 }
 
+/// `test` of one value, of what `known` says it can be, in fewer tests where
+/// that says some: `c !== 2` of `c !== 1 && c !== 2` once `c !== 1` is
+/// known, the values it can't be passing or failing either (#696). `None`
+/// where it's no fewer.
+pub(super) fn narrowed(known: &[(Expr, Set)], test: &Expr) -> Option<Expr> {
+    let (subject, set) = atom(test)?;
+    let can = known_of(known, &subject, set.kind);
+    let fewer = render(&subject, &set.union(&can.complement()));
+    (atoms(&fewer) < atoms(test)).then_some(Expr {
+        span: test.span,
+        ..fewer
+    })
+}
+
 /// `tests`, each read where it's made, without what those before it in a
 /// run of tests of one value already say: `None` where no value passes
 /// them all.

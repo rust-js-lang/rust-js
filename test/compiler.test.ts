@@ -1340,7 +1340,7 @@ test("the lexer's JS steps through its source with $next and $peek", async () =>
   expect(js).toContain("return {\n      chars: iterator_peekable($iter(Array.from(src))),\n      line: 1,\n    };");
   expect(js).toContain("while ((c = $peek(lexer.chars)) != null) {");
   expect(js).toContain('$nextIf(lexer.chars, (item) => item === "/") != null');
-  expect(js).toContain('$nextIf(lexer.chars, (c) => c !== "\\n") == null');
+  expect(js).toContain('while ($nextIf(lexer.chars, (c) => c !== "\\n") != null) {}');
   expect(js).toContain("const it = $iter(v);");
   expect(js).toContain("const rest = Array.from(it);");
   expect(js).toContain('return c != null ? c.toUpperCase() + $restStr(chars) : "";');

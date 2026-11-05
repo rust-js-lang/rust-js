@@ -29,9 +29,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an inner loop's tail that leaves the outer, `if (count > 10) { break; } continue bb1;`, stays in it once `decisions` makes its block's `break` the loop's, `bb1: while (..) { while (true) { .. continue bb1; } break; }` (rd141c)",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("exits after", |b, h| {\n                js::statement_lists(b, &mut |s| exits_after(s, &h.written.breaks))\n            }),\n            // A match\'s tree of tests, its arms reached through a block MIR\n            // made: the chain of its arms, now that the loops are made.\n            pass("decisions", |b, h| {\n                let bound = decisions::bound(b);\n                let loops = decisions::loop_labels(b);\n                let written: Vec<js::Span> = (h.written.ifs.iter()).chain(&h.written.logicals).copied().collect();\n                let told = decisions::Told {\n                    written: &written,\n                    guards: &h.written.guards,\n                    switches: &h.written.switches,\n                    bound: &bound,\n                    loops: &loops,\n                };\n                bottom_up(b, &mut |s| decisions::decisions(s, &told))\n            }),\n',
+    find: "            pass(\"exits after\", |b, h| {\n                js::statement_lists(b, &mut |s| exits_after(s, &h.written.breaks))\n            }),\n            // A match's tree of tests, its arms reached through a block MIR\n            // made: the chain of its arms, now that the loops are made.\n            pass(\"decisions\", |b, h| decided_trees(b, h, false)),\n",
     replace:
-      '            // A match\'s tree of tests, its arms reached through a block MIR\n            // made: the chain of its arms, now that the loops are made.\n            pass("decisions", |b, h| {\n                let bound = decisions::bound(b);\n                let loops = decisions::loop_labels(b);\n                let written: Vec<js::Span> = (h.written.ifs.iter()).chain(&h.written.logicals).copied().collect();\n                let told = decisions::Told {\n                    written: &written,\n                    guards: &h.written.guards,\n                    switches: &h.written.switches,\n                    bound: &bound,\n                    loops: &loops,\n                };\n                bottom_up(b, &mut |s| decisions::decisions(s, &told))\n            }),\n            pass("exits after", |b, h| {\n                js::statement_lists(b, &mut |s| exits_after(s, &h.written.breaks))\n            }),\n',
+      "            // A match's tree of tests, its arms reached through a block MIR\n            // made: the chain of its arms, now that the loops are made.\n            pass(\"decisions\", |b, h| decided_trees(b, h, false)),\n            pass(\"exits after\", |b, h| {\n                js::statement_lists(b, &mut |s| exits_after(s, &h.written.breaks))\n            }),\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_loop_tails.rs$"],
     snapshots: true,
   },
@@ -563,8 +563,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a match MIR tests as a tree stays a labeled block each leaf breaks out of",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "                bottom_up(b, &mut |s| decisions::decisions(s, &told))\n",
-    replace: "                let _ = told;\n",
+    find: "            pass(\"decisions\", |b, h| decided_trees(b, h, false)),\n",
+    replace: "",
     tests: [
       "test/lowering-matches.test.ts",
       "-t",
@@ -1146,6 +1146,15 @@ export const mutations: Mutation[] = [
     find: "                js::statement_lists(b, &mut |s| logicals::skipped_tests(s, &h.written.logicals, false))\n",
     replace: "                js::statement_lists(b, &mut |s| logicals::skipped_tests(s, &h.written.logicals, true))\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_effects.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "kept-trees-unrun",
+    breaks: "no pass chains a tree once every other pass is done, so the interpreter's `eval` and the lexer's keep MIR's labels (#523, C1)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "            pass(\"kept trees\", |b, h| decided_trees(b, h, true)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(interpreter).rs$"],
     snapshots: true,
   },
 ];

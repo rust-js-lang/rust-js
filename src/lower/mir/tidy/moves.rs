@@ -345,7 +345,7 @@ fn read_of(stmt: &Stmt, name: &str, stable: bool) -> Option<Read> {
 /// Whether `e` reads `name` where all that JS evaluates before it in `e`
 /// `passes`: `Some(true)`; `Some(false)` if something doesn't, or it's read
 /// where it may not be; `None` if it isn't read.
-fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> bool) -> Option<bool> {
+pub(super) fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> bool) -> Option<bool> {
     let mut reads = false;
     e.visit_vars(&mut |v| reads |= v == name);
     if !reads {

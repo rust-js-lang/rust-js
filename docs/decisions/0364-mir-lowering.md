@@ -1173,3 +1173,133 @@ the same chain with it or without (the tree tests in the order it's
 written), so that mutation is removed; the refusal stays, of a chain that
 would read the value where the tree hasn't called yet.
 
+
+## Amendment: the rest of C1, no `match` keeps a label MIR made (the user's decision, #523, #696, 2026-11-05)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The JS does what it
+did; only its form changes. The user decided C1 for #523's match trees: a
+flat `if`/`else if` chain that tests again only pure tests, never a call
+or a getter, with A1's form for a guarded or-pattern's bindings. Five
+corpus files and the lexer's snapshot still kept a `bbN:` block;
+`test/readability.test.ts`'s gate now holds that no committed file has
+one.
+
+- **A guard a path makes again is a call of its own.** `(1, _) | (_, 1)
+  if odd(a + b)` calls `odd` a second time where the first alternative's
+  guard failed, and the second call may say something else. `Model`
+  refused a path that made one call twice; it now counts each time a path
+  makes a call apart (`times`), so a way of the tests is a bit for each,
+  and the chain must make them as often, in the same order: `(a === 1 &&
+  odd(a + b)) || (b === 1 && odd(a + b))`. `fewest` tries an arm's paths
+  in each order (four paths at most), and a path's tests whole where
+  `factored` would read the call once (`told`). What `says` reads of a
+  call made before on the way is what it said then (`again`), not a new
+  call. A run of a tuple's parts in a tree that calls reads in the order
+  the pattern names them where that tells too (`written_order`).
+- **A call's test and its converse are one call.** `$nextIf(..) != null`
+  and `== null`, `odd(x)` and `!odd(x)`, a sequence by its last, are one
+  call of the model, read negated (`opaque`, `same_call`); and a call
+  `written_alike` can't compare, of a closure, is one with itself. The
+  lexer's `'/' if self.chars.next_if_eq(&'/').is_some()` is one test of
+  the chain then: `} else if (c === "/" && $nextIf(..) != null) {`.
+- **A guarded `|`'s bindings are set in its guard (A1's form).** MIR
+  gives each alternative's binding its own value, `x = b` and `x = a`,
+  so the alternatives were two arms sharing a tail, which `chain` won't
+  copy. `bound_where_read` sets them in the guard's test: in place where
+  the guard reads the one binding once and first, `if ((a === 1 &&
+  odd((x = b))) || (b === 1 && odd((x = a)))) { level = x * 10; }`;
+  otherwise first, `((x = b), (y = c), odd(x))` or `((x = b), odd(a +
+  b))`, as A1 sets a `let` read twice (ADR 1074). Only of a binding two
+  sites set, written where the guard's arm's pattern is (`Guard::tested`),
+  named nowhere else in the tree, of a pure value the guard can't change
+  (E0510); and each guard's own binding is read only by its guard. What a
+  guard that fails sets is read nowhere: the arm's binding is read only on
+  the arm's way, after an alternative set it.
+- **A guard that calls nothing binds too.** `Some(Circle(r) | Sphere(r))
+  if r > 1.0`'s `r$1 = o._0; if (!(r$1 > 1))` reads its binding as its
+  value, as a guard that calls does (`binds`): or_bindings' `match` has
+  no label. Only of a guard's test: a `const` a test the program wrote
+  reads, `const _31 = heap[i]; if (_31 < heap[j])`, stays, the program's
+  `if`s no `match`'s tree (`lowering-numbers.test.ts`'s sift-down).
+- **A test of a value says only what the arms before don't.** `c !== 1
+  && c !== 2` after `c === 1`'s arm is `c !== 2` (`paths::narrowed`), and
+  then goes as its other alternative's failing (`absorbed`): #696's
+  `match` in a loop of `continue`, push, `break` and nothing is `if (c
+  === 1) { continue; } if (a === 1 || c === 2) { out.push(2); } else if
+  (a === 2) { break; }`. Only of a tree no `switch` takes (a `switch` of
+  constants stays, `switch_tail_continues`), and where the chain's `else`
+  is the arm that does nothing, if one does: otherwise that arm would be
+  `else if (_3._0 !== 1) {}`, a chain later passes read worse than the
+  tree (`catch_unwind_arms_where_returned`).
+- **A last pass, `kept trees`.** First in `finish`, before `condition
+  lets`, `decisions` runs again of each block MIR made that's still there
+  once every other pass is done (`Told::kept`): its label stays where no
+  chain is made, so the chain is made of tests read again that do
+  nothing, however long (`labeled`); and an arm's own `match` whose arms
+  give the outer `match`'s value, `match (op, l, r) { .. }` in
+  `Expr::Binary(op, l, r) => { .. }`, `value = ..; break bb195;`, is
+  chained where it is (`tails`): there, in a list the block ends with, a
+  `break` of the block goes where the list's end does. A block no `break`
+  leaves then is what it holds. The interpreter's `eval` is then `if
+  (e._0 === "+" && l.TAG === "Num" && r.TAG === "Num") { .. } else if ..
+  else { return { TAG: "Err", .. }; }`.
+
+Forms the user decided, through the coordinator (2026-11-05), each as
+recommended:
+
+1. or_bindings' `Some(Circle(r) | Sphere(r)) if r > 1.0 => big, Some(..)
+   => small, _ => none` stays the nesting the other passes make, `if (o
+   != null && (o.TAG === "Circle" || o.TAG === "Sphere")) { if (o._0 > 1)
+   { .. continue; } .. continue; }`, no test read again, not the flat
+   chain.
+2. A guard made again of each alternative, `(1, _) | (_, 1) if on(..) =>
+   10`, is one `if` of an `||`, `if ((a === 1 && on(..)) || (b === 1 &&
+   on(..))) { return 10; }`, where it was two `if`s each returning 10
+   (switch_guarded_or_pattern's `eitherOne`).
+3. The interpreter's lexer's `'=' if peek() == Some(&'>') => .., '=' =>
+   ..` is flat, `} else if (c === "=" && $peek(..) === ">") { .. } else if
+   (c === "=") { .. }`, and its `eval`'s inner `match` the flat chain, one
+   pure test read again past the arm that returned, `r._0 !== 0`.
+4. The order of a `|`'s alternatives of a tuple's parts in the chain is
+   MIR's where MIR gives them all the whole `|`'s place: `(_, _, 2) | (1,
+   _, _)` reads `a === 1 || c === 2`.
+5. The lexer's whitespace arm, `c if c.is_whitespace() => {}`, stays the
+   nesting the other passes make, `} else if (!/^\p{White_Space}$/u.test(c))
+   { if (c >= "0" && c <= "9") { .. } else if .. }`, no empty branch; its
+   other arms the flat chain, and its comment loop `while ($nextIf(..) !=
+   null) {}`, as Rust's `while ..is_some() {}`.
+6. A tree that calls reads its arms in the order they're written:
+   `0 => 0, 1 | 2 if take(&c).is_some() => 1, 1 | 2 => 2, _ => 3` is `x
+   === 0 ? 0 : (x === 1 || x === 2) && take(c) != null ? 1 : x === 1 || x
+   === 2 ? 2 : 3`, no test read again. Three rules make it so, each of a
+   tree whose guard calls: the chain's `else` is tried first as the arm
+   written last, the `_`, where the longest is reached past the call; the
+   arms are in the order what each does is written, as their tests are
+   decided where a guard is, of its passing and of its failing; and a
+   block each `break` of which ends a
+   branch it ends with, an inner tree's chain whose arms go on past it, is
+   what it holds (`breaks_ended`), not a tree to chain again. Of a tree of
+   pure tests each is as it was: the `else` the longest arm's, and a block
+   of tail `break`s the chain's, which reads better, `if (x === 1 || n ===
+   1) { return 2; }` (or_pattern_option_order).
+
+Corpus `guards_that_call.rs` (`either_read`, `sums`), `or_bindings.rs`,
+`interpreter.rs`, `or_pattern_unreachable_alternative.rs`, new
+`guards_set_bindings.rs` (two bindings; a guard reading none; a guard
+of a call's `is_some()`) and `match_in_loop_continue_break.rs` (#696),
+and the lexer's snapshot, against native Rust; 800 generated guarded
+matches of or-patterns, bindings and guards of a stateful call, and 120
+of these shapes, agree with native Rust. Mutations `calls-made-again-once`,
+`calls-known-made-again`, `calls-paths-one-order`,
+`calls-paths-factored-only`, `calls-converse-another-call`,
+`calls-closure-call-unknown`, `calls-tuple-order-unread`,
+`calls-sequence-not-its-last` (`decisions/calls.ts`),
+`bindings-set-in-guards-never`, `binding-set-first-always`,
+`arm-trees-unchained`, `arm-trees-unkept`, `kept-trees-unforced`,
+`narrowed-into-an-empty-branch`, `narrowed-of-a-switch`,
+`guard-of-no-call-unbound`, `written-pure-test-bound`,
+`arms-of-one-test-by-index`, `else-of-a-call`, `ended-breaks-kept`, `ended-breaks-of-pure-trees`
+(`decisions.ts`, `decisions/guarded.ts`, `decisions/tails.ts`), `narrowed-never`
+(`decisions/paths.ts`) and `kept-trees-unrun` (`stages.ts`);
+`calls-alike-refused`, `calls-no-fewer` and
+`guard-read-after-its-call-refused` follow the code they mutate.

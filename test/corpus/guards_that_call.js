@@ -110,19 +110,12 @@ function eitherRead(pairs) {
   for (let i = 0; i < pairs.length; i++) {
     const [a, b] = pairs[i];
     let level;
-    bb26: {
-      if (a === 1 && odd(b)) {
-        x = b;
-      } else if (b === 1 && odd(a)) {
-        x = a;
-      } else if (a === 2 && b === 2) {
-        level = 2;
-        break bb26;
-      } else {
-        level = 5;
-        break bb26;
-      }
+    if ((a === 1 && odd((x = b))) || (b === 1 && odd((x = a)))) {
       level = (x * 10) >>> 0;
+    } else if (a === 2 && b === 2) {
+      level = 2;
+    } else {
+      level = 5;
     }
     seen.push(level);
   }
@@ -135,20 +128,12 @@ function sums(pairs) {
   const seen = [];
   for (let i = 0; i < pairs.length; i++) {
     const [a, b] = pairs[i];
-    let level = 1;
-    bb26: {
-      if (a !== 1 || !odd((a + b) >>> 0)) {
-        if (b === 1) {
-          if (odd((a + b) >>> 0)) {
-            break bb26;
-          }
-        } else if (b === 2 && a === 2) {
-          level = 2;
-          break bb26;
-        }
-        level = 5;
-      }
-    }
+    const level =
+      (a === 1 && odd((a + b) >>> 0)) || (b === 1 && odd((a + b) >>> 0))
+        ? 1
+        : a === 2 && b === 2
+          ? 2
+          : 5;
     seen.push(level);
   }
   return seen;

@@ -11258,16 +11258,10 @@ export function zipZipImplAB_nextBack(
     }
     throw error;
   }
-  bb17: {
-    if (tmp[0] == null) {
-      if (tmp[1] != null) {
-        break bb17;
-      }
-      return;
-    }
-    if (tmp[1] == null) {
-      break bb17;
-    }
+  if (tmp[0] == null && tmp[1] == null) {
+    return;
+  }
+  if (tmp[0] != null && tmp[1] != null) {
     return [$someValue(tmp[0]), $someValue(tmp[1])];
   }
   try {
@@ -11398,16 +11392,10 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
     }
     throw error;
   }
-  bb17: {
-    if (tmp[0] == null) {
-      if (tmp[1] != null) {
-        break bb17;
-      }
-      return;
-    }
-    if (tmp[1] == null) {
-      break bb17;
-    }
+  if (tmp[0] == null && tmp[1] == null) {
+    return;
+  }
+  if (tmp[0] != null && tmp[1] != null) {
     return [$someValue(tmp[0]), $someValue(tmp[1])];
   }
   try {

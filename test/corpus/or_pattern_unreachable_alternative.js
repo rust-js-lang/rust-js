@@ -8,13 +8,13 @@ export function three(v0, v1, v2) {
   if (v2 === 1) {
     return 1;
   }
-  if (v2 !== 2 && v0 !== 1) {
-    if (v0 === 2) {
-      return 3;
-    }
-    return 0;
+  if (v0 === 1 || v2 === 2) {
+    return 2;
   }
-  return 2;
+  if (v0 === 2) {
+    return 3;
+  }
+  return 0;
 }
 
 export function first(a, b, c) {
@@ -47,17 +47,13 @@ export function counted(rows) {
   const out = [];
   for (let i = 0; i < rows.length; i++) {
     const [a, b, c] = rows[i];
-    bb20: {
-      if (c === 1) {
-        continue;
-      }
-      if (c !== 2 && a !== 1) {
-        if (a === 2) {
-          break;
-        }
-        break bb20;
-      }
+    if (c === 1) {
+      continue;
+    }
+    if (a === 1 || c === 2) {
       out.push(2);
+    } else if (a === 2) {
+      break;
     }
     out.push(a);
   }

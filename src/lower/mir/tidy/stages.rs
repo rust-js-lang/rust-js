@@ -143,19 +143,7 @@ pub(super) const STAGES: &[Stage] = &[
             }),
             // A match's tree of tests, its arms reached through a block MIR
             // made: the chain of its arms, now that the loops are made.
-            pass("decisions", |b, h| {
-                let bound = decisions::bound(b);
-                let loops = decisions::loop_labels(b);
-                let written: Vec<js::Span> = (h.written.ifs.iter()).chain(&h.written.logicals).copied().collect();
-                let told = decisions::Told {
-                    written: &written,
-                    guards: &h.written.guards,
-                    switches: &h.written.switches,
-                    bound: &bound,
-                    loops: &loops,
-                };
-                bottom_up(b, &mut |s| decisions::decisions(s, &told))
-            }),
+            pass("decisions", |b, h| decided_trees(b, h, false)),
             pass("early returns", |b, h| {
                 js::statement_lists(b, &mut |s| early_returns(s, &h.written.elses))
             }),
@@ -998,6 +986,11 @@ pub(super) const STAGES: &[Stage] = &[
                 bindings::readable_temporaries(&h.params.borrow(), b, h.suggested)
             }),
             pass("flags named", |b, h| flags::named_flags(b, h.flags)),
+            // A match's tree MIR's block still holds, every other pass done:
+            // the chain of its arms, its tests read again however often where
+            // they do nothing, and of an arm's own `match` whose arms leave
+            // the block, that one's there (C1, the user's decision, #523).
+            pass("kept trees", |b, h| decided_trees(b, h, true)),
             // A block MIR made still there of a condition whose `const`
             // can't be read in place, or a let chain's binding a later test
             // that calls may change: a `let` declared before the `if`, set
@@ -1286,4 +1279,21 @@ fn redeclared_only(stmts: &[Stmt], name: &str) -> bool {
         }
     });
     js::mentions_in(&rest, name) == 0
+}
+
+/// `decisions` of each list of `b`, inner first; `kept`, of the trees whose
+/// block keeps its label once every other pass is done (`Told::kept`).
+fn decided_trees(b: &mut Vec<Stmt>, h: &Hints, kept: bool) {
+    let bound = decisions::bound(b, &h.written.guards);
+    let loops = decisions::loop_labels(b);
+    let written: Vec<js::Span> = (h.written.ifs.iter()).chain(&h.written.logicals).copied().collect();
+    let told = decisions::Told {
+        written: &written,
+        guards: &h.written.guards,
+        switches: &h.written.switches,
+        bound: &bound,
+        loops: &loops,
+        kept,
+    };
+    bottom_up(b, &mut |s| decisions::decisions(s, &told))
 }

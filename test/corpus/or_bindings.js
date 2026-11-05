@@ -94,35 +94,15 @@ function main() {
 
   // Nested, with a guard that reads what's bound.
   for (const o of [{ TAG: "Circle", _0: 0.5 }, { TAG: "Sphere", _0: 3 }, undefined]) {
-    bb66: {
-      if (o != null) {
-        let r$2;
-        bb84: {
-          let r;
-          let r$1;
-          if (o.TAG === "Circle") {
-            r$1 = o._0;
-            if (!(r$1 > 1)) {
-              r$2 = o._0;
-              break bb84;
-            }
-            r = o._0;
-          } else if (o.TAG === "Sphere") {
-            r$1 = o._0;
-            if (!(r$1 > 1)) {
-              r$2 = o._0;
-              break bb84;
-            }
-            r = o._0;
-          } else {
-            break bb66;
-          }
-          console.log(`big ${$displayF64(r)}`);
-          continue;
-        }
-        console.log(`small ${$displayF64(r$2)}`);
+    if (o != null && (o.TAG === "Circle" || o.TAG === "Sphere")) {
+      if (o._0 > 1) {
+        const r = o._0;
+        console.log(`big ${$displayF64(r)}`);
         continue;
       }
+      const r = o._0;
+      console.log(`small ${$displayF64(r)}`);
+      continue;
     }
     console.log("none");
   }

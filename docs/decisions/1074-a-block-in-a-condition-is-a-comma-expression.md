@@ -251,3 +251,12 @@ Held by corpus `condition_block_sequence.rs`'s `twice` (a parameter of the
 once and left as it was; mutations `condition-let-never-hoisted`,
 `condition-let-of-a-held-block-kept` (`logicals/skipped.ts`, moved there with the code, #523), `condition-lets-early`
 (`stages.ts`) and `shadow-set-in-a-test-unseen` (`shadows.ts`).
+
+## Amendment: a guarded or-pattern's bindings, set in its guard (C1, #523, 2026-11-05)
+
+A1's form holds of a guarded `|`'s bindings too, as the user decided for
+C1: the arm's binding set where the guard reads it, `odd((x = b))`, or
+first, `((x = b), (y = c), odd(x))`, the `let` the binding's own,
+declared before the chain (ADR 0364's amendment of 2026-11-05,
+`decisions::bound_where_read`).
+

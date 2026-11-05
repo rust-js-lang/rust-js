@@ -8,7 +8,7 @@
   "library": {
     "version": 15,
     "name": "rust_js_std",
-    "crate_hash": "4ebe9fb687978a87e295ba5afce74565",
+    "crate_hash": "de96a621c28f4553eee522ed8d3b71fb",
     "items": [
       {
         "key": "core::iter::adapters::filter::{impl#9}::assume_count_le_upper_bound",
@@ -12534,7 +12534,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "a75317372a6ba070"
+      "hash": "115560736aefcdc4"
     },
     {
       "file": "iter.js.map",
