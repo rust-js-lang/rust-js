@@ -182,11 +182,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/iterators.rs",
     find: '            "std::iter::Take"\n            | "std::iter::Skip"\n',
     replace: '            "std::iter::Take"\n',
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(fold_back_drops_what_it_takes|own_iterator_dropped_through_adapters).rs$",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^generic_rev_nths_its_own_back.rs$"],
   },
   {
     name: "empty-iter-not-an-array",
@@ -552,7 +548,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/iterators.rs",
     find: '            // A copy or a clone of each it steps (ADR 0547).\n            | "std::iter::Copied"\n            | "std::iter::Cloned"\n',
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^consumed_adapter_drops.rs$"],
+    tests: ["test/iterator-forms.test.ts", "-t", "^last_takes_its_source with"],
   },
   {
     name: "copied-holds-no-source",

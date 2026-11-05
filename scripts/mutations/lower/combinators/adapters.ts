@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators/adapters.rs",
     find: "        match own || self.drops(gives) != crate::lower::drops::Drops::Nothing {\n",
     replace: "        match false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_closed_part_way_drops_source_first.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
   },
   {
     name: "flat-map-of-dropped-items-js",

@@ -113,15 +113,12 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-guarded-off",
     breaks:
-      "a `let … else` stays a labeled block holding the rest of the function",
+      "the tests that leave a `match` to its panicking rest aren't one guard, `if (day < 1 || day > 5) { throw .. }`, but the range's arm tested and the panic last",
     file: "src/lower/mir/tidy/stages.rs",
     find: '            pass("guarded", |b, _| js::statement_lists(b, &mut guarded)),\n',
     replace: "",
-    tests: [
-      "test/lowering-matches.test.ts",
-      "-t",
-      "let-else from MIR is a guard",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^match_arms_then_a_panicking_rest.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-tidy-lets-first",

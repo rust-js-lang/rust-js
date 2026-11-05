@@ -9,11 +9,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "        return (item.is_some_and(&drops) || enumerates_a_compiled_struct(tcx, adapter))\n",
     replace: "        return (item.is_some_and(|_| false) || enumerates_a_compiled_struct(tcx, adapter))\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(enumerate_of_droppers_from_back|enumerate_made_in_place_from_back).rs$",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^skip_rfold_closes_as_it_unwinds.rs$"],
   },
   {
     name: "enumerate-of-compiled-struct-stepped-unrecorded",
@@ -345,7 +341,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "                || chained_sources(tcx, held).is_some()\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^chain_stepped_from_its_back_elsewhere.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^held_chain_mapped_from_its_back.rs$"],
   },
   {
     name: "inspect-of-dropping-items-not-back-stepped",
