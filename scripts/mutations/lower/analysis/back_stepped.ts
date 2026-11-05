@@ -310,4 +310,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^chain_stepped_from_its_back_elsewhere.rs$"],
   },
+  {
+    name: "inspect-of-dropping-items-not-back-stepped",
+    breaks: "an `inspect()` of a `Vec`'s items with a destructor, held in a variable to drop them, isn't made knowing its back, and its `rfind` is refused (#751)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "        .or_else(|| inspected_source(tcx, adapter))\n        .or_else(|| filtered_source(tcx, adapter))\n",
+    replace: "        .or_else(|| filtered_source(tcx, adapter))\n",
+    tests: ["test/corpus.test.ts", "-t", "^inspect_of_dropping_items_from_its_back.rs$"],
+  },
 ];

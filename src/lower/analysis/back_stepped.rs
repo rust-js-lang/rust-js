@@ -299,9 +299,10 @@ fn closure_drops<'tcx>(tcx: TyCtxt<'tcx>, adapter: Ty<'tcx>, drops: impl Fn(Ty<'
     mapped_source(tcx, adapter).is_some() && matches!(adapter.kind(), ty::Adt(_, args) if drops(args.type_at(1)))
 }
 
-/// Whether `adapter`, a map or a filter, is of an array's items whose drop
-/// runs, `drops`'s: an owning source closed to drop them (ADR 0465), or a
-/// `rev()` of one, which steps them from the other end (#646).
+/// Whether `adapter`, a map, an inspect or a filter, is of an array's
+/// items whose drop runs, `drops`'s: an owning source closed to drop them
+/// (ADR 0465), or a `rev()` of one, which steps them from the other end
+/// (#646).
 fn dropping_items<'tcx>(
     recognition: Recognition<'_, 'tcx>,
     adapter: Ty<'tcx>,
@@ -314,7 +315,9 @@ fn dropping_items<'tcx>(
         }
         source
     };
+    // An `inspect(f)`'s too, made as a map (#751).
     mapped_source(tcx, adapter)
+        .or_else(|| inspected_source(tcx, adapter))
         .or_else(|| filtered_source(tcx, adapter))
         .map(|source| unreversed(source.peel_refs()))
         .is_some_and(|source| {

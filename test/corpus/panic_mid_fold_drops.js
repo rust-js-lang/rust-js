@@ -934,15 +934,17 @@ function main() {
       boom(d, 22);
     }
     const x = $foldDropping(
-      $rev($closing($iter(ds({ start: 20, end: 24 })), $dropEach(dDrop_drop))).map((item) => {
-        try {
-          inspect(item);
-        } catch (error) {
-          dDrop_drop(item);
-          throw error;
-        }
-        return item;
-      }),
+      $rev(
+        $mapEnds($closing($iter(ds({ start: 20, end: 24 })), $dropEach(dDrop_drop)), (item) => {
+          try {
+            inspect(item);
+          } catch (error) {
+            dDrop_drop(item);
+            throw error;
+          }
+          return item;
+        }),
+      ),
       [],
       push,
       $dropEach(dDrop_drop),

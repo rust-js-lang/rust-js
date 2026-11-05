@@ -571,3 +571,31 @@ Making every source kind knowing its back where it's made is #764's.
 against native Rust in both builds; mutations
 `enumerate-of-map-made-forward` and `copy-of-compiled-struct-backless`
 (`lower/mir/iter/backs.ts`).
+
+## Amended (2026-11-05, #751): an inspect of an array's items with a destructor too
+
+`ds().into_iter().inspect(f).rfind(p)` of items with a destructor, and
+its `next_back()`, were refused in the default build, "a
+`std::iter::Inspect<std::vec::IntoIter<D>, ..>` as a
+`DoubleEndedIterator`": the recognizers make an `inspect(f)` as a map,
+and `back_stepped_adapter` read it as one, but `dropping_items` asked
+only a map's and a filter's source, so an inspect of an array's items
+whose drop runs looked like a map of an array's, which steps from its
+back by its own form. Its items are closed to drop them and held in a
+variable (ADR 0465), which no form steps from its back, so it was never
+made knowing its back, and the `rfind` of the variable refused it.
+**`dropping_items` asks an inspect's source too**, as each other reading
+of this analysis takes an inspect for a map: made knowing its back where
+it's made, `$mapEnds`, as a map of the same items is.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; a
+refusal of valid Rust lifted, each item seen and dropped where std's
+`Inspect` gives or passes it.
+
+Held by corpus `inspect_of_dropping_items_from_its_back`, against native
+Rust in both builds: `rfind`, `next_back` then `next`, a `rev()` of it
+and an inspect of a reversed source. Mutation
+`inspect-of-dropping-items-not-back-stepped` (`analysis/back_stepped.ts`).
+An inspect or a map whose closure has a destructor, over a `Vec`'s
+`u32`s, is refused the same way, `closure_drops`'s map of that closure
+held where no form steps it from its back: its own gap, #780.
