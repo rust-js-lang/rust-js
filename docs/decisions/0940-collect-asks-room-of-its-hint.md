@@ -5,7 +5,8 @@ all done, the choice is your recommendation"). The plan "rust-js: one
 representation per iterator", its second phase. Extends
 [0774](0774-room-past-isize-max-bytes-panics.md). Amended: what has no
 end once it gives an item (below); amended: what isn't `TrustedLen` is
-stepped once before its hint is asked (below, #724).
+stepped once before its hint is asked (below, #724), and its hint is
+asked again as the `Vec` grows (below, #728).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): results change.
 `(0..).map(f).collect::<Vec<u8>>()` called `f` without end where Rust
@@ -112,9 +113,9 @@ as `extend_trusted` does, and of another it steps first. The amendment above is 
 the room asked after the first item is `usize::MAX`'s.
 
 Left as it was: std's `extend_desugared` asks the hint again each time
-the `Vec` is full as it grows. rust-js keeps no native capacity (ADR
-0419), so the JS asks it once. And a collect the recognizers make in
-place, of the crate's iterator, asks no hint at all. Both are #728's.
+the `Vec` is full as it grows, which the amendment below models. And a
+collect the recognizers make in place, of the crate's iterator, asks no
+hint at all, #733's.
 
 `collect_closes_what_its_hint_panics.rs` holds a `fuse()`'s and a
 `peekable()`'s collect of the crate's iterator that prints its steps and
@@ -126,3 +127,41 @@ against native Rust in both builds; it joins iterator-forms' few (TESTS.md:
 `lower/mir/iter/collect.ts`), each of the first item's drop, now held by
 both cases; `endless-room-by-lower` and `endless-once-unstepped` follow
 the code.
+
+## Amendment: the hint is asked again each time the `Vec` is full, as it grows (2026-11-05, #728)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. How often the
+crate's `size_hint` runs, and what's dropped as one panics, changes, so
+Rust's behavior is kept.
+
+Std's `Vec::from_iter` of what isn't `TrustedLen` (rustc 1.99.0's
+library/alloc/src/vec/spec_from_iter_nested.rs:18, `from_iter`) starts
+the `Vec` with room for `max(MIN_NON_ZERO_CAP, lower + 1)`, then
+extends it by `extend_desugared` (vec/mod.rs:4092). That steps each item
+by `next`, and where `len == capacity`, asks `size_hint` again and
+reserves its lower bound and one more. `reserve` grows by
+`grow_amortized` (raw_vec/mod.rs:503): to `max(capacity * 2, len +
+additional, MIN_NON_ZERO_CAP)`. `MIN_NON_ZERO_CAP` is
+`min_non_zero_cap(size_of::<T>())` (raw_vec/mod.rs:158): 8 of items of
+1 byte, 4 of up to 1024, else 1. Items of no size have a capacity of
+`usize::MAX`, so the `Vec` is never full. A crate's iterator whose
+`size_hint` prints shows each ask: of 20 bytes, at 1, 9 and 17; of 20
+`u32`s, at 1, 5, 9 and 17; of 5 items of 2000 bytes, at 1, 2, 3 and 5.
+
+ADR 0419 keeps no native capacity on a `Vec`. That stays true of the
+`Vec` the program holds. What's modelled here is the capacity the collect
+itself has as it fills, inside the `$Steps` that `$roomForHint` gives: it
+counts what it has given, and where that reaches the capacity, asks the
+hint again and grows as std does, `$roomFor` checking the new capacity's
+size. Where that ask throws, a panic, the item just taken is dropped,
+then `$collectDropping` drops what's left, then what it collected, as
+`extend_desugared`'s frame, then `from_iter`'s, unwind.
+
+Corpus case `collect_asks_hint_as_it_grows.rs`: `u8`s, `u32`s with no
+lower bound, with half of what's left and with all of it, 2000-byte
+arrays, `()`s, a `peekable()`'s `u16`s, and items with a destructor
+whose hint panics as the `Vec` grows. It runs against native Rust in
+both builds. Mutations (`runtime/capacity.ts`):
+`room-for-hint-unasked-as-it-grows`, `room-for-hint-least-of-any-size`,
+`room-for-hint-first-capacity-least`, `room-for-hint-zero-size-fills`,
+`room-for-hint-grows-by-hint-alone`, `room-for-hint-grown-item-undropped`.

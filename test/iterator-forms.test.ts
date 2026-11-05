@@ -120,6 +120,8 @@ const few = [
   // A `Vec`'s collect of what isn't `TrustedLen`: its first item by
   // `next`, then its hint asked, which may panic (#724, #660).
   "collect_closes_what_its_hint_panics.rs",
+  // And its hint asked again each time the `Vec` is full (#728).
+  "collect_asks_hint_as_it_grows.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus")

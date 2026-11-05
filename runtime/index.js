@@ -8477,7 +8477,8 @@ export function $roomFor(count, size) {
 // `from_iter` drops what it took as it unwinds; where asking its room
 // does, the item taken is dropped first, `drop`, as it was taken last:
 // so `$collectDropping` of what it gives closes `it` wherever it ends
-// (#660).
+// (#660). And as what it gives is stepped, where the `Vec` std makes is
+// full, the hint is asked again, as the `Vec` grows (#728).
 export function $roomForHint(it, size, trusted, endless = false, drop) {
   const unwound = (asked, before) => {
     try {
@@ -8499,26 +8500,57 @@ export function $roomForHint(it, size, trusted, endless = false, drop) {
     });
     return it;
   }
+  // Its capacity, std's: what it asks room for first, the hint's lower
+  // bound and one more, or `MIN_NON_ZERO_CAP` of items of `size` bytes if
+  // more (raw_vec/mod.rs `min_non_zero_cap`); of items of no size, any
+  // number, so it's never full.
+  const least = size === 1 ? 8 : size <= 1024 ? 4 : 1;
+  const max = 2 ** 32 - 1;
+  let capacity;
   const first = unwound(() => it.next());
   if (!first.done) {
     unwound(
       () => {
         if (endless) throw new Error("capacity overflow");
         const [lower] = $sizeHint(it);
-        $roomFor(Math.min(lower + 1, 2 ** 32 - 1), size);
+        capacity = size === 0 ? Infinity : Math.max(least, Math.min(lower + 1, max));
+        $roomFor(Math.min(lower + 1, max), size);
       },
       () => drop?.(first.value),
     );
   }
-  let given = false;
+  // How many it has given, which the `Vec` holds.
+  let length = 0;
   const steps = new $Steps(
     () => {
       if (first.done) return first;
-      if (!given) {
-        given = true;
+      if (length === 0) {
+        length = 1;
         return first;
       }
-      return it.next();
+      // Std's `extend_desugared`: each item by `next`, and where the `Vec`
+      // is full, its hint asked again, room for its lower bound and one
+      // more reserved, `grow_amortized`'s, at least twice what it had
+      // (vec/mod.rs `extend_desugared`, raw_vec/mod.rs `grow_amortized`).
+      // Where that throws, a panic, the item just taken is dropped as the
+      // loop's frame unwinds, before what's left and what's collected
+      // (#728).
+      const step = it.next();
+      if (step.done) return step;
+      if (length === capacity) {
+        try {
+          const [lower] = $sizeHint(it);
+          const required = length + Math.min(lower + 1, max);
+          if (required > max) throw new Error("capacity overflow");
+          capacity = Math.max(capacity * 2, required, least);
+          $roomFor(capacity, size);
+        } catch (error) {
+          drop?.(step.value);
+          throw error;
+        }
+      }
+      length += 1;
+      return step;
     },
     () => it.return?.(),
   );
