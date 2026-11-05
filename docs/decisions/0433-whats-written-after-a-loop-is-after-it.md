@@ -137,3 +137,16 @@ guide example or port (`check:fast --all` with a probe at it), and its
 mutation `exits-after-tuple-unplaced` survived. The search and that
 mutation are gone; `exits-after-return-unplaced`, of the `return`'s own
 place, is held by `loop_exit_tuple` too.
+
+## Amendment: an `if` is placed by its branch, or its own place (#781)
+
+`first_written` placed an `if` by its branch but never before its test,
+`first_written(then).max(test)`, for a binding its pattern makes, a `let
+.. else`'s, written at the pattern. Since #723's shared cleanups
+(78372e8ba) no `if` reaches it whose branch is written before its test:
+its mutation, `first-written-if-by-branch`, survived the Nightly of
+f3f23cd67, and the whole corpus, the snapshots, the rest of check:fast's
+suite and probes of `let .. else` print the same JS with the branch's
+place taken as it is. So an `if` is placed by its branch, else by its own
+place, `first_written(then).or(test)`, and the mutation goes with the
+`max`.

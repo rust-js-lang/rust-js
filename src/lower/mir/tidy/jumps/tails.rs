@@ -439,11 +439,8 @@ fn let_else_of(then: &[Stmt], otherwise: &[Stmt], at: u32, let_elses: &[js::Span
 pub(in crate::lower::mir::tidy) fn first_written(stmts: &[Stmt]) -> Option<u32> {
     stmts.iter().find_map(|stmt| match &stmt.kind {
         // An `if`'s where its branch is, a `match`'s test written before
-        // each arm; but not before its test, of a binding its pattern makes.
-        StmtKind::If(_, then, _) => {
-            let test = (!stmt.span.is_none()).then_some(stmt.span.lo);
-            first_written(then).max(test)
-        }
+        // each arm, else its own.
+        StmtKind::If(_, then, _) => first_written(then).or((!stmt.span.is_none()).then_some(stmt.span.lo)),
         _ if !stmt.span.is_none() => Some(stmt.span.lo),
         StmtKind::ForOf { body, .. }
         | StmtKind::For { body, .. }

@@ -157,23 +157,13 @@ export const mutations: Mutation[] = [
     breaks:
       "an `if`'s place is its test's, a `match`'s written before each arm, so a `Display` match's first arm comes last",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "            first_written(then).max(test)\n",
-    replace: "            test.or(first_written(then))\n",
+    find: "        StmtKind::If(_, then, _) => first_written(then).or((!stmt.span.is_none()).then_some(stmt.span.lo)),\n",
+    replace: "        StmtKind::If(_, then, _) => (!stmt.span.is_none()).then_some(stmt.span.lo).or(first_written(then)),\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
       "^(app_errors|calculator|interpreter|stock_orders).rs$",
     ],
-    snapshots: true,
-  },
-  {
-    name: "first-written-if-by-branch",
-    breaks:
-      "an `if`'s place is its branch's even before its test, a binding its pattern makes, so a `let .. else`'s guard comes last",
-    file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "            first_written(then).max(test)\n",
-    replace: "            first_written(then).or(test)\n",
-    tests: ["test/corpus.test.ts", "-t", "^option_combinator_drops.rs$"],
     snapshots: true,
   },
   {

@@ -143,3 +143,18 @@ cases lose the `try` around such calls, `const _two = [undefined, many(10)];`, t
 drop them as no-ops. The mutations are `drop-never-steps-on`
 (`lower/analysis/unwinding.ts`) and `moved-out-drops-there` and
 `quiet-drops-there` (`lower/mir/drops.ts`).
+
+## Amendment: a temporary that runs the program's code is no longer made first (#781)
+
+`may_throw_first` also held a temporary made by the program's code that
+never unwinds, `made(5)`, as made first, so `slot.pending.insert(made(5))`
+made the value before `insert` dropped what the slot held. Since #765
+(`Option::insert` makes its value first where it's lowered) and #723's
+shared cleanups (78372e8ba), nothing reaches that answer: its mutation,
+`program-code-pending-unflushed`, survived the Nightly of f3f23cd67, and
+the whole corpus, the snapshots, the rest of check:fast's suite and
+probes of `Option::insert`, `HashMap::insert`, `Option::replace`, an
+index's and a variable's assignment of a value `made(n)` gives print the
+same JS without it. `may_throw_first` is `may_throw` again, and the
+mutation goes with the term. `option_destructors.rs` and
+`never_unwinding_calls.rs` still hold the order against native Rust.
