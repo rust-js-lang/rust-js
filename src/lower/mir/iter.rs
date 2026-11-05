@@ -668,7 +668,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None if let Some(reversed) = self.reversed(&receiver, iter_ty) => reversed,
                 Some(kind) if let Some(step) = kind.step(true) => self.stepped_by(receiver, Expr::helper(step)),
                 Some(_) => return Err(unsupported(self)),
-                None => self.rev_items(receiver, iter_ty, span)?,
+                None => self.rev_items(receiver, iter_ty, self.reversed_made_knowing(output), span)?,
             };
             return self.reversed_knowing(reversed, output, span).map(Some);
         }

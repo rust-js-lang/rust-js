@@ -9,7 +9,7 @@
 
 use crate::lower::body_queries::strip;
 use crate::lower::recognition::{
-    Recognition, back_stepped_source, copied_source, enumerated_source, enumerates_a_compiled_struct,
+    Recognition, back_stepped_source, chained_sources, copied_source, enumerated_source, enumerates_a_compiled_struct,
     filter_mapped_source, filtered_source, flattened_source, inspected_source, is_double_ended, is_exact_size,
     is_iter_adapter_def, mapped_source, reversed_source,
 };
@@ -132,6 +132,18 @@ pub(super) fn back_stepped<'tcx>(
                         {
                             let made_apart = given || held_rev || held_arg;
                             stepped.extend(back_stepped_adapter(tcx, recognition, held, made_apart, &drops));
+                        }
+                        // A chain of items with a destructor a `rev()` or
+                        // generic code asks to be double-ended, which MIR
+                        // holds in a variable to drop them before it's
+                        // asked: made `$chainEnds` where it's made, as no
+                        // form is left to read where it's stepped (#718).
+                        if held == asked
+                            && !given
+                            && chained_sources(tcx, held).is_some()
+                            && recognition.iterator_item(held).is_some_and(&drops)
+                        {
+                            stepped.insert(tcx.erase_and_anonymize_regions(held));
                         }
                         // Given behind an `impl`, each it holds too, made
                         // where it's made, which no call of the caller's

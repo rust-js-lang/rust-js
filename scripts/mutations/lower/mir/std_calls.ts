@@ -844,4 +844,13 @@ export const mutations: Mutation[] = [
     replace: "cells.nullable.contains(&state.at),",
     tests: ["test/lowering-nullable-borrows.test.ts", "-t", "written through a borrow"],
   },
+  {
+    name: "chain-stepped-from-back-made-unknowing",
+    breaks:
+      "a chain the crate steps from its back isn't made `$chainEnds` where it's made: one MIR holds in a variable, of items with a destructor, is refused at its `rev()` (#718)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                        IterComb::Chain,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rev_made_knowing_its_back.rs$"],
+  },
 ];

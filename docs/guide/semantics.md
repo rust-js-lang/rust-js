@@ -678,6 +678,10 @@ What's refused is in [the limitations](limitations.md).
   $rangeNextBack))`, and a flatten's `rev().rfold(String::new(), f)` is
   `$foldBack($rev($flattenEnds(..)), "", f)`
   ([0545](../decisions/0545-a-map-stepped-from-its-back-is-made-knowing-it.md), #702).
+  So is a type parameter's, `it.rev().nth_back(1)` stepping `$rev(it)`; a
+  range's map's, `(0..5).map(f).rev().rfold(mk(), g)` stepping
+  `$rev($mapEnds(..))`; and a chain's of items with a destructor,
+  `$rev($chainEnds(..))` (#718). A zip's isn't yet.
 - **Room asked past `isize::MAX` bytes panics `capacity overflow`, as
   std's does:** `Vec::with_capacity(n)` is `$roomFor(n, 4); []`, of the
   items' size, and `reserve`, `vec![x; n]`, a slice's `repeat`,

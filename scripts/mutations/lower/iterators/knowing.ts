@@ -790,4 +790,13 @@ export const mutations: Mutation[] = [
     replace: "        let dropped = vec![(acc, Expr::var(\"unwind\"))];\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "rev-of-a-parameter-not-made-knowing",
+    breaks:
+      "a type parameter's `rev()` stepped from its back isn't made knowing its back where it's made, so MIR's variable of it, lent to `nth_back`, is refused (#718)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            (!self.is_unknown(source) || matches!(source.kind(), ty::Param(_)))\n",
+    replace: "            !self.is_unknown(source)\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_made_knowing_its_back.rs$"],
+  },
 ];

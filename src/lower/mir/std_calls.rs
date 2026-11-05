@@ -926,12 +926,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         true => made.in_place(),
                         false => made,
                     };
-                    // And an `inspect(f)`'s, made as a map, and a `filter_map(f)`'s (#473).
+                    // And an `inspect(f)`'s, made as a map, and a `filter_map(f)`'s (#473);
+                    // a chain's, `$chainEnds` (#718).
                     let back_made = [
                         IterComb::Flatten,
                         IterComb::FlatMap,
                         IterComb::Inspect,
                         IterComb::FilterMap,
+                        IterComb::Chain,
                     ];
                     let made = match back_made.contains(&comb) && this.stepped_from_its_back(output) {
                         true => this.as_double_ended(made, output, span)?,

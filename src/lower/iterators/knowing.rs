@@ -6,7 +6,7 @@ use crate::lower::recognition::{OwnStep, Reach};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`'s reversal, a `rev()` made in place of `source` (ADR 0987).
-    fn reversal_of<'e>(&self, value: &'e Expr, source: ty::Ty<'tcx>) -> Option<Reversal<'e>> {
+    pub(in crate::lower) fn reversal_of<'e>(&self, value: &'e Expr, source: ty::Ty<'tcx>) -> Option<Reversal<'e>> {
         let range_back = self.range_kind(source.peel_refs()).and_then(|kind| kind.step(true));
         crate::lower::iterators::reversal(value, range_back)
     }
@@ -15,8 +15,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// made (`reversed_knowing`): one the crate steps from its back, its own
     /// `rfold`, `nth_back` or `rfind` called (ADR 0545), of a source whose
     /// `rev()` is made here, the crate's iterator, a range or a std
-    /// adapter, not a type parameter or a zip, which `reversed` steps by
-    /// what it's given. So one made in place that MIR holds in a variable
+    /// adapter, or a type parameter, `$rev` of the JS iterator it's given
+    /// made knowing its back (`rev_items`, #718), refused of one given as it
+    /// is, stepped by its dictionary (`reversed`); not a zip, which
+    /// `reversed` steps by what it's given. So one made in place that MIR
+    /// holds in a variable
     /// before it's stepped, past a call or a cleanup that drops it, or lends
     /// to `nth_back`, steps from its back as it is, no form of it left to
     /// read (#702). The one answer, of what's made and what's stepped.
@@ -24,7 +27,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty = self.reveal(ty.peel_refs());
         crate::lower::recognition::reversed_source(self.tcx, ty).is_some_and(|source| {
             let source = self.reveal(source.peel_refs());
-            !self.is_unknown(source) && crate::lower::recognition::zipped_sources(self.tcx, source).is_none()
+            (!self.is_unknown(source) || matches!(source.kind(), ty::Param(_)))
+                && crate::lower::recognition::zipped_sources(self.tcx, source).is_none()
         }) && self.stepped_from_its_back(ty)
     }
 

@@ -88,8 +88,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`rev()` of a lazy chain over a slice, `v.iter().map(f).rev()`, is refused, though its closures run in the same order over the items reversed",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            None if let Some(reversed) = reversed_inward(&receiver) => {\n",
-    replace: "            None if let Some(reversed) = None::<Expr> => {\n",
+    find: "            None if let Some(reversed) = reversed_inward(&receiver)\n",
+    replace: "            None if let Some(reversed) = None::<Expr>\n",
     tests: ["test/corpus.test.ts", "-t", "rev_of_lazy_chains"],
     snapshots: true,
   },
@@ -639,5 +639,14 @@ export const mutations: Mutation[] = [
     find: "        && (crate::lower::iterators::is_stepped_items(it) || crate::lower::iterators::is_range_stepped(it))\n",
     replace: "        && (crate::lower::iterators::is_stepped_items(it)\n            || crate::lower::iterators::is_range_stepped(it)\n            || crate::lower::iterators::closed_parts(it).is_some())\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_of_rev_last_folds.rs$"],
+  },
+  {
+    name: "rev-reversed-inward-unread",
+    breaks:
+      "a range's map reversed inward, `$iterator(range, $rangeNextBack).map(f)`, is kept for a `rev()` made knowing its back, whose form `reversal` can't read: `(0..5).map(f).rev().rfold(mk(), g)` is refused (#718)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                && !(knowing && self.reversal_of(&reversed, iter_ty).is_none()) =>\n",
+    replace: "                && true =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_made_knowing_its_back.rs$"],
   },
 ];

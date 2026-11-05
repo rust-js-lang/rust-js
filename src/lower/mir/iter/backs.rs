@@ -37,8 +37,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `rev()` of a std iterator neither a range nor the crate's own: of
     /// items made already, an array's, a `$iter` of them reversed; a lazy
     /// chain made of its items reversed where its closures run in the same
-    /// order; else what steps it from its back, reversed (ADR 0535).
-    pub(super) fn rev_items(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    /// order; else what steps it from its back, reversed (ADR 0535). Of
+    /// one made knowing its back (`knowing`, `reversed_made_knowing`), not
+    /// a chain reversed inward whose form `reversal` can't read, a range's
+    /// map's: what steps it from its back (#718).
+    pub(super) fn rev_items(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, knowing: bool, span: Span) -> R<Expr> {
         if let Some(closed) = self.closed_rev(receiver.clone(), iter_ty, span)? {
             return Ok(closed);
         }
@@ -64,7 +67,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A chain over an array's items of callbacks that read
             // no index: the chain over them reversed, each called
             // from the back, as Rust's `next_back` calls them.
-            None if let Some(reversed) = reversed_inward(&receiver) => {
+            None if let Some(reversed) = reversed_inward(&receiver)
+                && !(knowing && self.reversal_of(&reversed, iter_ty).is_none()) =>
+            {
                 return Ok(reversed);
             }
             // Of another, lazy, a map's say, or the crate's own `next_back`'s

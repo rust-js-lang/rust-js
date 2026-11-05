@@ -371,3 +371,50 @@ enumeration steps from its back, as it's `$enumerate` of the struct, whose
 `count` is its source's; a recorded one is made knowing its back and
 length where it's made. [ADR 0465](0465-dropping-an-adapter-is-closing-it.md)'s
 #712 amendment says why.
+
+## Amendment: a type parameter's `rev()`, a range's map's and a chain of droppers made knowing their backs (2026-11-05, #718)
+
+#702 left out three shapes MIR holds in a variable before their back step,
+each refused as there was no form left to read:
+
+- **A type parameter's `rev()`**, `it.rev().nth_back(1)` in generic code,
+  which `nth_back`'s `&mut` puts in a variable. `reversed_made_knowing`
+  no longer leaves type parameters out. Of one given a JS iterator (ADR
+  0061), such a `rev()` is `$rev` of it made knowing its back and closed
+  to drop it (`rev_items`). `$rev` passes its source's own `nth`, `fold`
+  and `try_fold` on as its `nth_back`, `rfold` and `try_rfold`, as std's
+  `Rev` does, so the crate's own `nth` is still called. Of one given as
+  it is (ADR 0411), which a struct holds, `reversed` steps it by its
+  dictionary, a form `reversed_knowing` can't make knowing its back, so
+  it's refused there, as it was before. Made knowing it by `$given`, it
+  would be closed by what `$iterator` wraps, `it.of`, which `$given` of a
+  `Vec`'s items doesn't make. The guide's limitations list it.
+- **A range's map or filter reversed**, `(0..5).map(f).rev().rfold(mk(),
+  g)`, held past `mk()`'s call. `rev_items` reverses such a chain inward,
+  `$iterator(range, $rangeNextBack).map(f)`, a form `reversal` can't
+  read. Where the `rev()` is made knowing its back, a form that `reversal`
+  can't read isn't taken. What steps it from its back is taken instead,
+  `$rev($mapEnds(..))`.
+- **A chain of items with a destructor** that a `rev()` asks to be
+  double-ended, which MIR holds in a variable to drop them. `back_stepped`
+  records it as it records a flatten. Where it's made it's `$chainEnds`
+  (`std_calls`' `back_made`), so the `rev()` steps it as it is. A chain
+  given behind an `impl` is std's `Chain`, as before.
+
+A zip's `rev()` is still left out: `$zipBack` steps only from the back,
+and a zip that knows both ends is std's `Zip`, which isn't held where it's
+made in place.
+
+No other corpus snapshot changes. `rev_made_knowing_its_back.rs` checks
+generic `nth_back`, `next_back` and `next`, `rfold` and `rfind` of a
+`Vec`'s items and of the crate's iterator with its own `nth`, numbers, a
+panicking drop, a range's map's and an inclusive range's filter's `rfold`
+given a call's value, and a chain of droppers' `rev().fold`, `rev().rfold`
+and a panic in its closure, against native Rust in both builds.
+A flatten of a slice's maps held and stepped by `next_back()` is there
+too. Mutations: `rev-of-a-parameter-not-made-knowing`
+(`lower/iterators/knowing.ts`),
+`rev-reversed-inward-unread` (`lower/mir/iter/backs.ts`),
+`chain-of-droppers-asked-unrecorded` (`lower/analysis/back_stepped.ts`),
+`chain-stepped-from-back-made-unknowing` (`lower/mir/std_calls.ts`);
+`rev-chain-refused` names its line as it now reads.

@@ -309,4 +309,13 @@ export const mutations: Mutation[] = [
     replace: "    item.is_some() || true\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_of_iterators_from_back.rs$"],
   },
+  {
+    name: "chain-of-droppers-asked-unrecorded",
+    breaks:
+      "a chain of items with a destructor a `rev()` asks to be double-ended isn't made knowing its back where it's made: MIR holds it in a variable to drop them, so its `rev().fold()` is refused (#718)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                            && chained_sources(tcx, held).is_some()\n",
+    replace: "                            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_made_knowing_its_back.rs$"],
+  },
 ];
