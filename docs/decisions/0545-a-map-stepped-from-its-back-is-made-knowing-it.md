@@ -418,3 +418,41 @@ too. Mutations: `rev-of-a-parameter-not-made-knowing`
 `chain-of-droppers-asked-unrecorded` (`lower/analysis/back_stepped.ts`),
 `chain-stepped-from-back-made-unknowing` (`lower/mir/std_calls.ts`);
 `rev-chain-refused` names its line as it now reads.
+
+## Amendment (2026-11-05): what a `flat_map()`'s closure gives (#716)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change.
+`groups.iter().flat_map(|g| g.iter().map(|x| x * 10)).next_back()` gave
+`None`, where Rust gives `Some(50)`. The flatten, stepped from its back,
+is made knowing its back where it's made, `$flattenEnds`, and what its
+closure gives is made knowing its back too. The closure's `map()` is made
+in place: a closure `flat_map` is given makes what it gives in place, as
+what's stepped where it's given (`body_queries::results_in_place`). But
+`knowing_held` judged it by the flatten call's span, which isn't the
+closure body's, so it wasn't among that body's adapters made in place. It
+took the `map()` for std's compiled `Map` and gave the JS `.map()` chain
+`mapDoubleEndedIterator_nextBack`, which stepped nothing.
+
+**What a `flat_map()`'s closure gives is marked made in place where the
+flatten made here reads it** (`as_double_ended`'s flatten), its own fact,
+so its `map()` is read by its form, `$mapEnds($iter(g), f)`. A `rev()`'s
+was right already: its span is among the adapters made in place.
+
+`test/corpus/flat_map_of_maps_from_its_back.rs` checks the issue's
+`next_back()`, a `rev().collect()`, an `rfold`, an `nth_back`, an `rfind`,
+and closures that give an `enumerate().map()` and a `rev().map()`, against
+native Rust, as the crate builds it and with std's iterator structs. The
+mutation is `flat-map-closure-result-by-span`
+(`lower/iterators/knowing.ts`).
+
+A `flat_map()` held in a variable is std's compiled `FlatMap`, which
+steps what its closure gives as std's struct, from its back too: its
+closure's result is made in place only where the `flat_map()` is
+(`results_in_place` asks the call's body's adapters made in place), where
+it was of every one's, so a held one's `next_back()` threw, `it.back` of a
+JS `.map()` chain (#726; `test/corpus/held_flat_map_of_maps_from_its_back.rs`,
+mutation `held-flat-map-results-in-place`, `lower/body_queries.ts`).
+
+Still apart: a `map(|g| g.iter().map(f)).flatten()`
+stepped from its back is refused, and the flattens of std's adapters that
+`back_stepped` leaves out (#702's amendment) stay as they were (#718).

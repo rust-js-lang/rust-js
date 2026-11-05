@@ -628,7 +628,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a flatten of ranges made knowing its back takes what `each` gives as a range, and steps its JS iterator by its bounds",
     file: "src/lower/iterators/knowing.rs",
-    find: "                    let knowing = self.as_double_ended(taken.clone(), inner, span)?;\n",
+    find: "                    let knowing = self.as_double_ended(taken, inner, span)?;\n",
     replace:
       "                    let knowing = self.as_double_ended(Expr::call(each.clone(), vec![Expr::var(item)]), inner, span)?;\n",
     tests: [
@@ -798,5 +798,13 @@ export const mutations: Mutation[] = [
     find: "            (!self.is_unknown(source) || matches!(source.kind(), ty::Param(_)))\n",
     replace: "            !self.is_unknown(source)\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_made_knowing_its_back.rs$"],
+  },
+  {
+    name: "flat-map-closure-result-by-span",
+    breaks: "what a `flat_map()`'s closure gives isn't marked made in place, so its `map()` is judged by the outer call's span, taken for std's compiled `Map`, whose back it hasn't: `flat_map(|g| g.iter().map(f)).next_back()` gives `None` (#716)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                        true => taken.clone().in_place(),\n",
+    replace: "                        true => taken.clone(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^flat_map_of_maps_from_its_back.rs$"],
   },
 ];

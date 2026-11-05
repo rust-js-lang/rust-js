@@ -549,4 +549,12 @@ export const mutations: Mutation[] = [
     replace: "            } => return false,\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a catch makes its payload where it's first read"],
   },
+  {
+    name: "held-flat-map-results-in-place",
+    breaks: "what the closure of a `flat_map()` held in a variable gives is made in place, a JS `.map()` chain, which std's compiled `FlatMap` steps from its back as its struct and throws (#726)",
+    file: "src/lower/body_queries.rs",
+    find: "                && body.facts.in_place_adapters.contains(&fn_span)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^held_flat_map_of_maps_from_its_back.rs$"],
+  },
 ];

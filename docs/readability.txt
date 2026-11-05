@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1719
-lines	183348
+files	1722
+lines	184067
 temporaries	0	0
 labeled blocks	8	0.4
-while (true)	144	7.9
-$iter	1594	86.9
-Iterator.from	159	8.7
+while (true)	144	7.8
+$iter	1622	88.1
+Iterator.from	162	8.8
 return;	235	12.8
-renamed x$1	10444	569.6
+renamed x$1	10477	569.2
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drop_past_a_panic.js	46	0	0	0	1	0	0	0
 test/corpus/adapter_drops.js	1976	0	0	1	18	3	1	134
@@ -16,7 +16,7 @@ test/corpus/adapter_of_a_value_given_as_it_is.js	54	0	0	0	0	0	0	0
 test/corpus/adapter_size_hints.js	110	0	0	0	0	0	0	20
 test/corpus/adapter_source_drops.js	72	0	0	0	0	0	0	0
 test/corpus/adapters_given_to_generic_backs.js	53	0	0	0	2	0	0	4
-test/corpus/adapters_over_own_next_that_panics.js	1101	0	0	2	1	2	0	3
+test/corpus/adapters_over_own_next_that_panics.js	1109	0	0	2	1	2	0	3
 test/corpus/adapters_own_nth_fold.js	254	0	0	0	0	0	0	8
 test/corpus/adapters_own_work_that_panics.js	490	0	0	0	7	0	0	11
 test/corpus/alias_reads.js	57	0	0	0	0	0	0	2
@@ -222,7 +222,7 @@ test/corpus/closures_made_and_folded.js	73	0	0	0	0	1	0	8
 test/corpus/closures_of_their_value.js	86	0	0	0	0	0	0	0
 test/corpus/code_point_order.js	108	0	0	0	0	0	0	10
 test/corpus/collect_close_panics.js	91	0	0	0	5	0	0	0
-test/corpus/collect_closes_what_its_hint_panics.js	66	0	0	0	0	0	0	0
+test/corpus/collect_closes_what_its_hint_panics.js	115	0	0	0	0	0	0	0
 test/corpus/collect_drops.js	116	0	0	0	5	0	0	0
 test/corpus/collect_endless_once_stepped.js	206	0	0	0	5	0	0	29
 test/corpus/collect_fallible.js	70	0	0	0	3	0	0	2
@@ -488,6 +488,7 @@ test/corpus/filters_held_double_ended.js	130	0	0	0	0	0	0	0
 test/corpus/flag_of_a_guarded_match.js	40	0	0	0	0	0	0	0
 test/corpus/flat_map_drops.js	149	0	0	0	10	0	0	4
 test/corpus/flat_map_inner_iterables.js	42	0	0	0	0	0	0	0
+test/corpus/flat_map_of_maps_from_its_back.js	57	0	0	0	8	0	0	0
 test/corpus/flatten_boxed_options.js	76	0	0	0	0	0	0	0
 test/corpus/flatten_closed_part_way_drops_source_first.js	290	0	0	1	15	0	0	0
 test/corpus/flatten_folds_reach_its_sources_own.js	457	0	0	2	10	0	0	0
@@ -668,6 +669,7 @@ test/corpus/held_enumerate.js	283	0	0	0	4	0	0	20
 test/corpus/held_filter_map_drops.js	59	0	0	0	2	0	0	0
 test/corpus/held_filter_map_from_its_back.js	28	0	0	0	1	0	0	0
 test/corpus/held_filter_map_reversed.js	93	0	0	0	4	0	0	2
+test/corpus/held_flat_map_of_maps_from_its_back.js	241	0	0	0	7	0	0	15
 test/corpus/held_function_drops.js	183	0	0	0	5	1	0	9
 test/corpus/held_fuse_back.js	117	0	0	0	1	0	0	0
 test/corpus/held_fuse_back_drops.js	141	0	0	0	1	0	0	0
@@ -1279,6 +1281,7 @@ test/corpus/rev_in_place_through_adapters.js	275	0	0	0	0	0	0	2
 test/corpus/rev_lazy_drops.js	67	0	0	0	3	0	0	0
 test/corpus/rev_lazy_range.js	42	0	0	0	0	0	0	0
 test/corpus/rev_loops.js	130	0	0	0	0	0	0	8
+test/corpus/rev_made_knowing_its_back.js	364	0	0	0	13	3	0	18
 test/corpus/rev_of_char_indices.js	47	0	0	0	0	0	0	0
 test/corpus/rev_of_closed_items.js	106	0	0	0	4	0	0	0
 test/corpus/rev_of_dyn_double_ended.js	21	0	0	0	1	0	0	0

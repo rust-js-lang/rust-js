@@ -386,16 +386,20 @@ pub(super) fn across_bodies<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'
     resumes_as_given(tcx, bodies);
 }
 
-/// Each closure the crate gives `flat_map`, which steps what it gives
-/// there as a JS iterator: what it gives is made in place
-/// (`in_place_adapters`), its facts made again so. Before lowering, of the
-/// crate's bodies.
+/// Each closure the crate gives a `flat_map` made in place, which steps
+/// what it gives there as a JS iterator: what it gives is made in place
+/// (`in_place_adapters`), its facts made again so. Not one held, std's
+/// compiled `FlatMap`, which steps what it gives as std's struct, its
+/// `next_back` too (#726). Before lowering, of the crate's bodies.
 fn results_in_place<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>], cloned: &HashSet<ty::Ty<'tcx>>) {
     let mut given = HashSet::new();
     for body in bodies.iter() {
         for e in body.thir.exprs.iter() {
-            if let ExprKind::Call { fun, ref args, .. } = e.kind
+            if let ExprKind::Call {
+                fun, ref args, fn_span, ..
+            } = e.kind
                 && matches!(*body.thir[fun].ty.kind(), ty::FnDef(id, _) if super::recognition::is_flat_map(tcx, id))
+                && body.facts.in_place_adapters.contains(&fn_span)
                 && let Some(&f) = args.get(1)
                 && let ExprKind::Closure(ref closure) = body.thir[strip(&body.thir, f)].kind
             {
