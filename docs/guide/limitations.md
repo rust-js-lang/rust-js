@@ -137,7 +137,6 @@ depends on what the program does:
 - `.rev()` of a `chain()` of a `map()` of a slice's items and another slice's: `let v = [1, 2]; let w = [3]; let r: Vec<i32> = v.iter().map(|x| x * 10).chain(w.iter().copied()).rev().collect(); println!("{r:?}");`
 - `VecDeque::remove` in generic code given an `Option` for its item, whose `None` the result's could look like: `fn take<T>(q: &mut std::collections::VecDeque<T>, i: usize) -> Option<T> { q.remove(i) } let mut q = std::collections::VecDeque::from(vec![None, Some(2)]); println!("{:?}", take(&mut q, 0));`
 - `dedup_by` in generic code, whose closure takes a `&mut` of a type parameter's items: `fn dd<T, F: FnMut(&mut T, &mut T) -> bool>(v: &mut Vec<T>, f: F) { v.dedup_by(f) } let mut v = vec![1, 1, 2]; dd(&mut v, |a, b| a == b); println!("{v:?}");`
-- `len()` of a zip: `let v = [1, 2, 3]; println!("{}", v.iter().zip(v.iter()).len());`
 - `size_hint()` of an adapter (`filter`, `take_while`, `flat_map` and the like) of a slice's, a collection's or a type parameter's iterator, and of a `str`'s `chars` and what's made of it; of an adapter of the crate's iterator or a range it's std's ([1092](../decisions/1092-the-iterator-protocol-is-one-contract.md)): `let v = [1, 2, 3]; println!("{:?}", v.iter().filter(|x| **x > 1).size_hint());`
 - A `&mut` from `flatten()` of an `iter_mut()`: `let mut g = vec![vec![1u64], vec![2]]; for x in g.iter_mut().flatten() { *x += 1; } println!("{g:?}");`
 - `sum()` or `product()` of `Wrapping`s: `let s: std::num::Wrapping<u8> = [std::num::Wrapping(200u8), std::num::Wrapping(100)].into_iter().sum(); println!("{s}");`
@@ -152,7 +151,6 @@ depends on what the program does:
 - `rfind` of a `skip()` or a `take()`, which rust-js can't step from its back yet: `let v = vec![1, 2, 3]; println!("{:?}", v.iter().take(2).rfind(|x| **x > 1));`
 - Stepping from its back a `step_by()` of a `Vec`'s items that have a destructor, which is held where it's made: `struct L(u32); impl Drop for L { fn drop(&mut self) {} } let v: Vec<L> = vec![L(1), L(2), L(3)].into_iter().step_by(2).rev().collect(); println!("{}", v.len());`
 - Stepping from its back, by `nth_back`, `rfold` or `rfind`, a `rev()` of a type parameter a struct holds, which is given as it is (#718): `struct Held<I>(I); impl<I: DoubleEndedIterator<Item = u32>> Held<I> { fn second_last(self) -> Option<u32> { self.0.rev().nth_back(1) } } println!("{:?}", Held(vec![1, 2, 3].into_iter()).second_last());`
-- Stepping from its back, by `nth_back`, `rfold` or `rfind`, a `rev()` of a `zip()` (#718): `let v = [1, 2, 3]; let w = [4, 5, 6]; println!("{:?}", v.iter().zip(w.iter()).rev().nth_back(1));`
 
 ## Numbers and text
 

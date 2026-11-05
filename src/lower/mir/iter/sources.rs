@@ -101,6 +101,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let range = crate::lower::iterators::steps(it).unwrap_or(it);
             return self.range_len(range, ty, kind);
         }
+        // A zip made here, the fewer of its sides', as std's `Zip`'s is
+        // (#740).
+        if let (Some((a_ty, b_ty)), Some(zip)) =
+            (r::zipped_sources(self.tcx, ty), crate::lower::iterators::zip_parts(it))
+        {
+            let a = self.counted_before_stepping(zip.a, a_ty, made)?;
+            let b = self.counted_before_stepping(zip.b, b_ty, made)?;
+            return Some(Expr::call(Expr::member(Expr::var("Math"), "min"), vec![a, b]));
+        }
         // A generic one's or a `dyn`'s, given knowing its length (ADR 0456):
         // its own, not `Iterator.from`'s of it.
         if (self.is_unknown(ty) || r::dyn_iter_trait(self.tcx, ty).is_some()) && self.knows_its_length(ty) {

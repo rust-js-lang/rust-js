@@ -936,6 +936,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         IterComb::Inspect,
                         IterComb::FilterMap,
                         IterComb::Chain,
+                        IterComb::Zip,
                     ];
                     let made = match back_made.contains(&comb) && this.stepped_from_its_back(output) {
                         true => this.as_double_ended(made, output, span)?,

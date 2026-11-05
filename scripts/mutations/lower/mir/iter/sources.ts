@@ -449,4 +449,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
   },
+  {
+    name: "zip-len-the-longer",
+    breaks: "`len()` of a zip made here is the longer of its sides' (#740)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            return Some(Expr::call(Expr::member(Expr::var(\"Math\"), \"min\"), vec![a, b]));\n",
+    replace: "            return Some(Expr::call(Expr::member(Expr::var(\"Math\"), \"max\"), vec![a, b]));\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_from_its_back.rs$"],
+  },
 ];

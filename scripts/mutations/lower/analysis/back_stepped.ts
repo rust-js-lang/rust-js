@@ -351,4 +351,12 @@ export const mutations: Mutation[] = [
     replace: "        .or_else(|| filtered_source(tcx, adapter))\n",
     tests: ["test/corpus.test.ts", "-t", "^inspect_of_dropping_items_from_its_back.rs$"],
   },
+  {
+    name: "zip-not-back-stepped",
+    breaks: "a zip held in a variable and stepped from its back isn't made knowing its back where it's made, and its `next_back` is refused (#740)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "    if zipped_sources(tcx, adapter).is_some() {\n        return Some(tcx.erase_and_anonymize_regions(adapter));\n    }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^zip_from_its_back.rs$"],
+  },
 ];

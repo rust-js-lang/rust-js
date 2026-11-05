@@ -74,16 +74,47 @@ function $getUnchecked(it, i, dictionary) {
   return typeof it.start === "bigint" ? it.start + BigInt(i) : it.start + i;
 }
 
-// `a.zip(b).rev()` of two iterators that know their backs and lengths,
-// `$iter`s: the longer trimmed from its back to the shorter's length, then
-// each's back paired, as Rust's `Zip::next_back` does (ADR 0493).
-function* $zipBack(a, b) {
-  for (let n = a.len() - b.len(); n > 0; n--) a.back();
-  for (let n = b.len() - a.len(); n > 0; n--) b.back();
-  while (true) {
-    const x = a.back();
-    const y = b.back();
-    if (x.done || y.done) return;
-    yield [x.value, y.value];
-  }
+// A zip of two iterators made knowing their backs and lengths, `zipped`
+// of `left` and `right`, as std's `Zip` is double-ended and exact-sized
+// where both its sides are: its length the shorter's, and its back std's
+// `next_back`, the longer trimmed from its back to the shorter's length,
+// each it trims dropped, `dropA` or `dropB`, then each's back paired;
+// where `right`'s step throws, a panic, `left`'s item dropped as the pair
+// std makes unwinds (#740).
+function $zipEndsOf(zipped, left, right, dropA, dropB) {
+  zipped.len = () => Math.min(left.len(), right.len());
+  zipped.back = () => {
+    for (let n = left.len() - right.len(); n > 0; n--) {
+      const x = left.back();
+      if (!x.done) dropA?.(x.value);
+    }
+    for (let n = right.len() - left.len(); n > 0; n--) {
+      const y = right.back();
+      if (!y.done) dropB?.(y.value);
+    }
+    const x = left.back();
+    let y;
+    try {
+      y = right.back();
+    } catch (error) {
+      if (!x.done) dropA?.(x.value);
+      throw error;
+    }
+    if (x.done || y.done) return { done: true, value: undefined };
+    return { done: false, value: [x.value, y.value] };
+  };
+  return zipped;
+}
+
+// `a.zip(b)`, `$lazyZip`'s, of sides made knowing their backs and lengths.
+function $zipEnds(a, b, dropA, dropB) {
+  const zipped = $lazyZip(a, b, dropA);
+  return $zipEndsOf(zipped, zipped.from[0], zipped.from[1], dropA, dropB);
+}
+
+// `a.zip(b)` std reads by index, `$trustedZip`'s, of sides made knowing
+// their backs and lengths.
+function $trustedZipEnds(a, b, dropA, dropB) {
+  const zipped = $trustedZip(a, b);
+  return $zipEndsOf(zipped, zipped.from[0], zipped.from[1], dropA, dropB);
 }

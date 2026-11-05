@@ -13,7 +13,7 @@ use crate::lower::body_queries::strip;
 use crate::lower::recognition::{
     Recognition, back_stepped_source, chained_sources, copied_source, enumerated_source, enumerates_a_compiled_struct,
     filter_mapped_source, filtered_source, flattened_source, inspected_source, is_double_ended, is_exact_size,
-    is_iter_adapter_def, mapped_source, reversed_source,
+    is_iter_adapter_def, mapped_source, reversed_source, zipped_sources,
 };
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::{ExprId, ExprKind};
@@ -251,6 +251,12 @@ fn back_stepped_adapter<'tcx>(
     // it's made, as MIR may hold it in a variable before its `rfold` or
     // `nth_back`, past a call, a cleanup that drops it, or a `&mut` (#702).
     if reversed_source(tcx, adapter).is_some() {
+        return Some(tcx.erase_and_anonymize_regions(adapter));
+    }
+    // A zip, whose own forms, `$lazyZip` and `$trustedZip`, step only
+    // forward: made knowing its back where it's made, `$zipEnds`, as MIR
+    // holds it in a variable before its `next_back` (#740).
+    if zipped_sources(tcx, adapter).is_some() {
         return Some(tcx.erase_and_anonymize_regions(adapter));
     }
     // An enumeration of items with a destructor, held in a variable to drop

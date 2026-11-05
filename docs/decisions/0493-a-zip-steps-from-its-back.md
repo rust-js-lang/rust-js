@@ -38,3 +38,52 @@ for (const [x, y] of $zipBack($iter($mutItems(a)), $iter($mutItems(b)))) {
 ## Consequences
 
 - **What compiles grows**: itertools' `multi_cartesian_product`.
+
+## Amended (2026-11-05, #740): any zip whose sides know their backs and lengths
+
+`v.iter().copied().zip(0..2).rev()` and its `cloned()` form were refused,
+"a `Zip<Copied<Iter<u32>>, Range<i32>>` as a `DoubleEndedIterator`", as
+were `len()` of a zip, a `rev()`'s `nth_back` of one (#718), and a zip of
+two `cloned()`s of a `Drop` item asked its length: `$zipBack` stepped two
+arrays' `$iter`s alone, of items with nothing to drop. **A zip made here,
+`$lazyZip(a, b, ..)` or one std reads by index, `$trustedZip(a, b)` (ADR
+0973), is made knowing its back and length where it's asked them,
+`$zipEnds(a, b, dropA, dropB)` or `$trustedZipEnds`, of its sides each
+made so** (knowing.rs's `zip_knowing`, of `as_double_ended` and
+`as_exact_size`): its length the shorter's, and its back std's
+`Zip::next_back`, the longer trimmed from its back to the shorter's
+length, each it trims dropped, then each's back paired, the first's item
+dropped where the second's step panics. One the crate steps from its back
+in a variable is made so where it's made (`back_stepped`, ADR 0545), and
+a `rev()` of one is `$rev` of it, made knowing its back too. Its `len()`
+made here is the fewer of its sides', `Math.min(v.length, w.length)`
+(`len_in_place`).
+
+`$zipBack` is gone, the user's decision (through m6-react): a `rev()` of
+a zip is `$rev($zipEnds(a, b))`, the one form, `rev_items`' of what's made
+knowing its back; `test/architecture-iterators.test.ts`' "a reversed zip
+has one form" refuses a `$zipBack` brought back. Value.rs's
+`zip_parts` reads what a zip is given, and `zip_ends` makes it, as it owns
+each iterator form (ADR 1092).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; a
+refusal of valid Rust lifted, each item given and dropped where std's
+are. Held by corpus `zip_from_its_back`, against native Rust in both
+builds, and `zip_from_back`. Mutations `zip-not-made-knowing-its-back`,
+`zip-back-trims-undropped`, `zip-not-counted-held`,
+`rev-of-zip-not-made-knowing` (`iterators/knowing.ts`),
+`zip-not-back-stepped` (`analysis/back_stepped.ts`), `zip-len-the-longer`
+(`mir/iter/sources.ts`), and `zip-ends-trim-keeps-a`,
+`zip-ends-back-throw-keeps-a`, `zip-ends-len-longer` (`runtime/lazy_zip.ts`),
+with `zip-back-untrimmed` on the new trim. #400's rule, a
+`size_hint()` of a `rev()` sized in place only where what it's made of is,
+is gone with its mutation, `rev-sized-whatever-its-source` (the user's
+decision, through m6-react: no code left that no test holds): it held a
+`rev()` of a zip apart as `$zipBack` made in place had no hint, and
+`$rev($zipEnds(..))` has std's. Without it no answer changes, of the corpus
+or either iterator slice, and `zip_size_hints`' `rev()` of a zip reads
+`$sizeHint($rev($zipEnds($iter(v), $iter(w))))`, not std's compiled
+`Rev<Zip>`. A zip of `cloned()`s whose
+`Clone` runs code is still refused, "a `Cloned<Iter<D>>` as an
+`ExactSizeIterator`": a `cloned()` of a slice's items made `.map(clone)`
+knows no length, #792.

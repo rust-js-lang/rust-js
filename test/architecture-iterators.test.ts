@@ -324,3 +324,12 @@ test("whether a collect's items drop is asked of the lowering's drops", () => {
   const given = drops.slice(drops.indexOf("pub(super) fn drops_given"));
   expect(given.slice(0, given.indexOf("\n}\n"))).toMatch(/state\.give\([\s\S]*\.drops\(ty\) != Drops::Nothing/);
 });
+
+// A reversed zip is `$rev($zipEnds(a, b))`, `rev_items`' of what's made
+// knowing its back, the one form; `$zipBack`, its second, is gone (ADR 0493,
+// #740, the user's decision). A new one fails here.
+test("a reversed zip has one form, never `$zipBack`", () => {
+  const sources = ["src/lower.rs", ...files("src/lower"), ...files("src/runtime")];
+  const found = sources.filter((path) => read(path).includes("$zipBack"));
+  expect([found, "a reversed zip is `$rev($zipEnds(a, b))` (ADR 0493)"]).toEqual([[], "a reversed zip is `$rev($zipEnds(a, b))` (ADR 0493)"]);
+});

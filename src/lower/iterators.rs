@@ -16,6 +16,7 @@ pub(in crate::lower) use self::value::{
     held_by_its_owner, is_knowing, is_lent, is_range_stepped, is_reversed, iterator_parts, its_facts,
     made_knowing_its_back, repeating_n, repeating_n_parts, reversed_by, reversed_of, stepped_every,
     stepped_every_parts, stepped_from, stepped_range, stepped_value, steps, unlent, was_made_knowing_its_back,
+    zip_parts,
 };
 pub(super) use self::{eager::*, in_place::*};
 
@@ -456,7 +457,7 @@ pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
 /// 0561), `$lazyScan` (ADR 0517) and `$lazyMapWhile`, not fused, and each of
 /// its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 34] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 35] = [
     "$stdIterator",
     "$memchrIter",
     "$mapEnds",
@@ -486,7 +487,8 @@ pub(crate) const ITERATOR_HELPERS: [&str; 34] = [
     "$lazyChain",
     "$lazyZip",
     "$trustedZip",
-    "$zipBack",
+    "$zipEnds",
+    "$trustedZipEnds",
     "$flatMap",
     "$repeatingWith",
     "$successors",

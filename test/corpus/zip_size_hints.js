@@ -3,13 +3,10 @@
 import {
   iterator_chain,
   iterator_map,
-  iterator_rev,
   iterator_skip,
   iterator_zip,
   mapIterator___iteratorGetUnchecked,
   skipIterator___iteratorGetUnchecked,
-  zipDoubleEndedIterator_nextBack,
-  zipIterator___iteratorGetUnchecked,
 } from "@rust-js/std/iter.js";
 import {
   $foldOf,
@@ -17,11 +14,12 @@ import {
   $iterator,
   $lazyZip,
   $next,
-  $nextBack,
   $rangeFromStep,
   $rangeNext,
+  $rev,
   $sizeHint,
   $slice,
+  $zipEnds,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -37,7 +35,6 @@ function show([low, high]) {
 }
 
 function main() {
-  const iterExactSizeIterator = { len: (iterator) => iterator.len() };
   const iterIntoIterator = {
     intoIter: (items) => items,
     IntoIterIterator: () => ({ next: $next }),
@@ -155,41 +152,7 @@ function main() {
       ),
     ),
   );
-  show(
-    $sizeHint(
-      iterator_rev(
-        iterator_zip(
-          $iter(v),
-          $iter(w),
-          { next: $next },
-          iterIntoIterator,
-          true,
-          true,
-          true,
-          true,
-          true,
-          true,
-        ),
-        { next: $next, fold: $foldOf, getUnchecked: zipIterator___iteratorGetUnchecked },
-        {
-          next_back: (iterator) =>
-            zipDoubleEndedIterator_nextBack(
-              iterator,
-              { next: $next },
-              { next_back: $nextBack },
-              iterExactSizeIterator,
-              { next: $next },
-              { next_back: $nextBack },
-              iterExactSizeIterator,
-              true,
-              true,
-              true,
-              true,
-            ),
-        },
-      ),
-    ),
-  );
+  show($sizeHint($rev($zipEnds($iter(v), $iter(w)))));
   show(
     $sizeHint(
       iterator_zip(

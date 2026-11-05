@@ -196,9 +196,9 @@ export const mutations: Mutation[] = [
     breaks:
       "every `rev()` is std's compiled `Rev`, a chain stepped where it's made no longer `v.toReversed()`",
     file: "src/lower/body_queries.rs",
-    find: "            if steps_as_js(callee, index, &found, at, maker, made) {\n",
+    find: "            if steps_as_js(callee, index, &found, at, maker) {\n",
     replace:
-      "            if false && steps_as_js(callee, index, &found, at, maker, made) {\n",
+      "            if false && steps_as_js(callee, index, &found, at, maker) {\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
   },
@@ -493,15 +493,6 @@ export const mutations: Mutation[] = [
       "-t",
       "an == of a value read as the registry's symbol",
     ],
-  },
-  {
-    name: "rev-sized-whatever-its-source",
-    breaks:
-      "a `rev()` of a zip whose `size_hint()` is asked is made in place, `$zipBack`, as only the `rev()` was asked whether it's sized: `(0, None)` (#400)",
-    file: "src/lower/body_queries.rs",
-    find: "            Some(&(source, of)) => (made, maker) = (source, of),\n",
-    replace: "            Some(_) => break true,\n",
-    tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
   },
   {
     name: "as-given-lent-unseen",

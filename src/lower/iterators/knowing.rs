@@ -17,8 +17,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `rev()` is made here, the crate's iterator, a range or a std
     /// adapter, or a type parameter, `$rev` of the JS iterator it's given
     /// made knowing its back (`rev_items`, #718), refused of one given as it
-    /// is, stepped by its dictionary (`reversed`); not a zip, which
-    /// `reversed` steps by what it's given. So one made in place that MIR
+    /// is, stepped by its dictionary (`reversed`); a zip's, `$rev` of its
+    /// `$zipEnds` (#740). So one made in place that MIR
     /// holds in a variable
     /// before it's stepped, past a call or a cleanup that drops it, or lends
     /// to `nth_back`, steps from its back as it is, no form of it left to
@@ -27,8 +27,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty = self.reveal(ty.peel_refs());
         crate::lower::recognition::reversed_source(self.tcx, ty).is_some_and(|source| {
             let source = self.reveal(source.peel_refs());
-            (!self.is_unknown(source) || matches!(source.kind(), ty::Param(_)))
-                && crate::lower::recognition::zipped_sources(self.tcx, source).is_none()
+            !self.is_unknown(source) || matches!(source.kind(), ty::Param(_))
         }) && self.stepped_from_its_back(ty)
     }
 
@@ -173,8 +172,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A flatten the crate steps from its back, made knowing it,
         // `$flattenEnds`, and a chain a function gives behind an `impl`,
         // `$lazyChain` of sides made knowing theirs (#739).
+        // And a zip the crate steps from its back, `$zipEnds` (#740).
         if crate::lower::recognition::flattened_source(self.tcx, ty).is_some()
             || crate::lower::recognition::chained_sources(self.tcx, ty).is_some() && self.stepped_from_its_back(ty)
+            || crate::lower::recognition::zipped_sources(self.tcx, ty).is_some()
         {
             return self.stepped_from_its_back(ty);
         }
@@ -281,10 +282,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && compiled_exact()
                     && self.stepped_from_its_back(ty);
         }
+        // A zip the crate steps from its back, made knowing its length too,
+        // `$zipEnds` (#740).
+        if crate::lower::recognition::zipped_sources(self.tcx, ty).is_some() && self.knows_its_back(ty) {
+            return true;
+        }
         if let Some(id) = crate::lower::recognition::dyn_iter_trait(self.tcx, ty) {
             return crate::lower::recognition::is_exact_size(self.tcx, id);
         }
         self.exact_size_param(self.tcx.typeck_root_def_id(self.item), ty)
+    }
+
+    /// A zip made here of `ty`, `$lazyZip(a, b, ..)` or one std reads by
+    /// index, `$trustedZip(a, b)`: `$zipEnds` or `$trustedZipEnds` of its
+    /// sides, each made knowing its length, and its back where `back` asks,
+    /// as std's `Zip` is exact-sized and double-ended where both its sides
+    /// are, what its back trims of each dropped by its items' drop (#740).
+    /// `None` of another value.
+    fn zip_knowing(&mut self, value: &Expr, ty: ty::Ty<'tcx>, back: bool, span: Span) -> R<Option<Expr>> {
+        let (Some((a_ty, b_ty)), Some(zip)) = (
+            crate::lower::recognition::zipped_sources(self.tcx, ty),
+            value::zip_parts(value),
+        ) else {
+            return Ok(None);
+        };
+        let a = self.as_exact_size(zip.a.clone(), a_ty.peel_refs(), back, span)?;
+        let b = self.as_exact_size(zip.b.clone(), b_ty.peel_refs(), back, span)?;
+        let item_drop = |cx: &mut Self, side: ty::Ty<'tcx>| match cx.iterator_item(side.peel_refs()) {
+            Some(item) if back => cx.std_drop_function(item, span),
+            _ => Ok(None),
+        };
+        // What std's back trims of `a` dropped too where it reads by index,
+        // whose own `next` drops none.
+        let drop_a = match (zip.drop_a, zip.by_index) {
+            (Some(drop_a), _) => Some(drop_a.clone()),
+            (None, true) => item_drop(self, a_ty)?,
+            (None, false) => None,
+        };
+        let drop_b = item_drop(self, b_ty)?;
+        Ok(Some(value::zip_ends(zip.by_index, a, b, (drop_a, drop_b))))
     }
 
     /// `value`, an iterator of type `ty`, given where generic code asks its
@@ -346,6 +382,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if self.steps_an_array(ty) {
             return Ok(self.std_iterator(value, ty));
+        }
+        if let Some(zipped) = self.zip_knowing(&value, ty, back, span)? {
+            return Ok(zipped);
         }
         // `skip(n)` or `take(n)` made here, `src.drop(n)`: `$skipping` or
         // `$taking` of its source, made knowing its back and its length,
@@ -534,6 +573,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let a = self.as_double_ended(a, first.peel_refs(), span)?;
             let b = self.as_double_ended(b, second, span)?;
             return Ok(Expr::call_helper("$lazyChain", vec![a, b]));
+        }
+        if let Some(zipped) = self.zip_knowing(&value, ty, true, span)? {
+            return Ok(zipped);
         }
         // A map made here of one that knows its back, `src.map(f)`: its
         // source's items, each `f`'s, from either end, as Rust's `Map` steps

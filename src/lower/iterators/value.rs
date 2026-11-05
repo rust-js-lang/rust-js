@@ -261,6 +261,47 @@ pub(in crate::lower) fn is_reversed(e: &Expr) -> bool {
     reversed_of(e).is_some()
 }
 
+/// What `e`, a zip made here, is given (`zipped`'s): `$lazyZip(a, b, ..)`'s
+/// sides, and what drops each of `a`'s items `b` runs out at (ADR 0465);
+/// or `$trustedZip(a, b)`'s, std's read by index (ADR 0973), `by_index`.
+pub(in crate::lower) struct ZipParts<'e> {
+    pub(in crate::lower) a: &'e Expr,
+    pub(in crate::lower) b: &'e Expr,
+    pub(in crate::lower) drop_a: Option<&'e Expr>,
+    pub(in crate::lower) by_index: bool,
+}
+
+pub(in crate::lower) fn zip_parts(e: &Expr) -> Option<ZipParts<'_>> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    let by_index = match callee.helper_name() {
+        Some("$lazyZip") => false,
+        Some("$trustedZip") => true,
+        _ => return None,
+    };
+    let (a, b, drop_a) = match args.as_slice() {
+        [a, b] => (a, b, None),
+        [a, b, drop_a] => (a, b, Some(drop_a)),
+        _ => return None,
+    };
+    Some(ZipParts { a, b, drop_a, by_index })
+}
+
+/// `$zipEnds(a, b, dropA, dropB)`, or of a zip `by_index`
+/// `$trustedZipEnds`: a zip of sides made knowing their backs and lengths,
+/// which knows its own, as std's `Zip` is double-ended and exact-sized
+/// where both its sides are; what its back trims of each dropped by its
+/// drop (#740).
+pub(in crate::lower) fn zip_ends(by_index: bool, a: Expr, b: Expr, drops: (Option<Expr>, Option<Expr>)) -> Expr {
+    let mut args = vec![a, b];
+    match drops {
+        (drop_a, Some(drop_b)) => args.extend([drop_a.unwrap_or_else(Expr::undefined), drop_b]),
+        (drop_a, None) => args.extend(drop_a),
+    }
+    Expr::call_helper(if by_index { "$trustedZipEnds" } else { "$zipEnds" }, args)
+}
+
 /// `$stepBy(it, n, ..)`: `it` stepped every `n`th item, given `args`, `it`
 /// and `n` first (#231), marked so.
 pub(in crate::lower) fn stepped_every(args: Vec<Expr>) -> Expr {

@@ -528,23 +528,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// back, its `Some` boxed where it may look like `None` (ADR 0051); of
     /// one that knows its back, `$rev(it)` (ADRs 0429, 0516), of a type
     /// parameter's given as it is, by its `DoubleEndedIterator` dictionary's
-    /// `next_back` (ADR 0487); and of a zip of two arrays' iterators, made
-    /// here, `$zipBack` of them, of items with nothing to drop (ADR 0493).
-    /// `None` of another.
+    /// `next_back` (ADR 0487). A zip made here is `as_double_ended`'s,
+    /// `$zipEnds` (ADR 0493, #740). `None` of another.
     pub(super) fn reversed(&self, it: &Expr, iter_ty: Ty<'tcx>) -> Option<Expr> {
-        if let Some((a, b)) = crate::lower::recognition::zipped_sources(self.tcx, iter_ty) {
-            let js::ExprKind::Call(zip, sides) = &it.kind else {
-                return None;
-            };
-            let leaves_none = |side: Ty<'tcx>| {
-                self.steps_an_array(side)
-                    && self
-                        .iterator_item(side)
-                        .is_some_and(|item| self.drops(item) == crate::lower::drops::Drops::Nothing)
-            };
-            return (zip.helper_name() == Some("$lazyZip") && sides.len() == 2 && leaves_none(a) && leaves_none(b))
-                .then(|| Expr::call_helper("$zipBack", sides.clone()));
-        }
         let boxed = self.iterator_item(iter_ty).is_none_or(|item| self.boxed_payload(item));
         let double_ended = self.recognition().double_ended_iterator()?;
         let next_back = crate::lower::recognition::extension_entry(self.tcx, double_ended);
