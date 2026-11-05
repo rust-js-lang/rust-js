@@ -29,6 +29,9 @@ function bagDebug_fmt(bag) {
   return `Bag([${bag[0].join(", ")}])`;
 }
 
+export const bagFromIteratorU32 = {
+  fromIter: (arg0, TIntoIterInPlace) => bagFromIteratorU32_fromIter(arg0),
+};
 function bagFromIteratorU32_fromIter(items) {
   return [
     Array.from(
@@ -48,7 +51,7 @@ function parsed(words, BFromIteratorResult) {
 function main() {
   const v = gather(3, { fromIter: (items) => Array.from(items) });
   const s = gather(2, { fromIter: (items) => new Set(Array.from(items)) });
-  const b = gather(4, { fromIter: (items) => bagFromIteratorU32_fromIter(Array.from(items)) });
+  const b = gather(4, bagFromIteratorU32);
   const t = made("abc", { fromIter: (items) => Array.from(items).join("") });
   const pairs = new $BTreeMap(
     gather(2, { fromIter: (items) => Array.from(items) })

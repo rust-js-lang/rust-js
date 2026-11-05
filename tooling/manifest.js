@@ -1,4 +1,10 @@
 // The compiler's versioned build result. Shared by native and WASI hosts.
+
+// The library ABI a contract is of: `src/library.rs`' `VERSION`, its
+// authority, mirrored here across the compiler's boundary; every library
+// a test builds and reads holds the two equal.
+export const LIBRARY_ABI = 17;
+
 function validCompiler(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value)
     && typeof value.version === "string" && value.version.length > 0
@@ -59,7 +65,7 @@ export function parseManifest(text) {
   if (result.library !== undefined) {
     const library = result.library;
     // ADR 0100: each item another crate can reach, by rustc's key for it.
-    if (!object(library) || library.version !== 16 || typeof library.name !== "string" || !library.name
+    if (!object(library) || library.version !== LIBRARY_ABI || typeof library.name !== "string" || !library.name
         || typeof library.crate_hash !== "string" || !library.crate_hash
         || !Array.isArray(library.inputs) || !library.inputs.every(fingerprint)
         || !strings(library.impls) || !strings(library.libraries)
@@ -101,7 +107,7 @@ export function parseManifest(text) {
             && typeof associated.key === "string" && strings(associated.facts)))
         // The structs its code makes values of, by key (ADR 1022, amended).
         || !(library.built === undefined || strings(library.built))) {
-      throw new Error("Invalid rust-js library contract; expected library ABI 14");
+      throw new Error(`Invalid rust-js library contract; expected library ABI ${LIBRARY_ABI}`);
     }
   }
   if (!path(result.input) || !path(result.output) || !paths(result.sources)

@@ -618,9 +618,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(item) = item
             && let Some(dictionary) = self.collected_evidence(output, item)
         {
-            let from_iter = std_item(self.tcx, StdItem::FromIterator);
-            let from_iter = crate::lower::bindings::trait_method_name(self.tcx, from_iter, "from_iter");
-            return Ok(Expr::call(Expr::member(dictionary, from_iter), vec![it]));
+            let from_iterator = std_item(self.tcx, StdItem::FromIterator);
+            let from_iter = crate::lower::bindings::trait_method_name(self.tcx, from_iterator, "from_iter");
+            // After the items, what its `from_iter::<I>` is given of its own
+            // `I`, the iterator collected: the facts its declaration carries,
+            // its `IntoIter`'s `InPlace` (`std_method_facts`, #794), then the
+            // drops (ADR 0163), as a call through any dictionary gives them.
+            let mut args = vec![it];
+            if let Some(iter_ty) = iter_ty {
+                let method = crate::lower::recognition::trait_method(self.tcx, from_iterator, "from_iter");
+                let generic_args = self.tcx.mk_args(&[output.into(), item.into(), iter_ty.into()]);
+                args.extend(self.own_evidence(method, generic_args, None, span)?);
+            }
+            return Ok(Expr::call(Expr::member(dictionary, from_iter), args));
         }
         Ok(if self.is_std_type(output, StdItem::BinaryHeap) {
             let items = match self.unwinding_collect(output, item, iter_ty, span)? {

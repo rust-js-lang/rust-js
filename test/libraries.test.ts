@@ -659,3 +659,87 @@ test("imports are in the order of the uses that make them, a binding's and a lib
   expect(imported()).toEqual(["config/src/setup", "../../own.js", "server/src/Fizz"]);
   expect(loaded()).toBe("8 mark,own,start");
 }, 600_000);
+
+// A library's generic collect into its caller's `T: FromIterator<D>`, and
+// another library's `impl FromIterator<D> for Req` of `Vec::from_iter`,
+// semver's `VersionReq` (#794), each compiled without the other: what the
+// first gives through the dictionary is what `FromIterator::from_iter`'s
+// declaration carries, its iterator's in-place buffer, the same in both
+// crates (`std_method_facts`), so the second's impl, which asks it, is
+// given it, not `undefined`: the buffer by which a panic partway through
+// the in-place collect drops what it collected and what's left. (That drop
+// itself is #800's: the panic's run against native waits for it.)
+test("a std trait's generic method's dictionary carries the same facts in each library", () => {
+  const dir = fixture("std-method-facts");
+  writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["items", "reqs", "app"]\nresolver = "3"\n');
+  const crates: [string, string, string][] = [
+    ["items", "", `pub struct D(pub i32);
+
+impl Drop for D {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+
+pub fn gather<T: FromIterator<D>>(v: Vec<D>, stop: i32) -> T {
+    v.into_iter()
+        .map(|d| if d.0 == stop { panic!("at {stop}") } else { D(d.0 * 10) })
+        .collect()
+}
+`],
+    ["reqs", 'items = { path = "../items" }\n', `use items::D;
+
+pub struct Req {
+    pub cs: Vec<D>,
+}
+
+impl FromIterator<D> for Req {
+    fn from_iter<I: IntoIterator<Item = D>>(iter: I) -> Self {
+        Req { cs: Vec::from_iter(iter) }
+    }
+}
+`],
+    ["app", 'items = { path = "../items" }\nreqs = { path = "../reqs" }\n', `use items::{D, gather};
+use reqs::Req;
+
+pub fn run() {
+    let req: Req = gather(vec![D(1), D(2), D(3)], 0);
+    println!("gathered {}", req.cs.len());
+    drop(req);
+}
+`],
+  ];
+  for (const [name, deps, source] of crates) {
+    mkdirSync(join(dir, name, "src"), { recursive: true });
+    writeFileSync(join(dir, name, "Cargo.toml"), `[package]\nname = "${name}"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\n${deps}`);
+    writeFileSync(join(dir, name, "src", "lib.rs"), source);
+  }
+  mkdirSync(join(dir, "node_modules", "@rust-js"), { recursive: true });
+  symlinkSync(runtimeDir, join(dir, "node_modules", "@rust-js", "runtime"), "dir");
+  symlinkSync(stdDir, join(dir, "node_modules", "@rust-js", "std"), "dir");
+  // What native Rust prints of the three crates.
+  const native = join(dir, "native");
+  mkdirSync(native);
+  const rlib = (name: string, ...externs: string[]) =>
+    run(["rustc", "--edition=2024", "--crate-type=rlib", "--crate-name", name, join(dir, name, "src", "lib.rs"), "-o", join(native, `lib${name}.rlib`),
+      ...externs.flatMap((e) => ["--extern", `${e}=${join(native, `lib${e}.rlib`)}`]), "-L", `dependency=${native}`]);
+  rlib("items");
+  rlib("reqs", "items");
+  rlib("app", "items", "reqs");
+  writeFileSync(join(native, "main.rs"), "fn main() {\n    app::run();\n}\n");
+  run(["rustc", "--edition=2024", join(native, "main.rs"), "-o", join(native, "program"), "--extern", `app=${join(native, "libapp.rlib")}`, "-L", `dependency=${native}`]);
+  const nativeRun = runSync([join(native, "program")], dir, 30_000).stdout;
+  expect(nativeRun).toContain("gathered 3");
+  expect(build(join(dir, "app")).stderr).toBe("");
+  // The library's generic collect, compiled without the other's impl, gives
+  // a `Vec`'s iterator's in-place buffer through the dictionary, and so does
+  // the consumer's own of it (ADR 0914), as it compiles the impl, which takes
+  // it.
+  const fact = /TFromIteratorD\.fromIter\(\s*\$closing\(\$iter\(v\)[\s\S]*?\),\s*\[4, 4\],/;
+  expect(readFileSync(join(dir, "items", "src", "lib.js"), "utf8")).toMatch(fact);
+  const app = readFileSync(join(dir, "app", "src", "lib.js"), "utf8");
+  expect(app).toContain("fromIter(\n      iter,\n      [4, 4],");
+  expect(app).toContain("function reqFromIteratorD_fromIter(iter, IIntoIterInPlace,");
+  const ran = runSync([node ?? "node", "--input-type=module", "--eval", `(await import(${JSON.stringify(join(dir, "app", "src", "lib.js"))})).run();`], dir, 30_000);
+  expect(ran.stdout).toBe(nativeRun);
+}, 600_000);

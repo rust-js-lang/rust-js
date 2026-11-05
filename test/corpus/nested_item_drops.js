@@ -130,6 +130,7 @@ function concat(
   iter,
   IItemExtendIItemItem,
   IItemIntoIterator,
+  IItemIntoIterInPlace,
   dropIItem,
   dropIIntoIter,
   dropIItemIntoIter,
@@ -145,6 +146,7 @@ function concat(
             IItemExtendIItemItem.extend(
               self,
               $given(IItemIntoIterator.intoIter(b), IItemIntoIterator.IntoIterIterator(), true),
+              IItemIntoIterInPlace,
               dropIItem,
               dropIItemIntoIter,
             );
@@ -272,6 +274,7 @@ function main() {
       },
     },
     intoIterator,
+    [4, 4],
     $dropEach(loudDrop_drop),
     (intoIter) => {
       for (const item of intoIter) {

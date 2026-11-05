@@ -460,8 +460,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // which it passes on as the method's (ADR 0466), as the trait
             // method's are named.
             let parent = self.tcx.generics_of(item.def_id).parent_count as u32;
+            // A std trait's required method's, what its declaration says
+            // (`std_method_facts`, #794).
             let own_facts: Vec<(u32, TypeFact)> = (self.krate.type_facts.get(&item.def_id).into_iter().flatten())
                 .copied()
+                .chain(super::std_method_facts(self.tcx, self.krate.foreign, item.def_id))
                 .filter(|&(index, _)| index >= parent)
                 .collect();
             let fact_mark = self.given.type_facts.len();
@@ -549,10 +552,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let given_back =
                 (forms.result_within.as_ref()).and_then(|within| within.adapted(&Expr::var(&given), false));
             let made = call.is_none() && given_back.is_none();
-            let patterns = params.into_iter().map(|name| match &defaulted {
-                Some((location, at)) if *location == name => js::Pattern::Defaulted(name, at.clone()),
-                _ => name.into(),
-            });
             let call = call.unwrap_or_else(|| Expr::call(callee, values));
             let body = match given_back {
                 Some(adapted) => vec![
@@ -561,6 +560,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ],
                 None => vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
             };
+            let patterns = params.into_iter().map(|name| match &defaulted {
+                Some((location, at)) if *location == name => js::Pattern::Defaulted(name, at.clone()),
+                _ => name.into(),
+            });
             let arrow = Expr::arrow(patterns.collect(), body);
             // One that passes on just what it's given, in order, is the method.
             let value = match made {

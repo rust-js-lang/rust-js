@@ -84,6 +84,24 @@ export const mutations: Mutation[] = [
     find: "        ty::Tuple(parts) => (parts.iter())\n",
     replace: "        ty::Tuple(parts) if false => (parts.iter())\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
+  },
+  {
+    name: "std-method-facts-none",
+    breaks:
+      "a std trait's required generic method carries nothing of its own type parameters, so `impl FromIterator<D> for Req`'s `Vec::from_iter(iter)` asks its `I::IntoIter`'s in-place buffer of no caller, refused (#794)",
+    file: "src/lower/traits/drop_params.rs",
+    find: "    if method.is_local() || foreign.is_library(method.krate) || tcx.trait_of_assoc(method).is_none() {\n",
+    replace: "    if true || method.is_local() || foreign.is_library(method.krate) || tcx.trait_of_assoc(method).is_none() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^from_iter_impl_of_dropping.rs$"],
+  },
+  {
+    name: "std-method-facts-of-provided",
+    breaks:
+      "a std trait's provided method, whose std body the crate compiles and asks its own (ADR 0561), carries its declaration's facts too: `Iterator::collect` given `B: FromIterator` asks an `InPlace` its body never reads, the JS of every generic collect another parameter (#794)",
+    file: "src/lower/traits/drop_params.rs",
+    find: "    if tcx.associated_item(method).defaultness(tcx).has_value() {\n",
+    replace: "    if false && tcx.associated_item(method).defaultness(tcx).has_value() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(generic_chain_of_into|into_iter_arguments|zip_into_mut_slice|backs_given_behind_impls|adapter_drops|held_adapters_stepped_to_their_end).rs$"],
     snapshots: true,
   },
 ];

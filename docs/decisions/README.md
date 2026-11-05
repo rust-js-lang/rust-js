@@ -914,7 +914,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [0463 Hashing is std's: its hashers, and what `Hash` writes to one](0463-hashing-is-stds.md) *(extended by 0864: `ptr::hash` writes its address)*
 - [0464 A pick drops what it passes over, and a consumed iterator is dropped after](0464-a-pick-drops-what-it-passes-over.md)
 - [0465 Dropping a std adapter is closing it, and what it holds is closed by its own drop](0465-dropping-an-adapter-is-closing-it.md)
-- [0466 A generic map's class is its caller's, a type fact of its key](0466-a-generic-maps-class-is-its-callers.md) *(amended: a `&T` key's class is `T`'s; a map std makes, called or given, or behind the `&mut` it gives)*
+- [0466 A generic map's class is its caller's, a type fact of its key](0466-a-generic-maps-class-is-its-callers.md) *(amended: a `&T` key's class is `T`'s; a map std makes, called or given, or behind the `&mut` it gives; extended by 1095: std traits' generic methods carry what their declaration says)*
+- [1095 A std trait's generic method's dictionary carries what its declaration says](1095-a-std-traits-generic-method-carries-what-its-declaration-says.md) *(the user's decision, option (B), #794; library ABI 17)*
 - [0467 A map's keys with a destructor drop as Rust's do](0467-a-maps-keys-drop-as-rusts-do.md)
 - [0468 A lent adapter leaves its source to its lender, lent once](0468-a-lent-adapter-leaves-its-source-to-its-lender.md)
 - [0469 A function std leaves unrun is dropped there](0469-a-function-std-leaves-unrun-is-dropped-there.md)

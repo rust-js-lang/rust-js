@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
-import { parseManifest } from "../tooling/manifest.js";
+import { LIBRARY_ABI, parseManifest } from "../tooling/manifest.js";
 import { channel } from "../scripts/toolchain.ts";
 import { underLoad } from "../scripts/timing";
 
@@ -51,7 +51,7 @@ test("a real Cargo dependency links functions and function values into JS", asyn
   const original = readFileSync(libraryManifest, "utf8");
   parseManifest(original);
   for (const [edit, message] of [
-    [(m: any) => m.library.version = 2, "unsupported library ABI 2; expected 16"],
+    [(m: any) => m.library.version = 2, `unsupported library ABI 2; expected ${LIBRARY_ABI}`],
     [(m: any) => m.compiler.toolchain = "wrong", "incompatible dependency compiler identity"],
     // Another build of the compiler, of one version, or one before builds
     // were told apart (ADR 1003).

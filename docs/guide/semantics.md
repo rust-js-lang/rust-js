@@ -658,6 +658,12 @@ What's refused is in [the limitations](limitations.md).
 - **A collection of the crate's is its own impls':** `for` over it calls
   its `IntoIterator`, `collect()` its `FromIterator`, `extend` its
   `Extend`, `sum()` its `Sum` ([0160](../decisions/0160-user-collections.md)).
+  Through a dictionary, from generic code or a library, its `from_iter`,
+  `extend` or `sum` is given, after its items, what std's trait declares
+  of them, the same in every crate: the buffer std may collect them in,
+  in place, by which a panic drops what's collected,
+  `TFromIteratorD.fromIter(items, [4, 4])` of a `Vec`'s iterator
+  ([1095](../decisions/1095-a-std-traits-generic-method-carries-what-its-declaration-says.md)).
   Given where any `IntoIterator` goes, to `v.extend(cart)` or generic code,
   it's refused: that code wouldn't call its `into_iter`. An iterator of the
   crate's runs from both ends by its own `next_back`, `rev()` included, and

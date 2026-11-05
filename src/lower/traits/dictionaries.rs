@@ -251,7 +251,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A std collection's `FromIterator`, `{ from_iter(items) }`: what
         // `collect` into it makes, of the items given, any iterable (ADR 0445).
-        if is_std_def(self.tcx, tr.def_id, StdItem::FromIterator) && !self.has_user_impl(tr.def_id, ty) {
+        // Not the crate's own impl, `impl FromIterator<C> for Req`, of the
+        // `A` it's given: its `from_iter` is its entry (#794).
+        if is_std_def(self.tcx, tr.def_id, StdItem::FromIterator) && !self.is_user_impl(tr) {
             let items = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![Expr::var("items")]);
             let made = self.collected_into(items, ty, Some(tr.args.type_at(1)), None, span)?;
             let from_iter = Expr::arrow(

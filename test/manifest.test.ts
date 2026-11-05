@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, realpathSync, writeFileSync, rmSync, readFileSync, mkdirSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseManifest, mapManifestPaths, parseCompilerIdentity } from "../tooling/manifest.js";
+import { LIBRARY_ABI, parseManifest, mapManifestPaths, parseCompilerIdentity } from "../tooling/manifest.js";
 import { createNativeBuilder } from "../tooling/build.js";
 import { buildCompiler, cargoApp, compiler, fixture, installRuntime, run } from "./support";
 
@@ -75,7 +75,7 @@ test("compiler identities reject incompatible ABI and missing version fields", (
 // types whose `Rc`s it counts (ADR 0852).
 test("library manifests validate their items and remap fingerprinted inputs", () => {
   const library = {
-    version: 16, name: "shared", crate_hash: "0123456789abcdef", inputs: [{ file: "/virtual/shared.rs", hash: "1234567890abcdef" }],
+    version: LIBRARY_ABI, name: "shared", crate_hash: "0123456789abcdef", inputs: [{ file: "/virtual/shared.rs", hash: "1234567890abcdef" }],
     items: [{ key: "ab12", rust_path: "shared::User::validate", module: [], export: "User", member: "validate" },
       { key: "cd34", rust_path: "shared::count", module: ["util"], export: "count", member: null, params: [{ index: 0, marks: ["drop"] }, { index: 1, marks: ["copy", "clone"], stepped: ["9f0e"] }, { index: 3, facts: ["Size", "Align"], built: { of: { adt: { key: "0f1e", args: [{ slot: 2 }, { tuple: [{ primitive: "u8" }, { ref: { mutable: false, to: { array: { len: 4, of: { slot: 0 } } } } }] }] } }, gates: [0] } }], facts: ["takes_location"], nulled_params: [0] }],
     impls: ["ef56"], libraries: ["base"], counted_rcs: [{ of: "ab12", args: [{}] }],
@@ -231,4 +231,13 @@ test("a library is refused without its manifest", () => {
   writeFileSync(join(dir, "lib.rs"), "pub fn one() -> u32 { 1 }\n");
   expect(() => run([compiler, join(dir, "lib.rs"), "--library"])).toThrow("--library requires --manifest");
   expect(existsSync(join(dir, "lib.js"))).toBe(false);
+});
+
+// The library ABI the tooling reads, `LIBRARY_ABI` in tooling/manifest.js,
+// mirrors the compiler's, `src/library.rs`' `VERSION`: the std package's
+// manifest, which the compiler writes and every compile checks is of its
+// `VERSION`, says the ABI the tooling takes.
+test("the tooling's library ABI is the compiler's", () => {
+  const std = JSON.parse(readFileSync(join(import.meta.dir, "..", "std", "manifest.json"), "utf8"));
+  expect(std.library.version).toBe(LIBRARY_ABI);
 });

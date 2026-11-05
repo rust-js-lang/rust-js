@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a std collection's `FromIterator` has no dictionary, and generic code that collects into one is refused",
     file: "src/lower/traits/dictionaries.rs",
-    find: "        if is_std_def(self.tcx, tr.def_id, StdItem::FromIterator) && !self.has_user_impl(tr.def_id, ty) {\n",
+    find: "        if is_std_def(self.tcx, tr.def_id, StdItem::FromIterator) && !self.is_user_impl(tr) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect.rs$"],
   },
@@ -622,5 +622,15 @@ export const mutations: Mutation[] = [
     find: "            && (!matches!(ty.kind(), ty::Ref(..)) || self.recognition().iterates_as_itself(ty))\n",
     replace: "            && !matches!(ty.kind(), ty::Ref(..))\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^mut_ref_iterators_into_iter with std"],
+  },
+  {
+    name: "user-from-iterator-as-collection",
+    breaks:
+      "the crate's own `impl FromIterator<u32> for Bag` is taken for a std collection's, its dictionary an entry of `Array.from(items)` that gives the impl no fact of what it's given, where it's the impl's own (#794)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "        if is_std_def(self.tcx, tr.def_id, StdItem::FromIterator) && !self.is_user_impl(tr) {\n",
+    replace: "        if is_std_def(self.tcx, tr.def_id, StdItem::FromIterator) && !self.has_user_impl(tr.def_id, ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect.rs$"],
+    snapshots: true,
   },
 ];

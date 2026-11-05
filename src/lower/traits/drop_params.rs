@@ -66,6 +66,84 @@ pub(in crate::lower) fn own_drop_params<'tcx>(
     indices
 }
 
+/// What a std trait's required generic method's dictionary carries of its
+/// own type parameters, the same for every crate (#794): of each one its
+/// declaration bounds by `IntoIterator`, `InPlace` of its `IntoIter`, and
+/// of one bounded by `Iterator`, its own, the buffer std's `collect()` into
+/// a `Vec` may collect it in (#672), which an impl's `Vec::from_iter(iter)`
+/// asks: `FromIterator::from_iter`'s, `Extend::extend`'s, `Sum::sum`'s.
+/// Decided by the trait's declaration, as `own_drop_params` is: its impls
+/// are its only bodies, a library's and a consumer's alike, so a union of
+/// the impls one crate sees would leave a library calling it through a
+/// dictionary giving less than another crate's impl asks. A provided
+/// method's std body, which the crate compiles, asks its own (ADR 0561);
+/// the crate's and a library's traits carry what their code asks (ADR
+/// 0466).
+pub(in crate::lower) fn std_method_facts<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    method: DefId,
+) -> Vec<(u32, TypeFact)> {
+    if method.is_local() || foreign.is_library(method.krate) || tcx.trait_of_assoc(method).is_none() {
+        return Vec::new();
+    }
+    if tcx.associated_item(method).defaultness(tcx).has_value() {
+        return Vec::new();
+    }
+    let generics = tcx.generics_of(method);
+    let parent = generics.parent_count as u32;
+    let into_iterator = std_item(tcx, StdItem::IntoIterator);
+    let iterator = std_item(tcx, StdItem::Iterator);
+    let into_iter = crate::lower::recognition::trait_method(tcx, into_iterator, "IntoIter");
+    let items = drop_items(tcx, foreign, method);
+    let mut facts = Vec::new();
+    for (clause, _) in tcx.clauses_of(method).instantiate_identity(tcx) {
+        let Some(bound) = clause
+            .skip_normalization()
+            .as_trait_clause()
+            .and_then(|b| b.no_bound_vars())
+        else {
+            continue;
+        };
+        let ty::Param(param) = *bound.self_ty().kind() else {
+            continue;
+        };
+        if param.index < parent {
+            continue;
+        }
+        if bound.def_id() == iterator {
+            facts.push((param.index, TypeFact::InPlace));
+        } else if bound.def_id() == into_iterator {
+            // Its `IntoIter`'s slot, after the type parameters (`drop_slot`).
+            let place = items.iter().position(|&item| {
+                alias_of(item).is_some_and(|alias| {
+                    matches!(alias.kind, ty::Projection { def_id } if def_id == into_iter)
+                        && matches!(*alias.self_ty().kind(), ty::Param(p) if p.index == param.index)
+                })
+            });
+            facts.extend(place.map(|place| (generics.count() as u32 + place as u32, TypeFact::InPlace)));
+        }
+    }
+    facts.sort();
+    facts.dedup();
+    facts
+}
+
+/// What a function compiled elsewhere asks of its type parameters, as the
+/// analysis relays it to its callers and a call gives it: a std trait's
+/// required method, what its declaration carries (`std_method_facts`); a
+/// library's function, what its manifest says. The one answer of both.
+pub(in crate::lower) fn foreign_facts<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    id: DefId,
+) -> Vec<(u32, TypeFact)> {
+    match std_method_facts(tcx, foreign, id) {
+        facts if !facts.is_empty() => facts,
+        _ => foreign.type_facts(id),
+    }
+}
+
 /// The type a function's slot `index` is, in its own terms: its type
 /// parameter's, `T`, below its generics' count, and from there each
 /// associated type of a type parameter's bound by a trait no dictionary

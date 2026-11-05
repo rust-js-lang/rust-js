@@ -15,18 +15,18 @@ export function entry() {
   main();
 }
 
-function eitherExtendA_extend(either, iter, LExtendA, RExtendA) {
+function eitherExtendA_extend(either, iter, LExtendA, RExtendA, TIntoIterInPlace) {
   if (either.TAG === "Left") {
     const self = { value: either._0 };
     try {
-      LExtendA.extend(self, iter);
+      LExtendA.extend(self, iter, TIntoIterInPlace);
     } finally {
       either._0 = self.value;
     }
   } else {
     const self = { value: either._0 };
     try {
-      RExtendA.extend(self, iter);
+      RExtendA.extend(self, iter, TIntoIterInPlace);
     } finally {
       either._0 = self.value;
     }
@@ -55,7 +55,7 @@ function main() {
   const a = { TAG: "Left", _0: [9] };
   eitherExtendA_extend(a, [1, 2, 3], vecExtend, bTreeSetExtend);
   const b = { TAG: "Right", _0: new $BTreeSet() };
-  eitherExtendA_extend(b, [5, 4, 5], vecExtend, bTreeSetExtend);
+  eitherExtendA_extend(b, [5, 4, 5], vecExtend, bTreeSetExtend, [4, 4]);
   let s = "x";
   const value = [];
   const c = { value };

@@ -413,4 +413,32 @@ export const mutations: Mutation[] = [
     replace: "        let bounds = impl_env.param_env.caller_bounds().iter().chain(own_clauses.filter(|_| false));\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
   },
+  {
+    name: "std-method-facts-unrelayed",
+    breaks:
+      "the analysis asks a std callee only its manifest's facts, none of std's, so `impl Extend for Either`'s `inner.extend(iter)` through `L: Extend<A>` asks its `T::IntoIter`'s in-place buffer of no caller, refused (#794)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                    false => crate::lower::traits::foreign_facts(tcx, foreign, id),\n",
+    replace: "                    false => foreign.type_facts(id),\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
+  },
+  {
+    name: "std-method-facts-of-resolved-calls",
+    breaks:
+      "a std trait's required method rustc resolves to std's own impl, `Vec::from_iter(it)`, relays its declaration's facts too, giving `sorted(it, IInPlace)` a parameter nothing reads (#794)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            let resolved = named.len() > 1;\n",
+    replace: "            let resolved = false && named.len() > 1;\n",
+    tests: ["test/corpus.test.ts", "-t", "^from_iter_called.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "bound-collect-unrelayed",
+    breaks:
+      "a `collect()` into what the caller's own bound collects into, `Result<U, E>: FromIterator<..>`, asks nothing of the iterator, though the lowering calls its dictionary's `from_iter` with its in-place buffer: `try_collect` refused (#794)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                if bound.def_id == from_iterator && Some(callee) == collect_of(tcx) {\n",
+    replace: "                if false && bound.def_id == from_iterator && Some(callee) == collect_of(tcx) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_accumulations.rs$"],
+  },
 ];

@@ -684,6 +684,28 @@ impl<'tcx> Asking<'tcx> {
                 self.asked.insert((caller, index, TypeFact::Name));
             }
             let Some((impl_id, impl_args)) = evidence_impl(tcx, typing_env, bound) else {
+                // `collect()`'s `B: FromIterator<A>` the caller's own bound
+                // gives, its dictionary's `from_iter` of the iterator, which
+                // the lowering calls given what its declaration carries
+                // (`collected_evidence`, `std_method_facts`, #794).
+                let from_iterator = std_item(tcx, StdItem::FromIterator);
+                if bound.def_id == from_iterator && Some(callee) == collect_of(tcx) {
+                    let from_iter = trait_method(tcx, from_iterator, "from_iter");
+                    let from_args = tcx.mk_args(&[bound.args[0], bound.args[1], args[0]]);
+                    for (index, fact) in crate::lower::traits::foreign_facts(tcx, foreign, from_iter) {
+                        let slot =
+                            crate::lower::traits::drop_slot(tcx, (foreign, &Default::default()), from_iter, index);
+                        let gates = foreign_gates(foreign, from_iter, index);
+                        let asked = asked_of_caller(
+                            tcx,
+                            foreign,
+                            typing_env,
+                            (caller, from_iter, from_args),
+                            (slot, fact, &gates),
+                        );
+                        asked.into_iter().for_each(|each| self.ask(caller, each));
+                    }
+                }
                 continue;
             };
             for (index, arg) in impl_args.iter().enumerate() {
@@ -769,8 +791,17 @@ impl<'tcx> Asking<'tcx> {
                 }
                 named.push((instance.def_id(), instance.args));
             }
+            // A std trait's required method resolved to an impl, `Vec`'s
+            // `from_iter`, asks what that impl's lowering asks
+            // (`in_place_asks`); only one called through a dictionary
+            // carries what its declaration says (#794).
+            let resolved = named.len() > 1;
             for (id, args) in named {
-                for (index, fact) in foreign.type_facts(id) {
+                let facts = match resolved && id == callee {
+                    true => foreign.type_facts(id),
+                    false => crate::lower::traits::foreign_facts(tcx, foreign, id),
+                };
+                for (index, fact) in facts {
                     let slot = crate::lower::traits::drop_slot(tcx, (foreign, &Default::default()), id, index);
                     let gates = foreign_gates(foreign, id, index);
                     for each in asked_of_caller(tcx, foreign, typing_env, (caller, id, args), (slot, fact, &gates)) {
@@ -940,4 +971,9 @@ fn slot_of<'tcx>(
         }
         _ => None,
     }
+}
+
+/// std's `Iterator::collect`.
+fn collect_of(tcx: TyCtxt<'_>) -> Option<DefId> {
+    Some(trait_method(tcx, std_item(tcx, StdItem::Iterator), "collect"))
 }

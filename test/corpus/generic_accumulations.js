@@ -30,8 +30,8 @@ function total(v, SSumU32) {
   return SSumU32.sum($iter(v));
 }
 
-function tryCollect(it, ResultFromIteratorResult) {
-  return ResultFromIteratorResult.fromIter(Iterator.from(it));
+function tryCollect(it, ResultFromIteratorResult, IInPlace) {
+  return ResultFromIteratorResult.fromIter(Iterator.from(it), IInPlace);
 }
 
 function main() {
@@ -65,6 +65,7 @@ function main() {
       { TAG: "Ok", _0: 2 },
     ]),
     { fromIter: (items) => $collectResults(Array.from(items)) },
+    [12, 4],
   );
   const err = tryCollect(
     $iter([
@@ -73,6 +74,7 @@ function main() {
       { TAG: "Ok", _0: 3 },
     ]),
     { fromIter: (items) => $collectResults(Array.from(items)) },
+    [12, 4],
   );
   console.log(
     `${ok.TAG === "Ok" ? `Ok([${ok._0.join(", ")}])` : `Err(${$debugStr(ok._0)})`} ${err.TAG === "Ok" ? `Ok([${err._0.join(", ")}])` : `Err(${$debugStr(err._0)})`}`,

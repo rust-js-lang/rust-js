@@ -246,7 +246,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // (ADR 0561).
         match self.compiled_here(id) {
             true => self.krate.type_facts.get(&id).cloned().unwrap_or_default(),
-            false => self.krate.foreign.type_facts(id),
+            false => super::foreign_facts(self.tcx, self.krate.foreign, id),
         }
     }
 
@@ -659,7 +659,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What a trait's generic method is given where it's called through a
     /// dictionary, after its arguments: its own bounds' evidence, for this call
     /// (ADR 0106). None for one that isn't generic.
-    fn own_evidence(
+    pub(in crate::lower) fn own_evidence(
         &mut self,
         id: DefId,
         generic_args: ty::GenericArgsRef<'tcx>,

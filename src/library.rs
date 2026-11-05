@@ -39,7 +39,11 @@ use std::path::Path;
 /// and flattens into a struct (ADR 1071). 16: a type built of a function's
 /// slots it asks the layout of, `built`, a template of its type parameters
 /// and their associated types, past them by index (ADR 0145, amended, #737).
-pub const VERSION: u32 = 16;
+/// 17: a std trait's required generic method's dictionary, its entries and
+/// its calls, carries the facts its declaration does, `InPlace` of
+/// `from_iter`'s `I::IntoIter` (`std_method_facts`, ADR 1095), so a library
+/// before it gives a consumer after it less than that consumer's impl takes.
+pub const VERSION: u32 = 17;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]

@@ -243,7 +243,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's function that asks its type parameter's size isn't given it by its consumer",
     file: "src/lower/traits/calls.rs",
-    find: "            false => self.krate.foreign.type_facts(id),\n",
+    find: "            false => super::foreign_facts(self.tcx, self.krate.foreign, id),\n",
     replace: "            false => Vec::new(),\n",
     tests: ["test/crates.test.ts", "-t", "size of its consumer's type"],
   },

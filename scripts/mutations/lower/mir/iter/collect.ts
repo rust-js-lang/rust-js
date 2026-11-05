@@ -878,4 +878,14 @@ export const mutations: Mutation[] = [
     replace: "                let _ = key_drop;\n                self.is_sorted_call(keys, key, None, span)\n",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
   },
+  {
+    name: "dictionary-collect-without-own-evidence",
+    breaks:
+      "a generic collect into its caller's `T: FromIterator<D>` calls the dictionary's `from_iter` with the items alone, so a `Vec`'s iterator's in-place buffer and its drops aren't given (#794)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                args.extend(self.own_evidence(method, generic_args, None, span)?);\n",
+    replace: "                let _ = (method, generic_args);\n",
+    tests: ["test/corpus.test.ts", "-t", "^from_iter_impl_of_dropping.rs$"],
+    snapshots: true,
+  },
 ];

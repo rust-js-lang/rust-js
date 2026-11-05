@@ -1,6 +1,8 @@
 # 0466. A generic map's class is its caller's, a type fact of its key
 
-Status: Accepted. Extends [0145](0145-type-facts.md) to a map's class, and
+Status: Accepted; extended by [1095](1095-a-std-traits-generic-method-carries-what-its-declaration-says.md)
+(a std trait's generic method's dictionary carries what its declaration
+says). Extends [0145](0145-type-facts.md) to a map's class, and
 to a trait's generic methods and a type parameter's std associated types;
 extends [0121](0121-value-keys.md).
 
