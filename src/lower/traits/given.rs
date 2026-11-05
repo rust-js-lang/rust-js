@@ -185,16 +185,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.given = given;
     }
 
-    pub(in crate::lower) fn impl_type(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
-        if self.given.self_args.is_none() {
-            return ty;
-        }
-        let typing_env = self.typing_env;
-        self.tcx
-            .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
-            .unwrap_or(ty)
-    }
-
     /// `resolve_instance` of a call whose arguments a copied default's
     /// `Self` was replaced in (ADR 0049): they're the impl's, which resolve in
     /// the impl's typing environment, as its own body's types don't.

@@ -140,3 +140,12 @@ which put them in the impl's terms, is gone, and its mutation,
 `in-place-default-in-trait-terms`, with it. No case's JS changed, as a
 program or a library (case N).
 
+
+## Amendment: a copied default's types are asked as they are (2026-11-06, #809)
+
+`impl_type`, which normalized a type in the impl's typing environment
+where a copied default asked one, its drops', a lost `dyn`'s drop's and its
+`Iterator` dictionary's, is the identity since #803 put its MIR in the
+impl's terms, normalized there: made the identity, no case's JS changed,
+as a program or a library, nor any lowering test. It's gone, with
+`default-evidence-trait-terms`, which made it so and survived.

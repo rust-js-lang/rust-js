@@ -461,7 +461,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // its dictionary's `$drop`.
                         if self
                             .drop_query()
-                            .dyn_drop_lost(*to, self.impl_type(self.pointee(from)), self.pointee(*to))
+                            .dyn_drop_lost(*to, self.pointee(from), self.pointee(*to))
                         {
                             return Err(self.unsupported(span, "a `dyn` of a value with a destructor"));
                         }

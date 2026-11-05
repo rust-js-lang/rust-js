@@ -207,12 +207,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// What dropping a `ty` runs.
-    /// Of a copied default's type, the impl's (ADR 0176), asked where the
-    /// impl is, as it may name the impl's own parameters, `SIZE` of a
-    /// `WriteBuffer<SIZE>`, which the trait's method doesn't have.
+    /// What dropping a `ty` runs. Of a copied default's type, the impl's,
+    /// as its MIR is in the impl's terms (ADR 0176, #803).
     pub(in crate::lower) fn drops(&self, ty: Ty<'tcx>) -> Drops<'tcx> {
-        self.drop_query().drops(self.impl_type(ty))
+        self.drop_query().drops(ty)
     }
 
     /// Whether dropping a `ty` may panic: a `Drop` of the crate's that isn't
@@ -250,11 +248,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(in crate::lower) fn has_drops(&self, ty: Ty<'tcx>) -> bool {
-        self.drop_query().has_drops(self.impl_type(ty))
+        self.drop_query().has_drops(ty)
     }
 
     fn drops_itself(&self, ty: Ty<'tcx>) -> bool {
-        self.drop_query().drops_itself(self.impl_type(ty))
+        self.drop_query().drops_itself(ty)
     }
 
     /// A call of `callee` of `args`: the type parameters it takes no

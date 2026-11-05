@@ -178,15 +178,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "default-evidence-trait-terms",
-    breaks:
-      "a copied default's `Self` is asked its `Iterator` dictionary in the trait's terms, finds none, and is stepped as a JS iterator",
-    file: "src/lower/iterators/knowing.rs",
-    find: "        let ty = self.impl_type(ty.peel_refs());\n",
-    replace: "        let ty = ty.peel_refs();\n",
-    tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
-  },
-  {
     name: "filter-made-here-backless",
     breaks:
       "a filter made where it's stepped from its back, `xs.iter().filter(p).rfold(..)`, is refused",
