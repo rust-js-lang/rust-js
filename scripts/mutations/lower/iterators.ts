@@ -136,8 +136,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`$iterator(it, next, nextBack)` reads its `nextBack` as whether its `Some` is boxed",
     file: "src/lower/iterators.rs",
-    find: "        list.push(arg.unwrap_or_else(|| match at {\n            0 => Expr::bool(false),\n            _ => Expr::undefined(),\n        }));\n",
-    replace: "        let _ = at;\n        list.extend(arg);\n",
+    find: "        .map(|(at, arg)| {\n            arg.unwrap_or_else(|| match at {\n                0 => Expr::bool(false),\n                _ => Expr::undefined(),\n            })\n        })\n",
+    replace: "        .filter_map(|(_, arg)| arg)\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
   },

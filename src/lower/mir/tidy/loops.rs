@@ -367,11 +367,9 @@ pub(super) fn for_of(
             label: label.clone(),
             pattern,
             mutable,
-            iterable: crate::lower::iterators::stepped(
+            iterable: crate::lower::iterators::stepped_range_by(
                 source.clone(),
                 crate::lower::std_types::range::range_from_stepper(bounds),
-                false,
-                None,
             ),
             body,
             keys: false,

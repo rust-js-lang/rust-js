@@ -540,3 +540,32 @@ matrix's are, under their issues, and only shrink.
   owners.
 - The stale references to "ADR 1092" for the iterator matrix
   (`test/iterator-matrix.ts`, ADR 0510) now name 1090, its number.
+
+## Amendment: the lowering's iterator value, step by step (2026-11-05, #730 phase 3)
+
+Owner (b) lands as `src/lower/iterators/value.rs`'s `IterValue`, in nine
+steps, each its own commit. The user decided two things: the value sits
+beside each MIR local's `Expr`, and its facts are kept per local only. A
+struct's field, a closure's capture and a return fall back to the type's
+answer.
+
+Many of the readers it replaces run in tidy's passes, after lowering
+(`range_items`, `reversed_step`, `eager_chains`, `reversed_in_place`, tidy's
+loops). No MIR local exists there. So the value's facts travel on the JS it
+writes, as `Known::Part` carries a tuple's part (#756):
+
+- `IterValue::emit()` is the one writer of `$iterator`, `$given`,
+  `$knowing`, `$closing` and `$lent`.
+- `emit()` marks each call with what it is: `Known::IterStepped`,
+  `IterRange`, `IterKnowing`, `IterClosing` and `IterLent`.
+- A reader asks value.rs, which reads those facts, never a helper's name or
+  a call's shape.
+- Value.rs reads the shape back itself only where no fact can reach the
+  reader: after a spill to a variable, or where tidy builds the shape
+  itself. Each such site is allow-listed, with its reason, in
+  test/architecture-iterators.test.ts.
+
+Step 1 adds the value, and its makers write through it: `stepped_ends`,
+`stepped_range_by`, `given_js_iterator`, `knowing_held`, `closed_by` and
+`lent_iterator`. No reader changes yet, and the JS is byte-identical.
+`$holding`'s maker, `closing_function`, stays m6-lily's.

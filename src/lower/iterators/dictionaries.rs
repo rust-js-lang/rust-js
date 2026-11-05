@@ -34,14 +34,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Each given, and each before it, `undefined` where it isn't.
         let given = [boxed.then(|| Expr::bool(true)), back, len];
         let last = given.iter().rposition(Option::is_some).map_or(0, |at| at + 1);
-        let mut list = vec![value, dictionary];
-        for (at, arg) in given.into_iter().enumerate().take(last) {
-            list.push(arg.unwrap_or_else(|| match at {
-                0 => Expr::bool(false),
-                _ => Expr::undefined(),
-            }));
-        }
-        Some(Expr::call_helper("$given", list))
+        let given = (given.into_iter().enumerate().take(last))
+            .map(|(at, arg)| {
+                arg.unwrap_or_else(|| match at {
+                    0 => Expr::bool(false),
+                    _ => Expr::undefined(),
+                })
+            })
+            .collect();
+        Some(
+            IterValue::of(Form::Given {
+                value,
+                dictionary,
+                given,
+            })
+            .emit(),
+        )
     }
 
     /// `ty`'s dictionary of an iterator's extension trait, `trait_id`, given

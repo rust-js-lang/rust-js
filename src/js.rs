@@ -955,6 +955,18 @@ pub enum Known {
     /// Never a binding's `js::get(o, &1.0)`, which a getter may answer
     /// (#756).
     Part,
+    /// An iterator's value as `lower::iterators::value` wrote it, which only
+    /// that module reads (ADR 1092, #730): a JS iterator of the value it
+    /// steps, `$iterator(value, next, ..)` or `$given(value, ..)`.
+    IterStepped,
+    /// Of those, a range's numbers, `$iterator(range, step)`.
+    IterRange,
+    /// Std's compiled struct given what a use site knows, `$knowing(it, ..)`.
+    IterKnowing,
+    /// One closed to drop what it hasn't given, `$closing(it, drop)`.
+    IterClosing,
+    /// One lent, `$lent(it)`, which nothing past it closes.
+    IterLent,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

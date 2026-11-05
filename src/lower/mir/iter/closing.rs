@@ -159,11 +159,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Not of a drop written here, an arrow, which isn't one of each item,
         // `$dropEach`'s, by which `$closing` steps a slice.
         let each = !matches!(drop.kind, js::ExprKind::Arrow(..));
-        let mut args = vec![it, drop];
-        if each && self.passes_each_owned(ty) {
-            args.push(Expr::bool(false));
-        }
-        Expr::call_helper("$closing", args)
+        let passes_each = each && self.passes_each_owned(ty);
+        crate::lower::iterators::IterValue::js(it)
+            .closed(drop, passes_each)
+            .emit()
     }
 
     /// Whether a `ty`'s value may own an array's items it drops each of as

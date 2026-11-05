@@ -564,9 +564,9 @@ test("each module of mir/ reads only the fields of mir.rs's state it's listed fo
 // in mir/iter.rs and tidy.rs too (the third architecture audit).
 const idioms: [string, RegExp, string[]][] = [
   ["Iterator.from", /Expr::var\("Iterator"\),\s*"from"|==\s*"Iterator"/, ["src/lower/iterators.rs", "src/lower/iterators/eager.rs", "src/lower/iterators/in_place.rs", "src/lower/iterators/stepping.rs"]],
-  ["$iterator", /"\$iterator"|Helper::Iterator\b/, ["src/lower/iterators.rs", "src/lower/iterators/in_place.rs"]],
+  ["$iterator", /"\$iterator"|Helper::Iterator\b/, ["src/lower/iterators.rs", "src/lower/iterators/in_place.rs", "src/lower/iterators/value.rs"]],
   ["$iter", /"\$iter"|Helper::Iter\b/, ["src/lower/iterators.rs", "src/lower/iterators/in_place.rs"]],
-  ["$lent", /"\$lent"|Helper::Lent\b/, ["src/lower/iterators/in_place.rs", "src/lower/iterators/stepping.rs"]],
+  ["$lent", /"\$lent"|Helper::Lent\b/, ["src/lower/iterators/in_place.rs", "src/lower/iterators/value.rs"]],
   ["$someNone", /\$someNone/, ["src/lower/std_types/option.rs"]],
   // What a box, a cell or a handle holds, and a `dyn` pair's dictionary
   // (ADRs 0099, 0049): the JS tree's names of the fields, `js::HELD` and

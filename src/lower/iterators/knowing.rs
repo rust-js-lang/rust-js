@@ -1292,7 +1292,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let own = [rfold, nth_back, try_rfold];
             let mut given = vec![
-                it,
                 back.unwrap_or_else(Expr::undefined),
                 len.unwrap_or_else(Expr::undefined),
             ];
@@ -1302,7 +1301,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .take(last)
                     .map(|entry| entry.unwrap_or_else(Expr::undefined)),
             );
-            return Ok(Some(Expr::call_helper("$knowing", given)));
+            return Ok(Some(IterValue::of(Form::Knowing { it, given }).emit()));
         }
         Ok(None)
     }

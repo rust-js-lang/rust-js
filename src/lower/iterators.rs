@@ -9,7 +9,9 @@ mod ends;
 mod in_place;
 mod knowing;
 mod stepping;
+mod value;
 
+pub(in crate::lower) use self::value::{Form, IterValue};
 pub(super) use self::{eager::*, in_place::*};
 
 use super::calls::Call;
@@ -112,17 +114,22 @@ pub(in crate::lower) fn stepped_ends(
         None,
         count,
     ];
-    let Some(last) = given.iter().rposition(Option::is_some) else {
-        return Expr::call(Expr::helper("$iterator"), vec![value, next]);
-    };
-    let mut list = vec![value, next];
-    for (at, arg) in given.into_iter().enumerate().take(last + 1) {
-        list.push(arg.unwrap_or_else(|| match at {
-            0 => Expr::bool(false),
-            _ => Expr::undefined(),
-        }));
-    }
-    Expr::call(Expr::helper("$iterator"), list)
+    let last = given.iter().rposition(Option::is_some).map_or(0, |at| at + 1);
+    let given = (given.into_iter().enumerate().take(last))
+        .map(|(at, arg)| {
+            arg.unwrap_or_else(|| match at {
+                0 => Expr::bool(false),
+                _ => Expr::undefined(),
+            })
+        })
+        .collect();
+    IterValue::of(Form::Own { value, next, given }).emit()
+}
+
+/// `$iterator(range, step)`: a range's numbers, its bounds stepped by
+/// `step`, its kind's (`range_stepper`).
+pub(in crate::lower) fn stepped_range_by(range: Expr, step: Expr) -> Expr {
+    IterValue::of(Form::Range { range, step }).emit()
 }
 
 /// Whether `e` is a range's numbers, `$iterator({ start, end }, $rangeNext,

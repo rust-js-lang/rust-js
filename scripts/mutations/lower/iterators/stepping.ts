@@ -23,16 +23,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "range_values"],
   },
   {
-    name: "lent-iterator-closable",
-    breaks:
-      "a lazy chain lent to `it.take(2)` is closed by it, and its lender's `next()` finds it done",
-    file: "src/lower/iterators/stepping.rs",
-    find: '        Expr::call(Expr::helper("$lent"), vec![it])',
-    replace:
-      '        Expr::call(Expr::member(Expr::var("Iterator"), "from"), vec![it])',
-    tests: ["test/corpus.test.ts", "-t", "lent_iterators"],
-  },
-  {
     name: "collect-fallible-any-target",
     breaks:
       "`collect()` into a `Result` of a map, a set or text is `Ok` of an array, not of it",

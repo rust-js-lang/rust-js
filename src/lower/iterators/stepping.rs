@@ -97,7 +97,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if is_lent(&it) {
             return it;
         }
-        Expr::call(Expr::helper("$lent"), vec![it])
+        IterValue::js(it).lent().emit()
     }
 
     /// `$iter(items)`: a JS iterator of an array that knows where it is
@@ -106,10 +106,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         array_stepped(items)
     }
 
-    /// `$iterator(value, next)`: a JS iterator of `value`, stepped by `next`,
-    /// a range's by its `$rangeNext`.
+    /// `$iterator(value, next)`: a JS iterator of `value`, a range, stepped
+    /// by `next`, its `$rangeNext`.
     pub(in crate::lower) fn stepped_by(&mut self, value: Expr, next: Expr) -> Expr {
-        stepped(value, next, false, None)
+        stepped_range_by(value, next)
     }
 
     /// What's left of `it`, a `$iter` of std's iterator over an array, of
