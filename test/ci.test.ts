@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, timingsRun } from "../scripts/ci";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf } from "../scripts/crate-corpus";
 import { batches, type Change, changedLines, changedMutations, enclosingFunction, schema, setPasses, site, type Sited, testBlocks, testResults, testSet } from "../scripts/mutations";
+import { jobs, leftToCi } from "../scripts/checkFast";
 import { jobs as localNightly } from "../scripts/nightly";
 import { caseParts, caseShardParts, nightly, shard } from "../scripts/shard";
 import { fixture, root } from "./support";
@@ -46,6 +47,48 @@ test("the files only the nightly runs are test files, which its check runs", () 
   const suites = check.split("\n").filter((line) => /bun (run test|scripts\/test\.ts) --shard=/.test(line));
   expect(suites).toHaveLength(2);
   for (const line of suites) expect(line).toContain("${{ inputs.nightly && ' --nightly' || '' }}");
+});
+
+// `check:fast --all`, the check before a push, runs what a push's check
+// runs (#732): each command of check.yml's jobs is one of its jobs' (`ci`),
+// or one `leftToCi` says why it leaves to CI, and each of those is still
+// check.yml's. `cargo test` and the pilot's committed JS, run by the check
+// alone, went red on `main` unseen (801d40c55, 336984bff).
+const checkJobs = jobs({ all: true, changed: [], added: [], extra: [], cores: 4 });
+const ranHere = [...checkJobs.jobs, ...checkJobs.after];
+
+test("each command a push's check runs is check:fast --all's, or left to CI by name", () => {
+  type Step = { run?: string; parallel?: Step[] };
+  type Job = { uses?: string; steps?: Step[] };
+  const workflow = Bun.YAML.parse(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")) as { jobs: Record<string, Job> };
+  const steps = (list: Step[]): string[] => list.flatMap((step) => [...(step.run ? [step.run.trim().split("\n")[0]] : []), ...steps(step.parallel ?? [])]);
+  const commands = Object.values(workflow.jobs).flatMap((job) => [...(job.uses ? [`uses: ${job.uses}`] : []), ...steps(job.steps ?? [])]);
+  // A command, or its start and then its arguments: `bun run test` is
+  // `bun run test --shard=..`'s, not `bun run test:rustc`'s.
+  const starts = (command: string, start: string) => command === start || command.startsWith(`${start} `);
+  const known = [...ranHere.flatMap((job) => (job.ci ? [job.ci] : [])), ...leftToCi.map((left) => left.run)];
+  expect(commands.filter((command) => !known.some((start) => starts(command, start)))).toEqual([]);
+  expect(leftToCi.filter((left) => !commands.some((command) => starts(command, left.run))).map((left) => left.run)).toEqual([]);
+  expect(starts("bun run test:rustc", "bun run test")).toBe(false);
+});
+
+test("each test file a push's suite runs, check:fast --all runs", () => {
+  // As bun finds them, in test/ (bunfig.toml), and as scripts/test.ts runs
+  // them: all but the nightly's.
+  const suite = readdirSync(join(root, "test"))
+    .filter((name) => name.endsWith(".test.ts"))
+    .map((name) => `test/${name}`)
+    .filter((file) => !nightly.includes(file));
+  expect(suite).toContain("test/pilot.test.ts");
+  // A `bun test` job runs each file whose path has one of its filters in it,
+  // or, of none, every file, but those it ignores.
+  const runs = (cmd: string[], file: string) => {
+    if (cmd[0] !== "bun" || cmd[1] !== "test") return false;
+    const ignored = cmd.filter((arg) => arg.startsWith("--path-ignore-patterns=")).map((arg) => arg.slice("--path-ignore-patterns=".length));
+    const filters = cmd.slice(2).filter((arg) => !arg.startsWith("-"));
+    return !ignored.includes(file) && (filters.length === 0 || filters.some((filter) => file.includes(filter)));
+  };
+  expect(suite.filter((file) => !ranHere.some((job) => runs(job.cmd, file)))).toEqual([]);
 });
 
 // `bun run nightly` runs what the nightly does, here: each of nightly.yml's

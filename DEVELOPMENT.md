@@ -69,16 +69,16 @@ branch's one running, and no branch's run touches another's.
 | The new test, seen to fail, then pass | yes, on the Mac: it's the point | in the suite | in the suite |
 | Its module's focused tests, `bun test test/<file>.test.ts -t <name>` | yes, on the Mac | in the suite | in the suite |
 | The new mutations, `bun scripts/mutations.ts <name>` | yes, on the Mac | the changed ones | all of them, on 16 machines |
-| `bun run check:fast`: lint, the corpus, the lowering, compiler and bindings suites, the snapshots, JSX and diagnostics a change touches, its new mutations, at once; `--all`, every test file a push's suite runs but the browsers' | yes, before each commit; `--all` before a push | | |
+| `bun run check:fast`: lint, the corpus, the lowering, compiler and bindings suites, the snapshots, JSX and diagnostics a change touches, its new mutations, at once; `--all`, what a push's check runs that can run here: typecheck, fmt, clippy, `cargo test`, the Vite example's build, and every test file of the suite, the browsers' after the rest | yes, before each commit; `--all` before a push, with the change's mutations: nothing else | | |
 | `bun run ci:status`: main's latest run | yes, before each commit: a red one is fixed first | | |
 | `bun run nightly`: every job the nightly runs, here, each in parts on all the cores (`scripts/nightly.ts`); `bun run nightly stages forms` runs some | yes, before a change the nightly would find, or to prove a night green | | |
 | Reading the generated JS and snapshot diffs | yes | the bless patch, read before it's committed | |
-| `bun run typecheck`, `fmt:check`, clippy, `cargo test` | | **lint** job | |
-| `bun run test`, the whole suite but the nightly's files | | **test** job, or shards | with them, `--nightly` |
+| `bun run typecheck`, `fmt:check`, clippy, `cargo test` | in `check:fast --all` | **lint** job | |
+| `bun run test`, the whole suite but the nightly's files | in `check:fast --all`, the browsers' files after the rest | **test** job, or shards | with them, `--nightly` |
 | The files only the nightly runs, `nightly` in `scripts/shard.ts` (ADR 1030): the release's packaging, the coverage ratchets, React's releases, the editor's check, the harness's own, build history | `bun test test/<file>.test.ts` when a change touches what one checks | | in the suite |
 | WASM compiler parity | | **wasm** job | |
 | rustc's test suite and its lists | | **rustc** jobs, 6 shards | |
-| The Vite example's build | | **examples** job | |
+| The Vite example's build | in `check:fast --all` | **examples** job | |
 | Generated programs (fuzz) | | | yes, and the suite's 12 seeds |
 | Each corpus case after each of tidy's stages and without each of preparation's rewrites that changed it, `test/tidy-stages.test.ts` (ADR 1087) | its nine cases, in `check:fast` when tidy or preparation changes: 90 s on the Mac, its runs kept | its nine cases, the read cases and six generated programs, **Readability passes** workflow, of a push that changes tidy or preparation | its nine cases in the suite; every case, on 6 machines |
 | The day's 600 generated programs through the same, `TIDY_STAGES=programs` | | | yes (`programs`, 6 machines of 100) |
@@ -201,7 +201,7 @@ On the M3 Max, with the scan off:
 | Eight mutations, four at a time | 11 s |
 | The react.dev port, built | 30 s |
 | `bun run check:fast`, of a change to the lowering | 40 s |
-| `bun run check:fast --all`, every test file a push's suite runs but the browsers' (195 files and the corpus) | 2 min 36 s (load 12–16, 2026-11-04) |
+| `bun run check:fast --all`, what a push's check runs that can run here (195 files and the corpus at once, then the browsers' 6) | 2 min 36 s before the browsers' files and `cargo test` (load 12–16, 2026-11-04); 6 min at a load of 20–33, its corpus parts and two other jobs killed at 290 s, each passing alone after: the other files in 116 s, the corpus in six parts in 239 s (2026-11-05) |
 | `bun run port measure`, react.dev compiled against its committed JS | 7 s |
 | `bun run port compare`, its build and 823 pages | 7–15 s |
 
@@ -231,16 +231,26 @@ What keeps them there:
   `src/` or the runtime, and with them the guide's examples, std's package
   and the readability ratchet, which a lowering change turned `main` red
   with when only CI ran them; the mutations, those the change adds or
-  changes; CI runs the rest. **`--all` runs every test file a push's suite
-  runs** (`scripts/test.ts`) in place of that list, one `bun test
-  --parallel` of them beside the corpus's parts, but the browsers'
-  (`scripts/shard.ts`'s `browsers`), which starve beside the corpus and
-  are CI's, and the nightly's own (`nightly`), tidy's stages run where tidy
-  changes: the list of suites a `src/` change could break left out
-  rest-parameters' and cross-crate-items', and `main` went red three
-  times in a day (#607). Its 195 files take 2 min 35 s beside the corpus
-  under another agent's load (2026-11-04), 2 min 36 s in all, where the
-  list took 2 min 41 s. Each job
+  changes; CI runs the rest. **`--all` runs what a push's check runs**
+  that can run here, so the check before a push is it and the change's
+  mutations, no list beside it: typecheck, fmt and clippy, `cargo test`
+  (its own timeout, 600 s, as its build waits on clippy's lock of
+  `target/`), the Vite example's build, and every test file of the suite
+  (`scripts/test.ts`), one `bun test --parallel` of them beside the
+  corpus's parts, then the browsers' (`scripts/shard.ts`'s `browsers`) on
+  their own, as the suite runs them, as beside the corpus they starve; the
+  nightly's own (`nightly`) are left as the push's suite leaves them, tidy's
+  stages run where tidy changes. The list of suites a `src/` change could
+  break left out rest-parameters' and cross-crate-items', and `main` went red
+  three times in a day (#607); `cargo test` and the browsers' files, left to
+  CI, went red on `main` unseen, `finish_is_the_last_stage_in_its_order`
+  after 801d40c55 and the pilot's committed JS at 336984bff (#732).
+  `test/ci.test.ts` holds it to `check.yml`: each command a job of the
+  check runs is a job's here, or one `leftToCi` names with why (the WASM
+  compiler, rustc's whole suite, all of a check's mutations, a machine's
+  setup), and each test file its suite runs is one a job here runs. Its 195
+  files take 2 min 35 s beside the corpus under another agent's load
+  (2026-11-04). Each job
   is given the compiler it built, `RUST_JS_COMPILER`: one that builds its
   own links it again, and races the others.
 - **The node bindings are built before the jobs**, by support.ts's

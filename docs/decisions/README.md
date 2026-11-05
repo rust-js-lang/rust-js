@@ -1030,6 +1030,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1031 Mutations are built many to a build](1031-mutations-are-built-many-to-a-build.md) *(amended: a site is its function's body, and each mutation's build lexes)*
 - [1067 Regression nets the nightly casts](1067-regression-nets-the-nightly-casts.md) *(amended: each crate at an exact release, its row's)*
 - [1090 An iterator conformance matrix, against native Rust in both builds](1090-an-iterator-conformance-matrix.md)
+- [1093 The check before a push is the push's check, held to it by a test](1093-the-check-before-a-push-is-the-pushs-check.md) *(the user's decision, 2026-11-05, #732)*
 - [1032 An `if` whose branches are alike is its branch](1032-an-if-whose-branches-are-alike-is-its-branch.md)
 
 **Architecture boundaries**

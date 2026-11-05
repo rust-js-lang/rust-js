@@ -178,14 +178,17 @@ CONTRIBUTING.md.
 | To | On the Mac | On CI |
 |---|---|---|
 | Test | `bun test test/<file>.test.ts -t <name>` | `bun run test` |
+| Check before a push | `bun run check:fast --all` | each push's check, `check.yml` |
 | Bless snapshots | `BLESS=1 bun test test/<file>.test.ts -t <name>` | `bun run ci:bless` applies its patch |
 | Mutations ([ADR 0093](docs/decisions/0093-mutations.md)) | `bun scripts/mutations.ts <name>` | changed ones; all before a release |
 | rustc tests ([ADR 0089](docs/decisions/0089-rustc-tests.md)) | `bun run test:rustc drop/ closures/` | all; bless lists with `bun run ci:bless` |
 | Generated programs ([ADR 0092](docs/decisions/0092-generated-programs.md)) | | `gh workflow run "rustc tests" -f fuzz_start=1000 -f fuzz_seeds=600` |
 | Playground compiler | | check's `wasm` job |
 
-Before pushing, run `bun run typecheck`, `bun run fmt:check`,
-`cargo clippy --locked -- -D warnings`, and the change's tests and mutations.
+Before pushing, run `bun run check:fast --all`, which runs what a push's
+check runs that can run here: typecheck, `fmt:check`, clippy, `cargo test`,
+the Vite example's build and every file of the suite, the browsers' too
+(`test/ci.test.ts` holds it to `check.yml`); and the change's mutations.
 A push to `main` starts its own check, which runs to its end: read it
 with `bun run ci:status`, and don't start another after pushing, which
 only waits behind it. `bun run ci:check` is for another branch, or a
