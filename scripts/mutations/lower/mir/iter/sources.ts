@@ -28,8 +28,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's `step_by(s)` made in place has no count: its `len()` is refused and its `collect()` asks no room (#246)",
     file: "src/lower/mir/iter/sources.rs",
-    find: '            && callee.helper_name() == Some("$stepBy")\n',
-    replace: '            && callee.helper_name() == Some("$stepByNot")\n',
+    find: "            && let Some([source_value, step]) = crate::lower::iterators::stepped_every_parts(it)\n",
+    replace: "            && let Some([source_value, step]) = crate::lower::iterators::stepped_every_parts(it).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
   },
   {
@@ -37,8 +37,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`repeat_n(x, n)` made in place has no count, so its `collect()` asks no room: `capacity overflow` unasked (#246)",
     file: "src/lower/mir/iter/sources.rs",
-    find: '            && callee.helper_name() == Some("$repeatingN")\n',
-    replace: '            && callee.helper_name() == Some("$repeatingNot")\n',
+    find: "            && let Some([_, n]) = crate::lower::iterators::repeating_n_parts(it)\n",
+    replace: "            && let Some([_, n]) = crate::lower::iterators::repeating_n_parts(it).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
   },
   {

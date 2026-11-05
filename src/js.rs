@@ -986,6 +986,12 @@ pub enum Known {
     /// A `flat_map()`'s closure whose result is made in place, as the
     /// `flat_map()` that's given it is (`body_queries::results_in_place`).
     IterResultInPlace,
+    /// One stepped from its back, `$rev(it)`.
+    IterRev,
+    /// One stepped every `n`th item, `$stepBy(it, n, ..)`.
+    IterStepBy,
+    /// `repeat_n(x, n)`'s, `$repeatingN(x, n, ..)`.
+    IterRepeatingN,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

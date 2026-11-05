@@ -311,11 +311,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => None,
                 };
                 let drop = self.drop_function(item, span)?;
-                let name = match source {
-                    IterSource::Repeat => "$repeating",
-                    _ => "$repeatingN",
-                };
-                Expr::call(Expr::helper(name), Expr::optional_args(list, vec![clone, drop]))
+                let args = Expr::optional_args(list, vec![clone, drop]);
+                match source {
+                    IterSource::Repeat => Expr::call(Expr::helper("$repeating"), args),
+                    _ => repeating_n(args),
+                }
             }
             Std::IterSource(IterSource::RepeatWith) => Expr::call(Expr::helper("$repeatingWith"), vec![arg()]),
             // Their closures' `Option`s: a `Some` that looks like `None` is boxed (ADR 0051).

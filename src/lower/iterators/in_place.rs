@@ -55,10 +55,11 @@ pub(in crate::lower) fn item_drop_given<'e>(name: &str, args: &'e [Expr]) -> Opt
 /// of an array's iterator, which knows its back and length already, the
 /// iterator (ADR 0561); through `$rev` of one.
 pub(super) fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
+    let reversed = is_reversed(e);
     let js::ExprKind::Call(callee, given) = &mut e.kind else {
         return;
     };
-    if matches!(callee.helper_name(), Some("$rev" | "$knowing")) && !given.is_empty() {
+    if (reversed || callee.helper_name() == Some("$knowing")) && !given.is_empty() {
         stepped_in_place(&mut given[0], false, fuse);
     }
     // An iterator of the crate's stepped till it ends, which nothing asks

@@ -492,7 +492,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     let mut list = vec![items, n];
                     list.extend(self.item_drop_of(receiver_ty, span)?);
-                    return Ok(Expr::call(Expr::helper("$stepBy"), list));
+                    return Ok(crate::lower::iterators::stepped_every(list));
                 }
                 let keep = Expr::bin(Op::Eq, Expr::bin(Op::Rem, Expr::var("i"), n), Expr::int(0));
                 let body = match self.item_drop_call(receiver_ty, Expr::var("item"), span)? {

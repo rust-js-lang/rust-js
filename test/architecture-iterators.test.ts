@@ -232,8 +232,8 @@ test("an iterator value's readers are defined in value.rs alone", () => {
   expect([owned("a reader of an iterator value"), outsideValue(readers)]).toEqual([owned("a reader of an iterator value"), []]);
 });
 
-test("$iterator, $given, $knowing, $closing and $lent are written by value.rs's emit() alone", () => {
-  const written = /(call_helper|Expr::helper)\("\$(iterator|given|knowing|closing|lent)"/;
+test("$iterator, $given, $knowing, $closing, $lent, $rev, $stepBy and $repeatingN are written by value.rs alone", () => {
+  const written = /(call_helper|Expr::helper)\("\$(iterator|given|knowing|closing|lent|rev|stepBy|repeatingN)"/;
   expect([owned("a write of an iterator value's helper"), outsideValue(written)]).toEqual([owned("a write of an iterator value's helper"), []]);
 });
 
@@ -265,20 +265,10 @@ test("in_place_adapter_steps is read by steps_in_place alone", () => {
 // helper, with its reason and what removes it. The list only shrinks: a new
 // read fails here, and one gone fails until its entry goes too.
 test("an iterator helper is read by its name only where the list says, until value.rs owns its form", () => {
-  const maker = "its maker isn't in value.rs yet";
   const allowed: Record<string, [number, string]> = {
-    "src/lower/iterators.rs $iterator": [3, `\`behind_a_dyn\`, \`is_range_stepped\` and \`reversal\`'s range: ${maker} (\`OwnMethods\`), step 10`],
-    "src/lower/iterators.rs $rev": [1, `\`reversal\`'s \`$rev(it)\`: ${maker}, step 10`],
-    "src/lower/iterators.rs $stepBy": [1, `\`stepped_by\`, tidy's \`(a..b).step_by(n)\` loop: ${maker}, step 10`],
-    "src/lower/iterators/in_place.rs $iterator": [1, `tidy's \`stepped_in_place\`, an \`$iterator\`'s hint dropped: ${maker} (\`OwnMethods\`), step 10`],
-    "src/lower/iterators/in_place.rs $knowing": [2, "tidy's `stepped_in_place` sees through `$knowing`: a reader of `IterKnowing`, step 10"],
-    "src/lower/iterators/in_place.rs $rev": [1, `tidy's \`stepped_in_place\` sees through \`$rev\`: ${maker}, step 10`],
-    "src/lower/iterators/knowing.rs $stepBy": [1, `\`as_double_ended\`'s \`step_by\` by its source's \`nth\`: ${maker}, step 10, then step 8`],
-    "src/lower/mir/iter/backs.rs $rev": [4, `tidy's \`reversed_in_place\` rewrites of \`$rev\`: ${maker}, step 10`],
-    "src/lower/mir/iter/sources.rs $repeatingN": [1, `\`len_in_place\`'s \`repeat_n\`: ${maker}, step 10`],
-    "src/lower/mir/iter/sources.rs $rev": [1, `\`len_in_place\`'s reversed source: ${maker}, step 10`],
-    "src/lower/mir/iter/sources.rs $stepBy": [1, `\`len_in_place\`'s \`step_by\`: ${maker}, step 10`],
-    "src/lower/std_types/range.rs $stepBy": [2, `tidy's \`range_step\` and \`reversed_step\`, a range's \`step_by\` folded: ${maker}, step 10`],
+    "src/lower/iterators.rs $iterator": [3, `\`behind_a_dyn\` and \`is_range_stepped\` ask an \`$iterator\`'s own steps, and \`reversal\` a range stepped from its end: value.rs has no accessor for it yet, a fact of \`Form::Own\`'s steps and \`Form::Range\`'s step`],
+    "src/lower/iterators/in_place.rs $iterator": [1, `tidy's \`stepped_in_place\`, an \`$iterator\`'s hint dropped: value.rs has no accessor for it yet, a fact of \`Form::Own\`'s steps`],
+    "src/lower/iterators/in_place.rs $knowing": [2, "tidy's `stepped_in_place` sees through `$knowing`: a value.rs reader of `IterKnowing`"],
   };
   const helpers = "closing|iterator|given|lent|stepBy|rev|repeatingN|knowing";
   const read_ = new RegExp(`Some\\("\\$(${helpers})"`);

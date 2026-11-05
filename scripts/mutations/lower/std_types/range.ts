@@ -263,9 +263,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`$stepBy($lazyRange(a, b), n)` isn't folded into `$lazyRange(a, b, n)` (#231)",
     file: "src/lower/std_types/range.rs",
-    find: '    if callee.helper_name() == Some("$stepBy")\n        && let [source, n] = &args[..]\n',
-    replace:
-      '    if callee.helper_name() == Some("$stepByNot")\n        && let [source, n] = &args[..]\n',
+    find: "    if let Some([source, n]) = crate::lower::iterators::stepped_every_parts(e)\n",
+    replace: "    if let Some([source, n]) = crate::lower::iterators::stepped_every_parts(e).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
     snapshots: true,
   },
@@ -274,9 +273,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a reversed range's `$stepBy` isn't folded into `$lazyRangeBack(a, b, n)` (#231)",
     file: "src/lower/std_types/range.rs",
-    find: '            if callee.helper_name() == Some("$stepBy")\n                && let [made, n] = &args[..]\n',
-    replace:
-      '            if callee.helper_name() == Some("$stepByNot")\n                && let [made, n] = &args[..]\n',
+    find: "        _ if let Some([made, n]) = crate::lower::iterators::stepped_every_parts(e)\n",
+    replace: "        _ if let Some([made, n]) = crate::lower::iterators::stepped_every_parts(e).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
     snapshots: true,
   },

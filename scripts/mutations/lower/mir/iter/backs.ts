@@ -270,7 +270,7 @@ export const mutations: Mutation[] = [
     name: "try-rfold-forward",
     breaks: "`try_rfold` folds from the front",
     file: "src/lower/mir/iter/backs.rs",
-    find: '            let reversed = Expr::call_helper("$rev", vec![it]);\n',
+    find: "            let reversed = crate::lower::iterators::reversed_by(it);\n",
     replace: "            let reversed = it;\n",
     tests: ["test/corpus.test.ts", "-t", "^try_rfold.rs$"],
   },
@@ -279,9 +279,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`rev()` of a lazy map of a range is refused, not stepped from its back",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            None => {\n                let it = self.as_double_ended(receiver, iter_ty, span)?;\n                return Ok(Expr::call_helper(\"$rev\", vec![self.closing(it, iter_ty, span)?]));\n            }",
-    replace:
-      '            None => {\n                return Err(self.unsupported(span, "`rev` of a lazy iterator, from its MIR"));\n            }',
+    find: "            None => {\n                let it = self.as_double_ended(receiver, iter_ty, span)?;\n                return Ok(crate::lower::iterators::reversed_by(self.closing(it, iter_ty, span)?));\n            }",
+    replace: "            None => {\n                return Err(self.unsupported(span, \"`rev` of a lazy iterator, from its MIR\"));\n            }",
     tests: ["test/corpus.test.ts", "-t", "^range_mapped_by_a_function.rs$"],
   },
 
@@ -353,8 +352,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`rev().rev()` of an array's items or a range stays `$rev($rev(it))`, not `it` (#205)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "    // `Rev`'s `last` folds, which a drop that panics shows (#722).\n    if let js::ExprKind::Call(callee, args) = &e.kind\n",
-    replace: "    // `Rev`'s `last` folds, which a drop that panics shows (#722).\n    if false && let js::ExprKind::Call(callee, args) = &e.kind\n",
+    find: "    // `Rev`'s `last` folds, which a drop that panics shows (#722).\n    if let Some(inner) = crate::lower::iterators::reversed_of(e)\n",
+    replace: "    // `Rev`'s `last` folds, which a drop that panics shows (#722).\n    if false && let Some(inner) = crate::lower::iterators::reversed_of(e)\n",
     tests: ["test/corpus.test.ts", "-t", "^(vec_extend_indexed|rev_given_to_generic_code).rs$"],
     snapshots: true,
   },
@@ -595,8 +594,8 @@ export const mutations: Mutation[] = [
     name: "generic-rev-unclosed",
     breaks: "a generic `rev()` of a type parameter isn't closed: the crate's iterator it reverses is never dropped (#650)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                return Ok(Expr::call_helper(\"$rev\", vec![self.closing(it, iter_ty, span)?]));\n",
-    replace: "                return Ok(Expr::call_helper(\"$rev\", vec![it]));\n",
+    find: "                return Ok(crate::lower::iterators::reversed_by(self.closing(it, iter_ty, span)?));\n",
+    replace: "                return Ok(crate::lower::iterators::reversed_by(it));\n",
     tests: ["test/corpus.test.ts", "-t", "^rfold_and_rev_close_what_they_step.rs$"],
   },
   {

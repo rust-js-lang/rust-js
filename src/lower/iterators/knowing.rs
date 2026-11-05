@@ -68,7 +68,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Reversal::Stepped(_) | Reversal::Items => value.clone(),
             Reversal::Range(range) => {
                 let range = self.as_double_ended(range.clone(), source, span)?;
-                Expr::call_helper("$rev", vec![range])
+                crate::lower::iterators::reversed_by(range)
             }
             Reversal::Chain => self.as_double_ended(value.clone(), source, span)?,
         }))
@@ -395,7 +395,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return match reversal {
                 Reversal::Stepped(it) | Reversal::Range(it) => {
                     let it = self.as_exact_size(it.clone(), source, true, span)?;
-                    Ok(Expr::call_helper("$rev", vec![it]))
+                    Ok(crate::lower::iterators::reversed_by(it))
                 }
                 Reversal::Items => Ok(value.clone()),
                 Reversal::Chain => self.as_exact_size(value.clone(), source, back, span),
@@ -619,9 +619,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // One made here by its source's `nth`, `$stepBy(src, n)`, a range's
         // (#231): as the filter's, `$stepByEnds` of its source.
         if let Some(source) = crate::lower::recognition::stepped_by_source(self.tcx, ty)
-            && let js::ExprKind::Call(callee, args) = &value.kind
-            && callee.helper_name() == Some("$stepBy")
-            && let [source_value, step] = args.as_slice()
+            && let Some([source_value, step]) = crate::lower::iterators::stepped_every_parts(&value)
         {
             let source_value = stepped_value(source_value).unwrap_or_else(|| source_value.clone());
             let source_value = self.as_exact_size(source_value, source.peel_refs(), true, span)?;

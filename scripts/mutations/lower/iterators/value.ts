@@ -110,4 +110,14 @@ export const mutations: Mutation[] = [
       "^(rev_in_place_through_adapters).rs$",
     ],
   },
+  {
+    name: "rev-unmarked",
+    breaks:
+      "`$rev(it)` isn't marked where it's made, so what sees through it, `rev().rev()`'s, a reversed range's count or tidy's for of it, never finds it (#722)",
+    file: "src/lower/iterators/value.rs",
+    find: "    e.facts = e.facts.with(Known::IterRev);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(rev_of_rev_last_folds|rev_of_rev_folds_its_source|len_made_in_place|rev_range_counted_beside_its_rfold).rs$"],
+    snapshots: true,
+  },
 ];

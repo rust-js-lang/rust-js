@@ -130,13 +130,16 @@ impl IterValue {
 }
 
 /// Each fact `emit` marks a value's JS with.
-const VALUE_FACTS: [Known; 6] = [
+const VALUE_FACTS: [Known; 9] = [
     Known::IterStepped,
     Known::IterRange,
     Known::IterKnowing,
     Known::IterClosing,
     Known::IterLent,
     Known::IterResultInPlace,
+    Known::IterRev,
+    Known::IterStepBy,
+    Known::IterRepeatingN,
 ];
 
 /// Of `facts`, those `emit` marked a value's JS with: what a value made
@@ -234,6 +237,58 @@ pub(in crate::lower) fn gives_in_place(mut f: Expr) -> Expr {
 /// Whether `f`, a closure, gives what's made in place (`gives_in_place`).
 pub(in crate::lower) fn gives_made_in_place(f: &Expr) -> bool {
     f.facts.has(Known::IterResultInPlace)
+}
+
+/// `$rev(it)`: `it` stepped from its back (ADR 0516), marked so.
+pub(in crate::lower) fn reversed_by(it: Expr) -> Expr {
+    let mut e = Expr::call_helper("$rev", vec![it]);
+    e.facts = e.facts.with(Known::IterRev);
+    e
+}
+
+/// What `e`, a `reversed_by` one, steps from its back: `it`.
+pub(in crate::lower) fn reversed_of(e: &Expr) -> Option<&Expr> {
+    match &e.kind {
+        js::ExprKind::Call(_, args) if e.facts.has(Known::IterRev) && args.len() == 1 => args.first(),
+        _ => None,
+    }
+}
+
+/// Whether `e` is a `reversed_by` one.
+pub(in crate::lower) fn is_reversed(e: &Expr) -> bool {
+    reversed_of(e).is_some()
+}
+
+/// `$stepBy(it, n, ..)`: `it` stepped every `n`th item, given `args`, `it`
+/// and `n` first (#231), marked so.
+pub(in crate::lower) fn stepped_every(args: Vec<Expr>) -> Expr {
+    let mut e = Expr::call_helper("$stepBy", args);
+    e.facts = e.facts.with(Known::IterStepBy);
+    e
+}
+
+/// What a `stepped_every` one is given, `it` and `n` first.
+pub(in crate::lower) fn stepped_every_parts(e: &Expr) -> Option<&[Expr]> {
+    match &e.kind {
+        js::ExprKind::Call(_, args) if e.facts.has(Known::IterStepBy) => Some(args.as_slice()),
+        _ => None,
+    }
+}
+
+/// `$repeatingN(x, n, ..)`: `repeat_n(x, n)`'s items (ADR 0513), given
+/// `args`, `x` and `n` first, marked so.
+pub(in crate::lower) fn repeating_n(args: Vec<Expr>) -> Expr {
+    let mut e = Expr::call_helper("$repeatingN", args);
+    e.facts = e.facts.with(Known::IterRepeatingN);
+    e
+}
+
+/// What a `repeating_n` one is given, `x` and `n` first.
+pub(in crate::lower) fn repeating_n_parts(e: &Expr) -> Option<&[Expr]> {
+    match &e.kind {
+        js::ExprKind::Call(_, args) if e.facts.has(Known::IterRepeatingN) => Some(args.as_slice()),
+        _ => None,
+    }
 }
 
 /// A range's numbers as its maker wrote them (`Form::Range`), `$iterator({

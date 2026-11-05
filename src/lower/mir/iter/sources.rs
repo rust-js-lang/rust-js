@@ -115,7 +115,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // no form of its source's (#745).
         if let Some(source) = r::reversed_source(self.tcx, ty) {
             let source_value = match &it.kind {
-                js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$rev") && args.len() == 1 => &args[0],
+                _ if let Some(source) = crate::lower::iterators::reversed_of(it) => source,
                 _ if it.reads_same() => crate::lower::iterators::steps(it)?,
                 _ => crate::lower::iterators::steps(it).unwrap_or(it),
             };
@@ -123,9 +123,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // `repeat_n(x, n)`, `$repeatingN(x, n)`: `n`.
         if r::is_repeat_n(self.tcx, ty)
-            && let js::ExprKind::Call(callee, args) = &it.kind
-            && callee.helper_name() == Some("$repeatingN")
-            && let [_, n] = args.as_slice()
+            && let Some([_, n]) = crate::lower::iterators::repeating_n_parts(it)
             && !n.has_effects()
         {
             return Some(n.clone());
@@ -134,9 +132,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `Math.ceil(Math.max(b - a, 0) / s)`.
         if let Some(source) = r::stepped_by_source(self.tcx, ty)
             && self.range_kind(source).is_some()
-            && let js::ExprKind::Call(callee, args) = &it.kind
-            && callee.helper_name() == Some("$stepBy")
-            && let [source_value, step] = args.as_slice()
+            && let Some([source_value, step]) = crate::lower::iterators::stepped_every_parts(it)
             && !step.has_effects()
         {
             let count = self.len_in_place(&source_value.clone(), source, made)?;

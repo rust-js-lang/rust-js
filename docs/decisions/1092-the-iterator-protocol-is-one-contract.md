@@ -713,6 +713,18 @@ so does a gone one until its entry goes. They are the `$rev`, `$stepBy` and
 `$repeatingN` readers, whose makers aren't in value.rs yet (step 10), and the
 `$iterator`/`$knowing` readers of `OwnMethods` and tidy's `stepped_in_place`.
 
+Step 10 moves the makers of `$rev`, `$stepBy` and `$repeatingN` into
+value.rs: `reversed_by`, `stepped_every` and `repeating_n`. Each marks what
+it writes (`Known::IterRev`, `IterStepBy`, `IterRepeatingN`), one of the
+kept marks. Their readers ask `reversed_of`, `is_reversed`,
+`stepped_every_parts` and `repeating_n_parts`, never the helper's name:
+`reversal`, `stepped_by`, tidy's `stepped_in_place`, `reversed_in_place`,
+`range_step` and `reversed_step`, `len_in_place` and `as_double_ended`. Step
+9's test now refuses a write of any of the three outside value.rs. The
+named reads left are the `$iterator` readers of an own iterator's steps and
+of a range stepped from its end, and tidy's `$knowing` reader, each listed
+with the accessor value.rs doesn't give yet.
+
 ## Amendment: each adapter's `sizeHint`, and who asks it (2026-11-05, #733 steps 1–3)
 
 G10 closes in three steps. ADR 0262's case each time: results change, so

@@ -59,9 +59,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`repeat`'s value is never dropped, as its iterator isn't given its drop",
     file: "src/lower/iterators/ends.rs",
-    find: "                Expr::call(Expr::helper(name), Expr::optional_args(list, vec![clone, drop]))\n",
-    replace:
-      "                Expr::call(Expr::helper(name), Expr::optional_args(list, vec![clone]))\n",
+    find: "                let args = Expr::optional_args(list, vec![clone, drop]);\n",
+    replace: "                let args = Expr::optional_args(list, vec![clone]);\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -82,8 +81,8 @@ export const mutations: Mutation[] = [
     name: "repeat-n-is-repeat",
     breaks: "`repeat_n` is `repeat`'s, given its count as its clone",
     file: "src/lower/iterators/ends.rs",
-    find: '                    _ => "$repeatingN",\n',
-    replace: '                    _ => "$repeating",\n',
+    find: "                    _ => repeating_n(args),\n",
+    replace: "                    _ => Expr::call(Expr::helper(\"$repeating\"), args),\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_and_peek_mut.rs$"],
   },
   {

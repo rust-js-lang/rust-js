@@ -13,7 +13,8 @@ mod value;
 
 pub(in crate::lower) use self::value::{
     Form, IterValue, bounds_of, bounds_read, closed, closed_parts, gives_in_place, gives_made_in_place, is_lent,
-    its_facts, stepped_from, stepped_range, stepped_value, steps, unlent,
+    is_reversed, its_facts, repeating_n, repeating_n_parts, reversed_by, reversed_of, stepped_every,
+    stepped_every_parts, stepped_from, stepped_range, stepped_value, steps, unlent,
 };
 pub(super) use self::{eager::*, in_place::*};
 
@@ -593,8 +594,10 @@ pub(in crate::lower) fn reversal<'e>(e: &'e Expr, range_back: Option<&str>) -> O
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;
     };
+    if let Some(it) = reversed_of(e) {
+        return Some(Reversal::Stepped(it));
+    }
     match (callee.helper_name(), args.as_slice()) {
-        (Some("$rev"), [it]) => Some(Reversal::Stepped(it)),
         (Some("$iterator"), [range, step]) if range_back.is_some() && step.helper_name() == range_back => {
             Some(Reversal::Range(range))
         }
@@ -606,10 +609,7 @@ pub(in crate::lower) fn reversal<'e>(e: &'e Expr, range_back: Option<&str>) -> O
 /// Of `it.step_by(n)`, made where it's stepped, `$stepBy(it, n)`: `it`
 /// and `n`, a whole number from 1 up to `2^31`, which every step adds.
 pub(in crate::lower) fn stepped_by(e: &Expr) -> Option<(&Expr, i128)> {
-    let js::ExprKind::Call(callee, args) = &e.kind else {
-        return None;
-    };
-    let (Some("$stepBy"), [it, n]) = (callee.helper_name(), &args[..]) else {
+    let [it, n] = stepped_every_parts(e)? else {
         return None;
     };
     let n = n.as_int().filter(|&n| (1..=1 << 31).contains(&n))?;

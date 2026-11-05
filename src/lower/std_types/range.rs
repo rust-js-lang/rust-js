@@ -661,12 +661,10 @@ fn reversed_step(e: &Expr) -> Option<Expr> {
     match &e.kind {
         // `step_by(n)` of one, `$stepBy(range, n)`: its numbers from its end,
         // `n` apart (#231).
-        js::ExprKind::Call(callee, args)
-            if callee.helper_name() == Some("$stepBy")
-                && let [made, n] = &args[..]
-                && n.reads_same()
-                && let Some(range) = crate::lower::iterators::stepped_range(made)
-                && range.back =>
+        _ if let Some([made, n]) = crate::lower::iterators::stepped_every_parts(e)
+            && n.reads_same()
+            && let Some(range) = crate::lower::iterators::stepped_range(made)
+            && range.back =>
         {
             let mut args = vec![range.start.clone(), range.end.clone(), n.clone()];
             if range.inclusive {
@@ -717,8 +715,7 @@ fn range_step(e: &Expr) -> Option<Expr> {
         return None;
     };
     // `step_by(n)` of one, `$stepBy(range, n)`: its numbers `n` apart.
-    if callee.helper_name() == Some("$stepBy")
-        && let [source, n] = &args[..]
+    if let Some([source, n]) = crate::lower::iterators::stepped_every_parts(e)
         && n.reads_same()
         && let Some((start, end, None)) = lazy_range_parts(source)
     {

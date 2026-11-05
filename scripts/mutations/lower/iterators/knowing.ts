@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a reversed range made in place, given where generic code steps it, is stepped forward: `ends((1..4).rev())` is `(Some(3), Some(1), ..)`, not `(Some(1), Some(3), ..)` (ADR 0987)",
     file: "src/lower/iterators/knowing.rs",
-    find: '                let range = self.as_double_ended(range.clone(), source, span)?;\n                Expr::call_helper("$rev", vec![range])\n',
+    find: "                let range = self.as_double_ended(range.clone(), source, span)?;\n                crate::lower::iterators::reversed_by(range)\n",
     replace: "                let range = self.as_double_ended(range.clone(), source, span)?;\n                range\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_given_to_generic_code.rs$"],
   },
@@ -520,9 +520,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's `step_by(n).rev()`, `$stepBy(range, n)`, isn't made knowing its back, and is refused (#231)",
     file: "src/lower/iterators/knowing.rs",
-    find: '            && callee.helper_name() == Some("$stepBy")\n            && let [source_value, step] = args.as_slice()\n',
-    replace:
-      '            && callee.helper_name() == Some("$stepByNot")\n            && let [source_value, step] = args.as_slice()\n',
+    find: "            && let Some([source_value, step]) = crate::lower::iterators::stepped_every_parts(&value)\n",
+    replace: "            && let Some([source_value, step]) = crate::lower::iterators::stepped_every_parts(&value).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_step_by.rs$"],
   },
   {

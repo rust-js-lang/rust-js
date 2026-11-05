@@ -23,7 +23,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.array_source(iter_ty).is_none() {
             return Ok(self
                 .reversed_in_order(iter_ty)
-                .then(|| Expr::call_helper("$rev", vec![receiver])));
+                .then(|| crate::lower::iterators::reversed_by(receiver)));
         }
         let it = match self.array_source(iter_ty) {
             Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => receiver,
@@ -31,7 +31,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => self.as_js_iterator(receiver, iter_ty, span)?,
         };
         let it = self.closing(it, iter_ty, span)?;
-        Ok(Some(Expr::call_helper("$rev", vec![it])))
+        Ok(Some(crate::lower::iterators::reversed_by(it)))
     }
 
     /// `rev()` of `receiver`, of type `iter_ty`, called on a `receiver_ty`,
@@ -65,7 +65,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let lent = if lends { back } else { self.lent_iterator(back) };
                 let lent = self.slicing(lent, iter_ty, true, span)?;
-                Expr::call_helper("$rev", vec![lent])
+                crate::lower::iterators::reversed_by(lent)
             }
             None => self.rev_items(receiver, iter_ty, self.reversed_made_knowing(output), span)?,
         };
@@ -118,7 +118,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // as `Rev` drops it (ADR 0516, #650).
             None => {
                 let it = self.as_double_ended(receiver, iter_ty, span)?;
-                return Ok(Expr::call_helper("$rev", vec![self.closing(it, iter_ty, span)?]));
+                return Ok(crate::lower::iterators::reversed_by(self.closing(it, iter_ty, span)?));
             }
         };
         let items = crate::lower::iterators::reversed(items);
@@ -379,7 +379,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `try_rfold`: `try_fold` of it reversed, which gives its items as
         // its own function does (ADR 0531).
         if method == IterMethod::TryRFold {
-            let reversed = Expr::call_helper("$rev", vec![it]);
+            let reversed = crate::lower::iterators::reversed_by(it);
             let mut arg = || values.next().expect("rustc checked the arguments");
             let folded = self.try_folded(reversed, method, &mut arg, (false, output), arg_tys, span)?;
             return Ok(Some(folded));
@@ -563,12 +563,8 @@ pub(in crate::lower::mir) fn reversed_in_place(e: &mut Expr) {
     // its `fold` (#621). Nor of an array's items closed to drop them, a
     // `Vec`'s `IntoIter`'s, whose own `last` takes its back, where a
     // `Rev`'s `last` folds, which a drop that panics shows (#722).
-    if let js::ExprKind::Call(callee, args) = &e.kind
-        && callee.helper_name() == Some("$rev")
-        && let [inner] = args.as_slice()
-        && let js::ExprKind::Call(inner_callee, inner_args) = &inner.kind
-        && inner_callee.helper_name() == Some("$rev")
-        && let [it] = inner_args.as_slice()
+    if let Some(inner) = crate::lower::iterators::reversed_of(e)
+        && let Some(it) = crate::lower::iterators::reversed_of(inner)
         && (crate::lower::iterators::is_stepped_items(it) || crate::lower::iterators::is_range_stepped(it))
     {
         *e = Expr {
@@ -577,12 +573,10 @@ pub(in crate::lower::mir) fn reversed_in_place(e: &mut Expr) {
         };
         return;
     }
-    if let js::ExprKind::Call(callee, args) = &e.kind
-        && callee.helper_name() == Some("$rev")
-        && let [chain] = args.as_slice()
+    if let Some(chain) = crate::lower::iterators::reversed_of(e)
         && !matches!(chain.kind, js::ExprKind::Var(_))
         && let Some(reversed) = reversed_inward(chain)
-        && !matches!(&reversed.kind, js::ExprKind::Call(c, _) if c.helper_name() == Some("$rev"))
+        && !crate::lower::iterators::is_reversed(&reversed)
     {
         *e = Expr {
             span: e.span,
@@ -599,7 +593,7 @@ fn reversed_inward(e: &Expr) -> Option<Expr> {
     // drop)`: stepped from its back, `$rev(..)`, which drops what's left
     // front to back, as `closed_rev` makes it (ADR 0516, #205).
     if crate::lower::iterators::closed(e).is_some_and(|closed| crate::lower::iterators::is_stepped_items(closed.it)) {
-        return Some(Expr::call_helper("$rev", vec![e.clone()]));
+        return Some(crate::lower::iterators::reversed_by(e.clone()));
     }
     // `$iter(v)` of an array just made iterable: `$iter(v.toReversed())`.
     if crate::lower::iterators::is_stepped_items(e) {
