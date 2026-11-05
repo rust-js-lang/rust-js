@@ -305,7 +305,7 @@ function main() {
   );
   console.log(`enumerate rev rfold ${n}`);
   const v = $range(1, 4).map((value) => [value]);
-  const d$1 = $lastDropping($closing($iter(v), $dropEach(dDrop_drop)), dDrop_drop);
+  const d$1 = $lastDropping($rev($rev($closing($iter(v), $dropEach(dDrop_drop)))), dDrop_drop);
   function map$1(d) {
     const result = d[0];
     dDrop_drop(d);

@@ -351,11 +351,11 @@ export const mutations: Mutation[] = [
   {
     name: "rev-of-rev-kept",
     breaks:
-      "`rev().rev()` of an array's items with a destructor, held, stays `$rev($rev(it))`, not `it` (#205)",
+      "`rev().rev()` of an array's items or a range stays `$rev($rev(it))`, not `it` (#205)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "    // its `fold` (#621).\n    if let js::ExprKind::Call(callee, args) = &e.kind\n",
-    replace: "    // its `fold` (#621).\n    if false && let js::ExprKind::Call(callee, args) = &e.kind\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_of_closed_items.rs$"],
+    find: "    // `Rev`'s `last` folds, which a drop that panics shows (#722).\n    if let js::ExprKind::Call(callee, args) = &e.kind\n",
+    replace: "    // `Rev`'s `last` folds, which a drop that panics shows (#722).\n    if false && let js::ExprKind::Call(callee, args) = &e.kind\n",
+    tests: ["test/corpus.test.ts", "-t", "^(vec_extend_indexed|rev_given_to_generic_code).rs$"],
     snapshots: true,
   },
   {
@@ -611,8 +611,8 @@ export const mutations: Mutation[] = [
     name: "rev-of-rev-of-own-steps-dropped",
     breaks: "`rev().rev()` of a type parameter's iterator is the iterator itself, so its `last()` asks the crate's own `last`, which std's `Rev` never passes on (#621)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "        && (crate::lower::iterators::is_stepped_items(it)\n",
-    replace: "        && (true\n",
+    find: "        && (crate::lower::iterators::is_stepped_items(it) || crate::lower::iterators::is_range_stepped(it))\n",
+    replace: "        && (true || crate::lower::iterators::is_range_stepped(it))\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_of_rev_folds_its_source.rs$"],
   },
   {
@@ -630,5 +630,14 @@ export const mutations: Mutation[] = [
     find: "            IterMethod::NthBack | IterMethod::AdvanceBackBy => self.slicing(it, iter_ty, true, span)?,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(nth_passes_a_slice_or_each|vec_skipped_from_back_drops).rs$"],
+  },
+  {
+    name: "rev-of-rev-of-closed-items-collapsed",
+    breaks:
+      "`rev().rev()` of a `Vec`'s items with a destructor is the `Vec`'s own `IntoIter`, whose `last` takes its back, where std's `Rev` folds: a drop that panics drops the item before the last and leaks the last (#722)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "        && (crate::lower::iterators::is_stepped_items(it) || crate::lower::iterators::is_range_stepped(it))\n",
+    replace: "        && (crate::lower::iterators::is_stepped_items(it)\n            || crate::lower::iterators::is_range_stepped(it)\n            || crate::lower::iterators::closed_parts(it).is_some())\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_of_rev_last_folds.rs$"],
   },
 ];

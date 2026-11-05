@@ -68,7 +68,7 @@ function main() {
     }
   }
 
-  const twice = $held($closing($iter(louds(3)), $dropEach(loudDrop_drop)));
+  const twice = $held($rev($rev($closing($iter(louds(3)), $dropEach(loudDrop_drop)))));
   let first;
   try {
     first = $next(twice);

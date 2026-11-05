@@ -1941,3 +1941,36 @@ crate's iterator whose `size_hint` panics, and one that ends. Mutations:
 `room-for-hint-unclosed` (`runtime/capacity.ts`),
 `consumed-collect-closing-any` (`lower/mir/iter.ts`),
 `collect-dropping-closing-unsaid` (`lower/mir/iter/collect.ts`).
+
+## Amendment: a `rev()` of a `rev()` of a `Vec`'s items with a destructor isn't its source (2026-11-05, #722)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, so
+Rust's behavior is kept.
+
+Tidy's `reversed_in_place` made `$rev($rev(it))` `it` for an array's
+items, a range, and an array's items closed to drop them (#621's
+amendment). The last of those was sound only while every step a `Rev`
+hides gave what std's defaults give. Since a9ebb21a4, a `Vec`'s
+`IntoIter` has its own `last`, std's: it takes its back, then drops what's
+left as one slice. A `Rev<Rev<IntoIter<T>>>`'s `last` is std's default, a
+fold, which keeps each item as it goes. With D(3)'s drop panicking,
+`v.into_iter().rev().rev().last()` dropped 4 and leaked 5, where native
+drops 5, and so did that `rev().rev()`'s `skip(1).last()` and
+`chain(..).last()`.
+
+The collapse now holds of an array's items and a range alone. A closed
+`$iter`, of items with a destructor, stays `$rev($rev(..))`, whose `$rev`
+passes on what std's `Rev` passes on (`fold`, `rfold`, `nth`, `try_fold`)
+and nothing else, so its `last` folds. `rev_of_closed_items.js` and
+`rev_of_rev_folds_its_source.js` read `$rev($rev($closing(..)))` where
+they read `$closing(..)`.
+
+Kind: unsound optimization (the JS was right before the rewrite). Area:
+iterators. Regression of a9ebb21a4, bisected by the nightly.
+
+`rev_of_rev_last_folds.rs` checks `rev().rev()`'s `last`, `skip(1).last()`,
+`chain(..).last()`, `count`, `nth` and `collect`, and a single `rev()`'s
+`last`, with a panicking drop, against native Rust in both builds.
+Mutation: `rev-of-rev-of-closed-items-collapsed`; `rev-of-rev-kept` and
+`rev-of-rev-of-own-steps-dropped` name their lines as they now read
+(`lower/mir/iter/backs.ts`).

@@ -494,21 +494,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// temporary's: `reversed_inward`'s of it, where it says (#205).
 pub(in crate::lower::mir) fn reversed_in_place(e: &mut Expr) {
     // A `Rev`'s `rev()`, `$rev($rev(it))`: `it` itself, of an array's
-    // items, closed or not, or a range, whose steps a `Rev` passes on or
-    // that give what std's default does.
+    // items or a range, whose steps a `Rev` passes on or that give what
+    // std's default does.
     // Not of another, the crate's or a type parameter's, whose own `last`
     // or `count` std's `Rev` doesn't pass on: `rev().rev().last()` asks
-    // its `fold` (#621).
+    // its `fold` (#621). Nor of an array's items closed to drop them, a
+    // `Vec`'s `IntoIter`'s, whose own `last` takes its back, where a
+    // `Rev`'s `last` folds, which a drop that panics shows (#722).
     if let js::ExprKind::Call(callee, args) = &e.kind
         && callee.helper_name() == Some("$rev")
         && let [inner] = args.as_slice()
         && let js::ExprKind::Call(inner_callee, inner_args) = &inner.kind
         && inner_callee.helper_name() == Some("$rev")
         && let [it] = inner_args.as_slice()
-        && (crate::lower::iterators::is_stepped_items(it)
-            || crate::lower::iterators::is_range_stepped(it)
-            || crate::lower::iterators::closed_parts(it)
-                .is_some_and(|(source, _)| crate::lower::iterators::is_stepped_items(source)))
+        && (crate::lower::iterators::is_stepped_items(it) || crate::lower::iterators::is_range_stepped(it))
     {
         *e = Expr {
             span: e.span,
