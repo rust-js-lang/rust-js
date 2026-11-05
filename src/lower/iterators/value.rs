@@ -158,6 +158,55 @@ pub(in crate::lower) fn steps(e: &Expr) -> Option<&Expr> {
     }
 }
 
+/// What closes a value `emit()` closed to drop what it hasn't given,
+/// `$closing(it, drop)` (`Known::IterClosing`): `it`, `drop`, and whether
+/// it drops each of an array's items as it's passed, not as one slice
+/// (#234).
+pub(in crate::lower) struct Closed<'e> {
+    pub(in crate::lower) it: &'e Expr,
+    pub(in crate::lower) drop: &'e Expr,
+    pub(in crate::lower) passes_each: bool,
+}
+
+/// `e`'s closing, of a value `emit()` closed; `None` of another.
+pub(in crate::lower) fn closed(e: &Expr) -> Option<Closed<'_>> {
+    let js::ExprKind::Call(_, args) = &e.kind else {
+        return None;
+    };
+    match (args.as_slice(), e.facts.has(Known::IterClosing)) {
+        ([it, drop], true) => Some(Closed {
+            it,
+            drop,
+            passes_each: false,
+        }),
+        ([it, drop, _], true) => Some(Closed {
+            it,
+            drop,
+            passes_each: true,
+        }),
+        _ => None,
+    }
+}
+
+/// What `e`, closed, is made of, its `it` and `drop` (`closed`).
+pub(in crate::lower) fn closed_parts(e: &Expr) -> Option<(&Expr, &Expr)> {
+    closed(e).map(|closed| (closed.it, closed.drop))
+}
+
+/// What `e`, a value `emit()` lent (`Known::IterLent`), `$lent(it)`, lends:
+/// `it`, made for this call alone, which no one else steps; or `e` itself.
+pub(in crate::lower) fn unlent(e: &Expr) -> &Expr {
+    match &e.kind {
+        js::ExprKind::Call(_, of) if e.facts.has(Known::IterLent) && of.len() == 1 => &of[0],
+        _ => e,
+    }
+}
+
+/// Whether `e` is lent, a JS iterator nothing closes (`unlent`).
+pub(in crate::lower) fn is_lent(e: &Expr) -> bool {
+    !std::ptr::eq(unlent(e), e)
+}
+
 /// A range's numbers as its maker wrote them (`Form::Range`), `$iterator({
 /// start: a, end: b }, $rangeNext)`: its bounds, made where it's stepped,
 /// whether its end is in it, `a..=b`'s, whether it's stepped from its end,

@@ -77,20 +77,6 @@ pub(super) fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
     }
 }
 
-/// Whether `e` is `$lent(x)`, a JS iterator nothing closes.
-pub(super) fn is_lent(e: &Expr) -> bool {
-    !std::ptr::eq(unlent(e), e)
-}
-
-/// What `$lent(e)` lends, `e`, made for this call alone, which no one else
-/// steps; or `e` itself.
-pub(in crate::lower) fn unlent(e: &Expr) -> &Expr {
-    match &e.kind {
-        js::ExprKind::Call(lent, of) if lent.helper_name() == Some("$lent") && of.len() == 1 => &of[0],
-        _ => e,
-    }
-}
-
 /// Of `Array.from(chain.drop(n).take(1))`, `nth(n)`'s first: `chain` and `n`.
 pub(super) fn nth_of(e: &Expr) -> Option<(&Expr, &Expr)> {
     fn call<'e>(e: &'e Expr, name: &str) -> Option<(&'e Expr, &'e [Expr])> {

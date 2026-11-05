@@ -368,17 +368,12 @@ pub(in crate::lower) fn eager_spreads(stmts: &mut [Stmt]) {
 /// Of `$closing($iter(xs), $dropEach(drop))`, an owning `$iter` closed by
 /// `drop`, as a helper given `drop` closes an array it's given (#423): `xs`.
 fn closed_by_its_drop<'e>(chain: &'e Expr, drop: &Expr) -> Option<&'e Expr> {
-    let js::ExprKind::Call(closing, args) = &chain.kind else {
+    let closed = closed(chain).filter(|closed| !closed.passes_each)?;
+    let js::ExprKind::Call(drop_each, dropped) = &closed.drop.kind else {
         return None;
     };
-    let [it, each] = &args[..] else { return None };
-    let js::ExprKind::Call(drop_each, dropped) = &each.kind else {
-        return None;
-    };
-    let by_drop = closing.helper_name() == Some("$closing")
-        && drop_each.helper_name() == Some("$dropEach")
-        && matches!(&dropped[..], [d] if d.kind == drop.kind);
-    by_drop.then(|| fresh_iter_source(it)).flatten()
+    let by_drop = drop_each.helper_name() == Some("$dropEach") && matches!(&dropped[..], [d] if d.kind == drop.kind);
+    by_drop.then(|| fresh_iter_source(closed.it)).flatten()
 }
 
 /// A chain MIR makes as Rust runs it (ADR 0364), item by item, `$iter(xs)
@@ -419,10 +414,9 @@ fn eager_items_of(chain: &Expr, whole: bool, taker: Option<&Expr>, owns: bool) -
     // An owning source closed to drop what it hasn't given, `$closing($iter(xs),
     // drop)`, which a chain of `map`s and `filter`s run over every item never
     // closes (ADR 0465): its items.
-    let at = match &at.kind {
-        js::ExprKind::Call(callee, args)
-            if callee.helper_name() == Some("$closing")
-                && whole
+    let at = match closed(at) {
+        Some(closed)
+            if whole
                 && stages.iter().all(|(name, f)| {
                     // Not one a panic stops early, which drops what's left
                     // as it closes (#422), its stages' or what takes them.
@@ -430,7 +424,7 @@ fn eager_items_of(chain: &Expr, whole: bool, taker: Option<&Expr>, owns: bool) -
                 })
                 && taker.is_none_or(|f| !crate::lower::iterators::in_place::may_throw(f)) =>
         {
-            &args[0]
+            closed.it
         }
         _ if owns => return None,
         _ => at,

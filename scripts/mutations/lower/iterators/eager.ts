@@ -382,9 +382,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a whole chain of `map`s and `filter`s of an owning source keeps its `$closing`, never closed: a `BTreeMap`'s `into_iter().count()` is `$closing($iter(..)).reduce(..)`, not its sorted entries' own `reduce`",
     file: "src/lower/iterators/eager.rs",
-    find: '            if callee.helper_name() == Some("$closing")\n                && whole\n',
-    replace:
-      '            if callee.helper_name() == Some("$closing")\n                && false\n',
+    find: "        Some(closed)\n            if whole\n",
+    replace: "        Some(closed)\n            if false\n",
     tests: ["test/corpus.test.ts", "-t", "^(map_into_iter_drops|drop_guard_name_shared).rs$"],
     snapshots: true,
   },
@@ -515,9 +514,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an owning `$iter` closed by the drop its consumer is given, `$maxByKey($closing($iter(xs), $dropEach(drop)), ..)`, isn't read as the array the helper closes itself, `$maxByKey(xs, ..)` (#423)",
     file: "src/lower/iterators/eager.rs",
-    find: "    by_drop.then(|| fresh_iter_source(it)).flatten()\n",
-    replace:
-      "    by_drop.then(|| fresh_iter_source(it)).flatten().filter(|_| false)\n",
+    find: "    by_drop.then(|| fresh_iter_source(closed.it)).flatten()\n",
+    replace: "    by_drop.then(|| fresh_iter_source(closed.it)).flatten().filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
     snapshots: true,
   },

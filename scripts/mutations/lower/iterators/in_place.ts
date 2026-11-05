@@ -12,19 +12,6 @@ export const mutations: Mutation[] = [
       "        _ if fused && given.first().is_some_and(is_js_iterator) => given[0].clone(),\n",
     tests: ["test/corpus.test.ts", "-t", "^owned_items_through_fuse.rs$"],
   },
-  {
-    name: "iter-eager-lent-root-kept",
-    breaks: "a chain on `$lent($iter(xs))` just made stays a JS iterator's",
-    file: "src/lower/iterators/in_place.rs",
-    find: 'js::ExprKind::Call(lent, of) if lent.helper_name() == Some("$lent") && of.len() == 1 => &of[0],',
-    replace:
-      'js::ExprKind::Call(lent, of) if lent.helper_name() == Some("$lent") && of.len() == 1 => e,',
-    tests: [
-      "test/lowering-matches.test.ts",
-      "-t",
-      "let-else from MIR is a guard",
-    ],
-  },
 
   {
     name: "does-f64-max-given-acts",

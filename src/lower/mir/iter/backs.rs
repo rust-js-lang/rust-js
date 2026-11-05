@@ -598,7 +598,7 @@ fn reversed_inward(e: &Expr) -> Option<Expr> {
     // An array's items closed to drop what's left, `$closing($iter(v),
     // drop)`: stepped from its back, `$rev(..)`, which drops what's left
     // front to back, as `closed_rev` makes it (ADR 0516, #205).
-    if callee.helper_name() == Some("$closing") && args.first().is_some_and(crate::lower::iterators::is_stepped_items) {
+    if crate::lower::iterators::closed(e).is_some_and(|closed| crate::lower::iterators::is_stepped_items(closed.it)) {
         return Some(Expr::call_helper("$rev", vec![e.clone()]));
     }
     // `$iter(v)` of an array just made iterable: `$iter(v.toReversed())`.

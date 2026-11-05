@@ -12,7 +12,8 @@ mod stepping;
 mod value;
 
 pub(in crate::lower) use self::value::{
-    Form, IterValue, bounds_of, bounds_read, its_facts, stepped_from, stepped_range, steps,
+    Form, IterValue, bounds_of, bounds_read, closed, closed_parts, is_lent, its_facts, stepped_from, stepped_range,
+    steps, unlent,
 };
 pub(super) use self::{eager::*, in_place::*};
 
@@ -163,20 +164,6 @@ pub(in crate::lower) fn stepped_form(e: &Expr) -> Option<&Expr> {
         return None;
     };
     matches!(callee.helper_name(), Some("$iterator" | "$given")).then(|| args.first())?
-}
-
-/// What a JS iterator closed to drop it is made of, `it` and `drop` of
-/// `$closing(it, drop)`, or of `$closing(it, drop, true)`, a `Vec`'s that
-/// drops what it passes over as one slice (#234), as `closing` makes it:
-/// the one reader of its form.
-pub(in crate::lower) fn closed_parts(e: &Expr) -> Option<(&Expr, &Expr)> {
-    let js::ExprKind::Call(callee, args) = &e.kind else {
-        return None;
-    };
-    match args.as_slice() {
-        [it, drop] | [it, drop, _] if callee.helper_name() == Some("$closing") => Some((it, drop)),
-        _ => None,
-    }
 }
 
 /// Whether a bound of `tr` reads its value as its own type, `Clone`'s or

@@ -705,7 +705,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // lends made knowing them, given its own methods as std's `&mut I`
         // passes them on, not its folds, which would take it; nothing
         // closes it (#225).
-        if super::in_place::is_lent(&value) {
+        if is_lent(&value) {
             let lent = crate::lower::iterators::unlent(&value);
             let it = stepped_value(lent).unwrap_or_else(|| lent.clone());
             let borrowed = ty::Ty::new_mut_ref(self.tcx, self.tcx.lifetimes.re_erased, ty.peel_refs());
@@ -742,7 +742,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let knowing = self.reversed_user_knowing(it, ty, (back, len), span)?;
             return Ok(self.closed_by(knowing, drop, ty));
         }
-        let lent = super::in_place::is_lent(&value).then(|| crate::lower::iterators::unlent(&value).clone());
+        let lent = is_lent(&value).then(|| crate::lower::iterators::unlent(&value).clone());
         if let Some(lent) = lent {
             let borrowed = ty::Ty::new_mut_ref(self.tcx, self.tcx.lifetimes.re_erased, ty.peel_refs());
             return self.reversed_user_knowing(lent, borrowed, (back, len), span);

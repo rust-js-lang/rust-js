@@ -75,4 +75,26 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(len_made_in_place|range_values|collected_counts_ask_room).rs$"],
     snapshots: true,
   },
+  {
+    name: "iter-eager-lent-root-kept",
+    breaks: "a chain on `$lent($iter(xs))` just made stays a JS iterator's",
+    file: "src/lower/iterators/value.rs",
+    find: "        js::ExprKind::Call(_, of) if e.facts.has(Known::IterLent) && of.len() == 1 => &of[0],\n",
+    replace: "        js::ExprKind::Call(_, of) if e.facts.has(Known::IterLent) && of.len() == 1 => e,\n",
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "let-else from MIR is a guard",
+    ],
+  },
+  {
+    name: "closing-unmarked",
+    breaks:
+      "a value closed to drop what it hasn't given isn't marked so, so what makes it again knowing its back, `$closing($iterator(it, next), drop)`'s, steps it as the crate's own, unclosed (#223)",
+    file: "src/lower/iterators/value.rs",
+    find: '            e = made("$closing", args, &[Known::IterClosing]);',
+    replace: '            e = made("$closing", args, &[]);',
+    tests: ["test/corpus.test.ts", "-t", "^(panic_mid_fold_drops|rfold_and_rev_close_what_they_step|map_into_iter_drops).rs$"],
+    snapshots: true,
+  },
 ];

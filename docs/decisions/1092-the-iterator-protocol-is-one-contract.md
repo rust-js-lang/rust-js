@@ -648,3 +648,13 @@ closure was dropped after the call, outside the fold, and std's compiled
   `test/corpus/skip_while_first_step_unwinds.rs` in both builds, and by the
   conformance table's `skip_while | fold holding` and `skip_while |
   try_fold holding` cases at `stage`, taken off its list.
+
+Step 4 reads whether a value is closed or lent through the value. Value.rs's
+`closed` (`it`, `drop`, `passes_each`), `closed_parts`, `unlent` and `is_lent`
+answer only of a call `emit()` marked `Known::IterClosing` or `IterLent`.
+They replace iterators.rs's `closed_parts` and in_place.rs's `unlent` and
+`is_lent`, and eager.rs's and `reversed_inward`'s reads of `$closing` by its
+name. The readers are knowing.rs's remakes of a closed or lent value
+(#223, #225), `slicing`, a trusted-length `eq`, `positioned`, `range_items`,
+eager chains and `found_index`.
+

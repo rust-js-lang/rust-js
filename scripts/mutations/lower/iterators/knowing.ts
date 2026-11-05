@@ -466,7 +466,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&mut` of the crate's iterator, lent, made knowing its back, is wrapped as if it were the crate's value: a wrong value (#225)",
     file: "src/lower/iterators/knowing.rs",
-    find: "        if super::in_place::is_lent(&value) {\n",
+    find: "        if is_lent(&value) {\n",
     replace: "        if false {\n",
     tests: [
       "test/corpus.test.ts",
