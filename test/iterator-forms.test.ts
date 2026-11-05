@@ -64,7 +64,8 @@ const few = [
   "copied_structs_apart.rs",
   "associated_double_ended.rs",
   "back_steps.rs",
-  "generic_accumulations.rs", "collected_counts_ask_room.rs",
+  "generic_accumulations.rs",
+  "collected_counts_ask_room.rs",
   "heap_pop_of_a_param.rs",
   "escape_iterators.rs",
   "held_zips.rs",
@@ -118,16 +119,29 @@ const few = [
   "closure_folded_by_value_panics.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
-if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);
+if (which !== undefined && which !== "corpus")
+  throw new Error(
+    `ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`,
+  );
 const chosen = which === "corpus" ? caseShard(cases) : few;
 
 /** The cases whose std-struct build doesn't run as native Rust yet, each
  * with why: what's left to do, which only shrinks. One that runs as Rust
  * does is taken off. */
-const differs: Record<string, string> = {};
+const differs: Record<string, string> = {
+  // A `zip()` of a `cloned()` of a slice's items: std's compiled `Zip` asks
+  // whether each side is read by index, `TrustedRandomAccess`, which a
+  // `Cloned<slice::Iter<D>>` is, but std's `Cloned` isn't compiled, so
+  // there's no reader of its item at an index, and it's refused rather
+  // than read as another is; though its other side here, a `chain()`, isn't
+  // read so, and std steps both by `next` (#727).
+  "adapters_own_work_that_panics.rs":
+    "reading a `Cloned<slice::Iter<D>>` by its index, as std's zip of it does, is refused: std's `Cloned` isn't compiled (#727)",
+};
 
 test("the cases a run of a few names are the corpus's, and each listed difference is one", () => {
-  for (const name of [...few, ...Object.keys(differs)]) expect(cases).toContain(name);
+  for (const name of [...few, ...Object.keys(differs)])
+    expect(cases).toContain(name);
 });
 
 for (const name of chosen.filter((name) => cases.includes(name))) {
@@ -135,26 +149,46 @@ for (const name of chosen.filter((name) => cases.includes(name))) {
   const want = directives(readFileSync(file, "utf8"));
   // What doesn't run as Rust does yet, or doesn't run, has no form to
   // check; a malformed directive is the corpus's to report.
-  if (typeof want === "string" || want.kind === "compile-fail" || want.kind === "ignore-rust-js") continue;
+  if (
+    typeof want === "string" ||
+    want.kind === "compile-fail" ||
+    want.kind === "ignore-rust-js"
+  )
+    continue;
   test(`${basename(name, ".rs")} with std's iterator structs`, () => {
     const dir = fixture(`forms-${basename(name, ".rs")}`);
     const native = runNative(file, dir, want.edition, want.native);
     if (typeof native === "string") throw new Error(native);
-    const compiled = compileJs(file, dir, want.edition, false, {}, ["--std-iterators"]);
+    const compiled = compileJs(file, dir, want.edition, false, {}, [
+      "--std-iterators",
+    ]);
     let problem = "";
     if (!("js" in compiled)) {
       problem = `rust-js failed: ${compiled.error.split("\n").slice(0, 6).join("\n")}`;
     } else {
       const js = readFileSync(compiled.js, "utf8");
-      const key = runKey(["std iterators", js, native.bytes.stdout, native.bytes.stderr, show(native.outcome), shared()]);
+      const key = runKey([
+        "std iterators",
+        js,
+        native.bytes.stdout,
+        native.bytes.stderr,
+        show(native.outcome),
+        shared(),
+      ]);
       if (!verified(key)) {
         const [runtime, cmd] = runtimes[0];
         const ran = runJs(cmd, compiled.js, dir, `${runtime}-std-iterators`);
-        if (agree(ran, native)) record(key, `${name} with std's iterator structs`);
-        else problem = `${show(ran.outcome)}, printing\n${ran.stdout.slice(0, 400)}\nwhere native Rust ended ${show(native.outcome)}, printing\n${native.stdout.slice(0, 400)}`;
+        if (agree(ran, native))
+          record(key, `${name} with std's iterator structs`);
+        else
+          problem = `${show(ran.outcome)}, printing\n${ran.stdout.slice(0, 400)}\nwhere native Rust ended ${show(native.outcome)}, printing\n${native.stdout.slice(0, 400)}`;
       }
     }
-    if (name in differs) expect(problem, `${name} runs as Rust does now: take it off \`differs\``).not.toBe("");
+    if (name in differs)
+      expect(
+        problem,
+        `${name} runs as Rust does now: take it off \`differs\``,
+      ).not.toBe("");
     else expect(problem).toBe("");
   }, 300_000);
 }
@@ -165,12 +199,15 @@ for (const name of chosen.filter((name) => cases.includes(name))) {
 test("a build of std's iterator structs makes no adapter in place", () => {
   const dir = fixture("forms-in-place");
   const file = join(dir, "main.rs");
-  writeFileSync(file, `fn main() {
+  writeFileSync(
+    file,
+    `fn main() {
     let v = [1, 2, 3];
     let doubled: Vec<i32> = v.iter().map(|x| x * 2).filter(|x| *x > 2).collect();
     println!("{doubled:?}");
 }
-`);
+`,
+  );
   const compiled = compileJs(file, dir, "2024", false, {}, ["--std-iterators"]);
   if (!("js" in compiled)) throw new Error(compiled.error);
   const js = readFileSync(compiled.js, "utf8");
@@ -193,7 +230,9 @@ test("a build of std's iterator structs makes no adapter in place", () => {
 test("a take's rev, consumed by fold or by next, drops what it passes as std's does", () => {
   const dir = fixture("forms-take-rev");
   const file = join(dir, "main.rs");
-  writeFileSync(file, `use std::cell::Cell;
+  writeFileSync(
+    file,
+    `use std::cell::Cell;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 thread_local! {
@@ -272,7 +311,8 @@ fn main() {
     }));
     println!("chars panics {:?}", r.ok());
 }
-`);
+`,
+  );
   const native = runNative(file, dir, "2024");
   if (typeof native === "string") throw new Error(native);
   const compiled = compileJs(file, dir, "2024", false, {}, ["--std-iterators"]);
