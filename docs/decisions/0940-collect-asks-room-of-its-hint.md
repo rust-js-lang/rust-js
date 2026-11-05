@@ -165,3 +165,30 @@ both builds. Mutations (`runtime/capacity.ts`):
 `room-for-hint-unasked-as-it-grows`, `room-for-hint-least-of-any-size`,
 `room-for-hint-first-capacity-least`, `room-for-hint-zero-size-fills`,
 `room-for-hint-grows-by-hint-alone`, `room-for-hint-grown-item-undropped`.
+
+## Amendment: a collect in place asks no room (2026-11-05, #770)
+
+Case R: the build of std's structs dropped what a `filter()`'s collect had
+gathered where a dropped item's drop panicked, which native Rust leaks.
+
+Std's in-place collect (`alloc/src/vec/in_place_collect.rs`,
+`from_iter_in_place`) writes into its source's buffer by `try_fold`, the
+items it wrote held by an `InPlaceDrop` that is the fold's accumulator. It
+asks no `size_hint` of an iterator that isn't `TrustedRandomAccess`, a
+`Filter`'s, and where a dropped item's drop panics inside the filter's
+closure, the accumulator that closure gives back is leaked, as rustc leaks
+what a function gives back while a later drop unwinds
+(rust-lang/rust#47949; `$kept`, #651). 82ee82006 (#724) gave the collect's
+iterator `$roomForHint` before `$collectsInPlace(..)` chose how it's
+collected, so the in-place branch, `$foldToArray`, folded the room-asking
+wrapper too, which drops what was collected as a step throws, as
+`extend_desugared` does. Bisected: 9953b391f runs as native Rust does,
+82ee82006 doesn't.
+
+The in-place branch folds the iterator as it was before room was asked of
+it; only the branch that collects by `next`, `$collectDropping`, is given
+`$roomForHint`. No std source collected in place has a hint a program can
+see, so asking none there changes nothing else (N).
+
+`generic_collect_drops_rest_first.rs` is off iterator-forms' `differs` and
+in its few. The mutation is `in-place-collect-asks-room`.

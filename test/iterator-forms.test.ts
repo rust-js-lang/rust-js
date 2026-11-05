@@ -140,6 +140,11 @@ const few = [
   // A `by_ref()` lends, never owns: its hint, length, folds and `rev()`,
   // in generic code too (#745, #747, #749, #755).
   "by_ref_lends.rs",
+  // A `filter()`'s collect in place whose dropped item's drop panics: what
+  // it gathered leaked, as rustc leaks the `InPlaceDrop` its `try_fold`
+  // gives back, never dropped by a `$roomForHint` std's in-place collect
+  // never asks (#770).
+  "generic_collect_drops_rest_first.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus")
@@ -151,11 +156,7 @@ const chosen = which === "corpus" ? caseShard(cases) : few;
 /** The cases whose std-struct build doesn't run as native Rust yet, each
  * with why: what's left to do, which only shrinks. One that runs as Rust
  * does is taken off. */
-const differs: Record<string, string> = {
-  // A `filter()`'s collect into a `Vec` whose dropped item's drop panics:
-  // std's compiled collect drops what it gathered, which rustc leaks (#770).
-  "generic_collect_drops_rest_first.rs": "#770",
-};
+const differs: Record<string, string> = {};
 
 test("the cases a run of a few names are the corpus's, and each listed difference is one", () => {
   for (const name of [...few, ...Object.keys(differs)])

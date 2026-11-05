@@ -603,7 +603,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         Ok(if self.is_std_type(output, StdItem::BinaryHeap) {
             let items = match self.unwinding_collect(output, item, iter_ty, span)? {
-                Some(unwinding) => unwinding.collected(it),
+                Some(unwinding) => unwinding.collected(it, None),
                 None => items(it),
             };
             self.heap_values(HeapOp::From, vec![items], (output, false), span)?
@@ -644,6 +644,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && !self.recognition().nth_back_folded_sources(iter_ty).is_empty())
             .then(|| self.type_fact_value(iter_ty, crate::lower::recognition::TypeFact::TrustedLen, span))
             .transpose()?;
+            let unroomed = it.clone();
             let it = match item {
                 Some(item)
                     if asks_room
@@ -689,7 +690,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let args = self.folded_unwinding(it.clone(), output, item, iter_ty, span)?;
                 let by_fold = Expr::call_helper("$foldToArray", args);
                 let by_next = match self.unwinding_collect(output, item, Some(iter_ty), span)? {
-                    Some(unwinding) => unwinding.collected(it),
+                    Some(unwinding) => unwinding.collected(it, Some(unroomed)),
                     None => Expr::collected(it),
                 };
                 return Ok(Expr::cond(trusted, by_fold, by_next));
@@ -707,7 +708,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::call_helper("$foldToArray", args)
                 }
                 None if let Some(unwinding) = self.unwinding_collect(output, item, Some(iter_ty), span)? => {
-                    unwinding.collected(it)
+                    unwinding.collected(it, Some(unroomed))
                 }
                 None => match self.collected_items(&it, iter_ty) {
                     Some(items) => items,
@@ -744,7 +745,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `$mapFrom`, what's left then what it holds dropped (#423).
             let unwinding = self.unwinding_collect(output, item, iter_ty, span)?;
             let (it, unwinds) = match unwinding {
-                Some(unwinding) if self.is_sorted(output) => (unwinding.collected(it), false),
+                Some(unwinding) if self.is_sorted(output) => (unwinding.collected(it, None), false),
                 unwinding => (it, unwinding.is_some()),
             };
             self.made_of(set, self.tcx.mk_args(&[output.into()]), it, unwinds, span)?
@@ -1064,16 +1065,26 @@ impl UnwindingCollect {
     /// $collectDropping(it, drop, true)`, as `ITrustedLen` picks a fold
     /// (#672, #670). `$collectDropping` closes `it` at its end and as a
     /// panic unwinds, which it says (`Known::ClosesWhatItSteps`, #660), as
-    /// `$roomForHint` closes it where asking its room throws.
-    fn collected(self, it: Expr) -> Expr {
+    /// `$roomForHint` closes it where asking its room throws. In place, of
+    /// `it` before it's given room, `unroomed`, where it is: std's in-place
+    /// collect writes into the source's buffer and asks no room, so what it
+    /// gathered is the `InPlaceDrop` its `try_fold` holds, which a later
+    /// drop's panic leaks, as rustc leaks what a closure gives back (#770).
+    fn collected(self, it: Expr, unroomed: Option<Expr>) -> Expr {
         let mut args = vec![it];
         args.extend(self.drop);
+        let in_place = |mut args: Vec<Expr>| {
+            if let Some(unroomed) = unroomed {
+                args[0] = unroomed;
+            }
+            Expr::call_helper("$foldToArray", args)
+        };
         match self.in_place {
-            InPlace::Yes => Expr::call_helper("$foldToArray", args),
-            InPlace::IfCaller(in_place) => {
-                let by_fold = Expr::call_helper("$foldToArray", args.clone());
+            InPlace::Yes => in_place(args),
+            InPlace::IfCaller(collects_in_place) => {
+                let by_fold = in_place(args.clone());
                 args.push(Expr::bool(true));
-                Expr::cond(in_place, by_fold, Expr::call_helper("$collectDropping", args))
+                Expr::cond(collects_in_place, by_fold, Expr::call_helper("$collectDropping", args))
             }
             InPlace::No => {
                 args.extend(self.rest_first);

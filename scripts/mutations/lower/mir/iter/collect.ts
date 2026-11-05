@@ -429,7 +429,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `collect` into a B-tree a panic may stop drops nothing it took (#423)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                Some(unwinding) if self.is_sorted(output) => (unwinding.collected(it), false),",
+    find: "                Some(unwinding) if self.is_sorted(output) => (unwinding.collected(it, None), false),",
     replace:
       "                Some(_) if self.is_sorted(output) => (it, false),",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
@@ -648,7 +648,7 @@ export const mutations: Mutation[] = [
     name: "in-place-collect-by-next",
     breaks: "a collect std makes in place, of a `filter` whose discarded item's drop panics, steps it by `next`, so it drops what it collected, which std leaks (#681)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            InPlace::Yes => Expr::call_helper(\"$foldToArray\", args),\n",
+    find: "            InPlace::Yes => in_place(args),\n",
     replace: "            InPlace::Yes => Expr::call_helper(\"$collectDropping\", args),\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_leaks_what_a_discard_strands.rs$"],
   },
@@ -709,7 +709,7 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's collect of a `Vec`'s `IntoIter` that std collects in place, its caller says, steps it by `next`, so a discarded item's drop that panics drops what it collected, which std leaks (#672, #681)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                let by_fold = Expr::call_helper(\"$foldToArray\", args.clone());\n",
+    find: "                let by_fold = in_place(args.clone());\n",
     replace: "                let by_fold = Expr::call_helper(\"$collectDropping\", args.clone());\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
   },
@@ -801,5 +801,14 @@ export const mutations: Mutation[] = [
     find: "                let keys = Expr::call(Expr::member(it, \"map\"), vec![self.unary_callback(arg(), own)]);\n",
     replace: "                let _ = arg();\n                let keys = it;\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_is_sorted_by.rs$"],
+  },
+  {
+    name: "in-place-collect-asks-room",
+    breaks:
+      "std's compiled collect in place of a `filter()` is given `$roomForHint`, which std's in-place collect never asks, so where a dropped item's drop panics it drops what it gathered, which rustc leaks (#770)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                args[0] = unroomed;\n",
+    replace: "",
+    tests: ["test/iterator-forms.test.ts", "-t", "^generic_collect_drops_rest_first with"],
   },
 ];
