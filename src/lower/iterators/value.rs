@@ -147,6 +147,17 @@ pub(in crate::lower) fn its_facts(facts: js::Facts) -> js::Facts {
         .fold(js::Facts::NONE, js::Facts::with)
 }
 
+/// What `e` steps, of a JS iterator of a value its maker wrote
+/// (`Known::IterStepped`), `$iterator(value, next, ..)` or `$given(value,
+/// ..)`: `value`, the crate's iterator, a range or a type parameter's value.
+/// `None` of another, or of one a variable holds, whose value isn't there.
+pub(in crate::lower) fn steps(e: &Expr) -> Option<&Expr> {
+    match &e.kind {
+        js::ExprKind::Call(_, args) if e.facts.has(Known::IterStepped) => args.first(),
+        _ => None,
+    }
+}
+
 /// A range's numbers as its maker wrote them (`Form::Range`), `$iterator({
 /// start: a, end: b }, $rangeNext)`: its bounds, made where it's stepped,
 /// whether its end is in it, `a..=b`'s, whether it's stepped from its end,

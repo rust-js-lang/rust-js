@@ -65,4 +65,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(rev_loops|range_rev_from_computed).rs$"],
     snapshots: true,
   },
+  {
+    name: "steps-of-no-value",
+    breaks:
+      "what a range's or the crate's value steps isn't read out of its `$iterator`, so a `len()` of a reversed range made in place counts the JS iterator's own fields, not its bounds",
+    file: "src/lower/iterators/value.rs",
+    find: "        js::ExprKind::Call(_, args) if e.facts.has(Known::IterStepped) => args.first(),\n",
+    replace: "        js::ExprKind::Call(_, args) if e.facts.has(Known::IterStepped) && false => args.first(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^(len_made_in_place|range_values|collected_counts_ask_room).rs$"],
+    snapshots: true,
+  },
 ];

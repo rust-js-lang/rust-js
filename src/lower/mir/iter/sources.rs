@@ -98,7 +98,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Some(self.items_left(it.clone(), made));
         }
         if let Some(kind) = self.range_kind(ty) {
-            let range = crate::lower::iterators::stepped_form(it).unwrap_or(it);
+            let range = crate::lower::iterators::steps(it).unwrap_or(it);
             return self.range_len(range, ty, kind);
         }
         // A generic one's or a `dyn`'s, given knowing its length (ADR 0456):
@@ -116,8 +116,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(source) = r::reversed_source(self.tcx, ty) {
             let source_value = match &it.kind {
                 js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$rev") && args.len() == 1 => &args[0],
-                _ if it.reads_same() => crate::lower::iterators::stepped_form(it)?,
-                _ => crate::lower::iterators::stepped_form(it).unwrap_or(it),
+                _ if it.reads_same() => crate::lower::iterators::steps(it)?,
+                _ => crate::lower::iterators::steps(it).unwrap_or(it),
             };
             return self.len_in_place(&source_value.clone(), source, made);
         }

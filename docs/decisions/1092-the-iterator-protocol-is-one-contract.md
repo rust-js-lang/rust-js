@@ -583,3 +583,9 @@ rebuild the call they're given without what else was known of it, and had
 dropped the marks with it. Then a `for` over `(a..b).rev()` was no longer
 the `for` that counts down.
 
+Step 3 counts what a value made in place has left through the value.
+`len_in_place` reads what a range's or the crate's value steps by value.rs's
+`steps`, which answers only of a call `emit()` marked
+`Known::IterStepped`. #745's `NaN`, a held `Rev` counted as its range, was
+fixed first on its own (d9dfd1cff), so this step changes no JS.
+
