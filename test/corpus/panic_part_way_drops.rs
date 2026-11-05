@@ -41,6 +41,10 @@ fn small(d: &D) -> bool {
     d.0 < 3
 }
 
+fn tagged(d: D) -> (u32, D) {
+    (d.0, d)
+}
+
 fn run(name: &str, f: impl FnOnce()) {
     let r = catch_unwind(AssertUnwindSafe(f));
     println!("{name} {}", r.is_err());
@@ -97,6 +101,10 @@ fn main() {
     });
     run("filter by a fn", || {
         let x: Vec<D> = ds(0..5).into_iter().filter(small).collect();
+        println!("{}", x.len());
+    });
+    run("map by a fn", || {
+        let x: Vec<(u32, D)> = ds(0..3).into_iter().map(tagged).collect();
         println!("{}", x.len());
     });
     run("filter", || {

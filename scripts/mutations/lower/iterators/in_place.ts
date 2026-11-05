@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "never-unwinding-predicate-may-throw",
     breaks:
-      "a predicate that's one of the crate's functions that never unwinds is judged one that may panic, its `filter` the `try` form",
+      "a predicate that's one of the crate's functions that never unwinds is judged one that may panic, so an owning `map(tagged)` keeps its `$closing`, not the array's own `ds(..).map(tagged)`",
     file: "src/lower/iterators/in_place.rs",
     find: "        _ => !f.facts.has(js::Known::NeverThrows),",
     replace: "        _ => true,",

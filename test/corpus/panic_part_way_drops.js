@@ -73,6 +73,10 @@ function small(d) {
   return d[0] < 3;
 }
 
+function tagged(d) {
+  return [d[0], d];
+}
+
 function run(name, f) {
   const r = $catchUnwind(f);
   console.log(`${name} ${r.TAG === "Err"}`);
@@ -266,6 +270,13 @@ function main() {
     console.log(`${x.length}`);
     for (const item of x) {
       dDrop_drop(item);
+    }
+  });
+  run("map by a fn", () => {
+    const x = ds({ start: 0, end: 3 }).map(tagged);
+    console.log(`${x.length}`);
+    for (const item of x) {
+      dDrop_drop(item[1]);
     }
   });
   run("filter", () => {
