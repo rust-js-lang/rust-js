@@ -503,6 +503,9 @@ function setterText(setter: Setter, it: string): string {
 // iterator that writes none of its steps, one that writes every one, one
 // double-ended, and a type parameter of a `Vec`'s and of the crate's.
 
+/** What a `map` makes of an item of `from`, its number past 100. */
+const mapped = (from: Shape) => ({ D: "D(x.0 + 100)", N: "x + 100", "&D": "x.0 + 100", "&N": "x + 100", pair: "x.v()" })[from.item];
+
 /** The adapters only the table runs, besides the matrix's. */
 const stepAdapters: Adapter[] = [
   {
@@ -543,24 +546,34 @@ const stepAdapters: Adapter[] = [
     text: (from, panics) => `.flat_map(|x| ${counted(panics, "flat_map", from.item === "D" ? "vec![D(x.0 + 10), x]" : "vec![x + 10, x]")})`,
   },
   {
-    // A closure that holds a `D` of its own, `drop 90`, moved into the
-    // adapter, which its fold drops where std's does (ADR 0991).
+    // A closure that holds a `D` of its own, `drop 80`, `caseFn`'s `h`,
+    // moved into the adapter, which its fold drops where std's does (ADR
+    // 0991).
     name: "map holding",
     closure: true,
     shape: (from) => (from.item === "D" ? from : { item: "N", owns: false, back: from.back, exact: from.exact }),
-    text: (from, panics) => {
-      const body = { D: "D(x.0 + 100)", N: "x + 100", "&D": "x.0 + 100", "&N": "x + 100", pair: "x.v()" }[from.item];
-      return `.map({ let g = D(90); move |x| { let _g = &g; ${counted(panics, "map", body)} } })`;
-    },
+    text: (from, panics) => `.map(move |x| { let _h = &h; ${counted(panics, "map", mapped(from))} })`,
+  },
+  {
+    // The same made by a block given to the call, which rust-js refuses
+    // (#759): kept so the refusal stays seen.
+    name: "map holding block",
+    closure: true,
+    shape: (from) => (from.item === "D" ? from : { item: "N", owns: false, back: from.back, exact: from.exact }),
+    text: (from, panics) => `.map({ let h = D(80); move |x| { let _h = &h; ${counted(panics, "map", mapped(from))} } })`,
   },
   // Lent, `caseFn`'s: its steps are `&mut I`'s.
   { name: "by_ref", closure: false, shape: (from) => from, text: () => "" },
 ];
 
-/** A consumer's closure that holds a `D` of its own, `drop 90`, and counts
- * by the case's `seen`, which it borrows: its start, as `call`'s. */
+/** A consumer's closure that holds a `D` of its own, `drop 90`, moved in,
+ * and counts by the case's `seen`, which it borrows as `counter`: what
+ * comes before the consumer's call, `holds`, and the closure, its start as
+ * `call`'s. Each a statement of its own, as a block that makes the closure
+ * is refused (`a closure that holds a value with a destructor, made here`). */
+const holds = "let g = D(90);\n    let counter = &mut seen;\n    ";
 const holding = (panics: boolean, params: string, body: string) =>
-  `{ let g = D(90); let seen = &mut seen; move |${params}| { let _g = &g; *seen += 1;${panics ? ` if *seen == 2 { panic!("consumer") }` : ""} ${body} } }`;
+  `move |${params}| { let _g = &g; *counter += 1;${panics ? ` if *counter == 2 { panic!("consumer") }` : ""} ${body} }`;
 const back = (shape: Shape) => shape.back;
 
 /** The steps only the table runs, besides the matrix's consumers: each
@@ -629,19 +642,28 @@ const stepConsumers: Consumer[] = [
     name: "fold holding",
     closure: true,
     takes: any,
-    text: (it, p) => `let acc = ${it}.fold(Acc(0), ${holding(p, "mut a, x", "a.0 += x.v(); a")});\n    println!("fold {} after {seen}", acc.0);`,
+    text: (it, p) => `${holds}let acc = ${it}.fold(Acc(0), ${holding(p, "mut a, x", "a.0 += x.v(); a")});\n    println!("fold {} after {seen}", acc.0);`,
+  },
+  {
+    // The same made by a block given to the call, which rust-js refuses
+    // (#759): kept so the refusal stays seen.
+    name: "fold holding block",
+    closure: true,
+    takes: any,
+    text: (it, p) =>
+      `let acc = ${it}.fold(Acc(0), { let g = D(90); let counter = &mut seen; ${holding(p, "mut a, x", "a.0 += x.v(); a")} });\n    println!("fold {} after {seen}", acc.0);`,
   },
   {
     name: "rfold holding",
     closure: true,
     takes: back,
-    text: (it, p) => `let acc = ${it}.rfold(Acc(0), ${holding(p, "mut a, x", "a.0 += x.v(); a")});\n    println!("rfold {} after {seen}", acc.0);`,
+    text: (it, p) => `${holds}let acc = ${it}.rfold(Acc(0), ${holding(p, "mut a, x", "a.0 += x.v(); a")});\n    println!("rfold {} after {seen}", acc.0);`,
   },
   {
     name: "for_each holding",
     closure: true,
     takes: any,
-    text: (it, p) => `${it}.for_each(${holding(p, "x", 'println!("item {}", x.v());')});\n    println!("for_each after {seen}");`,
+    text: (it, p) => `${holds}${it}.for_each(${holding(p, "x", 'println!("item {}", x.v());')});\n    println!("for_each after {seen}");`,
   },
   {
     name: "try_fold holding",
@@ -649,14 +671,14 @@ const stepConsumers: Consumer[] = [
     takes: any,
     lends: true,
     text: (it, p) =>
-      `let r = ${it}.try_fold(Acc(0), ${holding(p, "mut a, x", "a.0 += x.v(); if *seen == 3 { Err(a.0) } else { Ok(a) }")});\n    match &r { Ok(a) => println!("ok {}", a.0), Err(n) => println!("err {n}") }`,
+      `${holds}let r = ${it}.try_fold(Acc(0), ${holding(p, "mut a, x", "a.0 += x.v(); if *counter == 3 { Err(a.0) } else { Ok(a) }")});\n    match &r { Ok(a) => println!("ok {}", a.0), Err(n) => println!("err {n}") }`,
   },
   {
     name: "any holding",
     closure: true,
     takes: any,
     lends: true,
-    text: (it, p) => `let r = ${it}.any(${holding(p, "x", "x.v() % 3 == 0")});\n    println!("any {r} after {seen}");`,
+    text: (it, p) => `${holds}let r = ${it}.any(${holding(p, "x", "x.v() % 3 == 0")});\n    println!("any {r} after {seen}");`,
   },
 ];
 
@@ -679,6 +701,15 @@ export function conformanceCases(): Case[] {
       const shapes = [source.shape, shape];
       for (const consumer of steps) {
         if (!consumer.takes(shape)) continue;
+        // A closure made by a block given to the call, refused (#759): a
+        // few of it, of a `Vec`'s, the consumer's alone and the adapter's
+        // folded, so the refusal stays seen and costs few batches a second
+        // compile.
+        const block = (name: string) => name.endsWith(" block");
+        const blockCase =
+          source.name === "vec" &&
+          ((chain.length === 0 && block(consumer.name)) || (chain.length === 1 && block(chain[0].name) && consumer.name === "fold"));
+        if ((block(consumer.name) || chain.some((a) => block(a.name))) && !blockCase) continue;
         for (const site of sites) {
           if (!applies(site, source, chain, consumer, shapes)) continue;
           const id = `${source.name} | ${chain.map((a) => a.name).join(".") || "-"} | ${consumer.name} | ${site}`;
@@ -772,6 +803,10 @@ function caseFn(c: Case, n: number): string {
       // Peeked first, so what it holds is in each step after.
       body.push(`let mut it = ${expr}.peekable();`, `println!("peeked {:?}", it.peek().map(|x| x.v()));`);
       expr = "it";
+    } else if (a.name === "map holding") {
+      // What its closure holds, moved in.
+      body.push("let h = D(80);");
+      expr += a.text(shape, panics);
     } else if (a.name === "by_ref") {
       // Lent: what the consumer leaves is dropped as `held` is, after it.
       body.push(`let mut held = ${expr};`);

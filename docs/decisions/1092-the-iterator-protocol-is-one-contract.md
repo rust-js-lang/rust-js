@@ -244,6 +244,28 @@ is `held`, when its owner drops it where Rust does (#206). A temporary's
 end and its source's end are the same statement, so no program sees the
 difference (N).
 
+**S9. A fold by value closes each part it finishes with, itself, where
+std's frame drops it.** It never counts on S8's closing at exhaustion. Std
+moves each part into the step it asks and drops it as that step ends:
+- `Chain::fold` consumes `a` by `a.fold(acc, &mut f)`, then `b` by
+  `b.fold(acc, f)`, which drops `f` before `b`'s rest (`chain.rs:116`);
+- `FlattenCompat::fold` consumes each inner by its own `fold`
+  (`flatten.rs:573`);
+- `Take::fold` and `StepBy::fold` end their source with themselves
+  (`take.rs:276`, `step_by.rs`).
+
+The JS fold must `return()` each part at the same point. The consume
+primitive (#734) holds what it folds, `hold()`, so nothing is closed for
+being done: a part a fold leaves to be closed at exhaustion is closed only
+when the whole is, after `f` and after the parts std dropped first. #757
+was `$chainEnds`' fold doing so.
+
+This isn't checked statically: whether a fold closes a part depends on
+its control flow. The conformance table checks it. Its folds by value of
+a closure that holds a `D` (`fold holding`, `rfold holding`, `for_each
+holding`) run over a `chain`, `flatten`, `flat_map`, `step_by` and `take`
+of the crate's iterators with a `Drop`, which print as each part drops.
+
 ### 3. What each std adapter asks of what it holds
 
 Each adapter's steps are std's specializations, not the defaults. Which
@@ -449,7 +471,7 @@ their steps apart:
   (`Every`), or a back (`Backs`);
 - a type parameter of a `Vec`'s and of the crate's.
 
-That is 21,587 cases in 360 programs. Its known failures are listed as the
+That is 21,594 cases in 360 programs. Its known failures are listed as the
 matrix's are, under their issues, and only shrink.
 
 ## Alternatives
@@ -499,11 +521,21 @@ matrix's are, under their issues, and only shrink.
   - #746: a compiled `scan()`'s collect drops in the wrong order;
   - #747: a `&mut I`'s `rfold` reaches `I::rfold` (§3);
   - #748: a compiled `scan()` consumed by value drops its source twice;
-  - #749: a type parameter's `by_ref()` is the value itself (§3).
+  - #749: a type parameter's `by_ref()` is the value itself (§3);
+  - #762: a `map()`'s held function is leaked past its source's panic
+    (S7), and dropped after what's left from its back (S2).
 
   Their cases are listed under each in `test/iterator-matrix-known.txt`,
-  which only shrinks. A collected `Vec`'s capacity number is ADR 0419's
-  case B: the table checks only `capacity() >= len()`.
+  which only shrinks:
+  - 953 under #734 are the folds by value of a closure that holds a `D`
+    that #734's first step doesn't reach yet: generic code, `rfold`, the
+    `*_while`s and `scan`, and std's build;
+  - #744's were fixed before they were listed.
+
+  A collected `Vec`'s capacity number is ADR 0419's case B: the table
+  checks only `capacity() >= len()`. A closure made by a block given to the
+  call is refused (#759, P2), and a few of those cases stay in the table as
+  refusals.
 - docs/architecture.md's "Libraries and runtime" names the contract and its
   owners.
 - The stale references to "ADR 1092" for the iterator matrix
