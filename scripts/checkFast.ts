@@ -12,7 +12,7 @@
 // `--all` is the check before a push: `test/ci.test.ts` holds it to
 // check.yml, each command its jobs run one of `jobs`' or one `leftToCi`
 // names, and each test file its suite runs one a job here runs (#732).
-import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { availableParallelism, loadavg } from "node:os";
 import { join } from "node:path";
 import { pruneKept } from "../test/kept";
@@ -221,12 +221,34 @@ if (import.meta.main) {
   if (build.exitCode !== 0) process.exit(1);
   console.log(timed("cargo build", (Date.now() - building) / 1000));
 
+  // The jobs' compiler is the run's own hard link of the one just built.
+  // A `cargo build` in the checkout while the run runs, of the agent's next
+  // edit, replaces `target/debug/rust-js`. It's gone for part of that, 899
+  // of 88,241 looks during one build here, and a test that spawns it then
+  // fails at once (ENOENT in 0.1 ms): diagnostics' "a RefCell of a dyn
+  // upcast" failed in 0.91 ms (#761). The link is the run's build however
+  // the checkout's changes, and goes with the run.
+  // Those of runs that ended without exiting, whose process is gone, go too.
+  const runs = join(root, "target", "check-fast");
+  mkdirSync(runs, { recursive: true });
+  for (const pid of readdirSync(runs)) {
+    try {
+      process.kill(Number(pid), 0);
+    } catch {
+      rmSync(join(runs, pid), { recursive: true, force: true });
+    }
+  }
+  const own = join(runs, String(process.pid));
+  mkdirSync(own, { recursive: true });
+  const compiler = join(own, "rust-js");
+  linkSync(join(root, "target", "debug", "rust-js"), compiler);
+  process.on("exit", () => rmSync(own, { recursive: true, force: true }));
+
   // And the node bindings the bindings and lowering tests compile against,
   // once, before the jobs that ask for them: built by the first test to ask
   // under the others' load, it outran bun's 5 s test timeout, was killed, and
   // failed every test waiting on it (#227). support.ts's `buildNode`, whose
   // stamp skips it where nothing changed.
-  const compiler = join(root, "target", "debug", "rust-js");
   const binding = Date.now();
   const node = Bun.spawnSync(["bun", "-e", "import { buildNode } from './test/support.ts'; buildNode();"], {
     cwd: root,
