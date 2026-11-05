@@ -72,6 +72,7 @@ export const nightly = [
   "iterator-matrix",
   "declarations-conformance",
   "fuzz",
+  "match-trees",
   "packages",
   "create",
   "npm-crates",
