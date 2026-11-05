@@ -1315,8 +1315,7 @@ here. Where a `match` has two `break`s no arm tells, an arm of two
 patterns MIR tests apart, nothing is given (a guard no program of the
 corpus tells, kept as the elimination's premise). A commented `continue
 'outer` arm beside an arm of the inner loop's `continue`, which MIR
-doesn't join, is outside this rule: it's still printed above the `if`
-(#693).
+doesn't join, is outside this rule (#693, below).
 
 Held by corpus `comment_before_a_bare_continue_arm` (`guarded`,
 `after_a_block`, `last_of_two`, `two_blocks`, `nested_matches`,
@@ -1327,3 +1326,25 @@ Held by corpus `comment_before_a_bare_continue_arm` (`guarded`,
 and `joined-continue-of-the-outer-match` (`mir/tidy/jumps/continues.ts`);
 `continues-written-left-breaks`', `arm-continue-of-the-ifs-test-unseen`'s
 and `shared-continue-arm-at-the-match`'s finds moved.
+
+## Amendment: a commented `continue 'outer` arm beside an inner one's (#693, 2026-11-05)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+`Some(0) => continue, Some(n) => *n, // The row ends.\n None => continue
+'rows,` printed `// The row ends.` above `if (x == null) { continue rows;
+}`: MIR tests `None` where the `match` is, and `arm_continues_placed`
+took that `if` for the `match`'s first arm of `continue`, `Some(0)`'s,
+uncommented, so the `continue rows` got no place. MIR doesn't join the
+two, as their loops are two.
+
+Now the `if` MIR makes where the `match` is is the arm's, of the arms
+that continue, that no `if` of its own pattern tests (`Some(0)`'s `if
+(x === 0)`): by elimination, as of the arms MIR joins above; and an `if`
+of an arm's own pattern is that arm's. So `if (x == null) { // The row
+ends.\n continue rows; } if (x !== 0) { .. }`, the inner one the `if` of
+the rest, as before.
+
+Held by corpus `comment_before_a_bare_continue_arm`'s `outer` against
+native Rust, and the mutations `match-continue-of-the-first-arm` and
+`match-continue-of-another-arms-if` (`mir/tidy/jumps/continues.ts`);
+`continue-at-the-match-uncommented`'s find moved.

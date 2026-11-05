@@ -344,13 +344,37 @@ pub(in crate::lower::mir::tidy) fn arm_continues_placed(
     arms: &[(js::Span, js::Span, js::Span)],
     commented: &[js::Span],
 ) {
+    // The arms an `if` of their own pattern tests, `Some(0) => continue`'s
+    // `if (x === 0)`, whose `continue` is that `if`'s.
+    let mut own_ifs: Vec<u32> = Vec::new();
+    js::each_list(stmts, &mut |list| {
+        for stmt in list {
+            if let StmtKind::If(test, ..) = &stmt.kind
+                && !test.span.is_none()
+            {
+                own_ifs.push(test.span.lo);
+            }
+        }
+    });
     // Of a `match` that continues by an arm, the others going on, that
     // arm's `continue`: one the program placed, of a block, or with
-    // comments above it.
-    let alone = |matched: js::Span| {
-        (arms.iter())
-            .find(|&&(m, ..)| m == matched)
-            .filter(|&&(_, arm, written)| written.hi < arm.hi || commented.contains(&written))
+    // comments above it; of more arms that continue, the one no `if` of
+    // its own pattern tests, `None => continue 'rows` beside `Some(0) =>
+    // continue` (#693); of an `if` of an arm's own pattern, that arm's.
+    let alone = |matched: js::Span, tested: js::Span| {
+        let mut left = (arms.iter()).filter(|&&(m, arm, _)| m == matched && !own_ifs.contains(&arm.lo));
+        let own = (arms.iter()).find(|&&(m, arm, _)| m == matched && !tested.is_none() && arm.lo == tested.lo);
+        let arm = match (
+            arms.iter().filter(|&&(m, ..)| m == matched).count(),
+            left.next(),
+            left.next(),
+        ) {
+            _ if own.is_some() => own,
+            (1, ..) => arms.iter().find(|&&(m, ..)| m == matched),
+            (_, Some(arm), None) => Some(arm),
+            _ => None,
+        };
+        arm.filter(|&&(_, arm, written)| written.hi < arm.hi || commented.contains(&written))
             .map(|&(.., written)| written)
     };
     for stmt in stmts.iter_mut() {
@@ -368,7 +392,7 @@ pub(in crate::lower::mir::tidy) fn arm_continues_placed(
             && let Some(&(matched, arm, _)) =
                 (arms.iter()).find(|&&(matched, ..)| matched.lo <= span.lo && span.hi <= matched.hi)
             && test.span.hi <= arm.lo
-            && let Some(written) = alone(matched)
+            && let Some(written) = alone(matched, test.span)
         {
             jump.span = written;
         }
@@ -387,7 +411,7 @@ pub(in crate::lower::mir::tidy) fn arm_continues_placed(
                 jump.span = written;
             } else if let Some(&(matched, ..)) = at_match
                 && single
-                && let Some(written) = alone(matched)
+                && let Some(written) = alone(matched, test.span)
             {
                 jump.span = written;
             }

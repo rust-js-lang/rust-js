@@ -252,6 +252,24 @@ export function uncommentedJoined(xs, log) {
   }
 }
 
+export function outer(rows, log) {
+  rows: for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    for (let j = 0; j < row.length; j++) {
+      const x = row[j];
+      if (x == null) {
+        // The row ends.
+        continue rows;
+      }
+      if (x !== 0) {
+        const n = x;
+        log.push(n);
+      }
+    }
+    log.push(-9);
+  }
+}
+
 function main() {
   const log = [];
   switched(4, log);
@@ -271,6 +289,7 @@ function main() {
   twoBlocks([0, 6, undefined, 1], log);
   nestedMatches([2, { $someNone: 0 }, undefined, 5], log);
   uncommentedJoined([3, undefined, 6], log);
+  outer([[1, 0, undefined, 3], [4], [undefined]], log);
   console.log(`[${log.join(", ")}]`);
   console.log(`${chars("a b!")}`);
 }

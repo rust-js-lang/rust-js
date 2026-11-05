@@ -13,7 +13,10 @@
 // commented one's, `if (x == null) { // c\n continue; }` beside a guarded
 // arm's or a block's, `default:\n // c\n continue;` after `1 =>
 // continue`, each of two blocks', and an outer `match`'s beside an inner
-// one's; not one with no comment, the `if` of the rest (#680).
+// one's; not one with no comment, the `if` of the rest (#680). And of a
+// commented `continue 'rows` arm beside an inner `continue` arm, which MIR
+// tests apart, the `if` MIR makes where the `match` is, `if (x == null) {
+// // c\n continue rows; }`, the inner one's the `if` of the rest (#693).
 pub fn switched(reason: i32, log: &mut Vec<i32>) {
     for k in 0..reason {
         match k {
@@ -241,6 +244,21 @@ pub fn uncommented_joined(xs: &[Option<i32>], log: &mut Vec<i32>) {
     }
 }
 
+pub fn outer(rows: &[Vec<Option<i32>>], log: &mut Vec<i32>) {
+    'rows: for row in rows {
+        for x in row {
+            let n = match x {
+                Some(0) => continue,
+                Some(n) => *n,
+                // The row ends.
+                None => continue 'rows,
+            };
+            log.push(n);
+        }
+        log.push(-9);
+    }
+}
+
 fn main() {
     let mut log = Vec::new();
     switched(4, &mut log);
@@ -260,6 +278,7 @@ fn main() {
     two_blocks(&[Some(0), Some(6), None, Some(1)], &mut log);
     nested_matches(&[Some(Some(2)), Some(None), None, Some(Some(5))], &mut log);
     uncommented_joined(&[Some(3), None, Some(6)], &mut log);
+    outer(&[vec![Some(1), Some(0), None, Some(3)], vec![Some(4)], vec![None]], &mut log);
     println!("{log:?}");
     println!("{}", chars("a b!"));
 }
