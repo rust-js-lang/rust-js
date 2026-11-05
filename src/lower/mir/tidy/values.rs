@@ -585,8 +585,8 @@ pub(super) fn handles_in_place(body: &mut Vec<Stmt>) {
 /// A flattened state written whole through its handle, each of its keys
 /// set on the object it's in (ADR 1044, `Storage::written_in_place`),
 /// before the handle is its place: `handles_in_place`'s, and
-/// `read_handles`' where it makes one of a declared handle, which may be
-/// where tidy's stages run again, after `handles_in_place` (#779).
+/// `read_handles`' where it makes one of a declared handle where tidy's
+/// stages run again, after `handles_in_place` (#779, #784).
 fn written_whole_in_place(body: &mut Vec<Stmt>) {
     // Each a name of its own, as two such writes may be in one list (#687).
     let mut taken = std::collections::HashSet::new();
@@ -638,7 +638,7 @@ fn written_whole_in_place(body: &mut Vec<Stmt>) {
 /// `let chunks = store.chunks.borrow();`, is read where it's made, `const
 /// chunks = store.chunks;`, whatever runs before its uses: Rust lets
 /// nothing change what it's to while it's held (rd658).
-pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::LetNames) {
+pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::LetNames, rerun: bool) {
     let frozen = &lets.frozen;
     let mut handles: Vec<(String, Expr, bool, js::Storage)> = Vec::new();
     js::each_list(body, &mut |stmts| {
@@ -723,7 +723,12 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::L
             }
         };
         js::each_expr_mut(body, substitute);
-        written_whole_in_place(body);
+        // Where tidy's stages run again, after the `written` stage's
+        // `handles in place`, which isn't: its keys set here. Before it,
+        // they're set there, once what's read into them is (#779, #784).
+        if rerun {
+            written_whole_in_place(body);
+        }
     }
     handles
         .retain(|(name, _, _, storage)| !(matches!(storage, js::Storage::InPlace(_)) && written_whole.contains(name)));

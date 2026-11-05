@@ -139,10 +139,8 @@ pub(super) struct Hints<'h> {
     pub(super) suggested: &'h HashMap<String, Vec<String>>,
     /// The locals the program names, and its `String`s, by name.
     pub(super) named: &'h Named,
-    /// Whether the stage running found its `again` stages must run once
-    /// it's done (`stages::Stage::again`): set by its passes, taken by
-    /// `tidy`.
-    pub(super) again: &'h std::cell::Cell<bool>,
+    /// Its stages run again (`Again`).
+    pub(super) again: &'h Again,
     /// What the body says of what does nothing (`sources::Commented`): each
     /// `break` or `continue` the program wrote with comments before it that
     /// a branch jumps by, where what the branch does last is and where the
@@ -154,6 +152,16 @@ pub(super) struct Hints<'h> {
 /// `body`, tidied, by what `hints` say of it: each stage's passes in turn
 /// (`stages::STAGES`), up to `hints.until`'s where it names one, and in a
 /// debug build, what each stage leaves checked (ADR 0659).
+/// Tidy's stages run again (`stages::Stage::again`): whether the stage
+/// running found they must, once it's done, `must`, set by its passes and
+/// taken by `tidy`; and whether they're running, `running`, after the
+/// body's own `written` stage, which isn't run again (#779, #784).
+#[derive(Default)]
+pub(super) struct Again {
+    pub(super) must: std::cell::Cell<bool>,
+    pub(super) running: std::cell::Cell<bool>,
+}
+
 pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     for stage in stages::STAGES {
         if run_stage(body, hints, stage, stage.name) {
@@ -161,12 +169,14 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         }
         // Its stages run again where its passes found they must, each
         // through this runner, named `again/<stage>`.
-        if !stage.again.is_empty() && hints.again.take() {
+        if !stage.again.is_empty() && hints.again.must.take() {
+            hints.again.running.set(true);
             for again in stages::STAGES.iter().filter(|s| stage.again.contains(&s.name)) {
                 if run_stage(body, hints, again, &again_name(again)) {
                     return;
                 }
             }
+            hints.again.running.set(false);
         }
     }
 }

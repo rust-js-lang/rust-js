@@ -198,7 +198,9 @@ pub(super) const STAGES: &[Stage] = &[
         name: "names",
         passes: &[
             pass("alias variables", |b, h| alias_variables(b, &h.made.fixed)),
-            pass("read handles", |b, h| read_handles(b, false, h.lets)),
+            pass("read handles", |b, h| {
+                read_handles(b, false, h.lets, h.again.running.get())
+            }),
             pass("plain reads", |b, h| {
                 js::statement_lists(b, &mut |s| plain_reads(s, h.plain, &h.made.captured))
             }),
@@ -262,7 +264,9 @@ pub(super) const STAGES: &[Stage] = &[
             // A handle those made a `const`, a let chain's `borrow_mut()`
             // of a flattened state, declared before its `if` and written in
             // it: its place, where its `value` is read (rd533).
-            pass("declared handles", |b, h| read_handles(b, true, h.lets)),
+            pass("declared handles", |b, h| {
+                read_handles(b, true, h.lets, h.again.running.get())
+            }),
             // A temporary of a variable those made a `const`, `const _42 =
             // queue;` of a `borrow_mut()` of an object's `RefCell`, which is
             // the object: the variable, where it's read (ADR 0883).
@@ -929,14 +933,14 @@ pub(super) const STAGES: &[Stage] = &[
             // drops it (rd191).
             pass("looped drops", |b, h| {
                 let looped = looped_drops_of_made(b, h, false);
-                h.again.set(h.again.get() || looped);
+                h.again.must.set(h.again.must.get() || looped);
             }),
             pass("drop scopes", |b, h| {
                 let mut scoped = false;
                 js::statement_lists(b, &mut |stmts| {
                     scoped |= unwinds::scoped_drops(stmts, h.result, &h.lets.guards)
                 });
-                h.again.set(h.again.get() || scoped);
+                h.again.must.set(h.again.must.get() || scoped);
             }),
             pass("returns through finally", |b, _| {
                 js::statement_lists(b, &mut unwinds::returned_through_finally)
@@ -954,7 +958,7 @@ pub(super) const STAGES: &[Stage] = &[
             pass("unthrown catches", |b, h| {
                 let mut unthrown = false;
                 js::statement_lists(b, &mut |stmts| unthrown |= unwinds::unthrown_catches(stmts));
-                h.again.set(h.again.get() || unthrown);
+                h.again.must.set(h.again.must.get() || unthrown);
             }),
             // And an `unwrap()`'s, its test and panic, as an `assert!`'s:
             // where its drops' flags are known again (ADR 0873, amended).
@@ -964,7 +968,7 @@ pub(super) const STAGES: &[Stage] = &[
                 if tested {
                     flags::settled_flags(b, h.flags);
                 }
-                h.again.set(h.again.get() || tested);
+                h.again.must.set(h.again.must.get() || tested);
             }),
         ],
         ensures: &[

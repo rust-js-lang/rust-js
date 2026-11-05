@@ -196,6 +196,27 @@ pub fn has_big(source: &Unknown) -> bool {
   expect(reads).toBe(2);
 });
 
+// A binding read as a property, `ReactSharedInternals.G`, calls nothing:
+// the closure's parameter that binds what it gives names it, `const
+// onStartGestureTransitionFinish = ..`, as upstream writes it; where none
+// does, the property's name, `const count` above (#784, ADR 0569).
+test("a getter's Option a closure binds is named by its parameter", async () => {
+  const { js, lib } = await compiled("getter-option-bound", `use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::link_name = "get G")]
+fn g(this: &Unknown) -> Option<fn(u32) -> u32> {
+    unreachable!()
+}
+
+pub fn finish(shared: &Unknown, n: u32) -> Option<u32> {
+    g(shared).map(|on_finish| on_finish(n))
+}
+`);
+  expect(js).toContain("  const onFinish = shared.G;\n  return onFinish != null ? onFinish(n) : undefined;\n");
+  expect(lib.finish({ G: (n: number) => n * 2 } as never, 4 as never)).toBe(8);
+  expect(lib.finish({ G: null } as never, 4 as never)).toBeUndefined();
+});
+
 // React's addObjectDiffToProperties: `if (readReactElementTypeof(nextValue)
 // === REACT_ELEMENT_TYPE) { .. continue; } else { .. }`, a test MIR holds
 // before the blocks its arms' jumps leave, `const _183 = ..; bb200: {

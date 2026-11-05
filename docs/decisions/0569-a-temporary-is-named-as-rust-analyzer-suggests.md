@@ -242,3 +242,34 @@ decision is to accept these as they are**, with no numbered call name,
 `next$1`, tried first. Mutations: `subject-not-named-by-its-call`,
 `subject-name-taken-from-the-program`, `in-place-value-unnamed`,
 `result-subject-named-by-its-call`, `closures-left-in-tries`.
+
+## Amended (2026-11-05, #784): a closure's parameter before a getter's name, and an `Option`'s own method names nothing
+
+#769 named a value read in place after the call that made it. Two kinds
+of call read worse than the pin's, as neither is a call the JS writes:
+
+- **A binding read as a property, `get G` or `prop x`, names it only
+  where no closure's parameter does**: `g(REACT_SHARED_INTERNALS).map(
+  |on_start_gesture_transition_finish| ..)` is `ReactSharedInternals.G`
+  in JS, which calls nothing, so its subject is the parameter that binds
+  it, `const onStartGestureTransitionFinish = ReactSharedInternals.G`, as
+  upstream writes it, not `const g`; where none does, the property's own
+  name, `const count = source.count` of `count(source).filter(..)`. A
+  call names what it makes over a closure's parameter, `const next =
+  $next(r)` of `r.next().map(|l| ..)`, #769's decision.
+- **An `Option`'s or a `Result`'s own method names nothing**: `as_deref()`,
+  `filter()`, `map_or_else()` give back the option they had, so
+  `props.name.as_deref().filter(..)`'s subject is `option` again, not
+  `deref`, and `get_component_name_from_type(c).filter(..)`'s not
+  `filter`. Upstream writes no temporary there, `getComponentNameFromType(Component)
+  || Component`, which fusing the combinators would give: a P3 of its own.
+
+`named_by_their_call` gives each name, marking a property's read
+(`js::Held::read`), and `spill_subject` drops a read's name where its
+caller's `base` is a closure's parameter. The user's decision, through
+m6-react. Held by corpus `option_subject_named_by_its_binding`, against
+native Rust in both builds and by its snapshot, and `lowering-moves`' "a
+getter's Option a closure binds is named by its parameter" and "a
+getter's Option a combinator reads more than once is read once".
+Mutations `option-method-names-its-subject` and
+`binding-read-names-its-subject` (`mir/hints/calls.ts`).

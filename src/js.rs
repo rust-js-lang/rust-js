@@ -667,7 +667,14 @@ pub struct Expr {
 /// `Expr::held_as`: the name a temporary is given, never part of what an
 /// expression is, so two alike but for it are equal.
 #[derive(Clone, Default)]
-pub struct HeldAs(pub Option<std::sync::Arc<String>>);
+pub struct HeldAs(pub Option<std::sync::Arc<Held>>);
+
+/// A temporary's name; `read` of a binding read as a property (#784).
+#[derive(Clone)]
+pub struct Held {
+    pub name: String,
+    pub read: bool,
+}
 
 impl PartialEq for HeldAs {
     fn eq(&self, _: &HeldAs) -> bool {

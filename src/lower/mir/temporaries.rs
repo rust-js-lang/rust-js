@@ -12,15 +12,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Not one the program's own has, `make$1` of `make(2)` beside its
     /// `make`: `base` then; but another of a call it named so, `nth$1`.
     /// Of an `Option`'s, `named`; a `Result`'s is a result, which its call
-    /// names worse, `catchUnwind`, `parse`.
+    /// names worse, `catchUnwind`, `parse`. Of a binding read as a property,
+    /// `ReactSharedInternals.G`, only where `base` isn't a closure's
+    /// parameter that binds it, `bound` (#784).
     pub(in crate::lower) fn spill_subject(
         &mut self,
         base: &str,
         value: Expr,
-        named: bool,
+        (named, bound): (bool, bool),
         out: &mut Vec<Stmt>,
     ) -> Expr {
-        let held = (value.held_as.0.as_deref().filter(|_| named))
+        let held = (value.held_as.0.as_deref().filter(|held| named && !(held.read && bound)))
+            .map(|held| &held.name)
             .filter(|name| !self.names.contains(*name) || self.locals.mir.subjects.contains(*name))
             .cloned();
         let Some(held) = held else {

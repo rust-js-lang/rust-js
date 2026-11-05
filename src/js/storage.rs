@@ -27,10 +27,10 @@ impl Storage {
     /// `None` of any other storage.
     ///
     /// Rust computes the whole value before it writes any of it: a field
-    /// that computes, `reason: thrown(error)`, or reads what a key set
-    /// before it may change, is held first, `const reason = ..`, each in
-    /// the order written, and only a field that reads nothing but
-    /// variables is set as it is (#779).
+    /// that computes, `reason: thrown(error)`, or reads the object a key
+    /// set before it changes, is held first, `const reason = ..`, each in
+    /// the order written (#779); any other is set as it is, an object of
+    /// variables or a read of another place (#784).
     pub fn written_in_place(
         self,
         place: &Expr,
@@ -46,13 +46,23 @@ impl Storage {
                 .iter()
                 .all(|prop| matches!(prop, Prop::Field(name, _) if keys.contains(&name.as_str())))
         {
+            // What an earlier key's set can't change, nor see: no call, no
+            // getter, and no read of the object written; another place it
+            // reads, a field of `handler`, Rust's borrow of the state keeps
+            // apart from it (#784).
+            let mut root = place;
+            while let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &root.kind {
+                root = of;
+            }
+            let apart = |value: &Expr| match &root.kind {
+                ExprKind::Var(object) => !value.has_effects() && !value.mentions_var(object),
+                _ => value.is_constant() || value.reads_only_vars(),
+            };
             let mut out = Vec::new();
             let fields: Vec<(&str, Expr)> = props
                 .iter()
                 .map(|prop| match prop {
-                    Prop::Field(name, value) if value.is_constant() || value.reads_only_vars() => {
-                        (name.as_str(), value.clone())
-                    }
+                    Prop::Field(name, value) if apart(value) => (name.as_str(), value.clone()),
                     Prop::Field(name, value) => (name.as_str(), spill(name, value.clone(), &mut out)),
                     _ => unreachable!("an object of fields"),
                 })

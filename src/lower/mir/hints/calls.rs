@@ -37,15 +37,31 @@ impl<'tcx> FnCx<'_, 'tcx> {
 
     /// Those of `calls_named_in_source` whose call names them, by that name as
     /// `temporaries_names` gives it first, `next` of `r.next()`; not
-    /// `unwrap` of `x.unwrap()`, which names nothing.
+    /// `unwrap` of `x.unwrap()`, which names nothing. Nor an `Option`'s or
+    /// a `Result`'s own method, `as_deref`, `filter`, `map_or_else`, which
+    /// gives back the option it had: named by a closure's parameter, or
+    /// `option`, as before #769. A binding read as a property, `get G`'s
+    /// `g()`, `ReactSharedInternals.G` in JS, which calls nothing, is
+    /// `read`: it names it only where no closure's parameter does (#784).
     pub(in crate::lower::mir) fn named_by_their_call(
         &self,
         mir_body: &mir::Body<'tcx>,
-    ) -> std::collections::HashMap<Local, String> {
+    ) -> std::collections::HashMap<Local, js::Held> {
+        let tcx = self.tcx;
+        let optional = |def_id| crate::lower::recognition::is_option_or_result_method(tcx, def_id);
+        let read = |def_id| {
+            crate::lower::bindings::is_binding(tcx, def_id)
+                && matches!(
+                    crate::lower::bindings::js_form(tcx, def_id),
+                    crate::lower::bindings::JsForm::Get(_) | crate::lower::bindings::JsForm::Prop(_)
+                )
+        };
         (self.calls_named_in_source(mir_body).into_iter())
+            .filter(|&(_, def_id)| !optional(def_id))
             .filter_map(|(local, def_id)| {
                 let name = variable_name(&crate::lower::camel_case(&self.call_name(def_id)?));
-                (crate::names::js_ident(&name) == name).then_some((local, name))
+                let read = read(def_id);
+                (crate::names::js_ident(&name) == name).then_some((local, js::Held { name, read }))
             })
             .collect()
     }

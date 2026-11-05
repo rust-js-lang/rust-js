@@ -702,6 +702,36 @@ each field's panic caught. Mutations `in-place-fields-set-before-computed`
 react-client` gives the pin's `initializeModelChunk` again, and
 `initializeModuleChunk`'s field held before its tag is set.
 
+## Amended (2026-11-05, #784): only what an earlier key could change is held first
+
+#779 held more than it had to. React's Flight client's
+`resolveModelChunk` read `const reason = {[RESPONSE_SYMBOL]: response};`
+before `chunk.status = 'resolved_model'`, and the reply server's
+`resolveReference` `const value = handler.value;`, where upstream and the
+pin set them in place. Two causes:
+
+- `written_in_place` held each field that read more than variables. **It
+  holds only a field that has effects, a call or a getter, or that reads
+  the object being written**: an object of variables, or a read of another
+  place, `handler.value`, which Rust's borrow of the state keeps apart from
+  it, is set as it is.
+- `read_handles` wrote a declared handle's whole write in place in its
+  first run of `names`, while its fields were still MIR's temporaries,
+  which the inliners that ran after it no longer folded past the tag's
+  set. **It does so only where tidy's stages run again** (`Again::running`,
+  set around the `again` stages), #779's one case, after the `written`
+  stage's `handles in place`, which isn't run again; in the first run,
+  `handles in place` sets the keys once what's read into them is.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; the
+JS reads as upstream's. Held by corpus
+`flattened_state_written_whole_of_other_places`, against native Rust in
+both builds and by its snapshot, a write through a borrow and by its
+cell's `replace`; #779's `flattened_state_written_whole_after_its_fields`
+holds what still must be held. Mutations
+`in-place-fields-of-other-places-held` (`js/storage.ts`) and
+`declared-handle-written-whole-before-inlined` (`mir/tidy/values.ts`).
+
 ## Amended (2026-11-05, #786): a `RefCell::replace` whose cell is in a variable copies too
 
 `chunk.state.replace(ChunkState::Initialized { value: handler.value.get(),

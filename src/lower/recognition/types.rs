@@ -1065,6 +1065,16 @@ pub(in crate::lower) enum PresentItem {
     Filtered,
 }
 
+/// Whether `def_id` is an `Option`'s or a `Result`'s own method, an
+/// inherent one, `as_deref`, `filter`, `map_or_else`, which gives back the
+/// option it had (#784).
+pub(in crate::lower) fn is_option_or_result_method(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    tcx.inherent_impl_of_assoc(def_id).is_some_and(|imp| {
+        matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(), ty::Adt(adt, _)
+            if [sym::Option, sym::Result].into_iter().any(|name| tcx.is_diagnostic_item(name, adt.did())))
+    })
+}
+
 pub(in crate::lower) fn present_item<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,

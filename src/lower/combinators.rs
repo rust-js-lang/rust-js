@@ -346,7 +346,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else {
                 "result"
             };
-            self.spill_subject(base, subject, self.option_of(subject_ty).is_some(), out)
+            self.spill_subject(base, subject, (self.option_of(subject_ty).is_some(), false), out)
         };
         let mut rest = values.into_iter();
         let mut next = || rest.next().expect("rustc checked the arguments");

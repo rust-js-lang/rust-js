@@ -355,7 +355,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let option = match &option.kind {
                             js::ExprKind::Var(_) => option,
                             _ if self.plain_field(&option) => option,
-                            _ => self.spill_subject(&base, option, true, out),
+                            _ => self.spill_subject(&base, option, (true, base != "option"), out),
                         };
                         let present = Expr::presence(option.clone(), true);
                         (option, present)
