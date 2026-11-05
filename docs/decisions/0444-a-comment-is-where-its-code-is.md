@@ -1162,3 +1162,47 @@ Held by `test/lowering-comments-inside.test.ts`'s "a comment above a later
 arm of a tuple's or-pattern is the arm's", run, the corpus case
 `tuple_or_pattern_arm_comments.rs` against native Rust, and the mutation
 `guard-if-at-its-first-unread` (`to_oxc/arms.ts`).
+
+## Amendment: above a `let` whose value opens, before its first JS (#758, #767, 2026-11-05)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments alone.
+
+React's initializeModelChunk writes `// Invoke any listeners ..` above `let
+resolve_listeners = match &mut *chunk.state.borrow_mut() {`, in the
+closure `catch_unwind` calls. The `let` is printed `let resolveListeners;`
+and the `if` of the `match`, which starts at its first arm's pattern; the
+declaration, which rust-js made, has no place of its own, and is printed
+at the next statement's. Between the comment and that start were the
+`let`'s pattern, its `=` and the `match`'s opening, which no rule read as
+an opening with no JS, so the comment was nobody's, and before the
+innermost statement it's in, the `try`, outside the closure's block, above
+statements the Rust has above it (#758). Above `let f = { let g = D(5);
+move || .. };`, whose block's first statement is the `let`'s first JS,
+`const g = [5];`, it was lost: no statement but the function holds it
+(#767).
+
+**A `let`'s opening, its pattern, its type and `=`, then a `match`'s
+opening or a block's `{`, has no JS of its own** (`openings::let_value`):
+the comment is the start's after it, its value's first, printed before the
+first JS of the whole `let`, `let listeners;` too, in its block, as
+upstream has it. The `=` is the first alone outside brackets, so a type's
+`Box<dyn Iterator<Item = u32>>` is the type's. A closure, `let f = move ||
+{`, and an `unsafe` block were openings already.
+
+```js
+try {
+  const value = revive(n);
+
+  // Invoke any listeners added while resolving this model. I.e. cyclic
+  // references.
+  let listeners;
+  if (state.value.TAG === "Blocked") {
+```
+
+Held by `test/lowering-comments-inside.test.ts`'s "a comment above a let
+of a match or a block is above its first JS", the corpus case
+`comment_above_a_let_of_a_value.rs` against native Rust, and the
+mutations `comment-above-a-let-of-a-value-lost`,
+`comment-above-a-let-of-a-block-lost` (`to_oxc.ts`),
+`let-value-past-a-types-equals` and `let-value-past-the-whole-line`
+(`to_oxc/openings.ts`).

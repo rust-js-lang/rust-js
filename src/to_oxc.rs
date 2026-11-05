@@ -44,8 +44,8 @@ pub(crate) use self::expressions::*;
 use self::header::header;
 pub(crate) use self::loads::{entry_exports, loaded_modules};
 use self::openings::{
-    arm_opening, closure_opening, leading_statements, let_end, macro_opening, match_opening, receiver_only, type_alias,
-    unsafe_opening, use_item,
+    arm_opening, closure_opening, leading_statements, let_end, let_value, macro_opening, match_opening, receiver_only,
+    type_alias, unsafe_opening, use_item,
 };
 use self::starts::{bodies, declared_class, noinline_starts, set_apart_starts, statement_spans};
 
@@ -927,6 +927,11 @@ fn comments_of(
                         || macro_opening(&rest[..=i])
                         || unsafe_opening(head)
                         || match_opening(head) && rest[i + 1..].trim().is_empty()
+                        // And a `let`'s, `let listeners = match .. {` or
+                        // `let f = {`, whose value's first JS is the whole
+                        // `let`'s, its `let x;` too (#758, #767).
+                        || let_value(head).is_some_and(|value| value.is_empty() || match_opening(value))
+                            && rest[i + 1..].trim().is_empty()
                         || (arm_opening(head) || head.trim() == "=>" && of_no_default(c))
                             && receiver_only(&rest[i + 1..])
                 }) || default;

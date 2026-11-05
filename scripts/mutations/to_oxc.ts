@@ -180,6 +180,25 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a match an if is made of is the if's"],
   },
   {
+    name: "comment-above-a-let-of-a-value-lost",
+    breaks:
+      "a comment above `let listeners = match .. {` in a `catch_unwind` closure is above the `try`, and one above `let f = {` is lost, as the `let`'s opening is between it and the value's first start (#758, #767)",
+    file: "src/to_oxc.rs",
+    find: "                        || let_value(head).is_some_and(|value| value.is_empty() || match_opening(value))\n",
+    replace: "                        || let_value(head).is_some_and(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_above_a_let_of_a_value.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "comment-above-a-let-of-a-block-lost",
+    breaks: "a comment above `let f = {`, whose block's first statement is the `let`'s first JS, is lost (#767)",
+    file: "src/to_oxc.rs",
+    find: "                        || let_value(head).is_some_and(|value| value.is_empty() || match_opening(value))\n",
+    replace: "                        || let_value(head).is_some_and(|value| match_opening(value))\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_above_a_let_of_a_value.rs$"],
+    snapshots: true,
+  },
+  {
     name: "closure-opening-a-blank",
     breaks: "a closure's opening line, between a comment and the statement after it, prints as a blank line",
     file: "src/to_oxc.rs",

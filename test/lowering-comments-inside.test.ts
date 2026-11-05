@@ -1151,3 +1151,62 @@ pub fn rooted(container: &Unknown, log: &mut Vec<&'static str>) {
   rooted({ parentNode: { _reactRootContainer: 0 } }, log);
   expect(log).toEqual(["root", "not", "not", "rooted"]);
 });
+
+// React's initializeModelChunk: `// Invoke any listeners ..` above `let
+// resolve_listeners = match &mut *chunk.state.borrow_mut() {`, in the
+// closure `catch_unwind` calls, was above the `try`; and one above `let f
+// = {`, a block whose closure holds a destructor and is dropped by
+// `drop(f)`, was lost. What's between the comment and the first start of
+// the `let`'s value, its pattern and `=` and what opens the value, has no
+// JS: the comment is above the whole `let`'s first, `let listeners;` and
+// the block's first statement (#758, #767).
+test("a comment above a let of a match or a block is above its first JS", async () => {
+  const { js, lib } = await compiled("comment-above-a-let-of-a-value", `use std::panic::{AssertUnwindSafe, catch_unwind};
+
+pub fn init(state: &mut Vec<u32>, n: u32, log: &mut Vec<u32>) {
+    log.push(0);
+    if catch_unwind(AssertUnwindSafe(|| {
+        let value = n + 1;
+
+        // Invoke any listeners.
+        let listeners = match state.last_mut() {
+            Some(last) => std::mem::take(last),
+            None => 0,
+        };
+        log.push(value + listeners);
+    }))
+    .is_err()
+    {
+        log.push(9);
+    }
+}
+
+pub fn blocked(n: u32) -> u32 {
+    // A comment above a let of a block.
+    let f = {
+        let g = n * 2;
+        move || g + 1
+    };
+    f()
+}
+
+pub fn typed(n: u32) -> u32 {
+    // A comment above a let of a type's equals.
+    let it: Box<dyn Iterator<Item = u32>> = {
+        let m = n + 1;
+        Box::new(std::iter::once(m))
+    };
+    it.sum()
+}
+`);
+  expect(js).toContain("  // A comment above a let of a type's equals.\n  const m = (n + 1) >>> 0;\n");
+  expect((lib.typed as (n: number) => number)(3)).toBe(4);
+  expect(js).toContain("    const value = (n + 1) >>> 0;\n\n    // Invoke any listeners.\n    const last = $mutAt(state, -1);\n    let listeners;\n");
+  expect(js).toContain("  // A comment above a let of a block.\n  const g = (n * 2) >>> 0;\n");
+  const log: number[] = [];
+  const state = [4];
+  (lib.init as (state: number[], n: number, log: number[]) => void)(state, 2, log);
+  (lib.init as (state: number[], n: number, log: number[]) => void)(state, 2, log);
+  expect(log).toEqual([0, 7, 0, 3]);
+  expect((lib.blocked as (n: number) => number)(3)).toBe(7);
+});

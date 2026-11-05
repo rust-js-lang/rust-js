@@ -143,6 +143,34 @@ pub(super) fn unsafe_opening(head: &str) -> bool {
         .is_some_and(|before| !before.ends_with(|c: char| c.is_alphanumeric() || c == '_'))
 }
 
+/// `head`, the code before a `{`, past a `let`'s pattern, its type and
+/// `=` on its last line, `match &mut *state.borrow_mut()` of `let listeners
+/// = match &mut *state.borrow_mut()`, nothing of `let f =` whose value is a
+/// block: what opens the `let`'s value, whose first JS is the whole `let`'s
+/// first, a `let x;` the `if` of a `match` sets, or a block's first
+/// statement (#758, #767). `None` of a head that's no `let`'s. Its `=` is
+/// the first alone outside brackets, a type's `<Item = u32>` inside them,
+/// `->`'s `>` none; a pattern and a type hold no other.
+pub(super) fn let_value(head: &str) -> Option<&str> {
+    let line = head[head.rfind('\n').map_or(0, |i| i + 1)..].trim_start();
+    let bound = line.strip_prefix("let ")?;
+    let bytes = bound.as_bytes();
+    let mut depth = 0u32;
+    for (at, &c) in bytes.iter().enumerate() {
+        let before = at.checked_sub(1).map(|i| bytes[i]);
+        match c {
+            b'(' | b'[' | b'{' | b'<' => depth += 1,
+            b'>' if before == Some(b'-') => {}
+            b')' | b']' | b'}' | b'>' => depth = depth.saturating_sub(1),
+            b'=' if depth == 0 && !matches!(bytes.get(at + 1), Some(b'=' | b'>')) => {
+                return Some(bound[at + 1..].trim());
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
 /// Whether `head`, the code before a `{`, is a `match` of its scrutinee,
 /// `match &new_last`, the keyword first.
 pub(super) fn match_opening(head: &str) -> bool {

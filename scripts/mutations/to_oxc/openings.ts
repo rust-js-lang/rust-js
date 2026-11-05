@@ -3,6 +3,24 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "let-value-past-a-types-equals",
+    breaks: "a comment above `let it: Box<dyn Iterator<Item = u32>> = {` is lost, as the type's `=` is read as the `let`'s",
+    file: "src/to_oxc/openings.rs",
+    find: "            b'(' | b'[' | b'{' | b'<' => depth += 1,\n",
+    replace: "            b'(' | b'[' | b'{' => depth += 1,\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_above_a_let_of_a_value.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "let-value-past-the-whole-line",
+    breaks: "a comment above `let listeners = match .. {` is above the `try`, as the `let`'s value is read from the line's start",
+    file: "src/to_oxc/openings.rs",
+    find: "                return Some(bound[at + 1..].trim());\n",
+    replace: "                return Some(bound.trim());\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_above_a_let_of_a_value.rs$"],
+    snapshots: true,
+  },
+  {
     name: "or-pattern-alternative-unread",
     breaks:
       'a comment above a later or-pattern arm, `// Santized URLs\\n "src" | "href" => {`, is before its `if`, `} else {\\n // Santized URLs\\n if (name === "src" || name === "href") {`, not first in the `else if`\'s block (#608)',
