@@ -810,7 +810,6 @@ pub(super) const STAGES: &[Stage] = &[
             pass("loops ending blocks", |b, _| {
                 js::statement_lists(b, &mut |s| blocks_loops_end(s, true))
             }),
-            pass("settle jumps", |b, _| settle_jumps(b)),
             // A `while` those leave its own `break`, `while (true) { if
             // (!(t)) { break; } .. }` of one that ends an `if`'s branch with
             // code after the `if`, whose `break` left the block: its test.

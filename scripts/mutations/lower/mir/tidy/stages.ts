@@ -517,17 +517,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "mir-tidy-late-labels-kept",
-    breaks:
-      "a label that the ways out of what it names, `break`s now, no longer name stays: calculator.rs's `bb92: { if (..) { .. } else if (..) { .. break bb92; } .. }`",
-    file: "src/lower/mir/tidy/stages.rs",
-    find: '                js::statement_lists(b, &mut |s| blocks_loops_end(s, true))\n            }),\n            pass("settle jumps", |b, _| settle_jumps(b)),\n',
-    replace:
-      "                js::statement_lists(b, &mut |s| blocks_loops_end(s, true))\n            }),\n",
-    tests: ["test/corpus.test.ts", "-t", "^calculator.rs$"],
-    snapshots: true,
-  },
-  {
     name: "mir-tidy-steps-out-of-order",
     breaks: "MIR's loop body tests what's written later first",
     file: "src/lower/mir/tidy/stages.rs",

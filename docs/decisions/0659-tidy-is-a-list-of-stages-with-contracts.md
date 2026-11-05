@@ -530,3 +530,20 @@ and runs the same differential of them: each corpus case and generated
 program after each of tidy's stages, without each of preparation's
 rewrites that changed it, and at the least of both, against native Rust;
 and a read oracle of what JS made, which native Rust can't see.
+
+## Amendment: `settled`'s `settle jumps` after `loops ending blocks` goes, dead since 9fe234511 (2026-11-05)
+
+The `settled` stage ran `settle_jumps`, `tail jumps` then `unlabeled`,
+after `loops ending blocks`, for calculator.rs's `bb92: { if (..) { .. }
+else if (..) { .. break bb92; } .. }`, a label MIR made whose `break`s the
+loops now leave by. Since 9fe234511 (#523 C1) no `match` keeps a label MIR
+made, and the mutation `mir-tidy-late-labels-kept`, the pass taken out,
+survived main's check from 36d7f5184 on. With it out, built in a debug
+compiler, which checks each stage's contract: the whole corpus (1,708
+cases, each against its snapshot and native Rust), every other test file
+a push runs (2,833 tests), `tidy-stages` and 420 generated programs
+(seeds 1000 to 1419), each of whose JS is the same byte for byte. `finish`
+ends with `tail jumps` and `unlabeled`, and the stage still ensures each
+label is named, so a debug build refuses what would come back. **The pass
+and its mutation are removed** (ADR 0093). `settle_jumps` stays where the
+`loops` and `chains` stages run it. Case: N.
