@@ -21,4 +21,13 @@ export const mutations: Mutation[] = [
     replace: "                for part in std::iter::once(constant.ty()) {\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
+  {
+    name: "closure-in-aggregate-operand-unfound",
+    breaks:
+      "a closure capturing nothing made into a struct's field, a `const ZeroSized` operand of the struct's aggregate, is never visited, so a consumer compiling the library's function that makes it is refused: arrayvec's `ScopeExitGuard` in `extend_from_iter` (#795)",
+    file: "src/lower/analysis/foreign_bodies.rs",
+    find: "                self.super_rvalue(rvalue, at);\n",
+    replace: "                let _ = at;\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a library's closure capturing nothing, made into a struct's field"],
+  },
 ];

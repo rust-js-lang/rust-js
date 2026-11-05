@@ -29,12 +29,17 @@ pub(in crate::lower) fn foreign_bodies(tcx: TyCtxt<'_>, mut ids: Vec<DefId>) -> 
         // `FlattenCompat::count` (#736).
         struct Closures(Vec<DefId>);
         impl<'tcx> rustc_middle::mir::visit::Visitor<'tcx> for Closures {
-            fn visit_rvalue(&mut self, rvalue: &rustc_middle::mir::Rvalue<'tcx>, _: rustc_middle::mir::Location) {
+            fn visit_rvalue(&mut self, rvalue: &rustc_middle::mir::Rvalue<'tcx>, at: rustc_middle::mir::Location) {
                 if let rustc_middle::mir::Rvalue::Aggregate(kind, _) = rvalue
                     && let rustc_middle::mir::AggregateKind::Closure(closure, _) = **kind
                 {
                     self.0.push(closure);
                 }
+                // And each operand it's made of: a closure capturing nothing,
+                // a field of a struct it's made into, is a constant there,
+                // arrayvec's `ScopeExitGuard { f: const ZeroSized, .. }` in
+                // `extend_from_iter` (#795).
+                self.super_rvalue(rvalue, at);
             }
             fn visit_const_operand(
                 &mut self,

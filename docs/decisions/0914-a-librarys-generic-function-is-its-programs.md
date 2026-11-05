@@ -897,3 +897,34 @@ before. The rule for impls is that rule now, not one of its own.
   `Engine` defaults it called through the library.
 - The mutation `instance-impl-kept-unused` (`lower/pipeline/reached.ts`)
   takes the rule away of impls and functions alike.
+
+## Amendment: a closure capturing nothing made into a struct is found as its operand (#795)
+
+Since f73daa2c5 (#736), `foreign_bodies` finds the closures a body makes in
+two ways: a closure aggregate, and a closure a constant's type holds. It no
+longer walks each local's type. But its `visit_rvalue` didn't walk on into
+the operands of what it visited. A closure capturing nothing is a value of
+no size, and where it's made into a struct's field, optimized MIR gives it
+as a constant operand of the struct's aggregate:
+`ScopeExitGuard { value: .., data: .., f: const ZeroSized: {closure} }`,
+arrayvec's in `extend_from_iter`. That operand was never visited. Before
+f73daa2c5, the local walk found the closure by the guard's type. After it,
+a consumer compiling `extend_from_iter` itself (`ArrayVec<String, 4>`'s
+`collect`) refused arrayvec's probe with "this closure, from its MIR".
+
+**Each rvalue's operands are visited, so a closure is found wherever its
+body names it as a constant**: in a call, and in an aggregate, a struct's
+or a closure's own captures alike.
+
+- Case N ([0262](0262-when-rust-and-js-disagree.md)): this is which bodies
+  are compiled, and no observable difference follows from it.
+- `test/cross-crate-items.test.ts`'s "a library's closure capturing
+  nothing, made into a struct's field, is compiled by its consumer" holds
+  it. There, a library's generic `cloned_all` makes a drop guard of a
+  `move` closure that captures nothing. Its consumer compiles its own
+  `clonedAll`, because what it clones isn't its own clone, and runs it.
+  Without the fix, that crate is refused with arrayvec's message.
+  `bun scripts/crate-corpus.ts --check arrayvec` holds the probe, which runs
+  the same as native again.
+- Mutation `closure-in-aggregate-operand-unfound`
+  (`lower/analysis/foreign_bodies.ts`).

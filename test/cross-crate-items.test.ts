@@ -1435,3 +1435,56 @@ pub fn as_value() -> fn(Option<&ModuleLoading>, &str) -> String {
   expect(stderr).toContain("whose nullable parameter is `null` at each of its calls, given as a value");
   expect(stderr.match(/given as a value/g)).toHaveLength(1);
 });
+
+// A closure capturing nothing that a library's generic function makes into
+// a struct's field is a constant there, `f: const ZeroSized`, in the MIR a
+// consumer compiles its own of the function from, cloning what isn't its
+// own clone (ADR 0914): its body is found as the struct's operand. arrayvec's `ScopeExitGuard` in `extend_from_iter`
+// refused its probe with "this closure, from its MIR" (#795).
+test("a library's closure capturing nothing, made into a struct's field, is compiled by its consumer", async () => {
+  const dir = fixture("cross-crate-zero-sized-closure");
+  const { app } = compiled(dir, `struct Guard<T, Data, F: FnMut(&Data, &mut T)> {
+    value: T,
+    data: Data,
+    f: F,
+}
+
+impl<T, Data, F: FnMut(&Data, &mut T)> Drop for Guard<T, Data, F> {
+    fn drop(&mut self) {
+        (self.f)(&self.data, &mut self.value)
+    }
+}
+
+pub struct Tally {
+    pub len: u32,
+}
+
+impl Tally {
+    pub fn cloned_all<T: Clone>(&mut self, items: &[T]) -> Vec<T> {
+        let len = self.len;
+        let mut guard = Guard {
+            value: &mut self.len,
+            data: len,
+            f: move |&len, self_len: &mut &mut u32| **self_len = len,
+        };
+        let mut cloned = Vec::new();
+        for item in items {
+            cloned.push(item.clone());
+            guard.data += 1;
+        }
+        cloned
+    }
+}
+`, `pub fn tally() -> (u32, Vec<Vec<u32>>, Vec<Vec<u32>>) {
+    let mut tally = dep::Tally { len: 1 };
+    let original = vec![vec![4], vec![5]];
+    let mut copies = tally.cloned_all(&original);
+    copies[0].push(6);
+    (tally.len, original, copies)
+}
+`);
+  // The consumer's own, as what it clones isn't itself.
+  expect(app).toContain("  clonedAll(tally, items, TClone) {\n");
+  const { tally } = await import(join(dir, "app", "lib.js"));
+  expect(tally()).toEqual([3, [[4], [5]], [[4, 6], [5]]]);
+});
