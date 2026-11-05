@@ -745,6 +745,19 @@ given in place, a `fuse()` given no drops is its source, and that is an
 array's iterator. `fused_iterator.rs` is that case. Its two halves are held
 by `knowing-unread` and `knowing-of-items-kept`.
 
+Step 8 holds who reads back_stepped's per-type set, whether a value is made
+knowing its back (ADR 0545). Its readers are the makers (`cloned_apart_call`,
+`mir_iter_std_call`, `back_kept`, `rev_called`, `reversed_knowing`) and two
+type questions asked with no value in hand (`knows_its_back`,
+`knows_its_length`). test/architecture-iterators.test.ts lists them per file,
+with their counts and reasons. One value is read past its maker:
+`as_double_ended`'s `rev()` made in place. A mark the maker gave it would be
+lost where MIR spills it to a variable, which the type's answer isn't. So
+that read stays listed until step 8b. Step 8b carries each local's marks
+across a spill: recorded where it's written to a variable (`flush`,
+`mir_store`), given back where it's read (`read_local_value`). Step 6b needs
+the same, and they come together.
+
 ## Amendment: each adapter's `sizeHint`, and who asks it (2026-11-05, #733 steps 1–3)
 
 G10 closes in three steps. ADR 0262's case each time: results change, so

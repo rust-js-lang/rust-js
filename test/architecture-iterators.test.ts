@@ -279,3 +279,32 @@ test("no iterator helper is read by its name outside value.rs", () => {
   }
   expect([owned("a read of an iterator helper by its name"), found]).toEqual([owned("a read of an iterator helper by its name"), {}]);
 });
+
+// Whether a value is made knowing its back is back_stepped's per-type set
+// (ADR 0545), asked where the value is made, and as a type's question where
+// no value is in hand (`knows_its_back`, `knows_its_length`), never of a
+// value past its maker (ADR 1092, amended, #730 step 8). Each reader is
+// listed per file with its reason. A new one fails, and so does a gone one
+// until its row goes too.
+test("back_stepped's set is read where a value is made, or as a type's question", () => {
+  const allowed: Record<string, [number, string]> = {
+    "src/lower/mir/iter.rs": [1, "`cloned_apart_call`, the maker of a map or a filter cloned apart"],
+    "src/lower/mir/std_calls.rs": [1, "`mir_iter_std_call`, the maker of a std adapter made in place"],
+    "src/lower/mir/iter/backs.rs": [3, "`back_kept`, the maker of a map or a filter it steps from its back, and `rev_called`, a `rev()`'s"],
+    "src/lower/iterators/knowing.rs": [
+      9,
+      "`reversed_made_knowing` and `reversed_knowing`, a `rev()`'s maker; `knows_its_back` and `knows_its_length`, a type's questions; and `as_double_ended`'s one read of a value, until #730's step 8b carries the maker's mark across a spill",
+    ],
+  };
+  const reader = /\.(stepped_from_its_back|reversed_made_knowing)\(/;
+  const found: Record<string, number> = {};
+  for (const file of loweringSources()) {
+    const count = linesOf(file).filter((line) => reader.test(line)).length;
+    if (count > 0) found[file] = count;
+  }
+  const expected = Object.fromEntries(Object.entries(allowed).map(([file, [count]]) => [file, count]));
+  expect([owned("a read of back_stepped's set past a value's maker"), found]).toEqual([
+    owned("a read of back_stepped's set past a value's maker"),
+    expected,
+  ]);
+});
