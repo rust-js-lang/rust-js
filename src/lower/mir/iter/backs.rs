@@ -290,9 +290,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // neither its back nor its length, which its index from
                     // the back is counted by: a `take(n)`'s or a
                     // `step_by(n)`'s, `.take(n)` and `$stepBy` (#651), a
-                    // map's, JS's own `.map(f)` (#778): made knowing them, or
-                    // refused (`as_exact_size`), never stepped by what it
-                    // lacks.
+                    // map's, JS's own `.map(f)` (#778), std's compiled struct,
+                    // a `Fuse`'s, given its compiled back and length (#383):
+                    // made knowing them, or refused (`as_exact_size`), never
+                    // stepped by what it lacks.
                     None if self.stepped_from_its_back(output) && !self.has_a_back(iter_ty) => {
                         let it = self.as_exact_size(receiver.clone(), iter_ty, true, span)?;
                         self.closing(it, held, span)?
@@ -300,6 +301,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => self.closing(receiver.clone(), held, span)?,
                 };
                 crate::lower::iterators::enumerated_knowing(it)
+            }
+            // A `skip(n)` or a `take(n)` the crate steps from its back, held
+            // where it's given or a chain's side, which MIR holds in a
+            // variable before it's stepped (#718): made knowing its back and
+            // its length where it's made, `$skipping` or `$taking` of its
+            // source made knowing them and closed to drop what it holds, as a
+            // map's is, given its items' drop, as `as_exact_size` makes one in
+            // place. Not one through a `&mut`, its owner's.
+            Some(IterMethod::Skip | IterMethod::Take) if self.stepped_from_its_back(output) && !held.is_ref() => {
+                let skip = method == Some(IterMethod::Skip);
+                let it = self.as_exact_size(receiver.clone(), iter_ty, true, span)?;
+                let it = self.closing(it, held, span)?;
+                let n = values.next().expect("how many");
+                let mut given = vec![it, n];
+                if let Some(item) = self.iterator_item(output) {
+                    given.extend(self.std_drop_function(item, span)?);
+                }
+                Expr::call_helper(if skip { "$skipping" } else { "$taking" }, given)
             }
             // A filter of one (ADR 0526), given its items' drop, of items with
             // a destructor, which drops each it doesn't keep as it passes it

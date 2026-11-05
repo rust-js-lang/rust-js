@@ -1,8 +1,10 @@
-//@ compile-fail: as an `ExactSizeIterator`, which rust-js can't count
 // An `enumerate()` of a `take()` of items with a destructor, folded from
 // its back: its index from the back is its source's length, which a
-// `take()` of them can't count, so it's refused where it's made, never
-// stepped by a back and a length its JS lacks (#651).
+// `take()` of them, `$taking(source, n, drop)`, counts, made knowing its
+// back and its length where it's made (#718). Refused once, as `.take(n)`
+// knew neither and would have thrown (#651). What it trims, `D(6)` and
+// `D(5)`, is dropped first, as std's `Take::rfold` drops what its source's
+// `nth_back` passes and finds.
 struct D(u32);
 
 impl Drop for D {

@@ -290,8 +290,14 @@ test("back_stepped's set is read where a value is made, or as a type's question"
   const allowed: Record<string, [number, string]> = {
     "src/lower/mir/iter.rs": [1, "`cloned_apart_call`, the maker of a map or a filter cloned apart"],
     "src/lower/mir/std_calls.rs": [1, "`mir_iter_std_call`, the maker of a std adapter made in place"],
-    "src/lower/mir/iter/backs.rs": [2, "`back_kept`, the maker of an enumeration it steps from its back, and `rev_called`, a `rev()`'s"],
-    "src/lower/iterators/knowing.rs": [8, "`reversed_made_knowing` and `reversed_knowing`, a `rev()`'s maker; `knows_its_back` and `knows_its_length`, a type's questions"],
+    "src/lower/mir/iter/backs.rs": [
+      3,
+      "`back_kept`, the maker of an enumeration, a `skip(n)` or a `take(n)` it steps from its back, and `rev_called`, a `rev()`'s",
+    ],
+    "src/lower/iterators/knowing.rs": [
+      9,
+      "`reversed_made_knowing` and `reversed_knowing`, a `rev()`'s maker; `knows_its_back` and `knows_its_length`, a type's questions, and `counted_made_knowing`, theirs of a `skip(n)` or a `take(n)`",
+    ],
   };
   const reader = /\.(stepped_from_its_back|reversed_made_knowing)\(/;
   const found: Record<string, number> = {};

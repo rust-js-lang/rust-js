@@ -50,4 +50,22 @@ export const mutations: Mutation[] = [
     replace: "    $forward(taking, iter, { rfold, tryRfold });\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
+  {
+    name: "taking-passed-undropped",
+    breaks:
+      "what a `take`'s source's `nth_back` past what it won't give finds, which std's `Take::rfold` and `nth_back` let go of, isn't dropped: `ds().into_iter().take(3).rev().sum()` never drops `D(4)` (#718)",
+    file: "src/runtime/taking.js",
+    find: "      drop?.(step.value);\n      return true;\n",
+    replace: "      return true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
+  },
+  {
+    name: "taking-nth-back-past-undropped",
+    breaks:
+      "a `take`'s `nth_back` past its end lets what its source's `nth_back` finds go undropped, where std's drops it: `take(3).rev().nth(5)` of a `Vec` of five never drops `D(1)` (#718)",
+    file: "src/runtime/taking.js",
+    find: "      if (len > 0) passed(len - 1);\n",
+    replace: "      if (len > 0) $nthBackOf(taking.iter, len - 1, drop);\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
+  },
 ];

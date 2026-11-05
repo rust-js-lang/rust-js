@@ -701,7 +701,11 @@ What's refused is in [the limitations](limitations.md).
   So is a type parameter's, `it.rev().nth_back(1)` stepping `$rev(it)`; a
   range's map's, `(0..5).map(f).rev().rfold(mk(), g)` stepping
   `$rev($mapEnds(..))`; and a chain's of items with a destructor,
-  `$rev($lazyChain(..))` (#718). A zip's isn't yet.
+  `$rev($lazyChain(..))` (#718). So is a `skip(n)` or a `take(n)` held in a
+  variable or a chain's side, `$skipping(..)` or `$taking(..)` where it's
+  made (#718), and an adapter held in a variable beneath maps or filters
+  made where a `rev()` steps them, `c.map(f).rev()` of a held chain (#790).
+  A zip's isn't yet.
 - **Room asked past `isize::MAX` bytes panics `capacity overflow`, as
   std's does:** `Vec::with_capacity(n)` is `$roomFor(n, 4); []`, of the
   items' size, and `reserve`, `vec![x; n]`, a slice's `repeat`,

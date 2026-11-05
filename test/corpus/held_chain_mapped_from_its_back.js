@@ -128,14 +128,22 @@ function main() {
     it.return();
   }
   const c = $lazyChain(
-    $closing(
-      $iterator([2, "a"], ownIterator_next, false, ownDoubleEndedIterator_nextBack),
-      (it) => {
-        ownDrop_drop(it.of);
-      },
+    $lazyChain(
+      $closing(
+        $iterator([2, "a"], ownIterator_next, false, ownDoubleEndedIterator_nextBack),
+        (it) => {
+          ownDrop_drop(it.of);
+        },
+      ),
+      $closing(
+        $iterator([2, "b"], ownIterator_next, false, ownDoubleEndedIterator_nextBack),
+        (it) => {
+          ownDrop_drop(it.of);
+        },
+      ),
     ),
     $closing(
-      $iterator([2, "b"], ownIterator_next, false, ownDoubleEndedIterator_nextBack),
+      $iterator([1, "c"], ownIterator_next, false, ownDoubleEndedIterator_nextBack),
       (it) => {
         ownDrop_drop(it.of);
       },

@@ -185,8 +185,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a chain's sides aren't made knowing their back where they're made: `v.into_iter().filter(p).chain(w).rev()` of droppers, whose `a` MIR holds in a variable for `w`'s drop flag, is refused, a `Filter` as a `DoubleEndedIterator` (#718)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "            Some((a, b)) => vec![a, b],\n",
-    replace: "            Some(_) => Vec::new(),\n",
+    find: "            Some((a, b)) => (vec![a, b], chain.is_some()),\n",
+    replace: "            Some(_) => (Vec::new(), chain.is_some()),\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_of_adapters_stepped_from_its_back.rs$"],
   },
   {
@@ -194,8 +194,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a chain's first side isn't made knowing its back where it's made, only its second: a held `filter()` on side `a` of droppers stepped from the back is refused (#718)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "            Some((a, b)) => vec![a, b],\n",
-    replace: "            Some((_, b)) => vec![b],\n",
+    find: "            Some((a, b)) => (vec![a, b], chain.is_some()),\n",
+    replace: "            Some((_, b)) => (vec![b], chain.is_some()),\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_of_adapters_stepped_from_its_back.rs$"],
   },
   {
@@ -222,7 +222,7 @@ export const mutations: Mutation[] = [
     breaks:
       "each held adapter a back-stepped one steps is marked, whatever it is: the crate's own iterator a held `filter` steps is made with its exact length, `$exactLen(..)`, which nothing asks (#218)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "            if mapped_source(tcx, held).is_some()\n                || filtered_source(tcx, held).is_some()\n                || filter_mapped_source(tcx, held).is_some()\n                || copied_source(tcx, held).is_some()\n                || cloned_source(tcx, held).is_some()\n                || inspected_source(tcx, held).is_some()\n                || chained_sources(tcx, held).is_some()\n            {\n",
+    find: "            if mapped_source(tcx, held).is_some()\n                || filtered_source(tcx, held).is_some()\n                || filter_mapped_source(tcx, held).is_some()\n                || copied_source(tcx, held).is_some()\n                || cloned_source(tcx, held).is_some()\n                || inspected_source(tcx, held).is_some()\n                || chained_sources(tcx, held).is_some()\n                || sides && counted_source(tcx, held).is_some()\n            {\n",
     replace: "            if true {\n",
     tests: [
       "test/corpus.test.ts",
@@ -332,7 +332,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "                || chained_sources(tcx, held).is_some()\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^held_chain_mapped_from_its_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(held_chain_mapped_from_its_back|chain_under_a_held_map_from_its_back).rs$"],
   },
   {
     name: "inspect-of-dropping-items-not-back-stepped",
@@ -362,8 +362,8 @@ export const mutations: Mutation[] = [
     name: "zip-sides-not-back-stepped",
     breaks: "a zip stepped from its back doesn't make its sides knowing theirs where they're made, and a `cloned()` side MIR holds in a variable is refused (#792)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "        let held = match chained_sources(tcx, ty).or_else(|| zipped_sources(tcx, ty)) {\n",
-    replace: "        let held = match chained_sources(tcx, ty) {\n",
+    find: "        let (held, sides) = match chain.or_else(|| zipped_sources(tcx, ty)) {\n",
+    replace: "        let (held, sides) = match chain {\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_cloned_items_whose_clone_runs.rs$"],
   },
   {
@@ -381,5 +381,50 @@ export const mutations: Mutation[] = [
     find: "        return (dropping_items(recognition, source.peel_refs(), &drops) || enumerates_a_compiled_struct(tcx, adapter))\n",
     replace: "        return (false || enumerates_a_compiled_struct(tcx, adapter))\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_made_knowing_read_again.rs$"],
+  },
+  {
+    name: "counted-given-held-unrecorded",
+    breaks:
+      "a `skip(n)` or a `take(n)` given held to what steps it from its back isn't recorded, so it's made with no back: `held.rev()` of a `let held = v.into_iter().skip(1)` is refused (#718)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "        return given.then(|| tcx.erase_and_anonymize_regions(adapter));\n",
+    replace: "        return false.then(|| tcx.erase_and_anonymize_regions(adapter));\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
+  },
+  {
+    name: "counted-chain-side-unstepped",
+    breaks:
+      "a chain's `skip(n)` or `take(n)` side, which MIR holds in a variable before the chain is made, isn't made knowing its back: `ds().into_iter().skip(1).chain(w).rev()` is refused (#718)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                || sides && counted_source(tcx, held).is_some()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
+  },
+  {
+    name: "held-beneath-unrecorded",
+    breaks:
+      "an adapter held in a variable, then given to adapters made in place that a `rev()` steps from its back, isn't recorded: `c.map(f).rev()` of a `let c = a.chain(b)` is refused (#790)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                    && let Some(beneath) = held_beneath(hidden)\n",
+    replace: "                    && let Some(beneath) = held_beneath(hidden).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_beneath_adapters_from_its_back.rs$"],
+  },
+  {
+    name: "held-beneath-chain-as-adapter",
+    breaks:
+      "a chain held beneath adapters made in place is recorded as a map or a filter would be, which records no chain: `c.map(f).rev()` of a `let c = a.chain(b)` is refused (#790)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                    match chained_sources(tcx, beneath) {\n                        Some(_) => {\n",
+    replace: "                    match chained_sources(tcx, beneath).filter(|_| false) {\n                        Some(_) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_beneath_adapters_from_its_back.rs$"],
+  },
+  {
+    name: "held-beneath-through-one",
+    breaks:
+      "what's held beneath adapters made in place is looked for only as what the call is given itself, never through them: `c.map(f).rev()` of a `let c = a.chain(b)` is refused (#790)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                            (source, made) = (first, true);\n",
+    replace: "                            (source, made) = (first, true);\n                            return None;\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_beneath_adapters_from_its_back.rs$"],
   },
 ];

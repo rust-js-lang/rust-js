@@ -731,3 +731,97 @@ still runs on each item. `move_closure_adapter_from_its_back` loses its
 unread `const value` and `const map`. Mutations `unread-map-by-its-shape`
 (`iterators.ts`), `map-of-an-iterator-unmarked` (`iterators/value.ts`),
 `unread-map-assignment-kept` (`mir/tidy/values.ts`).
+
+## Amendment: a `skip(n)` or a `take(n)` held, and what's held beneath what's made in place (2026-11-05, #718, #790)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for the refusals,
+valid Rust that was refused; results change for what `$taking` and
+`$skipping` let go undropped, so Rust's behavior is kept.
+
+In the default build, a `Vec<D>`'s `into_iter().skip(1).rev()` was refused,
+"a `Skip<IntoIter<D>>` as a `DoubleEndedIterator`", made in place or held in
+a variable, alone or as a chain's side, and so was a `take(n)`'s, "as an
+`ExactSizeIterator`". Of numbers, a held `skip(1)` or `take(3)` given to
+`rev()` was refused too. Three causes:
+
+- `as_double_ended`'s counted arm read a `skip(n)` made in place only as
+  JS's `src.drop(n)`, never as a skip of items with a destructor,
+  `$skipping(src, n, drop)`; `as_exact_size` read that one apart, and refused
+  a `take(n)` of such items. **One reader, `counted_parts`, reads all three
+  forms**, and `as_exact_size` makes each `$skipping` or `$taking` of its
+  source made knowing its back and length, a take of such items given their
+  drop, `$taking(src, n, drop)`.
+- A held one, `let held = v.into_iter().skip(1); held.rev()`, or a chain's
+  side, which MIR holds in a variable before the chain is made, had no form
+  left to read. **`back_stepped` records a `skip(n)` or a `take(n)` given held
+  to what steps it from its back** (a `rev()`, generic code, or a chain's
+  side through `with_stepped_sources`), never every one, so one made in
+  place keeps reading as `.drop(n)` where nothing asks its back.
+  `back_kept` makes a recorded one knowing its back and length where it's
+  made, `$skipping` or `$taking` of its source made knowing them and closed
+  to drop what it holds; `knows_its_back` and `knows_its_length` say so of its
+  type (`counted_made_knowing`, the one read).
+- **What's held beneath adapters made in place** (#790): `c.map(f).rev()` of
+  a `let c = a.chain(b)` of the crate's iterators was refused unless something
+  else stepped a map of that chain's type from its back. The `rev()` was given
+  a map made in place, so nothing was held where it was given, and the
+  chain arm records a chain only of items that drop. `back_stepped` now
+  follows what a call asking its back is given through each call whose result
+  is std's adapter of its first argument, to the std adapter a variable, a
+  field or a place holds there (`held_beneath`), and records it as one given
+  held is, a chain as the chain arm does. A `Vec`'s held `skip(1)`, mapped,
+  and a held map, filtered, then reversed, are the same.
+
+Two wrong answers in the runtime, unreachable before since no take of items
+with a destructor was made knowing its back: `$taking`'s `rfold` trimmed its
+source by `nth_back(len - n - 1)` and let the item found go undropped, where
+std's `Take::rfold` drops it, so `ds().into_iter().take(3).rev().sum()`
+never dropped `D(4)`; and both `$taking`'s and `$skipping`'s `nth_back` past
+their end let what their source's `nth_back(len - 1)` found go undropped, as
+std's `Take::nth_back` and `Skip::nth_back` drop it.
+
+So an `enumerate()` of a `take()` of such items folded from its back, refused
+since #651, runs: `enumerate_of_take_from_back_refused.rs` is
+`enumerate_of_take_from_back.rs`, against native Rust, and the guide's
+limitations list a `step_by()`'s alone. A `skip(n)` or a `take(n)` stepped
+by its own `rfind`, `v.iter().take(2).rfind(p)`, is still refused, as the
+guide lists: recording every one whose own back step is called, as a map is,
+records std's compiled bodies' calls too, a `Rev<&mut Skip<..>>`'s
+`next_back`, so a struct's held `skip` lent to a `for`, which never steps it
+from its back, was given its back by `$knowing` (`held_adapters_by_ref.rs`), a
+change of form for nothing.
+
+`test/corpus/skip_take_of_droppers_from_back.rs` holds a skip's and a take's
+`rev()` made in place and held, as a chain's side, `next_back`, `rfold`,
+`nth_back` and `rfind`, `rev().nth` past either's end, a held `rev()` stepped
+from both ends, a held one's `rev().len()`, and of numbers, against native
+Rust in both builds; `test/corpus/held_beneath_adapters_from_its_back.rs`
+holds #790's chain, mapped and filtered, a held `skip`, mapped, and a held
+map, filtered. Mutations: `dropping-skip-uncounted` (retargeted),
+`dropping-take-dropless` and `counted-made-knowing-unread`
+(`lower/iterators/knowing.ts`), `counted-back-stepped-made-unknowing`
+(`lower/mir/iter/backs.ts`), `counted-given-held-unrecorded`,
+`counted-chain-side-unstepped`, `held-beneath-unrecorded`,
+`held-beneath-chain-as-adapter` and `held-beneath-through-one`
+(`lower/analysis/back_stepped.ts`), `taking-passed-undropped`,
+`taking-nth-back-past-undropped` (`runtime/taking.ts`) and
+`skipping-nth-back-past-undropped` (`runtime/skipping.ts`).
+
+What's made knowing its back is decided of each type, so the corpus case
+holds each way with items of a type of its own: `P` made in place, `C` a
+chain's sides, `D` held. A `skip(n)` or a `take(n)` is recorded as a chain's
+side alone among what `with_stepped_sources` takes in: a copy's, made in
+place, is made knowing its back by the copy (`back_kept`'s copy arm, #646),
+which records nothing. `held_chain_mapped_from_its_back.rs`'s second chain
+is a chain of three now, a type of its own. #790's `held_beneath` recorded
+the second chain's type, so `chain-under-back-stepped-map-unrecorded`
+(`with_stepped_sources`' chain under a recorded map, #739) survived; it's
+held by `chain_under_a_held_map_from_its_back.rs` now, a map whose closure
+owns what has a destructor, of a chain MIR holds before the map is made,
+reversed, which the mutant refuses, with a map's `rfold` given a call's
+value, a held map's `next_back` and `nth_back` and a filter's map reversed,
+against native Rust in both builds.
+`back_kept`'s enumeration arm that makes its source knowing by
+`as_exact_size`, which asks `knowing_held` of std's compiled struct first,
+is held by `enumerate_of_droppers_from_back.rs` too (its mutation
+`enumerate-of-take-from-back-unknowing`).

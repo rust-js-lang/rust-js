@@ -6,12 +6,14 @@
 //! made knowing its back where it's made, as the iterators draft asks of
 //! one owner, before lowering: so one held in a variable before it's
 //! stepped, as a library's drop flags make one, still steps from its back.
-//! So are a chain's sides (#718), and a map whose closure has a destructor
-//! that a zip read by index asks the length of (#775).
+//! So are a chain's sides (#718), a `skip(n)` or a `take(n)` given held
+//! (#718), what's held beneath adapters made where they're given (#790), and
+//! a map whose closure has a destructor that a zip read by index asks the
+//! length of (#775).
 
 use crate::lower::body_queries::strip;
 use crate::lower::recognition::{
-    Recognition, back_stepped_source, chained_sources, cloned_source, copied_source, enumerated_source,
+    Recognition, back_stepped_source, chained_sources, cloned_source, copied_source, counted_source, enumerated_source,
     enumerates_a_compiled_struct, filter_mapped_source, filtered_source, flattened_source, inspected_source,
     is_double_ended, is_exact_size, is_iter_adapter_def, mapped_source, reversed_source, zipped_sources,
 };
@@ -91,6 +93,34 @@ pub(super) fn back_stepped<'tcx>(
                         })
                     })
             };
+            // What's held beneath adapters made where it's given: `c.map(f)
+            // .rev()` of a `let c = a.chain(b)` (#790). Of a value of type
+            // `asked` it's given, through each call whose result is std's
+            // adapter of its first argument, made in place where it's
+            // stepped, the std adapter a variable, a field or a place holds
+            // there, which no form of the call's steps from its back.
+            let held_beneath = |asked: Ty<'tcx>| {
+                let (_, args) = called.get(&at)?;
+                let mut source = *args.iter().find(|&&arg| body.thir[arg].ty.peel_refs() == asked)?;
+                let mut made = false;
+                loop {
+                    let e = through(source);
+                    match (&e.kind, e.ty.kind()) {
+                        (ExprKind::Call { args, .. }, ty::Adt(adapter, of))
+                            if is_iter_adapter_def(tcx, adapter.did())
+                                && let Some(&first) = args.first()
+                                && of.types().next() == Some(body.thir[first].ty.peel_refs()) =>
+                        {
+                            (source, made) = (first, true);
+                        }
+                        (ExprKind::Call { .. }, _) => return None,
+                        (_, ty::Adt(adapter, _)) if made && is_iter_adapter_def(tcx, adapter.did()) => {
+                            return Some(recognition.reveal(e.ty));
+                        }
+                        _ => return None,
+                    }
+                }
+            };
             // What it asks to be double-ended holds such a type, as an
             // `Either` of filters does, stepped from its back by the impl
             // that asks it of what it holds; the type asked itself is its
@@ -118,6 +148,21 @@ pub(super) fn back_stepped<'tcx>(
                 // it's made, as one given behind an `impl` is: asked its
                 // back, not its length alone.
                 let held_arg = !length && given_held(hidden);
+                // One held beneath what's made in place, made knowing its back
+                // where it's made too: a chain as the chain arm below records
+                // one, another as one given held is.
+                if !length
+                    && !own_method
+                    && !given
+                    && let Some(beneath) = held_beneath(hidden)
+                {
+                    match chained_sources(tcx, beneath) {
+                        Some(_) => {
+                            stepped.insert(tcx.erase_and_anonymize_regions(beneath));
+                        }
+                        None => stepped.extend(back_stepped_adapter(tcx, recognition, beneath, true, &drops)),
+                    }
+                }
                 // Not through a std adapter, whose own call steps what it
                 // holds: `filter(p).map(f).rev()`'s is `rev()`'s.
                 let mut walk = asked.walk();
@@ -269,6 +314,12 @@ fn back_stepped_adapter<'tcx>(
         return (dropping_items(recognition, source.peel_refs(), &drops) || enumerates_a_compiled_struct(tcx, adapter))
             .then(|| tcx.erase_and_anonymize_regions(adapter));
     }
+    // A `skip(n)` or a `take(n)` given where it's held, which no form of the
+    // caller's steps from its back once a variable holds it (#718); one made
+    // in place where it's stepped is made knowing its back there, by its form.
+    if counted_source(tcx, adapter).is_some() {
+        return given.then(|| tcx.erase_and_anonymize_regions(adapter));
+    }
     // An `inspect(f)` is made as a map, stepped from its back as one is.
     let mapped = mapped_source(tcx, adapter).or_else(|| inspected_source(tcx, adapter));
     let copied = copied_source(tcx, adapter);
@@ -298,18 +349,24 @@ fn back_stepped_adapter<'tcx>(
 /// back (#739). And a chain's sides in turn, which `$lazyChain` steps from
 /// their back, each made knowing it where it's made: MIR holds side `a` in
 /// a variable before the chain is made, where `b`'s drop flag must be
-/// cleared, so no form of `a` is left to read (#718). And a zip's sides,
-/// which `$zipEnds` steps from their back and counts, a `cloned()`'s too,
-/// as MIR holds a side in a variable before the zip is made (#792).
+/// cleared, so no form of `a` is left to read (#718), a `skip(n)` or a
+/// `take(n)` side too. And a zip's sides, which `$zipEnds` steps from their
+/// back and counts, a `cloned()`'s too, as MIR holds a side in a variable
+/// before the zip is made (#792).
 fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: HashSet<Ty<'tcx>>) -> HashSet<Ty<'tcx>> {
     let mut all = stepped.clone();
     let mut sources: Vec<Ty<'tcx>> = stepped.into_iter().collect();
     while let Some(ty) = sources.pop() {
-        let held = match chained_sources(tcx, ty).or_else(|| zipped_sources(tcx, ty)) {
-            Some((a, b)) => vec![a, b],
-            None => back_stepped_source(tcx, ty).into_iter().collect(),
+        // A chain's sides, a zip's, or the source of what steps from its back
+        // where its source does.
+        let chain = chained_sources(tcx, ty);
+        let (held, sides) = match chain.or_else(|| zipped_sources(tcx, ty)) {
+            Some((a, b)) => (vec![a, b], chain.is_some()),
+            None => (back_stepped_source(tcx, ty).into_iter().collect(), false),
         };
         for held in held.into_iter().map(|held| held.peel_refs()) {
+            // A `skip(n)` or a `take(n)` as a chain's side alone: a copy's,
+            // made in place, is made knowing its back by the copy (`back_kept`).
             if mapped_source(tcx, held).is_some()
                 || filtered_source(tcx, held).is_some()
                 || filter_mapped_source(tcx, held).is_some()
@@ -317,6 +374,7 @@ fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: HashSet<Ty<'tcx>>) -> 
                 || cloned_source(tcx, held).is_some()
                 || inspected_source(tcx, held).is_some()
                 || chained_sources(tcx, held).is_some()
+                || sides && counted_source(tcx, held).is_some()
             {
                 all.insert(tcx.erase_and_anonymize_regions(held));
             }

@@ -1249,7 +1249,10 @@ of them, `$skipping`, knew its back already and is as it was.
 
 `enumerate_of_take_from_back_refused.rs` holds the refusal, and the guide's
 limitations list it. Mutation: `enumerate-of-take-from-back-unknowing`
-(`lower/mir/iter/backs.ts`).
+(`lower/mir/iter/backs.ts`). Amended (#718, ADR 0545): a `take()` of items
+with a destructor is made knowing its back and its length now,
+`$taking(source, n, drop)`, so the case runs against native Rust, renamed
+`enumerate_of_take_from_back.rs`; a `step_by()`'s is still refused.
 
 ## Amendment: a `skip()`'s `rfold` is closed as it unwinds (2026-11-04, #621)
 

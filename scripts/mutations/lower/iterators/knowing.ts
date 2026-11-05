@@ -834,11 +834,15 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dropping-skip-uncounted",
-    breaks: "a `skip(n)` of items with a destructor, `$skipping(source, n, drop)`, isn't made knowing its back and its length, so an enumeration of the crate's iterator's `skip()` folded from its back is refused (#778)",
+    breaks: "a `skip(n)` of items with a destructor, `$skipping(source, n, drop)`, isn't made knowing its back and its length, so an enumeration of the crate's iterator's `skip()` folded from its back is refused (#778), and so is a `Vec`'s `skip(1).rev()` (#718)",
     file: "src/lower/iterators/knowing.rs",
-    find: "            && callee.helper_name() == Some(\"$skipping\")\n            && let [source_value, n, drop] = args.as_slice()\n",
-    replace: "            && callee.helper_name() == Some(\"$skipping\")\n            && let [source_value, n, drop] = args.as_slice()\n            && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^back_folds_of_sources_made_knowing_their_back.rs$"],
+    find: '        (_, [source, n, drop]) if skip && callee.helper_name() == Some("$skipping") => {\n',
+    replace: '        (_, [source, n, drop]) if skip && callee.helper_name() == Some("$skipping") && false => {\n',
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(back_folds_of_sources_made_knowing_their_back|skip_take_of_droppers_from_back).rs$",
+    ],
   },
   {
     name: "cloned-map-uncounted",
@@ -905,5 +909,23 @@ export const mutations: Mutation[] = [
     find: "            || self.explicit_adapter(ty)\n            || self.range_kind(ty).is_some()\n",
     replace: "            || self.range_kind(ty).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^(held_cycle).rs$"],
+  },
+  {
+    name: "dropping-take-dropless",
+    breaks:
+      "a `take(n)` of items with a destructor made knowing its back isn't given their drop, `$taking(source, n)`, so what its `rfold` trims and what an `nth_back` past its end finds are never dropped (#718)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                None => match self.iterator_item(ty) {\n",
+    replace: "                None => match self.iterator_item(ty).filter(|_| skip) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(skip_take_of_droppers_from_back|enumerate_of_take_from_back).rs$"],
+  },
+  {
+    name: "counted-made-knowing-unread",
+    breaks:
+      "a `skip(n)` or a `take(n)` the crate steps from its back, made knowing it where it's made, isn't read as knowing it where a variable holds it: `held.rev()` of a `let held = v.into_iter().skip(1)` is refused (#718)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        crate::lower::recognition::counted_source(self.tcx, ty).is_some() && self.stepped_from_its_back(ty)\n",
+    replace: "        crate::lower::recognition::counted_source(self.tcx, ty).is_some() && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
   },
 ];

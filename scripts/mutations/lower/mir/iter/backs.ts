@@ -599,7 +599,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/backs.rs",
     find: "                    None if self.stepped_from_its_back(output) && !self.has_a_back(iter_ty) => {\n",
     replace: "                    None if false && self.stepped_from_its_back(output) && !self.has_a_back(iter_ty) => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_take_from_back_refused.rs$|^back_folds_of_sources_made_knowing_their_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(enumerate_of_take_from_back|back_folds_of_sources_made_knowing_their_back|enumerate_of_droppers_from_back).rs$"],
   },
   {
     name: "nth-back-of-a-vec-unsliced",
@@ -688,5 +688,14 @@ export const mutations: Mutation[] = [
     find: "                        || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)) =>\n",
     replace: "                        || false && crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^back_folds_of_sources_made_knowing_their_back.rs$"],
+  },
+  {
+    name: "counted-back-stepped-made-unknowing",
+    breaks:
+      "a `skip(n)` or a `take(n)` the crate steps from its back isn't made knowing it where it's made, so one a variable holds, or a chain's side, has no form left to step from its back: refused (#718)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            Some(IterMethod::Skip | IterMethod::Take) if self.stepped_from_its_back(output) && !held.is_ref() => {\n",
+    replace: "            Some(IterMethod::Skip | IterMethod::Take) if self.stepped_from_its_back(output) && false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(skip_take_of_droppers_from_back|held_beneath_adapters_from_its_back).rs$"],
   },
 ];

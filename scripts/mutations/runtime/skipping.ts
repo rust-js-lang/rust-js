@@ -234,4 +234,13 @@ export const mutations: Mutation[] = [
     replace: "    return skipping.iter.tryFold(init, f, broke, unwind);\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
   },
+  {
+    name: "skipping-nth-back-past-undropped",
+    breaks:
+      "a `skip`'s `nth_back` past its end lets what its source's `nth_back` finds go undropped, where std's drops it: `skip(2).rev().nth(5)` of a `Vec` of five never drops `D(3)` (#718)",
+    file: "src/runtime/skipping.js",
+    find: "      if (!step.done) drop?.(step.value);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
+  },
 ];

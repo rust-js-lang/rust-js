@@ -169,6 +169,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(source) = crate::lower::recognition::back_stepped_source(self.tcx, ty) {
             return self.knows_its_back(source) || self.stepped_from_its_back(ty);
         }
+        if self.counted_made_knowing(ty) {
+            return true;
+        }
         // A flatten the crate steps from its back, made knowing it,
         // `$flattenEnds`, and a chain a function gives behind an `impl`,
         // `$lazyChain` of sides made knowing theirs (#739).
@@ -287,6 +290,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if crate::lower::recognition::zipped_sources(self.tcx, ty).is_some() && self.knows_its_back(ty) {
             return true;
         }
+        // A `skip(n)` or a `take(n)` made so (#718).
+        if self.counted_made_knowing(ty) {
+            return true;
+        }
         if let Some(id) = crate::lower::recognition::dyn_iter_trait(self.tcx, ty) {
             return crate::lower::recognition::is_exact_size(self.tcx, id);
         }
@@ -321,6 +328,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let drop_b = item_drop(self, b_ty)?;
         Ok(Some(value::zip_ends(zip.by_index, a, b, (drop_a, drop_b))))
+    }
+
+    /// Whether `ty` is a `skip(n)` or a `take(n)` the crate steps from its
+    /// back, `back_stepped`'s, made knowing its back and its length where
+    /// it's made (`back_kept`, #718): `$skipping` or `$taking` of its source
+    /// made knowing them, held in a variable or not. A type's question, of
+    /// `knows_its_back` and `knows_its_length`.
+    fn counted_made_knowing(&self, ty: ty::Ty<'tcx>) -> bool {
+        crate::lower::recognition::counted_source(self.tcx, ty).is_some() && self.stepped_from_its_back(ty)
     }
 
     /// `value`, an iterator of type `ty`, given where generic code asks its
@@ -389,8 +405,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `skip(n)` or `take(n)` made here, `src.drop(n)`: `$skipping` or
         // `$taking` of its source, made knowing its back and its length,
         // which they step from the back by, as std's `Skip` and `Take` of an
-        // `ExactSizeIterator` do, and know their length (ADR 0542). Of items with a destructor,
-        // which std drops as a `Vec`'s tail slice, refused below.
+        // `ExactSizeIterator` do, and know their length (ADR 0542).
         // One made so already, `$skipping(source, n)` of `as_exact_size`'s
         // own, a `rev()`'s source (#385); not `closing`'s, given a drop.
         if let Some((_, skip)) = crate::lower::recognition::counted_source(self.tcx, ty)
@@ -400,29 +415,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(value);
         }
+        // Of items with a destructor (#718): a skip made so, `$skipping(source,
+        // n, drop)`, which drops each it skips as it's skipped (ADR 0465), its
+        // source made knowing what's asked, its `len` and back what it steps
+        // by (#778); a take, `$taking(source, n, drop)`, whose back passes
+        // what it won't give to its source's `nth_back`, a `Vec`'s as one
+        // slice, else each dropped by `drop`, as std's `Take::next_back` and
+        // `rfold` pass it.
         if let Some((source, skip)) = crate::lower::recognition::counted_source(self.tcx, ty)
-            && let Some((source_value, n)) = counted_parts(&value, skip)
-            && (self.iterator_item(ty)).is_some_and(|item| self.drops(item) == crate::lower::drops::Drops::Nothing)
+            && let Some((source_value, n, drop)) = counted_parts(&value, skip)
         {
+            let back = back || drop.is_none();
+            let drop = match drop {
+                Some(drop) => Some(drop),
+                None => match self.iterator_item(ty) {
+                    Some(item) => self.std_drop_function(item, span)?,
+                    None => None,
+                },
+            };
             let source_value = stepped_value(&source_value).unwrap_or(source_value);
-            let source_value = self.as_exact_size(source_value, source.peel_refs(), true, span)?;
-            let name = if skip { "$skipping" } else { "$taking" };
-            return Ok(Expr::call_helper(name, vec![source_value, n]));
-        }
-        // A `skip(n)` of items with a destructor made here, `$skipping(source,
-        // n, drop)`, which drops each it skips as it's skipped (ADR 0465):
-        // its source made knowing its back and its length, as it is of
-        // others, its `len` and back what it steps by (#778).
-        if let Some((source, true)) = crate::lower::recognition::counted_source(self.tcx, ty)
-            && let js::ExprKind::Call(callee, args) = &value.kind
-            && callee.helper_name() == Some("$skipping")
-            && let [source_value, n, drop] = args.as_slice()
-        {
-            let source_value = stepped_value(source_value).unwrap_or_else(|| source_value.clone());
             let source_value = self.as_exact_size(source_value, source.peel_refs(), back, span)?;
+            let name = if skip { "$skipping" } else { "$taking" };
             return Ok(Expr::call_helper(
-                "$skipping",
-                vec![source_value, n.clone(), drop.clone()],
+                name,
+                [vec![source_value, n], drop.into_iter().collect()].concat(),
             ));
         }
         // An enumeration made here of an array's items, `$enumerate` of their
@@ -1408,15 +1424,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-/// What a `skip(n)` or a `take(n)` made here steps, and `n`: of
-/// `src.drop(n)` or `src.take(n)`.
-fn counted_parts(value: &Expr, skip: bool) -> Option<(Expr, Expr)> {
+/// What a `skip(n)` or a `take(n)` made here steps, `n`, and the drop it
+/// drops what it skips by: of `src.drop(n)` or `src.take(n)`, none; of a
+/// skip of items with a destructor, `$skipping(src, n, drop)` (`skipped`),
+/// its `drop`.
+fn counted_parts(value: &Expr, skip: bool) -> Option<(Expr, Expr, Option<Expr>)> {
     let js::ExprKind::Call(callee, args) = &value.kind else {
         return None;
     };
     let method = if skip { "drop" } else { "take" };
     match (&callee.kind, args.as_slice()) {
-        (js::ExprKind::Member(source, name), [n]) if name == method => Some(((**source).clone(), n.clone())),
+        (js::ExprKind::Member(source, name), [n]) if name == method => Some(((**source).clone(), n.clone(), None)),
+        (_, [source, n, drop]) if skip && callee.helper_name() == Some("$skipping") => {
+            Some((source.clone(), n.clone(), Some(drop.clone())))
+        }
         _ => None,
     }
 }

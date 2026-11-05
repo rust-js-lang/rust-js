@@ -28,6 +28,15 @@ function $taking(iter, n, drop) {
   // And its `nth_back`, `rfold` and `try_rfold`, std's, by its source's
   // `nth_back` past what it won't give, where that reaches the crate's own.
   if (iter.nthBack !== undefined || iter.rfold !== undefined || iter.tryRfold !== undefined) {
+    // What its source's `nth_back` past what it won't give finds, which
+    // std's `Take` lets go of, dropped by `drop` (#718): `false` where it
+    // found none.
+    const passed = (k) => {
+      const step = $nthBackOf(taking.iter, k, drop);
+      if (step.done) return false;
+      drop?.(step.value);
+      return true;
+    };
     const nthBack = (k) => {
       const len = taking.iter.len();
       if (taking.n > k) {
@@ -35,13 +44,13 @@ function $taking(iter, n, drop) {
         taking.n -= k + 1;
         return $nthBackOf(taking.iter, past, drop);
       }
-      if (len > 0) $nthBackOf(taking.iter, len - 1, drop);
+      if (len > 0) passed(len - 1);
       return { done: true, value: undefined };
     };
     // Its source trimmed to what it gives, `false` where that ran out.
     const trimmed = () => {
       const len = taking.iter.len();
-      return !(len > taking.n && $nthBackOf(taking.iter, len - taking.n - 1, drop).done);
+      return !(len > taking.n && !passed(len - taking.n - 1));
     };
     // Consumed, its source done with after (#225).
     // What drops with `f`, `ends`, its source's `rfold`'s, first (#734).

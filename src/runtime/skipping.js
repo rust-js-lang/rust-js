@@ -146,11 +146,15 @@ function $skipping(iter, n, drop) {
   skipping.back = () => (skipping.len() > 0 ? skipping.iter.back() : { done: true, value: undefined });
   skipping.len = () => Math.max(skipping.iter.len() - skipping.n, 0);
   // Std's `Skip::nth_back`: its source's, of what it gives, the crate's own
-  // where it reaches it (#220).
+  // where it reaches it (#220); past what it gives, what its source's finds
+  // let go of, dropped (#718).
   const nthBack = (k) => {
     const len = skipping.len();
     if (k < len) return skipping.iter.nthBack(k);
-    if (len > 0) skipping.iter.nthBack(len - 1);
+    if (len > 0) {
+      const step = skipping.iter.nthBack(len - 1);
+      if (!step.done) drop?.(step.value);
+    }
     return { done: true, value: undefined };
   };
   // Its `try_rfold` and `rfold`, std's: its source's, stopped after what it
