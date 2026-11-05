@@ -39,7 +39,7 @@ function $stdIterator(struct, steps) {
     }
   };
   if (steps.hint !== undefined) {
-    it.hint = () => steps.hint(it);
+    it.sizeHint = () => steps.hint(it);
   }
   // Each its compiled body's, which passes it on as std's does: its `fold`,
   // given `unwind`, the compiled fold's accumulator's drop, where a stage's

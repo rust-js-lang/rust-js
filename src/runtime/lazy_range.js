@@ -18,7 +18,7 @@ function $lazyRange(start, end = Infinity, step = 1) {
   });
   // Its `size_hint`, std's, exact, of how many it has left; of `n..`,
   // `usize::MAX` and none known (ADR 0918).
-  range.hint = () => {
+  range.sizeHint = () => {
     if (end === Infinity) return [4294967295, undefined];
     const left = at < end ? Math.ceil((Number(end) - Number(at)) / step) : 0;
     return [left, left];

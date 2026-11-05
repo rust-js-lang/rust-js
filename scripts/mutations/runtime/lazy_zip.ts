@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "lazy-zip-unhinted",
     breaks: "a zip given to generic code hints `(0, None)`, not its sides', `(2, Some(2))` of two arrays' (#400)",
     file: "src/runtime/lazy_zip.js",
-    find: "  zipped.hint = () => $zipHint($sizeHint(left), $sizeHint(right));\n",
+    find: "  zipped.sizeHint = () => $zipHint($sizeHint(left), $sizeHint(right));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
   },

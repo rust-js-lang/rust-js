@@ -137,6 +137,9 @@ const few = [
   // A `&mut` of the crate's iterator, std's `IntoIterator` of every
   // iterator, as rustc selects it (#742).
   "mut_ref_iterators_into_iter.rs",
+  // A `by_ref()` lends, never owns: its hint, length, folds and `rev()`,
+  // in generic code too (#745, #747, #749, #755).
+  "by_ref_lends.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus")

@@ -34,6 +34,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(Expr::call_helper("$rev", vec![it])))
     }
 
+    /// `rev()` of `receiver`, of type `iter_ty`, called on a `receiver_ty`,
+    /// giving `output`: of the crate's iterator, `reversed_user`'s; of a
+    /// range, stepped from its end; of items made already, an array's, a
+    /// `$iter` of them; not of a lazy one, whose closures would run in
+    /// another order (ADR 0164). What it steps is closed with it, which
+    /// drops it: a compiled struct, a `fuse()`, by its own `return` (#225).
+    /// One stepped from its back made knowing it (`reversed_knowing`).
+    pub(super) fn rev_called(
+        &mut self,
+        receiver: Expr,
+        (iter_ty, receiver_ty, output): (Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),
+        name: &str,
+        span: Span,
+    ) -> R<Expr> {
+        let unsupported = |cx: &Self| cx.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR"));
+        let reversed = match self.range_kind(iter_ty) {
+            _ if self.is_user_iterator(iter_ty) => self.reversed_user(receiver, receiver_ty, span)?,
+            None if let Some(reversed) = self.reversed(&receiver, iter_ty) => reversed,
+            Some(kind) if let Some(step) = kind.step(true) => self.stepped_by(receiver, Expr::helper(step)),
+            Some(_) => return Err(unsupported(self)),
+            // Of a `&mut`, `by_ref()`'s: what it's to, lent, stepped from
+            // its back, its slice's steps its own (`slicing`), and never
+            // closed, as a `Rev<&mut I>` drops nothing of its `I` (#755).
+            None if receiver_ty.is_mutable_ptr() => {
+                let lends = !std::ptr::eq(crate::lower::iterators::unlent(&receiver), &receiver);
+                let back = match self.has_a_back(iter_ty) {
+                    true => receiver,
+                    false => self.as_double_ended(receiver, iter_ty, span)?,
+                };
+                let lent = if lends { back } else { self.lent_iterator(back) };
+                let lent = self.slicing(lent, iter_ty, true, span)?;
+                Expr::call_helper("$rev", vec![lent])
+            }
+            None => self.rev_items(receiver, iter_ty, self.reversed_made_knowing(output), span)?,
+        };
+        self.reversed_knowing(reversed, output, span)
+    }
+
     /// `rev()` of a std iterator neither a range nor the crate's own: of
     /// items made already, an array's, a `$iter` of them reversed; a lazy
     /// chain made of its items reversed where its closures run in the same
@@ -168,8 +206,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // moves its start, `$rangeNext(it)`, as Rust's does, not a JS
             // iterator of it, which would be stepped as a range again.
             Some(IterMethod::ByRef) if self.range_kind(iter_ty).is_some() => receiver.clone(),
+            // Of one that knows its back, lent knowing it, as std's `&mut I`
+            // passes on `I`'s back and length, never its ownership (#749).
             Some(IterMethod::ByRef) if self.knows_its_back(iter_ty) => {
-                self.as_double_ended(receiver.clone(), iter_ty, span)?
+                let back = self.as_double_ended(receiver.clone(), iter_ty, span)?;
+                self.lent_iterator(back)
             }
             // A copy that's its source, of numbers, stepped from its back:
             // its source made knowing its back, a `skip`'s or a `take`'s of a
@@ -201,8 +242,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => receiver.clone(),
                 };
                 // An owning source of items with a destructor, closed to drop
-                // what it hasn't given, as a map's is (ADR 0465).
-                let it = self.closing(it, iter_ty, span)?;
+                // what it hasn't given, as a map's is (ADR 0465); not one
+                // through a `&mut`, `by_ref()`'s, its owner's (#749).
+                let it = self.closing(it, held, span)?;
                 let own = arg_tys.get(1).is_some_and(|ty| self.is_called_as_written(*ty));
                 let f = self.unary_callback(values.next().expect("the function"), own);
                 Expr::call_helper("$mapEnds", vec![it, f])
@@ -355,8 +397,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let lent = arg_tys.first().is_some_and(|ty| ty.is_mutable_ptr());
             let dropping = (self.iterator_item(iter_ty))
                 .is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing);
+            // Of a `&mut`, lent: its `rfold` is what it's to's `try_rfold`,
+            // as std's `&mut I` gives it, never that one's own `rfold`, which
+            // would take it from its owner (#747).
             let it = match self.consumer_closes(Some(method), iter_ty, lent, dropping) {
                 true => self.closing(it, iter_ty, span)?,
+                false if lent => self.lent_iterator(it),
                 false => it,
             };
             // Of a function it moves into its fold, `$consume`'s (#734).

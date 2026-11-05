@@ -300,8 +300,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a map made knowing its back, of a `Vec`'s items with a destructor, doesn't close its source, so what it never gave isn't dropped",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                let it = self.closing(it, iter_ty, span)?;\n                let own = arg_tys.get(1)",
-    replace: "                let own = arg_tys.get(1)",
+    find: "                // through a `&mut`, `by_ref()`'s, its owner's (#749).\n                let it = self.closing(it, held, span)?;\n",
+    replace: "                // through a `&mut`, `by_ref()`'s, its owner's (#749).\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_lazy_drops.rs$"],
   },
   {
@@ -422,8 +422,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `filter` stepped from its back of the crate's iterator with a destructor, or a `fuse()` of it, isn't closed to drop it (#225)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                let it = self.closing(it, held, span)?;\n                let own = arg_tys.get(1)",
-    replace: "                let own = arg_tys.get(1)",
+    find: "                // iterator or a compiled `fuse()` of it (#225).\n                let it = self.closing(it, held, span)?;\n",
+    replace: "                // iterator or a compiled `fuse()` of it (#225).\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -648,5 +648,59 @@ export const mutations: Mutation[] = [
     find: "                && !(knowing && self.reversal_of(&reversed, iter_ty).is_none()) =>\n",
     replace: "                && true =>\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_made_knowing_its_back.rs$"],
+  },
+  {
+    name: "by-ref-knowing-unlent",
+    breaks:
+      "`by_ref()` of what knows its back, a type parameter's, is the value itself, not lent, so `Total::sum` of it reaches the crate's own `fold`, which drops what the caller still owns (#749)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                self.lent_iterator(back)\n",
+    replace: "                back\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
+  },
+  {
+    name: "rfold-of-mut-unlent",
+    breaks:
+      "`rfold` of a `&mut` to the crate's iterator, `by_ref().rfold(..)`, is its own `rfold`, which takes it, so it's dropped there and again by its owner (#747)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                false if lent => self.lent_iterator(it),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
+  },
+  {
+    name: "map-of-mut-closed",
+    breaks:
+      "a `map()` of a `by_ref()` of a type parameter's iterator that knows its back is closed to drop it, so a collect of a `take(2)` of it drops what its owner still holds, and its owner drops it again (#749)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                // through a `&mut`, `by_ref()`'s, its owner's (#749).\n                let it = self.closing(it, held, span)?;\n",
+    replace: "                // through a `&mut`, `by_ref()`'s, its owner's (#749).\n                let it = self.closing(it, iter_ty, span)?;\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
+  },
+  {
+    name: "rev-made-unknowing",
+    breaks:
+      "a `rev()` the crate steps from its back isn't made knowing it where it's made: a slice's map's `rev().nth_back(1)` lent to `nth_back` is `$iter(v.toReversed()).map(f)`, which has no back, and throws (#702)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "        self.reversed_knowing(reversed, output, span)\n",
+    replace: "        Ok(reversed)\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
+  },
+  {
+    name: "rev-of-mut-closed",
+    breaks:
+      "a `rev()` of a `&mut`, `by_ref().rev()` of a `Vec`'s `IntoIter`, is closed to drop what it steps, so a `take(1)` of it drops what its owner still holds (#755)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            None if receiver_ty.is_mutable_ptr() => {\n",
+    replace: "            None if false => {\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
+  },
+  {
+    name: "rev-of-mut-unsliced",
+    breaks:
+      "a `rev()` of a `by_ref()` of a `Vec`'s `IntoIter` isn't given its slice's steps, so its `nth` drops what it passes from the back one by one, not as one slice (#755)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                let lent = self.slicing(lent, iter_ty, true, span)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
   },
 ];

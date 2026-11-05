@@ -179,7 +179,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       unwind === undefined ? (a, x) => g(a, f(x, i++)) : (a, x) => g(a, $staged(f, x, i++, a, unwind)),
     );
     // Std's `Map::size_hint`, its source's.
-    mapped.hint = () => $sizeHint(this);
+    mapped.sizeHint = () => $sizeHint(this);
     return mapped;
   }
   // Of items with a destructor, each it doesn't keep dropped by `drop`,

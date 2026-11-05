@@ -71,7 +71,7 @@ function main() {
   console.log(`[${back.join(", ")}] ${arg$1 == null ? "None" : `Some(${arg$1})`}`);
   const odd = { it: $filterEnds($iter(v), (item) => even(item)) };
   const last = $nextBack(odd.it);
-  const fromBack = Array.from($rev(odd.it).take(1));
+  const fromBack = Array.from($rev($lent(odd.it)).take(1));
   const value = $next(odd.it);
   const arg$2 = $nextBack(odd.it);
   console.log(

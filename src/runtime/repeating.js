@@ -15,7 +15,7 @@ function $repeating(value, clone = (value) => value, drop) {
       }
     },
   );
-  it.hint = () => [2 ** 32 - 1, undefined];
+  it.sizeHint = () => [2 ** 32 - 1, undefined];
   return it;
 }
 
@@ -40,6 +40,6 @@ function $repeatingN(value, count, clone = (value) => value, drop) {
       }
     },
   );
-  it.hint = () => [left, left];
+  it.sizeHint = () => [left, left];
   return it;
 }

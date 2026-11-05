@@ -46,7 +46,7 @@ function tagged(it) {
 
 function lastBig(it) {
   const found = $findBack(
-    $mapEnds(it, (n) => (n * 2) >>> 0),
+    $mapEnds($lent(it), (n) => (n * 2) >>> 0),
     (n) => n > 2,
   );
   return [found, $next(it)];

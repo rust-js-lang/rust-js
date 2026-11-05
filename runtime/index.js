@@ -615,7 +615,7 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
   }
   // Its own `size_hint`, the crate's impl's, which `$sizeHint` reads.
   if (hint !== undefined) {
-    it.hint = () => hint(iterator);
+    it.sizeHint = () => hint(iterator);
   }
   return it;
 }
@@ -1638,7 +1638,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       unwind === undefined ? (a, x) => g(a, f(x, i++)) : (a, x) => g(a, $staged(f, x, i++, a, unwind)),
     );
     // Std's `Map::size_hint`, its source's.
-    mapped.hint = () => $sizeHint(this);
+    mapped.sizeHint = () => $sizeHint(this);
     return mapped;
   }
   // Of items with a destructor, each it doesn't keep dropped by `drop`,
@@ -2716,6 +2716,16 @@ export function $advanceSlice(it, m, each, back = false) {
 // B-tree's and a `BinaryHeap`'s aren't: theirs are std's defaults, each
 // dropped as it's passed, a panic stopping them (#703, #704).
 export function $slicing(it, drop) {
+  // Of one lent, `by_ref()`'s, what it lends, given them, and they passed
+  // on, as std's `&mut I` passes on `I`'s `advance_by`, `nth`,
+  // `advance_back_by` and `nth_back`; not its `last`, which takes it (#745).
+  if (it.lends !== undefined) {
+    if (it.lends.items === undefined) return it;
+    $slicing(it.lends, drop);
+    $forward(it, it.lends, { advanceBy: "advanceBy", advanceBackBy: "advanceBackBy", nth: "nth", nthBack: "nthBack" });
+    it.dropItem = drop;
+    return it;
+  }
   // Given them already, or a JS iterator of its own, one closed, whose are.
   if (it.items === undefined || Object.hasOwn(it, "advanceBackBy")) return it;
   $forward(it, it, {
@@ -2878,7 +2888,7 @@ export function $skipping(iter, n, drop) {
     skipping.n = 0;
     return skipping.iter.nth(skip + k, dropItem);
   };
-  skipping.hint = () => {
+  skipping.sizeHint = () => {
     const [low, high] = $sizeHint(skipping.iter);
     return [Math.max(low - skipping.n, 0), high === undefined ? undefined : Math.max(high - skipping.n, 0)];
   };
@@ -2942,7 +2952,7 @@ export function $taking(iter, n, drop) {
   );
   taking.iter = iter;
   taking.n = n;
-  taking.hint = () => {
+  taking.sizeHint = () => {
     const [low, high] = $sizeHint(taking.iter);
     return [Math.min(low, taking.n), high === undefined ? taking.n : Math.min(high, taking.n)];
   };
@@ -3406,7 +3416,7 @@ export function $stepBy(it, step, drop) {
   stepped.skip = skip;
   // Its size hint, std's `StepBy`'s of its source's: before its first item
   // is taken, that one and each `step`th after; then each `step`th.
-  stepped.hint = () => {
+  stepped.sizeHint = () => {
     const [low, high] = $sizeHint(it);
     const left = (n) => (stepped.first ? (n === 0 ? 0 : 1 + Math.floor((n - 1) / step)) : Math.floor(n / step));
     return [left(low), high == null ? undefined : left(high)];
@@ -3539,7 +3549,7 @@ export function $enumerate(iter) {
   );
   enumerated.iter = iter;
   enumerated.count = 0;
-  enumerated.hint = () => $sizeHint(enumerated.iter);
+  enumerated.sizeHint = () => $sizeHint(enumerated.iter);
   // Std's `Enumerate::next_back`: its source's, then where it is, the count
   // so far and how many are left after it, asked once it's stepped (#738).
   enumerated.back = () => {
@@ -4133,7 +4143,7 @@ export function $lazyRange(start, end = Infinity, step = 1) {
   });
   // Its `size_hint`, std's, exact, of how many it has left; of `n..`,
   // `usize::MAX` and none known (ADR 0918).
-  range.hint = () => {
+  range.sizeHint = () => {
     if (end === Infinity) return [4294967295, undefined];
     const left = at < end ? Math.ceil((Number(end) - Number(at)) / step) : 0;
     return [left, left];
@@ -11303,7 +11313,7 @@ export function $stdIterator(struct, steps) {
     }
   };
   if (steps.hint !== undefined) {
-    it.hint = () => steps.hint(it);
+    it.sizeHint = () => steps.hint(it);
   }
   // Each its compiled body's, which passes it on as std's does: its `fold`,
   // given `unwind`, the compiled fold's accumulator's drop, where a stage's
@@ -11718,7 +11728,7 @@ export function $sizeHint(it, iterator) {
   const ranged = iterator === undefined ? undefined : $rangeHintOf(iterator.next);
   if (ranged !== undefined) return ranged(it);
   // An explicit adapter's, its own, of what it steps (ADR 0542).
-  if (it.hint !== undefined) return it.hint();
+  if (it.sizeHint !== undefined) return it.sizeHint();
   // What a `$iterator` steps, a JS iterator's, an array's `$iter` given as
   // it is (ADR 0411).
   if (typeof it.of?.next === "function") return $sizeHint(it.of);
@@ -12878,7 +12888,7 @@ export function $lazyZip(a, b, dropA) {
   zipped.from = [left, right];
   // Its `size_hint()`, std's `Zip`'s of its sides', each what its JS
   // value tells, as a generic iterator's is (#400).
-  zipped.hint = () => $zipHint($sizeHint(left), $sizeHint(right));
+  zipped.sizeHint = () => $zipHint($sizeHint(left), $sizeHint(right));
   return zipped;
 }
 
@@ -13091,7 +13101,7 @@ export function $rev(it) {
   rev.back = () => it.next();
   rev.from = [it];
   rev.len = () => it.len();
-  rev.hint = () => $sizeHint(it);
+  rev.sizeHint = () => $sizeHint(it);
   // Its `fold`, `nth` and `try_fold`, its source's `rfold`, `nth_back` and
   // `try_rfold`, as std's `Rev`'s are; its `nth_back` and `advance_back_by`
   // its source's `nth` and `advance_by` where they drop what they pass over
@@ -13305,7 +13315,7 @@ export function $repeating(value, clone = (value) => value, drop) {
       }
     },
   );
-  it.hint = () => [2 ** 32 - 1, undefined];
+  it.sizeHint = () => [2 ** 32 - 1, undefined];
   return it;
 }
 
@@ -13330,7 +13340,7 @@ export function $repeatingN(value, count, clone = (value) => value, drop) {
       }
     },
   );
-  it.hint = () => [left, left];
+  it.sizeHint = () => [left, left];
   return it;
 }
 
@@ -13391,7 +13401,7 @@ export function $cycleFrom(orig, iter, clone, next, boxed, drop) {
   cycled.orig = orig;
   cycled.iter = iter;
   // Rust's: none of an empty one, else without end.
-  cycled.hint = () => {
+  cycled.sizeHint = () => {
     const [low, high] = $sizeHint(cycled.orig);
     if (low === 0 && high === 0) return [0, 0];
     return low === 0 ? [0, undefined] : [4294967295, undefined];
@@ -13759,10 +13769,15 @@ export function $formatFloat(value, options, show) {
 
 // A JS iterator lent as a `&mut` (ADR 0071): it steps `it`, and what takes
 // from it and stops early, as `take` or a loop that breaks does, closes
-// this, not `it`, which its lender goes on stepping. Its `nth` is `it`'s,
-// as std's `&mut I` gives it, the crate's own where `$iterator` was given
-// it; its `fold`, std's, of `next` (#162), or of `it`'s `tryFold` where `it`
-// is std's adapter of one, or a range, whose `tryFold` it is too.
+// this, not `it`, which its lender goes on stepping. The one owner of what
+// std's `&mut I` passes on (`core/src/iter/traits/iterator.rs:4233`,
+// `double_ended.rs:437`, ADR 1092 §3), each `it`'s, the crate's own where
+// `$iterator` was given it: its `next`, `size_hint`, `advance_by`, `nth`
+// and `try_fold`; its `next_back`, `nth_back` and `try_rfold`; and its
+// `len`. Its `fold` is `it`'s `try_fold`, never stopped, as `&mut I`'s
+// `spec_fold` is for a sized `I` (#162), and its `rfold`, `count` and
+// `last` std's defaults, of those, so none reaches `it`'s own, which would
+// take it from its lender (#747, #749).
 export function $lent(it) {
   // Its `nth`, `it`'s, as std's `&mut I` gives it, the crate's own where
   // `$iterator` was given it; its `advance_by`, `it`'s own (ADR 0913); its
@@ -13782,6 +13797,11 @@ export function $lent(it) {
   });
   if (it.back !== undefined) lent.back = () => it.back();
   if (it.len !== undefined) lent.len = () => it.len();
+  // Its `size_hint`, `it`'s, as std's `&mut I` passes it on (#745).
+  lent.sizeHint = () => $sizeHint(it);
+  // What it lends, whose facts are its own: `$slicing` gives it its
+  // slice's steps, which it passes on (#745).
+  lent.lends = it;
   // Of std's struct, compiled (ADR 0871): its fields `it`'s, read and
   // written through it, so its compiled bodies step `it` where it is, as
   // std's `&mut I` steps its `I`; what stops early closes `lent`, not it.

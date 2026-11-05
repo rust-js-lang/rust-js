@@ -14,7 +14,7 @@ function $taking(iter, n, drop) {
   );
   taking.iter = iter;
   taking.n = n;
-  taking.hint = () => {
+  taking.sizeHint = () => {
     const [low, high] = $sizeHint(taking.iter);
     return [Math.min(low, taking.n), high === undefined ? taking.n : Math.min(high, taking.n)];
   };

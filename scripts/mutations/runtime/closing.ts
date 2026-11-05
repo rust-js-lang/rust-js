@@ -266,4 +266,22 @@ export const mutations: Mutation[] = [
     replace: "    (true\n",
     tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
   },
+  {
+    name: "slicing-lent-unpassed",
+    breaks:
+      "`$slicing` of a lent `Vec`'s `IntoIter` gives what it lends its slice's steps but the lent value doesn't pass them on, so std's compiled `Rev::nth` of a `by_ref()` drops what it passes from the back one by one (#755)",
+    file: "src/runtime/closing.js",
+    find: "    $forward(it, it.lends, { advanceBy: \"advanceBy\", advanceBackBy: \"advanceBackBy\", nth: \"nth\", nthBack: \"nthBack\" });\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
+  },
+  {
+    name: "slicing-lent-ignored",
+    breaks:
+      "`$slicing` of a lent `Vec`'s `IntoIter` gives it nothing, as the lent value has no `items`, so a generic `nth_back` of a `by_ref()` drops what it passes one by one, not as one slice (#755)",
+    file: "src/runtime/closing.js",
+    find: "  if (it.lends !== undefined) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
+  },
 ];

@@ -440,4 +440,13 @@ export const mutations: Mutation[] = [
     replace: "                false\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "reads only its parameters is its function"],
   },
+  {
+    name: "len-in-place-held-rev-read",
+    breaks:
+      "the `size_hint()` of a reversed range held, std's compiled `Rev`, is counted from its own fields as a range's, `it.end - it.start`, which it hasn't: `NaN` (#745)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "                _ if it.reads_same() => crate::lower::iterators::stepped_form(it)?,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
+  },
 ];

@@ -153,6 +153,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call_helper("$sizeHint", args))
     }
 
+    /// `next` and `size_hint` of a `&mut` to the crate's iterator,
+    /// `by_ref()`'s: std's of a `&mut I`, which is `I`'s own, of what the
+    /// `&mut` is to (#745). `None` of another, or of a hint its impl doesn't
+    /// write, std's, `$sizeHint`'s.
+    fn own_step_through_mut(
+        &mut self,
+        (def_id, trait_id): (DefId, DefId),
+        (iter_ty, receiver_ty): (Ty<'tcx>, Ty<'tcx>),
+        values: &[Expr],
+        span: Span,
+    ) -> R<Option<Expr>> {
+        let std_method = self.recognition().iterator_method(def_id);
+        let stepped = matches!(std_method, Some(IterMethod::Next | IterMethod::SizeHint));
+        let through_mut = matches!(receiver_ty.kind(), ty::Ref(_, through, _) if through.is_ref());
+        if !(stepped && through_mut && self.is_user_iterator(iter_ty)) {
+            return Ok(None);
+        }
+        let name = self.tcx.item_name(def_id);
+        let args = self.args_of(trait_id, iter_ty);
+        let mut made = Vec::new();
+        let value = values.first().expect("the receiver").clone();
+        match self.trait_call(def_id, args, vec![value], span, &mut made)? {
+            Some(call) if made.is_empty() => Ok(Some(call)),
+            None if std_method == Some(IterMethod::SizeHint) => Ok(None),
+            _ => Err(self.unsupported(span, &format!("`{name}` of this `&mut`, from its MIR"))),
+        }
+    }
+
     /// `mir_iter_call`'s, of a `map` or a `filter` cloned apart (ADR 0525):
     /// made by a function of its source and its function, which its clone
     /// calls again, of a source generic code is given too.
@@ -617,6 +645,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if self.is_user_iterator(iter_ty) {
                 return Ok(None);
             }
+            // `next_back` steps it where it is, closing nothing: of one lent,
+            // `by_ref()`'s, what it lends.
+            let it = match std_method {
+                Some(IterMethod::NextBack) => crate::lower::iterators::unlent(&it).clone(),
+                _ => it,
+            };
             let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
             if std_method == Some(IterMethod::NextBack)
                 && self.range_kind(iter_ty).is_none()
@@ -625,6 +659,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Some(back));
             }
             let array = self.has_a_back(iter_ty);
+            // `len(&self)` of a `Self` that's a `&mut`.
+            let lends_self = matches!(receiver_ty.kind(), ty::Ref(_, through, _) if through.is_mutable_ptr());
             return Ok(Some(match (std_method, self.range_kind(iter_ty)) {
                 (Some(IterMethod::NextBack), Some(kind)) if let Some(step) = kind.step(true) => {
                     Expr::call_helper(step, vec![it])
@@ -636,6 +672,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (Some(IterMethod::Len), None) if self.knows_its_length(iter_ty) => {
                     Expr::call(Expr::member(it, "len"), Vec::new())
                 }
+                // Of a `&mut`, `by_ref()`'s, `$lent`'s, which passes on the
+                // `len` of what it's to, as std's `&mut I` does (#745).
+                (Some(IterMethod::Len), None) if lends_self => Expr::call(Expr::member(it, "len"), Vec::new()),
                 (Some(IterMethod::Len), None) if array => self.items_left(it, made),
                 // One made in place, by what each of its adapters counts of
                 // its source: a range of numbers' count, an array's items
@@ -654,23 +693,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }));
         }
-        // `rev()`: of the crate's iterator, `reversed_user`'s; of a range,
-        // stepped from its end; of items made already, an array's, a `$iter`
-        // of them; not of a lazy one, whose closures would run in another
-        // order (ADR 0164). What it steps is closed with it, which drops
-        // it: a compiled struct, a `fuse()`, by its own `return` (#225).
-        // One stepped from its back made knowing it (`reversed_knowing`).
+        // `rev()`, `rev_called`'s.
         if std_method == Some(IterMethod::Rev) {
             let receiver = values.into_iter().next().expect("the receiver");
-            let unsupported = |cx: &Self| cx.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR"));
-            let reversed = match self.range_kind(iter_ty) {
-                _ if self.is_user_iterator(iter_ty) => self.reversed_user(receiver, receiver_ty, span)?,
-                None if let Some(reversed) = self.reversed(&receiver, iter_ty) => reversed,
-                Some(kind) if let Some(step) = kind.step(true) => self.stepped_by(receiver, Expr::helper(step)),
-                Some(_) => return Err(unsupported(self)),
-                None => self.rev_items(receiver, iter_ty, self.reversed_made_knowing(output), span)?,
-            };
-            return self.reversed_knowing(reversed, output, span).map(Some);
+            return self
+                .rev_called(receiver, (iter_ty, receiver_ty, output), name, span)
+                .map(Some);
         }
         // `size_hint()` of a `$iter`, exact, or of a generic one, as `$sizeHint`
         // finds it (ADR 0170); a range's is its bounds' (`RangeOp::SizeHint`).
@@ -681,22 +709,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let receiver = values.into_iter().next().expect("the receiver");
             return self.size_hint_of(receiver, iter_ty, span, made).map(Some);
         }
-        // `next` of a `&mut` to the crate's iterator, `by_ref()`'s: std's of a
-        // `&mut I`, which is `I`'s own, of what the `&mut` is to.
-        if std_method == Some(IterMethod::Next)
-            && self.is_user_iterator(iter_ty)
-            && let ty::Ref(_, through, _) = receiver_ty.kind()
-            && through.is_ref()
-        {
-            let next = def_id;
-            let args = self.args_of(trait_id, iter_ty);
-            let mut made = Vec::new();
-            let value = values.into_iter().next().expect("the receiver");
-            let call = self.trait_call(next, args, vec![value], span, &mut made)?;
-            return match call {
-                Some(call) if made.is_empty() => Ok(Some(call)),
-                _ => Err(self.unsupported(span, "`next` of this `&mut`, from its MIR")),
-            };
+        if let Some(call) = self.own_step_through_mut((def_id, trait_id), (iter_ty, receiver_ty), &values, span)? {
+            return Ok(Some(call));
         }
         // Only std's iterator methods, `iterator_method`'s; of the crate's
         // iterator, what its impl takes from `Iterator` is std's of a JS

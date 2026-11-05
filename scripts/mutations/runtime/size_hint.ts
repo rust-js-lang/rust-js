@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "size-hint-not-adapters-own",
     breaks: "an explicit adapter's size hint isn't its own",
     file: "src/runtime/size_hint.js",
-    find: "  if (it.hint !== undefined) return it.hint();\n",
+    find: "  if (it.sizeHint !== undefined) return it.sizeHint();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
   },

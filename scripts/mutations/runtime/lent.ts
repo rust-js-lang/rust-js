@@ -58,4 +58,22 @@ export const mutations: Mutation[] = [
     replace: "    tryFold: it.tryFold && ((init, f, broke) => it.tryFold(init, f, broke)),\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^generic_folds_unwind.rs$|^panic_mid_fold_drops with"],
   },
+  {
+    name: "lent-hint-unpassed",
+    breaks:
+      "a JS iterator lent as a `&mut` has no `size_hint` of its own, so `held.by_ref().size_hint()` of a `Vec`'s `IntoIter` is std's default `(0, None)`, where `&mut I` passes on `I`'s (#745)",
+    file: "src/runtime/lent.js",
+    find: "  lent.sizeHint = () => $sizeHint(it);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
+  },
+  {
+    name: "lent-lends-unsaid",
+    breaks:
+      "a lent `Vec`'s `IntoIter` given its slice's steps where it's lent, by `$slicing` of the lent value, isn't, so a `by_ref().rev().nth(2)` drops what it passes from the back one by one, not as one slice (#755)",
+    file: "src/runtime/lent.js",
+    find: "  lent.lends = it;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
+  },
 ];

@@ -1,9 +1,14 @@
 // A JS iterator lent as a `&mut` (ADR 0071): it steps `it`, and what takes
 // from it and stops early, as `take` or a loop that breaks does, closes
-// this, not `it`, which its lender goes on stepping. Its `nth` is `it`'s,
-// as std's `&mut I` gives it, the crate's own where `$iterator` was given
-// it; its `fold`, std's, of `next` (#162), or of `it`'s `tryFold` where `it`
-// is std's adapter of one, or a range, whose `tryFold` it is too.
+// this, not `it`, which its lender goes on stepping. The one owner of what
+// std's `&mut I` passes on (`core/src/iter/traits/iterator.rs:4233`,
+// `double_ended.rs:437`, ADR 1092 §3), each `it`'s, the crate's own where
+// `$iterator` was given it: its `next`, `size_hint`, `advance_by`, `nth`
+// and `try_fold`; its `next_back`, `nth_back` and `try_rfold`; and its
+// `len`. Its `fold` is `it`'s `try_fold`, never stopped, as `&mut I`'s
+// `spec_fold` is for a sized `I` (#162), and its `rfold`, `count` and
+// `last` std's defaults, of those, so none reaches `it`'s own, which would
+// take it from its lender (#747, #749).
 function $lent(it) {
   // Its `nth`, `it`'s, as std's `&mut I` gives it, the crate's own where
   // `$iterator` was given it; its `advance_by`, `it`'s own (ADR 0913); its
@@ -23,6 +28,11 @@ function $lent(it) {
   });
   if (it.back !== undefined) lent.back = () => it.back();
   if (it.len !== undefined) lent.len = () => it.len();
+  // Its `size_hint`, `it`'s, as std's `&mut I` passes it on (#745).
+  lent.sizeHint = () => $sizeHint(it);
+  // What it lends, whose facts are its own: `$slicing` gives it its
+  // slice's steps, which it passes on (#745).
+  lent.lends = it;
   // Of std's struct, compiled (ADR 0871): its fields `it`'s, read and
   // written through it, so its compiled bodies step `it` where it is, as
   // std's `&mut I` steps its `I`; what stops early closes `lent`, not it.

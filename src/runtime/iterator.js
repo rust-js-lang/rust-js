@@ -73,7 +73,7 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
   }
   // Its own `size_hint`, the crate's impl's, which `$sizeHint` reads.
   if (hint !== undefined) {
-    it.hint = () => hint(iterator);
+    it.sizeHint = () => hint(iterator);
   }
   return it;
 }

@@ -36,7 +36,7 @@ function $lazyZip(a, b, dropA) {
   zipped.from = [left, right];
   // Its `size_hint()`, std's `Zip`'s of its sides', each what its JS
   // value tells, as a generic iterator's is (#400).
-  zipped.hint = () => $zipHint($sizeHint(left), $sizeHint(right));
+  zipped.sizeHint = () => $zipHint($sizeHint(left), $sizeHint(right));
   return zipped;
 }
 

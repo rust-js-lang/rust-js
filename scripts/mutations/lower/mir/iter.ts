@@ -141,8 +141,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`next` of a `&mut` to the crate's iterator from MIR is refused, not its own",
     file: "src/lower/mir/iter.rs",
-    find: "            && through.is_ref()\n",
-    replace: "            && through.is_ref() && false\n",
+    find: "        let through_mut = matches!(receiver_ty.kind(), ty::Ref(_, through, _) if through.is_ref());\n",
+    replace: "        let through_mut = false;\n",
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",
@@ -630,15 +630,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_steps_a_type_parameter_may_reach.rs$"],
   },
   {
-    name: "rev-made-unknowing",
-    breaks:
-      "a `rev()` the crate steps from its back isn't made knowing it where it's made: a slice's map's `rev().nth_back(1)` lent to `nth_back` is `$iter(v.toReversed()).map(f)`, which has no back, and throws (#702)",
-    file: "src/lower/mir/iter.rs",
-    find: "            return self.reversed_knowing(reversed, output, span).map(Some);\n",
-    replace: "            return Ok(Some(reversed));\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
-  },
-  {
     name: "holding-unmoved",
     breaks: "an adapter holding a function is made with no `moved`, so a fold drops its function after what it steps (#710)",
     file: "src/lower/mir/iter.rs",
@@ -681,5 +672,23 @@ export const mutations: Mutation[] = [
     replace: '            || self.compiled_step(revealed, iterator, "count");\n',
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
     snapshots: true,
+  },
+  {
+    name: "len-of-mut-items-left",
+    breaks:
+      "`len()` of a `by_ref()` of a `Vec`'s `IntoIter` reads `it.end - it.at` of the lent value, which has neither: `NaN` (#745)",
+    file: "src/lower/mir/iter.rs",
+    find: "                (Some(IterMethod::Len), None) if lends_self => Expr::call(Expr::member(it, \"len\"), Vec::new()),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
+  },
+  {
+    name: "hint-of-mut-own-refused",
+    breaks:
+      "`size_hint()` of a `by_ref()` of the crate's iterator, `&mut I`'s, which passes on `I`'s own, is refused (#745)",
+    file: "src/lower/mir/iter.rs",
+    find: "        let stepped = matches!(std_method, Some(IterMethod::Next | IterMethod::SizeHint));\n",
+    replace: "        let stepped = matches!(std_method, Some(IterMethod::Next));\n",
+    tests: ["test/corpus.test.ts", "-t", "^by_ref_lends.rs$"],
   },
 ];

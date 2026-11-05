@@ -14,7 +14,7 @@ function $rev(it) {
   rev.back = () => it.next();
   rev.from = [it];
   rev.len = () => it.len();
-  rev.hint = () => $sizeHint(it);
+  rev.sizeHint = () => $sizeHint(it);
   // Its `fold`, `nth` and `try_fold`, its source's `rfold`, `nth_back` and
   // `try_rfold`, as std's `Rev`'s are; its `nth_back` and `advance_back_by`
   // its source's `nth` and `advance_by` where they drop what they pass over

@@ -245,7 +245,7 @@ function $stepBy(it, step, drop) {
   stepped.skip = skip;
   // Its size hint, std's `StepBy`'s of its source's: before its first item
   // is taken, that one and each `step`th after; then each `step`th.
-  stepped.hint = () => {
+  stepped.sizeHint = () => {
     const [low, high] = $sizeHint(it);
     const left = (n) => (stepped.first ? (n === 0 ? 0 : 1 + Math.floor((n - 1) / step)) : Math.floor(n / step));
     return [left(low), high == null ? undefined : left(high)];
@@ -378,7 +378,7 @@ function $enumerate(iter) {
   );
   enumerated.iter = iter;
   enumerated.count = 0;
-  enumerated.hint = () => $sizeHint(enumerated.iter);
+  enumerated.sizeHint = () => $sizeHint(enumerated.iter);
   // Std's `Enumerate::next_back`: its source's, then where it is, the count
   // so far and how many are left after it, asked once it's stepped (#738).
   enumerated.back = () => {

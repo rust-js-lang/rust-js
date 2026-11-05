@@ -49,7 +49,7 @@ function $cycleFrom(orig, iter, clone, next, boxed, drop) {
   cycled.orig = orig;
   cycled.iter = iter;
   // Rust's: none of an empty one, else without end.
-  cycled.hint = () => {
+  cycled.sizeHint = () => {
     const [low, high] = $sizeHint(cycled.orig);
     if (low === 0 && high === 0) return [0, 0];
     return low === 0 ? [0, undefined] : [4294967295, undefined];

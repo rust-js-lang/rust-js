@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "rev-hint-unpassed",
     breaks: "a `rev()` of what generic code is given has no size hint of its own: `(0, None)` where Rust's `Rev` gives its source's, `(3, Some(3))` (ADR 0989)",
     file: "src/runtime/rev.js",
-    find: "  rev.hint = () => $sizeHint(it);\n",
+    find: "  rev.sizeHint = () => $sizeHint(it);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^hint_through_a_given_value.rs$"],
   },

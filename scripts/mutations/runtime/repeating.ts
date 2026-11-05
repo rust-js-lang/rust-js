@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "repeating-n-unhinted",
     breaks: "`repeat_n(x, n)` hints `(0, None)`, so std's struct of a `map` of it, collected, asks no room and runs its closure until memory runs out, where std panics `capacity overflow` first (#246)",
     file: "src/runtime/repeating.js",
-    find: "  it.hint = () => [left, left];\n",
+    find: "  it.sizeHint = () => [left, left];\n",
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "collected_counts_ask_room"],
   },

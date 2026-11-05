@@ -256,7 +256,7 @@ function main() {
     $slicing($iter(seven()), dDrop_drop),
     (it) => {
       const option = $nthDropping(
-        $lent($rev($closing($iter($lent(it)), $dropEach(dDrop_drop)))),
+        $lent($rev($lent($slicing(it, dDrop_drop)))),
         3,
         dDrop_drop,
         false,
@@ -384,12 +384,7 @@ function main() {
                   6,
                   $iter($drain(v$1, 0)),
                   (it) => {
-                    const option = $nthDropping(
-                      $lent($rev($closing(it, $dropEach(dDrop_drop), false))),
-                      3,
-                      dDrop_drop,
-                      false,
-                    );
+                    const option = $nthDropping($lent($rev($lent(it))), 3, dDrop_drop, false);
                     function map(d) {
                       const result = d[0];
                       dDrop_drop(d);

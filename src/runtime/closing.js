@@ -247,6 +247,16 @@ function $advanceSlice(it, m, each, back = false) {
 // B-tree's and a `BinaryHeap`'s aren't: theirs are std's defaults, each
 // dropped as it's passed, a panic stopping them (#703, #704).
 function $slicing(it, drop) {
+  // Of one lent, `by_ref()`'s, what it lends, given them, and they passed
+  // on, as std's `&mut I` passes on `I`'s `advance_by`, `nth`,
+  // `advance_back_by` and `nth_back`; not its `last`, which takes it (#745).
+  if (it.lends !== undefined) {
+    if (it.lends.items === undefined) return it;
+    $slicing(it.lends, drop);
+    $forward(it, it.lends, { advanceBy: "advanceBy", advanceBackBy: "advanceBackBy", nth: "nth", nthBack: "nthBack" });
+    it.dropItem = drop;
+    return it;
+  }
   // Given them already, or a JS iterator of its own, one closed, whose are.
   if (it.items === undefined || Object.hasOwn(it, "advanceBackBy")) return it;
   $forward(it, it, {

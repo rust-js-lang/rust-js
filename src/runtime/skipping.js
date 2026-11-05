@@ -140,7 +140,7 @@ function $skipping(iter, n, drop) {
     skipping.n = 0;
     return skipping.iter.nth(skip + k, dropItem);
   };
-  skipping.hint = () => {
+  skipping.sizeHint = () => {
     const [low, high] = $sizeHint(skipping.iter);
     return [Math.max(low - skipping.n, 0), high === undefined ? undefined : Math.max(high - skipping.n, 0)];
   };

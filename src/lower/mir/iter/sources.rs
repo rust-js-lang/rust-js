@@ -110,9 +110,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Its source's, `$rev(source)`, a range's stepped from its back,
         // `$iterator(range, $rangeNextBack)`, or an array's items reversed
         // where they're made, `$iter(xs.toReversed())` (ADR 0530).
+        // Or one reversed inward, its source's chain over its items reversed.
+        // Not one a variable or a field holds, std's compiled `Rev`, which is
+        // no form of its source's (#745).
         if let Some(source) = r::reversed_source(self.tcx, ty) {
             let source_value = match &it.kind {
                 js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$rev") && args.len() == 1 => &args[0],
+                _ if it.reads_same() => crate::lower::iterators::stepped_form(it)?,
                 _ => crate::lower::iterators::stepped_form(it).unwrap_or(it),
             };
             return self.len_in_place(&source_value.clone(), source, made);
