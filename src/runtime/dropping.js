@@ -9,14 +9,13 @@ function $dropping(f, drop) {
   return f;
 }
 
-// A closure made elsewhere dropped: the drop it carries, `$dropping`'s, run,
-// once, as Rust drops a value once: a fold it was moved into drops it where
-// std's does, before what's left, and its caller's drop after does nothing
-// (#710).
+// A closure made elsewhere dropped: the drop it carries, `$dropping`'s, run.
+// The compiler drops each closure where Rust does, once: a fold it was moved
+// into drops it where std's does, before what's left, and its caller doesn't
+// (#710, #734).
 function $dispose(f) {
   const drop = f[$disposeKey];
   if (drop === undefined) return;
-  f[$disposeKey] = undefined;
   drop();
 }
 

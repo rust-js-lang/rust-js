@@ -34,12 +34,4 @@ export const mutations: Mutation[] = [
     replace: "  return f;\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_borrowed_function.rs$"],
   },
-  {
-    name: "dispose-twice",
-    breaks: "a closure that carries its drop is dropped again by its caller after the fold it was moved into dropped it (#710)",
-    file: "src/runtime/dropping.js",
-    find: "  f[$disposeKey] = undefined;\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
-  },
 ];

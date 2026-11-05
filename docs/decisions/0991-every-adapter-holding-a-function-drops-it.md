@@ -112,8 +112,9 @@ it, and otherwise after what it steps, as before.**
   `Map::fold`'s `map_fold(f, g)`, which carries its drop (`$dropping`), or
   of std's body, the `F` it was given, whose drop is its caller's `ends`.
   The drop after the call
-  stays, and drops nothing again: `$dispose` runs a closure's drop once,
-  as Rust drops a value once, and `ends` is once. A collect in place of
+  is none since #734 (`consumed_function`): a by-value consumer's caller
+  doesn't drop the function it moved into the fold, and `ends` is once.
+  (`$dispose` ran a closure's drop once besides; that guard went, below.) A collect in place of
   items with nothing to drop is said so by its caller (`$foldToArray`'s
   `inPlace`), where a compiled `Map`'s fold would move its function.
 - A panic in the closure under `--std-iterators` leaked it, where Rust
@@ -140,4 +141,25 @@ and `holding-alone-as-after`
 `fold-given-no-ends-of-a-param` and `in-place-of-numbers-unsaid`
 (`lower/mir/iter/collect.ts`), `compiled-fold-f-undropped`
 (`lower/iterators/knowing.ts`), `std-iterator-fold-ends-lost`
-(`runtime/std_iterator.ts`), `in-place-by-fold` (`runtime/fold_of.ts`) and `dispose-twice` (`runtime/dropping.ts`).
+(`runtime/std_iterator.ts`), `in-place-by-fold` (`runtime/fold_of.ts`).
+
+## Amendment: `$dispose` runs what it's given, and the compiler drops each closure once (2026-11-05)
+
+`$dispose` cleared the drop it ran, so a second `$dispose` of the same
+closure did nothing, for the caller's drop after a by-value fold that had
+already dropped the closure it was moved into. Since #734
+(`consumed_function`, 1c23afa16) no caller drops a function a by-value
+consumer moved into its fold. The mutation `dispose-twice`, the clearing
+taken out, survived main's check from 36d7f5184 on. With the mutant's own
+runtime, none of these changed:
+- the whole corpus in the default build and with std's iterator structs;
+- every other test file a push runs;
+- the full iterator matrix, 1,787 batches: its 33 failing batches fail
+  alike without the mutant, case by case;
+- the full conformance table, 360 batches: its 2 failing batches fail
+  alike.
+The guard had also hidden a real double drop from a test. closure_clone_
+counted.rs no longer caught `dropped-function-dropped-again`, which
+closure_block_value.rs now does. **The guard and its mutation are
+removed**: when a closure drops is the compiler's to say, once, and a
+double drop shows as one. Case: N.
