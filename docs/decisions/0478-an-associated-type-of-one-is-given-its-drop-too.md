@@ -42,3 +42,46 @@ $assign(a, self.value);
 
 - **What compiles grows**: values of an associated type of an associated
   type, as itertools' `kmerge_by` and `concat` have.
+
+## Amendment: a copied default's own where clause gives its impl slots (#798)
+
+A trait's default copied into an impl (ADR 0049) is given no drop of its
+own: the impl's dictionary is, and the default reads the impl's. An
+associated type only the default's own where clause names, `<Self::Item as
+IntoIterator>::IntoIter` of a `Self::Item: IntoIterator`, was no slot of
+the impl's, whose bounds alone `drop_items` read, so its values, the
+`iter` of a `Held<<Self::Item as IntoIterator>::IntoIter>`, were never
+dropped: a wrong answer (case C of ADR 0262).
+
+- **An impl's slots are read of its bounds and, after them, of each
+  default it keeps' own where clause in its terms**, `<T as
+  Iterator>::Item: IntoIterator` (`slot_bounds`): one derivation, where
+  each holds, so the impl's caller gives that drop as it gives any slot's.
+  A clause naming the default's own parameters, which its caller gives
+  (ADR 0163), isn't the impl's.
+- **An associated type of a type its trait isn't implemented for**,
+  `<u8 as IntoIterator>::IntoIter`, the impl's slot where its caller's
+  arguments can't meet that default's where clause, as `(0..3u8)`'s, is no
+  type: it drops nothing.
+- A library's default its consumer's impl keeps is the library's function
+  (ADR 0100), whose own slots were already given; a std trait's defaults,
+  std's own, add none, as their clauses don't name the impl's slots.
+
+```js
+function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter) { ... }
+
+$dropItems(all, (item) => {
+  try {
+    heldDrop_drop(item, dropTItemIntoIter);
+  } finally {
+    dropTItemIntoIter?.(item.iter);
+  }
+});
+```
+
+Held by `test/corpus/default_where_clause_item_drops.rs`, the
+`default_where_clause_drops` crate pair, and
+`in_place_collect_of_a_built_type_relayed.rs`'s default, whose items now
+hold their iterators plainly, with native Rust. Still open: a non-blanket
+impl's `Self::Item` in its terms (#803), a default's own type
+parameters' drops (#802), and one numbered as an impl's (#804).

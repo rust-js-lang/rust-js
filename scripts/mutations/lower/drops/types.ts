@@ -380,4 +380,13 @@ export const mutations: Mutation[] = [
     replace: "                if let Some(normal) = self.normalized(ty)\n                    && normal != ty\n                    && false =>\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
+  {
+    name: "impossible-alias-unsupported",
+    breaks:
+      "an associated type of a type its trait isn't implemented for, an impl's slot of a default its arguments can't meet, is refused as an unknown one, so `(0..3u8).counted()` doesn't compile (#798)",
+    file: "src/lower/drops/types.rs",
+    find: "            ) if !ty.has_param()\n                && (self.recognition.tcx)",
+    replace: "            ) if false\n                && (self.recognition.tcx)",
+    tests: ["test/corpus.test.ts", "-t", "^default_where_clause_item_drops.rs$"],
+  },
 ];

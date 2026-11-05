@@ -519,6 +519,21 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             {
                 self.drops_in(normal, walk)
             }
+            // One that's no type, of a type its trait isn't implemented for,
+            // `<u8 as IntoIterator>::IntoIter`: an impl's slot of a default
+            // whose where clause the impl's arguments here can't meet, which
+            // their dictionary leaves out (#798). No value is one.
+            ty::Alias(
+                _,
+                alias @ ty::AliasTy {
+                    kind: ty::Projection { def_id },
+                    ..
+                },
+            ) if !ty.has_param()
+                && (self.recognition.tcx).instantiate_and_check_impossible_clauses((*def_id, alias.args)) =>
+            {
+                Drops::Nothing
+            }
             ty::Alias(
                 _,
                 ty::AliasTy {

@@ -4,9 +4,8 @@
 // and of a trait's default copied into a blanket impl, in the impl's terms,
 // as itertools' `Itertools::multi_cartesian_product` collects. Where a panic
 // stops it, in place it drops what it collected first, else what's left
-// (#672, #737). The default's items keep their iterators undropped: a
-// default's own where clause's associated type is dropped by none (#798).
-use std::mem::ManuallyDrop;
+// (#672, #737), each item's iterator too, an associated type of the
+// default's own where clause (#798).
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 struct D(u64);
@@ -57,28 +56,13 @@ fn enumerated<I: Iterator>(items: I) -> Vec<(usize, I::Item)> {
     items.enumerate().collect()
 }
 
-/// What keeps its iterator, never dropping it: what's left of the source,
-/// dropped before or after these, shows which was first.
-struct Kept<I> {
-    iter: ManuallyDrop<I>,
-}
-
-impl<I> Drop for Kept<I> {
-    fn drop(&mut self) {
-        println!("drop kept");
-    }
-}
-
 trait Holding: Iterator {
-    fn held_all(self) -> Vec<Kept<<Self::Item as IntoIterator>::IntoIter>>
+    fn held_all(self) -> Vec<Held<<Self::Item as IntoIterator>::IntoIter>>
     where
         Self: Sized,
         Self::Item: IntoIterator,
     {
-        self.map(|i| Kept {
-            iter: ManuallyDrop::new(i.into_iter()),
-        })
-        .collect()
+        self.map(|i| Held { iter: i.into_iter() }).collect()
     }
 }
 
@@ -141,7 +125,7 @@ fn main() {
         narrows.into_iter().map(narrow).held_all().len()
     });
     run("a default, not in place", || {
-        let kept = (1..=2).map(|n| vec![D(n)]).held_all();
-        kept.iter().map(|k| k.iter.len()).sum()
+        let held = (1..=2).map(|n| vec![D(n)]).held_all();
+        held.iter().map(|h| h.iter.len()).sum()
     });
 }

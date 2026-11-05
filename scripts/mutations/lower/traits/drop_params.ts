@@ -84,6 +84,7 @@ export const mutations: Mutation[] = [
     find: "        ty::Tuple(parts) => (parts.iter())\n",
     replace: "        ty::Tuple(parts) if false => (parts.iter())\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
+    snapshots: true,
   },
   {
     name: "std-method-facts-none",
@@ -103,5 +104,14 @@ export const mutations: Mutation[] = [
     replace: "    if false && tcx.associated_item(method).defaultness(tcx).has_value() {\n",
     tests: ["test/corpus.test.ts", "-t", "^(generic_chain_of_into|into_iter_arguments|zip_into_mut_slice|backs_given_behind_impls|adapter_drops|held_adapters_stepped_to_their_end).rs$"],
     snapshots: true,
+  },
+  {
+    name: "default-where-clause-unslotted",
+    breaks:
+      "an associated type only a copied default's own where clause names, `<Self::Item as IntoIterator>::IntoIter`, is no slot of its impl's, so the `iter` of a `Held` it pushes is never dropped (#798)",
+    file: "src/lower/traits/drop_params.rs",
+    find: "        bounds.push((clauses, ty::TypingEnv::new(param_env, typing_env.typing_mode())));\n",
+    replace: "        let _ = (clauses, param_env);\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_where_clause_item_drops.rs$"],
   },
 ];

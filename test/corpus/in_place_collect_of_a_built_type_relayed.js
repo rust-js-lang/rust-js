@@ -169,32 +169,49 @@ function enumerated(items, IInPlace, UsizeIItemSize, UsizeIItemAlign, dropI, dro
   }
 }
 
-function keptDrop_drop(kept, dropI) {
-  console.log("drop kept");
-}
-
 const $tHolding = new Map();
 
-function tHolding(TIterator, TInPlace, KeptSize, KeptAlign, dropT, dropTItem) {
+function tHolding(
+  TIterator,
+  TInPlace,
+  HeldSize,
+  HeldAlign,
+  dropT,
+  dropTItem,
+  dropTItemItem,
+  dropTItemIntoIter,
+) {
   return $traitImpl(
     $tHolding,
-    [TIterator, TInPlace, KeptSize, KeptAlign, dropT, dropTItem],
+    [TIterator, TInPlace, HeldSize, HeldAlign, dropT, dropTItem, dropTItemItem, dropTItemIntoIter],
     () => ({
       heldAll(self, SelfItemIntoIterator) {
         const iter = $closing($given(self, TIterator, true), dropT, false).map((i) => ({
           iter: SelfItemIntoIterator.intoIter(i),
         }));
         try {
-          return $collectsInPlace(TInPlace, KeptSize, KeptAlign)
-            ? $foldToArray(iter, (kept) => {
-                keptDrop_drop(kept, SelfItemIntoIterator.$dropIntoIter);
+          return $collectsInPlace(TInPlace, HeldSize, HeldAlign)
+            ? $foldToArray(iter, (held) => {
+                try {
+                  heldDrop_drop(held, dropTItemIntoIter);
+                } finally {
+                  dropTItemIntoIter?.(held.iter);
+                }
               })
             : $collectDropping(
-                $roomForHint(iter, 0, false, false, (kept) => {
-                  keptDrop_drop(kept, SelfItemIntoIterator.$dropIntoIter);
+                $roomForHint(iter, 0, false, false, (held) => {
+                  try {
+                    heldDrop_drop(held, dropTItemIntoIter);
+                  } finally {
+                    dropTItemIntoIter?.(held.iter);
+                  }
                 }),
-                (kept) => {
-                  keptDrop_drop(kept, SelfItemIntoIterator.$dropIntoIter);
+                (held) => {
+                  try {
+                    heldDrop_drop(held, dropTItemIntoIter);
+                  } finally {
+                    dropTItemIntoIter?.(held.iter);
+                  }
                 },
                 true,
               );
@@ -216,23 +233,30 @@ function heldOf(
   items,
   IItemIntoIterator,
   IIntoIterInPlace,
-  KeptSize,
-  KeptAlign,
+  HeldSize,
+  HeldAlign,
   dropIItem,
   dropIIntoIter,
+  dropIItemItem,
   dropIItemIntoIter,
 ) {
   const heldAll = tHolding(
     { next: $nextSome },
     IIntoIterInPlace,
-    KeptSize,
-    KeptAlign,
+    HeldSize,
+    HeldAlign,
     dropIIntoIter,
     dropIItem,
+    dropIItemItem,
+    dropIItemIntoIter,
   ).heldAll($intoIter(items), IItemIntoIterator);
   const result = heldAll.length;
   $dropItems(heldAll, (item) => {
-    keptDrop_drop(item, dropIItemIntoIter);
+    try {
+      heldDrop_drop(item, dropIItemIntoIter);
+    } finally {
+      dropIItemIntoIter?.(item.iter);
+    }
   });
   return result;
 }
@@ -366,6 +390,7 @@ function main() {
           }
         }
       },
+      dDrop_drop,
       $dropEach(dDrop_drop),
     );
   });
@@ -386,6 +411,8 @@ function main() {
           dDrop_drop(option);
         }
       },
+      dDrop_drop,
+      $dropEach(dDrop_drop),
     ).heldAll(
       iterator_map(
         $iter(wides),
@@ -416,7 +443,13 @@ function main() {
       },
     );
     $dropItems(heldAll, (item) => {
-      keptDrop_drop(item, $dropEach(dDrop_drop));
+      try {
+        heldDrop_drop(item, $dropEach(dDrop_drop));
+      } finally {
+        for (const item$1 of item.iter) {
+          dDrop_drop(item$1);
+        }
+      }
     });
     return heldAll.length;
   });
@@ -434,6 +467,8 @@ function main() {
       (map) => {
         map.return();
       },
+      $dropEach(dDrop_drop),
+      dDrop_drop,
       $dropEach(dDrop_drop),
     ).heldAll(
       iterator_map(
@@ -457,17 +492,25 @@ function main() {
       },
     );
     $dropItems(heldAll, (item) => {
-      keptDrop_drop(item, $dropEach(dDrop_drop));
+      try {
+        heldDrop_drop(item, $dropEach(dDrop_drop));
+      } finally {
+        for (const item$1 of item.iter) {
+          dDrop_drop(item$1);
+        }
+      }
     });
     return heldAll.length;
   });
   run("a default, not in place", () => {
-    const kept = tHolding(
+    const held = tHolding(
       { next: $next, fold: $foldOf },
       undefined,
       undefined,
       undefined,
       undefined,
+      $dropEach(dDrop_drop),
+      dDrop_drop,
       $dropEach(dDrop_drop),
     ).heldAll(
       iterator_map(
@@ -483,10 +526,16 @@ function main() {
       },
     );
     try {
-      return kept.map((k) => k.iter.end - k.iter.at).reduce((a, b) => (a + b) >>> 0, 0);
+      return held.map((h) => h.iter.end - h.iter.at).reduce((a, b) => (a + b) >>> 0, 0);
     } finally {
-      $dropItems(kept, (item) => {
-        keptDrop_drop(item, $dropEach(dDrop_drop));
+      $dropItems(held, (item) => {
+        try {
+          heldDrop_drop(item, $dropEach(dDrop_drop));
+        } finally {
+          for (const item$1 of item.iter) {
+            dDrop_drop(item$1);
+          }
+        }
       });
     }
   });

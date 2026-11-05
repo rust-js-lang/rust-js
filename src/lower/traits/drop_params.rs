@@ -212,36 +212,103 @@ pub(in crate::lower) fn built_slot<'tcx>(
 /// The associated types of a function's type parameters it may be given a
 /// drop for, after its type parameters' (`drop_slot`); and of those a bound
 /// names, `<I::Item as IntoIterator>::IntoIter` of an `I::Item: IntoIterator`
-/// (ADR 0478), each found in turn.
+/// (ADR 0478), each found in turn, of each of `slot_bounds`.
 pub(in crate::lower) fn drop_items<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     id: DefId,
 ) -> Vec<Ty<'tcx>> {
-    let typing_env = ty::TypingEnv::non_body_analysis(tcx, id);
+    let bounds = slot_bounds(tcx, id);
     let mut items: Vec<Ty<'tcx>> = Vec::new();
     loop {
         let found = items.len();
-        drop_items_of(tcx, foreign, (id, typing_env), &mut items);
+        for (clauses, typing_env) in &bounds {
+            drop_items_of(tcx, foreign, (clauses, *typing_env), &mut items);
+        }
         if items.len() == found {
             return items;
         }
     }
 }
 
-/// `drop_items`' of each bound on a type parameter, or on one of `items`.
+/// The bounds `drop_items` reads, each with where it holds: a function's
+/// own, where its bounds hold; and, of an impl, each trait default it keeps'
+/// own where clause in the impl's terms, `<T as Iterator>::Item:
+/// IntoIterator` of a `Self::Item: IntoIterator`, where the impl's bounds
+/// and it hold: the impl's dictionary is given the drops a default copied
+/// into it asks of them, as no caller of the default gives any (ADR 0478,
+/// #798). Not one of the default's own parameters, which its caller gives
+/// (`own_drop_params`).
+fn slot_bounds<'tcx>(tcx: TyCtxt<'tcx>, id: DefId) -> Vec<(Vec<ty::Clause<'tcx>>, ty::TypingEnv<'tcx>)> {
+    let typing_env = ty::TypingEnv::non_body_analysis(tcx, id);
+    let own = (tcx.clauses_of(id).instantiate_identity(tcx).into_iter())
+        .map(|(clause, _)| clause.skip_normalization())
+        .collect();
+    let mut bounds = vec![(own, typing_env)];
+    if !matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true }) {
+        return bounds;
+    }
+    let tr = tcx.impl_trait_ref(id).instantiate_identity().skip_normalization();
+    let overridden = tcx.impl_item_implementor_ids(id);
+    let trait_count = tcx.generics_of(tr.def_id).count() as u32;
+    for item in tcx.associated_items(tr.def_id).in_definition_order() {
+        // A default the impl keeps.
+        if !matches!(item.kind, ty::AssocKind::Fn { .. })
+            || !tcx.defaultness(item.def_id).has_value()
+            || overridden.contains_key(&item.def_id)
+        {
+            continue;
+        }
+        let args = tr.args.extend_to(tcx, item.def_id, |param, _| match param.kind {
+            ty::GenericParamDefKind::Lifetime => tcx.lifetimes.re_erased.into(),
+            _ => tcx.mk_param_from_def(param),
+        });
+        // A trait's bound or an associated type's equality, of the impl's
+        // parameters alone: none of the default's own, which, in the impl's
+        // terms, would be numbered as the impl's.
+        let of_the_impl = |clause: ty::Clause<'tcx>| {
+            let parts: Vec<ty::GenericArg<'tcx>> = match clause.kind().skip_binder() {
+                ty::ClauseKind::Trait(bound) => bound.trait_ref.args.to_vec(),
+                ty::ClauseKind::Projection(equal) => (equal.projection_term.args.iter())
+                    .chain(equal.term.as_type().map(Into::into))
+                    .collect(),
+                _ => return false,
+            };
+            (parts.iter().flat_map(|part| part.walk())).all(|part| match part.kind() {
+                ty::GenericArgKind::Type(t) => !matches!(t.kind(), ty::Param(p) if p.index >= trait_count),
+                ty::GenericArgKind::Const(c) => !matches!(c.kind(), ty::ConstKind::Param(p) if p.index >= trait_count),
+                ty::GenericArgKind::Lifetime(_) => true,
+            })
+        };
+        let clauses: Vec<ty::Clause<'tcx>> = (tcx.clauses_of(item.def_id).clauses.iter())
+            .filter(|&&(clause, _)| of_the_impl(clause))
+            .map(|&(clause, _)| {
+                ty::EarlyBinder::bind(tcx, clause)
+                    .instantiate(tcx, args)
+                    .skip_normalization()
+            })
+            .collect();
+        if clauses.is_empty() {
+            continue;
+        }
+        let held =
+            (typing_env.param_env.caller_bounds().iter()).chain(ty::elaborate::elaborate(tcx, clauses.iter().copied()));
+        let param_env = ty::ParamEnv::new(tcx.mk_clauses_from_iter(held));
+        bounds.push((clauses, ty::TypingEnv::new(param_env, typing_env.typing_mode())));
+    }
+    bounds
+}
+
+/// `drop_items`' of each of `clauses` on a type parameter, or on one of
+/// `items`, its associated types those that `typing_env` doesn't name.
 fn drop_items_of<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
-    (id, typing_env): (DefId, ty::TypingEnv<'tcx>),
+    (clauses, typing_env): (&[ty::Clause<'tcx>], ty::TypingEnv<'tcx>),
     items: &mut Vec<Ty<'tcx>>,
 ) {
-    for (clause, _) in tcx.clauses_of(id).instantiate_identity(tcx) {
-        let Some(bound) = clause
-            .skip_normalization()
-            .as_trait_clause()
-            .and_then(|b| b.no_bound_vars())
-        else {
+    for clause in clauses {
+        let Some(bound) = clause.as_trait_clause().and_then(|b| b.no_bound_vars()) else {
             continue;
         };
         let self_ty = bound.self_ty();
