@@ -427,6 +427,38 @@ as a wrong answer is.
   crates.io one under `~/.cargo/registry/src/*/<name>-<version>`, a git
   one, as oxc is, under `~/.cargo/git/checkouts/<repo>-*/<rev>/`.
 
+### When the machine stalls
+
+Every stall below was seen on these Macs. Before you believe a timeout or a
+slow step, check `uptime`, `memory_pressure`, `df -h ~`, and
+`ps -Ao pid,ppid,%cpu,rss,etime,command -r | head`. Then compare the
+symptom with this table. When you hit a new kind of stall, add a row.
+
+| Symptom | Cause | What to do |
+|---|---|---|
+| A 5-minute command takes hours; `timeout` never fires; tests fail on their 10 s limits | The Mac slept. `timeout`'s clock stops in sleep too (`pmset -g log \| grep -E " (Sleep\|Wake\|DarkWake) "`) | Keep it awake with a detached `nohup caffeinate -dimsu & disown`, which outlives a session restart. Check `pgrep -fl caffeinate` after any restart. On a laptop, closing the lid sleeps anyway. |
+| New binaries start 300 ms late; corpus and native checks run 3–5× slow; `XprotectService` and `syspolicyd` are busy | macOS's scan is on for the app the commands run under, often after an update of that app | See [The Mac, with the scan off](#the-mac-with-the-scan-off): find the app just below `launchd`, add it, restart it, and time 20 first runs. |
+| Load 50–60 on 12 cores; every step 3–5× slower; timeouts and reruns | Too many agents on one machine (8 worktrees at once) | One agent per machine. |
+| Swap grows; builds slow; memory pressure warns | Several `target/` builds and test processes at once on 16 GB (about 1 GB per compiler build, 300–500 MB per test process) | The same, and size runs to the memory as well as the cores. |
+| A command can't start: `ENOSPC`; agents stop mid-commit | The disk filled: worktrees' `target/` (10–20 GB each, `target/mutants` above all), React's `node_modules/.cache` (15–30 GB), a `--changed=main` mutation run of 1,337 files | Keep 40 GB free. Delete `target/mutants` after each run, run `cargo clean` when a task ends, and remove finished worktrees. Use `--changed=origin/main`. |
+| A gate waits forever before it starts | A stopped run left its lock (the mutations lock) behind | Release locks on any exit with `trap`, and check for a stale lock before waiting on it. |
+| Load stays high with no agent working | Orphans: a finished or restarted session's `bun`, `node`, `rust-js` or `cargo` left running (`ppid` 1) | List them with `ps -Ao pid,ppid,etime,command \| awk '$2==1'`, check their worktree (`lsof -p <pid> -d cwd`), and kill only those of finished work. |
+| "main is red" after a rebase, and nobody else sees it | A build or regeneration ran while the rebase was stopped on a conflict | Wait until `git status` no longer says `rebasing`, then rebuild. |
+| Everything slows for minutes | A whole-disk search (`find /`) | Search only where Cargo keeps sources (see above). |
+| A session restart, and all its agents stop | The host app was restarted or updated; agents' background jobs die with it | Commit WIP often. After a restart, check each worktree, clear stale gate entries and locks, and resume each agent with its hand-off. |
+
+**Good practice:**
+- One agent per machine, with every heavy step at full width.
+- Independent steps at once: both corpus builds, the checks after a build, and probes with `xargs -P`.
+- Commit WIP before long runs.
+- `cargo clean` and worktree removal when a task ends.
+
+**Bad practice:**
+- Several agents sharing one machine.
+- Running a suite as one process when it has parts.
+- `--changed=main`, or a lock without a `trap`.
+- Building mid-rebase, or retrying a timed-out command with more time instead of finding out whether it hung.
+
 ### Landing a branch on a moving `main`
 
 Several agents land at once, so `main` often moves while a change is being
