@@ -260,4 +260,8 @@ pub enum Known {
     /// An enumeration made knowing its back and its length, `$enumerate(it)`
     /// (value.rs's `enumerated_knowing`, #764).
     IterEnumerate,
+    /// A field's cell, `$fieldCell(x, "f", true)`, that stores a `None`
+    /// `null`, as the field does (`NoneForm::Null`): what a handle on the
+    /// field made of it stores so, never read from its arguments (#819).
+    NullStored,
 }

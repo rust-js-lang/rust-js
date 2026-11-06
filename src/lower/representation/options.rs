@@ -2,7 +2,7 @@
 //! is boxed, as one of a value that may look like `None` is (ADR 0051,
 //! amended).
 
-pub(in crate::lower) use super::nones::{NoneForm, NonePlace, none_form};
+pub(in crate::lower) use super::nones::{NoneForm, NonePlace, Writers, none_form};
 
 use super::super::FnCx;
 use super::super::bindings;

@@ -34,10 +34,10 @@ pub(super) struct Call<'c, 'tcx> {
     /// nothing can ask whether its cell is borrowed: checked, not counted
     /// (ADR 0328, rd218).
     pub(super) momentary: bool,
-    /// Of a call that writes a thread-local's cell, whether the thread-local
-    /// is `#[rust_js::nullable]`, its `None` stored `null` (ADR 0586,
-    /// amended).
-    pub(super) null_for_none: bool,
+    /// Of a call that writes a thread-local's cell, how the thread-local
+    /// holds a `None`: of a `#[rust_js::nullable]` one, `null` (ADR 0586,
+    /// amended, `NoneForm`).
+    pub(super) none_form: super::representation::NoneForm,
     /// Of one, whether nothing reads it apart, `null` from `undefined`, so
     /// what's given is stored as it is, its `None` `null`
     /// (`NulledParams::reads_alike`, #665).
@@ -54,14 +54,14 @@ pub(super) struct Call<'c, 'tcx> {
 }
 
 /// What MIR says of a call's arguments that their values don't, as `Call`
-/// carries it: `nulled`, `quiet`, `momentary`, `null_for_none`,
+/// carries it: `nulled`, `quiet`, `momentary`, `none_form`,
 /// `read_alike` and `flattened`; and of what it gives, `unread`.
 #[derive(Clone, Copy, Default)]
 pub(super) struct Given<'c> {
     pub(super) nulled: &'c [bool],
     pub(super) quiet: bool,
     pub(super) momentary: bool,
-    pub(super) null_for_none: bool,
+    pub(super) none_form: super::representation::NoneForm,
     pub(super) read_alike: bool,
     pub(super) unread: bool,
     pub(super) flattened: [bool; 2],
@@ -80,7 +80,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             nulled,
             quiet,
             momentary,
-            null_for_none,
+            none_form,
             read_alike,
             unread,
             flattened,
@@ -92,7 +92,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             nulled,
             quiet,
             momentary,
-            null_for_none,
+            none_form,
             read_alike,
             unread,
             flattened,
@@ -398,13 +398,8 @@ pub(super) fn gives_null_for_none(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: rus
 /// which may give back as it is a nullable field's value that an object
 /// JS made holds `undefined` in.
 pub(super) fn none_given_by(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: rustc_span::def_id::DefId) -> Option<Known> {
-    if !super::bindings::is_binding(tcx, def_id) || tcx.trait_of_assoc(def_id).is_some() {
-        return None;
-    }
-    if super::bindings::nullable_result(tcx, def_id) {
-        return Some(Known::NoneNull);
-    }
-    super::bindings::optional_result(tcx, def_id).then_some(Known::NoneUndefined)
+    use super::representation::{NonePlace, Writers, none_form};
+    none_form(tcx, NonePlace::CallResult(def_id)).trust(Writers::Exact)
 }
 
 /// What an `and_then` of `f` gives, of `then`, `f`'s call: `then`, as

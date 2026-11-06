@@ -131,8 +131,9 @@ pub(super) struct QuietCells {
     /// (`unchecked_guards`, #700).
     checked: HashSet<Local>,
     /// Each call that writes a `#[rust_js::nullable]` thread-local's cell,
-    /// whose `None` is `null` (ADR 0586, amended).
-    pub(super) nullable: HashSet<BasicBlock>,
+    /// or reads it whole, and how the thread-local holds a `None`, `null`
+    /// (ADR 0586, amended; `NoneForm`, #819).
+    pub(super) nullable: HashMap<BasicBlock, crate::lower::representation::NoneForm>,
     /// Of those, each of one nothing reads apart, `null` from `undefined`
     /// (`NulledParams::reads_alike`, #665): what it's given is stored as it
     /// is, its `None` `null`.
@@ -141,7 +142,7 @@ pub(super) struct QuietCells {
     /// thread-local's cell, or what it holds, to what it runs, which may
     /// write it: what's written through the lend stores `null` for `None`
     /// too (#541).
-    pub(super) nullable_lent: HashSet<BasicBlock>,
+    pub(super) nullable_lent: HashMap<BasicBlock, crate::lower::representation::NoneForm>,
     /// Each `swap` of a `RefCell` that's a class's flattened state, its
     /// object's keys (ADR 1044): which of its two cells is one (#687).
     pub(super) flattened: HashMap<BasicBlock, [bool; 2]>,
@@ -658,6 +659,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> QuietCells {
         let tcx = self.tcx;
         let mut quiet = QuietCells::default();
+        // How a thread-local's place holds a `None`, of one that stores it
+        // `null` (#819).
+        let nulled =
+            |place| Some(crate::lower::representation::none_form(tcx, place)).filter(|form| form.stores_null());
         let momentary = self.momentary_borrows();
         // Each local assigned once, and what it's assigned.
         let mut assigned: HashMap<Local, Option<&Rvalue<'tcx>>> = HashMap::new();
@@ -721,23 +726,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // amended, the user's decision, 2026-10-27).
             if let Some(Std::LocalBorrow { mutable: false }) = self.recognition().classify(def_id, generic_args)
                 && let Some(key) = local_key(&first.node)
-                && crate::lower::bindings::nullable_local(tcx, key)
+                && let Some(form) = nulled(crate::lower::representation::NonePlace::Local(key))
                 && let Some(f) = args.get(1)
                 && let Some((f, _)) = fn_def(f.node.ty(body, tcx))
                 && tcx
                     .trait_of_assoc(f)
                     .is_some_and(|t| tcx.is_lang_item(t, LangItem::Clone))
             {
-                quiet.nullable.insert(block);
+                quiet.nullable.insert(block, form);
             }
             // A nullable one lent, `KEY.with(f)` or `KEY.with_borrow_mut(f)`
             // (#541).
             if let Some(Std::LocalWith | Std::LocalBorrow { mutable: true }) =
                 self.recognition().classify(def_id, generic_args)
                 && let Some(key) = local_key(&first.node)
-                && crate::lower::bindings::nullable_local_cell(tcx, key)
+                && let Some(form) = nulled(crate::lower::representation::NonePlace::LocalCell(key))
             {
-                quiet.nullable_lent.insert(block);
+                quiet.nullable_lent.insert(block, form);
             }
             // A flattened state swapped, either cell (#687).
             if let Some(Std::CellSwap) = self.recognition().classify(def_id, generic_args)
@@ -779,16 +784,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A nullable one's read, `null` or a value (ADR 0949).
                 Some(Std::CellGet)
                     if let Some(key) = local_key(&first.node)
-                        && crate::lower::bindings::nullable_local(tcx, key) =>
+                        && let Some(form) = nulled(crate::lower::representation::NonePlace::Local(key)) =>
                 {
-                    quiet.nullable.insert(block);
+                    quiet.nullable.insert(block, form);
                 }
                 Some(Std::CellSet | Std::CellReplace | Std::CellTake) if let Some(key) = local_key(&first.node) => {
                     if key.as_local().is_some_and(|key| self.krate.quiet_locals.contains(&key)) {
                         quiet.calls.insert(block);
                     }
-                    if crate::lower::bindings::nullable_local(tcx, key) {
-                        quiet.nullable.insert(block);
+                    if let Some(form) = nulled(crate::lower::representation::NonePlace::Local(key)) {
+                        quiet.nullable.insert(block, form);
                         if self.krate.nulled_params.reads_alike(key) {
                             quiet.alike.insert(block);
                         }

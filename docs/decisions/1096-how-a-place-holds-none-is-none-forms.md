@@ -1,13 +1,14 @@
 # 1096. How a place holds `None` is `NoneForm`'s
 
-Status: Accepted (2026-11-06, step 1 of 3, #819). ADR 1085's structural
+Status: Accepted (2026-11-06, steps 1 and 2 of 3, #819). ADR 1085's structural
 change 6, on [1086](1086-a-mut-refs-js-form-is-mut-ref-forms.md)'s model.
 Amends [0791](0791-a-cells-storage-says-what-it-stores.md):
 which places store `NullForNone` is one owner's answer.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none. This changes who
 answers, not what's answered: every corpus snapshot is byte-identical, in
-both builds, and so is every other test's JS.
+both builds, and so is every other test's JS, after each step. Step 2
+found no reader that disagreed with its writers: no snapshot changed.
 
 ## Context
 
@@ -48,13 +49,43 @@ MIR's places ask it through one adapter, `nulled.rs`'s `place_none_form`,
 of the field a place is or holds an item of, or of the function's own
 parameter (`own_param_none_form`).
 
+### Step 2: what a reader trusts
+
+What a reader may trust of a place's `None`, `Known::NoneNull` (tested
+`=== null`) or `Known::NoneUndefined` (`=== undefined`), is the owner's
+too: `NoneForm::trust(writers)`, of the place's form and who writes it,
+`Writers`:
+
+| writers | of |
+|---|---|
+| `Crate` | the crate's own writes, each by the form's `storage()` |
+| `Exact` | each value exactly of the form: a literal `None`, a value `null` or a value already, JS's held to a binding's declared type |
+| `Loose` | JS's too, which may leave a field out of a struct it makes (ADR 1072) |
+
+A `Null` place's `None` is trusted `null` but of `Loose` writers; an
+`Undefined` one's `undefined` only of `Exact` ones, as a plain write
+stores what it's given; an `Optional`, a held (`Nested`, `Value`) and an
+`Either` one's nothing. `Either` is the form added for it: a binding's
+result it declares neither way, which JS gives `undefined` or `null`
+(`regexp.exec(text)`), of `NonePlace::CallResult`, whose `#[rust_js::nullable]`
+one's is `Null` and `#[rust_js::optional]` one's `Undefined` (ADR 0298,
+amended). Each fact a reader set itself now comes from it: a binding's
+call's (`calls.rs`'s `none_given_by`), a field's read
+(`field_none_trust`, which replaces `bindings::null_or_value`) and a read
+through a reference to one (`read_none_trust`), a literal `None` and a
+function's own nulled parameter (`patterns.rs`), and a nulled value
+written through a reference (`assign.rs`).
+
+Two writers' bools became the owner's forms: a call of a thread-local's
+cell carries its `NoneForm` (`Given::none_form`, of `QuietCells`'
+`nullable` and `nullable_lent`, each now of the form of
+`NonePlace::Local` or `NonePlace::LocalCell`), not `null_for_none`; and a
+field's kept cell, `$fieldCell(x, "f", true)`, carries that it stores
+`null` as a fact where it's made, `Known::NullStored`, which the
+uncounted cell made of it reads, not its JS arguments.
+
 ## Next
 
-- Step 2: what a reader may trust, `Known::NoneNull` and
-  `Known::NoneUndefined`, made by the owner too, of the place and who may
-  write it (`NoneForm::trust`), where today's disagreements live; each
-  snapshot that changes there is a latent wrong answer, checked against
-  native Rust and listed on #819.
 - Step 3: an architecture test that makes `Storage::NullForNone` and those
   facts the owner's alone, as ADR 1086's does of `MutRefForm`.
 - The JS-boundary test of what each `.d.ts` permits is #822.
@@ -63,4 +94,8 @@ parameter (`own_param_none_form`).
 
 Byte-identical: the corpus in both builds (`RUST_JS_LIBRARIES=all`), and
 every other test file. Mutations: `nones.ts`'s six, one of each arm, and
-the 31 of the writers retargeted to the owner's form, each caught.
+the 31 of the writers retargeted to the owner's form, each caught. Step
+2: six more of `nones.ts`, of `trust`'s arms and each call result's form,
+and the 15 of the readers and the thread-local cells retargeted, each
+caught; `lowering-option-truth`'s test of a binding's undeclared result,
+`pattern.exec(text) != null`, which JS gives `null`.

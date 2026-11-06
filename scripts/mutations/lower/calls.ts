@@ -210,15 +210,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "none-given-by-the-crates-nullable-function",
-    breaks:
-      "the crate's `#[rust_js::nullable]` function, which gives a nullable field of an object JS made as it is, `undefined` too, is taken to give only `null`, so `childOf(holder) !== null` holds of `{}` (a wrong answer, ADR 0298, amended)",
-    file: "src/lower/calls.rs",
-    find: "    if !super::bindings::is_binding(tcx, def_id) || tcx.trait_of_assoc(def_id).is_some() {\n",
-    replace: "    if tcx.trait_of_assoc(def_id).is_some() {\n",
-    tests: ["test/lowering-option-truth.test.ts", "-t", "None it can be"],
-  },
-  {
     name: "and-then-of-a-binding-nulled",
     breaks:
       "`and_then` of a closure of a nullable binding's call, `labels.item(0)`, writes `null` where what it's of is `None`, `option != null ? option.item(0) : null`, not JS's `input.labels?.item(0)` (ADR 0298, amended)",

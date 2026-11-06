@@ -31,8 +31,8 @@ export const mutations: Mutation[] = [
     breaks:
       "no call is a nullable thread-local's whole read, so what it gives may be `undefined`, `return searchTarget ?? null` (ADRs 0861, 0949)",
     file: "src/lower/mir/nulled.rs",
-    find: "        state.facts.quiet_cells().nullable.contains(&block)\n",
-    replace: "        false && state.facts.quiet_cells().nullable.contains(&block)\n",
+    find: "        state.facts.quiet_cells().nullable.contains_key(&block)\n",
+    replace: "        false && state.facts.quiet_cells().nullable.contains_key(&block)\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable parameter, a nullable thread-local"],
   },
   {
@@ -492,5 +492,23 @@ export const mutations: Mutation[] = [
     find: "                if !(self.krate.nulled_params).is_nulled(state.body.source.def_id(), param) =>\n",
     replace: "                if false && !(self.krate.nulled_params).is_nulled(state.body.source.def_id(), param) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_param_stored.rs$"],
+  },
+  {
+    name: "strict-class-field-unset",
+    breaks:
+      "a class's nullable field its constructors don't each set first is tested `=== null`, though it's absent until set (rd647)",
+    file: "src/lower/mir/nulled.rs",
+    find: "        let writers = match self.krate.constructed.contains(&field.did)\n",
+    replace: "        let writers = match true\n",
+    tests: ["test/js-constructors.test.ts", "-t", "each constructor sets first"],
+  },
+  {
+    name: "strict-field-of-a-js-given-struct",
+    breaks:
+      "a nullable field of a struct only JS gives is tested `=== null`, so a `{}` JS gives reads `undefined` as a `Some` (rd647)",
+    file: "src/lower/mir/nulled.rs",
+    find: "            || self.krate.cell_borrows.pointers().only_the_crate_makes(adt.did())\n        {\n            true => Writers::Crate,\n",
+    replace: "            || true\n        {\n            true => Writers::Crate,\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
   },
 ];

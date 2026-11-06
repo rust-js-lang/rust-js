@@ -61,9 +61,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a thread-local that's its module's variable is set as a cell, `$borrowMut(current)` (ADR 0270, amended)",
     file: "src/lower/mir/local_facts.rs",
-    find: "                        quiet.calls.insert(block);\n                    }\n                    if crate::lower::bindings::nullable_local(tcx, key) {\n",
-    replace:
-      "                    }\n                    if crate::lower::bindings::nullable_local(tcx, key) {\n",
+    find: "                        quiet.calls.insert(block);\n                    }\n                    if let Some(form) = nulled(crate::lower::representation::NonePlace::Local(key)) {\n",
+    replace: "                    }\n                    if let Some(form) = nulled(crate::lower::representation::NonePlace::Local(key)) {\n",
     tests: [
       "test/lowering-field-cells.test.ts",
       "-t",
@@ -88,7 +87,7 @@ export const mutations: Mutation[] = [
     breaks:
       "no call that writes a nullable thread-local is found, so what may be `undefined` is stored as it is, `NEXT = fiber.stateNode`, where Rust's `None` is `null` (ADR 0586, amended)",
     file: "src/lower/mir/local_facts.rs",
-    find: "                        quiet.nullable.insert(block);\n",
+    find: "                        quiet.nullable.insert(block, form);\n",
     replace: "",
     tests: [
       "test/lowering-nullable-reads.test.ts",
@@ -110,9 +109,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable thread-local's `with_borrow(Clone::clone)` may be `undefined`, so popSearchTarget returns `searchTarget ?? null`",
     file: "src/lower/mir/local_facts.rs",
-    find: "                    .is_some_and(|t| tcx.is_lang_item(t, LangItem::Clone))\n            {\n                quiet.nullable.insert(block);\n",
-    replace:
-      "                    .is_some_and(|t| tcx.is_lang_item(t, LangItem::Clone))\n            {\n",
+    find: "                    .is_some_and(|t| tcx.is_lang_item(t, LangItem::Clone))\n            {\n                quiet.nullable.insert(block, form);\n",
+    replace: "                    .is_some_and(|t| tcx.is_lang_item(t, LangItem::Clone))\n            {\n",
     tests: [
       "test/lowering-nullable-reads.test.ts",
       "-t",
@@ -250,7 +248,7 @@ export const mutations: Mutation[] = [
     breaks:
       "no `with` or `with_borrow_mut` lends a nullable thread-local, so what's written through the lend of its module's variable is stored as it is, `current = noneOf(1)` (#541)",
     file: "src/lower/mir/local_facts.rs",
-    find: "                quiet.nullable_lent.insert(block);\n",
+    find: "                quiet.nullable_lent.insert(block, form);\n",
     replace: "",
     tests: ["test/lowering-nullable-borrows.test.ts", "-t", "written through a borrow"],
   },

@@ -92,7 +92,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if nullable {
             given.push(Expr::bool(true));
         }
-        Some(Expr::call_helper("$fieldCell", given))
+        let cell = Expr::call_helper("$fieldCell", given);
+        Some(match nullable {
+            true => Expr {
+                facts: cell.facts.with(js::Known::NullStored),
+                ..cell
+            },
+            false => cell,
+        })
     }
 
     /// Of `cell`, a struct's field's one cell (`kept_cell`), `$fieldCell(x,
@@ -102,12 +109,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn uncounted(&self, cell: Expr) -> Expr {
         if let js::ExprKind::Call(callee, given) = &cell.kind
             && callee.helper_name() == Some("$fieldCell")
-            && let [holder, key, rest @ ..] = given.as_slice()
+            && let [holder, key, ..] = given.as_slice()
             && let js::ExprKind::Str(key) = &key.kind
         {
-            let storage = match rest.is_empty() {
-                true => super::NoneForm::Undefined.storage(),
-                false => super::NoneForm::Null.storage(),
+            let storage = match cell.facts.has(js::Known::NullStored) {
+                true => super::NoneForm::Null.storage(),
+                false => super::NoneForm::Undefined.storage(),
             };
             return Expr::stored_handle(Expr::member(holder.clone(), key.clone()), storage);
         }

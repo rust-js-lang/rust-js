@@ -307,22 +307,4 @@ export const mutations: Mutation[] = [
     replace: "    null_where_made(tcx, field) && true\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
   },
-  {
-    name: "strict-class-field-unset",
-    breaks:
-      "a class's nullable field its constructors don't each set first is tested `=== null`, though it's absent until set (rd647)",
-    file: "src/lower/bindings/nullable.rs",
-    find: "    declared_null_or_value(tcx, field) && (constructed || only_the_crate_makes)\n",
-    replace: "    declared_null_or_value(tcx, field) && (true || only_the_crate_makes)\n",
-    tests: ["test/js-constructors.test.ts", "-t", "each constructor sets first"],
-  },
-  {
-    name: "strict-field-of-a-js-given-struct",
-    breaks:
-      "a nullable field of a struct only JS gives is tested `=== null`, so a `{}` JS gives reads `undefined` as a `Some` (rd647)",
-    file: "src/lower/bindings/nullable.rs",
-    find: "    declared_null_or_value(tcx, field) && (constructed || only_the_crate_makes)\n",
-    replace: "    declared_null_or_value(tcx, field) && (constructed || true)\n",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
-  },
 ];

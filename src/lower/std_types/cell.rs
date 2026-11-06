@@ -50,8 +50,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `current = noneOf(n) ?? null` (#541); of another, the cell itself,
     /// which stores so of itself (`plain_statics`). Of any other, `key`.
     fn nullable_lent(&self, key: Expr, call: &Call<'_, 'tcx>) -> Expr {
-        match call.null_for_none && call.quiet {
-            true => Expr::stored_handle(Expr::held(key), NoneForm::Null.storage()),
+        match call.none_form.stores_null() && call.quiet {
+            true => Expr::stored_handle(Expr::held(key), call.none_form.storage()),
             false => key,
         }
     }
@@ -137,15 +137,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // variable holding the handle, which tidy writes as its storage
         // stores (ADR 0791), what MIR says so is marked so (ADR 0841).
         let given_nulled = call.nulled.get(1) == Some(&true);
-        let null_for_none = call.null_for_none;
+        let none_form = call.none_form;
+        let null_for_none = none_form.stores_null();
         // A nullable thread-local's nothing reads apart, what's given as it
         // is, its `None` `null` (#665).
         let written = |cell: &Expr, value: Expr| match cell.kind {
             js::ExprKind::Handle(_, storage) if call.read_alike => storage.written_alike(value),
             js::ExprKind::Handle(_, storage) => storage.written(value, given_nulled),
-            _ if null_for_none && call.read_alike => NoneForm::Null.storage().written_alike(value),
+            _ if null_for_none && call.read_alike => none_form.storage().written_alike(value),
             // A nullable thread-local's, its `None` `null` (ADR 0586, amended).
-            _ if null_for_none => NoneForm::Null.storage().written(value, given_nulled),
+            _ if null_for_none => none_form.storage().written(value, given_nulled),
             // A JS-made struct's field read among them, a getter's that may
             // be `undefined` elsewhere, MIR says it isn't here (rd628).
             _ if given_nulled && !matches!(value.kind, js::ExprKind::Undefined) => Expr {

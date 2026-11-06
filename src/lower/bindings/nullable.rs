@@ -141,21 +141,6 @@ pub(in crate::lower) fn declared_null_or_value(tcx: TyCtxt<'_>, field: &FieldDef
     null_where_made(tcx, field) && nullable_option(tcx, declared).is_some()
 }
 
-/// Whether `field` is `null` or a value wherever it's read, never
-/// `undefined`, so it's tested `=== null` (rd647, #519, ADR 1072): one
-/// declared so (`declared_null_or_value`) of a struct only the crate makes
-/// (`only_the_crate_makes`), or that each constructor of it sets first
-/// (`constructed`, rd628). Where JS may make its struct, it's tested
-/// `== null`, so JS that leaves it out still reads `None`.
-pub(in crate::lower) fn null_or_value(
-    tcx: TyCtxt<'_>,
-    field: &FieldDef,
-    constructed: bool,
-    only_the_crate_makes: bool,
-) -> bool {
-    declared_null_or_value(tcx, field) && (constructed || only_the_crate_makes)
-}
-
 /// Whether a field's `None` is `null` from where it's made on, so its read is `null` or a value: a
 /// nullable one's, not an optional one's, which a literal's `None` leaves out (ADR 0810, amended).
 pub(in crate::lower) fn null_where_made(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {

@@ -359,12 +359,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // says so, so it's tested `=== null` (rd647).
             (ty::Tuple(_) | ty::Adt(..), _) => {
                 let read = self.project(base, ty.ty, i);
-                Ok(match self.null_or_value_field(ty.ty, i) {
-                    true => Expr {
-                        facts: read.facts.with(js::Known::NoneNull),
+                Ok(match self.field_none_trust(ty.ty, i) {
+                    Some(none) => Expr {
+                        facts: read.facts.with(none),
                         ..read
                     },
-                    false => read,
+                    None => read,
                 })
             }
             _ => Err(self.unsupported(span, "this field, from its MIR")),

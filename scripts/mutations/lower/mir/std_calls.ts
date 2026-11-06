@@ -840,8 +840,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable thread-local's lend isn't said to store `null` for `None`, so its module's variable written through it is stored as it is (#541)",
     file: "src/lower/mir/std_calls.rs",
-    find: "cells.nullable.contains(&state.at) || cells.nullable_lent.contains(&state.at),",
-    replace: "cells.nullable.contains(&state.at),",
+    find: "                .or(cells.nullable_lent.get(&state.at))\n",
+    replace: "",
     tests: ["test/lowering-nullable-borrows.test.ts", "-t", "written through a borrow"],
   },
   {

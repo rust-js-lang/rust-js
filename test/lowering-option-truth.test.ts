@@ -499,7 +499,8 @@ pub fn text_there(v: Option<&'static js::Unknown>) -> bool {
 // React's resolveUpdatePriority writes `if (currentEvent === undefined)`;
 // one it types `T | null`, `node.textContent`, `#[rust_js::nullable]`,
 // `!== null`, and a nullable function gives it as it is (rd66); one that
-// may be either, made of both or given, `!= null`.
+// may be either, made of both or given, or a binding's it declares neither
+// way, `regexp.exec(text)`'s, which JS gives `null`, `!= null` (#819).
 test("an Option's test says the None it can be", async () => {
   const dir = fixture("none-kinds");
   writeFileSync(join(dir, "lib.rs"), `use webapi::{Node, Window};
@@ -557,6 +558,10 @@ fn child_of(holder: &Holder) -> Option<u32> {
 pub fn has_child(holder: &Holder) -> bool {
     child_of(holder).is_some()
 }
+
+pub fn matched(pattern: &js::RegExp, text: &str) -> bool {
+    pattern.exec(text).is_some()
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs("webapi", "js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -568,6 +573,7 @@ pub fn has_child(holder: &Holder) -> bool {
   expect(js).toContain("  return copy == null;\n");
   expect(js).toContain("  return count != null;\n");
   expect(js).toContain("  return childOf(holder) != null;\n");
+  expect(js).toContain("  return pattern.exec(text) != null;\n");
   const lib = await import(join(dir, "lib.js"));
   const event = { type: "click" };
   expect([lib.priority({ event: undefined }), lib.priority({ event }), lib.textLen({ textContent: null }), lib.textLen({ textContent: "ab" })]).toEqual([32, 5, 0, 2]);
@@ -578,4 +584,5 @@ pub fn has_child(holder: &Holder) -> bool {
   // A nullable field of an object JS made may be left out, `undefined`:
   // the crate's nullable function gives it as it is, so either.
   expect([lib.hasChild({}), lib.hasChild({ child: null }), lib.hasChild({ child: 0 })]).toEqual([false, false, true]);
+  expect([lib.matched(/a/, "b"), lib.matched(/a/, "a")]).toEqual([false, true]);
 });

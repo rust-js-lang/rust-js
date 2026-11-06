@@ -292,8 +292,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && matches!(rvalue, Rvalue::Use(operand, _) if self.stored_given(state, operand) == Given::Nulled) =>
             {
                 let value = self.value_expr(value, span)?;
+                let none =
+                    crate::lower::representation::NoneForm::Null.trust(crate::lower::representation::Writers::Exact);
                 Value::Expr(Expr {
-                    facts: value.facts.with(js::Known::NoneNull),
+                    facts: none.map_or(value.facts, |none| value.facts.with(none)),
                     ..value
                 })
             }

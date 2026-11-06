@@ -17,35 +17,52 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.stored_given(state, operand) == Given::Nulled
     }
 
-    /// Whether field `i` of `ty`, a struct, is `null` or a value wherever
-    /// it's read, its `None` never `undefined`, so it's tested `=== null`
-    /// (`bindings::null_or_value`, rd647, #519).
-    pub(super) fn null_or_value_field(&self, ty: Ty<'tcx>, i: usize) -> bool {
-        let ty::Adt(adt, _) = ty.kind() else { return false };
-        let Some(field) = self.struct_field_def(ty, i) else {
-            return false;
+    /// What a read of field `i` of `ty`, a struct, may trust its `None`
+    /// is, the owner's answer (`NoneForm::trust`, #819): of a nullable
+    /// field declared an `Option` or a cell of one, `Known::NoneNull`,
+    /// tested `=== null`, where the crate alone writes it, of a struct only
+    /// it makes (`only_the_crate_makes`), or that each constructor of it
+    /// sets first (`constructed`, rd628); JS that makes its struct may
+    /// leave it out, so it's tested `== null` (rd647, #519, ADR 1072).
+    pub(super) fn field_none_trust(&self, ty: Ty<'tcx>, i: usize) -> Option<js::Known> {
+        use crate::lower::representation::{NonePlace, Writers, none_form};
+        let ty::Adt(adt, _) = ty.kind() else { return None };
+        let field = self.struct_field_def(ty, i)?;
+        let declared = self.tcx.type_of(field.did).instantiate_identity().skip_normalization();
+        let writers = match self.krate.constructed.contains(&field.did)
+            || self.krate.cell_borrows.pointers().only_the_crate_makes(adt.did())
+        {
+            true => Writers::Crate,
+            false => Writers::Loose,
         };
-        let constructed = self.krate.constructed.contains(&field.did);
-        let only_the_crate_makes = self.krate.cell_borrows.pointers().only_the_crate_makes(adt.did());
-        bindings::null_or_value(self.tcx, field, constructed, only_the_crate_makes)
+        none_form(self.tcx, NonePlace::Field(field, Some(declared))).trust(writers)
     }
 
-    /// Whether `place`, read in `body`, is such a field
-    /// (`null_or_value_field`) or reads one: through a shared reference
-    /// made once, a copy of one, or a `RefCell` field's guard, which is the
+    /// What `place`, read in `body`, may trust its `None` is, of a field
+    /// it is (`field_none_trust`) or reads: through a shared reference made
+    /// once, a copy of one, or a `RefCell` field's guard, which is the
     /// field's value, `state.clones.borrow()`, or a `Deref` of it (ADR 0863,
-    /// rd647). The `Option` a `let` holds of it then says its `None` is
-    /// `null` (`mir_nones`).
-    pub(super) fn reads_null_or_value(&self, body: &mir::Body<'tcx>, place: Place<'tcx>, depth: usize) -> bool {
+    /// rd647). The `Option` a `let` holds of it then says so
+    /// (`mir_nones`).
+    pub(super) fn read_none_trust(
+        &self,
+        body: &mir::Body<'tcx>,
+        place: Place<'tcx>,
+        depth: usize,
+    ) -> Option<js::Known> {
         if depth > 8 {
-            return false;
+            return None;
         }
         if let Some((base, PlaceElem::Field(field, _))) = place.as_ref().last_projection() {
             let base = base.ty(body, self.tcx);
-            return base.variant_index.is_none() && self.null_or_value_field(base.ty, field.as_usize());
+            return base
+                .variant_index
+                .is_none()
+                .then(|| self.field_none_trust(base.ty, field.as_usize()))
+                .flatten();
         }
         if !matches!(place.projection.as_slice(), [] | [PlaceElem::Deref]) {
-            return false;
+            return None;
         }
         let local = place.local;
         let mut writes = (body.basic_blocks.iter()).flat_map(|data| {
@@ -65,15 +82,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             statements.chain(call)
         });
         let (Some(write), None) = (writes.next(), writes.next()) else {
-            return false;
+            return None;
         };
         match write {
             // `&place`, read through, and a copy of a reference.
             Ok(Rvalue::Ref(_, BorrowKind::Shared, of)) if !place.projection.is_empty() => {
-                self.reads_null_or_value(body, *of, depth + 1)
+                self.read_none_trust(body, *of, depth + 1)
             }
             Ok(Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _)) if of.projection.is_empty() => self
-                .reads_null_or_value(
+                .read_none_trust(
                     body,
                     Place::from(of.local).project_deeper(place.projection, self.tcx),
                     depth + 1,
@@ -82,7 +99,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `RefCell` it's given holds.
             Err((func, args)) => {
                 let (Some((def_id, generic_args)), [arg]) = (func.const_fn_def(), &args[..]) else {
-                    return false;
+                    return None;
                 };
                 let deref = (self.tcx.trait_of_assoc(def_id))
                     .is_some_and(|t| self.tcx.is_lang_item(t, LangItem::Deref))
@@ -95,18 +112,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }) => place.projection.is_empty(),
                     _ => deref && !place.projection.is_empty(),
                 };
-                let given = arg.node.place().filter(|given| given.projection.is_empty());
-                through
-                    && given.is_some_and(|given| {
-                        self.reads_null_or_value(body, given.project_deeper(&[PlaceElem::Deref], self.tcx), depth + 1)
-                    })
+                let given = arg
+                    .node
+                    .place()
+                    .filter(|given| through && given.projection.is_empty())?;
+                self.read_none_trust(body, given.project_deeper(&[PlaceElem::Deref], self.tcx), depth + 1)
             }
-            _ => false,
+            _ => None,
         }
     }
 
     /// `is_some()` or `is_none()` of a field that's `null` or a value, read
-    /// through a reference (`reads_null_or_value`), `state.clones.borrow()
+    /// through a reference (`read_none_trust`), `state.clones.borrow()
     /// .is_none()`: `=== null` (rd647). `None` of any other call.
     pub(super) fn null_or_value_tested(
         &mut self,
@@ -123,13 +140,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let [given] = operands else { return Ok(None) };
         let Some(place) = given.place() else { return Ok(None) };
-        if !self.reads_null_or_value(state.body, place.project_deeper(&[PlaceElem::Deref], self.tcx), 0) {
+        let Some(none) = self.read_none_trust(state.body, place.project_deeper(&[PlaceElem::Deref], self.tcx), 0)
+        else {
             return Ok(None);
-        }
+        };
         let value = (self.take_operands(state, operands, out)?.into_iter().next()).expect("one operand");
         let value = self.value_expr(value, span)?;
         let value = Expr {
-            facts: value.facts.with(js::Known::NoneNull),
+            facts: value.facts.with(none),
             ..value
         };
         Ok(Some(Expr::presence(value, some)))
@@ -137,7 +155,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Of a call of `func` with `args`, an `as_ref()` or `as_deref()`, or a `Cell`'s `get()`, of a
     /// shared reference to a field that's `null` or a value
-    /// (`reads_null_or_value`): its `None`'s, `null` (rd647).
+    /// (`read_none_trust`): what its `None` may be trusted to be (rd647).
     pub(super) fn as_ref_of_null_or_value(
         &self,
         body: &mir::Body<'tcx>,
@@ -148,13 +166,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let [arg] = args else { return None };
         let given = arg.node.place()?;
         let shared = matches!(given.ty(body, self.tcx).ty.kind(), ty::Ref(_, _, ty::Mutability::Not));
-        (shared
+        let read = shared
             && matches!(
                 self.recognition().classify(def_id, generic_args),
                 Some(Std::Pointee | Std::CellGet)
-            )
-            && self.reads_null_or_value(body, given.project_deeper(&[PlaceElem::Deref], self.tcx), 0))
-        .then_some(js::Known::NoneNull)
+            );
+        read.then(|| self.read_none_trust(body, given.project_deeper(&[PlaceElem::Deref], self.tcx), 0))
+            .flatten()
     }
 
     /// How `place` holds a `None`, however it's written: a
@@ -472,7 +490,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// wherever it goes, never `Known::Present`, as it may be `None`
     /// (#539).
     pub(super) fn reads_nullable_local(&self, state: &State<'_, 'tcx>, block: BasicBlock, local: Local) -> bool {
-        state.facts.quiet_cells().nullable.contains(&block)
+        state.facts.quiet_cells().nullable.contains_key(&block)
             && self.option_of(state.body.local_decls[local].ty).is_some()
     }
 

@@ -515,7 +515,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a function's own nullable parameter each call gives `null` or a value is tested `!= null`, not upstream's `!== null` (rd613)",
     file: "src/lower/mir/patterns.rs",
-    find: "            held.insert(param, Ok(Some(js::Known::NoneNull)));\n",
+    find: "            held.insert(param, Ok(NoneForm::Null.trust(Writers::Exact)));\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "each call gives null or a value"],
   },

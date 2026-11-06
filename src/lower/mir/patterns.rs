@@ -4,6 +4,7 @@
 mod let_names;
 
 use super::*;
+use crate::lower::representation::{NoneForm, Writers};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The locals that patterns bind in an enum's variant, by THIR's
@@ -564,15 +565,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if let AggregateKind::Adt(did, variant, ..) = **kind
                         && tcx.is_lang_item(did, LangItem::Option) =>
                 {
-                    Write::Made((variant.as_u32() == 0).then_some(js::Known::NoneUndefined))
+                    // A literal `None`, made `undefined` (`NoneForm::trust`).
+                    Write::Made(
+                        (variant.as_u32() == 0)
+                            .then(|| NoneForm::Undefined.trust(Writers::Exact))
+                            .flatten(),
+                    )
                 }
                 Rvalue::Use(Operand::Copy(read) | Operand::Move(read), _) if read.projection.is_empty() => {
                     Write::Of(read.local)
                 }
                 Rvalue::Use(Operand::Copy(read) | Operand::Move(read), _)
-                    if self.reads_null_or_value(body, *read, 0) =>
+                    if let Some(none) = self.read_none_trust(body, *read, 0) =>
                 {
-                    Write::Made(Some(js::Known::NoneNull))
+                    Write::Made(Some(none))
                 }
                 Rvalue::Ref(_, BorrowKind::Shared, of)
                     if matches!(of.projection.as_slice(), [] | [mir::ProjectionElem::Deref]) =>
@@ -644,7 +650,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         for &param in &fixed {
-            held.insert(param, Ok(Some(js::Known::NoneNull)));
+            held.insert(param, Ok(NoneForm::Null.trust(Writers::Exact)));
         }
         loop {
             let mut changed = false;

@@ -67,7 +67,7 @@ pub(crate) fn refuse_counted_instances<'tcx>(tcx: TyCtxt<'tcx>, counts: impl Fn(
 /// makes, its `.d.ts`, which says so. A field one of a struct's
 /// constructors doesn't set first isn't one. One that's also
 /// `#[rust_js::optional]`, absent until it's set (ADR 0810), is its
-/// readers' to leave out: `bindings::null_or_value`'s `null_where_made`,
+/// readers' to leave out: `NoneForm::trust` of its form, `Optional`,
 /// and a `Cell` field's `get()`, which asks `is_optional` first.
 pub(crate) fn set_where_constructed<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> HashSet<DefId> {
     let of_id: HashMap<DefId, &Body<'tcx>> = bodies.iter().map(|body| (body.def_id, *body)).collect();
