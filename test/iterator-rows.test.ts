@@ -5,7 +5,7 @@
 
 import { expect, test } from "bun:test";
 
-import { enclosingArm, named, pattern, type Hunk } from "../scripts/iteratorRows";
+import { budgetOf, enclosingArm, named, pattern, rowsPerPart, type Hunk } from "../scripts/iteratorRows";
 
 const adapters = new Set(["map", "filter", "skip", "take", "fuse", "enumerate", "chain", "rev", "step_by", "zip", "take_while", "copied", "cloned"]);
 const consumers = new Set(["fold", "rfold", "any", "all", "count", "nth", "for", "nth_back"]);
@@ -91,5 +91,15 @@ test("a helper's hunk names no consumer by its variables or comments", () => {
   expect(named(capacity, adapters, consumers)).toMatchObject({ adapters: [], consumers: [] });
   const counted = hunk(["  const count = $count(it, drop);", "  for (let k = 0; k < count; k++) at = $stepOf(it);"]);
   expect(named(counted, adapters, consumers).consumers).toEqual([]);
+});
+
+// The rows a change runs fit its time on whatever machine runs them: as
+// many as its parts run in it, at the machine's own rate (#857: the M1's 8
+// cores ran 12 cores' 16,000 and 5,000 in 4 parts in 43 to 55 min).
+test("a change's rows are as many as its parts run in its time", () => {
+  for (const table of ["matrix", "conformance"] as const) {
+    expect(budgetOf(table, 12)).toBeGreaterThan(budgetOf(table, 4));
+    expect(budgetOf(table, 4)).toBe(Math.max(1_000, Math.floor(rowsPerPart(table) * 4 * (table === "matrix" ? 150 : 40))));
+  }
 });
 

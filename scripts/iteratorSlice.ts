@@ -13,7 +13,7 @@
 //   bun scripts/iteratorSlice.ts run rows [parts]          the rows of both tables the change names (scripts/iteratorRows.ts, #818)
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
-import { pick } from "./iteratorRows";
+import { noteRate, pick } from "./iteratorRows";
 import { caseParts } from "./shard";
 
 const root = join(import.meta.dir, "..");
@@ -73,7 +73,8 @@ export const runs = {
  * passed, and how long it took. */
 export async function run(of: keyof typeof runs | "rows", parts: number): Promise<boolean> {
   let passed = true;
-  for (const { name, file, env } of of === "rows" ? changeRows() : runs[of]) {
+  const each: Run[] = of === "rows" ? changeRows(parts) : [...runs[of]];
+  for (const { name, file, env, rate } of each) {
     const start = Date.now();
     const parted = Array.from({ length: parts }, async (_, i) => {
       const p = Bun.spawn(["bun", "test", "--timeout=600000", file], {
@@ -88,7 +89,11 @@ export async function run(of: keyof typeof runs | "rows", parts: number): Promis
       return code === 0;
     });
     const ok = (await Promise.all(parted)).every(Boolean);
-    console.log(`${name} ${ok ? "passed" : "failed"} in ${((Date.now() - start) / 1000).toFixed(0)} s`);
+    const seconds = (Date.now() - start) / 1000;
+    console.log(`${name} ${ok ? "passed" : "failed"} in ${seconds.toFixed(0)} s`);
+    // How fast this machine ran it, which sizes the next change's rows to
+    // its time (scripts/iteratorRows.ts's `budgetOf`).
+    if (rate !== undefined && rate.rows > 0) noteRate({ ...rate, seconds, parts });
     passed &&= ok;
   }
   return passed;
@@ -97,15 +102,22 @@ export async function run(of: keyof typeof runs | "rows", parts: number): Promis
 /** The runs of the rows the change names, the working tree's since it left
  * `main` (scripts/iteratorRows.ts): each table's, said with why they're
  * picked, hunk by hunk. */
-function changeRows(): { name: string; file: string; env: Record<string, string> }[] {
+type Run = { name: string; file: string; env: Record<string, string>; rate?: { table: "matrix" | "conformance"; rows: number } };
+
+function changeRows(parts: number): Run[] {
   const git = (args: string[]) => Bun.spawnSync(["git", ...args], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
   const base = git(["merge-base", "HEAD", "origin/main"])[0];
   if (base === undefined) return [];
   const files = [...git(["diff", "--name-only", base]), ...git(["ls-files", "--others", "--exclude-standard"])].filter((file) => touchesIterators([file]));
-  return pick(base, undefined, files).map((p) => {
+  return pick(base, undefined, files, parts).map((p) => {
     for (const line of p.why) console.log(`  ${line}`);
     console.log(`${p.table}: ${p.rows} rows, ITERATOR_MATRIX='${p.setting}'`);
-    return { name: `the ${p.table === "matrix" ? "matrix" : "conformance table"}'s ${p.rows} rows the change names`, file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: p.table, ITERATOR_MATRIX: p.setting } };
+    return {
+      name: `the ${p.table === "matrix" ? "matrix" : "conformance table"}'s ${p.rows} rows the change names`,
+      file: "test/iterator-matrix.test.ts",
+      env: { ITERATOR_TABLE: p.table, ITERATOR_MATRIX: p.setting },
+      rate: { table: p.table as "matrix" | "conformance", rows: p.rows },
+    };
   });
 }
 

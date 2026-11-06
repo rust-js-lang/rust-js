@@ -220,11 +220,13 @@ change names (`bun scripts/iteratorSlice.ts run rows`, the picking
   names; of `$given`, generic code's, every generic source's. The rows of
   an adapter a hunk takes away more of than it puts back always run whole,
   whatever their count: removing code as equivalent decides for every row
-  of what it names (#823). The rest share one budget for the change, some
-  2.5 minutes of the matrix's alone and 40 s of the table's (16,000 and
-  5,000 rows, about twice that beside check:fast's other steps, within
-  its cap): the shared sample's fifth of it reserved, then what's named,
-  then the sample, at least 2,000 rows. What's past what's left is `pairs`
+  of what it names (#823). The rest share one budget for the change, the
+  rows its parts run in some 2.5 minutes of the matrix's and 40 s of the
+  table's at the machine's own rate (`budgetOf`: the median rows a second
+  per part of its last runs, `target/iterator-rows-rates.json`, the M3
+  Max's 9.2 and 10.8 until it has some; 16,560 and 5,184 rows there in 12
+  parts, about 1,000 of each on the M1 in 4, #857): the shared sample's
+  fifth of it reserved, then what's named, then the sample, a fifth of it. What's past what's left is `pairs`
   of it, as many of each pairing of an adapter with a consumer as fit,
   said so, with the setting that runs each.
 - **What every adapter shares.** A hunk in the runtime's protocol

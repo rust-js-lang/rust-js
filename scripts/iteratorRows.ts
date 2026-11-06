@@ -20,8 +20,8 @@
 // `pairs` of all of them.
 //
 //   bun scripts/iteratorRows.ts [base [head]]   what the change picks, and why
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { allCases, conformanceCases, pairs, type Case, type Table } from "../test/iterator-matrix";
 
 const root = join(import.meta.dir, "..");
@@ -35,12 +35,56 @@ const shared = {
   functions: ["$consume", "$consumed", "$closing", "$closed", "$forward", "$given", "$givenDrop", "$knowing", "$held", "$iterator"],
 };
 
-/** The rows a change runs of each table, all its picks together: some 2.5
- * minutes of the matrix's, at 110 rows a second in 12 parts alone, and
- * some 40 s of the table's, at 130; about twice that under check:fast's
- * load (2026-11-06). */
 // The points table (#817) has no rows a change picks yet: #818 decides.
-const budget: Record<Exclude<Table, "points">, number> = { matrix: 16_000, conformance: 5_000 };
+type Picking = Exclude<Table, "points">;
+
+/** The seconds each table's rows a change runs take, all its picks
+ * together: some 2.5 minutes of the matrix's and 40 s of the table's alone,
+ * about twice that beside check:fast's other jobs, within its cap. */
+const seconds: Record<Picking, number> = { matrix: 150, conformance: 40 };
+
+/** The rows a part runs a second, of each table, where this machine has
+ * run none yet: the M3 Max's, 110 and 130 a second in 12 parts alone
+ * (2026-11-06). */
+const perPart: Record<Picking, number> = { matrix: 9.2, conformance: 10.8 };
+
+/** Where each run of the rows a change names says how fast it ran, a
+ * cache of what ran here, keyed by nothing else: the machine's own. */
+export const ratesFile = join(root, "target", "iterator-rows-rates.json");
+
+type Rate = { table: Picking; rows: number; seconds: number; parts: number };
+
+/** The rows a part of this machine runs a second, of `table`: the median of
+ * its last runs' (`ratesFile`), else the M3 Max's. */
+export function rowsPerPart(table: Picking): number {
+  let rates: Rate[] = [];
+  try {
+    rates = JSON.parse(readFileSync(ratesFile, "utf8"));
+  } catch {}
+  const mine = rates.filter((r) => r.table === table && r.seconds > 0 && r.parts > 0).map((r) => r.rows / r.seconds / r.parts);
+  if (mine.length === 0) return perPart[table];
+  mine.sort((a, b) => a - b);
+  return mine[Math.floor(mine.length / 2)];
+}
+
+/** That a run of `rows` of `table` in `parts` took `seconds`, kept with the
+ * last 20. */
+export function noteRate(rate: Rate) {
+  let rates: Rate[] = [];
+  try {
+    rates = JSON.parse(readFileSync(ratesFile, "utf8"));
+  } catch {}
+  mkdirSync(dirname(ratesFile), { recursive: true });
+  writeFileSync(ratesFile, JSON.stringify([...rates, rate].slice(-20)));
+}
+
+/** The rows each table runs in `parts`, all a change's picks together: as
+ * many as its parts run in its seconds, at this machine's own rate. A
+ * machine of fewer or slower cores runs fewer, in the same time (#857: the
+ * M1's 8 cores ran 16,000 and 5,000 in 4 parts in 43 to 55 min). */
+export function budgetOf(table: Picking, parts: number): number {
+  return Math.max(1_000, Math.floor(rowsPerPart(table) * parts * seconds[table]));
+}
 
 /** What names nothing of its own: the runtime's module, generated of
  * src/runtime, and the tests and scripts, which run as they are. */
@@ -190,7 +234,7 @@ export function pattern(adapters: Set<string>, consumers: Set<string>, generic: 
 
 /** What the change from `base` to `head` runs of each table, in
  * `iteratorPaths`' `files`. */
-export function pick(base: string, head: string | undefined, files: string[]): Picked[] {
+export function pick(base: string, head: string | undefined, files: string[], parts: number): Picked[] {
   const found = hunks(base, head, files);
   if (found.length === 0) return [];
   return (["matrix", "conformance"] as const).flatMap((table) => {
@@ -217,11 +261,12 @@ export function pick(base: string, head: string | undefined, files: string[]): P
     // One budget for the change, its rows taken in turn: what's removed,
     // each row whatever its count, as a sample of it would miss what the
     // removal decided for (#823); a sample of each adapter with each
-    // consumer, of a change to what they share, a fifth of it at most and
-    // 2,000 rows at least; then what's named. What's past what's left is
+    // consumer, of a change to what they share, a fifth of it, at most and
+    // at least, past what's removed; then what's named. What's past what's left is
     // `pairs` of it, as many of each pairing as fit, said so (#856's
     // measure: 31,676 rows of a removal and `pairs` took 868 s inside
     // check:fast, past its cap).
+    const budget = { [table]: budgetOf(table, parts) } as Record<Picking, number>;
     let left = budget[table];
     const take = (matching: Case[], source: string, label: string) => {
       if (matching.length === 0 || left <= 0) {
@@ -257,7 +302,7 @@ export function pick(base: string, head: string | undefined, files: string[]): P
       left += reserve;
     }
     if (everyAdapter) {
-      left = Math.max(left, Math.min(shared.length, 2_000));
+      left = Math.max(left, Math.min(shared.length, sharedCap));
       if (shared.length <= left) picks.push({ table, setting: "pairs", rows: shared.length, why: [] });
       else take(cases, "", "what every adapter shares");
     }
@@ -273,7 +318,10 @@ if (import.meta.main) {
   const range = head === undefined ? [base] : [base, head];
   const files = Bun.spawnSync(["git", "diff", "--name-only", ...range], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
   const globs = iteratorPaths.map((path) => new Bun.Glob(path));
-  for (const p of pick(base, head, files.filter((file) => globs.some((glob) => glob.match(file))))) {
+  const { availableParallelism } = await import("node:os");
+  const { caseParts } = await import("./shard");
+  const parts = caseParts(availableParallelism() * 2);
+  for (const p of pick(base, head, files.filter((file) => globs.some((glob) => glob.match(file))), parts)) {
     for (const line of p.why) console.log(`  ${line}`);
     console.log(`${p.table}: ${p.rows} rows, ITERATOR_MATRIX='${p.setting}'`);
   }
