@@ -28,7 +28,7 @@ function $collectOptions(items, boxed = false, into, drop, restFirst = false, si
       );
       values.push(value);
     }
-  }, ...$collectUnwound(it, values, drop, restFirst));
+  }, $collectUnwound(it, values, drop, restFirst));
   if (!failed) return into ? into(values) : values;
   it.return?.();
   if (drop) $dropItems(values, drop);

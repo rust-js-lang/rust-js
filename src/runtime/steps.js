@@ -460,7 +460,7 @@ function $inTurn(...runs) {
 // `run` of each of `items` in turn, `$inTurn`'s, the rest run as one that
 // throws unwinds: a slice's drop glue, `$dropItems`' (#416).
 function $inTurnOf(items, run) {
-  const all = Array.isArray(items) ? items : [...items];
+  const all = Array.isArray(items) ? items : Array.from(items);
   for (let i = 0; i < all.length; i++) {
     try {
       run(all[i]);

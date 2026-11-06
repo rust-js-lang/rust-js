@@ -1124,7 +1124,7 @@ test("zip takes its first side's item before its second's", () => {
   expect(js).toContain("$lazyZip(");
   const zip = readFileSync(join(root, "src/runtime/lazy_zip.js"), "utf8");
   expect(zip).toContain("const item = left.next();\n    if (item.done) return item;\n");
-  expect(zip.indexOf("const item = left.next();")).toBeLessThan(zip.indexOf("other = right.next();"));
+  expect(zip.indexOf("const item = left.next();")).toBeLessThan(zip.indexOf("() => right.next(),"));
 });
 
 // ADR 0748: a `for` of a slice's first items, or of those past some,

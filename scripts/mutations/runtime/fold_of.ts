@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "collect-rest-first-ignored",
     breaks: "a `collect` std does otherwise than in place, a panic stopping it, drops what it collected before what's left, where std drops what's left first (#423)",
     file: "src/runtime/fold_of.js",
-    find: "  return restFirst ? [rest, collected] : [collected, rest];",
-    replace: "  return [collected, rest];",
+    find: "  return restFirst ? () => $inTurn(rest, collected) : () => $inTurn(collected, rest);",
+    replace: "  return () => $inTurn(collected, rest);",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
     breaks: "a compiled std struct's collect, a `zip`'s, a panic stopping it, drops neither what it collected nor what's left (#423)",
     file: "src/runtime/fold_of.js",
     find: "  const unwinding = $collectUnwound(it, items, unwind === undefined ? drop : undefined, restFirst);\n",
-    replace: "  const unwinding = [];\n",
+    replace: "  const unwinding = undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "fold-to-array-collected-last",
     breaks: "a collect in place of std's struct, a `map`'s, a stage panicking, drops what's left before what it collected, where std's `InPlaceDrop` drops what it collected first (#423)",
     file: "src/runtime/fold_of.js",
-    find: "  const folded = $unwinds(() => it.tryFold(items, push, () => false, unwind), ...unwinding);\n",
-    replace: "  const folded = $unwinds(() => it.tryFold(items, push, () => false, undefined), ...unwinding);\n",
+    find: "  const folded = $unwinds(() => it.tryFold(items, push, () => false, unwind), unwinding);\n",
+    replace: "  const folded = $unwinds(() => it.tryFold(items, push, () => false, undefined), unwinding);\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^panic_mid_iteration_drops with"],
   },
   {
@@ -114,8 +114,8 @@ export const mutations: Mutation[] = [
     name: "in-place-by-fold",
     breaks: "an in-place collect folds, which moves a compiled `Map`'s function before what's left, where std's `try_fold` by `&mut` keeps it (#710)",
     file: "src/runtime/fold_of.js",
-    find: "  if (!inPlace || typeof it.tryFold !== \"function\") return $unwinds(() => it.fold(items, push, unwind), ...unwinding);\n",
-    replace: "  return $unwinds(() => it.fold(items, push, unwind), ...unwinding);\n",
+    find: "  if (!inPlace || typeof it.tryFold !== \"function\") return $unwinds(() => it.fold(items, push, unwind), unwinding);\n",
+    replace: "  return $unwinds(() => it.fold(items, push, unwind), unwinding);\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^fold_drops_moved_function_first with std"],
   },
   {

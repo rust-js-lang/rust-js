@@ -87,11 +87,11 @@ function $foldToArray(it, drop, restFirst = false, inPlace = drop !== undefined 
   // In place, `inPlace`, std's `try_fold` by `&mut`, which moves no
   // adapter's function into the fold it asks, then what's left closed, an
   // adapter's function after it (#710).
-  if (!inPlace || typeof it.tryFold !== "function") return $unwinds(() => it.fold(items, push, unwind), ...unwinding);
+  if (!inPlace || typeof it.tryFold !== "function") return $unwinds(() => it.fold(items, push, unwind), unwinding);
   // Held, so nothing it steps closes inside the fold, a `take`'s source at
   // its limit, but all of it after, at the end (#843).
   it.hold?.();
-  const folded = $unwinds(() => it.tryFold(items, push, () => false, unwind), ...unwinding);
+  const folded = $unwinds(() => it.tryFold(items, push, () => false, unwind), unwinding);
   // Then what its source, the `Vec` whose buffer it reuses, has left
   // dropped, where a drop of it that panics drops what it collected as it
   // unwinds, after it, as std's in-place guard does once its fold is done
@@ -132,21 +132,21 @@ function $collectDropping(it, drop, restFirst = false) {
   const items = [];
   $unwinds(() => {
     for (let step = it.next(); !step.done; step = it.next()) items.push(step.value);
-  }, ...$collectUnwound(it, items, drop, restFirst));
+  }, $collectUnwound(it, items, drop, restFirst));
   // And at its end, as std's `collect` drops what it took then, what an
   // adapter that stops early left (ADR 0570), `$collectEnded`'s.
   $collectEnded(it, items, drop);
   return items;
 }
 
-// What a collect a panic stopped holds, the drops it runs as it unwinds, in
-// std's order, `$unwinds`': `items`, what it collected, by `drop`, and
-// what's left of `it`, closed; what's left first, `restFirst`, where std's
-// fold drops it before its `Vec` (#422, #423).
+// What a collect a panic stopped holds, the drop it runs as it unwinds,
+// `$unwinds`': `items`, what it collected, by `drop`, and what's left of
+// `it`, closed, in turn in std's order; what's left first, `restFirst`,
+// where std's fold drops it before its `Vec` (#422, #423).
 function $collectUnwound(it, items, drop, restFirst) {
   const collected = () => {
     if (drop !== undefined) $dropItems(items, drop);
   };
   const rest = () => it.return?.();
-  return restFirst ? [rest, collected] : [collected, rest];
+  return restFirst ? () => $inTurn(rest, collected) : () => $inTurn(collected, rest);
 }

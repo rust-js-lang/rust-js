@@ -224,7 +224,7 @@ function $mapFrom(m, items, set, drop, dropKey) {
   return $unwinds(
     () => $extendMap(m, items, set, drop, dropKey),
     () =>
-      $inTurnOf([...m.entries()], ([key, value]) =>
+      $inTurnOf(Array.from(m.entries()), ([key, value]) =>
         $inTurn(
           () => dropKey?.(key),
           () => set || drop?.(value),

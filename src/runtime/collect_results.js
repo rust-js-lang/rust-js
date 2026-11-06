@@ -26,7 +26,7 @@ function $collectResults(items, into, drop, restFirst = false, size) {
       );
       values.push(item._0);
     }
-  }, ...$collectUnwound(it, values, drop, restFirst));
+  }, $collectUnwound(it, values, drop, restFirst));
   if (failed === undefined) return { TAG: "Ok", _0: into ? into(values) : values };
   it.return?.();
   if (drop) $dropItems(values, drop);

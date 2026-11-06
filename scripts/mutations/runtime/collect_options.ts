@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
     name: "collect-options-unwinds-nothing",
     breaks: "a `collect` into an `Option` a panic stops drops neither what it collected nor what's left (#423)",
     file: "src/runtime/collect_options.js",
-    find: "  }, ...$collectUnwound(it, values, drop, restFirst));",
+    find: "  }, $collectUnwound(it, values, drop, restFirst));",
     replace: "  });",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
