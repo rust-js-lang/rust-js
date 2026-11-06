@@ -654,7 +654,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return Ok(Some(back));
             }
-            let array = self.has_a_back(iter_ty) || std_method == Some(IterMethod::NextBack) && knows_back(&it);
+            let array = self.has_a_back(iter_ty, &it) || std_method == Some(IterMethod::NextBack) && knows_back(&it);
             // `len(&self)` of a `Self` that's a `&mut`.
             let lends_self = matches!(receiver_ty.kind(), ty::Ref(_, through, _) if through.is_mutable_ptr());
             return Ok(Some(match (std_method, self.range_kind(iter_ty)) {

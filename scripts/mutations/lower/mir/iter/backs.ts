@@ -75,8 +75,8 @@ export const mutations: Mutation[] = [
     name: "double-ended-next-back-refused",
     breaks: "`next_back()` of a generic `T: DoubleEndedIterator` is refused",
     file: "src/lower/mir/iter/backs.rs",
-    find: "        self.steps_an_array(iter_ty) || self.knows_its_back(iter_ty)\n",
-    replace: "        self.steps_an_array(iter_ty)\n",
+    find: "        self.steps_an_array(iter_ty)\n            || self.knows_its_back(iter_ty)\n",
+    replace: "        self.steps_an_array(iter_ty)\n            || false\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
   },
   {
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`nth_back` and `rfold` of an iterator that knows its back wrap it again, `$nthBack($iter(it), ..)`, which `$iter` gives back as it is (ADR 0456)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            None if self.range_kind(iter_ty).is_none() && self.has_a_back(iter_ty) => it,\n",
+    find: "            None if self.range_kind(iter_ty).is_none() && self.has_a_back(iter_ty, &it) => it,\n",
     replace: "            None if false => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
     snapshots: true,
@@ -268,9 +268,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a range a map the crate steps from its back maps is given as it is, not knowing its back",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    None if back && !self.has_a_back(iter_ty) => {\n",
+    find: "                    None if back && !self.has_a_back(iter_ty, receiver) => {\n",
     replace:
-      "                    None if back && !self.has_a_back(iter_ty) && self.range_kind(iter_ty).is_none() => {\n",
+      "                    None if back && !self.has_a_back(iter_ty, receiver) && self.range_kind(iter_ty).is_none() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
   },
   {
@@ -341,7 +341,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a map stepped from its back of a `skip` or a `step_by` made here steps a JS iterator with no back, and throws (#218)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    None if back && !self.has_a_back(iter_ty) => {\n",
+    find: "                    None if back && !self.has_a_back(iter_ty, receiver) => {\n",
     replace: "                    None if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^back_stepped_adapter_sources.rs$"],
   },
@@ -350,7 +350,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a filter stepped from its back of a `take` made here steps a JS iterator with no back, and throws (#218)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    None if !self.has_a_back(iter_ty) => self.as_double_ended(receiver.clone(), iter_ty, span)?,\n",
+    find: "                    None if !self.has_a_back(iter_ty, receiver) => {\n                        self.as_double_ended(receiver.clone(), iter_ty, span)?\n                    }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^back_stepped_adapter_sources.rs$"],
   },
@@ -492,12 +492,7 @@ export const mutations: Mutation[] = [
     find: "        let knowing = match self.compiled_struct(revealed, &it) {\n",
     replace:
       "        let knowing = match false && self.compiled_struct(revealed, &it) {\n",
-    tests: [
-      "test/corpus.test.ts",
-      "test/iterator-forms.test.ts",
-      "-t",
-      "^returned_impl_ends.rs$|^back_steps with",
-    ],
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^returned_impl_ends.rs$|^back_steps with|^array_cloned_stepped_from_its_back with"],
   },
   {
     name: "rfold-acc-unwind-unseen",
@@ -597,8 +592,8 @@ export const mutations: Mutation[] = [
     name: "enumerate-of-take-from-back-unknowing",
     breaks: "an enumeration the crate steps from its back of a source whose JS knows no back is given it as it's made: of a `take()` of items with a destructor, `.take(n)`, `enumerated.iter.len is not a function` (#651); of a map, `ds().into_iter().map(f).enumerate().rfold(..)`, and of a slice's `cloned()`'s and the crate's iterator's `skip()`'s and `rev()`'s, `enumerated.iter.back is not a function` (#778)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    None if self.stepped_from_its_back(output) && !self.has_a_back(iter_ty) => {\n",
-    replace: "                    None if false && self.stepped_from_its_back(output) && !self.has_a_back(iter_ty) => {\n",
+    find: "                    None if self.stepped_from_its_back(output) && !self.has_a_back(iter_ty, receiver) => {\n",
+    replace: "                    None if false && self.stepped_from_its_back(output) && !self.has_a_back(iter_ty, receiver) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^(enumerate_of_take_from_back|back_folds_of_sources_made_knowing_their_back|enumerate_of_droppers_from_back).rs$"],
   },
   {
@@ -793,5 +788,13 @@ export const mutations: Mutation[] = [
     find: "                || crate::lower::iterators::knows_its_given_length(source)\n",
     replace: "                || false\n",
     tests: ["test/corpus.test.ts", "-t", "^counted_adapter_given_back_from_its_back.rs$"],
+  },
+  {
+    name: "compiled-struct-taken-as-knowing-its-back",
+    breaks: "std's compiled struct of a type the crate steps from its back elsewhere is taken to have a back as it's made, so a map of a compiled `Zip` is `$mapEnds` of a struct with none, and its `rfold` throws (#856)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                && (!self.compiled_struct(self.reveal(iter_ty), value)\n",
+    replace: "                && (true\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_of_its_type_stepped_from_its_back_elsewhere.rs$"],
   },
 ];

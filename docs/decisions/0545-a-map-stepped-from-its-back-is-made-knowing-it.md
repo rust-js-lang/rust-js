@@ -1025,3 +1025,22 @@ and `counted-made-knowing-unread` name the new fact's lines;
 `counted-made-knowing-unmarked`, `rev-of-counted-knowing-unmarked` and
 `rev-of-given-counted-unmarked` are new, the last two held by corpus
 `counted_adapter_given_back_from_its_back`; `next-back-asks-no-back` goes with `asks_its_back`.
+
+## Amendment: std's compiled struct has a back only where it's given one (2026-11-06, #856)
+
+ADR 0262's case: results change, so Rust's behavior is kept. Where the
+crate folds a zip of a type from its back elsewhere, `knows_its_back`
+says each value of that type knows its back, as its maker makes the one
+made in place `$zipEnds`. But a compiled `Zip`, std's struct, `iterator_zip(..)`,
+is made as it is, with no back until it's given its compiled one
+(`$knowing`). A map or a filter of it was `$mapEnds` or `$filterEnds` of
+the struct as it was made, so its `rfold` threw where Rust folds it.
+`has_a_back` (backs.rs), what the adapters' arms ask before making their
+source knowing its back, now asks the value too: an array's, or one of a
+type that knows its back, but std's compiled struct, which has one only
+given it, `$knowing`'s or made knowing it. Found by #818's `pairs` beside
+`vec | zip | rfold`; bisected on a clean `main`. Corpus
+`zip_of_its_type_stepped_from_its_back_elsewhere`; mutation
+`compiled-struct-taken-as-knowing-its-back`. The per-type fact itself is
+#851's to retire.
+

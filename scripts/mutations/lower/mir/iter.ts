@@ -703,8 +703,8 @@ export const mutations: Mutation[] = [
     name: "next-back-of-marked-unread",
     breaks: "`next_back` of a variable made knowing its back where it's held reads its type alone, which doesn't, and is refused (#718)",
     file: "src/lower/mir/iter.rs",
-    find: "self.has_a_back(iter_ty) || std_method == Some(IterMethod::NextBack) && knows_back(&it);",
-    replace: "self.has_a_back(iter_ty);",
+    find: "self.has_a_back(iter_ty, &it) || std_method == Some(IterMethod::NextBack) && knows_back(&it);",
+    replace: "self.has_a_back(iter_ty, &it);",
     tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
   },
   {

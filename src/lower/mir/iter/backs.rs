@@ -73,7 +73,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // closed, as a `Rev<&mut I>` drops nothing of its `I` (#755).
             None if receiver_ty.is_mutable_ptr() => {
                 let lends = !std::ptr::eq(crate::lower::iterators::unlent(&receiver), &receiver);
-                let back = match self.has_a_back(iter_ty) {
+                let back = match self.has_a_back(iter_ty, &receiver) {
                     true => receiver,
                     false => self.as_double_ended(receiver, iter_ty, span)?,
                 };
@@ -258,7 +258,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(IterMethod::Copied | IterMethod::Cloned)
                 if self.is_its_source(output)
                     && self.knows_its_back(output)
-                    && !self.has_a_back(iter_ty)
+                    && !self.has_a_back(iter_ty, receiver)
                     && (self.recognition().is_iter_adapter(iter_ty)
                         || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)) =>
             {
@@ -286,7 +286,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None if len && self.range_kind(iter_ty).is_some() => {
                         self.as_exact_size(receiver.clone(), iter_ty, back, span)?
                     }
-                    None if back && !self.has_a_back(iter_ty) => {
+                    None if back && !self.has_a_back(iter_ty, receiver) => {
                         self.as_double_ended(receiver.clone(), iter_ty, span)?
                     }
                     None => receiver.clone(),
@@ -334,7 +334,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // a `Fuse`'s, given its compiled back and length (#383):
                     // made knowing them, or refused (`as_exact_size`), never
                     // stepped by what it lacks.
-                    None if self.stepped_from_its_back(output) && !self.has_a_back(iter_ty) => {
+                    None if self.stepped_from_its_back(output) && !self.has_a_back(iter_ty, receiver) => {
                         let it = self.as_exact_size(receiver.clone(), iter_ty, true, span)?;
                         self.closing(it, held, span)?
                     }
@@ -373,7 +373,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None if self.is_user_iterator(iter_ty) => {
                         self.user_iterator_knowing(receiver.clone(), held, (true, false), span)?
                     }
-                    None if !self.has_a_back(iter_ty) => self.as_double_ended(receiver.clone(), iter_ty, span)?,
+                    None if !self.has_a_back(iter_ty, receiver) => {
+                        self.as_double_ended(receiver.clone(), iter_ty, span)?
+                    }
                     None => receiver.clone(),
                 };
                 // Closed to drop what it holds, as a map's is, the crate's
@@ -461,7 +463,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let it = match knowing {
             Some(knowing) => knowing,
-            None if self.range_kind(iter_ty).is_none() && self.has_a_back(iter_ty) => it,
+            None if self.range_kind(iter_ty).is_none() && self.has_a_back(iter_ty, &it) => it,
             None => self.as_double_ended(it, iter_ty, span)?,
         };
         // `try_rfold`: `try_fold` of it reversed, which gives its items as
@@ -599,8 +601,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.compiled_step(source, std_item(self.tcx, StdItem::Iterator), "count")
     }
 
-    pub(super) fn has_a_back(&self, iter_ty: Ty<'tcx>) -> bool {
-        self.steps_an_array(iter_ty) || self.knows_its_back(iter_ty)
+    /// Whether `value`, of type `iter_ty`, has a back by its form: an
+    /// array's; or one whose type knows its back, made so by its maker, but
+    /// std's compiled struct, which has one only where it's given its
+    /// compiled back, `$knowing`'s, or made knowing it. A crate that steps
+    /// its type from its back elsewhere makes no such struct knowing it
+    /// where it's made, so a map of one was `$mapEnds` of a struct with no
+    /// back (#856).
+    pub(super) fn has_a_back(&self, iter_ty: Ty<'tcx>, value: &Expr) -> bool {
+        self.steps_an_array(iter_ty)
+            || self.knows_its_back(iter_ty)
+                && (!self.compiled_struct(self.reveal(iter_ty), value)
+                    || crate::lower::iterators::is_knowing(value)
+                    || crate::lower::iterators::was_made_knowing_its_back(value))
     }
 
     /// `rev()` of `it`, an iterator of type `iter_ty` that steps from its

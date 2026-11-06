@@ -171,6 +171,9 @@ const few = [
   // and `nth_back` given where they reach the crate's own `nth_back`, of
   // items without a destructor too (#834).
   "step_by_folded_from_its_back_as_std.rs",
+  // A `cloned()` of an array's items stepped from its back, std's struct
+  // given its compiled back where its step asks it (#856).
+  "array_cloned_stepped_from_its_back.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus")
