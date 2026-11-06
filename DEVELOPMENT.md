@@ -549,6 +549,20 @@ checked:
   about 30 s). A rule removed on the corpus and slices alone broke 19
   matrix rows (#823). The same goes for a generated drop-order sweep where
   the code is about drops.
+- **Land a big change's prerequisites first, each as its own commit.** A
+  precision fix or a new rule that improves the output without the big
+  change can land with a small gate of its own. #847, an abort on a panic
+  during unwind, found three blockers one after another: a precision fix,
+  React's labels, which an early-return rule fixed, and 32 mutations no
+  longer caught. Each blocker cost another 30–45 minute round of checks,
+  over four agents' hand-offs. Landed first, the precision fix and the
+  early-return rule would have been on `main` already, and the flip would
+  have carried far fewer surprises.
+- **A mutation that changes only the output's form isn't caught by the
+  corpus**: the mutation runner ignores corpus snapshots
+  (`RUST_JS_SNAPSHOTS=ignore`) and judges the corpus by behaviour alone. So
+  a form-only rule needs a lowering test, or a mutation with
+  `snapshots: true` (#864 tracks a runner-wide fix).
 - **ADR numbers**: `bun run adr:next`, and `bun run adr:renumber` when
   `main` took yours.
 
