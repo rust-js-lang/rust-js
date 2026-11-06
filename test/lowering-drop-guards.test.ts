@@ -1164,3 +1164,45 @@ pub fn props_twice(prototype: u32) -> u32 {
   ]);
   for (const name of ["work", "lines", "restored", "define", "del"]) delete g[name];
 });
+
+// An early return out of a guard's scope whose drop may throw, a binding's
+// call, so no \`finally\` holds it: the drop and the \`return\` where it
+// leaves, not a \`break\` of MIR's label to the drop after the scope, a
+// label the program never wrote (#861; React's ReactFlightClient).
+test("an early return out of a guard's scope no finally holds drops where it leaves", () => {
+  const { js } = compiled("guard-early-return-dropped-in-place", `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.restore")]
+fn restore(_: u32) {}
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.work")]
+fn work(n: u32) -> Option<u32> {
+    Some(n)
+}
+
+struct Guard(u32);
+
+impl Drop for Guard {
+    fn drop(&mut self) {
+        restore(self.0);
+    }
+}
+
+pub fn run(owner: Option<u32>, n: u32) {
+    let _guard = Guard(n);
+    let stack = work(n);
+    if let Some(owner) = owner {
+        let task = work(owner);
+        if let Some(task) = task {
+            work(task + 1);
+            return;
+        }
+    }
+    let root = work(n + 2);
+    if root.is_none() {
+        work(0);
+        return;
+    }
+    work(stack.unwrap_or(0));
+}
+`);
+  expect(js).not.toMatch(/\bbb\d+/);
+  expect(js).toContain("      globalThis.restore(n);\n      return;\n    }\n  }\n  let root;\n");
+});

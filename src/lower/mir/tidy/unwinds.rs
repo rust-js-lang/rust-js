@@ -1042,3 +1042,129 @@ fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught, insi
     *stmts = out;
     !dropped
 }
+
+/// A guard's scope no `finally` holds (`finally_holds`): MIR's block of it,
+/// `bb19: { .. break bb19; .. } drop; return;`, each `break` to the drop and
+/// what ends the function, or to a throw the drop's `catch` guards, is
+/// those in its place, as an early return drops what it leaves
+/// where it leaves (#861): no label then. The drop is the one each `catch`
+/// in the block runs as a panic unwinds (`dropped_last`), so the program's
+/// own code is never copied; and a `break` in a `try`, whose `catch` or
+/// `finally` would run as it drops, stays. Whether it took one.
+pub(super) fn dropped_at_breaks(stmts: &mut [Stmt]) -> bool {
+    let mut took = false;
+    for i in 0..stmts.len() {
+        let tail = &stmts[i + 1..];
+        let StmtKind::Labeled(label, body) = &stmts[i].kind else {
+            continue;
+        };
+        let Some((last, drops)) = tail.split_last() else {
+            continue;
+        };
+        // What ends it: a `return`, or a throw, one in a `try` whose `catch`
+        // drops as it unwinds too, `try { throw x; } catch (error) { drop;
+        // throw error; }`, a value resumed.
+        let thrown = |stmts: &[Stmt]| {
+            matches!(
+                stmts,
+                [Stmt {
+                    kind: StmtKind::Throw(_),
+                    ..
+                }]
+            )
+        };
+        let guarded_throw =
+            matches!(&last.kind, StmtKind::TryCatch(inner, ..) if thrown(inner)) && dropped_last(last).is_some();
+        let caught = caught_drops(body);
+        let dropped = drops
+            .iter()
+            .all(|drop| !finally_holds(drop) && caught.iter().any(|c| alike(c, drop)))
+            && match &last.kind {
+                StmtKind::Return(_) | StmtKind::Throw(_) => !drops.is_empty(),
+                _ => guarded_throw && drops.is_empty(),
+            };
+        if !dropped || js::mentions_in(tail, label) > 0 {
+            continue;
+        }
+        let (label, tail) = (label.clone(), tail.to_vec());
+        let StmtKind::Labeled(_, body) = &mut stmts[i].kind else {
+            unreachable!("matched")
+        };
+        let mut taken = body.clone();
+        if breaks_dropped(&mut taken, &label, &tail, true) {
+            *body = taken;
+            took = true;
+        }
+    }
+    took
+}
+
+/// Each drop `stmts`' `catch`es run as a panic unwinds (`dropped_last`),
+/// however deep, but not a function's own.
+fn caught_drops(stmts: &[Stmt]) -> Vec<&Stmt> {
+    let mut found = Vec::new();
+    for stmt in stmts {
+        found.extend(dropped_last(stmt));
+        match &stmt.kind {
+            StmtKind::If(_, then, otherwise) => {
+                found.extend(caught_drops(then));
+                found.extend(otherwise.as_deref().map(caught_drops).unwrap_or_default());
+            }
+            StmtKind::While { body, .. }
+            | StmtKind::DoWhile { body, .. }
+            | StmtKind::ForOf { body, .. }
+            | StmtKind::For { body, .. }
+            | StmtKind::Labeled(_, body) => found.extend(caught_drops(body)),
+            StmtKind::Switch { cases, default, .. } => {
+                for case in cases {
+                    found.extend(caught_drops(&case.body));
+                }
+                found.extend(default.as_deref().map(caught_drops).unwrap_or_default());
+            }
+            _ => {}
+        }
+    }
+    found
+}
+
+/// `stmts`, each `break label` in it `tail`, where `free`, outside any
+/// `try`: whether none was in one.
+fn breaks_dropped(stmts: &mut Vec<Stmt>, label: &str, tail: &[Stmt], free: bool) -> bool {
+    let mut i = 0;
+    while i < stmts.len() {
+        if matches!(&stmts[i].kind, StmtKind::Break(Some(l)) if l == label) {
+            if !free {
+                return false;
+            }
+            stmts.splice(i..=i, tail.iter().cloned());
+            i += tail.len();
+            continue;
+        }
+        let held = match &mut stmts[i].kind {
+            StmtKind::If(_, then, otherwise) => {
+                breaks_dropped(then, label, tail, free)
+                    && otherwise.as_mut().is_none_or(|o| breaks_dropped(o, label, tail, free))
+            }
+            StmtKind::While { body, .. }
+            | StmtKind::DoWhile { body, .. }
+            | StmtKind::ForOf { body, .. }
+            | StmtKind::For { body, .. }
+            | StmtKind::Labeled(_, body) => breaks_dropped(body, label, tail, free),
+            StmtKind::Switch { cases, default, .. } => {
+                cases
+                    .iter_mut()
+                    .all(|case| breaks_dropped(&mut case.body, label, tail, free))
+                    && default.as_mut().is_none_or(|d| breaks_dropped(d, label, tail, free))
+            }
+            StmtKind::Try(body, other) | StmtKind::TryCatch(body, _, other) => {
+                breaks_dropped(body, label, tail, false) && breaks_dropped(other, label, tail, false)
+            }
+            _ => true,
+        };
+        if !held {
+            return false;
+        }
+        i += 1;
+    }
+    true
+}

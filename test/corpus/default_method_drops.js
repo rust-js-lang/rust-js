@@ -59,9 +59,10 @@ const personGreet = {
         });
         throw error;
       }
-    } else {
-      result = first.item[0];
+      dropList(first);
+      return result;
     }
+    result = first.item[0];
     dropList(first);
     return result;
   },

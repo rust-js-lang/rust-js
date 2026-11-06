@@ -136,6 +136,8 @@ function kept(n, log) {
     log.value = (log.value + 10) >>> 0;
     // Twice what it found.
     result = (first * 2) >>> 0;
+    _restore[0].value = (((_restore[0].value * 10) >>> 0) + _restore[1]) >>> 0;
+    return (result + 100) >>> 0;
   } catch (thrown$1) {
     let message;
     const thrown = $unwound(thrown$1);
@@ -148,9 +150,9 @@ function kept(n, log) {
       throw error;
     }
     result = $byteLen(message);
+    _restore[0].value = (((_restore[0].value * 10) >>> 0) + _restore[1]) >>> 0;
+    return (result + 100) >>> 0;
   }
-  _restore[0].value = (((_restore[0].value * 10) >>> 0) + _restore[1]) >>> 0;
-  return (result + 100) >>> 0;
 }
 
 function main() {

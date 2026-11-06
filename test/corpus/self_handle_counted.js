@@ -53,15 +53,16 @@ function counted(step) {
             });
             throw error;
           }
-        } else {
-          try {
-            result = countdown.value(BigInt.asUintN(64, n - step));
-          } catch (error) {
-            $cleanup(() => {
-              $rcDrop(countdown, $dispose);
-            });
-            throw error;
-          }
+          $rcDrop(countdown, $dispose);
+          return result;
+        }
+        try {
+          result = countdown.value(BigInt.asUintN(64, n - step));
+        } catch (error) {
+          $cleanup(() => {
+            $rcDrop(countdown, $dispose);
+          });
+          throw error;
         }
         $rcDrop(countdown, $dispose);
         return result;

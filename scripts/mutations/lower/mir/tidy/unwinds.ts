@@ -445,4 +445,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_vec.rs$"],
   },
+  {
+    name: "dropped-at-breaks-off",
+    breaks: "an early return out of a guard's scope whose drop may throw is a `break` of MIR's label to the drop after it, a label the program never wrote (#861)",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "        if breaks_dropped(&mut taken, &label, &tail, true) {\n",
+    replace: "        if false && breaks_dropped(&mut taken, &label, &tail, true) {\n",
+    tests: ["test/lowering-drop-guards.test.ts", "-t", "drops where it leaves"],
+  },
 ];

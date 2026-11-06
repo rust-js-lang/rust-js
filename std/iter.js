@@ -1007,67 +1007,18 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
   const peeked = peekable.peeked;
   peekable.peeked = undefined;
   let result;
-  bb13: {
-    if (peeked != null) {
-      if ($someValue(peeked) == null) {
-        result = 0;
-        try {
-          if (peeked != null) {
-            if ($someValue(peeked) != null) {
-              dropIItem?.($someValue($someValue(peeked)));
-            }
+  if (peeked != null) {
+    if ($someValue(peeked) == null) {
+      result = 0;
+      try {
+        if (peeked != null) {
+          if ($someValue(peeked) != null) {
+            dropIItem?.($someValue($someValue(peeked)));
           }
-        } catch (error) {
-          $cleanup(() => {
-            dropI?.(peekable.iter);
-            if (peekable.peeked != null) {
-              if ($someValue(peekable.peeked) != null) {
-                dropIItem?.($someValue($someValue(peekable.peeked)));
-              }
-            }
-          });
-          throw error;
         }
-        try {
+      } catch (error) {
+        $cleanup(() => {
           dropI?.(peekable.iter);
-        } catch (error) {
-          $cleanup(() => {
-            if (peekable.peeked != null) {
-              if ($someValue(peekable.peeked) != null) {
-                dropIItem?.($someValue($someValue(peekable.peeked)));
-              }
-            }
-          });
-          throw error;
-        }
-        break bb13;
-      }
-      tmp = false;
-      const iter = peekable.iter;
-      let result$1;
-      let count;
-      try {
-        try {
-          result$1 = $count($given(iter, IIterator, true), dropIItem);
-        } catch (error) {
-          $cleanup(() => {
-            if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
-              dropI?.(iter);
-            }
-          });
-          throw error;
-        }
-        if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
-          dropI?.(iter);
-        }
-        count = result$1;
-      } catch (error) {
-        $cleanup(() => {
-          if (peeked != null) {
-            if ($someValue(peeked) != null) {
-              dropIItem?.($someValue($someValue(peeked)));
-            }
-          }
           if (peekable.peeked != null) {
             if ($someValue(peekable.peeked) != null) {
               dropIItem?.($someValue($someValue(peekable.peeked)));
@@ -1076,33 +1027,10 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
         });
         throw error;
       }
-      result = (1 + count) >>> 0;
-    } else {
-      tmp = false;
-      const iter = peekable.iter;
-      let result$1;
       try {
-        try {
-          result$1 = $count($given(iter, IIterator, true), dropIItem);
-        } catch (error) {
-          $cleanup(() => {
-            if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
-              dropI?.(iter);
-            }
-          });
-          throw error;
-        }
-        if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
-          dropI?.(iter);
-        }
-        result = result$1;
+        dropI?.(peekable.iter);
       } catch (error) {
         $cleanup(() => {
-          if (peeked != null) {
-            if ($someValue(peeked) != null) {
-              dropIItem?.($someValue($someValue(peeked)));
-            }
-          }
           if (peekable.peeked != null) {
             if ($someValue(peekable.peeked) != null) {
               dropIItem?.($someValue($someValue(peekable.peeked)));
@@ -1111,23 +1039,40 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
         });
         throw error;
       }
+      if (peekable.peeked != null) {
+        if ($someValue(peekable.peeked) != null) {
+          dropIItem?.($someValue($someValue(peekable.peeked)));
+        }
+      }
+      return result;
     }
+    tmp = false;
+    const iter = peekable.iter;
+    let result$1;
+    let count;
     try {
-      if (peeked != null) {
-        if ($someValue(peeked) != null) {
-          dropIItem?.($someValue($someValue(peeked)));
-        }
+      try {
+        result$1 = $count($given(iter, IIterator, true), dropIItem);
+      } catch (error) {
+        $cleanup(() => {
+          if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
+            dropI?.(iter);
+          }
+        });
+        throw error;
       }
+      if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
+        dropI?.(iter);
+      }
+      count = result$1;
     } catch (error) {
       $cleanup(() => {
-        if (tmp) {
-          dropI?.(peekable.iter);
-          if (peekable.peeked != null) {
-            if ($someValue(peekable.peeked) != null) {
-              dropIItem?.($someValue($someValue(peekable.peeked)));
-            }
+        if (peeked != null) {
+          if ($someValue(peeked) != null) {
+            dropIItem?.($someValue($someValue(peeked)));
           }
-        } else if (peekable.peeked != null) {
+        }
+        if (peekable.peeked != null) {
           if ($someValue(peekable.peeked) != null) {
             dropIItem?.($someValue($someValue(peekable.peeked)));
           }
@@ -1135,6 +1080,64 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
       });
       throw error;
     }
+    result = (1 + count) >>> 0;
+  } else {
+    tmp = false;
+    const iter = peekable.iter;
+    let result$1;
+    try {
+      try {
+        result$1 = $count($given(iter, IIterator, true), dropIItem);
+      } catch (error) {
+        $cleanup(() => {
+          if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
+            dropI?.(iter);
+          }
+        });
+        throw error;
+      }
+      if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
+        dropI?.(iter);
+      }
+      result = result$1;
+    } catch (error) {
+      $cleanup(() => {
+        if (peeked != null) {
+          if ($someValue(peeked) != null) {
+            dropIItem?.($someValue($someValue(peeked)));
+          }
+        }
+        if (peekable.peeked != null) {
+          if ($someValue(peekable.peeked) != null) {
+            dropIItem?.($someValue($someValue(peekable.peeked)));
+          }
+        }
+      });
+      throw error;
+    }
+  }
+  try {
+    if (peeked != null) {
+      if ($someValue(peeked) != null) {
+        dropIItem?.($someValue($someValue(peeked)));
+      }
+    }
+  } catch (error) {
+    $cleanup(() => {
+      if (tmp) {
+        dropI?.(peekable.iter);
+        if (peekable.peeked != null) {
+          if ($someValue(peekable.peeked) != null) {
+            dropIItem?.($someValue($someValue(peekable.peeked)));
+          }
+        }
+      } else if (peekable.peeked != null) {
+        if ($someValue(peekable.peeked) != null) {
+          dropIItem?.($someValue($someValue(peekable.peeked)));
+        }
+      }
+    });
+    throw error;
   }
   if (peekable.peeked != null) {
     if ($someValue(peekable.peeked) != null) {
@@ -4821,9 +4824,10 @@ export function mapWhileIterator_tryFold(
       });
       throw error;
     }
-  } else {
-    result = tryFold._0;
+    dropFold?.(fold);
+    return result;
   }
+  result = tryFold._0;
   dropFold?.(fold);
   return result;
 }
@@ -12379,49 +12383,50 @@ export function stepByStepByBackImplI_specRfold(
       });
       throw error;
     }
-  } else {
-    const x = $someValue(specNextBack);
-    let acc;
-    try {
-      acc = f(init, x);
-    } catch (error) {
-      $cleanup(() => {
+    stepBy.return();
+    return result;
+  }
+  const x = $someValue(specNextBack);
+  let acc;
+  try {
+    acc = f(init, x);
+  } catch (error) {
+    $cleanup(() => {
+      dropF?.(f);
+      stepBy.return();
+    });
+    throw error;
+  }
+  const captured = stepBy.iter;
+  const captured$1 = stepBy.stepMinusOne;
+  const value$1 = $fromFn(
+    () =>
+      $nthBack(
+        $given(captured, IIterator, true, IDoubleEndedIterator),
+        captured$1,
+        $some,
+        dropIItem,
+      ),
+    true,
+  );
+  let value;
+  try {
+    value = $consume(
+      value$1,
+      "fold",
+      acc,
+      (a, b) => f(a, b),
+      dropAcc,
+      () => {
         dropF?.(f);
-        stepBy.return();
-      });
-      throw error;
-    }
-    const captured = stepBy.iter;
-    const captured$1 = stepBy.stepMinusOne;
-    const value$1 = $fromFn(
-      () =>
-        $nthBack(
-          $given(captured, IIterator, true, IDoubleEndedIterator),
-          captured$1,
-          $some,
-          dropIItem,
-        ),
-      true,
+      },
     );
-    let value;
-    try {
-      value = $consume(
-        value$1,
-        "fold",
-        acc,
-        (a, b) => f(a, b),
-        dropAcc,
-        () => {
-          dropF?.(f);
-        },
-      );
-      result = value;
-    } catch (error) {
-      $cleanup(() => {
-        stepBy.return();
-      });
-      throw error;
-    }
+    result = value;
+  } catch (error) {
+    $cleanup(() => {
+      stepBy.return();
+    });
+    throw error;
   }
   stepBy.return();
   return result;
@@ -13002,27 +13007,44 @@ export function zipZipImplAB_nextBack(
     });
     throw error;
   }
-  if (tmp[0] == null && tmp[1] == null) {
+  if (tmp[0] == null) {
+    if (tmp[1] != null) {
+      try {
+        throw new Error("internal error: entered unreachable code");
+      } catch (error) {
+        $cleanup(() => {
+          if (tmp[0] != null) {
+            dropAItem?.($someValue(tmp[0]));
+            if (tmp[1] != null) {
+              dropBItem?.($someValue(tmp[1]));
+            }
+          } else if (tmp[1] != null) {
+            dropBItem?.($someValue(tmp[1]));
+          }
+        });
+        throw error;
+      }
+    }
     return;
   }
-  if (tmp[0] != null && tmp[1] != null) {
-    return [$someValue(tmp[0]), $someValue(tmp[1])];
-  }
-  try {
-    throw new Error("internal error: entered unreachable code");
-  } catch (error) {
-    $cleanup(() => {
-      if (tmp[0] != null) {
-        dropAItem?.($someValue(tmp[0]));
-        if (tmp[1] != null) {
+  if (tmp[1] == null) {
+    try {
+      throw new Error("internal error: entered unreachable code");
+    } catch (error) {
+      $cleanup(() => {
+        if (tmp[0] != null) {
+          dropAItem?.($someValue(tmp[0]));
+          if (tmp[1] != null) {
+            dropBItem?.($someValue(tmp[1]));
+          }
+        } else if (tmp[1] != null) {
           dropBItem?.($someValue(tmp[1]));
         }
-      } else if (tmp[1] != null) {
-        dropBItem?.($someValue(tmp[1]));
-      }
-    });
-    throw error;
+      });
+      throw error;
+    }
   }
+  return [$someValue(tmp[0]), $someValue(tmp[1])];
 }
 
 export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_nextBack(
@@ -13142,27 +13164,44 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
     });
     throw error;
   }
-  if (tmp[0] == null && tmp[1] == null) {
+  if (tmp[0] == null) {
+    if (tmp[1] != null) {
+      try {
+        throw new Error("internal error: entered unreachable code");
+      } catch (error) {
+        $cleanup(() => {
+          if (tmp[0] != null) {
+            dropAItem?.($someValue(tmp[0]));
+            if (tmp[1] != null) {
+              dropBItem?.($someValue(tmp[1]));
+            }
+          } else if (tmp[1] != null) {
+            dropBItem?.($someValue(tmp[1]));
+          }
+        });
+        throw error;
+      }
+    }
     return;
   }
-  if (tmp[0] != null && tmp[1] != null) {
-    return [$someValue(tmp[0]), $someValue(tmp[1])];
-  }
-  try {
-    throw new Error("internal error: entered unreachable code");
-  } catch (error) {
-    $cleanup(() => {
-      if (tmp[0] != null) {
-        dropAItem?.($someValue(tmp[0]));
-        if (tmp[1] != null) {
+  if (tmp[1] == null) {
+    try {
+      throw new Error("internal error: entered unreachable code");
+    } catch (error) {
+      $cleanup(() => {
+        if (tmp[0] != null) {
+          dropAItem?.($someValue(tmp[0]));
+          if (tmp[1] != null) {
+            dropBItem?.($someValue(tmp[1]));
+          }
+        } else if (tmp[1] != null) {
           dropBItem?.($someValue(tmp[1]));
         }
-      } else if (tmp[1] != null) {
-        dropBItem?.($someValue(tmp[1]));
-      }
-    });
-    throw error;
+      });
+      throw error;
+    }
   }
+  return [$someValue(tmp[0]), $someValue(tmp[1])];
 }
 
 export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_getUnchecked(

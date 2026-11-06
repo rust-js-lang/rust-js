@@ -102,6 +102,7 @@ function twice(base, TCheckedDouble, dropT) {
     });
     throw error;
   }
+  let result;
   if (value != null) {
     try {
       dropT?.(base);
@@ -135,8 +136,11 @@ function twice(base, TCheckedDouble, dropT) {
       base = value$1;
       return base;
     }
+    result = undefined;
+    dropT?.(base);
+    return result;
   }
-  const result = undefined;
+  result = undefined;
   dropT?.(base);
   return result;
 }

@@ -67,6 +67,13 @@ pub(super) const STAGES: &[Stage] = &[
                     unwinds::scoped_loops(stmts, h.result, &h.lets.guards);
                 })
             }),
+            // A scope no `finally` holds, its early returns each its drop
+            // where it leaves, not a `break` to it (#861).
+            pass("dropped at breaks", |b, _| {
+                js::statement_lists(b, &mut |stmts| {
+                    unwinds::dropped_at_breaks(stmts);
+                })
+            }),
         ],
         ensures: &[contracts::NOTHING_AFTER_A_JUMP],
         again: &[],
