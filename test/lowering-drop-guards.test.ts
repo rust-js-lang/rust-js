@@ -1014,9 +1014,12 @@ pub fn zeroed(depth: &Cell<u32>, fail: bool) -> u32 {
 }
 `,
   );
-  expect(js).toContain(`  function restore() {
+  // `Finally`'s drop, given a closure that can't panic, never unwinds
+  // (#861), so it's the `finally`'s.
+  expect(js).toContain(`  } finally {
     depth.value = 0; // zeroed
   }
+}
 `);
   const lib = await import(join(dir, "lib.js"));
   const depth = { value: 5 };

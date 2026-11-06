@@ -143,24 +143,14 @@ function wrapperKeeping(IIterator, dropI, dropIItem, dropIItemItem, dropIItemInt
             },
           ).map((i) => ({ iter: SelfItemIntoIterator.intoIter(i) })),
           (held) => {
-            try {
-              console.log("drop held");
-            } catch (error) {
-              dropIItemIntoIter?.(held.iter);
-              throw error;
-            }
+            console.log("drop held");
             dropIItemIntoIter?.(held.iter);
           },
           true,
         );
         const result = all.length;
         $dropItems(all, (item) => {
-          try {
-            console.log("drop held");
-          } catch (error) {
-            dropIItemIntoIter?.(item.iter);
-            throw error;
-          }
+          console.log("drop held");
           dropIItemIntoIter?.(item.iter);
         });
         return result;
@@ -330,24 +320,14 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
             },
           ).map((i) => ({ iter: SelfItemIntoIterator.intoIter(i) })),
           (held) => {
-            try {
-              console.log("drop held");
-            } catch (error) {
-              dropIItemIntoIter?.(held.iter);
-              throw error;
-            }
+            console.log("drop held");
             dropIItemIntoIter?.(held.iter);
           },
           true,
         );
         const result = all.length;
         $dropItems(all, (item) => {
-          try {
-            console.log("drop held");
-          } catch (error) {
-            dropIItemIntoIter?.(item.iter);
-            throw error;
-          }
+          console.log("drop held");
           dropIItemIntoIter?.(item.iter);
         });
         return result;

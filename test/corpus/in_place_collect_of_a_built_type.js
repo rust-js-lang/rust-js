@@ -38,31 +38,16 @@ function held(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, dr
   try {
     result = $collectsInPlace(HInPlace, HeldSize, HeldAlign)
       ? $foldToArray(iter, (held) => {
-          try {
-            heldDrop_drop(held, dropHItemIntoIter);
-          } catch (error) {
-            dropHItemIntoIter?.(held.iter);
-            throw error;
-          }
+          heldDrop_drop(held, dropHItemIntoIter);
           dropHItemIntoIter?.(held.iter);
         })
       : $collectDropping(
           $roomForHint(iter, HeldSize, false, false, (held) => {
-            try {
-              heldDrop_drop(held, dropHItemIntoIter);
-            } catch (error) {
-              dropHItemIntoIter?.(held.iter);
-              throw error;
-            }
+            heldDrop_drop(held, dropHItemIntoIter);
             dropHItemIntoIter?.(held.iter);
           }),
           (held) => {
-            try {
-              heldDrop_drop(held, dropHItemIntoIter);
-            } catch (error) {
-              dropHItemIntoIter?.(held.iter);
-              throw error;
-            }
+            heldDrop_drop(held, dropHItemIntoIter);
             dropHItemIntoIter?.(held.iter);
           },
           true,

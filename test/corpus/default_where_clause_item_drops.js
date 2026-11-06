@@ -56,12 +56,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             $cleanup(() => {
               dropT?.(iter);
               $dropItems(all, (item) => {
-                try {
-                  heldDrop_drop(item, dropTItemIntoIter);
-                } catch (error) {
-                  dropTItemIntoIter?.(item.iter);
-                  throw error;
-                }
+                heldDrop_drop(item, dropTItemIntoIter);
                 dropTItemIntoIter?.(item.iter);
               });
             });
@@ -73,12 +68,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             } catch (error) {
               $cleanup(() => {
                 $dropItems(all, (item) => {
-                  try {
-                    heldDrop_drop(item, dropTItemIntoIter);
-                  } catch (error) {
-                    dropTItemIntoIter?.(item.iter);
-                    throw error;
-                  }
+                  heldDrop_drop(item, dropTItemIntoIter);
                   dropTItemIntoIter?.(item.iter);
                 });
               });
@@ -94,12 +84,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             $cleanup(() => {
               dropT?.(iter);
               $dropItems(all, (item) => {
-                try {
-                  heldDrop_drop(item, dropTItemIntoIter);
-                } catch (error) {
-                  dropTItemIntoIter?.(item.iter);
-                  throw error;
-                }
+                heldDrop_drop(item, dropTItemIntoIter);
                 dropTItemIntoIter?.(item.iter);
               });
             });
@@ -111,12 +96,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             $cleanup(() => {
               dropT?.(iter);
               $dropItems(all, (item) => {
-                try {
-                  heldDrop_drop(item, dropTItemIntoIter);
-                } catch (error) {
-                  dropTItemIntoIter?.(item.iter);
-                  throw error;
-                }
+                heldDrop_drop(item, dropTItemIntoIter);
                 dropTItemIntoIter?.(item.iter);
               });
             });
@@ -125,12 +105,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
         }
         const result = all.length;
         $dropItems(all, (item) => {
-          try {
-            heldDrop_drop(item, dropTItemIntoIter);
-          } catch (error) {
-            dropTItemIntoIter?.(item.iter);
-            throw error;
-          }
+          heldDrop_drop(item, dropTItemIntoIter);
           dropTItemIntoIter?.(item.iter);
         });
         return result;
@@ -201,12 +176,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             $cleanup(() => {
               dropT?.(iter);
               $dropItems(all, (item) => {
-                try {
-                  heldDrop_drop(item, dropTItemIntoIter);
-                } catch (error) {
-                  dropTItemIntoIter?.(item.iter);
-                  throw error;
-                }
+                heldDrop_drop(item, dropTItemIntoIter);
                 dropTItemIntoIter?.(item.iter);
               });
               if (extra$live) {
@@ -221,12 +191,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             } catch (error) {
               $cleanup(() => {
                 $dropItems(all, (item) => {
-                  try {
-                    heldDrop_drop(item, dropTItemIntoIter);
-                  } catch (error) {
-                    dropTItemIntoIter?.(item.iter);
-                    throw error;
-                  }
+                  heldDrop_drop(item, dropTItemIntoIter);
                   dropTItemIntoIter?.(item.iter);
                 });
                 if (extra$live) {
@@ -245,12 +210,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             $cleanup(() => {
               dropT?.(iter);
               $dropItems(all, (item) => {
-                try {
-                  heldDrop_drop(item, dropTItemIntoIter);
-                } catch (error) {
-                  dropTItemIntoIter?.(item.iter);
-                  throw error;
-                }
+                heldDrop_drop(item, dropTItemIntoIter);
                 dropTItemIntoIter?.(item.iter);
               });
               if (extra$live) {
@@ -265,12 +225,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             $cleanup(() => {
               dropT?.(iter);
               $dropItems(all, (item) => {
-                try {
-                  heldDrop_drop(item, dropTItemIntoIter);
-                } catch (error) {
-                  dropTItemIntoIter?.(item.iter);
-                  throw error;
-                }
+                heldDrop_drop(item, dropTItemIntoIter);
                 dropTItemIntoIter?.(item.iter);
               });
               if (extra$live) {
@@ -301,12 +256,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
         } catch (error) {
           $cleanup(() => {
             $dropItems(all, (item) => {
-              try {
-                heldDrop_drop(item, dropTItemIntoIter);
-              } catch (error) {
-                dropTItemIntoIter?.(item.iter);
-                throw error;
-              }
+              heldDrop_drop(item, dropTItemIntoIter);
               dropTItemIntoIter?.(item.iter);
             });
           });
@@ -314,12 +264,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
         }
         const result = (length + result$1) >>> 0;
         $dropItems(all, (item) => {
-          try {
-            heldDrop_drop(item, dropTItemIntoIter);
-          } catch (error) {
-            dropTItemIntoIter?.(item.iter);
-            throw error;
-          }
+          heldDrop_drop(item, dropTItemIntoIter);
           dropTItemIntoIter?.(item.iter);
         });
         return result;

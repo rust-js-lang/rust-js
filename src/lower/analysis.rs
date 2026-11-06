@@ -43,6 +43,7 @@ pub(super) use self_handles::SelfHandles;
 mod tests;
 mod throwing;
 mod unwinding;
+pub(super) use unwinding::never_unwinds_given;
 mod wholes;
 pub(super) use wholes::{Wholes, whole_locals};
 

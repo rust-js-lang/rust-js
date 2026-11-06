@@ -80,16 +80,9 @@ function main() {
     123,
   ];
   const value = $dynCell(wrapper, {});
+  value[0].value = (value[0].value + 400) | 0;
+  console.log("wrapper dropped");
   try {
-    try {
-      value[0].value = (value[0].value + 400) | 0;
-      console.log("wrapper dropped");
-    } catch (error) {
-      $cleanup(() => {
-        value.impl.$drop?.(value[1]);
-      });
-      throw error;
-    }
     value.impl.$drop?.(value[1]);
   } catch (error) {
     $cleanup(() => {
@@ -114,16 +107,9 @@ function main() {
     ],
     { $drop: noisyDrop_drop },
   );
+  held[0].value = (held[0].value + 400) | 0;
+  console.log("wrapper dropped");
   try {
-    try {
-      held[0].value = (held[0].value + 400) | 0;
-      console.log("wrapper dropped");
-    } catch (error) {
-      $cleanup(() => {
-        held.impl.$drop?.(held[1]);
-      });
-      throw error;
-    }
     held.impl.$drop?.(held[1]);
   } catch (error) {
     $cleanup(() => {

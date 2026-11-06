@@ -158,3 +158,42 @@ index's and a variable's assignment of a value `made(n)` gives print the
 same JS without it. `may_throw_first` is `may_throw` again, and the
 mutation goes with the term. `option_destructors.rs` and
 `never_unwinding_calls.rs` still hold the order against native Rust.
+
+## Amendment: a generic `Drop` impl is judged for each use (#861, 2026-11-06)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): no difference. What runs,
+and in what order, is the same; a drop that can't panic is a `finally`'s
+again, where #847 made each that may a `catch`'s and the drop after the
+`try` (ADR 0660, amended).
+
+`never_unwinding` takes no function of type parameters, so a generic `Drop`
+impl, the guide's `impl<F: FnMut()> Drop for Defer<F>`, was one that may
+unwind whatever it was given, and `Defer(|| DEPTH.set(previous))` dropped
+after the `try` and in a `$cleanup`.
+
+**Each use asks of the impl as it's given its arguments**
+(`never_unwinds_given`, `analysis/unwinding.rs`, which the lowering's
+`drop_never_unwinds` asks and remembers for each function): its MIR, the
+arguments filled in, steps on as one of no type parameters must, read by the
+same `steps_on`. A call of a trait's method is what it resolves to in the
+caller's typing environment, a closure's `call_mut` the closure, which
+never unwinds where `never_unwinding` holds it; a call of another generic
+function is judged so in turn, one reached again as one that may. A `Drop`
+in it is of what drops nothing (`mir::dead_drops`) or of what the lowering's
+`drop_may_panic` says can't panic. The drop's call is marked
+`Known::NeverThrows` where it's made (`drops/parts.rs`), as a reference to
+one of no type parameters is, and `drop_may_panic` asks the same of each
+type's own `Drop`. A dictionary's `$drop` of a generic type whose `Drop`
+only prints, `console.log(`drop ${wrapper[1]}`)`, needs no `try` for its
+fields' drops after it.
+
+`test/corpus/generic_drops_judged_per_use.rs` holds both sides against
+native Rust: `Defer` of a closure that can't panic, and of one that may (an
+index past the end); a drop calling a generic function given a value whose
+drop only prints; and a drop of a type parameter's value, of a number and of
+one whose drop may panic. Ten other corpus snapshots read better, each a
+`finally` or no `try` where a generic `Drop` only prints, and the guide's
+`Defer` is `try { return work(); } finally { depth = previous; }`.
+Mutations: `instance-drops-may-panic`, `instance-calls-unresolved`
+(`lower/analysis/unwinding.ts`), `generic-drop-judged-whole`
+(`lower/drops.ts`) and `generic-drop-call-unmarked` (`lower/drops/parts.ts`).

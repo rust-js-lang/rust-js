@@ -40,4 +40,24 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^drops_of_nothing_never_unwind.rs$"],
   },
+  {
+    name: "instance-drops-may-panic",
+    breaks:
+      "a generic function judged for a use takes each drop of what's of its type parameters, given a value whose drop can't panic, for one that may, so a guard whose drop calls it drops after its `try` and in a `$cleanup` (#861)",
+    file: "src/lower/analysis/unwinding.rs",
+    find: "                (!(self.may_panic)(ty)).then_some(at)\n",
+    replace: "                (!(self.may_panic)(ty) && false).then_some(at)\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_drops_judged_per_use.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "instance-calls-unresolved",
+    breaks:
+      "a generic function judged for a use takes each call of a trait's method, a closure's `call_mut` of one that can't panic, for one that may, so `Defer(|| DEPTH.set(previous))` drops after its `try` and in a `$cleanup` (#861)",
+    file: "src/lower/analysis/unwinding.rs",
+    find: "                ty::InstanceKind::Item(def) => self.given(def, instance.args, seen),\n",
+    replace: "                ty::InstanceKind::Item(def) => def == callee && self.given(def, instance.args, seen),\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_drops_judged_per_use.rs$"],
+    snapshots: true,
+  },
 ];

@@ -167,6 +167,9 @@ pub(super) struct DropState<'tcx> {
     /// What a type drops depends on, beside its types (ADR 0098).
     types: TypeDrops<'tcx>,
     sizes: RefCell<HashMap<Ty<'tcx>, usize>>,
+    /// Each generic `Drop` impl's `drop`, as it's given its arguments, that
+    /// never unwinds (`drop_never_unwinds`, #861).
+    never_unwinding: RefCell<HashMap<(DefId, GenericArgsRef<'tcx>), bool>>,
     /// Each body's facts, by the address of its THIR: a closure's is its own.
     facts: HashMap<usize, Rc<Facts>>,
     /// The function being lowered's drop functions, by the index of the
@@ -235,7 +238,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Param(_) | ty::Dynamic(..) | ty::Alias(..) => true,
             ty::Adt(adt, args) if adt.did().is_local() => {
                 let own = (self.tcx.adt_destructor(adt.did()))
-                    .is_some_and(|destructor| !self.krate.never_unwinding.contains(&destructor.did));
+                    .is_some_and(|destructor| !self.drop_never_unwinds(destructor.did, args));
                 own || adt.all_fields().any(|field| {
                     let field_ty =
                         (self.tcx).erase_and_anonymize_regions(field.ty(self.tcx, args).skip_normalization());
@@ -250,6 +253,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => false,
         }
+    }
+
+    /// Whether the crate's `Drop` impl's `drop`, of a type given `args`,
+    /// never unwinds: one of no type parameters `never_unwinding` holds, a
+    /// generic one as it's given `args` (#861), the guide's `Defer` of a
+    /// closure that can't panic. Each asked once a function.
+    pub(in crate::lower) fn drop_never_unwinds(&self, drop: DefId, args: GenericArgsRef<'tcx>) -> bool {
+        if self.krate.never_unwinding.contains(&drop) {
+            return true;
+        }
+        if !self.tcx.generics_of(drop).requires_monomorphization(self.tcx) {
+            return false;
+        }
+        let args = self.tcx.erase_and_anonymize_regions(args);
+        if let Some(&known) = self.drop_state.never_unwinding.borrow().get(&(drop, args)) {
+            return known;
+        }
+        // Asked again as it's judged, of a drop that drops its own type: as
+        // one that may.
+        self.drop_state.never_unwinding.borrow_mut().insert((drop, args), false);
+        let never = super::analysis::never_unwinds_given(
+            (&self.recognition(), self.krate.never_unwinding, self.krate.bodies),
+            (drop, args, self.typing_env),
+            (&|ty| self.drops(ty) != Drops::Nothing, &|ty| self.drop_may_panic(ty)),
+        );
+        self.drop_state.never_unwinding.borrow_mut().insert((drop, args), never);
+        never
     }
 
     pub(in crate::lower) fn has_drops(&self, ty: Ty<'tcx>) -> bool {

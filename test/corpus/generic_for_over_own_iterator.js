@@ -29,21 +29,15 @@ function wrapperIterator_next(wrapper, IIterator, dropI, dropIItem) {
 function looped(w, IIterator) {
   let n = 0;
   const iter = w;
-  while (true) {
-    let tmp;
-    try {
-      tmp = wrapperIterator_next(iter, IIterator);
-    } catch (error) {
-      $cleanup(() => {
-        console.log(`drop ${iter[1]}`);
-      });
-      throw error;
+  try {
+    while (true) {
+      if (wrapperIterator_next(iter, IIterator) == null) {
+        break;
+      }
+      n = (n + 1) >>> 0;
     }
-    if (tmp == null) {
-      console.log(`drop ${iter[1]}`);
-      break;
-    }
-    n = (n + 1) >>> 0;
+  } finally {
+    console.log(`drop ${iter[1]}`);
   }
   return n;
 }
@@ -51,27 +45,19 @@ function looped(w, IIterator) {
 function dropping(w, IIterator) {
   let sum = 0;
   const iter = w;
-  while (true) {
+  try {
     let n;
-    try {
-      n = wrapperIterator_next(iter, IIterator);
-    } catch (error) {
-      $cleanup(() => {
-        console.log(`drop ${iter[1]}`);
-      });
-      throw error;
-    }
-    if (n != null) {
+    while ((n = wrapperIterator_next(iter, IIterator)) != null) {
       const d = [n];
-      if (n !== 2) {
-        sum = (sum + d[0]) >>> 0;
+      if (n === 2) {
         dDrop_drop(d);
-        continue;
+        break;
       }
+      sum = (sum + d[0]) >>> 0;
       dDrop_drop(d);
     }
+  } finally {
     console.log(`drop ${iter[1]}`);
-    break;
   }
   return sum;
 }
@@ -85,12 +71,7 @@ function ofItems(w, IIterator, dropT, dropI) {
       tmp = wrapperIterator_next(iter, IIterator, dropI, dropT);
     } catch (error) {
       $cleanup(() => {
-        try {
-          console.log(`drop ${iter[1]}`);
-        } catch (error) {
-          dropI?.(iter[0]);
-          throw error;
-        }
+        console.log(`drop ${iter[1]}`);
         dropI?.(iter[0]);
         $dropItems(all, (item) => {
           dropT?.(item);
@@ -99,15 +80,8 @@ function ofItems(w, IIterator, dropT, dropI) {
       throw error;
     }
     if (tmp == null) {
+      console.log(`drop ${iter[1]}`);
       try {
-        try {
-          console.log(`drop ${iter[1]}`);
-        } catch (error) {
-          $cleanup(() => {
-            dropI?.(iter[0]);
-          });
-          throw error;
-        }
         dropI?.(iter[0]);
       } catch (error) {
         $cleanup(() => {
@@ -124,12 +98,7 @@ function ofItems(w, IIterator, dropT, dropI) {
       all.push(item);
     } catch (error) {
       $cleanup(() => {
-        try {
-          console.log(`drop ${iter[1]}`);
-        } catch (error) {
-          dropI?.(iter[0]);
-          throw error;
-        }
+        console.log(`drop ${iter[1]}`);
         dropI?.(iter[0]);
         $dropItems(all, (item) => {
           dropT?.(item);
@@ -149,12 +118,7 @@ function wrapperCounted(IIterator, dropI, dropIItem) {
       return wrapperCounted_counted(arg0, IIterator, dropI, dropIItem);
     },
     $drop(wrapper) {
-      try {
-        console.log(`drop ${wrapper[1]}`);
-      } catch (error) {
-        dropI?.(wrapper[0]);
-        throw error;
-      }
+      console.log(`drop ${wrapper[1]}`);
       dropI?.(wrapper[0]);
     },
   }));
@@ -168,12 +132,7 @@ function wrapperCounted_counted(wrapper, IIterator, dropI, dropIItem) {
       tmp = wrapperIterator_next(iter, IIterator, dropI, dropIItem);
     } catch (error) {
       $cleanup(() => {
-        try {
-          console.log(`drop ${iter[1]}`);
-        } catch (error) {
-          dropI?.(iter[0]);
-          throw error;
-        }
+        console.log(`drop ${iter[1]}`);
         dropI?.(iter[0]);
       });
       throw error;
@@ -185,24 +144,12 @@ function wrapperCounted_counted(wrapper, IIterator, dropI, dropIItem) {
         }
       } catch (error) {
         $cleanup(() => {
-          try {
-            console.log(`drop ${iter[1]}`);
-          } catch (error) {
-            dropI?.(iter[0]);
-            throw error;
-          }
+          console.log(`drop ${iter[1]}`);
           dropI?.(iter[0]);
         });
         throw error;
       }
-      try {
-        console.log(`drop ${iter[1]}`);
-      } catch (error) {
-        $cleanup(() => {
-          dropI?.(iter[0]);
-        });
-        throw error;
-      }
+      console.log(`drop ${iter[1]}`);
       dropI?.(iter[0]);
       break;
     }
@@ -213,12 +160,7 @@ function wrapperCounted_counted(wrapper, IIterator, dropI, dropIItem) {
       }
     } catch (error) {
       $cleanup(() => {
-        try {
-          console.log(`drop ${iter[1]}`);
-        } catch (error) {
-          dropI?.(iter[0]);
-          throw error;
-        }
+        console.log(`drop ${iter[1]}`);
         dropI?.(iter[0]);
       });
       throw error;
@@ -240,12 +182,7 @@ function wrapperTallying(IIterator, dropI, dropIItem) {
           tmp = wrapperIterator_next(iter, IIterator, dropI, dropIItem);
         } catch (error) {
           $cleanup(() => {
-            try {
-              console.log(`drop ${iter[1]}`);
-            } catch (error) {
-              dropI?.(iter[0]);
-              throw error;
-            }
+            console.log(`drop ${iter[1]}`);
             dropI?.(iter[0]);
           });
           throw error;
@@ -257,24 +194,12 @@ function wrapperTallying(IIterator, dropI, dropIItem) {
             }
           } catch (error) {
             $cleanup(() => {
-              try {
-                console.log(`drop ${iter[1]}`);
-              } catch (error) {
-                dropI?.(iter[0]);
-                throw error;
-              }
+              console.log(`drop ${iter[1]}`);
               dropI?.(iter[0]);
             });
             throw error;
           }
-          try {
-            console.log(`drop ${iter[1]}`);
-          } catch (error) {
-            $cleanup(() => {
-              dropI?.(iter[0]);
-            });
-            throw error;
-          }
+          console.log(`drop ${iter[1]}`);
           dropI?.(iter[0]);
           break;
         }
@@ -285,12 +210,7 @@ function wrapperTallying(IIterator, dropI, dropIItem) {
           }
         } catch (error) {
           $cleanup(() => {
-            try {
-              console.log(`drop ${iter[1]}`);
-            } catch (error) {
-              dropI?.(iter[0]);
-              throw error;
-            }
+            console.log(`drop ${iter[1]}`);
             dropI?.(iter[0]);
           });
           throw error;
@@ -299,12 +219,7 @@ function wrapperTallying(IIterator, dropI, dropIItem) {
       return n;
     },
     $drop(wrapper) {
-      try {
-        console.log(`drop ${wrapper[1]}`);
-      } catch (error) {
-        dropI?.(wrapper[0]);
-        throw error;
-      }
+      console.log(`drop ${wrapper[1]}`);
       dropI?.(wrapper[0]);
     },
   }));

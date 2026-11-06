@@ -12,7 +12,7 @@ use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, TerminatorKind};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 /// The crate's functions and closures that never unwind: of no type parameters, no
 /// binding nor trait's method a dictionary may call another impl of, each
@@ -44,7 +44,12 @@ pub(super) fn never_unwinding<'tcx>(
     let mut never: HashSet<DefId> = candidates.iter().map(|&(id, ..)| id).collect();
     loop {
         let unwinding: Vec<DefId> = (candidates.iter())
-            .filter(|(id, mir, dead)| never.contains(id) && !steps_on(tcx, recognition, &never, (mir, dead)))
+            .filter(|(id, mir, dead)| {
+                never.contains(id)
+                    && !steps_on((mir, dead), &mut |callee, args| {
+                        never.contains(&callee) || std_never_unwinds(tcx, recognition, callee, args)
+                    })
+            })
             .map(|&(id, ..)| id)
             .collect();
         if unwinding.is_empty() {
@@ -53,6 +58,95 @@ pub(super) fn never_unwinding<'tcx>(
         for id in unwinding {
             never.remove(&id);
         }
+    }
+}
+
+/// Whether the crate's generic function `id`, given `args`, never unwinds in
+/// `typing_env`, its caller's (#861): its MIR, `args` filled in, steps
+/// on as one of no type parameters must, each call of a trait's method
+/// what it resolves to, a closure's `call_mut` the closure, which then
+/// never unwinds where `never` holds it; each `Drop` one that drops
+/// nothing, or one `may_panic` says can't panic. So the guide's `impl<F:
+/// FnMut()> Drop for Defer<F>`, given a closure that can't panic, drops in
+/// a `finally`, where each use of it asks. Not of a binding, nor a
+/// coroutine; one that reaches itself again may unwind, as nothing is
+/// known of it yet.
+pub(in crate::lower) fn never_unwinds_given<'tcx>(
+    (recognition, never, bodies): (&Recognition<'_, 'tcx>, &HashSet<DefId>, &HashMap<DefId, &Body<'tcx>>),
+    (id, args, typing_env): (DefId, ty::GenericArgsRef<'tcx>, ty::TypingEnv<'tcx>),
+    (drops, may_panic): (&dyn Fn(Ty<'tcx>) -> bool, &dyn Fn(Ty<'tcx>) -> bool),
+) -> bool {
+    let judged = Judged {
+        recognition,
+        never,
+        bodies,
+        typing_env,
+        drops,
+        may_panic,
+    };
+    judged.given(id, args, &mut Vec::new())
+}
+
+/// What `never_unwinds_given` asks of each function it reaches.
+struct Judged<'a, 'b, 'tcx> {
+    recognition: &'a Recognition<'b, 'tcx>,
+    never: &'a HashSet<DefId>,
+    bodies: &'a HashMap<DefId, &'a Body<'tcx>>,
+    typing_env: ty::TypingEnv<'tcx>,
+    drops: &'a dyn Fn(Ty<'tcx>) -> bool,
+    may_panic: &'a dyn Fn(Ty<'tcx>) -> bool,
+}
+
+impl<'tcx> Judged<'_, '_, 'tcx> {
+    fn given(
+        &self,
+        id: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        seen: &mut Vec<(DefId, ty::GenericArgsRef<'tcx>)>,
+    ) -> bool {
+        let tcx = self.recognition.tcx;
+        if self.never.contains(&id) {
+            return true;
+        }
+        if !id.is_local()
+            || is_binding(tcx, id)
+            || !matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn)
+            || seen.contains(&(id, args))
+        {
+            return false;
+        }
+        let Some(mir) = self.bodies.get(&id).and_then(|body| body.mir.as_ref()) else {
+            return false;
+        };
+        let mir = mir.instantiated(tcx, args).body;
+        let mut dead = crate::lower::mir::dead_drops(tcx, &mir, &self.drops);
+        dead.extend(
+            (mir.basic_blocks.iter_enumerated()).filter_map(|(at, block)| match &block.terminator().kind {
+                TerminatorKind::Drop { place, .. } => {
+                    let ty = place.ty(&mir, tcx).ty;
+                    let ty =
+                        (tcx.try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))).ok()?;
+                    (!(self.may_panic)(ty)).then_some(at)
+                }
+                _ => None,
+            }),
+        );
+        seen.push((id, args));
+        let steps = steps_on((&mir, &dead), &mut |callee, callee_args| {
+            if self.never.contains(&callee) || std_never_unwinds(tcx, self.recognition, callee, callee_args) {
+                return true;
+            }
+            let resolved = crate::lower::items::resolve_instance_in(tcx, self.typing_env, callee, callee_args);
+            let Ok(Some(instance)) = resolved else {
+                return false;
+            };
+            match instance.def {
+                ty::InstanceKind::Item(def) => self.given(def, instance.args, seen),
+                _ => false,
+            }
+        });
+        seen.pop();
+        steps
     }
 }
 
@@ -76,14 +170,13 @@ fn candidate(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// Whether each block of `mir` but its cleanup goes on without a panic:
 /// a jump, a test, a return, a `Drop` of `dead`'s, which drops nothing
-/// (#717), or a call of one of `never`'s or of std's formatting and
-/// printing of what can't fail to show. Not an assert, a bound's or a
-/// divisor's, nor another drop, nor what's unreachable.
+/// (#717), or a call `called` says never unwinds: one of the crate's that
+/// never does, or std's formatting and printing of what can't fail to show.
+/// Not an assert, a bound's or a divisor's, nor another drop, nor what's
+/// unreachable.
 fn steps_on<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    recognition: &Recognition<'_, 'tcx>,
-    never: &HashSet<DefId>,
     (mir, dead): (&mir::Body<'tcx>, &HashSet<mir::BasicBlock>),
+    called: &mut dyn FnMut(DefId, ty::GenericArgsRef<'tcx>) -> bool,
 ) -> bool {
     mir.basic_blocks
         .iter_enumerated()
@@ -99,12 +192,9 @@ fn steps_on<'tcx>(
                 | TerminatorKind::Return
                 | TerminatorKind::FalseEdge { .. }
                 | TerminatorKind::FalseUnwind { .. } => true,
-                TerminatorKind::Call { func, .. } => match func.const_fn_def() {
-                    Some((callee, args)) => {
-                        never.contains(&callee) || std_never_unwinds(tcx, recognition, callee, args)
-                    }
-                    None => false,
-                },
+                TerminatorKind::Call { func, .. } => {
+                    func.const_fn_def().is_some_and(|(callee, args)| called(callee, args))
+                }
                 _ => false,
             }
         })

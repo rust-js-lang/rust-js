@@ -902,6 +902,10 @@ its scope drops it where it leaves, `drop(guard); return result;`, never a
 process to end, the abort is thrown past `catch_unwind`'s `$catchUnwind`,
 though a `catch_unwind` written as JS's `try` catches it
 ([0660](../decisions/0660-catch-unwind-catches-what-js-throws.md), amended).
+A drop that can't panic keeps its `finally`; a generic `Drop` impl is
+judged for each use, so `Defer(|| DEPTH.set(previous))` of `impl<F:
+FnMut()> Drop for Defer<F>` is `finally { depth = previous; }`
+([0902](../decisions/0902-what-never-unwinds-is-read-from-mir.md), amended).
 
 Generic code drops a value of an associated type through its impl's
 dictionary ([0178](../decisions/0178-associated-type-drops.md)).

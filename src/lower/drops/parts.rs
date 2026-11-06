@@ -290,9 +290,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .drop_trait()
                         .map(|t| self.tcx.associated_item_def_ids(t)[0])
                         .expect("`Drop` has `drop`");
-                    let call = self
+                    let mut call = self
                         .trait_call(drop, self.tcx.mk_args(&[ty.into()]), vec![this], span, out)?
                         .ok_or_else(|| self.unsupported(span, &format!("calling `{ty}`'s `drop`")))?;
+                    // A generic one that never unwinds as it's given `args`
+                    // (#861), as one of no type parameters is known by its
+                    // reference (ADR 0902).
+                    if self.drop_never_unwinds(d.did, args) {
+                        call = call.never_throws();
+                    }
                     parts.push(vec![StmtKind::Expr(call).at(js_span)]);
                 }
                 if let Some(inner) = self.option_of(ty) {

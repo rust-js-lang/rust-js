@@ -90,15 +90,8 @@ function pairedCounting(dropI, dropU, dropIItem) {
       return 0;
     },
     heldWith(paired, extra, dropU$1) {
+      console.log("drop held");
       try {
-        try {
-          console.log("drop held");
-        } catch (error) {
-          $cleanup(() => {
-            dropU$1?.(extra);
-          });
-          throw error;
-        }
         dropU$1?.(extra);
       } catch (error) {
         $cleanup(() => {
@@ -151,23 +144,13 @@ function pairedCounting(dropI, dropU, dropIItem) {
       try {
         result$1 = $collectsInPlace([USize, UAlign], HeldSize, HeldAlign)
           ? $foldToArray(iter, (held) => {
-              try {
-                console.log("drop held");
-              } catch (error) {
-                dropU$1?.(held.held);
-                throw error;
-              }
+              console.log("drop held");
               dropU$1?.(held.held);
             })
           : $collectDropping(
               iter,
               (held) => {
-                try {
-                  console.log("drop held");
-                } catch (error) {
-                  dropU$1?.(held.held);
-                  throw error;
-                }
+                console.log("drop held");
                 dropU$1?.(held.held);
               },
               true,
@@ -182,12 +165,7 @@ function pairedCounting(dropI, dropU, dropIItem) {
       const all = result$1;
       const result = all.length;
       $dropItems(all, (item) => {
-        try {
-          console.log("drop held");
-        } catch (error) {
-          dropU$1?.(item.held);
-          throw error;
-        }
+        console.log("drop held");
         dropU$1?.(item.held);
       });
       return result;

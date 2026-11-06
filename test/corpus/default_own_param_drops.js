@@ -118,24 +118,12 @@ function tJoining(TIterator, dropT, dropTItem) {
         n = result;
       } catch (error) {
         $cleanup(() => {
-          try {
-            console.log("drop held");
-          } catch (error) {
-            dropUIntoIter?.(held.iter);
-            throw error;
-          }
+          console.log("drop held");
           dropUIntoIter?.(held.iter);
         });
         throw error;
       }
-      try {
-        console.log("drop held");
-      } catch (error) {
-        $cleanup(() => {
-          dropUIntoIter?.(held.iter);
-        });
-        throw error;
-      }
+      console.log("drop held");
       dropUIntoIter?.(held.iter);
       return n;
     },

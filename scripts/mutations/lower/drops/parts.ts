@@ -270,4 +270,14 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_assert.rs$"],
   },
+  {
+    name: "generic-drop-call-unmarked",
+    breaks:
+      "the call of a generic `Drop` impl that never unwinds as it's given its arguments isn't known to, so its guard drops after its `try` and in a `$cleanup` (#861)",
+    file: "src/lower/drops/parts.rs",
+    find: "                    if self.drop_never_unwinds(d.did, args) {\n",
+    replace: "                    if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_drops_judged_per_use.rs$"],
+    snapshots: true,
+  },
 ];

@@ -113,4 +113,14 @@ export const mutations: Mutation[] = [
     replace: "        out.extend(parts.into_iter().flatten());\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_captures_dropped_past_a_panic.rs$"],
   },
+  {
+    name: "generic-drop-judged-whole",
+    breaks:
+      "a generic `Drop` impl is judged as a whole, not as each use gives it, so the guide's `Defer` of a closure that can't panic drops after its `try` and in a `$cleanup` (#861)",
+    file: "src/lower/drops.rs",
+    find: "        if !self.tcx.generics_of(drop).requires_monomorphization(self.tcx) {\n",
+    replace: "        if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_drops_judged_per_use.rs$"],
+    snapshots: true,
+  },
 ];

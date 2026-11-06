@@ -48,31 +48,16 @@ function held(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, dr
   try {
     result = $collectsInPlace(HInPlace, HeldSize, HeldAlign)
       ? $foldToArray(iter, (held) => {
-          try {
-            heldDrop_drop(held, dropHItemIntoIter);
-          } catch (error) {
-            dropHItemIntoIter?.(held.iter);
-            throw error;
-          }
+          heldDrop_drop(held, dropHItemIntoIter);
           dropHItemIntoIter?.(held.iter);
         })
       : $collectDropping(
           $roomForHint(iter, HeldSize, false, false, (held) => {
-            try {
-              heldDrop_drop(held, dropHItemIntoIter);
-            } catch (error) {
-              dropHItemIntoIter?.(held.iter);
-              throw error;
-            }
+            heldDrop_drop(held, dropHItemIntoIter);
             dropHItemIntoIter?.(held.iter);
           }),
           (held) => {
-            try {
-              heldDrop_drop(held, dropHItemIntoIter);
-            } catch (error) {
-              dropHItemIntoIter?.(held.iter);
-              throw error;
-            }
+            heldDrop_drop(held, dropHItemIntoIter);
             dropHItemIntoIter?.(held.iter);
           },
           true,
@@ -107,18 +92,11 @@ function relayed(options, JInPlace, HeldSize, HeldAlign, dropT, dropJ) {
   );
   const result = value.length;
   $dropItems(value, (item) => {
-    try {
-      heldDrop_drop(item, (intoIter) => {
-        $dropItems(intoIter, (item) => {
-          dropT?.(item);
-        });
-      });
-    } catch (error) {
-      $dropItems(item.iter, (item) => {
+    heldDrop_drop(item, (intoIter) => {
+      $dropItems(intoIter, (item) => {
         dropT?.(item);
       });
-      throw error;
-    }
+    });
     $dropItems(item.iter, (item) => {
       dropT?.(item);
     });
@@ -143,7 +121,9 @@ function ranged(t, HeldSize, HeldAlign) {
     HeldAlign,
   );
   const result = value.length;
-  $dropItems(value, heldDrop_drop);
+  for (const item of value) {
+    heldDrop_drop(item);
+  }
   return result;
 }
 
@@ -159,12 +139,7 @@ function listed(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, 
   return $collectDropping(
     $folded(iter),
     (held) => {
-      try {
-        heldDrop_drop(held, dropHItemIntoIter);
-      } catch (error) {
-        dropHItemIntoIter?.(held.iter);
-        throw error;
-      }
+      heldDrop_drop(held, dropHItemIntoIter);
       dropHItemIntoIter?.(held.iter);
     },
     true,
@@ -184,7 +159,9 @@ function listedRanged(t) {
     },
   );
   const result = value.length;
-  $dropItems(value, heldDrop_drop);
+  for (const item of value) {
+    heldDrop_drop(item);
+  }
   return result;
 }
 
@@ -263,31 +240,16 @@ function tHolding(
         try {
           result = $collectsInPlace(TInPlace, HeldSize, HeldAlign)
             ? $foldToArray(iter, (held) => {
-                try {
-                  heldDrop_drop(held, dropTItemIntoIter);
-                } catch (error) {
-                  dropTItemIntoIter?.(held.iter);
-                  throw error;
-                }
+                heldDrop_drop(held, dropTItemIntoIter);
                 dropTItemIntoIter?.(held.iter);
               })
             : $collectDropping(
                 $roomForHint(iter, HeldSize, false, false, (held) => {
-                  try {
-                    heldDrop_drop(held, dropTItemIntoIter);
-                  } catch (error) {
-                    dropTItemIntoIter?.(held.iter);
-                    throw error;
-                  }
+                  heldDrop_drop(held, dropTItemIntoIter);
                   dropTItemIntoIter?.(held.iter);
                 }),
                 (held) => {
-                  try {
-                    heldDrop_drop(held, dropTItemIntoIter);
-                  } catch (error) {
-                    dropTItemIntoIter?.(held.iter);
-                    throw error;
-                  }
+                  heldDrop_drop(held, dropTItemIntoIter);
                   dropTItemIntoIter?.(held.iter);
                 },
                 true,
@@ -334,12 +296,7 @@ function heldOf(
   ).heldAll($intoIter(items), IItemIntoIterator);
   const result = heldAll.length;
   $dropItems(heldAll, (item) => {
-    try {
-      heldDrop_drop(item, dropIItemIntoIter);
-    } catch (error) {
-      dropIItemIntoIter?.(item.iter);
-      throw error;
-    }
+    heldDrop_drop(item, dropIItemIntoIter);
     dropIItemIntoIter?.(item.iter);
   });
   return result;
@@ -489,7 +446,9 @@ function main() {
   run("listed, ranged", () => listedRanged(7));
   run("holding", () => {
     const value = holding($iter([1, 2]), undefined, 1, 1);
-    $dropItems(value, heldDrop_drop);
+    for (const item of value) {
+      heldDrop_drop(item);
+    }
     return value.length;
   });
   run("enumerated", () => {
