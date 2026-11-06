@@ -18,8 +18,9 @@
 // and a presence test read once, past the arm of its negation, but
 // another value's read where it was (#791); an arm's statement copied
 // into each alternative that binds its value apart, each its own binding
-// (the user's decision A, #771); and a guard's test of constants alone
-// read after another guard's call, which no call changes (#771).
+// (the user's decision A, #771); and a guard's test of constants alone,
+// or of a parameter the function never replaces, read after another
+// guard's call, which no call changes (#771).
 use std::cell::Cell;
 
 fn g(c: &Cell<u32>, n: u32, k: u32) -> bool {
@@ -296,6 +297,22 @@ const SLICES: &[&[u32]] = &[
     &[0, 1, 2, 3],
 ];
 
+fn param_after_call(c: &Cell<u32>, o: Option<u32>) -> u32 {
+    let mut level = 0;
+    for _ in 0..2 {
+        level += 1;
+        match o {
+            Some(_x) | Some(_x) if g(c, 4, 0) || 0 % 2 == 0 => break,
+            Some(x) if 2 > 1 && x % 2 == 0 => continue,
+            _ => {
+                level += 1;
+            }
+        }
+        level += 10;
+    }
+    level
+}
+
 fn constant_after_call(c: &Cell<u32>, o: Option<u32>) -> u32 {
     match o {
         Some(x) | Some(x) if x + 3 % 2 == 0 || 2 % 2 == 0 => x,
@@ -324,6 +341,7 @@ fn main() {
     println!("bound_in_each {:?}", bound_in_each(c, None));
     for o in [None, Some(0), Some(1), Some(2), Some(5)] {
         println!("constant_after_call {}", constant_after_call(c, o));
+        println!("param_after_call {}", param_after_call(c, o));
     }
     for o in [None, Some(0), Some(2)] {
         for p in [None, Some((0, 0)), Some((1, 2))] {

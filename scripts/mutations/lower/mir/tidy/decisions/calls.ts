@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard's test of constants alone, `3 % 2 === 0`, read after another guard's call is taken for one the call may change, so the tree keeps its label (#771)",
     file: "src/lower/mir/tidy/decisions/calls.rs",
-    find: "                    Read::Opaque(j, _) => reads_no_place(&self.opaque[*j].0),\n",
+    find: "                    Read::Opaque(j, _) => self.unchanged(&self.opaque[*j].0),\n",
     replace: "                    Read::Opaque(..) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^match_trees_chained.rs$"],
     snapshots: true,

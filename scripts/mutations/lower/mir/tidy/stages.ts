@@ -1143,4 +1143,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(interpreter).rs$"],
     snapshots: true,
   },
+  {
+    name: "fixed-params-in-the-first-pass",
+    breaks:
+      "a parameter is read after a call as unchanged in the first decisions pass too, whose chain then leaves the last pass a label it would take: seed 2's `m38` (#771)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "    let fixed = match kept {\n",
+    replace: "    let fixed = match true {\n",
+    tests: ["test/match-trees.test.ts", "-t", "seed 2$"],
+  },
 ];

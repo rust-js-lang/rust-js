@@ -1294,6 +1294,12 @@ fn decided_trees(b: &mut Vec<Stmt>, h: &Hints, kept: bool) {
     let bound = decisions::bound(b, &h.written.guards);
     let loops = decisions::loop_labels(b);
     let written: Vec<js::Span> = (h.written.ifs.iter()).chain(&h.written.logicals).copied().collect();
+    // In the last pass alone, every other form tried first: in the first,
+    // a chain it then makes can leave the last pass a label it would take.
+    let fixed = match kept {
+        true => decisions::fixed_params(&h.params.borrow(), b),
+        false => Vec::new(),
+    };
     let told = decisions::Told {
         written: &written,
         guards: &h.written.guards,
@@ -1301,6 +1307,7 @@ fn decided_trees(b: &mut Vec<Stmt>, h: &Hints, kept: bool) {
         bound: &bound,
         loops: &loops,
         kept,
+        fixed: &fixed,
     };
     bottom_up(b, &mut |s| decisions::decisions(s, &told))
 }

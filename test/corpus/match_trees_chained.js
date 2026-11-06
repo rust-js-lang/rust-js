@@ -500,6 +500,22 @@ function boundInEach(c, e) {
 
 const SLICES = [[], [1], [2], [1, 1], [2, 2], [1, 2], [2, 1], [3, 1, 2], [1, 3, 1], [0, 1, 2, 3]];
 
+function paramAfterCall(c, o) {
+  let level = 0;
+  for (let i = 0; i < 2; i++) {
+    level = (level + 1) >>> 0;
+    if (o != null && (g(c, 4, 0) || 0 % 2 === 0 || g(c, 4, 0) || 0 % 2 === 0)) {
+      break;
+    }
+    if (o != null && o % 2 === 0) {
+      continue;
+    }
+    level = (level + 1) >>> 0;
+    level = (level + 10) >>> 0;
+  }
+  return level;
+}
+
 function constantAfterCall(c, o) {
   if (o != null && (!((o + (3 % 2)) >>> 0) || 2 % 2 === 0)) {
     const x = o;
@@ -559,6 +575,7 @@ function main() {
   console.log(`bound_in_each ${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${value$4._0})`}`);
   for (const o of [undefined, 0, 1, 2, 5]) {
     console.log(`constant_after_call ${constantAfterCall(c, o)}`);
+    console.log(`param_after_call ${paramAfterCall(c, o)}`);
   }
   for (const o of [undefined, 0, 2]) {
     for (const p of [undefined, [0, 0], [1, 2]]) {

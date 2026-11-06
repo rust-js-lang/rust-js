@@ -63,6 +63,25 @@ pub(super) struct Told<'h> {
     /// again that do nothing, however long, and of an arm's own tree whose
     /// leaves leave the block (`tails`), as the user decided (C1, #523).
     pub kept: bool,
+    /// The function's parameters it never replaces nor declares again
+    /// (`fixed_params`), which no call changes.
+    pub fixed: &'h [String],
+}
+
+/// The parameters of a function of `params` and `body` that it never
+/// replaces nor declares again: what a guard's call can't change.
+pub(super) fn fixed_params(params: &[js::Pattern], body: &[Stmt]) -> Vec<String> {
+    let writes = js::Writes::of(body);
+    let mut fixed = Vec::new();
+    for param in params {
+        let mut param = param.clone();
+        param.each_name_mut(&mut |name| {
+            if !writes.may_replace(name) && !js::declares(body, name) {
+                fixed.push(name.clone());
+            }
+        });
+    }
+    fixed
 }
 
 /// The label of each loop in `body`.
@@ -467,7 +486,7 @@ fn chain(
         // which the chain must do too, as `Model` tells (#221).
         let model = match calls.is_empty() {
             true => None,
-            false => Some(Model::of(&arms, &calls, told.guards)?),
+            false => Some(Model::of(&arms, &calls, told.guards, told.fixed)?),
         };
         let mut steps: Vec<(usize, Expr)> = Vec::new();
         for &i in &order {

@@ -35,7 +35,7 @@ impl Model<'_> {
     /// out, of each value tested apart from the others, so what holds of
     /// all of them holds of those a program has: `None` where there are
     /// too many, or one it can't tell.
-    pub(super) fn of<'e>(arms: &[Arm], calls: &'e [Expr], guards: &[Guard]) -> Option<Model<'e>> {
+    pub(super) fn of<'e>(arms: &[Arm], calls: &'e [Expr], guards: &[Guard], fixed: &[String]) -> Option<Model<'e>> {
         // Calls alike, one call of the model: a guarded or-pattern's guard,
         // MIR's copy of which each alternative makes, `A | B if on(x)`, of
         // which a path makes one (rd136). One a path makes again, the guard
@@ -71,6 +71,7 @@ impl Model<'_> {
             .collect();
         let within_guard = guarded.iter().map(|g| g.map(|g| g.span)).collect();
         let mut model = Model {
+            fixed: fixed.to_vec(),
             subjects: Vec::new(),
             opaque: Vec::new(),
             calls: unique,
@@ -404,6 +405,9 @@ fn merged(paths: &mut Vec<Vec<Expr>>) {
 /// made where the tree makes it, or not at all, and what's read after it
 /// is what it can't change.
 pub(super) struct Model<'e> {
+    /// The function's parameters it never replaces nor declares again,
+    /// which no call changes (`Told::fixed`).
+    fixed: Vec<String>,
     subjects: Vec<(Expr, Vec<Set>, Vec<js::Span>)>,
     opaque: Vec<(Expr, Vec<js::Span>)>,
     calls: Vec<&'e Expr>,
@@ -460,6 +464,14 @@ impl Model<'_> {
                 self.add(part)
             }
         }
+    }
+
+    /// Whether `test` reads constants and `fixed` alone, the function's
+    /// parameters it never replaces (`read_places`).
+    fn unchanged(&self, test: &Expr) -> bool {
+        let mut places = Vec::new();
+        read_places(test, &mut places)
+            && (places.iter()).all(|place| matches!(&place.kind, ExprKind::Var(v) if self.fixed.contains(v)))
     }
 
     fn read(&self, part: &Expr) -> Option<Read> {
@@ -537,14 +549,17 @@ impl Model<'_> {
                     _ => &[],
                 };
                 let in_its_guard = |c: usize| !span.is_none() && self.within_guard[c].is_some_and(|g| within(*span, g));
-                // A test of constants alone, `0 % 2 === 0` of a guard
-                // `0 % 2 == 0`, reads no place a call could change (#771).
-                let constant = match read {
-                    Read::Opaque(j, _) => reads_no_place(&self.opaque[*j].0),
+                // A test of constants and the function's parameters it never
+                // replaces alone, `0 % 2 === 0` of a guard `0 % 2 == 0`, or
+                // `b === 0` of a `match (a, b)` its tree reads as `b`, reads
+                // nothing a call could change (#771).
+                let unchanged = match read {
+                    Read::Subject(j, _) => self.unchanged(&self.subjects[*j].0),
+                    Read::Opaque(j, _) => self.unchanged(&self.opaque[*j].0),
                     _ => false,
                 };
                 if matches!(read, Read::Subject(..) | Read::Opaque(..))
-                    && !constant
+                    && !unchanged
                     && !(trace.iter()).all(|&(c, _)| self.made[c].is_some_and(|m| kept.contains(&m)) || in_its_guard(c))
                 {
                     return None;
@@ -585,12 +600,6 @@ enum Node {
         span: js::Span,
         cells: Vec<Option<bool>>,
     },
-}
-
-/// Whether `test` reads constants alone, no place (`read_places`).
-fn reads_no_place(test: &Expr) -> bool {
-    let mut places = Vec::new();
-    read_places(test, &mut places) && places.is_empty()
 }
 
 /// The places `test` reads, each variable, property or element, `a` of `a

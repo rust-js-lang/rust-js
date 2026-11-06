@@ -1553,3 +1553,13 @@ so it isn't made.
 
 `match_trees_chained.rs`' `constant_after_call`, against native Rust in
 both builds. Mutation: `constant-test-refused-after-calls`.
+
+And a test of the function's parameters it never replaces nor declares
+again, `fixed_params`, reads nothing a call changes either: the last pass
+reads the tree's tests as the parameters, `b === 0` where MIR's was
+`_7[1] === 0`, and so refused `b` after another guard's call, which only
+the `match`'s copy, `_7`, was kept for. Only in the last pass, every other
+form tried first: in the first, a chain it then makes leaves the last
+pass seed 2's `m38` labeled. 214 of 960 functions, from 221.
+`param_after_call` against native Rust; mutations `fixed-params-none` and
+`fixed-params-in-the-first-pass`.
