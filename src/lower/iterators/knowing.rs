@@ -80,7 +80,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// back (ADR 0545), made knowing it where it's made: the one answer, of
     /// what's made and what's stepped.
     pub(in crate::lower) fn stepped_from_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
-        (self.krate.back_stepped).contains(&self.tcx.erase_and_anonymize_regions(ty.peel_refs()))
+        (self.krate.back_stepped.types).contains(&self.tcx.erase_and_anonymize_regions(ty.peel_refs()))
+    }
+
+    /// Whether `local`, of the body being lowered, holds what the crate
+    /// steps from its back (back_stepped's `stepped_locals`, #814): by the
+    /// MIR identity of what holds a value, not its type, which another value
+    /// of it need not share. The one answer of a counted adapter's, a
+    /// `skip(n)`'s, a `take(n)`'s or a `step_by(n)`'s.
+    pub(in crate::lower) fn local_stepped_from_its_back(
+        &self,
+        local: rustc_middle::mir::Local,
+    ) -> Option<crate::lower::analysis::SteppedLocal> {
+        (self.krate.back_stepped.locals)
+            .get(&(self.frame.owner, local))
+            .copied()
+    }
+
+    /// Whether what the std iterator method being lowered makes, into
+    /// `made_into`, is given to what steps it from its back, made knowing it
+    /// by its maker (`SteppedLocal::Given`).
+    /// `make`, a call's lowering, told where it makes its value, `into`, its
+    /// maker's MIR identity, which `made_stepped_from_its_back` asks (#814).
+    pub(in crate::lower) fn making_into<T>(
+        &mut self,
+        into: Option<rustc_middle::mir::Local>,
+        make: impl FnOnce(&mut Self) -> T,
+    ) -> T {
+        let outer = std::mem::replace(&mut self.made_into, into);
+        let made = make(self);
+        self.made_into = outer;
+        made
+    }
+
+    pub(in crate::lower) fn made_stepped_from_its_back(&self) -> bool {
+        self.made_into.and_then(|local| self.local_stepped_from_its_back(local))
+            == Some(crate::lower::analysis::SteppedLocal::Given)
     }
 
     /// Whether an adapter of type `ty` is explicit (ADR 0542): of a kind the
@@ -169,9 +204,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // it (ADR 0545).
         if let Some(source) = crate::lower::recognition::back_stepped_source(self.tcx, ty) {
             return self.knows_its_back(source) || self.stepped_from_its_back(ty);
-        }
-        if self.counted_made_knowing(ty) {
-            return true;
         }
         // A flatten the crate steps from its back, made knowing it,
         // `$flattenEnds`, and a chain a function gives behind an `impl`,
@@ -291,10 +323,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if crate::lower::recognition::zipped_sources(self.tcx, ty).is_some() && self.knows_its_back(ty) {
             return true;
         }
-        // A `skip(n)` or a `take(n)` made so (#718).
-        if self.counted_made_knowing(ty) {
-            return true;
-        }
         if let Some(id) = crate::lower::recognition::dyn_iter_trait(self.tcx, ty) {
             return crate::lower::recognition::is_exact_size(self.tcx, id);
         }
@@ -332,15 +360,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // steps `a` once more, `SpecFold`'s `TrustedLen` impl (ADR 0997).
         let to_shorter = crate::lower::recognition::zip_folds_to_the_shorter(self.tcx, ty) == Some(false);
         Ok(Some(value::zip_ends(zip.by_index, a, b, (drop_a, drop_b), to_shorter)))
-    }
-
-    /// Whether `ty` is a `skip(n)` or a `take(n)` the crate steps from its
-    /// back, `back_stepped`'s, made knowing its back and its length where
-    /// it's made (`back_kept`, #718): `$skipping` or `$taking` of its source
-    /// made knowing them, held in a variable or not. A type's question, of
-    /// `knows_its_back` and `knows_its_length`.
-    fn counted_made_knowing(&self, ty: ty::Ty<'tcx>) -> bool {
-        crate::lower::recognition::counted_source(self.tcx, ty).is_some() && self.stepped_from_its_back(ty)
     }
 
     /// `value`, an iterator of type `ty`, given where generic code asks its

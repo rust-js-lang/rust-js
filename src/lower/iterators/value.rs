@@ -477,6 +477,13 @@ pub(in crate::lower) fn is_knowing(e: &Expr) -> bool {
     e.facts.has(Known::IterKnowing)
 }
 
+/// Whether `e`, `$knowing(it, back, len, ..)`, is given its length, `len`:
+/// std's struct, given its compiled `len` where it's asked (#814).
+pub(in crate::lower) fn knows_its_given_length(e: &Expr) -> bool {
+    is_knowing(e)
+        && matches!(&e.kind, js::ExprKind::Call(_, args) if args.get(2).is_some_and(|len| *len != Expr::undefined()))
+}
+
 /// `e`, a `rev()` its maker made knowing its back (`reversed_knowing`),
 /// marked so: what's asked of it past its maker reads the mark, not the
 /// type's set (back_stepped, ADR 0545).

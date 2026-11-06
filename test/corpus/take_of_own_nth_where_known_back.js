@@ -11,7 +11,9 @@ import {
   $lazyChain,
   $lent,
   $next,
+  $nthBack,
   $nthDropping,
+  $rev,
   $taking,
 } from "@rust-js/runtime";
 
@@ -87,22 +89,17 @@ function main() {
     },
   );
   console.log(`chained ${chained}`);
-  let it;
-  it = $enumerate(
-    $taking(
-      $iterator(
-        count(),
-        countIterator_next,
-        false,
-        countDoubleEndedIterator_nextBack,
-        (it) => $exactLen(countIterator_sizeHint(it)),
-        countIterator_sizeHint,
-        undefined,
-        countIterator_nth,
-      ),
-      3,
-      dDrop_drop,
-    ),
+  const it = $enumerate(
+    $iterator(
+      count(),
+      countIterator_next,
+      false,
+      undefined,
+      undefined,
+      countIterator_sizeHint,
+      undefined,
+      countIterator_nth,
+    ).take(3),
   );
   const second = $nthDropping(
     $lent(it),
@@ -129,7 +126,47 @@ function main() {
       dDrop_drop(next[1]);
     }
   }
-  const past = $taking(
+  const past = $iterator(
+    count(),
+    countIterator_next,
+    false,
+    undefined,
+    undefined,
+    countIterator_sizeHint,
+    undefined,
+    countIterator_nth,
+  ).take(2);
+  let none = $nthDropping($lent(past), 4, dDrop_drop, false);
+  function map(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
+  }
+  const value = none != null ? map(none) : undefined;
+  console.log(`past ${value == null ? "None" : `Some(${value})`}`);
+  let taken = $taking(
+    $iterator(
+      count(),
+      countIterator_next,
+      false,
+      countDoubleEndedIterator_nextBack,
+      (it) => $exactLen(countIterator_sizeHint(it)),
+      countIterator_sizeHint,
+      undefined,
+      countIterator_nth,
+    ),
+    3,
+    dDrop_drop,
+  );
+  const nth = $nthBack($rev(taken), 1, undefined, dDrop_drop);
+  function map$1(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
+  }
+  const value$1 = nth != null ? map$1(nth) : undefined;
+  console.log(`rev nth_back ${value$1 == null ? "None" : `Some(${value$1})`}`);
+  taken = $taking(
     $iterator(
       count(),
       countIterator_next,
@@ -143,13 +180,13 @@ function main() {
     2,
     dDrop_drop,
   );
-  const none = $nthDropping($lent(past), 4, dDrop_drop, false);
-  function map(d) {
+  none = $nthBack($rev(taken), 4, undefined, dDrop_drop);
+  function map$2(d) {
     const result = d[0];
     dDrop_drop(d);
     return result;
   }
-  const value = none != null ? map(none) : undefined;
-  console.log(`past ${value == null ? "None" : `Some(${value})`}`);
+  const value$2 = none != null ? map$2(none) : undefined;
+  console.log(`rev past ${value$2 == null ? "None" : `Some(${value$2})`}`);
 }
 //# sourceMappingURL=case.js.map

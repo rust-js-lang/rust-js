@@ -1175,7 +1175,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             flattened: Default::default(),
             in_place: Default::default(),
             settled: Vec::new(),
-            iter_locals: temporaries::IterLocals::of(self.recognition(), mir_body),
+            iter_locals: temporaries::IterLocals::of(mir_body),
             named: Default::default(),
             parts: Default::default(),
             places: Default::default(),

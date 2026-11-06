@@ -288,12 +288,12 @@ test("back_stepped's set is read where a value is made, or as a type's question"
     "src/lower/mir/iter.rs": [1, "`cloned_apart_call`, the maker of a map or a filter cloned apart"],
     "src/lower/mir/std_calls.rs": [1, "`mir_iter_std_call`, the maker of a std adapter made in place"],
     "src/lower/mir/iter/backs.rs": [
-      4,
-      "`back_kept`, the maker of an enumeration, a `skip(n)` or a `take(n)` it steps from its back, and `rev_called`, a `rev()`'s, twice: of a type parameter given as it is, and of what `rev_items` makes",
+      3,
+      "`back_kept`, the maker of an enumeration it steps from its back, and `rev_called`, a `rev()`'s, twice: of a type parameter given as it is, and of what `rev_items` makes",
     ],
     "src/lower/iterators/knowing.rs": [
-      9,
-      "`reversed_made_knowing` and `reversed_knowing`, a `rev()`'s maker; `knows_its_back` and `knows_its_length`, a type's questions, and `counted_made_knowing`, theirs of a `skip(n)` or a `take(n)`",
+      8,
+      "`reversed_made_knowing` and `reversed_knowing`, a `rev()`'s maker; `knows_its_back` and `knows_its_length`, a type's questions",
     ],
   };
   const reader = /\.(stepped_from_its_back|reversed_made_knowing)\(/;
@@ -306,6 +306,36 @@ test("back_stepped's set is read where a value is made, or as a type's question"
   expect([owned("a read of back_stepped's set past a value's maker"), found]).toEqual([
     owned("a read of back_stepped's set past a value's maker"),
     expected,
+  ]);
+});
+
+// Whether a counted adapter, a `skip(n)`, a `take(n)` or a `step_by(n)`, is
+// stepped from its back is back_stepped's `stepped_locals` alone, by the MIR
+// identity of what holds it (#814): a temporary lent to a back step, a
+// variable's value given to one, a chain's side, what an adapter holds
+// beneath, a function's return place. Not a type's question, which another
+// value of the type need not share: the per-type set records no counted
+// adapter, `IterLocals` holds no back-step fact of its locals, and no
+// lowering file but back_stepped.rs scans MIR's calls for what steps from
+// its back through a `&mut`.
+test("a counted adapter is stepped from its back by back_stepped's stepped_locals alone", () => {
+  const owner = read("src/lower/analysis/back_stepped.rs");
+  const types = owner.slice(0, owner.indexOf("pub(super) fn stepped_locals"));
+  const locals = read("src/lower/mir/temporaries.rs");
+  const struct = locals.slice(locals.indexOf("pub(super) struct IterLocals {"));
+  const fields = [...struct.slice(0, struct.indexOf("\n}\n")).matchAll(/^    (?:pub\(super\) )?(\w+):/gm)].map((m) => m[1]);
+  const scans = loweringSources().filter(
+    (file) =>
+      file !== "src/lower/analysis/back_stepped.rs" &&
+      read(file).includes("TerminatorKind::Call") &&
+      read(file).includes("BorrowKind::Mut") &&
+      /steps_from_its_back\(\)|IterMethod::(NextBack|NthBack|RFind)\b/.test(read(file)),
+  );
+  expect([owned("a second fact of a counted adapter stepped from its back"), types.includes("counted_source("), fields, scans]).toEqual([
+    owned("a second fact of a counted adapter stepped from its back"),
+    false,
+    ["maps", "marks", "once"],
+    [],
   ]);
 });
 

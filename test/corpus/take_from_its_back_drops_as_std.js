@@ -9,9 +9,11 @@ import {
   $enumerate,
   $foldBack,
   $foldToArray,
+  $held,
   $iter,
   $lazyChain,
   $mapEnds,
+  $nthBack,
   $range,
   $rev,
   $roomForHint,
@@ -116,11 +118,32 @@ function main() {
   );
   console.log(`chained ${chained}`);
   const n = $count(
-    $enumerate($taking($rev($closing($iter(ds()), $dropEach(dDrop_drop))), 3, dDrop_drop)),
+    $enumerate($rev($closing($iter(ds()), $dropEach(dDrop_drop))).take(3)),
     (value) => {
       dDrop_drop(value[1]);
     },
   );
   console.log(`count ${n}`);
+  const rev = $held(
+    $rev(
+      $lazyChain(
+        $taking($rev($closing($iter(ds()), $dropEach(dDrop_drop))), 3, dDrop_drop),
+        $closing($iter([[6]]), $dropEach(dDrop_drop)),
+      ),
+    ),
+  );
+  let third;
+  try {
+    const nthBack = $nthBack(rev, 2, undefined, dDrop_drop);
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    third = nthBack != null ? map(nthBack) : undefined;
+  } finally {
+    rev.return();
+  }
+  console.log(`third ${third == null ? "None" : `Some(${third})`}`);
 }
 //# sourceMappingURL=case.js.map

@@ -659,8 +659,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `rev()` the crate steps from its back isn't made knowing it where it's made: a slice's map's `rev().nth_back(1)` lent to `nth_back` is `$iter(v.toReversed()).map(f)`, which has no back, and throws (#702)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "        self.reversed_knowing(reversed, output, span)\n",
-    replace: "        Ok(reversed)\n",
+    find: "        let reversed = self.reversed_knowing(reversed, output, span)?;\n",
+    replace: "        let reversed = reversed;\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
   },
   {
@@ -694,8 +694,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `skip(n)` or a `take(n)` the crate steps from its back isn't made knowing it where it's made, so one a variable holds, or a chain's side, has no form left to step from its back: refused (#718)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            Some(IterMethod::Skip | IterMethod::Take) if self.stepped_from_its_back(output) && !held.is_ref() => {\n",
-    replace: "            Some(IterMethod::Skip | IterMethod::Take) if self.stepped_from_its_back(output) && false => {\n",
+    find: "            Some(IterMethod::Skip | IterMethod::Take) if self.made_stepped_from_its_back() && !held.is_ref() => {\n",
+    replace: "            Some(IterMethod::Skip | IterMethod::Take) if self.made_stepped_from_its_back() && false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^(skip_take_of_droppers_from_back|held_beneath_adapters_from_its_back).rs$"],
   },
   {
@@ -769,5 +769,29 @@ export const mutations: Mutation[] = [
     replace: "        Ok(crate::lower::iterators::made_knowing_its_back(knowing))\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
     snapshots: true,
+  },
+  {
+    name: "counted-made-knowing-unmarked",
+    breaks: "a `skip(n)` or a `take(n)` made knowing its back by its maker isn't marked so, and a variable holding it, given to a `rev()` whose `len()` is asked, is refused (#814)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                crate::lower::iterators::made_knowing_its_back(Expr::call_helper(\n                    if skip { \"$skipping\" } else { \"$taking\" },\n                    given,\n                ))\n",
+    replace: "                Expr::call_helper(if skip { \"$skipping\" } else { \"$taking\" }, given)\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
+  },
+  {
+    name: "rev-of-counted-knowing-unmarked",
+    breaks: "a `rev()` of a `skip(n)` or a `take(n)` that knows its length isn't marked so, and a variable holding it, held to drop its items, is asked its `len()` past its maker and refused (#814)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            Some(source) if crate::lower::recognition::counted_source(self.tcx, iter_ty).is_some() && knows(source) => {\n",
+    replace: "            Some(source) if false && knows(source) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^counted_adapter_given_back_from_its_back.rs$"],
+  },
+  {
+    name: "rev-of-given-counted-unmarked",
+    breaks: "a `rev()` of a `skip(n)` or a `take(n)` a function gives behind an `impl`, std's struct given its compiled `len`, isn't marked knowing its back, and its `len()` is refused (#814)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                || crate::lower::iterators::knows_its_given_length(source)\n",
+    replace: "                || false\n",
+    tests: ["test/corpus.test.ts", "-t", "^counted_adapter_given_back_from_its_back.rs$"],
   },
 ];

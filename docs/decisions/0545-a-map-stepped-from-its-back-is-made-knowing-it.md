@@ -968,3 +968,60 @@ with a destructor print as native Rust does. Mutations
 `step-by-back-slice-dropped-each`, `step-by-ends-drop-unpassed`
 (`runtime/back_steps.ts`), `step-by-ends-undropped`
 (`iterators/stepping.ts`); four others name their lines as they now read.
+
+## Amended (2026-11-06, #814): a counted adapter is stepped from its back by what holds it, not its type
+
+Two rules decided whether a `skip(n)`, a `take(n)` or a `step_by(n)` is
+made knowing its back. The per-type set recorded one given held to what
+asks its back, and a chain's side (afdd70519); `IterLocals` recorded a
+temporary lent to a back step (#718's fourth part). Two authorities for
+one question, which AGENTS.md refuses. Neither alone could hold both:
+recording the type of every one a back step asks changed what else of
+that type was made, a field's `skip` given `$knowing` at a plain `for`,
+and four matrix rows' drop order. One type has many values, of which only
+some are stepped from their back.
+
+**One fact, by the MIR identity of what holds the value:
+`back_stepped::stepped_locals`, each `(body, local)` the crate steps from
+its back, and how it holds it.**
+- `Lent`: a temporary whose `&mut` is given as the receiver of what asks
+  its back, a `DoubleEndedIterator` clause of the callee's of its type,
+  `nth_back(&mut _11)`'s. Its value, made in place, is made knowing its
+  back where it's assigned, by its form (`made_knowing_where_held`).
+- `Given`: a variable's value given whole to what asks its back,
+  `rev()`'s or generic code's, through each move MIR makes of it; a
+  chain's side, of a chain stepped from its back; a variable held beneath
+  an adapter made in place that a step asks, `s.map(f).rev()` of a held
+  `s` (#790). Not a function's return place: one a function gives behind
+  an `impl` is std's struct (ADR 0919), which steps from its back by its
+  compiled impl. Its maker, `back_kept`, knowing it by the local its call makes its
+  value into (`made_into`, set where the call's terminator is lowered),
+  makes it `$skipping` or `$taking` and marks it made knowing its back.
+
+Not a temporary given whole, made in place where it's stepped, whose form
+the step reads, `v.slice(2).toReversed()`; nor a variable lent, std's
+struct, whose compiled back the step asks. The per-type set records no
+counted adapter, and the type questions `knows_its_back` and
+`knows_its_length` don't answer of one: its value's mark does, carried by
+its locals. A `rev()` of one that knows its length, made knowing its back
+or std's struct given its compiled `len` (`knows_its_given_length`), is
+marked so where it's made (`rev_called`), and `len_in_place` reads the mark
+of a variable that holds it, held to drop its items (`held.rev().len()`). `IterLocals` holds no back-step fact of its own. The
+architecture test "a counted adapter is stepped from its back by
+back_stepped's stepped_locals alone" holds it.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable. The
+whole corpus, the snapshots, both iterator slices and #823's 19 matrix rows
+run as before, and 138 generated programs (each counted adapter, of numbers
+and of items with a destructor, made in place, held, given behind an `impl`
+or a chain's side, stepped back six ways) run, are refused or are wrong as
+on main, in both builds; one snapshot reads better, `skip_take_of_droppers_from_back`'s
+`$rev(held).map(f)` summed forward, where the type said `held` knew its back
+and its map was made `$mapEnds`. Mutations `counted-given-held-unrecorded`,
+`counted-chain-side-unstepped`, `back-stepped-temporary-unrecorded`,
+`back-stepped-temporary-made-unknowing`, `counted-back-stepped-made-unknowing`
+and `counted-made-knowing-unread` name the new fact's lines;
+`stepped-local-held-beneath-unasked`, `stepped-local-origin-unread`,
+`counted-made-knowing-unmarked`, `rev-of-counted-knowing-unmarked` and
+`rev-of-given-counted-unmarked` are new, the last two held by corpus
+`counted_adapter_given_back_from_its_back`; `next-back-asks-no-back` goes with `asks_its_back`.

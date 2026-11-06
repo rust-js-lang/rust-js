@@ -465,4 +465,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(generic_and_counted_steps_from_their_back|collected_counts_ask_room).rs$"],
     snapshots: true,
   },
+  {
+    name: "counted-made-knowing-unread",
+    breaks:
+      "a `skip(n)` or a `take(n)` the crate steps from its back, made knowing it where it's made, isn't read as knowing it where a variable holds it: `held.rev()` of a `let held = v.into_iter().skip(1)` is refused (#718)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "        if r::counted_source(self.tcx, base).is_some() && crate::lower::iterators::was_made_knowing_its_back(it) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
+  },
 ];

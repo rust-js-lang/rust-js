@@ -5,8 +5,10 @@
 // `extend_trusted` folds a `TrustedLen` one, so what `rfold` trims drops
 // from the back, of a type parameter's too; and its `count` is its
 // source's `advance_by`, which drops a reversed `Vec`'s as one slice,
-// front to back, where a chain's `rfold` of one elsewhere makes its type
-// knowing its back.
+// front to back, of a chain's side stepped by the chain's `nth`, a `rev()`'s
+// `nth_back`. One of the same type that isn't stepped from its back is std's
+// `take`, as a chain's `rfold` of one elsewhere no longer makes its type
+// knowing its back (#814).
 use std::panic::catch_unwind;
 
 struct D(u32);
@@ -70,4 +72,13 @@ fn main() {
     println!("chained {chained}");
     let n = ds().into_iter().rev().take(3).enumerate().count();
     println!("count {n}");
+    let third = ds()
+        .into_iter()
+        .rev()
+        .take(3)
+        .chain(vec![D(6)])
+        .rev()
+        .nth_back(2)
+        .map(|d| d.0);
+    println!("third {third:?}");
 }

@@ -1437,12 +1437,6 @@ impl IterMethod {
         )
     }
 
-    /// Whether it asks its receiver's back alone: `steps_from_its_back`'s,
-    /// and `next_back` (#718). Not `rposition`, which asks its length too.
-    pub(crate) fn asks_its_back(self) -> bool {
-        self.steps_from_its_back() || self == IterMethod::NextBack
-    }
-
     /// Whether it's a fold that may stop early, stepping what it's given
     /// with its `next()` and closing nothing: `try_fold` and `try_for_each`
     /// (ADRs 0458, 0539).

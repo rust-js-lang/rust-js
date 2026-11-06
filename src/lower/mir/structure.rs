@@ -721,9 +721,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(refuse(self.tcx, *fn_span, Refused::Because(&what, why)));
                 }
                 let mut called = Vec::new();
+                // Where it makes its value, its maker's MIR identity, which
+                // what's stepped from its back asks (#814).
+                let into = destination.projection.is_empty().then_some(destination.local);
                 let value = match state.facts.awaits().contains(&block) {
                     true => self.mir_await(state, func, args, *destination, *fn_span, &mut called),
-                    false => self.mir_call(state, func, args, *destination, *fn_span, &mut called),
+                    false => self.making_into(into, |cx| {
+                        cx.mir_call(state, func, args, *destination, *fn_span, &mut called)
+                    }),
                 };
                 let value = value?;
                 // An adapter made in place, marked so by its maker (#730).

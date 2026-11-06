@@ -20,7 +20,6 @@ import {
   $knowing,
   $lastDropping,
   $lazyChain,
-  $mapEnds,
   $next,
   $nextBack,
   $range,
@@ -55,66 +54,63 @@ function taken() {
 function main() {
   const intoIterExactSizeIterator = { len: (iterator) => iterator.len() };
   const i = $foldToArray(
-    $mapEnds(
-      $rev(
-        $knowing(
-          taken(),
-          (iterator) =>
-            takeIDoubleEndedIterator_nextBack(
-              iterator,
-              { next: $next, advanceBy: $advanceSlice },
-              { next_back: $nextBack },
-              intoIterExactSizeIterator,
-              $dropEach(dDrop_drop),
-              dDrop_drop,
-            ),
-          (iterator) => $exactLen($sizeHint(iterator)),
-          (iterator, init, f, unwind, ends) =>
-            takeIDoubleEndedIterator_rfold(
-              iterator,
-              init,
-              f,
-              { next: $next, advanceBy: $advanceSlice },
-              { next_back: $nextBack },
-              intoIterExactSizeIterator,
-              $dropEach(dDrop_drop),
-              unwind,
-              ends,
-              dDrop_drop,
-            ),
-          (iterator, k) =>
-            takeIDoubleEndedIterator_nthBack(
-              iterator,
-              k,
-              { next: $next, advanceBy: $advanceSlice },
-              { next_back: $nextBack },
-              intoIterExactSizeIterator,
-              $dropEach(dDrop_drop),
-              dDrop_drop,
-            ),
-          (iterator, init, f, broke, unwind, ends) =>
-            takeIDoubleEndedIterator_tryRfold(
-              iterator,
-              init,
-              f,
-              { next: $next, advanceBy: $advanceSlice },
-              { next_back: $nextBack },
-              intoIterExactSizeIterator,
-              $tryOf(broke),
-              $dropEach(dDrop_drop),
-              unwind,
-              ends,
-              undefined,
-              dDrop_drop,
-            ),
-        ),
+    $rev(
+      $knowing(
+        taken(),
+        (iterator) =>
+          takeIDoubleEndedIterator_nextBack(
+            iterator,
+            { next: $next, advanceBy: $advanceSlice },
+            { next_back: $nextBack },
+            intoIterExactSizeIterator,
+            $dropEach(dDrop_drop),
+            dDrop_drop,
+          ),
+        (iterator) => $exactLen($sizeHint(iterator)),
+        (iterator, init, f, unwind, ends) =>
+          takeIDoubleEndedIterator_rfold(
+            iterator,
+            init,
+            f,
+            { next: $next, advanceBy: $advanceSlice },
+            { next_back: $nextBack },
+            intoIterExactSizeIterator,
+            $dropEach(dDrop_drop),
+            unwind,
+            ends,
+            dDrop_drop,
+          ),
+        (iterator, k) =>
+          takeIDoubleEndedIterator_nthBack(
+            iterator,
+            k,
+            { next: $next, advanceBy: $advanceSlice },
+            { next_back: $nextBack },
+            intoIterExactSizeIterator,
+            $dropEach(dDrop_drop),
+            dDrop_drop,
+          ),
+        (iterator, init, f, broke, unwind, ends) =>
+          takeIDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next, advanceBy: $advanceSlice },
+            { next_back: $nextBack },
+            intoIterExactSizeIterator,
+            $tryOf(broke),
+            $dropEach(dDrop_drop),
+            unwind,
+            ends,
+            undefined,
+            dDrop_drop,
+          ),
       ),
-      (d) => {
-        const result = d[0];
-        dDrop_drop(d);
-        return result;
-      },
-    ),
+    ).map((d) => {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }),
   );
   console.log(`[${i.join(", ")}]`);
   const c = $foldToArray(
@@ -180,7 +176,7 @@ function main() {
   const l = last != null ? map(last) : undefined;
   console.log(`${l == null ? "None" : `Some(${l})`}`);
   const v = $foldToArray(
-    $mapEnds($rev($taking($closing($iter(ds()), $dropEach(dDrop_drop)), 3, dDrop_drop)), (d) => {
+    $rev($taking($closing($iter(ds()), $dropEach(dDrop_drop)), 3, dDrop_drop)).map((d) => {
       const result = d[0];
       dDrop_drop(d);
       return result;
@@ -189,21 +185,20 @@ function main() {
   console.log(`[${v.join(", ")}]`);
   const held = $taking($closing($iter(ds()), $dropEach(dDrop_drop)), 3, dDrop_drop);
   const w = $foldToArray(
-    $mapEnds($rev(held), (d) => {
+    $rev(held).map((d) => {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }),
   );
   console.log(`[${w.join(", ")}]`);
-  const s = $mapEnds(
-    $rev($taking($closing($iter(ds()), $dropEach(dDrop_drop)), 3, dDrop_drop)),
-    (d) => {
+  const s = $rev($taking($closing($iter(ds()), $dropEach(dDrop_drop)), 3, dDrop_drop))
+    .map((d) => {
       const result = d[0];
       dDrop_drop(d);
       return result;
-    },
-  ).reduce((a, b) => (a + b) >>> 0, 0);
+    })
+    .reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${s}`);
   const it = $held($rev($taking($closing($iter(ds()), $dropEach(dDrop_drop)), 3, dDrop_drop)));
   try {

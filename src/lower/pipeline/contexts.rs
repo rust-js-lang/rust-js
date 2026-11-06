@@ -57,5 +57,6 @@ pub(super) fn fn_cx<'a, 'tcx>(
         scope_self: None,
         scope_values: Vec::new(),
         telling_arms: Default::default(),
+        made_into: None,
     }
 }

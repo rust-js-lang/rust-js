@@ -846,12 +846,4 @@ export const mutations: Mutation[] = [
     replace: "                    | \"std::iter::Copied\"\n                    | \"std::iter::Enumerate\"\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_cloned_items_whose_clone_runs.rs$"],
   },
-  {
-    name: "next-back-asks-no-back",
-    breaks: "`next_back` isn't a step that asks its receiver's back, so a temporary it takes isn't made knowing it, and it's refused (#718)",
-    file: "src/lower/recognition/iterators.rs",
-    find: "        self.steps_from_its_back() || self == IterMethod::NextBack\n",
-    replace: "        self.steps_from_its_back()\n",
-    tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
-  },
 ];

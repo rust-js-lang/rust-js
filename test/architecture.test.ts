@@ -457,6 +457,9 @@ const owners: Record<string, string[]> = {
   // once it knows its arms differ, where a class is told by `instanceof`
   // (#555): set by its switch, read where a test is.
   "self.telling_arms": ["src/lower/mir/structure.rs", "src/lower/untagged/classes.rs"],
+  // While a call is lowered, the local it makes its value into, its maker's
+  // MIR identity, which what's stepped from its back asks (#814).
+  "self.made_into": ["src/lower/iterators/knowing.rs"],
 };
 // The rest of a function's context, which each module may read, and why:
 // what it lowers and where (set entering a body, `bodies.rs`), the names it

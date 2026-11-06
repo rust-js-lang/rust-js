@@ -368,7 +368,7 @@ struct CrateFacts<'a, 'tcx> {
     /// (ADR 0542): those its types hold, and those with a count it clones.
     explicit_adapters: &'a HashSet<DefId>,
     /// The map and filter types the crate steps from their back (ADR 0545).
-    back_stepped: &'a HashSet<Ty<'tcx>>,
+    back_stepped: &'a analysis::BackStepped<'tcx>,
     /// The trait constants generic code reads (ADR 0106).
     generic_consts: &'a HashSet<DefId>,
     changed_vecs: &'a HashSet<Ty<'tcx>>,
@@ -602,6 +602,9 @@ struct FnCx<'a, 'tcx> {
     /// type's class, once it knows its arms differ (#555): no test of them
     /// refuses it then.
     telling_arms: Cell<bool>,
+    /// The local a std iterator method's call being lowered makes its value
+    /// into, where it's a whole local: its maker's MIR identity (#814).
+    made_into: Option<rustc_middle::mir::Local>,
 }
 
 /// What a body being lowered has of its own, which a nested one, a

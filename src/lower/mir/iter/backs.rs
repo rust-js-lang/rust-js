@@ -87,7 +87,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => reversed.in_place(),
             false => reversed,
         };
-        self.reversed_knowing(reversed, output, span)
+        let reversed = self.reversed_knowing(reversed, output, span)?;
+        // Of a `skip(n)` or a `take(n)` that knows its length, made knowing
+        // its back where it's made or std's struct given its compiled `len`:
+        // marked so, as what's asked of it past its maker, its `len()`, reads
+        // the mark, not its type (#814).
+        let knows = |source: &Expr| {
+            crate::lower::iterators::was_made_knowing_its_back(source)
+                || crate::lower::iterators::knows_its_given_length(source)
+        };
+        Ok(match crate::lower::iterators::reversed_of(&reversed) {
+            Some(source) if crate::lower::recognition::counted_source(self.tcx, iter_ty).is_some() && knows(source) => {
+                crate::lower::iterators::made_knowing_its_back(reversed)
+            }
+            _ => reversed,
+        })
     }
 
     /// `rev()` of a std iterator neither a range nor the crate's own: of
@@ -335,7 +349,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // source made knowing them and closed to drop what it holds, as a
             // map's is, given its items' drop, as `as_exact_size` makes one in
             // place. Not one through a `&mut`, its owner's.
-            Some(IterMethod::Skip | IterMethod::Take) if self.stepped_from_its_back(output) && !held.is_ref() => {
+            Some(IterMethod::Skip | IterMethod::Take) if self.made_stepped_from_its_back() && !held.is_ref() => {
                 let skip = method == Some(IterMethod::Skip);
                 let it = self.as_exact_size(receiver.clone(), iter_ty, true, span)?;
                 let it = self.closing(it, held, span)?;
@@ -344,7 +358,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Some(item) = self.iterator_item(output) {
                     given.extend(self.std_drop_function(item, span)?);
                 }
-                Expr::call_helper(if skip { "$skipping" } else { "$taking" }, given)
+                crate::lower::iterators::made_knowing_its_back(Expr::call_helper(
+                    if skip { "$skipping" } else { "$taking" },
+                    given,
+                ))
             }
             // A filter of one (ADR 0526), given its items' drop, of items with
             // a destructor, which drops each it doesn't keep as it passes it

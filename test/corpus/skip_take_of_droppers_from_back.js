@@ -28,7 +28,6 @@ import {
   $lazyChain,
   $lazyRange,
   $lent,
-  $mapEnds,
   $next,
   $nextBack,
   $nthDropping,
@@ -272,11 +271,13 @@ function held() {
     dDrop_drop,
   );
   console.log(
-    `${$mapEnds($rev(held), (d) => {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }).reduce((a, b) => (a + b) >>> 0, 0)}`,
+    `${$rev(held)
+      .map((d) => {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      })
+      .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   held = $taking(
     $closing($iter(ds((value) => [value], dDrop_drop)), $dropEach(dDrop_drop)),
@@ -284,11 +285,13 @@ function held() {
     dDrop_drop,
   );
   console.log(
-    `${$mapEnds($rev(held), (d) => {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }).reduce((a, b) => (a + b) >>> 0, 0)}`,
+    `${$rev(held)
+      .map((d) => {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      })
+      .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   let it = $held(
     iterator_skip(

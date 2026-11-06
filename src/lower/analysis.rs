@@ -2,6 +2,7 @@
 
 pub(super) mod arguments;
 mod back_stepped;
+pub(in crate::lower) use back_stepped::{BackStepped, SteppedLocal};
 mod callers_decide;
 mod cell_borrows;
 mod cell_flow;
@@ -521,7 +522,7 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub explicit_adapters: HashSet<DefId>,
     /// The map and filter types the crate steps from their back, each made
     /// knowing its back (ADR 0545).
-    pub back_stepped: HashSet<Ty<'tcx>>,
+    pub back_stepped: BackStepped<'tcx>,
     pub changed_vecs: HashSet<Ty<'tcx>>,
     /// Each generic function's type parameters it's given a drop function
     /// for (ADR 0098), by their indices.
@@ -1055,6 +1056,11 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let back_stepped = back_stepped::back_stepped(tcx, recognition, all_bodies, |item| {
         super::drops::drop_runs(recognition, (library, &closure_facts), &counted, item)
     });
+    let locals = back_stepped::stepped_locals(tcx, recognition, all_bodies, &back_stepped);
+    let back_stepped = BackStepped {
+        types: back_stepped,
+        locals,
+    };
     // What generic code compares by `eq` of two `TrustedLen` iterators
     // given it, which it can't count: refused where comparing runs code
     // (#386).

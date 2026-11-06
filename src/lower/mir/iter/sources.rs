@@ -110,6 +110,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let b = self.counted_before_stepping(zip.b, b_ty, made)?;
             return Some(Expr::call(Expr::member(Expr::var("Math"), "min"), vec![a, b]));
         }
+        // A `skip(n)` or a `take(n)` made knowing its back where it's made,
+        // `$skipping` or `$taking`, or a `rev()` of one, as its maker marked
+        // it, which knows its length too (#814): its own. A `step_by(n)`'s is
+        // counted by its parts, below.
+        let mut base = ty;
+        while let Some(source) = r::reversed_source(self.tcx, base) {
+            base = self.reveal(source.peel_refs());
+        }
+        if r::counted_source(self.tcx, base).is_some() && crate::lower::iterators::was_made_knowing_its_back(it) {
+            return Some(Expr::call(Expr::member(it.clone(), "len"), Vec::new()));
+        }
         // A generic one's or a `dyn`'s, given knowing its length (ADR 0456):
         // its own, not `Iterator.from`'s of it.
         if (self.is_unknown(ty) || r::dyn_iter_trait(self.tcx, ty).is_some()) && self.knows_its_length(ty) {

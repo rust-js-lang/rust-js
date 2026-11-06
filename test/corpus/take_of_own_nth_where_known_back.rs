@@ -1,8 +1,11 @@
-// A `take(n)` of the crate's own iterator made knowing its back, as a
-// chain's `rfold` of one elsewhere makes its type, stepped by `nth`: std's
+// A `take(n)` of the crate's own iterator made knowing its back, a variable
+// given whole to `rev()`, stepped by `nth`, its `rev()`'s `nth_back`: std's
 // `Take::nth`, its source's `nth(k)`, the crate's own, where it has more
 // than `k` left, and past its end its source's `nth(n - 1)`, dropped
 // (#835). It stepped each item by `next`, so the crate's `nth` never ran.
+// One of the same type that isn't stepped from its back is std's `take`,
+// as a chain's `rfold` of one elsewhere no longer makes its type knowing
+// its back (#814).
 struct D(u32);
 
 impl Drop for D {
@@ -71,4 +74,10 @@ fn main() {
     let mut past = count().take(2);
     let none = past.nth(4);
     println!("past {:?}", none.map(|d| d.0));
+    let taken = count().take(3);
+    let nth = taken.rev().nth_back(1);
+    println!("rev nth_back {:?}", nth.map(|d| d.0));
+    let taken = count().take(2);
+    let none = taken.rev().nth_back(4);
+    println!("rev past {:?}", none.map(|d| d.0));
 }

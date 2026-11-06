@@ -185,8 +185,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a chain's sides aren't made knowing their back where they're made: `v.into_iter().filter(p).chain(w).rev()` of droppers, whose `a` MIR holds in a variable for `w`'s drop flag, is refused, a `Filter` as a `DoubleEndedIterator` (#718)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "            Some((a, b)) => (vec![a, b], chain.is_some()),\n",
-    replace: "            Some(_) => (Vec::new(), chain.is_some()),\n",
+    find: "            Some((a, b)) => vec![a, b],\n            None => back_stepped_source(tcx, ty).into_iter().collect(),\n",
+    replace: "            Some(_) => Vec::new(),\n            None => back_stepped_source(tcx, ty).into_iter().collect(),\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_of_adapters_stepped_from_its_back.rs$"],
   },
   {
@@ -194,8 +194,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a chain's first side isn't made knowing its back where it's made, only its second: a held `filter()` on side `a` of droppers stepped from the back is refused (#718)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "            Some((a, b)) => (vec![a, b], chain.is_some()),\n",
-    replace: "            Some((_, b)) => (vec![b], chain.is_some()),\n",
+    find: "            Some((a, b)) => vec![a, b],\n            None => back_stepped_source(tcx, ty).into_iter().collect(),\n",
+    replace: "            Some((_, b)) => vec![b],\n            None => back_stepped_source(tcx, ty).into_iter().collect(),\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_of_adapters_stepped_from_its_back.rs$"],
   },
   {
@@ -222,7 +222,7 @@ export const mutations: Mutation[] = [
     breaks:
       "each held adapter a back-stepped one steps is marked, whatever it is: the crate's own iterator a held `filter` steps is made with its exact length, `$exactLen(..)`, which nothing asks (#218)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "            if mapped_source(tcx, held).is_some()\n                || filtered_source(tcx, held).is_some()\n                || filter_mapped_source(tcx, held).is_some()\n                || copied_source(tcx, held).is_some()\n                || cloned_source(tcx, held).is_some()\n                || inspected_source(tcx, held).is_some()\n                || chained_sources(tcx, held).is_some()\n                || sides && counted_source(tcx, held).is_some()\n            {\n",
+    find: "            if mapped_source(tcx, held).is_some()\n                || filtered_source(tcx, held).is_some()\n                || filter_mapped_source(tcx, held).is_some()\n                || copied_source(tcx, held).is_some()\n                || cloned_source(tcx, held).is_some()\n                || inspected_source(tcx, held).is_some()\n                || chained_sources(tcx, held).is_some()\n            {\n",
     replace: "            if true {\n",
     tests: [
       "test/corpus.test.ts",
@@ -362,8 +362,8 @@ export const mutations: Mutation[] = [
     name: "zip-sides-not-back-stepped",
     breaks: "a zip stepped from its back doesn't make its sides knowing theirs where they're made, and a `cloned()` side MIR holds in a variable is refused (#792)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "        let (held, sides) = match chain.or_else(|| zipped_sources(tcx, ty)) {\n",
-    replace: "        let (held, sides) = match chain {\n",
+    find: "        let held: Vec<Ty<'tcx>> = match chained_sources(tcx, ty).or_else(|| zipped_sources(tcx, ty)) {\n",
+    replace: "        let held: Vec<Ty<'tcx>> = match chained_sources(tcx, ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_cloned_items_whose_clone_runs.rs$"],
   },
   {
@@ -387,8 +387,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `skip(n)` or a `take(n)` given held to what steps it from its back isn't recorded, so it's made with no back: `held.rev()` of a `let held = v.into_iter().skip(1)` is refused (#718)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "        return given.then(|| tcx.erase_and_anonymize_regions(adapter));\n",
-    replace: "        return false.then(|| tcx.erase_and_anonymize_regions(adapter));\n",
+    find: "                            (true, false, true) => mark(&mut stepped, (owner, local), SteppedLocal::Given),\n",
+    replace: "                            (true, false, true) => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
   },
   {
@@ -396,8 +396,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a chain's `skip(n)` or `take(n)` side, which MIR holds in a variable before the chain is made, isn't made knowing its back: `ds().into_iter().skip(1).chain(w).rev()` is refused (#718)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "                || sides && counted_source(tcx, held).is_some()\n",
-    replace: "",
+    find: "                        if ty == source && (chain && made_stepped || user) {\n",
+    replace: "                        if ty == source && user {\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
   },
   {
@@ -443,5 +443,29 @@ export const mutations: Mutation[] = [
     find: "        return (item.is_some_and(&drops)\n",
     replace: "        return (item.is_some_and(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_of_own_iterator_folded_from_its_back.rs$"],
+  },
+  {
+    name: "stepped-local-held-beneath-unasked",
+    breaks: "a temporary given whole to what asks its back, a map made in place of a held `skip(n)`, `s.map(f).rev()`, isn't asked, so the variable it holds beneath isn't made knowing its back and its `rev()` is refused (#790, #814)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                            (true, false, false) => {\n",
+    replace: "                            (true, false, false) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_beneath_adapters_from_its_back.rs$"],
+  },
+  {
+    name: "stepped-local-origin-unread",
+    breaks: "a temporary moved out of a variable to be given on, `rev(move _x)` of `_x = move held`, is taken for a temporary given whole, so the variable isn't made knowing its back (#814)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                                None => (origin(place.local), false),\n",
+    replace: "                                None => (place.local, false),\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
+  },
+  {
+    name: "back-stepped-temporary-unrecorded",
+    breaks: "a temporary MIR holds a `take(n)` made in place in to lend it to `nth_back` isn't recorded, so it isn't made knowing its back where it's made and its back step is refused (#718)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                            (true, true, false) => mark(&mut stepped, (owner, local), SteppedLocal::Lent),\n",
+    replace: "                            (true, true, false) => {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
   },
 ];
