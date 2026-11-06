@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1814
-lines	203723
+files	1816
+lines	203894
 temporaries	0	0
 labeled blocks	0	0
 while (true)	154	7.6
-$iter	2017	99
-Iterator.from	185	9.1
-return;	266	13.1
-renamed x$1	11189	549.2
+$iter	2022	99.2
+Iterator.from	189	9.3
+return;	266	13
+renamed x$1	11171	547.9
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drop_past_a_panic.js	46	0	0	0	1	0	0	0
 test/corpus/adapter_drops.js	1872	0	0	1	18	3	1	98
@@ -85,7 +85,7 @@ test/corpus/bit_methods.js	55	0	0	0	0	0	0	4
 test/corpus/bit_width.js	45	0	0	0	0	0	0	3
 test/corpus/bitwise_operators.js	105	0	0	0	0	0	0	4
 test/corpus/blanket_default_beside_an_unmet_clause.js	241	0	0	2	3	0	0	13
-test/corpus/blanket_iterator_trait.js	121	0	0	0	1	0	2	14
+test/corpus/blanket_iterator_trait.js	119	0	0	0	1	0	2	15
 test/corpus/blanket_unsized_impl.js	58	0	0	0	2	0	0	6
 test/corpus/block_modules.js	28	0	0	0	0	0	0	4
 test/corpus/bool_call_of_another_module.js	21	0	0	0	0	0	0	0
@@ -123,7 +123,7 @@ test/corpus/byte_ascii.js	72	0	0	0	0	0	0	0
 test/corpus/byte_escape.js	56	0	0	0	3	0	0	0
 test/corpus/byte_strings.js	50	0	0	0	0	0	0	0
 test/corpus/bytes_through_pointers.js	174	0	0	0	0	0	0	0
-test/corpus/c_variadic.js	59	0	0	0	0	0	0	0
+test/corpus/c_variadic.js	57	0	0	0	0	0	0	0
 test/corpus/cache_node_walk.js	131	0	0	0	0	0	0	12
 test/corpus/calculator.js	417	0	0	4	1	0	0	35
 test/corpus/call_argument_comments_across_lines.js	62	0	0	0	0	0	0	0
@@ -287,10 +287,11 @@ test/corpus/continues_before_break.js	76	0	0	0	0	0	0	0
 test/corpus/continues_in_arms.js	75	0	0	0	0	0	0	5
 test/corpus/convert_identity.js	17	0	0	0	0	0	0	0
 test/corpus/copied_clone_of_its_own.js	101	0	0	0	0	0	1	0
+test/corpus/copied_default_asks_its_drops_in_the_impls_terms.js	162	0	0	0	5	4	0	2
 test/corpus/copied_default_closure_of_its_own_generics.js	48	0	0	0	1	0	0	0
 test/corpus/copied_default_impl_drops.js	166	0	0	0	0	0	0	0
 test/corpus/copied_default_own_params.js	57	0	0	0	2	0	0	0
-test/corpus/copied_default_through_its_entry.js	377	0	0	0	0	0	0	47
+test/corpus/copied_default_through_its_entry.js	368	0	0	0	0	0	0	40
 test/corpus/copied_given_back.js	35	0	0	0	1	0	0	0
 test/corpus/copied_given_len.js	140	0	0	0	5	2	1	5
 test/corpus/copied_given_to_generic_backs.js	42	0	0	0	4	0	0	6
@@ -479,7 +480,7 @@ test/corpus/error_description_cause.js	98	0	0	0	0	0	0	0
 test/corpus/escape_iterators.js	26	0	0	0	0	0	0	0
 test/corpus/escapes_stepped.js	58	0	0	0	7	0	0	4
 test/corpus/evaluation_order.js	33	0	0	0	0	0	0	0
-test/corpus/evidence_paths.js	160	0	0	0	1	0	0	6
+test/corpus/evidence_paths.js	153	0	0	0	1	0	0	4
 test/corpus/exact_len_unknown.js	17	0	0	0	0	0	0	0
 test/corpus/exact_size_len.js	59	0	0	0	7	0	0	6
 test/corpus/exp_format.js	25	0	0	0	0	0	0	0
@@ -629,7 +630,7 @@ test/corpus/generic_collect_own_fold.js	130	0	0	0	2	5	2	0
 test/corpus/generic_compound_assign.js	144	0	0	0	0	0	0	3
 test/corpus/generic_deref.js	41	0	0	0	0	0	0	0
 test/corpus/generic_deref_mut.js	226	0	0	0	0	0	0	16
-test/corpus/generic_dictionary_declared_once.js	281	0	0	0	0	0	0	46
+test/corpus/generic_dictionary_declared_once.js	203	0	0	0	0	0	0	31
 test/corpus/generic_double_ended.js	143	0	0	1	7	1	2	10
 test/corpus/generic_drops_nothing.js	107	0	0	0	0	0	1	0
 test/corpus/generic_extend.js	92	0	0	0	1	0	0	6
@@ -654,9 +655,9 @@ test/corpus/generic_map_made_by_entry.js	184	0	0	0	0	0	0	7
 test/corpus/generic_maps.js	201	0	0	0	6	0	0	9
 test/corpus/generic_method_drops.js	82	0	0	0	0	0	0	0
 test/corpus/generic_mut_map.js	31	0	0	0	0	0	0	0
-test/corpus/generic_mut_moved_out.js	81	0	0	0	0	0	0	11
+test/corpus/generic_mut_moved_out.js	80	0	0	0	0	0	0	11
 test/corpus/generic_mut_moved_out_other_ways.js	133	0	0	0	0	0	0	22
-test/corpus/generic_mut_ref.js	95	0	0	0	0	0	0	12
+test/corpus/generic_mut_ref.js	93	0	0	0	0	0	0	11
 test/corpus/generic_mut_ref_kept.js	273	0	0	1	0	0	0	26
 test/corpus/generic_mut_written_whole.js	108	0	0	0	0	0	0	6
 test/corpus/generic_operators.js	124	0	0	0	0	0	0	4
@@ -958,7 +959,8 @@ test/corpus/mut_arg_before_its_index_changes.js	57	0	0	0	0	0	0	4
 test/corpus/mut_assoc_through_dictionary.js	107	0	0	0	0	0	0	24
 test/corpus/mut_field_given.js	112	0	0	0	0	0	0	22
 test/corpus/mut_given_as_type_param.js	91	0	0	0	0	0	0	15
-test/corpus/mut_method_pointer.js	88	0	0	0	0	0	0	0
+test/corpus/mut_method_pointer.js	84	0	0	0	0	0	0	0
+test/corpus/mut_method_pointer_replaced.js	114	0	0	0	0	0	0	4
 test/corpus/mut_number_args.js	28	0	0	0	0	0	0	0
 test/corpus/mut_number_handles.js	87	0	0	0	0	0	0	2
 test/corpus/mut_param_moved_out.js	75	0	0	0	0	0	0	0
