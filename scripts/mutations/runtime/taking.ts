@@ -104,4 +104,12 @@ export const mutations: Mutation[] = [
     replace: "    }\n    return { done: true, value: undefined };\n",
     tests: ["test/corpus.test.ts", "-t", "^take_of_own_nth_where_known_back.rs$"],
   },
+  {
+    name: "taking-own-nth-back-unmarked",
+    breaks: "a `take(n)`'s `nth_back` isn't marked its source's own, so a `step_by(n)` over it from its back never calls the crate's own `nth_back` (#834)",
+    file: "src/runtime/taking.js",
+    find: "    if (iter.ownNthBack) taking.ownNthBack = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_folded_from_its_back_as_std.rs$"],
+  },
 ];

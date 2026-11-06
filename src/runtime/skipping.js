@@ -190,6 +190,9 @@ function $skipping(iter, n, drop) {
     last: typeof iter.last === "function" ? last : undefined,
   });
   if (iter.ownNth) skipping.ownNth = true;
+  // And its `nth_back`, its source's, as a `step_by` over it asks from its
+  // back (#834).
+  if (iter.ownNthBack) skipping.ownNthBack = true;
   // Its `count` its source's, the crate's own where it writes one, which
   // a `skip` of it asks in turn (#671).
   if (iter.ownCount) skipping.ownCount = true;

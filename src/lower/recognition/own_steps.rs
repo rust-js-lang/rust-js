@@ -114,9 +114,12 @@ impl OwnStep {
             (Rfold, "Take") => &[(0, Rfold), (0, NthBack)],
             (Rfold, "Skip") => &[(0, TryRfold)],
             (TryRfold, "Take") => &[(0, NthBack), (0, TryRfold)],
+            // Std's `StepBy::rfold` and `try_rfold` (`spec_rfold`): its last by
+            // its `nth_back`, then each its source's `nth_back(step - 1)` (#834).
+            (Rfold | TryRfold, "StepBy") => &[(0, NthBack)],
             (TryRfold, "Map" | "Filter" | "Enumerate" | "Skip" | "Fuse" | "Peekable") => own,
             (Nth, "Skip" | "Take" | "StepBy" | "Enumerate" | "Fuse" | "Peekable") => own,
-            (NthBack, "Skip" | "Take" | "Enumerate" | "Fuse") => own,
+            (NthBack, "Skip" | "Take" | "StepBy" | "Enumerate" | "Fuse") => own,
             (Last, "Skip" | "Fuse" | "Peekable" | "Copied" | "Cloned") => own,
             (Count, "Skip" | "Fuse" | "Peekable" | "Enumerate" | "Copied" | "Cloned") => own,
             (Count, "Flatten" | "FlatMap") => &[(INNERS, Count)],

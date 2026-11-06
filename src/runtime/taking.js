@@ -110,6 +110,9 @@ function $taking(iter, n, drop) {
     const tryRfold = (init, f, broke, unwind, ends) =>
       taking.n === 0 || !kept(init, unwind, ends) ? init : $tryRfoldOf(taking.iter, init, f, broke, unwind, ends);
     $forward(taking, iter, { nthBack, rfold, tryRfold });
+    // Its `nth_back` its source's, which drops what it passes over itself,
+    // as a `step_by` over it asks from its back (#834).
+    if (iter.ownNthBack) taking.ownNthBack = true;
   }
   return taking;
 }

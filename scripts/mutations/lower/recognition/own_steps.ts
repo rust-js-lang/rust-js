@@ -328,4 +328,20 @@ export const mutations: Mutation[] = [
     replace: "            INNERS => args.types().next(),\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
   },
+  {
+    name: "step-by-rfold-asks-no-nth-back",
+    breaks: "the catalog says a `StepBy`'s `rfold` and `try_rfold` ask nothing of its source, where std's ask its `nth_back` (#834)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "            (Rfold | TryRfold, \"StepBy\") => &[(0, NthBack)],\n",
+    replace: "",
+    tests: ["test/iterator-forms.test.ts", "-t", "^step_by_folded_from_its_back_as_std with"],
+  },
+  {
+    name: "step-by-nth-back-unowned",
+    breaks: "the catalog says a `StepBy`'s `nth_back` asks nothing of its source, where std's asks its `nth_back` (#834)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "            (NthBack, \"Skip\" | \"Take\" | \"StepBy\" | \"Enumerate\" | \"Fuse\") => own,\n",
+    replace: "            (NthBack, \"Skip\" | \"Take\" | \"Enumerate\" | \"Fuse\") => own,\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^step_by_folded_from_its_back_as_std with"],
+  },
 ];

@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1811
-lines	203025
+files	1814
+lines	203723
 temporaries	0	0
 labeled blocks	0	0
 while (true)	154	7.6
-$iter	2013	99.2
+$iter	2017	99
 Iterator.from	185	9.1
-return;	260	12.8
-renamed x$1	11181	550.7
+return;	266	13.1
+renamed x$1	11189	549.2
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drop_past_a_panic.js	46	0	0	0	1	0	0	0
 test/corpus/adapter_drops.js	1872	0	0	1	18	3	1	98
@@ -711,6 +711,7 @@ test/corpus/held_borrow_of_own_cell.js	114	0	0	0	0	0	0	6
 test/corpus/held_chain_mapped_from_its_back.js	156	0	0	0	0	0	1	0
 test/corpus/held_cycle.js	265	0	0	0	5	0	1	5
 test/corpus/held_enumerate.js	284	0	0	0	4	0	0	20
+test/corpus/held_fields_of_a_constant.js	28	0	0	0	0	0	0	0
 test/corpus/held_filter_map_drops.js	59	0	0	0	2	0	0	0
 test/corpus/held_filter_map_from_its_back.js	28	0	0	0	1	0	0	0
 test/corpus/held_filter_map_reversed.js	93	0	0	0	4	0	0	2
@@ -994,6 +995,7 @@ test/corpus/nested_option_field_captured.js	132	0	0	0	0	0	0	2
 test/corpus/nested_option_held_as_payload.js	170	0	0	0	0	0	0	2
 test/corpus/nested_option_inner_none.js	111	0	0	0	0	0	0	12
 test/corpus/nested_option_nullable_field.js	113	0	0	0	0	0	0	0
+test/corpus/nested_option_of_a_class.js	29	0	0	0	0	0	0	0
 test/corpus/nested_option_tests.js	50	0	0	0	0	0	0	0
 test/corpus/nested_options.js	171	0	0	0	2	0	0	28
 test/corpus/nested_type_chain.js	314	0	0	0	0	0	0	0
@@ -1492,7 +1494,8 @@ test/corpus/std_rev.js	182	0	0	0	7	0	0	16
 test/corpus/std_struct_const.js	20	0	0	0	1	0	0	0
 test/corpus/std_variants_renamed_twice.js	33	0	0	0	0	0	0	2
 test/corpus/step_by_compiled_source_nth.js	434	0	0	0	10	0	0	98
-test/corpus/step_by_nth_back.js	97	0	0	0	0	0	0	2
+test/corpus/step_by_folded_from_its_back_as_std.js	643	0	0	0	4	0	6	8
+test/corpus/step_by_nth_back.js	95	0	0	0	0	0	0	2
 test/corpus/step_by_of_a_call_holds_its_items.js	85	0	0	0	2	0	0	7
 test/corpus/step_by_of_a_flatten_unwinds.js	215	0	0	0	11	0	0	8
 test/corpus/step_by_of_own_nth_that_never_unwinds.js	79	0	0	0	0	0	2	0

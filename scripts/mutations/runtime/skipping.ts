@@ -252,4 +252,12 @@ export const mutations: Mutation[] = [
     replace: "    tryRfold: iter.tryRfold !== undefined ? tryRfold : undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_of_own_from_its_back_asks_len_once.rs$"],
   },
+  {
+    name: "skipping-own-nth-back-unmarked",
+    breaks: "a `skip(n)`'s `nth_back` isn't marked its source's own, so a `step_by(n)` over it from its back never calls the crate's own `nth_back` (#834)",
+    file: "src/runtime/skipping.js",
+    find: "  if (iter.ownNthBack) skipping.ownNthBack = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_folded_from_its_back_as_std.rs$"],
+  },
 ];

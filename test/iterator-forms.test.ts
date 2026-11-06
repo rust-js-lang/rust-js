@@ -167,6 +167,10 @@ const few = [
   // the impl's terms already, asked of the impl's drops, isn't put in them
   // again, as std's `vec::IntoIter` struct asks (#804).
   "default_own_param_numbered_as_the_impls.rs",
+  // A `step_by(n)` given to generic code, std's struct, its compiled `rfold`
+  // and `nth_back` given where they reach the crate's own `nth_back`, of
+  // items without a destructor too (#834).
+  "step_by_folded_from_its_back_as_std.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus")

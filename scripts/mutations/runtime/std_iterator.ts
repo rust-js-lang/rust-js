@@ -131,4 +131,12 @@ export const mutations: Mutation[] = [
     replace: "steps.tryFold(it, init, f, broke, unwind)),\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^skip_while_first_step_unwinds with"],
   },
+  {
+    name: "std-iterator-nth-back-unmarked",
+    breaks: "std's compiled struct's `nth_back`, a `fuse()`'s, isn't marked its own, so a `step_by(n)` over it from its back drops each item itself and never calls the crate's own `nth_back` (#834)",
+    file: "src/runtime/std_iterator.js",
+    find: "    if (nthBack !== undefined) it.ownNthBack = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_folded_from_its_back_as_std.rs$"],
+  },
 ];

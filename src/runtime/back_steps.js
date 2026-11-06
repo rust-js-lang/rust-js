@@ -262,7 +262,38 @@ function $stepByEnds(it, step, drop) {
   stepped.len = () => stepped.sizeHint()[0];
   // Std's `nth_back(n)`: its source's, past `n` steps and its back's index,
   // one call, the crate's own where it writes one (#245).
-  $forward(stepped, it, { nthBack: (n) => stepped.skip(n * step + backIndex(), "back") });
+  // Std's `rfold` and `try_rfold` (`spec_rfold`, `spec_try_rfold`): its back
+  // once, which asks its source's length, then each its source's
+  // `nth_back(step - 1)`, which asks it no more (#834). Where a step throws,
+  // a stage's panic, what it folded dropped by `unwind`; its first, while
+  // std's frame holds only its parameters, drops what drops with `f`,
+  // `ends`, first, as its `try_fold`'s does (#423, #768).
+  const tryRfold = (init, f, broke, unwind, ends) => {
+    let folded = init;
+    const stepping = (run) => (unwind === undefined ? run() : $staged(run, undefined, undefined, folded, unwind));
+    const last = $stepHolding(() => stepped.back(), folded, unwind, ends);
+    if (last.done) return folded;
+    folded = f(folded, last.value);
+    if (broke(folded)) return folded;
+    const back = () => stepping(() => stepped.skip(step - 1, "back"));
+    for (let at = back(); !at.done; at = back()) {
+      folded = f(folded, at.value);
+      if (broke(folded)) return folded;
+    }
+    return folded;
+  };
+  // Its `rfold`, its `try_rfold` never stopped, then closed, as
+  // `rfold(self)` drops what it has left at its end, and though it throws,
+  // as its `fold` is.
+  const rfold = (init, f, unwind, ends) => {
+    const folded = $consumed(stepped, () => tryRfold(init, f, () => false, unwind, ends), ends);
+    $closedAfter(ends, () => stepped.return());
+    return folded;
+  };
+  $forward(stepped, it, { nthBack: (n) => stepped.skip(n * step + backIndex(), "back"), tryRfold, rfold });
+  // Its `nth_back` its source's, which drops what it passes over itself, a
+  // `Vec`'s as one slice, as a `step_by` over it asks (#834).
+  if (it.ownNthBack) stepped.ownNthBack = true;
   return stepped;
 }
 
@@ -371,9 +402,11 @@ function $enumerate(iter) {
     let at = enumerated.count + enumerated.iter.len();
     return $tryRfoldOf(enumerated.iter, init, (a, x) => f(a, [--at, x]), broke, unwind, ends);
   };
+  // Its `nth_back`: its source's, then where it is, its length asked only
+  // of an item it found, as std's `?` returns first (#834).
   const nthBack = (k) => {
     const step = enumerated.iter.nthBack(k);
-    return pair(step, enumerated.count + enumerated.iter.len());
+    return step.done ? step : pair(step, enumerated.count + enumerated.iter.len());
   };
   // Std's `nth(k)`: its source's, counted `k` more, the crate's own where
   // it writes one (#182); its own where its source's is, which drops what
@@ -382,6 +415,9 @@ function $enumerate(iter) {
   // by which a `take` past its end drops what its source's `nth` gives
   // back (#492).
   if (iter.ownNth) enumerated.ownNth = true;
+  // And its `nth_back`, its source's, its own where its source's is, which
+  // a `step_by` over it asks from its back (#834).
+  if (iter.ownNthBack) enumerated.ownNthBack = true;
   // Its `count`, `countItems`, its source's, the crate's own where it
   // writes one, which a `skip` of it asks (#671).
   if (iter.ownCount) enumerated.ownCount = true;

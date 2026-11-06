@@ -88,6 +88,10 @@ function $stdIterator(struct, steps) {
       nthBack: nthBack && ((k) => step(nthBack(it, k))),
       tryRfold: tryRfold && ((init, f, broke, unwind, ends) => tryRfold(it, init, f, broke, unwind, ends)),
     });
+    // Its compiled `nth_back`, std's body, which drops what it passes
+    // itself, as its `nth` does: `ownNthBack`, which a `step_by` over it
+    // asks from its back (#834).
+    if (nthBack !== undefined) it.ownNthBack = true;
   };
   // Its fields, the struct's, are what a move copies and what a write of
   // the whole replaces; its methods step `it` itself (#537). Moved out

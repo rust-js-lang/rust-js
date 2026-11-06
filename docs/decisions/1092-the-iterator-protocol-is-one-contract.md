@@ -286,7 +286,7 @@ adapter's `$forward` declaration must say the same:
 | `Enumerate` | `nth:93`, `count:101`, `fold:129`, `try_fold:106`, `advance_by:151`, back steps | the source's same step, counted |
 | `Chain` | `count:87`, `fold:116`, `try_fold:99`, `advance_by:130`, `nth:148`, `last:174`, back steps | `a`'s step, then `b`'s. `nth` advances `a`, then asks `b`'s `nth`. `last` takes `a`'s `last`, then `b`'s, and drops `a`'s once `b`'s is found |
 | `Rev` | `fold:79` = `rfold`, `nth:66` = `nth_back`, `advance_by:61`, `try_fold:70`, and the reverse | the source's other end. No `last` or `count`: those are the defaults, so `rev().last()` folds, not `IntoIter::last` (#722) |
-| `StepBy` | `next:59` (its first `next`, then `nth(step - 1)`), `nth:69`, `fold:82`, `try_fold:73`, back steps | the source's `nth` and `nth_back` |
+| `StepBy` | `next:59` (its first `next`, then `nth(step - 1)`), `nth:69`, `fold:82`, `try_fold:73`, back steps (`nth_back`, `rfold` and `try_rfold`: its last by `next_back_index`, then `nth_back(step - 1)`) | the source's `nth` and `nth_back` |
 | `Flatten`, `FlatMap` | `fold:573`, `try_fold:556`, `advance_by:589`, `count:606`, `last:617`, back steps | each inner's same step, through the source's `fold` |
 | `Zip` | `nth:92`, `fold:97`, `next_back:122` (trims the longer side, dropping what it trims) | each side's `next` |
 | `Copied`, `Cloned` | `Copied`: `nth:84`, `last:88`, `count:92`, `advance_by:97` and folds; `Cloned`: folds only | the source's same step |
@@ -324,7 +324,7 @@ one has one meaning and one maker:
 
 | Fact | Meaning | Made by | Asked by |
 |---|---|---|---|
-| `ownFold`, `ownRfold`, `ownNth`, `ownNthBack`, `ownLast`, `ownCount` (`$ownStep(step)`) | calling this step runs one that drops what it passes, or takes and drops the value, itself: the crate's own, a `Vec`'s slice step, or a compiled body | `$iterator` (the crate's own), `$slicing` (a `Vec`'s), `$stdIterator` (compiled `nth`, `last`), and `$forward` for a step passed on by name, with no `each`, from a source that has the fact | `$skipping`, `$stepBy`, `$closing`, `$took`, `$lastDropping`, `$count` |
+| `ownFold`, `ownRfold`, `ownNth`, `ownNthBack`, `ownLast`, `ownCount` (`$ownStep(step)`) | calling this step runs one that drops what it passes, or takes and drops the value, itself: the crate's own, a `Vec`'s slice step, or a compiled body | `$iterator` (the crate's own), `$slicing` (a `Vec`'s), `$stdIterator` (compiled `nth`, `last`, `nth_back`), `$forward` for a step passed on by name, with no `each`, from a source that has the fact, and each adapter whose own `nth` or `nth_back` passes it on to its source's, from a source that has it (`$skipping`, `$taking`, `$enumerate`, `$stepBy`, `$stepByEnds`, #834) | `$skipping`, `$stepBy`, `$closing`, `$took`, `$lastDropping`, `$count` |
 | `dropItem` | the items' drop that an `ownNth` with none of its own drops by | `$slicing`, `$closing`, `$skipping`, `$lazyChain`, `$rev`, `$Steps.take` | `take`'s `nth`, `$lazyChain`'s `nth` |
 | `held` | its owner is a variable or a temporary (S8); passed on to `from` and `iter` | `$held`, `hold()` | every done-closing |
 | `from`, `iter` | what it steps, for `hold` and for `$knowing`'s search | each adapter | `hold`, `$knowing` |
@@ -1028,3 +1028,61 @@ item size would otherwise make `pub fn applied<T, U, F>(..) -> Vec<U>`
 take `U`'s size, which a JS caller can't give, so it would go undeclared
 (ADR 1077). It also drops two `$roomForHint` wrappers whose hint was
 std's own.
+
+## Amendment: a `step_by(n)` from its back asks its source's `nth_back` as std's does (2026-11-06, #834)
+
+ADR 0262's case: results change, so Rust's behavior is kept. 731ae66fe
+(#823, #827) let `$stepBy`'s back step ask its source's `nth_back` only
+where the source says it drops what it passes (`ownNthBack`). Only a
+`Vec`'s closing and the crate's own `$iterator` said so. That made 34
+rows of the matrix and the conformance table compile, and they then ran
+otherwise than std's `StepBy` (found by nightly2's full run):
+
+- **A fold from its back asked the length at each step.** `$stepByEnds`
+  had no `rfold` or `try_rfold`, so `$foldBack` stepped its `back`, and
+  each `back` asked `next_back_index`, the crate's own `size_hint`. Std's
+  `spec_rfold` and `spec_try_rfold` take its last once, then each its
+  source's `nth_back(step - 1)`. `$stepByEnds` now has both, as
+  `$stepBy`'s `tryFold` and `fold` are made: the first step taken while
+  the frame holds only its parameters (#768), then closed as `rfold(self)`
+  drops it.
+- **The crate's own `nth_back` was never called under an adapter.**
+  `$enumerate`, `$skipping` and `$taking` pass `nth_back` on to their
+  source's, and `$stepByEnds`' is its source's past the steps, but none
+  carried `ownNthBack` as they carry `ownNth`. Std's compiled struct, a
+  `fuse()`'s, was given its compiled `nth_back` by `$knowing`, but not
+  marked as its compiled `nth` is. Each now carries the fact from a source
+  that has it, and the compiled struct is marked. So
+  `v.into_iter().step_by(2).step_by(2).rfold(..)` drops a `Vec`'s items
+  as one slice, front to back, as std's `nth_back` does. A chain carries
+  no `ownNthBack`: it is never `ExactSizeIterator`, so no `step_by` steps
+  it from its back.
+- **`$enumerate`'s `nth_back` asked its source's length at its end.**
+  Std's is `let a = self.iter.nth_back(n)?; let len = self.iter.len();`,
+  so a source's `None` returns before the length is asked. The runtime
+  now asks it only of an item found.
+- **The `OwnStep` catalog had no back steps for `StepBy`.** `asked_of`
+  now says that `StepBy`'s `nth_back` asks its source's (`NthBack`, like
+  `Skip` and `Take`), and that its `rfold` and `try_rfold` ask its
+  source's `nth_back`. Without these rows, `--std-iterators` gave generic
+  code a `step_by(2)` of the crate's iterator of `u32`s with no compiled
+  `rfold`, so it was folded by `next_back` and asked the crate's
+  `size_hint` at each step, unlike native Rust. Items with a destructor
+  hid it, as std's drop order makes the compiled `rfold` given anyway.
+
+The proof:
+
+- All 15 batches that hold #834's rows, and every batch of the matrix and
+  conformance table with a `step_by` row (505 batches, 17,367 rows), run
+  as native Rust does in the default build, with refused cases set aside
+  as the harness does. The generic `StepBy<I>` rows are refused, as they
+  were before #814, and the `--std-iterators` build runs them all.
+- Corpus `step_by_folded_from_its_back_as_std` holds each shape against
+  native Rust in both builds. It is also in `iterator-forms`' run of a
+  few, which holds the catalog's rows in the `--std-iterators` build.
+- Mutations: `step-by-ends-rfold-by-back`,
+  `step-by-ends-own-nth-back-unmarked`, `enumerate-own-nth-back-unmarked`,
+  `enumerate-nth-back-len-asked-at-end`, `skipping-own-nth-back-unmarked`,
+  `taking-own-nth-back-unmarked`, `std-iterator-nth-back-unmarked`,
+  `step-by-rfold-asks-no-nth-back` and `step-by-nth-back-unowned`. Five
+  older mutations whose finds the new code repeats now match once.
