@@ -85,10 +85,11 @@ fn nested_option<'tcx>(tcx: TyCtxt<'tcx>, field: &FieldDef) -> bool {
 }
 
 /// Of a `holds_nested` field's `T`, what may look like `None` by its type,
-/// so its `Some(Some(v))` and `Some(None)` couldn't be told apart: a type
-/// parameter or one of its types, a `()`, an `Option`, a unit struct, or
-/// an untagged enum of `undefined` or `null`, through references, `Box`
-/// and `Rc`; the error that says so.
+/// so its `Some(Some(v))` and `Some(None)` couldn't be told apart: the
+/// owner's answer, `may_look_like_none`, a type parameter, a `()`, an
+/// `Option`, a `MaybeUninit`, a `Weak`, a unit struct not a class, or an
+/// untagged enum of `undefined` or `null`, through references, `Box`, `Rc`
+/// and `Pin` (#832); the error that says so.
 pub(in crate::lower) fn nested_refused(tcx: TyCtxt<'_>, field: &FieldDef) -> Option<&'static str> {
     if !holds_nested(tcx, field) {
         return None;
@@ -98,27 +99,7 @@ pub(in crate::lower) fn nested_refused(tcx: TyCtxt<'_>, field: &FieldDef) -> Opt
     let ty::Adt(_, args) = args.type_at(0).kind() else {
         return None;
     };
-    let mut payload = args.type_at(0);
-    loop {
-        payload = match payload.kind() {
-            ty::Ref(_, inner, _) => *inner,
-            ty::Adt(_, args) if payload.is_box() => args.type_at(0),
-            _ => match crate::lower::recognition::rc_pointee(tcx, payload) {
-                Some(pointee) => pointee,
-                None => break,
-            },
-        };
-    }
-    let nullish = match payload.kind() {
-        ty::Param(_) | ty::Alias(..) => true,
-        ty::Tuple(items) => items.is_empty(),
-        ty::Adt(adt, _) => {
-            tcx.is_lang_item(adt.did(), LangItem::Option)
-                || (adt.is_struct() && adt.non_enum_variant().fields.is_empty())
-                || crate::lower::untagged::holds_nullish(tcx, *adt)
-        }
-        _ => false,
-    };
+    let nullish = crate::lower::representation::may_look_like_none(tcx, args.type_at(0));
     nullish.then_some(
         "rust-js: a `#[rust_js::nullable]` `Option<Option<T>>` field, `field?: T | null`, holds `T` itself, which can't be `undefined` or `null`: this `T` may be; hold a `T` that's never `None`-like",
     )
@@ -611,7 +592,7 @@ pub(in crate::lower) fn reject_nullable_held<'tcx>(
             let of_options: Vec<u32> = (nullable_type_params(tcx, callee).into_iter())
                 .filter(|&p| match generic_args.skip_binder().type_at(p as usize).kind() {
                     ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => {
-                        !crate::lower::representation::may_look_like_none(recognition, args.type_at(0))
+                        !crate::lower::representation::may_look_like_none(tcx, args.type_at(0))
                             && holds_none_as_null(tcx, args.type_at(0))
                     }
                     _ => false,

@@ -1376,9 +1376,12 @@ export function prepare(moduleLoading) {
   that boxes, `{:?}` or a
   generic function, it's ADR 0051's box there, and what's given it of
   one, `x === undefined ? undefined : $someValue(x) ?? null`. Its `.d.ts`
-  is `sdpMid?: string | null | undefined`. `T` is never what may look like `None`, a
-  `()` or a type parameter, and the field is set whole, never through a
-  `&mut`, each an error (#470, ADRs 0051 and 0810, amended, the user's
+  is `sdpMid?: string | null | undefined`. `T` is never what may look like
+  `None`, as generic code's box asks it: a `()`, a type parameter, an
+  `Option`, a `Weak`, a `MaybeUninit` or a unit struct, through
+  references, `Box`, `Rc` and `Pin`; a class of no fields is its instance,
+  so it may be (#832). The field is set whole, never through a `&mut`.
+  Each is an error (#470, ADRs 0051 and 0810, amended, the user's
   decision):
 
 ```rust

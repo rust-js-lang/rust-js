@@ -345,11 +345,15 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
             };
             // So may a field a symbol names, read where its initializer runs,
             // as that symbol is made (ADR 1051).
+            // And a nullable field held in a form of its own, a nested
+            // one's `Some(None)` `null` or a value's `Some(v)` `v` (ADR 1017,
+            // rd645), which its struct's maker writes so where it runs: a
+            // constant's value would be the box of each `Some` (#832).
             if variant.ctor_kind().is_none()
                 && variant
                     .fields
                     .iter()
-                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did))
+                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did) || bindings::is_held(tcx, f))
             {
                 return None;
             }

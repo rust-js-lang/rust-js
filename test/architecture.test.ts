@@ -705,7 +705,10 @@ test("each owner and question the architecture names is there", () => {
   const asked = rows.flatMap(([, , ask]) => names(ask));
   const code = sources.map(read).join("\n");
   expect(asked.length).toBeGreaterThan(20);
-  expect(asked.filter(name => isModule(name) ? !found(name) : !new RegExp(`\\b(?:fn|struct|enum|trait)\\s+${name}\\b`).test(code))).toEqual([]);
+  // Each item the code defines, found in one pass: a regex of each name
+  // over all of it took 21 to 30 s beside check:fast's other jobs.
+  const defined = new Set([...code.matchAll(/\b(?:fn|struct|enum|trait)\s+(\w+)/g)].map(m => m[1]));
+  expect(asked.filter(name => isModule(name) ? !found(name) : !defined.has(name))).toEqual([]);
   expect(rows.flatMap(([, owner]) => names(owner)).filter(owner => !found(owner))).toEqual([]);
   // It reads every module the architecture names, 1 s alone: past 5 s beside check:fast's other jobs.
 }, underLoad(30_000));

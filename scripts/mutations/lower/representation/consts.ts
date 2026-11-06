@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `const` of a struct whose `RefCell<Option<u8>>` field is the value it holds is `{ items: {} }`, the cell's box, which a read of the field takes for `Some` (ADR 0863, amended)",
     file: "src/lower/representation/consts.rs",
-    find: "                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did))\n",
-    replace: "                    .any(|f| bindings::named_by_symbol(tcx, f.did))\n",
+    find: "                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did) || bindings::is_held(tcx, f))\n",
+    replace: "                    .any(|f| bindings::named_by_symbol(tcx, f.did) || bindings::is_held(tcx, f))\n",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_field_const.rs$"],
   },
   {
@@ -164,8 +164,8 @@ export const mutations: Mutation[] = [
     name: "field-symbol-constant-folded",
     breaks: "a constant struct a symbol names a field of is folded at compile time, its key named by text, which it hasn't",
     file: "src/lower/representation/consts.rs",
-    find: "                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did))",
-    replace: "                    .any(ref_cell)",
+    find: "                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did) || bindings::is_held(tcx, f))",
+    replace: "                    .any(|f| ref_cell(f) || bindings::is_held(tcx, f))",
     tests: [
       "test/field-symbol-names.test.ts",
       "-t",
@@ -212,5 +212,13 @@ export const mutations: Mutation[] = [
     find: "            if variant.fields.iter().any(|f| {\n",
     replace: "            if false && variant.fields.iter().any(|f| {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_variant_derives.rs$"],
+  },
+  {
+    name: "held-field-constant-folded",
+    breaks: "a struct made of constants with a nullable nested field is folded into a constant, its `Some(None)` the box `{ $someNone: 0 }`, which reads as `Some(Some(..))`, not the held form's `null` (a wrong answer, #832)",
+    file: "src/lower/representation/consts.rs",
+    find: "                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did) || bindings::is_held(tcx, f))\n",
+    replace: "                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did))\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_fields_of_a_constant.rs$"],
   },
 ];

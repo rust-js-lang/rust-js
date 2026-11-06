@@ -252,7 +252,7 @@ export const mutations: Mutation[] = [
     breaks:
       "no type a caller gives is taken to look like `None`, so `relay(())`'s `Some(())` is `undefined`, `None` (ADR 0051, amended)",
     file: "src/lower/analysis/mutation.rs",
-    find: "        &|ty| !crate::lower::representation::may_look_like_none(recognition, ty),\n",
+    find: "        &|ty| !crate::lower::representation::may_look_like_none(recognition.tcx, ty),\n",
     replace: "        &|_| true,\n",
     tests: ["test/corpus.test.ts", "-t", "^unboxed_type_params.rs$"],
   },

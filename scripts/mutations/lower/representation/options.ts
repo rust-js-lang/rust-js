@@ -33,8 +33,8 @@ export const mutations: Mutation[] = [
     name: "uninit-not-nullish",
     breaks: "`Some(MaybeUninit::uninit())` is `None`",
     file: "src/lower/representation/options.rs",
-    find: "        || recognition.uninit_of(ty).is_some()\n",
-    replace: "",
+    find: "        || matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option)\n            || is_std_def(tcx, adt.did(), StdItem::MaybeUninit))\n",
+    replace: "        || matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option))\n",
     tests: ["test/corpus.test.ts", "-t", "box_uninit"],
   },
   {
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     name: "class-of-no-fields-nullish",
     breaks: "a class of no fields is nullish by its shape, as a unit struct is, so a `Some` of its instance, a class component's `ref`, is boxed, `$someValue(gauge)` (ADR 1041, amended)",
     file: "src/lower/representation/options.rs",
-    find: "            && !super::super::classes::is_class(recognition.tcx, adt.did()))",
+    find: "            && !super::super::classes::is_class(tcx, adt.did()))",
     replace: ")",
     tests: ["test/class-components.test.ts", "-t", "ref is its instance"],
   },
@@ -136,5 +136,13 @@ export const mutations: Mutation[] = [
     find: "        ty.is_unit() || matches!(ty.kind(), ty::Adt(adt, _) if super::super::untagged::holds_nullish(self.tcx, *adt))\n",
     replace: "        true\n",
     tests: ["test/lowering-nested-options.test.ts", "-t", "refuses what would box it"],
+  },
+  {
+    name: "pin-not-seen-through",
+    breaks: "a `Pin` isn't seen through, so a nullable nested field of a `Pin<Box<()>>`, `undefined`, is taken for a value: its `Some(None)` reads as `Some(Some(()))` (a wrong answer, #832)",
+    file: "src/lower/representation/options.rs",
+    find: "                    || tcx.is_lang_item(adt.did(), LangItem::Pin) =>\n",
+    replace: "                    || false =>\n",
+    tests: ["test/diagnostics.test.ts", "-t", "nullable Option of an Option of a Pin"],
   },
 ];

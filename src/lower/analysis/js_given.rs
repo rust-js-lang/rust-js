@@ -221,10 +221,10 @@ impl JsGiven {
 /// What `given`, which a call gives a type parameter, is, as the lowering
 /// the call is in takes its own type parameters (`params`).
 fn given_as<'tcx>(recognition: &Recognition<'_, 'tcx>, params: &Params, given: Ty<'tcx>) -> Given {
-    match crate::lower::representation::payload_through(recognition, given).kind() {
+    match crate::lower::representation::payload_through(recognition.tcx, given).kind() {
         ty::Param(param) if params.js.contains(&param.index) => Given::Js,
         ty::Param(param) if params.unboxed.contains(&param.index) => Given::Defined,
-        _ if crate::lower::representation::may_look_like_none(recognition, given) => Given::Nullish,
+        _ if crate::lower::representation::may_look_like_none(recognition.tcx, given) => Given::Nullish,
         _ => Given::Defined,
     }
 }

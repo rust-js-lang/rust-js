@@ -263,4 +263,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
     snapshots: true,
   },
+  {
+    name: "nested-refused-own-catalog",
+    breaks: "a nullable nested field's `T` that may look like `None` isn't refused, a `Weak`, `Weak::new()`'s `null`, read as `Some(None)` (a wrong answer, #832)",
+    file: "src/lower/bindings/nullable.rs",
+    find: "    let nullish = crate::lower::representation::may_look_like_none(tcx, args.type_at(0));\n",
+    replace: "    let nullish = args.type_at(0).is_unit();\n",
+    tests: ["test/diagnostics.test.ts", "-t", "nullable Option of an Option of a Weak"],
+  },
 ];

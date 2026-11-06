@@ -668,7 +668,7 @@ fn gives_more<'tcx>(
         // boxes none gives as it is (ADR 0051, amended).
         let nullish = match given.kind() {
             ty::Param(param) => !calls.unboxed.contains(&(caller, param.index)),
-            _ => super::representation::may_look_like_none(&calls.recognition, given),
+            _ => super::representation::may_look_like_none(calls.recognition.tcx, given),
         };
         (drops && !takes(index, ParamFact::Drop) && body_may_drop(calls, (callee, index), may_drop))
             || (nullish

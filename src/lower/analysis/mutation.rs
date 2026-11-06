@@ -308,7 +308,7 @@ pub(in crate::lower) fn unboxed_params<'tcx>(
         (items.iter(), &|id| items.contains(&id)),
         foreign,
         &|id| type_params(tcx, id),
-        &|ty| !crate::lower::representation::may_look_like_none(recognition, ty),
+        &|ty| !crate::lower::representation::may_look_like_none(recognition.tcx, ty),
     );
     (items.iter().copied())
         .filter(|&id| copies_by_callers(tcx, foreign, id) && tcx.typeck_root_def_id(id) == id)

@@ -48,3 +48,17 @@ test("whether a `None` is `null` is none_form's alone", () => {
   const nullStored = lowering.filter((file) => code(file).some((line) => /\.with\((?:js::)?Known::NullStored\)/.test(line)));
   expect(nullStored).toEqual(["src/lower/representation/cells.rs"]);
 });
+
+// What may look like `None` by its type is `options.rs`'s one answer,
+// `may_look_like_none` (ADR 0051, amended): a nullable nested field's
+// refusal re-derived it with a peel and a catalog of its own, which took a
+// `Weak`, a `Pin` of a `()` and a `MaybeUninit` for values and read their
+// `Some(None)` as a `Some`, wrong answers, and refused a class of no
+// fields (#832). `bindings` asks it, never the shapes it's made of.
+test("what may look like None is may_look_like_none's alone", () => {
+  const asking = files("src/lower/bindings").concat("src/lower/bindings.rs").filter((file) => file.endsWith(".rs"))
+    .flatMap((file) => read(file).split("\n")
+      .filter((line) => !/^\s*\/\//.test(line) && /\b(?:holds_nullish|weak_pointee|rc_pointee|known_by_bounds)\(/.test(line))
+      .map((line) => `${file}: ${line.trim()}`));
+  expect(asking).toEqual([]);
+});

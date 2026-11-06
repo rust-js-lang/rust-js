@@ -409,3 +409,35 @@ given on, against native Rust), `test/lowering-nested-options.test.ts`'s
 `defined-payload-unboxed-too` (`lower/representation/options.ts`),
 `held-some-null-for-none` (`lower/mir/assign.ts`) and
 `held-read-binding-only` (`lower/mir/structure.ts`).
+
+## Amended (2026-11-06, #832): what may look like `None` is one answer
+
+A `#[rust_js::nullable]` `Option<Option<T>>` field's refusal of a `T`
+that may look like `None` (#470) asked a peel and a catalog of its own,
+`bindings::nested_refused`'s: through `&`, `Box` and `Rc`, a type
+parameter, a `()`, an `Option`, a unit struct or an untagged enum of
+`undefined` or `null`. It disagreed with generic code's answer of the
+same question, `options.rs`'s `may_look_like_none` (ADR 0051, amended),
+and gave wrong answers ([0262](0262-when-rust-and-js-disagree.md): results
+change, now refused as Rust's behaviour can't be kept): a `Weak`,
+`Weak::new()`'s `null`, and a `Pin<Box<()>>` and a `MaybeUninit`, each
+`undefined`, were taken for values, so `Some(Some(Weak::new()))` threw
+and a `Some(None)` read as `Some(Some(..))`. It refused a class of no
+fields, whose value is its instance. It now asks `may_look_like_none`,
+which takes only `tcx`, its `Recognition` argument never having been
+needed; `test/architecture-nones.test.ts` holds that `bindings` asks it,
+never the shapes it's made of.
+
+Found beside it, older: a struct made of constants, promoted where it's
+borrowed, `show(&Holder { link: Some(None) })`, was folded into a
+constant whose held field's `Some(None)` was the box `{ $someNone: 0 }`,
+read as `Some(Some(..))`, a wrong answer of any `T`. A struct with a held
+field, nested or of a value (rd645), is made where it runs instead, by
+the maker that writes the held form.
+
+Held by `test/diagnostics.test.ts`'s refusals of a `Weak`, a `Pin` of a
+`()` and a `MaybeUninit`; corpus `nested_option_of_a_class` and
+`held_fields_of_a_constant`, against native Rust in both builds; and the
+mutations `nested-refused-own-catalog` (`lower/bindings/nullable.ts`),
+`pin-not-seen-through` (`lower/representation/options.ts`) and
+`held-field-constant-folded` (`lower/representation/consts.ts`).

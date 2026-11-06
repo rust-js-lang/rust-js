@@ -6,8 +6,9 @@ pub(in crate::lower) use super::nones::{NoneForm, NonePlace, Writers, none_form,
 
 use super::super::FnCx;
 use super::super::bindings;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty;
-use rustc_middle::ty::Ty;
+use rustc_middle::ty::{Ty, TyCtxt};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What an `Option<T>`'s `T` is in JS: through references, `Box` and `Rc`,
@@ -180,7 +181,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || (super::super::recognition::known_by_bounds(ty) && !self.defined_by_its_bounds(ty))
             // An uncounted `Weak::new()`, `null` (ADR 0843).
             || self.uncounted_weak(ty).is_some()
-            || nullish_by_its_shape(&self.recognition(), ty)
+            || nullish_by_its_shape(self.tcx, ty)
     }
 }
 
@@ -190,14 +191,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// untagged enum of `undefined` or `null`, `js::Kind` (ADR 0676). Not a
 /// class of no fields, whose value is the instance its constructor made,
 /// as a class component's `ref` is given (ADR 1041, amended).
-fn nullish_by_its_shape<'tcx>(recognition: &super::super::recognition::Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> bool {
+fn nullish_by_its_shape<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    use super::super::recognition::{StdItem, is_std_def};
     ty.is_unit()
-        || recognition.option_of(ty).is_some()
-        || recognition.uninit_of(ty).is_some()
+        || matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option)
+            || is_std_def(tcx, adt.did(), StdItem::MaybeUninit))
         || matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct()
             && adt.non_enum_variant().fields.is_empty()
-            && !super::super::classes::is_class(recognition.tcx, adt.did()))
-        || matches!(ty.kind(), ty::Adt(adt, _) if super::super::untagged::holds_nullish(recognition.tcx, *adt))
+            && !super::super::classes::is_class(tcx, adt.did()))
+        || matches!(ty.kind(), ty::Adt(adt, _) if super::super::untagged::holds_nullish(tcx, *adt))
 }
 
 /// Whether a type a caller gives generic code may make a value of it there
@@ -206,27 +208,29 @@ fn nullish_by_its_shape<'tcx>(recognition: &super::super::recognition::Recogniti
 /// `Rc` and `Pin`, and of any `Weak`, which may be `Weak::new()`'s `null`,
 /// and a type parameter or an associated type of one, whatever its bounds.
 /// Never less than `can_be_nullish`, which knows which `Rc`s are counted.
-pub(in crate::lower) fn may_look_like_none<'tcx>(
-    recognition: &super::super::recognition::Recognition<'_, 'tcx>,
-    ty: Ty<'tcx>,
-) -> bool {
-    let ty = payload_through(recognition, ty);
+/// The one answer of it, of the type alone: generic code's, and what a
+/// nullable nested field's `T` may hold (`bindings::nested_refused`, #832).
+pub(in crate::lower) fn may_look_like_none<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    let ty = payload_through(tcx, ty);
     super::super::recognition::known_by_bounds(ty)
-        || super::super::recognition::weak_pointee(recognition.tcx, ty).is_some()
-        || nullish_by_its_shape(recognition, ty)
+        || super::super::recognition::weak_pointee(tcx, ty).is_some()
+        || nullish_by_its_shape(tcx, ty)
 }
 
 /// What a value of `ty` is, seen through every reference, `Box`, `Rc` and
 /// `Pin`, which are the value itself as an `Option`'s payload, whatever a
 /// crate counts (`may_look_like_none`'s).
-pub(in crate::lower) fn payload_through<'tcx>(
-    recognition: &super::super::recognition::Recognition<'_, 'tcx>,
-    mut ty: Ty<'tcx>,
-) -> Ty<'tcx> {
+pub(in crate::lower) fn payload_through<'tcx>(tcx: TyCtxt<'tcx>, mut ty: Ty<'tcx>) -> Ty<'tcx> {
+    use super::super::recognition::{StdItem, is_std_def};
     loop {
         ty = match ty.kind() {
             ty::Ref(_, inner, _) => *inner,
-            ty::Adt(_, args) if ty.is_box() || recognition.is_rc(ty) || recognition.pinned(ty).is_some() => {
+            ty::Adt(adt, args)
+                if ty.is_box()
+                    || is_std_def(tcx, adt.did(), StdItem::Rc)
+                    || is_std_def(tcx, adt.did(), StdItem::Arc)
+                    || tcx.is_lang_item(adt.did(), LangItem::Pin) =>
+            {
                 args.type_at(0)
             }
             _ => return ty,
