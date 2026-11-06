@@ -457,12 +457,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// may throw, a destructor's panic, the rest after it, which run as it
 /// unwinds too (`dropped_after`), `try { boom_drop(pair.first); } finally {
 /// loudDrop_drop(pair.second); }` (#416). One that can't, as it is.
+///
+/// As one unwinds, the rest run as Rust's drop glue's cleanup runs them, one
+/// after another, a panic of one of them aborting there: in the `catch`, each
+/// as it is, `try { a } catch (error) { b; c; throw error; } try { b } ..`,
+/// so the JS grows as the square of its parts, never twice for each (#865:
+/// num-traits' 20-tuple `Bounded`, 240 MB).
 pub(in crate::lower) fn each_dropped(parts: Vec<Vec<Stmt>>, js_span: js::Span) -> Vec<Stmt> {
+    let parts: Vec<Vec<Stmt>> = parts.into_iter().filter(|part| !part.is_empty()).collect();
     let mut rest: Vec<Stmt> = Vec::new();
-    for part in parts.into_iter().rev().filter(|part| !part.is_empty()) {
-        rest = match rest.is_empty() || !may_throw(&part) {
-            true => part.into_iter().chain(rest).collect(),
-            false => dropped_after(part, rest, js_span),
+    for (at, part) in parts.iter().enumerate().rev() {
+        rest = match rest.is_empty() || !may_throw(part) {
+            true => part.iter().cloned().chain(rest).collect(),
+            false => {
+                let unwinding: Vec<Stmt> = parts[at + 1..].iter().flatten().cloned().collect();
+                dropped_after_unwinding(part.clone(), (unwinding, rest), js_span)
+            }
         };
     }
     rest
@@ -476,10 +486,21 @@ pub(in crate::lower) fn each_dropped(parts: Vec<Vec<Stmt>>, js_span: js::Span) -
 /// no way out but its end or a throw. The one form of what runs after a
 /// body as it ends either way, of what's dropped where it's emitted.
 pub(in crate::lower) fn dropped_after(body: Vec<Stmt>, dropped: Vec<Stmt>, js_span: js::Span) -> Vec<Stmt> {
+    dropped_after_unwinding(body, (dropped.clone(), dropped), js_span)
+}
+
+/// `dropped_after`'s, where what runs as `body` unwinds, `unwinding`, is
+/// other JS than what runs after it, `dropped`, the same drops: drop glue's
+/// rest, each as it is, where its way on drops each in turn (`each_dropped`).
+fn dropped_after_unwinding(
+    body: Vec<Stmt>,
+    (unwinding, dropped): (Vec<Stmt>, Vec<Stmt>),
+    js_span: js::Span,
+) -> Vec<Stmt> {
     if !may_throw(&dropped) {
         return vec![StmtKind::Try(body, dropped).at(js_span)];
     }
-    let mut handler = dropped.clone();
+    let mut handler = unwinding;
     handler.push(StmtKind::Throw(Expr::var("error")).at(js_span));
     let mut out = vec![StmtKind::TryCatch(body, Some("error".into()), handler).at(js_span)];
     out.extend(dropped);

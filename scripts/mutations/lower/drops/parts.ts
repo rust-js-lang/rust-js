@@ -216,8 +216,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a struct's, a tuple's or a variant's parts after one whose destructor panics are never dropped, its throw past them (#416)",
     file: "src/lower/drops/parts.rs",
-    find: "            false => dropped_after(part, rest, js_span),\n",
-    replace: "            false => part.into_iter().chain(rest).collect(),\n",
+    find: "                dropped_after_unwinding(part.clone(), (unwinding, rest), js_span)\n",
+    replace: "                part.iter().cloned().chain(rest).collect::<Vec<Stmt>>()\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_parts_past_a_panic.rs$"],
   },
   {
@@ -279,5 +279,14 @@ export const mutations: Mutation[] = [
     replace: "                    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_judged_per_use.rs$"],
     snapshots: true,
+  },
+  {
+    name: "drop-glue-rest-each-in-its-try",
+    breaks:
+      "drop glue's `catch` of a part runs each later part in a `try` of its own, so where one of those panics too the parts after it still drop before the abort, `drop 4`, where Rust aborts at once; and its JS doubles with each part, num-traits' 20-tuple `Bounded` 240 MB, which lowering-drop-guards' 12-tuple bounds (#865)",
+    file: "src/lower/drops/parts.rs",
+    find: "                dropped_after_unwinding(part.clone(), (unwinding, rest), js_span)\n",
+    replace: "                dropped_after_unwinding(part.clone(), (rest.clone(), rest), js_span)\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_glue_second_panic_aborts.rs$"],
   },
 ];

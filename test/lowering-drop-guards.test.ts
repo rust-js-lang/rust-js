@@ -1421,3 +1421,30 @@ pub fn run(owner: Option<u32>, n: u32) {
   expect(js).not.toMatch(/\bbb\d+/);
   expect(js).toContain("      globalThis.restore(n);\n      return;\n    }\n  }\n  let root;\n");
 });
+
+test("drop glue of a 12-tuple whose parts may panic grows as the square of its parts", async () => {
+  // Each part's `catch` runs the rest as they are, as Rust's drop glue's
+  // cleanup does: once it copied all that drops after it, twice a part, and
+  // num-traits' 20-tuple `Bounded` was 240 MB of JS (#865).
+  const parts = Array.from({ length: 12 }, (_, i) => `Bomb(${i + 1})`).join(", ");
+  const { js, dir } = compiled(
+    "drop-glue-of-twelve-parts",
+    `pub struct Bomb(pub u32);
+
+impl Drop for Bomb {
+    fn drop(&mut self) {
+        if self.0 == 7 {
+            panic!("bomb {}", self.0);
+        }
+    }
+}
+
+pub fn dropped() {
+    let _parts = (${parts});
+}
+`,
+  );
+  expect(js.length).toBeLessThan(20_000);
+  const lib = await import(join(dir, "lib.js"));
+  expect(() => lib.dropped()).toThrow("bomb 7");
+});

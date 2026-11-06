@@ -610,3 +610,36 @@ panic unwinds is guarded by drops/parts.rs alone"; and the mutations of
 `dropped-at-breaks-off` (`lower/mir/tidy/unwinds.ts`) and `assert-drops-unguarded`
 (`lower/mir/structure.ts`); tidy's contract is held by its unit test,
 `what_unwinds_is_guarded`.
+
+## Amendment: drop glue's later parts run flat as a part's panic unwinds (#865, 2026-11-07)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Results changed:
+where a part of drop glue panicked and a later part panicked too, the JS
+dropped the parts after that one before the abort, where Rust aborts at once.
+
+#847's drop glue, `each_dropped`, wrote each part that may panic as
+`dropped_after(part, rest)`, `try { part } catch (error) { rest; throw
+error; } rest`, where `rest` was the later parts' own glue, each part in
+its `try` again. So the `catch` of a part ran each later part guarded, and
+one that panicked as the first unwound didn't stop the parts after it:
+`drop 1`, part 2's panic, part 3's, then `drop 4` and the abort, where Rust's
+cleanup of drop glue aborts at part 3's panic. And the copy of `rest` in
+each `catch` doubled the JS with each part: num-traits' 20-tuple
+`Bounded`'s `$drop` was 2^20 copies, `bounds.js` 240 MB, 172 s and 11.6 GB
+to compile, where it took 9 s before #847.
+
+**As a part's panic unwinds, the later parts run flat, each as it is**,
+`try { a } catch (error) { b; c; throw error; } try { b } catch (error) {
+c; throw error; } c` (`dropped_after_unwinding`), where tidy's "guarded
+cleanups" makes the `catch`'s drops `$cleanup`'s, so a later part's panic
+aborts there, as Rust's does. A drop of one or two parts reads as before;
+of more, the JS grows as the square of its parts.
+
+Held by `test/corpus/drop_glue_second_panic_aborts.rs` (`//@ run-abort`, no
+`drop 4`) and `drop_glue_of_many_parts.rs`, a tuple's, a struct's and a
+generic 20-tuple's drop where each part in turn panics, against native Rust
+in both builds; `test/lowering-drop-guards.test.ts`' 12-tuple, whose JS
+is bounded; and the mutation `drop-glue-rest-each-in-its-try`
+(`lower/drops/parts.ts`). std's `iter.js` is made again: `scan`'s,
+`flatten`'s and `flat_map`'s drops of three parts run their last two flat.
+num-traits compiles in 9 s again (DEVELOPMENT.md's speed-ups).

@@ -9554,12 +9554,7 @@ export function iterator_scan(
         try {
           dropSelf?.(iterator.iter);
         } catch (error) {
-          try {
-            dropF?.(iterator.f);
-          } catch (error) {
-            dropSt?.(iterator.state);
-            throw error;
-          }
+          dropF?.(iterator.f);
           dropSt?.(iterator.state);
           throw error;
         }
@@ -9745,15 +9740,8 @@ export function iterator_flatten(
         try {
           iterator.inner.iter.return();
         } catch (error) {
-          try {
-            if (iterator.inner.frontiter != null) {
-              dropSelfItemIntoIter?.($someValue(iterator.inner.frontiter));
-            }
-          } catch (error) {
-            if (iterator.inner.backiter != null) {
-              dropSelfItemIntoIter?.($someValue(iterator.inner.backiter));
-            }
-            throw error;
+          if (iterator.inner.frontiter != null) {
+            dropSelfItemIntoIter?.($someValue(iterator.inner.frontiter));
           }
           if (iterator.inner.backiter != null) {
             dropSelfItemIntoIter?.($someValue(iterator.inner.backiter));
@@ -10002,15 +9990,8 @@ export function iterator_flatMap(
         try {
           iterator.inner.iter.return();
         } catch (error) {
-          try {
-            if (iterator.inner.frontiter != null) {
-              dropUIntoIter?.($someValue(iterator.inner.frontiter));
-            }
-          } catch (error) {
-            if (iterator.inner.backiter != null) {
-              dropUIntoIter?.($someValue(iterator.inner.backiter));
-            }
-            throw error;
+          if (iterator.inner.frontiter != null) {
+            dropUIntoIter?.($someValue(iterator.inner.frontiter));
           }
           if (iterator.inner.backiter != null) {
             dropUIntoIter?.($someValue(iterator.inner.backiter));
