@@ -140,13 +140,13 @@ function matched() {
   } else {
     console.log("none");
   }
+  const dd = take();
+  if (dd != null) {
+    console.log("took");
+  } else {
+    console.log("empty");
+  }
   try {
-    const dd = take();
-    if (dd != null) {
-      console.log("took");
-    } else {
-      console.log("empty");
-    }
     if (dd != null) {
       ddDrop_drop(dd);
     }

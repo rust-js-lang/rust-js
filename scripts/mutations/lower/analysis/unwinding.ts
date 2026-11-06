@@ -41,6 +41,47 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^drops_of_nothing_never_unwind.rs$"],
   },
   {
+    name: "cell-set-of-copies-only",
+    breaks:
+      "a `Cell`'s set of an `Option` of a reference or of an `Rc` no count is kept of is one that may panic, so a guard that restores it drops after its `try` and in a `$cleanup` (#861)",
+    file: "src/lower/analysis/unwinding.rs",
+    find: "        _ if name == \"set\" && of_a_cell(tcx, callee) => args.types().all(|ty| !drops(ty)),\n",
+    replace:
+      "        _ if name == \"set\" && of_a_cell(tcx, callee) => args.types().all(|ty| !drops(ty) && ty.is_trivially_pure_clone_copy()),\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_restores_never_unwind.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "cell-set-of-what-drops",
+    breaks:
+      "a `Cell`'s set of a value whose old one has a destructor is taken for one that never panics, so a guard that restores it drops its old value in a `finally` that runs as a panic unwinds, where a panic of that drop must abort (#847, #861)",
+    file: "src/lower/analysis/unwinding.rs",
+    find: "        _ if name == \"set\" && of_a_cell(tcx, callee) => args.types().all(|ty| !drops(ty)),\n",
+    replace: "        _ if name == \"set\" && of_a_cell(tcx, callee) => args.types().all(|ty| !drops(ty) || true),\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_restores_never_unwind.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "cell-replace-may-panic",
+    breaks:
+      "a `Cell`'s replace, which drops nothing, is one that may panic, so a guard whose drop replaces a thread-local drops after its `try` and in a `$cleanup` (#861)",
+    file: "src/lower/analysis/unwinding.rs",
+    find: "        _ if name == \"replace\" && of_a_cell(tcx, callee) => true,\n",
+    replace: "        _ if name == \"replace\" && of_a_cell(tcx, callee) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_restores_never_unwind.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "option-take-may-panic",
+    breaks:
+      "an `Option`'s take is one that may panic, so a guard whose drop restores what it takes, `CURRENT.set(self.0.take())`, drops after its `try` and in a `$cleanup` (#861)",
+    file: "src/lower/analysis/unwinding.rs",
+    find: "        _ if name == \"take\" && of_an_option(tcx, recognition, callee) => true,\n",
+    replace: "        _ if name == \"take\" && of_an_option(tcx, recognition, callee) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_restores_never_unwind.rs$"],
+    snapshots: true,
+  },
+  {
     name: "instance-drops-may-panic",
     breaks:
       "a generic function judged for a use takes each drop of what's of its type parameters, given a value whose drop can't panic, for one that may, so a guard whose drop calls it drops after its `try` and in a `$cleanup` (#861)",

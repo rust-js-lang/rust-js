@@ -197,3 +197,36 @@ one whose drop may panic. Ten other corpus snapshots read better, each a
 Mutations: `instance-drops-may-panic`, `instance-calls-unresolved`
 (`lower/analysis/unwinding.ts`), `generic-drop-judged-whole`
 (`lower/drops.ts`) and `generic-drop-call-unmarked` (`lower/drops/parts.ts`).
+
+## Amendment: a `Cell`'s set of what drops nothing, its replace and an `Option`'s take (#861, 2026-11-06)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): no difference, as above.
+
+#847 took a `Cell`'s or a thread-local `Cell`'s `set` or `replace` for one
+that never panics only of a value `is_trivially_pure_clone_copy`, a number
+or a `bool`. React's `CURRENT_DEBUG_INFO.set(self.0)`, an `Option` of a JS
+object, and a restore of an `Option<Rc<Fiber>>`, `CURRENT.set(self.0.take())`,
+were ones that may, and their guards dropped after the `try` and in a
+`$cleanup`.
+
+- **A `set` never panics where JS drops nothing of the value it replaces**
+  (`std_never_unwinds`' `drops`, the analysis's `runs` of the body, the
+  lowering's `drops` of an instance): an `Option` of a reference, of a JS
+  object or of an `Rc` no count is kept of. One of a value with a
+  destructor, a `Loud`'s or a counted `Rc`'s, may, as that drop may.
+- **A `replace` never does**: it gives the old value back, which its
+  caller drops where MIR says.
+- **An `Option`'s `take` never does.**
+
+`test/corpus/cell_restores_never_unwind.rs` holds both sides against native
+Rust: restores of an `Option<&Fiber>`, an `Option<Rc<Fiber>>` taken, a `u32`
+replaced and a `&Cell` given, in a `finally`; an `Option<Loud>` and an
+`Option<Rc<Loud>>`, whose old values have destructors, after the `try` and
+in a `$cleanup`. `refused_drops_and_displays.js` reads better, a `take()`
+of the crate's that never unwinds before the `try`. The readability
+baseline is blessed with both amendments' cases: like for like, `renamed
+x$1`'s share grew from 549.9 to 550.1 in 10,000 lines as the generic
+`Drop`s' `try`s went, no rename new, and with the cases it's 549.4. Mutations:
+`cell-set-of-copies-only`, `cell-set-of-what-drops`,
+`cell-replace-may-panic` and `option-take-may-panic`
+(`lower/analysis/unwinding.ts`).

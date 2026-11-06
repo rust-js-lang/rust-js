@@ -47,7 +47,8 @@ pub(super) fn never_unwinding<'tcx>(
             .filter(|(id, mir, dead)| {
                 never.contains(id)
                     && !steps_on((mir, dead), &mut |callee, args| {
-                        never.contains(&callee) || std_never_unwinds(tcx, recognition, callee, args)
+                        never.contains(&callee)
+                            || std_never_unwinds((tcx, recognition), (callee, args), &|ty| runs(ty, *id))
                     })
             })
             .map(|&(id, ..)| id)
@@ -133,7 +134,9 @@ impl<'tcx> Judged<'_, '_, 'tcx> {
         );
         seen.push((id, args));
         let steps = steps_on((&mir, &dead), &mut |callee, callee_args| {
-            if self.never.contains(&callee) || std_never_unwinds(tcx, self.recognition, callee, callee_args) {
+            if self.never.contains(&callee)
+                || std_never_unwinds((tcx, self.recognition), (callee, callee_args), self.drops)
+            {
                 return true;
             }
             let resolved = crate::lower::items::resolve_instance_in(tcx, self.typing_env, callee, callee_args);
@@ -203,12 +206,12 @@ fn steps_on<'tcx>(
 /// Whether std's `callee`, given `args`, never panics as rust-js runs it:
 /// a print, whose stream never fails (ADR 0132), the `Arguments` it's
 /// given, and each argument's `Display` or `Debug` of a number, a `bool`,
-/// a `char` or text, which shows any (ADR 0901).
+/// a `char` or text, which shows any (ADR 0901); a cell's set of what JS
+/// drops nothing of, `drops` false of its old value.
 fn std_never_unwinds<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    recognition: &Recognition<'_, 'tcx>,
-    callee: DefId,
-    args: ty::GenericArgsRef<'tcx>,
+    (tcx, recognition): (TyCtxt<'tcx>, &Recognition<'_, 'tcx>),
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+    drops: &dyn Fn(Ty<'tcx>) -> bool,
 ) -> bool {
     if !is_std_crate(tcx, callee) {
         return false;
@@ -222,17 +225,20 @@ fn std_never_unwinds<'tcx>(
         _ if path.contains("fmt::rt::Argument") => {
             matches!(name, "new_display" | "new_debug") && args.types().all(|ty| shown_whole(recognition, ty))
         }
-        // A thread-local's or a `Cell`'s set or replace of a value that
-        // drops nothing: a write of a module's `let` or of the cell's place,
-        // as rust-js runs it, where native Rust's thread-local may panic once
-        // destroyed, which a JS module never is. So a guard that restores
-        // one, `DEPTH.set(self.0)`, drops in a `finally` (#847). Not its
-        // `get` yet: a scope whose calls then never throw is MIR's blocks,
-        // `bb18: { .. }`, where tidy makes no `finally` of its early returns
-        // (`drop_guard_early_returns`), #861's to make.
-        _ if matches!(name, "set" | "replace") && of_a_cell(tcx, callee) => {
-            args.types().all(|ty| ty.is_trivially_pure_clone_copy())
-        }
+        // A thread-local's or a `Cell`'s set of a value whose old one JS
+        // drops nothing of, `drops` false, an `Option` of a JS object or of
+        // an `Rc` no count is kept of (#861), and its replace, which gives
+        // the old one back: a write of a module's `let` or of the cell's
+        // place, as rust-js runs it, where native Rust's thread-local may
+        // panic once destroyed, which a JS module never is. So a guard that
+        // restores one, `DEPTH.set(self.0)`, drops in a `finally` (#847).
+        // Not its `get` yet: a scope whose calls then never throw is MIR's
+        // blocks, `bb18: { .. }`, where tidy makes no `finally` of its early
+        // returns (`drop_guard_early_returns`), #861's to make.
+        _ if name == "set" && of_a_cell(tcx, callee) => args.types().all(|ty| !drops(ty)),
+        _ if name == "replace" && of_a_cell(tcx, callee) => true,
+        // An `Option`'s take, the value it held, `None` left (#861).
+        _ if name == "take" && of_an_option(tcx, recognition, callee) => true,
         _ => false,
     }
 }
@@ -248,6 +254,14 @@ fn of_a_cell(tcx: TyCtxt<'_>, method: DefId) -> bool {
     is(own, "Cell")
         || matches!(own.kind(), ty::Adt(_, local) if is(own, "LocalKey")
             && local.types().next().is_some_and(|cell| is(cell, "Cell")))
+}
+
+/// Whether `method` is an `Option`'s own.
+fn of_an_option<'tcx>(tcx: TyCtxt<'tcx>, recognition: &Recognition<'_, 'tcx>, method: DefId) -> bool {
+    tcx.inherent_impl_of_assoc(method).is_some_and(|imp| {
+        let own = tcx.type_of(imp).instantiate_identity().skip_normalization();
+        recognition.is_lang_adt(own, LangItem::Option)
+    })
 }
 
 /// Whether showing a value of `ty` can't fail: a number's, a `bool`'s, a
