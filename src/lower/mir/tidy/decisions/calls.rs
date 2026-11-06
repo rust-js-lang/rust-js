@@ -537,7 +537,14 @@ impl Model<'_> {
                     _ => &[],
                 };
                 let in_its_guard = |c: usize| !span.is_none() && self.within_guard[c].is_some_and(|g| within(*span, g));
+                // A test of constants alone, `0 % 2 === 0` of a guard
+                // `0 % 2 == 0`, reads no place a call could change (#771).
+                let constant = match read {
+                    Read::Opaque(j, _) => reads_no_place(&self.opaque[*j].0),
+                    _ => false,
+                };
                 if matches!(read, Read::Subject(..) | Read::Opaque(..))
+                    && !constant
                     && !(trace.iter()).all(|&(c, _)| self.made[c].is_some_and(|m| kept.contains(&m)) || in_its_guard(c))
                 {
                     return None;
@@ -578,6 +585,12 @@ enum Node {
         span: js::Span,
         cells: Vec<Option<bool>>,
     },
+}
+
+/// Whether `test` reads constants alone, no place (`read_places`).
+fn reads_no_place(test: &Expr) -> bool {
+    let mut places = Vec::new();
+    read_places(test, &mut places) && places.is_empty()
 }
 
 /// The places `test` reads, each variable, property or element, `a` of `a

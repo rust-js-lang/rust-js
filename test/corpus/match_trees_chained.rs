@@ -18,7 +18,8 @@
 // and a presence test read once, past the arm of its negation, but
 // another value's read where it was (#791); an arm's statement copied
 // into each alternative that binds its value apart, each its own binding
-// (the user's decision A, #771).
+// (the user's decision A, #771); and a guard's test of constants alone
+// read after another guard's call, which no call changes (#771).
 use std::cell::Cell;
 
 fn g(c: &Cell<u32>, n: u32, k: u32) -> bool {
@@ -295,6 +296,16 @@ const SLICES: &[&[u32]] = &[
     &[0, 1, 2, 3],
 ];
 
+fn constant_after_call(c: &Cell<u32>, o: Option<u32>) -> u32 {
+    match o {
+        Some(x) | Some(x) if x + 3 % 2 == 0 || 2 % 2 == 0 => x,
+        Some(_x) if g(c, 3, 1) && 3 % 2 == 0 => 1,
+        None | Some(1..=2) if g(c, 2 * 2, 2) => 1 + 1,
+        None => 0,
+        _ => 99,
+    }
+}
+
 fn main() {
     let c = &Cell::new(0);
     for op in 0..4u32 {
@@ -311,6 +322,9 @@ fn main() {
     println!("inner_after_an_arm {:?}", inner_after_an_arm(c, None));
     println!("value_between_returns {:?}", value_between_returns(c, None));
     println!("bound_in_each {:?}", bound_in_each(c, None));
+    for o in [None, Some(0), Some(1), Some(2), Some(5)] {
+        println!("constant_after_call {}", constant_after_call(c, o));
+    }
     for o in [None, Some(0), Some(2)] {
         for p in [None, Some((0, 0)), Some((1, 2))] {
             println!("presence_of_another {:?}", presence_of_another(o, p));

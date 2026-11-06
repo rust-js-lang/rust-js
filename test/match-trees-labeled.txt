@@ -6,21 +6,21 @@
 // test/match-trees.test.ts`.
 programs 26098c152e8e
 seed 1: m7 m12 m23 m32 m35
-seed 2: m11 m12 m16 m17 m22 m23 m27 m30 m32 m36
+seed 2: m12 m17 m22 m23 m30 m32 m36
 seed 3: m4 m5 m9 m16 m27 m29 m30 m34 m36 m37
 seed 4: m5 m9 m17 m18 m20 m27 m29 m32 m36 m38 m39
 seed 5: m0 m7 m8 m9 m11 m17 m18 m22 m23 m24 m26 m28 m31 m35 m37 m38
 seed 6: m9 m16 m19 m20 m23 m24 m25 m27 m30 m37 m38
 seed 7: m0 m1 m8 m9 m21 m22 m26 m30 m34 m35
-seed 8: m2 m15 m16 m20 m25 m34 m37 m38
+seed 8: m2 m15 m20 m25 m34 m37 m38
 seed 9: m1 m2 m4 m5 m9 m13 m15 m21 m22 m26 m27 m28 m30 m32 m35 m39
 seed 10: m4 m6 m9 m16 m19 m23 m24 m26 m27 m35 m36
 seed 11: m1 m7 m9 m12 m13 m19 m23 m26 m31 m34
 seed 12: m6 m11 m20 m25 m28 m35 m36
 seed 13: m0 m8 m9 m16 m19 m30 m33
-seed 14: m0 m2 m3 m11 m16 m19 m25 m26 m29 m31 m36 m39
+seed 14: m0 m2 m11 m16 m19 m25 m26 m29 m31 m36 m39
 seed 15: m4 m11 m14 m23 m26 m28 m31 m32 m36 m38
-seed 16: m8 m20 m22 m28 m29 m30 m31 m32 m33 m38
+seed 16: m8 m20 m22 m28 m29 m30 m31 m32 m33
 seed 17: m6 m7 m11 m21 m27 m29
 seed 18: m3 m6 m16 m19 m20 m29
 seed 19: m0 m1 m6 m27 m29 m31
@@ -28,4 +28,4 @@ seed 20: m7 m11 m18 m25 m28 m30 m34 m37
 seed 21: m4 m6 m7 m11 m17 m20 m27 m34 m35
 seed 22: m3 m5 m7 m9 m11 m21 m23 m31 m32 m33
 seed 23: m2 m5 m14 m15 m16 m18 m22 m29 m33 m35 m36 m39
-seed 24: m3 m7 m13 m19 m23 m27 m29 m39
+seed 24: m7 m19 m23 m27 m29 m39

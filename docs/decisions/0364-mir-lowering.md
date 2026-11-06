@@ -1532,3 +1532,24 @@ the 24 generated seeds agree with native Rust, 229 labeled of 960, from
 statement an arm shares, follows the check it mutates. No program yet
 copies a statement that makes a function; it's refused as a declaration
 is.
+
+## Amendment: a guard's test of constants alone is read after a call (#771, 2026-11-06)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The JS does what it
+did; only its form changes.
+
+`Model` reads a test after a call only where the call can't change what
+it reads: each call made so far is in a guard whose `match` keeps it
+(E0510), or in its own guard. A test of constants alone, `3 % 2 === 0`
+of a guard `Some(x) if g(c, 3, 1) && 3 % 2 == 0`, reads no place at all
+(`reads_no_place`), so no call changes it; it was refused as any other,
+and the tree kept its label. Generated match trees print a compiler-made
+label in 221 of 960 functions, from 229.
+
+Reading a tuple MIR makes of the `match`'s values, `_4[0]`, as the
+variable it holds, `a`, the remainder's first item, was tried: in the 24
+seeds, no function's chain needs it, with it or without the rule above,
+so it isn't made.
+
+`match_trees_chained.rs`' `constant_after_call`, against native Rust in
+both builds. Mutation: `constant-test-refused-after-calls`.
