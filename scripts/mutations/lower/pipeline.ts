@@ -588,8 +588,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable `const`'s `None` is made `undefined`, `export const NoTransition = undefined;`, where React's is `null` (ADR 0586, amended)",
     file: "src/lower/pipeline.rs",
-    find: "_ if key.map_or(nullable(def_id), held) =>",
-    replace: "_ if key.map_or(false, held) =>",
+    find: "            None => local_none_form(tcx, def_id.to_def_id()),\n",
+    replace: "            None => NoneForm::Undefined,\n",
     tests: [
       "test/lowering-module-variables.test.ts",
       "-t",
@@ -685,8 +685,8 @@ export const mutations: Mutation[] = [
     name: "nullable-const-block-local-undefined",
     breaks: "a nullable thread-local of an `Option` made in a `const { .. }` block is `undefined` for `None`, so React's FB stream config's `byteLengthOfChunk !== null` calls it",
     file: "src/lower/pipeline.rs",
-    find: "_ if key.map_or(nullable(def_id), held) =>",
-    replace: "_ if key.map_or(nullable(def_id), |_| false) =>",
+    find: "            Some(key) => local_option_none_form(tcx, key.to_def_id()),\n",
+    replace: "            Some(_) => NoneForm::Undefined,\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "nullable const's None"],
   },
   {

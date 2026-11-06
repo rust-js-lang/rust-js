@@ -2,6 +2,11 @@
 //! is boxed, as one of a value that may look like `None` is (ADR 0051,
 //! amended).
 
+pub(in crate::lower) use super::nones::{
+    NoneForm, binding_arg_none_form, binding_entries_none_form, field_none_form, foreign_param_none_form,
+    local_none_form, local_option_none_form, param_none_form, result_none_form,
+};
+
 use super::super::FnCx;
 use super::super::bindings;
 use rustc_middle::ty;

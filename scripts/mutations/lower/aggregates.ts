@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an optional nullable field made `None`, or `Cell::new(None)`, is `null` in its literal, not left out (ADR 0810)",
     file: "src/lower/aggregates.rs",
-    find: "        if bindings::is_optional(self.tcx, field)\n            && (given == Given::WrittenNone\n",
+    find: "        if form == NoneForm::Optional\n            && (given == Given::WrittenNone\n",
     replace: "        if false\n            && (given == Given::WrittenNone\n",
     tests: [
       "test/lowering-nullable.test.ts",
@@ -219,7 +219,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an optional nullable field made of another's value is `{ name: abort.name ?? null }`, `null` where upstream's copy is `undefined` (ADR 0810, amended)",
     file: "src/lower/aggregates.rs",
-    find: "        let copied = given == Given::Optional && bindings::is_optional(self.tcx, field);\n",
+    find: "        let copied = given == Given::Optional && form == NoneForm::Optional;\n",
     replace: "        let copied = false;\n",
     tests: [
       "test/lowering-optional-fields.test.ts",
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable field that isn't optional, made of an optional one's value, takes it as it is, `undefined` where it's absent, not `null` (ADR 0810, amended)",
     file: "src/lower/aggregates.rs",
-    find: "        let copied = given == Given::Optional && bindings::is_optional(self.tcx, field);\n",
+    find: "        let copied = given == Given::Optional && form == NoneForm::Optional;\n",
     replace: "        let copied = given == Given::Optional;\n",
     tests: [
       "test/lowering-optional-fields.test.ts",
@@ -258,8 +258,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an optional nullable field made with an `Option` that may be `None` is given it as it is, `{ label }`, there and `undefined` (ADR 0810, amended)",
     file: "src/lower/aggregates.rs",
-    find: "            if !bindings::is_nullable(self.tcx, field) {\n",
-    replace: "            if !bindings::null_where_made(self.tcx, field) {\n",
+    find: "            if !matches!(form, NoneForm::Null | NoneForm::Optional) {\n",
+    replace: "            if !matches!(form, NoneForm::Null) {\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -446,7 +446,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a derived `Default` of a nullable field of what may be `undefined` is `undefined`, its `Some` (rd645)",
     file: "src/lower/aggregates.rs",
-    find: "            Some(field) if bindings::holds_value(self.tcx, field) => Expr::null(),\n",
+    find: "            Some((NoneForm::Value, _)) => Expr::null(),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
   },
@@ -497,8 +497,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a derived `Default` of a nullable field leaves its `None` `undefined`, which a `=== null` test reads as a `Some` (rd647)",
     file: "src/lower/aggregates.rs",
-    find: "                if bindings::is_nullable(self.tcx, field)\n                    && bindings::nullable_option(self.tcx, field_ty).is_some() =>\n",
-    replace: "                if false =>\n",
+    find: "            Some((form @ (NoneForm::Null | NoneForm::Optional), field)) => {\n",
+    replace: "            Some((form @ (NoneForm::Null | NoneForm::Optional), field)) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
   },
 ];

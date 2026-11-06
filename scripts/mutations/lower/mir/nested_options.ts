@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a held `Option` of an `Option` made of an `Option` whose `None` is `undefined` keeps it, so its `Some(None)` is its `None` (ADR 1017)",
     file: "src/lower/mir/nested_options.rs",
-    find: "                js::Storage::NullForNone.written(held, nulled)\n",
+    find: "                NoneForm::Nested.of_some().storage().written(held, nulled)\n",
     replace: "                { let _ = nulled; held }\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
   },
@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
     name: "nested-field-given-none-undefined",
     breaks: "a boxed `Some(None)` given a nested field is `undefined`, read back as `None` (#470)",
     file: "src/lower/mir/nested_options.rs",
-    find: "            false => js::Storage::NullForNone.written(value, false),\n        };\n        Expr::cond(",
+    find: "            false => NoneForm::Nested.of_some().storage().written(value, false),\n        };\n        Expr::cond(",
     replace: "            false => value,\n        };\n        Expr::cond(",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_nullable_field.rs$"],
   },
@@ -344,8 +344,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a box stored in a nullable field of what may be `undefined` is `$someValue(x) ?? null`, its `Some(undefined)` `null`, a `None` (rd645)",
     file: "src/lower/mir/nested_options.rs",
-    find: "            true => value,\n            false => js::Storage::NullForNone.written(value, false),\n",
-    replace: "            true => js::Storage::NullForNone.written(value.clone(), false),\n            false => js::Storage::NullForNone.written(value, false),\n",
+    find: "            true => value,\n            false => NoneForm::Nested.of_some().storage().written(value, false),\n",
+    replace: "            true => NoneForm::Nested.of_some().storage().written(value.clone(), false),\n            false => NoneForm::Nested.of_some().storage().written(value, false),\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
   },
   {

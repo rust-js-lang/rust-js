@@ -5,6 +5,7 @@
 
 use super::*;
 use crate::lower::aggregates::Given;
+use crate::lower::representation::NoneForm;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `operand`, an `Option`, is `null` or a value already, as a
@@ -156,24 +157,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         .then_some(js::Known::NoneNull)
     }
 
-    /// Whether `place` stores `null` for `None`, however it's written: a
-    /// `#[rust_js::nullable]` field, one a `RefCell`'s `get_mut` lent, `*t.types.get_mut()` (ADR 0863), an
-    /// item of one's items, `v[i]` (ADR 0586, amended), or a parameter its
-    /// function names nullable (ADR 0861). The one answer of it: a write of
-    /// it stores so (`Storage::NullForNone`), and so does a `&mut` to it,
-    /// its handle, wherever that's given (#541).
-    pub(super) fn stores_null_for_none(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
+    /// How `place` holds a `None`, however it's written: a
+    /// `#[rust_js::nullable]` field, one a `RefCell`'s `get_mut` lent,
+    /// `*t.types.get_mut()` (ADR 0863), an item of one's items, `v[i]` (ADR
+    /// 0586, amended), or a parameter its function names nullable (ADR
+    /// 0861), the owner's answer of each (`representation::NoneForm`,
+    /// #819). The one answer of it: a write of it stores so
+    /// (`NoneForm::storage`), and so does a `&mut` to it, its handle,
+    /// wherever that's given (#541).
+    pub(super) fn place_none_form(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> NoneForm {
         let field = (self.place_field(state, place))
             .or_else(|| self.field_got_mut(state, place))
             .or_else(|| self.field_item(state, place));
         match field {
-            Some(field) => bindings::is_nullable(self.tcx, field),
-            None => self.own_nullable_param(state, place),
+            Some(field) => crate::lower::representation::field_none_form(self.tcx, field, None),
+            None => self.own_param_none_form(state, place),
         }
     }
 
     /// A `&mut` to `place`, `target` its JS: of one that stores `null` for
-    /// `None` (`stores_null_for_none`), a handle on it that stores so,
+    /// `None` (`place_none_form`), a handle on it that stores so,
     /// held, its `value` the `&mut`'s place, whatever's written through
     /// it, a callee's box copied back too, `fiber.owner = slot.value ??
     /// null` (#541). Of any other, `target`.
@@ -184,11 +187,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         target: Expr,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
-        if self.option_of(place.ty(state.body, self.tcx).ty).is_none() || !self.stores_null_for_none(state, place) {
+        let form = self.place_none_form(state, place);
+        if self.option_of(place.ty(state.body, self.tcx).ty).is_none() || !form.stores_null() {
             return Ok(Value::Ref(target));
         }
         self.flush(state, out)?;
-        let handle = Expr::stored_handle(target, js::Storage::NullForNone);
+        let handle = Expr::stored_handle(target, form.storage());
         Ok(Value::Ref(self.through_handle(handle, out)))
     }
 

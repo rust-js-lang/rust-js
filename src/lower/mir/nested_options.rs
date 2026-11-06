@@ -6,6 +6,7 @@
 //! but never `null`, its `None` `null` (rd645).
 
 use super::*;
+use crate::lower::representation::NoneForm;
 use rustc_span::def_id::DefId;
 
 /// What an `Option` held where it's made holds (ADR 1017): of an `Option`
@@ -180,7 +181,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(operand) => {
                 let nulled = self.stored_given(state, operand) == crate::lower::aggregates::Given::Nulled;
                 let held = self.mir_expr(state, operand, out)?;
-                js::Storage::NullForNone.written(held, nulled)
+                NoneForm::Nested.of_some().storage().written(held, nulled)
             }
         })
     }
@@ -289,7 +290,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && callee.helper_name() == Some("$some")
             && let [inner] = args.as_slice()
         {
-            return js::Storage::NullForNone.written(inner.clone(), false);
+            return NoneForm::Nested.of_some().storage().written(inner.clone(), false);
         }
         if boxed.is_constant() && !matches!(boxed.kind, js::ExprKind::Null) {
             return boxed;
@@ -301,7 +302,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let value = self.some_value(boxed.clone());
         let held = match value_form {
             true => value,
-            false => js::Storage::NullForNone.written(value, false),
+            false => NoneForm::Nested.of_some().storage().written(value, false),
         };
         Expr::cond(Expr::bin(Op::Eq, boxed, Expr::undefined()), none, held)
     }

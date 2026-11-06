@@ -588,7 +588,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable thread-local set what may be `undefined` holds it, `NEXT = fiber.stateNode`, where Rust's `None` is `null` (ADR 0586, amended)",
     file: "src/lower/std_types/cell.rs",
-    find: "            _ if null_for_none => js::Storage::NullForNone.written(value, given_nulled),\n",
+    find: "            _ if null_for_none => NoneForm::Null.storage().written(value, given_nulled),\n",
     replace: "",
     tests: [
       "test/lowering-nullable-reads.test.ts",
@@ -601,7 +601,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable thread-local's cell is made of what it's given, `undefined`, not `null` (ADR 0586, amended)",
     file: "src/lower/std_types/cell.rs",
-    find: "                *value = js::Storage::NullForNone.written(std::mem::replace(value, Expr::undefined()), false);\n",
+    find: "                *value = NoneForm::Null\n                    .storage()\n                    .written(std::mem::replace(value, Expr::undefined()), false);\n",
     replace: "",
     tests: [
       "test/lowering-module-variables.test.ts",
@@ -826,7 +826,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable thread-local that's its module's variable is lent its box, so what's written through it is stored as it is, `current = noneOf(1)` (#541)",
     file: "src/lower/std_types/cell.rs",
-    find: "            true => Expr::stored_handle(Expr::held(key), js::Storage::NullForNone),\n",
+    find: "            true => Expr::stored_handle(Expr::held(key), NoneForm::Null.storage()),\n",
     replace: "            true => key,\n",
     tests: ["test/lowering-nullable-borrows.test.ts", "-t", "written through a borrow"],
   },
@@ -881,7 +881,7 @@ export const mutations: Mutation[] = [
     name: "alike-store-coalesced",
     breaks: "a nullable thread-local nothing reads apart stores what it's given `?? null`, React's `resolveFamily = handler ?? null;` where upstream writes `resolveFamily = handler;` (#665)",
     file: "src/lower/std_types/cell.rs",
-    find: "            _ if null_for_none && call.read_alike => js::Storage::NullForNone.written_alike(value),\n",
+    find: "            _ if null_for_none && call.read_alike => NoneForm::Null.storage().written_alike(value),\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local nothing reads apart"],
   },

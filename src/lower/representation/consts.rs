@@ -367,11 +367,11 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
                 None => Some(Expr::object(
                     (variant.fields.iter().zip(values))
                         .map(|(f, v)| {
-                            let nullable = bindings::null_where_made(tcx, f)
-                                && bindings::nullable_option(tcx, f.ty(tcx, args).skip_normalization()).is_some();
-                            let v = match nullable {
-                                true => js::Storage::NullForNone.written(v, false),
-                                false => v,
+                            // Not an optional one's, which a literal's `None` leaves out.
+                            let form = super::field_none_form(tcx, f, Some(f.ty(tcx, args).skip_normalization()));
+                            let v = match form {
+                                super::NoneForm::Null => form.storage().written(v, false),
+                                _ => v,
                             };
                             Prop::Field(field_key(tcx, f).text().to_owned(), v)
                         })

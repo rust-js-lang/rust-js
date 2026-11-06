@@ -1,5 +1,6 @@
 //! What changes a place: `Cell`s, atomics, thread-locals, and `mem::drop` and `forget` (ADRs 0025, 0074, 0098).
 
+use crate::lower::representation::NoneForm;
 use std::collections::HashSet;
 
 use crate::js::result;
@@ -50,7 +51,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// which stores so of itself (`plain_statics`). Of any other, `key`.
     fn nullable_lent(&self, key: Expr, call: &Call<'_, 'tcx>) -> Expr {
         match call.null_for_none && call.quiet {
-            true => Expr::stored_handle(Expr::held(key), js::Storage::NullForNone),
+            true => Expr::stored_handle(Expr::held(key), NoneForm::Null.storage()),
             false => key,
         }
     }
@@ -142,9 +143,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let written = |cell: &Expr, value: Expr| match cell.kind {
             js::ExprKind::Handle(_, storage) if call.read_alike => storage.written_alike(value),
             js::ExprKind::Handle(_, storage) => storage.written(value, given_nulled),
-            _ if null_for_none && call.read_alike => js::Storage::NullForNone.written_alike(value),
+            _ if null_for_none && call.read_alike => NoneForm::Null.storage().written_alike(value),
             // A nullable thread-local's, its `None` `null` (ADR 0586, amended).
-            _ if null_for_none => js::Storage::NullForNone.written(value, given_nulled),
+            _ if null_for_none => NoneForm::Null.storage().written(value, given_nulled),
             // A JS-made struct's field read among them, a getter's that may
             // be `undefined` elsewhere, MIR says it isn't here (rd628).
             _ if given_nulled && !matches!(value.kind, js::ExprKind::Undefined) => Expr {
@@ -1115,7 +1116,9 @@ pub(in crate::lower) fn nullable_made(made: Expr) -> Expr {
         js::ExprKind::Object(mut props, layout) if matches!(props.as_slice(), [Prop::Field(key, _)] if key == js::HELD) =>
         {
             if let Some(Prop::Field(_, value)) = props.first_mut() {
-                *value = js::Storage::NullForNone.written(std::mem::replace(value, Expr::undefined()), false);
+                *value = NoneForm::Null
+                    .storage()
+                    .written(std::mem::replace(value, Expr::undefined()), false);
             }
             Expr {
                 kind: js::ExprKind::Object(props, layout),

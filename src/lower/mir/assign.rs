@@ -267,7 +267,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // (ADR 0863).
         // What an optional one holds, given another, is as it is (ADR 0810,
         // amended).
-        let nullable = self.stores_null_for_none(state, *place);
+        let form = self.place_none_form(state, *place);
+        let nullable = form.stores_null();
         let optional = (self.place_field(state, *place)).is_some_and(|field| bindings::is_optional(self.tcx, field));
         let value = match nullable {
             true => {
@@ -279,7 +280,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     },
                     _ => false,
                 };
-                Value::Expr(js::Storage::NullForNone.written(self.value_expr(value, span)?, nulled))
+                Value::Expr(form.storage().written(self.value_expr(value, span)?, nulled))
             }
             // Written through a reference, a `RefCell`'s borrow of a
             // nullable field, `*this.target_inst.borrow_mut() = target_inst`,
@@ -322,19 +323,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(super) fn own_nullable_param(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
+        self.own_param_none_form(state, place) == crate::lower::representation::NoneForm::Null
+    }
+
+    /// How the function's own parameter `place` is, or a closure's binding of
+    /// one, holds a `None` (`representation::param_none_form`).
+    pub(super) fn own_param_none_form(
+        &self,
+        state: &State<'_, 'tcx>,
+        place: Place<'tcx>,
+    ) -> crate::lower::representation::NoneForm {
+        use crate::lower::representation::NoneForm;
         let def_id = state.body.source.def_id();
         let arg = place.local.as_usize();
         if self.nullable_binding(state, place) {
-            return true;
+            return NoneForm::Null;
         }
-        place.projection.is_empty()
+        let own = place.projection.is_empty()
             && (1..=state.body.arg_count).contains(&arg)
             && matches!(
                 self.tcx.def_kind(def_id),
                 rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn
-            )
-            && (self.tcx.fn_arg_idents(def_id).get(arg - 1).copied().flatten())
-                .is_some_and(|ident| bindings::nullable_params(self.tcx, def_id).contains(&ident.name))
+            );
+        match own
+            .then(|| self.tcx.fn_arg_idents(def_id).get(arg - 1).copied().flatten())
+            .flatten()
+        {
+            Some(ident) => crate::lower::representation::param_none_form(self.tcx, def_id, ident.name),
+            None => NoneForm::Undefined,
+        }
     }
 
     /// Whether `place` is a binding of a closure's parameter that its
@@ -390,15 +407,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let read_nullable = place.projection.is_empty()
             && place.local != mir::RETURN_PLACE
             && state.facts.options().null_nones.contains(&place.local);
+        use crate::lower::representation::NoneForm;
+        // A nullable thread-local's read, or the function's result.
+        let form = match read_nullable {
+            true => NoneForm::Null,
+            false => crate::lower::representation::result_none_form(self.tcx, state.body.source.def_id()),
+        };
         if !read_nullable
-            && (place != Place::from(mir::RETURN_PLACE)
-                || state.writer.is_some()
-                || !bindings::null_result(self.tcx, state.body.source.def_id()))
+            && (place != Place::from(mir::RETURN_PLACE) || state.writer.is_some() || form != NoneForm::Null)
         {
             return Ok(value);
         }
         let value = self.value_expr(value, span)?;
-        Ok(Value::Expr(js::Storage::NullForNone.written(value, nulled)))
+        Ok(Value::Expr(form.storage().written(value, nulled)))
     }
 
     /// `rest = p.rest` of a `let`'s pattern, `let P { href, rest, .. } = p`:

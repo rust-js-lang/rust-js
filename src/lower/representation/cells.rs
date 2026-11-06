@@ -49,7 +49,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> Expr {
         match self.kept_cell(&place, field, ty, true) {
             Some(kept) => kept,
-            None => Expr::stored_handle(place, js::Storage::NullForNone),
+            None => Expr::stored_handle(place, super::NoneForm::Null.storage()),
         }
     }
 
@@ -106,8 +106,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let js::ExprKind::Str(key) = &key.kind
         {
             let storage = match rest.is_empty() {
-                true => js::Storage::AsGiven,
-                false => js::Storage::NullForNone,
+                true => super::NoneForm::Undefined.storage(),
+                false => super::NoneForm::Null.storage(),
             };
             return Expr::stored_handle(Expr::member(holder.clone(), key.clone()), storage);
         }

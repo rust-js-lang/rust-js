@@ -783,19 +783,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `None` is `null`, and a `Some(..)` its value (ADR 0275); of a
             // type parameter, where it's given an `Option` (ADR 0586,
             // amended); a `Some` of a `&dyn Any` its value, as below (rd170).
-            () if bindings::takes_nullable(tcx, def_id, i)
-                && self
-                    .option_of(ty)
-                    .is_some_and(|payload| bindings::holds_none_as_null(tcx, payload)) =>
+            () if let Some(payload) = self.option_of(ty)
+                && let form = crate::lower::representation::binding_arg_none_form(tcx, def_id, i, payload)
+                && form == crate::lower::representation::NoneForm::Null =>
             {
-                js::Storage::NullForNone.written(self.any_given_to_js(value, ty), nulled)
+                form.storage().written(self.any_given_to_js(value, ty), nulled)
             }
             // Entries written where they're given of such a value, an
             // `Option` of what never looks like `None`: each `null` for
             // `None`, `new Map([[key, null]])`, as `set` writes it (ADR
             // 0884, amended); `bindings::reject_nullable_held` refuses
             // entries made before.
-            () if bindings::takes_nullable_entries(tcx, def_id, i) && self.entries_of_options(ty) => {
+            () if crate::lower::representation::binding_entries_none_form(tcx, def_id, i)
+                == crate::lower::representation::NoneForm::Null
+                && self.entries_of_options(ty) =>
+            {
                 self.nulled_entries(self.any_given_to_js(value, ty))
             }
             // A parameter it names `#[rust_js::lazy(..)]`, a function JS
@@ -837,7 +839,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .map(|item| match item.kind {
                         js::ExprKind::Array(mut pair) if pair.len() == 2 => {
                             let value = pair.pop().expect("a pair's value");
-                            pair.push(js::Storage::NullForNone.written(value, false));
+                            pair.push(
+                                crate::lower::representation::NoneForm::Null
+                                    .storage()
+                                    .written(value, false),
+                            );
                             Expr {
                                 kind: js::ExprKind::Array(pair),
                                 ..item

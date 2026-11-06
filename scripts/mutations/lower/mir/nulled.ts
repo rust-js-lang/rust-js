@@ -436,7 +436,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&mut` to a nullable place is its place alone, so what's written through it, a callee's box copied back, `mem::swap`, is stored as it is, `fiber.owner = slot.value` (#541)",
     file: "src/lower/mir/nulled.rs",
-    find: "|| !self.stores_null_for_none(state, place) {\n",
+    find: "|| !form.stores_null() {\n",
     replace: "|| true {\n",
     tests: ["test/lowering-nullable-borrows.test.ts", "-t", "written through a borrow"],
   },
@@ -445,9 +445,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable field assigned `None`, `context.label = None`, is `undefined`, where its cell's `set` writes `null` (ADR 0810)",
     file: "src/lower/mir/nulled.rs",
-    find: "            Some(field) => bindings::is_nullable(self.tcx, field),\n",
-    replace:
-      "            Some(field) => false && bindings::is_nullable(self.tcx, field),\n",
+    find: "            Some(field) => crate::lower::representation::field_none_form(self.tcx, field, None),\n",
+    replace: "            Some(_) => NoneForm::Undefined,\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -459,8 +458,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a function's own nullable parameter set to `None` is `undefined`, `children = undefined`, where its callback is to be given `null` (ADR 0861)",
     file: "src/lower/mir/nulled.rs",
-    find: "            None => self.own_nullable_param(state, place),\n",
-    replace: "            None => false,\n",
+    find: "            None => self.own_param_none_form(state, place),\n",
+    replace: "            None => NoneForm::Undefined,\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
   },
   {

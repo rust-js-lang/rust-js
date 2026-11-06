@@ -23,12 +23,16 @@ use rustc_span::{Span, Symbol};
 mod cells;
 mod consts;
 mod mut_ref;
+mod nones;
 mod options;
 
 use consts::{Units, const_js_by};
 pub(super) use consts::{const_js, zero_sized_js};
 pub(in crate::lower) use mut_ref::{MutRefForm, SignatureForms, held_ts};
-pub(in crate::lower) use options::{may_look_like_none, payload_through};
+pub(in crate::lower) use options::{
+    NoneForm, binding_arg_none_form, binding_entries_none_form, field_none_form, foreign_param_none_form,
+    local_none_form, local_option_none_form, may_look_like_none, param_none_form, payload_through, result_none_form,
+};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// That `subject` is one of `variants` of its enum, an or-pattern's,

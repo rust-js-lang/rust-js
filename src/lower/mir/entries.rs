@@ -349,7 +349,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `v[i].take()` (ADR 0586, amended), written so here, its place read
         // and written as a path (ADR 1078).
         let (a, b) = match self.unhandled(&a).filter(|_| b_place.is_none()) {
-            Some(place) => (place, js::Storage::NullForNone.written(b, false)),
+            Some(place) => (
+                place,
+                crate::lower::representation::NoneForm::Null.storage().written(b, false),
+            ),
             None => (a, b),
         };
         // A take of a place rust-js made, read and written as a path, may

@@ -522,9 +522,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // given it `?? null`, as its contract says.
         if !callee.0.is_local() && self.krate.foreign.has_nulled_params(callee.0) {
             for (i, value) in values.iter_mut().enumerate() {
-                if self.krate.foreign.nulled_param(callee.0, i) && nulled.get(i) != Some(&true) {
+                let form = crate::lower::representation::foreign_param_none_form(self.krate.foreign, callee.0, i);
+                if form == crate::lower::representation::NoneForm::Null && nulled.get(i) != Some(&true) {
                     let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::undefined())), span)?;
-                    *value = Value::Expr(js::Storage::NullForNone.written(given, false));
+                    *value = Value::Expr(form.storage().written(given, false));
                 }
             }
         }

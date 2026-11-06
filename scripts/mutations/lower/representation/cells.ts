@@ -79,8 +79,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable field's kept cell borrowed where nothing's counted is a handle that writes its `None` `undefined` (ADR 0863, amended)",
     file: "src/lower/representation/cells.rs",
-    find: "                false => js::Storage::NullForNone,\n",
-    replace: "                false => js::Storage::AsGiven,\n",
+    find: "                false => super::NoneForm::Null.storage(),\n",
+    replace: "                false => super::NoneForm::Undefined.storage(),\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",

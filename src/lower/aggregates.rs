@@ -8,6 +8,7 @@ use super::recognition::{StdItem, std_item};
 use super::representation::ordering_value;
 use super::{FnCx, R, Shape};
 use crate::js::{self, Expr, Prop, StmtKind};
+use crate::lower::representation::NoneForm;
 use rustc_abi::VariantIdx;
 use rustc_hir::def::CtorKind;
 use rustc_middle::thir::{self as thir, ExprId};
@@ -387,18 +388,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // be `None` otherwise is stored as any nullable field's is: never
         // `{ label: undefined }` (ADR 0810, amended).
         for (i, (field, value)) in variant.fields.iter().zip(&mut fields).enumerate() {
-            if !bindings::is_nullable(self.tcx, field) {
-                continue;
-            }
             let given = given.get(i).copied().unwrap_or_default();
             let field_ty = field.ty(self.tcx, args).skip_normalization();
-            // A `Vec` of them, whose items are, is made as it's given (ADR
-            // 0586, amended).
-            if bindings::nullable_option(self.tcx, field_ty).is_none() {
+            // Not a `Vec` of them, whose items are, made as it's given (ADR
+            // 0586, amended), which holds no `Option` itself.
+            let form = crate::lower::representation::field_none_form(self.tcx, field, Some(field_ty));
+            if !matches!(form, NoneForm::Null | NoneForm::Optional) {
                 continue;
             }
             let made = std::mem::replace(value, Expr::undefined());
-            *value = self.nullable_field_made(field, field_ty, made, given);
+            *value = self.nullable_field_made((form, field), field_ty, made, given);
         }
         // A keyed enum's variant is its keys, no tag, each kept where it's
         // `undefined`, which `in` tells it by (#504).
@@ -538,14 +537,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// of type `field_ty`, holds of `made`, which MIR tells is `given`:
     /// its `None` `null`, what's `null` or a value already as it is, and an
     /// optional one's `None` left out (ADRs 0275, 0772, 0810).
-    fn nullable_field_made(&mut self, field: &ty::FieldDef, field_ty: Ty<'tcx>, made: Expr, given: Given) -> Expr {
+    fn nullable_field_made(
+        &mut self,
+        (form, field): (NoneForm, &ty::FieldDef),
+        field_ty: Ty<'tcx>,
+        made: Expr,
+        given: Given,
+    ) -> Expr {
         // And a `RefCell`'s that's the property it holds (ADR 0863).
         let cell = self.property_cell(Some(field), field_ty).is_some();
         let held = match cell {
             true => Expr::held(made.clone()),
             false => made.clone(),
         };
-        if bindings::is_optional(self.tcx, field)
+        if form == NoneForm::Optional
             && (given == Given::WrittenNone
                 || matches!(held.kind, js::ExprKind::Undefined | js::ExprKind::GivenUndefined))
         {
@@ -558,8 +563,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // What one optional field holds, given another, is as it is,
         // `undefined` where it's absent (ADR 0810, amended).
-        let copied = given == Given::Optional && bindings::is_optional(self.tcx, field);
-        let stored = js::Storage::NullForNone.written(held, given == Given::Nulled || copied);
+        let copied = given == Given::Optional && form == NoneForm::Optional;
+        let stored = form.storage().written(held, given == Given::Nulled || copied);
         match cell {
             true => Expr::object(vec![Prop::Field(js::HELD.into(), stored)]),
             false => stored,
@@ -573,13 +578,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as it is, `null` (rd645); else `default_value`'s.
     pub(super) fn field_default(&mut self, ty: Ty<'tcx>, i: usize, field_ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let made = self.default_value(field_ty, span)?;
-        Ok(match self.struct_field_def(ty, i) {
-            Some(field) if bindings::holds_value(self.tcx, field) => Expr::null(),
-            Some(field)
-                if bindings::is_nullable(self.tcx, field)
-                    && bindings::nullable_option(self.tcx, field_ty).is_some() =>
-            {
-                self.nullable_field_made(field, field_ty, made, Given::WrittenNone)
+        let form = |field| crate::lower::representation::field_none_form(self.tcx, field, Some(field_ty));
+        Ok(match self.struct_field_def(ty, i).map(|field| (form(field), field)) {
+            Some((NoneForm::Value, _)) => Expr::null(),
+            Some((form @ (NoneForm::Null | NoneForm::Optional), field)) => {
+                self.nullable_field_made((form, field), field_ty, made, Given::WrittenNone)
             }
             _ => made,
         })

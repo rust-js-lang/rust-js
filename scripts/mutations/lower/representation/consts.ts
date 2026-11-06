@@ -7,9 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a constant's `#[rust_js::nullable]` field's `None` is left out, `{ count: 0 }`, React's `CacheContext` without its `_currentValue: null` (ADR 0586, amended)",
     file: "src/lower/representation/consts.rs",
-    find: "                            let nullable = bindings::null_where_made(tcx, f)\n",
-    replace:
-      "                            let nullable = false && bindings::null_where_made(tcx, f)\n",
+    find: "                                super::NoneForm::Null => form.storage().written(v, false),\n",
+    replace: "                                super::NoneForm::Null => v,\n",
     tests: ["test/lowering-nullable-constants.test.ts"],
   },
   {
@@ -17,9 +16,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a constant's `#[rust_js::optional]` nullable field's `None` is `null`, not left out until it's set (ADR 0810)",
     file: "src/lower/representation/consts.rs",
-    find: "                            let nullable = bindings::null_where_made(tcx, f)\n",
-    replace:
-      "                            let nullable = bindings::is_nullable(tcx, f)\n",
+    find: "                                super::NoneForm::Null => form.storage().written(v, false),\n",
+    replace: "                                super::NoneForm::Null | super::NoneForm::Optional => form.storage().written(v, false),\n",
     tests: ["test/lowering-nullable-constants.test.ts"],
   },
   {

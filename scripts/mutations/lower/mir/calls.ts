@@ -18,18 +18,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments-inside.test.ts", "-t", "a comment before a dyn Fn call's argument is before it"],
   },
   {
-    name: "any-value-set-nulled",
-    breaks: "a map of any value's `set` writes `value ?? null` (#443)",
-    file: "src/lower/mir/calls.rs",
-    find: "                    .is_some_and(|payload| bindings::holds_none_as_null(tcx, payload)) =>\n",
-    replace: "                    .is_some() =>\n",
-    tests: [
-      "test/js-collections.test.ts",
-      "-t",
-      "a Map of any value holds undefined as it is",
-    ],
-  },
-  {
     name: "any-value-entries-nulled",
     breaks:
       "a map of any value's entries written where they're given write a `None` `null`, `new Map([[\"none\", null]])` (#443)",
@@ -47,9 +35,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Some(&frames)` given to a binding's `#[rust_js::nullable]` `Option<&dyn Any>`, webapi's `animate`'s, is the pair that downcasts it, `{value, impl}`, not `frames` (rd170)",
     file: "src/lower/mir/calls.rs",
-    find: "                js::Storage::NullForNone.written(self.any_given_to_js(value, ty), nulled)\n",
-    replace:
-      "                js::Storage::NullForNone.written(value, nulled)\n",
+    find: "                form.storage().written(self.any_given_to_js(value, ty), nulled)\n",
+    replace: "                form.storage().written(value, nulled)\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -270,9 +257,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Some(..)` given to a binding's nullable parameter is `value ?? null`, `Object.create(Object.prototype ?? null)`, a function's `(e) => .. ?? null`",
     file: "src/lower/mir/calls.rs",
-    find: "                js::Storage::NullForNone.written(self.any_given_to_js(value, ty), nulled)\n            }\n            // Entries written where they're given",
-    replace:
-      "                js::Storage::NullForNone.written(self.any_given_to_js(value, ty), false)\n            }\n            // Entries written where they're given",
+    find: "                form.storage().written(self.any_given_to_js(value, ty), nulled)\n",
+    replace: "                form.storage().written(self.any_given_to_js(value, ty), false)\n",
     tests: [
       "test/lowering-options.test.ts",
       "-t",
@@ -509,9 +495,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding's nullable type parameter given an `Option` is given `undefined` for `None`, `createCursor(undefined)`, and any other value `?? null` (ADR 0586, amended)",
     file: "src/lower/mir/calls.rs",
-    find: "                    .option_of(ty)\n                    .is_some_and(|payload| bindings::holds_none_as_null(tcx, payload)) =>\n",
-    replace:
-      "                    .option_of(ty)\n                    .is_none() =>\n",
+    find: "            () if let Some(payload) = self.option_of(ty)\n",
+    replace: "            () if let Some(payload) = self.option_of(ty).xor(Some(ty))\n",
     tests: [
       "test/lowering-module-variables.test.ts",
       "-t",
@@ -971,9 +956,8 @@ export const mutations: Mutation[] = [
     breaks:
       'entries written where they\'re given of a map of `Option` values keep `undefined` for `None`, `new Map([["none", undefined]])`, which `get` reads as a key it lacks (ADR 0884, amended)',
     file: "src/lower/mir/calls.rs",
-    find: "            () if bindings::takes_nullable_entries(tcx, def_id, i) && self.entries_of_options(ty) => {",
-    replace:
-      "            () if false && bindings::takes_nullable_entries(tcx, def_id, i) && self.entries_of_options(ty) => {",
+    find: "            () if crate::lower::representation::binding_entries_none_form(tcx, def_id, i)\n",
+    replace: "            () if false && crate::lower::representation::binding_entries_none_form(tcx, def_id, i)\n",
     tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
   },
   {

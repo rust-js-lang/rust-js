@@ -1056,3 +1056,4 @@ of *why* survives. Link it from its group above, and mark the old one's
 link *(superseded by NNNN)*: `test/architecture.test.ts` checks that each
 is linked once, each superseded or replaced one marked, and no two share
 a number.
+- [1096 How a place holds `None` is `NoneForm`'s](1096-how-a-place-holds-none-is-none-forms.md) *(#819 step 1 of 3, on 1086's model; amends 0791)*

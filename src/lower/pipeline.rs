@@ -330,10 +330,14 @@ pub fn lower_crate<'tcx>(
         let key = thread_local_inits.get(&def_id).copied();
         let named = key.unwrap_or(def_id);
         // A nullable one's `None` `null`: a `const`'s, or one's of the `Option`, `const { None }` (ADR 0586).
-        let nullable = |id: rustc_span::def_id::LocalDefId| super::bindings::nullable_local(tcx, id.to_def_id());
-        let held = |id: rustc_span::def_id::LocalDefId| super::bindings::nullable_local_option(tcx, id.to_def_id());
+        use super::representation::{NoneForm, local_none_form, local_option_none_form};
+        let nullable = |id: rustc_span::def_id::LocalDefId| local_none_form(tcx, id.to_def_id()) == NoneForm::Null;
+        let form = match key {
+            None => local_none_form(tcx, def_id.to_def_id()),
+            Some(key) => local_option_none_form(tcx, key.to_def_id()),
+        };
         let value = match key {
-            _ if key.map_or(nullable(def_id), held) => js::Storage::NullForNone.written(value, false),
+            _ if form == NoneForm::Null => form.storage().written(value, false),
             Some(key) if nullable(key) => super::std_types::cell::nullable_made(value),
             _ => value,
         };
