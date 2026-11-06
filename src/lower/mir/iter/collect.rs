@@ -301,7 +301,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !crate::lower::iterators::is_stepped_items(&it)
             && self.range_kind(iter_ty).is_none()
             && self.mapped_range(&it, iter_ty, item).is_none()
-            && !self.compiled_struct_at(iter_ty, span);
+            && !self.compiled_struct(iter_ty, &it);
         let mut held = Vec::new();
         let room = match (counted, item) {
             (true, Some(item)) => self.len_in_place(&it, iter_ty, &mut held).and_then(|len| {
@@ -629,6 +629,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Expr> {
         let method = |name: &str, it: Expr, args: Vec<Expr>| Expr::call(Expr::member(it, name), args);
+        // What it's given, whose maker's marks say whether it's std's struct
+        // (`compiled_struct`), before it's collected by its fold.
+        let given = it.clone();
         let it = match iter_ty {
             Some(iter_ty) if self.collects_by_fold(output) => {
                 let first_by_next = item.is_some_and(|item| self.takes_first_by_next(output, item));
@@ -670,7 +673,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // as it grows, collects in place and unwinds as any does (#797).
             let grown = item.map_or(output, |item| self.vec_grown_for(output, item));
             let items = match iter_ty {
-                Some(iter_ty) => self.collected_as_vec(it, grown, item, iter_ty, !heap, span)?,
+                Some(iter_ty) => self.collected_as_vec((it, &given), grown, item, iter_ty, !heap, span)?,
                 None => it,
             };
             match heap {
@@ -686,7 +689,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `Vec`, or a `Box<[T]>`, an array too (ADR 0530).
         } else if self.is_vec_like(output) || output.boxed_ty().is_some_and(|inner| inner.is_slice()) {
             let Some(iter_ty) = iter_ty else { return Ok(it) };
-            self.collected_as_vec(it, output, item, iter_ty, false, span)?
+            self.collected_as_vec((it, &given), output, item, iter_ty, false, span)?
         } else if self.is_lang_adt(output, LangItem::String) {
             // Of `char`s, its hint asked first, as std's `Extend<char>`
             // reserves by it (string.rs:2507); of strings, none.
@@ -751,10 +754,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// what `output`, a `Vec` a heap or a B-tree is made of, is (#797); a
     /// `LinkedList`'s too, which asks no room. Where what it's made into
     /// takes any `iterable`, a B-tree's, `it` itself where nothing else is
-    /// asked of it.
+    /// asked of it. `given` is what it was given, before it's collected by
+    /// its fold, whose maker's marks say whether it's std's struct
+    /// (`compiled_struct`).
     fn collected_as_vec(
         &mut self,
-        it: Expr,
+        (it, given): (Expr, &Expr),
         output: Ty<'tcx>,
         item: Option<Ty<'tcx>>,
         iter_ty: Ty<'tcx>,
@@ -791,7 +796,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // hint is asked only where it isn't (#724).
         let callers_trusted = (!trusted
             && iter_ty.has_param()
-            && self.compiled_struct_at(iter_ty, span)
+            && self.compiled_struct(iter_ty, given)
             && !self.recognition().nth_back_folded_sources(iter_ty).is_empty())
         .then(|| self.type_fact_value(iter_ty, crate::lower::recognition::TypeFact::TrustedLen, span))
         .transpose()?;
@@ -801,7 +806,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if asks_room
                     && (endless
                         || endless_once
-                        || self.compiled_struct_at(iter_ty, span) && !self.recognition().bounded_by_items(iter_ty)
+                        || self.compiled_struct(iter_ty, given) && !self.recognition().bounded_by_items(iter_ty)
                         || self.hint_reaches_own(iter_ty)) =>
             {
                 let size = self.grown_item_size(iter_ty, item, span)?;
@@ -828,7 +833,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // And of one whose fold moves a function an adapter holds with
         // a destructor, which drops before what's left, where std doesn't
         // collect it in place, by `try_fold`, which doesn't move it (#710).
-        let folded = (self.compiled_struct_at(iter_ty, span)
+        let folded = (self.compiled_struct(iter_ty, given)
             || self.steps_lent_inclusive(iter_ty)
             || self.folds_held_function(iter_ty) && self.collects_in_place(Some(iter_ty), item) == Some(false))
             && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);

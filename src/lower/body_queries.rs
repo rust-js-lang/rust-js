@@ -165,10 +165,9 @@ pub(super) struct BodyFacts<'tcx> {
     pub(super) method_calls: HashSet<Span>,
     pub(super) called_methods: HashSet<Span>,
     /// Where each `rev()`, `enumerate()` or `map()` is whose adapter a std
-    /// iterator's method steps where it's made, and where each such method
-    /// is, `in_place_adapters`'s.
+    /// iterator's method steps where it's made, `in_place_adapters`'s: its
+    /// maker marks what it makes so (`made_in_place`, #730).
     pub(super) in_place_adapters: HashSet<Span>,
-    pub(super) in_place_adapter_steps: HashSet<Span>,
     /// Of a closure a `flat_map()` made in place is given, that what it
     /// gives is made in place too, `results_in_place`'s: its value's fact
     /// (`Known::IterResultInPlace`).
@@ -188,7 +187,7 @@ impl<'tcx> BodyFacts<'tcx> {
     /// looks its answer up, and a closure's are its own body's.
     pub(super) fn collect(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
         let (jsx_given, jsx_bases) = jsx_given_props(tcx, thir);
-        let (in_place_adapters, in_place_adapter_steps) = in_place_adapters(tcx, thir, None, &HashSet::new());
+        let in_place_adapters = in_place_adapters(tcx, thir, None, &HashSet::new());
         let (method_calls, called_methods) = method_calls::method_calls(tcx, thir);
         Self {
             kept_casts: whole_casts(tcx, thir)
@@ -206,7 +205,6 @@ impl<'tcx> BodyFacts<'tcx> {
             method_calls,
             called_methods,
             in_place_adapters,
-            in_place_adapter_steps,
             constant_patterns: constant_patterns(tcx, thir),
             jsx_given,
             jsx_bases,
@@ -425,9 +423,7 @@ fn results_in_place<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>], c
             continue;
         }
         let stepped_result = flat_mapped.then_some(body.expr);
-        let (adapters, steps) = in_place_adapters(tcx, &body.thir, stepped_result, cloned);
-        body.facts.in_place_adapters = adapters;
-        body.facts.in_place_adapter_steps = steps;
+        body.facts.in_place_adapters = in_place_adapters(tcx, &body.thir, stepped_result, cloned);
         body.facts.result_in_place = flat_mapped;
     }
 }
@@ -864,7 +860,7 @@ fn in_place_adapters<'tcx>(
     thir: &Thir<'tcx>,
     stepped_result: Option<ExprId>,
     cloned: &HashSet<ty::Ty<'tcx>>,
-) -> (HashSet<Span>, HashSet<Span>) {
+) -> HashSet<Span> {
     use super::recognition::{StdItem, std_item};
     let iterator_traits = [std_item(tcx, StdItem::Iterator), std_item(tcx, StdItem::IntoIterator)];
     // `cycle()`, which holds what it's given and clones it, as std's
@@ -953,7 +949,7 @@ fn in_place_adapters<'tcx>(
         super::iterators::bound_as_iterator(tcx, callee, param)
             && (std || callee.is_local() && !super::iterators::given_as_it_is(tcx, callee, param))
     };
-    let (mut found, mut steps) = (HashSet::new(), HashSet::new());
+    let mut found = HashSet::new();
     // What a closure gives that's stepped where it's given, `flat_map`'s:
     // made in place, as one given to it would be.
     if let Some(result) = stepped_result.map(|e| tail(thir, e))
@@ -1075,7 +1071,6 @@ fn in_place_adapters<'tcx>(
         for &(made, at, callee, index, maker) in &given {
             if steps_as_js(callee, index, &found, at, maker) {
                 found.insert(made);
-                steps.insert(at);
             }
         }
         for (&var, &at) in &made {
@@ -1088,11 +1083,10 @@ fn in_place_adapters<'tcx>(
                 && of.iter().all(|maker| found.contains(maker))
             {
                 found.insert(at);
-                steps.extend(uses.iter().chain(of).copied());
             }
         }
         if found.len() == before {
-            return (found, steps);
+            return found;
         }
     }
 }

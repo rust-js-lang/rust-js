@@ -198,7 +198,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // iterator it is, which its clone makes again (ADR 0525), and
             // std's struct, a `rev()`'s, which its compiled `Clone` clones
             // (ADR 0915).
-            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct_at(ty, span) => {
+            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct(ty, &it) => {
                 let boxed = self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item));
                 (Expr::helper(if boxed { "$nextSome" } else { "$next" }), boxed)
             }
@@ -213,7 +213,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Std's struct, a `Map` held (ADR 0871), cloned by its compiled
         // `Clone`; another, the JS iterator it is.
         let mut body = Vec::new();
-        let cloned = match self.compiled_struct_at(ty, span) {
+        let cloned = match self.compiled_struct(ty, &it) {
             true => self.clone_value(Expr::var("iterator"), ty, span, &mut body)?,
             false => self.clone_in_place(Expr::var("iterator"), ty, span, &mut body)?,
         };

@@ -40,14 +40,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `$iter` of them; not of a lazy one, whose closures would run in
     /// another order (ADR 0164). What it steps is closed with it, which
     /// drops it: a compiled struct, a `fuse()`, by its own `return` (#225).
-    /// One stepped from its back made knowing it (`reversed_knowing`).
+    /// One stepped from its back made knowing it (`reversed_knowing`). One
+    /// made in place, as `rev`, `def_id`, is at `span` (`adapter_in_place`),
+    /// is marked so first, which what makes it knowing its back asks of it
+    /// (`made_in_place`).
     pub(super) fn rev_called(
         &mut self,
         receiver: Expr,
         (iter_ty, receiver_ty, output): (Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),
-        name: &str,
+        rev: rustc_span::def_id::DefId,
         span: Span,
     ) -> R<Expr> {
+        let (name, in_place) = (self.tcx.item_name(rev), self.adapter_in_place(rev, span));
         let unsupported = |cx: &Self| cx.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR"));
         let reversed = match self.range_kind(iter_ty) {
             _ if self.is_user_iterator(iter_ty) => self.reversed_user(receiver, receiver_ty, span)?,
@@ -78,6 +82,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 crate::lower::iterators::reversed_by(lent)
             }
             None => self.rev_items(receiver, iter_ty, self.reversed_made_knowing(output), span)?,
+        };
+        let reversed = match in_place {
+            true => reversed.in_place(),
+            false => reversed,
         };
         self.reversed_knowing(reversed, output, span)
     }
@@ -126,9 +134,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // items from the front reversed (#382).
             // Closed to drop what it holds, a type parameter's by its drop,
             // as `Rev` drops it (ADR 0516, #650).
+            // What steps it from its back is it, made again: made in place
+            // where it was (`made_in_place`).
             None => {
+                let in_place = crate::lower::iterators::made_in_place(&receiver);
                 let it = self.as_double_ended(receiver, iter_ty, span)?;
-                return Ok(crate::lower::iterators::reversed_by(self.closing(it, iter_ty, span)?));
+                let it = self.closing(it, iter_ty, span)?;
+                let it = match in_place {
+                    true => it.in_place(),
+                    false => it,
+                };
+                return Ok(crate::lower::iterators::reversed_by(it));
             }
         };
         let items = crate::lower::iterators::reversed(items);
@@ -379,8 +395,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !counted || !crate::lower::iterators::made_in_place(&value) {
             return Ok(value);
         }
+        // It, made again to step from its back: made in place, as it was.
         let knowing = self.as_double_ended(value, ty, span)?;
-        Ok(crate::lower::iterators::made_knowing_its_back(knowing))
+        Ok(crate::lower::iterators::made_knowing_its_back(knowing).in_place())
     }
 
     /// `rev()` of the crate's iterator, `receiver` of type `receiver_ty`:
@@ -421,7 +438,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // (ADR 0920); another made one, a range's of its bounds, stepped in
         // place.
         let revealed = self.reveal(iter_ty.peel_refs());
-        let knowing = match self.compiled_struct_at(revealed, span) {
+        let knowing = match self.compiled_struct(revealed, &it) {
             true => self.knowing_held(it.clone(), revealed, span)?,
             false => None,
         };

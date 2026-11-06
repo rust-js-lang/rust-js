@@ -360,15 +360,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `$skipping`, each it skips dropped as it's skipped, as Rust's `nth`
     /// drops it (ADRs 0422, 0465).
     pub(super) fn skipped(&mut self, it: Expr, n: Expr, dropping: Option<Ty<'tcx>>, span: Span) -> R<Expr> {
-        // Made in place, as `take(n)` is, never std's struct (#718).
+        // Made in place, never std's struct (#718), as its maker marks it
+        // (`made_by`, #730).
         Ok(match dropping {
             Some(item) => {
                 let drop = self.std_drop_function(item, span)?.expect("a destructor");
                 Expr::call_helper("$skipping", vec![it, n, drop])
             }
             None => Expr::call(Expr::member(it, "drop"), vec![n]),
-        }
-        .in_place())
+        })
     }
 
     /// The one item of `it` a method picks, of items of type `item`, which
@@ -416,7 +416,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.drops(iter_ty) != crate::lower::drops::Drops::Nothing && self.steps_may_panic(iter_ty);
         if drops_none
             && (self.recognition().reaches_its_own(iter_ty, OwnStep::Last, Reach::Sure)
-                || self.compiled_struct_at(iter_ty, span)
+                || self.compiled_struct(iter_ty, &it)
                 || unwinds_holding)
         {
             let boxed = item.is_some_and(|item| self.boxed_payload(item));

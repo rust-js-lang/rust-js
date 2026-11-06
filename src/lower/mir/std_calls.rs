@@ -837,7 +837,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             v => this.value_expr(v, span),
                         })
                         .collect::<R<Vec<_>>>()?;
-                    let mut exprs = this.marked_in_place(exprs, arg_tys, span);
+                    let mut exprs = exprs;
                     let receiver = exprs.remove(0);
                     let it = this.as_js_iterator(receiver, iter_ty, span)?;
                     // One that owns items with a destructor, given whole to a

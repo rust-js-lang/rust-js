@@ -1061,12 +1061,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ))
     }
 
-    /// `const <base> = value;`, so it's evaluated here, then its name.
+    /// `const <base> = value;`, so it's evaluated here, then its name, which
+    /// keeps what's known of an iterator's value (`iterators::held_marks`).
     fn spill(&mut self, base: &str, value: Expr, out: &mut Vec<Stmt>) -> Expr {
         let name = self.fresh(&unhyphenated(base));
-        let span = value.span;
+        let (span, marks) = (value.span, iterators::held_marks(value.facts));
         out.push(StmtKind::Const(name.clone(), value).at(span));
-        Expr::var(&name)
+        let mut held = Expr::var(&name);
+        held.facts = held.facts.and(marks);
+        held
     }
 
     fn unsupported(&self, span: Span, what: &str) -> ErrorGuaranteed {

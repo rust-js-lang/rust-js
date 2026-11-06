@@ -812,7 +812,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an in-place `map()`'s `rfold`, which the recognizers' JS iterator is, calls std's compiled `rfold` of a struct it isn't",
     file: "src/lower/mir/dispatch.rs",
-    find: "            || self.steps_adapter_in_place(def_id, generic_args, span))\n",
+    find: "            || self.steps_adapter_in_place(def_id, generic_args, receiver))\n",
     replace: ")\n",
     tests: [
       "test/corpus.test.ts",
@@ -1087,7 +1087,7 @@ export const mutations: Mutation[] = [
     name: "std-method-call-unasked",
     breaks: "a call that resolves to a body compiled into `@rust-js/std` but is lowered as std's iterator method, a `Rev`'s `rfold`, drops nothing of the function it's given, a closure that holds what has a destructor, leaked (#754)",
     file: "src/lower/mir/dispatch.rs",
-    find: "            || (self.tcx.trait_of_assoc(def_id).is_some() && self.std_iterator_call(def_id, generic_args, span)?);\n",
+    find: "            || (self.tcx.trait_of_assoc(def_id).is_some()\n                && self.std_iterator_call(def_id, generic_args, values.first(), span)?);\n",
     replace: "            || false;\n",
     tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
   },

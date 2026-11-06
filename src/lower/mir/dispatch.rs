@@ -759,7 +759,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // to a body compiled into `@rust-js/std`, a `Rev`'s `rfold` the
         // build that rewrites adapters steps as `$foldBack` (#754).
         let std = self.is_std_call(def_id, generic_args)?
-            || (self.tcx.trait_of_assoc(def_id).is_some() && self.std_iterator_call(def_id, generic_args, span)?);
+            || (self.tcx.trait_of_assoc(def_id).is_some()
+                && self.std_iterator_call(def_id, generic_args, values.first(), span)?);
         let given = match std {
             true => {
                 let known = self.recognition().classify(def_id, generic_args);
@@ -833,19 +834,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !self.adapter_in_place(def_id, span))
     }
 
-    /// Whether a trait method's call of `def_id` at `span` is a std
-    /// iterator's, a JS iterator's method: not one the crate's impl has,
-    /// in a copied default as its impl calls it (ADR 0492), nor a compiled
-    /// std body's, but an adapter stepped where it's made (ADR 0871).
+    /// Whether a trait method's call of `def_id` at `span`, given
+    /// `receiver`, is a std iterator's, a JS iterator's method: not one the
+    /// crate's impl has, in a copied default as its impl calls it (ADR
+    /// 0492), nor a compiled std body's, but an adapter stepped where it's
+    /// made (ADR 0871), as its maker marked it.
     fn std_iterator_call(
         &self,
         def_id: rustc_span::def_id::DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
+        receiver: Option<&Value<'tcx>>,
         span: Span,
     ) -> R<bool> {
+        let receiver = receiver.and_then(|receiver| match receiver {
+            Value::Expr(e) | Value::Place(e) | Value::Ref(e) => Some(e),
+            _ => None,
+        });
         Ok(!self.resolves_to_crate(def_id, generic_args)?
             || self.adapter_in_place(def_id, span)
-            || self.steps_adapter_in_place(def_id, generic_args, span))
+            || self.steps_adapter_in_place(def_id, generic_args, receiver))
     }
 
     /// Whether `def_id` is std's, as it's called with `generic_args`: not
@@ -990,7 +997,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // to one is it, an object its helpers step in place. Not one the
         // crate's impl has, in a copied default as its impl calls it (ADR
         // 0492).
-        if tcx.trait_of_assoc(def_id).is_some() && self.std_iterator_call(def_id, generic_args, span)? {
+        if tcx.trait_of_assoc(def_id).is_some() && self.std_iterator_call(def_id, generic_args, values.first(), span)? {
             let mut exprs = (values.clone().into_iter())
                 .map(|v| self.value_expr(v, span))
                 .collect::<R<Vec<_>>>()?;

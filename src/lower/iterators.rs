@@ -772,7 +772,18 @@ pub(super) fn array_stepped(items: Expr) -> Expr {
 
 /// Whether `e`, of a `Rev`, an `Enumerate` or a `Map`, is what the
 /// recognizers made of it in place, never std's struct, which one held is:
-/// as the call that took it marked it (`Known::InPlace`, ADR 0871).
+/// as its maker marked it (`Known::InPlace`, ADR 0871).
 pub(in crate::lower) fn made_in_place(e: &Expr) -> bool {
     e.facts.has(js::Known::InPlace)
+}
+
+/// Of `facts`, a value's, what's known of the value that what holds it
+/// keeps on its name: its form's marks (`its_facts`) and whether it's made
+/// in place (`made_in_place`).
+pub(in crate::lower) fn held_marks(facts: js::Facts) -> js::Facts {
+    let marks = its_facts(facts);
+    match facts.has(js::Known::InPlace) {
+        true => marks.with(js::Known::InPlace),
+        false => marks,
+    }
 }

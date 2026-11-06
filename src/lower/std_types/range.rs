@@ -148,7 +148,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A reversed one's bounds: of one made here, its `$iterator`'s, those
         // it was made of, once `reversed_step` reads them; of one held,
         // std's `Rev`, what it holds, `iter` (ADR 0871): as the value's mark
-        // says, `marked_in_place`'s.
+        // says, its maker's (`made_in_place`).
         if reversed.is_some() {
             let first = values.first_mut()?;
             *first = match crate::lower::iterators::made_in_place(first) {

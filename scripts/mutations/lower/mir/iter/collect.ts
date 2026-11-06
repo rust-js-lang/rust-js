@@ -73,9 +73,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`collect()` into a `Vec` of std's struct asks no room of its hint first, so `(0..usize::MAX).map(f).collect()` maps without end where Rust's `SpecFromIter` panics `capacity overflow` (ADR 0940)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                        || self.compiled_struct_at(iter_ty, span) && !self.recognition().bounded_by_items(iter_ty)\n",
+    find: "                        || self.compiled_struct(iter_ty, given) && !self.recognition().bounded_by_items(iter_ty)\n",
     replace:
-      "                        || false && self.compiled_struct_at(iter_ty, span) && !self.recognition().bounded_by_items(iter_ty)\n",
+      "                        || false && self.compiled_struct(iter_ty, given) && !self.recognition().bounded_by_items(iter_ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^std_rev.rs$"],
     snapshots: true,
   },
@@ -428,8 +428,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `collect` into a B-tree isn't the `Vec`'s it's made of, so a panic that may stop it drops nothing it took (#423, #797)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                Some(iter_ty) => self.collected_as_vec(it, grown, item, iter_ty, !heap, span)?,\n",
-    replace: "                Some(_) if !heap => it,\n                Some(iter_ty) => self.collected_as_vec(it, grown, item, iter_ty, !heap, span)?,\n",
+    find: "                Some(iter_ty) => self.collected_as_vec((it, &given), grown, item, iter_ty, !heap, span)?,\n",
+    replace: "                Some(_) if !heap => it,\n                Some(iter_ty) => self.collected_as_vec((it, &given), grown, item, iter_ty, !heap, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
@@ -446,8 +446,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `collect` into a `BinaryHeap` isn't the `Vec`'s it's made of, so a panic that may stop it drops nothing it took (#423, #797)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                Some(iter_ty) => self.collected_as_vec(it, grown, item, iter_ty, !heap, span)?,\n",
-    replace: "                Some(_) if heap => Expr::collected(it),\n                Some(iter_ty) => self.collected_as_vec(it, grown, item, iter_ty, !heap, span)?,\n",
+    find: "                Some(iter_ty) => self.collected_as_vec((it, &given), grown, item, iter_ty, !heap, span)?,\n",
+    replace: "                Some(_) if heap => Expr::collected(it),\n                Some(iter_ty) => self.collected_as_vec((it, &given), grown, item, iter_ty, !heap, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
@@ -854,8 +854,8 @@ export const mutations: Mutation[] = [
     name: "vec-collect-asks-no-own-hint",
     breaks: "a collect into a `Vec` of a chain made in place over the crate's iterator asks no hint, which std's `from_iter` asks after its first item and as it grows (#733)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                        || self.compiled_struct_at(iter_ty, span) && !self.recognition().bounded_by_items(iter_ty)\n                        || self.hint_reaches_own(iter_ty)) =>\n",
-    replace: "                        || self.compiled_struct_at(iter_ty, span) && !self.recognition().bounded_by_items(iter_ty)) =>\n",
+    find: "                        || self.compiled_struct(iter_ty, given) && !self.recognition().bounded_by_items(iter_ty)\n                        || self.hint_reaches_own(iter_ty)) =>\n",
+    replace: "                        || self.compiled_struct(iter_ty, given) && !self.recognition().bounded_by_items(iter_ty)) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
   },
   {

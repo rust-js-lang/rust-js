@@ -461,12 +461,17 @@ pub(in crate::lower) fn made_knowing_its_back(mut e: Expr) -> Expr {
 
 /// `$held(e)`, an iterator its owner drops held (#206): the same iterator,
 /// so what's known of its value, not of its JS's form, is kept on it, made
-/// knowing its back (`made_knowing_its_back`).
+/// knowing its back (`made_knowing_its_back`) and made in place
+/// (`made_in_place`).
 pub(in crate::lower) fn held_by_its_owner(e: Expr) -> Expr {
-    let knows_back = was_made_knowing_its_back(&e);
+    let (knows_back, in_place) = (was_made_knowing_its_back(&e), super::made_in_place(&e));
     let held = Expr::call_helper("$held", vec![e]);
-    match knows_back {
+    let held = match knows_back {
         true => made_knowing_its_back(held),
+        false => held,
+    };
+    match in_place {
+        true => held.in_place(),
         false => held,
     }
 }

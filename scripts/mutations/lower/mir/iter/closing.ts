@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`last()` of std's struct, a zip's, steps it by `next()`, not by its `fold` as std's default `last` does: its closure runs once more (#380)",
     file: "src/lower/mir/iter/closing.rs",
-    find: "                || self.compiled_struct_at(iter_ty, span)\n                || unwinds_holding)\n",
-    replace: "                || false && self.compiled_struct_at(iter_ty, span)\n                || unwinds_holding)\n",
+    find: "                || self.compiled_struct(iter_ty, &it)\n                || unwinds_holding)\n",
+    replace: "                || false && self.compiled_struct(iter_ty, &it)\n                || unwinds_holding)\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_fold_steps_the_shorter.rs$"],
   },
   {
@@ -263,8 +263,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`last()` of items with a destructor through a `chain` of the crate's iterators with their own `last` is the chain's own `last`, which drops neither side's `a` where `b` has one (#494)",
     file: "src/lower/mir/iter/closing.rs",
-    find: "        if drops_none\n            && (self.recognition().reaches_its_own(iter_ty, OwnStep::Last, Reach::Sure)\n                || self.compiled_struct_at(iter_ty, span)\n                || unwinds_holding)\n",
-    replace: "        if self.recognition().reaches_its_own(iter_ty, OwnStep::Last, Reach::Sure)\n            || drops_none && (self.compiled_struct_at(iter_ty, span) || unwinds_holding)\n",
+    find: "        if drops_none\n            && (self.recognition().reaches_its_own(iter_ty, OwnStep::Last, Reach::Sure)\n                || self.compiled_struct(iter_ty, &it)\n                || unwinds_holding)\n",
+    replace: "        if self.recognition().reaches_its_own(iter_ty, OwnStep::Last, Reach::Sure)\n            || drops_none && (self.compiled_struct(iter_ty, &it) || unwinds_holding)\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
   },
   {
@@ -349,13 +349,5 @@ export const mutations: Mutation[] = [
     find: "                    | IterMethod::IsSortedByKey\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
-  },
-  {
-    name: "skip-made-unmarked-in-place",
-    breaks: "`skip(n)` made in place, JS's `.drop(n)`, isn't marked so, and a back step of it gives it std's compiled `Skip`'s steps, `it.back is not a function` (#718)",
-    file: "src/lower/mir/iter/closing.rs",
-    find: "        }\n        .in_place())\n",
-    replace: "        })\n",
-    tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
   },
 ];

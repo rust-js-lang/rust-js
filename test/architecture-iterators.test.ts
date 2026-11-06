@@ -242,23 +242,20 @@ test("no iterator fact is read off a member's name, `.of`, `.at`, `.end`, `.iter
   expect([owned("a member read as an iterator's fact"), outsideValue(member)]).toEqual([owned("a member read as an iterator's fact"), []]);
 });
 
-// Whether a call steps an adapter made in place is body_queries' answer, read
-// by mir/iter.rs's `steps_in_place` alone, the maker of each value's in-place
-// mark (step 6). It's still keyed by the call's span, which #730's step 6b
-// removes, each in-place adapter's maker marking what it makes.
-test("in_place_adapter_steps is read by steps_in_place alone", () => {
-  const allowed: Record<string, [number, string]> = {
-    "src/lower/body_queries.rs": [4, "its owner, which makes it of the THIR"],
-    "src/lower/analysis.rs": [1, "the `--std-iterators` build's switch, which makes no adapter in place"],
-    "src/lower/mir/iter.rs": [1, "`steps_in_place`, its one reader, until #730's step 6b"],
-  };
-  const found: Record<string, number> = {};
-  for (const file of loweringSources()) {
-    const count = linesOf(file).filter((line) => line.includes("in_place_adapter_steps")).length;
-    if (count > 0) found[file] = count;
-  }
-  const expected = Object.fromEntries(Object.entries(allowed).map(([file, [count]]) => [file, count]));
-  expect(found).toEqual(expected);
+// Whether a value is a `rev()`, an `enumerate()` or a `map()` made in place
+// is its maker's mark (`made_in_place`, #730 step 6b): body_queries says which
+// calls make one (`in_place_adapters`), and the value carries the mark past
+// spills and locals. No answer is keyed by the span of the call that steps
+// it: a table of those, or a question of a type and a span, fails here.
+test("whether a value is made in place is its maker's mark, never a stepping call's span", () => {
+  const spanKeyed = /in_place_adapter_steps|\bsteps_in_place\b|\bmarked_in_place\b|\bcompiled_struct_at\b|\bspill_marked\b/;
+  const found = loweringSources().flatMap((file) =>
+    linesOf(file)
+      .map((line, i) => [line, i] as const)
+      .filter(([line]) => spanKeyed.test(line) && !line.trim().startsWith("//"))
+      .map(([, i]) => `${file}:${i + 1}`),
+  );
+  expect(found).toEqual([]);
 });
 
 // No iterator helper is read by its name outside value.rs: each reader asks

@@ -258,7 +258,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`rev()` of a lazy map of a range is refused, not stepped from its back",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            None => {\n                let it = self.as_double_ended(receiver, iter_ty, span)?;\n                return Ok(crate::lower::iterators::reversed_by(self.closing(it, iter_ty, span)?));\n            }",
+    find: "            None => {\n                let in_place = crate::lower::iterators::made_in_place(&receiver);\n                let it = self.as_double_ended(receiver, iter_ty, span)?;\n                let it = self.closing(it, iter_ty, span)?;\n                let it = match in_place {\n                    true => it.in_place(),\n                    false => it,\n                };\n                return Ok(crate::lower::iterators::reversed_by(it));\n            }",
     replace: "            None => {\n                return Err(self.unsupported(span, \"`rev` of a lazy iterator, from its MIR\"));\n            }",
     tests: ["test/corpus.test.ts", "-t", "^range_mapped_by_a_function.rs$"],
   },
@@ -489,9 +489,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`rfind` of std's `Chain` a function gives behind an `impl` isn't given its compiled back, so it throws `it.back is not a function` (ADR 0920)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "        let knowing = match self.compiled_struct_at(revealed, span) {\n",
+    find: "        let knowing = match self.compiled_struct(revealed, &it) {\n",
     replace:
-      "        let knowing = match false && self.compiled_struct_at(revealed, span) {\n",
+      "        let knowing = match false && self.compiled_struct(revealed, &it) {\n",
     tests: [
       "test/corpus.test.ts",
       "test/iterator-forms.test.ts",
@@ -573,8 +573,8 @@ export const mutations: Mutation[] = [
     name: "generic-rev-unclosed",
     breaks: "a generic `rev()` of a type parameter isn't closed: the crate's iterator it reverses is never dropped (#650)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                return Ok(crate::lower::iterators::reversed_by(self.closing(it, iter_ty, span)?));\n",
-    replace: "                return Ok(crate::lower::iterators::reversed_by(it));\n",
+    find: "                let it = self.closing(it, iter_ty, span)?;\n                let it = match in_place {\n",
+    replace: "                let it = match in_place {\n",
     tests: ["test/corpus.test.ts", "-t", "^rfold_and_rev_close_what_they_step.rs$"],
   },
   {
@@ -702,8 +702,8 @@ export const mutations: Mutation[] = [
     name: "back-stepped-temporary-unmarked",
     breaks: "a `take(n)` made knowing its back where a temporary holds it isn't marked so, and `next_back` of its variable reads its type, which doesn't, and is refused (#718)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "        Ok(crate::lower::iterators::made_knowing_its_back(knowing))\n",
-    replace: "        Ok(knowing)\n",
+    find: "        Ok(crate::lower::iterators::made_knowing_its_back(knowing).in_place())\n",
+    replace: "        Ok(knowing.in_place())\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
   },
   {
@@ -739,5 +739,35 @@ export const mutations: Mutation[] = [
     find: "            None if self.reversed_made_knowing(output)\n",
     replace: "            None if false && self.reversed_made_knowing(output)\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_of_a_type_parameter_held_as_it_is.rs$"],
+  },
+  {
+    name: "rev-source-remade-unmarked",
+    breaks:
+      "what a `rev()` made in place reverses, made again to step from its back, loses its maker's mark, so where it's asked as an `ExactSizeIterator` it's taken as std's struct, `$knowing` of its compiled back (#730)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                let it = match in_place {\n                    true => it.in_place(),\n                    false => it,\n                };\n                return Ok(crate::lower::iterators::reversed_by(it));\n",
+    replace: "                let _ = in_place;\n                return Ok(crate::lower::iterators::reversed_by(it));\n",
+    tests: ["test/corpus.test.ts", "-t", "^lengths_and_backs_given_on.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "rev-made-in-place-unmarked",
+    breaks:
+      "a `rev()` made in place isn't marked so before it's made knowing its back, so the map it reverses, `v.iter().map(f).rev().nth_back(1)`'s, is taken as std's struct, `$knowing` of its compiled back (#730)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "        let reversed = match in_place {\n            true => reversed.in_place(),\n            false => reversed,\n        };\n",
+    replace: "        let _ = in_place;\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "back-stepped-temporary-remade-unmarked",
+    breaks:
+      "a `skip(n)` or a `take(n)` made in place that a temporary holds for a back step, made knowing its back there, loses its maker's mark, so its back step calls std's compiled `Skip`'s `next_back`, of a struct it isn't (#730)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "        Ok(crate::lower::iterators::made_knowing_its_back(knowing).in_place())\n",
+    replace: "        Ok(crate::lower::iterators::made_knowing_its_back(knowing))\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
+    snapshots: true,
   },
 ];

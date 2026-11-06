@@ -1043,7 +1043,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // it's stepped, as `extend` drops what it's given, which its end
         // doesn't, as the recognizers' `take` does (ADR 0913).
         if !iterable.is_ref()
-            && self.compiled_struct_at(iterable, span)
+            && self.compiled_struct(iterable, &items)
             && let Some(drop) = self.drop_function(iterable, span)?
         {
             let held = match items.reads_same() {

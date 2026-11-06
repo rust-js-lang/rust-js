@@ -127,7 +127,6 @@ pub fn collect_bodies(tcx: TyCtxt<'_>, std_iterators: bool) -> Vec<Body<'_>> {
     if std_iterators {
         for body in &mut bodies {
             body.facts.in_place_adapters.clear();
-            body.facts.in_place_adapter_steps.clear();
         }
     }
     // What only an unlowered impl reaches is no JS either (ADR 0425).

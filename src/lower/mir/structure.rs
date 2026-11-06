@@ -726,6 +726,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => self.mir_call(state, func, args, *destination, *fn_span, &mut called),
                 };
                 let value = value?;
+                // An adapter made in place, marked so by its maker (#730).
+                let value = match (value, fn_def(func.ty(&state.body.local_decls, self.tcx))) {
+                    (Value::Expr(e), Some((def_id, _))) => Value::Expr(self.made_by(def_id, *fn_span, e)),
+                    (value, _) => value,
+                };
                 // A throwing function's result, a throwing call's, is the
                 // call's value: its throw goes on, to the throwing
                 // function's caller's `try` (ADR 0644).

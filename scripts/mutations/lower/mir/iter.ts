@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an iterator of the crate's `len()` from MIR is refused, not its `size_hint()`'s",
     file: "src/lower/mir/iter.rs",
-    find: "            if (self.is_user_iterator(iter_ty) || self.compiled_struct_at(iter_ty, span))\n                && std_method == Some(IterMethod::Len)\n",
+    find: "            if (self.is_user_iterator(iter_ty) || self.compiled_struct(iter_ty, &it))\n                && std_method == Some(IterMethod::Len)\n",
     replace:
       "            if false\n                && std_method == Some(IterMethod::Len)\n",
     tests: [
@@ -407,8 +407,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Rev` stepped where it's made is taken as std's struct, closed after it's consumed",
     file: "src/lower/mir/iter.rs",
-    find: "            && !(crate::lower::recognition::is_held_compiled(self.tcx, ty) && self.steps_in_place(span))\n",
-    replace: "            && !(false && self.steps_in_place(span))\n",
+    find: "                && crate::lower::iterators::made_in_place(value))\n",
+    replace: "                && false)\n",
     snapshots: true,
     tests: [
       "test/corpus.test.ts",
@@ -421,7 +421,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`len()` of a `map()` made in place, the recognizers' JS iterator, is std's struct's hint, `$exactLen($sizeHint(..))`, not its own `len()`",
     file: "src/lower/mir/iter.rs",
-    find: "            if (self.is_user_iterator(iter_ty) || self.compiled_struct_at(iter_ty, span))\n",
+    find: "            if (self.is_user_iterator(iter_ty) || self.compiled_struct(iter_ty, &it))\n",
     replace:
       "            if (self.is_user_iterator(iter_ty) || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty))\n",
     snapshots: true,
@@ -432,16 +432,6 @@ export const mutations: Mutation[] = [
     ],
   },
 
-  {
-    name: "in-place-given-unmarked",
-    breaks:
-      "a variable's `rev()` made in place, stepped from its back past a `skip`, is given `Rev`'s compiled back, not refused",
-    file: "src/lower/mir/iter.rs",
-    find: "            .map(|(i, value)| match arg_tys.get(i).is_some_and(|&ty| in_place(ty)) {\n",
-    replace:
-      "            .map(|(i, value)| match false && arg_tys.get(i).is_some_and(|&ty| in_place(ty)) {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "held rev of the crate"],
-  },
   {
     name: "param-count-reduced",
     breaks:
@@ -638,10 +628,10 @@ export const mutations: Mutation[] = [
   {
     name: "steps-in-place-never",
     breaks:
-      "no call steps an adapter made in place, so `v.iter().map(f).rfold(..)` steps std's compiled `Map`, whose back the recognizers' JS `.map()` hasn't (ADR 0871)",
+      "no call steps an adapter made in place, its receiver's mark unread, so `v.iter().map(f).rfold(..)` steps std's compiled `Map`, whose back the recognizers' JS `.map()` hasn't (ADR 0871)",
     file: "src/lower/mir/iter.rs",
-    find: "        self.frame.facts.in_place_adapter_steps.contains(&span)\n",
-    replace: "        let _ = span;\n        false\n",
+    find: "            && receiver.is_some_and(crate::lower::iterators::made_in_place)\n",
+    replace: "            && receiver.is_some_and(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^(rev_in_place_through_adapters|flat_map_of_maps_from_its_back|range_own_steps).rs$"],
     snapshots: true,
   },
@@ -719,11 +709,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
   },
   {
-    name: "take-made-unmarked-in-place",
-    breaks: "`take(n)` made in place, JS's `.take(n)`, isn't marked so, and a back step of it gives it std's compiled `Take`'s steps, `it.back is not a function` (#718)",
+    name: "in-place-given-unmarked",
+    breaks:
+      "an adapter made in place isn't marked so by its maker, so a variable's `rev()` made in place, stepped from its back past a `skip`, is given `Rev`'s compiled back, not refused (#730)",
     file: "src/lower/mir/iter.rs",
-    find: "            Some(IterMethod::Take) => method(\"take\", it, vec![arg()]).in_place(),\n",
-    replace: "            Some(IterMethod::Take) => method(\"take\", it, vec![arg()]),\n",
-    tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
+    find: "            true => made.in_place(),\n            false => made,\n",
+    replace: "            true => made,\n            false => made,\n",
+    tests: ["test/diagnostics.test.ts", "-t", "held rev of the crate"],
   },
 ];

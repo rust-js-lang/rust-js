@@ -851,7 +851,7 @@ pub(super) fn read_by_name(state: &State<'_, '_>, local: Local, name: &str) -> E
 /// once (`IterLocals::once`), else none.
 pub(super) fn note_marks(state: &mut State<'_, '_>, local: Local, expr: &Expr) {
     let marks = match state.iter_locals.once.contains(&local) {
-        true => crate::lower::iterators::its_facts(expr.facts),
+        true => crate::lower::iterators::held_marks(expr.facts),
         false => js::Facts::NONE,
     };
     match marks == js::Facts::NONE {
@@ -866,8 +866,8 @@ pub(super) struct IterLocals {
     /// Each temporary a map of an array's items is made in, `$iter(v).map(f)`:
     /// that, which `next_back` steps from its source's end.
     pub(super) maps: HashMap<Local, Expr>,
-    /// What `emit()` marked the value written to each local's variable
-    /// (`iterators::its_facts`), given back where it's read by its name
+    /// What `emit()` and its maker marked the value written to each local's
+    /// variable (`iterators::held_marks`), given back where it's read by its name
     /// (`read_by_name`). Recorded wherever its value is written whole to
     /// its variable (`note_marks`): `flush`'s `const`, `mir_store`'s
     /// `const`, `let` and assignment. A value read in place, through a

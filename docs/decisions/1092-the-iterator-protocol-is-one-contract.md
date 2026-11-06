@@ -807,6 +807,61 @@ both slices and the corpus with std's iterator structs are byte-identical.
 back_stepped's set has no read of a value past its maker left, and
 knowing.rs's row of step 8's list drops it.
 
+Step 6b moves the in-place answer from the span of the call that steps an
+adapter to a mark its maker gives the value. `in_place_adapter_steps` was a
+set of spans, each of a call where some argument is an adapter made in place.
+`compiled_struct_at(ty, span)` asked that set of whatever type it was given,
+so a source's type, or the type of a value the call didn't step, got the
+call's answer.
+- **The maker marks.** A call's value is marked `Known::InPlace` where
+  `adapter_in_place` says the call makes an adapter in place (`made_by` in
+  mir/iter.rs, which the call's lowering applies to what it gives). A `rev()` is marked before `reversed_knowing` makes it
+  knowing its back, which asks it (`rev_called`). What `rev_items` reverses,
+  made again to step from its back, keeps its source's mark. So does a
+  `skip(n)`, `take(n)` or `step_by(n)` a temporary holds for a back step,
+  made knowing its back there (`made_knowing_where_held`, #718). Without
+  that, its back step called std's compiled `Skip`'s steps, and a range's
+  `step_by(2)` stepped by `nth_back` then `fold` panicked: the iterator
+  matrix's slice and `skip_and_take_stepped_from_their_back_in_place.rs`
+  caught it before the readers moved. The recognizers' `take(n)` and
+  `skip(n)` marked themselves in place too (#718). With `made_by` that mark
+  is the maker's, so their own go, and with them their mutations,
+  `take-made-unmarked-in-place` and `skip-made-unmarked-in-place`, which
+  survived. The whole corpus, both slices and the std-structs corpus pass
+  without it.
+- **The mark is carried** wherever the value is held. `held_marks` is
+  `its_facts` and `InPlace`: a local keeps it (`note_marks`), a spill's name
+  keeps it (`spill`, so `spill_marked` goes), and `$held(..)` keeps it.
+- **The readers ask the value.** `compiled_struct(ty, &value)` replaces
+  `compiled_struct_at(ty, span)` at its 15 callers. A collect asks what it
+  was given before its fold. Dispatch's `steps_adapter_in_place` asks the
+  receiver's mark.
+- **What goes.** `marked_in_place`, which marked a call's arguments by its
+  span, and `steps_in_place` and the span set. body_queries' fixed point
+  keeps only the adapters made in place. test/architecture-iterators.test.ts
+  refuses any of these names coming back.
+
+ADR 0262's case: none, as the output is unchanged; the decision moved to its
+owner. Before the readers asked the mark, the corpus showed two ways a mark
+was lost, and each was fixed:
+- a spill named a value without its mark (`collected_counts_ask_room.rs`,
+  `range_steps_anywhere.rs`, `range_steps_known.rs`);
+- a `rev()`'s source was made again without it (`lengths_and_backs_given_on.rs`,
+  `own_iterator_flattened_from_its_back.rs`).
+
+With every reader on the mark, the span and the mark still disagree at 110
+`knowing_held` calls in 31 cases, all one way. The value is a `zip()`,
+`chain()`, `flatten()`, `flat_map()`, `inspect()`, `map()` or `enumerate()`
+made in place, and the span is its own maker's call. That span isn't a call
+that steps it, so the old answer called it std's struct. `knowing_held`'s
+own question, `!made_in_place(&it)`, already said no to it, so no answer
+changed. That question was there to correct the span. Asked of the mark,
+`compiled_struct` answers it already, so it goes. Its mutation,
+`in-place-adapter-made-knowing`, survived the whole corpus and the corpus
+with std's iterator structs, and goes too. `in-place-rev-a-struct` now holds
+the rule, in `compiled_struct`. The JS is byte-identical: the whole corpus, both slices and the
+corpus with std's iterator structs passed with nothing blessed.
+
 ## Amendment: each adapter's `sizeHint`, and who asks it (2026-11-05, #733 steps 1–3)
 
 G10 closes in three steps. ADR 0262's case each time: results change, so

@@ -735,9 +735,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a held `repeat(x).take(n)` given whole to `extend` isn't closed after, `repeated.return()`, where `extend`'s own close drops its `x` as Rust does now: its JS (ADR 0913)",
     file: "src/lower/combinators.rs",
-    find: "        if !iterable.is_ref()\n            && self.compiled_struct_at(iterable, span)\n",
+    find: "        if !iterable.is_ref()\n            && self.compiled_struct(iterable, &items)\n",
     replace:
-      "        if false\n            && self.compiled_struct_at(iterable, span)\n",
+      "        if false\n            && self.compiled_struct(iterable, &items)\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
   },

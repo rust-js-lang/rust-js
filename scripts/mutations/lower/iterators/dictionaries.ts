@@ -131,9 +131,9 @@ export const mutations: Mutation[] = [
     name: "cycle-of-array-unstepped",
     breaks: "`cycled()` of an array's iterator a struct holds is refused",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct_at(ty, span) => {\n                let boxed",
+    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct(ty, &it) => {\n                let boxed",
     replace:
-      "            None if (self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct_at(ty, span)) && false => {\n                let boxed",
+      "            None if (self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct(ty, &it)) && false => {\n                let boxed",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
   {
@@ -169,9 +169,9 @@ export const mutations: Mutation[] = [
     name: "cycle-of-cloned-apart-refused",
     breaks: "`cycle()` of a `map` or a `filter` is refused",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct_at(ty, span) => {\n",
+    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct(ty, &it) => {\n",
     replace:
-      "            None if self.steps_an_array(ty) || self.compiled_struct_at(ty, span) => {\n",
+      "            None if self.steps_an_array(ty) || self.compiled_struct(ty, &it) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
   },
   {
@@ -230,7 +230,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a held `Map` cycled, std's struct, is cloned as the JS iterator it isn't",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "        let cloned = match self.compiled_struct_at(ty, span) {\n",
+    find: "        let cloned = match self.compiled_struct(ty, &it) {\n",
     replace: "        let cloned = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^(std_map).rs$"],
   },
@@ -280,7 +280,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`cycle()` of std's struct, a `rev()`'s, is refused where it steps it as the JS iterator it is (#308, ADR 0915)",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct_at(ty, span) => {\n",
+    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct(ty, &it) => {\n",
     replace:
       "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^cycled_reversed_ranges.rs$"],

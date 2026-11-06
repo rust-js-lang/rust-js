@@ -41,16 +41,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         made: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
-        let mut values = self.marked_in_place(values, arg_tys, span);
+        let mut values = values;
         let Some(trait_id) = self.tcx.trait_of_assoc(def_id) else {
             return Ok(None);
         };
         let receiver_ty = arg_tys.first().copied().unwrap_or(self.tcx.types.unit);
         if !receiver_ty.is_ref()
             && (is_std_def(self.tcx, trait_id, StdItem::Iterator) || self.recognition().rfolds_what_it_consumes(def_id))
-            && self.dropped_after(def_id, (receiver_ty, arg_tys), output, !values.is_empty(), span)?
+            && self.dropped_after(def_id, (receiver_ty, arg_tys), output, values.first(), span)?
         {
-            let held = self.spill_marked(values.remove(0), made);
+            let held = self.spill("iter", values.remove(0), made);
             values.insert(0, held.clone());
             return self.consumed_call(held, (def_id, trait_id, arg_tys), values, output, span, made);
         }
@@ -430,37 +430,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(())
     }
 
-    /// `values`, of `arg_tys`, that the call at `span` takes, each a `Rev`,
-    /// an `Enumerate` or a `Map` made in place, a variable's too, marked so
-    /// (`made_in_place`): what takes them apart past this call asks it of
-    /// them, never std's compiled back (#257). The one answer, where each
-    /// std iterator method's values are made.
-    pub(in crate::lower) fn marked_in_place(&self, values: Vec<Expr>, arg_tys: &[Ty<'tcx>], span: Span) -> Vec<Expr> {
-        let in_place = |ty: Ty<'tcx>| {
-            let ty = ty.peel_refs();
-            crate::lower::recognition::is_held_compiled(self.tcx, ty) && !self.compiled_struct_at(ty, span)
-        };
-        (values.into_iter().enumerate())
-            .map(|(i, value)| match arg_tys.get(i).is_some_and(|&ty| in_place(ty)) {
-                true => value.in_place(),
-                false => value,
-            })
-            .collect()
-    }
-
-    /// `value` spilled, `const iter = value;`, its mark kept on the name
-    /// that reads it (`made_in_place`).
-    fn spill_marked(&mut self, value: Expr, made: &mut Vec<Stmt>) -> Expr {
-        let in_place = value.facts.has(js::Known::InPlace);
-        let marks = crate::lower::iterators::its_facts(value.facts);
-        let mut held = self.spill("iter", value, made);
-        held.facts = held.facts.and(marks);
-        match in_place {
-            true => held.in_place(),
-            false => held,
-        }
-    }
-
     /// Whether a call of `def_id` at `span` is a `rev()`, an `enumerate()`
     /// or a `map()` whose adapter a std iterator's method steps where it's
     /// made, `body_queries::in_place_adapters` says: what the recognizers
@@ -470,41 +439,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.frame.facts.in_place_adapters.contains(&span)
     }
 
-    /// Whether a call of an iterator trait's method `def_id` at `span`, of
-    /// `generic_args`, steps a `Rev`, an `Enumerate` or a `Map` made in place,
-    /// `v.iter().map(f).rfold(..)`'s `rfold`: the recognizers', as what it
-    /// steps is theirs, not its compiled impl's (ADR 0871).
+    /// `made`, what a call of `def_id` at `span` gives: of a `rev()`, an
+    /// `enumerate()` or a `map()` made in place (`adapter_in_place`), what
+    /// the recognizers make of it (ADR 0871), marked so, which each of its
+    /// uses asks (`made_in_place`), its local's reads too (#730). The one
+    /// maker of the mark.
+    pub(in crate::lower::mir) fn made_by(&self, def_id: DefId, span: Span, made: Expr) -> Expr {
+        match self.adapter_in_place(def_id, span) {
+            true => made.in_place(),
+            false => made,
+        }
+    }
+
+    /// Whether a call of an iterator trait's method `def_id`, of
+    /// `generic_args`, steps `receiver`, a `Rev`, an `Enumerate` or a `Map`
+    /// made in place, `v.iter().map(f).rfold(..)`'s `rfold`: the
+    /// recognizers', as what it steps is theirs, not its compiled impl's
+    /// (ADR 0871), as its maker marked it (`made_in_place`, #730).
     pub(in crate::lower::mir) fn steps_adapter_in_place(
         &self,
         def_id: rustc_span::def_id::DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
-        span: Span,
+        receiver: Option<&Expr>,
     ) -> bool {
         self.tcx
             .trait_of_assoc(def_id)
             .is_some_and(|tr| crate::lower::recognition::is_iterator_extension(self.tcx, tr))
             && (generic_args.types().next()).is_some_and(|ty| crate::lower::recognition::is_held_compiled(self.tcx, ty))
-            && self.steps_in_place(span)
+            && receiver.is_some_and(crate::lower::iterators::made_in_place)
     }
 
-    /// Whether the call at `span` steps a `rev()`, an `enumerate()` or a
-    /// `map()` made in place, as `body_queries::in_place_adapters` says (ADR
-    /// 0871): the one reader of `in_place_adapter_steps`, which
-    /// `marked_in_place` makes each value's mark of, and whose other readers
-    /// ask that mark. Still keyed by the call's span: that each in-place
-    /// adapter's maker marks what it makes, and its sources, is #730's later
-    /// step (ADR 1092, amended).
-    pub(in crate::lower) fn steps_in_place(&self, span: Span) -> bool {
-        self.frame.facts.in_place_adapter_steps.contains(&span)
-    }
-
-    /// Whether a value of `ty` the call at `span` takes is std's compiled
-    /// struct, a compiled std iterator's (ADR 0561): not a `Rev`, an
-    /// `Enumerate` or a `Map` it steps where it's made, which is what the recognizers
-    /// make of it, a JS iterator that closes as it ends (ADR 0871).
-    pub(in crate::lower) fn compiled_struct_at(&self, ty: Ty<'tcx>, span: Span) -> bool {
+    /// Whether `value`, of `ty`, is std's compiled struct, a compiled std
+    /// iterator's (ADR 0561): not a `Rev`, an `Enumerate` or a `Map` made in
+    /// place, as its maker marked it (`made_in_place`, #730), which is what
+    /// the recognizers make of it, a JS iterator that closes as it ends (ADR
+    /// 0871).
+    pub(in crate::lower) fn compiled_struct(&self, ty: Ty<'tcx>, value: &Expr) -> bool {
         crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
-            && !(crate::lower::recognition::is_held_compiled(self.tcx, ty) && self.steps_in_place(span))
+            && !(crate::lower::recognition::is_held_compiled(self.tcx, ty)
+                && crate::lower::iterators::made_in_place(value))
     }
     /// Whether an iterator taken by value, `items.fold(..)`'s, of a
     /// `receiver` with something to drop, is dropped after its method, as
@@ -519,7 +492,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         def_id: DefId,
         (receiver, arg_tys): (Ty<'tcx>, &[Ty<'tcx>]),
         output: Ty<'tcx>,
-        given: bool,
+        given: Option<&Expr>,
         span: Span,
     ) -> R<bool> {
         if self.drops(receiver) == crate::lower::drops::Drops::Nothing {
@@ -567,7 +540,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A compiled std iterator's struct, `Peekable`'s, is dropped as a
         // struct is, by its fields' drops, given where it holds only type
         // parameters' values (ADR 0561).
-        let compiled = self.compiled_struct_at(receiver, span);
+        let compiled = given.is_none_or(|given| self.compiled_struct(receiver, given));
         let dropped = match params_only {
             true => {
                 self.given_drop(receiver).is_some()
@@ -583,7 +556,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What it gives that holds it: not an item of it, `Option<I::Item>`,
         // `last()`'s, whose projection names `I` (#522).
         let holds = crate::lower::mut_refs::holds_outside_projections(output, receiver);
-        if dropped && given && !holds {
+        if dropped && given.is_some() && !holds {
             return Ok(true);
         }
         if params_only {
@@ -655,7 +628,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // 0492). A compiled std iterator's whose `len` isn't compiled,
             // `Peekable`'s, is its struct's hint (ADR 0561), where it's
             // std's struct, not one made in place (ADR 0871).
-            if (self.is_user_iterator(iter_ty) || self.compiled_struct_at(iter_ty, span))
+            if (self.is_user_iterator(iter_ty) || self.compiled_struct(iter_ty, &it))
                 && std_method == Some(IterMethod::Len)
             {
                 let mut made = Vec::new();
@@ -720,7 +693,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if std_method == Some(IterMethod::Rev) {
             let receiver = values.into_iter().next().expect("the receiver");
             return self
-                .rev_called(receiver, (iter_ty, receiver_ty, output), name, span)
+                .rev_called(receiver, (iter_ty, receiver_ty, output), def_id, span)
                 .map(Some);
         }
         // `size_hint()` of a `$iter`, exact, or of a generic one, as `$sizeHint`
@@ -789,7 +762,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let test = self.unary_callback(arg(), own);
                 self.filtered(it, test, dropping, span)?
             }
-            Some(IterMethod::Take) => method("take", it, vec![arg()]).in_place(),
+            Some(IterMethod::Take) => method("take", it, vec![arg()]),
             // Of items with a destructor, each it skips dropped as it's
             // skipped, as Rust's `nth` drops it (ADRs 0422, 0465).
             Some(IterMethod::Skip) => self.skipped(it, arg(), dropping, span)?,
@@ -920,14 +893,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let iterator = std_item(self.tcx, StdItem::Iterator);
         let revealed = self.reveal(iter_ty);
         let in_place_flatten = crate::lower::recognition::flattened_source(self.tcx, revealed).is_some()
-            && !self.compiled_struct_at(revealed, span);
+            && !self.compiled_struct(revealed, &it);
         let inners_own = self
             .recognition()
             .reaches_its_own(revealed, OwnStep::Count, Reach::Sure);
         // And a filter's, std's `Filter::count`, which asks its source's
         // hint first, where that may reach what the program sees (#733).
         let filter_asks = crate::lower::recognition::filtered_source(self.tcx, revealed)
-            .is_some_and(|source| !self.compiled_struct_at(revealed, span) && self.hint_reaches_own(source));
+            .is_some_and(|source| !self.compiled_struct(revealed, &it) && self.hint_reaches_own(source));
         let own_count = matches!(revealed.kind(), ty::Param(_))
             || filter_asks
             || self.compiled_step(revealed, iterator, "count") && (!in_place_flatten || inners_own);
