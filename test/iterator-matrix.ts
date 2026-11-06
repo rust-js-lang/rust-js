@@ -730,6 +730,24 @@ export function batches(cases: Case[], perBatch = 60): Case[][] {
   return out;
 }
 
+/** What a change to what every adapter shares runs, of `cases` (#818): of
+ * each pairing of an adapter, or of none, with a consumer, `perPair` of its
+ * cases, `sample`'s, in their order. */
+export function pairs(cases: Case[], perPair: number): Case[] {
+  const of = new Map<string, Case[]>();
+  for (const c of cases) {
+    for (const adapter of c.chain.length === 0 ? ["-"] : c.chain.map((a) => a.name)) {
+      const pairing = `${adapter} | ${c.consumer.name}`;
+      of.set(pairing, [...(of.get(pairing) ?? []), c]);
+    }
+  }
+  const picked = new Set<Case>();
+  [...of.keys()].sort().forEach((pairing, seed) => {
+    for (const c of sample(of.get(pairing)!, seed + 1, perPair)) picked.add(c);
+  });
+  return cases.filter((c) => picked.has(c));
+}
+
 /** `count` of `items`, the seed saying which, in their order. */
 export function sample<T>(items: T[], seed: number, count: number): T[] {
   const { int } = random(seed);

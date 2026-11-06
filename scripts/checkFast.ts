@@ -151,8 +151,13 @@ export function jobs({ all, changed, branch, added, extra, cores }: Scope): { jo
       // alone at a load of 14-20; the corpus's every case (2026-11-05).
       ...(iterators
         ? [
-            ...(["matrix", "conformance", "forms"] as const).map((of) =>
-              job(runs[of][0].name, ["bun", "scripts/iteratorSlice.ts", "run", of, String(parts)], { timeout: 600, ci: `bun scripts/iteratorSlice.ts run ${of}` }),
+            // And the rows of both tables the change names, sized to it
+            // (scripts/iteratorRows.ts, #818).
+            ...(["matrix", "conformance", "forms", "rows"] as const).map((of) =>
+              job(of === "rows" ? "the rows the change names" : runs[of][0].name, ["bun", "scripts/iteratorSlice.ts", "run", of, String(parts)], {
+                timeout: 600,
+                ci: `bun scripts/iteratorSlice.ts run ${of}`,
+              }),
             ),
           ]
         : []),

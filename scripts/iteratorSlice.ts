@@ -10,8 +10,10 @@
 //   bun scripts/iteratorSlice.ts run matrix [parts]        the matrix's slice, in parts at once, against native Rust
 //   bun scripts/iteratorSlice.ts run conformance [parts]   the conformance table's
 //   bun scripts/iteratorSlice.ts run forms [parts]         the corpus with std's iterator structs
+//   bun scripts/iteratorSlice.ts run rows [parts]          the rows of both tables the change names (scripts/iteratorRows.ts, #818)
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
+import { pick } from "./iteratorRows";
 import { caseParts } from "./shard";
 
 const root = join(import.meta.dir, "..");
@@ -34,6 +36,7 @@ export const iteratorPaths = [
   "src/lower/recognition/specialization.rs",
   "src/lower/recognition/std_items.rs",
   "src/lower/analysis/iterator_steps.rs",
+  "src/lower/analysis/back_stepped.rs",
   "src/lower/body_queries.rs",
   "src/runtime.rs",
   "src/runtime/**",
@@ -67,9 +70,9 @@ export const runs = {
 /** `of`, in `parts` processes at once, each its share of the cases
  * (`RUST_JS_CASES`), their logs printed as each ends: whether every part
  * passed, and how long it took. */
-export async function run(of: keyof typeof runs, parts: number): Promise<boolean> {
+export async function run(of: keyof typeof runs | "rows", parts: number): Promise<boolean> {
   let passed = true;
-  for (const { name, file, env } of runs[of]) {
+  for (const { name, file, env } of of === "rows" ? changeRows() : runs[of]) {
     const start = Date.now();
     const parted = Array.from({ length: parts }, async (_, i) => {
       const p = Bun.spawn(["bun", "test", "--timeout=600000", file], {
@@ -90,9 +93,24 @@ export async function run(of: keyof typeof runs, parts: number): Promise<boolean
   return passed;
 }
 
+/** The runs of the rows the change names, the working tree's since it left
+ * `main` (scripts/iteratorRows.ts): each table's, said with why they're
+ * picked, hunk by hunk. */
+function changeRows(): { name: string; file: string; env: Record<string, string> }[] {
+  const git = (args: string[]) => Bun.spawnSync(["git", ...args], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
+  const base = git(["merge-base", "HEAD", "origin/main"])[0];
+  if (base === undefined) return [];
+  const files = [...git(["diff", "--name-only", base]), ...git(["ls-files", "--others", "--exclude-standard"])].filter((file) => touchesIterators([file]));
+  return pick(base, undefined, files).map((p) => {
+    for (const line of p.why) console.log(`  ${line}`);
+    console.log(`${p.table}: ${p.rows} rows, ITERATOR_MATRIX='${p.setting}'`);
+    return { name: `the ${p.table === "matrix" ? "matrix" : "conformance table"}'s ${p.rows} rows the change names`, file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: p.table, ITERATOR_MATRIX: p.setting } };
+  });
+}
+
 if (import.meta.main) {
   const [command, of, count] = process.argv.slice(2);
-  if (command !== "run" || !(of in runs)) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms [parts]");
+  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|rows [parts]");
   const parts = count === undefined ? caseParts(availableParallelism() * 2) : Number(count);
-  process.exit((await run(of as keyof typeof runs, parts)) ? 0 : 1);
+  process.exit((await run(of as keyof typeof runs | "rows", parts)) ? 0 : 1);
 }

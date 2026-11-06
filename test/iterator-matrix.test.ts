@@ -9,6 +9,9 @@
 //   bun test test/iterator-matrix.test.ts                                        # its slice, of every source, adapter, consumer and panic site
 //   ITERATOR_MATRIX=all RUST_JS_CASES=1/8 bun test test/iterator-matrix.test.ts  # an eighth of every batch
 //   ITERATOR_MATRIX=#651 bun test test/iterator-matrix.test.ts                   # the batches holding #651's known cases
+//   ITERATOR_MATRIX='/step_by/' bun test test/iterator-matrix.test.ts           # the cases whose ids match, in batches of their own, a change's (#818)
+//   ITERATOR_MATRIX=pairs bun test test/iterator-matrix.test.ts                  # a sample of each adapter with each consumer, of a change to what they share
+//   ITERATOR_MATRIX='pairs:20/step_by/' bun test test/iterator-matrix.test.ts    # 20 of each pairing, of the cases whose ids match
 //   ITERATOR_TABLE=conformance bun test test/iterator-matrix.test.ts             # the conformance table's (ADR 1092), each likewise
 //   bun scripts/iteratorSlice.ts run                                             # both tables' slices, in parts at once (#731)
 //
@@ -24,6 +27,7 @@ import { basename, join } from "node:path";
 
 import {
   batches,
+  pairs,
   builds,
   casesOf,
   failures,
@@ -47,8 +51,13 @@ beforeAll(buildCompiler);
 
 const which = process.env.ITERATOR_MATRIX;
 const issue = /^#(\d+)$/.exec(which ?? "")?.[1];
-if (which !== undefined && which !== "all" && issue === undefined) {
-  throw new Error(`ITERATOR_MATRIX=${which}: \`all\`, \`#<issue>\` for the batches of an issue's known cases, or unset for its slice`);
+const picking = /^(pairs(?::(\d+))?)?(?:\/(.+)\/)?$/.exec(which ?? "");
+const paired = picking?.[1] === undefined ? undefined : Number(picking[2] ?? (table === "matrix" ? 60 : 10));
+const rows = picking?.[3];
+if (which !== undefined && which !== "all" && issue === undefined && paired === undefined && rows === undefined) {
+  throw new Error(
+    `ITERATOR_MATRIX=${which}: \`all\`, \`#<issue>\` for the batches of an issue's known cases, \`/<regex>/\` for the cases whose ids match, \`pairs[:<n>]\` for <n> of each adapter with each consumer, of those a pattern after it matches, or unset for its slice`,
+  );
 }
 const list = readKnown();
 const known = knownCases(list);
@@ -61,8 +70,22 @@ const perBatch = all[0].length;
 const ofIssue = [...known]
   .filter(([name, n]) => String(n) === issue && ofTable(name.split(" ")[0]))
   .map(([name]) => Math.floor(Number(name.split(" ")[1]) / perBatch));
+// Of a pattern, the cases whose ids it matches, in batches of their own:
+// each is judged by itself, by its number, so what it runs costs as many
+// cases as it names, where the batches holding them would be nearly all,
+// each of which holds every consumer (#818).
+// Of `pairs`, so many of each pairing of an adapter with a consumer, 60 of
+// the matrix's and 10 of the table's, that they're some 200 batches and
+// some 100 (#818).
+const matching = rows === undefined ? every : every.filter((c) => new RegExp(rows).test(c.id));
+const picked = paired !== undefined ? pairs(matching, paired) : rows !== undefined ? matching : undefined;
+const run = picked === undefined ? all : batches(picked);
 const chosen =
-  which === "all" ? indexes : issue !== undefined ? [...new Set(ofIssue)].sort((a, b) => a - b) : slice(all);
+  which === "all" || picked !== undefined
+    ? run.map((_, i) => i)
+    : issue !== undefined
+      ? [...new Set(ofIssue)].sort((a, b) => a - b)
+      : slice(all);
 if (issue !== undefined && chosen.length === 0) throw new Error(`ITERATOR_MATRIX=${which}: no known case is under #${issue}`);
 const [part, parts] = (process.env.RUST_JS_CASES ?? "1/1").split("/").map(Number);
 const mine = shard(
@@ -171,9 +194,9 @@ function judge(cases: Case[], native: Map<string, string>, dir: string, build: s
 }
 
 for (const index of mine) {
-  const batch = all[index];
-  test(`batch ${index + 1} of ${all.length}: ${batch.length} cases`, () => {
-    const dir = fixture(`iterator-${table}-${index}`);
+  const batch = run[index];
+  test(`batch ${index + 1} of ${run.length}${picked === undefined ? "" : ` of ${which}`}: ${batch.length} cases`, () => {
+    const dir = fixture(`iterator-${table}-${picked === undefined ? "" : "picked-"}${index}`);
     const file = join(dir, "native.rs");
     writeFileSync(file, program(batch));
     const native: Run | string = runNative(file, dir);

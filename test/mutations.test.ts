@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { judge, lists, mutate, mutations, site, syncTree, testsEnv, unmatched, unparsed } from "../scripts/mutations";
+import { underLoad } from "../scripts/timing";
 import { run as runChild, type Exit } from "./child";
 import { installPackages } from "./packages-of";
 import { node } from "./programs";
@@ -38,7 +39,9 @@ test("every mutation's build lexes, alone and in a build of many", () => {
     return problem ? [`${m.name}: ${problem}`] : [];
   });
   expect(unlexed).toEqual([]);
-});
+  // 1.6 s alone; 13.6–14.2 s under check:fast's load, all its parts at once
+  // (2026-11-06), past bun's 5 s.
+}, underLoad(30_000));
 
 test("a mutation's build that wouldn't lex says where", () => {
   const read = (source: string) => () => source;

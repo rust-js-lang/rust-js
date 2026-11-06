@@ -188,3 +188,55 @@ closures captured nothing, which is how #710, #719 and #734 got through.
   corpus with std's iterator structs (ADR 0908, amended): `iterators`,
   `iterator-conformance` and `iterator-forms`, about 5 minutes wall each,
   at once, beside the suite.
+
+## Amendment: a change runs the rows it names before it lands (#818, 2026-11-06)
+
+Most of the iterators' regressions were one fix breaking another adapter
+or consumer: 15 of 23 since 11-04, three in one day (#823, #833, #834).
+The fixed slices didn't sample the rows they broke, and the nightly's
+full run, some 17 minutes of 12 cores, found them after they landed.
+
+`check:fast` now runs, beside the slices, the rows of both tables a
+change names (`bun scripts/iteratorSlice.ts run rows`, the picking
+`scripts/iteratorRows.ts`'):
+
+- **What a hunk names.** Each hunk the change makes to `iteratorPaths`,
+  with the head of the function it's in, names the generator's adapters
+  and consumers: in code, its identifiers, their words inflected
+  (`$taking` is `take`, `StepBy` is `step_by`); in a comment, what it
+  quotes in backticks, never its prose. The runtime's generated module
+  and the tests name nothing. The names are the generator's own lists, so
+  there is no second catalog; picking is no compiler decision, so names
+  are enough (m6-react's decision, for the user).
+- **What runs.** Every row of each adapter a hunk names, whatever its
+  consumer; of a hunk that names no adapter, every row of each consumer it
+  names; of `$given`, generic code's, every generic source's. Past a
+  budget, some 3 minutes of each table's (20,000 and 6,000 rows), it's
+  `pairs` of them, as many of each pairing of an adapter with a consumer
+  as fit, said so. The rows of an adapter a hunk takes away more of than
+  it puts back always run whole: removing code as equivalent decides for
+  every row of what it names (#823).
+- **What every adapter shares.** A hunk in the runtime's protocol
+  (`$forward`, closing, consuming, `$given`, `$knowing`, `$held`,
+  `$iterator`) or the lowering's iterator value, or that names none, runs
+  `pairs`: 60 of each adapter with each consumer of the matrix, 10 of the
+  table's, 200 and 103 batches.
+- **The harness.** `ITERATOR_MATRIX` takes `/<regex>/`, the cases whose
+  ids match, rebatched by 60, judged each by its number as in a full run;
+  and `pairs[:<n>][/<regex>/]`. The batches holding them would be nearly
+  all, as each batch holds every consumer.
+- **What's said.** `check:fast` prints each hunk, what it names, and each
+  run's rows and setting, so a miss is traced; its step is timed against
+  its usual as each is.
+
+Measured on 12 cores (2026-11-06): #834's change picks 10,353 and 4,347
+rows, 111 s; the `step_by` rows alone, 13,400 of the matrix's, 123 s;
+#810's `$givenDrop` arrow reintroduced picks the generic rows and `pairs`,
+309 s, and fails in `pairs`' `zip.map` and `zip.filter` rows, as it
+should. Replayed, 766055774, which made #823, runs every `enumerate` row,
+#823's 19 among them; 731ae66fe, which made #834, every `step_by` row,
+#834's 34 among them. `test/iterator-rows.test.ts` holds the naming.
+The pairwise comparison of the two builds the issue asked for isn't
+made: each is compared with native Rust, which a disagreement between
+them can't pass.
+
