@@ -240,26 +240,28 @@ function main() {
   const it = iterator_map($iter(v), (x) => (x + 1) >>> 0);
   const back = $next(
     $rev(
-      $knowing(
-        $lent(it),
-        mapDoubleEndedIterator_nextBack,
-        (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
-        undefined,
-        undefined,
-        (iterator, init, f, broke, unwind, ends) =>
-          mapDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: $next },
-            { next_back: $nextBack },
-            $tryOf(broke),
-            undefined,
-            undefined,
-            undefined,
-            unwind,
-            ends,
-          ),
+      $lent(
+        $knowing(
+          it,
+          mapDoubleEndedIterator_nextBack,
+          (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
+          undefined,
+          undefined,
+          (iterator, init, f, broke, unwind, ends) =>
+            mapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $next },
+              { next_back: $nextBack },
+              $tryOf(broke),
+              undefined,
+              undefined,
+              undefined,
+              unwind,
+              ends,
+            ),
+        ),
       ),
     ),
   );

@@ -459,7 +459,10 @@ const owners: Record<string, string[]> = {
   "self.telling_arms": ["src/lower/mir/structure.rs", "src/lower/untagged/classes.rs"],
   // While a call is lowered, the local it makes its value into, its maker's
   // MIR identity, which what's stepped from its back asks (#814).
-  "self.made_into": ["src/lower/iterators/knowing.rs"],
+  "self.made_into": ["src/lower/iterators/back_facts.rs"],
+  "self.made_from": ["src/lower/iterators/back_facts.rs"],
+  "self.asking_made": ["src/lower/iterators/back_facts.rs", "src/lower/mir/iter/backs.rs"],
+  "self.by_set": ["src/lower/iterators/back_facts.rs", "src/lower/iterators/knowing.rs"],
 };
 // The rest of a function's context, which each module may read, and why:
 // what it lowers and where (set entering a body, `bodies.rs`), the names it

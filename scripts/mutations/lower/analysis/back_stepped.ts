@@ -92,8 +92,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a filter or a map a type holds, asked to be double-ended by the call that asks it of that type, isn't made knowing its back",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "                            stepped.extend(back_stepped_adapter(tcx, recognition, held, made_apart, &drops));\n",
-    replace: "",
+    find: "                            let made = back_stepped_adapter(tcx, recognition, held, made_apart, &drops);\n",
+    replace: "                            let made = None;\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
     find: "                        if held != asked\n                            || given\n                            || held_rev\n                            || held_arg\n                            || dropping_items(recognition, held, &drops)\n",
     replace:
       "                        if held != asked\n                            || given\n                            || held_rev\n                            || held_arg\n",
-    tests: ["test/corpus.test.ts", "-t", "^(rev_lazy_drops|std_rev).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^copied_skip_take_and_filter_stepped_from_back.rs$"],
     snapshots: true,
   },
   {
@@ -167,8 +167,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a map held in a variable that a back-stepped map steps isn't made knowing its back, and is refused (#218)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "    with_stepped_sources(tcx, stepped)\n",
-    replace: "    stepped\n",
+    find: "    (with_stepped_sources(tcx, stepped), with_stepped_sources(tcx, typed))\n",
+    replace: "    (stepped, with_stepped_sources(tcx, typed))\n",
     tests: ["test/corpus.test.ts", "-t", "^back_stepped_adapter_sources.rs$"],
   },
   {
@@ -203,19 +203,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a zip read by index doesn't record its `b`, a map whose closure holds what drops: the map, held in a variable, is refused as an `ExactSizeIterator` (#775)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "            if Some(callee) == zip\n",
-    replace: "            if false\n",
+    find: "            if Some(callee) == zip\n                && let [a, b] = args.types().collect::<Vec<_>>()[..]\n",
+    replace: "            if false\n                && let [a, b] = args.types().collect::<Vec<_>>()[..]\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_by_index_of_holding_maps.rs$"],
-  },
-  {
-    name: "zip-by-index-any-map-asked",
-    breaks:
-      "a zip read by index records its `b` though its closure drops nothing: a map made in place `$mapEnds(..)` where it was `.map(f)`, a change of form (#775)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                if closure_drops(tcx, b, &drops) {\n",
-    replace: "                if true {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(zip_by_index|zip_by_index_of_holding_maps).rs$"],
-    snapshots: true,
   },
   {
     name: "stepped-sources-any-adapter",
@@ -268,7 +258,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "                            let made_apart = given || held_rev || held_arg;\n",
     replace: "                            let made_apart = given || held_rev;\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_filter_map_reversed.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^rposition_of_held_map.rs$"],
   },
   {
     name: "made-in-place-taken-held",
@@ -287,7 +277,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "                    ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => e = arg,\n                    _ => break &body.thir[e],\n",
     replace: "                    _ => break &body.thir[e],\n",
-    tests: ["test/corpus.test.ts", "-t", "^backs_given_behind_impls.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^rposition_of_lazy.rs$"],
     snapshots: true,
   },
   {
@@ -509,5 +499,38 @@ export const mutations: Mutation[] = [
     replace: "                            (true, true, false) => {\n",
     tests: ["test/corpus.test.ts"],
     snapshots: true,
+  },
+  {
+    name: "zip-sides-of-a-zip-unstepped",
+    breaks: "a zip's sides, which `$zipEnds` steps from their back, aren't recorded as a chain's are, so a map a zip of items with a destructor holds is refused (#851)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                let chain = chained_sources(tcx, made).is_some() || zipped_sources(tcx, made).is_some();\n",
+    replace: "                let chain = chained_sources(tcx, made).is_some();\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_of_droppers_from_its_back.rs$"],
+  },
+  {
+    name: "zip-by-index-b-unrecorded",
+    breaks: "a zip that reads its sides by index asks the length of its `b`, a map whose closure has a destructor, which isn't recorded, so it's refused (#775, #851)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                    if crate::lower::recognition::zips_by_index(tcx, typing_env, a, b) && closure_drops(tcx, b, &drops)\n",
+    replace: "                    if false && crate::lower::recognition::zips_by_index(tcx, typing_env, a, b) && closure_drops(tcx, b, &drops)\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_by_index_of_holding_maps.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "held-closure-map-unrecorded",
+    breaks: "a temporary map whose closure has a destructor, held to drop it, given to a back step, isn't recorded, so its form is gone where it's stepped and it's refused (#851)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                                || closure_drops(tcx, ty, &drops)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^closing_maps_given_counted.rs$"],
+  },
+  {
+    name: "own-method-receiver-unrecorded",
+    breaks: "the receiver of `DoubleEndedIterator`'s own method, a map of the crate's iterator `count().map(f).rfold(..)`, isn't recorded though no form of its own steps it from its back, and it's refused (#851)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                                && back_stepped_adapter(tcx, recognition, ty, false, &drops).is_some()\n",
+    replace: "                                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_stepped_adapter_sources.rs$"],
   },
 ];

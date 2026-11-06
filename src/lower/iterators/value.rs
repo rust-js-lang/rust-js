@@ -550,6 +550,23 @@ pub(in crate::lower) fn knows_its_back_by_form(e: &Expr) -> bool {
     }
 }
 
+/// What `e` steps, where its back is its source's: of what holds or lends
+/// it as it is, `$held`'s, `$lent`'s and `$closing`'s, the
+/// value of its own type (`true`); of an adapter, `$mapEnds`'s,
+/// `$filterEnds`'s, `$enumerate`'s, `$taking`'s, `$skipping`'s or
+/// `$stepByEnds`', its source's (`false`) (#851).
+pub(in crate::lower) fn back_source(e: &Expr) -> Option<(&Expr, bool)> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    let same = match callee.helper_name()? {
+        "$held" | "$lent" | "$closing" => true,
+        "$mapEnds" | "$filterEnds" | "$enumerate" | "$taking" | "$skipping" | "$stepByEnds" => false,
+        _ => return None,
+    };
+    args.first().map(|source| (source, same))
+}
+
 /// Whether `e`'s form says it has no back (#851): JS's own iterator helper,
 /// `.map(f)`, `.filter(p)`, `.take(n)`, `.drop(n)`, `.flatMap(f)`, which step
 /// only forward; or an adapter of one whose back is its source's. (Std's

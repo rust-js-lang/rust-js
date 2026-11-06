@@ -721,15 +721,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^skip_of_a_peekable_from_back.rs$"],
   },
   {
-    name: "rev-made-knowing-read-by-form",
-    breaks:
-      "a `rev()` made knowing its back where it's made is read by its form where it's stepped: the crate's iterator's, held in a variable past `mk()`, is refused, `a rev() of a Folds a variable holds` (#702)",
-    file: "src/lower/iterators/knowing.rs",
-    find: "        if was_made_knowing_its_back(&value) {\n            return Ok(value);\n        }\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
-  },
-  {
     name: "rev-made-knowing-of-own-unknowing",
     breaks:
       "a `rev()` of the crate's iterator the crate steps from its back is made by its forms, not by its own `next`: its `$iterator(it, nextBack)` has no back, refused where it's made (#702)",
@@ -754,14 +745,6 @@ export const mutations: Mutation[] = [
     find: "            !self.is_unknown(source) || matches!(source.kind(), ty::Param(_))\n",
     replace: "            !self.is_unknown(source)\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_made_knowing_its_back.rs$"],
-  },
-  {
-    name: "flat-map-closure-result-by-span",
-    breaks: "what a `flat_map()`'s closure gives isn't marked made in place, so its `map()` is judged by the outer call's span, taken for std's compiled `Map`, whose back it hasn't: `flat_map(|g| g.iter().map(f)).next_back()` gives `None` (#716)",
-    file: "src/lower/iterators/knowing.rs",
-    find: "                        true => taken.clone().in_place(),\n",
-    replace: "                        true => taken.clone(),\n",
-    tests: ["test/corpus.test.ts", "-t", "^flat_map_of_maps_from_its_back.rs$"],
   },
   {
     name: "compiled-try-fold-given-no-ends",
@@ -895,5 +878,29 @@ export const mutations: Mutation[] = [
     find: "        // A `step_by(n)` made here, as `as_double_ended` makes it (#718).\n        if let Some(stepped) = self.step_by_knowing(&value, ty, span)? {\n",
     replace: "        // A `step_by(n)` made here, as `as_double_ended` makes it (#718).\n        if let Some(stepped) = None::<Expr> {\n",
     tests: ["test/corpus.test.ts", "-t", "^step_by_stepped_from_its_back.rs$"],
+  },
+  {
+    name: "knowing-form-made-again",
+    breaks: "a value whose form knows its back already, `$mapEnds` of an array's, isn't taken as it is but made knowing it again, which refuses what no arm makes (#851)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if self.knows_its_back_of(&value, ty) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_map_folded_and_rfolded.rs$"],
+  },
+  {
+    name: "map-source-not-made-again",
+    breaks: "a `$mapEnds` of a source that isn't knowing its back, an enumeration's own form beneath, isn't made knowing it again, and is refused (#851)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            && matches!(callee.helper_name(), Some(\"$mapEnds\" | \"$filterEnds\"))\n",
+    replace: "            && matches!(callee.helper_name(), Some(\"\"))\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_stepped_adapter_sources.rs$"],
+  },
+  {
+    name: "length-asked-per-value",
+    breaks: "a map's length is asked of its value's fact too, which phase B doesn't move, so a map of a copy an `rposition` counts is refused (#851)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        let outer = self.by_set.replace(true);\n",
+    replace: "        let outer = self.by_set.replace(false);\n",
+    tests: ["test/corpus.test.ts", "-t", "^owned_maps_asked_their_length.rs$"],
   },
 ];

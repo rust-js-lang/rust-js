@@ -603,8 +603,21 @@ struct FnCx<'a, 'tcx> {
     /// refuses it then.
     telling_arms: Cell<bool>,
     /// The local a std iterator method's call being lowered makes its value
-    /// into, where it's a whole local: its maker's MIR identity (#814).
-    made_into: Option<rustc_middle::mir::Local>,
+    /// into, where it's a whole local, and its type, regions erased: its
+    /// maker's MIR identity (#814, #851).
+    made_into: Option<(rustc_middle::mir::Local, Ty<'tcx>)>,
+    /// The whole locals that call is given, and their types, regions
+    /// erased: what an adapter made in place where it's stepped is held in
+    /// (#851).
+    made_from: Vec<(rustc_middle::mir::Local, Ty<'tcx>)>,
+    /// While what's asked is whether a value made before has a back, its
+    /// form's or its mark's, not whether what's made is to be made knowing
+    /// it (`has_a_back`'s, #851).
+    asking_made: Cell<bool>,
+    /// While what's asked is a length, which back_stepped's set still says
+    /// of a map's type (#851 phase B moves its back alone): each answer of
+    /// it the set's, as before.
+    by_set: Cell<bool>,
 }
 
 /// What a body being lowered has of its own, which a nested one, a

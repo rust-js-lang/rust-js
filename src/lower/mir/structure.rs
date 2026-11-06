@@ -723,10 +723,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut called = Vec::new();
                 // Where it makes its value, its maker's MIR identity, which
                 // what's stepped from its back asks (#814).
-                let into = destination.projection.is_empty().then_some(destination.local);
+                let erased = |cx: &Self, ty: Ty<'tcx>| cx.tcx.erase_and_anonymize_regions(cx.reveal(ty.peel_refs()));
+                let into = destination.projection.is_empty().then(|| {
+                    let ty = destination.ty(&state.body.local_decls, self.tcx).ty;
+                    (destination.local, erased(self, ty))
+                });
+                // And what it's given, whole locals, an adapter made in place
+                // where it's stepped held in one (#851).
+                let of: Vec<(mir::Local, Ty<'tcx>)> = (args.iter())
+                    .filter_map(|arg| match &arg.node {
+                        mir::Operand::Move(place) | mir::Operand::Copy(place) => place.as_local(),
+                        _ => None,
+                    })
+                    .map(|local| (local, erased(self, state.body.local_decls[local].ty)))
+                    .collect();
                 let value = match state.facts.awaits().contains(&block) {
                     true => self.mir_await(state, func, args, *destination, *fn_span, &mut called),
-                    false => self.making_into(into, |cx| {
+                    false => self.making_into((into, of), |cx| {
                         cx.mir_call(state, func, args, *destination, *fn_span, &mut called)
                     }),
                 };
@@ -734,6 +747,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // An adapter made in place, marked so by its maker (#730).
                 let value = match (value, fn_def(func.ty(&state.body.local_decls, self.tcx))) {
                     (Value::Expr(e), Some((def_id, _))) => Value::Expr(self.made_by(def_id, *fn_span, e)),
+                    (value, _) => value,
+                };
+                // An adapter given to what steps it from its back, made knowing
+                // it by its maker, which asked the same fact: marked so, the
+                // mark carried by its local, which what's asked of it reads
+                // where its type says nothing of its back (#851).
+                // Of std's own adapter methods alone, whose makers ask it, not
+                // what a function gives, nor std's compiled struct, which no
+                // maker makes knowing it.
+                let callee = fn_def(func.ty(&state.body.local_decls, self.tcx)).map(|(def_id, _)| def_id);
+                let value = match (value, into) {
+                    (Value::Expr(e), Some((local, made)))
+                        if self.local_stepped_from_its_back(local)
+                            == Some(crate::lower::analysis::SteppedLocal::Given)
+                            && crate::lower::recognition::mapped_source(self.tcx, made).is_some()
+                            && callee.is_some_and(|callee| self.recognition().iterator_method(callee).is_some())
+                            && !self.compiled_struct(made, &e) =>
+                    {
+                        Value::Expr(crate::lower::iterators::made_knowing_its_back(e))
+                    }
                     (value, _) => value,
                 };
                 // A throwing function's result, a throwing call's, is the

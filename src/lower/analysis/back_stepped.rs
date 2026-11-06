@@ -23,14 +23,38 @@ use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use std::collections::{HashMap, HashSet};
 
-/// Each such type `all_bodies` step from its back, regions erased.
+/// What `all_bodies` step from their back: the types (`back_stepped`), of
+/// them those whose question is a type's, each local by its body
+/// (`stepped_locals`), and each `&mut` of a local (`borrows`).
+pub(super) fn of_crate<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    recognition: Recognition<'_, 'tcx>,
+    all_bodies: &[&Body<'tcx>],
+    drops: impl Fn(Ty<'tcx>) -> bool + Copy,
+) -> BackStepped<'tcx> {
+    let (types, typed) = back_stepped(tcx, recognition, all_bodies, drops);
+    let locals = stepped_locals(tcx, recognition, all_bodies, &types, drops);
+    BackStepped {
+        types,
+        typed,
+        borrows: borrows(all_bodies),
+        locals,
+    }
+}
+
+/// Each such type `all_bodies` step from its back, regions erased; and of
+/// them, those whose question is a type's, not a value's (#851): one a
+/// function gives behind an `impl`, which its callers can't see to make
+/// knowing its back, so each value of it its maker makes is; and each type
+/// a generic function's of its callers' (#388).
 pub(super) fn back_stepped<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     drops: impl Fn(Ty<'tcx>) -> bool,
-) -> HashSet<Ty<'tcx>> {
+) -> (HashSet<Ty<'tcx>>, HashSet<Ty<'tcx>>) {
     let mut stepped = HashSet::new();
+    let mut typed: HashSet<Ty<'tcx>> = HashSet::new();
     // Each body's own, by its function: what a caller's call of it makes too.
     let mut of_body: HashMap<rustc_span::def_id::DefId, HashSet<Ty<'tcx>>> = HashMap::new();
     let rev = crate::lower::recognition::compiled_provided_method(tcx, "Iterator", "rev");
@@ -192,7 +216,11 @@ pub(super) fn back_stepped<'tcx>(
                             || enumerates_a_compiled_struct(tcx, held)
                         {
                             let made_apart = given || held_rev || held_arg;
-                            stepped.extend(back_stepped_adapter(tcx, recognition, held, made_apart, &drops));
+                            let made = back_stepped_adapter(tcx, recognition, held, made_apart, &drops);
+                            if given {
+                                typed.extend(made);
+                            }
+                            stepped.extend(made);
                         }
                         // A chain of items with a destructor a `rev()` or
                         // generic code asks to be double-ended, which MIR
@@ -224,11 +252,17 @@ pub(super) fn back_stepped<'tcx>(
             let adapter = recognition.reveal(hidden);
             match hidden != adapter {
                 // Given behind an `impl`: each adapter in it.
-                true => stepped.extend(adapter.walk().filter_map(|part| part.as_type()).filter_map(|held| {
-                    matches!(held.kind(), ty::Adt(a, _) if is_iter_adapter_def(tcx, a.did()))
-                        .then(|| back_stepped_adapter(tcx, recognition, held, true, &drops))
-                        .flatten()
-                })),
+                true => {
+                    let made: Vec<Ty<'tcx>> = (adapter.walk().filter_map(|part| part.as_type()))
+                        .filter_map(|held| {
+                            matches!(held.kind(), ty::Adt(a, _) if is_iter_adapter_def(tcx, a.did()))
+                                .then(|| back_stepped_adapter(tcx, recognition, held, true, &drops))
+                                .flatten()
+                        })
+                        .collect();
+                    typed.extend(made.iter().copied());
+                    stepped.extend(made);
+                }
                 false => stepped.extend(back_stepped_adapter(tcx, recognition, adapter, false, &drops)),
             }
         }
@@ -268,10 +302,11 @@ pub(super) fn back_stepped<'tcx>(
         }
         for (owner, made) in more {
             stepped.insert(made);
+            typed.insert(made);
             of_body.entry(owner).or_default().insert(made);
         }
     }
-    with_stepped_sources(tcx, stepped)
+    (with_stepped_sources(tcx, stepped), with_stepped_sources(tcx, typed))
 }
 
 /// `adapter`, regions erased, where it's a map or a filter of a source not
@@ -429,6 +464,12 @@ fn dropping_items<'tcx>(
 /// `stepped_locals`' (#814).
 pub(in crate::lower) struct BackStepped<'tcx> {
     pub(in crate::lower) types: HashSet<Ty<'tcx>>,
+    /// Of `types`, those whose question is a type's (`back_stepped`'s
+    /// second): asked of every value of one, never of a value alone.
+    pub(in crate::lower) typed: HashSet<Ty<'tcx>>,
+    /// Each `&mut` of a whole local, the local it lends (`borrows`).
+    pub(in crate::lower) borrows:
+        HashMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), rustc_middle::mir::Local>,
     pub(in crate::lower) locals: HashMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), SteppedLocal>,
 }
 
@@ -466,9 +507,11 @@ pub(super) fn stepped_locals<'tcx>(
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     types: &HashSet<Ty<'tcx>>,
+    drops: impl Fn(Ty<'tcx>) -> bool,
 ) -> HashMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), SteppedLocal> {
     use rustc_middle::mir;
     let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(recognition.reveal(ty.peel_refs()));
+    let zip = crate::lower::recognition::compiled_provided_method(tcx, "Iterator", "zip");
     let Some(double_ended) = recognition.double_ended_iterator() else {
         return HashMap::new();
     };
@@ -479,6 +522,12 @@ pub(super) fn stepped_locals<'tcx>(
     // (#790).
     let mut asked: HashSet<(rustc_span::def_id::DefId, mir::Local)> = HashSet::new();
     let mut held_whole: HashSet<(rustc_span::def_id::DefId, mir::Local)> = HashSet::new();
+    // Each field of a struct or an enum's variant a back step is given,
+    // lent or whole, `self.it.next_back()` of `struct Evens { it: Filter<..> }`:
+    // each value MIR moves into it as it makes one, made knowing its back by
+    // its maker (#851).
+    let mut stepped_fields: HashSet<(rustc_span::def_id::DefId, rustc_abi::VariantIdx, rustc_abi::FieldIdx)> =
+        HashSet::new();
     let mark = |stepped: &mut HashMap<_, _>, at, how| {
         // `Given` wins: its maker makes it, wherever it's lent besides.
         let held = stepped.entry(at).or_insert(how);
@@ -491,6 +540,7 @@ pub(super) fn stepped_locals<'tcx>(
             stepped.len(),
             stepped.values().filter(|h| **h == SteppedLocal::Given).count(),
             asked.len(),
+            stepped_fields.len(),
         );
         for body in all_bodies {
             let Some(mir) = body.mir.as_ref() else { continue };
@@ -503,6 +553,13 @@ pub(super) fn stepped_locals<'tcx>(
             // Where each `&mut` is taken, and where each call's value is
             // made, its call's return: what's held from there to its step.
             let mut lent_at: HashMap<mir::Local, (mir::BasicBlock, usize)> = HashMap::new();
+            // Each `&mut` of a field, `_3 = &mut ((*_1).0)`, and each value
+            // moved into a field as a struct is made.
+            let mut lent_field: HashMap<mir::Local, mir::Place<'tcx>> = HashMap::new();
+            let mut into_fields: Vec<(
+                (rustc_span::def_id::DefId, rustc_abi::VariantIdx, rustc_abi::FieldIdx),
+                mir::Local,
+            )> = Vec::new();
             let mut made_at: HashMap<mir::Local, (mir::BasicBlock, usize)> = HashMap::new();
             for (block, data) in mir.basic_blocks.iter_enumerated() {
                 if let mir::TerminatorKind::Call {
@@ -527,6 +584,20 @@ pub(super) fn stepped_locals<'tcx>(
                             lent.insert(to.local, of.local);
                             lent_at.insert(to.local, (block, at + 1));
                         }
+                        mir::Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) => {
+                            lent_field.insert(to.local, *of);
+                        }
+                        mir::Rvalue::Aggregate(kind, operands) => {
+                            if let mir::AggregateKind::Adt(adt, variant, ..) = **kind {
+                                for (field, operand) in operands.iter_enumerated() {
+                                    if let mir::Operand::Move(of) | mir::Operand::Copy(of) = operand
+                                        && let Some(local) = of.as_local()
+                                    {
+                                        into_fields.push(((adt, variant, field), local));
+                                    }
+                                }
+                            }
+                        }
                         mir::Rvalue::Use(mir::Operand::Move(of) | mir::Operand::Copy(of), ..)
                             if of.projection.is_empty() =>
                         {
@@ -547,6 +618,11 @@ pub(super) fn stepped_locals<'tcx>(
                 }
                 local
             };
+            for &(field, local) in &into_fields {
+                if stepped_fields.contains(&field) {
+                    mark(&mut stepped, (owner, origin(local)), SteppedLocal::Given);
+                }
+            }
             for (&to, &of) in &moved {
                 if let Some(&how) = stepped.get(&(owner, to)) {
                     mark(&mut stepped, (owner, of), how);
@@ -568,6 +644,29 @@ pub(super) fn stepped_locals<'tcx>(
                 let Some((callee, generic_args)) = func.const_fn_def() else {
                     continue;
                 };
+                // A zip that reads its sides by index (ADR 0973), which asks
+                // the length of `b`, a map whose closure has a destructor:
+                // made knowing its length where it's made, as `back_stepped`'s
+                // rule of its type says (#775).
+                if Some(callee) == zip
+                    && let [a, b] = generic_args.types().collect::<Vec<_>>()[..]
+                    && !rustc_middle::ty::TypeVisitableExt::has_param(&(a, b))
+                    && let [_, arg] = &args[..]
+                    && let mir::Operand::Move(place) | mir::Operand::Copy(place) = &arg.node
+                    && let Some(local) = place.as_local()
+                {
+                    let typing_env = ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(owner));
+                    let b = recognition.reveal(crate::lower::recognition::iterator_type_of(tcx, typing_env, b));
+                    if crate::lower::recognition::zips_by_index(tcx, typing_env, a, b) && closure_drops(tcx, b, &drops)
+                    {
+                        let local = origin(local);
+                        let how = match mir.local_decls[local].is_user_variable() {
+                            true => SteppedLocal::Given,
+                            false => SteppedLocal::Lent,
+                        };
+                        mark(&mut stepped, (owner, local), how);
+                    }
+                }
                 // Each local given, lent or whole, its type, and whether MIR
                 // holds it across what acts before the call.
                 let given: Vec<(mir::Local, bool, Ty<'tcx>, bool)> = (args.iter())
@@ -588,10 +687,25 @@ pub(super) fn stepped_locals<'tcx>(
                     let Some(clause) = clause.skip_normalization().as_trait_clause() else {
                         continue;
                     };
+                    let asked_ty = erased(clause.self_ty().skip_binder());
                     if clause.def_id() != double_ended {
                         continue;
                     }
-                    let asked_ty = erased(clause.self_ty().skip_binder());
+                    // A field it's given, lent or whole, of the type asked.
+                    for arg in args.iter() {
+                        let (mir::Operand::Move(place) | mir::Operand::Copy(place)) = &arg.node else {
+                            continue;
+                        };
+                        let place = match place.as_local().and_then(|local| lent_field.get(&local)) {
+                            Some(lent) => *lent,
+                            None => *place,
+                        };
+                        if let Some(field) = field_of(tcx, mir, place)
+                            && erased(place.ty(&mir.local_decls, tcx).ty) == asked_ty
+                        {
+                            stepped_fields.insert(field);
+                        }
+                    }
                     for &(local, lent, ty, held) in &given {
                         let user = mir.local_decls[local].is_user_variable();
                         // A counted adapter lent, whose form no step reads
@@ -600,11 +714,37 @@ pub(super) fn stepped_locals<'tcx>(
                         // `nth_back({ k += 1; k - 2 })`, which makes it
                         // first, its form gone where the step reads it (#811).
                         let counted = counted_source(tcx, ty).is_some() || stepped_by_source(tcx, ty).is_some();
+                        // Or, as back_stepped's set says of its type: the
+                        // receiver of `DoubleEndedIterator`'s own method, of a
+                        // kind no form of whose own a step reads from its back
+                        // where it's made, a `rev()`'s, a zip's, a flatten's or
+                        // a map of what's no array's (`back_stepped_adapter`'s);
+                        // or of an array's items or a closure with a
+                        // destructor, or an enumeration of std's struct,
+                        // whatever asks it. Not a map of an array's items an
+                        // `rposition` asks, whose step reads its form (#851).
+                        let own_method = tcx.trait_of_assoc(callee).is_some_and(|tr| is_double_ended(tcx, tr));
+                        let receiver = given.first().is_some_and(|&(first, ..)| first == local);
+                        let unread = || {
+                            own_method
+                                && receiver
+                                && back_stepped_adapter(tcx, recognition, ty, false, &drops).is_some()
+                                || dropping_items(recognition, ty, &drops)
+                                || closure_drops(tcx, ty, &drops)
+                                || enumerates_a_compiled_struct(tcx, ty)
+                        };
+                        let held = held || unread();
                         match (ty == asked_ty, lent, user) {
                             (true, true, false) if counted || held => {
                                 mark(&mut stepped, (owner, local), SteppedLocal::Lent)
                             }
                             (true, false, true) => mark(&mut stepped, (owner, local), SteppedLocal::Given),
+                            // A variable lent to its step, `f.next_back()` of a
+                            // `let mut f = v.iter().filter(p)`: a JS form its
+                            // maker makes knowing its back; not a counted
+                            // adapter, std's struct where a variable holds
+                            // it (#718, #851).
+                            (true, true, true) if !counted => mark(&mut stepped, (owner, local), SteppedLocal::Given),
                             (true, false, false) => {
                                 asked.insert((owner, local));
                                 if held {
@@ -631,7 +771,10 @@ pub(super) fn stepped_locals<'tcx>(
                 // holds beneath, held where it's given (#790). Not one made in
                 // place beneath a map, a filter or a copy, whose maker makes
                 // it knowing its back by its form.
-                let chain = chained_sources(tcx, made).is_some();
+                // A chain's sides or a zip's, which `$lazyChain` and `$zipEnds`
+                // step from their back, MIR holding a side in a variable
+                // before the adapter is made (#718, #792, #851).
+                let chain = chained_sources(tcx, made).is_some() || zipped_sources(tcx, made).is_some();
                 let sources: Vec<Ty<'tcx>> = match chained_sources(tcx, made).or_else(|| zipped_sources(tcx, made)) {
                     Some((a, b)) => vec![a, b],
                     None => back_stepped_source(tcx, made)
@@ -652,7 +795,7 @@ pub(super) fn stepped_locals<'tcx>(
             }
         }
         let given = stepped.values().filter(|h| **h == SteppedLocal::Given).count();
-        if (stepped.len(), given, asked.len()) == before {
+        if (stepped.len(), given, asked.len(), stepped_fields.len()) == before {
             // And each temporary given whole held across what acts before
             // its step, `map(f).rfold({ k += 1; k }, g)`'s, as one lent: its
             // step reads the form of one made in place (#811).
@@ -700,4 +843,52 @@ fn held_across(
         first = 0;
     }
     true
+}
+
+/// The field `place` is, of a struct or of an enum's variant, a field
+/// projection last: `(*_1).0`, `((_2 as Some).0)`.
+fn field_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    mir: &rustc_middle::mir::Body<'tcx>,
+    place: rustc_middle::mir::Place<'tcx>,
+) -> Option<(rustc_span::def_id::DefId, rustc_abi::VariantIdx, rustc_abi::FieldIdx)> {
+    use rustc_middle::mir::ProjectionElem;
+    let (last, base) = place.projection.split_last()?;
+    let ProjectionElem::Field(field, _) = last else {
+        return None;
+    };
+    let (variant, base) = match base.split_last() {
+        Some((ProjectionElem::Downcast(_, variant), rest)) => (*variant, rest),
+        _ => (rustc_abi::FIRST_VARIANT, base),
+    };
+    let base_ty = rustc_middle::mir::Place::ty_from(place.local, base, &mir.local_decls, tcx).ty;
+    match base_ty.kind() {
+        ty::Adt(adt, _) => Some((adt.did(), variant, *field)),
+        _ => None,
+    }
+}
+
+/// Each `&mut` MIR lends a whole local by, `_3 = &mut _4`, by its body: the
+/// local it lends, which a call given `_3` is given the value of, an
+/// adapter made in place where it's stepped (#851). Not a fact of its own.
+pub(super) fn borrows<'tcx>(
+    all_bodies: &[&Body<'tcx>],
+) -> HashMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), rustc_middle::mir::Local> {
+    use rustc_middle::mir;
+    let mut out = HashMap::new();
+    for body in all_bodies {
+        let Some(mir) = body.mir.as_ref() else { continue };
+        for data in mir.body.basic_blocks.iter() {
+            for statement in &data.statements {
+                if let mir::StatementKind::Assign(assign) = &statement.kind
+                    && let (to, mir::Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of)) = &**assign
+                    && to.projection.is_empty()
+                    && of.projection.is_empty()
+                {
+                    out.insert((body.def_id, to.local), of.local);
+                }
+            }
+        }
+    }
+    out
 }

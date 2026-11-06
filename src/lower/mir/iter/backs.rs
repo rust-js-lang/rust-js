@@ -629,8 +629,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// that steps its type from its back elsewhere made such a value as it
     /// is, a `cloned()`'s (#850), std's struct (#856).
     pub(super) fn has_a_back(&self, iter_ty: Ty<'tcx>, value: &Expr) -> bool {
+        // Of a value made before: whether its type knows its back by its
+        // structure, not whether what's being made is to be made so (#851).
+        let structural = || {
+            let outer = self.asking_made.replace(true);
+            let knows = self.knows_its_back(iter_ty);
+            self.asking_made.set(outer);
+            knows
+        };
         self.steps_an_array(iter_ty)
-            || self.knows_its_back(iter_ty)
+            || structural()
                 && !crate::lower::iterators::form_lacks_a_back(value)
                 && (!self.compiled_struct(self.reveal(iter_ty), value)
                     || crate::lower::iterators::is_knowing(value)

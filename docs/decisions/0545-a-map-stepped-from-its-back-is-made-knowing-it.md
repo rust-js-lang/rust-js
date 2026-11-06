@@ -1124,3 +1124,74 @@ Mutations `has-a-back-trusts-the-type` and
 `form-lacks-no-back-of-js-helpers`; #850's `copied-items-mapped-backless`
 is still caught, its maker's own fix kept.
 
+## Amendment: a map is made knowing its back by its value's fact, not its type's (2026-11-06, #851 phase B, maps)
+
+ADR 0262's case: none where its JS changes, as it ran as Rust does; what
+was refused stays so or runs. The first kind moved off back_stepped's
+per-type set is the map: whether a `map(f)` is made knowing its back is
+now asked of its value, `stepped_from_its_back` (iterators/back_facts.rs,
+the facts' one reader): the local the call being lowered makes its value
+into (`made_into`) or is given (`made_from`, as a chain made in place is
+built at its consumer), through the `&mut` that lends it (`borrows`),
+recorded by `stepped_locals`; or a type whose question is a type's
+(`typed`): one a function gives behind an `impl`, and a generic
+function's of its callers' (#388). Other kinds keep the set, each moved
+in turn; a length is the set's still (`by_set`, `knows_its_length`).
+
+`stepped_locals` records what the set covered of a map's values:
+
+- a variable lent to its step, `m.next_back()` of a `let m = ..map(f)`,
+  a JS form its maker makes knowing its back (a counted adapter so held
+  is std's struct, #718);
+- a temporary lent or given whole where MIR holds it across what acts
+  (#811), or the receiver of `DoubleEndedIterator`'s own method of a kind
+  no form of whose own a step reads from its back where it's made
+  (`back_stepped_adapter`'s), a map of the crate's iterator
+  `count().map(f).rfold(..)`; or of an array's items or a closure with a
+  destructor, or an enumeration of std's struct. Not a map of an array's
+  items an `rposition` asks, whose step reads its form;
+- a field a back step is given, lent or whole, `self.it.next_back()`:
+  each value MIR moves into it as it makes the struct;
+- a zip's sides as a chain's (#718, #792), and the `b` of a zip read by
+  index, a map whose closure has a destructor (#775); an
+  `ExactSizeIterator` clause of such a map, held to drop it (#385).
+
+The marked value carries its fact past its maker: where a std adapter
+method makes a map into a local that's given to what steps it from its
+back, the value is marked made knowing it. What asks a value whether it
+has a back reads its form down to what holds it (`knows_its_back_of`):
+a wrapper, `$closing`, `$lent`, `$held`, `$holding` (iter.rs's
+`held_by_holding`), an adapter whose back is its source's, down to a
+variable whose type says it, never a bare variable of an array's
+iterator, which may hold the array, nor std's compiled struct, which
+has a back only given it (#856). `as_double_ended` returns such a value
+as it is, and makes knowing again what holds one that isn't,
+`$mapEnds`'s, `$filterEnds`' and `$holding`'s source.
+
+The cross-check: where the value's answer and the set's differ,
+`RUST_JS_BACK_STEPPED_CROSS_CHECK` says so on stderr while the set
+remains (phase C removes both). Across the corpus 58 answers differ, in
+17 cases; two change their JS, each a value of a stepped type that isn't
+stepped itself or the same compiled struct given its back sooner:
+`generic_map_folded_and_rfolded`, a map only folded forward, JS's own
+`.map(f)` where it was `$mapEnds`; `backs_given_behind_impls`,
+`$lent($knowing(it, ..))` where it was `$knowing($lent(it), ..)`. The
+others' JS is as it was. The whole corpus, both builds, and the matrix and
+the conformance table in full run as native Rust.
+
+Mutations: `map-stepped-by-its-type`, `made-from-unread`,
+`zip-sides-of-a-zip-unstepped`, `zip-by-index-b-unrecorded`,
+`held-closure-map-unrecorded`, `own-method-receiver-unrecorded`,
+`knowing-form-made-again`, `map-source-not-made-again`,
+`bare-array-iterator-trusted`, `compiled-variable-trusted` and
+`length-asked-per-value`, each held by the corpus case that showed the
+rule was needed. Four older ones, `rev-made-knowing-read-by-form`,
+`flat-map-closure-result-by-span`, `zip-by-index-any-map-asked` and phase
+A's `has-a-back-trusts-the-type`, are retired as equivalent under the
+value's fact: with all four and two rules of this phase's applied at
+once, the corpus, the matrix and the conformance table in full
+(`ITERATOR_MATRIX=all`, both builds) run as before. The two rules, an
+`ExactSizeIterator` clause of a map whose closure drops, and remaking a
+`$holding`'s source, are removed; the four older rules' code stays, as
+the kinds still on the set may need them, until phase C retires the set
+and them with it.

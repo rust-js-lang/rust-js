@@ -31,10 +31,9 @@ function wrapIterator_next(wrap, IIterator) {
 }
 
 function wrapIterator_fold(wrap, init, f, IIterator) {
-  return $mapEnds($given(wrap.inner, IIterator, true), (value) => [value]).reduce(
-    (a, b) => f(a, b),
-    init,
-  );
+  return $given(wrap.inner, IIterator, true)
+    .map((value) => [value])
+    .reduce((a, b) => f(a, b), init);
 }
 
 function wrapDoubleEndedIterator_nextBack(wrap, IDoubleEndedIterator) {

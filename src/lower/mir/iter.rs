@@ -304,6 +304,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.closing_function(adapter, output, (f, function), span).map(Some)
     }
 
+    /// What `$holding(adapter, drop)`, `closing_function`'s, holds: its
+    /// adapter, of its own type (#851).
+    pub(in crate::lower) fn held_by_holding(e: &Expr) -> Option<&Expr> {
+        match &e.kind {
+            js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$holding") => args.first(),
+            _ => None,
+        }
+    }
+
     /// `adapter`, of type `ty`, which holds `f`, a function of type
     /// `function` with a destructor, closed to drop it: `$holding(adapter,
     /// () => drop(f))`, its source closed, then its function dropped, as

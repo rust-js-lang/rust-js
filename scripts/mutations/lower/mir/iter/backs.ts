@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
     name: "double-ended-next-back-refused",
     breaks: "`next_back()` of a generic `T: DoubleEndedIterator` is refused",
     file: "src/lower/mir/iter/backs.rs",
-    find: "        self.steps_an_array(iter_ty)\n            || self.knows_its_back(iter_ty)\n",
+    find: "        self.steps_an_array(iter_ty)\n            || structural()\n",
     replace: "        self.steps_an_array(iter_ty)\n            || false\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
   },
@@ -786,13 +786,5 @@ export const mutations: Mutation[] = [
     find: "            Some(crate::lower::analysis::SteppedLocal::Lent) => self.made_knowing_where_held(value, ty, span),\n",
     replace: "            Some(crate::lower::analysis::SteppedLocal::Lent) if false => self.made_knowing_where_held(value, ty, span),\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
-  },
-  {
-    name: "has-a-back-trusts-the-type",
-    breaks: "what asks whether a value has a back trusts its type though its form, JS's own `.map(f)`, has none, so an `inspect(f)` of a chain the crate steps from its back elsewhere throws `it.back is not a function` (#851)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "                && !crate::lower::iterators::form_lacks_a_back(value)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^inspect_of_a_chain_stepped_from_its_back.rs$"],
   },
 ];

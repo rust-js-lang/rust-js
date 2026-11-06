@@ -76,48 +76,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
-    /// Whether `ty`, a map's or a filter's, is one the crate steps from its
-    /// back (ADR 0545), made knowing it where it's made: the one answer, of
-    /// what's made and what's stepped.
-    pub(in crate::lower) fn stepped_from_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
-        (self.krate.back_stepped.types).contains(&self.tcx.erase_and_anonymize_regions(ty.peel_refs()))
-    }
-
-    /// Whether `local`, of the body being lowered, holds what the crate
-    /// steps from its back (back_stepped's `stepped_locals`, #814): by the
-    /// MIR identity of what holds a value, not its type, which another value
-    /// of it need not share. The one answer of a counted adapter's, a
-    /// `skip(n)`'s, a `take(n)`'s or a `step_by(n)`'s.
-    pub(in crate::lower) fn local_stepped_from_its_back(
-        &self,
-        local: rustc_middle::mir::Local,
-    ) -> Option<crate::lower::analysis::SteppedLocal> {
-        (self.krate.back_stepped.locals)
-            .get(&(self.frame.owner, local))
-            .copied()
-    }
-
-    /// Whether what the std iterator method being lowered makes, into
-    /// `made_into`, is given to what steps it from its back, made knowing it
-    /// by its maker (`SteppedLocal::Given`).
-    /// `make`, a call's lowering, told where it makes its value, `into`, its
-    /// maker's MIR identity, which `made_stepped_from_its_back` asks (#814).
-    pub(in crate::lower) fn making_into<T>(
-        &mut self,
-        into: Option<rustc_middle::mir::Local>,
-        make: impl FnOnce(&mut Self) -> T,
-    ) -> T {
-        let outer = std::mem::replace(&mut self.made_into, into);
-        let made = make(self);
-        self.made_into = outer;
-        made
-    }
-
-    pub(in crate::lower) fn made_stepped_from_its_back(&self) -> bool {
-        self.made_into.and_then(|local| self.local_stepped_from_its_back(local))
-            == Some(crate::lower::analysis::SteppedLocal::Given)
-    }
-
     /// Whether an adapter of type `ty` is explicit (ADR 0542): of a kind the
     /// crate's types hold, which keeps its source and its state wherever the
     /// crate makes one. The one answer, of what's made and what's asked of it.
@@ -292,6 +250,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a `dyn`'s, or a map of one. The one answer, of what generic code asks
     /// the length of and what its callers give it.
     pub(in crate::lower) fn knows_its_length(&self, ty: ty::Ty<'tcx>) -> bool {
+        let outer = self.by_set.replace(true);
+        let knows = self.knows_its_length_by_set(ty);
+        self.by_set.set(outer);
+        knows
+    }
+
+    fn knows_its_length_by_set(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.reveal(ty.peel_refs());
         // Of an array's items made knowing its back, `$mapEnds` of their
         // `$iter`, which knows its length too.
@@ -385,7 +350,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return self.reversed_user_knowing(value, source, (back, true), span);
         }
-        if self.knows_its_length(ty) && (!back || self.knows_its_back(ty)) {
+        // Of one whose form, or what it holds down to its type, knows its
+        // back, its back too (#851).
+        if self.knows_its_length(ty) && (!back || self.knows_its_back(ty) || self.knows_its_back_of(&value, ty)) {
             return Ok(value);
         }
         if let Some(it) = self.given_js_iterator(value.clone(), ty, back, true) {
@@ -519,11 +486,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ))
     }
 
-    /// `value`, a double-ended iterator of type `ty`, as a JS iterator that
-    /// knows its back (ADR 0429): an array's, its `$iter`; a range's,
-    /// `$iterator(range, $rangeNext, false, $rangeNextBack)`; the crate's
-    /// own, stepped by its impls' `next` and `next_back`; one already, a
-    /// `dyn`'s or a type parameter's, itself.
     pub(in crate::lower) fn as_double_ended(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
         let ty = self.reveal(ty);
         // A `rev()` made in place, knowing its back where it's made, as its
@@ -533,6 +495,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // no mark, and `knowing_held` gives its back below.
         if was_made_knowing_its_back(&value) {
             return Ok(value);
+        }
+        // One whose form knows its back already, `$mapEnds` of one that
+        // does, its maker's, through what its form holds down to what its
+        // type says, an array's iterator a variable holds: itself (#851).
+        if self.knows_its_back_of(&value, ty) {
+            return Ok(value);
+        }
+        // A map or a filter made knowing its back of a source that isn't
+        // yet, a map's own form beneath: its source made knowing it, again.
+        if let Some((source, false)) = crate::lower::iterators::back_source(&value)
+            && let Some(source_ty) = self.back_source_ty(ty, false)
+            && let js::ExprKind::Call(callee, args) = &value.kind
+            && matches!(callee.helper_name(), Some("$mapEnds" | "$filterEnds"))
+        {
+            let source = self.as_double_ended(source.clone(), source_ty, span)?;
+            let mut args = args.clone();
+            args[0] = source;
+            return Ok(Expr::call((**callee).clone(), args));
         }
         // A `rev()` of the crate's iterator made in place, of its form, as
         // `reversed_user_knowing` makes it again.

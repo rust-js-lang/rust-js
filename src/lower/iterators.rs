@@ -2,6 +2,7 @@
 //! what ends it (ADRs 0036, 0055, 0128), lazy where Rust's order can be seen
 //! (ADR 0139), and what a chain that owns its items drops (ADR 0098).
 
+mod back_facts;
 mod clones;
 mod dictionaries;
 mod eager;
@@ -15,12 +16,12 @@ mod value;
 pub(in crate::lower) use self::hint_asks::{Room, Shunted, refuse_unknown_capacity_extends};
 pub(in crate::lower) use self::stepping::stepped_by_parts;
 pub(in crate::lower) use self::value::{
-    EnumeratedForm, Form, IterValue, bounds_of, bounds_read, closed, closed_parts, enumerated, enumerated_knowing,
-    enumerated_of, form_lacks_a_back, gives_in_place, gives_made_in_place, held_by_its_owner, held_of, is_knowing,
-    is_lent, is_range_stepped, is_reversed, iterator_parts, its_facts, knows_its_given_length, lazily_made,
-    made_knowing_its_back, repeating_n, repeating_n_parts, reversed_by, reversed_of, stepped_by_ends,
-    stepped_by_ends_parts, stepped_every, stepped_every_parts, stepped_from, stepped_range, stepped_value, steps,
-    unlent, was_made_knowing_its_back, zip_parts,
+    EnumeratedForm, Form, IterValue, back_source, bounds_of, bounds_read, closed, closed_parts, enumerated,
+    enumerated_knowing, enumerated_of, form_lacks_a_back, gives_in_place, gives_made_in_place, held_by_its_owner,
+    held_of, is_knowing, is_lent, is_range_stepped, is_reversed, iterator_parts, its_facts, knows_its_back_by_form,
+    knows_its_given_length, lazily_made, made_knowing_its_back, repeating_n, repeating_n_parts, reversed_by,
+    reversed_of, stepped_by_ends, stepped_by_ends_parts, stepped_every, stepped_every_parts, stepped_from,
+    stepped_range, stepped_value, steps, unlent, was_made_knowing_its_back, zip_parts,
 };
 pub(super) use self::{eager::*, in_place::*};
 
