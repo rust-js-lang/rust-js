@@ -1,5 +1,8 @@
 # Tests at a glance
 
+How these suites find wrong answers, and what each has found, is in
+[docs/finding-wrong-answers.md](docs/finding-wrong-answers.md).
+
 As of 2026-10-30, `main` at `120772e2`; times are CI's, check run 41022723550.
 
 | Suite | Size | What it proves | Time |
