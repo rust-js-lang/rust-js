@@ -9,8 +9,11 @@
 //! here alone.
 
 use super::*;
+use crate::lower::recognition::iterator_type_of;
 use crate::lower::recognition::{Recognition, TypeFact, is_trusted_len};
+use rustc_middle::mir::{Operand, TerminatorKind};
 use rustc_middle::ty::TypeVisitableExt;
+use std::collections::{HashMap, HashSet};
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Whether a collect into `output` of an iterator of `iter_ty` grows a
@@ -290,6 +293,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(item) = self.iterator_item(iter_ty) else {
             return Ok((collection, items));
         };
+        // Of an iterator its caller gives, a type parameter's or one made of
+        // it, whose hint is the crate's own only where a caller's is: asked
+        // where the capacity's known, else its caller's to refuse, where it
+        // knows the iterator (`refuse_unknown_capacity_extends`).
+        let callers = iterable.has_param() || iterable.has_aliases();
+        if callers && !(capacity_known && !item.has_param()) {
+            return Ok((collection, items));
+        }
         if !capacity_known || item.has_param() {
             return Err(self.unsupported(
                 span,
@@ -337,21 +348,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What `extend` of `into` by what's of type `iterable` reserves room
-    /// for first, and of what iterator: a `String`'s by `char`s, its bytes;
-    /// a hash table's, its entries. `None` of another.
+    /// for first, and of what iterator (`room_of`). `None` of another.
     fn extend_room(&self, into: Ty<'tcx>, iterable: Ty<'tcx>) -> Option<(Ty<'tcx>, Room<'tcx>)> {
         let iter_ty = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, iterable);
         let item = self.iterator_item(iter_ty)?;
-        let room = match () {
+        Some((iter_ty, self.room_of(into, item)?))
+    }
+
+    /// What `extend` of `into` by `item`s reserves room for first: a
+    /// `String`'s by `char`s, its bytes; a hash table's, its entries. `None`
+    /// of another.
+    fn room_of(&self, into: Ty<'tcx>, item: Ty<'tcx>) -> Option<Room<'tcx>> {
+        match () {
             _ if self.is_lang_adt(into, rustc_hir::attrs::lang_items::LangItem::String)
                 && item.peel_refs().is_char() =>
             {
-                Room::Bytes
+                Some(Room::Bytes)
             }
-            _ if self.is_map(into) && !self.is_sorted(into) => Room::Entries(item),
-            _ => return None,
+            _ if self.is_map(into) && !self.is_sorted(into) => Some(Room::Entries(item)),
+            _ => None,
+        }
+    }
+
+    /// `extend_reserved`'s, of a dictionary's `extend`, `C: Extend<item>`
+    /// of `into`, given any iterator generic code has, which may be the
+    /// crate's own: its hint asked, as std's asks it (#849).
+    pub(in crate::lower) fn dictionary_reserved(&self, it: Expr, into: Ty<'tcx>, item: Ty<'tcx>, of: Expr) -> Expr {
+        let Some(room) = self.room_of(into, item) else {
+            return it;
         };
-        Some((iter_ty, room))
+        let mut args = vec![it];
+        match room {
+            Room::Nothing => {}
+            Room::Bytes => args.extend([Expr::int(1), Expr::undefined()]),
+            Room::Entries(entry) => {
+                let (size, align) = match self.layout(entry) {
+                    Some(layout) => (i128::from(layout.size.bytes()), i128::from(layout.align.abi.bytes())),
+                    None => (0, 1),
+                };
+                args.extend([Expr::int(size), Expr::int(align)]);
+            }
+        }
+        args.push(of);
+        Expr::call_helper("$reserveHint", args)
     }
 
     /// `it`, of type `iter_ty`, asked its `size_hint` before it's stepped,
@@ -390,5 +429,154 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             args.push(of);
         }
         Expr::call_helper("$reserveHint", args)
+    }
+}
+
+// Generic code's `extend` of a collection its caller gives, `c.extend(it)`
+// of a `C: Extend<T>`, through its dictionary: where its caller gives a
+// `Vec`, a `VecDeque` or a `BinaryHeap` and an iterator whose `size_hint`
+// the crate's own may run, std asks that hint as the collection fills, as
+// its capacity says, which isn't known there (#849, the user's (b)). Refused
+// where those types are known, at the call that gives them; relayed
+// where they're a caller's own type parameters, as #796 relays `TSize`, so
+// the outermost caller that knows them decides. One of std's iterators, or
+// the crate's that keeps std's default `size_hint`, compiles.
+/// The message of a call refused: what it gives, and what to write.
+const REFUSED: &str = "rust-js: this call gives generic code a `Vec`, a `VecDeque` or a `BinaryHeap` to `extend` by an iterator whose `size_hint` is the crate's own, which std asks as the collection fills, as its capacity says, unknown where generic code extends it (#849): collect the iterator first and give that, or extend a collection this function made, by `new`, `with_capacity(n)` or `vec![..]`, here";
+
+/// How many times what each function extends is relayed to its callers,
+/// and how much of it each holds, past which what's left isn't: a
+/// recursive generic function's types may grow without end.
+const ROUNDS: usize = 16;
+const HELD: usize = 64;
+
+/// Refuses each call of `bodies` that gives generic code's `extend` a
+/// collection that grows as it's extended and an iterator whose hint may
+/// run the crate's own, both known there.
+pub(in crate::lower) fn refuse_unknown_capacity_extends<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    bodies: &[&crate::lower::Body<'tcx>],
+) {
+    let tcx = recognition.tcx;
+    let mirs: Vec<(DefId, &rustc_middle::mir::Body<'tcx>)> = (bodies.iter())
+        .filter_map(|body| Some((body.def_id, &body.mir.as_ref()?.body)))
+        .collect();
+    // What each function extends of what it doesn't know: the collection
+    // and what it's extended by, in its own type parameters' terms.
+    let mut extends: HashMap<DefId, HashSet<(Ty<'tcx>, Ty<'tcx>)>> = HashMap::new();
+    // Which of a body's `extend`s know their collection's capacity, in its
+    // own typing environment (`known_capacity_extends`).
+    let known = |def_id: DefId, body: &rustc_middle::mir::Body<'tcx>| {
+        let recognition = Recognition {
+            typing_env: ty::TypingEnv::post_analysis(tcx, def_id),
+            ..*recognition
+        };
+        recognition.known_capacity_extends(body)
+    };
+    for &(def_id, body) in &mirs {
+        for (block, data) in body.basic_blocks.iter_enumerated() {
+            let TerminatorKind::Call { func, args, .. } = &data.terminator().kind else {
+                continue;
+            };
+            let Some((callee, generic_args)) = func.const_fn_def() else {
+                continue;
+            };
+            let extend = tcx
+                .trait_of_assoc(callee)
+                .is_some_and(|t| crate::lower::recognition::is_extend(tcx, t));
+            let Some(collection) = generic_args.types().next().map(|ty| ty.peel_refs()) else {
+                continue;
+            };
+            let Some(iterable) = args.get(1).map(|arg| arg.node.ty(body, tcx)) else {
+                continue;
+            };
+            // Of a collection it doesn't know; and of one that grows as it's
+            // extended by an iterator its caller gives, whose capacity, or
+            // whose items' size, isn't known there (`extended_grown`).
+            let callers = |ty: Ty<'tcx>| ty.has_param() || ty.has_aliases();
+            let given = extend
+                && (recognition.is_unknown(collection)
+                    || recognition.grows_as_it_extends(collection)
+                        && callers(iterable)
+                        && !(known(def_id, body).contains(&block)
+                            && generic_args.types().nth(1).is_some_and(|item| !callers(item))));
+            if given {
+                extends.entry(def_id).or_default().insert((collection, iterable));
+            }
+        }
+    }
+    // Each call of a function of the crate's, resolved where it's a
+    // trait's, with what it's given in its caller's terms.
+    let mut calls: Vec<(DefId, DefId, ty::GenericArgsRef<'tcx>, Span)> = Vec::new();
+    for &(def_id, body) in &mirs {
+        let typing_env = ty::TypingEnv::post_analysis(tcx, def_id);
+        for data in body.basic_blocks.iter() {
+            let TerminatorKind::Call { func, fn_span, .. } = &data.terminator().kind else {
+                continue;
+            };
+            let Some((callee, generic_args)) = Operand::const_fn_def(func) else {
+                continue;
+            };
+            let (callee, generic_args) =
+                match crate::lower::items::resolve_instance_in(tcx, typing_env, callee, generic_args) {
+                    Ok(Some(instance)) => (instance.def_id(), instance.args),
+                    _ => (callee, generic_args),
+                };
+            if callee.is_local() {
+                calls.push((def_id, callee, generic_args, *fn_span));
+            }
+        }
+    }
+    let mut refused: HashSet<Span> = HashSet::new();
+    for _ in 0..ROUNDS {
+        // A closure's, the function's it's written in, whose type
+        // parameters it has: what std's code that calls it isn't seen to.
+        let mut changed = false;
+        let closures: Vec<(DefId, HashSet<(Ty<'tcx>, Ty<'tcx>)>)> = (extends.iter())
+            .filter(|(def_id, _)| tcx.is_closure_like(**def_id))
+            .map(|(&def_id, held)| (tcx.typeck_root_def_id(def_id), held.clone()))
+            .collect();
+        for (root, held) in closures {
+            let theirs = extends.entry(root).or_default();
+            for each in held {
+                if theirs.len() < HELD {
+                    changed |= theirs.insert(each);
+                }
+            }
+        }
+        for &(caller, callee, generic_args, span) in &calls {
+            let Some(theirs) = extends.get(&callee).cloned() else {
+                continue;
+            };
+            let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
+            for (collection, iterable) in theirs {
+                let given = |ty: Ty<'tcx>| {
+                    let ty = ty::EarlyBinder::bind(tcx, ty)
+                        .instantiate(tcx, generic_args)
+                        .skip_normalization();
+                    tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
+                        .unwrap_or(ty)
+                };
+                let (collection, iterable) = (given(collection).peel_refs(), given(iterable));
+                let grows = recognition.grows_as_it_extends(collection);
+                if !grows && !recognition.is_unknown(collection) {
+                    continue;
+                }
+                if grows && !iterable.has_param() && !iterable.has_aliases() {
+                    let iter_ty = iterator_type_of(tcx, typing_env, iterable);
+                    if recognition.hint_reaches_own(iter_ty) && refused.insert(span) {
+                        tcx.dcx().span_err(span, REFUSED);
+                    }
+                    continue;
+                }
+                let held = extends.entry(caller).or_default();
+                if held.len() < HELD {
+                    changed |= held.insert((collection, iterable));
+                }
+            }
+        }
+        if !changed {
+            break;
+        }
     }
 }

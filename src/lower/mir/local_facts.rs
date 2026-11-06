@@ -663,7 +663,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> QuietCells {
         let tcx = self.tcx;
         let mut quiet = QuietCells {
-            known_capacity: self.known_capacity_extends(body),
+            known_capacity: self.recognition().known_capacity_extends(body),
             ..QuietCells::default()
         };
         // How a thread-local's place holds a `None`, of one that stores it

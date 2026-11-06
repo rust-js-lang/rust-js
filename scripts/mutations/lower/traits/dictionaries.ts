@@ -265,7 +265,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a std collection's `Extend` has no dictionary, and generic code that extends one is refused",
     file: "src/lower/traits/dictionaries.rs",
-    find: "            && let Some(dictionary) = self.extend_dictionary(ty, span)?\n",
+    find: "            && let Some(dictionary) = self.extend_dictionary(ty, tr.args.type_at(1), span)?\n",
     replace: "            && let Some(dictionary) = None::<Expr>\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
   },

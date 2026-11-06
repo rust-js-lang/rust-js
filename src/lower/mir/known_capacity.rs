@@ -12,10 +12,10 @@ use super::*;
 use crate::lower::recognition::{CapacityOp, InPlaceSource, capacity_op, in_place_source, is_trusted_len};
 use rustc_span::def_id::DefId;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'a, 'tcx> crate::lower::recognition::Recognition<'a, 'tcx> {
     /// Of `body`'s calls, each `extend` of a collection whose capacity is
-    /// known where it's called.
-    pub(super) fn known_capacity_extends(&self, body: &mir::Body<'tcx>) -> HashSet<BasicBlock> {
+    /// known where it's called, in this typing environment, the body's.
+    pub(in crate::lower) fn known_capacity_extends(&self, body: &mir::Body<'tcx>) -> HashSet<BasicBlock> {
         let mut known = HashSet::new();
         // Each local assigned once by a statement, and what it's assigned.
         let mut assigned: HashMap<Local, Option<&Rvalue<'tcx>>> = HashMap::new();
@@ -55,7 +55,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let Some((def_id, generic_args)) = func.const_fn_def() else {
                 continue;
             };
-            if !self.extends_as_it_fills(def_id, generic_args) {
+            if !self.extend_grows(def_id, generic_args) {
                 continue;
             }
             let receiver = args
@@ -73,14 +73,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether `def_id` is an `extend` std's collection asks its hint of as
     /// it fills: a `Vec`'s, a `VecDeque`'s or a `BinaryHeap`'s.
-    fn extends_as_it_fills(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
+    pub(in crate::lower) fn extend_grows(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
         self.tcx
             .trait_of_assoc(def_id)
             .is_some_and(|t| crate::lower::recognition::is_extend(self.tcx, t))
             && generic_args
                 .types()
                 .next()
-                .is_some_and(|ty| self.recognition().grows_as_it_extends(ty.peel_refs()))
+                .is_some_and(|ty| self.grows_as_it_extends(ty.peel_refs()))
     }
 
     /// Whether `variable`, a collection, has the capacity native Rust's has
@@ -197,7 +197,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let reserves = matches!(capacity_op(self.tcx, def_id), Some(CapacityOp::Reserve { .. }));
                 let first_alone = args.first().is_some_and(|arg| mentions(&arg.node))
                     && !args.iter().skip(1).any(|arg| mentions(&arg.node));
-                if !(first_alone && (reserves || self.extends_as_it_fills(def_id, generic_args))) {
+                if !(first_alone && (reserves || self.extend_grows(def_id, generic_args))) {
                     return false;
                 }
             }
@@ -217,7 +217,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return true;
         }
         if matches!(
-            self.recognition().classify(def_id, generic_args),
+            self.classify(def_id, generic_args),
             Some(Std::VecNew | Std::VecMacro | Std::FromElem)
         ) {
             return true;

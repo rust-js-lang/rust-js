@@ -9,8 +9,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// what a known one's call is, of its items as they're given, any
     /// iterable, and of the box generic code's `&mut` is (ADR 0180). None of
     /// another type, the crate's, whose impl's dictionary is its own.
-    fn extend_dictionary(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
-        let (collection, items) = (Expr::member(Expr::var("collection"), js::HELD), Expr::var("items"));
+    fn extend_dictionary(&mut self, ty: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let collection = Expr::member(Expr::var("collection"), js::HELD);
+        // Its hint asked first where the collection reserves by it, a
+        // `String`'s by `char`s and a hash table's (#849).
+        let items = self.dictionary_reserved(Expr::var("items"), ty, item, collection.clone());
         let mut body = Vec::new();
         // The items' type said as the collection's, which no range is, so
         // what's given is iterated as it is.
@@ -276,7 +279,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A std collection's `Extend`, `{ extend(collection, items) }` (ADR 0445).
         if crate::lower::recognition::is_extend(self.tcx, tr.def_id)
-            && let Some(dictionary) = self.extend_dictionary(ty, span)?
+            && let Some(dictionary) = self.extend_dictionary(ty, tr.args.type_at(1), span)?
         {
             return Ok(dictionary);
         }

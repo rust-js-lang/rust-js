@@ -118,10 +118,27 @@ where the capacity is known where it's extended, refused elsewhere.
 - The owner's `extended_grown` makes `$grownBy(v, it, size, deque,
   drop)` of it, which asks as std does and keeps `v`'s capacity native;
   refused, saying what to write, where it isn't known, or of items whose
-  size is a caller's. A dictionary's `extend`, of any iterator generic
-  code gives it, of a caller's collection, asks as before: refusing it
-  would refuse every generic `extend` of a `Vec`, a decision asked of
-  the user.
+  size is a caller's.
+- Generic code's `extend`, `c.extend(it)` of a `C: Extend<T>`, through
+  its dictionary, of a caller's collection whose capacity it can't know:
+  the user chose (b), refused where the types are known, as narrowly as
+  they allow. The owner's `refuse_unknown_capacity_extends` keeps, of each function, the
+  collection and the iterable it extends of what it doesn't know, in its
+  own type parameters' terms, a closure's its function's; and relays them
+  to each call, instantiated, as #796 relays `TSize`. A call that gives a
+  `Vec`, a `VecDeque` or a `BinaryHeap` and an iterable whose hint reaches
+  the crate's own, both known there, is refused, saying to collect first
+  or to extend one made there; one still of the caller's type parameters
+  is the caller's to relay. So is a `Vec` generic code extends of its
+  own, a field's, by an iterator its caller gives, a type parameter's or
+  one made of it, whose capacity, or items' size, isn't known there:
+  refused in the body, it refused itertools' `LazyBuffer`, generic
+  library code no caller of which gives it the crate's own hint (the
+  crate corpus, 2026-11-06). std's iterators, and the crate's that keeps
+  std's default `size_hint`, compile. A dictionary's `extend` of a hash
+  table, or of a `String` by `char`s (`C: Extend<char>`), asks its
+  iterator's hint first, as std's does, as it may be the crate's own
+  (`dictionary_reserved`): it asked none.
 - `$reserve` grows as `grow_amortized` does, of items of a size,
   `reserve_exact`'s `$reserveExact` as many as it needs; so the capacity
   `capacity()` gives after them is native Rust's too.
@@ -139,9 +156,19 @@ one pushed first, one given, one collected of what isn't `TrustedLen`, a
 parameter made again; the limitation's example; three snapshots,
 `adapter_size_hints` (its `with_capacity` `Vec` now asks), and
 `collection_capacity` and `vec_capacity`, whose `$reserve` is given the
-items' size. Mutations: three of the runtime's, four of
+items' size; and of generic code's, corpus `generic_extend_of_own_hints`
+(a `Vec` by std's iterators and by the crate's of std's hint, a hash set
+and a `String` by the crate's own hint, through a caller of the caller)
+against native Rust in both builds, `generic_extend`'s snapshot (its
+`String` dictionary asks), and `diagnostics.test.ts`'s refusals of the
+call that gives a `Vec`, relayed, and of a closure's `extend`. Mutations: three of the runtime's, four of
 `known_capacity.rs`, `unknown-capacity-extend-unrefused`,
-`growing-extend-capacity-unkept`, three retargeted.
+`growing-extend-capacity-unkept`, three retargeted; of generic code's,
+`generic-vec-extend-unrefused`, `generic-extend-unrelayed`,
+`closure-extend-unmerged`, `dictionary-extend-unreserved`,
+`generic-body-extend-refused` and `field-extend-unrelayed`, two
+retargeted; and `diagnostics.test.ts`'s refusal of a field's `extend` at
+the caller that gives the crate's own iterator.
 
 ## Next
 

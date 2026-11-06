@@ -8,6 +8,7 @@ import {
   $extendMap,
   $iter,
   $lazyRange,
+  $reserveHint,
   $sortedKeys,
 } from "@rust-js/runtime";
 
@@ -69,7 +70,7 @@ function main() {
   const c$2 = { value: s };
   shout(c$2, {
     extend(collection, items) {
-      collection.value += Array.from(items).join("");
+      collection.value += Array.from($reserveHint(items, 1, undefined, collection.value)).join("");
     },
   });
   s = c$2.value;
