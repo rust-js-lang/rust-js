@@ -73,7 +73,7 @@ function main() {
     "step_by",
     () => {
       const it = $lazyRange(0, all, 1);
-      $roomFor(Math.ceil(Math.max(all - 0, 0) / 1), 4);
+      $roomFor(Math.max(all - 0, 0), 4);
       return Array.from(it).length;
     },
     usizeDebug,

@@ -269,8 +269,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what a held compiled iterator's back steps, which `rev()` of it asks, isn't seen, so `I`'s dictionaries aren't given",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "                                && crate::lower::recognition::is_double_ended(tcx, by)\n",
-    replace: "                                && false\n",
+    find: "                            if (asked || defaulted) && crate::lower::recognition::is_double_ended(tcx, by) {\n",
+    replace: "                            if (asked || defaulted) && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^(held_enumerate).rs$"],
   },
   {
@@ -295,5 +295,13 @@ export const mutations: Mutation[] = [
       "-t",
       "the committed @rust-js/std is std's bodies",
     ],
+  },
+  {
+    name: "extension-default-of-adapter-unstepped",
+    breaks: "an extension's own method a compiled adapter of a type parameter writes none of, `self.0.map(f).nth_back(1)`'s, isn't seen to step the parameter by its back, so its function is given no `IDoubleEndedIterator`: the JS throws `it.back is not a function` of the crate's iterator, and std's structs' build refuses it (#811)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                                defaulted = tcx.trait_of_assoc(callee) == Some(by)\n",
+    replace: "                                defaulted = false && tcx.trait_of_assoc(callee) == Some(by)\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_and_counted_steps_from_their_back.rs$"],
   },
 ];

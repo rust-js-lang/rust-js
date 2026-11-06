@@ -232,8 +232,8 @@ test("an iterator value's readers are defined in value.rs alone", () => {
   expect([owned("a reader of an iterator value"), outsideValue(readers)]).toEqual([owned("a reader of an iterator value"), []]);
 });
 
-test("$iterator, $given, $knowing, $closing, $lent, $rev, $stepBy, $repeatingN and $enumerate are written by value.rs alone", () => {
-  const written = /(call_helper|Expr::helper)\("\$(iterator|given|knowing|closing|lent|rev|stepBy|repeatingN|enumerate)"/;
+test("$iterator, $given, $knowing, $closing, $lent, $rev, $stepBy, $stepByEnds, $repeatingN and $enumerate are written by value.rs alone", () => {
+  const written = /(call_helper|Expr::helper)\("\$(iterator|given|knowing|closing|lent|rev|stepBy|stepByEnds|repeatingN|enumerate)"/;
   expect([owned("a write of an iterator value's helper"), outsideValue(written)]).toEqual([owned("a write of an iterator value's helper"), []]);
 });
 
@@ -262,7 +262,7 @@ test("whether a value is made in place is its maker's mark, never a stepping cal
 // value.rs's accessor of the fact `emit()` marked (steps 1 to 11). A new read
 // fails here, with the owner to add the accessor to.
 test("no iterator helper is read by its name outside value.rs", () => {
-  const helpers = "closing|iterator|given|lent|stepBy|rev|repeatingN|knowing|enumerate";
+  const helpers = "closing|iterator|given|lent|stepBy|stepByEnds|rev|repeatingN|knowing|enumerate";
   const read_ = new RegExp(`Some\\("\\$(${helpers})"`);
   const literal = new RegExp(`"\\$(${helpers})"`, "g");
   const found: Record<string, number> = {};

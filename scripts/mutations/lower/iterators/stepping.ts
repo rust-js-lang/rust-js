@@ -372,8 +372,8 @@ export const mutations: Mutation[] = [
     name: "step-by-made-unstepped",
     breaks: "`rev()` of a `step_by` made in place is refused",
     file: "src/lower/iterators/stepping.rs",
-    find: "                crate::lower::std_types::range::every_nth(f).map(|step| ((**source_value).clone(), step))\n",
-    replace: "                crate::lower::std_types::range::every_nth(f).filter(|_| false).map(|step| ((**source_value).clone(), step))\n",
+    find: "            crate::lower::std_types::range::every_nth(f).map(|step| ((**source_value).clone(), step))\n",
+    replace: "            crate::lower::std_types::range::every_nth(f).filter(|_| false).map(|step| ((**source_value).clone(), step))\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_step_by.rs$"],
   },
   {
@@ -381,8 +381,16 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's `step_by(n).rev()`, `$stepBy(range, n)`, isn't made knowing its back, and is refused (#231)",
     file: "src/lower/iterators/stepping.rs",
-    find: "            (_, Some([source_value, step])) => Some((source_value.clone(), step.clone())),\n",
-    replace: "            (_, Some([source_value, step])) if false => Some((source_value.clone(), step.clone())),\n",
+    find: "        (_, Some([source_value, step])) => Some((source_value.clone(), step.clone())),\n",
+    replace: "        (_, Some([source_value, step])) if false => Some((source_value.clone(), step.clone())),\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_step_by.rs$"],
+  },
+  {
+    name: "step-by-ends-unread",
+    breaks: "a `step_by(n)` made knowing its back, `$stepByEnds(src, n)`, a `rev()`'s source, isn't read as one, and `len()` of its `rev()` is refused (#811)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "    if let Some((source_value, step)) = crate::lower::iterators::stepped_by_ends_parts(value) {\n",
+    replace: "    if let Some((source_value, step)) = None::<(&Expr, &Expr)> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_and_counted_steps_from_their_back.rs$"],
   },
 ];

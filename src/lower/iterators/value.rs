@@ -406,6 +406,28 @@ pub(in crate::lower) fn stepped_every_parts(e: &Expr) -> Option<&[Expr]> {
     }
 }
 
+/// `$stepByEnds(it, n)`: `it` stepped every `n`th item from either end,
+/// knowing its back and its length, as std's `StepBy` of an exact-sized
+/// source does (#718), marked made knowing its back.
+pub(in crate::lower) fn stepped_by_ends(it: Expr, step: Expr) -> Expr {
+    made_knowing_its_back(Expr::call_helper("$stepByEnds", vec![it, step]))
+}
+
+/// What a `stepped_by_ends` one steps, and by how many.
+pub(in crate::lower) fn stepped_by_ends_parts(e: &Expr) -> Option<(&Expr, &Expr)> {
+    match &e.kind {
+        js::ExprKind::Call(callee, args)
+            if was_made_knowing_its_back(e) && callee.helper_name() == Some("$stepByEnds") =>
+        {
+            match args.as_slice() {
+                [it, step] => Some((it, step)),
+                _ => None,
+            }
+        }
+        _ => None,
+    }
+}
+
 /// `$repeatingN(x, n, ..)`: `repeat_n(x, n)`'s items (ADR 0513), given
 /// `args`, `x` and `n` first, marked so.
 pub(in crate::lower) fn repeating_n(args: Vec<Expr>) -> Expr {

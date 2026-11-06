@@ -137,19 +137,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Some(n.clone());
         }
-        // A range's `step_by(s)`, `$stepBy(range, s)`: its count `s` apart,
-        // `Math.ceil(Math.max(b - a, 0) / s)`.
+        // A `step_by(s)`, a range's `$stepBy(range, s)` or another's filter of
+        // every `s`th (`stepped_by_parts`): its source's count `s` apart, as
+        // std's `StepBy` counts before its first step, `Math.ceil(n / s)`, a
+        // range's `Math.ceil(Math.max(b - a, 0) / s)` (#811).
         if let Some(source) = r::stepped_by_source(self.tcx, ty)
-            && self.range_kind(source).is_some()
-            && let Some([source_value, step]) = crate::lower::iterators::stepped_every_parts(it)
+            && let Some((source_value, step)) = crate::lower::iterators::stepped_by_parts(it)
             && !step.has_effects()
         {
-            let count = self.len_in_place(&source_value.clone(), source, made)?;
+            let count = self.len_in_place(&source_value, source.peel_refs(), made)?;
             // Of numbers known, the number, `(0..10).step_by(3)`'s 4.
             if let (Some(count), Some(step)) = (count.as_int(), step.as_int())
                 && step > 0
             {
                 return Some(Expr::int((count.max(0) + step - 1) / step));
+            }
+            // Of every item, `step_by(1)`'s, its source's count.
+            if step.as_int() == Some(1) {
+                return Some(count);
             }
             let ceil = Expr::member(Expr::var("Math"), "ceil");
             return Some(Expr::call(ceil, vec![Expr::bin(Op::Div, count, step.clone())]));

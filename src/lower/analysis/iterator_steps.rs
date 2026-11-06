@@ -307,6 +307,13 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                         // `Skip::rfold`'s `self.try_rfold(..)`: what it's given
                         // passed on, as it steps it (ADR 0927).
                         if crate::lower::recognition::is_compiled_std_iterator(tcx, self_ty) {
+                            // The extension's own method the adapter writes
+                            // none of, `Map`'s `nth_back`, its trait's default,
+                            // which steps the adapter from its back, by its
+                            // `next_back` or its own `try_rfold`, each of which
+                            // asks what `next_back` does of what it holds, `I`'s
+                            // back: what its `next_back` steps (#811).
+                            let mut defaulted = false;
                             if let Ok(Some(instance)) =
                                 crate::lower::items::resolve_instance_in(tcx, typing_env, callee, args)
                             {
@@ -315,6 +322,8 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                                 } else if foreign.item(instance.def_id()).is_some() {
                                     steps_through(&mut stepped, instance.def_id(), instance.args);
                                 }
+                                defaulted = tcx.trait_of_assoc(callee) == Some(by)
+                                    && tcx.trait_of_assoc(instance.def_id()) == Some(by);
                             }
                             // And, where it's asked of it, `rev()`'s, what its
                             // compiled methods a use site gives `$knowing`
@@ -322,11 +331,13 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                             // `len`, by their manifests: a held
                             // `Enumerate<I>`'s back asks `I`'s length too (ADR
                             // 0871).
-                            if tcx.trait_of_assoc(callee) != Some(by)
-                                && crate::lower::recognition::is_double_ended(tcx, by)
-                            {
+                            let asked = tcx.trait_of_assoc(callee) != Some(by);
+                            if (asked || defaulted) && crate::lower::recognition::is_double_ended(tcx, by) {
                                 let exact = crate::lower::recognition::exact_size_iterator_trait(tcx);
-                                let given = [(Some(by), "next_back"), (Some(by), "nth_back"), (exact, "len")];
+                                let given = match defaulted {
+                                    true => vec![(Some(by), "next_back")],
+                                    false => vec![(Some(by), "next_back"), (Some(by), "nth_back"), (exact, "len")],
+                                };
                                 for (tr, name) in given {
                                     let Some(tr) = tr else { continue };
                                     let method = trait_method(tcx, tr, name);

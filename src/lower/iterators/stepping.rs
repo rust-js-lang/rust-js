@@ -585,23 +585,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(source) = crate::lower::recognition::stepped_by_source(self.tcx, ty) else {
             return Ok(None);
         };
-        let parts = match (&value.kind, crate::lower::iterators::stepped_every_parts(value)) {
-            (_, Some([source_value, step])) => Some((source_value.clone(), step.clone())),
-            (js::ExprKind::Call(callee, args), None)
-                if let js::ExprKind::Member(source_value, method) = &callee.kind
-                    && method == "filter"
-                    && let [f] = args.as_slice() =>
-            {
-                crate::lower::std_types::range::every_nth(f).map(|step| ((**source_value).clone(), step))
-            }
-            _ => None,
-        };
-        let Some((source_value, step)) = parts else {
+        // One made so already, itself.
+        if crate::lower::iterators::stepped_by_ends_parts(value).is_some() {
+            return Ok(Some(value.clone()));
+        }
+        let Some((source_value, step)) = stepped_by_parts(value) else {
             return Ok(None);
         };
         let source = source.peel_refs();
         let source_value = crate::lower::iterators::stepped_value(&source_value).unwrap_or(source_value);
         let source_value = self.as_exact_size(source_value, source, true, span)?;
-        Ok(Some(Expr::call_helper("$stepByEnds", vec![source_value, step])))
+        Ok(Some(crate::lower::iterators::stepped_by_ends(source_value, step)))
+    }
+}
+
+/// What `value`, a `step_by(n)` made here, steps and by how many: of
+/// `src.filter((_, i) => i % n === 0)`, of what drops each it passes over
+/// too (`every_nth`), `$stepBy(src, n)` by its source's `nth`
+/// (`stepped_every_parts`), or one made knowing its back, `$stepByEnds(src,
+/// n)` (`stepped_by_ends_parts`), a `rev()`'s source: `src` and `n`. The one
+/// reader of each form, `step_by_knowing`'s and `len_in_place`'s (#718,
+/// #811).
+pub(in crate::lower) fn stepped_by_parts(value: &Expr) -> Option<(Expr, Expr)> {
+    if let Some((source_value, step)) = crate::lower::iterators::stepped_by_ends_parts(value) {
+        return Some((source_value.clone(), step.clone()));
+    }
+    match (&value.kind, crate::lower::iterators::stepped_every_parts(value)) {
+        (_, Some([source_value, step])) => Some((source_value.clone(), step.clone())),
+        (js::ExprKind::Call(callee, args), None)
+            if let js::ExprKind::Member(source_value, method) = &callee.kind
+                && method == "filter"
+                && let [f] = args.as_slice() =>
+        {
+            crate::lower::std_types::range::every_nth(f).map(|step| ((**source_value).clone(), step))
+        }
+        _ => None,
     }
 }

@@ -71,3 +71,25 @@ twice({ start: 0, end: 3 }, { next: $rangeNext }, { clone: .. }, { len: $rangeLe
   holds, is still a JS iterator** in its impl, which its caller's value
   isn't; that's the next gap. (Amended: it's given as it is, its extension
   bound an `Iterator` bound too, ADR 0488.)
+
+## Amended (2026-11-06, #811): an extension's own method an adapter writes none of
+
+`stepped_params` asks what a compiled std adapter of a type parameter
+steps it by, of the method called: `map(f).nth_back(1)` of a `Map<I, F>`
+resolves `nth_back` to `DoubleEndedIterator`'s default, as `Map` writes
+none, which shows nothing of `I`. The pass that asks what the adapter's
+own `next_back` steps ran only where the method was another trait's,
+`rev()`'s, so a function stepping `self.0.map(f)` from its back was given
+no `IDoubleEndedIterator`: of the crate's iterator, the JS threw `it.back is
+not a function` where native Rust runs, and std's structs' build refused
+it. **Of an extension's own method that resolves to its trait's default,
+what the adapter's `next_back` steps, which every default stepping from
+the back steps it by, is asked too.** Only that: the other pass's
+`nth_back` and `len` would give dictionaries no step uses.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. Held by corpus
+`generic_and_counted_steps_from_their_back` against native Rust in both
+builds; no other snapshot changes. Mutations
+`extension-default-of-adapter-unstepped`; `compiled-back-hooks-unstepped`
+names its line as it now reads.

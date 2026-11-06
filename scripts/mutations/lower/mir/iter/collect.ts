@@ -958,4 +958,13 @@ export const mutations: Mutation[] = [
     replace: "        if self.layout(item).is_some() {\n            return Ok(self.room_item_size(item));\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size.rs$"],
   },
+  {
+    name: "step-by-of-items-asks-room",
+    breaks: "a collect of a `step_by(n)` of an array's items asks room of its count, `$roomFor(Math.ceil(items.length / n), ..)`, which no array's length overflows, and its eager filter is made lazy for it (#811)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                || r::stepped_by_source(self.tcx, ty).is_some_and(|source| !of_items(source))\n",
+    replace: "                || r::stepped_by_source(self.tcx, ty).is_some()\n",
+    tests: ["test/corpus.test.ts", "-t", "^(step_by_zero|sales_report|returned_slice_iters).rs$"],
+    snapshots: true,
+  },
 ];

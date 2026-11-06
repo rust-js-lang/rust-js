@@ -28,8 +28,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's `step_by(s)` made in place has no count: its `len()` is refused and its `collect()` asks no room (#246)",
     file: "src/lower/mir/iter/sources.rs",
-    find: "            && let Some([source_value, step]) = crate::lower::iterators::stepped_every_parts(it)\n",
-    replace: "            && let Some([source_value, step]) = crate::lower::iterators::stepped_every_parts(it).filter(|_| false)\n",
+    find: "            && let Some((source_value, step)) = crate::lower::iterators::stepped_by_parts(it)\n",
+    replace: "            && let Some((source_value, step)) = crate::lower::iterators::stepped_by_parts(it).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
   },
   {
@@ -456,5 +456,22 @@ export const mutations: Mutation[] = [
     find: "            return Some(Expr::call(Expr::member(Expr::var(\"Math\"), \"min\"), vec![a, b]));\n",
     replace: "            return Some(Expr::call(Expr::member(Expr::var(\"Math\"), \"max\"), vec![a, b]));\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_from_its_back.rs$"],
+  },
+  {
+    name: "step-by-len-of-items-uncounted",
+    breaks: "`len()` of a `step_by(n)` of a slice's items made in place is counted only of a range's, and refused (#811)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            && let Some((source_value, step)) = crate::lower::iterators::stepped_by_parts(it)\n",
+    replace: "            && self.range_kind(source.peel_refs()).is_some()\n            && let Some((source_value, step)) = crate::lower::iterators::stepped_by_parts(it)\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_and_counted_steps_from_their_back.rs$"],
+  },
+  {
+    name: "step-by-of-one-divided",
+    breaks: "a `step_by(1)`'s count is `Math.ceil(n / 1)`, where it's its source's (#811)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            if step.as_int() == Some(1) {\n",
+    replace: "            if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(generic_and_counted_steps_from_their_back|collected_counts_ask_room).rs$"],
+    snapshots: true,
   },
 ];

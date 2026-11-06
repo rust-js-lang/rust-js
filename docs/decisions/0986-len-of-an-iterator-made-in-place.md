@@ -90,3 +90,33 @@ them, whose `$iter` knows its hint already, so `size_hint.js` reads as it
 did. `test/corpus/size_hints_made_in_place.rs` checks `skip`, `take`,
 both, and a map against native Rust. The mutation is
 `size-hint-in-place-uncounted`.
+
+## Amended (2026-11-06, #811): a `step_by(n)` of any source counted in place
+
+`len_in_place` counted a `step_by(n)` of a range alone, `$stepBy(range,
+n)`, so `v.iter().step_by(3).len()` was refused. **It counts a `step_by(n)`
+of either form, `stepped_by_parts`' (stepping.rs, the one reader of a
+filter of every `n`th and of `$stepBy`), by its source's count:
+`Math.ceil(v.length / 3)`**, a skip's or a map's of a slice's items too,
+and of `step_by(1)` the count itself. A `rev()`'s source, a `step_by(n)`
+made knowing its back, `$stepByEnds(src, n)` (value.rs' `stepped_by_ends`,
+which alone writes it), is read as one too: `v.iter().step_by(3).rev().len()`.
+Not yet one of a map, `map(f).step_by(n).rev()`, whose source is `$mapEnds`
+(diagnostics' "len of a reversed step_by of a map").
+
+What collects one asks room of a count no array bounds (ADR 0940), not of
+a `step_by(n)` of an array's items, which no array's length overflows:
+its eager filter stays as it was. A reversed range's `step_by(n)`, which
+`len_in_place` now counts, asks it as std's `SpecFromIter` does, so
+`(0..=u32::MAX).rev().step_by(1 << 30).collect()` reads `$roomFor(Math.ceil(
+4294967296 / step), 4)` (`range_steps_known`), and a range a capacity
+can't hold panics `capacity overflow` as Rust's does.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable but the
+room a range asks, which Rust asks too. Held by corpus
+`generic_and_counted_steps_from_their_back`; `collected_counts_ask_room`'s
+`step_by(1)` reads its count. Mutations `step-by-len-of-items-uncounted`,
+`step-by-of-one-divided`, `step-by-of-items-asks-room`, `step-by-ends-unread`;
+`mir-len-closure-type-shown` asks the diagnostics row above; `step-by-uncounted`,
+`step-by-made-unstepped` and `step-by-made-by-nth-backless` name their
+lines as they now read.

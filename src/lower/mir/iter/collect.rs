@@ -288,9 +288,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn()))
         };
         use crate::lower::recognition as r;
+        // A count no array bounds: not a `step_by(n)` of an array's items,
+        // or a `skip`'s or a `map`'s of them, which no more than the array's
+        // length can overflow nothing (#811).
+        let of_items = |source: Ty<'tcx>| {
+            source
+                .walk()
+                .any(|part| part.as_type().is_some_and(|t| self.steps_an_array(t)))
+                && !source
+                    .walk()
+                    .any(|part| part.as_type().is_some_and(|t| self.range_kind(t).is_some()))
+        };
         let given_count = |ty: Ty<'tcx>| {
             r::is_repeat_n(self.tcx, ty)
-                || r::stepped_by_source(self.tcx, ty).is_some()
+                || r::stepped_by_source(self.tcx, ty).is_some_and(|source| !of_items(source))
                 || r::counted_source(self.tcx, ty)
                     .is_some_and(|(source, skip)| !skip && self.recognition().endless_by_type(source))
         };

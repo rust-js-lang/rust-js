@@ -153,7 +153,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                        ty::Adt(adt, _) => self.tcx.def_path_str(adt.did()),\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "len of a step_by of a map"],
+    tests: ["test/diagnostics.test.ts", "-t", "len of a reversed step_by of a map"],
   },
   {
     name: "identity-map-step",

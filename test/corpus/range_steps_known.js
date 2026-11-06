@@ -55,9 +55,13 @@ function main() {
     `${nth == null ? "None" : `Some(${nth})`} ${$lazyRange(1, 11, 3).reduce((n) => n + 1, 0)}`,
   );
   const step$3 = $step((1 << 30) >>> 0);
-  console.log(`[${Array.from($lazyRangeBack(0, 4294967295, step$3)).join(", ")}]`);
+  const it$1 = $lazyRangeBack(0, 4294967295, step$3);
+  $roomFor(Math.ceil(4294967295 / step$3), 4);
+  console.log(`[${Array.from(it$1).join(", ")}]`);
   const step$4 = $step((1 << 30) >>> 0);
-  console.log(`[${Array.from($lazyRangeBack(0, 4294967295, step$4, true)).join(", ")}]`);
+  const it$2 = $lazyRangeBack(0, 4294967295, step$4, true);
+  $roomFor(Math.ceil(4294967296 / step$4), 4);
+  console.log(`[${Array.from(it$2).join(", ")}]`);
   const step$5 = $step((1 << 31) >>> 0);
   console.log(
     `[${Array.from($lazyRangeBack(0n, 18446744073709551615n, step$5).take(3)).join(", ")}]`,
