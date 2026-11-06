@@ -26,6 +26,7 @@ none of these would have, add it here in the same commit as the fix.
 | Real crates | `bun scripts/crate-corpus.ts` (22 crates) | #737, #794, #795, #828 | Real code combines features in ways the corpus doesn't |
 | The ports | react-in-rust, alien-signals | Most early representation and readability gaps | A whole program, compared file by file with its original |
 | Probing against native before deciding | Any decision whose JS form is in doubt | #832's three wrong payloads; #809's unsound "pass the box on" | A plausible rule is checked before it's built |
+| Mapping a rule's deciders, then probing every case of its model | Before a refactor of a scattered rule (#820): each destination × operation, with the crate's own observable step, `size_hint` that prints | #848 (a `Result`/`Option` collect's hint, through std's `GenericShunt`) and #849 (every `extend`), neither touched by any of the six P0s the rule had | The model's table is the test list: a case no decider handled is one nobody wrote |
 | rustc's own tests and generated programs | `bun run test:rustc`, the nightly's 600 programs (ADR 0089, 0092) | Long-tail language cases | Programs written by others, or by no one |
 | Reading accepted differences against ADR 0262 | Guide "Differences", ADR exceptions | #115, #847: documented "rare and harmless" differences that native showed were results changing | A difference written down as accepted is never tested again |
 

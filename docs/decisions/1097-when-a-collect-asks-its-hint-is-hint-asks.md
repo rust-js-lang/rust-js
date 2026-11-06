@@ -1,6 +1,6 @@
 # 1097. When a collect asks its hint is `hint_asks`'s
 
-Status: Accepted (2026-11-06, step 1 of #820's three). On ADR 1096's
+Status: Accepted (2026-11-06, #820 step 1; step 2's #848). On ADR 1096's
 model, as #819's was.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none. This changes who
@@ -49,12 +49,41 @@ hint_asks's alone" holds it: no module but the owner makes `$roomForHint`
 or `$reserveHint`, and none but it asks `hint_reaches_own`, but
 `Filter::count`'s (`mir/iter.rs`), which is no collect.
 
+## Step 2: through std's `GenericShunt` (#848)
+
+A collect into a `Result` or an `Option` of a collection, `try_process`,
+collects a `GenericShunt` of its source, whose hint is its source's, its
+lower bound none, `(0, upper)`, asked while no `Err` or `None` has
+stopped it. rust-js asked none. The owner's `shunted_ask` answers it, a
+`Shunted`: of a collection std grows as a `Vec`, as `SpecFromIterNested`
+and `extend_desugared` ask it, after the first value, then each time the
+`Vec` is full, `$collectResults` and `$collectOptions` given the values'
+size, a caller's `TSize` where they're its caller's
+(`grows_by_callers_size` sees through the `Result` or `Option` to them);
+of a `String` of `char`s or a hash table, once, first, room for none,
+`$reserveHint(it)` (`Room::Nothing`); of a `LinkedList` or a `String` of
+strings, never. Only where asking it may run the crate's own. Where
+asking it panics, the value just taken drops first, as
+`extend_desugared`'s element does. std's `MIN_NON_ZERO_CAP` is one
+runtime function, `$leastCapacity`, of both `$roomForHint` and the
+shunt's growth.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's behaviour is kept. Held by corpus `collect_into_results_asks_hint`
+(each destination, a failure first and later, generic values of a size
+and of none, and a hint that panics first and later, with values that
+drop) against native Rust in both builds; two generic snapshots now
+give their collect its values' size, `generic_collect_closes_its_source`
+and `generic_collect_drops_rest_first`, as a type parameter's hint may
+be the crate's own (ADR 1092). Mutations `shunted-hint-unasked`,
+`shunted-callers-size-zero`, `shunted-reserve-unasked`,
+`shunt-growth-unasked`, `shunt-growth-not-doubled` and
+`shunt-hint-panic-drops-not-taken`.
+
 ## Next
 
-- Step 2, the wrong answers mapping found, each a corpus case against
-  native Rust in both builds: a collect into `Result<Vec<_>, _>` or
-  `Option<Vec<_>>`, whose `GenericShunt` passes the hint on (#848); and
-  `extend`, which asks none (#849): a `VecDeque`'s, a hash table's and a
+- Step 2's rest, `extend`, which asks none (#849), a corpus case against
+  native Rust in both builds: a `VecDeque`'s, a hash table's and a
   `String<char>`'s reserve once; a `Vec`'s asks as it fills, exact where
   its capacity is known where it's extended, made in the same body by
   `Vec::new`, `with_capacity`, `vec![..]` or a collect and only extended

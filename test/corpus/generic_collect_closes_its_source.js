@@ -48,7 +48,14 @@ function tried(src, IInPlace, dropI) {
   const iter = $closing(Iterator.from(src), dropI, false).map((value) => value);
   let result;
   try {
-    result = $collectOptions(iter, false, undefined, dDrop_drop, !$collectsInPlace(IInPlace, 4, 4));
+    result = $collectOptions(
+      iter,
+      false,
+      undefined,
+      dDrop_drop,
+      !$collectsInPlace(IInPlace, 4, 4),
+      4,
+    );
   } finally {
     iter.return();
   }

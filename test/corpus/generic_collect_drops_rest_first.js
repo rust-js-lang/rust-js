@@ -233,7 +233,7 @@ function tried(src, IInPlace, dropI) {
   });
   let result$1;
   try {
-    result$1 = $collectResults(iter, undefined, dDrop_drop, !$collectsInPlace(IInPlace, 4, 4));
+    result$1 = $collectResults(iter, undefined, dDrop_drop, !$collectsInPlace(IInPlace, 4, 4), 4);
   } finally {
     iter.return();
   }

@@ -38,6 +38,12 @@ function $roomFor(count, size) {
   if (count > 2 ** 32 - 1 || count * size > 2 ** 31 - 1) throw new Error("capacity overflow");
 }
 
+// The least capacity std's `Vec` of items of `size` bytes grows to,
+// `MIN_NON_ZERO_CAP` (raw_vec/mod.rs `min_non_zero_cap`).
+function $leastCapacity(size) {
+  return size === 1 ? 8 : size <= 1024 ? 4 : 1;
+}
+
 // `it`, of what `Vec::from_iter` asks room for first, of `size` bytes each,
 // as std's `SpecFromIter` does. Of a `TrustedLen`'s, `trusted`, its hint
 // first: its upper bound where it has one; of one whose type has no end,
@@ -76,10 +82,9 @@ function $roomForHint(it, size, trusted, endless = false, drop) {
     return it;
   }
   // Its capacity, std's: what it asks room for first, the hint's lower
-  // bound and one more, or `MIN_NON_ZERO_CAP` of items of `size` bytes if
-  // more (raw_vec/mod.rs `min_non_zero_cap`); of items of no size, any
-  // number, so it's never full.
-  const least = size === 1 ? 8 : size <= 1024 ? 4 : 1;
+  // bound and one more, or `MIN_NON_ZERO_CAP` if more; of items of no
+  // size, any number, so it's never full.
+  const least = $leastCapacity(size);
   const max = 2 ** 32 - 1;
   let capacity;
   const first = unwound(() => it.next());
@@ -136,11 +141,14 @@ function $roomForHint(it, size, trusted, endless = false, drop) {
 // `it`, asked its hint before it's stepped, as std's `extend` of a new
 // `String` or hash table asks it, and room reserved for its lower bound
 // (string.rs:2507, hashbrown's `extend`): of a `String`'s bytes, no
-// `align`, else of a table's entries of `size` bytes aligned to `align`.
-// Where that throws, a panic, `it` is closed, as `extend` drops it (#733).
+// `align`, else of a table's entries of `size` bytes aligned to `align`;
+// of no `size`, none, the hint of a `GenericShunt`, `collect()`'s into a
+// `Result` or an `Option`, whose lower bound is none (#848). Where that
+// throws, a panic, `it` is closed, as `extend` drops it (#733).
 function $reserveHint(it, size, align) {
   try {
     const [lower] = $sizeHint(it);
+    if (size === undefined) return it;
     if (align === undefined) $roomFor(lower, size);
     else $tableRoomFor(lower, size, align);
   } catch (error) {
@@ -182,3 +190,26 @@ function $tableRoomFor(count, size, align) {
   const ctrlOffset = Math.ceil((size * buckets) / ctrlAlign) * ctrlAlign;
   if (ctrlOffset + buckets + width > 2 ** 31 - 1 - (ctrlAlign - 1)) throw overflow();
 }
+
+// What std's `Vec` of items of `size` bytes asks of a `GenericShunt` as
+// it grows, `collect()`'s into a `Result` or an `Option` of one: its
+// source's hint, `it`'s, whose lower bound the shunt makes none, `(0,
+// upper)`, after its first value (`SpecFromIterNested`), then each time
+// it's full (`extend_desugared`), room for one more, at least twice what
+// it had (#848). Asked with how many it holds before each value's pushed.
+function $shuntGrowth(it, size) {
+  const least = $leastCapacity(size);
+  let capacity = 0;
+  return (length) => {
+    if (length !== capacity) return;
+    $sizeHint(it);
+    if (length === 0) {
+      capacity = size === 0 ? Infinity : least;
+      $roomFor(1, size);
+      return;
+    }
+    capacity = Math.max(capacity * 2, length + 1, least);
+    $roomFor(capacity, size);
+  };
+}
+

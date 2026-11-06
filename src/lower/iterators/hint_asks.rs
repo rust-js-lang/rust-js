@@ -20,9 +20,55 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// asked is seen, the size its caller gives, `TSize` (#796). The one
     /// answer of the lowering's `grown_item_size` and the analysis's
     /// `grown_asked`.
+    /// Of a collect into a `Result` or an `Option`, the collection std's
+    /// `GenericShunt` collects and its values', `T` of `Result<T, E>`
+    /// (#848).
     pub(in crate::lower) fn grows_by_callers_size(&self, output: Ty<'tcx>, iter_ty: Ty<'tcx>, item: Ty<'tcx>) -> bool {
+        let (output, item) = self.shunted(output, item).unwrap_or((output, item));
         self.grows_as_vec(output) && item.has_param() && self.hint_reaches_own(iter_ty)
     }
+
+    /// Of a collect into `output`, a `Result` or an `Option` of a
+    /// collection, of `item`s, `Result<T, E>` or `Option<T>`: what std's
+    /// `GenericShunt` collects, that collection of `T`s, as `try_process`
+    /// makes it (#848). `None` of another.
+    fn shunted(&self, output: Ty<'tcx>, item: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+        let first = |ty: Ty<'tcx>| match ty.kind() {
+            ty::Adt(_, args) => args.types().next(),
+            _ => None,
+        };
+        let collection = match self.option_of(output) {
+            Some(collection) => collection,
+            None if self.is_result(output) => first(output)?,
+            None => return None,
+        };
+        Some((collection, first(item)?))
+    }
+}
+
+/// What a reserve by an iterator's hint makes room for (`reserved_by_hint`).
+pub(in crate::lower) enum Room<'tcx> {
+    /// A `String`'s bytes.
+    Bytes,
+    /// A hash table's entries of this type, of a type parameter's of their
+    /// count alone, as `table_room_for` asks it.
+    Entries(Ty<'tcx>),
+    /// None: the hint of a `GenericShunt`, whose lower bound is none (#848).
+    Nothing,
+}
+
+/// What a collect into a `Result` or an `Option` of a collection asks of
+/// its iterator's hint through std's `GenericShunt`, whose hint is its
+/// source's, its lower bound none, `(0, upper)`, asked while no `Err` or
+/// `None` has stopped it (#848).
+pub(in crate::lower) enum Shunted {
+    /// Nothing the program sees.
+    Never,
+    /// As a `Vec` of values of this size grows (`$shuntGrowth`).
+    Grown(Expr),
+    /// Once, before it's stepped, as a `String`'s or a hash table's
+    /// `extend` reserves, room for none (`$reserveHint(it)`).
+    Reserved,
 }
 
 /// What a collect into a `Vec` std grows asks of its iterator's hint, as
@@ -135,27 +181,63 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// What a collect of an iterator of `iter_ty` into `target`, a `Result`
+    /// or an `Option` of a collection, of `item`s, asks of its hint
+    /// through std's `GenericShunt` (`Shunted`): of a collection std grows
+    /// as a `Vec`, as it grows, by its values' size, a caller's `TSize`
+    /// where it's its caller's (`grows_by_callers_size`); of a `String` of
+    /// `char`s or a hash table, which reserve first, once; of another, a
+    /// `LinkedList` or a `String` of strings, none. Only where asking it
+    /// may run the crate's own (`hint_reaches_own`).
+    pub(in crate::lower) fn shunted_ask(
+        &mut self,
+        target: Ty<'tcx>,
+        item: Option<Ty<'tcx>>,
+        iter_ty: Option<Ty<'tcx>>,
+        span: Span,
+    ) -> R<Shunted> {
+        let (Some(item), Some(iter_ty)) = (item, iter_ty) else {
+            return Ok(Shunted::Never);
+        };
+        let Some((collection, value)) = self.recognition().shunted(target, item) else {
+            return Ok(Shunted::Never);
+        };
+        if !self.hint_reaches_own(iter_ty) {
+            return Ok(Shunted::Never);
+        }
+        if self.recognition().grows_as_vec(collection) {
+            return Ok(Shunted::Grown(
+                match self.recognition().grows_by_callers_size(target, iter_ty, item) {
+                    true => self.type_fact_value(value, TypeFact::Size, span)?,
+                    false => self.room_item_size(value),
+                },
+            ));
+        }
+        let chars =
+            self.is_lang_adt(collection, rustc_hir::attrs::lang_items::LangItem::String) && value.peel_refs().is_char();
+        Ok(
+            match chars || (self.is_map(collection) && !self.is_sorted(collection)) {
+                true => Shunted::Reserved,
+                false => Shunted::Never,
+            },
+        )
+    }
+
     /// `it`, of type `iter_ty`, asked its `size_hint` before it's stepped,
     /// as std's `extend` of a new `String` or hash table asks it, and room
-    /// for its lower bound reserved, `$reserveHint(it, size, align)`: of a
-    /// `String`'s bytes, `entry` none, else of a table's entries of type
-    /// `entry`, of a type parameter's of its count alone, as
-    /// `table_room_for` asks it. Only where asking it may run what the
-    /// program sees (`hint_reaches_own`), as std's own hints change
-    /// nothing but that room, which no JS string or table reaches (#733).
-    pub(in crate::lower) fn reserved_by_hint(
-        &self,
-        it: Expr,
-        iter_ty: Option<Ty<'tcx>>,
-        entry: Option<Ty<'tcx>>,
-    ) -> Expr {
+    /// for its lower bound reserved as `room` says, `$reserveHint(it, size,
+    /// align)`. Only where asking it may run what the program sees
+    /// (`hint_reaches_own`), as std's own hints change nothing but that
+    /// room, which no JS string or table reaches (#733).
+    pub(in crate::lower) fn reserved_by_hint(&self, it: Expr, iter_ty: Option<Ty<'tcx>>, room: Room<'tcx>) -> Expr {
         if !iter_ty.is_some_and(|iter_ty| self.hint_reaches_own(iter_ty)) {
             return it;
         }
         let mut args = vec![it];
-        match entry {
-            None => args.push(Expr::int(1)),
-            Some(entry) => {
+        match room {
+            Room::Nothing => {}
+            Room::Bytes => args.push(Expr::int(1)),
+            Room::Entries(entry) => {
                 let (size, align) = match self.layout(entry) {
                     Some(layout) => (i128::from(layout.size.bytes()), i128::from(layout.align.abi.bytes())),
                     None => (0, 1),

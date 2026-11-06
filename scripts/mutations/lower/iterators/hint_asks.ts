@@ -102,4 +102,28 @@ export const mutations: Mutation[] = [
     replace: "        if true || !iter_ty.is_some_and(|iter_ty| self.hint_reaches_own(iter_ty)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(collect_asks_hint_as_it_grows|map_ends_size_hint|size_hint_of_adapters).rs$"],
   },
+  {
+    name: "shunted-hint-unasked",
+    breaks: "a collect into a `Result` or an `Option` of a collection never asks its source's hint, which std's `GenericShunt` passes on, so the crate's own `size_hint` doesn't run (a wrong answer, #848)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        if !self.hint_reaches_own(iter_ty) {\n            return Ok(Shunted::Never);\n",
+    replace: "        if true || !self.hint_reaches_own(iter_ty) {\n            return Ok(Shunted::Never);\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_into_results_asks_hint.rs$"],
+  },
+  {
+    name: "shunted-callers-size-zero",
+    breaks: "a generic collect into a `Result` of a `Vec` of a caller's values grows it by none, as if each were of no size, so its hint isn't asked again as it fills (a wrong answer, #848)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "                    true => self.type_fact_value(value, TypeFact::Size, span)?,\n",
+    replace: "                    true => self.room_item_size(value),\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_into_results_asks_hint.rs$"],
+  },
+  {
+    name: "shunted-reserve-unasked",
+    breaks: "a collect into a `Result` of a `String` of `char`s or a hash table doesn't ask its source's hint first, as their `extend` reserves by the shunt's (a wrong answer, #848)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "                true => Shunted::Reserved,\n",
+    replace: "                true => Shunted::Never,\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_into_results_asks_hint.rs$"],
+  },
 ];

@@ -12,6 +12,7 @@ mod knowing;
 mod stepping;
 mod value;
 
+pub(in crate::lower) use self::hint_asks::{Room, Shunted};
 pub(in crate::lower) use self::stepping::stepped_by_parts;
 pub(in crate::lower) use self::value::{
     EnumeratedForm, Form, IterValue, bounds_of, bounds_read, closed, closed_parts, enumerated, enumerated_knowing,

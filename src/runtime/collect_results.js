@@ -4,17 +4,27 @@
 // of it, then each value collected is dropped by `drop`, as std's are.
 // Where stepping it throws, a panic in a closure, what it collected and
 // what's left are dropped as std's unwinds, what's left first,
-// `restFirst`, where it doesn't collect in place (#423).
-function $collectResults(items, into, drop, restFirst = false) {
+// `restFirst`, where it doesn't collect in place (#423). Of a `Vec` of
+// values of `size` bytes, where its hint may run the crate's own, that
+// hint asked as std's `Vec` grows of the `GenericShunt` (`$shuntGrowth`):
+// where asking it panics, the value just taken dropped first (#848).
+function $collectResults(items, into, drop, restFirst = false, size) {
   const values = [];
   let failed;
   const it = items[Symbol.iterator]();
+  const grown = size === undefined ? undefined : $shuntGrowth(it, size);
   try {
     for (let step = it.next(); !step.done; step = it.next()) {
       const item = step.value;
       if (item.TAG === "Err") {
         failed = item;
         break;
+      }
+      try {
+        grown?.(values.length);
+      } catch (error) {
+        drop?.(item._0);
+        throw error;
       }
       values.push(item._0);
     }

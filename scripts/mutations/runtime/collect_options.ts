@@ -22,4 +22,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
+  {
+    name: "shunt-hint-panic-drops-not-taken",
+    breaks: "where asking the hint of a collect into an `Option` panics, the value just taken isn't dropped, as std's `extend_desugared` drops its element (a wrong answer, #848)",
+    file: "src/runtime/collect_options.js",
+    find: "        drop?.(value);\n        throw error;\n",
+    replace: "        throw error;\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_into_results_asks_hint.rs$"],
+  },
 ];

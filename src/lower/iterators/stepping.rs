@@ -71,21 +71,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (Some(_), Some(value)) => self.rest_dropped_first(collection, iter_ty, value, span)?,
             _ => None,
         };
+        // What it asks of its hint through std's `GenericShunt` (#848):
+        // asked once first, or as the `Vec` it collects grows, its values'
+        // size given last.
+        let (items, size) = match self.shunted_ask(target, item, iter_ty, span)? {
+            crate::lower::iterators::Shunted::Never => (items, None),
+            crate::lower::iterators::Shunted::Reserved => (
+                self.reserved_by_hint(items, iter_ty, crate::lower::iterators::Room::Nothing),
+                None,
+            ),
+            crate::lower::iterators::Shunted::Grown(size) => (items, Some(size)),
+        };
+        // Its arguments past `items`, each before one given given, as
+        // `undefined` of an optional one, `false` of a flag.
+        let given = |optional: Vec<(Option<Expr>, Expr)>| {
+            let last = optional.iter().rposition(|(given, _)| given.is_some());
+            (optional.into_iter().enumerate())
+                .take_while(|&(at, _)| last.is_some_and(|last| at <= last))
+                .map(|(_, (given, unset))| given.unwrap_or(unset))
+                .collect::<Vec<_>>()
+        };
         Ok(if self.option_of(target).is_some() {
-            let mut list = vec![items];
             let boxed = item.is_some_and(|item| self.option_of(item).is_some_and(|inner| self.boxed_payload(inner)));
-            if boxed || into.is_some() {
-                list.push(Expr::bool(boxed));
-            }
-            list.extend(into);
-            list.extend(drop);
-            list.extend(rest_first);
+            let mut list = vec![items];
+            list.extend(given(vec![
+                (boxed.then(|| Expr::bool(true)), Expr::bool(false)),
+                (into, Expr::undefined()),
+                (drop, Expr::undefined()),
+                (rest_first, Expr::bool(false)),
+                (size, Expr::undefined()),
+            ]));
             Expr::call(Expr::helper("$collectOptions"), list)
         } else {
             let mut list = vec![items];
-            list.extend(into);
-            list.extend(drop);
-            list.extend(rest_first);
+            list.extend(given(vec![
+                (into, Expr::undefined()),
+                (drop, Expr::undefined()),
+                (rest_first, Expr::bool(false)),
+                (size, Expr::undefined()),
+            ]));
             Expr::call(Expr::helper("$collectResults"), list)
         })
     }

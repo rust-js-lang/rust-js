@@ -692,7 +692,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // reserves by it (string.rs:2507); of strings, none.
             let chars = item.is_some_and(|item| item.peel_refs().is_char());
             let it = match chars {
-                true => self.reserved_by_hint(it, iter_ty, None),
+                true => self.reserved_by_hint(it, iter_ty, crate::lower::iterators::Room::Bytes),
                 false => it,
             };
             let items = match self.unwinding_collect(output, item, iter_ty, span)? {
@@ -727,7 +727,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // the `Vec` it grows, above (#797).
             let it = match self.is_sorted(output) {
                 true => it,
-                false => self.reserved_by_hint(it, iter_ty, item),
+                false => self.reserved_by_hint(
+                    it,
+                    iter_ty,
+                    item.map_or(
+                        crate::lower::iterators::Room::Bytes,
+                        crate::lower::iterators::Room::Entries,
+                    ),
+                ),
             };
             let unwinding = self.unwinding_collect(output, item, iter_ty, span)?;
             let (it, unwinds) = match unwinding {
