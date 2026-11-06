@@ -154,8 +154,11 @@ export function jobs({ all, changed, branch, added, extra, cores }: Scope): { jo
             // And the rows of both tables the change names, sized to it
             // (scripts/iteratorRows.ts, #818).
             ...(["matrix", "conformance", "forms", "rows"] as const).map((of) =>
+              // The rows a change names: a removal's run whole, some 28,000
+              // of the matrix's, about 4 min alone and twice that beside the
+              // rest (#856).
               job(of === "rows" ? "the rows the change names" : runs[of][0].name, ["bun", "scripts/iteratorSlice.ts", "run", of, String(parts)], {
-                timeout: 600,
+                timeout: of === "rows" ? 1200 : 600,
                 ci: `bun scripts/iteratorSlice.ts run ${of}`,
               }),
             ),

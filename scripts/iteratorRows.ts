@@ -34,10 +34,12 @@ const shared = {
   functions: ["$consume", "$consumed", "$closing", "$closed", "$forward", "$given", "$givenDrop", "$knowing", "$held", "$iterator"],
 };
 
-/** The rows each table runs within: some 3 minutes of the matrix's, at
- * 110 rows a second in 12 parts, and of the table's (2026-11-06). */
+/** The rows a change runs of each table, all its picks together: some 2.5
+ * minutes of the matrix's, at 110 rows a second in 12 parts alone, and
+ * some 40 s of the table's, at 130; about twice that under check:fast's
+ * load (2026-11-06). */
 // The points table (#817) has no rows a change picks yet: #818 decides.
-const budget: Record<Exclude<Table, "points">, number> = { matrix: 20_000, conformance: 6_000 };
+const budget: Record<Exclude<Table, "points">, number> = { matrix: 16_000, conformance: 5_000 };
 
 /** What names nothing of its own: the runtime's module, generated of
  * src/runtime, and the tests and scripts, which run as they are. */
@@ -194,24 +196,53 @@ export function pick(base: string, head: string | undefined, files: string[]): P
       why.push(`${hunk.file}:${hunk.at}: ${said}${removes && a.length > 0 ? " (removes: each row)" : ""}${sharedHunk ? " (shared: pairs)" : none ? " (names none: pairs)" : ""}`);
     }
     const picks: Picked[] = [];
+    // One budget for the change, its rows taken in turn: what's removed,
+    // each row whatever its count, as a sample of it would miss what the
+    // removal decided for (#823); a sample of each adapter with each
+    // consumer, of a change to what they share, a fifth of it at most and
+    // 2,000 rows at least; then what's named. What's past what's left is
+    // `pairs` of it, as many of each pairing as fit, said so (#856's
+    // measure: 31,676 rows of a removal and `pairs` took 868 s inside
+    // check:fast, past its cap).
+    let left = budget[table];
+    const take = (matching: Case[], source: string, label: string) => {
+      if (matching.length === 0 || left <= 0) {
+        if (matching.length > 0) why.push(`${label}: past ${budget[table]} rows, none left; ITERATOR_MATRIX='${source}' runs its ${matching.length}`);
+        return;
+      }
+      if (matching.length <= left) {
+        picks.push({ table, setting: source, rows: matching.length, why: [] });
+        left -= matching.length;
+        return;
+      }
+      let per = 60;
+      while (per > 1 && pairs(matching, per).length > left) per = Math.floor(per * 0.8);
+      const rows = pairs(matching, per).length;
+      picks.push({ table, setting: `pairs:${per}${source}`, rows, why: [] });
+      why.push(`${label}: past what's left of ${budget[table]} rows (${matching.length}), ${per} of each pairing; ITERATOR_MATRIX='${source}' runs each`);
+      left -= rows;
+    };
     const whole = pattern(removing, new Set(), false);
-    if (whole) picks.push({ table, setting: `/${whole.source}/`, rows: cases.filter((c) => whole.test(c.id)).length, why: [] });
+    if (whole) {
+      const removed = cases.filter((c) => whole.test(c.id));
+      picks.push({ table, setting: `/${whole.source}/`, rows: removed.length, why: [] });
+      left -= removed.length;
+      if (left < 0) why.push(`what's removed: ${removed.length} rows, past ${budget[table]}, each run (#823)`);
+    }
+    const shared = everyAdapter ? pairs(cases, table === "matrix" ? 60 : 10) : [];
+    const sharedCap = Math.min(shared.length, Math.floor(budget[table] / 5));
     const some = pattern(picked.adapters, picked.consumers, picked.generic);
     if (some) {
-      const matching = cases.filter((c) => some.test(c.id) && !whole?.test(c.id));
-      let setting = `/${some.source}/`;
-      let rows = matching.length;
-      if (rows > budget[table]) {
-        // As many of each pairing as fit.
-        let per = 60;
-        while (per > 1 && pairs(matching, per).length > budget[table]) per = Math.floor(per * 0.8);
-        setting = `pairs:${per}/${some.source}/`;
-        rows = pairs(matching, per).length;
-        why.push(`past ${budget[table]} rows (${matching.length}): ${per} of each pairing; ITERATOR_MATRIX='/${some.source}/' runs each`);
-      }
-      picks.push({ table, setting, rows, why: [] });
+      const reserve = Math.min(sharedCap, left);
+      left -= reserve;
+      take(cases.filter((c) => some.test(c.id) && !whole?.test(c.id)), `/${some.source}/`, "what's named");
+      left += reserve;
     }
-    if (everyAdapter) picks.push({ table, setting: "pairs", rows: pairs(cases, table === "matrix" ? 60 : 10).length, why: [] });
+    if (everyAdapter) {
+      left = Math.max(left, Math.min(shared.length, 2_000));
+      if (shared.length <= left) picks.push({ table, setting: "pairs", rows: shared.length, why: [] });
+      else take(cases, "", "what every adapter shares");
+    }
     if (picks.length > 0) picks[0].why = why;
     return picks;
   });

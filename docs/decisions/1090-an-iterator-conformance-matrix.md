@@ -212,12 +212,16 @@ change names (`bun scripts/iteratorSlice.ts run rows`, the picking
   are enough (m6-react's decision, for the user).
 - **What runs.** Every row of each adapter a hunk names, whatever its
   consumer; of a hunk that names no adapter, every row of each consumer it
-  names; of `$given`, generic code's, every generic source's. Past a
-  budget, some 3 minutes of each table's (20,000 and 6,000 rows), it's
-  `pairs` of them, as many of each pairing of an adapter with a consumer
-  as fit, said so. The rows of an adapter a hunk takes away more of than
-  it puts back always run whole: removing code as equivalent decides for
-  every row of what it names (#823).
+  names; of `$given`, generic code's, every generic source's. The rows of
+  an adapter a hunk takes away more of than it puts back always run whole,
+  whatever their count: removing code as equivalent decides for every row
+  of what it names (#823). The rest share one budget for the change, some
+  2.5 minutes of the matrix's alone and 40 s of the table's (16,000 and
+  5,000 rows, about twice that beside check:fast's other steps, within
+  its cap): the shared sample's fifth of it reserved, then what's named,
+  then the sample, at least 2,000 rows. What's past what's left is `pairs`
+  of it, as many of each pairing of an adapter with a consumer as fit,
+  said so, with the setting that runs each.
 - **What every adapter shares.** A hunk in the runtime's protocol
   (`$forward`, closing, consuming, `$given`, `$knowing`, `$held`,
   `$iterator`) or the lowering's iterator value, or that names none, runs
@@ -236,8 +240,12 @@ rows, 111 s; the `step_by` rows alone, 13,400 of the matrix's, 123 s;
 #810's `$givenDrop` arrow reintroduced picks the generic rows and `pairs`,
 309 s, and fails in `pairs`' `zip.map` and `zip.filter` rows, as it
 should. Replayed, 766055774, which made #823, runs every `enumerate` row,
-#823's 19 among them; 731ae66fe, which made #834, every `step_by` row,
-#834's 34 among them. `test/iterator-rows.test.ts` holds the naming.
+#823's 19 among them, a removal; 731ae66fe, which made #834, names 60,505
+matrix rows, past the budget, and runs 60 of each pairing of them, 10,329
+rows, which hold some of #834's 34 about four times in five (#856's
+budget: 31,676 rows of a removal and `pairs` took 868 s inside
+check:fast, past its 600 s cap). The whole of a change's names is the
+setting the report prints, for a fix that must run each. `test/iterator-rows.test.ts` holds the naming.
 The pairwise comparison of the two builds the issue asked for isn't
 made: each is compared with native Rust, which a disagreement between
 them can't pass.
