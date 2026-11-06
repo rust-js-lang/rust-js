@@ -1,0 +1,105 @@
+// Mutations of src/lower/iterators/hint_asks.rs (ADR 0093).
+import type { Mutation } from "../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "endless-collect-unchecked",
+    breaks:
+      "`(0..).map(f).collect::<Vec<_>>()`, a `TrustedLen` with no upper bound, maps without end where Rust panics `capacity overflow` before any item's made (ADR 0940)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        let endless = trusted && self.recognition().endless_by_type(iter_ty);\n",
+    replace: "        let endless = trusted && self.recognition().endless_by_type(iter_ty) && false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^asked_length_overflow.rs$"],
+  },
+  {
+    name: "endless-once-collect-unchecked",
+    breaks:
+      "`collect()` into a `Vec` of a `cycle()` of an array's items, not `TrustedLen`, maps without end where Rust steps it once and panics `capacity overflow` (#433, ADR 0940)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        let endless_once = match !trusted && asks_room && item.is_some_and(sized) {\n",
+    replace: "        let endless_once = match false && !trusted && asks_room && item.is_some_and(sized) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_endless_once_stepped.rs$"],
+  },
+  {
+    name: "endless-once-of-items-of-no-size",
+    breaks:
+      "`collect()` of a `cycle()` into a `Vec<()>` panics `capacity overflow`, where Rust has room for any number of items of no size and goes on (#433, ADR 0940)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        let endless_once = match !trusted && asks_room && item.is_some_and(sized) {\n",
+    replace: "        let endless_once = match !trusted && asks_room && item.is_some() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_endless_once_stepped.rs$"],
+  },
+  {
+    name: "endless-once-item-drop-ungiven",
+    breaks:
+      "the item a `collect()` of what has no end once stepped makes, `(0..).skip(1).map(|_| Noisy(..))`'s, isn't dropped as it panics `capacity overflow` (#433, ADR 0940)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        let drop = match !trusted && self.drops(item) != crate::lower::drops::Drops::Nothing {\n",
+    replace: "        let drop = match false && self.drops(item) != crate::lower::drops::Drops::Nothing {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(collect_endless_once_stepped|collect_closes_what_its_hint_panics).rs$"],
+  },
+  {
+    name: "collect-hint-room-unasked",
+    breaks:
+      "`collect()` into a `Vec` of std's struct asks no room of its hint first, so `(0..usize::MAX).map(f).collect()` maps without end where Rust's `SpecFromIter` panics `capacity overflow` (ADR 0940)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "                        || std_struct && !self.recognition().bounded_by_items(iter_ty)\n",
+    replace: "                        || false && std_struct && !self.recognition().bounded_by_items(iter_ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_rev.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "vec-collect-asks-no-own-hint",
+    breaks: "a collect into a `Vec` of a chain made in place over the crate's iterator asks no hint, which std's `from_iter` asks after its first item and as it grows (#733)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "                        || std_struct && !self.recognition().bounded_by_items(iter_ty)\n                        || self.hint_reaches_own(iter_ty))\n",
+    replace: "                        || std_struct && !self.recognition().bounded_by_items(iter_ty))\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
+  },
+  {
+    name: "linked-list-asks-room",
+    breaks:
+      "a collect into a `LinkedList`, whose `from_iter` extends a new one asking no room, asks the crate's iterator its `size_hint` as a `Vec` would (#797)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        let asks_room = self.recognition().grows_as_vec(output);\n",
+    replace: "        let asks_room = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_as_vec_asks_hint.rs$"],
+  },
+  {
+    name: "grown-size-of-a-caller-zero",
+    breaks:
+      "generic code's collect into a `Vec` of a type parameter's items grows by a size of 0, never full, so it asks the crate's hint its caller gives once, not again as it grows (#796)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "            true => self.type_fact_value(item, TypeFact::Size, span),\n",
+    replace: "            true => Ok(self.room_item_size(item)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size.rs$"],
+  },
+  {
+    name: "grown-size-asked-of-a-known-hint",
+    breaks:
+      "generic code's collect into a `Vec<T>` of std's own iterator asks `TSize`, which no caller gives where the hint is std's, so it's refused, \"`size_of` of a type parameter\" (#796)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        self.grows_as_vec(output) && item.has_param() && self.hint_reaches_own(iter_ty)\n",
+    replace: "        self.grows_as_vec(output) && item.has_param()\n",
+    tests: ["test/corpus.test.ts", "-t", "^(generic_drops_nothing|closure_stages_that_never_unwind|boxed_option_unwraps|generic_collect_grows_by_its_items_size).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "grown-size-asked-of-any-hint",
+    breaks:
+      "generic code's collect into a `Vec` of a `T` asks its caller's `TSize` where its iterator's hint is std's own, which it never reads (#796)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        self.grows_as_vec(output) && item.has_param() && self.hint_reaches_own(iter_ty)\n",
+    replace: "        self.grows_as_vec(output) && item.has_param() && (self.hint_reaches_own(iter_ty) || true)\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "string-or-table-hint-unreserved",
+    breaks: "a `String`'s or a hash table's collect of what may run the crate's own `size_hint` doesn't ask it before it's stepped, as std's `extend` reserves by it (a wrong answer, #733)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        if !iter_ty.is_some_and(|iter_ty| self.hint_reaches_own(iter_ty)) {\n",
+    replace: "        if true || !iter_ty.is_some_and(|iter_ty| self.hint_reaches_own(iter_ty)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(collect_asks_hint_as_it_grows|map_ends_size_hint|size_hint_of_adapters).rs$"],
+  },
+];

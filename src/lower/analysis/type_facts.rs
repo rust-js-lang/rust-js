@@ -607,7 +607,7 @@ fn grown_asked<'tcx>(
         typing_env: typing_env.with_post_analysis_normalized(tcx),
         ..*recognition
     };
-    if !revealed.grows_as_vec(output) || !dest.has_param() || !revealed.hint_reaches_own(iter) {
+    if !revealed.grows_by_callers_size(output, iter, dest) {
         return Vec::new();
     }
     let foreign = recognition.foreign;

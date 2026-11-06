@@ -1057,3 +1057,4 @@ link *(superseded by NNNN)*: `test/architecture.test.ts` checks that each
 is linked once, each superseded or replaced one marked, and no two share
 a number.
 - [1096 How a place holds `None` is `NoneForm`'s](1096-how-a-place-holds-none-is-none-forms.md) *(#819, on 1086's model; amends 0791)*
+- [1097 When a collect asks its hint is `hint_asks`'s](1097-when-a-collect-asks-its-hint-is-hint-asks.md) *(#820 step 1 of 3, on 1096's model)*

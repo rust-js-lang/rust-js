@@ -6,6 +6,7 @@ mod clones;
 mod dictionaries;
 mod eager;
 mod ends;
+mod hint_asks;
 mod in_place;
 mod knowing;
 mod stepping;

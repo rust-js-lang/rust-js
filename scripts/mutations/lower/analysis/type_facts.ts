@@ -488,16 +488,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size.rs$"],
   },
   {
-    name: "grown-size-asked-of-any-hint",
-    breaks:
-      "generic code's collect into a `Vec` of a `T` asks its caller's `TSize` where its iterator's hint is std's own, which it never reads (#796)",
-    file: "src/lower/analysis/type_facts.rs",
-    find: " || !revealed.hint_reaches_own(iter) {\n",
-    replace: " {\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size.rs$"],
-    snapshots: true,
-  },
-  {
     name: "grown-size-of-a-built-type-unasked",
     breaks:
       "generic code's collect into a `Vec<(T, u8)>` of a type parameter's iterator asks its caller no layout of `(T, u8)`, so it's refused, \"`size_of` of a type parameter\" (#796)",

@@ -416,20 +416,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call_helper("$collectsInPlace", vec![source, size, align]))
     }
 
-    /// The size of each of `item`s a `Vec` std makes of an iterator of
-    /// `iter_ty` grows by, which says when it's full and asks the hint
-    /// again (`$roomForHint`'s, #728): `room_item_size`; but of items whose
-    /// size is a caller's, a type parameter's or one built of them, `(T,
-    /// u8)`, where that hint may run the crate's own (`hint_reaches_own`),
-    /// so when it's asked is seen, the caller's, `TSize` (#796), as
-    /// `type_facts`' `grown_asked` asks it.
-    fn grown_item_size(&mut self, iter_ty: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Expr> {
-        if self.layout(item).is_some() || !self.hint_reaches_own(iter_ty) {
-            return Ok(self.room_item_size(item));
-        }
-        self.type_fact_value(item, crate::lower::recognition::TypeFact::Size, span)
-    }
-
     /// Of a collect into `output` of `item`s a panic may stop, of an
     /// iterator of type `iter_ty` whose steps may panic, that holds what has
     /// a destructor or gives items with one: how what it holds is dropped
@@ -777,30 +763,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         iterable: bool,
         span: Span,
     ) -> R<Expr> {
-        // Of std's struct, the room its hint asks first, as std's
-        // `SpecFromIter` does, and of one whose type has no end, the
-        // `capacity overflow` a `TrustedLen`'s none asks (ADR 0940). Only
-        // of what std grows as a `Vec` (`grows_as_vec`), not a
-        // `LinkedList`, whose `from_iter` extends a new one, asking none.
+        // What it asks of its hint as std grows a `Vec` of it (`grown_ask`).
         let trusted = crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
-        let endless = trusted && self.recognition().endless_by_type(iter_ty);
-        // Of another whose hint has no end once it gives an item, a
-        // `cycle()`'s, std steps it once, then asks room for its lower
-        // bound and one more, `usize::MAX`: a `capacity overflow` of
-        // items of any size, the item it made dropped (ADR 0940,
-        // amended). Of items of no size, room for any number, so it goes
-        // on as JS does.
-        let sized = |item: Ty<'tcx>| self.layout(item).is_some_and(|layout| layout.size.bytes() > 0);
-        let asks_room = self.recognition().grows_as_vec(output);
-        let endless_once = match !trusted && asks_room && item.is_some_and(sized) {
-            true => self.recognition().endless_once_stepped(iter_ty).ok_or_else(|| {
-                self.unsupported(
-                    span,
-                    "`collect()` into a `Vec` of what may have no end only as what it holds says, a `cycle()` chained with what has an end, a `cycle()` of what's partly filtered or a `step_by(n)` of what has no end, which panics `capacity overflow` only then",
-                )
-            })?,
-            false => false,
-        };
+        let grown = self.grown_ask(output, item, iter_ty, self.compiled_struct(iter_ty, given), span)?;
         // Whether it's `TrustedLen` where that's its caller's, a type
         // parameter's that folds by its `nth_back` (#670): as it says,
         // `ITrustedLen`, so its first item is taken by `next` before its
@@ -822,30 +787,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .then(|| self.type_fact_value(iter_ty, crate::lower::recognition::TypeFact::TrustedLen, span))
             .transpose()?;
         let unroomed = it.clone();
-        let it = match item {
-            Some(item)
-                if asks_room
-                    && (endless
-                        || endless_once
-                        || self.compiled_struct(iter_ty, given) && !self.recognition().bounded_by_items(iter_ty)
-                        || self.hint_reaches_own(iter_ty)) =>
-            {
-                let size = self.grown_item_size(iter_ty, item, span)?;
-                let mut given = vec![it, size, callers_trusted.clone().unwrap_or_else(|| Expr::bool(trusted))];
-                // Of one not `TrustedLen`, whose first item std takes by
-                // `next` before it asks room, that item's drop, as a
-                // panic asking it unwinds (#724).
-                let drop = match !trusted && self.drops(item) != crate::lower::drops::Drops::Nothing {
-                    true => self.drop_function(item, span)?,
-                    false => None,
-                };
-                if endless || endless_once || drop.is_some() {
-                    given.push(Expr::bool(endless || endless_once));
-                }
-                given.extend(drop);
-                Expr::call_helper("$roomForHint", given)
-            }
-            _ => it,
+        let it = match grown {
+            Some(grown) => self.grown_by_hint(it, grown, iter_ty, callers_trusted.clone(), span)?,
+            None => it,
         };
         // Of std's struct that's `TrustedLen`, by its `fold`, as std's
         // `extend_trusted` collects it, a zip's `SpecFold` (#380), and
@@ -915,32 +859,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let vec = self.tcx.adt_def(std_item(self.tcx, StdItem::Vec));
         Ty::new_adt(self.tcx, vec, self.tcx.mk_args(&[item.into(), alloc.into()]))
-    }
-
-    /// `it`, of type `iter_ty`, asked its `size_hint` before it's stepped,
-    /// as std's `extend` of a new `String` or hash table asks it, and room
-    /// for its lower bound reserved, `$reserveHint(it, size, align)`: of a
-    /// `String`'s bytes, `entry` none, else of a table's entries of type
-    /// `entry`, of a type parameter's of its count alone, as
-    /// `table_room_for` asks it. Only where asking it may run what the
-    /// program sees (`hint_reaches_own`), as std's own hints change
-    /// nothing but that room, which no JS string or table reaches (#733).
-    fn reserved_by_hint(&self, it: Expr, iter_ty: Option<Ty<'tcx>>, entry: Option<Ty<'tcx>>) -> Expr {
-        if !iter_ty.is_some_and(|iter_ty| self.hint_reaches_own(iter_ty)) {
-            return it;
-        }
-        let mut args = vec![it];
-        match entry {
-            None => args.push(Expr::int(1)),
-            Some(entry) => {
-                let (size, align) = match self.layout(entry) {
-                    Some(layout) => (i128::from(layout.size.bytes()), i128::from(layout.align.abi.bytes())),
-                    None => (0, 1),
-                };
-                args.extend([Expr::int(size), Expr::int(align)]);
-            }
-        }
-        Expr::call_helper("$reserveHint", args)
     }
 
     /// `items` made a collection of the crate's own, `output`, by its

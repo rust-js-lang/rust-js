@@ -366,3 +366,27 @@ test("a reversed zip has one form, never `$zipBack`", () => {
   const found = sources.filter((path) => read(path).includes("$zipBack"));
   expect([found, "a reversed zip is `$rev($zipEnds(a, b))` (ADR 0493)"]).toEqual([[], "a reversed zip is `$rev($zipEnds(a, b))` (ADR 0493)"]);
 });
+
+// When a collect asks its iterator's `size_hint`, and for what room, is
+// `iterators/hint_asks.rs`'s one model of std's `SpecFromIter`, its
+// `SpecFromIterNested` and `extend_desugared` and the reserves of a
+// `String`'s and a hash table's `extend` (#820): six P0s in a month
+// (#724 #728 #733 #794 #796 #797) were collects that asked it at the
+// wrong time, or not at all, each decided where it was lowered. So the
+// runtime's `$roomForHint` and `$reserveHint` are made there alone, and
+// whether asking the hint may run the crate's own is asked there, by the
+// analysis through `grows_by_callers_size`, and by `Filter::count`, which
+// is no collect, alone.
+test("when a collect asks its hint is hint_asks's alone", () => {
+  const owner = "src/lower/iterators/hint_asks.rs";
+  const lowering = files("src/lower").filter((file) => file.endsWith(".rs") && file !== owner);
+  const code = (file: string) => read(file).split("\n").filter((line) => !/^\s*\/\//.test(line));
+  const making = lowering.flatMap((file) =>
+    code(file).filter((line) => /"\$(?:roomForHint|reserveHint)"/.test(line)).map((line) => `${file}: ${line.trim()}`));
+  expect(making).toEqual([]);
+  const asking = lowering
+    .filter((file) => !["src/lower/recognition/lengths.rs", "src/lower/shortcuts.rs"].includes(file))
+    .filter((file) => code(file).some((line) => /(?<!fn )\bhint_reaches_own\(/.test(line)));
+  expect(asking).toEqual(["src/lower/mir/iter.rs"]);
+});
+
