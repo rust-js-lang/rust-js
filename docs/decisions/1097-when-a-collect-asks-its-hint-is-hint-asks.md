@@ -1,6 +1,6 @@
 # 1097. When a collect asks its hint is `hint_asks`'s
 
-Status: Accepted (2026-11-06, #820 step 1; step 2's #848). On ADR 1096's
+Status: Accepted (2026-11-06, #820 step 1; step 2's #848 and #849's reserves). On ADR 1096's
 model, as #819's was.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none. This changes who
@@ -80,10 +80,26 @@ be the crate's own (ADR 1092). Mutations `shunted-hint-unasked`,
 `shunt-growth-unasked`, `shunt-growth-not-doubled` and
 `shunt-hint-panic-drops-not-taken`.
 
+## Step 2: an `extend` that reserves first (#849)
+
+An `extend` asked no hint. std's of a `String` by `char`s reserves its
+lower bound first (string.rs `Extend<char>`, `&char` too); hashbrown's,
+a `HashMap`'s and through it a `HashSet`'s, reserves its lower bound
+where the table is empty, else half of it rounded up. The owner's
+`extended_reserved` makes `$reserveHint(it, size, align, of)` of them,
+counted with what `of`, the collection, holds (`$textRoomFor`, and the
+table's entries); of a `String` by strings, or a B-tree's, none. A map
+not named, `new Set()`, is held first only where it's reserved
+(`extend_reserves`), so nothing else reads otherwise. Case
+([0262](0262-when-rust-and-js-disagree.md)): results changed, so Rust's
+behaviour is kept. Held by corpus `extend_reserves_by_hint` against
+native Rust in both builds, and the mutations `table-extend-hint-unasked`,
+`map-extend-unreserved` and `string-extend-unreserved`.
+
 ## Next
 
-- Step 2's rest, `extend`, which asks none (#849), a corpus case against
-  native Rust in both builds: a `VecDeque`'s, a hash table's and a
+- Step 2's rest, the `extend` that asks as it grows (#849), a corpus
+  case against native Rust in both builds: a `VecDeque`'s, a hash table's and a
   `String<char>`'s reserve once; a `Vec`'s asks as it fills, exact where
   its capacity is known where it's extended, made in the same body by
   `Vec::new`, `with_capacity`, `vec![..]` or a collect and only extended

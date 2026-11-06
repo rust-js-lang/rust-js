@@ -533,8 +533,8 @@ export const mutations: Mutation[] = [
     breaks:
       '`s.extend(chars)` adds their array, `s += ["y", "z"]`, not their text',
     file: "src/lower/mir/std_calls.rs",
-    find: "                    true => this.joined_text(value, Some(arg_tys[1]), span, out)?,\n",
-    replace: "                    true => value,\n",
+    find: "                            this.joined_text(value, Some(arg_tys[1]), span, out)?\n",
+    replace: "                            value\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
   },
   {
@@ -852,5 +852,13 @@ export const mutations: Mutation[] = [
     find: "                        IterComb::Chain,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(rev_made_knowing_its_back|chain_stepped_from_its_back_elsewhere).rs$"],
+  },
+  {
+    name: "string-extend-unreserved",
+    breaks: "a `String`'s `extend` by `char`s doesn't ask their iterator's hint first, as std's `Extend<char>` reserves by it (a wrong answer, #849)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                            let value = this.extended_reserved(value, into, arg_tys[1], place.clone());\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^extend_reserves_by_hint.rs$"],
   },
 ];

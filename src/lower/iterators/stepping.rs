@@ -77,7 +77,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (items, size) = match self.shunted_ask(target, item, iter_ty, span)? {
             crate::lower::iterators::Shunted::Never => (items, None),
             crate::lower::iterators::Shunted::Reserved => (
-                self.reserved_by_hint(items, iter_ty, crate::lower::iterators::Room::Nothing),
+                self.reserved_by_hint(items, iter_ty, crate::lower::iterators::Room::Nothing, None),
                 None,
             ),
             crate::lower::iterators::Shunted::Grown(size) => (items, Some(size)),

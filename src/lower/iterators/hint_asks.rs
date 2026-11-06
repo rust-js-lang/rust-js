@@ -223,13 +223,61 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         )
     }
 
+    /// What `extend` of `into` by what it's given, `it`, of type `iterable`,
+    /// asks of its hint before it's stepped, as std's does (#849): of a
+    /// `String` by `char`s, `reserve(lower)` (string.rs `Extend<char>`); of
+    /// a hash table, hashbrown's `reserve` of its lower bound, half of it
+    /// rounded up where the table has entries already; each counted with
+    /// what `of`, the collection, holds. `it` as it is of another, which
+    /// asks none first, a `String` by strings, a B-tree's; a `Vec`'s and a
+    /// `VecDeque`'s, which ask it as they grow, are their own.
+    pub(in crate::lower) fn extended_reserved(&self, it: Expr, into: Ty<'tcx>, iterable: Ty<'tcx>, of: Expr) -> Expr {
+        match self.extend_room(into, iterable) {
+            Some((iter_ty, room)) => self.reserved_by_hint(it, Some(iter_ty), room, Some(of)),
+            None => it,
+        }
+    }
+
+    /// Whether `extend` of `into` by what's of type `iterable` asks its
+    /// hint first (`extended_reserved`): where it's asked of a collection
+    /// not named, it's held first, so it's made once.
+    pub(in crate::lower) fn extend_reserves(&self, into: Ty<'tcx>, iterable: Ty<'tcx>) -> bool {
+        self.extend_room(into, iterable)
+            .is_some_and(|(iter_ty, _)| self.hint_reaches_own(iter_ty))
+    }
+
+    /// What `extend` of `into` by what's of type `iterable` reserves room
+    /// for first, and of what iterator: a `String`'s by `char`s, its bytes;
+    /// a hash table's, its entries. `None` of another.
+    fn extend_room(&self, into: Ty<'tcx>, iterable: Ty<'tcx>) -> Option<(Ty<'tcx>, Room<'tcx>)> {
+        let iter_ty = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, iterable);
+        let item = self.iterator_item(iter_ty)?;
+        let room = match () {
+            _ if self.is_lang_adt(into, rustc_hir::attrs::lang_items::LangItem::String)
+                && item.peel_refs().is_char() =>
+            {
+                Room::Bytes
+            }
+            _ if self.is_map(into) && !self.is_sorted(into) => Room::Entries(item),
+            _ => return None,
+        };
+        Some((iter_ty, room))
+    }
+
     /// `it`, of type `iter_ty`, asked its `size_hint` before it's stepped,
-    /// as std's `extend` of a new `String` or hash table asks it, and room
-    /// for its lower bound reserved as `room` says, `$reserveHint(it, size,
-    /// align)`. Only where asking it may run what the program sees
-    /// (`hint_reaches_own`), as std's own hints change nothing but that
-    /// room, which no JS string or table reaches (#733).
-    pub(in crate::lower) fn reserved_by_hint(&self, it: Expr, iter_ty: Option<Ty<'tcx>>, room: Room<'tcx>) -> Expr {
+    /// as std's `extend` of a `String` or hash table asks it, and room for
+    /// its lower bound reserved as `room` says, `$reserveHint(it, size,
+    /// align, of)`, counted with what `of` holds, the collection extended,
+    /// of a new one none. Only where asking it may run what the program
+    /// sees (`hint_reaches_own`), as std's own hints change nothing but
+    /// that room, which no JS string or table reaches (#733).
+    pub(in crate::lower) fn reserved_by_hint(
+        &self,
+        it: Expr,
+        iter_ty: Option<Ty<'tcx>>,
+        room: Room<'tcx>,
+        of: Option<Expr>,
+    ) -> Expr {
         if !iter_ty.is_some_and(|iter_ty| self.hint_reaches_own(iter_ty)) {
             return it;
         }
@@ -244,6 +292,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 args.extend([Expr::int(size), Expr::int(align)]);
             }
+        }
+        if let Some(of) = of {
+            if args.len() == 2 {
+                args.push(Expr::undefined());
+            }
+            args.push(of);
         }
         Expr::call_helper("$reserveHint", args)
     }

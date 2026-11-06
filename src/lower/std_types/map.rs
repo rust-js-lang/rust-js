@@ -649,8 +649,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::Extend => {
                 let (m, items) = (arg(), arg());
                 // By `for_each`, std's, so through the crate's own `fold`:
-                // `$extendMap`'s, by what it's given's own (#494).
+                // `$extendMap`'s, by what it's given's own (#494); its hint
+                // asked first, as hashbrown's `extend` reserves by it (#849).
+                let reserves = self.extend_reserves(receiver, tys[1]);
+                let m = match reserves && !m.reads_same() {
+                    true => self.spill("map", m, out),
+                    false => m,
+                };
                 let items = self.iterable_items(items, tys[1], span, out)?;
+                let items = match reserves {
+                    true => self.extended_reserved(items, receiver, tys[1], m.clone()),
+                    false => items,
+                };
                 let list = vec![m, items, Expr::bool(set)];
                 map_ops("$extendMap", with_drops(list, vec![values_drop, keys_drop]))
             }

@@ -310,8 +310,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // `s.extend(items)`: their text, joined (ADR 0445).
                     let extended = (this.tcx.trait_of_assoc(def_id))
                         .is_some_and(|t| crate::lower::recognition::is_extend(this.tcx, t));
+                    // Its hint asked first, as std's `Extend<char>` reserves by
+                    // it (#849).
                     let value = match extended {
-                        true => this.joined_text(value, Some(arg_tys[1]), span, out)?,
+                        true => {
+                            let into = arg_tys[0].peel_refs();
+                            let value = this.extended_reserved(value, into, arg_tys[1], place.clone());
+                            this.joined_text(value, Some(arg_tys[1]), span, out)?
+                        }
                         false => value,
                     };
                     this.flush(state, out)?;

@@ -126,4 +126,12 @@ export const mutations: Mutation[] = [
     replace: "                true => Shunted::Never,\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_results_asks_hint.rs$"],
   },
+  {
+    name: "table-extend-hint-unasked",
+    breaks: "a hash table's `extend` doesn't ask its iterator's hint first, as hashbrown's reserves by it, so the crate's own `size_hint` doesn't run (a wrong answer, #849)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "            _ if self.is_map(into) && !self.is_sorted(into) => Room::Entries(item),\n",
+    replace: "            _ if false && self.is_map(into) => Room::Entries(item),\n",
+    tests: ["test/corpus.test.ts", "-t", "^extend_reserves_by_hint.rs$"],
+  },
 ];

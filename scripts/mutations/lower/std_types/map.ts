@@ -743,4 +743,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^hash_phantom_data.rs$"],
     snapshots: true,
   },
+  {
+    name: "map-extend-unreserved",
+    breaks: "a map's `extend` is given what it steps as it is, its hint never asked first (a wrong answer, #849)",
+    file: "src/lower/std_types/map.rs",
+    find: "                let reserves = self.extend_reserves(receiver, tys[1]);\n",
+    replace: "                let reserves = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^extend_reserves_by_hint.rs$"],
+  },
 ];

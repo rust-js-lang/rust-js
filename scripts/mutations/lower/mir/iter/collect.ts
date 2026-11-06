@@ -788,7 +788,7 @@ export const mutations: Mutation[] = [
     name: "string-collect-asks-no-hint",
     breaks: "a collect into a `String` of `char`s asks no hint before it steps, as std's `Extend<char>` does (#733)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                true => self.reserved_by_hint(it, iter_ty, crate::lower::iterators::Room::Bytes),\n",
+    find: "                true => self.reserved_by_hint(it, iter_ty, crate::lower::iterators::Room::Bytes, None),\n",
     replace: "                true => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
   },

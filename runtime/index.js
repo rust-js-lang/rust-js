@@ -8887,14 +8887,22 @@ export function $roomForHint(it, size, trusted, endless = false, drop) {
 // (string.rs:2507, hashbrown's `extend`): of a `String`'s bytes, no
 // `align`, else of a table's entries of `size` bytes aligned to `align`;
 // of no `size`, none, the hint of a `GenericShunt`, `collect()`'s into a
-// `Result` or an `Option`, whose lower bound is none (#848). Where that
-// throws, a panic, `it` is closed, as `extend` drops it (#733).
-export function $reserveHint(it, size, align) {
+// `Result` or an `Option`, whose lower bound is none (#848). Of `of`, the
+// collection `extend` is given, counted with what it holds: a string's
+// bytes, and a table's entries, of one that has some half the lower bound,
+// rounded up, as hashbrown's `extend` reserves (#849). Where that throws,
+// a panic, `it` is closed, as `extend` drops it (#733).
+export function $reserveHint(it, size, align, of) {
   try {
     const [lower] = $sizeHint(it);
     if (size === undefined) return it;
-    if (align === undefined) $roomFor(lower, size);
-    else $tableRoomFor(lower, size, align);
+    if (align === undefined) {
+      if (of === undefined) $roomFor(lower, size);
+      else $textRoomFor(of, lower);
+    } else {
+      const had = of === undefined ? 0 : of.size;
+      $tableRoomFor(had + (had === 0 ? lower : Math.ceil(lower / 2)), size, align);
+    }
   } catch (error) {
     it.return?.();
     throw error;
