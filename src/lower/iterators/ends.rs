@@ -31,7 +31,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// each it skips or the one it stops at, which `$lazySkipWhile` and
     /// `$lazyTakeWhile` run as `$kept` says, the runtime's one answer of what
     /// a discarding stage drops as its test panics (#651, #817).
-    pub(in crate::lower) fn dropping_discarded(&mut self, item: ty::Ty<'tcx>, exprs: &mut Vec<Expr>, span: Span) -> R<()> {
+    pub(in crate::lower) fn dropping_discarded(
+        &mut self,
+        item: ty::Ty<'tcx>,
+        exprs: &mut Vec<Expr>,
+        span: Span,
+    ) -> R<()> {
         exprs.extend(self.std_drop_function(item, span)?);
         Ok(())
     }

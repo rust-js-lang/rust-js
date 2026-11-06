@@ -391,7 +391,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             IterComb::TakeWhile | IterComb::SkipWhile => {
                 let mut args = vec![items, next()];
                 args.extend(rest.next());
-                let helper = if comb == IterComb::TakeWhile { "$lazyTakeWhile" } else { "$lazySkipWhile" };
+                let helper = if comb == IterComb::TakeWhile {
+                    "$lazyTakeWhile"
+                } else {
+                    "$lazySkipWhile"
+                };
                 Expr::call(Expr::helper(helper), args)
             }
             // Lazy of a JS iterator, as Rust's is (ADR 0517).
