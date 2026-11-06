@@ -1088,3 +1088,39 @@ in place be made again, is retired as equivalent: a counted adapter's
 but made again it's what it was, so no test can tell; the guard stays, as
 what it keeps from `as_double_ended` could only be refused there.
 
+## Amendment: what asks whether a value has a back never trusts its type over its form (2026-11-06, #851 phase A)
+
+ADR 0262's case: results change where it applies, so Rust's behavior is
+kept. #850 and #856 were one shape: a maker left a value as it was made,
+a `cloned()`'s JS `.map(clone)`, a compiled `Zip` with no `$knowing`, while
+what asked whether it has a back trusted its type, which back_stepped's
+set said steps from its back because another value of it did; it then
+stepped a back the value hadn't and threw. A third, an `inspect(f)` of a
+chain stepped from its back elsewhere, made JS's `.map(f)` beneath a
+`$mapEnds`, threw the same way on `main` (found by #851's probe of 13
+adapters over such a chain, each stepped back four ways).
+
+`has_a_back(ty, value)`, what each adapter's arm and each back step asks
+before making its source knowing its back, now withdraws trust where the
+value's form says it has none: JS's own iterator helpers, `.map(f)`,
+`.filter(p)`, `.take(n)`, `.drop(n)`, `.flatMap(f)`, which step only
+forward, or an adapter of one whose back is its source's (`$mapEnds`,
+`$filterEnds`, `$enumerate`, `$lent`, `$closing`, `$held`, `$taking`,
+`$skipping`): value.rs's `form_lacks_a_back`, the owner of an iterator
+value's form, beside `knows_its_back_by_form`, what a form says it has.
+What its form doesn't say, a variable's, a field's, a parameter's, a
+function's result, its type says, as what made it asked the same set.
+Such a value is made knowing its back where it's asked
+(`as_double_ended`) or refused, never stepped by what it lacks. This is
+#851's first phase: the makers keep the set, and each moves to a value's
+own fact next, its misses a conversion or a refusal now, never a wrong
+answer.
+
+Measured first: across the whole corpus no value is trusted today whose
+form lacks a back, so its JS is as it was; the matrix and the conformance
+table in full, both builds, as before. Corpus
+`inspect_of_a_chain_stepped_from_its_back`, which throws on `main`.
+Mutations `has-a-back-trusts-the-type` and
+`form-lacks-no-back-of-js-helpers`; #850's `copied-items-mapped-backless`
+is still caught, its maker's own fix kept.
+

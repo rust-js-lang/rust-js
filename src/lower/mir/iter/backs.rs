@@ -622,13 +622,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `value`, of type `iter_ty`, has a back by its form: an
     /// array's; or one whose type knows its back, made so by its maker, but
     /// std's compiled struct, which has one only where it's given its
-    /// compiled back, `$knowing`'s, or made knowing it. A crate that steps
-    /// its type from its back elsewhere makes no such struct knowing it
-    /// where it's made, so a map of one was `$mapEnds` of a struct with no
-    /// back (#856).
+    /// compiled back, `$knowing`'s, or made knowing it (#856); and never one
+    /// whose form says it has none, JS's own `.map(f)` say, though its type
+    /// says it may (`form_lacks_a_back`, #851): what's asked of it makes it
+    /// knowing its back or refuses it, never steps a back it hasn't. A crate
+    /// that steps its type from its back elsewhere made such a value as it
+    /// is, a `cloned()`'s (#850), std's struct (#856).
     pub(super) fn has_a_back(&self, iter_ty: Ty<'tcx>, value: &Expr) -> bool {
         self.steps_an_array(iter_ty)
             || self.knows_its_back(iter_ty)
+                && !crate::lower::iterators::form_lacks_a_back(value)
                 && (!self.compiled_struct(self.reveal(iter_ty), value)
                     || crate::lower::iterators::is_knowing(value)
                     || crate::lower::iterators::was_made_knowing_its_back(value))

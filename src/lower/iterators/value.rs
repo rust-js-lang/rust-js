@@ -522,6 +522,60 @@ pub(in crate::lower) fn was_made_knowing_its_back(e: &Expr) -> bool {
     e.facts.has(Known::IterKnowsBack)
 }
 
+/// Whether `e`'s JS steps from its back, by its form (#851): what's marked
+/// so, `$knowing`'s, an array's `$iter`, a reversal's, a zip's or a
+/// flatten's ends; an adapter of a source that does, a map's, a filter's,
+/// an enumeration's, a `skip(n)`'s or a `take(n)`'s, and what's lent,
+/// closed or held of one; a chain of sides that do; the crate's own, or a
+/// type parameter's value, given its `next_back`. The one answer of a value's form, which what asks it
+/// reads where its type says it may (`has_a_back`): never its type alone,
+/// which another value of it need not share.
+pub(in crate::lower) fn knows_its_back_by_form(e: &Expr) -> bool {
+    // An array's, `$iter(v)`, its owner's to say (`fresh_iter_source`).
+    if was_made_knowing_its_back(e) || is_knowing(e) || super::fresh_iter_source(e).is_some() {
+        return true;
+    }
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return false;
+    };
+    match callee.helper_name() {
+        Some("$rev" | "$zipEnds" | "$trustedZipEnds" | "$flattenEnds") => true,
+        Some(
+            "$mapEnds" | "$filterEnds" | "$enumerate" | "$lent" | "$closing" | "$held" | "$taking" | "$skipping"
+            | "$stepByEnds",
+        ) => args.first().is_some_and(knows_its_back_by_form),
+        Some("$lazyChain") => matches!(&args[..], [a, b, ..] if knows_its_back_by_form(a) && knows_its_back_by_form(b)),
+        Some("$iterator" | "$given") => args.get(3).is_some_and(|back| *back != Expr::undefined()),
+        _ => false,
+    }
+}
+
+/// Whether `e`'s form says it has no back (#851): JS's own iterator helper,
+/// `.map(f)`, `.filter(p)`, `.take(n)`, `.drop(n)`, `.flatMap(f)`, which step
+/// only forward; or an adapter of one whose back is its source's. (Std's
+/// compiled struct not given its compiled back is the lowering's question
+/// of its type, `compiled_struct`.) Not what its form doesn't say, a variable's,
+/// a field's, a function's result: what its maker made it, which the type
+/// says (`has_a_back`).
+pub(in crate::lower) fn form_lacks_a_back(e: &Expr) -> bool {
+    if knows_its_back_by_form(e) {
+        return false;
+    }
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return false;
+    };
+    match (&callee.kind, callee.helper_name()) {
+        (js::ExprKind::Member(_, method), _) => {
+            matches!(method.as_str(), "map" | "filter" | "take" | "drop" | "flatMap")
+        }
+        (
+            _,
+            Some("$mapEnds" | "$filterEnds" | "$enumerate" | "$lent" | "$closing" | "$held" | "$taking" | "$skipping"),
+        ) => args.first().is_some_and(form_lacks_a_back),
+        _ => false,
+    }
+}
+
 /// A range's numbers as its maker wrote them (`Form::Range`), `$iterator({
 /// start: a, end: b }, $rangeNext)`: its bounds, made where it's stepped,
 /// whether its end is in it, `a..=b`'s, whether it's stepped from its end,

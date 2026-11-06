@@ -787,4 +787,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(crate::lower::analysis::SteppedLocal::Lent) if false => self.made_knowing_where_held(value, ty, span),\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
   },
+  {
+    name: "has-a-back-trusts-the-type",
+    breaks: "what asks whether a value has a back trusts its type though its form, JS's own `.map(f)`, has none, so an `inspect(f)` of a chain the crate steps from its back elsewhere throws `it.back is not a function` (#851)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                && !crate::lower::iterators::form_lacks_a_back(value)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^inspect_of_a_chain_stepped_from_its_back.rs$"],
+  },
 ];
