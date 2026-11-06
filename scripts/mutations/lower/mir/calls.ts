@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a map of any value's entries written where they're given write a `None` `null`, `new Map([[\"none\", null]])` (#443)",
     file: "src/lower/mir/calls.rs",
-    find: "                    !self.boxed_payload(payload) && crate::lower::bindings::holds_none_as_null(self.tcx, payload)\n",
+    find: "                    !self.boxed_payload(payload)\n                        && crate::lower::representation::none_form(\n                            self.tcx,\n                            crate::lower::representation::NonePlace::CollectionValue(payload),\n                        ) == crate::lower::representation::NoneForm::Null\n",
     replace: "                    !self.boxed_payload(payload)\n",
     tests: [
       "test/js-collections.test.ts",

@@ -484,7 +484,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .and_then(|cell| self.borrowed(state, cell))
                 .and_then(|cell| self.place_field(state, cell))
                 .is_some_and(|field| bindings::is_optional(self.tcx, field));
-        let nulled: Vec<bool> = match writes_a_cell || !bindings::nullable_params(self.tcx, callee.0).is_empty() {
+        let nulled: Vec<bool> = match writes_a_cell || !null_params(self.tcx, callee.0).is_empty() {
             false => Vec::new(),
             true => (operands.iter())
                 .map(|o| match self.stored_given(state, o) {

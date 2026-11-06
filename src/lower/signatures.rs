@@ -216,11 +216,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let inputs = sig.inputs();
         let idents = tcx.fn_arg_idents(function);
         let rest = super::bindings::takes_rest(tcx, function).then(|| inputs.len() - 1);
-        let nullable_params = super::bindings::nullable_params(tcx, function);
-        let nullable = |i: usize| {
-            (idents.get(i).copied().flatten()).is_some_and(|ident| nullable_params.contains(&ident.name))
-                && is_option(tcx, inputs[i])
-        };
+        let null_params = super::representation::null_params(tcx, function);
+        let nullable = |i: usize| null_params.contains(&i) && is_option(tcx, inputs[i]);
         // What its JS takes after them, of a function a JS caller calls,
         // not a trait's method's, which its dictionary's type declares, nor a
         // binding's; after which none may be left out.
@@ -300,7 +297,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             });
         }
         let output = sig.output();
-        let result = match (output.is_unit(), super::bindings::nullable_result(tcx, function)) {
+        let null_result =
+            super::representation::none_form(tcx, super::representation::NonePlace::FnResult(function)).stores_null();
+        let result = match (output.is_unit(), null_result) {
             (true, _) => Form::Void,
             (false, true) if is_option(tcx, output) => match output.kind() {
                 ty::Adt(_, args) => Form::Nullable(args.type_at(0)),

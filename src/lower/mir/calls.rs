@@ -786,7 +786,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             () if let Some(payload) = self.option_of(ty)
                 && let form = crate::lower::representation::none_form(
                     tcx,
-                    crate::lower::representation::NonePlace::BindingArg(def_id, i, payload),
+                    crate::lower::representation::NonePlace::BindingArg(def_id, i, Some(payload)),
                 )
                 && form == crate::lower::representation::NoneForm::Null =>
             {
@@ -827,7 +827,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty.walk().any(|part| {
             part.as_type().is_some_and(|t| match t.kind() {
                 ty::Tuple(items) if items.len() == 2 => self.option_of(items[1]).is_some_and(|payload| {
-                    !self.boxed_payload(payload) && crate::lower::bindings::holds_none_as_null(self.tcx, payload)
+                    !self.boxed_payload(payload)
+                        && crate::lower::representation::none_form(
+                            self.tcx,
+                            crate::lower::representation::NonePlace::CollectionValue(payload),
+                        ) == crate::lower::representation::NoneForm::Null
                 }),
                 _ => false,
             })

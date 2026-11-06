@@ -34,7 +34,11 @@ use std::collections::{HashMap, HashSet};
 /// nothing reads apart.
 pub(super) fn found<'tcx>(recognition: &Recognition<'_, 'tcx>, bodies: &[&Body<'tcx>]) -> HashSet<DefId> {
     let tcx = recognition.tcx;
-    let nullable = |key: DefId| key.is_local() && crate::lower::bindings::nullable_local_cell(tcx, key);
+    let nullable = |key: DefId| {
+        key.is_local()
+            && crate::lower::representation::none_form(tcx, crate::lower::representation::NonePlace::LocalCell(key))
+                .stores_null()
+    };
     // Each read or set where the THIR shows it, and each read or used
     // where its reads may not all be seen.
     let mut alike: HashSet<DefId> = HashSet::new();

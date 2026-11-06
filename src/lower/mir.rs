@@ -80,7 +80,7 @@ use super::recognition::{
     pure_std, std_item, trait_method,
 };
 use super::refusal::{Refused, refuse};
-use super::representation::variant_field;
+use super::representation::{null_params, variant_field};
 use super::std_types::cow::CowOp;
 use super::std_types::map::MapOp;
 use super::std_types::number::NumOp;

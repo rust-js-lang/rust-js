@@ -53,9 +53,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `#[rust_js::nullable]` field moved into another, `p.code`, is `p.code ?? null`",
     file: "src/lower/mir/nulled.rs",
-    find: "                Some(field) if bindings::null_where_made(self.tcx, field) => Given::Nulled,\n",
-    replace:
-      "                Some(field) if false && bindings::null_where_made(self.tcx, field) => Given::Nulled,\n",
+    find: "                    ) == NoneForm::Null =>\n                {\n                    Given::Nulled\n",
+    replace: "                    ) == NoneForm::Null && false =>\n                {\n                    Given::Nulled\n",
     tests: [
       "test/lowering-options.test.ts",
       "-t",
@@ -67,9 +66,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an optional nullable field's value, `undefined` where it's absent, is given to a nullable field as it is, not `null` (ADR 0810)",
     file: "src/lower/mir/nulled.rs",
-    find: "                Some(field) if bindings::null_where_made(self.tcx, field) => Given::Nulled,\n",
-    replace:
-      "                Some(field) if bindings::is_nullable(self.tcx, field) => Given::Nulled,\n",
+    find: "                    ) == NoneForm::Null =>\n                {\n                    Given::Nulled\n",
+    replace: "                    ).stores_null() =>\n                {\n                    Given::Nulled\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -510,5 +508,14 @@ export const mutations: Mutation[] = [
     find: "            || self.krate.cell_borrows.pointers().only_the_crate_makes(adt.did())\n        {\n            true => Writers::Crate,\n",
     replace: "            || true\n        {\n            true => Writers::Crate,\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
+  },
+  {
+    name: "strict-type-parameter-field",
+    breaks:
+      "a nullable field of a type parameter's value is tested `=== null`, though generic code stores the `undefined` it's given (rd647)",
+    file: "src/lower/mir/nulled.rs",
+    find: "        none_form(self.tcx, NonePlace::Field(field, Some(declared))).trust(writers)\n",
+    replace: "        none_form(self.tcx, NonePlace::Field(field, None)).trust(writers)\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
   },
 ];

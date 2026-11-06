@@ -17,8 +17,8 @@ use rustc_span::def_id::{DefId, LocalModId};
 use serde_json::{Value, json};
 
 use super::bindings::{
-    declared_tag, field_default, field_key, fn_name, is_binding, is_flatten, is_mark, is_nullable, is_otherwise,
-    is_rest, is_untagged, tag_key, variant_name,
+    declared_tag, field_default, field_key, fn_name, is_binding, is_flatten, is_mark, is_otherwise, is_rest,
+    is_untagged, tag_key, variant_name,
 };
 use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
@@ -573,7 +573,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     ty::Adt(adt, of)
                         if nullable.contains(&param.index)
                             && out.tcx.is_lang_item(adt.did(), LangItem::Option)
-                            && super::bindings::holds_none_as_null(out.tcx, of.type_at(0)) =>
+                            && super::representation::none_form(
+                                out.tcx,
+                                super::representation::NonePlace::CollectionValue(of.type_at(0)),
+                            ) == super::representation::NoneForm::Null =>
                     {
                         Given::Is(json!({ "kind": "union", "types": [out.ts(of.type_at(0)), keyword("null")] }))
                     }
@@ -811,7 +814,15 @@ impl<'tcx> Declarations<'_, 'tcx> {
             // One of a value that may be `undefined`, which is a `Some`
             // held as it is, is there, `T | null` (rd645).
             let value = super::bindings::holds_value(self.tcx, field);
-            let option = match is_nullable(self.tcx, field) {
+            // How it holds a `None`, the owner's answer (#819): its
+            // declaration's, and of the type it's declared, which a
+            // nullable one is there of (ADR 1072, amended).
+            let nullable =
+                super::representation::none_form(self.tcx, super::representation::NonePlace::Field(field, None))
+                    .stores_null();
+            let declared =
+                super::representation::none_form(self.tcx, super::representation::NonePlace::Field(field, Some(ty)));
+            let option = match nullable {
                 true => super::bindings::nullable_option(self.tcx, ty).and_then(|option| self.option(option)),
                 false if nested => self.option(ty).and_then(|option| self.option(option)),
                 // A plain one's too, of a cell that's the property it holds,
@@ -828,8 +839,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     // to, which may hold `null` (ADR 0935, amended).
                     // A nullable one is there, whoever makes its struct
                     // (ADR 1072, amended).
-                    let present = super::bindings::declared_null_or_value(self.tcx, field) || value;
-                    match is_nullable(self.tcx, field) || nested || value || self.null_fields.contains(&field.did) {
+                    let present = matches!(
+                        declared,
+                        super::representation::NoneForm::Null | super::representation::NoneForm::Value
+                    );
+                    match nullable || nested || value || self.null_fields.contains(&field.did) {
                         true => (!present, json!({ "kind": "union", "types": [inner, keyword("null")] })),
                         false => (true, inner),
                     }
@@ -1103,13 +1117,15 @@ impl<'tcx> Declarations<'_, 'tcx> {
         let ty = match variable {
             // A nullable one's `None` is `null`, by the aliases its type is written of (ADR 0586, amended).
             Some(_)
-                if super::bindings::nullable_local(self.tcx, def_id)
+                if super::representation::none_form(self.tcx, super::representation::NonePlace::Local(def_id))
+                    .stores_null()
                     && let Some(inner) = self.option(ty) =>
             {
                 json!({ "kind": "union", "types": [self.as_written(written, |out| out.ts(inner)), keyword("null")] })
             }
             // One that holds the `Option` itself, a `const`, a nullable `const` too.
-            None if super::bindings::nullable_local(self.tcx, def_id)
+            None if super::representation::none_form(self.tcx, super::representation::NonePlace::Local(def_id))
+                .stores_null()
                 && let Some(inner) = self.option(ty) =>
             {
                 json!({ "kind": "union", "types": [self.as_written(written, |out| out.ts(inner)), keyword("null")] })

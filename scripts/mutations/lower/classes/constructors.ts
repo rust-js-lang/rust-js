@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     name: "set-first-unnullable",
     breaks: "a field not `#[rust_js::nullable]`, whose `None` is `undefined`, that its constructor sets first is taken for `null` or a value, so `prepare(response.plain)` gives a nullable parameter `undefined` (rd628)",
     file: "src/lower/classes/constructors.rs",
-    find: "crate::lower::bindings::is_nullable(tcx, def)",
-    replace: "{ let _ = def; true }",
+    find: "            field_def(tcx, field).is_some_and(|def| {\n                crate::lower::representation::none_form(tcx, crate::lower::representation::NonePlace::Field(def, None))\n                    .stores_null()\n            })\n",
+    replace: "            field_def(tcx, field).is_some()\n",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
   },
 ];

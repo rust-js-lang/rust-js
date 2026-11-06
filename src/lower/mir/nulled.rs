@@ -307,7 +307,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if let Some((PlaceElem::Field(..), _)) = place.projection.split_last() {
             let given = match self.place_field(state, place) {
-                Some(field) if bindings::null_where_made(self.tcx, field) => Given::Nulled,
+                Some(field)
+                    if crate::lower::representation::none_form(
+                        self.tcx,
+                        crate::lower::representation::NonePlace::Field(field, None),
+                    ) == NoneForm::Null =>
+                {
+                    Given::Nulled
+                }
                 Some(field) if bindings::is_optional(self.tcx, field) => Given::Optional,
                 _ => Given::Unknown,
             };

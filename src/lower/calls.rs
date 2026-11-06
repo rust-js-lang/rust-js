@@ -386,7 +386,8 @@ fn inlined(params: &[js::Pattern], args: &[Expr], value: &Expr) -> Option<Expr> 
 /// body writing it so (ADRs 0578, 0638). Not a trait's method, whose impl
 /// the call may run, which says nothing of it (ADR 0841, amended).
 pub(super) fn gives_null_for_none(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: rustc_span::def_id::DefId) -> bool {
-    super::bindings::nullable_result(tcx, def_id) && tcx.trait_of_assoc(def_id).is_none()
+    use super::representation::{NonePlace, none_form};
+    none_form(tcx, NonePlace::FnResult(def_id)).stores_null() && tcx.trait_of_assoc(def_id).is_none()
 }
 
 /// What a call of `def_id` gives for `None` where it's only one of

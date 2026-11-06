@@ -106,7 +106,7 @@ export function jobs({ all, changed, branch, added, extra, cores }: Scope): { jo
     { ci: "bun run test" },
   );
   const suites: Job[] = [
-    job("architecture, mutation lists", ["bun", "test", "test/architecture.test.ts", "test/architecture-iterators.test.ts", "test/mutations.test.ts"]),
+    job("architecture, mutation lists", ["bun", "test", "test/architecture.test.ts", "test/architecture-iterators.test.ts", "test/architecture-nones.test.ts", "test/mutations.test.ts"]),
     // What checks the JS bodies are lowered to.
     // Each a file of a concept's (ADR 0572), `test/lowering` all of lowering's.
     job("lowering", ["bun", "test", "test/lowering"]),

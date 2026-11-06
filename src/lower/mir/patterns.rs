@@ -4,7 +4,7 @@
 mod let_names;
 
 use super::*;
-use crate::lower::representation::{NoneForm, Writers};
+use crate::lower::representation::{NoneForm, NonePlace, Writers, none_form};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The locals that patterns bind in an enum's variant, by THIR's
@@ -104,7 +104,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // found`'s `None` is `null` where it's made, `let found = null;`,
         // and the variable returned as it is (ADR 0957, amended, the user's
         // decision, 2026-10-27).
-        let returns_nullable = bindings::nullable_result(self.tcx, body.source.def_id());
+        let returns_nullable = none_form(self.tcx, NonePlace::FnResult(body.source.def_id())).stores_null();
         // Each local assigned once, and what it's assigned: what a
         // thread-local's key is read through (`queries::referred_key`).
         let mut assigned: std::collections::HashMap<Local, Option<&Rvalue<'tcx>>> = Default::default();
@@ -157,7 +157,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             for (field, operand) in operands.iter_enumerated() {
                 if let Some(read) = operand.place()
                     && read.projection.is_empty()
-                    && bindings::is_nullable(self.tcx, &fields[field])
+                    && none_form(self.tcx, NonePlace::Field(&fields[field], None)).stores_null()
                 {
                     *given.entry(read.local).or_default() += 1;
                     stored.insert(read.local);
@@ -211,24 +211,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && let Some(read) = value.node.place()
                 && read.projection.is_empty()
                 && queries::referred_key(promoted, |local| assigned.get(&local).copied().flatten(), &key.node)
-                    .is_some_and(|key| bindings::nullable_local(self.tcx, key))
+                    .is_some_and(|key| none_form(self.tcx, NonePlace::Local(key)).stores_null())
             {
                 *given.entry(read.local).or_default() += 1;
             }
-            let nullable = bindings::nullable_params(self.tcx, def_id);
+            let nullable = crate::lower::representation::null_params(self.tcx, def_id);
             // What a `#[rust_js::nullable]` thread-local is made of, its
             // `init`'s call's value: each `Option` given for a type
             // parameter's, `create_cursor(None)`'s (ADR 0586, amended).
             let made = destination.local == mir::RETURN_PLACE
                 && destination.projection.is_empty()
-                && bindings::nullable_init(self.tcx, body.source.def_id());
+                && (self.tcx.opt_parent(body.source.def_id()))
+                    .is_some_and(|key| none_form(self.tcx, NonePlace::Local(key)).stores_null());
             if nullable.is_empty() && !made {
                 continue;
             }
             let inputs = self.tcx.fn_sig(def_id).skip_binder().skip_binder().inputs();
             let binding = bindings::is_binding(self.tcx, def_id);
             for (i, arg) in args.iter().enumerate() {
-                let named = !nullable.is_empty() && bindings::takes_nullable(self.tcx, def_id, i);
+                let named =
+                    !nullable.is_empty() && none_form(self.tcx, NonePlace::BindingArg(def_id, i, None)).stores_null();
                 let of_a_type_parameter =
                     made && inputs.get(i).is_some_and(|input| matches!(input.kind(), ty::Param(_)));
                 if let Some(read) = arg.node.place()
@@ -259,7 +261,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let ty = operand.ty(body, self.tcx);
                     if let Some(read) = operand.place()
                         && read.projection.is_empty()
-                        && bindings::is_nullable(self.tcx, field)
+                        && none_form(self.tcx, NonePlace::Field(field, None)).stores_null()
                         && bindings::nullable_items(self.tcx, ty).is_some()
                     {
                         items.insert(read.local);
@@ -360,7 +362,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A `#[rust_js::nullable]` function's result is read by its return,
         // and a nullable thread-local's of an `Option`, its `init`'s.
-        let result = bindings::null_result(self.tcx, body.source.def_id());
+        let result = none_form(self.tcx, NonePlace::Result(body.source.def_id())).stores_null();
         // What a `let` is written, besides what it makes, of its arms' own
         // `let`s or temporaries, each written once by what makes an
         // `Option`, read once, there: `let x = if c { let y = f(); y }

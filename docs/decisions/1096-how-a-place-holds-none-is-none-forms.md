@@ -1,14 +1,14 @@
 # 1096. How a place holds `None` is `NoneForm`'s
 
-Status: Accepted (2026-11-06, steps 1 and 2 of 3, #819). ADR 1085's structural
+Status: Accepted (2026-11-06, #819, its three steps). ADR 1085's structural
 change 6, on [1086](1086-a-mut-refs-js-form-is-mut-ref-forms.md)'s model.
 Amends [0791](0791-a-cells-storage-says-what-it-stores.md):
 which places store `NullForNone` is one owner's answer.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none. This changes who
 answers, not what's answered: every corpus snapshot is byte-identical, in
-both builds, and so is every other test's JS, after each step. Step 2
-found no reader that disagreed with its writers: no snapshot changed.
+both builds, and so is every other test's JS, after each step. Steps 2
+and 3 found no reader that disagreed with its writers: no snapshot changed.
 
 ## Context
 
@@ -84,10 +84,45 @@ field's kept cell, `$fieldCell(x, "f", true)`, carries that it stores
 `null` as a fact where it's made, `Known::NullStored`, which the
 uncounted cell made of it reads, not its JS arguments.
 
+### Step 3: the owner's alone
+
+The predicates that answer "is a `None` `null` here" are asked only by the
+owner, which `bindings` defines them for: `is_nullable`,
+`null_where_made`, `declared_null_or_value`, `nullable_local`,
+`nullable_local_cell`, `nullable_local_option`, `null_result`,
+`nullable_result`, `optional_result`, `nullable_params`,
+`takes_nullable`, `takes_nullable_entries`, `holds_none_as_null`,
+`nullable_init` and a library's `nulled_param`. Their 35 other askers ask
+`none_form`: the `.d.ts`'s fields, thread-locals and a collection's
+values (`declarations.rs`, a second reader of the question, as #519's
+was), the signature's parameters and result, the analysis of nulled
+parameters, `patterns.rs`'s inference, the thread-locals' made values and
+cells, a class's fields set first and a `RefCell` field's refusal. For them
+the owner adds `NonePlace::FnResult` (a function's own `#[rust_js::nullable]`,
+not a thread-local `init`'s), `NonePlace::Param` by index with
+`null_params`, its indexes, `NonePlace::CollectionValue`, and
+`BindingArg`'s payload where it's asked. `null_where_made`,
+`declared_null_or_value` and `nullable_init` are gone.
+
+`test/architecture.test.ts`'s "whether a `None` is `null` is
+none_form's alone" holds it, as ADR 1086's test does of `MutRefForm`: no
+module of `src/lower` but the owner and `bindings` calls those
+predicates; none makes `Storage::NullForNone`, `Known::NoneNull` or
+`Known::NoneUndefined`, only matches or tests them; and only `cells.rs`,
+where a field's kept cell is made, says `Known::NullStored`.
+
+The shape predicates, `is_optional`, `is_held`, `holds_value`,
+`holds_nested` and `nullable_option`, answer another question, a
+declared payload's shape, and stay `bindings`'. Of `options.rs`'s
+type-level answers, `holds_value` and `undefined_payload` consume one
+rule, `bindings::undefined_never_null`; `holds_nested`'s refusal,
+`nested_refused`, re-derives `may_look_like_none`'s "may this payload
+look like `None`" with a peel and a catalog of its own, which disagree
+of a `Weak`, a `Pin`, a `MaybeUninit` and a class of no fields: #832.
+
 ## Next
 
-- Step 3: an architecture test that makes `Storage::NullForNone` and those
-  facts the owner's alone, as ADR 1086's does of `MutRefForm`.
+- #832: `nested_refused` asks `may_look_like_none`.
 - The JS-boundary test of what each `.d.ts` permits is #822.
 
 ## Tests
@@ -98,4 +133,8 @@ the 31 of the writers retargeted to the owner's form, each caught. Step
 2: six more of `nones.ts`, of `trust`'s arms and each call result's form,
 and the 15 of the readers and the thread-local cells retargeted, each
 caught; `lowering-option-truth`'s test of a binding's undeclared result,
-`pattern.exec(text) != null`, which JS gives `null`.
+`pattern.exec(text) != null`, which JS gives `null`. Step 3: the 29
+mutations of the askers routed to the owner retargeted, each caught (one,
+`optional-field-made-null`, removed with `null_where_made`, which
+`optional-field-none-as-null` covers); the architecture test, shown to
+fail of a predicate asked and a fact made outside the owner.

@@ -43,8 +43,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a trait's method marked `#[rust_js::nullable]` is taken to give `null`, whose impl gives `undefined`: `internals.T = PPeek.peek(queue)` stores it (ADR 0841, amended)",
     file: "src/lower/calls.rs",
-    find: "    super::bindings::nullable_result(tcx, def_id) && tcx.trait_of_assoc(def_id).is_none()\n",
-    replace: "    super::bindings::nullable_result(tcx, def_id)\n",
+    find: "    none_form(tcx, NonePlace::FnResult(def_id)).stores_null() && tcx.trait_of_assoc(def_id).is_none()\n",
+    replace: "    none_form(tcx, NonePlace::FnResult(def_id)).stores_null()\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",

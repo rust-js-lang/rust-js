@@ -109,7 +109,12 @@ pub(crate) fn set_where_constructed<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tc
         }
     }
     (set.into_values().flatten())
-        .filter(|&field| field_def(tcx, field).is_some_and(|def| crate::lower::bindings::is_nullable(tcx, def)))
+        .filter(|&field| {
+            field_def(tcx, field).is_some_and(|def| {
+                crate::lower::representation::none_form(tcx, crate::lower::representation::NonePlace::Field(def, None))
+                    .stores_null()
+            })
+        })
         .collect()
 }
 

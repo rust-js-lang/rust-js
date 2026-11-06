@@ -19,22 +19,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn nullable_cell_field(&self, ty: Ty<'tcx>, (i, field_ty): (usize, Ty<'tcx>)) -> bool {
         let ty::Adt(adt, _) = ty.kind() else { return false };
         adt.is_struct()
-            && bindings::is_nullable(
+            && super::none_form(
                 self.tcx,
-                &adt.non_enum_variant().fields[rustc_abi::FieldIdx::from_usize(i)],
+                super::NonePlace::Field(
+                    &adt.non_enum_variant().fields[rustc_abi::FieldIdx::from_usize(i)],
+                    Some(field_ty),
+                ),
             )
-            && bindings::nullable_option(self.tcx, field_ty).is_some_and(|option| option != field_ty)
+            .stores_null()
+            && bindings::nullable_option(self.tcx, field_ty) != Some(field_ty)
     }
 
-    /// Whether field `i` of `ty`, a struct's, is `null` for `None` where
-    /// it's made, and so never `undefined` (`bindings::null_where_made`).
-    pub(in crate::lower) fn null_where_made(&self, ty: Ty<'tcx>, i: usize) -> bool {
-        let ty::Adt(adt, _) = ty.kind() else { return false };
-        adt.is_struct()
-            && bindings::null_where_made(
+    /// How field `i` of `ty`, a struct's, holds a `None`: of a nullable
+    /// one not optional, `null` where it's made, and so never `undefined`
+    /// (`NoneForm::Null`).
+    pub(in crate::lower) fn field_none_form(&self, ty: Ty<'tcx>, i: usize) -> super::NoneForm {
+        let ty::Adt(adt, _) = ty.kind() else {
+            return super::NoneForm::Undefined;
+        };
+        match adt.is_struct() {
+            true => super::none_form(
                 self.tcx,
-                &adt.non_enum_variant().fields[rustc_abi::FieldIdx::from_usize(i)],
-            )
+                super::NonePlace::Field(&adt.non_enum_variant().fields[rustc_abi::FieldIdx::from_usize(i)], None),
+            ),
+            false => super::NoneForm::Undefined,
+        }
     }
 
     /// A handle on `place`, a `nullable_cell_field`'s, `field` of type

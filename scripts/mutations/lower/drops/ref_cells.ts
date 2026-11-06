@@ -239,9 +239,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `#[rust_js::nullable]` `RefCell` field of a transparent struct, which is the cell, is taken for one that holds its value (ADRs 0584, 0863)",
     file: "src/lower/drops/ref_cells.rs",
-    find: "                    if crate::lower::bindings::is_nullable(tcx, field)\n",
-    replace:
-      "                    if false && crate::lower::bindings::is_nullable(tcx, field)\n",
+    find: "                    .stores_null()\n                        && self.is_std_type(ty, StdItem::RefCell)\n",
+    replace: "                    .stores_null()\n                        && false\n                        && self.is_std_type(ty, StdItem::RefCell)\n",
     tests: [
       "test/lowering-field-cells.test.ts",
       "-t",

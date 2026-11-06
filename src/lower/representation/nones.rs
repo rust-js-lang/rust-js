@@ -131,8 +131,12 @@ pub(in crate::lower) enum NonePlace<'p, 'tcx> {
     /// The result of this body, a function's or a nullable thread-local's
     /// `init`.
     Result(DefId),
-    /// A function's parameter of this name.
-    Param(DefId, rustc_span::Symbol),
+    /// The result of this function its `#[rust_js::nullable]` says, its
+    /// own, not a thread-local's `init`'s.
+    FnResult(DefId),
+    /// A function's parameter, by its index, its `#[rust_js::nullable(..)]`
+    /// names (`null_params`).
+    Param(DefId, usize),
     /// What a call of this function gives: a binding's, as it declares it,
     /// `#[rust_js::nullable]`'s `T | null` or `#[rust_js::optional]`'s `T |
     /// undefined` (ADR 0298, amended); not a trait's method's, whose impl
@@ -140,8 +144,14 @@ pub(in crate::lower) enum NonePlace<'p, 'tcx> {
     /// back as it is a nullable field's value an object JS made holds
     /// `undefined` in.
     CallResult(DefId),
-    /// A binding's argument, by its index, an `Option` of this payload.
-    BindingArg(DefId, usize, Ty<'tcx>),
+    /// A binding's argument, by its index, an `Option` of this payload
+    /// where that's asked.
+    BindingArg(DefId, usize, Option<Ty<'tcx>>),
+    /// A collection's value it holds `None` of as `null`, an `Option` of
+    /// this payload: not of a value of any shape, `Option<&Unknown>`,
+    /// whose `undefined` and `null` are each a value of its own (rd275,
+    /// #443; ADR 0884, amended).
+    CollectionValue(Ty<'tcx>),
     /// The values of the entries a binding's argument holds,
     /// `[[key, value], ..]`, by its index.
     BindingEntries(DefId, usize),
@@ -184,17 +194,34 @@ pub(in crate::lower) fn none_form<'tcx>(tcx: TyCtxt<'tcx>, place: NonePlace<'_, 
         NonePlace::LocalOption(key) => NoneForm::null_if(bindings::nullable_local_option(tcx, key)),
         NonePlace::LocalCell(key) => NoneForm::null_if(bindings::nullable_local_cell(tcx, key)),
         NonePlace::Result(body) => NoneForm::null_if(bindings::null_result(tcx, body)),
-        NonePlace::Param(def_id, name) => NoneForm::null_if(bindings::nullable_params(tcx, def_id).contains(&name)),
+        NonePlace::FnResult(def_id) => NoneForm::null_if(bindings::nullable_result(tcx, def_id)),
+        NonePlace::Param(def_id, i) => NoneForm::null_if(null_params(tcx, def_id).contains(&i)),
         NonePlace::CallResult(def_id) if !bindings::is_binding(tcx, def_id) || tcx.trait_of_assoc(def_id).is_some() => {
             NoneForm::Either
         }
         NonePlace::CallResult(def_id) if bindings::nullable_result(tcx, def_id) => NoneForm::Null,
         NonePlace::CallResult(def_id) if bindings::optional_result(tcx, def_id) => NoneForm::Undefined,
         NonePlace::CallResult(_) => NoneForm::Either,
-        NonePlace::BindingArg(def_id, i, payload) => {
-            NoneForm::null_if(bindings::takes_nullable(tcx, def_id, i) && bindings::holds_none_as_null(tcx, payload))
-        }
+        NonePlace::BindingArg(def_id, i, payload) => NoneForm::null_if(
+            bindings::takes_nullable(tcx, def_id, i)
+                && payload.is_none_or(|payload| bindings::holds_none_as_null(tcx, payload)),
+        ),
+        NonePlace::CollectionValue(payload) => NoneForm::null_if(bindings::holds_none_as_null(tcx, payload)),
         NonePlace::BindingEntries(def_id, i) => NoneForm::null_if(bindings::takes_nullable_entries(tcx, def_id, i)),
         NonePlace::ForeignParam(foreign, def_id, i) => NoneForm::null_if(foreign.nulled_param(def_id, i)),
     }
+}
+
+/// The indexes of `def_id`'s parameters its `#[rust_js::nullable(..)]`
+/// names, each `NonePlace::Param`'s `null` (ADR 0861): of a function
+/// that names none, none, asking nothing of its parameters.
+pub(in crate::lower) fn null_params(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<usize> {
+    let names = bindings::nullable_params(tcx, def_id);
+    if names.is_empty() {
+        return Vec::new();
+    }
+    (tcx.fn_arg_idents(def_id).iter().enumerate())
+        .filter(|(_, ident)| ident.is_some_and(|ident| names.contains(&ident.name)))
+        .map(|(i, _)| i)
+        .collect()
 }

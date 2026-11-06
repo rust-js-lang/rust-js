@@ -26,8 +26,8 @@ export const mutations: Mutation[] = [
     name: "nested-field-declared-undefined",
     breaks: "a nullable `Option<Option<T>>` field is declared `T | undefined`, where JS holds `null` too (#470)",
     file: "src/lower/declarations.rs",
-    find: "                    match is_nullable(self.tcx, field) || nested || value || self.null_fields.contains(&field.did) {\n",
-    replace: "                    match is_nullable(self.tcx, field) || value || self.null_fields.contains(&field.did) {\n",
+    find: "                    match nullable || nested || value || self.null_fields.contains(&field.did) {\n",
+    replace: "                    match nullable || value || self.null_fields.contains(&field.did) {\n",
     tests: ["test/declarations.test.ts", "-t", "declarations take JS's null"],
   },
   {
@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a map of any value is declared `Map<K, unknown | null>`, without the `undefined` it holds (#443)",
     file: "src/lower/declarations.rs",
-    find: "                            && super::bindings::holds_none_as_null(out.tcx, of.type_at(0)) =>\n",
+    find: "                            && super::representation::none_form(\n                                out.tcx,\n                                super::representation::NonePlace::CollectionValue(of.type_at(0)),\n                            ) == super::representation::NoneForm::Null =>\n",
     replace: " =>\n",
     tests: [
       "test/js-collections.test.ts",
@@ -379,9 +379,8 @@ export const mutations: Mutation[] = [
     breaks:
       "every `Option` field is declared `?: T | null`, so a TypeScript caller reading one passes `null` where a default takes only `undefined`",
     file: "src/lower/declarations.rs",
-    find: "                    match is_nullable(self.tcx, field) || nested || value || self.null_fields.contains(&field.did) {\n",
-    replace:
-      "                    match true || is_nullable(self.tcx, field) {\n",
+    find: "                    match nullable || nested || value || self.null_fields.contains(&field.did) {\n",
+    replace: "                    match true || nullable {\n",
     tests: ["test/declarations.test.ts", "-t", "null for an Option"],
   },
   {
@@ -870,9 +869,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable thread-local's variable is declared `Fiber | null | undefined`, where its `None` is `null` (ADR 0586, amended)",
     file: "src/lower/declarations.rs",
-    find: "                if super::bindings::nullable_local(self.tcx, def_id)\n",
-    replace:
-      "                if false && super::bindings::nullable_local(self.tcx, def_id)\n",
+    find: "                if super::representation::none_form(self.tcx, super::representation::NonePlace::Local(def_id))\n",
+    replace: "                if false && super::representation::none_form(self.tcx, super::representation::NonePlace::Local(def_id))\n",
     tests: [
       "test/lowering-module-variables.test.ts",
       "-t",
@@ -897,9 +895,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable thread-local of an `Option`, and a nullable `const`, is declared `T | undefined`, not `T | null` (ADR 0586, amended)",
     file: "src/lower/declarations.rs",
-    find: "            None if super::bindings::nullable_local(self.tcx, def_id)\n                && let Some(inner) = self.option(ty) =>\n",
-    replace:
-      "            None if false\n                && let Some(inner) = self.option(ty) =>\n",
+    find: "            None if super::representation::none_form(self.tcx, super::representation::NonePlace::Local(def_id))\n                .stores_null()\n                && let Some(inner) = self.option(ty) =>\n",
+    replace: "            None if false\n                && let Some(inner) = self.option(ty) =>\n",
     tests: [
       "test/lowering-module-variables.test.ts",
       "-t",
@@ -943,8 +940,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a plain `Option` field a `js::null()` is written to is declared `?: T | undefined`, though it holds `null` (ADR 0935, amended)",
     file: "src/lower/declarations.rs",
-    find: "                    match is_nullable(self.tcx, field) || nested || value || self.null_fields.contains(&field.did) {\n",
-    replace: "                    match is_nullable(self.tcx, field) || nested || value {\n",
+    find: "                    match nullable || nested || value || self.null_fields.contains(&field.did) {\n",
+    replace: "                    match nullable || nested || value {\n",
     tests: ["test/lowering-nullable-constants.test.ts", "-t", "is declared"],
   },
   {
@@ -1085,8 +1082,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable field of what may be `undefined` is declared optional, `serverModuleMap?: ServerManifest | null | undefined` (rd645)",
     file: "src/lower/declarations.rs",
-    find: "                    let present = super::bindings::declared_null_or_value(self.tcx, field) || value;\n",
-    replace: "                    let present = super::bindings::declared_null_or_value(self.tcx, field);\n",
+    find: "                    let present = matches!(\n                        declared,\n                        super::representation::NoneForm::Null | super::representation::NoneForm::Value\n                    );\n",
+    replace: "                    let present = matches!(declared, super::representation::NoneForm::Null);\n",
     tests: ["test/lowering-nested-options.test.ts", "-t", "what may be undefined"],
   },
   {
@@ -1094,8 +1091,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable field of what may be `undefined` is declared without `| null` (rd645)",
     file: "src/lower/declarations.rs",
-    find: "                    match is_nullable(self.tcx, field) || nested || value || self.null_fields.contains(&field.did) {\n",
-    replace: "                    match is_nullable(self.tcx, field) || nested || self.null_fields.contains(&field.did) {\n",
+    find: "                    match nullable || nested || value || self.null_fields.contains(&field.did) {\n",
+    replace: "                    match nullable || nested || self.null_fields.contains(&field.did) {\n",
     tests: ["test/lowering-nested-options.test.ts", "-t", "what may be undefined"],
   },
   {
@@ -1127,8 +1124,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable field of a struct JS may give is declared optional, `moduleLoading?: unknown | null | undefined`, where `nullable` says JS gives `null`, never `undefined`, as upstream's `moduleLoading: ModuleLoading` does (ADR 1072, amended)",
     file: "src/lower/declarations.rs",
-    find: "                    let present = super::bindings::declared_null_or_value(self.tcx, field) || value;\n",
-    replace: "                    let present = value;\n",
+    find: "                    let present = matches!(\n                        declared,\n                        super::representation::NoneForm::Null | super::representation::NoneForm::Value\n                    );\n",
+    replace: "                    let present = matches!(declared, super::representation::NoneForm::Value);\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
   },
   {

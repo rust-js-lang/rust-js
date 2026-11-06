@@ -767,8 +767,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a function's parameter its function doesn't name nullable, or another argument, set to `None` is `null` (ADR 0861)",
     file: "src/lower/mir/assign.rs",
-    find: "            Some(ident) => crate::lower::representation::none_form(\n                self.tcx,\n                crate::lower::representation::NonePlace::Param(def_id, ident.name),\n            ),\n",
-    replace: "            Some(_) => NoneForm::Null,\n",
+    find: "            true => crate::lower::representation::none_form(\n                self.tcx,\n                crate::lower::representation::NonePlace::Param(def_id, arg - 1),\n            ),\n",
+    replace: "            true => NoneForm::Null,\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
   },
   {

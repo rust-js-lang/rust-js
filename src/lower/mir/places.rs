@@ -401,7 +401,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.property_cell(Some(field_a), ty_a).is_none()
             && self.property_cell(Some(field_b), ty_b).is_none()
             && variant_field(self.tcx, variant_a, a.as_usize()) == variant_field(self.tcx, variant_b, b.as_usize())
-            && bindings::is_nullable(self.tcx, field_a) == bindings::is_nullable(self.tcx, field_b)
+            && crate::lower::representation::none_form(
+                self.tcx,
+                crate::lower::representation::NonePlace::Field(field_a, None),
+            )
+            .stores_null()
+                == crate::lower::representation::none_form(
+                    self.tcx,
+                    crate::lower::representation::NonePlace::Field(field_b, None),
+                )
+                .stores_null()
             && bindings::is_optional(self.tcx, field_a) == bindings::is_optional(self.tcx, field_b)
     }
 

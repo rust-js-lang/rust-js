@@ -711,7 +711,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if matches!(tcx.def_kind(id), DefKind::Struct) {
                 for field in tcx.adt_def(id).all_fields() {
                     let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-                    if crate::lower::bindings::is_nullable(tcx, field)
+                    if crate::lower::representation::none_form(
+                        tcx,
+                        crate::lower::representation::NonePlace::Field(field, None),
+                    )
+                    .stores_null()
                         && self.is_std_type(ty, StdItem::RefCell)
                         && crate::lower::bindings::nullable_option(tcx, ty).is_some()
                         && !found.holds_value(tcx, field)

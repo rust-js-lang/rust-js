@@ -250,17 +250,19 @@ pub(super) fn forwarding(
 /// error naming what to write.
 fn nullable_alike(tcx: TyCtxt<'_>, method: DefId, target: DefId) -> bool {
     let nullable = |id: DefId, from: usize| -> Vec<usize> {
-        let names = super::super::bindings::nullable_params(tcx, id);
-        (tcx.fn_arg_idents(id).iter().enumerate().skip(from))
-            .filter(|(_, ident)| ident.is_some_and(|ident| names.contains(&ident.name)))
-            .map(|(i, _)| i - from)
+        (crate::lower::representation::null_params(tcx, id).into_iter())
+            .filter(|&i| i >= from)
+            .map(|i| i - from)
             .collect()
     };
     if nullable(method, 1) == nullable(target, 0) {
         return true;
     }
     let names = |id: DefId| {
-        let names = super::super::bindings::nullable_params(tcx, id);
+        let idents = tcx.fn_arg_idents(id);
+        let names: Vec<_> = (crate::lower::representation::null_params(tcx, id).into_iter())
+            .filter_map(|i| Some(idents.get(i).copied().flatten()?.name))
+            .collect();
         match names.is_empty() {
             true => "none".to_string(),
             false => names

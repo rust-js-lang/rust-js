@@ -53,9 +53,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`let label = None;` given to an optional nullable field is `undefined` where it's made, and `label ?? null` where it's given (ADR 0810, amended)",
     file: "src/lower/mir/patterns.rs",
-    find: "                    && bindings::is_nullable(self.tcx, &fields[field])\n",
-    replace:
-      "                    && bindings::null_where_made(self.tcx, &fields[field])\n",
+    find: "                    && none_form(self.tcx, NonePlace::Field(&fields[field], None)).stores_null()\n",
+    replace: "                    && none_form(self.tcx, NonePlace::Field(&fields[field], None)) == NoneForm::Null\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -67,9 +66,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`let owner = None;` given to a binding's nullable parameter is `undefined` where it's made (ADR 0781)",
     file: "src/lower/mir/patterns.rs",
-    find: "                let named = !nullable.is_empty() && bindings::takes_nullable(self.tcx, def_id, i);\n",
-    replace:
-      "                let named = !nullable.is_empty() && bindings::takes_nullable(self.tcx, def_id, i) && false;\n",
+    find: "                    !nullable.is_empty() && none_form(self.tcx, NonePlace::BindingArg(def_id, i, None)).stores_null();\n",
+    replace: "                    !nullable.is_empty() && none_form(self.tcx, NonePlace::BindingArg(def_id, i, None)).stores_null() && false;\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -603,8 +601,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option` a nullable thread-local's `set` alone reads keeps its `None` `undefined` where it's made: React's ReactFlightServer printed `importStringRequest = __DEV__ && debug ? undefined : request;`, where upstream writes `null` (#683, ADR 0861, amended)",
     file: "src/lower/mir/patterns.rs",
-    find: "                    .is_some_and(|key| bindings::nullable_local(self.tcx, key))\n            {\n                *given.entry(read.local).or_default() += 1;\n",
-    replace: "                    .is_some_and(|key| bindings::nullable_local(self.tcx, key))\n            {\n",
+    find: "                    .is_some_and(|key| none_form(self.tcx, NonePlace::Local(key)).stores_null())\n            {\n                *given.entry(read.local).or_default() += 1;\n",
+    replace: "                    .is_some_and(|key| none_form(self.tcx, NonePlace::Local(key)).stores_null())\n            {\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "stores a test tidy makes of its value"],
   },
   {
@@ -612,8 +610,21 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option` any thread-local's `set` alone reads is `null` for `None` where it's made, though one not `#[rust_js::nullable]` holds `undefined` for `None` (#683, ADR 0861, amended)",
     file: "src/lower/mir/patterns.rs",
-    find: "                    .is_some_and(|key| bindings::nullable_local(self.tcx, key))\n",
-    replace: "                    .is_some()\n",
+    find: "                    .is_some_and(|key| none_form(self.tcx, NonePlace::Local(key)).stores_null())\n            {\n",
+    replace: "                    .is_some()\n            {\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "stores a test tidy makes of its value"],
+  },
+  {
+    name: "nullable-init-of-any-thread-local",
+    breaks:
+      "a thread-local that isn't `#[rust_js::nullable]`, made by a generic constructor, is given `null` for `None`, `createCursor(null)` where its JS reads `undefined` (ADR 0586, amended)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                    .is_some_and(|key| none_form(self.tcx, NonePlace::Local(key)).stores_null());\n",
+    replace: "                    .is_some();\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a generic constructor makes",
+    ],
   },
 ];

@@ -58,19 +58,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "optional-field-made-null",
-    breaks:
-      "an optional nullable field's read, which may be absent, is taken for `null` or a value, so a nullable field given it stores `undefined` (ADR 0810, amended)",
-    file: "src/lower/bindings/nullable.rs",
-    find: "    is_nullable(tcx, field) && !is_optional(tcx, field)\n",
-    replace: "    is_nullable(tcx, field)\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "an optional nullable field",
-    ],
-  },
-  {
     name: "nullable-refcell-refused",
     breaks:
       "`#[rust_js::nullable]` of a field's `RefCell<Option<T>>` is refused (ADR 0863)",
@@ -100,19 +87,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings/nullable.rs",
     find: "    matches!(held.kind(), ty::Adt(adt, args) if !tcx.is_lang_item(adt.did(), LangItem::Option) && args.types().any(option))\n",
     replace: "    let _ = (held, option);\n    false\n",
-    tests: [
-      "test/lowering-module-variables.test.ts",
-      "-t",
-      "a generic constructor makes",
-    ],
-  },
-  {
-    name: "nullable-init-of-any-thread-local",
-    breaks:
-      "a thread-local that isn't `#[rust_js::nullable]`, made by a generic constructor, is given `null` for `None`, `createCursor(null)` where its JS reads `undefined` (ADR 0586, amended)",
-    file: "src/lower/bindings/nullable.rs",
-    find: "    tcx.opt_parent(body).is_some_and(|key| nullable_local(tcx, key))\n",
-    replace: "    tcx.opt_parent(body).is_some()\n",
     tests: [
       "test/lowering-module-variables.test.ts",
       "-t",
@@ -288,23 +262,5 @@ export const mutations: Mutation[] = [
     replace: "    match ty.kind() {\n        ty::Tuple(_) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
     snapshots: true,
-  },
-  {
-    name: "strict-optional-field",
-    breaks:
-      "an optional nullable field, absent until it's set, is tested `=== null`, its absent `None` a `Some` (rd647)",
-    file: "src/lower/bindings/nullable.rs",
-    find: "    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some()\n",
-    replace: "    is_nullable(tcx, field) && nullable_option(tcx, declared).is_some()\n",
-    tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
-  },
-  {
-    name: "strict-type-parameter-field",
-    breaks:
-      "a nullable field of a type parameter's value is tested `=== null`, though generic code stores the `undefined` it's given (rd647)",
-    file: "src/lower/bindings/nullable.rs",
-    find: "    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some()\n",
-    replace: "    null_where_made(tcx, field) && true\n",
-    tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
   },
 ];

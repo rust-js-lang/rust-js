@@ -29,7 +29,9 @@ mod options;
 use consts::{Units, const_js_by};
 pub(super) use consts::{const_js, zero_sized_js};
 pub(in crate::lower) use mut_ref::{MutRefForm, SignatureForms, held_ts};
-pub(in crate::lower) use options::{NoneForm, NonePlace, Writers, may_look_like_none, none_form, payload_through};
+pub(in crate::lower) use options::{
+    NoneForm, NonePlace, Writers, may_look_like_none, none_form, null_params, payload_through,
+};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// That `subject` is one of `variants` of its enum, an or-pattern's,
@@ -546,7 +548,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // `None`, so what's read of it is never `undefined`; not
                     // an optional one, absent until it's set (ADRs 0620,
                     // amended, 0810).
-                    true if self.null_where_made(ty, i) => self.nullable_cell_handle(field.defined(), def, fields[i].1),
+                    true if self.field_none_form(ty, i) == NoneForm::Null => {
+                        self.nullable_cell_handle(field.defined(), def, fields[i].1)
+                    }
                     true => self.nullable_cell_handle(field, def, fields[i].1),
                     false => self.held(field, def, fields[i].1),
                 }

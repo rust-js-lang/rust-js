@@ -1087,8 +1087,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for _ in 0..body.local_decls.len() {
             if let Some(field) = self.place_field(state, place) {
                 let ty = Place::ty_from(place.local, place.projection, &body.local_decls, self.tcx).ty;
-                return (bindings::is_nullable(self.tcx, field) && bindings::nullable_items(self.tcx, ty).is_some())
-                    .then_some(field);
+                let nullable = crate::lower::representation::none_form(
+                    self.tcx,
+                    crate::lower::representation::NonePlace::Field(field, None),
+                )
+                .stores_null();
+                return (nullable && bindings::nullable_items(self.tcx, ty).is_some()).then_some(field);
             }
             if !matches!(place.projection.as_slice(), [] | [PlaceElem::Deref]) {
                 return None;

@@ -355,14 +355,7 @@ fn candidate(tcx: TyCtxt<'_>, id: DefId) -> Option<Vec<usize>> {
     if crate::lower::bindings::is_binding(tcx, id) {
         return None;
     }
-    let names = crate::lower::bindings::nullable_params(tcx, id);
-    if names.is_empty() {
-        return None;
-    }
-    let params: Vec<usize> = (tcx.fn_arg_idents(id).iter().enumerate())
-        .filter(|(_, ident)| ident.is_some_and(|ident| names.contains(&ident.name)))
-        .map(|(i, _)| i)
-        .collect();
+    let params = crate::lower::representation::null_params(tcx, id);
     (!params.is_empty()).then_some(params)
 }
 
@@ -392,7 +385,8 @@ pub(in crate::lower) fn may_return_nulled(tcx: TyCtxt<'_>, id: DefId) -> bool {
     callable
         && id.is_local()
         && !crate::lower::bindings::is_binding(tcx, id)
-        && !crate::lower::bindings::nullable_result(tcx, id)
+        && !crate::lower::representation::none_form(tcx, crate::lower::representation::NonePlace::FnResult(id))
+            .stores_null()
         && option(tcx.fn_sig(id).skip_binder().skip_binder().output())
 }
 

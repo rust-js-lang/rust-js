@@ -481,9 +481,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what's read of a nullable field may be `undefined`, so a variable holding it is stored `returnFiber ?? null`",
     file: "src/lower/representation.rs",
-    find: "                    true if self.null_where_made(ty, i) => self.nullable_cell_handle(field.defined(), def, fields[i].1),\n",
-    replace:
-      "                    true if self.null_where_made(ty, i) => self.nullable_cell_handle(field, def, fields[i].1),\n",
+    find: "                    true if self.field_none_form(ty, i) == NoneForm::Null => {\n                        self.nullable_cell_handle(field.defined(), def, fields[i].1)\n",
+    replace: "                    true if self.field_none_form(ty, i) == NoneForm::Null => {\n                        self.nullable_cell_handle(field, def, fields[i].1)\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -495,9 +494,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an optional nullable field, absent until it's set, is read as never `undefined`, so `undefined` is stored where `null` is",
     file: "src/lower/representation.rs",
-    find: "                    true if self.null_where_made(ty, i) => self.nullable_cell_handle(field.defined(), def, fields[i].1),\n",
-    replace:
-      "                    true if !self.null_where_made(ty, i) || true => self.nullable_cell_handle(field.defined(), def, fields[i].1),\n",
+    find: "                    true if self.field_none_form(ty, i) == NoneForm::Null => {\n",
+    replace: "                    true => {\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",

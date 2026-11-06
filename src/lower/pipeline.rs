@@ -17,6 +17,7 @@ use self::load_cycles::{ModuleJs, module_imports};
 use self::reached::written_where_reached;
 use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, nulled_params::NulledParams};
 use super::bindings::Export;
+use super::representation::{NonePlace, none_form};
 use super::{Body, CrateFacts, const_js, located, module_file, static_value};
 use crate::js::{self, Expr, Prop, StmtKind};
 use crate::program::{LoweredModule, Unlinked, UnlinkedModule};
@@ -880,7 +881,7 @@ pub fn lower_crate<'tcx>(
                         .unwrap_or_else(|| Expr::call(Expr::arrow(Vec::new(), function.body), Vec::new())),
                 };
                 // A nullable thread-local's `None` `null` (ADR 0586, amended).
-                let value = match super::bindings::nullable_local(tcx, key.to_def_id()) {
+                let value = match none_form(tcx, NonePlace::Local(key.to_def_id())).stores_null() {
                     true => super::std_types::cell::nullable_made(value),
                     false => value,
                 };
@@ -1314,7 +1315,7 @@ pub fn lower_crate<'tcx>(
             let nullable: HashSet<&str> = (thread_local_inits.values())
                 .filter(|&&key| {
                     tcx.parent_module_from_def_id(key) == module
-                        && super::bindings::nullable_local_cell(tcx, key.to_def_id())
+                        && none_form(tcx, NonePlace::LocalCell(key.to_def_id())).stores_null()
                 })
                 .filter_map(|&key| Some(fns.get(&key.to_def_id())?.name.as_str()))
                 .collect();

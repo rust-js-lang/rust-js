@@ -130,23 +130,6 @@ pub(in crate::lower) fn is_optional(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     tcx.get_attrs_by_path(field.did, &path).next().is_some()
 }
 
-/// Whether `field` is declared there, `field: T | null`, its `None` `null`,
-/// never `undefined`, whoever makes its struct (ADR 1072, amended, the
-/// user's decision): `#[rust_js::nullable]` and not optional
-/// (`null_where_made`), declared an `Option` or a cell of one, so not of a
-/// type parameter's value, which generic code stores as it's given,
-/// `undefined` too. JS that makes its struct is held to it as to any type.
-pub(in crate::lower) fn declared_null_or_value(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
-    let declared = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-    null_where_made(tcx, field) && nullable_option(tcx, declared).is_some()
-}
-
-/// Whether a field's `None` is `null` from where it's made on, so its read is `null` or a value: a
-/// nullable one's, not an optional one's, which a literal's `None` leaves out (ADR 0810, amended).
-pub(in crate::lower) fn null_where_made(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
-    is_nullable(tcx, field) && !is_optional(tcx, field)
-}
-
 /// The `Option` a `#[rust_js::nullable]` field of type `ty` holds: itself,
 /// or a `Cell`'s, whose `None` is `null` in JS (ADRs 0196, 0772), or a
 /// `RefCell`'s, a field's the value it holds (ADRs 0362, 0863). `None` of
@@ -451,12 +434,6 @@ fn made_of_options(tcx: TyCtxt<'_>, held: Ty<'_>) -> bool {
 /// (`nullable_local_option`), the value it's made, `__DEV__ ? f : null`.
 pub(in crate::lower) fn null_result(tcx: TyCtxt<'_>, body: DefId) -> bool {
     nullable_result(tcx, body) || tcx.opt_parent(body).is_some_and(|key| nullable_local_option(tcx, key))
-}
-
-/// Whether `body`, a thread-local's `init`, is a `#[rust_js::nullable]`
-/// one's (`nullable_local`), whose `None`s are `null` where it's made.
-pub(in crate::lower) fn nullable_init(tcx: TyCtxt<'_>, body: DefId) -> bool {
-    tcx.opt_parent(body).is_some_and(|key| nullable_local(tcx, key))
 }
 
 /// `#[rust_js::nullable]` alone on `id`, of no parameter's name.

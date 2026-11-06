@@ -346,15 +346,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.tcx.def_kind(def_id),
                 rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn
             );
-        match own
-            .then(|| self.tcx.fn_arg_idents(def_id).get(arg - 1).copied().flatten())
-            .flatten()
-        {
-            Some(ident) => crate::lower::representation::none_form(
+        match own {
+            true => crate::lower::representation::none_form(
                 self.tcx,
-                crate::lower::representation::NonePlace::Param(def_id, ident.name),
+                crate::lower::representation::NonePlace::Param(def_id, arg - 1),
             ),
-            None => NoneForm::Undefined,
+            false => NoneForm::Undefined,
         }
     }
 
