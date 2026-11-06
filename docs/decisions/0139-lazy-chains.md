@@ -136,3 +136,22 @@ runs it, and std's docs leave how many unspecified. ADR 0262's case:
 rare and harmless, so JavaScript's: listed in the semantics as
 difference 15, and held by `test/lowering-iterators.test.ts`, "zip takes
 its first side's item before its second's".
+
+## Amended (2026-11-06, #115): no exception, and no difference left
+
+The amendment above called a zip whose first side runs once more than
+native "rare and harmless, so JavaScript's", difference 15. Only the user
+grants that exception (ADR 0262), and none was granted: a difference that
+changes what a program prints keeps Rust's behavior, or is refused. Each
+part of it was since matched or refused: two sides std reads by index stop
+at the shorter's length by `next()`, `collect` and `fold` alike (ADR 0973,
+`$trustedZip`); two `TrustedLen` sides fold, and collect, only as many as
+the shorter has, where `next()` makes one more, as std does (#654); and
+generic code's zip of such sides, whose caller's types alone say which, is
+refused where a step of its first side runs code (ADR 1014, the guide's
+limitations). Of other sides, a filter's, std's `collect`, `fold` and
+`next()` each make one more, as rust-js does. Held by corpus
+`zip_steps_its_first_side_as_std_does`, against native Rust in both builds,
+and by 40 generated programs, eight first sides by five second sides, each
+collected, folded, counted, looped over, stepped by `next()`, summed and
+asked its `last()`.

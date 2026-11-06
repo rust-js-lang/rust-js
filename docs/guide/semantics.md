@@ -598,9 +598,11 @@ What's refused is in [the limitations](limitations.md).
   up to the shorter's length, as std does, by `for`, `next()` and
   `collect()` alike: the first side is never stepped once the second has
   none ([0973](../decisions/0973-a-zip-std-reads-by-index-stops-at-the-shorter.md)).
-  Of other sides std's `collect` and `fold` alone skip that item, which
-  std's docs leave unspecified: a closure that prints shows it
-  ([0139](../decisions/0139-lazy-chains.md), #380).
+  Of two `TrustedLen` sides, an inclusive range's or a chain's, its `fold`
+  and what folds, `collect` say, stop at the shorter's length too, and
+  `next()` makes one more, as std's `SpecFold` and `Zip::next` do (#654);
+  of others, a filter's, each makes one more, as std's `next` does
+  ([0139](../decisions/0139-lazy-chains.md), #115).
 - **A shared slice is a copy,** `&v[a..b]`, `split_at` and `get(a..b)`:
   nothing changes `v` while it's borrowed
   ([0153](../decisions/0153-collection-and-cell-methods.md)). **A `&mut`
