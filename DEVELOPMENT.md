@@ -445,6 +445,8 @@ symptom with this table. When you hit a new kind of stall, add a row.
 | Load stays high with no agent working | Orphans: a finished or restarted session's `bun`, `node`, `rust-js` or `cargo` left running (`ppid` 1) | List them with `ps -Ao pid,ppid,etime,command \| awk '$2==1'`, check their worktree (`lsof -p <pid> -d cwd`), and kill only those of finished work. |
 | "main is red" after a rebase, and nobody else sees it | A build or regeneration ran while the rebase was stopped on a conflict | Wait until `git status` no longer says `rebasing`, then rebuild. |
 | Everything slows for minutes | A whole-disk search (`find /`) | Search only where Cargo keeps sources (see above). |
+| A test file times out at its deadline only under load (`test/tidy-stages`, 109 s alone) | Its cases compiled one after another inside one test | Compile each case's variants at once, and share one folder per case (#808: 109 s became 31–38 s). |
+| A mutation run takes hours | An empty name list, often from zsh not splitting `$VAR` into words, runs every mutation (8,000+) | Read names from a file, and stop with an error when the list is empty. |
 | A session restart, and all its agents stop | The host app was restarted or updated; agents' background jobs die with it | Commit WIP often. After a restart, check each worktree, clear stale gate entries and locks, and resume each agent with its hand-off. |
 
 **Good practice:**
