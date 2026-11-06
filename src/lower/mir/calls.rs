@@ -784,7 +784,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // type parameter, where it's given an `Option` (ADR 0586,
             // amended); a `Some` of a `&dyn Any` its value, as below (rd170).
             () if let Some(payload) = self.option_of(ty)
-                && let form = crate::lower::representation::binding_arg_none_form(tcx, def_id, i, payload)
+                && let form = crate::lower::representation::none_form(
+                    tcx,
+                    crate::lower::representation::NonePlace::BindingArg(def_id, i, payload),
+                )
                 && form == crate::lower::representation::NoneForm::Null =>
             {
                 form.storage().written(self.any_given_to_js(value, ty), nulled)
@@ -794,8 +797,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `None`, `new Map([[key, null]])`, as `set` writes it (ADR
             // 0884, amended); `bindings::reject_nullable_held` refuses
             // entries made before.
-            () if crate::lower::representation::binding_entries_none_form(tcx, def_id, i)
-                == crate::lower::representation::NoneForm::Null
+            () if crate::lower::representation::none_form(
+                tcx,
+                crate::lower::representation::NonePlace::BindingEntries(def_id, i),
+            ) == crate::lower::representation::NoneForm::Null
                 && self.entries_of_options(ty) =>
             {
                 self.nulled_entries(self.any_given_to_js(value, ty))

@@ -392,7 +392,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let field_ty = field.ty(self.tcx, args).skip_normalization();
             // Not a `Vec` of them, whose items are, made as it's given (ADR
             // 0586, amended), which holds no `Option` itself.
-            let form = crate::lower::representation::field_none_form(self.tcx, field, Some(field_ty));
+            let form = crate::lower::representation::none_form(
+                self.tcx,
+                crate::lower::representation::NonePlace::Field(field, Some(field_ty)),
+            );
             if !matches!(form, NoneForm::Null | NoneForm::Optional) {
                 continue;
             }
@@ -578,7 +581,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as it is, `null` (rd645); else `default_value`'s.
     pub(super) fn field_default(&mut self, ty: Ty<'tcx>, i: usize, field_ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let made = self.default_value(field_ty, span)?;
-        let form = |field| crate::lower::representation::field_none_form(self.tcx, field, Some(field_ty));
+        let form = |field| {
+            crate::lower::representation::none_form(
+                self.tcx,
+                crate::lower::representation::NonePlace::Field(field, Some(field_ty)),
+            )
+        };
         Ok(match self.struct_field_def(ty, i).map(|field| (form(field), field)) {
             Some((NoneForm::Value, _)) => Expr::null(),
             Some((form @ (NoneForm::Null | NoneForm::Optional), field)) => {

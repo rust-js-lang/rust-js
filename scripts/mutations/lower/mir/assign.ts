@@ -669,8 +669,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `#[rust_js::nullable]` function's `None` it didn't make is `undefined`, which a JS caller's `!== null` takes for a value",
     file: "src/lower/mir/assign.rs",
-    find: "            false => crate::lower::representation::result_none_form(self.tcx, state.body.source.def_id()),\n",
-    replace: "            false => NoneForm::Undefined,\n",
+    find: "                crate::lower::representation::NonePlace::Result(state.body.source.def_id()),\n",
+    replace: "                crate::lower::representation::NonePlace::Result(rustc_span::def_id::CRATE_DEF_ID.to_def_id()),\n",
     tests: [
       "test/bindings.test.ts",
       "-t",
@@ -776,7 +776,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a function's parameter its function doesn't name nullable, or another argument, set to `None` is `null` (ADR 0861)",
     file: "src/lower/mir/assign.rs",
-    find: "            Some(ident) => crate::lower::representation::param_none_form(self.tcx, def_id, ident.name),\n",
+    find: "            Some(ident) => crate::lower::representation::none_form(\n                self.tcx,\n                crate::lower::representation::NonePlace::Param(def_id, ident.name),\n            ),\n",
     replace: "            Some(_) => NoneForm::Null,\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
   },

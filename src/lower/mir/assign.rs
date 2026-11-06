@@ -349,7 +349,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .then(|| self.tcx.fn_arg_idents(def_id).get(arg - 1).copied().flatten())
             .flatten()
         {
-            Some(ident) => crate::lower::representation::param_none_form(self.tcx, def_id, ident.name),
+            Some(ident) => crate::lower::representation::none_form(
+                self.tcx,
+                crate::lower::representation::NonePlace::Param(def_id, ident.name),
+            ),
             None => NoneForm::Undefined,
         }
     }
@@ -411,7 +414,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A nullable thread-local's read, or the function's result.
         let form = match read_nullable {
             true => NoneForm::Null,
-            false => crate::lower::representation::result_none_form(self.tcx, state.body.source.def_id()),
+            false => crate::lower::representation::none_form(
+                self.tcx,
+                crate::lower::representation::NonePlace::Result(state.body.source.def_id()),
+            ),
         };
         if !read_nullable
             && (place != Place::from(mir::RETURN_PLACE) || state.writer.is_some() || form != NoneForm::Null)

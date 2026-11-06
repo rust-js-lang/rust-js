@@ -368,7 +368,10 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
                     (variant.fields.iter().zip(values))
                         .map(|(f, v)| {
                             // Not an optional one's, which a literal's `None` leaves out.
-                            let form = super::field_none_form(tcx, f, Some(f.ty(tcx, args).skip_normalization()));
+                            let form = super::none_form(
+                                tcx,
+                                super::NonePlace::Field(f, Some(f.ty(tcx, args).skip_normalization())),
+                            );
                             let v = match form {
                                 super::NoneForm::Null => form.storage().written(v, false),
                                 _ => v,

@@ -521,9 +521,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // value, which its body tests `!== null`: what may be `undefined`
         // given it `?? null`, as its contract says.
         if !callee.0.is_local() && self.krate.foreign.has_nulled_params(callee.0) {
+            use crate::lower::representation::{NoneForm, NonePlace, none_form};
             for (i, value) in values.iter_mut().enumerate() {
-                let form = crate::lower::representation::foreign_param_none_form(self.krate.foreign, callee.0, i);
-                if form == crate::lower::representation::NoneForm::Null && nulled.get(i) != Some(&true) {
+                let form = none_form(self.tcx, NonePlace::ForeignParam(self.krate.foreign, callee.0, i));
+                if form == NoneForm::Null && nulled.get(i) != Some(&true) {
                     let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::undefined())), span)?;
                     *value = Value::Expr(form.storage().written(given, false));
                 }

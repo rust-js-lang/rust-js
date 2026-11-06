@@ -49,8 +49,8 @@ export const mutations: Mutation[] = [
     name: "nullable-param-undefined",
     breaks: "a parameter its function names `#[rust_js::nullable(..)]` is set `undefined` for `None`, which its body's `=== null` misses (ADR 0861, #819)",
     file: "src/lower/representation/nones.rs",
-    find: "    NoneForm::null_if(bindings::nullable_params(tcx, def_id).contains(&name))\n",
-    replace: "    NoneForm::null_if(false && bindings::nullable_params(tcx, def_id).contains(&name))\n",
+    find: "        NonePlace::Param(def_id, name) => NoneForm::null_if(bindings::nullable_params(tcx, def_id).contains(&name)),\n",
+    replace: "        NonePlace::Param(def_id, name) => NoneForm::null_if(false && bindings::nullable_params(tcx, def_id).contains(&name)),\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
   },
   {

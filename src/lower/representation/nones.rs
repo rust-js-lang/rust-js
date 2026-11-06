@@ -70,73 +70,69 @@ impl NoneForm {
     }
 }
 
-/// How `field` holds a `None`, of an `Option` or a cell of one, `field_ty`
-/// where the field's type there is asked: a held value's, a nullable
-/// one's, an optional nullable one's, or a plain one's, a nested one's too,
-/// which no writer stores apart.
-pub(in crate::lower) fn field_none_form<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    field: &FieldDef,
-    field_ty: Option<Ty<'tcx>>,
-) -> NoneForm {
-    if bindings::holds_value(tcx, field) {
-        return NoneForm::Value;
+/// A place an `Option` is written to, of each kind `none_form` answers: a
+/// new kind is a variant its match can't miss.
+#[derive(Clone, Copy)]
+pub(in crate::lower) enum NonePlace<'p, 'tcx> {
+    /// A struct's field, of an `Option` or a cell of one, its type there
+    /// where that's asked.
+    Field(&'p FieldDef, Option<Ty<'tcx>>),
+    /// A thread-local or a `const` of this key.
+    Local(DefId),
+    /// The `Option` a thread-local of this key holds itself, not a cell's.
+    LocalOption(DefId),
+    /// The result of this body, a function's or a nullable thread-local's
+    /// `init`.
+    Result(DefId),
+    /// A function's parameter of this name.
+    Param(DefId, rustc_span::Symbol),
+    /// A binding's argument, by its index, an `Option` of this payload.
+    BindingArg(DefId, usize, Ty<'tcx>),
+    /// The values of the entries a binding's argument holds,
+    /// `[[key, value], ..]`, by its index.
+    BindingEntries(DefId, usize),
+    /// Another crate's function's parameter, by its index, which its body
+    /// tests `!== null`, as its manifest says.
+    ForeignParam(&'p crate::lower::library::Foreign<'p, 'tcx>, DefId, usize),
+}
+
+/// How `place` holds a `None`, the one answer of each kind of place:
+/// - a field's: a held value's, a nullable one's, an optional nullable
+///   one's, or a plain one's, a nested one's too, which no writer stores
+///   apart;
+/// - a thread-local's or a `const`'s, and the `Option` a thread-local holds
+///   itself (`#[rust_js::nullable]`, ADR 0586, amended);
+/// - a function's result (ADR 0841) and its parameter its
+///   `#[rust_js::nullable(..)]` names, `T | null` (ADR 0861);
+/// - a binding's argument it names `#[rust_js::nullable(..)]`, or a
+///   collection's value it holds `None` of as `null`, of a payload not of
+///   any shape (ADR 0275), and the values of entries it's given (ADR 0884,
+///   amended);
+/// - another crate's function's parameter, as its manifest says (ADR 0861).
+pub(in crate::lower) fn none_form<'tcx>(tcx: TyCtxt<'tcx>, place: NonePlace<'_, 'tcx>) -> NoneForm {
+    match place {
+        NonePlace::Field(field, field_ty) => {
+            if bindings::holds_value(tcx, field) {
+                return NoneForm::Value;
+            }
+            let held = field_ty.is_none_or(|ty| bindings::nullable_option(tcx, ty).is_some());
+            match (
+                bindings::is_nullable(tcx, field) && held,
+                bindings::is_optional(tcx, field),
+            ) {
+                (true, true) => NoneForm::Optional,
+                (true, false) => NoneForm::Null,
+                (false, _) => NoneForm::Undefined,
+            }
+        }
+        NonePlace::Local(key) => NoneForm::null_if(bindings::nullable_local(tcx, key)),
+        NonePlace::LocalOption(key) => NoneForm::null_if(bindings::nullable_local_option(tcx, key)),
+        NonePlace::Result(body) => NoneForm::null_if(bindings::null_result(tcx, body)),
+        NonePlace::Param(def_id, name) => NoneForm::null_if(bindings::nullable_params(tcx, def_id).contains(&name)),
+        NonePlace::BindingArg(def_id, i, payload) => {
+            NoneForm::null_if(bindings::takes_nullable(tcx, def_id, i) && bindings::holds_none_as_null(tcx, payload))
+        }
+        NonePlace::BindingEntries(def_id, i) => NoneForm::null_if(bindings::takes_nullable_entries(tcx, def_id, i)),
+        NonePlace::ForeignParam(foreign, def_id, i) => NoneForm::null_if(foreign.nulled_param(def_id, i)),
     }
-    let held = field_ty.is_none_or(|ty| bindings::nullable_option(tcx, ty).is_some());
-    match (
-        bindings::is_nullable(tcx, field) && held,
-        bindings::is_optional(tcx, field),
-    ) {
-        (true, true) => NoneForm::Optional,
-        (true, false) => NoneForm::Null,
-        (false, _) => NoneForm::Undefined,
-    }
-}
-
-/// How a thread-local or a `const` of `key` holds a `None`
-/// (`#[rust_js::nullable]`, ADR 0586).
-pub(in crate::lower) fn local_none_form(tcx: TyCtxt<'_>, key: DefId) -> NoneForm {
-    NoneForm::null_if(bindings::nullable_local(tcx, key))
-}
-
-/// How the `Option` a thread-local of `key` holds itself, not a cell's, holds
-/// a `None` (ADR 0586, amended).
-pub(in crate::lower) fn local_option_none_form(tcx: TyCtxt<'_>, key: DefId) -> NoneForm {
-    NoneForm::null_if(bindings::nullable_local_option(tcx, key))
-}
-
-/// How the result of `body`, a function's or a nullable thread-local's
-/// `init`, holds a `None` (ADRs 0841, 0586).
-pub(in crate::lower) fn result_none_form(tcx: TyCtxt<'_>, body: DefId) -> NoneForm {
-    NoneForm::null_if(bindings::null_result(tcx, body))
-}
-
-/// How binding `def_id`'s `i`th argument, an `Option` of `payload`, holds a
-/// `None`: one it names `#[rust_js::nullable(..)]`, or a collection's value
-/// it holds `None` of as `null`, of a payload not of any shape (ADR 0275).
-pub(in crate::lower) fn binding_arg_none_form(tcx: TyCtxt<'_>, def_id: DefId, i: usize, payload: Ty<'_>) -> NoneForm {
-    NoneForm::null_if(bindings::takes_nullable(tcx, def_id, i) && bindings::holds_none_as_null(tcx, payload))
-}
-
-/// How `def_id`'s parameter `name` holds a `None`: one its
-/// `#[rust_js::nullable(..)]` names, `T | null` (ADR 0861).
-pub(in crate::lower) fn param_none_form(tcx: TyCtxt<'_>, def_id: DefId, name: rustc_span::Symbol) -> NoneForm {
-    NoneForm::null_if(bindings::nullable_params(tcx, def_id).contains(&name))
-}
-
-/// How the values of the entries binding `def_id`'s `i`th argument holds,
-/// `[[key, value], ..]`, hold a `None`: of a collection whose values it
-/// holds `None` of as `null` (ADR 0884, amended).
-pub(in crate::lower) fn binding_entries_none_form(tcx: TyCtxt<'_>, def_id: DefId, i: usize) -> NoneForm {
-    NoneForm::null_if(bindings::takes_nullable_entries(tcx, def_id, i))
-}
-
-/// How another crate's function's `i`th parameter, which its body tests
-/// `!== null`, holds a `None`: as its manifest says (ADR 0861).
-pub(in crate::lower) fn foreign_param_none_form(
-    foreign: &crate::lower::library::Foreign<'_, '_>,
-    def_id: DefId,
-    i: usize,
-) -> NoneForm {
-    NoneForm::null_if(foreign.nulled_param(def_id, i))
 }

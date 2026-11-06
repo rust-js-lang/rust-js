@@ -170,7 +170,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .or_else(|| self.field_got_mut(state, place))
             .or_else(|| self.field_item(state, place));
         match field {
-            Some(field) => crate::lower::representation::field_none_form(self.tcx, field, None),
+            Some(field) => crate::lower::representation::none_form(
+                self.tcx,
+                crate::lower::representation::NonePlace::Field(field, None),
+            ),
             None => self.own_param_none_form(state, place),
         }
     }

@@ -445,7 +445,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable field assigned `None`, `context.label = None`, is `undefined`, where its cell's `set` writes `null` (ADR 0810)",
     file: "src/lower/mir/nulled.rs",
-    find: "            Some(field) => crate::lower::representation::field_none_form(self.tcx, field, None),\n",
+    find: "            Some(field) => crate::lower::representation::none_form(\n                self.tcx,\n                crate::lower::representation::NonePlace::Field(field, None),\n            ),\n",
     replace: "            Some(_) => NoneForm::Undefined,\n",
     tests: [
       "test/lowering-nullable.test.ts",

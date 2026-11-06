@@ -38,10 +38,10 @@ an `Option`'s payload, whether its `Some` is boxed, stay there):
 | `Nested` | `undefined`, its `Some(None)` `null` | ADR 1017's held form |
 | `Value` | `null`, its `Some(v)` `v` | a nullable field of a value never `null` (rd645) |
 
-Each kind of place has one function of the owner's:
-`field_none_form`, `local_none_form`, `local_option_none_form`,
-`result_none_form`, `param_none_form`, `binding_arg_none_form`,
-`binding_entries_none_form` and `foreign_param_none_form`. A writer asks
+One function answers each kind of place, `none_form(tcx, NonePlace)`, of
+a variant of `NonePlace`: `Field`, `Local`, `LocalOption`, `Result`,
+`Param`, `BindingArg`, `BindingEntries` and `ForeignParam`. A new kind of
+place is a new variant its match can't miss, not another function. A writer asks
 it, and stores by `NoneForm::storage()`, never `Storage::NullForNone`
 itself; `NoneForm::stores_null`, `storage` and `of_some` match every form.
 MIR's places ask it through one adapter, `nulled.rs`'s `place_none_form`,

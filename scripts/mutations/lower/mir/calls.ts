@@ -956,8 +956,8 @@ export const mutations: Mutation[] = [
     breaks:
       'entries written where they\'re given of a map of `Option` values keep `undefined` for `None`, `new Map([["none", undefined]])`, which `get` reads as a key it lacks (ADR 0884, amended)',
     file: "src/lower/mir/calls.rs",
-    find: "            () if crate::lower::representation::binding_entries_none_form(tcx, def_id, i)\n",
-    replace: "            () if false && crate::lower::representation::binding_entries_none_form(tcx, def_id, i)\n",
+    find: "            () if crate::lower::representation::none_form(\n                tcx,\n                crate::lower::representation::NonePlace::BindingEntries(def_id, i),\n",
+    replace: "            () if false && crate::lower::representation::none_form(\n                tcx,\n                crate::lower::representation::NonePlace::BindingEntries(def_id, i),\n",
     tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
   },
   {
