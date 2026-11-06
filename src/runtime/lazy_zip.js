@@ -115,15 +115,15 @@ function $zipEnds(a, b, dropA, dropB, toShorter) {
   const left = zipped.from[0];
   const right = zipped.from[1];
   if (toShorter) {
+    // Std's default fold of the pairs it takes, `$foldBy`'s, of a view of
+    // it that ends there, closed as it is.
     const fold = (init, f, unwind, ends) => {
       let pairs = Math.min(left.len(), right.len());
-      const next = zipped.next;
-      zipped.next = () => (pairs-- > 0 ? next() : { done: true, value: undefined });
-      try {
-        return $Steps.prototype.fold.call(zipped, init, f, unwind, ends);
-      } finally {
-        zipped.next = next;
-      }
+      const taken = {
+        next: () => (pairs-- > 0 ? zipped.next() : { done: true, value: undefined }),
+        return: () => zipped.return(),
+      };
+      return $foldBy(taken, "next", init, f, unwind, ends);
     };
     $forward(zipped, zipped, { fold });
   }

@@ -127,8 +127,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a zip std folds by `SpecFold`'s `TrustedLen` impl folds as its `next` steps, its first side once more, so its extra item is dropped inside the fold, before its result, which Rust leaks where that drop panics (#812)",
     file: "src/runtime/lazy_zip.js",
-    find: "      zipped.next = () => (pairs-- > 0 ? next() : { done: true, value: undefined });\n",
-    replace: "      zipped.next = () => next();\n",
+    find: "        next: () => (pairs-- > 0 ? zipped.next() : { done: true, value: undefined }),\n",
+    replace: "        next: () => zipped.next(),\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_droppers_from_its_back.rs$"],
   },
   {
