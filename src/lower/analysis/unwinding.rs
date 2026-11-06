@@ -153,9 +153,7 @@ fn of_a_cell(tcx: TyCtxt<'_>, method: DefId) -> bool {
     let Some(imp) = tcx.inherent_impl_of_assoc(method) else {
         return false;
     };
-    let is = |ty: Ty<'_>, name: &str| {
-        matches!(ty.kind(), ty::Adt(adt, _) if is_std_crate(tcx, adt.did()) && tcx.item_name(adt.did()).as_str() == name)
-    };
+    let is = |ty: Ty<'_>, name: &str| matches!(ty.kind(), ty::Adt(adt, _) if is_std_crate(tcx, adt.did()) && tcx.item_name(adt.did()).as_str() == name);
     let own = tcx.type_of(imp).instantiate_identity().skip_normalization();
     is(own, "Cell")
         || matches!(own.kind(), ty::Adt(_, local) if is(own, "LocalKey")

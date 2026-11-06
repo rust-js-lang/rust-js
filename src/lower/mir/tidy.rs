@@ -163,9 +163,12 @@ pub(super) struct Again {
 }
 
 pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
+    // Stopped early, `--tidy-until`'s, what runs as a panic unwinds is
+    // guarded still, as it's what the JS does, not how it reads (#847).
+    let stopped = |body: &mut Vec<Stmt>| js::statement_lists(body, &mut |s| unwinds::guarded_cleanups(s));
     for stage in stages::STAGES {
         if run_stage(body, hints, stage, stage.name) {
-            return;
+            return stopped(body);
         }
         // Its stages run again where its passes found they must, each
         // through this runner, named `again/<stage>`.
@@ -173,7 +176,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
             hints.again.running.set(true);
             for again in stages::STAGES.iter().filter(|s| stage.again.contains(&s.name)) {
                 if run_stage(body, hints, again, &again_name(again)) {
-                    return;
+                    return stopped(body);
                 }
             }
             hints.again.running.set(false);
@@ -992,10 +995,11 @@ mod tests {
                 "jumps made next",
                 "named texts",
                 "stepped slices",
-                "written loop labels"
+                "written loop labels",
+                "guarded cleanups"
             ]
         );
-        assert!(names.last().is_some_and(|n| n == "finish/written loop labels"));
+        assert!(names.last().is_some_and(|n| n == "finish/guarded cleanups"));
     }
 
     fn present(x: &str) -> Expr {

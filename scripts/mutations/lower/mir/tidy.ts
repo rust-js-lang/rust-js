@@ -438,4 +438,12 @@ export const mutations: Mutation[] = [
     replace: "        let facts = made.facts.and(e.facts.of_statement());\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a caught value nothing reads that may throw"],
   },
+  {
+    name: "tidy-until-cleanups-unguarded",
+    breaks: "a body tidy stops in early, `--tidy-until`'s, runs its cleanups unguarded, so a drop's panic as a panic unwinds replaces it where Rust aborts (#847)",
+    file: "src/lower/mir/tidy.rs",
+    find: "    let stopped = |body: &mut Vec<Stmt>| js::statement_lists(body, &mut |s| unwinds::guarded_cleanups(s));\n",
+    replace: "    let stopped = |_: &mut Vec<Stmt>| {};\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "unwinding_drop_aborts_locals"],
+  },
 ];

@@ -54,6 +54,9 @@ const few = [
   // what isn't one, `undefined` in their place, never an undeclared
   // temporary's read (#641).
   "value_cell_set_after_its_call.rs",
+  // A drop that panics as a panic unwinds aborts at every stage end: tidy
+  // guards its cleanups wherever it stops (#847).
+  "unwinding_drop_aborts_locals.rs",
 ];
 const which = process.env.TIDY_STAGES;
 if (which !== undefined && which !== "corpus" && which !== "programs") {
@@ -227,7 +230,7 @@ test("a stage's end is the last of its passes", () => {
   buildCompiler();
   const ends = stageEnds();
   expect(ends.length).toBeGreaterThan(10);
-  expect(ends).toContain("finish/written loop labels");
+  expect(ends).toContain("finish/guarded cleanups");
   expect(ends.some((end) => end.startsWith("again/"))).toBe(true);
 });
 
