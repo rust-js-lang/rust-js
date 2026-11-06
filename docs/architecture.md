@@ -454,7 +454,14 @@ source's steps, `fold`, `try_fold`, `rfold`, `try_rfold`, `nth`,
 it specializes, is given by `$forward` (`src/runtime/forward.js`) alone,
 which passes on every argument a step takes, an item's drop and an
 accumulator's `unwind` ([ADR 1089](decisions/1089-an-iterators-steps-are-passed-on-by-one-combinator.md));
-`test/architecture.test.ts` rejects a step assigned anywhere else.
+`test/architecture.test.ts` rejects a step assigned anywhere else. What a
+helper drops as a panic unwinds is `$unwinds(run, ...drops)`'s alone, the
+drops given in std's frame's order, and what a frame's end and drop glue
+run in turn is `$inTurn`'s; std's default fold is `$foldBy`'s, after the
+value's own step; a drop that throws while one unwinds is
+`$unwindingThrew`'s (ADR 1092's #817 amendment).
+`test/architecture-iterators.test.ts` rejects a runtime `try`, `catch` or
+`finally` outside them, but of helpers it names that aren't an iterator's.
 
 ### The iterator protocol
 

@@ -208,6 +208,67 @@ test("an adapter's parts are closed in turn by $inTurn alone", () => {
   expect(read("src/runtime/steps.js")).toContain("function $inTurn(...runs)");
 });
 
+// What a runtime helper drops as a panic unwinds is `$unwinds(run,
+// ...drops)`'s alone, each drop given in std's frame's order, and what a
+// frame's end or a drop glue runs in turn is `$inTurn`'s and `$inTurnOf`'s,
+// all in steps.js (ADR 1092's #817 amendment): each helper's own `try` kept
+// its own order and its own answer of which error goes on, and 40 of them
+// drifted (#843, #844, #845, iterators × protocol gap). The helpers below
+// aren't an iterator's: what each runs as it throws is its own owner's, the
+// panic points of #854 to make one with it.
+const ownUnwinding: Record<string, string> = {
+  "src/runtime/borrow.js": "a `RefCell` borrow given back as the call it guards throws",
+  "src/runtime/dedup_by.js": "a `Vec`'s `dedup_by` of a test that may panic, its items kept as std's guard keeps them",
+  "src/runtime/fmt_error.js": "a `fmt::Error` caught to become `write!`'s `Err`, not a drop",
+  "src/runtime/from_json.js": "serde's decoding error caught to become a `Result`, not a drop",
+  "src/runtime/heap_ops.js": "a `BinaryHeap`'s `retain` of a test that may panic",
+  "src/runtime/json_content.js": "serde's decoding error caught to become a `Result`, not a drop",
+  "src/runtime/json_decoder.js": "serde's decoding error caught to become a `Result`, not a drop",
+  "src/runtime/json_flat.js": "serde's decoding error caught to become a `Result`, not a drop",
+  "src/runtime/json_read.js": "JSON.parse's `SyntaxError` caught to become a `Result`, not a drop",
+  "src/runtime/json_reader.js": "serde's decoding error caught to become a `Result`, not a drop",
+  "src/runtime/json_value.js": "serde's encoding error caught to become a `Result`, not a drop",
+  "src/runtime/json_value_reader.js": "serde's decoding error caught to become a `Result`, not a drop",
+  "src/runtime/map_ops.js": "a map's `retain` of a test that may panic",
+  "src/runtime/rc.js": "`Rc::unwrap_or_clone` of a clone that may panic",
+  "src/runtime/resize.js": "a `Vec`'s `resize_with` of a function that may panic, its length set as std's guard sets it",
+  "src/runtime/retain.js": "a `Vec`'s `retain` of a test that may panic, its items kept as std's guard keeps them",
+  "src/runtime/should_panic.js": "a `#[should_panic]` test's panic caught, not a drop",
+  "src/runtime/slice_ops.js": "a slice's `is_sorted_by` and `retain_mut` of a function that may panic",
+  "src/runtime/to_json.js": "serde's encoding error caught to become a `Result`, not a drop",
+  "src/runtime/try.js": "`?`'s early return of an `Err` thrown and caught, not a drop",
+  "src/runtime/unwind.js": "`catch_unwind`, the one catch of a panic",
+};
+
+test("a runtime helper drops what it holds as a panic unwinds by $unwinds alone", () => {
+  const unwinding = /^\s*(\}\s*)?(try\s*\{|catch\s*\(|finally\s*\{)|\}\s*(catch\s*\(|finally\s*\{)/;
+  expect(unwinding.test("  } finally {")).toBe(true);
+  expect(unwinding.test("    try {")).toBe(true);
+  const owners = new Set(["$unwinds", "$dropsUnwinding", "$inTurnOf"]);
+  const catching = files("src/runtime")
+    .filter((file) => file.endsWith(".js") && !(file in ownUnwinding))
+    .flatMap((file) => {
+      let fn = "";
+      return read(file)
+        .split("\n")
+        .flatMap((line, i) => {
+          fn = /^function (\$\w+)/.exec(line)?.[1] ?? fn;
+          const own = file === "src/runtime/steps.js" && owners.has(fn);
+          return !line.trimStart().startsWith("//") && unwinding.test(line) && !own ? [`${file}:${i + 1} (${fn})`] : [];
+        });
+    });
+  expect(catching).toEqual([]);
+  // Each one listed still writes its own, or it's off the list.
+  const stale = Object.keys(ownUnwinding).filter((file) => !read(file).split("\n").some((line) => unwinding.test(line)));
+  expect(stale).toEqual([]);
+  // And the lowering of iterators writes none into the JS: a `skip_while`'s
+  // test is the runtime's `$kept` (#817).
+  const lowering = [...files("src/lower/iterators"), ...files("src/lower/mir/iter")]
+    .filter((file) => file.endsWith(".rs"))
+    .filter((file) => /StmtKind::Try(Catch)?\(/.test(read(file)));
+  expect(lowering).toEqual([]);
+});
+
 // An iterator value's facts are written once, by lower/iterators/value.rs's
 // `emit()`, and read only through value.rs, which reads the `Known` facts
 // `emit()` marks its JS with (ADR 1092, amended, #730 phase 3). A reader that

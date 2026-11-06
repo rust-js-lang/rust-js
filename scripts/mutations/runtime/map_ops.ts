@@ -306,7 +306,7 @@ export const mutations: Mutation[] = [
     name: "map-from-keeps-entries",
     breaks: "a `collect` into a hash map a panic stops leaves what it held undropped (#423)",
     file: "src/runtime/map_ops.js",
-    find: "      try {\n        dropKey?.(key);\n      } finally {\n        if (!set) drop?.(value);\n      }\n",
+    find: "          () => dropKey?.(key),\n          () => set || drop?.(value),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },

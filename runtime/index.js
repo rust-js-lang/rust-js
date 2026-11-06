@@ -6768,18 +6768,16 @@ export function $extendMap(m, items, set, drop, dropKey) {
 // closed, then each entry `m` holds dropped, its key then its value, as
 // std's `from_iter` drops its `extend`'s iterator, then its map (#423).
 export function $mapFrom(m, items, set, drop, dropKey) {
-  try {
-    return $extendMap(m, items, set, drop, dropKey);
-  } catch (error) {
-    for (const [key, value] of m.entries()) {
-      try {
-        dropKey?.(key);
-      } finally {
-        if (!set) drop?.(value);
-      }
-    }
-    throw error;
-  }
+  return $unwinds(
+    () => $extendMap(m, items, set, drop, dropKey),
+    () =>
+      $inTurnOf([...m.entries()], ([key, value]) =>
+        $inTurn(
+          () => dropKey?.(key),
+          () => set || drop?.(value),
+        ),
+      ),
+  );
 }
 
 // A B-tree's `first_entry()`, or `last_entry()` (`last`): its least or

@@ -1137,3 +1137,69 @@ Mutations: `in-place-collect-unheld`, `in-place-close-unguarded`,
 `fold-to-array-collected-last`, `collect-end-unwound-leaks`,
 `in-place-by-fold`, `consume-unheld` and the skip mutations of #492 and
 #768 name their lines as they now read.
+
+## Amendment: what a helper drops as a panic unwinds is one combinator's (2026-11-06, #817)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The JS a program
+compiles to is the same, but for a `skip_while`'s, the user's choice of form,
+and its behavior is the same, but where a second panic unwinds (below).
+
+The panic and drop column of this contract had no owner. Each of 40 runtime
+helpers wrote its own `try`, `catch` or `finally` to drop what it held as a
+panic unwound: `$consume`, `$consumed`, `$staged`, `$kept`, `$stepHolding`,
+`$endsAfter`, `$closing`'s fold, `$holding`'s, the collects, `$lastDropping`,
+`$extremeBy`, the zips, three copies of `FlattenCompat::fold`'s `finally {
+ends() }`, `$partition`, `$extend`, `$reduce`, the comparisons, the capacity
+hints and more. Each kept its own order and its own answer of which error
+goes on. The points table found the frames that drifted (#843, #844, #845).
+
+- **`$unwinds(run, ...drops)`** (`steps.js`) is the one place a helper drops
+  what it holds as a panic unwinds: `run()`, a call std's frame makes while
+  it owns what `drops` drop, given in that frame's order, its locals'
+  reverse order. Where it throws, each drop runs in turn, the next though one
+  throws, and the panic goes on. The frames of std's are named once on top of
+  it, each citing its std source: `$staged` (a fold closure holding the
+  accumulator), `$kept` (a discarding closure: the item, then the
+  accumulator), `$stepHolding` (a by-value fold before its accumulator is a
+  local: `f`, then `init`), `$consumed` (`f`, then `self`), `$endsAfter`, and a
+  collect's `$collectUnwound` and `$collectEnded`.
+- **`$inTurn(...runs)` and `$inTurnOf(items, run)`** are the one "each though
+  one throws" of a frame's end and of drop glue, the rest run as the first
+  throw unwinds. `$dropItems` is `$inTurnOf`'s.
+- **Std's default fold is one loop, `$foldBy(it, "next" | "back", ..)`**, the
+  fallback a consumer reaches after the value's own `fold` or `rfold`
+  (m6-lily's review: never a loop ahead of a step that exists, #834's
+  shape). `$Steps`' `fold`, `$foldDropping`'s and `$foldBack`'s were three.
+  `$foldDropping`'s dropped what drops with `f` after what's left, where std
+  drops `f` first. That was latent: only a bare `$iter`, which closes
+  nothing, reached it.
+- **A drop that throws while a panic unwinds is `$unwindingThrew`'s alone.**
+  Rust aborts there. Until #847 makes it Rust's abort (the user's decision,
+  2026-11-06), it keeps ADR 0660's answer: the first error goes on.
+  `$consumed`, `$stepHolding`, `$foldBack` and `$collectUnwound` had let the
+  later drop's error replace the panic, and `$dropItems` the last error of
+  many. Native Rust aborts in every such case, so no native comparison can
+  tell them apart.
+- **A `skip_while`'s test is the runtime's**, `$lazySkipWhile(it, skip,
+  drop)`, as a `take_while`'s is: the lowering's `dropping_skipped` wrote a
+  `try`/`finally` copy of `$kept`'s rule into each test it emitted. Eleven
+  corpus cases are 102 lines shorter.
+- **A zip's `SpecFold` fold** is `$foldBy` of a view that ends at its shorter
+  side's length. It no longer patches its own `next` and restores it in a
+  `finally`.
+
+`test/architecture-iterators.test.ts` ("a runtime helper drops what it holds
+as a panic unwinds by $unwinds alone") refuses a `try`, `catch` or `finally`
+in `src/runtime/` outside `$unwinds`, `$dropsUnwinding` and `$inTurnOf`,
+but of 21 helpers it names, each with why: those that aren't an iterator's,
+whose unwinding #854's panic points will check. It also refuses a
+`StmtKind::Try` built by `lower/iterators/` or `lower/mir/iter/`. The
+combinators' own emitted unwinding (`combinators.rs`'s `comb_values`,
+`combinators/values.rs`, `adapters.rs`'s `inspect`) is the lowering's and
+is left for later. 60 mutations name their lines as they now read.
+`unwinds-drops-nothing`, `skip-while-throw-keeps-item` and
+`skip-while-skipped-undropped` are new. Three are gone as equivalent:
+`holding-fold-unheld` (it already survived on main),
+`last-dropping-kept-dropped-twice` and
+`last-dropping-flatten-kept-dropped-twice`, because a frame's `unwind` runs
+only as a step throws, never after `f` has.
