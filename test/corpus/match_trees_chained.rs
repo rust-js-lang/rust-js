@@ -16,7 +16,9 @@
 // decision, #771); a guard's binding MIR declares, `let x = a;`, read as
 // its value, of the block and of an arm's own tree past its first leaving;
 // and a presence test read once, past the arm of its negation, but
-// another value's read where it was (#791).
+// another value's read where it was (#791); an arm's statement copied
+// into each alternative that binds its value apart, each its own binding
+// (the user's decision A, #771).
 use std::cell::Cell;
 
 fn g(c: &Cell<u32>, n: u32, k: u32) -> bool {
@@ -265,6 +267,21 @@ fn presence_of_another(o: Option<u32>, p: Option<(u32, u32)>) -> Result<u32, u32
     })
 }
 
+fn bound_in_each(c: &Cell<u32>, e: Option<(u32, u32)>) -> Result<u32, u32> {
+    Ok(match e {
+        None => 5,
+        Some((0, 0)) => 6,
+        Some((op, v)) => {
+            let l = step(c, v)?;
+            match (op, l) {
+                (0, x) | (x, 3) => x * 2 + 2,
+                (2, x) => x * 2 + 3,
+                (o, l) => return Err(o * 100 + l),
+            }
+        }
+    })
+}
+
 const SLICES: &[&[u32]] = &[
     &[],
     &[1],
@@ -286,12 +303,14 @@ fn main() {
             println!("declared_outside {:?}", declared_outside(c, Some((op, v))));
             println!("inner_after_an_arm {:?}", inner_after_an_arm(c, Some((op, v))));
             println!("value_between_returns {:?}", value_between_returns(c, Some((op, v))));
+            println!("bound_in_each {:?}", bound_in_each(c, Some((op, v))));
         }
     }
     println!("read_twice {:?}", read_twice(c, None));
     println!("declared_outside {:?}", declared_outside(c, None));
     println!("inner_after_an_arm {:?}", inner_after_an_arm(c, None));
     println!("value_between_returns {:?}", value_between_returns(c, None));
+    println!("bound_in_each {:?}", bound_in_each(c, None));
     for o in [None, Some(0), Some(2)] {
         for p in [None, Some((0, 0)), Some((1, 2))] {
             println!("presence_of_another {:?}", presence_of_another(o, p));

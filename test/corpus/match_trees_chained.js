@@ -468,6 +468,36 @@ function presenceOfAnother(o, p) {
   return { TAG: "Ok", _0: tmp };
 }
 
+function boundInEach(c, e) {
+  let tmp;
+  if (e == null) {
+    tmp = 5;
+  } else if (e[0] === 0 && e[1] === 0) {
+    tmp = 6;
+  } else {
+    const [op, v] = e;
+    const result = step(c, v);
+    if (result.TAG === "Err") {
+      return result;
+    }
+    const l = result._0;
+    if (op === 0) {
+      const x = l;
+      tmp = (((x * 2) >>> 0) + 2) >>> 0;
+    } else if (l === 3) {
+      const x = op;
+      tmp = (((x * 2) >>> 0) + 2) >>> 0;
+    } else if (op === 2) {
+      const x = l;
+      tmp = (((x * 2) >>> 0) + 3) >>> 0;
+    } else {
+      const o = op;
+      return { TAG: "Err", _0: (((o * 100) >>> 0) + l) >>> 0 };
+    }
+  }
+  return { TAG: "Ok", _0: tmp };
+}
+
 const SLICES = [[], [1], [2], [1, 1], [2, 2], [1, 2], [2, 1], [3, 1, 2], [1, 3, 1], [0, 1, 2, 3]];
 
 function main() {
@@ -488,6 +518,10 @@ function main() {
       console.log(
         `value_between_returns ${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${value$3._0})`}`,
       );
+      const value$4 = boundInEach(c, [op, v]);
+      console.log(
+        `bound_in_each ${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${value$4._0})`}`,
+      );
     }
   }
   const value = readTwice(c);
@@ -504,6 +538,8 @@ function main() {
   console.log(
     `value_between_returns ${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${value$3._0})`}`,
   );
+  const value$4 = boundInEach(c);
+  console.log(`bound_in_each ${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${value$4._0})`}`);
   for (const o of [undefined, 0, 2]) {
     for (const p of [undefined, [0, 0], [1, 2]]) {
       const value = presenceOfAnother(o, p);

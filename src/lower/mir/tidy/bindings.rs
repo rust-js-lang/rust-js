@@ -954,6 +954,49 @@ pub(super) fn sunk_lets(stmts: &mut Vec<Stmt>) {
     }
 }
 
+/// `chain`, an `if` and its `else if`s that `let name;` is declared just
+/// before, nothing after reading it: each branch that names it given its
+/// own, `if (op === 0) { const x = l; .. } else if (l === 3) { const x = op;
+/// .. }`, as Rust binds `x` in each alternative of `(0, x) | (x, 3)` (#771),
+/// where each assigns it before anything reads it and no test names it.
+/// Whether it is so: otherwise `chain` is as it was.
+pub(super) fn declared_in_branches(name: &str, chain: &mut Stmt) -> bool {
+    fn branches<'s>(stmt: &'s mut Stmt, name: &str, out: &mut Vec<&'s mut Vec<Stmt>>) -> bool {
+        let StmtKind::If(test, then, otherwise) = &mut stmt.kind else {
+            return false;
+        };
+        if test.mentions_var(name) {
+            return false;
+        }
+        out.push(then);
+        match otherwise {
+            Some(list) => {
+                let nested = matches!(list.as_slice(), [s] if matches!(s.kind, StmtKind::If(..)));
+                if nested {
+                    branches(&mut list[0], name, out)
+                } else {
+                    out.push(list);
+                    true
+                }
+            }
+            None => true,
+        }
+    }
+    let mut all = Vec::new();
+    if !branches(chain, name, &mut all) {
+        return false;
+    }
+    let named: Vec<&mut Vec<Stmt>> = all.into_iter().filter(|b| js::mentions_in(b, name) > 0).collect();
+    if named.len() < 2 || !named.iter().all(|b| assigned_first(b, name, &[])) {
+        return false;
+    }
+    for branch in named {
+        branch.insert(0, StmtKind::Let(name.to_string(), None).at(js::Span::NONE));
+        declarations(branch);
+    }
+    true
+}
+
 /// Whether `stmts` assign `name` before anything reads it, each way through
 /// them that names it: first `name = e`, or a branch of an `if` that does
 /// so, which is all that names it; or a loop or a labeled block that is all

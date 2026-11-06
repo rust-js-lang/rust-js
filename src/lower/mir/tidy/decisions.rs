@@ -39,7 +39,9 @@ use walk::{Leaf, Test, Walk};
 const LEAVES: usize = 64;
 
 /// Statements an arm may share with another, copied into each: the jumps
-/// that end them, `return w;`, as a person writes each arm's.
+/// that end them, `return w;`, as a person writes each arm's, and one
+/// statement before them that gives what the arm's alternatives bind, `tmp
+/// = x * 2 + 2;` of `(0, x) | (x, 3) => x * 2 + 2` (`copied_once`).
 const SHARED: usize = 3;
 
 /// What `decisions` is told of the body: each guard the program wrote
@@ -314,7 +316,8 @@ fn chain(
             }),
         }
     }
-    // What more than one arm does, copied into each: a jump, or none.
+    // What more than one arm does, copied into each: a jump, or none; and
+    // one statement that isn't, as the user decided (#771).
     let shared: Vec<&Stmt> = (arms.iter().enumerate())
         .flat_map(|(i, arm)| arm.body.iter().map(move |s| (i, *s)))
         .filter(|(i, s)| {
@@ -324,7 +327,12 @@ fn chain(
         })
         .map(|(_, s)| s)
         .collect();
-    if shared.len() > SHARED || !shared.iter().all(|s| ends(s) && size(s) == 1) {
+    let mut once: Vec<&Stmt> = shared.iter().copied().filter(|s| !ends(s)).collect();
+    once.dedup_by(|a, b| std::ptr::eq(*a, *b));
+    if shared.len() > SHARED
+        || !shared.iter().all(|s| size(s) == 1)
+        || !(once.is_empty() || matches!(once.as_slice(), [only] if kept && copied_once(only)))
+    {
         return None;
     }
     // Nor what one arm holds whole and another in part, an `if` the
@@ -618,8 +626,43 @@ fn chain(
         }
         stmts.push(d.clone());
     }
+    // Of a chain an arm's statement is copied into, each alternative's
+    // binding its own, `const x = l;`, as the user decided (A, #771).
+    let mut chain = chain;
+    if !once.is_empty()
+        && let [only] = chain.as_mut_slice()
+    {
+        stmts.retain(|s| match &s.kind {
+            StmtKind::Let(name, None) => {
+                !((takes_rest || js::mentions_in(after, name) == 0)
+                    && super::bindings::declared_in_branches(name, only))
+            }
+            _ => true,
+        });
+    }
     stmts.extend(chain);
     Some((stmts, takes_rest))
+}
+
+/// Whether `stmt`, what more than one arm does before the jump that ends
+/// it, `tmp = x * 2 + 2;` after `(0, x) | (x, 3)`'s `x = l;` and `x =
+/// op;`, may be written in each arm, as the user decided (#771): each way
+/// runs it once, as the tree does, so only where it reads alike written
+/// twice, a variable or a property given what reads nothing that a copy
+/// would read otherwise, no call, no function made, no declaration (whose
+/// scope would be the arm's).
+fn copied_once(stmt: &Stmt) -> bool {
+    let StmtKind::Assign(target, value) = &stmt.kind else {
+        return false;
+    };
+    let mut made = false;
+    js::each_expr(std::slice::from_ref(stmt), &mut |e| {
+        made |= matches!(
+            e.kind,
+            ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) | ExprKind::Function(..)
+        );
+    });
+    matches!(target.kind, ExprKind::Var(_)) && pure(value) && !value.has_effects() && !made
 }
 
 /// An arm's test of its `paths`, the tests of each: what each tests first

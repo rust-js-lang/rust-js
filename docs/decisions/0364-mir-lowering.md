@@ -1496,3 +1496,39 @@ the walk's check of a `let` a leaf names (`declared-binding-named-past-the-walk`
 a `let` binding is `bound`'s now, read where it's given, so no program
 reaches the check, and with it gone the 24 seeds and the corpus print as
 they do: it stays, and its mutation is removed.
+
+## Amendment: an arm's statement is copied into each alternative that binds apart (#771, the user's decision A, 2026-11-06)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The JS does what it
+did; only its form changes.
+
+`(0, x) | (x, 3) => x * 2 + 2` binds `x` from another place in each
+alternative, so MIR gives each its own leaf, `x = l;` and `x = op;`, that
+then share the arm's `tmp = x * 2 + 2;`. `chain` copied into each arm only
+the jumps it shares (`SHARED`), so the tree kept its label, `bb30: { let
+x; if (op === 0) { x = l; } else if (l === 3) { x = op; } else { ..; tmp =
+..; break bb30; } tmp = (((x * 2) >>> 0) + 2) >>> 0; }`. The user decided
+A, beside the nesting and the guard's `||` of #523: **one statement more
+than one arm does, before the jumps they share, is copied into each**,
+`if (op === 0) { const x = l; tmp = ..; } else if (l === 3) { const x =
+op; tmp = ..; } else if ..`, one statement at most (`copied_once`). Each
+way still runs it once, after its own alternative's statements, as the
+tree does; it's copied only where writing it twice reads alike: an
+assignment to a variable of a pure value, no call or getter, no function
+made (one each copy), no declaration (whose scope would be the arm's).
+And the `let x;` the walk declared before the chain is then each
+alternative's own (`bindings::declared_in_branches`), where each branch
+that names it gives it first and nothing after the chain reads it, `const x
+= l;`. Only of the last pass's trees (`kept`), so an arm's own tree isn't
+chained first in a way its outer one then nests, `let x$1;` in an `else`
+(`declared_outside`), and of `loop_ends_branch.rs`'s `switch (item)`, which
+stays.
+
+Corpus `match_trees_chained.rs` (`bound_in_each`), against native Rust;
+the 24 generated seeds agree with native Rust, 229 labeled of 960, from
+257. Mutations `shared-statement-uncopied`, `shared-statement-of-a-call`,
+`shared-statement-before-the-last-pass` and `alternatives-share-one-binding`
+(`decisions.ts`); `decisions-shared-assign-copied`, which copies any
+statement an arm shares, follows the check it mutates. No program yet
+copies a statement that makes a function; it's refused as a declaration
+is.
