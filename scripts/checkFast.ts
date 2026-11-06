@@ -14,7 +14,7 @@
 // names, and each test file its suite runs one a job here runs (#732).
 import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { availableParallelism, loadavg } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { pruneKept } from "../test/kept";
 import { runs, touchesIterators } from "./iteratorSlice";
 import { browsers, caseParts, nightly } from "./shard";
@@ -208,6 +208,16 @@ function run(list: Job[], compiler: string) {
 }
 
 if (import.meta.main) {
+  // A rebase stopped on a conflict leaves a half-applied tree, which every
+  // step would build and test for no reason of the change's own: stopped
+  // here, before anything builds (DEVELOPMENT.md's stalls).
+  for (const state of ["rebase-merge", "rebase-apply"]) {
+    const path = Bun.spawnSync(["git", "rev-parse", "--git-path", state], { cwd: root }).stdout.toString().trim();
+    if (path !== "" && existsSync(resolve(root, path))) {
+      console.error("a rebase is stopped on a conflict: resolve it first (`git status`), then run check:fast");
+      process.exit(1);
+    }
+  }
   const args = process.argv.slice(2);
   const all = args.includes("--all");
   const extra = args.filter((arg) => !arg.startsWith("--"));
