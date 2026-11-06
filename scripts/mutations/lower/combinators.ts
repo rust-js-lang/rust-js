@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
     name: "map-or-fallback-kept",
     breaks: "`map_or`'s fallback with a destructor, unused, is never dropped",
     file: "src/lower/combinators.rs",
-    find: "                        vec![StmtKind::Try(body, dropped).at(js_span)],\n",
+    find: "                        crate::lower::drops::dropped_after(body, dropped, js_span),\n",
     replace: "                        body,\n",
     tests: ["test/corpus.test.ts", "-t", "option_combinator_drops"],
   },

@@ -149,8 +149,12 @@ pub fn written(lines: &[&str]) -> usize {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('    while (s < lines.length && !isRoot(lines[s])) {\n      s++;\n    }\n');
-  expect(js).toContain('    while (s < lines.length) {\n      if (isRoot(lines[s])) {\n        break;\n      }\n      s++;\n    }\n');
+  // Its drop's \`Cell::get\` isn't yet known not to throw (#861 (c)), so a call
+  // that may throw in its scope is a \`try\` of its own, whose \`catch\` drops
+  // it as a panic unwinds (#847): the loop's test is that call's \`tmp\`, until
+  // #861 (c) makes the scope one \`finally\` again, its \`while\` its test.
+  expect(js).toContain('  while (s < lines.length) {\n    let tmp;\n    try {\n      tmp = isRoot(lines[s]);\n    } catch (error) {\n');
+  expect(js).toContain('    if (tmp) {\n      break;\n    }\n    s++;\n  }\n  const result = s;\n  DROPS = (DROPS + 1) >>> 0;\n  return result;\n}\n');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.root(["a", "Root"]), lib.root(["a"]), lib.root([])]).toEqual([1, 1, 0]);
   expect([lib.written(["a", "Root"]), lib.written(["a"]), lib.written([])]).toEqual([1, 1, 0]);
@@ -284,12 +288,13 @@ test("React's describeNativeComponentFrame's loops are upstream's", () => {
   run([compiler, join(root, "test/ports/component-stack-frame/lib.rs"), "-o", join(out, "lib.js"), "--", ...crates, "-L", node]);
   const js = readFileSync(join(out, "ReactComponentStackFrame.js"), "utf8");
   expect(js).toContain(
-    '      while (s < sampleLines.length && !sampleLines[s].includes("DetermineComponentFrameRoot")) {\n        s++;\n      }\n',
+    '    while (s < sampleLines.length && !sampleLines[s].includes("DetermineComponentFrameRoot")) {\n      s++;\n    }\n',
   );
   expect(js).toContain(
-    '      while (c < controlLines.length && !controlLines[c].includes("DetermineComponentFrameRoot")) {\n        c++;\n      }\n',
+    '    while (c < controlLines.length && !controlLines[c].includes("DetermineComponentFrameRoot")) {\n      c++;\n    }\n',
   );
-  expect(js).toContain("      while (s >= 1 && c >= 0) {\n");
+  // Its guard's drops are after each \`try\` of what may throw, not one \`finally\` round the loops (#847).
+  expect(js).toContain("    while (s >= 1 && c >= 0) {\n");
   expect(js).not.toContain("$index");
   expect(js).not.toMatch(/\bbb\d+/);
 });

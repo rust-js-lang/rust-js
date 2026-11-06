@@ -99,6 +99,6 @@ function $abort(cause) {
   if (cause instanceof $Abort) return cause;
   $aborted = true;
   $eprint("thread caused non-unwinding panic. aborting.\n");
-  globalThis.process?.exit?.(134);
+  $abortExit(134);
   return new $Abort("panic in a destructor during cleanup", { cause });
 }

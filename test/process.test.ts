@@ -26,7 +26,8 @@ test("each of std's functions that work in Node only is a helper of process.js, 
     const body = runtime.slice(runtime.indexOf(`function ${helper}(`)).split("\n}\n")[0];
     expect(body, helper).toContain(`$process("\`${path}\`")`);
   }
-  expect(functions.filter((name) => name !== "$process").sort()).toEqual([...helpers.values()].sort());
+  // `$abortExit`, an abort's exit, isn't std's function, and ends nothing without a process (#847).
+  expect(functions.filter((name) => name !== "$process" && name !== "$abortExit").sort()).toEqual([...helpers.values()].sort());
   // Only it, and printing, which writes to `console` where there's none, read Node's process.
   const runtimeFiles = readdirSync(join(root, "src/runtime"))
     .filter((file) => file.endsWith(".js") && read(`src/runtime/${file}`).includes("globalThis.process"));

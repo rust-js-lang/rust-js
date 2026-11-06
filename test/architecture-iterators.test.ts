@@ -282,7 +282,9 @@ test("what the lowering runs as a panic unwinds is guarded by drops/parts.rs alo
     ["src/lower.rs", ...files("src/lower"), ...files("src/prepare")]
       .filter((file) => file.endsWith(".rs") && !allowed.includes(file))
       .flatMap((file) =>
+        // A unit test's JS, `#[cfg(test)]`'s, writes nothing the lowering runs.
         read(file)
+          .split("#[cfg(test)]")[0]
           .split("\n")
           .filter((line) => !line.trimStart().startsWith("//") && pattern.test(line))
           .map((line) => `${file}: ${line.trim()}`),

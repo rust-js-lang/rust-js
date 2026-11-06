@@ -442,7 +442,7 @@ export const mutations: Mutation[] = [
     name: "tidy-until-cleanups-unguarded",
     breaks: "a body tidy stops in early, `--tidy-until`'s, runs its cleanups unguarded, so a drop's panic as a panic unwinds replaces it where Rust aborts (#847)",
     file: "src/lower/mir/tidy.rs",
-    find: "    let stopped = |body: &mut Vec<Stmt>| js::statement_lists(body, &mut |s| unwinds::guarded_cleanups(s));\n",
+    find: "    let stopped = |body: &mut Vec<Stmt>| (stages::GUARDED_CLEANUPS.run)(body, hints);\n",
     replace: "    let stopped = |_: &mut Vec<Stmt>| {};\n",
     tests: ["test/tidy-stages.test.ts", "-t", "unwinding_drop_aborts_locals"],
   },

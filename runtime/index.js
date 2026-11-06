@@ -8594,6 +8594,12 @@ export function $varsOs() {
 export function $exit(code) {
   $process("`std::process::exit`").exit(code);
 }
+// An abort's end of the process, `code` its status, where there's one: a
+// browser has none, so nothing ends, and `$abort` throws instead (#847).
+// Not std's function, so not `$process`'s, which panics without one.
+export function $abortExit(code) {
+  globalThis.process?.exit?.(code);
+}
 
 // The allocator (ADR 0417): an allocation is an array of slots, given as a
 // pointer to its first's bytes, which it's cast back from to its items'.
@@ -14162,7 +14168,7 @@ export function $abort(cause) {
   if (cause instanceof $Abort) return cause;
   $aborted = true;
   $eprint("thread caused non-unwinding panic. aborting.\n");
-  globalThis.process?.exit?.(134);
+  $abortExit(134);
   return new $Abort("panic in a destructor during cleanup", { cause });
 }
 

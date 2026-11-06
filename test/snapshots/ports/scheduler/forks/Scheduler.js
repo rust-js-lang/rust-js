@@ -21,6 +21,7 @@ import {
   NormalPriority,
   UserBlockingPriority,
 } from "../SchedulerPriorities.js";
+import { $cleanup } from "@rust-js/runtime";
 
 let getCurrentTime;
 if (typeof performance !== "undefined" && typeof performance.now !== "undefined") {
@@ -105,14 +106,21 @@ function flushWork(initialTime) {
 
   isPerformingWork = true;
   const previousPriorityLevel = currentPriorityLevel;
-  // No catch in prod code path.
+  let result;
   try {
-    return workLoop(initialTime);
-  } finally {
-    currentTask = undefined;
-    currentPriorityLevel = previousPriorityLevel;
-    isPerformingWork = false;
+    result = workLoop(initialTime);
+  } catch (error) {
+    $cleanup(() => {
+      currentTask = undefined;
+      currentPriorityLevel = previousPriorityLevel;
+      isPerformingWork = false;
+    });
+    throw error;
   }
+  currentTask = undefined;
+  currentPriorityLevel = previousPriorityLevel;
+  isPerformingWork = false;
+  return result;
 }
 
 function workLoop(initialTime) {
@@ -376,14 +384,22 @@ function performWorkUntilDeadline() {
     let hasMoreWork = true;
     try {
       hasMoreWork = flushWork(currentTime);
-    } finally {
-      if (hasMoreWork) {
-        // If there's more work, schedule the next message event at the end
-        // of the preceding one.
-        schedulePerformWorkUntilDeadline();
-      } else {
-        isMessageLoopRunning = false;
-      }
+    } catch (error) {
+      $cleanup(() => {
+        if (hasMoreWork) {
+          // If there's more work, schedule the next message event at the end
+          // of the preceding one.
+          schedulePerformWorkUntilDeadline();
+        } else {
+          isMessageLoopRunning = false;
+        }
+      });
+      throw error;
+    }
+    if (hasMoreWork) {
+      schedulePerformWorkUntilDeadline();
+    } else {
+      isMessageLoopRunning = false;
     }
   }
 }

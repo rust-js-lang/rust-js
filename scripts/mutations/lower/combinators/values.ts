@@ -86,8 +86,8 @@ export const mutations: Mutation[] = [
     breaks:
       "where `xor`'s first dropped value's destructor panics, the second is never dropped",
     file: "src/lower/combinators/values.rs",
-    find: "                false => vec![StmtKind::Try(dropped_a, dropped_b).at(js_span)],\n",
-    replace: "                false => [dropped_a, dropped_b].concat(),\n",
+    find: "            let dropped = crate::lower::drops::each_dropped(vec![dropped_a, dropped_b], js_span);\n",
+    replace: "            let dropped = [dropped_a, dropped_b].concat();\n",
     tests: ["test/corpus.test.ts", "-t", "^xor_drop_panics.rs$"],
   },
   {

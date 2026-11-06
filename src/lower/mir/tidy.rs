@@ -164,8 +164,8 @@ pub(super) struct Again {
 
 pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // Stopped early, `--tidy-until`'s, what runs as a panic unwinds is
-    // guarded still, as it's what the JS does, not how it reads (#847).
-    let stopped = |body: &mut Vec<Stmt>| js::statement_lists(body, &mut |s| unwinds::guarded_cleanups(s));
+    // guarded still, the list's own pass (#847).
+    let stopped = |body: &mut Vec<Stmt>| (stages::GUARDED_CLEANUPS.run)(body, hints);
     for stage in stages::STAGES {
         if run_stage(body, hints, stage, stage.name) {
             return stopped(body);

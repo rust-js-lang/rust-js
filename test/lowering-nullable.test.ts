@@ -987,9 +987,10 @@ pub fn peeked_queue(internals: &Internals, queue: &Queue) -> bool {
   expect(js).toContain("  internals.T = next;\n  internals.T = prevTransition;\n");
   expect(js).toContain("  const again = prevTransition;\n  internals.T = again;\n");
   expect(js).toContain("    prevTransition = other;\n  }\n  internals.T = prevTransition ?? null;\n}");
-  expect(js).toContain("  } finally {\n    internals.T = prevTransition;\n  }");
-  expect(js).toContain("    prev = other;\n  } finally {\n    internals.T = prev ?? null;\n");
-  expect(js).toContain("  } finally {\n    sharedInternals.T = prevTransition;\n");
+  // Its restore may throw, a setter's, so it's after the `try` and, as a panic unwinds, `$cleanup`'s (#847).
+  expect(js).toContain("    $cleanup(() => {\n      internals.T = prevTransition;\n    });\n    throw error;\n  }\n  internals.T = prevTransition;\n}");
+  expect(js).toContain("      internals.T = prev ?? null;\n    });\n    throw error;\n  }\n  prev = other;\n  internals.T = prev ?? null;\n}");
+  expect(js).toContain("      sharedInternals.T = prevTransition;\n    });\n    throw error;\n  }\n  sharedInternals.T = prevTransition;\n}");
   expect(js).toContain("  internals.T = PPeek.peek(queue) ?? null;\n");
   expect(js).toContain("  internals.T = first ?? null;\n");
   const lib = await import(join(dir, "lib.js"));

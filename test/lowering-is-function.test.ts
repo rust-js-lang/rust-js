@@ -502,7 +502,8 @@ pub fn either(a: f64) -> f64 {
   expect(js).toContain("  (element.focus || HTMLElement.prototype.focus).call(element, focusOptions);\n");
   expect(js).toContain("const fallback = globalThis.counted();\n  return a || fallback;");
   // The method read in the guard's \`try\`, where its call is (rd233).
-  expect(js).toContain("  try {\n    (element.focus || HTMLElement.prototype.focus).call(element, focusOptions);\n  } finally {\n    globalThis.done();\n  }");
+  // Its guard's drop, a binding's call, may throw: after the `try`, and `$cleanup`'s as a panic unwinds (#847).
+  expect(js).toContain("  try {\n    (element.focus || HTMLElement.prototype.focus).call(element, focusOptions);\n  } catch (error) {\n    $cleanup(() => {\n      globalThis.done();\n    });\n    throw error;\n  }\n  globalThis.done();\n}");
   const calls: unknown[] = [];
   const g = globalThis as Record<string, unknown>;
   const saved = g.HTMLElement;

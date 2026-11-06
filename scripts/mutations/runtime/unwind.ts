@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     name: "abort-exit-unasked",
     breaks: "an abort where the host has a process throws, not ends it with 134, as Rust's SIGABRT does (#847)",
     file: "src/runtime/unwind.js",
-    find: "  globalThis.process?.exit?.(134);\n",
+    find: "  $abortExit(134);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_field.rs$"],
   },

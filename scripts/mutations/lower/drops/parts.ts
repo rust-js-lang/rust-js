@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a struct's, a tuple's or a variant's parts after one whose destructor panics are never dropped, its throw past them (#416)",
     file: "src/lower/drops/parts.rs",
-    find: "            false => vec![StmtKind::Try(part, rest).at(js_span)],\n",
+    find: "            false => dropped_after(part, rest, js_span),\n",
     replace: "            false => part.into_iter().chain(rest).collect(),\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_parts_past_a_panic.rs$"],
   },

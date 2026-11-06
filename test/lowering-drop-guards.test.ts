@@ -71,6 +71,36 @@ async function restoresEach(dir: string) {
   expect([seen, lib.currentFiber()]).toEqual([["a", "b", "c"], "root"]);
 }
 
+// Its guard's drop, a binding's call, may throw, and one that throws as a
+// panic unwinds aborts, which a `finally` can't tell: so each way out drops it
+// after its `try`, and as a panic unwinds, `$cleanup`'s (#847, the user's
+// decision; #861 makes it one `finally` again where nothing it calls throws).
+const guardedReturns = `  let result;
+  if (wrap) {
+    try {
+      result = callback();
+    } catch (error) {
+      $cleanup(() => {
+        setCurrentFiber(previousFiber);
+      });
+      throw error;
+    }
+    setCurrentFiber(previousFiber);
+    return result;
+  }
+  try {
+    result = callback();
+  } catch (error) {
+    $cleanup(() => {
+      setCurrentFiber(previousFiber);
+    });
+    throw error;
+  }
+  setCurrentFiber(previousFiber);
+  return result;
+}
+`;
+
 // React's `runWithFiberInDEV` returns from inside its `try`, whose
 // `finally` restores the fiber: `try { if (..) { return ..; } return
 // callback(..); } finally { setCurrentFiber(previousFiber); }`. Its port's
@@ -86,17 +116,8 @@ test("an early return in a guard's scope returns in its try", async () => {
       "let _restore = Restore { previous: previous_fiber };",
     ),
   );
-  expect(js).toContain(`  try {
-    if (wrap) {
-      return callback();
-    }
-    return callback();
-  } finally {
-    setCurrentFiber(previousFiber);
-  }
-`);
-  expect(js).not.toContain("let result");
-  expect(js.match(/finally/g)?.length).toBe(1);
+  expect(js).toContain(guardedReturns);
+  expect(js).not.toContain("finally");
   await restoresEach(dir);
 });
 
@@ -110,15 +131,7 @@ test("a one-field guard of a variable reads as that variable", async () => {
     "guard-one-field-variable",
     runWithFiber("struct Restore(Option<String>);", "set_current_fiber(self.0.clone());"),
   );
-  expect(js).toContain(`  try {
-    if (wrap) {
-      return callback();
-    }
-    return callback();
-  } finally {
-    setCurrentFiber(previousFiber);
-  }
-`);
+  expect(js).toContain(guardedReturns);
   expect(js).not.toContain("restore");
   await restoresEach(dir);
   const later = compiled(
@@ -156,17 +169,41 @@ test("a guard's drop that takes its field reads the variable it was made of", as
     "guard-take",
     runWithFiber("struct Restore(Option<String>);", "set_current_fiber(self.0.take());"),
   );
+  // Dropped on each way out, the guard's field is taken where another may read it (#847, #861).
   expect(js).toContain(`export function runWithFiberInDev(fiber, wrap, callback) {
   const previousFiber = current;
   setCurrentFiber(fiber);
-  try {
-    if (wrap) {
-      return callback();
+  const _restore = [previousFiber];
+  let result;
+  if (wrap) {
+    try {
+      result = callback();
+    } catch (error) {
+      $cleanup(() => {
+        const old = _restore[0];
+        _restore[0] = undefined;
+        setCurrentFiber(old);
+      });
+      throw error;
     }
-    return callback();
-  } finally {
-    setCurrentFiber(previousFiber);
+    const old = _restore[0];
+    _restore[0] = undefined;
+    setCurrentFiber(old);
+    return result;
   }
+  try {
+    result = callback();
+  } catch (error) {
+    $cleanup(() => {
+      const old = _restore[0];
+      _restore[0] = undefined;
+      setCurrentFiber(old);
+    });
+    throw error;
+  }
+  const old = _restore[0];
+  setCurrentFiber(old);
+  return result;
 }
 `);
   await restoresEach(dir);
@@ -177,7 +214,7 @@ test("a guard's drop that takes its field reads the variable it was made of", as
       "let _restore = Restore { previous: previous_fiber };",
     ),
   );
-  expect(named.js).toContain("  } finally {\n    setCurrentFiber(previousFiber);\n  }\n");
+  expect(named.js).toContain("    const old = previous;\n    previous = undefined;\n    setCurrentFiber(old);\n    return result;\n  }\n");
   await restoresEach(named.dir);
   const again = compiled(
     "guard-take-again",
@@ -779,13 +816,24 @@ pub fn depth_seen(fail: bool) -> u32 {
 }
 `,
   );
+  // A generic `Drop`'s call of its closure may throw, as it's judged once for
+  // every use: dropped after the `try`, and `$cleanup`'s (#847; #861 (a)).
   expect(js).toContain(`function oper(node) {
   node.depth = (node.depth + 1) >>> 0;
-  try {
-    return node.getter();
-  } finally {
+  function restore() {
     node.depth = (node.depth - 1) >>> 0;
   }
+  let result;
+  try {
+    result = node.getter();
+  } catch (error) {
+    $cleanup(() => {
+      restore();
+    });
+    throw error;
+  }
+  restore();
+  return result;
 }
 `);
   expect(js).not.toContain("_drop");
@@ -820,10 +868,9 @@ pub fn zeroed(depth: &Cell<u32>, fail: bool) -> u32 {
 }
 `,
   );
-  expect(js).toContain(`  } finally {
+  expect(js).toContain(`  function restore() {
     depth.value = 0; // zeroed
   }
-}
 `);
   const lib = await import(join(dir, "lib.js"));
   const depth = { value: 5 };
@@ -1052,23 +1099,36 @@ pub fn props_twice(prototype: u32) -> u32 {
 `);
   expect(js).not.toContain("_restoreProps");
   expect(js).not.toContain("const prevProps = prevProps");
-  expect(js).toContain("      globalThis.define(prototype, prevProps);\n      globalThis.define(prototype, (prevProps + 1) >>> 0);\n");
-  expect(js).toContain(`  try {
-    const lines = globalThis.lines();
-    for (let s = 0; s < lines.length; s++) {
-      if (lines[s].includes("Root")) {
-        const frame = \`\\n\${lines[s]}\`;
-        return frame;
-      }
+  expect(js).toContain("  if (prevProps != null) {\n    globalThis.define(prototype, prevProps);\n    globalThis.define(prototype, (prevProps + 1) >>> 0);\n");
+  // Its drop calls a binding, which may throw: dropped on each way out, after the `try` of what may throw (#847).
+  expect(js).toContain(`  let lines;
+  try {
+    lines = globalThis.lines();
+  } catch (error) {
+    $cleanup(() => {
+      reentry = false;
+      globalThis.restored(previous, dispatcher);
+    });
+    throw error;
+  }
+  for (let s = 0; s < lines.length; s++) {
+    if (lines[s].includes("Root")) {
+      const frame = \`\\n\${lines[s]}\`;
+      const result = frame;
+      reentry = false;
+      globalThis.restored(previous, dispatcher);
+      return result;
     }
-  } finally {
-    reentry = false;
-    globalThis.restored(previous, dispatcher);
-  }`);
+  }
+  reentry = false;
+  globalThis.restored(previous, dispatcher);
+  return "";
+}`);
   expect(js).toContain(`  try {
-    return globalThis.work(prototype);
-  } finally {
-    if (prevProps != null) {`);
+    result = globalThis.work(prototype);
+  } catch (error) {
+    $cleanup(() => {
+      if (prevProps != null) {`);
   // A variable set once the guard's made isn't what the guard holds.
   expect(js).toContain("const _restore = {\n    previous,\n    dispatcher: previous,\n  };");
   expect(js).toContain("globalThis.restored(_restore.previous, _restore.dispatcher);");

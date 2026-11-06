@@ -34,6 +34,14 @@ const fn pass(name: &'static str, run: fn(&mut Vec<Stmt>, &Hints)) -> Pass {
 const UNWOUND: &[&str] = &["names", "in place", "chains"];
 
 /// Each stage, in order.
+/// Each cleanup that may throw guarded, where a throw aborts, as Rust's does
+/// where a drop panics as a panic unwinds (#847): the `settled` stage's last
+/// pass, which a body `--tidy-until` stops early runs too, as it's what the
+/// JS does, not how it reads.
+pub(super) const GUARDED_CLEANUPS: Pass = pass("guarded cleanups", |b, _| {
+    js::statement_lists(b, &mut |s| unwinds::guarded_cleanups(s))
+});
+
 pub(super) const STAGES: &[Stage] = &[
     Stage {
         name: "flags",
@@ -1075,12 +1083,8 @@ pub(super) const STAGES: &[Stage] = &[
             // the program wrote of a loop it labeled: that label, `outer:`
             // (D1, the user's decision).
             pass("written loop labels", |b, h| written_loop_breaks(b, &h.written.loops)),
-            // Last, once no pass reads them: each cleanup that may throw
-            // guarded, where a throw aborts, as Rust's does where a drop
-            // panics as a panic unwinds (#847).
-            pass("guarded cleanups", |b, _| {
-                js::statement_lists(b, &mut |s| unwinds::guarded_cleanups(s))
-            }),
+            // Last, once no pass reads them: each cleanup guarded.
+            GUARDED_CLEANUPS,
         ],
         // What `settled` ensured, kept: what's printed is checked as it is.
         ensures: &[

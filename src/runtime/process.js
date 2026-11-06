@@ -33,3 +33,9 @@ function $varsOs() {
 function $exit(code) {
   $process("`std::process::exit`").exit(code);
 }
+// An abort's end of the process, `code` its status, where there's one: a
+// browser has none, so nothing ends, and `$abort` throws instead (#847).
+// Not std's function, so not `$process`'s, which panics without one.
+function $abortExit(code) {
+  globalThis.process?.exit?.(code);
+}

@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "{ TAG: \"Err\", _0: \"Missing\" }",
     tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
   },
+  {
+    name: "abort-exit-of-another-status",
+    breaks: "an abort ends the process with 1, not 134, as Rust's SIGABRT gives a shell (#847)",
+    file: "src/runtime/process.js",
+    find: "  globalThis.process?.exit?.(code);\n",
+    replace: "  globalThis.process?.exit?.(1);\n",
+    tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_field.rs$"],
+  },
 ];

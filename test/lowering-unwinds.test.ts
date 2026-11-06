@@ -658,12 +658,21 @@ pub fn guarded(n: u32) -> String {
     String::from("none")
 }
 `);
-  expect(js).not.toContain("catch (error)");
-  expect(js.match(/finally/g)?.length).toBe(1);
-  expect(js).toContain(`  } finally {
-    reentry = false;
-    globalThis.restored(previous);
+  // Its drop calls a binding, which may throw, and one that throws as a panic
+  // unwinds aborts: so each call that may throw is a \`try\` whose \`catch\`
+  // drops it, \`$cleanup\`'s, and each way out drops it after (#847, the
+  // user's decision; #861 makes it one \`finally\` where nothing it calls throws).
+  expect(js).not.toContain("finally");
+  expect(js).toContain(`      if (tmp) {
+        const result = \`found \${i}\`;
+        reentry = false;
+        globalThis.restored(previous);
+        return result;
+      }
+    }
   }
+  reentry = false;
+  globalThis.restored(previous);
   return "none";`);
   const lib = await import(join(dir, "lib.js"));
   const g = globalThis as Record<string, unknown>;

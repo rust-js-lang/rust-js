@@ -953,7 +953,8 @@ test("a consumer refuses a library's generic code it can't compile yet, and neve
   const copied = readFileSync(join(out, "app", "lib.js"), "utf8");
   // Each item dropped, the rest too after one that panics (a1a886ee4).
   expect(copied).toContain("  const result = v.length;\n  $dropItems(v, (item) => {\n    dropT?.(item);\n  });\n  return result;\n}");
-  expect(copied).toContain("  if (keep) {\n    return held;\n  }\n  try {\n    check();\n  } finally {\n    dropT?.(held);\n  }\n}");
+  // A caller's drop may throw: after the \`try\`, and \`$cleanup\`'s as a panic unwinds (#847).
+  expect(copied).toContain("  if (keep) {\n    return held;\n  }\n  try {\n    check();\n  } catch (error) {\n    $cleanup(() => {\n      dropT?.(held);\n    });\n    throw error;\n  }\n  const result = undefined;\n  dropT?.(held);\n  return result;\n}");
   const dir = fixture("library-boxed-refused");
   writeFileSync(join(dir, "dep.rs"), "pub fn unboxed<T>(t: T) -> T {\n    let boxed = Box::new(t);\n    *boxed\n}\n");
   const lib = join(dir, "dep");
