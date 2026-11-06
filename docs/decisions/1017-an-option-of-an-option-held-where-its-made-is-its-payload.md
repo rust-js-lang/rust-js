@@ -441,3 +441,38 @@ Held by `test/diagnostics.test.ts`'s refusals of a `Weak`, a `Pin` of a
 mutations `nested-refused-own-catalog` (`lower/bindings/nullable.ts`),
 `pin-not-seen-through` (`lower/representation/options.ts`) and
 `held-field-constant-folded` (`lower/representation/consts.ts`).
+
+## Amended (2026-11-06, #836): a `T` that may look like `None`, boxed
+
+#832 refused a nullable `Option<Option<T>>` field of a `T` that may look
+like `None` (`may_look_like_none`), as its `Some(Some(v))` held as `v`
+couldn't be told from its `None` or `Some(None)`. The held form keeps the
+inner `Option` as a plain one is, its `None` `null`: of such a `T` that's
+ADR 0051's box, `$some(v)`, so `Some(Some(Weak::new()))` is
+`{ $someNone: 0, $value: null }`, its `None` `undefined` and its
+`Some(None)` `null`, three values apart, read by the same tests, `===
+undefined`, `== null` and `$someValue`, where it's made, given to a
+function and given back, set and read, of a type parameter's too. Its
+makers and readers were already the generic ones; what was refused was
+only the refusal, and the constant folding #832 fixed. So it's held so,
+as the user decided (m6-react, 2026-11-06): case
+([0262](0262-when-rust-and-js-disagree.md)) none, the same results as
+Rust's.
+
+Of a struct kept to the crate only: a `pub` struct's `.d.ts` declares
+the field `field?: T | null`, and the box isn't a `T`; ADR 0051's
+declarations don't declare its box elsewhere either (`Option<()>`'s is
+`undefined | undefined`), so a `pub` one's field stays an error, which
+says what to write. Its `Some(Some(v))` of a value made where it's
+needed, `$some(x)` kept in a variable before the field's
+`$someValue(..) ?? null` reads it, is wordier than a payload's that isn't
+boxed: making `$some` pure, so it's read where it's made, changed eleven
+other snapshots and leaked a MIR name, `_12$0$live`, so it's left.
+
+Held by corpus `nested_option_of_none_like_payloads` (a `Weak`, a
+`Pin<Box<()>>`, a `MaybeUninit`, a `()` and a type parameter's, of
+`Option<u8>` too, each state made, given, given back, set and read,
+against native Rust in both builds), diagnostics.test.ts's refusals of a
+`pub` struct's, and the mutations `nested-payload-unchecked`,
+`nested-none-like-of-private-refused` (`lower/bindings/nullable.ts`).
+
