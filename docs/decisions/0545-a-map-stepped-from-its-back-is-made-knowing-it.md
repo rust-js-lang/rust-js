@@ -1044,3 +1044,47 @@ given it, `$knowing`'s or made knowing it. Found by #818's `pairs` beside
 `compiled-struct-taken-as-knowing-its-back`. The per-type fact itself is
 #851's to retire.
 
+## Amendment: an adapter held across what its step's argument runs is made knowing its back where it's made (2026-11-06, #811)
+
+ADR 0262's case: none, as the JS ran as Rust does or was refused; this
+removes a refusal. `u.into_iter().map(|x| x * 10).nth_back({ k += 1; k - 2
+})` was refused in the default build, though `v.iter().map(f).next_back()`
+runs: MIR holds the map in a variable across the statement the argument
+runs, its `&mut` lent to `nth_back` (or the map given whole, `rfold({ k
++= 1; k }, g)`), and the lowering writes it out there, a `const` of its
+form, which the step then can't read; a map's type knows no back, so it
+was refused. `stepped_locals` now records such a temporary `Lent`, as it
+records a counted adapter's lent temporary (#718, #814):
+
+- **Held across what acts.** `held_across` follows MIR from where the
+  temporary is lent (its `&mut`) or made (its call's return) to its step's
+  call, along `Goto`s and overflows' `Assert`s, and says whether a
+  statement between writes a variable or a place, or whether a call, a
+  switch or a drop runs between. Moves, borrows and arithmetic into
+  temporaries don't act: a lent map whose `next_back()` follows it is read
+  in place, `$nextBack($iter(v))` mapped, as before.
+- **Given whole too.** A temporary given whole, held so, is recorded
+  `Lent` once the fixpoint ends, apart from `asked`, so what it holds
+  beneath is asked as before.
+- **Where it's written.** `written_knowing_its_back` (backs.rs) makes a
+  `Lent` temporary knowing its back where it's written, assigned or
+  written at last by `flush` before what runs next, `$mapEnds` or
+  `$filterEnds`, its mark carried by its local. `made_knowing_where_held`
+  is any adapter's, the counted question being the analysis's.
+
+Proof: 57 generated programs (a map, a filter, an enumeration, a `rev()`,
+a `skip`, a `step_by`, a `zip`, a map of a map, a `filter_map` and a copy,
+of numbers and of items with a destructor, stepped by `nth_back`,
+`rfold` and `rfind` past an argument's statement) run as native Rust in
+both builds, where `main` refused two; the corpus, the snapshots, both
+slices and the rows #818's gate names as before. Corpus
+`adapter_stepped_from_its_back_past_an_arguments_statement`; the guide's
+limitation is gone. Mutations `held-across-nothing-acts`,
+`held-across-its-own-step`, `held-lent-unrecorded`,
+`held-whole-unrecorded` and `flushed-made-as-it-is` are new; four
+retargeted. `back-stepped-temporary-held-made`, which let a value not made
+in place be made again, is retired as equivalent: a counted adapter's
+`Lent` temporary held as std's struct reaches that guard, in both builds,
+but made again it's what it was, so no test can tell; the guard stays, as
+what it keeps from `as_double_ended` could only be refused there.
+

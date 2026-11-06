@@ -1083,14 +1083,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^move_closure_adapter_from_its_back.rs$"],
   },
   {
-    name: "back-stepped-temporary-made-unknowing",
-    breaks: "a temporary a back step takes through its `&mut` is made as it is, `$iter(v).take(2)`, not knowing its back, and its `nth_back` is refused (#718)",
-    file: "src/lower/mir/assign.rs",
-    find: "        let lent = self.local_stepped_from_its_back(local) == Some(crate::lower::analysis::SteppedLocal::Lent);\n",
-    replace: "        let lent = false && self.local_stepped_from_its_back(local) == Some(crate::lower::analysis::SteppedLocal::Lent);\n",
-    tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
-  },
-  {
     name: "object-box-never-copied-back",
     breaks: "an object's box given any `&mut self` method isn't copied back, so a blanket impl's generic `Self`, `*self = other`, which writes the box's `value`, leaves the caller's object as it was (a wrong answer, #831)",
     file: "src/lower/mir/assign.rs",

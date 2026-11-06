@@ -436,9 +436,11 @@ pub(in crate::lower) struct BackStepped<'tcx> {
 /// (`stepped_locals`).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(in crate::lower) enum SteppedLocal {
-    /// A temporary lent to what steps it, `nth_back(&mut _11)`'s, which MIR
-    /// holds in a variable to lend it: its value made in place, by its form,
-    /// is made knowing its back where it's assigned (#718).
+    /// A temporary given to what steps it, lent, `nth_back(&mut _11)`'s,
+    /// or whole, `rfold(move _11, ..)`'s, which MIR holds in a variable to
+    /// lend it or while an argument's statement runs: its value made in
+    /// place, by its form, is made knowing its back where it's written to
+    /// one (#718, #811).
     Lent,
     /// A value given to what asks its back, held in a variable or a field
     /// where it's given, a chain's side, what an adapter stepped from its
@@ -476,6 +478,7 @@ pub(super) fn stepped_locals<'tcx>(
     // holds beneath is, a variable's value an adapter made in place holds
     // (#790).
     let mut asked: HashSet<(rustc_span::def_id::DefId, mir::Local)> = HashSet::new();
+    let mut held_whole: HashSet<(rustc_span::def_id::DefId, mir::Local)> = HashSet::new();
     let mark = |stepped: &mut HashMap<_, _>, at, how| {
         // `Given` wins: its maker makes it, wherever it's lent besides.
         let held = stepped.entry(at).or_insert(how);
@@ -497,8 +500,21 @@ pub(super) fn stepped_locals<'tcx>(
             // move of one into another, `_5 = move _4`.
             let mut lent: HashMap<mir::Local, mir::Local> = HashMap::new();
             let mut moved: HashMap<mir::Local, mir::Local> = HashMap::new();
-            for data in mir.basic_blocks.iter() {
-                for statement in &data.statements {
+            // Where each `&mut` is taken, and where each call's value is
+            // made, its call's return: what's held from there to its step.
+            let mut lent_at: HashMap<mir::Local, (mir::BasicBlock, usize)> = HashMap::new();
+            let mut made_at: HashMap<mir::Local, (mir::BasicBlock, usize)> = HashMap::new();
+            for (block, data) in mir.basic_blocks.iter_enumerated() {
+                if let mir::TerminatorKind::Call {
+                    destination,
+                    target: Some(target),
+                    ..
+                } = &data.terminator().kind
+                    && destination.projection.is_empty()
+                {
+                    made_at.insert(destination.local, (*target, 0));
+                }
+                for (at, statement) in data.statements.iter().enumerate() {
                     let mir::StatementKind::Assign(assign) = &statement.kind else {
                         continue;
                     };
@@ -509,6 +525,7 @@ pub(super) fn stepped_locals<'tcx>(
                     match rvalue {
                         mir::Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) if of.projection.is_empty() => {
                             lent.insert(to.local, of.local);
+                            lent_at.insert(to.local, (block, at + 1));
                         }
                         mir::Rvalue::Use(mir::Operand::Move(of) | mir::Operand::Copy(of), ..)
                             if of.projection.is_empty() =>
@@ -538,7 +555,7 @@ pub(super) fn stepped_locals<'tcx>(
                     asked.insert((owner, of));
                 }
             }
-            for data in mir.basic_blocks.iter() {
+            for (block, data) in mir.basic_blocks.iter_enumerated() {
                 let mir::TerminatorKind::Call {
                     func,
                     args,
@@ -551,15 +568,17 @@ pub(super) fn stepped_locals<'tcx>(
                 let Some((callee, generic_args)) = func.const_fn_def() else {
                     continue;
                 };
-                // Each local given, lent or whole, and its type.
-                let given: Vec<(mir::Local, bool, Ty<'tcx>)> = (args.iter())
+                // Each local given, lent or whole, its type, and whether MIR
+                // holds it across what acts before the call.
+                let given: Vec<(mir::Local, bool, Ty<'tcx>, bool)> = (args.iter())
                     .filter_map(|arg| match &arg.node {
                         mir::Operand::Move(place) | mir::Operand::Copy(place) if place.projection.is_empty() => {
-                            let (local, lent) = match lent.get(&place.local) {
-                                Some(&of) => (of, true),
-                                None => (origin(place.local), false),
+                            let (local, lent, from) = match lent.get(&place.local) {
+                                Some(&of) => (of, true, lent_at.get(&place.local)),
+                                None => (origin(place.local), false, made_at.get(&origin(place.local))),
                             };
-                            Some((local, lent, erased(mir.local_decls[local].ty)))
+                            let held = from.is_some_and(|&from| held_across(mir, from, block));
+                            Some((local, lent, erased(mir.local_decls[local].ty), held))
                         }
                         _ => None,
                     })
@@ -573,13 +592,24 @@ pub(super) fn stepped_locals<'tcx>(
                         continue;
                     }
                     let asked_ty = erased(clause.self_ty().skip_binder());
-                    for &(local, lent, ty) in &given {
+                    for &(local, lent, ty, held) in &given {
                         let user = mir.local_decls[local].is_user_variable();
+                        // A counted adapter lent, whose form no step reads
+                        // where MIR holds it (#718); another held across what
+                        // acts before its step, an argument's statement,
+                        // `nth_back({ k += 1; k - 2 })`, which makes it
+                        // first, its form gone where the step reads it (#811).
+                        let counted = counted_source(tcx, ty).is_some() || stepped_by_source(tcx, ty).is_some();
                         match (ty == asked_ty, lent, user) {
-                            (true, true, false) => mark(&mut stepped, (owner, local), SteppedLocal::Lent),
+                            (true, true, false) if counted || held => {
+                                mark(&mut stepped, (owner, local), SteppedLocal::Lent)
+                            }
                             (true, false, true) => mark(&mut stepped, (owner, local), SteppedLocal::Given),
                             (true, false, false) => {
                                 asked.insert((owner, local));
+                                if held {
+                                    held_whole.insert((owner, local));
+                                }
                             }
                             _ => {}
                         }
@@ -612,7 +642,7 @@ pub(super) fn stepped_locals<'tcx>(
                         .collect(),
                 };
                 for source in sources.into_iter().map(erased) {
-                    for &(local, _, ty) in &given {
+                    for &(local, _, ty, _) in &given {
                         let user = mir.local_decls[local].is_user_variable();
                         if ty == source && (chain && made_stepped || user) {
                             mark(&mut stepped, (owner, local), SteppedLocal::Given);
@@ -623,7 +653,51 @@ pub(super) fn stepped_locals<'tcx>(
         }
         let given = stepped.values().filter(|h| **h == SteppedLocal::Given).count();
         if (stepped.len(), given, asked.len()) == before {
+            // And each temporary given whole held across what acts before
+            // its step, `map(f).rfold({ k += 1; k }, g)`'s, as one lent: its
+            // step reads the form of one made in place (#811).
+            for at in held_whole {
+                stepped.entry(at).or_insert(SteppedLocal::Lent);
+            }
             return stepped;
         }
     }
+}
+
+/// Whether `mir` holds what's made or lent at `from`, a block and the first
+/// statement after it, across what acts before the call that ends `to`: a
+/// write to a variable or a place, or a call, a switch or a drop between,
+/// along the blocks MIR goes through (`Goto`, an overflow's `Assert`). Not
+/// moves, borrows or arithmetic into temporaries, which its step's lowering
+/// reads in place (#811).
+fn held_across(
+    mir: &rustc_middle::mir::Body<'_>,
+    from: (rustc_middle::mir::BasicBlock, usize),
+    to: rustc_middle::mir::BasicBlock,
+) -> bool {
+    use rustc_middle::mir;
+    let acts = |statement: &mir::Statement<'_>| match &statement.kind {
+        mir::StatementKind::Assign(assign) => {
+            let (place, _) = &**assign;
+            !place.projection.is_empty() || mir.local_decls[place.local].is_user_variable()
+        }
+        mir::StatementKind::SetDiscriminant { .. } | mir::StatementKind::Intrinsic(..) => true,
+        _ => false,
+    };
+    let (mut block, mut first) = from;
+    for _ in 0..64 {
+        let data = &mir.basic_blocks[block];
+        if data.statements.get(first..).is_some_and(|rest| rest.iter().any(acts)) {
+            return true;
+        }
+        if block == to {
+            return false;
+        }
+        block = match &data.terminator().kind {
+            mir::TerminatorKind::Goto { target } | mir::TerminatorKind::Assert { target, .. } => *target,
+            _ => return true,
+        };
+        first = 0;
+    }
+    true
 }

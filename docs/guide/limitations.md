@@ -143,7 +143,6 @@ depends on what the program does:
 - A map's `into_keys()` of values with a destructor, or its `into_values()` of keys with one, which Rust drops as it steps each entry (#432, [ADR 0422](../decisions/0422-an-iterator-holding-a-value-is-closed-to-drop-it.md), amended): `struct D; impl Drop for D { fn drop(&mut self) {} } let mut m = std::collections::HashMap::new(); m.insert(1, D); println!("{}", m.into_keys().count());`
 - `HashMap::get_disjoint_mut`: `let mut m: std::collections::HashMap<&str, i32> = [("a", 1), ("b", 2)].into(); let [a, b] = m.get_disjoint_mut(["a", "b"]); println!("{:?} {:?}", a, b);`
 - `rposition` of a `skip()` or a `take()`, or of a `map()` of a range or of the crate's iterator, which rust-js can't count yet: `let v = vec![1, 2, 3]; println!("{:?}", v.iter().skip(1).rposition(|&x| x == 2));`
-- Stepping from its back, by `nth_back` or `rfind`, a map of a `Vec`'s `into_iter()` made in place whose argument runs a statement of its own, which MIR holds in a variable first, made with no back (#811, #814): `let mut k = 1; let u = vec![1, 2, 3]; println!("{:?}", u.into_iter().map(|x| x * 10).nth_back({ k += 1; k - 2 }));`
 
 ## Numbers and text
 

@@ -594,4 +594,12 @@ export const mutations: Mutation[] = [
     replace: "        let _ = marks;\n",
     tests: ["test/corpus.test.ts", "-t", "^(rev_made_knowing_its_back|own_iterator_flattened_from_its_back).rs$"],
   },
+  {
+    name: "flushed-made-as-it-is",
+    breaks: "a temporary given whole to a back step, written at last before an argument's statement runs, is written as it was made, not knowing its back, and its `rfold` is refused (#811)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            let expr =\n                self.written_knowing_its_back(local, (expr, state.body.local_decls[local].ty), Span::default())?;\n",
+    replace: "            let expr = expr;\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_stepped_from_its_back_past_an_arguments_statement.rs$"],
+  },
 ];

@@ -394,14 +394,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `value` of type `ty`, a local's a back step takes through its `&mut`
-    /// (`IterLocals::back_stepped`): a `skip(n)`, a
-    /// `take(n)` or a `step_by(n)` the recognizers made in place
-    /// (`made_in_place`), made knowing its back where it's made, as what
+    /// (`SteppedLocal::Lent`): an adapter the recognizers made in place
+    /// (`made_in_place`), a `skip(n)`'s or a `map(f)`'s, made knowing its
+    /// back where it's made, as what
     /// steps it asks (`as_double_ended`), which refuses one of items with a
     /// destructor, and marked so (`made_knowing_its_back`), its mark carried
     /// by its local. Another as it is: one held, `$held` or closed to drop
     /// what it holds, std's struct (#718).
-    pub(in crate::lower::mir) fn made_knowing_where_held(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    /// `value`, written to `local` of type `ty`, a temporary given to what
+    /// steps it from its back, back_stepped's `SteppedLocal::Lent`, made in
+    /// place, which MIR holds to lend it or across what an argument runs
+    /// before the step: made knowing its back where it's made, `$taking` or
+    /// `$mapEnds` say, and marked so for its read (#718, #814, #811). Another
+    /// as it is.
+    pub(in crate::lower::mir) fn written_knowing_its_back(
+        &mut self,
+        local: rustc_middle::mir::Local,
+        (value, ty): (Expr, Ty<'tcx>),
+        span: Span,
+    ) -> R<Expr> {
+        match self.local_stepped_from_its_back(local) {
+            Some(crate::lower::analysis::SteppedLocal::Lent) => self.made_knowing_where_held(value, ty, span),
+            _ => Ok(value),
+        }
+    }
+
+    fn made_knowing_where_held(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let ty = self.reveal(ty);
         // Held by its owner, which drops it, `$held(it)` (#206): what it
         // holds made so, held again.
@@ -409,9 +427,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let made = self.made_knowing_where_held(held.clone(), ty, span)?;
             return Ok(crate::lower::iterators::held_by_its_owner(made));
         }
-        let counted = crate::lower::recognition::counted_source(self.tcx, ty).is_some()
-            || crate::lower::recognition::stepped_by_source(self.tcx, ty).is_some();
-        if !counted || !crate::lower::iterators::made_in_place(&value) {
+        // One not made in place, a counted adapter's held as std's struct,
+        // as it is: its step asks it as it is (#718).
+        if !crate::lower::iterators::made_in_place(&value) {
             return Ok(value);
         }
         // It, made again to step from its back: made in place, as it was.

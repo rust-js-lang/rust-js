@@ -702,24 +702,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
   },
   {
-    name: "back-stepped-temporary-of-any-adapter-made",
-    breaks: "any adapter made in place a temporary holds for a back step is made knowing its back where it's made, a map of an array's items `$mapEnds` where `next_back` steps its source's end itself, `$nextBack(src)` mapped (#718)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "        if !counted || !crate::lower::iterators::made_in_place(&value) {\n",
-    replace: "        if !crate::lower::iterators::made_in_place(&value) {\n",
-    tests: ["test/corpus.test.ts"],
-    snapshots: true,
-  },
-  {
-    name: "back-stepped-temporary-held-made",
-    breaks: "a `skip(n)` or a `take(n)` held, std's struct, a temporary a back step takes, is made knowing its back where the variable holds it, `$knowing(iterator_skip(..), ..)`, where its back step asks it as it is (#718)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "        if !counted || !crate::lower::iterators::made_in_place(&value) {\n",
-    replace: "        if !counted {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(back_predicate_unwinds|held_back_folds_by_try_rfold).rs$"],
-    snapshots: true,
-  },
-  {
     name: "back-stepped-temporary-held-unread",
     breaks: "a `step_by(n)` its owner holds, `$held(it)`, which a temporary a back step takes holds, isn't made knowing its back where it's made, and its `nth_back` is refused (#718)",
     file: "src/lower/mir/iter/backs.rs",
@@ -796,5 +778,13 @@ export const mutations: Mutation[] = [
     find: "                && (!self.compiled_struct(self.reveal(iter_ty), value)\n",
     replace: "                && (true\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_its_type_stepped_from_its_back_elsewhere.rs$"],
+  },
+  {
+    name: "back-stepped-temporary-made-unknowing",
+    breaks: "a temporary a back step takes, lent or whole, written to a variable is made as it is, `$iter(v).take(2)`, not knowing its back, and its `nth_back` is refused (#718, #811)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            Some(crate::lower::analysis::SteppedLocal::Lent) => self.made_knowing_where_held(value, ty, span),\n",
+    replace: "            Some(crate::lower::analysis::SteppedLocal::Lent) if false => self.made_knowing_where_held(value, ty, span),\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
   },
 ];

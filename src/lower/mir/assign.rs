@@ -823,14 +823,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         }
         let expr = self.value_expr(value, span)?;
-        // A temporary lent to what steps it from its back, back_stepped's
-        // `SteppedLocal::Lent`, of a `skip(n)`, a `take(n)` or a `step_by(n)`
-        // made in place, which MIR holds to lend it: made knowing its back
-        // where it's made, `$taking` say, and marked so for its read (#718,
-        // #814).
-        let lent = self.local_stepped_from_its_back(local) == Some(crate::lower::analysis::SteppedLocal::Lent);
-        let expr = match place.projection.is_empty() && lent {
-            true => self.made_knowing_where_held(expr, state.body.local_decls[local].ty, span)?,
+        let expr = match place.projection.is_empty() {
+            true => self.written_knowing_its_back(local, (expr, state.body.local_decls[local].ty), span)?,
             false => expr,
         };
         let js_span = self.js_span(span);
