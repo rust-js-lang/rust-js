@@ -409,8 +409,12 @@ pub(in crate::lower) fn stepped_every_parts(e: &Expr) -> Option<&[Expr]> {
 /// `$stepByEnds(it, n)`: `it` stepped every `n`th item from either end,
 /// knowing its back and its length, as std's `StepBy` of an exact-sized
 /// source does (#718), marked made knowing its back.
-pub(in crate::lower) fn stepped_by_ends(it: Expr, step: Expr) -> Expr {
-    made_knowing_its_back(Expr::call_helper("$stepByEnds", vec![it, step]))
+/// Of items with a destructor, given `drop`, by which it drops each it
+/// passes over where its source drops none itself (#823).
+pub(in crate::lower) fn stepped_by_ends(it: Expr, step: Expr, drop: Option<Expr>) -> Expr {
+    let mut args = vec![it, step];
+    args.extend(drop);
+    made_knowing_its_back(Expr::call_helper("$stepByEnds", args))
 }
 
 /// What a `stepped_by_ends` one steps, and by how many.
@@ -420,7 +424,7 @@ pub(in crate::lower) fn stepped_by_ends_parts(e: &Expr) -> Option<(&Expr, &Expr)
             if was_made_knowing_its_back(e) && callee.helper_name() == Some("$stepByEnds") =>
         {
             match args.as_slice() {
-                [it, step] => Some((it, step)),
+                [it, step, ..] => Some((it, step)),
                 _ => None,
             }
         }

@@ -78,11 +78,14 @@ function main() {
     const last = nextBack != null ? map(nextBack) : undefined;
     console.log(`last ${last == null ? "None" : `Some((${last[0]}, ${last[1]}))`}`);
     const r = $collectDropping(
-      $rev($enumerate($closing($iter([[7], [8]]), $dropEach(loudDrop_drop)))).map(([i, l]) => {
-        const result = [i, l[0]];
-        loudDrop_drop(l);
-        return result;
-      }),
+      $mapEnds(
+        $rev($enumerate($closing($iter([[7], [8]]), $dropEach(loudDrop_drop)))),
+        ([i, l]) => {
+          const result = [i, l[0]];
+          loudDrop_drop(l);
+          return result;
+        },
+      ),
     );
     console.log(`[${r.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   } finally {

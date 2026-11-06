@@ -32,20 +32,26 @@ function ls(n) {
 }
 
 function main() {
-  const v = Array.from($rev($stepByEnds($closing($iter(ls(3)), $dropEach(lDrop_drop)), 2)));
+  const v = Array.from(
+    $rev($stepByEnds($closing($iter(ls(3)), $dropEach(lDrop_drop)), 2, lDrop_drop)),
+  );
   console.log(`${v.length}`);
   for (const item of v) {
     lDrop_drop(item);
   }
   console.log(
-    `${$foldBack($stepByEnds($closing($iter(ls(5)), $dropEach(lDrop_drop)), 2), 0, (n, l) => {
-      const result = (((n * 10) >>> 0) + l[0]) >>> 0;
-      lDrop_drop(l);
-      return result;
-    })}`,
+    `${$foldBack(
+      $stepByEnds($closing($iter(ls(5)), $dropEach(lDrop_drop)), 2, lDrop_drop),
+      0,
+      (n, l) => {
+        const result = (((n * 10) >>> 0) + l[0]) >>> 0;
+        lDrop_drop(l);
+        return result;
+      },
+    )}`,
   );
   console.log(
-    `${$rev($stepByEnds($closing($iter(ls(9)), $dropEach(lDrop_drop)), 3))
+    `${$rev($stepByEnds($closing($iter(ls(9)), $dropEach(lDrop_drop)), 3, lDrop_drop))
       .map((l) => {
         const result = l[0];
         lDrop_drop(l);
@@ -53,7 +59,7 @@ function main() {
       })
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
-  const stepBy = $held($stepByEnds($closing($iter(ls(8)), $dropEach(lDrop_drop)), 3));
+  const stepBy = $held($stepByEnds($closing($iter(ls(8)), $dropEach(lDrop_drop)), 3, lDrop_drop));
   try {
     const nthBack = $nthBack(stepBy, 1, undefined, lDrop_drop);
     function map(l) {
@@ -66,7 +72,7 @@ function main() {
   } finally {
     stepBy.return();
   }
-  const value = $held($stepByEnds($closing($iter(ls(8)), $dropEach(lDrop_drop)), 3));
+  const value = $held($stepByEnds($closing($iter(ls(8)), $dropEach(lDrop_drop)), 3, lDrop_drop));
   try {
     const nextBack = $nextBack(value);
     function map(l) {
@@ -79,7 +85,7 @@ function main() {
   } finally {
     value.return();
   }
-  const value$1 = $held($stepByEnds($closing($iter(ls(10)), $dropEach(lDrop_drop)), 4));
+  const value$1 = $held($stepByEnds($closing($iter(ls(10)), $dropEach(lDrop_drop)), 4, lDrop_drop));
   try {
     const rfind = $findBack(value$1, (l) => l[0] < 5, undefined, lDrop_drop);
     function map(l) {
@@ -93,7 +99,7 @@ function main() {
     value$1.return();
   }
   const folded = $foldBack(
-    $enumerate($stepByEnds($closing($iter(ls(9)), $dropEach(lDrop_drop)), 3)),
+    $enumerate($stepByEnds($closing($iter(ls(9)), $dropEach(lDrop_drop)), 3, lDrop_drop)),
     0,
     (n, [i, l]) => {
       const result = (((((n * 10) >>> 0) + i) >>> 0) + l[0]) >>> 0;
@@ -103,7 +109,7 @@ function main() {
   );
   console.log(`${folded}`);
   const r = $collectDropping(
-    $rev($stepByEnds($closing($iter(ls(7)), $dropEach(lDrop_drop)), 2))
+    $rev($stepByEnds($closing($iter(ls(7)), $dropEach(lDrop_drop)), 2, lDrop_drop))
       .take(2)
       .map((l) => {
         const result = l[0];

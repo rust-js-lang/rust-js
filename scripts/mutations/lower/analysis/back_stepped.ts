@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an enumeration of std's compiled `Fuse` of numbers whose own `next_back()` or `rfold` the crate calls isn't recorded stepped from its back: `$enumerate` of it, made knowing neither, is refused (#712)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "        return (dropping_items(recognition, source.peel_refs(), &drops) || enumerates_a_compiled_struct(tcx, adapter))\n",
-    replace: "        return (dropping_items(recognition, source.peel_refs(), &drops) || false)\n",
+    find: "            || enumerates_a_compiled_struct(tcx, adapter))\n",
+    replace: "            || false)\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_reversible_source.rs$"],
   },
   {
@@ -378,8 +378,8 @@ export const mutations: Mutation[] = [
     name: "enumerate-of-a-dropping-map-unrecorded",
     breaks: "an enumeration of a map of a `Vec`'s items with a destructor, held in a variable to drop them, isn't made knowing its back where it's made, and its `next_back` is refused (#764)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "        return (dropping_items(recognition, source.peel_refs(), &drops) || enumerates_a_compiled_struct(tcx, adapter))\n",
-    replace: "        return (false || enumerates_a_compiled_struct(tcx, adapter))\n",
+    find: "            || dropping_items(recognition, source.peel_refs(), &drops)\n",
+    replace: "            || false\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_made_knowing_read_again.rs$"],
   },
   {
@@ -435,5 +435,13 @@ export const mutations: Mutation[] = [
     find: "        return array_of_drops(a.peel_refs()) || array_of_drops(b.peel_refs());\n",
     replace: "        return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
+  },
+  {
+    name: "enumerate-of-droppers-unrecorded",
+    breaks: "an enumeration of items with a destructor whose back the crate steps isn't recorded, so the crate's own iterator under a `rev()`, `skip(n)`, `take(n)` or `step_by(n)` beneath it is made with no back, `$iterator(it, nextBack)`, and its `rfold` throws `it.back is not a function` (#383, #823)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "        return (item.is_some_and(&drops)\n",
+    replace: "        return (item.is_some_and(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_own_iterator_folded_from_its_back.rs$"],
   },
 ];

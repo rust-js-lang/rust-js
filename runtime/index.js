@@ -3460,7 +3460,10 @@ export function $stepBy(it, step, drop) {
     // Given the items' drop, which an `ownNth` with none of its own, a
     // `take`'s past its end, drops by (#289).
     if (by === "next" && (drop === undefined || it.ownNth) && it.nth !== undefined) return it.nth(k, drop);
-    if (by === "back" && drop === undefined && it.nthBack !== undefined) return it.nthBack(k);
+    // Its own only where it drops what it passes itself, a `Vec`'s as one
+    // slice (`ownNthBack`); else each passed dropped by `drop`, as std's
+    // default `nth_back` drops each `next_back` gives (#823).
+    if (by === "back" && (drop === undefined || it.ownNthBack) && it.nthBack !== undefined) return it.nthBack(k);
     for (; k > 0; k--) {
       const at = it[by]();
       if (at.done) return at;
@@ -3537,9 +3540,11 @@ export function $stepBy(it, step, drop) {
 // which knows them too, as Rust's `StepBy` is double-ended and exact-sized
 // where its source is exact-sized: `$stepBy`'s from the front; from the
 // back, the last of those, found by the source's length, as std's
-// `next_back_index` finds it; its length its exact hint (#718).
-export function $stepByEnds(it, step) {
-  const stepped = $stepBy(it, step);
+// `next_back_index` finds it; its length its exact hint (#718). Of items with
+// a destructor, each passed over dropped by `drop`, `$stepBy`'s, where its
+// source drops none itself (#823).
+export function $stepByEnds(it, step, drop) {
+  const stepped = $stepBy(it, step, drop);
   // Std's `next_back_index`: how many its back passes over first.
   const backIndex = () => {
     const rem = it.len() % step;

@@ -595,7 +595,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let source = source.peel_refs();
         let source_value = crate::lower::iterators::stepped_value(&source_value).unwrap_or(source_value);
         let source_value = self.as_exact_size(source_value, source, true, span)?;
-        Ok(Some(crate::lower::iterators::stepped_by_ends(source_value, step)))
+        // Of items with a destructor, what drops each it passes over.
+        let drop = match self.iterator_item(ty) {
+            Some(item) => self.std_drop_function(item, span)?,
+            None => None,
+        };
+        Ok(Some(crate::lower::iterators::stepped_by_ends(source_value, step, drop)))
     }
 }
 
@@ -611,7 +616,7 @@ pub(in crate::lower) fn stepped_by_parts(value: &Expr) -> Option<(Expr, Expr)> {
         return Some((source_value.clone(), step.clone()));
     }
     match (&value.kind, crate::lower::iterators::stepped_every_parts(value)) {
-        (_, Some([source_value, step])) => Some((source_value.clone(), step.clone())),
+        (_, Some([source_value, step, ..])) => Some((source_value.clone(), step.clone())),
         (js::ExprKind::Call(callee, args), None)
             if let js::ExprKind::Member(source_value, method) = &callee.kind
                 && method == "filter"

@@ -381,8 +381,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's `step_by(n).rev()`, `$stepBy(range, n)`, isn't made knowing its back, and is refused (#231)",
     file: "src/lower/iterators/stepping.rs",
-    find: "        (_, Some([source_value, step])) => Some((source_value.clone(), step.clone())),\n",
-    replace: "        (_, Some([source_value, step])) if false => Some((source_value.clone(), step.clone())),\n",
+    find: "        (_, Some([source_value, step, ..])) => Some((source_value.clone(), step.clone())),\n",
+    replace: "        (_, Some([source_value, step, ..])) if false => Some((source_value.clone(), step.clone())),\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_step_by.rs$"],
   },
   {
@@ -392,5 +392,13 @@ export const mutations: Mutation[] = [
     find: "    if let Some((source_value, step)) = crate::lower::iterators::stepped_by_ends_parts(value) {\n",
     replace: "    if let Some((source_value, step)) = None::<(&Expr, &Expr)> {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_and_counted_steps_from_their_back.rs$"],
+  },
+  {
+    name: "step-by-ends-undropped",
+    breaks: "a `step_by(n)` made knowing its back isn't given its items' drop, so what it skips from the back of the crate's iterator is never dropped (#823)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "        Ok(Some(crate::lower::iterators::stepped_by_ends(source_value, step, drop)))\n",
+    replace: "        Ok(Some(crate::lower::iterators::stepped_by_ends(source_value, step, None.or(drop.filter(|_| false)))))\n",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_own_iterator_folded_from_its_back.rs$"],
   },
 ];

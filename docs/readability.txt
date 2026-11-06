@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1799
-lines	200638
+files	1800
+lines	201008
 temporaries	0	0
 labeled blocks	0	0
 while (true)	151	7.5
-$iter	1967	98
+$iter	1970	98
 Iterator.from	184	9.2
-return;	250	12.5
-renamed x$1	11100	553.2
+return;	252	12.5
+renamed x$1	11102	552.3
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drop_past_a_panic.js	46	0	0	0	1	0	0	0
 test/corpus/adapter_drops.js	1872	0	0	1	18	3	1	98
@@ -453,7 +453,7 @@ test/corpus/enumerate_bounds.js	56	0	0	0	1	0	0	0
 test/corpus/enumerate_count_is_its_sources.js	89	0	0	0	0	0	1	0
 test/corpus/enumerate_counted_by_generic_code.js	25	0	0	0	3	1	0	4
 test/corpus/enumerate_fold.js	93	0	0	0	0	0	0	0
-test/corpus/enumerate_made_in_place_from_back.js	93	0	0	0	5	0	0	0
+test/corpus/enumerate_made_in_place_from_back.js	96	0	0	0	5	0	0	0
 test/corpus/enumerate_made_knowing_read_again.js	189	0	0	0	4	0	0	2
 test/corpus/enumerate_mut_patterns.js	43	0	0	0	0	0	0	2
 test/corpus/enumerate_next_back_of_items.js	27	0	0	0	3	0	0	6
@@ -461,6 +461,7 @@ test/corpus/enumerate_of_a_fuse_from_back.js	252	0	0	0	3	0	0	0
 test/corpus/enumerate_of_a_reversible_source.js	369	0	0	0	2	0	2	10
 test/corpus/enumerate_of_droppers_from_back.js	261	0	0	0	3	0	0	4
 test/corpus/enumerate_of_known_length.js	64	0	0	0	4	0	0	0
+test/corpus/enumerate_of_own_iterator_folded_from_its_back.js	344	0	0	0	3	0	2	2
 test/corpus/enumerate_of_take_from_back.js	35	0	0	0	1	0	0	0
 test/corpus/enumerate_rev_drops.js	50	0	0	0	2	0	0	0
 test/corpus/env_args.js	28	0	0	0	2	0	0	0
@@ -928,7 +929,7 @@ test/corpus/match_of_strings_to_bools_is_a_switch.js	47	0	0	0	0	0	0	2
 test/corpus/match_of_what_a_match_made.js	288	0	0	0	0	0	2	5
 test/corpus/match_statement_arms.js	60	0	0	0	0	0	0	0
 test/corpus/match_trait_const.js	40	0	0	0	0	0	0	0
-test/corpus/match_trees_chained.js	593	0	0	0	0	0	1	46
+test/corpus/match_trees_chained.js	610	0	0	0	0	0	1	46
 test/corpus/matches_by_predicate.js	40	0	0	0	0	2	0	0
 test/corpus/math_values.js	155	0	0	0	0	0	0	2
 test/corpus/matrix_chars.js	122	0	0	0	0	0	0	9
@@ -1490,7 +1491,7 @@ test/corpus/step_by_of_a_call_holds_its_items.js	85	0	0	0	2	0	0	7
 test/corpus/step_by_of_a_flatten_unwinds.js	215	0	0	0	11	0	0	8
 test/corpus/step_by_of_own_nth_that_never_unwinds.js	79	0	0	0	0	0	2	0
 test/corpus/step_by_range_size_hint.js	44	0	0	0	0	0	0	0
-test/corpus/step_by_stepped_from_its_back.js	169	0	0	0	11	0	0	8
+test/corpus/step_by_stepped_from_its_back.js	175	0	0	0	11	0	0	8
 test/corpus/step_by_zero.js	23	0	0	0	0	0	0	2
 test/corpus/stepped_index_to_length.js	107	0	0	0	0	0	0	0
 test/corpus/stepped_nested.js	31	0	0	0	1	0	0	0

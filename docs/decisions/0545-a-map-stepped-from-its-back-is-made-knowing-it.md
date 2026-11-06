@@ -931,3 +931,40 @@ refusal of valid Rust lifted. Held by corpus
 items with a destructor and the crate's iterator whose `nth` is its own,
 against native Rust in both builds; mutation
 `rev-of-given-param-unknowing` (`mir/iter/backs.ts`).
+
+## Amended (2026-11-06, #823): #383's enumeration rule is back, and a `step_by(n)` from its back drops what it skips
+
+766055774 (#764) removed #383's rule, an enumeration of items with a
+destructor recorded stepped from its back, as no corpus case or slice
+needed it. The matrix's full rows did: an `enumerate()` folded from its
+back of the crate's own iterator under a `rev()`, a `skip(n)`, a `take(n)`
+or a `step_by(n)`, and of a reversed `Vec`'s `step_by(n)`, 19 cases, threw
+`it.back is not a function` in the default build, the `rev()` made in place
+`$iterator(it, nextBack)` with no back. **The rule is back:** such an
+enumeration, held in a variable to drop its items, is made knowing its back
+where it's made, its source too. `take(n)`'s and `step_by(n)`'s forms, which
+were refused before 766055774, run now. `enumerate_made_in_place_from_back`'s
+`rev().map(f)` reads `$mapEnds($rev($enumerate(..)), f)` again, the rule's
+form, the reading #764 traded the rule for.
+
+The `step_by(n)` forms showed what `$stepByEnds` lacked: what a step
+from the back skips was dropped by its source's own `nth_back` alone,
+which a `Vec`'s does as one slice, but the crate's iterator's default, one
+`next_back` at a time, didn't, so its skipped items were never dropped.
+**`$stepByEnds(it, n, drop)` is given its items' drop** (value.rs'
+`stepped_by_ends`, of `$stepBy(src, n, drop)`'s form too), and `$stepBy`'s
+back step asks the source's own `nth_back` where it drops what it passes,
+`ownNthBack`, else steps each from the back, dropping it, as std's default
+`nth_back` does.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. Held by corpus
+`enumerate_of_own_iterator_folded_from_its_back`, of the matrix's 19 rows'
+shapes and steps past two or more of a `Vec` and of the crate's iterator,
+against native Rust in both builds, and the 19 rows themselves; 326
+generated `step_by` programs of a `Vec`'s and the crate's iterator's items
+with a destructor print as native Rust does. Mutations
+`enumerate-of-droppers-unrecorded` (`analysis/back_stepped.ts`),
+`step-by-back-slice-dropped-each`, `step-by-ends-drop-unpassed`
+(`runtime/back_steps.ts`), `step-by-ends-undropped`
+(`iterators/stepping.ts`); four others name their lines as they now read.
