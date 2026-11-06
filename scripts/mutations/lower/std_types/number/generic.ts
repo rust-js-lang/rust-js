@@ -228,4 +228,22 @@ export const mutations: Mutation[] = [
     replace: "        if matches!(of.kind(), ty::Alias(..))\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type.rs$"],
   },
+  {
+    name: "const-size-of-built-type-asked",
+    breaks:
+      "the constant size of a type built from a type parameter that's no array, `&Vec<T>`, is asked of a caller who can't give it, so generic code's `rows.iter().flatten()` is refused in the build of std's structs (#813)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "            TypeFact::ConstSize => crate::lower::recognition::known_by_bounds(of.peel_refs()),\n",
+    replace: "            TypeFact::ConstSize => of.has_param() || matches!(of.kind(), ty::Alias(..)),\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "generic_flatten_of_vecs"],
+  },
+  {
+    name: "const-size-of-a-const-length-none",
+    breaks:
+      "an array of a const parameter's length is said to have no constant size, so std's flatten of them hints no upper bound, where Rust's is the rows times `N` (#813)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "                    None => self.const_arg(len, span),\n",
+    replace: "                    None => Ok(Expr::undefined()),\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "generic_flatten_of_vecs"],
+  },
 ];

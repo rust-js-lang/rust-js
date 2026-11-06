@@ -172,3 +172,22 @@ held and stepped. Mutations `zip-sized-in-place` (`recognition/std_items.ts`),
 (`runtime/range_len.ts`), `size-hint-range-given-unasked`
 (`runtime/size_hint.ts`), and `lazy-zip-unhinted` and `zip-hint-*`
 (`runtime/lazy_zip.ts`).
+
+## Amendment: a constant size is asked only of what may be an array (2026-11-06, #813)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): a refusal lifted; N.
+
+Std's `ConstSizeIntoIterator::size()` is `N` of `[T; N]`, `&[T; N]` and
+`&mut [T; N]`, and none of any other type. Generic code's
+`rows.iter().flatten()` of a `&[Vec<T>]`, std's struct in the build of
+std's structs, was refused, "its constant size of `&Vec<T>`, which no
+caller gives": every type that held a type parameter was taken for one a
+caller answers. Now only what may be an array, a type parameter or an
+alias through references, is; any other has none whatever its
+parameters; and an array's is its length, of a const parameter its value
+as the function's given it (`const_arg`), `[T; N]`'s `N`.
+
+`test/corpus/generic_flatten_of_vecs.rs`, of `Vec`s and of arrays of a
+const length, collected and asked their hint, against native Rust in
+both builds, and in `iterator-forms.test.ts`' few. Mutations:
+`const-size-of-built-type-asked`, `const-size-of-a-const-length-none`.

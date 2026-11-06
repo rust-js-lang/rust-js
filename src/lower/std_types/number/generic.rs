@@ -309,11 +309,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let decided = crate::lower::recognition::fact_trait(self.tcx, fact)
             .and_then(|fact_trait| self.recognition().trait_holds(of, fact_trait))
             .is_some();
-        if !matches!(fact, TypeFact::Fused)
-            && !decided
-            && (fact == TypeFact::ConstSize || crate::lower::recognition::fact_trait(self.tcx, fact).is_some())
-            && (of.has_param() || matches!(of.kind(), ty::Alias(..)))
-        {
+        // Of a constant size, std's `ConstSizeIntoIterator::size()`, only
+        // what may be an array: a type parameter or an alias, through
+        // references; an array's is its length, a const parameter's its value
+        // as given, and any other type has none, whatever its parameters,
+        // `&Vec<T>` (#813).
+        let unknown = match fact {
+            TypeFact::ConstSize => crate::lower::recognition::known_by_bounds(of.peel_refs()),
+            _ => {
+                crate::lower::recognition::fact_trait(self.tcx, fact).is_some()
+                    && (of.has_param() || matches!(of.kind(), ty::Alias(..)))
+            }
+        };
+        if !matches!(fact, TypeFact::Fused) && !decided && unknown {
             return Err(self.unsupported(span, &format!("{what} of `{of}`, which no caller gives")));
         }
         // Whether it has the trait the fact is, a `OneShot`, whose `flatten()`
@@ -334,11 +342,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `N` of an array of `N` items, or a reference to one, else none
         // (ADR 0899).
         if fact == TypeFact::ConstSize {
-            let array = match of.peel_refs().kind() {
-                ty::Array(_, len) => len.try_to_target_usize(self.tcx),
-                _ => None,
+            return match *of.peel_refs().kind() {
+                ty::Array(_, len) => match len.try_to_target_usize(self.tcx) {
+                    Some(n) => Ok(Expr::int(n.into())),
+                    None => self.const_arg(len, span),
+                },
+                _ => Ok(Expr::undefined()),
             };
-            return Ok(array.map_or_else(Expr::undefined, |n| Expr::int(n.into())));
         }
         // What std's unstable sort of it picks by its layout (ADR 0471).
         if fact == TypeFact::Sort {

@@ -34,6 +34,9 @@ const few = [
   "copied_clone_of_its_own.rs",
   "std_inspect.rs",
   "std_flatten.rs",
+  // A generic flatten's items' constant size, of what's no array and of
+  // an array of a const parameter's length (#813).
+  "generic_flatten_of_vecs.rs",
   "std_flat_map.rs",
   "held_adapters_by_ref.rs",
   "adapter_drops.rs",
