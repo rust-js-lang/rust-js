@@ -418,13 +418,9 @@ function main() {
   );
   try {
     console.log(`held ${$lent(map).some((x) => x > 5)}`);
-  } catch (error) {
-    $cleanup(() => {
-      map.return();
-    });
-    throw error;
+  } finally {
+    map.return();
   }
-  map.return();
   const chain = $held(
     $lazyChain(
       $closing(
@@ -447,13 +443,9 @@ function main() {
   );
   try {
     console.log(`held ${$lent(chain).every((x) => x < 30)}`);
-  } catch (error) {
-    $cleanup(() => {
-      chain.return();
-    });
-    throw error;
+  } finally {
+    chain.return();
   }
-  chain.return();
   const value$9 = $tryFoldOk(
     $iterator(
       c(),

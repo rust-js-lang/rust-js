@@ -8,7 +8,6 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $catchUnwind,
-  $cleanup,
   $closing,
   $debugStr,
   $dropEach,
@@ -277,19 +276,8 @@ function main() {
     let d;
     try {
       d = $nthBack(rev, 1, undefined, dDrop_drop);
-    } catch (error) {
-      $cleanup(() => {
-        rev.return();
-      });
-      throw error;
-    }
-    try {
+    } finally {
       rev.return();
-    } catch (error) {
-      if (d != null) {
-        dDrop_drop(d);
-      }
-      throw error;
     }
     function map(d) {
       const result = d[0];
@@ -314,19 +302,8 @@ function main() {
     let d;
     try {
       d = $findBack(rev, (d) => d[0] === 1, undefined, dDrop_drop);
-    } catch (error) {
-      $cleanup(() => {
-        rev.return();
-      });
-      throw error;
-    }
-    try {
+    } finally {
       rev.return();
-    } catch (error) {
-      if (d != null) {
-        dDrop_drop(d);
-      }
-      throw error;
     }
     function map(d) {
       const result = d[0];
@@ -384,19 +361,8 @@ function main() {
     let found;
     try {
       found = $findBack(rev, (d) => d[0] > 0, undefined, dDrop_drop);
-    } catch (error) {
-      $cleanup(() => {
-        rev.return();
-      });
-      throw error;
-    }
-    try {
+    } finally {
       rev.return();
-    } catch (error) {
-      if (found != null) {
-        dDrop_drop(found);
-      }
-      throw error;
     }
     let flatten;
     try {
@@ -419,26 +385,14 @@ function main() {
     try {
       last = $nextBack(flatten);
     } catch (error) {
-      $cleanup(() => {
-        flatten.return();
-        if (found != null) {
-          dDrop_drop(found);
-        }
-      });
-      throw error;
-    }
-    let last$live = true;
-    try {
       flatten.return();
-    } catch (error) {
-      if (last != null) {
-        dDrop_drop(last);
-      }
       if (found != null) {
         dDrop_drop(found);
       }
       throw error;
     }
+    let last$live = true;
+    flatten.return();
     let tmp;
     try {
       tmp = $rev(

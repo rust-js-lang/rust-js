@@ -75,39 +75,19 @@ function main() {
       $dropEach(dDrop_drop),
     ),
   );
-  let peek;
   try {
-    peek = $peek(p);
-  } catch (error) {
-    $cleanup(() => {
-      p.return();
-    });
-    throw error;
-  }
-  console.log(`${peek?.[0] ?? 0}`);
-  let next;
-  function map(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
-  try {
-    next = $next(p);
-  } catch (error) {
-    $cleanup(() => {
-      p.return();
-    });
-    throw error;
-  }
-  try {
+    const peek = $peek(p);
+    console.log(`${peek?.[0] ?? 0}`);
+    const next = $next(p);
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
     console.log(`${(next != null ? map(next) : undefined) ?? 0}`);
-  } catch (error) {
-    $cleanup(() => {
-      p.return();
-    });
-    throw error;
+    console.log("end");
+  } finally {
+    p.return();
   }
-  console.log("end");
-  p.return();
 }
 //# sourceMappingURL=case.js.map

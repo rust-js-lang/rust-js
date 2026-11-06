@@ -7,7 +7,6 @@ import {
   skipDoubleEndedIterator_tryRfold,
 } from "@rust-js/std/iter.js";
 import {
-  $cleanup,
   $closing,
   $dropEach,
   $exactLen,
@@ -83,132 +82,72 @@ function main() {
   const value$10 = $findBack($taking($iter(w), 3), (x) => x < 3);
   console.log(`${value$10 == null ? "None" : `Some(${value$10})`}`);
   const take = $held($taking($closing($iter(ls(4)), $dropEach(lDrop_drop)), 2, lDrop_drop));
-  let rfind;
-  function map(l) {
-    const result = l[0];
-    lDrop_drop(l);
-    return result;
-  }
   try {
-    rfind = $findBack(take, (l) => l[0] > 1, undefined, lDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      take.return();
-    });
-    throw error;
-  }
-  try {
+    const rfind = $findBack(take, (l) => l[0] > 1, undefined, lDrop_drop);
+    function map(l) {
+      const result = l[0];
+      lDrop_drop(l);
+      return result;
+    }
     const value = rfind != null ? map(rfind) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      take.return();
-    });
-    throw error;
+  } finally {
+    take.return();
   }
-  take.return();
   const skip = $held($skipping($closing($iter(ls(5)), $dropEach(lDrop_drop)), 1, lDrop_drop));
-  let rfind$1;
-  function map$1(l) {
-    const result = l[0];
-    lDrop_drop(l);
-    return result;
-  }
   try {
-    rfind$1 = $findBack(skip, (l) => l[0] % 2 === 0, undefined, lDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      skip.return();
-    });
-    throw error;
-  }
-  try {
-    const value = rfind$1 != null ? map$1(rfind$1) : undefined;
+    const rfind = $findBack(skip, (l) => l[0] % 2 === 0, undefined, lDrop_drop);
+    function map(l) {
+      const result = l[0];
+      lDrop_drop(l);
+      return result;
+    }
+    const value = rfind != null ? map(rfind) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      skip.return();
-    });
-    throw error;
+  } finally {
+    skip.return();
   }
-  skip.return();
   const value$11 = $held($taking($closing($iter(ls(6)), $dropEach(lDrop_drop)), 4, lDrop_drop));
-  let nthBack;
-  function map$2(l) {
-    const result = l[0];
-    lDrop_drop(l);
-    return result;
-  }
   try {
-    nthBack = $nthBack(value$11, 1, undefined, lDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      value$11.return();
-    });
-    throw error;
-  }
-  try {
-    const value = nthBack != null ? map$2(nthBack) : undefined;
+    const nthBack = $nthBack(value$11, 1, undefined, lDrop_drop);
+    function map(l) {
+      const result = l[0];
+      lDrop_drop(l);
+      return result;
+    }
+    const value = nthBack != null ? map(nthBack) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      value$11.return();
-    });
-    throw error;
+  } finally {
+    value$11.return();
   }
-  value$11.return();
   const value$12 = $held($skipping($closing($iter(ls(6)), $dropEach(lDrop_drop)), 2, lDrop_drop));
-  let nextBack;
-  function map$3(l) {
-    const result = l[0];
-    lDrop_drop(l);
-    return result;
-  }
   try {
-    nextBack = $nextBack(value$12);
-  } catch (error) {
-    $cleanup(() => {
-      value$12.return();
-    });
-    throw error;
-  }
-  try {
-    const value = nextBack != null ? map$3(nextBack) : undefined;
+    const nextBack = $nextBack(value$12);
+    function map(l) {
+      const result = l[0];
+      lDrop_drop(l);
+      return result;
+    }
+    const value = nextBack != null ? map(nextBack) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      value$12.return();
-    });
-    throw error;
+  } finally {
+    value$12.return();
   }
-  value$12.return();
   const value$13 = $held(
     $taking($skipping($closing($iter(ls(7)), $dropEach(lDrop_drop)), 1, lDrop_drop), 4, lDrop_drop),
   );
-  let nthBack$1;
-  function map$4(l) {
-    const result = l[0];
-    lDrop_drop(l);
-    return result;
-  }
   try {
-    nthBack$1 = $nthBack(value$13, 2, undefined, lDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      value$13.return();
-    });
-    throw error;
-  }
-  try {
-    const value = nthBack$1 != null ? map$4(nthBack$1) : undefined;
+    const nthBack = $nthBack(value$13, 2, undefined, lDrop_drop);
+    function map(l) {
+      const result = l[0];
+      lDrop_drop(l);
+      return result;
+    }
+    const value = nthBack != null ? map(nthBack) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      value$13.return();
-    });
-    throw error;
+  } finally {
+    value$13.return();
   }
-  value$13.return();
   // Held in a variable, std's struct, beside them.
   const it = iterator_skip($iter(v), 1);
   const value$14 = $findBack(

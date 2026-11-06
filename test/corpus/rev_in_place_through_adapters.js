@@ -151,13 +151,9 @@ function main() {
   try {
     const value = $nth($lent(rev), 1);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      rev.return();
-    });
-    throw error;
+  } finally {
+    rev.return();
   }
-  rev.return();
   console.log(
     `${$foldBack(
       $stepByEnds(
@@ -213,13 +209,9 @@ function main() {
   try {
     const value$1 = $nth($lent(value), 2);
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      value.return();
-    });
-    throw error;
+  } finally {
+    value.return();
   }
-  value.return();
   console.log(
     `${$foldBack(
       $stepByEnds(
@@ -287,12 +279,8 @@ function main() {
   try {
     const value = $nextBack(filter);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      filter.return();
-    });
-    throw error;
+  } finally {
+    filter.return();
   }
-  filter.return();
 }
 //# sourceMappingURL=case.js.map

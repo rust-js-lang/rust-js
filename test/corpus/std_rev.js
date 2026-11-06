@@ -11,7 +11,6 @@ import {
   revExactSizeIterator_len,
 } from "@rust-js/std/iter.js";
 import {
-  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -124,30 +123,18 @@ function main() {
 
   const louds = [[1], [2], [3]];
   const held = $held($rev($closing($iter(louds), $dropEach(loudDrop_drop))));
-  let next;
-  function map(l) {
-    const result = l[0];
-    loudDrop_drop(l);
-    return result;
-  }
   try {
-    next = $next(held);
-  } catch (error) {
-    $cleanup(() => {
-      held.return();
-    });
-    throw error;
-  }
-  try {
+    const next = $next(held);
+    function map(l) {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    }
     const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      held.return();
-    });
-    throw error;
+  } finally {
+    held.return();
   }
-  held.return();
 
   const inPlace = Array.from(
     $iterator([3], countdownDoubleEndedIterator_nextBack, false, countdownIterator_next).map(

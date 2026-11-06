@@ -367,13 +367,9 @@ function main() {
   let odd;
   try {
     odd = $nextBack(filter);
-  } catch (error) {
-    $cleanup(() => {
-      filter.return();
-    });
-    throw error;
+  } finally {
+    filter.return();
   }
-  filter.return();
   const value = $held(
     $filterEnds(
       $knowing(
@@ -447,13 +443,9 @@ function main() {
   let fusedOdd;
   try {
     fusedOdd = $nextBack(value);
-  } catch (error) {
-    $cleanup(() => {
-      value.return();
-    });
-    throw error;
+  } finally {
+    value.return();
   }
-  value.return();
   console.log(
     `${odd == null ? "None" : `Some(${odd})`} ${fusedOdd == null ? "None" : `Some(${fusedOdd})`}`,
   );
@@ -634,13 +626,9 @@ function main() {
   let second;
   try {
     second = $nth($lent(rev), 1);
-  } catch (error) {
-    $cleanup(() => {
-      rev.return();
-    });
-    throw error;
+  } finally {
+    rev.return();
   }
-  rev.return();
   const value$1 = $held(
     $enumerate(
       iterator_fuse(
@@ -654,13 +642,9 @@ function main() {
   let indexed;
   try {
     indexed = Array.from($lent(value$1).drop(1).take(1))[0];
-  } catch (error) {
-    $cleanup(() => {
-      value$1.return();
-    });
-    throw error;
+  } finally {
+    value$1.return();
   }
-  value$1.return();
   console.log(
     `${second == null ? "None" : `Some(${second})`} ${indexed == null ? "None" : `Some(${indexed})`}`,
   );
@@ -728,23 +712,18 @@ function main() {
     );
     const louds = [[1], [2], [3]];
     const value = $held($rev($closing($iter(louds), $dropEach(loudDrop_drop))));
-    let nth;
-    function map(l) {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    }
     let second;
     try {
-      nth = $nthDropping($lent(value), 1, loudDrop_drop, false);
+      const nth = $nthDropping($lent(value), 1, loudDrop_drop, false);
+      function map(l) {
+        const result = l[0];
+        loudDrop_drop(l);
+        return result;
+      }
       second = nth != null ? map(nth) : undefined;
-    } catch (error) {
-      $cleanup(() => {
-        value.return();
-      });
-      throw error;
+    } finally {
+      value.return();
     }
-    value.return();
     const twice = Array.from(
       $closing($iterator({ at: 0 }, twiceIterator_next), (it) => {
         console.log(`drop twice ${it.of.at}`);
@@ -759,9 +738,7 @@ function main() {
     try {
       head = $next(stepped);
     } catch (error) {
-      $cleanup(() => {
-        stepped.return();
-      });
+      stepped.return();
       throw error;
     }
     const tail = Array.from(stepped);

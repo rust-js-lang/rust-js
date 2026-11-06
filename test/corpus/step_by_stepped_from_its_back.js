@@ -3,7 +3,6 @@
 import { iterator_stepBy, stepByDoubleEndedIterator_nextBack } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
-  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -61,80 +60,44 @@ function main() {
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   const stepBy = $held($stepByEnds($closing($iter(ls(8)), $dropEach(lDrop_drop)), 3, lDrop_drop));
-  let nthBack;
-  function map(l) {
-    const result = l[0];
-    lDrop_drop(l);
-    return result;
-  }
   try {
-    nthBack = $nthBack(stepBy, 1, undefined, lDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      stepBy.return();
-    });
-    throw error;
-  }
-  try {
+    const nthBack = $nthBack(stepBy, 1, undefined, lDrop_drop);
+    function map(l) {
+      const result = l[0];
+      lDrop_drop(l);
+      return result;
+    }
     const value = nthBack != null ? map(nthBack) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      stepBy.return();
-    });
-    throw error;
+  } finally {
+    stepBy.return();
   }
-  stepBy.return();
   const value = $held($stepByEnds($closing($iter(ls(8)), $dropEach(lDrop_drop)), 3, lDrop_drop));
-  let nextBack;
-  function map$1(l) {
-    const result = l[0];
-    lDrop_drop(l);
-    return result;
-  }
   try {
-    nextBack = $nextBack(value);
-  } catch (error) {
-    $cleanup(() => {
-      value.return();
-    });
-    throw error;
+    const nextBack = $nextBack(value);
+    function map(l) {
+      const result = l[0];
+      lDrop_drop(l);
+      return result;
+    }
+    const value$1 = nextBack != null ? map(nextBack) : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } finally {
+    value.return();
   }
-  try {
-    const value = nextBack != null ? map$1(nextBack) : undefined;
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      value.return();
-    });
-    throw error;
-  }
-  value.return();
   const value$1 = $held($stepByEnds($closing($iter(ls(10)), $dropEach(lDrop_drop)), 4, lDrop_drop));
-  let rfind;
-  function map$2(l) {
-    const result = l[0];
-    lDrop_drop(l);
-    return result;
-  }
   try {
-    rfind = $findBack(value$1, (l) => l[0] < 5, undefined, lDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      value$1.return();
-    });
-    throw error;
-  }
-  try {
-    const value = rfind != null ? map$2(rfind) : undefined;
+    const rfind = $findBack(value$1, (l) => l[0] < 5, undefined, lDrop_drop);
+    function map(l) {
+      const result = l[0];
+      lDrop_drop(l);
+      return result;
+    }
+    const value = rfind != null ? map(rfind) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      value$1.return();
-    });
-    throw error;
+  } finally {
+    value$1.return();
   }
-  value$1.return();
   const folded = $foldBack(
     $enumerate($stepByEnds($closing($iter(ls(9)), $dropEach(lDrop_drop)), 3, lDrop_drop)),
     0,
@@ -165,14 +128,8 @@ function main() {
       lDrop_drop,
     ),
   );
-  let nextBack$1;
-  function map$3(l) {
-    const result = l[0];
-    lDrop_drop(l);
-    return result;
-  }
   try {
-    nextBack$1 = stepByDoubleEndedIterator_nextBack(
+    const nextBack = stepByDoubleEndedIterator_nextBack(
       it,
       { next: $next, advanceBy: $advanceSlice },
       { next_back: $nextBack },
@@ -180,47 +137,23 @@ function main() {
       $dropEach(lDrop_drop),
       lDrop_drop,
     );
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  try {
-    const value = nextBack$1 != null ? map$3(nextBack$1) : undefined;
+    function map(l) {
+      const result = l[0];
+      lDrop_drop(l);
+      return result;
+    }
+    const value = nextBack != null ? map(nextBack) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  let next;
-  function map$4(l) {
-    const result = l[0];
-    lDrop_drop(l);
-    return result;
-  }
-  // Of numbers, counted.
-  try {
-    next = $next(it);
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  try {
-    const value = next != null ? map$4(next) : undefined;
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  const w = [1, 2, 3, 4, 5, 6, 7, 8];
-  try {
+    const next = $next(it);
+    function map$1(l) {
+      const result = l[0];
+      lDrop_drop(l);
+      return result;
+    }
+    const value$1 = next != null ? map$1(next) : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    // Of numbers, counted.
+    const w = [1, 2, 3, 4, 5, 6, 7, 8];
     console.log(
       `${$foldBack(
         $enumerate($stepByEnds($iter(w), 3)),
@@ -228,25 +161,14 @@ function main() {
         (n, [i, x]) => (((((n * 10) >>> 0) + i) >>> 0) + x) >>> 0,
       )}`,
     );
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  try {
     console.log(
       `[${Array.from($rev($enumerate($stepByEnds($iter(w), 3))))
         .map((item) => `(${item[0]}, ${item[1]})`)
         .join(", ")}]`,
     );
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
+    console.log("end");
+  } finally {
+    it.return();
   }
-  console.log("end");
-  it.return();
 }
 //# sourceMappingURL=case.js.map

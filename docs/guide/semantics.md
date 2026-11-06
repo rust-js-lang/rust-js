@@ -907,7 +907,9 @@ judged for each use, so `Defer(|| DEPTH.set(previous))` of `impl<F:
 FnMut()> Drop for Defer<F>` is `finally { depth = previous; }`, and a
 `Cell`'s set never panics where JS drops nothing of what it replaces, an
 `Option` of a reference or of an `Rc` no count is kept of, nor does its
-`replace` or an `Option`'s `take`
+`replace` or an `Option`'s `take`, nor an iterator's close, `it.return()`,
+where nothing it holds, what a `Peekable` peeked at too, may panic as it
+drops
 ([0902](../decisions/0902-what-never-unwinds-is-read-from-mir.md), amended).
 
 Generic code drops a value of an associated type through its impl's

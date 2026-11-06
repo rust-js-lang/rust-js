@@ -2,7 +2,6 @@
 
 import { iterator_fuse } from "@rust-js/std/iter.js";
 import {
-  $cleanup,
   $closing,
   $dropEach,
   $held,
@@ -59,30 +58,18 @@ function main() {
       $closing($iter(louds(130, 2)), $dropEach(loudDrop_drop)),
     ),
   );
-  let nth$1;
-  function map$1(l) {
-    const result = l[0];
-    loudDrop_drop(l);
-    return result;
-  }
   try {
-    nth$1 = $nthDropping($lent(chain), 3, loudDrop_drop, false);
-  } catch (error) {
-    $cleanup(() => {
-      chain.return();
-    });
-    throw error;
-  }
-  try {
-    const value = nth$1 != null ? map$1(nth$1) : undefined;
+    const nth = $nthDropping($lent(chain), 3, loudDrop_drop, false);
+    function map(l) {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    }
+    const value = nth != null ? map(nth) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      chain.return();
-    });
-    throw error;
+  } finally {
+    chain.return();
   }
-  chain.return();
   console.log("--");
   const value$1 = $held(
     $lazyChain(
@@ -90,32 +77,20 @@ function main() {
       $closing($iter(louds(10, 3)), $dropEach(loudDrop_drop)),
     ),
   );
-  let nth$2;
-  function map$2(l) {
-    const result = l[0];
-    loudDrop_drop(l);
-    return result;
-  }
   try {
-    nth$2 = $nthDropping($lent(value$1), 4, loudDrop_drop, false);
-  } catch (error) {
-    $cleanup(() => {
-      value$1.return();
-    });
-    throw error;
-  }
-  try {
-    const value = nth$2 != null ? map$2(nth$2) : undefined;
+    const nth = $nthDropping($lent(value$1), 4, loudDrop_drop, false);
+    function map(l) {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    }
+    const value = nth != null ? map(nth) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      value$1.return();
-    });
-    throw error;
+  } finally {
+    value$1.return();
   }
-  value$1.return();
   console.log("--");
-  const nth$3 = $nthDropping(
+  const nth$1 = $nthDropping(
     $lent(
       $lazyChain(
         iterator_fuse([60, 63], { next: countIterator_next }, false, undefined, loudDrop_drop),
@@ -126,12 +101,12 @@ function main() {
     loudDrop_drop,
     false,
   );
-  function map$3(l) {
+  function map$1(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
   }
-  const value$2 = nth$3 != null ? map$3(nth$3) : undefined;
+  const value$2 = nth$1 != null ? map$1(nth$1) : undefined;
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   console.log("--");
   const next = $next(
@@ -144,12 +119,12 @@ function main() {
       loudDrop_drop,
     ),
   );
-  function map$4(l) {
+  function map$2(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
   }
-  const value$3 = next != null ? map$4(next) : undefined;
+  const value$3 = next != null ? map$2(next) : undefined;
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   console.log("--");
   const skip = $skipping($closing($iter(louds(20, 4)), $dropEach(loudDrop_drop)), 1, loudDrop_drop);
@@ -157,38 +132,24 @@ function main() {
   try {
     tmp = louds(30, 2);
   } catch (error) {
-    $cleanup(() => {
-      skip.return();
-    });
+    skip.return();
     throw error;
   }
   const value$4 = $held($lazyChain(skip, $closing($iter(tmp), $dropEach(loudDrop_drop))));
-  let nth$4;
-  function map$5(l) {
-    const result = l[0];
-    loudDrop_drop(l);
-    return result;
-  }
   try {
-    nth$4 = $nthDropping($lent(value$4), 3, loudDrop_drop, false);
-  } catch (error) {
-    $cleanup(() => {
-      value$4.return();
-    });
-    throw error;
-  }
-  try {
-    const value = nth$4 != null ? map$5(nth$4) : undefined;
+    const nth = $nthDropping($lent(value$4), 3, loudDrop_drop, false);
+    function map(l) {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    }
+    const value = nth != null ? map(nth) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      value$4.return();
-    });
-    throw error;
+  } finally {
+    value$4.return();
   }
-  value$4.return();
   console.log("--");
-  const nth$5 = $nthDropping(
+  const nth$2 = $nthDropping(
     $lent(
       $lazyChain(
         $skipping($iterator([40, 43], countIterator_next), 1, loudDrop_drop),
@@ -199,12 +160,12 @@ function main() {
     loudDrop_drop,
     false,
   );
-  function map$6(l) {
+  function map$3(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
   }
-  const value$5 = nth$5 != null ? map$6(nth$5) : undefined;
+  const value$5 = nth$2 != null ? map$3(nth$2) : undefined;
   console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
 }
 //# sourceMappingURL=case.js.map

@@ -4,7 +4,6 @@ import { iterator_fuse, iterator_inspect, iterator_peekable } from "@rust-js/std
 import {
   $advanceSlice,
   $catchUnwind,
-  $cleanup,
   $dropEach,
   $foldDropping,
   $foldOf,
@@ -74,13 +73,9 @@ function main() {
         },
         $dropEach(dDrop_drop),
       );
-    } catch (error) {
-      $cleanup(() => {
-        iter.return();
-      });
-      throw error;
+    } finally {
+      iter.return();
     }
-    iter.return();
     const kept = result;
     console.log(`${kept.length}`);
     for (const item of kept) {
@@ -122,13 +117,9 @@ function main() {
         },
         $dropEach(dDrop_drop),
       );
-    } catch (error) {
-      $cleanup(() => {
-        iter.return();
-      });
-      throw error;
+    } finally {
+      iter.return();
     }
-    iter.return();
     const kept = result;
     console.log(`${kept.length}`);
     for (const item of kept) {

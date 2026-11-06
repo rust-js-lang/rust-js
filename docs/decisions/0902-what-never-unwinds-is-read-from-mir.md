@@ -230,3 +230,32 @@ x$1`'s share grew from 549.9 to 550.1 in 10,000 lines as the generic
 `cell-set-of-copies-only`, `cell-set-of-what-drops`,
 `cell-replace-may-panic` and `option-take-may-panic`
 (`lower/analysis/unwinding.ts`).
+
+## Amendment: an iterator's close of what drops nothing that may panic (#861, 2026-11-07)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): no difference, as above.
+
+An iterator dropped by closing it, `it.return()` (ADR 0422), was a call
+that may throw whatever it held, so each scope that held one, a `Peekable`
+of items whose drop only prints say, dropped it after each `try` and in a
+`$cleanup`: 811 of the corpus's 1,968 `$cleanup`s.
+
+**A close never throws where nothing it may hold has a drop that may
+panic** (`close_may_panic`, `drops/parts.rs`): the iterator's own drop
+(`drop_may_panic`), and, through each std adapter it's made of, each one's
+`Item`, which a `Peekable` holds peeked and its type's arguments don't
+name, and a flatten's inner iterator. The close's call is then marked
+`Known::NeverThrows`, so it's a `finally`'s.
+
+`test/corpus/iterator_closes_of_quiet_items.rs` holds both sides against
+native Rust in both builds: a `Peekable` of quiet items, in a `finally`;
+of `Loud`s that may panic, of the crate's own iterator of them, whose
+`Item` its type doesn't name, and a `map()` of that, each after the `try`
+and in a `$cleanup`, a peeked `Loud`'s panic dropping what's after it. 104
+corpus snapshots read better, 4,300 lines fewer. The readability baseline
+is blessed: `while (true)` 8.7 to 8.1 and `renamed x$1` 549.4 to 538 in
+10,000 lines, as the `try`s each step held went; `$iter` 94.4 to 95.8 and
+`Iterator.from` 8.7 to 8.8 grow only as the lines around them go, none
+new. Mutations:
+`close-of-quiet-items-may-throw`, `close-item-unasked` and
+`close-adapters-unwalked` (`lower/drops/parts.ts`).

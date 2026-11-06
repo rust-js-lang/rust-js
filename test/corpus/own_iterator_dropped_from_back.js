@@ -146,13 +146,9 @@ function main() {
   let third;
   try {
     third = $nth($lent(rev), 2);
-  } catch (error) {
-    $cleanup(() => {
-      rev.return();
-    });
-    throw error;
+  } finally {
+    rev.return();
   }
-  rev.return();
   console.log(`${third == null ? "None" : `Some(${third})`}`);
   const value = $held(
     $rev(
@@ -181,13 +177,9 @@ function main() {
   let pair;
   try {
     pair = $nth($lent(value), 2);
-  } catch (error) {
-    $cleanup(() => {
-      value.return();
-    });
-    throw error;
+  } finally {
+    value.return();
   }
-  value.return();
   console.log(`${pair == null ? "None" : `Some((${pair[0]}, ${pair[1]}))`}`);
   const it = count();
   try {

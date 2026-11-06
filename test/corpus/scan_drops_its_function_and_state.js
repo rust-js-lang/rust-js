@@ -3,7 +3,6 @@
 import {
   $assign,
   $catchUnwind,
-  $cleanup,
   $closing,
   $held,
   $iterator,
@@ -103,13 +102,9 @@ function main() {
   try {
     const value = $next(held);
     console.log(`next ${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      held.return();
-    });
-    throw error;
+  } finally {
+    held.return();
   }
-  held.return();
   console.log("dropped");
   n = $lazyScan(
     $lazyRange(0, 4),

@@ -2,7 +2,6 @@
 
 import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
-  $cleanup,
   $closing,
   $count,
   $enumerate,
@@ -195,13 +194,9 @@ function main() {
   let result;
   try {
     result = $count(iter, dDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      iter.return();
-    });
-    throw error;
+  } finally {
+    iter.return();
   }
-  iter.return();
   console.log(`${result}`);
   const value = [ds()];
   let tmp;

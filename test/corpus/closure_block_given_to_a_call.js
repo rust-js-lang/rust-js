@@ -126,13 +126,9 @@ function main() {
   let result;
   try {
     result = iter$1.reduce((a, b) => (a + b) >>> 0, 0);
-  } catch (error) {
-    $cleanup(() => {
-      iter$1.return();
-    });
-    throw error;
+  } finally {
+    iter$1.return();
   }
-  iter$1.return();
   n = result;
   console.log(`sum ${n}`);
 

@@ -3,7 +3,6 @@
 import { iterator_fuse, iterator_rev } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
-  $cleanup,
   $closing,
   $count,
   $dropEach,
@@ -103,19 +102,8 @@ function main() {
   let nth;
   try {
     nth = $nthDropping($lent(value), 2, dDrop_drop, false);
-  } catch (error) {
-    $cleanup(() => {
-      value.return();
-    });
-    throw error;
-  }
-  try {
+  } finally {
     value.return();
-  } catch (error) {
-    if (nth != null) {
-      dDrop_drop(nth);
-    }
-    throw error;
   }
   function map(d) {
     const result = d[0];

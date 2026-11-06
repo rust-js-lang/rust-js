@@ -137,23 +137,18 @@ function main() {
       ),
     ),
   );
-  let nthBack;
-  function map(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
   let third;
   try {
-    nthBack = $nthBack(rev, 2, undefined, dDrop_drop);
+    const nthBack = $nthBack(rev, 2, undefined, dDrop_drop);
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
     third = nthBack != null ? map(nthBack) : undefined;
-  } catch (error) {
-    $cleanup(() => {
-      rev.return();
-    });
-    throw error;
+  } finally {
+    rev.return();
   }
-  rev.return();
   console.log(`third ${third == null ? "None" : `Some(${third})`}`);
 }
 //# sourceMappingURL=case.js.map

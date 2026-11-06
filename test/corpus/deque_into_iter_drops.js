@@ -3,7 +3,6 @@
 import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
-  $cleanup,
   $closing,
   $cmp,
   $count,
@@ -63,19 +62,8 @@ function main() {
   let first;
   try {
     first = $next(peeked);
-  } catch (error) {
-    $cleanup(() => {
-      peeked.return();
-    });
-    throw error;
-  }
-  try {
+  } finally {
     peeked.return();
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    throw error;
   }
   function map(l) {
     const result = l[0];

@@ -4,7 +4,6 @@ import { iterator_fuse, iterator_map, iterator_peekable, iterator_zip } from "@r
 import {
   $advanceSlice,
   $catchUnwind,
-  $cleanup,
   $closing,
   $collectDropping,
   $debugStr,
@@ -181,13 +180,9 @@ function main() {
     let result;
     try {
       result = $foldToArray(iter).join("");
-    } catch (error) {
-      $cleanup(() => {
-        iter.return();
-      });
-      throw error;
+    } finally {
+      iter.return();
     }
-    iter.return();
     const s = result;
     return s;
   });

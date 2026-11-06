@@ -2,7 +2,6 @@
 
 import {
   $catchUnwind,
-  $cleanup,
   $closing,
   $count,
   $foldDropping,
@@ -49,31 +48,17 @@ function main() {
         console.log("drop it");
       }).drop(2),
     );
-    let tryFold;
-    function map(a) {
-      const result = a[0];
-      accDrop_drop(a);
-      return result;
-    }
     try {
-      tryFold = $tryFoldSome(skip, [0], (a) => a, accDrop_drop);
-    } catch (error) {
-      $cleanup(() => {
-        skip.return();
-      });
-      throw error;
+      const tryFold = $tryFoldSome(skip, [0], (a) => a, accDrop_drop);
+      function map(a) {
+        const result = a[0];
+        accDrop_drop(a);
+        return result;
+      }
+      return tryFold != null ? map(tryFold) : undefined;
+    } finally {
+      skip.return();
     }
-    let result;
-    try {
-      result = tryFold != null ? map(tryFold) : undefined;
-    } catch (error) {
-      $cleanup(() => {
-        skip.return();
-      });
-      throw error;
-    }
-    skip.return();
-    return result;
   });
   console.log(`try_fold ok ${r.TAG === "Ok"}`);
   r = $catchUnwind(() =>

@@ -4,7 +4,6 @@ import { iterator_zip, zipDoubleEndedIterator_nextBack } from "@rust-js/std/iter
 import {
   $advanceSlice,
   $catchUnwind,
-  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -468,15 +467,13 @@ function main() {
     );
     back = nextBack$2 != null ? map$2(nextBack$2) : undefined;
   } catch (error) {
-    $cleanup(() => {
-      it.return();
-      for (const item of b) {
-        dDrop_drop(item);
-      }
-      for (const item of a) {
-        dDrop_drop(item);
-      }
-    });
+    it.return();
+    for (const item of b) {
+      dDrop_drop(item);
+    }
+    for (const item of a) {
+      dDrop_drop(item);
+    }
     throw error;
   }
   let next;
@@ -491,38 +488,7 @@ function main() {
     next = $next(it);
     front = next != null ? map$3(next) : undefined;
   } catch (error) {
-    $cleanup(() => {
-      it.return();
-      for (const item of b) {
-        dDrop_drop(item);
-      }
-      for (const item of a) {
-        dDrop_drop(item);
-      }
-    });
-    throw error;
-  }
-  let arg;
-  try {
-    arg = $exactLen($sizeHint(it));
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-      for (const item of b) {
-        dDrop_drop(item);
-      }
-      for (const item of a) {
-        dDrop_drop(item);
-      }
-    });
-    throw error;
-  }
-  console.log(
-    `| held ${back == null ? "None" : `Some((${back[0]}, ${back[1]}))`} ${front == null ? "None" : `Some((${front[0]}, ${front[1]}))`} ${arg}`,
-  );
-  try {
     it.return();
-  } catch (error) {
     for (const item of b) {
       dDrop_drop(item);
     }
@@ -531,6 +497,23 @@ function main() {
     }
     throw error;
   }
+  let arg;
+  try {
+    arg = $exactLen($sizeHint(it));
+  } catch (error) {
+    it.return();
+    for (const item of b) {
+      dDrop_drop(item);
+    }
+    for (const item of a) {
+      dDrop_drop(item);
+    }
+    throw error;
+  }
+  console.log(
+    `| held ${back == null ? "None" : `Some((${back[0]}, ${back[1]}))`} ${front == null ? "None" : `Some((${front[0]}, ${front[1]}))`} ${arg}`,
+  );
+  it.return();
   console.log("| dropped");
   r = $catchUnwind(() => {
     const zip = $held(
@@ -547,31 +530,17 @@ function main() {
         dDrop_drop,
       ),
     );
-    let nextBack;
-    function map([x, y]) {
-      const result = [x[0], y];
-      dDrop_drop(x);
-      return result;
-    }
     try {
-      nextBack = $nextBack(zip);
-    } catch (error) {
-      $cleanup(() => {
-        zip.return();
-      });
-      throw error;
+      const nextBack = $nextBack(zip);
+      function map([x, y]) {
+        const result = [x[0], y];
+        dDrop_drop(x);
+        return result;
+      }
+      return nextBack != null ? map(nextBack) : undefined;
+    } finally {
+      zip.return();
     }
-    let result;
-    try {
-      result = nextBack != null ? map(nextBack) : undefined;
-    } catch (error) {
-      $cleanup(() => {
-        zip.return();
-      });
-      throw error;
-    }
-    zip.return();
-    return result;
   });
   console.log(`| panics ${r.TAG === "Err"}`);
   r = $catchUnwind(() => {

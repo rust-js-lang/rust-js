@@ -38,27 +38,15 @@ function mapped() {
       (item) => $closing($iter(item), $dropEach(dDrop_drop)),
     ),
   );
-  let first;
   try {
-    first = $next(it);
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  console.log(`first ${first?.[0] ?? 0}`);
-  try {
+    const first = $next(it);
+    console.log(`first ${first?.[0] ?? 0}`);
     if (first != null) {
       dDrop_drop(first);
     }
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
+  } finally {
+    it.return();
   }
-  it.return();
   console.log("mapped end");
 }
 function flatMapped() {
@@ -72,27 +60,15 @@ function flatMapped() {
       (x) => $closing($iter([[(x[0] + 10) >>> 0], x]), $dropEach(dDrop_drop)),
     ),
   );
-  let first;
   try {
-    first = $nthDropping($lent(it), 0, dDrop_drop, false);
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  console.log(`first ${first?.[0] ?? 0}`);
-  try {
+    const first = $nthDropping($lent(it), 0, dDrop_drop, false);
+    console.log(`first ${first?.[0] ?? 0}`);
     if (first != null) {
       dDrop_drop(first);
     }
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
+  } finally {
+    it.return();
   }
-  it.return();
   console.log("flat mapped end");
 }
 function brokenOff() {
@@ -100,20 +76,15 @@ function brokenOff() {
     $closing($iter([[5], [6]]), $dropEach(dDrop_drop)).map((x) => [[(x[0] + 10) >>> 0], x]),
     (item) => $closing($iter(item), $dropEach(dDrop_drop)),
   );
-  let d;
   try {
-    d = $next(iter);
-  } catch (error) {
-    $cleanup(() => {
-      iter.return();
-    });
-    throw error;
+    const d = $next(iter);
+    if (d != null) {
+      console.log(`got ${d[0]}`);
+      dDrop_drop(d);
+    }
+  } finally {
+    iter.return();
   }
-  if (d != null) {
-    console.log(`got ${d[0]}`);
-    dDrop_drop(d);
-  }
-  iter.return();
   console.log("broken off end");
 }
 function ofARange() {
@@ -123,27 +94,15 @@ function ofARange() {
       (item) => $closing($iter(item), $dropEach(dDrop_drop)),
     ),
   );
-  let first;
   try {
-    first = $next(it);
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  console.log(`first ${first?.[0] ?? 0}`);
-  try {
+    const first = $next(it);
+    console.log(`first ${first?.[0] ?? 0}`);
     if (first != null) {
       dDrop_drop(first);
     }
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
+  } finally {
+    it.return();
   }
-  it.return();
   console.log("of a range end");
 }
 function foldsIterator_next(folds) {
@@ -250,9 +209,7 @@ function sourceEnded() {
   try {
     console.log(`peeked ${$peek(peeked)?.length ?? 0}`);
   } catch (error) {
-    $cleanup(() => {
-      peeked.return();
-    });
+    peeked.return();
     throw error;
   }
   const v = $collectDropping(

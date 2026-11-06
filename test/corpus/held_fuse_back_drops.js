@@ -6,7 +6,6 @@ import {
   iterator_fuse,
 } from "@rust-js/std/iter.js";
 import {
-  $cleanup,
   $exactLen,
   $iter,
   $iterator,
@@ -101,31 +100,15 @@ function main() {
     false,
     countdownDrop_drop,
   );
-  let next;
   try {
-    next = padIterator_next(it, countdownDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      it.iter.return();
-    });
-    throw error;
-  }
-  let nextBack;
-  try {
-    nextBack = padDoubleEndedIterator_nextBack(
+    const next = padIterator_next(it, countdownDrop_drop);
+    const nextBack = padDoubleEndedIterator_nextBack(
       it,
       { next_back: countdownDoubleEndedIterator_nextBack },
       countdownExactSizeIterator,
       false,
       countdownDrop_drop,
     );
-  } catch (error) {
-    $cleanup(() => {
-      it.iter.return();
-    });
-    throw error;
-  }
-  try {
     const value = padDoubleEndedIterator_nextBack(
       it,
       { next_back: countdownDoubleEndedIterator_nextBack },
@@ -136,13 +119,9 @@ function main() {
     console.log(
       `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
     );
-  } catch (error) {
-    $cleanup(() => {
-      it.iter.return();
-    });
-    throw error;
+  } finally {
+    it.iter.return();
   }
-  it.iter.return();
   const ranged = Array.from(
     $iterator(
       pad({ start: 0, end: 4 }, 0, { next: $rangeNext }, true),

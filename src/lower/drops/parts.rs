@@ -21,6 +21,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && !crate::lower::recognition::is_held_compiled(self.tcx, self.reveal(ty)))
     }
 
+    /// Whether closing an iterator of type `ty`, `it.return()`, may throw:
+    /// where dropping what it may hold may panic, its own parts' and,
+    /// through each std adapter it's made of, each one's `Item`, which a
+    /// `Peekable` holds peeked, and a flatten's inner iterator, which its
+    /// type's arguments don't name (#861).
+    pub(in crate::lower) fn close_may_panic(&self, ty: Ty<'tcx>, seen: &mut HashSet<Ty<'tcx>>) -> bool {
+        if !seen.insert(ty) {
+            return false;
+        }
+        let recognition = self.recognition();
+        self.drop_may_panic(ty)
+            || recognition
+                .iterator_item(ty)
+                .is_some_and(|item| self.drop_may_panic(item))
+            || recognition
+                .flattened_inner(ty)
+                .is_some_and(|inner| self.close_may_panic(inner, seen))
+            || matches!(ty.kind(), ty::Adt(adt, args) if !adt.did().is_local()
+                && args.types().any(|arg| self.close_may_panic(arg, seen)))
+    }
+
     /// Whether a closure of type `ty` carries its drop, anywhere but in its
     /// own body (ADRs 0484, 0521, 0522), which `$dispose(f)` runs, once:
     /// the one answer of its drop and of what's given it (#710).
@@ -68,7 +89,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // an adapter that holds a function with a destructor, made closing
             // to drop it, `map(f)`'s (ADR 0485).
             ty::Adt(..) if self.dropped_by_closing(ty) => {
-                out.push(StmtKind::Expr(Expr::call(Expr::member(value, "return"), Vec::new())).at(js_span));
+                let mut close = Expr::call(Expr::member(value, "return"), Vec::new());
+                // Of what holds nothing whose drop may panic, it never
+                // throws: it drops what it holds (#861).
+                if !self.close_may_panic(ty, &mut HashSet::new()) {
+                    close = close.never_throws();
+                }
+                out.push(StmtKind::Expr(close).at(js_span));
             }
             // A channel's end (ADR 0142): a receiver's drops what's still in
             // its queue, as Rust's does.

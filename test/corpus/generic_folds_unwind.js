@@ -309,26 +309,8 @@ function main() {
         $controlFlowTry,
         $dropEach(dDrop_drop),
       );
-    } catch (error) {
-      $cleanup(() => {
-        inspect.return();
-      });
-      throw error;
-    }
-    try {
+    } finally {
       inspect.return();
-    } catch (error) {
-      if (x.TAG === "Continue") {
-        for (const item of x._0) {
-          dDrop_drop(item);
-        }
-      }
-      if (x.TAG === "Break") {
-        for (const item of x._0) {
-          dDrop_drop(item);
-        }
-      }
-      throw error;
     }
     console.log(`${x.TAG === "Continue"}`);
     if (x.TAG === "Continue") {
@@ -497,9 +479,8 @@ function main() {
         dDrop_drop,
       ),
     );
-    let x;
     try {
-      x = mapDoubleEndedIterator_tryRfold(
+      const x = mapDoubleEndedIterator_tryRfold(
         held,
         [],
         (acc, d) => {
@@ -535,14 +516,7 @@ function main() {
         },
         dDrop_drop,
       );
-    } catch (error) {
-      $cleanup(() => {
-        held.return();
-      });
-      throw error;
-    }
-    console.log(`${x.TAG === "Continue"}`);
-    try {
+      console.log(`${x.TAG === "Continue"}`);
       if (x.TAG === "Continue") {
         for (const item of x._0) {
           dDrop_drop(item);
@@ -553,13 +527,9 @@ function main() {
           dDrop_drop(item);
         }
       }
-    } catch (error) {
-      $cleanup(() => {
-        held.return();
-      });
-      throw error;
+    } finally {
+      held.return();
     }
-    held.return();
   });
   run("generic try_rfold", () => {
     const inspect = (d) => boom(d, 92);

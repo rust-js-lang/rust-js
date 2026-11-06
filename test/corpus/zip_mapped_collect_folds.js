@@ -3,7 +3,6 @@
 import { iterator_enumerate, iterator_map, iterator_rev, iterator_zip } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
-  $cleanup,
   $dropEach,
   $foldOf,
   $foldToArray,
@@ -73,13 +72,9 @@ function main() {
   let result;
   try {
     result = $foldToArray($roomForHint(iter, 4, true));
-  } catch (error) {
-    $cleanup(() => {
-      iter.return();
-    });
-    throw error;
+  } finally {
+    iter.return();
   }
-  iter.return();
   let v = result;
   console.log(`[${v.join(", ")}]`);
   const iter$1 = iterator_map(
@@ -116,13 +111,9 @@ function main() {
   let result$1;
   try {
     result$1 = $foldToArray($roomForHint(iter$1, 4, true));
-  } catch (error) {
-    $cleanup(() => {
-      iter$1.return();
-    });
-    throw error;
+  } finally {
+    iter$1.return();
   }
-  iter$1.return();
   v = result$1;
   console.log(`[${v.join(", ")}]`);
   const iter$2 = iterator_map(
@@ -176,13 +167,9 @@ function main() {
   let result$2;
   try {
     result$2 = $foldToArray($roomForHint(iter$2, 8, true));
-  } catch (error) {
-    $cleanup(() => {
-      iter$2.return();
-    });
-    throw error;
+  } finally {
+    iter$2.return();
   }
-  iter$2.return();
   v = result$2;
   console.log(`[${v.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   let seen = 0;

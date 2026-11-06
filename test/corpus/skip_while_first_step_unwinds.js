@@ -3,7 +3,6 @@
 import {
   $byteLen,
   $catchUnwind,
-  $cleanup,
   $closing,
   $consume,
   $dropEach,
@@ -286,10 +285,8 @@ function main() {
       dDrop_drop(_3);
       return a;
     }
-    let value$1;
-    let tryFold;
     try {
-      value$1 = $tryFoldSome(
+      const value = $tryFoldSome(
         skip,
         d,
         (a, b) => f(a, b),
@@ -298,24 +295,12 @@ function main() {
           dDrop_drop(g);
         },
       );
-      tryFold = value$1;
-    } catch (error) {
-      $cleanup(() => {
-        skip.return();
-      });
-      throw error;
-    }
-    try {
-      if (tryFold != null) {
-        dDrop_drop(tryFold);
+      if (value != null) {
+        dDrop_drop(value);
       }
-    } catch (error) {
-      $cleanup(() => {
-        skip.return();
-      });
-      throw error;
+    } finally {
+      skip.return();
     }
-    skip.return();
   });
   console.log(`skip try_fold panicked ${r.TAG === "Err"}`);
   r = $catchUnwind(() => {

@@ -481,9 +481,7 @@ function main() {
   try {
     peek = $peek(it);
   } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
+    it.return();
     throw error;
   }
   const value = peek?.[0];
@@ -544,9 +542,7 @@ function main() {
     try {
       peek = $peek(it);
     } catch (error) {
-      $cleanup(() => {
-        it.return();
-      });
+      it.return();
       throw error;
     }
     const value = peek?.[0];

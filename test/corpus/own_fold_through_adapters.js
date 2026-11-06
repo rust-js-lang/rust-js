@@ -123,9 +123,7 @@ function main() {
     const value = $peek(peeked);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
-    $cleanup(() => {
-      peeked.return();
-    });
+    peeked.return();
     throw error;
   }
   console.log(`${peeked.reduce((a, b) => (a + b) >>> 0, 0)}`);
@@ -196,9 +194,7 @@ function main() {
   try {
     $peek(peeked);
   } catch (error) {
-    $cleanup(() => {
-      peeked.return();
-    });
+    peeked.return();
     throw error;
   }
   console.log(`[${$collectDropping(peeked.map((x) => (x * 2) >>> 0)).join(", ")}]`);
@@ -245,9 +241,7 @@ function main() {
   try {
     $peek(stepped);
   } catch (error) {
-    $cleanup(() => {
-      stepped.return();
-    });
+    stepped.return();
     throw error;
   }
   console.log(`[${Array.from(stepped.map((x) => (x * 2) >>> 0)).join(", ")}]`);

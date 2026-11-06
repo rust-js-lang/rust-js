@@ -9,7 +9,6 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
-  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -202,29 +201,17 @@ function main() {
     .reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${s}`);
   const it = $held($rev($taking($closing($iter(ds()), $dropEach(dDrop_drop)), 3, dDrop_drop)));
-  let next;
-  function map$1(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
   try {
-    next = $next(it);
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  try {
-    const value = next != null ? map$1(next) : undefined;
+    const next = $next(it);
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
+  } finally {
+    it.return();
   }
-  it.return();
 }
 //# sourceMappingURL=case.js.map

@@ -82,9 +82,7 @@ function main() {
   try {
     tmp = skips(3);
   } catch (error) {
-    $cleanup(() => {
-      value.return();
-    });
+    value.return();
     throw error;
   }
   const value$1 = chainedNth(value, tmp, (skip) => {
@@ -124,9 +122,7 @@ function main() {
       noisyDrop_drop,
     );
   } catch (error) {
-    $cleanup(() => {
-      first.return();
-    });
+    first.return();
     throw error;
   }
   const value$2 = chainedNth(first, second, (skip) => {

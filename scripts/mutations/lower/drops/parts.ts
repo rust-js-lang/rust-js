@@ -289,4 +289,34 @@ export const mutations: Mutation[] = [
     replace: "                dropped_after_unwinding(part.clone(), (rest.clone(), rest), js_span)\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_glue_second_panic_aborts.rs$"],
   },
+  {
+    name: "close-of-quiet-items-may-throw",
+    breaks:
+      "closing an iterator of items whose drop can't panic, `it.return()`, is one that may throw, so its scope drops it after each `try` and in a `$cleanup` (#861)",
+    file: "src/lower/drops/parts.rs",
+    find: "                if !self.close_may_panic(ty, &mut HashSet::new()) {\n",
+    replace: "                if false && !self.close_may_panic(ty, &mut HashSet::new()) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(iterator_closes_of_quiet_items|peekable_drops).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "close-item-unasked",
+    breaks:
+      "closing a `Peekable` of the crate's iterator isn't asked what it peeked at, of its `Item`, which its type doesn't name, so a close that drops a `Loud` that may panic is taken for one that never throws, in a `finally` (#861)",
+    file: "src/lower/drops/parts.rs",
+    find: "                .is_some_and(|item| self.drop_may_panic(item))\n",
+    replace: "                .is_some_and(|item| self.drop_may_panic(item) && false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_closes_of_quiet_items.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "close-adapters-unwalked",
+    breaks:
+      "closing a `map()` of a `Peekable` isn't asked what the inner one peeked at, so a close that drops a `Loud` that may panic is taken for one that never throws (#861)",
+    file: "src/lower/drops/parts.rs",
+    find: "                && args.types().any(|arg| self.close_may_panic(arg, seen)))\n",
+    replace: "                && args.types().any(|arg| self.close_may_panic(arg, seen) && false))\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_closes_of_quiet_items.rs$"],
+    snapshots: true,
+  },
 ];

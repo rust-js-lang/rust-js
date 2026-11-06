@@ -3,7 +3,6 @@
 import { chainDoubleEndedIterator_nextBack, iterator_chain } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
-  $cleanup,
   $closing,
   $count,
   $dropEach,
@@ -68,9 +67,8 @@ function main() {
       $dropEach(dDrop_drop),
     ),
   );
-  let back;
   try {
-    back = chainDoubleEndedIterator_nextBack(
+    const back = chainDoubleEndedIterator_nextBack(
       it,
       { next_back: endsDoubleEndedIterator_nextBack },
       { next_back: $nextBack },
@@ -78,136 +76,92 @@ function main() {
       $dropEach(dDrop_drop),
       dDrop_drop,
     );
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  const value = back?.[0];
-  console.log(`back ${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = ends();
-  const value$2 = [[6]];
-  let s;
-  try {
-    s = $foldToArray(
-      $reserveHint(
-        $mapEnds(
-          $lazyChain(
-            $iterator(
-              value$1,
-              endsIterator_next,
-              false,
-              endsDoubleEndedIterator_nextBack,
-              undefined,
-              endsIterator_sizeHint,
-            ),
-            $closing($iter(value$2), $dropEach(dDrop_drop)),
-          ),
-          (d) => {
-            try {
-              return String.fromCharCode((97 + (d[0] & 255)) & 255);
-            } finally {
-              dDrop_drop(d);
-            }
-          },
-        ),
-        1,
-      ),
-    ).join("");
-  } catch (error) {
-    $cleanup(() => {
-      if (back != null) {
-        dDrop_drop(back);
-      }
-      it.return();
-    });
-    throw error;
-  }
-  console.log(`${s}`);
-  const value$3 = ends();
-  const value$4 = [[6]];
-  let odd;
-  try {
-    odd = $foldToArray(
-      $reserveHint(
-        $mapEnds(
-          $filterEnds(
+    try {
+      const value = back?.[0];
+      console.log(`back ${value == null ? "None" : `Some(${value})`}`);
+      const s = $foldToArray(
+        $reserveHint(
+          $mapEnds(
             $lazyChain(
               $iterator(
-                value$3,
+                ends(),
                 endsIterator_next,
                 false,
                 endsDoubleEndedIterator_nextBack,
                 undefined,
                 endsIterator_sizeHint,
               ),
-              $closing($iter(value$4), $dropEach(dDrop_drop)),
+              $closing($iter([[6]]), $dropEach(dDrop_drop)),
+            ),
+            (d) => {
+              try {
+                return String.fromCharCode((97 + (d[0] & 255)) & 255);
+              } finally {
+                dDrop_drop(d);
+              }
+            },
+          ),
+          1,
+        ),
+      ).join("");
+      console.log(`${s}`);
+      const odd = $foldToArray(
+        $reserveHint(
+          $mapEnds(
+            $filterEnds(
+              $lazyChain(
+                $iterator(
+                  ends(),
+                  endsIterator_next,
+                  false,
+                  endsDoubleEndedIterator_nextBack,
+                  undefined,
+                  endsIterator_sizeHint,
+                ),
+                $closing($iter([[6]]), $dropEach(dDrop_drop)),
+              ),
+              (d) => d[0] % 2 === 1,
+              dDrop_drop,
+            ),
+            (d) => {
+              try {
+                return String.fromCharCode((97 + (d[0] & 255)) & 255);
+              } finally {
+                dDrop_drop(d);
+              }
+            },
+          ),
+          1,
+        ),
+      ).join("");
+      console.log(`${odd}`);
+      console.log(
+        `${$count(
+          $filterEnds(
+            $lazyChain(
+              $iterator(
+                ends(),
+                endsIterator_next,
+                false,
+                endsDoubleEndedIterator_nextBack,
+                undefined,
+                endsIterator_sizeHint,
+              ),
+              $closing($iter([[6]]), $dropEach(dDrop_drop)),
             ),
             (d) => d[0] % 2 === 1,
             dDrop_drop,
           ),
-          (d) => {
-            try {
-              return String.fromCharCode((97 + (d[0] & 255)) & 255);
-            } finally {
-              dDrop_drop(d);
-            }
-          },
-        ),
-        1,
-      ),
-    ).join("");
-  } catch (error) {
-    $cleanup(() => {
-      if (back != null) {
-        dDrop_drop(back);
-      }
-      it.return();
-    });
-    throw error;
-  }
-  console.log(`${odd}`);
-  try {
-    console.log(
-      `${$count(
-        $filterEnds(
-          $lazyChain(
-            $iterator(
-              ends(),
-              endsIterator_next,
-              false,
-              endsDoubleEndedIterator_nextBack,
-              undefined,
-              endsIterator_sizeHint,
-            ),
-            $closing($iter([[6]]), $dropEach(dDrop_drop)),
-          ),
-          (d) => d[0] % 2 === 1,
           dDrop_drop,
-        ),
-        dDrop_drop,
-      )}`,
-    );
-  } catch (error) {
-    $cleanup(() => {
+        )}`,
+      );
+    } finally {
       if (back != null) {
         dDrop_drop(back);
       }
-      it.return();
-    });
-    throw error;
-  }
-  try {
-    if (back != null) {
-      dDrop_drop(back);
     }
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
+  } finally {
+    it.return();
   }
-  it.return();
 }
 //# sourceMappingURL=case.js.map

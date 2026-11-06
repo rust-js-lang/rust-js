@@ -251,13 +251,9 @@ function main() {
   let result;
   try {
     result = $lastDropping(iter, dDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      iter.return();
-    });
-    throw error;
+  } finally {
+    iter.return();
   }
-  iter.return();
   show("fuse", result);
   const iter$1 = iterator_peekable(
     [ds()],
@@ -272,13 +268,9 @@ function main() {
   let result$1;
   try {
     result$1 = $lastDropping(iter$1, dDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      iter$1.return();
-    });
-    throw error;
+  } finally {
+    iter$1.return();
   }
-  iter$1.return();
   show("peekable", result$1);
   const peeked = $held(
     iterator_peekable(
@@ -295,22 +287,16 @@ function main() {
   try {
     $peek(peeked);
   } catch (error) {
-    $cleanup(() => {
-      peeked.return();
-    });
+    peeked.return();
     throw error;
   }
   const iter$2 = peeked;
   let result$2;
   try {
     result$2 = $lastDropping(iter$2, dDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      iter$2.return();
-    });
-    throw error;
+  } finally {
+    iter$2.return();
   }
-  iter$2.return();
   show("peeked", result$2);
   show(
     "chain",
@@ -499,13 +485,9 @@ function main() {
   let result$3;
   try {
     result$3 = $lastDropping(iter$3, dDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      iter$3.return();
-    });
-    throw error;
+  } finally {
+    iter$3.return();
   }
-  iter$3.return();
   show("fuse held", result$3);
   const iter$4 = iterator_peekable(
     [ds(), "p"],
@@ -521,13 +503,9 @@ function main() {
   let result$4;
   try {
     result$4 = $lastDropping(iter$4, dDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      iter$4.return();
-    });
-    throw error;
+  } finally {
+    iter$4.return();
   }
-  iter$4.return();
   show("peekable held", result$4);
   const value = $last(
     $closing(

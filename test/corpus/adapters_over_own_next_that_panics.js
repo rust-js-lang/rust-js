@@ -830,32 +830,18 @@ function main() {
         dDrop_drop,
       ),
     );
-    let tryFold;
-    function map(v) {
-      for (const item of v) {
-        dDrop_drop(item);
+    try {
+      const tryFold = $tryFoldSome(fuse, [], (acc, d) => push(acc, d), $dropEach(dDrop_drop));
+      function map(v) {
+        for (const item of v) {
+          dDrop_drop(item);
+        }
+        return v.length;
       }
-      return v.length;
+      return tryFold != null ? map(tryFold) : 0;
+    } finally {
+      fuse.return();
     }
-    try {
-      tryFold = $tryFoldSome(fuse, [], (acc, d) => push(acc, d), $dropEach(dDrop_drop));
-    } catch (error) {
-      $cleanup(() => {
-        fuse.return();
-      });
-      throw error;
-    }
-    let result;
-    try {
-      result = tryFold != null ? map(tryFold) : 0;
-    } catch (error) {
-      $cleanup(() => {
-        fuse.return();
-      });
-      throw error;
-    }
-    fuse.return();
-    return result;
   });
   run("try_fold result", () => {
     const fuse = $held(
@@ -880,21 +866,8 @@ function main() {
         (acc, d) => ({ TAG: "Ok", _0: push(acc, d) }),
         $dropEach(dDrop_drop),
       );
-    } catch (error) {
-      $cleanup(() => {
-        fuse.return();
-      });
-      throw error;
-    }
-    try {
+    } finally {
       fuse.return();
-    } catch (error) {
-      if (r.TAG === "Ok") {
-        for (const item of r._0) {
-          dDrop_drop(item);
-        }
-      }
-      throw error;
     }
     function map(v) {
       for (const item of v) {

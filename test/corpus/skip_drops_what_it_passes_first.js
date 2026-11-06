@@ -55,43 +55,31 @@ function main() {
   console.log(`generic ${value == null ? "None" : `Some(${value})`}`);
   ds = $range(1, 6).map((value) => [value]);
   const it = $held($skipping($rev($closing($iter(ds), $dropEach(dDrop_drop))), 1, dDrop_drop));
-  let next;
-  function map(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
   try {
-    next = $next(it);
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  try {
+    const next = $next(it);
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
     const value = next != null ? map(next) : undefined;
     console.log(`rev ${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
+  } finally {
+    it.return();
   }
-  it.return();
   const nums = [1, 2, 3, 4];
   const made = $skipping(
     nums.values().map((n) => [(n + 10) >>> 0]),
     2,
     dDrop_drop,
   );
-  const next$1 = $next(made);
-  function map$1(d) {
+  const next = $next(made);
+  function map(d) {
     const result = d[0];
     dDrop_drop(d);
     return result;
   }
-  const value$1 = next$1 != null ? map$1(next$1) : undefined;
+  const value$1 = next != null ? map(next) : undefined;
   console.log(`made ${value$1 == null ? "None" : `Some(${value$1})`}`);
   console.log("ended");
 }

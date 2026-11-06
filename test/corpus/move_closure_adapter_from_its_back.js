@@ -7,7 +7,6 @@ import {
   mapDoubleEndedIterator_nextBack,
 } from "@rust-js/std/iter.js";
 import {
-  $cleanup,
   $findBack,
   $held,
   $holding,
@@ -82,18 +81,14 @@ function main() {
       );
       try {
         found = $findBack(value$3, (d) => d % 2 === 1);
-      } catch (error) {
-        $cleanup(() => {
-          value$3.return();
-        });
-        throw error;
+      } finally {
+        value$3.return();
       }
-      value$3.return();
       console.log(`| owning inspect rfind ${found == null ? "None" : `Some(${found})`}`);
       const g = 6;
       try {
         let it = iterator_map($iter([1, 2, 3]), (d) => (d + g) >>> 0);
-        let back = mapDoubleEndedIterator_nextBack(it);
+        const back = mapDoubleEndedIterator_nextBack(it);
         const front = $next(it);
         console.log(
           `| held ${back == null ? "None" : `Some(${back})`} ${front == null ? "None" : `Some(${front})`}`,
@@ -126,7 +121,7 @@ function main() {
           ),
         );
         try {
-          back = inspectDoubleEndedIterator_nextBack(
+          const back = inspectDoubleEndedIterator_nextBack(
             it,
             { next_back: $nextBack },
             undefined,
@@ -134,14 +129,10 @@ function main() {
               $print(`drop ${k} `);
             },
           );
-        } catch (error) {
-          $cleanup(() => {
-            it.return();
-          });
-          throw error;
+          console.log(`| owning held ${back == null ? "None" : `Some(${back})`}`);
+        } finally {
+          it.return();
         }
-        console.log(`| owning held ${back == null ? "None" : `Some(${back})`}`);
-        it.return();
         console.log("| owning dropped");
         const g$1 = 4;
         try {

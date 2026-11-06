@@ -38,17 +38,11 @@ function scaled(v) {
     },
     "after",
   );
-  let result;
   try {
-    result = $foldToArray(iter);
-  } catch (error) {
-    $cleanup(() => {
-      iter.return();
-    });
-    throw error;
+    return $foldToArray(iter);
+  } finally {
+    iter.return();
   }
-  iter.return();
-  return result;
 }
 
 function kept(f, v, dropF) {
@@ -126,13 +120,9 @@ function main() {
   let result;
   try {
     result = iter.reduce((a, b) => (a + b) >>> 0, 0);
-  } catch (error) {
-    $cleanup(() => {
-      iter.return();
-    });
-    throw error;
+  } finally {
+    iter.return();
   }
-  iter.return();
   const total = result;
   console.log(`total ${total}`);
   const base = [5];
@@ -176,13 +166,9 @@ function main() {
   try {
     const value = $next(filtered);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      filtered.return();
-    });
-    throw error;
+  } finally {
+    filtered.return();
   }
-  filtered.return();
   let label$live = true;
   const label = [9];
   let tmp$2;

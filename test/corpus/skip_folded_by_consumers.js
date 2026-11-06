@@ -422,29 +422,17 @@ function main() {
       dDrop_drop,
     ),
   );
-  let next;
-  function map$3(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
   try {
-    next = $next(it);
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  try {
-    const value = next != null ? map$3(next) : undefined;
+    const next = $next(it);
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    const value = next != null ? map(next) : undefined;
     console.log(`next ${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
+  } finally {
+    it.return();
   }
-  it.return();
 }
 //# sourceMappingURL=case.js.map

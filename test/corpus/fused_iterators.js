@@ -2,7 +2,6 @@
 
 import { fuseClone_clone, fuseDebug_fmt, iterator_fuse } from "@rust-js/std/iter.js";
 import {
-  $cleanup,
   $foldToArray,
   $held,
   $iter,
@@ -109,93 +108,50 @@ function main() {
     `[${Array.from($roomForHint($iterator(again, pairIterator_next, true, undefined, undefined, pairIterator_sizeHint).take(3), 4, false)).join(", ")}]`,
   );
   const loud = $held(iterator_fuse(["loud", 3], { next: loudIterator_next }, false, loudDrop_drop));
-  let tmp;
-  try {
-    tmp = $next(loud);
-  } catch (error) {
-    $cleanup(() => {
-      loud.return();
-    });
-    throw error;
-  }
+  let loud$live;
   try {
     const value = $next(loud);
+    const value$1 = $next(loud);
     console.log(
-      `${tmp == null ? "None" : `Some(${tmp})`} ${value == null ? "None" : `Some(${value})`}`,
+      `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
     );
-  } catch (error) {
-    $cleanup(() => {
-      loud.return();
-    });
-    throw error;
+    const value$2 = $next(loud);
+    console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+    console.log("ended");
+    loud$live = false;
+  } finally {
+    loud.return();
   }
-  try {
-    const value = $next(loud);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      loud.return();
-    });
-    throw error;
-  }
-  console.log("ended");
-  let loud$live = false;
-  loud.return();
   const steady = $held(iterator_fuse([2], { next: steadyIterator_next }, true, steadyDrop_drop));
-  let tmp$1;
-  try {
-    tmp$1 = $next(steady);
-  } catch (error) {
-    $cleanup(() => {
-      steady.return();
-    });
-    throw error;
-  }
+  let steady$live;
   try {
     const value = $next(steady);
+    const value$1 = $next(steady);
     console.log(
-      `${tmp$1 == null ? "None" : `Some(${tmp$1})`} ${value == null ? "None" : `Some(${value})`}`,
+      `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
     );
-  } catch (error) {
-    $cleanup(() => {
-      steady.return();
-    });
-    throw error;
+    console.log("ended steady");
+    steady$live = false;
+  } finally {
+    steady.return();
   }
-  console.log("ended steady");
-  let steady$live = false;
-  steady.return();
   const iter = iterator_fuse(["looped", 3], { next: loudIterator_next }, false, loudDrop_drop);
   while (true) {
     let n;
     try {
       n = $next(iter);
     } catch (error) {
-      $cleanup(() => {
-        iter.return();
-        if (steady$live) {
-          steady.return();
-        }
-        if (loud$live) {
-          loud.return();
-        }
-      });
+      iter.return();
+      if (steady$live) {
+        steady.return();
+      }
+      if (loud$live) {
+        loud.return();
+      }
       throw error;
     }
     if (n == null) {
-      try {
-        iter.return();
-      } catch (error) {
-        $cleanup(() => {
-          if (steady$live) {
-            steady.return();
-          }
-          if (loud$live) {
-            loud.return();
-          }
-        });
-        throw error;
-      }
+      iter.return();
       break;
     }
     console.log(`looped ${n}`);
@@ -207,14 +163,12 @@ function main() {
       .map((n) => (n * 10) >>> 0)
       .reduce((a, b) => (a + b) >>> 0, 0);
   } catch (error) {
-    $cleanup(() => {
-      if (steady$live) {
-        steady.return();
-      }
-      if (loud$live) {
-        loud.return();
-      }
-    });
+    if (steady$live) {
+      steady.return();
+    }
+    if (loud$live) {
+      loud.return();
+    }
     throw error;
   }
   console.log(`summed ${total}`);

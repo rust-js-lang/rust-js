@@ -3,7 +3,6 @@
 import { inspectDoubleEndedIterator_nextBack, iterator_inspect } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
-  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -42,16 +41,12 @@ function main() {
   let found;
   try {
     found = $findBack(value, (d) => d[0] % 2 === 1, undefined, dDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      value.return();
-    });
-    throw error;
+  } finally {
+    value.return();
   }
   try {
-    value.return();
-    const value$1 = found?.[0];
-    console.log(`| rfind ${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const value = found?.[0];
+    console.log(`| rfind ${value == null ? "None" : `Some(${value})`}`);
   } finally {
     if (found != null) {
       dDrop_drop(found);
@@ -69,55 +64,34 @@ function main() {
       dDrop_drop,
     ),
   );
-  let back;
   try {
-    back = inspectDoubleEndedIterator_nextBack(
+    const back = inspectDoubleEndedIterator_nextBack(
       it,
       { next_back: $nextBack },
       $dropEach(dDrop_drop),
       undefined,
       dDrop_drop,
     );
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  const value$1 = back?.[0];
-  console.log(`| next_back ${value$1 == null ? "None" : `Some(${value$1})`}`);
-  try {
-    if (back != null) {
-      dDrop_drop(back);
+    try {
+      const value = back?.[0];
+      console.log(`| next_back ${value == null ? "None" : `Some(${value})`}`);
+    } finally {
+      if (back != null) {
+        dDrop_drop(back);
+      }
     }
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  let front;
-  try {
-    front = $next(it);
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  const value$2 = front?.[0];
-  console.log(`| next ${value$2 == null ? "None" : `Some(${value$2})`}`);
-  try {
-    if (front != null) {
-      dDrop_drop(front);
+    const front = $next(it);
+    try {
+      const value = front?.[0];
+      console.log(`| next ${value == null ? "None" : `Some(${value})`}`);
+    } finally {
+      if (front != null) {
+        dDrop_drop(front);
+      }
     }
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
+  } finally {
+    it.return();
   }
-  it.return();
   console.log("| dropped");
   function inspect$1(d) {
     $print(`see ${d[0]} `);
@@ -138,22 +112,18 @@ function main() {
   function inspect$2(d) {
     $print(`see ${d[0]} `);
   }
-  const value$3 = $held(
+  const value$1 = $held(
     $mapEnds($rev($closing($iter(ds()), $dropEach(dDrop_drop))), (item) => {
       inspect$2(item);
       return item;
     }),
   );
   try {
-    found = $findBack(value$3, (d) => d[0] > 2, undefined, dDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      value$3.return();
-    });
-    throw error;
+    found = $findBack(value$1, (d) => d[0] > 2, undefined, dDrop_drop);
+  } finally {
+    value$1.return();
   }
   try {
-    value$3.return();
     const value = found?.[0];
     console.log(`| rev rfind ${value == null ? "None" : `Some(${value})`}`);
   } finally {
@@ -172,24 +142,18 @@ function main() {
       }),
     ),
   );
-  let next;
-  function map(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
-  let first;
   try {
-    next = $next(it);
-    first = next != null ? map(next) : undefined;
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
+    const next = $next(it);
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    const first = next != null ? map(next) : undefined;
+    console.log(`| rev next ${first == null ? "None" : `Some(${first})`}`);
+  } finally {
+    it.return();
   }
-  console.log(`| rev next ${first == null ? "None" : `Some(${first})`}`);
-  it.return();
   console.log("| end");
 }
 //# sourceMappingURL=case.js.map

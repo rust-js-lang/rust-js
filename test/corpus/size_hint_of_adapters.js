@@ -255,13 +255,9 @@ function main() {
   );
   try {
     show("rev filter", $sizeHint(filter));
-  } catch (error) {
-    $cleanup(() => {
-      filter.return();
-    });
-    throw error;
+  } finally {
+    filter.return();
   }
-  filter.return();
   inGeneric("tag", { fmt: (value) => $debugStr(value) });
   const s = Array.from(
     $reserveHint(

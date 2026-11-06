@@ -4,7 +4,6 @@ import { iterator_fuse, iterator_inspect, iterator_peekable } from "@rust-js/std
 import {
   $advanceSlice,
   $catchUnwind,
-  $cleanup,
   $dropEach,
   $foldOf,
   $held,
@@ -55,23 +54,14 @@ function main() {
       },
       dDrop_drop,
     );
-    let tmp;
-    while (true) {
-      try {
-        tmp = $next(iter);
-      } catch (error) {
-        $cleanup(() => {
-          iter.return();
-        });
-        throw error;
+    try {
+      let d;
+      while ((d = $next(iter)) != null) {
+        console.log(`saw ${d[0]}`);
+        dDrop_drop(d);
       }
-      if (tmp == null) {
-        iter.return();
-        return;
-      }
-      const d = tmp;
-      console.log(`saw ${d[0]}`);
-      dDrop_drop(d);
+    } finally {
+      iter.return();
     }
   });
   run("peekable next", () => {
@@ -92,53 +82,23 @@ function main() {
         dDrop_drop,
       ),
     );
-    let a;
     try {
-      a = $next(p);
-    } catch (error) {
-      $cleanup(() => {
-        p.return();
-      });
-      throw error;
-    }
-    console.log(`${a != null}`);
-    let b;
-    try {
-      b = $next(p);
-    } catch (error) {
-      $cleanup(() => {
+      const a = $next(p);
+      console.log(`${a != null}`);
+      try {
+        const b = $next(p);
+        console.log(`${b != null}`);
+        if (b != null) {
+          dDrop_drop(b);
+        }
+      } finally {
         if (a != null) {
           dDrop_drop(a);
         }
-        p.return();
-      });
-      throw error;
-    }
-    console.log(`${b != null}`);
-    try {
-      if (b != null) {
-        dDrop_drop(b);
       }
-    } catch (error) {
-      $cleanup(() => {
-        if (a != null) {
-          dDrop_drop(a);
-        }
-        p.return();
-      });
-      throw error;
+    } finally {
+      p.return();
     }
-    try {
-      if (a != null) {
-        dDrop_drop(a);
-      }
-    } catch (error) {
-      $cleanup(() => {
-        p.return();
-      });
-      throw error;
-    }
-    p.return();
   });
 }
 //# sourceMappingURL=case.js.map

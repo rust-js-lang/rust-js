@@ -2,7 +2,6 @@
 
 import {
   $catchUnwind,
-  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -169,28 +168,16 @@ function main() {
         dDrop_drop,
       ),
     );
-    let next;
     try {
-      next = $next(zipped);
-    } catch (error) {
-      $cleanup(() => {
-        zipped.return();
-      });
-      throw error;
-    }
-    console.log(`${next != null}`);
-    try {
+      const next = $next(zipped);
+      console.log(`${next != null}`);
       if (next != null) {
         dDrop_drop(next[0]);
         dDrop_drop(next[1]);
       }
-    } catch (error) {
-      $cleanup(() => {
-        zipped.return();
-      });
-      throw error;
+    } finally {
+      zipped.return();
     }
-    zipped.return();
   });
 }
 //# sourceMappingURL=case.js.map

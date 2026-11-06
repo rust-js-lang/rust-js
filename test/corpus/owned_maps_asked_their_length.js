@@ -72,13 +72,9 @@ function main() {
   );
   try {
     console.log(`${value$1.len()}`);
-  } catch (error) {
-    $cleanup(() => {
-      value$1.return();
-    });
-    throw error;
+  } finally {
+    value$1.return();
   }
-  value$1.return();
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

@@ -95,53 +95,26 @@ function main() {
       loudDrop_drop,
     ),
   );
-  let next;
-  function map(l) {
-    const result = l[0];
-    loudDrop_drop(l);
-    return result;
-  }
   try {
-    next = $next(f);
-  } catch (error) {
-    $cleanup(() => {
-      f.return();
-    });
-    throw error;
-  }
-  try {
+    const next = $next(f);
+    function map(l) {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    }
     const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      f.return();
-    });
-    throw error;
+    const nth = $nthDropping($lent(f), 1, loudDrop_drop, false);
+    function map$1(l) {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    }
+    const value$1 = nth != null ? map$1(nth) : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } finally {
+    f.return();
   }
-  let nth;
-  function map$1(l) {
-    const result = l[0];
-    loudDrop_drop(l);
-    return result;
-  }
-  try {
-    nth = $nthDropping($lent(f), 1, loudDrop_drop, false);
-  } catch (error) {
-    $cleanup(() => {
-      f.return();
-    });
-    throw error;
-  }
-  try {
-    const value = nth != null ? map$1(nth) : undefined;
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      f.return();
-    });
-    throw error;
-  }
-  f.return();
   const value = $held(
     $rev(
       $knowing(
@@ -214,13 +187,9 @@ function main() {
   let r;
   try {
     r = $next(value);
-  } catch (error) {
-    $cleanup(() => {
-      value.return();
-    });
-    throw error;
+  } finally {
+    value.return();
   }
-  value.return();
   console.log(`${r == null ? "None" : `Some(${r})`}`);
   const value$1 = $held(
     iterator_fuse(
@@ -238,13 +207,9 @@ function main() {
   let c;
   try {
     c = $next(value$1);
-  } catch (error) {
-    $cleanup(() => {
-      value$1.return();
-    });
-    throw error;
+  } finally {
+    value$1.return();
   }
-  value$1.return();
   console.log(`${c == null ? "None" : `Some(${c})`}`);
   const value$2 = firsts($iter(louds(3)), $dropEach(loudDrop_drop));
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
@@ -267,37 +232,16 @@ function main() {
       loudDrop_drop,
     ),
   );
-  let nth$1;
-  function map$2(l) {
-    const result = l[0];
-    loudDrop_drop(l);
-    return result;
-  }
   try {
-    nth$1 = $nthDropping($lent(held), 2, loudDrop_drop, false);
-  } catch (error) {
-    $cleanup(() => {
-      held.return();
-    });
-    throw error;
-  }
-  try {
-    const value = nth$1 != null ? map$2(nth$1) : undefined;
+    const nth = $nthDropping($lent(held), 2, loudDrop_drop, false);
+    function map(l) {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    }
+    const value = nth != null ? map(nth) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      held.return();
-    });
-    throw error;
-  }
-  let nextBack;
-  function map$3(l) {
-    const result = l[0];
-    loudDrop_drop(l);
-    return result;
-  }
-  try {
-    nextBack = fuseDoubleEndedIterator_nextBack(
+    const nextBack = fuseDoubleEndedIterator_nextBack(
       held,
       {
         next_back: (iterator) =>
@@ -346,21 +290,15 @@ function main() {
       },
       loudDrop_drop,
     );
-  } catch (error) {
-    $cleanup(() => {
-      held.return();
-    });
-    throw error;
+    function map$1(l) {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    }
+    const value$1 = nextBack != null ? map$1(nextBack) : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } finally {
+    held.return();
   }
-  try {
-    const value = nextBack != null ? map$3(nextBack) : undefined;
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      held.return();
-    });
-    throw error;
-  }
-  held.return();
 }
 //# sourceMappingURL=case.js.map

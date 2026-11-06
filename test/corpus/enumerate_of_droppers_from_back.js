@@ -13,7 +13,6 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
-  $cleanup,
   $collectDropping,
   $dropEach,
   $enumerate,
@@ -53,15 +52,8 @@ function main() {
       loudDrop_drop,
     ),
   );
-  let nextBack;
-  function map([i, l]) {
-    const result = [i, l[0]];
-    loudDrop_drop(l);
-    return result;
-  }
-  let last;
   try {
-    nextBack = enumerateDoubleEndedIterator_nextBack(
+    const nextBack = enumerateDoubleEndedIterator_nextBack(
       it,
       {
         len: (iterator) =>
@@ -124,48 +116,28 @@ function main() {
       },
       loudDrop_drop,
     );
-    last = nextBack != null ? map(nextBack) : undefined;
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  console.log(`last ${last == null ? "None" : `Some((${last[0]}, ${last[1]}))`}`);
-  let next;
-  function map$1([i, l]) {
-    const result = [i, l[0]];
-    loudDrop_drop(l);
-    return result;
-  }
-  let first;
-  try {
-    next = $next(it);
-    first = next != null ? map$1(next) : undefined;
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  console.log(`first ${first == null ? "None" : `Some((${first[0]}, ${first[1]}))`}`);
-  const w = [4, 5, 6];
-  let e;
-  try {
-    e = iterator_enumerate(iterator_fuse($iter(w), { next: $next }, true), {
+    function map([i, l]) {
+      const result = [i, l[0]];
+      loudDrop_drop(l);
+      return result;
+    }
+    const last = nextBack != null ? map(nextBack) : undefined;
+    console.log(`last ${last == null ? "None" : `Some((${last[0]}, ${last[1]}))`}`);
+    const next = $next(it);
+    function map$1([i, l]) {
+      const result = [i, l[0]];
+      loudDrop_drop(l);
+      return result;
+    }
+    const first = next != null ? map$1(next) : undefined;
+    console.log(`first ${first == null ? "None" : `Some((${first[0]}, ${first[1]}))`}`);
+    const w = [4, 5, 6];
+    const e = iterator_enumerate(iterator_fuse($iter(w), { next: $next }, true), {
       next: $next,
       fold: $foldOf,
       getUnchecked: fuseIterator___iteratorGetUnchecked,
     });
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  let tmp;
-  try {
-    tmp = enumerateDoubleEndedIterator_nextBack(
+    const value = enumerateDoubleEndedIterator_nextBack(
       e,
       { len: (iterator) => fuseExactSizeIterator_len(iterator, exactSizeIterator) },
       {
@@ -205,32 +177,16 @@ function main() {
           ),
       },
     );
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  try {
-    const value = $next(e);
+    const value$1 = $next(e);
     console.log(
-      `${tmp == null ? "None" : `Some((${tmp[0]}, ${tmp[1]}))`} ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`,
+      `${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`} ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`,
     );
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  const value = [[7], [8]];
-  let r;
-  try {
-    r = $collectDropping(
+    const r = $collectDropping(
       $rev(
         $enumerate(
           $knowing(
             iterator_fuse(
-              $iter(value),
+              $iter([[7], [8]]),
               { next: $next, advanceBy: $advanceSlice },
               true,
               $dropEach(loudDrop_drop),
@@ -296,20 +252,9 @@ function main() {
         return result;
       }),
     );
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  try {
     console.log(`[${r.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
+  } finally {
+    it.return();
   }
-  it.return();
 }
 //# sourceMappingURL=case.js.map

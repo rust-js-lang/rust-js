@@ -3,7 +3,6 @@
 import { iterator_fuse, iterator_rev } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
-  $cleanup,
   $count,
   $dropEach,
   $enumerate,
@@ -44,30 +43,18 @@ function main() {
       dDrop_drop,
     ),
   );
-  let nth;
-  function map(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
   try {
-    nth = $nthDropping($lent(skip), 2, dDrop_drop, false);
-  } catch (error) {
-    $cleanup(() => {
-      skip.return();
-    });
-    throw error;
-  }
-  try {
+    const nth = $nthDropping($lent(skip), 2, dDrop_drop, false);
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
     const value = nth != null ? map(nth) : undefined;
     console.log(`nth ${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      skip.return();
-    });
-    throw error;
+  } finally {
+    skip.return();
   }
-  skip.return();
   console.log(
     `count ${$count(
       $skipping(
@@ -115,12 +102,12 @@ function main() {
     ),
     dDrop_drop,
   );
-  function map$1(d) {
+  function map(d) {
     const result = d[0];
     dDrop_drop(d);
     return result;
   }
-  const value = last != null ? map$1(last) : undefined;
+  const value = last != null ? map(last) : undefined;
   console.log(`last ${value == null ? "None" : `Some(${value})`}`);
   const value$1 = $held(
     $skipping(
@@ -143,13 +130,9 @@ function main() {
         return result;
       })}`,
     );
-  } catch (error) {
-    $cleanup(() => {
-      value$1.return();
-    });
-    throw error;
+  } finally {
+    value$1.return();
   }
-  value$1.return();
   const enumerate = $held(
     $enumerate(
       iterator_fuse(
@@ -169,14 +152,8 @@ function main() {
       ).take(1),
     ),
   );
-  let nth$1;
-  function map$2([, d]) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
   try {
-    nth$1 = $nthDropping(
+    const nth = $nthDropping(
       $lent(enumerate),
       1,
       (value) => {
@@ -184,22 +161,16 @@ function main() {
       },
       false,
     );
-  } catch (error) {
-    $cleanup(() => {
-      enumerate.return();
-    });
-    throw error;
-  }
-  try {
-    const value = nth$1 != null ? map$2(nth$1) : undefined;
+    function map([, d]) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    const value = nth != null ? map(nth) : undefined;
     console.log(`enumerate ${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      enumerate.return();
-    });
-    throw error;
+  } finally {
+    enumerate.return();
   }
-  enumerate.return();
   const value$2 = $held(
     $skipping(
       iterator_fuse(
@@ -213,29 +184,17 @@ function main() {
       dDrop_drop,
     ),
   );
-  let nth$2;
-  function map$3(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
   try {
-    nth$2 = $nthDropping($lent(value$2), 0, dDrop_drop, false);
-  } catch (error) {
-    $cleanup(() => {
-      value$2.return();
-    });
-    throw error;
-  }
-  try {
-    const value = nth$2 != null ? map$3(nth$2) : undefined;
+    const nth = $nthDropping($lent(value$2), 0, dDrop_drop, false);
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    const value = nth != null ? map(nth) : undefined;
     console.log(`within ${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      value$2.return();
-    });
-    throw error;
+  } finally {
+    value$2.return();
   }
-  value$2.return();
 }
 //# sourceMappingURL=case.js.map

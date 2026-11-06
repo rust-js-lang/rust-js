@@ -16,7 +16,6 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
-  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -103,30 +102,18 @@ function inPlace() {
       ),
     ),
   );
-  let nth;
-  function map(d) {
-    const result = d[0];
-    pDrop_drop(d);
-    return result;
-  }
   try {
-    nth = $nthDropping($lent(rev), 5, pDrop_drop, false);
-  } catch (error) {
-    $cleanup(() => {
-      rev.return();
-    });
-    throw error;
-  }
-  try {
+    const nth = $nthDropping($lent(rev), 5, pDrop_drop, false);
+    function map(d) {
+      const result = d[0];
+      pDrop_drop(d);
+      return result;
+    }
     const value = nth != null ? map(nth) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      rev.return();
-    });
-    throw error;
+  } finally {
+    rev.return();
   }
-  rev.return();
   const value = $held(
     $rev(
       $skipping(
@@ -136,30 +123,18 @@ function inPlace() {
       ),
     ),
   );
-  let nth$1;
-  function map$1(d) {
-    const result = d[0];
-    pDrop_drop(d);
-    return result;
-  }
   try {
-    nth$1 = $nthDropping($lent(value), 5, pDrop_drop, false);
-  } catch (error) {
-    $cleanup(() => {
-      value.return();
-    });
-    throw error;
+    const nth = $nthDropping($lent(value), 5, pDrop_drop, false);
+    function map(d) {
+      const result = d[0];
+      pDrop_drop(d);
+      return result;
+    }
+    const value$1 = nth != null ? map(nth) : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } finally {
+    value.return();
   }
-  try {
-    const value = nth$1 != null ? map$1(nth$1) : undefined;
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      value.return();
-    });
-    throw error;
-  }
-  value.return();
 }
 
 function chainSides() {
@@ -239,19 +214,8 @@ function chainSides() {
   let taken;
   try {
     taken = $nthDropping($lent(rev), 2, cDrop_drop, false);
-  } catch (error) {
-    $cleanup(() => {
-      rev.return();
-    });
-    throw error;
-  }
-  try {
+  } finally {
     rev.return();
-  } catch (error) {
-    if (taken != null) {
-      cDrop_drop(taken);
-    }
-    throw error;
   }
   function map(d) {
     const result = d[0];
@@ -344,18 +308,14 @@ function held() {
       dDrop_drop,
     );
   } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
+    it.return();
     throw error;
   }
   try {
     const value = nextBack != null ? map(nextBack) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
+    it.return();
     throw error;
   }
   let next;
@@ -367,18 +327,14 @@ function held() {
   try {
     next = $next(it);
   } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
+    it.return();
     throw error;
   }
   try {
     const value = next != null ? map$1(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
+    it.return();
     throw error;
   }
   console.log(
@@ -407,14 +363,8 @@ function held() {
       dDrop_drop,
     ),
   );
-  let nthBack;
-  function map$2(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
   try {
-    nthBack = takeIDoubleEndedIterator_nthBack(
+    const nthBack = takeIDoubleEndedIterator_nthBack(
       it,
       1,
       { next: $next, advanceBy: $advanceSlice },
@@ -423,29 +373,14 @@ function held() {
       $dropEach(dDrop_drop),
       dDrop_drop,
     );
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  try {
-    const value = nthBack != null ? map$2(nthBack) : undefined;
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    const value = nthBack != null ? map(nthBack) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  let rfind;
-  function map$3(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
-  try {
-    rfind = $findBack(
+    const rfind = $findBack(
       $knowing(
         it,
         (iterator) =>
@@ -501,52 +436,34 @@ function held() {
       undefined,
       dDrop_drop,
     );
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
+    function map$1(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    const value$1 = rfind != null ? map$1(rfind) : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } finally {
+    it.return();
   }
-  try {
-    const value = rfind != null ? map$3(rfind) : undefined;
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
-    throw error;
-  }
-  it.return();
   held = $taking(
     $closing($iter(ds((value) => [value], dDrop_drop)), $dropEach(dDrop_drop)),
     4,
     dDrop_drop,
   );
   const rev = $held($rev(held));
-  let nth;
-  function map$4(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
   try {
-    nth = $nthDropping($lent(rev), 9, dDrop_drop, false);
-  } catch (error) {
-    $cleanup(() => {
-      rev.return();
-    });
-    throw error;
-  }
-  try {
-    const value = nth != null ? map$4(nth) : undefined;
+    const nth = $nthDropping($lent(rev), 9, dDrop_drop, false);
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    const value = nth != null ? map(nth) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      rev.return();
-    });
-    throw error;
+  } finally {
+    rev.return();
   }
-  rev.return();
   held = $skipping(
     $closing($iter(ds((value) => [value], dDrop_drop)), $dropEach(dDrop_drop)),
     1,
@@ -555,13 +472,9 @@ function held() {
   const value = $held($rev(held));
   try {
     console.log(`${value.len()}`);
-  } catch (error) {
-    $cleanup(() => {
-      value.return();
-    });
-    throw error;
+  } finally {
+    value.return();
   }
-  value.return();
   let r = $held(
     iterator_rev(
       iterator_take(
@@ -627,37 +540,16 @@ function held() {
       dDrop_drop,
     ),
   );
-  let next$1;
-  function map$5(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
   try {
-    next$1 = $next(r);
-  } catch (error) {
-    $cleanup(() => {
-      r.return();
-    });
-    throw error;
-  }
-  try {
-    const value = next$1 != null ? map$5(next$1) : undefined;
+    const next = $next(r);
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      r.return();
-    });
-    throw error;
-  }
-  let nextBack$1;
-  function map$6(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
-  try {
-    nextBack$1 = revDoubleEndedIterator_nextBack(
+    const nextBack = revDoubleEndedIterator_nextBack(
       r,
       { next: $next, fold: $foldOf },
       (take) => {
@@ -665,22 +557,16 @@ function held() {
       },
       dDrop_drop,
     );
-  } catch (error) {
-    $cleanup(() => {
-      r.return();
-    });
-    throw error;
+    function map$1(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    const value$1 = nextBack != null ? map$1(nextBack) : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } finally {
+    r.return();
   }
-  try {
-    const value = nextBack$1 != null ? map$6(nextBack$1) : undefined;
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      r.return();
-    });
-    throw error;
-  }
-  r.return();
   r = $held(
     iterator_rev(
       iterator_skip(
@@ -742,37 +628,16 @@ function held() {
       dDrop_drop,
     ),
   );
-  let nth$1;
-  function map$7(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
   try {
-    nth$1 = $nthDropping($lent(r), 1, dDrop_drop, false);
-  } catch (error) {
-    $cleanup(() => {
-      r.return();
-    });
-    throw error;
-  }
-  try {
-    const value = nth$1 != null ? map$7(nth$1) : undefined;
+    const nth = $nthDropping($lent(r), 1, dDrop_drop, false);
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    const value = nth != null ? map(nth) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      r.return();
-    });
-    throw error;
-  }
-  let nextBack$2;
-  function map$8(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
-  try {
-    nextBack$2 = revDoubleEndedIterator_nextBack(
+    const nextBack = revDoubleEndedIterator_nextBack(
       r,
       { next: $next, fold: $foldOf },
       (skip) => {
@@ -780,22 +645,16 @@ function held() {
       },
       dDrop_drop,
     );
-  } catch (error) {
-    $cleanup(() => {
-      r.return();
-    });
-    throw error;
+    function map$1(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    const value$1 = nextBack != null ? map$1(nextBack) : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } finally {
+    r.return();
   }
-  try {
-    const value = nextBack$2 != null ? map$8(nextBack$2) : undefined;
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      r.return();
-    });
-    throw error;
-  }
-  r.return();
   const v = [1, 2, 3, 4, 5];
   held = $taking($iter(v), 3);
   console.log(`[${Array.from($rev(held)).join(", ")}]`);

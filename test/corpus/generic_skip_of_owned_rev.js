@@ -113,9 +113,7 @@ function main() {
   try {
     tmp = $rev($closing($iter(noisy(2)), $dropEach(noisyDrop_drop)));
   } catch (error) {
-    $cleanup(() => {
-      value$1.return();
-    });
+    value$1.return();
     throw error;
   }
   const value$2 = chainedNth(value$1, tmp, (rev) => {

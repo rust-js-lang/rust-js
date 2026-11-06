@@ -143,27 +143,16 @@ function main() {
         $closing($iter([[(k * 10) >>> 0], [(((k * 10) >>> 0) + 1) >>> 0]]), $dropEach(dDrop_drop)),
       ),
     );
-    let rfind;
+    let result;
     try {
-      rfind = $findBack(flatMap, (d) => p(d), undefined, dDrop_drop);
-    } catch (error) {
-      $cleanup(() => {
-        flatMap.return();
-      });
-      throw error;
-    }
-    const result = rfind != null;
-    try {
+      const rfind = $findBack(flatMap, (d) => p(d), undefined, dDrop_drop);
+      result = rfind != null;
       if (rfind != null) {
         dDrop_drop(rfind);
       }
-    } catch (error) {
-      $cleanup(() => {
-        flatMap.return();
-      });
-      throw error;
+    } finally {
+      flatMap.return();
     }
-    flatMap.return();
     return result;
   });
   second("by_ref rfind", (p) => {
@@ -190,27 +179,16 @@ function main() {
         $closing($iter([[4]]), $dropEach(dDrop_drop)),
       ),
     );
-    let rfind;
+    let result;
     try {
-      rfind = $findBack(chain, (d) => p(d), undefined, dDrop_drop);
-    } catch (error) {
-      $cleanup(() => {
-        chain.return();
-      });
-      throw error;
-    }
-    const result = rfind != null;
-    try {
+      const rfind = $findBack(chain, (d) => p(d), undefined, dDrop_drop);
+      result = rfind != null;
       if (rfind != null) {
         dDrop_drop(rfind);
       }
-    } catch (error) {
-      $cleanup(() => {
-        chain.return();
-      });
-      throw error;
+    } finally {
+      chain.return();
     }
-    chain.return();
     return result;
   });
   second("own rfind", (p) => {
@@ -277,9 +255,8 @@ function main() {
   });
   second("rev find_map", (p) => {
     const rev = $held($rev($closing($iter(ds()), $dropEach(dDrop_drop))));
-    let result;
     try {
-      result = $lent(rev)
+      return $lent(rev)
         .map((d) => {
           try {
             return p(d) ? d[0] : undefined;
@@ -288,99 +265,65 @@ function main() {
           }
         })
         .find((item) => item != null);
-    } catch (error) {
-      $cleanup(() => {
-        rev.return();
-      });
-      throw error;
+    } finally {
+      rev.return();
     }
-    rev.return();
-    return result;
   });
   second("rev find", (p) => {
     const rev = $held($rev($closing($iter(ds()), $dropEach(dDrop_drop))));
-    let find;
+    let result;
     try {
-      find = $findDropping($lent(rev), (d) => p(d), dDrop_drop, false);
-    } catch (error) {
-      $cleanup(() => {
-        rev.return();
-      });
-      throw error;
-    }
-    const result = find != null;
-    try {
+      const find = $findDropping($lent(rev), (d) => p(d), dDrop_drop, false);
+      result = find != null;
       if (find != null) {
         dDrop_drop(find);
       }
-    } catch (error) {
-      $cleanup(() => {
-        rev.return();
-      });
-      throw error;
+    } finally {
+      rev.return();
     }
-    rev.return();
     return result;
   });
   second("rev position", (p) => {
     const rev = $held($rev($closing($iter(ds()), $dropEach(dDrop_drop))));
-    let result;
     try {
-      result = $position($lent(rev), (d) => {
+      return $position($lent(rev), (d) => {
         try {
           return p(d);
         } finally {
           dDrop_drop(d);
         }
       });
-    } catch (error) {
-      $cleanup(() => {
-        rev.return();
-      });
-      throw error;
+    } finally {
+      rev.return();
     }
-    rev.return();
-    return result;
   });
   second("rev any", (p) => {
     const rev = $held($rev($closing($iter(ds()), $dropEach(dDrop_drop))));
-    let result;
     try {
-      result = $lent(rev).some((d) => {
+      return $lent(rev).some((d) => {
         try {
           return p(d);
         } finally {
           dDrop_drop(d);
         }
       });
-    } catch (error) {
-      $cleanup(() => {
-        rev.return();
-      });
-      throw error;
+    } finally {
+      rev.return();
     }
-    rev.return();
-    return result;
   });
   second("rev all", (p) => {
     const rev = $held($rev($closing($iter(ds()), $dropEach(dDrop_drop))));
-    let result;
     try {
-      result = $lent(rev).every((d) => {
+      return $lent(rev).every((d) => {
         try {
           return !p(d);
         } finally {
           dDrop_drop(d);
         }
       });
-    } catch (error) {
-      $cleanup(() => {
-        rev.return();
-      });
-      throw error;
+    } finally {
+      rev.return();
     }
-    rev.return();
-    return result;
   });
   second("own rev find", (p) => {
     const find = $findDropping(
@@ -408,27 +351,16 @@ function main() {
     const filter = $held(
       $filterEnds($closing($iter(ds()), $dropEach(dDrop_drop)), (d) => !p(d), dDrop_drop),
     );
-    let nextBack;
+    let result;
     try {
-      nextBack = $nextBack(filter);
-    } catch (error) {
-      $cleanup(() => {
-        filter.return();
-      });
-      throw error;
-    }
-    const result = nextBack != null;
-    try {
+      const nextBack = $nextBack(filter);
+      result = nextBack != null;
       if (nextBack != null) {
         dDrop_drop(nextBack);
       }
-    } catch (error) {
-      $cleanup(() => {
-        filter.return();
-      });
-      throw error;
+    } finally {
+      filter.return();
     }
-    filter.return();
     return result;
   });
   // Std's structs held, whose `rfind` is their own `try_rfold`.
@@ -655,75 +587,33 @@ function main() {
   const kept = $held(
     $filterEnds($closing($iter(ds()), $dropEach(dDrop_drop)), (d) => d[0] % 2 === 0, dDrop_drop),
   );
-  let nextBack$1;
-  function map$4(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
   try {
-    nextBack$1 = $nextBack(kept);
-  } catch (error) {
-    $cleanup(() => {
-      kept.return();
-    });
-    throw error;
-  }
-  try {
-    const value = nextBack$1 != null ? map$4(nextBack$1) : undefined;
+    const nextBack = $nextBack(kept);
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    const value = nextBack != null ? map(nextBack) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      kept.return();
-    });
-    throw error;
+    const next = $next(kept);
+    function map$1(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    const value$1 = next != null ? map$1(next) : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const next$1 = $next(kept);
+    function map$2(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    const value$2 = next$1 != null ? map$2(next$1) : undefined;
+    console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  } finally {
+    kept.return();
   }
-  let next;
-  function map$5(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
-  try {
-    next = $next(kept);
-  } catch (error) {
-    $cleanup(() => {
-      kept.return();
-    });
-    throw error;
-  }
-  try {
-    const value = next != null ? map$5(next) : undefined;
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      kept.return();
-    });
-    throw error;
-  }
-  let next$1;
-  function map$6(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
-  try {
-    next$1 = $next(kept);
-  } catch (error) {
-    $cleanup(() => {
-      kept.return();
-    });
-    throw error;
-  }
-  try {
-    const value = next$1 != null ? map$6(next$1) : undefined;
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      kept.return();
-    });
-    throw error;
-  }
-  kept.return();
 }
 //# sourceMappingURL=case.js.map

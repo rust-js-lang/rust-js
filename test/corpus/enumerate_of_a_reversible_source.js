@@ -13,7 +13,6 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
-  $cleanup,
   $collectDropping,
   $count,
   $dropEach,
@@ -77,9 +76,7 @@ function main() {
   try {
     peek = $peek(it);
   } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
+    it.return();
     throw error;
   }
   const value = peek?.[0];
@@ -143,9 +140,7 @@ function main() {
   try {
     peek$1 = $peek(it);
   } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
+    it.return();
     throw error;
   }
   const value$1 = peek$1?.[0];
@@ -207,9 +202,7 @@ function main() {
   try {
     peek$2 = $peek(it);
   } catch (error) {
-    $cleanup(() => {
-      it.return();
-    });
+    it.return();
     throw error;
   }
   const value$2 = peek$2?.[0];

@@ -124,11 +124,9 @@ function main() {
     try {
       next = $next(zipped);
     } catch (error) {
-      $cleanup(() => {
-        if (zipped$live) {
-          zipped.return();
-        }
-      });
+      if (zipped$live) {
+        zipped.return();
+      }
       throw error;
     }
     if (next == null) {
@@ -149,79 +147,43 @@ function main() {
       }),
     ),
   );
-  while (true) {
-    let tmp;
-    try {
-      tmp = $next(chained);
-    } catch (error) {
-      $cleanup(() => {
-        chained.return();
-      });
-      throw error;
+  try {
+    let x;
+    while ((x = $next(chained)) != null) {
+      console.log(`${x}`);
     }
-    if (tmp == null) {
-      break;
-    }
-    const x = tmp;
-    console.log(`${x}`);
+    console.log("chain done");
+  } finally {
+    chained.return();
   }
-  console.log("chain done");
-  chained.return();
   const mapped = $held(
     $closing($iterator(count("map"), countIterator_next), (it) => {
       loudDrop_drop(it.of._loud);
     }).map((x) => (x * 3) >>> 0),
   );
-  while (true) {
-    let tmp;
-    try {
-      tmp = $next(mapped);
-    } catch (error) {
-      $cleanup(() => {
-        mapped.return();
-      });
-      throw error;
-    }
-    if (tmp == null) {
-      break;
-    }
-    const x = tmp;
-    console.log(`${x}`);
-  }
   try {
+    let x;
+    while ((x = $next(mapped)) != null) {
+      console.log(`${x}`);
+    }
     const value = $next(mapped);
     console.log(`map done ${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    $cleanup(() => {
-      mapped.return();
-    });
-    throw error;
+  } finally {
+    mapped.return();
   }
-  mapped.return();
 
   const taken = $held(
     $closing($iterator(count("take"), countIterator_next), (it) => {
       loudDrop_drop(it.of._loud);
     }).take(5),
   );
-  while (true) {
-    let tmp;
-    try {
-      tmp = $next(taken);
-    } catch (error) {
-      $cleanup(() => {
-        taken.return();
-      });
-      throw error;
-    }
-    if (tmp == null) {
-      break;
-    }
-    const x = tmp;
-    console.log(`${x}`);
-  }
-  console.log("take done");
   try {
+    let x;
+    while ((x = $next(taken)) != null) {
+      console.log(`${x}`);
+    }
+    console.log("take done");
+
     consume(
       $lazyZip(
         $closing($iterator(count("param"), countIterator_next), (it) => {
@@ -233,15 +195,7 @@ function main() {
         zip.return();
       },
     );
-  } catch (error) {
-    $cleanup(() => {
-      taken.return();
-    });
-    throw error;
-  }
-  let stepped;
-  try {
-    stepped = $held(
+    const stepped = $held(
       iterator_zip(
         count("moved"),
         { start: 30 },
@@ -261,35 +215,17 @@ function main() {
         },
       ),
     );
-  } catch (error) {
-    $cleanup(() => {
-      taken.return();
-    });
-    throw error;
-  }
-  try {
-    const value = $next(stepped);
-    console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
-  } catch (error) {
-    $cleanup(() => {
+    try {
+      const value = $next(stepped);
+      console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
+    } catch (error) {
       stepped.return();
-      taken.return();
-    });
-    throw error;
-  }
-  try {
+      throw error;
+    }
     consume(stepped, (zip) => {
       zip.return();
     });
-  } catch (error) {
-    $cleanup(() => {
-      taken.return();
-    });
-    throw error;
-  }
-  let collected;
-  try {
-    collected = $held(
+    const collected = $held(
       $lazyZip(
         $closing($iterator(count("collected"), countIterator_next), (it) => {
           loudDrop_drop(it.of._loud);
@@ -297,37 +233,19 @@ function main() {
         $iterator({ start: 40 }, $rangeFromStep(-2147483648, 2147483647)),
       ),
     );
-  } catch (error) {
-    $cleanup(() => {
-      taken.return();
-    });
-    throw error;
-  }
-  try {
-    const value = $next(collected);
-    console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
-  } catch (error) {
-    $cleanup(() => {
+    try {
+      const value = $next(collected);
+      console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
+    } catch (error) {
       collected.return();
-      taken.return();
-    });
-    throw error;
-  }
-  try {
+      throw error;
+    }
     console.log(
       `[${Array.from(collected)
         .map((item) => `(${item[0]}, ${item[1]})`)
         .join(", ")}]`,
     );
-  } catch (error) {
-    $cleanup(() => {
-      taken.return();
-    });
-    throw error;
-  }
-  let collect;
-  try {
-    collect = sumFromIterator_u32__u32__fromIter(
+    const [sum] = sumFromIterator_u32__u32__fromIter(
       $lazyZip(
         $closing($iterator(count("from_iter"), countIterator_next), (it) => {
           loudDrop_drop(it.of._loud);
@@ -341,14 +259,9 @@ function main() {
         zip.return();
       },
     );
-  } catch (error) {
-    $cleanup(() => {
-      taken.return();
-    });
-    throw error;
+    console.log(`sum ${sum}`);
+  } finally {
+    taken.return();
   }
-  const sum = collect[0];
-  console.log(`sum ${sum}`);
-  taken.return();
 }
 //# sourceMappingURL=case.js.map
