@@ -518,3 +518,35 @@ refused.
 (ADR 0495, amended), so it calls the impl's method as the impl's own
 methods do, `clicksTouch_me(clicks)`, its `&mut self` taken out of generic
 code's box once, at its top.
+
+## Amended (2026-11-06, #831): a box an entry takes apart isn't copied back
+
+A call that gives an object a box for a trait's `&mut` copied the box
+back once it returned, `$assign(a, self.value)`, as every box is (ADR
+0099). Where the impl its `Self` selects has an entry that takes the box
+apart, `EntryForms::unboxed`, the entry reads its `value` once and gives
+its method, the impl's own or a default copied into it, the object,
+which it changes in place: `*self = other` is `$assign(object, other)`,
+`mem::take(self)` `$take(object, ..)`, and a generic callee it gives
+`self` is given a box of its own, copied back into the object. Nothing
+writes the caller's box whole, so its `value` is the same object, and the
+copy back copied it onto itself. It's left out: decided by the entry's
+owner, `traits/impls.rs`'s `entry_takes_box_apart`, of the impl
+`codegen_select_candidate` selects and the forms its entry is made of,
+never by the JS. A blanket impl's generic `Self` takes the box, writes its
+`value` and is copied back, as are a `Self` no impl is selected for here,
+an impl's own method of a type parameter, another crate's impl, whose
+entry is its own, and a default the dictionary doesn't copy in: a
+library's, compiled once over a generic `Self` (ADR 0100), whose
+`*self = next` the gate's `crates.test.ts` caught, and std's.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, the same object
+is assigned onto itself. Held by corpus `mut_method_pointer_replaced`
+(defaults copied into an object's impl that replace, take and give
+`self` to a generic `mem::replace`; a blanket impl's method and default
+that replace `*self`, copied back), the eight snapshots it changes in
+both builds, each against native Rust, and the mutations
+`object-box-never-copied-back`, `entry-box-copied-back`
+(`lower/mir/assign.ts`), `entry-takes-any-box-apart` and
+`library-default-taken-apart` (`lower/traits/impls.ts`).
+

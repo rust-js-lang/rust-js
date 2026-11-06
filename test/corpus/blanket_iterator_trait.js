@@ -84,37 +84,35 @@ function main() {
   const range = { start: 0, end: 5 };
   const pull = iPull_pull(range, { next: $rangeNext });
   const self = { value: range };
-  const pullTwo = RangePull.pullTwo(self);
-  $assign(range, self.value);
+  const value = RangePull.pullTwo(self);
   console.log(
-    `${pull == null ? "None" : `Some(${pull})`} (${pullTwo[0] == null ? "None" : `Some(${pullTwo[0]})`}, ${pullTwo[1] == null ? "None" : `Some(${pullTwo[1]})`})`,
+    `${pull == null ? "None" : `Some(${pull})`} (${value[0] == null ? "None" : `Some(${value[0]})`}, ${value[1] == null ? "None" : `Some(${value[1]})`})`,
   );
   console.log(`${range.start}..${range.end}`);
   const p = { value: range };
-  const value = drain(p, RangePull);
+  const value$1 = drain(p, RangePull);
   $assign(range, p.value);
-  console.log(`[${value.join(", ")}]`);
+  console.log(`[${value$1.join(", ")}]`);
   const down = [3];
   const self$1 = { value: down };
-  const value$1 = iPull({ next: countdownIterator_next }).pullTwo(self$1);
-  $assign(down, self$1.value);
+  const value$2 = iPull({ next: countdownIterator_next }).pullTwo(self$1);
   console.log(
-    `(${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}) ${down[0]}`,
+    `(${value$2[0] == null ? "None" : `Some(${value$2[0]})`}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}) ${down[0]}`,
   );
   const v = ["a", "b", "c"];
   const e = { inner: $iter(v), count: 0 };
-  const value$2 = enumeratedPull_pull(e, IterPull);
-  console.log(`${value$2 == null ? "None" : `Some((${value$2[0]}, ${$debugStr(value$2[1])}))`}`);
+  const value$3 = enumeratedPull_pull(e, IterPull);
+  console.log(`${value$3 == null ? "None" : `Some((${value$3[0]}, ${$debugStr(value$3[1])}))`}`);
   const p$1 = { value: e };
-  const value$3 = drain(p$1, enumeratedPull(IterPull));
+  const value$4 = drain(p$1, enumeratedPull(IterPull));
   $assign(e, p$1.value);
-  console.log(`[${value$3.map((item) => `(${item[0]}, ${$debugStr(item[1])})`).join(", ")}]`);
+  console.log(`[${value$4.map((item) => `(${item[0]}, ${$debugStr(item[1])})`).join(", ")}]`);
   const r = { inner: { start: 10, end: 13 }, count: 0 };
   const p$2 = { value: r };
-  const value$4 = drain(p$2, enumeratedPull(RangePull));
+  const value$5 = drain(p$2, enumeratedPull(RangePull));
   $assign(r, p$2.value);
   console.log(
-    `[${value$4.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${r.inner.start}..${r.inner.end}`,
+    `[${value$5.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${r.inner.start}..${r.inner.end}`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -51,9 +51,7 @@ function i32Counter_set(self, n) {
 function main() {
   function bump(a, b) {
     const self = { value: a };
-    const value = tallyCounter.bump(self, b);
-    $assign(a, self.value);
-    return value;
+    return tallyCounter.bump(self, b);
   }
   const set = tallyCounter_set;
   const tally = [100];
@@ -62,9 +60,7 @@ function main() {
   console.log(`${bump(tally, 2)} ${tally[0]}`);
   function replace(a, b) {
     const self = { value: a };
-    const value = tallyCounter.replaceWith(self, b);
-    $assign(a, self.value);
-    return value;
+    return tallyCounter.replaceWith(self, b);
   }
   replace(tally, [9]);
   console.log(`${tally[0]}`);

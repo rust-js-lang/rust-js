@@ -617,4 +617,20 @@ export const mutations: Mutation[] = [
     replace: "            let given_names: Vec<Option<String>> = (words.iter()).map(|word| word.map(String::from)).collect();\n",
     tests: ["test/corpus.test.ts", "-t", "^(blanket_iterator_trait|generic_dictionary_declared_once).rs$"],
   },
+  {
+    name: "entry-takes-any-box-apart",
+    breaks: "a blanket impl's default, of a generic `Self` that writes its box's `value`, is taken for one that takes the box apart, so `*self = Self::default()` through its function pointer leaves the caller's object as it was (a wrong answer, #831)",
+    file: "src/lower/traits/impls.rs",
+    find: "        forms.unboxed.get(i).is_some_and(|&unboxed| unboxed > 0)\n",
+    replace: "        forms.unboxed.get(i).is_some()\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer_replaced.rs$"],
+  },
+  {
+    name: "library-default-taken-apart",
+    breaks: "a library's trait's default, compiled once over a generic `Self` that writes its box's `value` (ADR 0100), is taken for one copied into the consumer's impl, so `*self = next` through it leaves the consumer's object as it was (a wrong answer, #831)",
+    file: "src/lower/traits/impls.rs",
+    find: "                && !self.krate.foreign.in_library(item)\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "a library's trait's defaults are what a consumer's impl doesn't write"],
+  },
 ];

@@ -483,7 +483,7 @@ export const mutations: Mutation[] = [
     replace:
       '        if false {\n            value = self.spill("value", value, &mut body);\n',
     snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer_replaced.rs$"],
   },
   {
     name: "variadic-value-rest-unpassed",

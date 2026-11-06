@@ -86,9 +86,7 @@ function main() {
   const bumpedTwice = i32Bump.bumpedTwice(self);
   n = self.value;
   const self$1 = { value: c };
-  const value = cBump.bumpedTwice(self$1);
-  $assign(c, self$1.value);
-  console.log(`${bumpedTwice} ${value}`);
+  console.log(`${bumpedTwice} ${cBump.bumpedTwice(self$1)}`);
   console.log(`${n} ${c.n}`);
 }
 //# sourceMappingURL=case.js.map

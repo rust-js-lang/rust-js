@@ -616,6 +616,63 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok((function, made))
     }
 
+    /// Whether a call of `item`, a trait's method, with `args`, through the
+    /// dictionary of the impl its `Self` selects, takes its parameter `i`'s
+    /// box apart where it's called: the entry reads the box's `value` once
+    /// and gives the method, the impl's or a default copied into it, the
+    /// object it holds, which it changes in place, so nothing writes the
+    /// box whole, and a copy back would copy the object onto itself (#831,
+    /// `entry_forms`'s `unboxed`). Not of a `Self` no impl is selected for
+    /// here, generic code's, nor of a blanket impl's generic `Self`, whose
+    /// method writes the box; nor of another crate's impl, whose entry is
+    /// its own, nor of a default the dictionary doesn't copy into the impl,
+    /// a library's, compiled once over a generic `Self` (ADR 0100), or
+    /// std's.
+    pub(in crate::lower) fn entry_takes_box_apart(
+        &self,
+        item: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        i: usize,
+    ) -> bool {
+        let tr = ty::TraitRef::from_assoc(self.tcx, self.tcx.parent(item), args);
+        let Some((imp, _)) = super::evidence_impl(self.tcx, self.typing_env, tr).filter(|(imp, _)| imp.is_local())
+        else {
+            return false;
+        };
+        // As the impl's dictionary makes its entry (`lower_dictionary`): in
+        // the impl's own terms, the impl's method or the default it keeps.
+        let impl_tr = self.tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization();
+        let own_args = impl_tr.args.extend_to(self.tcx, item, |param, _| match param.kind {
+            ty::GenericParamDefKind::Lifetime => self.tcx.lifetimes.re_erased.into(),
+            _ => self.tcx.mk_param_from_def(param),
+        });
+        let count = (self.tcx.fn_sig(item).instantiate_identity())
+            .skip_normalization()
+            .skip_binder()
+            .inputs()
+            .len();
+        let forms = match self.tcx.impl_item_implementor_ids(imp).get(&item) {
+            Some(&method) => {
+                let method_args = ty::GenericArgs::for_item(self.tcx, method, |param, _| match param.kind {
+                    ty::GenericParamDefKind::Lifetime => self.tcx.lifetimes.re_erased.into(),
+                    _ => self.tcx.mk_param_from_def(param),
+                });
+                self.entry_forms(item, (method, method_args), own_args, count, None)
+            }
+            // A default the dictionary copies in (`lower_dictionary`): the
+            // crate's trait's, not a library's, whose body is its own.
+            None if self.tcx.defaultness(item).has_value()
+                && self.is_rust_trait(tr.def_id)
+                && !self.krate.foreign.in_library(item)
+                && self.krate.fns.contains_key(&item) =>
+            {
+                self.entry_forms(item, (item, own_args), own_args, count, Some(imp))
+            }
+            None => return false,
+        };
+        forms.unboxed.get(i).is_some_and(|&unboxed| unboxed > 0)
+    }
+
     /// Copy the default body into this implementation. Its Rust bindings still
     /// refer to the trait definition; only its evidence is specialized here.
     /// What an impl's entry of `item`, a trait's method, makes of what its

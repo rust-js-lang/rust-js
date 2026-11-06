@@ -73,7 +73,6 @@ function main() {
   const full = { items: [7, 8] };
   const self = { value: full };
   const drained = stackDrain.drainOut(self);
-  $assign(full, self.value);
   full.items.push(9);
   console.log(`${stackDebug_fmt(full)} ${stackDebug_fmt(drained)}`);
 }

@@ -1257,7 +1257,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // back after in place, is the new value (ADR 0454, amended).
             let boxed = crate::lower::mut_refs::boxed(place.clone());
             out.push(StmtKind::Const(name.clone(), boxed).at(self.js_span(span)));
-            if fixed_place(&place) {
+            // Not an object's box the impl's entry takes apart, whose `value`
+            // is the same object once the call returns (#831).
+            let taken_apart = object
+                && callee.is_some_and(|(id, args)| {
+                    self.tcx.trait_of_assoc(id).is_some() && self.entry_takes_box_apart(id, args, i)
+                });
+            if fixed_place(&place) && !taken_apart {
                 state.copy_backs.push((place, name.clone(), object));
             }
             exprs.push(Expr::var(&name));

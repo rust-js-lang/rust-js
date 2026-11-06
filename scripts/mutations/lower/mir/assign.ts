@@ -1090,4 +1090,21 @@ export const mutations: Mutation[] = [
     replace: "        let lent = false && self.local_stepped_from_its_back(local) == Some(crate::lower::analysis::SteppedLocal::Lent);\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
   },
+  {
+    name: "object-box-never-copied-back",
+    breaks: "an object's box given any `&mut self` method isn't copied back, so a blanket impl's generic `Self`, `*self = other`, which writes the box's `value`, leaves the caller's object as it was (a wrong answer, #831)",
+    file: "src/lower/mir/assign.rs",
+    find: "            let taken_apart = object\n",
+    replace: "            let taken_apart = true || object\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer_replaced.rs$"],
+  },
+  {
+    name: "entry-box-copied-back",
+    breaks: "an object's box an impl's entry takes apart is copied back, `$assign(a, self.value)`, the same object onto itself (#831)",
+    file: "src/lower/mir/assign.rs",
+    find: "            let taken_apart = object\n",
+    replace: "            let taken_apart = false && object\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer.rs$"],
+    snapshots: true,
+  },
 ];
