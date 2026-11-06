@@ -9,9 +9,10 @@ function $lastDropping(it, drop, boxed) {
   // Std's `Chain::last`: each side's own `last`, `a`'s then `b`'s, each
   // dropping what it passes; `b`'s where it has one, `a`'s dropped then,
   // as `b_last.or(a_last)` drops it (#232).
-  // Std's `Skip::last`: its source's, after what it skips (#232).
+  // Std's `Skip::last`: its source's, after what it skips (#232), closed
+  // where what it skips throws, a panic, as `last(self)` drops it (#844).
   if (it.skipped !== undefined) {
-    const source = it.skipped();
+    const source = $consumed(it, () => it.skipped());
     if (source !== undefined) return $lastDropping(source, drop, boxed);
     it.return?.();
     return undefined;

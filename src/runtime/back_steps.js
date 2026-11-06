@@ -232,8 +232,11 @@ function $stepBy(it, step, drop) {
   // Its `fold`, its `try_fold` never stopped, then closed, as `fold(self)`
   // drops what it has left at its end (#242), and though it throws.
   // What drops with `f`, `ends`, first (#734): its first step's, or at
-  // its end.
+  // its end. Held, so what it steps is closed at its end, not inside the
+  // step that finds it done, where a panic of its drop would drop the
+  // accumulator, which std's fold has made its result (ADR 1092 S9, #845).
   const fold = (init, f, unwind, ends) => {
+    stepped.hold();
     const folded = $consumed(stepped, () => stepped.tryFold(init, f, () => false, unwind, ends), ends);
     $closedAfter(ends, () => stepped.return());
     return folded;
@@ -284,8 +287,9 @@ function $stepByEnds(it, step, drop) {
   };
   // Its `rfold`, its `try_rfold` never stopped, then closed, as
   // `rfold(self)` drops what it has left at its end, and though it throws,
-  // as its `fold` is.
+  // as its `fold` is, held as it is (#845).
   const rfold = (init, f, unwind, ends) => {
+    stepped.hold();
     const folded = $consumed(stepped, () => tryRfold(init, f, () => false, unwind, ends), ends);
     $closedAfter(ends, () => stepped.return());
     return folded;

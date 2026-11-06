@@ -15,8 +15,8 @@ export const mutations: Mutation[] = [
     name: "closure-drop-skipped",
     breaks: "a closure dropped uncalled doesn't drop what it took",
     file: "src/lower/drops.rs",
-    find: "        for (place, ty) in places {\n            self.drop_in(place, ty, span, made, out)?;\n        }",
-    replace: "        let _ = places;",
+    find: "            parts.push(dropped);\n        }\n        out.extend(parts::each_dropped(",
+    replace: "            let _ = dropped;\n        }\n        out.extend(parts::each_dropped(",
     tests: ["test/corpus.test.ts", "-t", "closure_drops"],
   },
   {
@@ -104,5 +104,13 @@ export const mutations: Mutation[] = [
     find: "            thir_args: (self.copied_default_args())\n",
     replace: "            thir_args: (None::<ty::GenericArgsRef<'tcx>>)\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_default_asks_its_drops_in_the_impls_terms.rs$"],
+  },
+  {
+    name: "closure-captures-dropped-in-a-row",
+    breaks: "a closure's captures are dropped one after another with no `try`, so where the first one's drop panics, the second is never dropped (#846)",
+    file: "src/lower/drops.rs",
+    find: "        out.extend(parts::each_dropped(parts, self.js_span(span)));\n",
+    replace: "        out.extend(parts.into_iter().flatten());\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_captures_dropped_past_a_panic.rs$"],
   },
 ];

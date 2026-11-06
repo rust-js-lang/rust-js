@@ -352,6 +352,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Drop what the closure `closure` took: the variables it took, where it
     /// was made. Only there, or in a closure made inside it, can JS see them.
+    /// Each in turn, the rest still dropped after one whose drop panics, as
+    /// a closure's drop glue drops its captures, a struct's fields
+    /// (`each_dropped`, #846).
     fn drop_taken(&mut self, closure: DefId, span: Span, made: &mut Made<'tcx>, out: &mut Vec<Stmt>) -> R<()> {
         let made_here = self.drop_state.closures.get(&closure).cloned().filter(|(made_in, _)| {
             std::iter::successors(Some(self.frame.owner), |&d| self.tcx.opt_parent(d)).any(|d| d == *made_in)
@@ -359,9 +362,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some((_, places)) = made_here else {
             return Err(self.unsupported(span, "dropping a closure that holds a value with a destructor here"));
         };
+        let mut parts = Vec::new();
         for (place, ty) in places {
-            self.drop_in(place, ty, span, made, out)?;
+            let mut dropped = Vec::new();
+            self.drop_in(place, ty, span, made, &mut dropped)?;
+            parts.push(dropped);
         }
+        out.extend(parts::each_dropped(parts, self.js_span(span)));
         Ok(())
     }
 

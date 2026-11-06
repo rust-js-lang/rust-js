@@ -726,3 +726,22 @@ the conformance table's `fold holding block` and `map holding block`
 cases (ADR 1092), each run as native Rust runs it in both builds, and
 the mutations `closure-block-given-to-a-call-refused` and
 `closure-block-value-refused`.
+
+## Amendment: a closure's captures are its parts (2026-11-06, #846)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Results change, so
+Rust's behavior is kept.
+
+A closure's drop, where it's made or carried (`$dropping`, ADR 0484), wrote
+each capture's drop as the next statement. So where the first capture's
+drop panicked, the second was never dropped, where Rust's drop glue goes on
+to a closure's other captures as it does to a struct's fields. In
+`--std-iterators` it showed as a compiled `Map::fold`'s `map_fold` closure,
+which holds the consumer's closure and the map's: the map's function was
+leaked when the consumer's closure's drop panicked. **A closure's captures
+are dropped by `each_dropped`**, as a struct's fields are (`drop_taken`,
+src/lower/drops.rs). `closures_made_and_folded.js` changed: its carried
+drop of two closures is one `try`/`finally`. Held by
+`closure_captures_dropped_past_a_panic.rs` in both builds, against native
+Rust, and the mutation `closure-captures-dropped-in-a-row`. Found by the
+iterator matrix's points table (#817).

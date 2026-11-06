@@ -100,22 +100,52 @@ function $foldToArray(it, drop, restFirst = false, inPlace = drop !== undefined 
     items.push(x);
     return items;
   };
+  let folded;
   try {
     // In place, `inPlace`, std's `try_fold` by `&mut`, which moves no
     // adapter's function into the fold it asks, then what's left closed,
     // an adapter's function after it (#710).
-    if (inPlace && typeof it.tryFold === "function") {
-      const folded = it.tryFold(items, push, () => false, unwind);
-      it.return?.();
-      return folded;
-    }
-    return it.fold(items, push, unwind);
+    if (!inPlace || typeof it.tryFold !== "function") return it.fold(items, push, unwind);
+    // Held, so nothing it steps closes inside the fold, a `take`'s source
+    // at its limit, but all of it after, at the end (#843).
+    it.hold?.();
+    folded = it.tryFold(items, push, () => false, unwind);
   } catch (error) {
     // In place, what it collected is dropped by the fold's `unwind` alone,
     // as std's `InPlaceDrop` is by the frame that holds it: not where a
     // stage's closure has moved it into what it gives, then panicked
     // dropping an item it discards, which leaks it (`$kept`, #681).
     $collectUnwound(it, items, unwind === undefined ? drop : undefined, restFirst);
+    throw error;
+  }
+  // Then what its source, the `Vec` whose buffer it reuses, has left
+  // dropped, where a drop of it that panics drops what it collected as it
+  // unwinds, after it, as std's in-place guard does once its fold is done
+  // (`InPlaceDstDataSrcBufDrop`, #843); then the adapters closed, their
+  // functions, whose drop's panic leaks what it collected, as std's
+  // `from_iter` has made it its result by then (rust-lang/rust#47949).
+  $collectEnded($inPlaceSource(it), items, drop);
+  it.return?.();
+  return folded;
+}
+
+// What a collect in place of `it` reuses the buffer of, a `Vec`'s
+// `IntoIter`: the source at its root, each adapter's first, `from[0]`,
+// that closes.
+function $inPlaceSource(it) {
+  let source = it;
+  while (source.from?.[0]?.return !== undefined) source = source.from[0];
+  return source;
+}
+
+// `it` closed at the end of a collect into `items`, which is dropped by
+// `drop` as a panic of that close unwinds, as std's `from_iter` drops the
+// `Vec` it holds then (#677, #843).
+function $collectEnded(it, items, drop) {
+  try {
+    it.return?.();
+  } catch (error) {
+    if (drop) $dropItems(items, drop);
     throw error;
   }
 }
@@ -135,15 +165,8 @@ function $collectDropping(it, drop, restFirst = false) {
     throw error;
   }
   // And at its end, as std's `collect` drops what it took then, what an
-  // adapter that stops early left (ADR 0570). Where that drop panics, what
-  // it collected is dropped as it unwinds, as std's `from_iter` drops the
-  // `Vec` it holds (#677).
-  try {
-    it.return?.();
-  } catch (error) {
-    if (drop) $dropItems(items, drop);
-    throw error;
-  }
+  // adapter that stops early left (ADR 0570), `$collectEnded`'s.
+  $collectEnded(it, items, drop);
   return items;
 }
 

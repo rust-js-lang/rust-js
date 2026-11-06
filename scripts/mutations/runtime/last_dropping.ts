@@ -138,4 +138,12 @@ export const mutations: Mutation[] = [
     replace: "    for (const item of it) keep(item);\n",
     tests: ["test/corpus.test.ts", "-t", "^last_fold_gives_back_what_it_kept.rs$"],
   },
+  {
+    name: "last-dropping-skip-unclosed",
+    breaks: "a `skip(1).last()` whose skipped item's drop panics never closes what it steps, so the rest of a `Vec`'s items are never dropped (#844)",
+    file: "src/runtime/last_dropping.js",
+    find: "    const source = $consumed(it, () => it.skipped());\n",
+    replace: "    const source = it.skipped();\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_passed_item_drop_unwinds.rs$"],
+  },
 ];

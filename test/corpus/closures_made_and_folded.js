@@ -28,8 +28,11 @@ function joined(f, g, dropFnMut, dropFnMut$1) {
   return $dropping(
     (acc, x) => g(acc, f(x)),
     () => {
-      dropFnMut$1?.(g);
-      dropFnMut?.(f);
+      try {
+        dropFnMut$1?.(g);
+      } finally {
+        dropFnMut?.(f);
+      }
     },
   );
 }

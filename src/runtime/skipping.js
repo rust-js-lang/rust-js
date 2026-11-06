@@ -44,6 +44,12 @@ function $skipping(iter, n, drop) {
     skipping.n = Math.max(skip - advanced, 0);
     return m - Math.max(advanced - skip, 0);
   };
+  // `step`, what its source's `nth(n - 1)` gave back, its item dropped,
+  // as std's `Skip` drops it in the step that asked it (#844).
+  const passed = (step, dropItem) => {
+    if (!step.done) dropItem?.(step.value);
+    return step;
+  };
   // Std's `Skip::count`: its source's `nth(n - 1)`, then its `count`, where
   // its source drops what it passes over itself (#261), or counts itself,
   // the crate's own `count` (#505).
@@ -51,12 +57,11 @@ function $skipping(iter, n, drop) {
     if (skipping.n > 0) {
       const k = skipping.n;
       skipping.n = 0;
-      const step = $consumed(skipping, () => skipping.iter.nth(k - 1, dropItem));
+      const step = $consumed(skipping, () => passed(skipping.iter.nth(k - 1, dropItem), dropItem));
       if (step.done) {
         skipping.return();
         return 0;
       }
-      dropItem?.(step.value);
     }
     return $count(skipping.iter, dropItem);
   };
@@ -71,7 +76,11 @@ function $skipping(iter, n, drop) {
   // that drops `self` (#423, rd767).
   // What drops with `f`, `ends`, first, as that frame holds only its
   // parameters (`$stepHolding`, #768).
-  const skipped = (k, init, unwind, ends) => $stepHolding(() => skipping.iter.nth(k - 1, drop), init, unwind, ends);
+  // The item that `nth(n - 1)` gives back dropped in that step, as std drops
+  // it in the frame that holds them, so its drop's panic drops them too
+  // (#844).
+  const skipped = (k, init, unwind, ends) =>
+    $stepHolding(() => passed(skipping.iter.nth(k - 1, drop), drop), init, unwind, ends);
   // What drops with `f`, `ends`, before what's left (#710).
   const fold = (init, f, unwind, ends) => {
     if (skipping.n > 0) {
@@ -82,7 +91,6 @@ function $skipping(iter, n, drop) {
         $closedAfter(ends, () => skipping.return());
         return init;
       }
-      drop?.(step.value);
     }
     const folded = skipping.iter.fold(init, f, unwind, ends);
     $closedAfter(ends, () => skipping.return());
@@ -95,7 +103,6 @@ function $skipping(iter, n, drop) {
       skipping.n = 0;
       const step = skipped(k, init, unwind, ends);
       if (step.done) return init;
-      drop?.(step.value);
     }
     return skipping.iter.tryFold(init, f, broke, unwind, ends);
   };
@@ -105,10 +112,8 @@ function $skipping(iter, n, drop) {
     if (skipping.n > 0 && skipping.iter.ownNth) {
       const k = skipping.n;
       skipping.n = 0;
-      const step = skipping.iter.nth(k - 1, drop);
-      if (step.done) return undefined;
-      drop?.(step.value);
-      return skipping.iter;
+      const step = passed(skipping.iter.nth(k - 1, drop), drop);
+      return step.done ? undefined : skipping.iter;
     }
     for (; skipping.n > 0; skipping.n--) {
       const step = skipping.iter.next();

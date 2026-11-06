@@ -2187,9 +2187,10 @@ export function $lastDropping(it, drop, boxed) {
   // Std's `Chain::last`: each side's own `last`, `a`'s then `b`'s, each
   // dropping what it passes; `b`'s where it has one, `a`'s dropped then,
   // as `b_last.or(a_last)` drops it (#232).
-  // Std's `Skip::last`: its source's, after what it skips (#232).
+  // Std's `Skip::last`: its source's, after what it skips (#232), closed
+  // where what it skips throws, a panic, as `last(self)` drops it (#844).
   if (it.skipped !== undefined) {
-    const source = it.skipped();
+    const source = $consumed(it, () => it.skipped());
     if (source !== undefined) return $lastDropping(source, drop, boxed);
     it.return?.();
     return undefined;
@@ -2442,22 +2443,52 @@ export function $foldToArray(it, drop, restFirst = false, inPlace = drop !== und
     items.push(x);
     return items;
   };
+  let folded;
   try {
     // In place, `inPlace`, std's `try_fold` by `&mut`, which moves no
     // adapter's function into the fold it asks, then what's left closed,
     // an adapter's function after it (#710).
-    if (inPlace && typeof it.tryFold === "function") {
-      const folded = it.tryFold(items, push, () => false, unwind);
-      it.return?.();
-      return folded;
-    }
-    return it.fold(items, push, unwind);
+    if (!inPlace || typeof it.tryFold !== "function") return it.fold(items, push, unwind);
+    // Held, so nothing it steps closes inside the fold, a `take`'s source
+    // at its limit, but all of it after, at the end (#843).
+    it.hold?.();
+    folded = it.tryFold(items, push, () => false, unwind);
   } catch (error) {
     // In place, what it collected is dropped by the fold's `unwind` alone,
     // as std's `InPlaceDrop` is by the frame that holds it: not where a
     // stage's closure has moved it into what it gives, then panicked
     // dropping an item it discards, which leaks it (`$kept`, #681).
     $collectUnwound(it, items, unwind === undefined ? drop : undefined, restFirst);
+    throw error;
+  }
+  // Then what its source, the `Vec` whose buffer it reuses, has left
+  // dropped, where a drop of it that panics drops what it collected as it
+  // unwinds, after it, as std's in-place guard does once its fold is done
+  // (`InPlaceDstDataSrcBufDrop`, #843); then the adapters closed, their
+  // functions, whose drop's panic leaks what it collected, as std's
+  // `from_iter` has made it its result by then (rust-lang/rust#47949).
+  $collectEnded($inPlaceSource(it), items, drop);
+  it.return?.();
+  return folded;
+}
+
+// What a collect in place of `it` reuses the buffer of, a `Vec`'s
+// `IntoIter`: the source at its root, each adapter's first, `from[0]`,
+// that closes.
+export function $inPlaceSource(it) {
+  let source = it;
+  while (source.from?.[0]?.return !== undefined) source = source.from[0];
+  return source;
+}
+
+// `it` closed at the end of a collect into `items`, which is dropped by
+// `drop` as a panic of that close unwinds, as std's `from_iter` drops the
+// `Vec` it holds then (#677, #843).
+export function $collectEnded(it, items, drop) {
+  try {
+    it.return?.();
+  } catch (error) {
+    if (drop) $dropItems(items, drop);
     throw error;
   }
 }
@@ -2477,15 +2508,8 @@ export function $collectDropping(it, drop, restFirst = false) {
     throw error;
   }
   // And at its end, as std's `collect` drops what it took then, what an
-  // adapter that stops early left (ADR 0570). Where that drop panics, what
-  // it collected is dropped as it unwinds, as std's `from_iter` drops the
-  // `Vec` it holds (#677).
-  try {
-    it.return?.();
-  } catch (error) {
-    if (drop) $dropItems(items, drop);
-    throw error;
-  }
+  // adapter that stops early left (ADR 0570), `$collectEnded`'s.
+  $collectEnded(it, items, drop);
   return items;
 }
 
@@ -2902,6 +2926,12 @@ export function $skipping(iter, n, drop) {
     skipping.n = Math.max(skip - advanced, 0);
     return m - Math.max(advanced - skip, 0);
   };
+  // `step`, what its source's `nth(n - 1)` gave back, its item dropped,
+  // as std's `Skip` drops it in the step that asked it (#844).
+  const passed = (step, dropItem) => {
+    if (!step.done) dropItem?.(step.value);
+    return step;
+  };
   // Std's `Skip::count`: its source's `nth(n - 1)`, then its `count`, where
   // its source drops what it passes over itself (#261), or counts itself,
   // the crate's own `count` (#505).
@@ -2909,12 +2939,11 @@ export function $skipping(iter, n, drop) {
     if (skipping.n > 0) {
       const k = skipping.n;
       skipping.n = 0;
-      const step = $consumed(skipping, () => skipping.iter.nth(k - 1, dropItem));
+      const step = $consumed(skipping, () => passed(skipping.iter.nth(k - 1, dropItem), dropItem));
       if (step.done) {
         skipping.return();
         return 0;
       }
-      dropItem?.(step.value);
     }
     return $count(skipping.iter, dropItem);
   };
@@ -2929,7 +2958,11 @@ export function $skipping(iter, n, drop) {
   // that drops `self` (#423, rd767).
   // What drops with `f`, `ends`, first, as that frame holds only its
   // parameters (`$stepHolding`, #768).
-  const skipped = (k, init, unwind, ends) => $stepHolding(() => skipping.iter.nth(k - 1, drop), init, unwind, ends);
+  // The item that `nth(n - 1)` gives back dropped in that step, as std drops
+  // it in the frame that holds them, so its drop's panic drops them too
+  // (#844).
+  const skipped = (k, init, unwind, ends) =>
+    $stepHolding(() => passed(skipping.iter.nth(k - 1, drop), drop), init, unwind, ends);
   // What drops with `f`, `ends`, before what's left (#710).
   const fold = (init, f, unwind, ends) => {
     if (skipping.n > 0) {
@@ -2940,7 +2973,6 @@ export function $skipping(iter, n, drop) {
         $closedAfter(ends, () => skipping.return());
         return init;
       }
-      drop?.(step.value);
     }
     const folded = skipping.iter.fold(init, f, unwind, ends);
     $closedAfter(ends, () => skipping.return());
@@ -2953,7 +2985,6 @@ export function $skipping(iter, n, drop) {
       skipping.n = 0;
       const step = skipped(k, init, unwind, ends);
       if (step.done) return init;
-      drop?.(step.value);
     }
     return skipping.iter.tryFold(init, f, broke, unwind, ends);
   };
@@ -2963,10 +2994,8 @@ export function $skipping(iter, n, drop) {
     if (skipping.n > 0 && skipping.iter.ownNth) {
       const k = skipping.n;
       skipping.n = 0;
-      const step = skipping.iter.nth(k - 1, drop);
-      if (step.done) return undefined;
-      drop?.(step.value);
-      return skipping.iter;
+      const step = passed(skipping.iter.nth(k - 1, drop), drop);
+      return step.done ? undefined : skipping.iter;
     }
     for (; skipping.n > 0; skipping.n--) {
       const step = skipping.iter.next();
@@ -3582,8 +3611,11 @@ export function $stepBy(it, step, drop) {
   // Its `fold`, its `try_fold` never stopped, then closed, as `fold(self)`
   // drops what it has left at its end (#242), and though it throws.
   // What drops with `f`, `ends`, first (#734): its first step's, or at
-  // its end.
+  // its end. Held, so what it steps is closed at its end, not inside the
+  // step that finds it done, where a panic of its drop would drop the
+  // accumulator, which std's fold has made its result (ADR 1092 S9, #845).
   const fold = (init, f, unwind, ends) => {
+    stepped.hold();
     const folded = $consumed(stepped, () => stepped.tryFold(init, f, () => false, unwind, ends), ends);
     $closedAfter(ends, () => stepped.return());
     return folded;
@@ -3634,8 +3666,9 @@ export function $stepByEnds(it, step, drop) {
   };
   // Its `rfold`, its `try_rfold` never stopped, then closed, as
   // `rfold(self)` drops what it has left at its end, and though it throws,
-  // as its `fold` is.
+  // as its `fold` is, held as it is (#845).
   const rfold = (init, f, unwind, ends) => {
+    stepped.hold();
     const folded = $consumed(stepped, () => tryRfold(init, f, () => false, unwind, ends), ends);
     $closedAfter(ends, () => stepped.return());
     return folded;

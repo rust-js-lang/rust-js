@@ -1086,3 +1086,54 @@ The proof:
   `taking-own-nth-back-unmarked`, `std-iterator-nth-back-unmarked`,
   `step-by-rfold-asks-no-nth-back` and `step-by-nth-back-unowned`. Five
   older mutations whose finds the new code repeats now match once.
+
+## Amendment: what the points table found first (2026-11-06, #843, #844, #845)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Each changed results,
+so Rust's behavior is kept.
+
+The points table (ADR 1090's #817 amendment) panics at each point of each
+case in turn. It found three runtime frames that dropped what std's drop,
+or dropped what rustc leaks, as one of those points unwound:
+
+- **A collect in place drops what it collected as its source's rest's drop
+  panics** (#843). `$foldToArray`'s in-place path closed what it folded
+  inside the `try` whose `catch` is for the fold's own panic, whose
+  `unwind` has already dropped what it collected, so a throw from the close
+  dropped nothing. A `take()` also closed its source at its limit, inside
+  the fold. It now holds what it folds (`hold()`, S9), then closes the
+  source whose buffer it reuses, the root of the adapters' `from[0]`
+  (`$inPlaceSource`), under the guard std's `InPlaceDstDataSrcBufDrop`
+  is: a panic there drops what it collected, after the rest. Then it closes
+  the adapters with no guard: by then std's `from_iter` has made the `Vec`
+  its result, which rustc leaks as an adapter's function's drop panics
+  (rust-lang/rust#47949). `$collectEnded` is the one end of a collect,
+  `$collectDropping`'s too. A compiled struct has no `from`, so its whole
+  close is guarded: right for its source's rest and wrong for its function,
+  which is #852, listed in iterator-forms' `differs`.
+- **A `skip()` drops the item its first `nth(n - 1)` gives back inside
+  that step** (#844), as std's `Skip` drops it in the frame that holds
+  `self`, `init` and `f`: its `fold`, `try_fold`, `count` and `last`, and
+  `$lastDropping`'s skip, which now closes it as that step throws. The
+  item's drop ran after `$stepHolding` and `$consumed` had returned, so its
+  panic leaked the accumulator and the rest.
+- **A `step_by()` folded by value holds what it steps** (#845), so its
+  source is closed as the fold ends, not inside the step that finds it
+  done. There, the source's drop's panic made that step's `unwind` drop the
+  accumulator, which std's fold has made its result by then and rustc
+  leaks. `$stepBy`'s and `$stepByEnds`' `fold` and `rfold`.
+
+Corpus cases, both builds, against native Rust:
+`collected_in_place_dropped_as_the_rest_panics.rs`,
+`collected_in_place_leaked_past_an_adapters_drop.rs` (the default build's
+alone, #852), `skip_passed_item_drop_unwinds.rs` and
+`step_by_source_dropped_at_its_folds_end.rs`. The points table's 166
+case-builds under #843–#846 are off its list; #852's 4 are on it.
+Mutations: `in-place-collect-unheld`, `in-place-close-unguarded`,
+`in-place-guard-over-the-adapters` (`runtime/fold_of.ts`),
+`skip-passed-item-dropped-outside-its-step` (`runtime/skipping.ts`),
+`last-dropping-skip-unclosed` (`runtime/last_dropping.ts`),
+`step-by-fold-unheld` and `step-by-rfold-unheld` (`runtime/back_steps.ts`).
+`fold-to-array-collected-last`, `collect-end-unwound-leaks`,
+`in-place-by-fold`, `consume-unheld` and the skip mutations of #492 and
+#768 name their lines as they now read.

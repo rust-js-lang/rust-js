@@ -701,4 +701,20 @@ export const mutations: Mutation[] = [
     replace: "    const step = enumerated.iter.nthBack(k);\n    return pair(step, enumerated.count + enumerated.iter.len());\n",
     tests: ["test/corpus.test.ts", "-t", "^step_by_folded_from_its_back_as_std.rs$"],
   },
+  {
+    name: "step-by-fold-unheld",
+    breaks: "a `step_by()` of the crate's iterator folded by value closes it inside the step that finds it done, so where its drop panics the accumulator, the fold's result, is dropped, which rustc leaks (#845)",
+    file: "src/runtime/back_steps.js",
+    find: "    stepped.hold();\n    const folded = $consumed(stepped, () => stepped.tryFold(",
+    replace: "    const folded = $consumed(stepped, () => stepped.tryFold(",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_source_dropped_at_its_folds_end.rs$"],
+  },
+  {
+    name: "step-by-rfold-unheld",
+    breaks: "a `step_by()` of the crate's iterator folded from its back by value closes it inside the step that finds it done, so where its drop panics the accumulator is dropped, which rustc leaks (#845)",
+    file: "src/runtime/back_steps.js",
+    find: "    stepped.hold();\n    const folded = $consumed(stepped, () => tryRfold(",
+    replace: "    const folded = $consumed(stepped, () => tryRfold(",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_source_dropped_at_its_folds_end.rs$"],
+  },
 ];

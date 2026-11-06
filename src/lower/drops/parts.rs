@@ -449,7 +449,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// may throw, a destructor's panic, the rest after it in its `finally`, so
 /// they still run, `try { boom_drop(pair.first); } finally {
 /// loudDrop_drop(pair.second); }` (#416). One that can't, as it is.
-fn each_dropped(parts: Vec<Vec<Stmt>>, js_span: js::Span) -> Vec<Stmt> {
+pub(super) fn each_dropped(parts: Vec<Vec<Stmt>>, js_span: js::Span) -> Vec<Stmt> {
     let mut rest: Vec<Stmt> = Vec::new();
     for part in parts.into_iter().rev().filter(|part| !part.is_empty()) {
         rest = match rest.is_empty() || !may_throw(&part) {

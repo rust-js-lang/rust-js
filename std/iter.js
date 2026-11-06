@@ -2521,8 +2521,11 @@ export function mapIterator_fold(
       return g(acc, tmp);
     },
     () => {
-      dropG?.(g);
-      dropF?.(captured);
+      try {
+        dropG?.(g);
+      } finally {
+        dropF?.(captured);
+      }
     },
   );
   let result;
@@ -2631,8 +2634,11 @@ export function mapDoubleEndedIterator_rfold(
       return g(acc, tmp);
     },
     () => {
-      dropG?.(g);
-      dropF?.(captured);
+      try {
+        dropG?.(g);
+      } finally {
+        dropF?.(captured);
+      }
     },
   );
   let result;
@@ -2824,8 +2830,11 @@ export function filterIterator_fold(
       return result;
     },
     () => {
-      dropP?.(captured);
-      dropFold?.(fold);
+      try {
+        dropP?.(captured);
+      } finally {
+        dropFold?.(fold);
+      }
     },
   );
   let result;
@@ -2948,8 +2957,11 @@ export function filterDoubleEndedIterator_rfold(
       return result;
     },
     () => {
-      dropP?.(captured);
-      dropFold?.(fold);
+      try {
+        dropP?.(captured);
+      } finally {
+        dropFold?.(fold);
+      }
     },
   );
   let result;
@@ -3617,8 +3629,11 @@ export function filterMapIterator_fold(
       return acc;
     },
     () => {
-      dropF?.(captured);
-      dropFold?.(fold);
+      try {
+        dropF?.(captured);
+      } finally {
+        dropFold?.(fold);
+      }
     },
   );
   let result;
@@ -3750,8 +3765,11 @@ export function filterMapDoubleEndedIterator_rfold(
       return acc;
     },
     () => {
-      dropF?.(captured);
-      dropFold?.(fold);
+      try {
+        dropF?.(captured);
+      } finally {
+        dropFold?.(fold);
+      }
     },
   );
   let result;
@@ -4603,8 +4621,11 @@ export function inspectIterator_fold(
       return fold(acc, item);
     },
     () => {
-      dropF?.(captured);
-      dropFold?.(fold);
+      try {
+        dropF?.(captured);
+      } finally {
+        dropFold?.(fold);
+      }
     },
   );
   let result;
@@ -4700,8 +4721,11 @@ export function inspectDoubleEndedIterator_rfold(
       return fold(acc, item);
     },
     () => {
-      dropF?.(captured);
-      dropFold?.(fold);
+      try {
+        dropF?.(captured);
+      } finally {
+        dropFold?.(fold);
+      }
     },
   );
   let result;
