@@ -104,6 +104,16 @@ checks that build native programs slow there. It can be turned off for the progr
 under **System Settings → Privacy & Security → Developer Tools**, then quit
 and reopen it.
 
+**Which app to add, on any host:** the binary just below `launchd` in the
+chain of parents of the shell that runs the commands. Walk up with
+`p=$$; while [ "$p" -gt 1 ]; do ps -o ppid=,comm= -p $p; p=$(ps -o ppid= -p $p); done`.
+Run from a terminal, that's the terminal (`Ghostty.app`), or a multiplexer
+it starts (`herdr`, `~/.local/bin/herdr`); add each one a session may run
+under. **To check it's off:** build twenty small programs with `rustc` and
+time their first runs against their second. Scanned, the first runs took
+6 s together (300 ms each); off, 0.05 s, the same as the second runs
+(2026-11-05). Check again after each update of the app.
+
 For the Claude desktop app, the app that starts commands isn't `Claude.app`
 itself, but Claude Code inside it, which a helper makes responsible for what
 it runs:
@@ -396,6 +406,19 @@ as a wrong answer is.
   slower. A session doesn't spawn agents to work in parallel: it finishes
   one issue, then starts the next. With three machines, three issues are
   in flight.
+- **Fill the gaps between heavy steps.** With one agent, the machine sits
+  mostly idle while it reads, edits and runs one focused test (64% idle
+  measured beside a 12-core agent, 93% beside an 8-core one, 2026-11-06).
+  So run what's independent at once: both corpus builds (the default and
+  `RUST_JS_LIBRARIES=all`) as one set of parts, not one after the other
+  (about 3 of 7 minutes saved on 8 cores); a bisect's or a probe's runs as
+  parallel processes; the next build while the last results are read.
+- **Mutations of a change: `--changed=origin/main`**, never
+  `--changed=main`. A worktree's local `main` can be far behind; one such
+  run picked up 1,337 files and was filling the disk.
+- **A gate or script that takes a lock releases it on any exit**, a
+  signal included (`trap`). A stopped gate once left its mutations lock
+  behind, and the next run waited on it overnight.
 - **Keep the Mac awake** while work runs unattended (`caffeinate -dims` in
   a terminal): a sleeping Mac pauses every process, and `timeout` with
   them, so a five-minute command took hours and its tests failed on time.
@@ -450,6 +473,18 @@ checked:
   them regenerated. Reset neither to `main`'s copy to tidy a diff: the
   runtime-package test fails on `main` once the committed bundle lags the
   compiler, and every other agent's check fails with it.
+- **After a conflicted merge of `scripts/mutations/*` lists**, typecheck
+  and run every mutation of each conflicted list, both sides'. A cut
+  between two entries once merged one into the other (typecheck's
+  duplicate keys), and another moved a `snapshots: true` onto a new
+  entry, so its mutation survived on `main`.
+- **Removing code because its mutation survived** (the code changes no
+  answer) needs more than the corpus and the sampled iterator slices: run
+  the full matrix rows of every adapter the removed code decides for
+  (`allCases().filter(c => /enumerate/.test(c.id))` given to `program()`,
+  about 30 s). A rule removed on the corpus and slices alone broke 19
+  matrix rows (#823). The same goes for a generated drop-order sweep where
+  the code is about drops.
 - **ADR numbers**: `bun run adr:next`, and `bun run adr:renumber` when
   `main` took yours.
 
