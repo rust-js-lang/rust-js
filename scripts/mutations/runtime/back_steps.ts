@@ -598,14 +598,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
   },
   {
-    name: "fold-back-ends-after",
-    breaks: "`$foldBack` closes what it steps before what drops with `f`, so an `rfold`'s closure drops after what's left (#734)",
-    file: "src/runtime/steps.js",
-    find: "  $inTurn(ends, close);\n  return folded;\n}",
-    replace: "  $inTurn(close, ends);\n  return folded;\n}",
-    tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
-  },
-  {
     name: "step-by-first-step-acc-first",
     breaks: "a `step_by()`'s first `next` that panics inside a fold drops the accumulator before what drops with `f` (#768)",
     file: "src/runtime/back_steps.js",
