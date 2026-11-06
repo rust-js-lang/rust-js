@@ -221,9 +221,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             None => ("item".to_string(), Expr::var("item")),
         };
-        let it = match self.slice_item(inner) {
-            Some(_) => self.stepped_items(value),
-            None => self.as_js_iterator(value, inner, span)?,
+        // An associated type's, `I::Item`'s, its dictionary's `into_iter`, as
+        // `inner_iterable`'s is (#278): a where clause's `Self::Item:
+        // IntoIterator` of a copied default, whose items are a `Vec`'s, not
+        // a JS iterator (#829).
+        let it = match self.items_by_dictionary(value.clone(), self.reveal(inner), span)? {
+            Some(items) => items,
+            None => match self.slice_item(inner) {
+                Some(_) => self.stepped_items(value),
+                None => self.as_js_iterator(value, inner, span)?,
+            },
         };
         let closed = self.closed_by(it, drop, inner);
         let mut each = Expr::arrow(

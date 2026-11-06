@@ -204,3 +204,19 @@ and `flat-map-count-not-passed-on`
 (`recognition/std_items.ts`), `projection-drop-unnormalized`,
 `projection-dropped-unnormalized` (`drops/`) and
 `closure-in-constant-type-unfound` (`analysis/foreign_bodies.ts`).
+
+## Amendment: an inner iterator a where clause makes, by its dictionary (2026-11-06, #829)
+
+A `flat_map` or a `flatten()` of items with a destructor, each closed as
+it's made (`closed_inner`), stepped its closure's result as a JS iterator
+whatever its type. Take an associated type that a where clause says is
+`IntoIterator`, such as a blanket impl's default's `Self::Item:
+IntoIterator` copied into its impl: the item is a `Vec`'s array, and
+stepping it threw `it.next is not a function`. It's now made an iterator by
+its dictionary's `into_iter` (`items_by_dictionary`), as `inner_iterable`
+already did for items with nothing to drop (#278). ADR 0262: results change
+(a throw where Rust runs), so Rust's is kept. Held by
+`flat_map_of_a_where_clause_into_iterator.rs`, both builds; mutation
+`closed-inner-not-by-dictionary`. A generic function's own `I::Item:
+IntoIterator` of items with a destructor is still refused, as ADR 0190
+says.
