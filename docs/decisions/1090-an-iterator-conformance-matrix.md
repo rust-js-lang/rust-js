@@ -240,3 +240,38 @@ The pairwise comparison of the two builds the issue asked for isn't
 made: each is compared with native Rust, which a disagreement between
 them can't pass.
 
+## Amendment: every point a panic can be, the points table (#817, 2026-11-06)
+
+The user's decision, through m6-react: the matrix's panic sites were five
+hand-picked places, the source's `next` at its third item, the chain's
+first closure and the consumer's at their second call, and `D(3)`'s drop.
+Most of the iterator P0s filed since 11-04 were one shape, what a step
+drops as a panic unwinds from somewhere else: the first call, a passed-over
+item's drop, the source's own drop, a closure's capture.
+
+- **A third table, `ITERATOR_TABLE=points`** (`pointsCases()`), of the
+  conformance table's cases that panic nowhere, 6,248 in 105 programs, with
+  ids of the same `source | chain | consumer | site` shape, its site
+  `points`.
+- **Each case runs once a point** (`run_points`): under `catch_unwind`, its
+  `k`th point panics, for `k` from 1 until a run has no `k`th, which is the
+  case run plain. A point (`point()`) is each call of a closure of the
+  case's, each drop and clone of a `D`, each drop of an accumulator or a
+  total, and each `next`, `next_back` and drop of the crate's iterator. So no
+  position is chosen by hand, and a new step's points are its own. One panic
+  a run, so native Rust never aborts on a second.
+- **The matrix's and the conformance table's programs are as before**, byte
+  for byte, their generator versions too: the points are added to the
+  prelude and the crate's iterators of a points program alone
+  (`withPoints`).
+- **When it runs:** every case each night, nightly.yml's `points`, one
+  machine of 4 parts. All of it took 48 s on the Mac in 10 parts. Whether a
+  push runs a slice of it is #818's gate's to decide.
+- **What it found at once:** 166 of its 12,496 case-builds differ from
+  native Rust. Four P0s were filed, each listed under its issue:
+  #843 (a collect in place whose rest's drop panics leaks what it
+  collected, both builds), #844 (a `skip()`'s passed-over item whose drop
+  panics leaks the accumulator and the rest), #845 (a `step_by()` folded
+  by value closes its source inside a step, so its drop's panic drops what
+  rustc leaks) and #846 (a closure's captures stop dropping at the first
+  whose drop panics, both builds).

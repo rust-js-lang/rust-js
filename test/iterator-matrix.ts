@@ -32,13 +32,15 @@ export const builds: [name: string, flags: string[]][] = [
   ["std", ["--std-iterators"]],
 ];
 
-/** Which table a run makes: the matrix (ADR 1090) or the conformance
- * table (ADR 1092), `ITERATOR_TABLE`'s. */
-export type Table = "matrix" | "conformance";
+/** Which table a run makes: the matrix (ADR 1090), the conformance
+ * table (ADR 1092), or the panic points of the conformance table's cases
+ * (#817), `ITERATOR_TABLE`'s. */
+export type Table = "matrix" | "conformance" | "points";
+export const tables: Table[] = ["matrix", "conformance", "points"];
 export const table: Table = (() => {
   const which = process.env.ITERATOR_TABLE ?? "matrix";
-  if (which !== "matrix" && which !== "conformance") throw new Error(`ITERATOR_TABLE=${which}: \`matrix\` or \`conformance\``);
-  return which;
+  if (!(tables as string[]).includes(which)) throw new Error(`ITERATOR_TABLE=${which}: ${tables.map((t) => `\`${t}\``).join(", ")}`);
+  return which as Table;
 })();
 
 /** Where each failure's program and lines are written, of either table. */
@@ -59,13 +61,14 @@ export const ofTable = (listed: string, of: Table = table) => (of === "matrix" ?
  * 120-179,4410` or `conformance:std 12`, the numbers of its cases as sorted
  * ranges; `//` a comment. Its `// generator <version>` line is the version
  * of the matrix's cases its numbers are of, `// generator conformance
- * <version>` the conformance table's. */
+ * <version>` the conformance table's, `// generator points <version>` the
+ * points table's. */
 export type Known = { versions: Partial<Record<Table, string>>; issues: { heading: string; cases: Map<string, number[]> }[] };
 
 export function parseKnown(text: string): Known {
   const known: Known = { versions: {}, issues: [] };
   for (const line of text.split("\n")) {
-    const version = /^\/\/ generator (?:(conformance) )?(\w+)$/.exec(line);
+    const version = /^\/\/ generator (?:(conformance|points) )?(\w+)$/.exec(line);
     if (version) known.versions[(version[1] as Table | undefined) ?? "matrix"] = version[2];
     if (line === "" || line.startsWith("//")) continue;
     if (/^#\d+ /.test(line)) {
@@ -73,7 +76,7 @@ export function parseKnown(text: string): Known {
       continue;
     }
     const at = known.issues.at(-1);
-    const row = /^((?:conformance:)?\w+) (\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)$/.exec(line);
+    const row = /^((?:conformance:|points:)?\w+) (\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)$/.exec(line);
     if (!at || !row) throw new Error(`test/iterator-matrix-known.txt: \`${line}\` is no build's cases under an issue`);
     const numbers = row[2].split(",").flatMap((range) => {
       const [from, to = from] = range.split("-").map(Number);
@@ -122,7 +125,7 @@ export function printKnown(known: Known, header: string): string {
       return rows.length === 0 ? "" : `\n${heading}\n${rows.map(([build, numbers]) => `${build} ${ranges(numbers)}`).join("\n")}\n`;
     })
     .join("");
-  const versions = (["matrix", "conformance"] as const)
+  const versions = tables
     .filter((of) => known.versions[of] !== undefined)
     .map((of) => `// generator ${of === "matrix" ? "" : `${of} `}${known.versions[of]}\n`)
     .join("");
@@ -146,8 +149,10 @@ type Item = "D" | "N" | "&D" | "&N" | "pair";
 type Shape = { item: Item; owns: boolean; back: boolean; exact: boolean };
 
 /** Where a case panics: nowhere, in the source's `next`, in the chain's
- * first closure, in the consumer's closure, or in an item's `Drop`. */
-export type Site = "none" | "next" | "stage" | "consumer" | "drop";
+ * first closure, in the consumer's closure, or in an item's `Drop`; or, of
+ * the points table, at each of its points in turn (`run_points`), which no
+ * other table's `sites` makes. */
+export type Site = "none" | "next" | "stage" | "consumer" | "drop" | "points";
 export const sites: Site[] = ["none", "next", "stage", "consumer", "drop"];
 
 type Source = {
@@ -200,14 +205,18 @@ export const sources: Source[] = [
 
 /** An adapter: the shape it makes of `from`, or none where it doesn't
  * apply; and its text, `panics` saying it's the stage that panics. */
-type Adapter = { name: string; closure: boolean; shape: (from: Shape) => Shape | undefined; text: (from: Shape, panics: boolean) => string };
+type Adapter = { name: string; closure: boolean; shape: (from: Shape) => Shape | undefined; text: (from: Shape, panics: Panics) => string };
+
+/** Whether a closure panics: at its second call, `true`; or, of the points
+ * table, where the run's point is, `"point"`, each call a point (`point()`). */
+type Panics = boolean | "point";
 
 const base = (item: Item) => item !== "pair";
 const owned = (item: Item) => item === "D" || item === "N";
 /** A closure's body, after a counter of its calls panics at the second, if
- * it's the one that does. */
-const counted = (panics: boolean, what: string, body: string) =>
-  panics ? `{ calls += 1; if calls == 2 { panic!("${what}") } ${body} }` : body;
+ * it's the one that does; of the points table, after its point. */
+const counted = (panics: Panics, what: string, body: string) =>
+  panics === "point" ? `{ point(); ${body} }` : panics ? `{ calls += 1; if calls == 2 { panic!("${what}") } ${body} }` : body;
 
 export const adapters: Adapter[] = [
   {
@@ -275,15 +284,17 @@ type Consumer = {
   takes: (shape: Shape) => boolean;
   /** Its statements, of the chain `it`, an expression, `panics` saying
    * its closure does. */
-  text: (it: string, panics: boolean) => string;
+  text: (it: string, panics: Panics) => string;
   /** Whether it takes `it` by `&mut` where `it` is an expression, so a
    * generic case's parameter alone is `mut`. */
   lends?: boolean;
 };
 
 /** A consumer's closure's start: its call counted, and a panic at the
- * second call if it's the one that panics. */
-const call = (panics: boolean) => `seen += 1;${panics ? ` if seen == 2 { panic!("consumer") }` : ""}`;
+ * second call if it's the one that panics; of the points table, its point
+ * first. */
+const call = (panics: Panics) =>
+  `${panics === "point" ? "point(); " : ""}seen += 1;${panics === true ? ` if seen == 2 { panic!("consumer") }` : ""}`;
 const any = () => true;
 
 export const consumers: Consumer[] = [
@@ -399,6 +410,9 @@ function applies(site: Site, source: Source, chain: Adapter[], consumer: Consume
       return consumer.closure;
     case "drop":
       return shapes.some((shape) => shape.owns);
+    // Every case has points: `pointsCases()` makes them, not `sites`.
+    case "points":
+      return true;
   }
 }
 
@@ -572,8 +586,8 @@ const stepAdapters: Adapter[] = [
  * `call`'s. Each a statement of its own, as a block that makes the closure
  * is refused (`a closure that holds a value with a destructor, made here`). */
 const holds = "let g = D(90);\n    let counter = &mut seen;\n    ";
-const holding = (panics: boolean, params: string, body: string) =>
-  `move |${params}| { let _g = &g; *counter += 1;${panics ? ` if *counter == 2 { panic!("consumer") }` : ""} ${body} }`;
+const holding = (panics: Panics, params: string, body: string) =>
+  `move |${params}| { let _g = &g; ${panics === "point" ? "point(); " : ""}*counter += 1;${panics === true ? ` if *counter == 2 { panic!("consumer") }` : ""} ${body} }`;
 const back = (shape: Shape) => shape.back;
 
 /** The steps only the table runs, besides the matrix's consumers: each
@@ -720,8 +734,19 @@ export function conformanceCases(): Case[] {
   return out;
 }
 
+/** Every case of the points table (#817): each of the conformance table's
+ * that panics nowhere, run again at each of its points in turn, each a
+ * closure's call, a value's drop, a clone, or a step or the drop of the
+ * crate's iterator (`point()`), so each step of each adapter is seen
+ * unwinding from every point it has, in both builds. */
+export function pointsCases(): Case[] {
+  return conformanceCases()
+    .filter((c) => c.site === "none")
+    .map((c, n) => ({ ...c, n, id: c.id.replace(/ \| none$/, " | points"), site: "points" as const }));
+}
+
 /** The cases of `table`. */
-export const casesOf = (of: Table): Case[] => (of === "matrix" ? allCases() : conformanceCases());
+export const casesOf = (of: Table): Case[] => (of === "matrix" ? allCases() : of === "conformance" ? conformanceCases() : pointsCases());
 
 /** The cases in programs of `perBatch`, in their order. */
 export function batches(cases: Case[], perBatch = 60): Case[][] {
@@ -814,7 +839,7 @@ function caseFn(c: Case, n: number): string {
   let expr = source.generic ? "src" : source.expr(site);
   let panicked = false;
   for (const a of chain) {
-    const panics = site === "stage" && a.closure && !panicked;
+    const panics: Panics = site === "points" ? "point" : site === "stage" && a.closure && !panicked;
     if (panics) panicked = true;
     if (a.name === "peekable") {
       // Peeked first, so what it holds is in each step after.
@@ -843,7 +868,7 @@ function caseFn(c: Case, n: number): string {
     }
     body.push(setterText(variant.setter, expr));
   }
-  body.push(consumer.text(expr, site === "consumer"));
+  body.push(consumer.text(expr, site === "points" ? "point" : site === "consumer"));
   if (variant.kind === "captures") {
     const captured = capturing(body.join("\n    "));
     body.splice(0, body.length, ...Array.from({ length: captured.guards }, (_, k) => `let g${k + 1} = D(${91 + k});`), captured.text);
@@ -1057,13 +1082,74 @@ fn run(name: &str, case: fn()) {
 }
 `;
 
+/** The points table's runner (#817): each case run under `catch_unwind`
+ * once a point, its `k`th point panicking, `point()`'s, until a run has no
+ * `k`th, which is the case run plain. A point is each call of a closure of
+ * the case's, each drop and clone of a `D`, each drop of an accumulator or
+ * a total, and each `next`, `next_back` and drop of the crate's iterator.
+ * One panic a run, so native Rust never aborts on a second. */
+const pointsRunner = `
+/** The point that panics, the \`k\`th of a run, or none; and how many a
+ * run has passed. */
+static POINT: AtomicU32 = AtomicU32::new(0);
+static POINTS: AtomicU32 = AtomicU32::new(0);
+
+/** A point: where it's the run's \`k\`th, a panic, once. */
+fn point() {
+    let n = POINTS.fetch_add(1, Ordering::Relaxed) + 1;
+    if n == POINT.load(Ordering::Relaxed) {
+        POINT.store(0, Ordering::Relaxed);
+        println!("panic at {n}");
+        panic!("point");
+    }
+}
+
+fn run_points(name: &str, case: fn()) {
+    println!("case {name}");
+    let mut k = 1;
+    loop {
+        POINTS.store(0, Ordering::Relaxed);
+        POINT.store(k, Ordering::Relaxed);
+        println!("point {k}");
+        let ended = catch_unwind(case);
+        let fired = POINT.load(Ordering::Relaxed) == 0;
+        POINT.store(0, Ordering::Relaxed);
+        match ended {
+            Ok(()) => println!("ended"),
+            Err(payload) => println!("panicked: {}", payload.downcast_ref::<&str>().copied().unwrap_or("?")),
+        }
+        if !fired || k == 200 {
+            break;
+        }
+        k += 1;
+    }
+}
+`;
+
+/** `text`, the prelude or the crate's iterators, with the points table's
+ * points: after each drop and clone prints, and first in each `next` and
+ * `next_back` of the crate's iterator. */
+function withPoints(text: string): string {
+  const points: [string, string][] = [
+    ['println!("drop {}", self.0);', 'println!("drop {}", self.0);\n        point();'],
+    ['println!("clone {}", self.0);', 'println!("clone {}", self.0);\n        point();'],
+    ['println!("drop acc {}", self.0);', 'println!("drop acc {}", self.0);\n        point();'],
+    ['println!("drop total {}", self.0);', 'println!("drop total {}", self.0);\n        point();'],
+    ['println!("drop src");', 'println!("drop src");\n        point();'],
+    ["-> Option<D> {\n        if self.at == self.end {", "-> Option<D> {\n        point();\n        if self.at == self.end {"],
+  ];
+  return points.reduce((out, [from, to]) => out.replaceAll(from, to), text);
+}
+
 /** A program of `cases`, which runs each in turn. */
 export function program(cases: Case[], of: Table = table): string {
   const used = new Set(cases.map((c) => c.source.name.replace(/^generic /, "")));
-  const iterators = owns.filter((own) => used.has(`own ${own.name}`)).map((own) => ownIterator(own, of === "conformance"));
+  const iterators = owns.filter((own) => used.has(`own ${own.name}`)).map((own) => ownIterator(own, of !== "matrix"));
   const fns = cases.map((c, n) => caseFn(c, n));
-  const main = `fn main() {\n${cases.map((c, n) => `    run(${JSON.stringify(c.id)}, case_${n});`).join("\n")}\n}`;
-  return [prelude, ...iterators, ...fns, main].join("\n\n") + "\n";
+  const runner = of === "points" ? "run_points" : "run";
+  const main = `fn main() {\n${cases.map((c, n) => `    ${runner}(${JSON.stringify(c.id)}, case_${n});`).join("\n")}\n}`;
+  if (of !== "points") return [prelude, ...iterators, ...fns, main].join("\n\n") + "\n";
+  return [withPoints(prelude) + pointsRunner, ...iterators.map(withPoints), ...fns, main].join("\n\n") + "\n";
 }
 
 /** Each case's lines in a run's output, by its id: from its `case` line
@@ -1086,11 +1172,12 @@ export function segments(stdout: string): Map<string, string> {
   return out;
 }
 
-const header = `// The iterator matrix's cases (ADR 1090) and the conformance table's (ADR
-// 1092) that don't run as native Rust does yet, each under its issue,
-// \`#<issue> <title>\`: a line a build, \`plain\` or \`std\` of the matrix's,
-// \`conformance:plain\` or \`conformance:std\` of the table's, the numbers of
-// its cases in \`allCases()\` or \`conformanceCases()\` as ranges. Each listed
+const header = `// The iterator matrix's cases (ADR 1090), the conformance table's (ADR
+// 1092) and the points table's (#817) that don't run as native Rust does
+// yet, each under its issue, \`#<issue> <title>\`: a line a build, \`plain\` or
+// \`std\` of the matrix's, \`conformance:plain\` or \`points:std\` of a table's,
+// the numbers of its cases in \`allCases()\`, \`conformanceCases()\` or
+// \`pointsCases()\` as ranges. Each listed
 // must still fail, so the list only shrinks: \`bun test/iterator-matrix.ts
 // take-off\` takes off what the last runs found fixed. Its numbers are of
 // each table's generator version below; a change to a table's cases makes
@@ -1106,7 +1193,7 @@ const header = `// The iterator matrix's cases (ADR 1090) and the conformance ta
 if (import.meta.main) {
   const [command, ...args] = process.argv.slice(2);
   const known = readKnown();
-  for (const of of ["matrix", "conformance"] as const) {
+  for (const of of tables) {
     const current = version(casesOf(of));
     const listed = known.versions[of];
     const rows = known.issues.some(({ cases }) => [...cases].some(([build, numbers]) => ofTable(build, of) && numbers.length > 0));

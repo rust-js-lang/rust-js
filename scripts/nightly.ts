@@ -92,6 +92,15 @@ export const jobs: Record<string, Part[]> = {
     cores: 1,
     timeout: 30 * minutes,
   })),
+  // Each of the conformance table's cases at each of its panic points, in
+  // both builds (#817).
+  points: parts("points", cores, (i) => ({
+    cmd: ["bun", "test", "--timeout=900000", "test/iterator-matrix.test.ts"],
+    env: { ...compiler, ITERATOR_TABLE: "points", ITERATOR_MATRIX: "all", RUST_JS_CASES: `${i}/${cores}` },
+    after: ["build"],
+    cores: 1,
+    timeout: 20 * minutes,
+  })),
   // The day's 600 generated programs (ADR 0092).
   fuzz: parts("fuzz", 12, (i) => ({
     cmd: ["bun", "test", "--timeout=600000", "test/fuzz.test.ts"],

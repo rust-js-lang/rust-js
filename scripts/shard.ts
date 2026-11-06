@@ -109,6 +109,13 @@ export const parts: Part[] = [
   // rows it names, `pairs`, a sample of each adapter with each consumer, or
   // both (#818).
   { setting: "ITERATOR_MATRIX", value: "p.setting", runs: "push", by: "scripts/iteratorSlice.ts" },
+  {
+    setting: "ITERATOR_TABLE",
+    value: "points",
+    runs: "nightly",
+    by: ".github/workflows/nightly.yml",
+    why: "every case at each of its panic points, 105 batches: a push's gate is #818's to choose",
+  },
   { setting: "TIDY_STAGES", value: "programs", runs: "push", by: ".github/workflows/readability-passes.yml" },
   { setting: "FUZZ_START", value: "1", runs: "push", by: ".github/workflows/readability-passes.yml" },
   { setting: "FUZZ_SEEDS", value: "6", runs: "push", by: ".github/workflows/readability-passes.yml" },

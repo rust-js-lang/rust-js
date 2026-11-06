@@ -13,6 +13,7 @@
 //   ITERATOR_MATRIX=pairs bun test test/iterator-matrix.test.ts                  # a sample of each adapter with each consumer, of a change to what they share
 //   ITERATOR_MATRIX='pairs:20/step_by/' bun test test/iterator-matrix.test.ts    # 20 of each pairing, of the cases whose ids match
 //   ITERATOR_TABLE=conformance bun test test/iterator-matrix.test.ts             # the conformance table's (ADR 1092), each likewise
+//   ITERATOR_TABLE=points ITERATOR_MATRIX=all bun test test/iterator-matrix.test.ts  # its cases at each panic point (#817)
 //   bun scripts/iteratorSlice.ts run                                             # both tables' slices, in parts at once (#731)
 //
 // A case that doesn't run as Rust does fails its batch, but those

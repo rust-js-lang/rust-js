@@ -36,7 +36,8 @@ const shared = {
 
 /** The rows each table runs within: some 3 minutes of the matrix's, at
  * 110 rows a second in 12 parts, and of the table's (2026-11-06). */
-const budget: Record<Table, number> = { matrix: 20_000, conformance: 6_000 };
+// The points table (#817) has no rows a change picks yet: #818 decides.
+const budget: Record<Exclude<Table, "points">, number> = { matrix: 20_000, conformance: 6_000 };
 
 /** What names nothing of its own: the runtime's module, generated of
  * src/runtime, and the tests and scripts, which run as they are. */
