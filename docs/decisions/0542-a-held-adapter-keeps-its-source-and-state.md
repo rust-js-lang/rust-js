@@ -220,3 +220,21 @@ conformance table's rows the nightly of afdd70519 failed; mutations
 `generic-take-rev-collect-trust-unasked`. `$taking`'s forward steps are
 now std's `Take`'s, as `$Steps.prototype.take`'s are. That is still two
 `Take`s, as #735 made one `Skip`. Merging them is #830.
+
+## Amendment: `$taking`'s `nth`, and each holder's back trim (2026-11-06, #835, #833)
+
+`$taking` had no `nth`, so `$Steps`' default stepped each item, and the
+crate's own `nth` never ran where std's `Take::nth` calls it. It now has
+std's: where it has more than `k` left, its source's `nth(k)`; past its
+end, its source's `nth(n - 1)`, whose item it drops, and none. This showed
+only where another step in the program made the type knowing its back, as
+a chain's `rfold` does (`back_kept`'s per-type set, #814). Held by
+`take_of_own_nth_where_known_back.rs`, both builds; mutations
+`taking-nth-stepped` and `taking-nth-past-end-undropped`.
+
+#833's `take(3).rev().map(f).collect()`, and the same of a `let`, behind
+`impl`, either side of a chain, a `filter`, a `sum`, a `count` and a
+`last`, trims as std's `Take::rfold` does since #826's fold of a
+`take(n).rev()`: `advance_back_by` drops `D(5)`, then `nth_back`'s `D(4)`
+is dropped. First bad commit afdd70519; it ran as native from 892d78a8f
+on. Held by `take_rev_trims_from_the_back_in_each_holder.rs`, both builds.

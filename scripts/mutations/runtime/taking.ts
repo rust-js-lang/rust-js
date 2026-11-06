@@ -73,8 +73,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `take` made knowing its back counts by stepping each item, not its source's `advance_by`, so a reversed `Vec`'s drop from the back where std drops them as one slice, front to back (#826)",
     file: "src/runtime/taking.js",
-    find: "  $forward(taking, iter, { advanceBy, count });\n",
-    replace: "",
+    find: '  $forward(taking, iter, { advanceBy, count, nth: typeof iter.nth === "function" ? nth : undefined });\n',
+    replace: '  $forward(taking, iter, { nth: typeof iter.nth === "function" ? nth : undefined });\n',
     tests: ["test/corpus.test.ts", "-t", "^take_from_its_back_drops_as_std.rs$"],
   },
   {
@@ -85,5 +85,23 @@ export const mutations: Mutation[] = [
     find: "        taking.n === 0 || !$consumed(taking, () => kept(init, unwind, ends), ends)\n",
     replace: "        taking.n === 0 || !trimmed()\n",
     tests: ["test/corpus.test.ts", "-t", "^take_from_its_back_drops_as_std.rs$"],
+  },
+  {
+    name: "taking-nth-stepped",
+    breaks:
+      "a `take` made knowing its back has no `nth` of its own, so `$Steps`' default steps each item and the crate's own `nth` never runs, where std's `Take::nth` calls its source's (#835)",
+    file: "src/runtime/taking.js",
+    find: "  $forward(taking, iter, { advanceBy, count, nth: typeof iter.nth === \"function\" ? nth : undefined });\n",
+    replace: "  $forward(taking, iter, { advanceBy, count });\n",
+    tests: ["test/corpus.test.ts", "-t", "^take_of_own_nth_where_known_back.rs$"],
+  },
+  {
+    name: "taking-nth-past-end-undropped",
+    breaks:
+      "a `take`'s `nth` past its end lets go of what its source's `nth(n - 1)` finds undropped, where std's `Take::nth` drops it (#835)",
+    file: "src/runtime/taking.js",
+    find: "      if (!step.done) dropItem?.(step.value);\n    }\n    return { done: true, value: undefined };\n",
+    replace: "    }\n    return { done: true, value: undefined };\n",
+    tests: ["test/corpus.test.ts", "-t", "^take_of_own_nth_where_known_back.rs$"],
   },
 ];

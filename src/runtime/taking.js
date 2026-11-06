@@ -43,7 +43,27 @@ function $taking(iter, n, drop) {
     taking.return();
     return counted;
   };
-  $forward(taking, iter, { advanceBy, count });
+  // Std's `Take::nth(k)`: its source's `nth(k)` where it has more than `k`
+  // left, the crate's own where it writes one; past its end, its source's
+  // `nth(n - 1)`, whose item it drops, and none (#835). It drops what it
+  // passes as its source's `nth` does, a reversed `Vec`'s as one slice.
+  const nth = (k, dropItem = taking.dropItem ?? drop) => {
+    if (taking.n > k) {
+      taking.n -= k + 1;
+      return taking.iter.nth(k, dropItem);
+    }
+    if (taking.n > 0) {
+      const step = taking.iter.nth(taking.n - 1, dropItem);
+      taking.n = 0;
+      if (!step.done) dropItem?.(step.value);
+    }
+    return { done: true, value: undefined };
+  };
+  if (iter.ownNth) {
+    taking.ownNth = true;
+    if (iter.dropItem !== undefined) taking.dropItem = iter.dropItem;
+  }
+  $forward(taking, iter, { advanceBy, count, nth: typeof iter.nth === "function" ? nth : undefined });
   // And its `nth_back`, `rfold` and `try_rfold`, std's, by its source's
   // `nth_back` past what it won't give, where that reaches the crate's own.
   if (iter.nthBack !== undefined || iter.rfold !== undefined || iter.tryRfold !== undefined) {
