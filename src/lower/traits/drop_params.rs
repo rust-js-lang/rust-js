@@ -404,8 +404,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a call of `id` with `args` gives its slot `index`'s facts:
     /// each but a built slot's whose every gate's `IInPlace` is
     /// `undefined` there, a source std never collects in place, whose
-    /// collect then never reads its layout (#737).
+    /// collect then never reads its layout (#737), and one of no type there
+    /// (`no_type_here`, #828).
     pub(in crate::lower) fn gives_slot(&self, id: DefId, index: u32, args: ty::GenericArgsRef<'tcx>) -> bool {
+        // Nor one of no type here, of a default whose where clause the
+        // arguments here can't meet, which nothing called here reads (#828).
+        if crate::lower::drops::no_type_here(self.tcx, self.typing_env, self.drop_slot_of(id, index, args)) {
+            return false;
+        }
         let Some(built) = built_slot(self.tcx, self.slots(), id, index) else {
             return true;
         };

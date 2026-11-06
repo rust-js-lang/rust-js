@@ -124,6 +124,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 &inlined
             }
             (None, Some(args)) => {
+                // The closure's own generics past its maker's, its kind, its
+                // signature and what it captures, as they are: its MIR may
+                // name them, `minmax_by`'s `|_| ()` in itertools (#828).
+                let own = ty::GenericArgs::identity_for_item(self.tcx, def_id);
+                let args = self
+                    .tcx
+                    .mk_args_from_iter(args.iter().chain(own.iter().skip(args.len())));
                 inlined = crate::lower::traits::default_mir(self.tcx, mir, args, self.typing_env);
                 &inlined
             }

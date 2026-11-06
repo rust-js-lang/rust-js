@@ -188,4 +188,13 @@ export const mutations: Mutation[] = [
     replace: "        ty_op: |t: Ty<'tcx>| match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^(blanket_iterator_trait|generic_associated_types).rs$"],
   },
+  {
+    name: "given-fact-unnormalized",
+    breaks:
+      "a fact of an impl's slot is found only by its type as written, so a copied default whose where clause says `Self::Item` is `T::Item` is refused `size_of` of what it was given (#828)",
+    file: "src/lower/traits/given.rs",
+    find: "            .find(|&&(at, given, _)| given == fact && normal(at) == of)\n",
+    replace: "            .find(|&&(at, given, _)| given == fact && self.tcx.erase_and_anonymize_regions(at) == self.tcx.erase_and_anonymize_regions(of))\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_matches_its_tuple_whole.rs$"],
+  },
 ];

@@ -50,3 +50,10 @@ It refused a `&mut` range, which ADR 0714 now steps where it is.
   `mut-param-made-items`, `into-iter-items-unhandled`,
   `mut-range-extend-refused`, `none-test-unfolded` and
   `compared-and-bool-unfolded`.
+
+## Amendment: a `&mut` type parameter's items (2026-11-06, #815)
+
+`iterable_items` kept a `&mut` type parameter out of `ref_into_iter` by a
+rule of its own. `items_by_dictionary`, asked first, or `ref_into_iter`'s
+own answer, none, covers it, so the rule changed no JS anywhere. It's gone,
+with its mutation `mut-param-made-items`.

@@ -368,25 +368,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Of `Iterator.from(list)` collected, `it`, each item mapped or
     /// filtered on the way: the array it makes, `Array.from(nodes).map(f)`
-    /// of a binding's list. Not of a generic
-    /// value's, which may be an iterator with only a `next`, of which
-    /// `Array.from` makes an empty array (ADR 0140). One dropped by closing
-    /// it, `$closing(..).take(n)`'s, whose listing would drop what it has
-    /// left before the stages after it run (#242), is never listed: it's a
-    /// JS iterator, which no `Iterator.from` wraps (`is_js_iterator`, ADR
+    /// of a binding's list. Never a generic value's, which may be an
+    /// iterator with only a `next`, of which `Array.from` makes an empty
+    /// array (ADR 0140): generic code's collect asks its room or folds it
+    /// (`$roomForHint`, `$foldToArray`, #733, #796), so no `Iterator.from` of
+    /// one reaches here, and no rule of its type is asked. One dropped by
+    /// closing it, `$closing(..).take(n)`'s, whose listing would drop what it
+    /// has left before the stages after it run (#242), is never listed: it's
+    /// a JS iterator, which no `Iterator.from` wraps (`is_js_iterator`, ADR
     /// 0570, amended), so `collected` finds no list of it, and a runtime
     /// helper's, which `collected` refuses (ADR 0510).
-    pub(super) fn collected_items(&self, it: &Expr, iter_ty: Ty<'tcx>) -> Option<Expr> {
-        let mut source = self.reveal(iter_ty);
-        while let ty::Adt(_, args) = source.kind()
-            && let Some(inner) = args.types().next()
-            && self.implements_iterator(inner)
-        {
-            source = inner;
-        }
-        if crate::lower::recognition::known_by_bounds(source) {
-            return None;
-        }
+    pub(super) fn collected_items(&self, it: &Expr) -> Option<Expr> {
         collected(it)
     }
 

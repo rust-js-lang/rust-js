@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "zip-back-untrimmed",
     breaks: "`rev()` of a zip pairs the longer one's last items, not those the shorter has",
     file: "src/runtime/lazy_zip.js",
-    find: "    for (let n = left.len() - right.len(); n > 0; n--) {\n",
+    find: "    for (let n = aLen - bLen; n > 0; n--) {\n",
     replace: "    for (let n = 0; n > 0; n--) {\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_from_back.rs$"],
   },
@@ -130,5 +130,14 @@ export const mutations: Mutation[] = [
     find: "      zipped.next = () => (pairs-- > 0 ? next() : { done: true, value: undefined });\n",
     replace: "      zipped.next = () => next();\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_droppers_from_its_back.rs$"],
+  },
+  {
+    name: "zip-back-len-asked-per-trim",
+    breaks:
+      "a zip stepped from its back asks each side's length in each trimming loop, the crate's own `size_hint` twice a step where std's `next_back` asks it once (#824)",
+    file: "src/runtime/lazy_zip.js",
+    find: "    for (let n = bLen - aLen; n > 0; n--) {\n",
+    replace: "    for (let n = right.len() - left.len(); n > 0; n--) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_of_own_from_its_back_asks_each_len_once.rs$"],
   },
 ];

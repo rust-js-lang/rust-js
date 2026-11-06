@@ -232,20 +232,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iterables_given_to_generics.rs$"],
   },
   {
-    name: "mut-param-made-items",
-    breaks:
-      "a &mut to a type parameter's iterator is itself, stepped by its dictionary",
-    file: "src/lower/iterators/stepping.rs",
-    find: "            && !matches!(inner.kind(), ty::Param(_))\n            && self.option_of(*inner).is_none()\n",
-    replace: "            && self.option_of(*inner).is_none()\n",
-    snapshots: true,
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(copied_default_own_params|self_given_on_as_into_iter).rs$",
-    ],
-  },
-  {
     name: "into-iter-arg-of-dictionary",
     breaks: "a parameter given an IntoIterator dictionary isn't made its items",
     file: "src/lower/iterators/stepping.rs",

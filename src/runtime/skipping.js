@@ -157,12 +157,15 @@ function $skipping(iter, n, drop) {
     }
     return { done: true, value: undefined };
   };
-  // Its `try_rfold` and `rfold`, std's: its source's, stopped after what it
-  // gives.
+  // Its `try_rfold` and `rfold`, std's: its length asked once, then its
+  // source's `try_rfold`, its own or std's of its `next_back`, stopped
+  // after what it gives. Of any source that steps from its back: stepped
+  // by its `back`, each step would ask its length, as `next_back` does,
+  // the crate's own `size_hint` each time where std asks it once (#825).
   const tryRfold = (init, f, broke, unwind, ends) => {
     let left = skipping.len();
     if (left === 0) return init;
-    return skipping.iter.tryRfold(init, (a, x) => (left--, f(a, x)), (a) => left === 0 || broke(a), unwind, ends);
+    return $tryRfoldOf(skipping.iter, init, (a, x) => (left--, f(a, x)), (a) => left === 0 || broke(a), unwind, ends);
   };
   // Consumed, its source done with after (#225), and though it throws, a
   // panic, as `rfold(self)` drops the `Skip` as it unwinds: a `$rev`'s
@@ -182,8 +185,8 @@ function $skipping(iter, n, drop) {
     tryFold: iter.nth !== undefined ? tryFold : undefined,
     nth: iter.ownNth ? nth : undefined,
     nthBack: iter.nthBack !== undefined ? nthBack : undefined,
-    tryRfold: iter.tryRfold !== undefined ? tryRfold : undefined,
-    rfold: iter.tryRfold !== undefined ? rfold : undefined,
+    tryRfold: iter.tryRfold !== undefined || iter.back !== undefined ? tryRfold : undefined,
+    rfold: iter.tryRfold !== undefined || iter.back !== undefined ? rfold : undefined,
     last: typeof iter.last === "function" ? last : undefined,
   });
   if (iter.ownNth) skipping.ownNth = true;

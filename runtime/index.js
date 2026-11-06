@@ -3015,12 +3015,15 @@ export function $skipping(iter, n, drop) {
     }
     return { done: true, value: undefined };
   };
-  // Its `try_rfold` and `rfold`, std's: its source's, stopped after what it
-  // gives.
+  // Its `try_rfold` and `rfold`, std's: its length asked once, then its
+  // source's `try_rfold`, its own or std's of its `next_back`, stopped
+  // after what it gives. Of any source that steps from its back: stepped
+  // by its `back`, each step would ask its length, as `next_back` does,
+  // the crate's own `size_hint` each time where std asks it once (#825).
   const tryRfold = (init, f, broke, unwind, ends) => {
     let left = skipping.len();
     if (left === 0) return init;
-    return skipping.iter.tryRfold(init, (a, x) => (left--, f(a, x)), (a) => left === 0 || broke(a), unwind, ends);
+    return $tryRfoldOf(skipping.iter, init, (a, x) => (left--, f(a, x)), (a) => left === 0 || broke(a), unwind, ends);
   };
   // Consumed, its source done with after (#225), and though it throws, a
   // panic, as `rfold(self)` drops the `Skip` as it unwinds: a `$rev`'s
@@ -3040,8 +3043,8 @@ export function $skipping(iter, n, drop) {
     tryFold: iter.nth !== undefined ? tryFold : undefined,
     nth: iter.ownNth ? nth : undefined,
     nthBack: iter.nthBack !== undefined ? nthBack : undefined,
-    tryRfold: iter.tryRfold !== undefined ? tryRfold : undefined,
-    rfold: iter.tryRfold !== undefined ? rfold : undefined,
+    tryRfold: iter.tryRfold !== undefined || iter.back !== undefined ? tryRfold : undefined,
+    rfold: iter.tryRfold !== undefined || iter.back !== undefined ? rfold : undefined,
     last: typeof iter.last === "function" ? last : undefined,
   });
   if (iter.ownNth) skipping.ownNth = true;
@@ -3078,6 +3081,25 @@ export function $taking(iter, n, drop) {
     return $nthBackOf(taking.iter, past, drop);
   };
   taking.len = () => Math.min(taking.iter.len(), taking.n);
+  // Std's `Take::advance_by(m)` and `count`: its source's `advance_by`, by
+  // as many as it has left, which drops what it passes itself where it
+  // can, a reversed `Vec`'s as one slice, front to back, else each by
+  // `drop`; its `count` then closed, as `count(self)` drops it, though its
+  // source's step throws, a panic (#826).
+  const advanceBy = (m, dropItem = drop) => {
+    const min = Math.min(taking.n, m);
+    const advanced = min - $advanceByOf(taking.iter, min, dropItem);
+    taking.n -= advanced;
+    return m - advanced;
+  };
+  const count = (dropItem = drop) => {
+    const k = taking.n;
+    taking.n = 0;
+    const counted = k === 0 ? 0 : $consumed(taking, () => k - $advanceByOf(taking.iter, k, dropItem));
+    taking.return();
+    return counted;
+  };
+  $forward(taking, iter, { advanceBy, count });
   // And its `nth_back`, `rfold` and `try_rfold`, std's, by its source's
   // `nth_back` past what it won't give, where that reaches the crate's own.
   if (iter.nthBack !== undefined || iter.rfold !== undefined || iter.tryRfold !== undefined) {
@@ -3107,13 +3129,22 @@ export function $taking(iter, n, drop) {
     };
     // Consumed, its source done with after (#225).
     // What drops with `f`, `ends`, its source's `rfold`'s, first (#734).
+    // Its trimming taken while its frame holds only `init` and `f`: where
+    // that throws, a panic in a stage's closure, `ends`, then `init`, by
+    // `unwind`, then what's left, as `rfold(self, init, f)` drops its
+    // parameters as it unwinds; of its `try_rfold`, by `&mut`, not what's
+    // left (#826).
+    const kept = (init, unwind, ends) => $stepHolding(trimmed, init, unwind, ends);
     const rfold = (init, f, unwind, ends) => {
-      const folded = taking.n === 0 || !trimmed() ? init : $foldBack(taking.iter, init, f, unwind, ends);
+      const folded =
+        taking.n === 0 || !$consumed(taking, () => kept(init, unwind, ends), ends)
+          ? init
+          : $foldBack(taking.iter, init, f, unwind, ends);
       $closedAfter(ends, () => $closed(taking.iter));
       return folded;
     };
     const tryRfold = (init, f, broke, unwind, ends) =>
-      taking.n === 0 || !trimmed() ? init : $tryRfoldOf(taking.iter, init, f, broke, unwind, ends);
+      taking.n === 0 || !kept(init, unwind, ends) ? init : $tryRfoldOf(taking.iter, init, f, broke, unwind, ends);
     $forward(taking, iter, { nthBack, rfold, tryRfold });
   }
   return taking;
@@ -13285,15 +13316,19 @@ export function $getUnchecked(it, i, dictionary) {
 // `next_back`, the longer trimmed from its back to the shorter's length,
 // each it trims dropped, `dropA` or `dropB`, then each's back paired;
 // where `right`'s step throws, a panic, `left`'s item dropped as the pair
-// std makes unwinds (#740).
+// std makes unwinds (#740). Each side's length asked once a step, `a`'s
+// then `b`'s, as std's `next_back` asks `a.len()` and `b.len()` before it
+// trims: the crate's own `size_hint` runs as often as natively (#824).
 export function $zipEndsOf(zipped, left, right, dropA, dropB) {
   zipped.len = () => Math.min(left.len(), right.len());
   zipped.back = () => {
-    for (let n = left.len() - right.len(); n > 0; n--) {
+    const aLen = left.len();
+    const bLen = right.len();
+    for (let n = aLen - bLen; n > 0; n--) {
       const x = left.back();
       if (!x.done) dropA?.(x.value);
     }
-    for (let n = right.len() - left.len(); n > 0; n--) {
+    for (let n = bLen - aLen; n > 0; n--) {
       const y = right.back();
       if (!y.done) dropB?.(y.value);
     }

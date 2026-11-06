@@ -178,3 +178,45 @@ native Rust in both builds. Mutations: `steps-drop-js-own`
 `held_hint_known` alone, as ADR 0561's amendment of this date says; MIR's
 second list of the same, `hints_its_size`, is gone. Nothing that runs
 changes (case N).
+
+## Amendment: `Skip`'s and `Take`'s steps from the back are std's (2026-11-06, #825, #826)
+
+`$skipping`'s `try_rfold` and `rfold` were std's only of a source with a
+`tryRfold` of its own. A crate's iterator has none, as no crate writes
+`try_rfold` on stable, so `skip(1).rfold(..)` and `.rfind(..)` of one
+stepped its `back`, which asks its length each step, the crate's
+`size_hint` too. They are now std's of any source that steps from its back:
+its length asked once, then its source's `try_rfold`, its own or std's of
+its `next_back` (`$tryRfoldOf`).
+
+`$taking`, a `take(n)` made knowing its back (#718), had three gaps:
+
+- Its `rfold` trims its source by `nth_back` first. Where that panics, in
+  a stage's closure, it dropped neither the accumulator nor what was left.
+  It now drops what drops with `f`, then `init`, by `unwind`, then what's
+  left, as `rfold(self, init, f)` drops its parameters as it unwinds. Its
+  `try_rfold`, by `&mut`, drops the first two.
+- It had no `count` or `advance_by`, so it counted by stepping each item.
+  std's `Take::count` is its source's `advance_by(n)`, which a reversed
+  `Vec`'s `IntoIter` drops as one slice, front to back. It now has both,
+  std's.
+- A `take(n).rev()` of droppers made in place, collected into a `Vec`,
+  was stepped by `next`, which asks `nth_back(len - n)`. std's
+  `extend_trusted` folds a `TrustedLen` one, and `Take::rfold` asks
+  `nth_back(len - n - 1)` and drops what that gives. `collect.rs` folded
+  only std's compiled struct. It now folds one made in place too, where
+  what the `nth_back` passes has a destructor (`folds_by_dropping_nth_back`),
+  and asks generic code's caller `ITrustedLen` of one, as #670's rule does
+  of the compiled struct. Of numbers the two orders are one, so nothing
+  changes there.
+
+ADR 0262: results change (drop order, missing drops, the crate's code run
+more often), so Rust's is kept. Held by
+`skip_of_own_from_its_back_asks_len_once.rs` and
+`take_from_its_back_drops_as_std.rs`, both builds, and the matrix's and
+conformance table's rows the nightly of afdd70519 failed; mutations
+`skipping-rfold-only-of-own-try-rfold`, `taking-count-stepped`,
+`taking-trim-unwind-undropped`, `take-rev-collect-stepped-not-folded`,
+`generic-take-rev-collect-trust-unasked`. `$taking`'s forward steps are
+now std's `Take`'s, as `$Steps.prototype.take`'s are. That is still two
+`Take`s, as #735 made one `Skip`. Merging them is #830.

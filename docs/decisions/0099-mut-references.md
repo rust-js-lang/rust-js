@@ -596,3 +596,14 @@ this covers it.
   smallvec probe runs the same as native.
 - Mutation `given-box-boxed-again` (`mir/assign.rs`), retargeted to the
   rule, held by both pairs.
+
+## Amendment: a copied default's generic `&mut self` (2026-11-06, #815)
+
+The rule that gave a resolved impl method's `&mut` of a type parameter
+that's a JS iterator or function the place itself is gone, with its
+mutation `generic-iterator-ref-boxed-for-impl`. A copied default's `Self`
+is its impl's, lowered in its terms (#803), and the rule changed no JS
+anywhere. The copy-back a `&mut` method made a value runs in its arrow
+changes only JS (`mut_method_pointer.rs`): the callee changes the object
+in place, so `$assign(a, self.value)` copies an object onto itself. Whether
+to drop it is a choice of output form, left to the user.

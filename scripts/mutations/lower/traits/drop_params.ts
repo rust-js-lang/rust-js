@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/drop_params.rs",
     find: "            || built.gates.iter().any(|&gate| {\n",
     replace: "            || !built.gates.iter().any(|&gate| {\n",
-    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type(_relayed)?.rs$"],
   },
   {
     name: "built-slot-misplaced",
@@ -122,5 +122,14 @@ export const mutations: Mutation[] = [
     find: "                (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(clause))).unwrap_or(clause)\n",
     replace: "                clause\n",
     tests: ["test/corpus.test.ts", "-t", "^(default_of_a_non_blanket_impl_steps_its_self).rs$"],
+  },
+  {
+    name: "unmet-slot-fact-given",
+    breaks:
+      "a caller gives an impl's slot facts of an associated type no value is there, of a default whose where clause it can't meet, and is refused its `size_of` (#828)",
+    file: "src/lower/traits/drop_params.rs",
+    find: "        if crate::lower::drops::no_type_here(self.tcx, self.typing_env, self.drop_slot_of(id, index, args)) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^blanket_default_beside_an_unmet_clause.rs$"],
   },
 ];

@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/awaits.rs",
     find: "(value == 0).then_some(target)",
     replace: "(value == 1).then_some(target)",
-    tests: [...awaited, ...snapshot],
+    tests: snapshot,
   },
   {
     name: "await-false-edge-ready",

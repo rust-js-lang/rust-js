@@ -358,8 +358,35 @@ export const mutations: Mutation[] = [
     breaks:
       "an associated type of a type its trait isn't implemented for, an impl's slot of a default its arguments can't meet, is refused as an unknown one, so `(0..3u8).counted()` doesn't compile (#798)",
     file: "src/lower/drops/types.rs",
-    find: "            ) if !ty.has_param()\n                && (self.recognition.tcx)",
-    replace: "            ) if false\n                && (self.recognition.tcx)",
+    find: "    if !ty.has_param() {\n        return tcx.instantiate_and_check_impossible_clauses((*def_id, alias.args));\n",
+    replace: "    if !ty.has_param() {\n        return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^default_where_clause_item_drops.rs$"],
+  },
+  {
+    name: "unmet-generic-alias-unsupported",
+    breaks:
+      "generic code calling a blanket impl's default is asked the drop of an associated type another default's where clause names, which it can't meet there, `<<I::IntoIter as Iterator>::Item as IntoIterator>::Item`, and is refused, as itertools' `intersperse` was (#828)",
+    file: "src/lower/drops/types.rs",
+    find: "            .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))\n            .is_err()\n",
+    replace: "            .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))\n            .is_err()\n            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^blanket_default_beside_an_unmet_clause.rs$"],
+  },
+  {
+    name: "binding-at-whole-unfollowed",
+    breaks:
+      "`elt @ Some(_)` of a temporary with a destructor, whose subpattern moves nothing, is refused as moving part of it, as itertools' `collect_tuple` was (#828)",
+    file: "src/lower/drops/types.rs",
+    find: "            } if !moves(sub) => {\n",
+    replace: "            } if false && !moves(sub) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_matches_its_tuple_whole.rs$"],
+  },
+  {
+    name: "no-type-of-unbounded-params",
+    breaks:
+      "an associated type of another item's type parameter, a dictionary's method's own `I`, read where its impl's bounds hold, is taken for no type there, so `from_iter::<I>`'s in-place buffer isn't given and a panic drops in another order (#794, #828)",
+    file: "src/lower/drops/types.rs",
+    find: "    params_bounded\n        && tcx\n",
+    replace: "    tcx\n",
+    tests: ["test/libraries.test.ts", "-t", "a std trait's generic method's dictionary carries the same facts in each library"],
   },
 ];

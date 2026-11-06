@@ -80,15 +80,19 @@ function $getUnchecked(it, i, dictionary) {
 // `next_back`, the longer trimmed from its back to the shorter's length,
 // each it trims dropped, `dropA` or `dropB`, then each's back paired;
 // where `right`'s step throws, a panic, `left`'s item dropped as the pair
-// std makes unwinds (#740).
+// std makes unwinds (#740). Each side's length asked once a step, `a`'s
+// then `b`'s, as std's `next_back` asks `a.len()` and `b.len()` before it
+// trims: the crate's own `size_hint` runs as often as natively (#824).
 function $zipEndsOf(zipped, left, right, dropA, dropB) {
   zipped.len = () => Math.min(left.len(), right.len());
   zipped.back = () => {
-    for (let n = left.len() - right.len(); n > 0; n--) {
+    const aLen = left.len();
+    const bLen = right.len();
+    for (let n = aLen - bLen; n > 0; n--) {
       const x = left.back();
       if (!x.done) dropA?.(x.value);
     }
-    for (let n = right.len() - left.len(); n > 0; n--) {
+    for (let n = bLen - aLen; n > 0; n--) {
       const y = right.back();
       if (!y.done) dropB?.(y.value);
     }

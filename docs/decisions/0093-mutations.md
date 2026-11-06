@@ -257,3 +257,21 @@ can't be asked makes its mutant inconclusive, not a survivor.
 adds". A mutant's corpus tests then wrote the mutant's JS over the
 snapshots, and passed (#729). The runner now unsets `BLESS` for every
 test run it starts (`testsEnv`), and `test/mutations.test.ts` holds that.
+
+## Amendment: the Nightly of afdd70519's survivors (2026-11-06, #815)
+
+Each is caught or gone with its code. They were found by running the mutant
+against the whole corpus in both builds, `crates.test.ts` and the lowering
+files:
+
+- `built-layout-gate-inverted` and `route-through-unheld-supertrait` change
+  `in_place_collect_of_a_built_type_relayed.rs` and the crate pair
+  `default_where_clause_drops`, which they now name.
+- `called-value-copy-back-outside` changes only the JS of
+  `mut_method_pointer.rs`, so it's `snapshots: true`.
+- `await-pending-taken-for-ready` made `compiler.test.ts`'s setup refuse
+  `examples/countdown.rs`, which `--bail` judged inconclusive. It names the
+  async snapshot alone.
+- `mir-iterable-collected-generic`, `mut-param-made-items` and
+  `generic-iterator-ref-boxed-for-impl` changed nothing anywhere. Their
+  conditions go with them (ADRs 0140, 0715 and 0099 amended).

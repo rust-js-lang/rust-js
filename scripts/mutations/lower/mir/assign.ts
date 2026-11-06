@@ -558,15 +558,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^if_let_mut_else_assign.rs$"],
   },
   {
-    name: "generic-iterator-ref-boxed-for-impl",
-    breaks:
-      "a copied default's `&mut self` of a blanket impl over every iterator is given its impl's method as the box, which steps nothing",
-    file: "src/lower/mir/assign.rs",
-    find: "                        || (generic && self.mut_ref_form_in(inner, typing_env.param_env) != MutRefForm::GenericBox)\n",
-    replace: "                        || (false && generic && self.mut_ref_form_in(inner, typing_env.param_env) != MutRefForm::GenericBox)\n",
-    tests: ["test/corpus.test.ts", "-t", "^blanket_iterator_trait.rs$"],
-  },
-  {
     name: "shared-box-unmade",
     breaks:
       "an impl for `&mut T`'s `&self`, called where its type is known, is given the object, which it reads as a box",

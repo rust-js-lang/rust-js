@@ -43,6 +43,7 @@ use facts::{Facts, find_facts};
 pub(super) use inlined::inlined_drops;
 pub(super) use ref_cells::{RefCells, holds_itself};
 pub(super) use types::Drops;
+pub(super) use types::no_type_here;
 use types::{DropQuery, TypeDrops, describe};
 
 /// Whether dropping `ty`, a type the crate knows, runs a destructor, of the

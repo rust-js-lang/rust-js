@@ -805,12 +805,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // parameter's that folds by its `nth_back` (#670): as it says,
         // `ITrustedLen`, so its first item is taken by `next` before its
         // hint is asked only where it isn't (#724).
+        // Of std's struct, or of the adapters made in its place where what
+        // that `nth_back` passes has a destructor, `$rev($taking(..))`,
+        // whose fold asks it as std's does: what it passes drops from the
+        // back, where its `next`'s `nth_back` drops it as a `Vec`'s slice,
+        // front to back (#826). Of numbers, the two are one.
+        let folds_by_dropping_nth_back =
+            (self.recognition().nth_back_folded_sources(iter_ty).into_iter()).any(|source| {
+                self.iterator_item(source)
+                    .is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing)
+            });
         let callers_trusted = (!trusted
             && iter_ty.has_param()
-            && self.compiled_struct(iter_ty, given)
-            && !self.recognition().nth_back_folded_sources(iter_ty).is_empty())
-        .then(|| self.type_fact_value(iter_ty, crate::lower::recognition::TypeFact::TrustedLen, span))
-        .transpose()?;
+            && !self.recognition().nth_back_folded_sources(iter_ty).is_empty()
+            && (self.compiled_struct(iter_ty, given) || folds_by_dropping_nth_back))
+            .then(|| self.type_fact_value(iter_ty, crate::lower::recognition::TypeFact::TrustedLen, span))
+            .transpose()?;
         let unroomed = it.clone();
         let it = match item {
             Some(item)
@@ -844,7 +854,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // And of one whose fold moves a function an adapter holds with
         // a destructor, which drops before what's left, where std doesn't
         // collect it in place, by `try_fold`, which doesn't move it (#710).
+        // And of one whose fold asks an `nth_back` its `next` asks
+        // otherwise, of items with a destructor, a `take(n).rev()`'s made
+        // in place (#826).
         let folded = (self.compiled_struct(iter_ty, given)
+            || folds_by_dropping_nth_back
             || self.steps_lent_inclusive(iter_ty)
             || self.folds_held_function(iter_ty) && self.collects_in_place(Some(iter_ty), item) == Some(false))
             && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
@@ -877,14 +891,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let args = self.folded_unwinding(it, output, item, iter_ty, span)?;
                 Expr::call_helper("$foldToArray", args)
             }
-            None if folded && self.collected_items(&it, iter_ty).is_none() => {
+            None if folded && self.collected_items(&it).is_none() => {
                 let args = self.folded_unwinding(it, output, item, iter_ty, span)?;
                 Expr::call_helper("$foldToArray", args)
             }
             None if let Some(unwinding) = self.unwinding_collect(output, item, Some(iter_ty), span)? => {
                 unwinding.collected(it, Some(unroomed))
             }
-            None => match self.collected_items(&it, iter_ty) {
+            None => match self.collected_items(&it) {
                 Some(items) => items,
                 None if iterable => it,
                 None => Expr::collected(it),

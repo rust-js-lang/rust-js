@@ -303,7 +303,8 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
 
     /// The parts a pattern moves out of what it's matched against, by value:
     /// those it binds that have a destructor. None if it moves one a way this
-    /// doesn't follow yet, as through a `Box` or into `x @ ..`.
+    /// doesn't follow yet, as through a `Box` or into an `x @ ..` whose
+    /// subpattern moves a part too.
     pub(in crate::lower) fn pattern_paths(&self, pat: &Pat<'tcx>) -> Option<Vec<Path>> {
         let mut found = Vec::new();
         self.paths_in(pat, &mut Path::new(), &mut found).then_some(found)
@@ -332,6 +333,20 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 ty,
                 ..
             } => {
+                if self.has_drops(*ty) {
+                    found.push(at.clone());
+                }
+                true
+            }
+            // `elt @ Some(_)`, whose subpattern moves nothing out: the whole,
+            // moved into `elt` as a binding without one is, the subpattern
+            // only a test (itertools' `collect_tuple`, #828).
+            PatKind::Binding {
+                mode: BindingMode(ByRef::No, _),
+                subpattern: Some(sub),
+                ty,
+                ..
+            } if !moves(sub) => {
                 if self.has_drops(*ty) {
                     found.push(at.clone());
                 }
@@ -473,21 +488,10 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             {
                 self.drops_in(normal, walk)
             }
-            // One that's no type, of a type its trait isn't implemented for,
-            // `<u8 as IntoIterator>::IntoIter`: an impl's slot of a default
-            // whose where clause the impl's arguments here can't meet, which
-            // their dictionary leaves out (#798). No value is one.
-            ty::Alias(
-                _,
-                alias @ ty::AliasTy {
-                    kind: ty::Projection { def_id },
-                    ..
-                },
-            ) if !ty.has_param()
-                && (self.recognition.tcx).instantiate_and_check_impossible_clauses((*def_id, alias.args)) =>
-            {
-                Drops::Nothing
-            }
+            // One that's no type here (`no_type_here`): an impl's slot of a
+            // default whose where clause the arguments here can't meet, which
+            // their dictionary leaves out (#798, #828). No value is one.
+            ty::Alias(..) if no_type_here(tcx, self.recognition.typing_env, ty) => Drops::Nothing,
             ty::Alias(
                 _,
                 ty::AliasTy {
@@ -710,4 +714,61 @@ pub(super) fn describe(ty: Ty<'_>, what: &str) -> String {
         ty::Closure(..) => what.to_string(),
         _ => format!("{what}, `{ty}`,"),
     }
+}
+
+/// Whether `ty`, an associated type, is no type where `typing_env` holds:
+/// of a type its trait isn't implemented for, `<u8 as IntoIterator>::IntoIter`
+/// (#798); or of a type parameter's whose trait the bounds there don't say it
+/// has, so it can't be normalized there, rigid or not, `<<I::IntoIter as
+/// Iterator>::Item as IntoIterator>::Item` of generic code calling a blanket
+/// impl's default, itertools' `intersperse`, where another default's where
+/// clause names it (#828). No value there is one, as rustc holds each type a
+/// body uses to its bounds: an impl's slot of such a default is given
+/// nothing there, its drop or its facts.
+pub(in crate::lower) fn no_type_here<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    ty: Ty<'tcx>,
+) -> bool {
+    let ty::Alias(
+        _,
+        alias @ ty::AliasTy {
+            kind: ty::Projection { def_id },
+            ..
+        },
+    ) = ty.kind()
+    else {
+        return false;
+    };
+    if !ty.has_param() {
+        return tcx.instantiate_and_check_impossible_clauses((*def_id, alias.args));
+    }
+    // Only of type parameters `typing_env` bounds, whose bounds it is: one
+    // of another's, a dictionary's method's own `I` read where its impl's
+    // bounds hold, is none of its to say (`from_iter::<I>`'s
+    // `<I as IntoIterator>::IntoIter`, #794).
+    let bounded: HashSet<ty::ParamTy> = (typing_env.param_env.caller_bounds().iter())
+        .flat_map(|clause| -> Vec<ty::GenericArg<'tcx>> {
+            match clause.kind().skip_binder() {
+                ty::ClauseKind::Trait(bound) => bound.trait_ref.args.iter().flat_map(|arg| arg.walk()).collect(),
+                ty::ClauseKind::Projection(equal) => (equal.projection_term.args.iter())
+                    .chain(equal.term.as_type().map(Into::into))
+                    .flat_map(|arg| arg.walk())
+                    .collect(),
+                _ => Vec::new(),
+            }
+        })
+        .filter_map(|part| match part.as_type()?.kind() {
+            ty::Param(param) => Some(*param),
+            _ => None,
+        })
+        .collect();
+    let params_bounded = (ty.walk().filter_map(|part| part.as_type())).all(|part| match part.kind() {
+        ty::Param(param) => bounded.contains(param),
+        _ => true,
+    });
+    params_bounded
+        && tcx
+            .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
+            .is_err()
 }

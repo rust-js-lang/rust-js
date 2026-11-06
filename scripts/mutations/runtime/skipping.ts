@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "skipping-rfold-by-next",
     breaks: "a `skip`'s `rfold` steps by `next_back`, not its source's `try_rfold`, a `take`'s trimmed by the crate's `nth_back` (#220)",
     file: "src/runtime/skipping.js",
-    find: "    tryRfold: iter.tryRfold !== undefined ? tryRfold : undefined,\n    rfold: iter.tryRfold !== undefined ? rfold : undefined,\n",
+    find: "    tryRfold: iter.tryRfold !== undefined || iter.back !== undefined ? tryRfold : undefined,\n    rfold: iter.tryRfold !== undefined || iter.back !== undefined ? rfold : undefined,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
@@ -242,5 +242,14 @@ export const mutations: Mutation[] = [
     find: "      if (!step.done) drop?.(step.value);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
+  },
+  {
+    name: "skipping-rfold-only-of-own-try-rfold",
+    breaks:
+      "a `skip`'s `rfold` and `try_rfold` are std's only of a source with a `try_rfold` of its own, so one of the crate's own iterator steps its back, asking its length each step (#825)",
+    file: "src/runtime/skipping.js",
+    find: "    tryRfold: iter.tryRfold !== undefined || iter.back !== undefined ? tryRfold : undefined,\n",
+    replace: "    tryRfold: iter.tryRfold !== undefined ? tryRfold : undefined,\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_of_own_from_its_back_asks_len_once.rs$"],
   },
 ];

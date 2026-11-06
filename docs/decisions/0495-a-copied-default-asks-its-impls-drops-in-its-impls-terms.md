@@ -149,3 +149,38 @@ where a copied default asked one, its drops', a lost `dyn`'s drop's and its
 impl's terms, normalized there: made the identity, no case's JS changed,
 as a program or a library, nor any lowering test. It's gone, with
 `default-evidence-trait-terms`, which made it so and survived.
+
+## Amendment: what a caller gives of a default's clause it can't meet, and a copied default's closures (2026-11-06, #828)
+
+Since #798 an impl's slots include those each kept default's where clause
+names. Generic code that calls one of a blanket impl's defaults was then
+asked to give the slot of another default's clause it can't meet there,
+`<<I::IntoIter as Iterator>::Item as IntoIterator>::Item` of itertools'
+`intersperse`, and was refused. Such a type can't be normalized where
+the clause doesn't hold, so no value of it exists there and nothing called
+there reads its slot. `drops::no_type_here` is the one answer, of the
+concrete case #798 made (`<u8 as IntoIterator>::IntoIter`) too: its drop
+is nothing (`DropQuery`) and its facts aren't given (`gives_slot`). It
+says so only of type parameters the environment bounds. A dictionary's
+method's own `I`, read where its impl's bounds hold, is none of its own,
+and its slot, `from_iter::<I>`'s in-place buffer (#794), is still given.
+
+A fact of an impl's slot is found by the slot's type as the bounds here
+normalize it (`given_fact_of`), so a copied default whose where clause
+says `Self: Iterator<Item = T::Item>` finds the `<Self as Iterator>::Item`
+slot it was given as `<T as TupleCollect>::Item` (itertools'
+`collect_tuple`). `pattern_paths` follows `elt @ Some(_)`, a binding whose
+subpattern moves nothing, as the whole moved into `elt`. A closure made in
+a copied default is read with the default's arguments and its own generics
+past them, its kind, signature and captures, as they are. Before this,
+rust-js crashed on itertools' `minmax_by`'s `|_| ()`, "type parameter out
+of range when instantiating".
+
+Held by `blanket_default_beside_an_unmet_clause.rs`,
+`default_matches_its_tuple_whole.rs` and
+`copied_default_closure_of_its_own_generics.rs`, both builds; mutations
+`impossible-alias-unsupported` (retargeted), `unmet-generic-alias-unsupported`,
+`unmet-slot-fact-given`, `binding-at-whole-unfollowed`,
+`given-fact-unnormalized` and `copied-closure-own-generics-dropped`.
+itertools still doesn't compile. Every other default of its blanket impl
+is lowered too, and about ten of them are refused (#828).

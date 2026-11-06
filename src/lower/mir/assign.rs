@@ -2,7 +2,6 @@
 //! a call of the crate's is given.
 
 use super::*;
-use crate::lower::MutRefForm;
 use crate::lower::aggregates::Given;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -1156,23 +1155,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             // Where what's called, an impl's method resolved, takes an object
             // by its own `&mut`, a copied default's `&mut self` given to its
-            // impl's method of an object `Self`, or of a type parameter that's
-            // a JS iterator or function, which isn't boxed either (ADR 0099):
-            // the object, which it changes in place, a box's `value` or a
-            // generic `self` boxed for none.
+            // impl's method of an object `Self` (ADR 0099): the object, which
+            // it changes in place, a box's `value`. A copied default's
+            // `Self` is its impl's, lowered in its terms (#803).
             let holds = fn_id.is_some_and(|fn_id| {
                 let sig = (self.tcx).instantiate_bound_regions_with_erased(
                     self.tcx.fn_sig(fn_id).instantiate_identity().skip_normalization(),
                 );
                 let param = sig.inputs().get(i).copied();
-                let typing_env = ty::TypingEnv::post_analysis(self.tcx, fn_id);
-                let itself = |inner: Ty<'tcx>| {
-                    let generic = self.recognition().is_unknown_in(inner, typing_env);
-                    self.is_object(inner)
-                        || (generic && self.mut_ref_form_in(inner, typing_env.param_env) != MutRefForm::GenericBox)
-                };
                 !self.param_is_box(fn_id, i)
-                    && matches!(param.map(|p| *p.kind()), Some(ty::Ref(_, inner, ty::Mutability::Mut)) if itself(inner))
+                    && matches!(param.map(|p| *p.kind()), Some(ty::Ref(_, inner, ty::Mutability::Mut)) if self.is_object(inner))
             });
             if holds {
                 exprs.push(place);

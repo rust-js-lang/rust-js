@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "taking-rfold-untrimmed",
     breaks: "a `take`'s `rfold` folds its source untrimmed, not after its `nth_back` past what it won't give (#220)",
     file: "src/runtime/taking.js",
-    find: "      const folded = taking.n === 0 || !trimmed() ? init : $foldBack(taking.iter, init, f, unwind, ends);\n",
-    replace: "      const folded = taking.n === 0 ? init : $foldBack(taking.iter, init, f, unwind, ends);\n",
+    find: "        taking.n === 0 || !$consumed(taking, () => kept(init, unwind, ends), ends)\n",
+    replace: "        taking.n === 0\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {
@@ -67,5 +67,23 @@ export const mutations: Mutation[] = [
     find: "      if (len > 0) passed(len - 1);\n",
     replace: "      if (len > 0) $nthBackOf(taking.iter, len - 1, drop);\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
+  },
+  {
+    name: "taking-count-stepped",
+    breaks:
+      "a `take` made knowing its back counts by stepping each item, not its source's `advance_by`, so a reversed `Vec`'s drop from the back where std drops them as one slice, front to back (#826)",
+    file: "src/runtime/taking.js",
+    find: "  $forward(taking, iter, { advanceBy, count });\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^take_from_its_back_drops_as_std.rs$"],
+  },
+  {
+    name: "taking-trim-unwind-undropped",
+    breaks:
+      "a `take`'s `rfold` whose trimming panics drops neither its accumulator nor what's left (#826)",
+    file: "src/runtime/taking.js",
+    find: "        taking.n === 0 || !$consumed(taking, () => kept(init, unwind, ends), ends)\n",
+    replace: "        taking.n === 0 || !trimmed()\n",
+    tests: ["test/corpus.test.ts", "-t", "^take_from_its_back_drops_as_std.rs$"],
   },
 ];

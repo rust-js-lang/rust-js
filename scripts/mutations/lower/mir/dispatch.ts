@@ -482,6 +482,7 @@ export const mutations: Mutation[] = [
     find: '        if !copy_backs.is_empty() {\n            value = self.spill("value", value, &mut body);\n',
     replace:
       '        if false {\n            value = self.spill("value", value, &mut body);\n',
+    snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer.rs$"],
   },
   {

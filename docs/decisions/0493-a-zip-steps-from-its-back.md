@@ -87,3 +87,16 @@ or either iterator slice, and `zip_size_hints`' `rev()` of a zip reads
 `Clone` runs code is still refused, "a `Cloned<Iter<D>>` as an
 `ExactSizeIterator`": a `cloned()` of a slice's items made `.map(clone)`
 knows no length, #792.
+
+## Amendment: each side's length asked once a step (2026-11-06, #824)
+
+`$zipEndsOf`'s back asked `left.len()` in each of its two trimming loops,
+so a zip of the crate's own exact-size iterator stepped from its back,
+`Every::new(0).zip(10..13).rfold(..)`, ran the crate's `size_hint` twice a
+step, and once more after it trimmed. std's `Zip::next_back` asks `a.len()`
+then `b.len()` once each before it trims. Each side's length is now read
+once a step, `a`'s then `b`'s. ADR 0262: results change (the crate's code
+runs as often as natively), so Rust's is kept. Held by
+`zip_of_own_from_its_back_asks_each_len_once.rs` and the conformance
+table's 24 `own Every | zip` rows; mutation `zip-back-len-asked-per-trim`.
+First bad commit 58af383ef.

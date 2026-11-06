@@ -281,15 +281,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "mir-iterable-collected-generic",
-    breaks:
-      "a generic iterator collected is `Array.from(items)`, empty of an iterator with only a `next`",
-    file: "src/lower/mir/iter/sources.rs",
-    find: "        if crate::lower::recognition::known_by_bounds(source) {\n",
-    replace: "        if false {\n",
-    tests: ["test/lowering-iterators.test.ts", "-t", "only a next"],
-  },
-  {
     name: "fresh-iter-len-stepped",
     breaks:
       "`v.iter().len()` is what's left of a `$iter` made for it, `$iter(v).end - $iter(v).at`, not `v.length`",

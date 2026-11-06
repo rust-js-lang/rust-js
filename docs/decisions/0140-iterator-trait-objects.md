@@ -78,3 +78,13 @@ helpers**, made where the value becomes one:
   `dyn Iterator` is one only where the program asks for one.
 - Of rustc's tests, 5 more pass, those that box an iterator, lend one or
   return one from a closure.
+
+## Amendment: no rule of a generic value's type in `collected_items` (2026-11-06, #815)
+
+`collected_items` refused to list a generic value's `Iterator.from` by its
+type, `known_by_bounds`. Generic code's collect asks its room or folds it
+(`$roomForHint`, `$foldToArray`, #733, #796), so no `Iterator.from` of a
+generic value reaches it, and the rule changed no JS anywhere. It's gone,
+with its mutation `mir-iterable-collected-generic`.
+"a generic iterator collected keeps an iterator with only a next" still
+holds the behaviour.

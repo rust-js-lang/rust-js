@@ -267,11 +267,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The fact of `of`, a std associated type of a type parameter, this
-    /// function was given, `IItemMap` (ADR 0466).
+    /// function was given, `IItemMap` (ADR 0466): each given one and `of`
+    /// compared as the bounds here normalize them, so a copied default's
+    /// `<Self as Iterator>::Item`, the impl's slot, is the `<T as
+    /// TupleCollect>::Item` its where clause, `Self: Iterator<Item =
+    /// T::Item>`, says it is, itertools' `collect_tuple` (#828).
     pub(in crate::lower) fn given_fact_of(&self, of: Ty<'tcx>, fact: TypeFact) -> Option<Expr> {
-        let of = self.tcx.erase_and_anonymize_regions(of);
+        let normal = |ty: Ty<'tcx>| {
+            let ty = self.tcx.erase_and_anonymize_regions(ty);
+            (self.tcx)
+                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))
+                .unwrap_or(ty)
+        };
+        let of = normal(of);
         (self.given.type_facts.iter())
-            .find(|&&(at, given, _)| self.tcx.erase_and_anonymize_regions(at) == of && given == fact)
+            .find(|&&(at, given, _)| given == fact && normal(at) == of)
             .map(|(_, _, value)| value.clone())
     }
 

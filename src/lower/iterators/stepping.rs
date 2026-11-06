@@ -333,10 +333,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.as_js_iterator(value, ty, span);
         }
         // A `&mut` collection's, a handle on each item, as `for x in &mut v`
-        // makes (`ref_into_iter`); not a type parameter's, an iterator its
-        // dictionary steps.
+        // makes (`ref_into_iter`); a type parameter's, an iterator its
+        // dictionary steps, `items_by_dictionary`'s above, or none of
+        // `ref_into_iter`'s.
         if let ty::Ref(_, inner, ty::Mutability::Mut) = ty.kind()
-            && !matches!(inner.kind(), ty::Param(_))
             && self.option_of(*inner).is_none()
             && !self.is_sorted(*inner)
             && let Some(items) = self.ref_into_iter(value.clone(), ty, span, out)?

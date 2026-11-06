@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`collect()` of std's struct that's `TrustedLen`, a zip's, steps it by `next()`, not its `fold` as std's `extend_trusted` does: its closure runs once more (#380)",
     file: "src/lower/mir/iter/collect.rs",
-    find: '            None if folded && self.collected_items(&it, iter_ty).is_none() => {\n                let args = self.folded_unwinding(it, output, item, iter_ty, span)?;\n                Expr::call_helper("$foldToArray", args)\n            }\n',
+    find: '            None if folded && self.collected_items(&it).is_none() => {\n                let args = self.folded_unwinding(it, output, item, iter_ty, span)?;\n                Expr::call_helper("$foldToArray", args)\n            }\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_fold_steps_the_shorter.rs$"],
   },
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding's list collected stays `Array.from(Iterator.from(nodes).map(f))`, not `Array.from(nodes).map(f)`",
     file: "src/lower/mir/iter/collect.rs",
-    find: "None => match self.collected_items(&it, iter_ty) {",
+    find: "None => match self.collected_items(&it) {",
     replace: "None => match None::<Expr> {",
     tests: [
       "test/compiler.test.ts",
@@ -497,9 +497,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a compiled std struct's collect a panic may stop, a `zip`'s, steps it by `next`, not its `SpecFold`, as std's `extend_trusted` does (#380, #423)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            None if folded && self.collected_items(&it, iter_ty).is_none() => {\n",
+    find: "            None if folded && self.collected_items(&it).is_none() => {\n",
     replace:
-      "            None if false && folded && self.collected_items(&it, iter_ty).is_none() => {\n",
+      "            None if false && folded && self.collected_items(&it).is_none() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
     snapshots: true,
   },
@@ -966,5 +966,23 @@ export const mutations: Mutation[] = [
     replace: "                || r::stepped_by_source(self.tcx, ty).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^(step_by_zero|sales_report|returned_slice_iters).rs$"],
     snapshots: true,
+  },
+  {
+    name: "take-rev-collect-stepped-not-folded",
+    breaks:
+      "a `take(n).rev()` of droppers made in place, collected into a `Vec`, is stepped by `next`, whose `nth_back` drops what it passes front to back, where std's `extend_trusted` folds it and `Take::rfold` drops it from the back (#826)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            || folds_by_dropping_nth_back\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^take_from_its_back_drops_as_std.rs$"],
+  },
+  {
+    name: "generic-take-rev-collect-trust-unasked",
+    breaks:
+      "generic code's `take(n).rev()` of droppers made in place, collected into a `Vec`, never asks its caller's `ITrustedLen`, so it's stepped by `next` where std folds it (#826)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            && (self.compiled_struct(iter_ty, given) || folds_by_dropping_nth_back))\n",
+    replace: "            && self.compiled_struct(iter_ty, given))\n",
+    tests: ["test/corpus.test.ts", "-t", "^take_from_its_back_drops_as_std.rs$"],
   },
 ];
