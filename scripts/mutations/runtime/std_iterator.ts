@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "std-iterator-takes-unmarked",
     breaks: "std's struct its compiled `fold` took isn't marked closed, so its close drops what it held again (ADR 0912)",
     file: "src/runtime/std_iterator.js",
-    find: "    if (steps.takes?.includes(method)) it.$closed = true;\n",
-    replace: "",
+    find: "  const taken = () => {\n    it.$closed = true;\n  };\n",
+    replace: "  const taken = () => {};\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
   {
@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "std-iterator-rfold-unwind-lost",
     breaks: "std's compiled struct's `rfold`, known where it's used, gets no `unwind`: a stage's panic leaves the accumulator undropped (#423)",
     file: "src/runtime/std_iterator.js",
-    find: "            return rfold(it, init, f, unwind, ends);\n",
-    replace: "            return rfold(it, init, f, undefined, ends);\n",
+    find: "() => rfold(it, init, f, unwind, ends)))",
+    replace: "() => rfold(it, init, f, undefined, ends)))",
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_folds_unwind with"],
   },
   {
@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
     name: "std-iterator-taken-after-its-fold",
     breaks: "std's compiled struct is marked taken only where its compiled `fold` returns, so a generic caller's close after one that panicked drops the crate's iterator again (rd764)",
     file: "src/runtime/std_iterator.js",
-    find: "    try {\n      return run();\n    } finally {\n      if (steps.takes?.includes(method)) it.$closed = true;\n    }\n",
-    replace: "    const made = run();\n    if (steps.takes?.includes(method)) it.$closed = true;\n    return made;\n",
+    find: "  const taking = (method, run) => (steps.takes?.includes(method) ? $endsAfter(taken, run) : run());",
+    replace: "  const taking = (method, run) => {\n    const made = run();\n    if (steps.takes?.includes(method)) taken();\n    return made;\n  };",
     tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
   },
   {
@@ -111,8 +111,8 @@ export const mutations: Mutation[] = [
     breaks:
       "std's compiled struct isn't taken once its compiled `rfold` ends: a `peekable()`'s `rev().fold(..)` whose closure panics drops its source and what it peeked at as std's `rfold` unwinds, then again as it's closed (#649)",
     file: "src/runtime/std_iterator.js",
-    find: "            return rfold(it, init, f, unwind, ends);\n          } finally {\n            it.$closed = true;\n",
-    replace: "            return rfold(it, init, f, unwind, ends);\n          } finally {\n",
+    find: "$endsAfter(taken, () => rfold(it, init, f, unwind, ends))",
+    replace: "rfold(it, init, f, unwind, ends)",
     tests: ["test/corpus.test.ts", "-t", "^own_steps_a_type_parameter_may_reach.rs$"],
   },
   {

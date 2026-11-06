@@ -31,13 +31,10 @@ function $stdIterator(struct, steps) {
   // one that panics drops what it took as it unwinds, so a close after it,
   // a generic caller's, drops nothing twice (rd764); not before, as a
   // compiled body may close it itself, `Take`'s `fold`.
-  const taking = (method, run) => {
-    try {
-      return run();
-    } finally {
-      if (steps.takes?.includes(method)) it.$closed = true;
-    }
+  const taken = () => {
+    it.$closed = true;
   };
+  const taking = (method, run) => (steps.takes?.includes(method) ? $endsAfter(taken, run) : run());
   if (steps.hint !== undefined) {
     it.sizeHint = () => steps.hint(it);
   }
@@ -78,13 +75,7 @@ function $stdIterator(struct, steps) {
     $forward(it, steps, {
       rfold:
         rfold &&
-        ((init, f, unwind, ends) => {
-          try {
-            return rfold(it, init, f, unwind, ends);
-          } finally {
-            it.$closed = true;
-          }
-        }),
+        ((init, f, unwind, ends) => $endsAfter(taken, () => rfold(it, init, f, unwind, ends))),
       nthBack: nthBack && ((k) => step(nthBack(it, k))),
       tryRfold: tryRfold && ((init, f, broke, unwind, ends) => tryRfold(it, init, f, broke, unwind, ends)),
     });

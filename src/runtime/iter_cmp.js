@@ -7,7 +7,7 @@
 function $iterCmp(a, b, cmp) {
   const x = $stepsOf(a);
   const y = $stepsOf(b);
-  try {
+  return $endsAfter(() => $closeEach(y, x), () => {
     let order = 0;
     const stopped = $lent(x).tryFold(
       false,
@@ -20,8 +20,5 @@ function $iterCmp(a, b, cmp) {
     );
     if (stopped) return order;
     return y.next().done ? 0 : -1;
-  } finally {
-    // The second though the first's drop throws (#743).
-    $closeEach(y, x);
-  }
+  });
 }

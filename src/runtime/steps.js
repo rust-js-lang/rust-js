@@ -46,20 +46,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
   // (`$holding`'s), that first, as `fold(self, init, f)` drops `f` before
   // what's left of `self` (#710).
   fold(init, f, unwind, ends) {
-    let folded = init;
-    // Closed though `f` throws, a panic, as Rust's `fold` drops what it
-    // took, what's left of it, as it unwinds (#422); where a step throws, a
-    // stage's of an adapter it steps, what it holds dropped first by
-    // `unwind`, the consumer's (#423).
-    const next = () => (unwind === undefined ? this.next() : $staged(() => this.next(), undefined, undefined, folded, unwind));
-    try {
-      for (let step = next(); !step.done; step = next()) folded = f(folded, step.value);
-    } catch (error) {
-      $closedAfter(ends, () => this.return());
-      throw error;
-    }
-    $closedAfter(ends, () => this.return());
-    return folded;
+    return $foldBy(this, "next", init, f, unwind, ends);
   }
   // Stepped by JS's own, `Array.from(it)`, `collect()`'s, `for..of` or a
   // spread: each item, then closed at its end, as `fold` is, as Rust drops
@@ -255,19 +242,16 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     // after, as std's `FlattenCompat::fold` folds its source by `&mut fold`;
     // `own`, its function, `$holding`'s, moved into its source's, as its
     // `Map` is (#710).
-    const fold = (init, g, unwind, ends, own) => {
-      let folded = init;
-      try {
+    const fold = (init, g, unwind, ends, own) =>
+      $endsAfter(ends, () => {
+        let folded = init;
         if (inner !== undefined) folded = $foldDropping(inner, folded, g, unwind);
         inner = undefined;
         if (ended) return folded;
         ended = true;
         const made = unwind === undefined ? (x) => f(x, i++) : (x, a) => $staged(f, x, i++, a, unwind);
         return this.fold(folded, (a, x) => $foldDropping(Iterator.from(made(x, a)), a, g, unwind), unwind, own);
-      } finally {
-        if (ends) ends();
-      }
-    };
+      });
     // Its `try_fold`, std's: the rest of the one it's in, then its source's
     // of each one's, the one it stops in kept for its next step.
     // What drops with `g`, `ends`, isn't passed on: std's `FlattenCompat`
@@ -431,17 +415,74 @@ function $filterDropping(it, keep, drop) {
   return steps.filter(keep, drop);
 }
 
+// `run()`, a call std's frame makes while it owns what `drops` drop, given
+// in the order the frame drops them as it unwinds, its locals' reverse
+// order: where it throws, a panic, each of them in turn, the next though
+// one throws, then what `run` threw goes on. The one place a runtime
+// iterator helper drops what it holds as a panic unwinds (ADR 1092 S2, S7,
+// #817); `undefined` of a drop is none.
+function $unwinds(run, ...drops) {
+  try {
+    return run();
+  } catch (error) {
+    $dropsUnwinding(error, drops);
+    throw error;
+  }
+}
+
+// Each of `drops` run as `error` unwinds, the next though one throws: what
+// one throws then is `$unwindingThrew`'s.
+function $dropsUnwinding(error, drops) {
+  for (const drop of drops) {
+    try {
+      drop?.();
+    } catch (second) {
+      $unwindingThrew(error, second);
+    }
+  }
+}
+
+// A drop that threw, `second`, while `first` unwinds: Rust aborts there
+// (#847); here `first` goes on, as JS can't abort, ADR 0660's answer, the
+// one place it's given.
+function $unwindingThrew(_first, _second) {}
+
+// Each of `runs` run in turn, the next though an earlier one throws, a
+// panic, as drop glue drops each field of what it drops though an earlier
+// field's drop unwinds, the rest dropped as that one unwinds
+// (`$dropsUnwinding`'s); the first error goes on (ADR 1092 S7, #743). One
+// `undefined` is none. The one answer of what a drop of many parts runs as
+// one of them throws.
+function $inTurn(...runs) {
+  $inTurnOf(runs, (run) => run?.());
+}
+
+// `run` of each of `items` in turn, `$inTurn`'s, the rest run as one that
+// throws unwinds: a slice's drop glue, `$dropItems`' (#416).
+function $inTurnOf(items, run) {
+  const all = Array.isArray(items) ? items : [...items];
+  for (let i = 0; i < all.length; i++) {
+    try {
+      run(all[i]);
+    } catch (error) {
+      $dropsUnwinding(
+        error,
+        all.slice(i + 1).map((item) => () => run(item)),
+      );
+      throw error;
+    }
+  }
+}
+
 // `f(x, i)`, what a stage runs of an item inside a fold that holds `a`:
 // where it throws, a panic, `a` dropped by `unwind`, the consumer's, as
 // std's adapter's fold closure drops the accumulator it was given as it
 // unwinds, before the fold closes what's left (#423).
 function $staged(f, x, i, a, unwind) {
-  try {
-    return f(x, i);
-  } catch (error) {
-    unwind(a);
-    throw error;
-  }
+  return $unwinds(
+    () => f(x, i),
+    () => unwind(a),
+  );
 }
 
 // Whether a stage that discards what it doesn't keep, a `filter` or a
@@ -455,28 +496,21 @@ function $staged(f, x, i, a, unwind) {
 // `a`, as rustc's does (rust-lang/rust#47949, #651). The one answer of
 // whether what a fold holds is dropped as a discarded item's drop unwinds.
 function $kept(keep, drop, x, i, a, unwind) {
-  let kept;
-  try {
-    kept = keep(x, i);
-  } catch (error) {
-    drop?.(x);
-    unwind?.(a);
-    throw error;
-  }
+  const kept = $unwinds(
+    () => keep(x, i),
+    () => drop?.(x),
+    () => unwind?.(a),
+  );
   if (!kept) drop?.(x);
   return kept;
 }
 
 // What an adapter's fold runs, `run`, consuming `it`: closed though it
 // throws, a panic, as Rust's `fold(self)` drops what it took as it unwinds
-// (#422, #423).
+// (#422, #423), after what drops with `f`, `ends`, as its frame drops `f`
+// before `self` (#710).
 function $consumed(it, run, ends) {
-  try {
-    return run();
-  } catch (error) {
-    $closedAfter(ends, () => it.return());
-    throw error;
-  }
+  return $unwinds(run, ends, () => it.return());
 }
 
 // `close()` after `ends`, what drops with a fold's `f`, where it's given:
@@ -485,27 +519,6 @@ function $consumed(it, run, ends) {
 // panic (#710): `$inTurn`'s.
 function $closedAfter(ends, close) {
   $inTurn(ends, close);
-}
-
-// Each of `runs` run in turn, the next though an earlier one throws, a
-// panic, as drop glue drops each field of what it drops though an earlier
-// field's drop unwinds; the first error goes on, as JS can't abort where
-// Rust does on a second panic (ADR 1092 S7, #743). One `undefined` is none.
-// The one answer of what a drop of many parts runs as one of them throws.
-function $inTurn(...runs) {
-  let failed = false;
-  let first;
-  for (const run of runs) {
-    try {
-      run?.();
-    } catch (error) {
-      if (!failed) {
-        failed = true;
-        first = error;
-      }
-    }
-  }
-  if (failed) throw first;
 }
 
 // Each of `parts`, what an adapter holds, closed in turn, `return()`, in
@@ -528,22 +541,13 @@ function $onceOf(ends) {
 // but its parameters, `init` and `f`, std's `SkipWhile`'s first `find`,
 // `Skip`'s `nth(n - 1)` and `StepBy`'s first `next`: where it throws, a
 // panic, what drops with `f`, `ends`, then `init`, by `unwind`, the
-// parameters' reverse order, the second though the first throws (S2,
-// #768). Past it, std's own fold holds the accumulator in its body, which
-// drops first, `$staged`'s. `ends` is once where it's made, `$consume`'s
-// and `$endsAfter`'s, so the fold that runs it again after drops nothing.
+// parameters' reverse order (S2, #768). Past it, std's own fold holds the
+// accumulator in its body, which drops first, `$staged`'s. `ends` is once
+// where it's made, `$consume`'s and `$endsAfter`'s, so the fold that runs
+// it again after drops nothing.
 function $stepHolding(step, init, unwind, ends) {
   if (unwind === undefined && ends === undefined) return step();
-  try {
-    return step();
-  } catch (error) {
-    try {
-      ends?.();
-    } finally {
-      unwind?.(init);
-    }
-    throw error;
-  }
+  return $unwinds(step, ends, () => unwind?.(init));
 }
 
 // `run(once)`, a `try_fold(&mut self, init, f)` given what drops with `f`,
@@ -553,13 +557,37 @@ function $stepHolding(step, init, unwind, ends) {
 function $endsAfter(ends, run) {
   if (ends === undefined) return run(undefined);
   const once = $onceOf(ends);
-  let made;
-  try {
-    made = run(once);
-  } catch (error) {
-    once();
-    throw error;
-  }
+  const made = $unwinds(() => run(once), once);
   once();
   return made;
+}
+
+// Std's default `fold(self, init, f)` of `it`, stepped by `by`, `next`, or
+// `back` of its `rfold` (iterator.rs:2660, double_ended.rs:353), the
+// fallback of a value whose own step isn't asked first: `f` of each item,
+// given what it gave; at its end, what drops with `f`, `ends`, then what's
+// left of `it`, closed; as a step unwinds, the accumulator, by `unwind`,
+// where it's given, then `ends`, then `it`; as `f` does, whose frame drops
+// the accumulator and the item itself, `ends`, then `it` (S2, #422, #423,
+// #710).
+function $foldBy(it, by, init, f, unwind, ends) {
+  let folded = init;
+  let stepping = false;
+  const close = () => it.return?.();
+  $unwinds(
+    () => {
+      for (;;) {
+        stepping = true;
+        const step = it[by]();
+        stepping = false;
+        if (step.done) return;
+        folded = f(folded, step.value);
+      }
+    },
+    () => stepping && unwind?.(folded),
+    ends,
+    close,
+  );
+  $inTurn(ends, close);
+  return folded;
 }

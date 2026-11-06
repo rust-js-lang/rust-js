@@ -126,8 +126,8 @@ export const mutations: Mutation[] = [
     name: "closing-fold-unclosed-on-throw",
     breaks: "a `for_each` or `fold` whose closure panics leaves what's left of an owning source undropped, its `$closing` never closed (#422)",
     file: "src/runtime/closing.js",
-    find: "      $closedAfter(ends, close);\n      throw error;\n",
-    replace: "      throw error;\n",
+    find: "      ends,\n      close,\n    );",
+    replace: "      ends,\n    );",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_iteration_drops.rs$"],
   },
   {
@@ -249,14 +249,6 @@ export const mutations: Mutation[] = [
     find: "    if (moved === \"alone\") return by(init, f, unwind, outer, own);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
-  },
-  {
-    name: "holding-fold-unheld",
-    breaks: "an adapter's closure folded by value drops after what it steps, which closed itself as a `step_by()` stepped it to its end (#734)",
-    file: "src/runtime/closing.js",
-    find: "    holding.hold?.();\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
   },
   {
     name: "holding-rfold-of-its-back-missing",

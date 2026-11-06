@@ -4,13 +4,10 @@
 // Given `unwind`, what drops what it folded where a stage throws, a panic,
 // passed to its fold (#423); and closed where its first step throws.
 function $reduce(it, f, boxed = false, unwind = undefined) {
-  let first;
-  try {
-    first = it.next();
-  } catch (error) {
-    it.return?.();
-    throw error;
-  }
+  const first = $unwinds(
+    () => it.next(),
+    () => it.return?.(),
+  );
   if (first.done) {
     it.return?.();
     return undefined;

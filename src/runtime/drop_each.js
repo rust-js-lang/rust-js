@@ -13,15 +13,5 @@ function $dropEach(drop) {
 // a panicking item; then what was thrown, thrown on, the last of them, as a
 // `finally`'s would be (#416).
 function $dropItems(items, drop) {
-  let threw = false;
-  let thrown;
-  for (const item of items) {
-    try {
-      drop(item);
-    } catch (error) {
-      threw = true;
-      thrown = error;
-    }
-  }
-  if (threw) throw thrown;
+  $inTurnOf(items, drop);
 }

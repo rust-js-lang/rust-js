@@ -75,18 +75,7 @@ function $leastCapacity(size) {
 // (#660). And as what it gives is stepped, where the `Vec` std makes is
 // full, the hint is asked again, as the `Vec` grows (#728).
 function $roomForHint(it, size, trusted, endless = false, drop) {
-  const unwound = (asked, before) => {
-    try {
-      return asked();
-    } catch (error) {
-      try {
-        before?.();
-      } finally {
-        it.return?.();
-      }
-      throw error;
-    }
-  };
+  const unwound = (asked, before) => $unwinds(asked, before, () => it.return?.());
   if (trusted) {
     unwound(() => {
       if (endless) throw new Error("capacity overflow");
@@ -132,16 +121,16 @@ function $roomForHint(it, size, trusted, endless = false, drop) {
       const step = it.next();
       if (step.done) return step;
       if (length === capacity) {
-        try {
-          const [lower] = $sizeHint(it);
-          const required = length + Math.min(lower + 1, max);
-          if (required > max) throw new Error("capacity overflow");
-          capacity = Math.max(capacity * 2, required, least);
-          $roomFor(capacity, size);
-        } catch (error) {
-          drop?.(step.value);
-          throw error;
-        }
+        $unwinds(
+          () => {
+            const [lower] = $sizeHint(it);
+            const required = length + Math.min(lower + 1, max);
+            if (required > max) throw new Error("capacity overflow");
+            capacity = Math.max(capacity * 2, required, least);
+            $roomFor(capacity, size);
+          },
+          () => drop?.(step.value),
+        );
       }
       length += 1;
       return step;
@@ -163,20 +152,20 @@ function $roomForHint(it, size, trusted, endless = false, drop) {
 // rounded up, as hashbrown's `extend` reserves (#849). Where that throws,
 // a panic, `it` is closed, as `extend` drops it (#733).
 function $reserveHint(it, size, align, of) {
-  try {
-    const [lower] = $sizeHint(it);
-    if (size === undefined) return it;
-    if (align === undefined) {
-      if (of === undefined) $roomFor(lower, size);
-      else $textRoomFor(of, lower);
-    } else {
-      const had = of === undefined ? 0 : of.size;
-      $tableRoomFor(had + (had === 0 ? lower : Math.ceil(lower / 2)), size, align);
-    }
-  } catch (error) {
-    it.return?.();
-    throw error;
-  }
+  $unwinds(
+    () => {
+      const [lower] = $sizeHint(it);
+      if (size === undefined) return;
+      if (align === undefined) {
+        if (of === undefined) $roomFor(lower, size);
+        else $textRoomFor(of, lower);
+      } else {
+        const had = of === undefined ? 0 : of.size;
+        $tableRoomFor(had + (had === 0 ? lower : Math.ceil(lower / 2)), size, align);
+      }
+    },
+    () => it.return?.(),
+  );
   return it;
 }
 
@@ -253,18 +242,18 @@ function $grownBy(v, items, size, deque = false, drop) {
       if (step.done) return step;
       const capacity = size === 0 ? Infinity : $capacity(v);
       if ((deque && first) || v.length === capacity) {
-        try {
-          const [lower] = $sizeHint(it);
-          const additional = Math.min(lower + 1, max);
-          if (capacity - v.length < additional) {
-            if (v.length + additional > max) throw new Error("capacity overflow");
-            $reserve(v, additional, size);
-            $roomFor($capacity(v), size);
-          }
-        } catch (error) {
-          drop?.(step.value);
-          throw error;
-        }
+        $unwinds(
+          () => {
+            const [lower] = $sizeHint(it);
+            const additional = Math.min(lower + 1, max);
+            if (capacity - v.length < additional) {
+              if (v.length + additional > max) throw new Error("capacity overflow");
+              $reserve(v, additional, size);
+              $roomFor($capacity(v), size);
+            }
+          },
+          () => drop?.(step.value),
+        );
       }
       first = false;
       return step;

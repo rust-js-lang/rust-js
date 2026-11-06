@@ -14,7 +14,7 @@ function $collectOptions(items, boxed = false, into, drop, restFirst = false, si
   let failed = false;
   const it = items[Symbol.iterator]();
   const grown = size === undefined ? undefined : $shuntGrowth(it, size);
-  try {
+  $unwinds(() => {
     for (let step = it.next(); !step.done; step = it.next()) {
       const item = step.value;
       if (item == null) {
@@ -22,18 +22,13 @@ function $collectOptions(items, boxed = false, into, drop, restFirst = false, si
         break;
       }
       const value = boxed ? $someValue(item) : item;
-      try {
-        grown?.(values.length);
-      } catch (error) {
-        drop?.(value);
-        throw error;
-      }
+      $unwinds(
+        () => grown?.(values.length),
+        () => drop?.(value),
+      );
       values.push(value);
     }
-  } catch (error) {
-    $collectUnwound(it, values, drop, restFirst);
-    throw error;
-  }
+  }, ...$collectUnwound(it, values, drop, restFirst));
   if (!failed) return into ? into(values) : values;
   it.return?.();
   if (drop) $dropItems(values, drop);

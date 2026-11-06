@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "fold-back-from-front",
     breaks: "`rfold` folds from the front",
     file: "src/runtime/back_steps.js",
-    find: "      step = it.back();\n    } catch",
-    replace: "      step = it.next();\n    } catch",
+    find: "  return $foldBy(it, \"back\", init, f, unwind, ends);\n",
+    replace: "  return $foldBy(it, \"next\", init, f, unwind, ends);\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
   },
   {
@@ -302,9 +302,9 @@ export const mutations: Mutation[] = [
     name: "fold-back-unclosed",
     breaks: "`rfold` of a chain doesn't close it at its end, so what a `skip` in it leaves isn't dropped (#206)",
     file: "src/runtime/back_steps.js",
-    find: "      $closedAfter(ends, () => it.return?.());\n      throw error;\n    }\n  }\n  $closedAfter(ends, () => it.return?.());\n  return folded;\n}",
-    replace: "      it.return?.();\n      throw error;\n    }\n  }\n  return folded;\n}",
-    tests: ["test/corpus.test.ts", "-t", "^fold_back_drops_what_it_takes.rs$"],
+    find: "  return $foldBy(it, \"back\", init, f, unwind, ends);\n",
+    replace: "  return $foldBy({ back: () => it.back() }, \"back\", init, f, unwind, ends);\n",
+    tests: ["test/corpus.test.ts","-t","^rfold_and_rev_close_what_they_step.rs$"],
   },
   {
     name: "step-by-fold-left-open",
@@ -417,8 +417,8 @@ export const mutations: Mutation[] = [
     name: "fold-back-step-unwinds-nothing",
     breaks: "an `rfold` of what has no `rfold` of its own, a step of which panics, leaves the accumulator undropped (#423)",
     file: "src/runtime/back_steps.js",
-    find: "        unwind?.(folded);\n",
-    replace: "",
+    find: "  return $foldBy(it, \"back\", init, f, unwind, ends);\n",
+    replace: "  return $foldBy(it, \"back\", init, f, undefined, ends);\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^generic_folds_unwind.rs$|^panic_in_own_rfold_drops with"],
   },
   {
@@ -600,9 +600,9 @@ export const mutations: Mutation[] = [
   {
     name: "fold-back-ends-after",
     breaks: "`$foldBack` closes what it steps before what drops with `f`, so an `rfold`'s closure drops after what's left (#734)",
-    file: "src/runtime/back_steps.js",
-    find: "  $closedAfter(ends, () => it.return?.());\n  return folded;\n}",
-    replace: "  it.return?.();\n  ends?.();\n  return folded;\n}",
+    file: "src/runtime/steps.js",
+    find: "  $inTurn(ends, close);\n  return folded;\n}",
+    replace: "  $inTurn(close, ends);\n  return folded;\n}",
     tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
   },
   {

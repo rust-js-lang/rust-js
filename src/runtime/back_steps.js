@@ -48,29 +48,7 @@ function $advanceBackBy(it, m, _found, drop) {
 // where a step throws, before what's left is closed (#423).
 function $foldBack(it, init, f, unwind, ends) {
   if (it.rfold !== undefined) return it.rfold(init, f, unwind, ends);
-  let folded = init;
-  for (;;) {
-    let step;
-    try {
-      step = it.back();
-    } catch (error) {
-      try {
-        unwind?.(folded);
-      } finally {
-        $closedAfter(ends, () => it.return?.());
-      }
-      throw error;
-    }
-    if (step.done) break;
-    try {
-      folded = f(folded, step.value);
-    } catch (error) {
-      $closedAfter(ends, () => it.return?.());
-      throw error;
-    }
-  }
-  $closedAfter(ends, () => it.return?.());
-  return folded;
+  return $foldBy(it, "back", init, f, unwind, ends);
 }
 
 // `it.rfind(p)`: the first item from the back `p` holds of, or `undefined`;
@@ -523,7 +501,7 @@ function $flattenEnds(it, each) {
   const folding = (fold, own, other) => (init, f, unwind, ends) => {
     const inners = (stepped, a) => fold(stepped, a, f, unwind);
     const made = unwind === undefined ? (x) => each(x) : (x, a) => $staged(each, x, undefined, a, unwind);
-    try {
+    return $endsAfter(ends, () => {
       let folded = init;
       const first = inner[own];
       inner[own] = undefined;
@@ -535,9 +513,7 @@ function $flattenEnds(it, each) {
       const last = inner[other];
       inner[other] = undefined;
       return last === undefined ? folded : inners(last, folded);
-    } finally {
-      ends?.();
-    }
+    });
   };
   // Std's `FlattenCompat::count`: the front inner's own `count`, then its
   // source's fold of each item's inner's, then the back inner's, the

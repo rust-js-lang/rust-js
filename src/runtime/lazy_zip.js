@@ -18,13 +18,10 @@ function $lazyZip(a, b, dropA) {
     if (item.done) return item;
     // Where `b`'s step throws, a panic, `a`'s item dropped as it unwinds,
     // as std's `Zip::next` holds it (#695).
-    let other;
-    try {
-      other = right.next();
-    } catch (error) {
-      dropA?.(item.value);
-      throw error;
-    }
+    const other = $unwinds(
+      () => right.next(),
+      () => dropA?.(item.value),
+    );
     if (other.done) {
       dropA?.(item.value);
       return other;
@@ -97,13 +94,10 @@ function $zipEndsOf(zipped, left, right, dropA, dropB) {
       if (!y.done) dropB?.(y.value);
     }
     const x = left.back();
-    let y;
-    try {
-      y = right.back();
-    } catch (error) {
-      if (!x.done) dropA?.(x.value);
-      throw error;
-    }
+    const y = $unwinds(
+      () => right.back(),
+      () => x.done || dropA?.(x.value),
+    );
     if (x.done || y.done) return { done: true, value: undefined };
     return { done: false, value: [x.value, y.value] };
   };

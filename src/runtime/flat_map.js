@@ -50,9 +50,9 @@ function $flatMap(it, f) {
   // so a `count` reaches the crate's own `fold` (#162). Its source's by
   // `&mut` of what drops with `g`, `ends`, which it drops after; `own`, its
   // function, `$holding`'s, moved into its source's, as its `Map` is (#710).
-  const fold = (init, g, unwind, ends, own) => {
-    let folded = init;
-    try {
+  const fold = (init, g, unwind, ends, own) =>
+    $endsAfter(ends, () => {
+      let folded = init;
       if (inner !== undefined) folded = $foldDropping(inner, folded, g, unwind);
       inner = undefined;
       if (ended) return folded;
@@ -60,10 +60,7 @@ function $flatMap(it, f) {
       const made = unwind === undefined ? f : (x, a) => $staged(f, x, undefined, a, unwind);
       const each = (a, x) => $foldDropping($stepsOf(made(x, a)), a, g, unwind);
       return typeof it.fold === "function" ? it.fold(folded, each, unwind, own) : $foldDropping(it, folded, each, unwind, own);
-    } finally {
-      if (ends) ends();
-    }
-  };
+    });
   // Its `try_fold`, std's: the rest of the one it's in, then its source's
   // of each one's, the one it stops in kept for its next step.
   // What drops with `g`, `ends`, isn't passed on: std's `FlattenCompat`

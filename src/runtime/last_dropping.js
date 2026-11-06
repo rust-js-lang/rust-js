@@ -21,20 +21,14 @@ function $lastDropping(it, drop, boxed) {
   // holds as it unwinds; where `b`'s does, `a`'s last dropped (#647).
   if (it.sides !== undefined) {
     const [a, b] = it.sides();
-    let aLast;
-    try {
-      aLast = a === undefined ? undefined : $lastDropping(a, drop, true);
-    } catch (error) {
-      b.return?.();
-      throw error;
-    }
-    let bLast;
-    try {
-      bLast = $lastDropping(b, drop, true);
-    } catch (error) {
-      if (aLast !== undefined) drop?.($someValue(aLast));
-      throw error;
-    }
+    const aLast = $unwinds(
+      () => (a === undefined ? undefined : $lastDropping(a, drop, true)),
+      () => b.return?.(),
+    );
+    const bLast = $unwinds(
+      () => $lastDropping(b, drop, true),
+      () => aLast !== undefined && drop?.($someValue(aLast)),
+    );
     if (bLast === undefined) return aLast === undefined ? undefined : some($someValue(aLast));
     if (aLast !== undefined) drop?.($someValue(aLast));
     return some($someValue(bLast));
@@ -54,13 +48,7 @@ function $lastDropping(it, drop, boxed) {
       if (dropped !== undefined) drop?.($someValue(dropped));
     };
     const take = (make) => {
-      let last;
-      try {
-        last = $lastDropping(make(), drop, true);
-      } catch (error) {
-        unwind();
-        throw error;
-      }
+      const last = $unwinds(() => $lastDropping(make(), drop, true), unwind);
       if (last === undefined) return;
       // The one kept given up before it's dropped: where its drop panics,
       // it isn't dropped again as the panic unwinds, and `last`, what
@@ -70,24 +58,15 @@ function $lastDropping(it, drop, boxed) {
       kept = last;
     };
     if (front !== undefined) {
-      try {
-        take(() => front);
-      } catch (error) {
-        source?.return?.();
-        throw error;
-      }
+      $unwinds(
+        () => take(() => front),
+        () => source?.return?.(),
+      );
     }
     if (source !== undefined && Object.hasOwn(source, "fold")) {
       source.fold(undefined, (_, item) => take(() => $stepsOf(f(item))), drop && unwind);
     } else if (source !== undefined) {
-      try {
-        for (let step = source.next(); !step.done; step = source.next()) take(() => $stepsOf(f(step.value)));
-      } catch (error) {
-        unwind();
-        source.return?.();
-        throw error;
-      }
-      source.return?.();
+      $foldBy(source, "next", undefined, (_, item) => take(() => $stepsOf(f(item))), unwind);
     }
     return kept === undefined ? undefined : some($someValue(kept));
   }
@@ -135,16 +114,12 @@ function $lastDropping(it, drop, boxed) {
   // its end inside its last step: what's left is dropped once the fold has
   // given back the one kept, so where that drop panics, it's leaked, as a
   // `zip`'s side's rest is (#648).
-  try {
-    for (let step = it.next(); !step.done; step = it.next()) keep(step.value);
-  } catch (error) {
-    try {
-      if (seen) drop?.(last);
-    } finally {
-      it.return?.();
+  const unwind = () => {
+    if (seen) {
+      seen = false;
+      drop?.(last);
     }
-    throw error;
-  }
-  it.return?.();
+  };
+  $foldBy(it, "next", undefined, (_, item) => keep(item), unwind);
   return seen ? some(last) : undefined;
 }

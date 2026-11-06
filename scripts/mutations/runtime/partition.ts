@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "partition-throw-keeps-sides",
     breaks: "a `partition` whose predicate panics leaves what it had put on each side undropped (#423)",
     file: "src/runtime/partition.js",
-    find: "      try {\n        $dropItems(no, drop);\n      } finally {\n        $dropItems(yes, drop);\n      }\n",
+    find: "    () => drop && $dropItems(no, drop),\n    () => drop && $dropItems(yes, drop),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },

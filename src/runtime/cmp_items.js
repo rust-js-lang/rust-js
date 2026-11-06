@@ -20,7 +20,7 @@ function $cmpItems(a, b, cmp) {
 function $iterEq(a, b, eq, dropA, dropB, lengths) {
   const x = $stepsOf(a);
   const y = $stepsOf(b);
-  try {
+  return $endsAfter(() => $closeEach(y, x), () => {
     if (lengths !== undefined && lengths[0] !== lengths[1]) return false;
     let same = true;
     const stopped = $lent(x).tryFold(
@@ -44,8 +44,5 @@ function $iterEq(a, b, eq, dropA, dropB, lengths) {
     if (q.done) return true;
     dropB?.(q.value);
     return false;
-  } finally {
-    // The second though the first's drop throws (#743).
-    $closeEach(y, x);
-  }
+  });
 }

@@ -12,10 +12,10 @@ function $extend(v, items, byFold = false) {
     return;
   }
   const it = items[Symbol.iterator]();
-  try {
-    for (let step = it.next(); !step.done; step = it.next()) v.push(step.value);
-  } catch (error) {
-    it.return?.();
-    throw error;
-  }
+  $unwinds(
+    () => {
+      for (let step = it.next(); !step.done; step = it.next()) v.push(step.value);
+    },
+    () => it.return?.(),
+  );
 }

@@ -24,26 +24,24 @@ function $extremeBy(items, compare, max, boxed, drop, ends) {
     drop(kept);
   };
   const keep = (kept, item) => {
-    let later;
-    try {
-      later = (compare(kept, item) > 0) !== max;
-    } catch (error) {
-      holding = false;
-      drop?.(item);
-      drop?.(kept);
-      throw error;
-    }
+    const later = $unwinds(
+      () => (compare(kept, item) > 0) !== max,
+      () => {
+        holding = false;
+      },
+      () => drop?.(item),
+      () => drop?.(kept),
+    );
     // Where the one passed over panics as it drops, the one kept is
     // leaked, as rustc leaks what `max_by(v1, v2)` returns while a later
     // drop unwinds (ADR 0465's #648 amendment), a pair's too (#776).
-    const passed = (value) => {
-      try {
-        drop?.(value);
-      } catch (error) {
-        holding = false;
-        throw error;
-      }
-    };
+    const passed = (value) =>
+      $unwinds(
+        () => drop?.(value),
+        () => {
+          holding = false;
+        },
+      );
     if (later) {
       passed(kept);
       return (held = item);
@@ -66,15 +64,12 @@ function $extremeBy(items, compare, max, boxed, drop, ends) {
     );
     return boxed && kept !== undefined ? $some(kept) : kept;
   }
-  let first;
   // What's left closed where its first step throws, as `reduce` drops
   // what it took.
-  try {
-    first = it.next();
-  } catch (error) {
-    it.return?.();
-    throw error;
-  }
+  const first = $unwinds(
+    () => it.next(),
+    () => it.return?.(),
+  );
   // None, `reduce`'s `next()?`, which drops it (#242).
   if (first.done) {
     it.return?.();
@@ -82,12 +77,10 @@ function $extremeBy(items, compare, max, boxed, drop, ends) {
   }
   held = first.value;
   holding = drop !== undefined;
-  try {
-    held = $foldDropping(it, first.value, keep, drop && unwind);
-  } catch (error) {
-    if (holding) drop(held);
-    throw error;
-  }
+  held = $unwinds(
+    () => $foldDropping(it, first.value, keep, drop && unwind),
+    () => holding && drop(held),
+  );
   return boxed ? $some(held) : held;
 }
 function $maxBy(items, compare, boxed = false, drop = undefined, ends = undefined) {
@@ -114,13 +107,10 @@ function $extremeByKey(items, key, compare, max, boxed, drop, ends, dropKey) {
   let folding = false;
   let after = false;
   const keyed = Iterator.from(owned).map((item) => {
-    let pair;
-    try {
-      pair = [key(item), item];
-    } catch (error) {
-      drop?.(item);
-      throw error;
-    }
+    const pair = $unwinds(
+      () => [key(item), item],
+      () => drop?.(item),
+    );
     folding = true;
     return pair;
   });
@@ -138,20 +128,16 @@ function $extremeByKey(items, key, compare, max, boxed, drop, ends, dropKey) {
             () => dropKey(pair[0]),
             drop && (() => drop(pair[1])),
           );
-  let pair;
-  try {
-    pair = $extremeBy(keyed, (a, b) => compare(a[0], b[0]), max, false, dropPair, dropped);
-  } finally {
-    if (after) ends();
-  }
+  const pair = $endsAfter(
+    () => after && ends(),
+    () => $extremeBy(keyed, (a, b) => compare(a[0], b[0]), max, false, dropPair, dropped),
+  );
   if (pair === undefined) return undefined;
   if (dropKey !== undefined) {
-    try {
-      dropKey(pair[0]);
-    } catch (error) {
-      drop?.(pair[1]);
-      throw error;
-    }
+    $unwinds(
+      () => dropKey(pair[0]),
+      () => drop?.(pair[1]),
+    );
   }
   return boxed ? $some(pair[1]) : pair[1];
 }

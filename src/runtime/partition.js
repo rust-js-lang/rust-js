@@ -10,26 +10,17 @@ function $partition(items, keep, drop) {
   const yes = [];
   const no = [];
   const it = Array.isArray(items) && drop !== undefined ? $closing($iter(items), $dropEach(drop)) : Iterator.from(items);
-  try {
-    it.forEach((item) => {
-      let kept;
-      try {
-        kept = keep(item);
-      } catch (error) {
-        drop?.(item);
-        throw error;
-      }
-      (kept ? yes : no).push(item);
-    });
-  } catch (error) {
-    if (drop !== undefined) {
-      try {
-        $dropItems(no, drop);
-      } finally {
-        $dropItems(yes, drop);
-      }
-    }
-    throw error;
-  }
+  $unwinds(
+    () =>
+      it.forEach((item) => {
+        const kept = $unwinds(
+          () => keep(item),
+          () => drop?.(item),
+        );
+        (kept ? yes : no).push(item);
+      }),
+    () => drop && $dropItems(no, drop),
+    () => drop && $dropItems(yes, drop),
+  );
   return [yes, no];
 }

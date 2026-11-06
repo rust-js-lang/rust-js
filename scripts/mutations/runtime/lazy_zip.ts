@@ -86,8 +86,8 @@ export const mutations: Mutation[] = [
     name: "zip-panicking-side-leaks-a",
     breaks: "a zip whose second side's `next` panics never drops the item it took from its first side, as std's `Zip::next` drops it as it unwinds (#695)",
     file: "src/runtime/lazy_zip.js",
-    find: "    } catch (error) {\n      dropA?.(item.value);\n      throw error;\n    }\n",
-    replace: "    } catch (error) {\n      throw error;\n    }\n",
+    find: "      () => dropA?.(item.value),\n",
+    replace: "      () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_second_side_panics.rs$"],
   },
   {
@@ -110,8 +110,8 @@ export const mutations: Mutation[] = [
     name: "zip-ends-back-throw-keeps-a",
     breaks: "where a zip's second side's back step throws, its first side's item isn't dropped (#740)",
     file: "src/runtime/lazy_zip.js",
-    find: "    } catch (error) {\n      if (!x.done) dropA?.(x.value);\n      throw error;\n",
-    replace: "    } catch (error) {\n      throw error;\n",
+    find: "      () => x.done || dropA?.(x.value),\n",
+    replace: "      () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_from_its_back.rs$"],
   },
   {

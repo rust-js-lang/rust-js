@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "dropping-once-not-on-unwind",
     breaks: "a `Fn` closure made a `dyn FnOnce` whose call panics never drops what it took as it unwinds (#409)",
     file: "src/runtime/dropping.js",
-    find: "    try {\n      return f(...args);\n    } finally {\n      drop();\n    }\n",
-    replace: "    const result = f(...args);\n    drop();\n    return result;\n",
+    find: "  return $dropping((...args) => $endsAfter(drop, () => f(...args)), drop);\n",
+    replace: "  return $dropping((...args) => {\n    const result = f(...args);\n    drop();\n    return result;\n  }, drop);\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_boxed_once_drops.rs$"],
   },
   {

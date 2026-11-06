@@ -4,12 +4,10 @@
 // first (ADR 0774); of none, or of no room, `item` dropped by `drop`, where
 // it has a destructor.
 function $repeat(item, count, size, clone, drop) {
-  try {
-    $roomFor(count, size);
-  } catch (panic) {
-    drop?.(item);
-    throw panic;
-  }
+  $unwinds(
+    () => $roomFor(count, size),
+    () => drop?.(item),
+  );
   const result = [];
   if (count > 0) {
     for (let i = 1; i < count; i++) result.push(clone(item));

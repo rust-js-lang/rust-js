@@ -66,15 +66,15 @@ function $closing(it, drop, slices = true) {
   // fold is its own, `own`, which took it and drops it as it unwinds (#423).
   // What drops with `f`, `ends`, first, as `fold(self, init, f)` drops `f`
   // before what's left of `self` (#710).
-  const unwound = (fold, own, ends) => {
-    try {
-      return fold();
-    } catch (error) {
-      if (own) closed = true;
-      $closedAfter(ends, close);
-      throw error;
-    }
-  };
+  const unwound = (fold, own, ends) =>
+    $unwinds(
+      fold,
+      () => {
+        if (own) closed = true;
+      },
+      ends,
+      close,
+    );
   // Given `unwind`, what drops an accumulator a stage's panic strands, it
   // passes it on, so a step of the crate's own iterator that panics drops
   // a `last`'s kept item before what's left (#423, #426); and `ends`, what
@@ -195,11 +195,10 @@ function $holding(it, drop, moved) {
     if (alone === undefined || it.fold === undefined) return fold(init, f, unwind, ends);
     // A `flat_map`'s: its fold drops `ends` after its source's, which it
     // gives its function to drop.
-    try {
-      return it.fold(init, f, unwind, ends, alone);
-    } finally {
-      $closedAfter(ends, () => holding.return());
-    }
+    const close = () => holding.return();
+    const folded = $unwinds(() => it.fold(init, f, unwind, ends, alone), ends, close);
+    $closedAfter(ends, close);
+    return folded;
   });
   // Its `rfold`, its own, or of what knows its back but no `rfold` of
   // its own, an array's `map`, `$foldBack` of its back: moved as its fold
