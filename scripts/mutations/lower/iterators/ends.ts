@@ -114,29 +114,11 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^zip_function.rs$"],
   },
   {
-    name: "discarded-throw-keeps-item",
-    breaks:
-      "a `skip_while` whose predicate panics leaves the item it was asked of undropped (#423)",
-    file: "src/lower/iterators/ends.rs",
-    find: "        if throws {\n            let body = vec![",
-    replace: "        if false {\n            let body = vec![",
-    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
-  },
-  {
-    name: "mir-skip-while-skipped-undropped",
-    breaks:
-      "MIR's `skip_while` of items with a destructor leaves those it skips undropped",
-    file: "src/lower/iterators/ends.rs",
-    find: "        let test = self.dropping_skipped(test, item, span, out)?;\n",
-    replace: "        let _ = item;\n",
-    tests: ["test/corpus.test.ts", "-t", "drop_skipped_items"],
-  },
-  {
     name: "take-while-rejected-undropped",
     breaks: "the item `take_while` stops at isn't dropped",
     file: "src/lower/iterators/ends.rs",
-    find: "            exprs.extend(self.std_drop_function(item, span)?);\n",
-    replace: "            let _ = item;\n",
+    find: "        exprs.extend(self.std_drop_function(item, span)?);\n",
+    replace: "        let _ = item;\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
   {

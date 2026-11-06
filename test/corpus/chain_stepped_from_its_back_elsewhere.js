@@ -660,26 +660,19 @@ function main() {
       dDrop_drop(g);
       throw error;
     }
-    function skip(d) {
-      k$1 = (k$1 + 1) | 0;
-      if (k$1 === 1) {
-        throw new Error("skip");
-      }
-      return d[0] < 3;
-    }
     let skipping;
     try {
-      skipping = $lazySkipWhile($closing(tmp, $dropEach(dDrop_drop)), (item) => {
-        let skipped = true;
-        try {
-          skipped = skip(item);
-        } finally {
-          if (skipped) {
-            dDrop_drop(item);
+      skipping = $lazySkipWhile(
+        $closing(tmp, $dropEach(dDrop_drop)),
+        (d) => {
+          k$1 = (k$1 + 1) | 0;
+          if (k$1 === 1) {
+            throw new Error("skip");
           }
-        }
-        return skipped;
-      });
+          return d[0] < 3;
+        },
+        dDrop_drop,
+      );
     } catch (error) {
       dDrop_drop(g);
       throw error;

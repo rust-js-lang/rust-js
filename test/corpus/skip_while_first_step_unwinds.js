@@ -120,28 +120,21 @@ function main() {
     const g = ["f"];
     let calls = 0;
     const value = [["1"], ["2"], ["3"]];
-    function skip(x) {
-      const calls$1 = { value: calls };
-      try {
-        return skipping($byteLen(x[0]), calls$1);
-      } finally {
-        calls = calls$1.value;
-      }
-    }
     let skipWhile;
     let d;
     try {
-      skipWhile = $lazySkipWhile($closing($iter(value), $dropEach(dDrop_drop)), (item) => {
-        let skipped = true;
-        try {
-          skipped = skip(item);
-        } finally {
-          if (skipped) {
-            dDrop_drop(item);
+      skipWhile = $lazySkipWhile(
+        $closing($iter(value), $dropEach(dDrop_drop)),
+        (x) => {
+          const calls$1 = { value: calls };
+          try {
+            return skipping($byteLen(x[0]), calls$1);
+          } finally {
+            calls = calls$1.value;
           }
-        }
-        return skipped;
-      });
+        },
+        dDrop_drop,
+      );
       d = ["acc"];
       g$3$live = false;
     } catch (error) {
@@ -172,27 +165,20 @@ function main() {
       throw error;
     }
     let calls = 0;
-    function skip(x) {
-      const calls$1 = { value: calls };
-      try {
-        return skipping($byteLen(x[0]), calls$1);
-      } finally {
-        calls = calls$1.value;
-      }
-    }
     let skipWhile;
     try {
-      skipWhile = $lazySkipWhile($lent(it), (item) => {
-        let skipped = true;
-        try {
-          skipped = skip(item);
-        } finally {
-          if (skipped) {
-            dDrop_drop(item);
+      skipWhile = $lazySkipWhile(
+        $lent(it),
+        (x) => {
+          const calls$1 = { value: calls };
+          try {
+            return skipping($byteLen(x[0]), calls$1);
+          } finally {
+            calls = calls$1.value;
           }
-        }
-        return skipped;
-      });
+        },
+        dDrop_drop,
+      );
     } catch (error) {
       for (const item of it) {
         dDrop_drop(item);

@@ -82,4 +82,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
   },
+  {
+    name: "skip-while-skipped-undropped",
+    breaks: "a `skip_while` of items with a destructor leaves those it skips undropped",
+    file: "src/runtime/lazy_skip_while.js",
+    find: "$kept((y) => !skip(y), drop, x)",
+    replace: "$kept((y) => !skip(y), undefined, x)",
+    tests: ["test/corpus.test.ts", "-t", "drop_skipped_items"],
+  },
+  {
+    name: "skip-while-throw-keeps-item",
+    breaks: "a `skip_while` whose predicate panics leaves the item it was asked of undropped (#423)",
+    file: "src/runtime/lazy_skip_while.js",
+    find: "$kept((y) => !skip(y), drop, x)",
+    replace: "(skip(x) ? (drop?.(x), false) : true)",
+    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
+  },
 ];

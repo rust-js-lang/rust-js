@@ -386,14 +386,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::helper("$lazyMapWhile"), vec![items, next(), present()]),
                 kept,
             ),
-            // And the drop of the item it stops at, of items with a
-            // destructor (#651).
-            IterComb::TakeWhile => {
+            // And the drop of the item it stops at, or of each it skips, of
+            // items with a destructor (#651, #817).
+            IterComb::TakeWhile | IterComb::SkipWhile => {
                 let mut args = vec![items, next()];
                 args.extend(rest.next());
-                Expr::call(Expr::helper("$lazyTakeWhile"), args)
+                let helper = if comb == IterComb::TakeWhile { "$lazyTakeWhile" } else { "$lazySkipWhile" };
+                Expr::call(Expr::helper(helper), args)
             }
-            IterComb::SkipWhile => Expr::call(Expr::helper("$lazySkipWhile"), vec![items, next()]),
             // Lazy of a JS iterator, as Rust's is (ADR 0517).
             // Its state's `&mut` as `handles_mut` says, the object itself of
             // a struct or a tuple.

@@ -118,19 +118,12 @@ function main() {
     }
   });
   run("fold skip_while first", () => {
-    const skip = (d) => !boom(d, 30);
     const x = $foldDropping(
-      $lazySkipWhile($closing($iter(ds({ start: 30, end: 34 })), $dropEach(dDrop_drop)), (item) => {
-        let skipped = true;
-        try {
-          skipped = skip(item);
-        } finally {
-          if (skipped) {
-            dDrop_drop(item);
-          }
-        }
-        return skipped;
-      }),
+      $lazySkipWhile(
+        $closing($iter(ds({ start: 30, end: 34 })), $dropEach(dDrop_drop)),
+        (d) => !boom(d, 30),
+        dDrop_drop,
+      ),
       [[39]],
       push,
       $dropEach(dDrop_drop),
@@ -577,18 +570,15 @@ function main() {
     }
   });
   run("skip_while later", () => {
-    const skip = (d) => d[0] < 81;
     function inspect(d) {
       boom(d, 82);
     }
     const x = $foldDropping(
-      $lazySkipWhile($closing($iter(ds({ start: 80, end: 84 })), $dropEach(dDrop_drop)), (item) => {
-        if (skip(item)) {
-          dDrop_drop(item);
-          return true;
-        }
-        return false;
-      }).map((item) => {
+      $lazySkipWhile(
+        $closing($iter(ds({ start: 80, end: 84 })), $dropEach(dDrop_drop)),
+        (d) => d[0] < 81,
+        dDrop_drop,
+      ).map((item) => {
         try {
           inspect(item);
         } catch (error) {
@@ -816,7 +806,6 @@ function main() {
     function inspect(d) {
       boom(d, 2);
     }
-    const skip = (d) => d[0] < 1;
     const x = $foldDropping(
       $lazySkipWhile(
         $closing($iter(ds({ start: 0, end: 4 })), $dropEach(dDrop_drop)).map((item) => {
@@ -828,13 +817,8 @@ function main() {
           }
           return item;
         }),
-        (item) => {
-          if (skip(item)) {
-            dDrop_drop(item);
-            return true;
-          }
-          return false;
-        },
+        (d) => d[0] < 1,
+        dDrop_drop,
       ),
       [],
       push,
@@ -879,7 +863,7 @@ function main() {
     const x = $foldDropping(
       $rev($closing($iter(ds({ start: 30, end: 34 })), $dropEach(dDrop_drop)))
         .map((d) => {
-          let d$57$live = true;
+          let d$60$live = true;
           try {
             boom(d, 32);
           } catch (error) {
@@ -890,10 +874,10 @@ function main() {
           if (d[0] === 31) {
             result = undefined;
           } else {
-            d$57$live = false;
+            d$60$live = false;
             result = d;
           }
-          if (d$57$live) {
+          if (d$60$live) {
             dDrop_drop(d);
           }
           return result;

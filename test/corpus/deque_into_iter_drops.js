@@ -81,15 +81,12 @@ function main() {
   }
   console.log(`first ${first != null ? map(first) : 0}`);
 
-  const skip = (l) => l[0] < 5;
   const skipped = Array.from(
-    $lazySkipWhile($closing($iter(deque([1, 8, 2])), $dropEach(loudDrop_drop)), (item) => {
-      if (skip(item)) {
-        loudDrop_drop(item);
-        return true;
-      }
-      return false;
-    }),
+    $lazySkipWhile(
+      $closing($iter(deque([1, 8, 2])), $dropEach(loudDrop_drop)),
+      (l) => l[0] < 5,
+      loudDrop_drop,
+    ),
   );
   console.log(`skipped to ${skipped.length}`);
   for (const item of skipped) {

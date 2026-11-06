@@ -83,16 +83,10 @@ function counter(end) {
 }
 
 function consume(n) {
-  const skip = (l) => l[0] < 11;
   const skipped = $lazySkipWhile(
     $closing($iter(three()), $dropEach(loudDrop_drop)).take(n),
-    (item) => {
-      if (skip(item)) {
-        loudDrop_drop(item);
-        return true;
-      }
-      return false;
-    },
+    (l) => l[0] < 11,
+    loudDrop_drop,
   ).reduce((n, item) => {
     loudDrop_drop(item);
     return n + 1;
@@ -100,16 +94,13 @@ function consume(n) {
   console.log(`skipped ${skipped}`);
   const value = $closing($iter(three()), $dropEach(loudDrop_drop)).take(n);
   const value$1 = [[30], [31]];
-  const skip$1 = (l) => l[0] < 30;
   let skipWhile;
   try {
-    skipWhile = $lazySkipWhile($closing($iter(value$1), $dropEach(loudDrop_drop)), (item) => {
-      if (skip$1(item)) {
-        loudDrop_drop(item);
-        return true;
-      }
-      return false;
-    });
+    skipWhile = $lazySkipWhile(
+      $closing($iter(value$1), $dropEach(loudDrop_drop)),
+      (l) => l[0] < 30,
+      loudDrop_drop,
+    );
   } catch (error) {
     value.return();
     throw error;
@@ -124,15 +115,12 @@ function consume(n) {
     loudDrop_drop(value$2[1]);
   }
   console.log(`last ${last}`);
-  const skip$2 = (l) => l[0] < 99;
   const max = $max(
-    $lazySkipWhile($closing($iter(three()), $dropEach(loudDrop_drop)).take(n), (item) => {
-      if (skip$2(item)) {
-        loudDrop_drop(item);
-        return true;
-      }
-      return false;
-    }).map((l) => {
+    $lazySkipWhile(
+      $closing($iter(three()), $dropEach(loudDrop_drop)).take(n),
+      (l) => l[0] < 99,
+      loudDrop_drop,
+    ).map((l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
@@ -390,15 +378,8 @@ function held(n) {
   let taken$live = true;
   if (n > 0) {
     taken$live = false;
-    const skip = (l) => l[0] < 99;
     const value = $max(
-      $lazySkipWhile(taken, (item) => {
-        if (skip(item)) {
-          loudDrop_drop(item);
-          return true;
-        }
-        return false;
-      }).map((l) => {
+      $lazySkipWhile(taken, (l) => l[0] < 99, loudDrop_drop).map((l) => {
         const result = l[0];
         loudDrop_drop(l);
         return result;
@@ -439,18 +420,14 @@ function held(n) {
         let taken$3$live = true;
         if (n > 0) {
           taken$3$live = false;
-          const skip = (l) => l[0] < 11;
           console.log(
-            `held while ${$lazySkipWhile(taken, (item) => {
-              if (skip(item)) {
+            `held while ${$lazySkipWhile(taken, (l) => l[0] < 11, loudDrop_drop).reduce(
+              (n, item) => {
                 loudDrop_drop(item);
-                return true;
-              }
-              return false;
-            }).reduce((n, item) => {
-              loudDrop_drop(item);
-              return n + 1;
-            }, 0)}`,
+                return n + 1;
+              },
+              0,
+            )}`,
           );
         }
         try {

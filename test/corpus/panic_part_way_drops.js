@@ -175,19 +175,12 @@ function main() {
     }
   });
   run("skip_while", () => {
-    const skip = (d) => boom(d, 51) || true;
     const x = $foldToArray(
-      $lazySkipWhile($closing($iter(ds({ start: 50, end: 54 })), $dropEach(dDrop_drop)), (item) => {
-        let skipped = true;
-        try {
-          skipped = skip(item);
-        } finally {
-          if (skipped) {
-            dDrop_drop(item);
-          }
-        }
-        return skipped;
-      }),
+      $lazySkipWhile(
+        $closing($iter(ds({ start: 50, end: 54 })), $dropEach(dDrop_drop)),
+        (d) => boom(d, 51) || true,
+        dDrop_drop,
+      ),
       dDrop_drop,
     );
     console.log(`${x.length}`);
@@ -818,7 +811,7 @@ function main() {
     const x = $collectDropping(
       $closing($iter(ds({ start: 70, end: 74 })), $dropEach(dDrop_drop))
         .map((d) => {
-          let d$74$live = true;
+          let d$75$live = true;
           try {
             boom(d, 72);
           } catch (error) {
@@ -829,10 +822,10 @@ function main() {
           if (d[0] === 71) {
             result = undefined;
           } else {
-            d$74$live = false;
+            d$75$live = false;
             result = [d, 1n];
           }
-          if (d$74$live) {
+          if (d$75$live) {
             dDrop_drop(d);
           }
           return result;

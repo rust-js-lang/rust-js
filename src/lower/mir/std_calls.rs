@@ -926,7 +926,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         && matches!(comb, IterComb::SkipWhile | IterComb::TakeWhile)
                     {
                         this.flush(state, out)?;
-                        this.dropping_discarded(comb == IterComb::SkipWhile, item, &mut exprs, span, out)?;
+                        this.dropping_discarded(item, &mut exprs, span)?;
                     }
                     let made =
                         this.iter_comb(comb, it, exprs.into_iter(), generic_args, (iter_ty, output), span, out)?;

@@ -293,15 +293,12 @@ function main() {
     numbered.return();
   }
 
-  const skip = (l) => l[0] < 82;
   const skipping = $held(
-    $lazySkipWhile($closing($iter(louds(80, 4)), $dropEach(loudDrop_drop)), (item) => {
-      if (skip(item)) {
-        loudDrop_drop(item);
-        return true;
-      }
-      return false;
-    }),
+    $lazySkipWhile(
+      $closing($iter(louds(80, 4)), $dropEach(loudDrop_drop)),
+      (l) => l[0] < 82,
+      loudDrop_drop,
+    ),
   );
   let skipping$live;
   try {

@@ -1351,22 +1351,9 @@ function main() {
       throw error;
     }
     const f = (d) => d[0] < (2 + zero(g)) >>> 0;
-    const iter = $holding(
-      $lazySkipWhile(take, (item) => {
-        let skipped = true;
-        try {
-          skipped = f(item);
-        } finally {
-          if (skipped) {
-            dDrop_drop(item);
-          }
-        }
-        return skipped;
-      }),
-      () => {
-        dDrop_drop(g);
-      },
-    );
+    const iter = $holding($lazySkipWhile(take, f, dDrop_drop), () => {
+      dDrop_drop(g);
+    });
     let result;
     try {
       result = iter.reduce((n, item) => {

@@ -258,15 +258,8 @@ function main() {
     return result;
   });
   run("skip_while try_fold", 2, () => {
-    const skip = (d) => d[0] < 3;
     const skipWhile = $held(
-      $lazySkipWhile($closing($iter(ds()), $dropEach(dDrop_drop)), (item) => {
-        if (skip(item)) {
-          dDrop_drop(item);
-          return true;
-        }
-        return false;
-      }),
+      $lazySkipWhile($closing($iter(ds()), $dropEach(dDrop_drop)), (d) => d[0] < 3, dDrop_drop),
     );
     let r;
     try {

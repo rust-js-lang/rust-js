@@ -3,8 +3,11 @@
 // a `None` of its source while it skips ends what's stepped now, as Rust's
 // `find` gives it. Each step is its source's `find`, a `try_fold`, as
 // std's is; its `try_fold` and its `fold`, its first step, then its
-// source's.
-function $lazySkipWhile(items, skip) {
+// source's. Of items with a destructor, each it skips dropped by `drop`,
+// and the one `skip` panics on as it unwinds, as std's `SkipWhile` drops
+// both in its `check` closure, whose frame holds no accumulator: `$kept`'s,
+// of what `skip` doesn't skip (#423, #817).
+function $lazySkipWhile(items, skip, drop) {
   const source = $stepsOf(items);
   let skipping = true;
   const skipped = new $Steps(
@@ -12,7 +15,7 @@ function $lazySkipWhile(items, skip) {
       let item;
       const found = $lent(source).tryFold(
         false,
-        (_, x) => (!skipping || !skip(x)) && ((skipping = false), (item = x), true),
+        (_, x) => (!skipping || $kept((y) => !skip(y), drop, x)) && ((skipping = false), (item = x), true),
         (found) => found,
       );
       return found ? { done: false, value: item } : { done: true, value: undefined };
