@@ -29,6 +29,7 @@ export const iteratorPaths = [
   "src/lower/combinators/**",
   "src/lower/mir/iter.rs",
   "src/lower/mir/iter/**",
+  "src/lower/mir/known_capacity.rs",
   "src/lower/recognition/iterators.rs",
   "src/lower/recognition/own_steps.rs",
   "src/lower/recognition/slice_steps.rs",

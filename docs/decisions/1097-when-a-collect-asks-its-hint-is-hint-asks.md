@@ -1,6 +1,6 @@
 # 1097. When a collect asks its hint is `hint_asks`'s
 
-Status: Accepted (2026-11-06, #820 step 1; step 2's #848 and #849's reserves). On ADR 1096's
+Status: Accepted (2026-11-06, #820 steps 1 and 2: #848, #849). On ADR 1096's
 model, as #819's was.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none. This changes who
@@ -96,14 +96,55 @@ behaviour is kept. Held by corpus `extend_reserves_by_hint` against
 native Rust in both builds, and the mutations `table-extend-hint-unasked`,
 `map-extend-unreserved` and `string-extend-unreserved`.
 
+## Step 2: an `extend` that asks as it fills (#849, the user's (B))
+
+std's `extend` of a `Vec`, `extend_desugared`, asks its iterator's hint as
+it takes an item where the `Vec` is full, and reserves room for its lower
+bound and one more, at least twice what it had (`grow_amortized`); a
+`BinaryHeap`'s is its `Vec`'s; a `VecDeque`'s `spec_extend` asks it at
+its first item too. When it asks is the collection's capacity's, which
+rust-js kept as its own number (ADR 0419). The user chose (B): exact
+where the capacity is known where it's extended, refused elsewhere.
+
+- `mir/known_capacity.rs`'s `known_capacity_extends` finds each such
+  `extend` of a variable made once in the same body by `new`,
+  `with_capacity`, `vec![..]`, `vec![x; n]` or a collect of a
+  `TrustedLen` iterator not in place (each of exactly its length or what
+  it's asked), and lent `&mut`, through its reborrows, only to an
+  `extend`, a `reserve` or a `reserve_exact` as what it's called on. Not
+  a parameter, whose value its caller made: MIR writes one again by a
+  statement, which the scan refuses, so that guard has no case of its own
+  and no mutation.
+- The owner's `extended_grown` makes `$grownBy(v, it, size, deque,
+  drop)` of it, which asks as std does and keeps `v`'s capacity native;
+  refused, saying what to write, where it isn't known, or of items whose
+  size is a caller's. A dictionary's `extend`, of any iterator generic
+  code gives it, of a caller's collection, asks as before: refusing it
+  would refuse every generic `extend` of a `Vec`, a decision asked of
+  the user.
+- `$reserve` grows as `grow_amortized` does, of items of a size,
+  `reserve_exact`'s `$reserveExact` as many as it needs; so the capacity
+  `capacity()` gives after them is native Rust's too.
+- A crate with such an `extend` keeps capacities (`extends_as_it_fills`,
+  ADR 0419's `keeps_capacity`), so `with_capacity(n)` is `$withCapacity(n)`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's behaviour is kept, or refused where it can't be known. Held by
+corpus `extend_asks_hint_as_it_fills` (each maker, `reserve` and
+`reserve_exact`, a heap, a `VecDeque` made with room, items of no size,
+a hint that panics with items that drop) and
+`extend_asks_hint_capacity_unasked` (a crate that asks no capacity),
+against native Rust in both builds; `diagnostics.test.ts`'s refusals of
+one pushed first, one given, one collected of what isn't `TrustedLen`, a
+parameter made again; the limitation's example; three snapshots,
+`adapter_size_hints` (its `with_capacity` `Vec` now asks), and
+`collection_capacity` and `vec_capacity`, whose `$reserve` is given the
+items' size. Mutations: three of the runtime's, four of
+`known_capacity.rs`, `unknown-capacity-extend-unrefused`,
+`growing-extend-capacity-unkept`, three retargeted.
+
 ## Next
 
-- Step 2's rest, the `extend` that asks as it grows (#849), a corpus
-  case against native Rust in both builds: a `VecDeque`'s, a hash table's and a
-  `String<char>`'s reserve once; a `Vec`'s asks as it fills, exact where
-  its capacity is known where it's extended, made in the same body by
-  `Vec::new`, `with_capacity`, `vec![..]` or a collect and only extended
-  or reserved since, refused elsewhere (the user's (B), 2026-11-06).
 - Step 3, the conformance table's rows: each destination, collected and
   extended, of each kind of source, `TrustedLen` std struct, in place,
   the crate's own hint and a type parameter's.

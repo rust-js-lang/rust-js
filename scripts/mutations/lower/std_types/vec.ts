@@ -44,9 +44,8 @@ export const mutations: Mutation[] = [
     name: "reserve-untracked",
     breaks: "`v.reserve(n)` keeps no room",
     file: "src/lower/std_types/vec.rs",
-    find: '                    (CapacityOp::Reserve, true) => helper("$reserve", vec![arg(), arg()]),\n',
-    replace:
-      "                    (CapacityOp::Reserve, true) => { let _ = (arg(), arg()); Expr::undefined() }\n",
+    find: "                    (CapacityOp::Reserve { exact: false }, true) => helper(\n                        \"$reserve\",\n                        vec![arg(), arg(), self.room_item_size(generic_args.type_at(0))],\n                    ),\n",
+    replace: "                    (CapacityOp::Reserve { exact: false }, true) => {\n                        let _ = (arg(), arg());\n                        Expr::undefined()\n                    }\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
   },
   {

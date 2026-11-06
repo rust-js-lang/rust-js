@@ -134,4 +134,12 @@ export const mutations: Mutation[] = [
     replace: "            _ if false && self.is_map(into) => Room::Entries(item),\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_reserves_by_hint.rs$"],
   },
+  {
+    name: "unknown-capacity-extend-unrefused",
+    breaks: "an `extend` of a `Vec` whose capacity isn't known where it's extended, pushed first, asks its hint as if it were (#849)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        if !capacity_known || item.has_param() {\n",
+    replace: "        if item.has_param() {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "an extend of a Vec pushed first"],
+  },
 ];

@@ -26,7 +26,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(Std::Comb(comb)) => Some(self.comb_values(
                 comb,
                 (vec![collection.clone(), items.clone()], &given),
-                false,
+                // A dictionary's, of any iterator generic code gives it, its
+                // collection's capacity its caller's: asked as before (#849).
+                (false, None),
                 none,
                 span,
                 &mut body,

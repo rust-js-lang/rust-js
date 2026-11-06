@@ -376,7 +376,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().is_std_type(ty, StdItem::Result) {
             let none = ty::List::empty();
             let comb = crate::lower::combinators::Comb::ResultIter;
-            return self.comb_values(comb, (vec![value], &[ty]), false, none, span, out);
+            return self.comb_values(comb, (vec![value], &[ty]), (false, None), none, span, out);
         }
         if self.range_kind(ty).is_some() || self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty) {
             return self.as_js_iterator(value, ty, span);

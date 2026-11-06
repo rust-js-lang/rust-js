@@ -72,3 +72,16 @@ of each are `capacity_op`'s, and what shortens each, `pop_front`,
 made with room, reserved, popped and cleared, one grown by pushes and
 cleared, and a deque so, with native Rust; rustc's
 `zero-sized-binary-heap-push` passes.
+
+## Amended (2026-11-06, #849): its number where an `extend` asks
+
+Its number was its own, case B: but where an `extend` of the crate's own
+`size_hint` asks it as a `Vec` fills, when it's asked is the capacity's,
+and results change. So a `reserve(n)` grows it as std's `grow_amortized`
+does, `reserve_exact(n)` as many as it needs, and `extend` as std's does
+(`$grownBy`); a crate with such an `extend` keeps capacities as one that
+asks them does. A `Vec` grown by `push` still has its length as its
+capacity, so such an `extend` is exact only of one made in the same
+function and only extended or reserved since, and refused elsewhere
+(ADR 1097, the user's (B)).
+

@@ -470,7 +470,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0416 `RangeBounds` in generic code: a dictionary of the range's bounds](0416-range-bounds-in-generic-code.md)
 - [0417 An allocation is an array of slots](0417-an-allocation-is-an-array-of-slots.md)
 - [0418 A slice's index of a type parameter's is a dictionary](0418-a-generic-slice-index-is-a-dictionary.md)
-- [0419 A `Vec`'s capacity is kept where it's asked](0419-a-vecs-capacity-kept-where-asked.md) *(amended by 0774: the room asked is checked first)*
+- [0419 A `Vec`'s capacity is kept where it's asked](0419-a-vecs-capacity-kept-where-asked.md) *(amended by 0774: the room asked is checked first; amended: `reserve` grows as std's does, and an `extend` asks as a `Vec` fills, #849)*
 - [0420 What `Vec::set_len` leaves past a vector's length stays where it was](0420-what-set-len-leaves-stays.md)
 - [0421 A std trait's associated type's drop is its caller's to give](0421-std-associated-type-drops-are-given.md)
 - [0422 An iterator that holds a value is closed to drop it](0422-an-iterator-holding-a-value-is-closed-to-drop-it.md)
@@ -1057,4 +1057,4 @@ link *(superseded by NNNN)*: `test/architecture.test.ts` checks that each
 is linked once, each superseded or replaced one marked, and no two share
 a number.
 - [1096 How a place holds `None` is `NoneForm`'s](1096-how-a-place-holds-none-is-none-forms.md) *(#819, on 1086's model; amends 0791)*
-- [1097 When a collect asks its hint is `hint_asks`'s](1097-when-a-collect-asks-its-hint-is-hint-asks.md) *(#820 step 1 of 3, on 1096's model; step 2: through the `GenericShunt`, #848)*
+- [1097 When a collect asks its hint is `hint_asks`'s](1097-when-a-collect-asks-its-hint-is-hint-asks.md) *(#820 step 1 of 3, on 1096's model; step 2: through the `GenericShunt`, #848; an `extend` asks, a `Vec`'s exact where its capacity's known, #849)*

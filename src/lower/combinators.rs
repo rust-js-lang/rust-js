@@ -279,11 +279,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `tys` their types (ADR 0364).
     /// `made`: whether the subject was just made by a call, so no other
     /// variable shares it.
+    /// `known`: of an `extend`, whether its collection's capacity is known
+    /// where it's called (`known_capacity`, #849); `None` of a dictionary's.
     pub(in crate::lower) fn comb_values(
         &mut self,
         comb: Comb,
         (mut values, tys): (Vec<Expr>, &[Ty<'tcx>]),
-        made: bool,
+        (made, known): (bool, Option<bool>),
         generic_args: ty::GenericArgsRef<'tcx>,
         span: Span,
         out: &mut Vec<Stmt>,
@@ -763,7 +765,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .ok_or_else(|| self.unsupported(span, "`contains` of this"))?;
                 self.contained(subject, x, item, span, out)?
             }
-            Comb::Extend => self.extended(subject, next(), (tys[1], subject_ty), generic_args, span, out)?,
+            Comb::Extend => self.extended(subject, next(), (tys[1], subject_ty), (generic_args, known), span, out)?,
             // Each item a clone, as `to_vec()` makes them.
             Comb::ExtendFromSlice => self.extended_from_slice(subject, next(), subject_ty, span, out)?,
             Comb::BinarySearchBy => helper("$binarySearchBy", vec![subject, next()]),
@@ -1034,7 +1036,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         collection: Expr,
         items: Expr,
         (iterable, into): (Ty<'tcx>, Ty<'tcx>),
-        generic_args: ty::GenericArgsRef<'tcx>,
+        (generic_args, capacity_known): (ty::GenericArgsRef<'tcx>, Option<bool>),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
@@ -1050,11 +1052,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => items,
                 false => self.spill("items", items, out),
             };
-            let extended = self.extended_whole(collection, held.clone(), (iterable, into), whole, span, out)?;
+            let extended = self.extended_whole(
+                collection,
+                held.clone(),
+                (iterable, into),
+                (whole, capacity_known),
+                span,
+                out,
+            )?;
             out.push(StmtKind::Expr(extended).at(js::Span::NONE));
             return Ok(Expr::call(drop, vec![held]));
         }
-        self.extended_whole(collection, items, (iterable, into), whole, span, out)
+        self.extended_whole(collection, items, (iterable, into), (whole, capacity_known), span, out)
     }
 
     /// `extended`'s, of what's dropped after; `whole`, where the call's own
@@ -1065,7 +1074,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         collection: Expr,
         items: Expr,
         (iterable, into): (Ty<'tcx>, Ty<'tcx>),
-        whole: bool,
+        (whole, capacity_known): (bool, Option<bool>),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
@@ -1084,6 +1093,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.slice_item(into),
             span,
         )?;
+        // What std's `extend` asks of its hint as the collection fills, a
+        // `Vec`'s, a `VecDeque`'s or a heap's (#849).
+        let (collection, items) = match capacity_known {
+            Some(known) => self.extended_grown(collection, items, (iterable, into), known, span, out)?,
+            None => (collection, items),
+        };
         if self.is_std_type(into, crate::lower::recognition::StdItem::BinaryHeap) {
             let item = self
                 .slice_item(into)

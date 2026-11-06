@@ -23,7 +23,7 @@ function main() {
   $heapPush(heap, 3, $cmp);
   $heapPush(heap, 7, $cmp);
   $roomFor(heap.length + 20, 4);
-  $reserve(heap, 20);
+  $reserve(heap, 20, 4);
   const value = $capacity(heap) >= 22;
   $keepCapacity(heap);
   const value$1 = $heapPop(heap, $cmp);

@@ -30,6 +30,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .copied()
                 .unwrap_or_default(),
             read_alike: cells.alike.contains(&state.at),
+            capacity_known: cells.known_capacity.contains(&state.at),
             unread: self.result_unread(state),
             flattened: cells.flattened.get(&state.at).copied().unwrap_or_default(),
         }

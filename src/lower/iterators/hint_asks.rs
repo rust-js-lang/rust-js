@@ -20,6 +20,49 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// asked is seen, the size its caller gives, `TSize` (#796). The one
     /// answer of the lowering's `grown_item_size` and the analysis's
     /// `grown_asked`.
+    /// Whether std's `extend` of `ty` asks its iterator's hint as it fills:
+    /// a `Vec`'s, `extend_desugared`, a `BinaryHeap`'s, its `Vec`'s, and a
+    /// `VecDeque`'s, `spec_extend` (#849). Not a `LinkedList`'s, which asks
+    /// none.
+    pub(in crate::lower) fn grows_as_it_extends(&self, ty: Ty<'tcx>) -> bool {
+        self.is_vec_like(ty) && !self.is_std_type(ty, crate::lower::recognition::StdItem::LinkedList)
+    }
+
+    /// Whether any of `bodies` extends a `Vec`, a `VecDeque` or a
+    /// `BinaryHeap` by an iterator whose hint may run the crate's own,
+    /// which std asks as the collection fills, as its capacity says: then
+    /// each one's capacity is native Rust's where it's asked (ADR 0419,
+    /// #849).
+    pub(in crate::lower) fn extends_as_it_fills(&self, bodies: &[&crate::lower::Body<'tcx>]) -> bool {
+        let extend = |func: &rustc_middle::mir::Operand<'tcx>,
+                      args: &[rustc_span::Spanned<rustc_middle::mir::Operand<'tcx>>],
+                      body: &rustc_middle::mir::Body<'tcx>| {
+            let Some((def_id, generic_args)) = func.const_fn_def() else {
+                return false;
+            };
+            let iterable = args.get(1).map(|arg| arg.node.ty(body, self.tcx));
+            self.tcx
+                .trait_of_assoc(def_id)
+                .is_some_and(|t| crate::lower::recognition::is_extend(self.tcx, t))
+                && generic_args
+                    .types()
+                    .next()
+                    .is_some_and(|ty| self.grows_as_it_extends(ty.peel_refs()))
+                && iterable.is_some_and(|iterable| {
+                    let iter_ty = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, iterable);
+                    self.hint_reaches_own(iter_ty)
+                })
+        };
+        (bodies.iter())
+            .filter_map(|body| body.mir.as_ref().map(|mir| &mir.body))
+            .any(|body| {
+                body.basic_blocks.iter().any(|data| {
+                    matches!(&data.terminator().kind,
+                    rustc_middle::mir::TerminatorKind::Call { func, args, .. } if extend(func, args, body))
+                })
+            })
+    }
+
     /// Of a collect into a `Result` or an `Option`, the collection std's
     /// `GenericShunt` collects and its values', `T` of `Result<T, E>`
     /// (#848).
@@ -221,6 +264,53 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => Shunted::Never,
             },
         )
+    }
+
+    /// `extend` of `collection`, of type `into`, by `items`, of type
+    /// `iterable`, asking its hint as std's does as the collection fills
+    /// (#849): of a `Vec`'s, a `BinaryHeap`'s, its `Vec`'s, and a
+    /// `VecDeque`'s, `$grownBy(collection, items, size, deque, drop)`, where
+    /// the hint may run the crate's own and the collection's capacity is
+    /// known where it's extended (`known_capacity`, the user's (B)); refused
+    /// where it isn't, or where its items' size is a caller's. What it's
+    /// extended by, and the collection, held first where it's read again.
+    pub(in crate::lower) fn extended_grown(
+        &mut self,
+        collection: Expr,
+        items: Expr,
+        (iterable, into): (Ty<'tcx>, Ty<'tcx>),
+        capacity_known: bool,
+        span: Span,
+        out: &mut Vec<crate::js::Stmt>,
+    ) -> R<(Expr, Expr)> {
+        let iter_ty = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, iterable);
+        if !self.recognition().grows_as_it_extends(into) || !self.hint_reaches_own(iter_ty) {
+            return Ok((collection, items));
+        }
+        let Some(item) = self.iterator_item(iter_ty) else {
+            return Ok((collection, items));
+        };
+        if !capacity_known || item.has_param() {
+            return Err(self.unsupported(
+                span,
+                "an `extend` of a `Vec`, a `VecDeque` or a `BinaryHeap` by an iterator whose `size_hint` is the crate's own, which std asks as it fills, as its capacity, unknown here, says: extend one this function made by `new`, `with_capacity(n)`, `vec![..]` or a `collect()` of a `TrustedLen` iterator, of items of a known type, and lent `&mut` since only to `extend` or `reserve`",
+            ));
+        }
+        let collection = match collection.reads_same() {
+            true => collection,
+            false => self.spill("items", collection, out),
+        };
+        let deque = self.is_std_type(into, crate::lower::recognition::StdItem::VecDeque);
+        let drop = match self.drops(item) != crate::lower::drops::Drops::Nothing {
+            true => self.drop_function(item, span)?,
+            false => None,
+        };
+        let mut args = vec![collection.clone(), items, self.room_item_size(item)];
+        if deque || drop.is_some() {
+            args.push(Expr::bool(deque));
+        }
+        args.extend(drop);
+        Ok((collection, Expr::call_helper("$grownBy", args)))
     }
 
     /// What `extend` of `into` by what it's given, `it`, of type `iterable`,

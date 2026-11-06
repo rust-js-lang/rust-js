@@ -50,12 +50,16 @@ pub(super) struct Call<'c, 'tcx> {
     /// Of a `RefCell`'s `swap`, which of its two cells is a class's
     /// flattened state, its object's keys (ADR 1044, #687).
     pub(super) flattened: [bool; 2],
+    /// Of an `extend` of a `Vec`, a `VecDeque` or a `BinaryHeap`, whether
+    /// its capacity is known where it's extended (`known_capacity`, #849).
+    pub(super) capacity_known: bool,
     pub(super) span: Span,
 }
 
 /// What MIR says of a call's arguments that their values don't, as `Call`
 /// carries it: `nulled`, `quiet`, `momentary`, `none_form`,
-/// `read_alike` and `flattened`; and of what it gives, `unread`.
+/// `read_alike`, `flattened` and `capacity_known`; and of what it gives,
+/// `unread`.
 #[derive(Clone, Copy, Default)]
 pub(super) struct Given<'c> {
     pub(super) nulled: &'c [bool],
@@ -65,6 +69,7 @@ pub(super) struct Given<'c> {
     pub(super) read_alike: bool,
     pub(super) unread: bool,
     pub(super) flattened: [bool; 2],
+    pub(super) capacity_known: bool,
 }
 
 impl<'c, 'tcx> Call<'c, 'tcx> {
@@ -84,6 +89,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             read_alike,
             unread,
             flattened,
+            capacity_known,
         } = given;
         Call {
             def_id,
@@ -96,6 +102,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             read_alike,
             unread,
             flattened,
+            capacity_known,
             span,
         }
     }

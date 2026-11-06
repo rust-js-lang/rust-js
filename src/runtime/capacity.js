@@ -15,9 +15,23 @@ function $withCapacity(n) {
   return v;
 }
 
-// `v.reserve(n)`, `reserve_exact(n)`: room for `n` more.
-function $reserve(v, additional) {
-  $capacities.set(v, Math.max($capacity(v), v.length + additional));
+// `v.reserve(n)` of items of `size` bytes: where it hasn't room for `n`
+// more, std's `grow_amortized`, at least twice what it had, as many as it
+// needs and `MIN_NON_ZERO_CAP` (raw_vec/mod.rs), so a `Vec` it's asked of
+// has the capacity native Rust's has (#849).
+// Of items of no size, room for as many as asked, its own number (ADR
+// 0419), as native Rust's is `usize::MAX`.
+function $reserve(v, additional, size) {
+  const capacity = $capacity(v);
+  if (capacity - v.length >= additional) return;
+  const grown = size === 0 ? v.length + additional : Math.max(capacity * 2, v.length + additional, $leastCapacity(size));
+  $capacities.set(v, grown);
+}
+
+// `v.reserve_exact(n)`: where it hasn't room for `n` more, as many as it
+// needs (raw_vec/mod.rs `grow_exact`).
+function $reserveExact(v, additional) {
+  if ($capacity(v) - v.length < additional) $capacities.set(v, v.length + additional);
 }
 
 // `v.shrink_to(n)`, `shrink_to_fit()` of `0`: no more than `n`, but its
@@ -219,5 +233,45 @@ function $shuntGrowth(it, size) {
     capacity = Math.max(capacity * 2, length + 1, least);
     $roomFor(capacity, size);
   };
+}
+
+// `it`, what `extend` of `v`, a `Vec` of items of `size` bytes, or a
+// `VecDeque`, `deque`, steps, asked its hint as std's does as `v` fills
+// (#849): `extend_desugared` asks it as it takes an item where `v` is full,
+// and reserves room for its lower bound and one more; a `VecDeque`'s
+// `spec_extend` asks it at its first item too. `v`'s capacity is native
+// Rust's where it's asked (`$reserve`, `$withCapacity`), and kept as it
+// grows. Where asking it throws, a panic, the item taken is dropped, then
+// `it` closed, as `extend` unwinds.
+function $grownBy(v, items, size, deque = false, drop) {
+  const it = items[Symbol.iterator]();
+  const max = 2 ** 32 - 1;
+  let first = true;
+  const steps = new $Steps(
+    () => {
+      const step = it.next();
+      if (step.done) return step;
+      const capacity = size === 0 ? Infinity : $capacity(v);
+      if ((deque && first) || v.length === capacity) {
+        try {
+          const [lower] = $sizeHint(it);
+          const additional = Math.min(lower + 1, max);
+          if (capacity - v.length < additional) {
+            if (v.length + additional > max) throw new Error("capacity overflow");
+            $reserve(v, additional, size);
+            $roomFor($capacity(v), size);
+          }
+        } catch (error) {
+          drop?.(step.value);
+          throw error;
+        }
+      }
+      first = false;
+      return step;
+    },
+    () => it.return?.(),
+  );
+  steps.from = [it];
+  return steps;
 }
 

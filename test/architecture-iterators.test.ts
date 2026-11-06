@@ -373,7 +373,8 @@ test("a reversed zip has one form, never `$zipBack`", () => {
 // `String`'s and a hash table's `extend` (#820): six P0s in a month
 // (#724 #728 #733 #794 #796 #797) were collects that asked it at the
 // wrong time, or not at all, each decided where it was lowered. So the
-// runtime's `$roomForHint` and `$reserveHint` are made there alone, and
+// runtime's `$roomForHint`, `$reserveHint` and `$grownBy` (an `extend`'s,
+// #849) are made there alone, and
 // whether asking the hint may run the crate's own is asked there, by the
 // analysis through `grows_by_callers_size`, and by `Filter::count`, which
 // is no collect, alone.
@@ -382,7 +383,7 @@ test("when a collect asks its hint is hint_asks's alone", () => {
   const lowering = files("src/lower").filter((file) => file.endsWith(".rs") && file !== owner);
   const code = (file: string) => read(file).split("\n").filter((line) => !/^\s*\/\//.test(line));
   const making = lowering.flatMap((file) =>
-    code(file).filter((line) => /"\$(?:roomForHint|reserveHint)"/.test(line)).map((line) => `${file}: ${line.trim()}`));
+    code(file).filter((line) => /"\$(?:roomForHint|reserveHint|grownBy)"/.test(line)).map((line) => `${file}: ${line.trim()}`));
   expect(making).toEqual([]);
   const asking = lowering
     .filter((file) => !["src/lower/recognition/lengths.rs", "src/lower/shortcuts.rs"].includes(file))

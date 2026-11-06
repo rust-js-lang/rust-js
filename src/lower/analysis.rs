@@ -1357,7 +1357,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
                 && !caller_locations.contains(&m)
         })
     });
-    let asks_capacity = asks_capacity(tcx, all_bodies);
+    // And where an `extend` asks the crate's own hint as a `Vec` fills,
+    // which its capacity decides (#849).
+    let asks_capacity = asks_capacity(tcx, all_bodies) || recognition.extends_as_it_fills(all_bodies);
     let generic_consts = generic_consts(tcx, all_bodies);
     // A program its tests use whose dictionaries lack a constant (#597).
     programs::refuse_lacked_consts(tcx, &foreign, &generic_consts);

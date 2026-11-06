@@ -10,8 +10,9 @@ pub(crate) enum CapacityOp {
     WithCapacity,
     /// `v.capacity()`.
     Of,
-    /// `v.reserve(n)`, `reserve_exact(n)`.
-    Reserve,
+    /// `v.reserve(n)`, std's amortized growth, or `reserve_exact(n)`,
+    /// `exact`, as many as it needs (#849).
+    Reserve { exact: bool },
     /// `v.shrink_to(n)`, or `shrink_to_fit()`.
     ShrinkTo { fit: bool },
 }
@@ -38,7 +39,8 @@ pub(crate) fn capacity_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<CapacityOp> 
     }
     Some(match array_collection_method(&path)? {
         "capacity" => CapacityOp::Of,
-        "reserve" | "reserve_exact" => CapacityOp::Reserve,
+        "reserve" => CapacityOp::Reserve { exact: false },
+        "reserve_exact" => CapacityOp::Reserve { exact: true },
         "shrink_to_fit" => CapacityOp::ShrinkTo { fit: true },
         "shrink_to" => CapacityOp::ShrinkTo { fit: false },
         _ => return None,

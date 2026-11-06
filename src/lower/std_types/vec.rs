@@ -71,7 +71,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let n = once(self, 0, "n");
                         self.room_for((None, n), size, span, out);
                     }
-                    CapacityOp::Reserve => {
+                    CapacityOp::Reserve { .. } => {
                         let len = Expr::member(once(self, 0, "items"), "length");
                         let n = once(self, 1, "n");
                         self.room_for((Some(len), n), size, span, out);
@@ -84,7 +84,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 match (op, self.krate.keeps_capacity) {
                     (CapacityOp::Of, _) => helper("$capacity", vec![arg()]),
                     (CapacityOp::WithCapacity, true) => helper("$withCapacity", vec![arg()]),
-                    (CapacityOp::Reserve, true) => helper("$reserve", vec![arg(), arg()]),
+                    (CapacityOp::Reserve { exact: false }, true) => helper(
+                        "$reserve",
+                        vec![arg(), arg(), self.room_item_size(generic_args.type_at(0))],
+                    ),
+                    (CapacityOp::Reserve { exact: true }, true) => helper("$reserveExact", vec![arg(), arg()]),
                     (CapacityOp::ShrinkTo { fit: true }, true) => helper("$shrinkTo", vec![arg(), Expr::int(0)]),
                     (CapacityOp::ShrinkTo { fit: false }, true) => helper("$shrinkTo", vec![arg(), arg()]),
                     // As ADR 0315's: a new array, or nothing.

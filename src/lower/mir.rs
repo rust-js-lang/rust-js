@@ -30,6 +30,7 @@ mod hints;
 mod iter;
 mod jsx_props;
 mod keyed_writes;
+mod known_capacity;
 mod local_facts;
 mod locals;
 mod nested_options;

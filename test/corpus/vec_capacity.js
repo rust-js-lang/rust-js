@@ -23,7 +23,7 @@ function main() {
   v.length = 0;
   console.log(`${$capacity(v) === before}`);
   $roomFor(v.length + 20, 4);
-  $reserve(v, 20);
+  $reserve(v, 20, 4);
   console.log(`${$capacity(v) >= 20}`);
   v.push(7);
   $shrinkTo(v, 0);
