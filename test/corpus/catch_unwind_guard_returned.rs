@@ -80,6 +80,44 @@ fn finished(n: u32, finish: Option<&Finish>) -> &'static dyn Fn() -> u32 {
     &noop
 }
 
+// Each again with a guard whose drop can't throw, a print and a `Cell`'s
+// set of what it holds: the scope's `finally`.
+struct Restored {
+    previous: u32,
+}
+
+impl Drop for Restored {
+    fn drop(&mut self) {
+        println!("restored {}", self.previous);
+        DEPTH.set(self.previous);
+    }
+}
+
+fn gesture_restored(n: u32, on_finish: Option<&Finish>) -> &'static dyn Fn() -> u32 {
+    let previous = DEPTH.get();
+    DEPTH.set(previous + 1);
+    let _restored = Restored { previous };
+    match catch_unwind(AssertUnwindSafe(|| {
+        let picked = scope(n);
+        on_finish.map(|on_finish| on_finish(picked))
+    })) {
+        Ok(Some(finish)) => return finish,
+        Ok(None) => {}
+        Err(error) => report(error.downcast_ref::<String>()),
+    }
+    &noop
+}
+
+fn finished_restored(n: u32, finish: Option<&Finish>) -> &'static dyn Fn() -> u32 {
+    let _restored = Restored { previous: DEPTH.get() };
+    match catch_unwind(AssertUnwindSafe(|| finish.map(|finish| finish(scope(n))))) {
+        Ok(Some(finish)) => return finish,
+        Ok(None) => {}
+        Err(_) => println!("finished {n} panicked"),
+    }
+    &noop
+}
+
 fn main() {
     for n in [1, 3, 4, 5] {
         for finish in [None, Some(&chosen as &Finish)] {
@@ -90,6 +128,13 @@ fn main() {
             }
             println!("depth {}", DEPTH.get());
             println!("finished {n} {} gave {}", finish.is_some(), finished(n, finish)());
+            let given = catch_unwind(AssertUnwindSafe(|| gesture_restored(n, finish)));
+            match given {
+                Ok(f) => println!("restored gesture {n} {} gave {}", finish.is_some(), f()),
+                Err(_) => println!("restored gesture {n} {} panicked", finish.is_some()),
+            }
+            let f = finished_restored(n, finish);
+            println!("finished restored {n} {} gave {}", finish.is_some(), f());
         }
     }
 }

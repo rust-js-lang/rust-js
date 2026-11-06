@@ -13,6 +13,7 @@ import {
   mapDoubleEndedIterator_tryRfold,
 } from "@rust-js/std/iter.js";
 import {
+  $catchUnwind,
   $cleanup,
   $closing,
   $enumerate,
@@ -153,6 +154,26 @@ function loudDoubleEndedIterator_rfold(loud, init, f, dropB, dropF) {
 
 function loudDrop_drop(loud) {
   console.log(`drop loud ${loud.left}`);
+}
+
+function added(acc, x) {
+  if (x === 7) {
+    throw new Error("seven");
+  }
+  return (acc + x) | 0;
+}
+
+function labelledRsum(count, label) {
+  let acc = 0;
+  try {
+    let x;
+    while ((x = countDoubleEndedIterator_nextBack(count)) != null) {
+      acc = added(acc, x);
+    }
+    return acc;
+  } finally {
+    console.log(`drop label ${label[0]}`);
+  }
 }
 
 function main() {
@@ -732,6 +753,9 @@ function main() {
       ),
     ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
+  console.log(`${labelledRsum({ at: 0, end: 5 }, ["sum"])}`);
+  const caught = $catchUnwind(() => labelledRsum(count(), ["seven"]));
+  console.log(`${caught.TAG === "Err"}`);
   const fused = fuseDoubleEndedIterator_nthBack(
     iterator_fuse(count(), { next: countIterator_next, sizeHint: countIterator_sizeHint }, false),
     1,

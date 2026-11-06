@@ -117,12 +117,42 @@ impl Drop for Restore {
     }
 }
 
+// A guard whose drop can't throw, a \`Cell\`'s set of what it holds.
+struct Counted(u32);
+
+impl Drop for Counted {
+    fn drop(&mut self) {
+        DROPS.set(self.0);
+    }
+}
+
 pub fn drops() -> u32 {
     DROPS.get()
 }
 
 fn is_root(line: &str) -> bool {
     line.contains("Root")
+}
+
+pub fn counted_root(lines: &[&str]) -> usize {
+    let _counted = Counted(DROPS.get() + 1);
+    let mut s = 0;
+    while s < lines.len() && !is_root(lines[s]) {
+        s += 1;
+    }
+    s
+}
+
+pub fn counted_written(lines: &[&str]) -> usize {
+    let _counted = Counted(DROPS.get() + 1);
+    let mut s = 0;
+    while s < lines.len() {
+        if is_root(lines[s]) {
+            break;
+        }
+        s += 1;
+    }
+    s
 }
 
 pub fn root(lines: &[&str]) -> usize {
@@ -155,10 +185,15 @@ pub fn written(lines: &[&str]) -> usize {
   // #861 (c) makes the scope one \`finally\` again, its \`while\` its test.
   expect(js).toContain('  while (s < lines.length) {\n    let tmp;\n    try {\n      tmp = isRoot(lines[s]);\n    } catch (error) {\n');
   expect(js).toContain('    if (tmp) {\n      break;\n    }\n    s++;\n  }\n  const result = s;\n  DROPS = (DROPS + 1) >>> 0;\n  return result;\n}\n');
+  // A drop that can't throw is the scope's one \`finally\`, each \`while\` its test.
+  expect(js).toContain('    while (s < lines.length && !isRoot(lines[s])) {\n      s++;\n    }\n    return s;\n  } finally {\n');
+  expect(js).toContain('    while (s < lines.length) {\n      if (isRoot(lines[s])) {\n        break;\n      }\n      s++;\n    }\n    return s;\n  } finally {\n');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.root(["a", "Root"]), lib.root(["a"]), lib.root([])]).toEqual([1, 1, 0]);
   expect([lib.written(["a", "Root"]), lib.written(["a"]), lib.written([])]).toEqual([1, 1, 0]);
   expect(lib.drops()).toBe(6);
+  expect([lib.countedRoot(["a", "Root"]), lib.countedRoot(["a"]), lib.countedWritten(["Root"]), lib.countedWritten([])]).toEqual([1, 1, 0, 0]);
+  expect(lib.drops()).toBe(10);
 });
 
 // ADR 0892: what can't throw, a `str`'s `includes` of Rust's types

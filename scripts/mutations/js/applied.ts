@@ -397,12 +397,11 @@ export const mutations: Mutation[] = [
   {
     name: "expression-closure-kept",
     breaks:
-      "a guard's closure of an expression, `() => log(..)`, stays `const onDrop = () => ..; .. onDrop();`, where its body is the `finally`'s (#501)",
+      "a guard's closure of an expression, `() => log(..)`, stays `const onDrop = () => ..; .. onDrop();`, where its body is what drops it (#501)",
     file: "src/js/applied.rs",
     find: "    block_of(&call, whole, false, false, false).or_else(|| value_of(&call, whole))\n",
     replace: "    block_of(&call, whole, false, false, false)\n",
-    tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
-    snapshots: true,
+    tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard of a closure"],
   },
   {
     name: "handle-given-not-applied",

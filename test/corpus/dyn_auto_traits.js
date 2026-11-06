@@ -21,6 +21,16 @@ function counterDrop_drop(counter) {
 
 function keep() {}
 
+// An `Rc` of what drops without a throw, its parts' prints, held while
+// what may panic runs: its drop the scope's `finally`.
+
+function left(pair) {
+  if (pair[0][0] === "") {
+    throw new Error("no left");
+  }
+  return pair[0][0];
+}
+
 function main() {
   const _boxed = { value: ["boxed"], impl: { $drop: noisyDrop_drop } };
   console.log("in scope");
@@ -101,6 +111,25 @@ function main() {
     },
   );
   console.log(`drops ${drops}`);
+
+  const pair = { value: [["left"], ["right"]], strong: 1, weak: 0 };
+  let other;
+  try {
+    other = $rcClone(pair);
+  } finally {
+    $rcDrop(pair, (value) => {
+      noisyDrop_drop(value[0]);
+      noisyDrop_drop(value[1]);
+    });
+  }
+  try {
+    console.log(`${left(other.value)}`);
+  } finally {
+    $rcDrop(other, (value) => {
+      noisyDrop_drop(value[0]);
+      noisyDrop_drop(value[1]);
+    });
+  }
 
   const kept = ["borrowed"];
   keep({ value: kept, impl: { $drop: noisyDrop_drop } });

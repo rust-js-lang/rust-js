@@ -155,6 +155,25 @@ function kept(n, log) {
   }
 }
 
+function keptSaid(n, log) {
+  const said = "kept";
+  let result;
+  try {
+    log.value = (log.value + 1) >>> 0;
+    const first = fails(n);
+    log.value = (log.value + 10) >>> 0;
+    // Twice what it found.
+    result = (first * 2) >>> 0;
+  } catch (thrown$1) {
+    const thrown = $unwound(thrown$1);
+    const message = messageOf(thrown);
+    result = $byteLen(message);
+  } finally {
+    console.log(`said ${said}`);
+  }
+  return (result + 100) >>> 0;
+}
+
 function main() {
   for (const [n, segment] of [
     [1, undefined],
@@ -179,8 +198,10 @@ function main() {
     console.log(
       `ended ${value.TAG === "Ok" ? "Ok(())" : `Err(${$debugStr(value._0)})`} ${log.value}`,
     );
-    const log$1 = { value: 0 };
+    let log$1 = { value: 0 };
     console.log(`kept ${kept(n, log$1)} ${log$1.value}`);
+    log$1 = { value: 0 };
+    console.log(`kept said ${keptSaid(n, log$1)} ${log$1.value}`);
   }
 }
 //# sourceMappingURL=case.js.map

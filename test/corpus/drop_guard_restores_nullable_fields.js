@@ -46,6 +46,18 @@ function initialize(chunk, tracked, run) {
   return result;
 }
 
+// Restored by hand, no guard: each as it was read, never `?? null`.
+function initializeByHand(chunk, run) {
+  const prevHandler = initializingHandler;
+  initializingHandler = null;
+  const prevChunk = initializingChunk;
+  initializingChunk = chunk;
+  const value = run();
+  initializingHandler = prevHandler;
+  initializingChunk = prevChunk;
+  return value;
+}
+
 function current() {
   const handler = initializingHandler?.id;
   const chunk = initializingChunk?.id;
@@ -67,5 +79,6 @@ function main() {
     }),
   );
   console.log(`${caught.TAG === "Err"} ${current()}`);
+  console.log(`${initializeByHand(inner, () => 20)} ${current()}`);
 }
 //# sourceMappingURL=case.js.map

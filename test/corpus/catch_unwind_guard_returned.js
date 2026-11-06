@@ -95,10 +95,50 @@ function finished(n, finish) {
   return result;
 }
 
+function gestureRestored(n, onFinish) {
+  const previous = depth;
+  depth = (previous + 1) >>> 0;
+  try {
+    const picked = scope(n);
+    const finish = onFinish != null ? onFinish(picked) : undefined;
+    if (finish != null) {
+      return finish;
+    }
+  } catch (thrown) {
+    const error = $unwound(thrown);
+    report(
+      error.impl.typeId() === "alloc::string::String" || error.impl === $panicMessage
+        ? error.value
+        : undefined,
+    );
+  } finally {
+    console.log(`restored ${previous}`);
+    depth = previous;
+  }
+  return noop;
+}
+
+function finishedRestored(n, finish) {
+  const previous = depth;
+  try {
+    const catchUnwind = finish != null ? finish(scope(n)) : undefined;
+    if (catchUnwind != null) {
+      const finish = catchUnwind;
+      return finish;
+    }
+  } catch {
+    console.log(`finished ${n} panicked`);
+  } finally {
+    console.log(`restored ${previous}`);
+    depth = previous;
+  }
+  return noop;
+}
+
 function main() {
   for (const n of [1, 3, 4, 5]) {
     for (const finish of [undefined, chosen]) {
-      const given = $catchUnwind(() => gesture(n, finish));
+      let given = $catchUnwind(() => gesture(n, finish));
       if (given.TAG === "Ok") {
         const f = given._0;
         const arg = f();
@@ -109,6 +149,17 @@ function main() {
       console.log(`depth ${depth}`);
       const arg = finished(n, finish)();
       console.log(`finished ${n} ${finish != null} gave ${arg}`);
+      given = $catchUnwind(() => gestureRestored(n, finish));
+      if (given.TAG === "Ok") {
+        const f = given._0;
+        const arg = f();
+        console.log(`restored gesture ${n} ${finish != null} gave ${arg}`);
+      } else {
+        console.log(`restored gesture ${n} ${finish != null} panicked`);
+      }
+      const f = finishedRestored(n, finish);
+      const arg$1 = f();
+      console.log(`finished restored ${n} ${finish != null} gave ${arg$1}`);
     }
   }
 }

@@ -52,6 +52,26 @@ function untilSeven(queue) {
   }
 }
 
+function untilSevenFinished(queue) {
+  if (queue.length !== 0) {
+    const finished = "queue";
+    try {
+      for (let i = 0; i < queue.length; i++) {
+        const n = queue[i];
+        if (n === 7) {
+          return;
+        }
+        work(n);
+      }
+      done = 0;
+    } catch (_error) {
+      done = 1;
+    } finally {
+      console.log(`finished ${finished}`);
+    }
+  }
+}
+
 function main() {
   console.log(`${flushed(2)}`);
   console.log(`${flushed(0)}`);
@@ -59,6 +79,9 @@ function main() {
   untilSeven([1, 7, 0]);
   untilSeven([1, 0, 7]);
   untilSeven([1, 2]);
+  untilSevenFinished([1, 7, 0]);
+  untilSevenFinished([1, 0, 7]);
+  untilSevenFinished([1, 2]);
   console.log(`${done}`);
 }
 //# sourceMappingURL=case.js.map

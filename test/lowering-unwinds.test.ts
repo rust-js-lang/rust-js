@@ -657,12 +657,62 @@ pub fn guarded(n: u32) -> String {
     }
     String::from("none")
 }
+
+thread_local! {
+    static RESTORED: Cell<u32> = const { Cell::new(0) };
+}
+
+// Its drop can't throw, a \`Cell\`'s sets: the scope's one \`finally\`.
+struct Quiet {
+    previous: u32,
+}
+
+impl Drop for Quiet {
+    fn drop(&mut self) {
+        REENTRY.set(false);
+        RESTORED.set(self.previous);
+    }
+}
+
+pub fn quiet_guarded(n: u32) -> String {
+    if REENTRY.get() {
+        return String::new();
+    }
+    {
+        REENTRY.set(true);
+        let previous = work(0);
+        let _quiet = Quiet { previous };
+        let first = work(n);
+        if first > 3 {
+            let mut i = 0;
+            while i < first {
+                if work(i) == 7 {
+                    return format!("found {i}");
+                }
+                i += 1;
+            }
+        }
+    }
+    String::from("none")
+}
+
+pub fn restored_last() -> u32 {
+    RESTORED.get()
+}
 `);
+  const quiet = js.slice(js.indexOf("export function quietGuarded"));
+  expect(quiet).not.toContain("catch (error)");
+  expect(quiet.match(/finally/g)?.length).toBe(1);
+  expect(quiet).toContain(`  } finally {
+    reentry = false;
+    RESTORED = previous;
+  }
+  return "none";`);
   // Its drop calls a binding, which may throw, and one that throws as a panic
   // unwinds aborts: so each call that may throw is a \`try\` whose \`catch\`
   // drops it, \`$cleanup\`'s, and each way out drops it after (#847, the
   // user's decision; #861 makes it one \`finally\` where nothing it calls throws).
-  expect(js).not.toContain("finally");
+  expect(js.match(/finally/g)?.length).toBe(1);
   expect(js).toContain(`      if (tmp) {
         const result = \`found \${i}\`;
         reentry = false;
@@ -687,6 +737,9 @@ pub fn guarded(n: u32) -> String {
   expect(restores).toEqual([40, 40, 40]);
   // Restored each time, so the next call isn't a reentry.
   expect(lib.guarded(2)).toBe("none");
+  expect([lib.quietGuarded(2), lib.quietGuarded(8), lib.restoredLast()]).toEqual(["none", "found 7", 40]);
+  expect(() => lib.quietGuarded(30)).toThrow("thirty");
+  expect(lib.quietGuarded(2)).toBe("none");
   delete g.restored;
   delete g.work;
 });

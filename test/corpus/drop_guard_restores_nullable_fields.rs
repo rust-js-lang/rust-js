@@ -47,6 +47,17 @@ fn initialize(chunk: &Rc<Chunk>, tracked: bool, run: &dyn Fn() -> u32) -> u32 {
     run()
 }
 
+// Restored by hand, no guard: each as it was read, never `?? null`.
+fn initialize_by_hand(chunk: &Rc<Chunk>, run: &dyn Fn() -> u32) -> u32 {
+    let prev_handler = INITIALIZING_HANDLER.take();
+    let prev_chunk = INITIALIZING_CHUNK.with_borrow(Clone::clone);
+    INITIALIZING_CHUNK.set(Some(Rc::clone(chunk)));
+    let value = run();
+    INITIALIZING_HANDLER.set(prev_handler);
+    INITIALIZING_CHUNK.set(prev_chunk);
+    value
+}
+
 fn current() -> String {
     let handler = INITIALIZING_HANDLER.with_borrow(|h| h.as_ref().map(|h| h.id));
     let chunk = INITIALIZING_CHUNK.with_borrow(|c| c.as_ref().map(|c| c.id));
@@ -63,4 +74,5 @@ fn main() {
     println!("{seen} {}", current());
     let caught = std::panic::catch_unwind(|| initialize(&inner, false, &|| panic!("boom")));
     println!("{} {}", caught.is_err(), current());
+    println!("{} {}", initialize_by_hand(&inner, &|| 20), current());
 }

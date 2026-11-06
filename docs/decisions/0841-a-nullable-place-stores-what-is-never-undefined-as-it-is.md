@@ -354,5 +354,8 @@ is. So each is stored as it is: `initializingHandler = prevHandler;`.
   thread-local's own value, `null` or a chunk.
 - Held by corpus `drop_guard_restores_nullable_fields` against native
   Rust, restored after a return and a panic, and the mutations
-  `nullable-local-read-unnulled` (`lower/mir/rvalues.ts`) and
-  `guard-copy-defined-lost` (`lower/drops/inlined.ts`).
+  `nullable-local-read-unnulled` (`lower/mir/nulled.ts`, now of a
+  restore by hand too, `initialize_by_hand`) and, until #847 made the
+  drop of a `take()` of an `Option` one that may throw, so no guard of
+  it is taken apart, `guard-copy-defined-lost` (`lower/drops/inlined.ts`),
+  taken out until #861 makes it quiet again (ADR 0660, amended).

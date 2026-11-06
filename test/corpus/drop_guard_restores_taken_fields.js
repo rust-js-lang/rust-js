@@ -15,6 +15,7 @@ export function entry() {
 
 let initializingHandler;
 let initializingChunk;
+let depth = 0;
 
 const DEV = true;
 
@@ -63,6 +64,23 @@ function initializeModelChunk(chunk) {
   return value;
 }
 
+function parseAtDepth(chunk, handler) {
+  const restore = depth;
+  depth = 1;
+  let value;
+  try {
+    value = parseModel(chunk);
+    if (handler.errored) {
+      // Ignore error parsing debug info, we'll report the original error instead.
+    } else if (handler.deps > 0) {
+      // TODO: Block the resolution of the error until all the debug info has loaded.
+    }
+  } finally {
+    depth = restore;
+  }
+  return value;
+}
+
 function state() {
   const handler = initializingHandler?.deps;
   const chunk = initializingChunk;
@@ -73,7 +91,14 @@ function main() {
   initializingHandler = { errored: false, deps: 2 };
   initializingChunk = "root";
   console.log(`${initializeModelChunk("41")} ${state()}`);
-  const caught = $catchUnwind(() => initializeModelChunk("x"));
+  let caught = $catchUnwind(() => initializeModelChunk("x"));
   console.log(`${caught.TAG === "Err"} ${state()}`);
+  const handler = {
+    errored: false,
+    deps: 1,
+  };
+  console.log(`${parseAtDepth("7", handler)} ${depth}`);
+  caught = $catchUnwind(() => parseAtDepth("y", handler));
+  console.log(`${caught.TAG === "Err"} ${depth}`);
 }
 //# sourceMappingURL=case.js.map

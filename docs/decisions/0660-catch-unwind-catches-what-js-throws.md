@@ -535,6 +535,18 @@ aborts: `_a` is never dropped and `never` never printed.
   turn as one of them panics, as Rust's drop glue does, and the abort comes
   where that panic leaves the drop: `drop first, bomb 2, drop last`, then
   the abort.
+- **An early return drops where it leaves**: a scope no `finally` holds
+  is MIR's block of it, `bb19: { .. break bb19; .. } drop; return;`, a
+  label the program never wrote. Tidy's "dropped at breaks" pass, after
+  "scoped loops" (`unwinds::dropped_at_breaks`), writes each `break` of the
+  block as what follows it: the drops each `catch` in the block runs as a
+  panic unwinds (`dropped_last`, so none of the program's own code is
+  copied), each one no `finally` holds, then the `return`, or a throw the
+  drops' `catch` guards, `try { throw x; } catch (error) { $cleanup(..);
+  throw error; }`, React's ReactChildFiber's. A `break` inside a `try`,
+  whose `catch` or `finally` would run again as it drops, stays, and so
+  does the block. So `if (..) { const result = ..; drop; return result; }`
+  where Rust returns; React's port has no compiler label left (#861).
 - **The runtime's own cleanup is the same `$cleanup`**: `$dropsUnwinding`,
   which `$unwinds` and `$inTurnOf` run (ADR 1092), where #817's
   `$unwindingThrew` kept the first error.
@@ -566,6 +578,20 @@ The corpus judges an abort as it judges a panic: `//@ run-abort`, native
 Rust's SIGABRT and the JS's exit 134 each `{ exit: 134 }`
 (`test/programs.ts`' `execute`), what each printed compared byte for byte.
 
+The paths a drop that can't throw still takes, one `finally` of its scope,
+stay held by tests whose guards' drops can't throw, a print or a `Cell`'s
+set of what the guard holds, beside those whose drops now may: the
+lowering tests' `runAtDepth`, `quiet_frame`, `quiet_guarded`, `counted_root`
+and a scope of a closure guard that can't throw, and the corpus cases'
+`*_restored`, `until_seven_finished`, `kept_said`, `parse_at_depth`, `initialize_by_hand`,
+`handle`, `twice_d`, `labelled_rsum`, `looped_gen`, `summed` and a loop of
+`ReadsPlain`. Three paths no program reaches until #861 makes more drops
+quiet keep their code but lose their mutations, which #861 brings back:
+`run-reads-what-drop-reads` and `leading-assignment-taken`, of a loop's
+drop of what it steps (a generic's or an iterator's close), and
+`guard-copy-defined-lost`, of a guard taken apart whose drop `take()`s an
+`Option` (rd523).
+
 Held by the corpus cases `unwinding_drop_aborts_locals` (and a drop that
 catches its own panic as it unwinds, which goes on),
 `unwinding_drop_aborts_field` (no `catch_unwind`), `unwinding_drop_aborts_vec`
@@ -580,7 +606,7 @@ panic unwinds is guarded by drops/parts.rs alone"; and the mutations of
 `abort-caught-by-catch-unwind`, `abort-cleanup-runs-after`
 (`runtime/unwind.ts`), `cleanup-unguarded`, `dropped-after-finally-unguarded`,
 `rc-drop-quiet-of-any` (`lower/drops/parts.ts`), `finally-holds-what-may-throw`,
-`cleanups-left-unguarded`, `tested-unwrap-drops-unguarded`
-(`lower/mir/tidy/unwinds.ts`) and `assert-drops-unguarded`
+`cleanups-left-unguarded`, `tested-unwrap-drops-unguarded`,
+`dropped-at-breaks-off` (`lower/mir/tidy/unwinds.ts`) and `assert-drops-unguarded`
 (`lower/mir/structure.ts`); tidy's contract is held by its unit test,
 `what_unwinds_is_guarded`.

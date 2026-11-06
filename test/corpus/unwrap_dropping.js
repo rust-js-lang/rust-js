@@ -129,6 +129,19 @@ function task(name) {
   );
 }
 
+// Again of what drops without a throw, a print: its drop before the panic,
+// nothing to tell whether it's still there.
+
+let handleImpl;
+
+function handle(noisy) {
+  if (handleImpl == null) {
+    console.log(`drop ${noisy[0]}`);
+    throw new Error("called `Option::unwrap()` on a `None` value");
+  }
+  handleImpl(noisy);
+}
+
 function caught(name, f) {
   try {
     f();
@@ -171,5 +184,11 @@ function main() {
     const value = nested();
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   });
+  caught("handle", () => handle(["handled"]));
+  handleImpl = (noisy) => {
+    console.log(`handle ${Noisy.name(noisy)}`);
+    console.log(`drop ${noisy[0]}`);
+  };
+  caught("handle, set", () => handle(["handled, set"]));
 }
 //# sourceMappingURL=case.js.map

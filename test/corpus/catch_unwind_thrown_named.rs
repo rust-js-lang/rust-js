@@ -121,6 +121,37 @@ fn kept(n: u32, log: &Cell<u32>) -> u32 {
     result + 100
 }
 
+/// Again with a guard whose drop can't throw, a print: its `finally`
+/// after the `catch`, the arm's value set in the `try`.
+struct Said(&'static str);
+
+impl Drop for Said {
+    fn drop(&mut self) {
+        println!("said {}", self.0);
+    }
+}
+
+fn kept_said(n: u32, log: &Cell<u32>) -> u32 {
+    let result;
+    {
+        let _said = Said("kept");
+        match catch_unwind(AssertUnwindSafe(|| {
+            log.set(log.get() + 1);
+            let first = fails(n);
+            log.set(log.get() + 10);
+            // Twice what it found.
+            first * 2
+        })) {
+            Ok(v) => result = v,
+            Err(thrown) => {
+                let message = message_of(&*thrown);
+                result = message.len() as u32;
+            }
+        }
+    }
+    result + 100
+}
+
 fn main() {
     for (n, segment) in [(1, None), (5, None), (1, Some(1)), (2, Some(4))] {
         let log = Cell::new(0);
@@ -140,5 +171,7 @@ fn main() {
         println!("ended {:?} {}", ended.map_err(|e| message_of(&*e)), log.get());
         let log = Cell::new(0);
         println!("kept {} {}", kept(n, &log), log.get());
+        let log = Cell::new(0);
+        println!("kept said {} {}", kept_said(n, &log), log.get());
     }
 }

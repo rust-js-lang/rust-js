@@ -78,6 +78,18 @@ fn task(name: &'static str) -> Box<dyn Fn()> {
     Box::new(move || println!("run {}", noisy.name()))
 }
 
+// Again of what drops without a throw, a print: its drop before the panic,
+// nothing to tell whether it's still there.
+type Handle = fn(Noisy);
+
+thread_local! {
+    static HANDLE_IMPL: Cell<Option<Handle>> = const { Cell::new(None) };
+}
+
+fn handle(noisy: Noisy) {
+    HANDLE_IMPL.get().unwrap()(noisy)
+}
+
 fn caught(name: &str, f: impl FnOnce()) {
     match panic::catch_unwind(AssertUnwindSafe(f)) {
         Ok(()) => println!("{name}: returned"),
@@ -102,4 +114,7 @@ fn main() {
     caught("once, set", || once(task("once, set")));
     println!("{:?}", nested(Some(None)));
     caught("nested", || println!("{:?}", nested(None)));
+    caught("handle", || handle(Noisy("handled")));
+    HANDLE_IMPL.set(Some(|noisy| println!("handle {}", noisy.name())));
+    caught("handle, set", || handle(Noisy("handled, set")));
 }

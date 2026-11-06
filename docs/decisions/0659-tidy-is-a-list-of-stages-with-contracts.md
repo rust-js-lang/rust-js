@@ -467,9 +467,13 @@ the todo snapshot, each a `for` or a `while` test where MIR's step was;
 `docs/readability.txt` is blessed with them: `$iter` and
 `return;` fewer, no shape's share grown.
 
-Held by mutations `ended-exit-unmoved`, `run-reads-what-drop-reads`,
-`run-labels-unseen`, `wide-run-unextended`, `escapes-own-labels-unseen`,
-`leading-assignment-taken` (`tidy/unwinds.ts`) and `looped-drops-break-kept` (`tidy/loops.ts`).
+Held by mutations `ended-exit-unmoved`,
+`run-labels-unseen`, `wide-run-unextended`, `escapes-own-labels-unseen`
+(`tidy/unwinds.ts`) and `looped-drops-break-kept` (`tidy/loops.ts`); and,
+until #847 made every loop's drop these reach one that may throw, a
+generic's or an iterator's close, `run-reads-what-drop-reads` and
+`leading-assignment-taken`, taken out until #861 makes such a drop quiet
+again (ADR 0660, amended).
 
 ## Amendment: the run's `unreachable` step goes, dead since #442 (2026-10-31)
 

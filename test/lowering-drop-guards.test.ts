@@ -71,6 +71,73 @@ async function restoresEach(dir: string) {
   expect([seen, lib.currentFiber()]).toEqual([["a", "b", "c"], "root"]);
 }
 
+/** \`runWithFiber\` of a depth, a \`Cell<u32>\`, whose guard's drop of \`drop\`'s
+ * body can't throw, a \`Cell\`'s set: the scope's one \`finally\` (#847). */
+const runAtDepth = (guard: string, drop: string, made: string) => `use std::cell::Cell;
+
+thread_local! {
+    static DEPTH: Cell<u32> = const { Cell::new(0) };
+}
+
+pub fn set_depth(depth: u32) {
+    DEPTH.set(depth);
+}
+
+pub fn depth() -> u32 {
+    DEPTH.get()
+}
+
+${guard}
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        ${drop}
+    }
+}
+
+pub fn run_at_depth<T>(depth: u32, wrap: bool, callback: impl FnOnce() -> T) -> T {
+    let previous_depth = DEPTH.get();
+    set_depth(depth);
+    let _restore = ${made};
+    if wrap {
+        return callback();
+    }
+    callback()
+}
+`;
+
+/** \`runAtDepth\`'s one \`finally\`, its returns in it. */
+const depthReturns = `  const previousDepth = DEPTH;
+  setDepth(depth);
+  try {
+    if (wrap) {
+      return callback();
+    }
+    return callback();
+  } finally {
+    setDepth(previousDepth);
+  }
+}
+`;
+
+/** Each way out of \`runAtDepth\` restores the depth before it, once. */
+async function restoresDepth(dir: string) {
+  const lib = await import(join(dir, "lib.js"));
+  lib.setDepth(1);
+  const seen: unknown[] = [];
+  expect(lib.runAtDepth(2, true, () => (seen.push(lib.depth()), 1))).toBe(1);
+  expect(lib.depth()).toBe(1);
+  expect(lib.runAtDepth(3, false, () => (seen.push(lib.depth()), 2))).toBe(2);
+  expect(lib.depth()).toBe(1);
+  expect(() =>
+    lib.runAtDepth(4, true, () => {
+      seen.push(lib.depth());
+      throw new RangeError("thrown");
+    }),
+  ).toThrow("thrown");
+  expect([seen, lib.depth()]).toEqual([[2, 3, 4], 1]);
+}
+
 // Its guard's drop, a binding's call, may throw, and one that throws as a
 // panic unwinds aborts, which a `finally` can't tell: so each way out drops it
 // after its `try`, and as a panic unwinds, `$cleanup`'s (#847, the user's
@@ -119,6 +186,13 @@ test("an early return in a guard's scope returns in its try", async () => {
   expect(js).toContain(guardedReturns);
   expect(js).not.toContain("finally");
   await restoresEach(dir);
+  // One whose drop can't throw returns in the \`try\` of the one \`finally\`.
+  const quiet = compiled(
+    "guard-early-return-quiet",
+    runAtDepth("struct Restore {\n    previous: u32,\n}", "set_depth(self.previous);", "Restore { previous: previous_depth }"),
+  );
+  expect(quiet.js).toContain(depthReturns);
+  await restoresDepth(quiet.dir);
 });
 
 // Its port's guard is a tuple struct, `struct Restore(Option<Fiber>)`: its
@@ -134,6 +208,10 @@ test("a one-field guard of a variable reads as that variable", async () => {
   expect(js).toContain(guardedReturns);
   expect(js).not.toContain("restore");
   await restoresEach(dir);
+  const quiet = compiled("guard-one-field-variable-quiet", runAtDepth("struct Restore(u32);", "set_depth(self.0);", "Restore(previous_depth)"));
+  expect(quiet.js).toContain(depthReturns);
+  expect(quiet.js).not.toContain("restore");
+  await restoresDepth(quiet.dir);
   const later = compiled(
     "guard-one-field-set-later",
     `struct Restore(u32);
@@ -216,6 +294,17 @@ test("a guard's drop that takes its field reads the variable it was made of", as
   );
   expect(named.js).toContain("    const old = previous;\n    previous = undefined;\n    setCurrentFiber(old);\n    return result;\n  }\n");
   await restoresEach(named.dir);
+  // One whose drop can't throw, its field read then written, as \`take\`
+  // writes it, is its one \`finally\`, the field its variable, no copy.
+  for (const [name, guard, made, field] of [
+    ["guard-take-quiet", "struct Restore(u32);", "Restore(previous_depth)", "self.0"],
+    ["guard-take-quiet-named", "struct Restore {\n    previous: u32,\n}", "Restore { previous: previous_depth }", "self.previous"],
+  ]) {
+    const quiet = compiled(name, runAtDepth(guard, `let old = ${field};\n        ${field} = 0;\n        set_depth(old);`, made));
+    expect(quiet.js).toContain(depthReturns);
+    expect(quiet.js).not.toContain("old");
+    await restoresDepth(quiet.dir);
+  }
   const again = compiled(
     "guard-take-again",
     `struct Twice(Option<String>);
@@ -269,6 +358,25 @@ pub fn looped(names: Vec<String>) {
         println!("{name}");
     }
 }
+
+// Its drop can't throw, so it's the scope's one \`finally\`, which reads
+// the field the scope writes.
+struct Count(u32);
+
+impl Drop for Count {
+    fn drop(&mut self) {
+        let count = self.0;
+        self.0 = 0;
+        println!("count {count}");
+    }
+}
+
+pub fn counted(work: fn()) {
+    let mut guard = Count(1);
+    work();
+    guard.0 = 2;
+    work();
+}
 `,
   );
   expect(again.js).toContain("  _t[0] = undefined;\n  const again = _t[0];\n");
@@ -282,10 +390,12 @@ pub fn looped(names: Vec<String>) {
     lib.twiceNamed("n");
     lib.flushed(() => {});
     lib.looped(["", "b"]);
+    lib.counted(() => {});
   } finally {
     console.log = log;
   }
-  expect(logged).toEqual(['Some("a") None', 'Some("n") None', "more None", "", "more Some(true)", "b", "more Some(false)"]);
+  expect(again.js).toContain("  try {\n    work();\n    guard[0] = 2;\n    work();\n  } finally {\n");
+  expect(logged).toEqual(['Some("a") None', 'Some("n") None', "more None", "", "more Some(true)", "b", "more Some(false)", "count 2"]);
 });
 
 // A copy the drop makes of its guard's field, `let old = self.0.clone();`,
@@ -794,6 +904,33 @@ fn oper(node: &Rc<Node>) -> u32 {
     (node.getter)()
 }
 
+// A scope that can't throw drops its guard once, after it: the closure's
+// body there, of a block and of an expression.
+fn deeper(node: &Node, by: u32) -> u32 {
+    node.depth.set(node.depth.get() + by);
+    let _restore = Finally(|| {
+        node.depth.set(node.depth.get() - by);
+    });
+    node.depth.get() * 2
+}
+
+pub fn deeper_seen(by: u32) -> u32 {
+    let node = Node {
+        getter: Box::new(|| 0),
+        depth: Cell::new(3),
+    };
+    deeper(&node, by) + node.depth.get()
+}
+
+fn restored(n: u32) {
+    println!("restored {n}");
+}
+
+pub fn shown(n: u32) {
+    let _restore = Finally(|| restored(n));
+    println!("showing {n}");
+}
+
 pub fn computed(getter: impl Fn() -> u32 + 'static) -> impl Fn() -> u32 {
     let node = Rc::new(Node {
         getter: Box::new(getter),
@@ -836,9 +973,18 @@ pub fn depth_seen(fail: bool) -> u32 {
   return result;
 }
 `);
+  expect(js).toContain(`function deeper(node, by) {
+  node.depth = (node.depth + by) >>> 0;
+  const result = (node.depth * 2) >>> 0;
+  node.depth = (node.depth - by) >>> 0;
+  return result;
+}
+`);
+  expect(js).toContain("export function shown(n) {\n  console.log(`showing ${n}`);\n  restored(n);\n}\n");
   expect(js).not.toContain("_drop");
   expect(js).not.toContain("_restore");
   const lib = await import(join(dir, "lib.js"));
+  expect(lib.deeperSeen(2)).toBe(13);
   expect(lib.depthSeen(false)).toBe(1);
   expect(() => lib.depthSeen(true)).toThrow("the getter failed");
 });
@@ -958,11 +1104,60 @@ test("a guard's fields are its variables, its scope read in place", async () => 
 
 thread_local! {
     static REENTRY: Cell<bool> = const { Cell::new(false) };
+    static RESTORED: Cell<u32> = const { Cell::new(0) };
 }
 
 struct Restore {
     previous: u32,
     dispatcher: Option<u32>,
+}
+
+// Its drop can't throw, a \`Cell\`'s sets of what it holds: one \`finally\`.
+struct Quiet {
+    previous: u32,
+    dispatcher: Option<u32>,
+}
+
+impl Drop for Quiet {
+    fn drop(&mut self) {
+        REENTRY.set(false);
+        RESTORED.set(self.previous);
+        if let Some(dispatcher) = self.dispatcher {
+            RESTORED.set(dispatcher);
+        }
+    }
+}
+
+pub fn restored_last() -> u32 {
+    RESTORED.get()
+}
+
+pub fn quiet_frame(dev: bool) -> String {
+    if REENTRY.get() {
+        return String::new();
+    }
+    {
+        REENTRY.set(true);
+        let previous = work(0);
+        let mut dispatcher = None;
+        if dev {
+            dispatcher = Some(work(1));
+        }
+        let _quiet = Quiet {
+            previous,
+            dispatcher,
+        };
+        let lines = lines();
+        let mut s = 0;
+        while s < lines.len() {
+            if lines[s].contains("Root") {
+                let frame = format!("\\n{}", lines[s]);
+                return frame;
+            }
+            s += 1;
+        }
+    }
+    String::new()
 }
 
 impl Drop for Restore {
@@ -1129,6 +1324,21 @@ pub fn props_twice(prototype: u32) -> u32 {
   } catch (error) {
     $cleanup(() => {
       if (prevProps != null) {`);
+  expect(js).toContain(`  try {
+    const lines = globalThis.lines();
+    for (let s = 0; s < lines.length; s++) {
+      if (lines[s].includes("Root")) {
+        const frame = \`\\n\${lines[s]}\`;
+        return frame;
+      }
+    }
+  } finally {
+    reentry = false;
+    RESTORED = previous;
+    if (dispatcher != null) {
+      RESTORED = dispatcher;
+    }
+  }`);
   // A variable set once the guard's made isn't what the guard holds.
   expect(js).toContain("const _restore = {\n    previous,\n    dispatcher: previous,\n  };");
   expect(js).toContain("globalThis.restored(_restore.previous, _restore.dispatcher);");
@@ -1144,8 +1354,10 @@ pub fn props_twice(prototype: u32) -> u32 {
   g.define = (...args: unknown[]) => calls.push(["define", ...args]);
   g.del = (...args: unknown[]) => calls.push(["delete", ...args]);
   expect([lib.frame(true), lib.frame(false)]).toEqual(["\nat Root", "\nat Root"]);
+  expect([lib.quietFrame(true), lib.restoredLast(), lib.quietFrame(false), lib.restoredLast()]).toEqual(["\nat Root", 41, "\nat Root", 40]);
   g.lines = () => ["Error"];
   expect(lib.frame(true)).toBe("");
+  expect([lib.quietFrame(false), lib.restoredLast()]).toEqual(["", 40]);
   expect(lib.props(2)).toBe(42);
   expect(() => lib.props(9)).toThrow("nine");
   expect(lib.changed(3)).toBe(44);

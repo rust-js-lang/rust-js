@@ -157,6 +157,33 @@ function main() {
     }
     seen.n = (seen.n + 2) >>> 0;
   }
-  console.log(`end ${round} ${last} ${seen.n}`);
+  const plain = { n: 0 };
+  let readsPlain;
+  while (plain.n < 4) {
+    const iter = $iter([
+      [plain, 1],
+      [plain, 2],
+    ]);
+    try {
+      while (true) {
+        readsPlain = $next(iter);
+        if (readsPlain == null) {
+          break;
+        }
+        const r = readsPlain;
+        if (r[1] === 1) {
+          console.log(`drop ${r[1]} sees plain ${r[0].n}`);
+          break;
+        }
+        console.log(`drop ${r[1]} sees plain ${r[0].n}`);
+      }
+    } finally {
+      for (const item of iter) {
+        console.log(`drop ${item[1]} sees plain ${item[0].n}`);
+      }
+    }
+    plain.n = (plain.n + 2) >>> 0;
+  }
+  console.log(`end ${round} ${last} ${seen.n} ${plain.n}`);
 }
 //# sourceMappingURL=case.js.map

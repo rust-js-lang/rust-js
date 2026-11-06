@@ -103,6 +103,31 @@ impl Drop for Loud {
     }
 }
 
+/// Its `rfold` of no type parameters, its label dropped as it's done, a
+/// print that can't throw: one `finally` round the loop, its `return` after.
+struct Label(&'static str);
+
+impl Drop for Label {
+    fn drop(&mut self) {
+        println!("drop label {}", self.0);
+    }
+}
+
+fn added(acc: i32, x: i32) -> i32 {
+    if x == 7 {
+        panic!("seven");
+    }
+    acc + x
+}
+
+fn labelled_rsum(mut count: Count, _label: Label) -> i32 {
+    let mut acc = 0;
+    while let Some(x) = count.next_back() {
+        acc = added(acc, x);
+    }
+    acc
+}
+
 fn main() {
     println!("{}", count().map(|x| x * 2).rev().sum::<i32>());
     println!("{}", count().filter(|x| x % 2 == 1).rfold(0, |a, x| a + x));
@@ -135,6 +160,9 @@ fn main() {
     println!("{skipped_last:?} {pair:?}");
     println!("{}", count().take(5).map(|x| x * 2).rev().take(2).sum::<i32>());
     println!("{}", count().fuse().rev().sum::<i32>());
+    println!("{}", labelled_rsum(Count { at: 0, end: 5 }, Label("sum")));
+    let caught = std::panic::catch_unwind(|| labelled_rsum(count(), Label("seven")));
+    println!("{}", caught.is_err());
     let fused = count().fuse().nth_back(1);
     let fused_last = count().fuse().take(5).rev().last();
     println!("{fused:?} {fused_last:?}");

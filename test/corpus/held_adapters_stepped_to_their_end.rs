@@ -56,7 +56,27 @@ impl FromIterator<(u32, u32)> for Sum {
     }
 }
 
+/// The crate's own iterator, of no type parameters, whose drop can't throw,
+/// a print: what's made before the loop, `let sum = 0;`, before its `try`.
+fn tripled(n: u32) -> u32 {
+    if n == 9 {
+        panic!("nine");
+    }
+    n * 3
+}
+
+fn summed(name: &'static str) -> u32 {
+    let mut it = count(name);
+    let mut sum = 0;
+    while let Some(n) = it.next() {
+        sum += tripled(n);
+    }
+    println!("summed {sum}");
+    sum
+}
+
 fn main() {
+    println!("{}", summed("sum"));
     let mut zipped = count("zip").zip(10..);
     while let Some((a, b)) = zipped.next() {
         println!("{a} {b}");

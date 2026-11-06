@@ -32,6 +32,17 @@ impl Drop for Counter<'_> {
 
 fn keep(_: &dyn Sync) {}
 
+// An `Rc` of what drops without a throw, its parts' prints, held while
+// what may panic runs: its drop the scope's `finally`.
+struct Pair(Noisy, Noisy);
+
+fn left(pair: &Pair) -> &'static str {
+    if pair.0.0.is_empty() {
+        panic!("no left");
+    }
+    pair.0.0
+}
+
 fn main() {
     {
         let _boxed: Box<dyn Send> = Box::new(Noisy("boxed"));
@@ -61,6 +72,12 @@ fn main() {
         let _: Rc<dyn Send> = Rc::new(Counter(&mut drops));
     }
     println!("drops {drops}");
+
+    let pair = Rc::new(Pair(Noisy("left"), Noisy("right")));
+    let other = pair.clone();
+    drop(pair);
+    println!("{}", left(&other));
+    drop(other);
 
     let kept = Noisy("borrowed");
     keep(&kept);

@@ -19,6 +19,7 @@ pub struct Handler {
 thread_local! {
     static INITIALIZING_HANDLER: RefCell<Option<Rc<Handler>>> = const { RefCell::new(None) };
     static INITIALIZING_CHUNK: RefCell<Option<Rc<String>>> = const { RefCell::new(None) };
+    static DEPTH: Cell<u32> = const { Cell::new(0) };
 }
 
 const DEV: bool = true;
@@ -58,6 +59,28 @@ fn initialize_model_chunk(chunk: &str) -> u32 {
     value
 }
 
+// Again with a guard whose drop can't throw, a `Cell`'s set of what it
+// holds: the `if` of only comments in its one `try`, as upstream's.
+struct RestoreDepth(u32);
+
+impl Drop for RestoreDepth {
+    fn drop(&mut self) {
+        DEPTH.set(self.0);
+    }
+}
+
+fn parse_at_depth(chunk: &str, handler: &Handler) -> u32 {
+    let _restore = RestoreDepth(DEPTH.get());
+    DEPTH.set(1);
+    let value = parse_model(chunk);
+    if handler.errored.get() {
+        // Ignore error parsing debug info, we'll report the original error instead.
+    } else if handler.deps.get() > 0 {
+        // TODO: Block the resolution of the error until all the debug info has loaded.
+    }
+    value
+}
+
 fn state() -> String {
     let handler = INITIALIZING_HANDLER.with_borrow(|h| h.as_ref().map(|h| h.deps.get()));
     let chunk = INITIALIZING_CHUNK.with_borrow(Clone::clone);
@@ -70,4 +93,11 @@ fn main() {
     println!("{} {}", initialize_model_chunk("41"), state());
     let caught = std::panic::catch_unwind(|| initialize_model_chunk("x"));
     println!("{} {}", caught.is_err(), state());
+    let handler = Handler {
+        errored: Cell::new(false),
+        deps: Cell::new(1),
+    };
+    println!("{} {}", parse_at_depth("7", &handler), DEPTH.get());
+    let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| parse_at_depth("y", &handler)));
+    println!("{} {}", caught.is_err(), DEPTH.get());
 }

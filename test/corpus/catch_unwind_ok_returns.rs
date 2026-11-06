@@ -61,6 +61,33 @@ fn until_seven(queue: &[u32]) {
     }
 }
 
+// One whose guard's drop can't throw, a print of what it holds: the
+// `finally` of the closure's `try`, its `return` the function's.
+struct Finished(&'static str);
+
+impl Drop for Finished {
+    fn drop(&mut self) {
+        println!("finished {}", self.0);
+    }
+}
+
+fn until_seven_finished(queue: &[u32]) {
+    if !queue.is_empty() {
+        let _finished = Finished("queue");
+        if let Err(_error) = panic::catch_unwind(AssertUnwindSafe(|| {
+            for &n in queue {
+                if n == 7 {
+                    return;
+                }
+                work(n);
+            }
+            DONE.set(0);
+        })) {
+            DONE.set(1);
+        }
+    }
+}
+
 fn main() {
     println!("{}", flushed(2));
     println!("{}", flushed(0));
@@ -68,5 +95,8 @@ fn main() {
     until_seven(&[1, 7, 0]);
     until_seven(&[1, 0, 7]);
     until_seven(&[1, 2]);
+    until_seven_finished(&[1, 7, 0]);
+    until_seven_finished(&[1, 0, 7]);
+    until_seven_finished(&[1, 2]);
     println!("{}", DONE.get());
 }

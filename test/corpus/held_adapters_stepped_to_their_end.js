@@ -82,7 +82,34 @@ function sumFromIterator_u32__u32__fromIter(items, dropI, dropIIntoIter) {
   return result;
 }
 
+/**
+ * The crate's own iterator, of no type parameters, whose drop can't throw,
+ * a print: what's made before the loop, `let sum = 0;`, before its `try`.
+ */
+function tripled(n) {
+  if (n === 9) {
+    throw new Error("nine");
+  }
+  return (n * 3) >>> 0;
+}
+
+function summed(name) {
+  const it = count(name);
+  let sum = 0;
+  try {
+    let n;
+    while ((n = countIterator_next(it)) != null) {
+      sum = (sum + tripled(n)) >>> 0;
+    }
+    console.log(`summed ${sum}`);
+    return sum;
+  } finally {
+    loudDrop_drop(it._loud);
+  }
+}
+
 function main() {
+  console.log(`${summed("sum")}`);
   const zipped = $held(
     $lazyZip(
       $closing($iterator(count("zip"), countIterator_next), (it) => {

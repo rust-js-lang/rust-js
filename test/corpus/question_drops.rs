@@ -55,6 +55,20 @@ fn twice<T: CheckedDouble>(mut base: T) -> Option<T> {
     Some(base)
 }
 
+// Again of `D`'s own, whose drop can't throw, a print, by what may panic.
+fn doubled(d: &D) -> Option<D> {
+    if d.0 == 7 {
+        panic!("seven");
+    }
+    d.checked_double()
+}
+
+fn twice_d(mut base: D) -> Option<D> {
+    base = doubled(&base)?;
+    base = doubled(&base)?;
+    Some(base)
+}
+
 fn main() {
     for start in [0, 2] {
         match climb(D(start)) {
@@ -75,6 +89,13 @@ fn main() {
         match twice(D(start)) {
             Some(d) => println!("doubled to {}", d.0),
             None => println!("too big"),
+        }
+    }
+    for start in [1, 3, 7] {
+        match std::panic::catch_unwind(|| twice_d(D(start))) {
+            Ok(Some(d)) => println!("doubled D to {}", d.0),
+            Ok(None) => println!("D too big"),
+            Err(_) => println!("D panicked"),
         }
     }
 }

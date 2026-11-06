@@ -896,7 +896,9 @@ A `drop` that panics while another panic unwinds aborts the process, as
 Rust does: std's `thread caused non-unwinding panic. aborting.` to stderr,
 then exit 134. What runs as a panic unwinds and may throw is
 `$cleanup(() => { .. })`'s, and a drop that may panic is no `finally`'s but
-a `catch`'s and run again after the `try`; in a browser, which has no
+a `catch`'s and run again after the `try`, and an early `return` out of
+its scope drops it where it leaves, `drop(guard); return result;`, never a
+`break` to the drop after the scope; in a browser, which has no
 process to end, the abort is thrown past `catch_unwind`'s `$catchUnwind`,
 though a `catch_unwind` written as JS's `try` catches it
 ([0660](../decisions/0660-catch-unwind-catches-what-js-throws.md), amended).

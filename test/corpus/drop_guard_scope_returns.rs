@@ -49,10 +49,50 @@ fn find(limit: u32, wanted: u32) -> String {
     format!("none at depth {}", DEPTH.get())
 }
 
+// Again with a guard whose drop can't throw, a print and a `Cell`'s set of
+// what it holds: the scope's one `finally`.
+struct Restored {
+    previous: u32,
+}
+
+impl Drop for Restored {
+    fn drop(&mut self) {
+        println!("restored {}", self.previous);
+        DEPTH.set(self.previous);
+    }
+}
+
+fn found(limit: u32, wanted: u32) -> String {
+    {
+        let previous = DEPTH.get();
+        DEPTH.set(previous + 1);
+        let _restored = Restored { previous };
+        let first = step(limit);
+        if first > 3 {
+            let mut i = 0;
+            while i < limit {
+                if step(i) == wanted {
+                    return format!("found {i} at depth {}", DEPTH.get());
+                }
+                if i > 15 {
+                    break;
+                }
+                i += 1;
+            }
+        }
+    }
+    format!("none at depth {}", DEPTH.get())
+}
+
 fn main() {
     println!("{}", find(5, 6));
     println!("{}", find(12, 100));
     println!("{}", find(1, 2));
     let caught = panic::catch_unwind(|| find(20, 1000));
+    println!("caught {} at depth {}", caught.is_err(), DEPTH.get());
+    println!("{}", found(5, 6));
+    println!("{}", found(12, 100));
+    println!("{}", found(1, 2));
+    let caught = panic::catch_unwind(|| found(20, 1000));
     println!("caught {} at depth {}", caught.is_err(), DEPTH.get());
 }

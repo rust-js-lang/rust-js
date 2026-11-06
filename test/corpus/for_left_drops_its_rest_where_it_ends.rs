@@ -21,6 +21,20 @@ impl Drop for Reads {
     }
 }
 
+// Its drop reads a plain field, a print that can't throw: the field set
+// after the loop is set after the drop, past the loop's one `finally`.
+struct Plain {
+    n: u32,
+}
+
+struct ReadsPlain<'a>(&'a Plain, u32);
+
+impl Drop for ReadsPlain<'_> {
+    fn drop(&mut self) {
+        println!("drop {} sees plain {}", self.1, self.0.n);
+    }
+}
+
 impl Drop for D {
     fn drop(&mut self) {
         println!("drop {}", self.0);
@@ -62,5 +76,14 @@ fn main() {
         }
         seen.n.set(seen.n.get() + 2);
     }
-    println!("end {} {} {}", round, last, seen.n.get());
+    let mut plain = Plain { n: 0 };
+    while plain.n < 4 {
+        for r in vec![ReadsPlain(&plain, 1), ReadsPlain(&plain, 2)] {
+            if r.1 == 1 {
+                break;
+            }
+        }
+        plain.n += 2;
+    }
+    println!("end {} {} {} {}", round, last, seen.n.get(), plain.n);
 }

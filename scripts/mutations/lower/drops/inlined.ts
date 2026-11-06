@@ -3,16 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "guard-copy-defined-lost",
-    breaks:
-      "a guard's field's copy, `const old = _restore.prevChunk` of a `Drop`'s `take()`, read as the variable it was made of loses that it's never `undefined`, `initializingChunk = prevChunk ?? null` (rd523)",
-    file: "src/lower/drops/inlined.rs",
-    find: "                *e = match defined {\n",
-    replace: "                *e = match defined && false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^drop_guard_restores_nullable_fields.rs$"],
-    snapshots: true,
-  },
-  {
     name: "guard-field-known-lost",
     breaks:
       "a guard's field read as the variable it was made of loses that it's never `undefined`: `internals.T = prevTransition ?? null` in its `finally` (ADR 0841, amended)",

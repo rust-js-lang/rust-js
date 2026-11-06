@@ -56,11 +56,38 @@ function find(limit, wanted) {
   return `none at depth ${depth}`;
 }
 
+function found(limit, wanted) {
+  const previous = depth;
+  depth = (previous + 1) >>> 0;
+  try {
+    const first = step(limit);
+    if (first > 3) {
+      for (let i = 0; i < limit; i++) {
+        if (step(i) === wanted) {
+          return `found ${i} at depth ${depth}`;
+        }
+        if (i > 15) {
+          break;
+        }
+      }
+    }
+  } finally {
+    console.log(`restored ${previous}`);
+    depth = previous;
+  }
+  return `none at depth ${depth}`;
+}
+
 function main() {
   console.log(`${find(5, 6)}`);
   console.log(`${find(12, 100)}`);
   console.log(`${find(1, 2)}`);
-  const caught = $catchUnwind(() => find(20, 1000));
+  let caught = $catchUnwind(() => find(20, 1000));
+  console.log(`caught ${caught.TAG === "Err"} at depth ${depth}`);
+  console.log(`${found(5, 6)}`);
+  console.log(`${found(12, 100)}`);
+  console.log(`${found(1, 2)}`);
+  caught = $catchUnwind(() => found(20, 1000));
   console.log(`caught ${caught.TAG === "Err"} at depth ${depth}`);
 }
 //# sourceMappingURL=case.js.map

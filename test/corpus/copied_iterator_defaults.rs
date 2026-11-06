@@ -123,6 +123,41 @@ trait Named {
 
 impl<I: Iterator> Named for Holder<I> {}
 
+/// An iterator of no type parameters whose drop can't throw, a print,
+/// stepped by value as `looped` steps its `Self`: one `finally` that drops
+/// it, which reads it, made before its `try`.
+struct LoudGen(u8);
+
+impl Iterator for LoudGen {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<u8> {
+        self.0 += 1;
+        if self.0 < 5 { Some(self.0) } else { None }
+    }
+}
+
+impl Drop for LoudGen {
+    fn drop(&mut self) {
+        println!("drop gen {}", self.0);
+    }
+}
+
+fn added(n: u8, x: u8) -> u8 {
+    if x == 1 {
+        panic!("one");
+    }
+    n.wrapping_add(x)
+}
+
+fn looped_gen(it: LoudGen) -> u8 {
+    let mut n = 0;
+    for x in it {
+        n = added(n, x);
+    }
+    n
+}
+
 fn main() {
     let mut g = Gen(0);
     g.skip_one();
@@ -141,6 +176,8 @@ fn main() {
     println!("{}", Gen(0).total());
     println!("{:?}", Gen(1).doubled());
     println!("{}", (1..4).looped());
+    println!("{}", looped_gen(LoudGen(2)));
+    println!("{}", std::panic::catch_unwind(|| looped_gen(LoudGen(0))).is_err());
     let mut h = Gen(0);
     println!("{:?} {:?}", h.first_two(), h.next());
     let mut range = 0..5;

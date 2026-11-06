@@ -34,7 +34,11 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "                _ => stmt.only_makes_values(),\n",
     replace: "                _ => true,\n",
-    tests: panics,
+    tests: ["test/corpus.test.ts", "-t", "^(drop_on_panic|question_drops|vec_destructors|dyn_auto_traits|scoped_drops_cross|drop_scopes|while_test_ends_in_throw).rs$"],
+    // Where a drop can't throw, the scope then reads as one `finally` past
+    // what may throw, `try { const value = early(false); .. }`: how it
+    // reads, as a drop that may throw reads none (#847).
+    snapshots: true,
   },
   {
     name: "scoped-drops-if-uncovered",
@@ -314,16 +318,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "run-reads-what-drop-reads",
-    breaks:
-      "what a loop steps that its drop reads too, `iter = self`, is taken into its `try`, `let iter; try { iter = self; .. } finally { dropT?.(iter); }`, where it was `const iter = self;` before it; one a `for` takes in, the `finally` reading what's never declared, a ReferenceError (#442)",
-    file: "src/lower/mir/tidy/unwinds.rs",
-    find: "                    && js::mentions_in(std::slice::from_ref(&drop), name) == 0),\n",
-    replace: "),\n",
-    tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
-    snapshots: true,
-  },
-  {
     name: "run-labels-unseen",
     breaks:
       "a block's `break` in what's before a loop, `bb42: { .. break bb42; }`, is a way out of the run, so a scope's `try` is cut around it (#442)",
@@ -356,21 +350,6 @@ export const mutations: Mutation[] = [
     replace:
       "            StmtKind::Break(Some(_)) | StmtKind::Continue(Some(_)) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "leading-assignment-taken",
-    breaks:
-      "what can't throw before an early loop's run, `let sum = 0;`, is taken into its `try` (#442)",
-    file: "src/lower/mir/tidy/unwinds.rs",
-    find: "                        for_made\n                            && stmts[start].cannot_throw()\n",
-    replace:
-      "                        false\n                            && stmts[start].cannot_throw()\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^held_adapters_stepped_to_their_end.rs$",
-    ],
     snapshots: true,
   },
   {
