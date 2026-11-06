@@ -22,7 +22,8 @@
 // verdict, then each crate of its graph rust-js refused, and why, or that
 // crashed, then whether its probe runs as natively.
 
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
+import { availableParallelism } from "node:os";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { cargoEnv } from "../tooling/cargo.js";
@@ -116,6 +117,17 @@ type Result = {
 };
 
 /** The first line where the JS's report isn't native Rust's. */
+/** `spawnSync`'s result, without blocking the other crates measured at once. */
+function spawned(cmd: string, args: string[], options: { cwd: string; env?: NodeJS.ProcessEnv }): Promise<{ status: number | null; stdout: string; stderr: string }> {
+  return new Promise((done) => {
+    const child = spawn(cmd, args, { ...options, stdio: ["ignore", "pipe", "pipe"] });
+    const [out, err]: [Buffer[], Buffer[]] = [[], []];
+    child.stdout.on("data", (chunk: Buffer) => out.push(chunk));
+    child.stderr.on("data", (chunk: Buffer) => err.push(chunk));
+    child.on("close", (status) => done({ status, stdout: Buffer.concat(out).toString("utf8"), stderr: Buffer.concat(err).toString("utf8") }));
+  });
+}
+
 function difference(native: string, js: string): string {
   const [a, b] = [native.split("\n"), js.split("\n")];
   const at = a.findIndex((line, i) => line !== b[i]);
@@ -123,7 +135,7 @@ function difference(native: string, js: string): string {
   return `line ${line + 1}: native ${JSON.stringify(a[line] ?? "")}, JS ${JSON.stringify(b[line] ?? "")}`;
 }
 
-function main() {
+async function main() {
   const root = resolve(import.meta.dir, "..");
   const compiler = resolve(process.env.RUST_JS_COMPILER ?? join(root, "target/debug/rust-js"));
   const toolchain = "1.99.0";
@@ -153,9 +165,10 @@ function main() {
     console.error(`${names}: no lock of its graph in scripts/crate-corpus/: \`bun scripts/crate-corpus.ts --lock ${names}\` writes it`);
     process.exit(1);
   }
-  const results: Result[] = [];
-
-  for (const crate of chosen) {
+  // Each crate measured apart, in a Cargo project and target of its own,
+  // several at once: one at a time, a graph's one big crate held one core
+  // while the rest sat idle. Each is printed in the table's order.
+  const measure = async (crate: Crate): Promise<Result> => {
     const dir = join(root, "target/crate-corpus", crate.name);
     mkdirSync(dir, { recursive: true });
     const probe = join(import.meta.dir, "crate-corpus", `${crate.name}.rs`);
@@ -188,10 +201,10 @@ function main() {
     }
     const packages = JSON.parse(metadata.stdout).packages as { name: string; version: string; manifest_path: string }[];
     const crates = packages.map((pkg) => realpathSync(dirname(pkg.manifest_path)));
-    const run = spawnSync(
+    const run = await spawned(
       "cargo",
       [`+${toolchain}`, "check", "--lib", "--keep-going", "--locked", "--message-format=json", "--target", "wasm32-unknown-unknown"],
-      { cwd: dir, env: cargoEnv(compiler, undefined, { apps: [], crates }), maxBuffer: 256 * 1024 * 1024, encoding: "utf8" },
+      { cwd: dir, env: cargoEnv(compiler, undefined, { apps: [], crates }) },
     );
     const compiled: string[] = [];
     const refused = new Map<string, string>();
@@ -238,22 +251,32 @@ function main() {
       else if (!probeJs) result.runs = "the probe wasn't compiled";
       else {
         // Native Rust's report, built for the host, apart from rust-js's.
-        const native = spawnSync("cargo", [`+${toolchain}`, "run", "--quiet", "--locked", "--bin", "native", "--target-dir", join(dir, "native")], {
-          cwd: dir,
-          maxBuffer: 64 * 1024 * 1024,
-          encoding: "utf8",
-        });
-        const js = spawnSync(process.execPath, ["-e", `import { report } from ${JSON.stringify(probeJs)};\nprocess.stdout.write(report());`], {
-          cwd: dir,
-          maxBuffer: 64 * 1024 * 1024,
-          encoding: "utf8",
-        });
+        const [native, js] = await Promise.all([
+          spawned("cargo", [`+${toolchain}`, "run", "--quiet", "--locked", "--bin", "native", "--target-dir", join(dir, "native")], { cwd: dir }),
+          spawned(process.execPath, ["-e", `import { report } from ${JSON.stringify(probeJs)};\nprocess.stdout.write(report());`], { cwd: dir }),
+        ]);
         if (native.status !== 0) result.runs = `native Rust failed: ${native.stderr.trim().split("\n").slice(-3).join(" ")}`;
         else if (js.status !== 0) result.runs = `the JS failed: ${js.stderr.trim().split("\n").slice(-6).join(" ")}`;
         else result.runs = native.stdout === js.stdout ? "same" : `differs at ${difference(native.stdout, js.stdout)}`;
       }
     }
-    results.push(result);
+    return result;
+  };
+  // Half the cores' crates at once, each `cargo check` of its graph on more.
+  const width = Math.max(1, Math.floor(availableParallelism() / 2));
+  const measured: Promise<Result>[] = [];
+  let next = 0;
+  const workers = Array.from({ length: Math.min(width, chosen.length) }, async () => {
+    while (next < chosen.length) {
+      const at = next++;
+      measured[at] = measure(chosen[at]);
+      await measured[at];
+    }
+  });
+  await Promise.all(workers);
+  const results: Result[] = await Promise.all(measured);
+  for (const result of results) {
+    const crate = chosen.find((c) => c.name === result.name)!;
     const crashed = result.crashed.length ? `, ${result.crashed.length} crashed` : "";
     console.log(`${crate.name}@${crate.version}: ${result.own}, ${result.compiled.length} compiled, ${result.refused.length} refused${crashed}`);
     for (const { crate: c, error } of [...result.refused, ...result.crashed]) console.log(`  ${c}: ${error}`);
@@ -285,4 +308,4 @@ function main() {
   }
 }
 
-if (import.meta.main) main();
+if (import.meta.main) await main();

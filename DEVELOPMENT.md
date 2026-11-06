@@ -378,6 +378,7 @@ sees what kind of fix pays.
 | A gate before a push (m6-lily's) | about 14.5 min, its steps one after another, mutations `--jobs=4` | 12.2 min with nearly four times the mutations | `check:fast`, rustc's tests, the suites and mutations at once after the build, mutations `--jobs=10 --tests=12` |
 | One agent per machine | load 50–60 on 12 cores, each step 3–5× slower | each step at its usual | Several agents on one machine stopped |
 | The iterator matrix and conformance rows a change touches (m6-lily, #834) | a full `ITERATOR_MATRIX=all` run, about 25 min on 12 parts | about 2 min for every batch with a `step_by` row (505 batches, 17,367 rows) | Only the batches whose rows touch the changed adapters, whole batches so each row is judged as in a full run, native and both builds 12-wide (the prototype of #818) |
+| `bun scripts/crate-corpus.ts --check`, the crate corpus (#828) | 102 s with rust-js's outputs to make again, one crate at a time, at a load near 1 on 12 cores | 33 s; 35 s from an empty `target/crate-corpus` | Half the cores' crates measured at once, each in its own project, printed in the table's order (2026-11-06) |
 
 - **Every step runs on all the machine's cores.** The Macs here have 8 to
   12 cores, and an agent's time is mostly waiting on a step, so a step
