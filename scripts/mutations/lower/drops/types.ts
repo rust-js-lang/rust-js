@@ -3,6 +3,24 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "thir-types-in-trait-terms",
+    breaks:
+      "a type a copied default's THIR names is asked what it drops in its trait's terms, `<Self as Iterator>::Item`, where its impl's drops are given, and `Vec::from_iter(self)` of itertools' `sorted_unstable` is refused (#828)",
+    file: "src/lower/drops/types.rs",
+    find: "        match self.thir_args {\n",
+    replace: "        match None::<ty::GenericArgsRef<'tcx>> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_default_asks_its_drops_in_the_impls_terms.rs$"],
+  },
+  {
+    name: "pattern-types-in-trait-terms",
+    breaks:
+      "what a library's copied default's pattern moves is asked what it drops in its trait's terms, so its `[_, b]` of its `Self::Item`s is taken to move nothing that drops, and isn't refused as a generic function's is (#828)",
+    file: "src/lower/drops/types.rs",
+    find: "                    any |= self.has_drops(self.thir_ty(ty));\n",
+    replace: "                    any |= self.has_drops(ty);\n",
+    tests: ["test/diagnostics.test.ts", "-t", "copied default moving part of its items"],
+  },
+  {
     name: "uncounted-weak-drops",
     breaks:
       "an uncounted `Weak`'s drop is `$weakDrop` of the object itself, or of `null`, which throws (ADR 0843)",

@@ -102,6 +102,7 @@ fn without_dictionaries<'a, 'tcx>(
         closure_facts,
         state,
         ref_cells: None,
+        thir_args: None,
     }
 }
 
@@ -205,6 +206,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             closure_facts: self.krate.closure_facts,
             state: &self.drop_state.types,
             ref_cells: Some((self.ref_cells(), self.krate.cell_borrows)),
+            thir_args: (self.copied_default_args())
+                .map(|args| crate::lower::traits::default_body_args(self.tcx, args, self.frame.owner)),
         }
     }
 

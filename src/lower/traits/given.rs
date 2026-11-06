@@ -121,6 +121,20 @@ pub(in crate::lower) fn default_mir<'tcx>(
     made
 }
 
+/// The arguments `body`, a copied default or a closure made in it, is read
+/// in the impl's terms with: the default's (`default_args`), and a
+/// closure's own generics past them, its kind, signature and captures, as
+/// they are, which its MIR and THIR may name, `minmax_by`'s `|_| ()` in
+/// itertools (#828).
+pub(in crate::lower) fn default_body_args<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    args: ty::GenericArgsRef<'tcx>,
+    body: DefId,
+) -> ty::GenericArgsRef<'tcx> {
+    let own = ty::GenericArgs::identity_for_item(tcx, body);
+    tcx.mk_args_from_iter(args.iter().chain(own.iter().skip(args.len())))
+}
+
 /// Whether `clause`, a trait's bound or an associated type's equality,
 /// names only type and const parameters `named` says of, by index: of a
 /// default's, its trait's alone, the impl's in its terms, or its own alone

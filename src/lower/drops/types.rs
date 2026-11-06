@@ -125,9 +125,26 @@ pub(in crate::lower) struct DropQuery<'a, 'tcx> {
     /// meet another is never counted, so drops nothing (ADR 0863). Not
     /// before, as which are is found by what bodies drop.
     pub(in crate::lower) ref_cells: Option<(&'a super::RefCells<'tcx>, &'a crate::lower::analysis::CellBorrows<'tcx>)>,
+    /// Of a trait's default copied into an impl, the arguments its body, or
+    /// a closure's in it, is read in the impl's terms with
+    /// (`traits::default_body_args`): its THIR is in its trait's (#828).
+    pub(in crate::lower) thir_args: Option<ty::GenericArgsRef<'tcx>>,
 }
 
 impl<'a, 'tcx> DropQuery<'a, 'tcx> {
+    /// `ty`, a type the body's THIR names, as its body has it: of a copied
+    /// default, in its impl's terms, as its MIR is (ADR 0495, #828), an
+    /// alias in them normalized where its drop is asked. What a walk of a
+    /// THIR asks of a type's drops, it asks of this.
+    pub(in crate::lower) fn thir_ty(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
+        match self.thir_args {
+            Some(args) => ty::EarlyBinder::bind(self.recognition.tcx, ty)
+                .instantiate(self.recognition.tcx, args)
+                .skip_normalization(),
+            None => ty,
+        }
+    }
+
     /// Is `drop`, a type's `Drop::drop`, one rust-js runs: the crate's own, a
     /// library's it exports (ADR 0100), or one the crate compiles itself,
     /// which its library's JS doesn't export (ADR 0914, amended)?
@@ -320,7 +337,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                     ..
                 } = p.kind
                 {
-                    any |= self.has_drops(ty);
+                    any |= self.has_drops(self.thir_ty(ty));
                 }
             });
             any
@@ -333,7 +350,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 ty,
                 ..
             } => {
-                if self.has_drops(*ty) {
+                if self.has_drops(self.thir_ty(*ty)) {
                     found.push(at.clone());
                 }
                 true
@@ -347,7 +364,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 ty,
                 ..
             } if !moves(sub) => {
-                if self.has_drops(*ty) {
+                if self.has_drops(self.thir_ty(*ty)) {
                     found.push(at.clone());
                 }
                 true

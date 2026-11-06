@@ -197,4 +197,13 @@ export const mutations: Mutation[] = [
     replace: "            .find(|&&(at, given, _)| given == fact && self.tcx.erase_and_anonymize_regions(at) == self.tcx.erase_and_anonymize_regions(of))\n",
     tests: ["test/corpus.test.ts", "-t", "^default_matches_its_tuple_whole.rs$"],
   },
+  {
+    name: "copied-closure-own-generics-dropped",
+    breaks:
+      "a closure made in a copied default is read with the default's arguments alone, and rust-js crashes where its MIR names its own generics, `minmax_by`'s `|_| ()` (#828)",
+    file: "src/lower/traits/given.rs",
+    find: "    tcx.mk_args_from_iter(args.iter().chain(own.iter().skip(args.len())))\n",
+    replace: "    tcx.mk_args_from_iter(args.iter().chain(own.iter().skip(own.len())))\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_default_closure_of_its_own_generics.rs$"],
+  },
 ];

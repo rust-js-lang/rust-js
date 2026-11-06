@@ -96,4 +96,13 @@ export const mutations: Mutation[] = [
     replace: "    for &index in taken.iter().filter(|_| false) {\n        state.give(\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
   },
+  {
+    name: "thir-args-of-no-copied-default",
+    breaks:
+      "a copied default's THIR, in its trait's terms, is asked what it drops as it's written, `<Self as Iterator>::Item` where its impl's drops are given, and `Vec::from_iter(self)` of itertools' `sorted_unstable` is refused (#828)",
+    file: "src/lower/drops.rs",
+    find: "            thir_args: (self.copied_default_args())\n",
+    replace: "            thir_args: (None::<ty::GenericArgsRef<'tcx>>)\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_default_asks_its_drops_in_the_impls_terms.rs$"],
+  },
 ];

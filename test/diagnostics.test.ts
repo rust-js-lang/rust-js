@@ -385,3 +385,19 @@ test("another crate's function in an extern block is refused where it's called",
   expect(compile("pub fn f() -> f64 {\n    dep::max(1.0, 2.0)\n}\n")).toEqual([1, true]);
   expect(compile("pub fn f() -> Vec<f64> {\n    [1.0, 2.0].map(|x| x * 2.0).into_iter().zip([3.0, 1.0]).map(|(a, b)| (dep::max as fn(f64, f64) -> f64)(a, b)).collect()\n}\n")).toEqual([1, true]);
 });
+
+// A copied default's THIR is in its trait's terms, and what its patterns
+// move is asked what it drops in its impl's (#828): a library's `[_, b]` of
+// its `Self::Item`s, whose consumers' items may drop, moves a part a way
+// MIR's lowering doesn't follow, and is refused, as a generic function's is.
+test("a library's copied default moving part of its items is refused", () => {
+  const dir = fixture("copied-default-pattern");
+  const input = join(dir, "lib.rs");
+  writeFileSync(
+    input,
+    "pub trait Ext: Iterator {\n    fn second(self) -> Option<Self::Item>\n    where\n        Self: Sized,\n    {\n        let pair: [Self::Item; 2] = Vec::from_iter(self).try_into().ok()?;\n        let [_, b] = pair;\n        Some(b)\n    }\n}\n\nimpl<T: Iterator + ?Sized> Ext for T {}\n",
+  );
+  const out = runSync([compiler, input, "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "lib.manifest.json")], dir, 60_000);
+  const errors = out.stderr.split("\n").filter((line) => line.startsWith("error: rust-js"));
+  expect([out.code === 0, errors], out.stderr).toEqual([false, ["error: rust-js does not support moving part of a value with a destructor yet"]]);
+});

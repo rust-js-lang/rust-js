@@ -154,11 +154,21 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
         (None, child)
     }
 
+    /// What dropping `ty`, a type the THIR names, runs, as the body has it:
+    /// a copied default's in its impl's terms (`DropQuery::thir_ty`, #828).
+    fn drops_of(&self, ty: Ty<'tcx>) -> Drops<'tcx> {
+        self.cx.drops(self.cx.thir_ty(ty))
+    }
+
+    fn has_drops(&self, ty: Ty<'tcx>) -> bool {
+        self.drops_of(ty) == Drops::Runs
+    }
+
     /// Whether a value made here has a destructor to run: `None` of an
     /// `Option` that could hold one doesn't, nor does a variant of an enum
     /// without a `Drop` of its own whose fields have none.
     fn holds_drops(&self, expr: &ThirExpr<'tcx>) -> bool {
-        if !self.cx.has_drops(expr.ty) {
+        if !self.has_drops(expr.ty) {
             return false;
         }
         match &expr.kind {
@@ -168,7 +178,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                     .tcx
                     .adt_destructor(adt.adt_def.did())
                     .is_some_and(|d| self.cx.runs_drop(d.did))
-                    || adt.fields.iter().any(|f| self.cx.has_drops(self.thir[f.expr].ty))
+                    || adt.fields.iter().any(|f| self.has_drops(self.thir[f.expr].ty))
                     || !matches!(adt.base, AdtExprBase::None)
             }
             _ => true,
@@ -190,7 +200,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
     /// doesn't call once isn't given to a call by value, which may consume it.
     fn closure_checked(&mut self, expr: &ThirExpr<'tcx>) {
         match expr.kind {
-            ExprKind::Closure(_) => match self.cx.drops(expr.ty) {
+            ExprKind::Closure(_) => match self.drops_of(expr.ty) {
                 Drops::Nothing => {}
                 Drops::Unsupported(t, what) => self.problem(expr.span, &describe(t, what)),
                 Drops::Runs => {
@@ -222,7 +232,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             ExprKind::Assign { lhs, .. }
                 if self.thir[lhs].ty.walk().any(|part| {
                     part.as_type()
-                        .is_some_and(|t| matches!(t.kind(), ty::Closure(..)) && self.cx.drops(t) != Drops::Nothing)
+                        .is_some_and(|t| matches!(t.kind(), ty::Closure(..)) && self.drops_of(t) != Drops::Nothing)
                 }) =>
             {
                 self.closure_problem(expr.span, "assigning a closure that holds a value with a destructor");
@@ -265,7 +275,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
     /// by its own body: what that drops, the call doesn't (ADR 0098).
     fn borrowing_closure(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Closure(_, args) if args.as_closure().kind() != ty::ClosureKind::FnOnce)
-            && self.cx.has_drops(ty)
+            && self.has_drops(ty)
     }
 
     fn taken(&self, pat: &Pat<'tcx>) -> Taken {
@@ -276,7 +286,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                 subpattern: None,
                 ty,
                 ..
-            } if self.cx.has_drops(*ty) => Taken::Whole,
+            } if self.has_drops(*ty) => Taken::Whole,
             _ => {
                 let mut part = false;
                 pat.walk_always(|p| {
@@ -286,7 +296,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                         ..
                     } = p.kind
                     {
-                        part |= self.cx.has_drops(ty);
+                        part |= self.has_drops(ty);
                     }
                 });
                 if part { Taken::Part } else { Taken::Nothing }
@@ -360,11 +370,11 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                 {
                     return false;
                 }
-                _ => return self.cx.has_drops(self.thir[child].ty),
+                _ => return self.has_drops(self.thir[child].ty),
             }
             child = parent;
         }
-        self.cx.has_drops(self.thir[child].ty)
+        self.has_drops(self.thir[child].ty)
     }
 
     /// Whether `pats`, the patterns a temporary is matched against, move
@@ -449,7 +459,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
         else {
             return;
         };
-        let drops = |ty| self.cx.drops_but_guards(ty);
+        let drops = |ty| self.cx.drops_but_guards(self.cx.thir_ty(ty));
         if !self.borrows.bounds_ask(recognition, (id, generic_args), cell, &drops) {
             self.facts.momentary.insert(fun);
         }
@@ -536,7 +546,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             (None, Some(extent))
                 if let ExprKind::Assign { lhs, .. } = self.thir[strip(self.thir, extent)].kind
                     && (lhs == e || self.stack.contains(&lhs))
-                    && !self.cx.drops_but_guards(self.thir[lhs].ty) =>
+                    && !self.cx.drops_but_guards(self.cx.thir_ty(self.thir[lhs].ty)) =>
             {
                 vec![lhs]
             }
@@ -982,7 +992,7 @@ struct Quiet<'c, 'q, 'a, 'tcx> {
 
 impl<'c, 'q, 'a, 'tcx> Quiet<'c, 'q, 'a, 'tcx> {
     fn drops(&self, ty: Ty<'tcx>) -> bool {
-        self.cx.drops_but_guards(ty)
+        self.cx.drops_but_guards(self.cx.thir_ty(ty))
     }
 
     /// `e` through what reads a place's value as it is: a borrow, a deref,
@@ -1316,7 +1326,7 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'q, 'a, 'tcx> {
             ..
         } = pat.kind
         {
-            match self.cx.drops(ty) {
+            match self.drops_of(ty) {
                 Drops::Nothing => {}
                 Drops::Runs => {
                     self.owners.insert(var);
@@ -1351,7 +1361,8 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'q, 'a, 'tcx> {
                     _ => (target, from),
                 };
                 // What owns one drops it through its dictionary's `$drop`.
-                self.cx.dyn_drop_lost(target, from, to)
+                self.cx
+                    .dyn_drop_lost(self.cx.thir_ty(target), self.cx.thir_ty(from), self.cx.thir_ty(to))
             } =>
             {
                 self.problem(expr.span, "a `dyn` of a value with a destructor");

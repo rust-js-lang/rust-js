@@ -184,3 +184,35 @@ Held by `blanket_default_beside_an_unmet_clause.rs`,
 `given-fact-unnormalized` and `copied-closure-own-generics-dropped`.
 itertools still doesn't compile. Every other default of its blanket impl
 is lowered too, and about ten of them are refused (#828).
+
+## Amendment: what a copied default's THIR makes is asked in its impl's terms (2026-11-06, #828)
+
+Since #803 a copied default's MIR, its environment and its drops are its
+impl's, but the walk of its THIR that finds what its body does with values
+that drop (`drops/facts.rs`, ADR 0098) still read its trait's types: of
+itertools' `sorted_unstable`, `Vec::from_iter(self)`'s `Vec<<Self as
+Iterator>::Item>`, whose drop no slot of the impl's names, was refused as "a
+value of an associated type, where a type may have a destructor", and as a
+library itertools didn't compile. Case C of ADR 0262: each item drops as
+Rust drops it, by the drop its caller gives.
+
+- **Every type a THIR walk asks the drops of is put in the body's terms by
+  one answer, `DropQuery::thir_ty`**: of a copied default, or a closure made
+  in it, its type instantiated with `traits::default_body_args`, the
+  default's arguments and a closure's own generics past them, the one
+  mapping `mir_closure_fn` reads its closure's MIR with too; an alias in
+  the impl's terms is normalized where its drop is asked, as any is. The
+  facts' `holds_drops`, `taken`, a closure's and a guard's drops, a lost
+  `dyn`'s, and `pattern_paths`' bindings ask it.
+- What a library's copied default moves of its items a way MIR's lowering
+  doesn't follow, `let [_, b] = pair;` of a `[Self::Item; 2]`, is refused
+  as a generic function's is, where in its trait's terms it compiled
+  (`test/diagnostics.test.ts`).
+
+Held by `copied_default_asks_its_drops_in_the_impls_terms.rs`, both builds,
+with native Rust, and mutations `thir-types-in-trait-terms`,
+`thir-args-of-no-copied-default` and `pattern-types-in-trait-terms`;
+`copied-closure-own-generics-dropped` moved to `default_body_args`.
+itertools 0.14 compiles again (docs/crate-corpus.md); its probe is still
+refused, first at "an iterator's own `last` given a dictionary of its own
+type parameter", as before #828.

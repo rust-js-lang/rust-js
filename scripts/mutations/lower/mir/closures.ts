@@ -339,13 +339,4 @@ export const mutations: Mutation[] = [
     replace: "                inlined = mir.instantiated(self.tcx, ty::GenericArgs::identity_for_item(self.tcx, def_id));\n                let _ = args;\n",
     tests: ["test/corpus.test.ts", "-t", "^(item_keyed_map).rs$"],
   },
-  {
-    name: "copied-closure-own-generics-dropped",
-    breaks:
-      "a closure made in a copied default is read with the default's arguments alone, and rust-js crashes where its MIR names its own generics, `minmax_by`'s `|_| ()` (#828)",
-    file: "src/lower/mir/closures.rs",
-    find: "                    .mk_args_from_iter(args.iter().chain(own.iter().skip(args.len())));\n",
-    replace: "                    .mk_args_from_iter(args.iter().chain(own.iter().skip(own.len())));\n",
-    tests: ["test/corpus.test.ts", "-t", "^copied_default_closure_of_its_own_generics.rs$"],
-  },
 ];
