@@ -3,6 +3,7 @@
 import {
   $KeyMap,
   $advanceSlice,
+  $cleanup,
   $dropEach,
   $dropItems,
   $eq,
@@ -29,7 +30,9 @@ function tCounting(TIterator, dropT, dropTItem) {
       try {
         counts = new SelfItemMap();
       } catch (error) {
-        dropT?.(self);
+        $cleanup(() => {
+          dropT?.(self);
+        });
         throw error;
       }
       const iter = self;
@@ -41,14 +44,22 @@ function tCounting(TIterator, dropT, dropTItem) {
             const orInsert = $mutGet(counts, item);
             orInsert.value = (orInsert.value + 1) >>> 0;
           });
-        } finally {
-          if (!$took(TIterator.fold, iter)) {
-            dropT?.(iter);
-          }
+        } catch (error) {
+          $cleanup(() => {
+            if (!$took(TIterator.fold, iter)) {
+              dropT?.(iter);
+            }
+          });
+          throw error;
+        }
+        if (!$took(TIterator.fold, iter)) {
+          dropT?.(iter);
         }
       } catch (error) {
-        $dropItems(counts.keys(), (item) => {
-          dropTItem?.(item);
+        $cleanup(() => {
+          $dropItems(counts.keys(), (item) => {
+            dropTItem?.(item);
+          });
         });
         throw error;
       }
@@ -120,16 +131,20 @@ function main() {
   ).counts($iter([[1], [1]]), loudHash, { eq: $eq }, $KeyMap);
   const loud = [1];
   try {
-    try {
-      const value = louds.get(loud);
-      console.log(`${value == null ? "None" : `Some(${value})`}`);
-    } finally {
+    const value = louds.get(loud);
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    $cleanup(() => {
       loudDrop_drop(loud);
-    }
-  } finally {
-    for (const item of louds.keys()) {
-      loudDrop_drop(item);
-    }
+      for (const item of louds.keys()) {
+        loudDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  loudDrop_drop(loud);
+  for (const item of louds.keys()) {
+    loudDrop_drop(item);
   }
 }
 //# sourceMappingURL=case.js.map

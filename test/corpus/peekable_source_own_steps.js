@@ -8,6 +8,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $dropEach,
   $foldOf,
   $held,
@@ -98,7 +99,9 @@ function main() {
   try {
     nth = $nthDropping($lent(peekable), id(3), loudDrop_drop, false);
   } catch (error) {
-    peekable.return();
+    $cleanup(() => {
+      peekable.return();
+    });
     throw error;
   }
   try {
@@ -143,7 +146,9 @@ function main() {
   try {
     nth = $nthDropping($lent(value$3), id(2), loudDrop_drop, false);
   } catch (error) {
-    value$3.return();
+    $cleanup(() => {
+      value$3.return();
+    });
     throw error;
   }
   try {

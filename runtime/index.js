@@ -1877,32 +1877,24 @@ export function $unwinds(run, ...drops) {
   try {
     return run();
   } catch (error) {
-    $dropsUnwinding(error, drops);
+    $dropsUnwinding(drops);
     throw error;
   }
 }
 
-// Each of `drops` run as `error` unwinds, the next though one throws: what
-// one throws then is `$unwindingThrew`'s.
-export function $dropsUnwinding(error, drops) {
-  for (const drop of drops) {
-    try {
-      drop?.();
-    } catch (second) {
-      $unwindingThrew(error, second);
-    }
-  }
+// Each of `drops` run in turn as a panic unwinds, the runtime's cleanup:
+// one that throws aborts, as Rust does (`$cleanup`, #847).
+export function $dropsUnwinding(drops) {
+  $cleanup(() => {
+    for (const drop of drops) drop?.();
+  });
 }
-
-// A drop that threw, `second`, while `first` unwinds: Rust aborts there
-// (#847); here `first` goes on, as JS can't abort, ADR 0660's answer, the
-// one place it's given.
-export function $unwindingThrew(_first, _second) {}
 
 // Each of `runs` run in turn, the next though an earlier one throws, a
 // panic, as drop glue drops each field of what it drops though an earlier
 // field's drop unwinds, the rest dropped as that one unwinds
-// (`$dropsUnwinding`'s); the first error goes on (ADR 1092 S7, #743). One
+// (`$dropsUnwinding`'s, where a second throw aborts); the first error
+// goes on (ADR 1092 S7, #743). One
 // `undefined` is none. The one answer of what a drop of many parts runs as
 // one of them throws.
 export function $inTurn(...runs) {
@@ -1917,10 +1909,7 @@ export function $inTurnOf(items, run) {
     try {
       run(all[i]);
     } catch (error) {
-      $dropsUnwinding(
-        error,
-        all.slice(i + 1).map((item) => () => run(item)),
-      );
+      $dropsUnwinding(all.slice(i + 1).map((item) => () => run(item)));
       throw error;
     }
   }
@@ -14136,13 +14125,45 @@ export function $unwinding(payload) {
   return new $Unwinding(payload);
 }
 
-// `catch_unwind(f)`: `Ok` of what `f()` gives, or `Err` of what unwound.
+// `catch_unwind(f)`: `Ok` of what `f()` gives, or `Err` of what unwound;
+// never of an abort, which no `catch_unwind` catches (#847).
 export function $catchUnwind(f) {
   try {
     return { TAG: "Ok", _0: f() };
   } catch (e) {
+    if (e instanceof $Abort) throw e;
     return { TAG: "Err", _0: $unwound(e) };
   }
+}
+
+// What a panic runs as it unwinds, Rust's cleanup: the drops of what the
+// frames it leaves hold. `run()`, where a throw, a drop's panic while
+// another panic unwinds, aborts the process, as Rust's does (#847, ADR 0660
+// amended): the one place it's decided, which the lowering's cleanups and
+// the runtime's (`$dropsUnwinding`) both call. Once aborted, as in a
+// browser, which `$abort` can't end, nothing more runs as it unwinds.
+export function $cleanup(run) {
+  if ($aborted) return;
+  try {
+    run();
+  } catch (second) {
+    throw $abort(second);
+  }
+}
+
+// The process ended by Rust's abort, of `cause`, a drop's panic while
+// another unwound: std's line to stderr, then exit 134, as a shell gives a
+// SIGABRT, where the host has a process. A browser has none, so what's
+// thrown is a `$Abort`, which `$catchUnwind` and the runtime throw on, but a
+// `catch_unwind` lowered to JS's own `try` catches (ADR 0660's limit).
+export let $aborted = false;
+export class $Abort extends Error {}
+export function $abort(cause) {
+  if (cause instanceof $Abort) return cause;
+  $aborted = true;
+  $eprint("thread caused non-unwinding panic. aborting.\n");
+  globalThis.process?.exit?.(134);
+  return new $Abort("panic in a destructor during cleanup", { cause });
 }
 
 export function $settle(promise) {

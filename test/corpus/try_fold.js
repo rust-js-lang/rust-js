@@ -3,6 +3,7 @@
 import {
   $bigChecked,
   $checked,
+  $cleanup,
   $debugParseError,
   $dropEach,
   $held,
@@ -57,10 +58,14 @@ function sumBelow(it, limit, dropI) {
       loudDrop_drop(loud);
       return result;
     });
-    console.log("stopped");
-  } finally {
-    dropI?.(it);
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(it);
+    });
+    throw error;
   }
+  console.log("stopped");
+  dropI?.(it);
   return sum;
 }
 

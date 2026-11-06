@@ -44,7 +44,8 @@ import {
   version,
   type Case,
 } from "./iterator-matrix";
-import { compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
+import { same, type Outcome } from "./oracle";
+import { aborted, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, fixture } from "./support";
 import { shard } from "../scripts/shard";
 
@@ -106,6 +107,16 @@ test("the known failures are of these cases, each one a case", () => {
 
 type Verdict = { kind: "same" } | { kind: "refused"; why: string } | { kind: "differs"; js: string; why?: string } | { kind: "crashed"; why: string };
 
+/** Of a batch of one whose native run aborted (#847): the same where the
+ * JS's aborted too, `{ exit: 134 }`, after it printed what native Rust did;
+ * else how it differs. */
+export function abortVerdict(js: { outcome: Outcome | string; printed: string }, native: string): Verdict {
+  if (typeof js.outcome === "string" || !same(js.outcome, aborted)) {
+    return { kind: "differs", js: js.printed, why: `native Rust aborted, where the run ended ${show(js.outcome)}` };
+  }
+  return js.printed === native ? { kind: "same" } : { kind: "differs", js: js.printed };
+}
+
 /** Which case each line of `text` is in, from `program`'s `fn case_<n>`. */
 function caseAtLine(text: string, cases: Case[]): (line: number) => Case | undefined {
   const starts: [number, number][] = [];
@@ -137,7 +148,7 @@ function refusedCases(stderr: string, text: string, cases: Case[], file: string)
 
 /** Each case of `cases`, compiled with `flags` and run, against what
  * native Rust printed of it. */
-function judge(cases: Case[], native: Map<string, string>, dir: string, build: string, flags: string[]): Map<Case, Verdict> {
+function judge(cases: Case[], native: Map<string, string>, dir: string, build: string, flags: string[], aborts = false): Map<Case, Verdict> {
   const verdicts = new Map<Case, Verdict>();
   mkdirSync(dir, { recursive: true });
   let pending = cases;
@@ -170,6 +181,11 @@ function judge(cases: Case[], native: Map<string, string>, dir: string, build: s
     const [runtime, cmd] = runtimes[0];
     const ran = runJs(cmd, compiled.js, at, runtime);
     const js = segments(ran.stdout);
+    if (aborts) {
+      const [c] = pending;
+      verdicts.set(c, abortVerdict({ outcome: ran.outcome, printed: js.get(c.id) ?? "" }, native.get(c.id) ?? ""));
+      return verdicts;
+    }
     const ended = typeof ran.outcome !== "string" && "value" in ran.outcome;
     // A run that ended early ended in the last case it began: those after
     // it run again, without it.
@@ -202,14 +218,18 @@ for (const index of mine) {
     writeFileSync(file, program(batch));
     const native: Run | string = runNative(file, dir);
     if (typeof native === "string") throw new Error(`the matrix made a program rustc rejects:\n${native.slice(0, 4000)}`);
-    if (typeof native.outcome === "string" || !("value" in native.outcome)) {
+    // A batch of one may abort, as Rust does where a drop panics as a panic
+    // unwinds: what it printed till then is what the JS must print, then
+    // abort too (#847). Any other run must end.
+    const aborts = batch.length === 1 && typeof native.outcome !== "string" && same(native.outcome, aborted);
+    if (!aborts && (typeof native.outcome === "string" || !("value" in native.outcome))) {
       throw new Error(`a native run of the matrix ended ${show(native.outcome)}:\n${native.stderr.slice(0, 2000)}`);
     }
     const expected = segments(native.stdout);
     const problems: string[] = [];
     let refused = 0;
     for (const [build, flags] of builds) {
-      for (const [c, verdict] of judge(batch, expected, dir, build, flags)) {
+      for (const [c, verdict] of judge(batch, expected, dir, build, flags, aborts)) {
         // As the one list names it, of either table.
         const listed = listedBuild(build);
         const name = `${listed}: ${c.id}`;
@@ -241,3 +261,16 @@ for (const index of mine) {
     expect(problems.join("\n\n")).toBe("");
   }, 900_000);
 }
+
+// A batch of one that aborts natively passes where the JS aborts too, after
+// printing the same, and fails where only one side aborts (#847).
+test("a batch of one that aborts is judged by its abort", () => {
+  const printed = "case x\ndrop 3\ndrop 4\n";
+  expect(abortVerdict({ outcome: aborted, printed }, printed)).toEqual({ kind: "same" });
+  expect(abortVerdict({ outcome: { value: null }, printed }, printed).kind).toBe("differs");
+  expect(abortVerdict({ outcome: { panic: "drop again" }, printed }, printed).kind).toBe("differs");
+  expect(abortVerdict({ outcome: aborted, printed: "case x\ndrop 3\n" }, printed).kind).toBe("differs");
+  // And a native run that doesn't abort is judged as every other: the JS's
+  // abort there ends the run early, which `judge` holds a difference.
+  expect(same(aborted, { value: null })).toBe(false);
+});

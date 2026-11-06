@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { node } from "./programs";
-import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { buildReact, compiler, fixture, root, run, runtimeDir, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -1323,4 +1323,48 @@ test("a stage read again is its own in tidy's trace", () => {
   const read = after(again.at(-1));
   expect(read).not.toBe(scoped);
   expect(read).not.toBe(after());
+});
+
+// A drop's panic as a panic unwinds aborts, as Rust's does (#847, ADR 0660,
+// amended): std's line, then exit 134 where there's a process; where its
+// `exit` doesn't end it, as a browser has none, a `$Abort` that no
+// `$catchUnwind` catches, and no cleanup runs after.
+test("a cleanup that throws aborts, past catch_unwind", () => {
+  const dir = fixture("unwinds-abort");
+  const script = join(dir, "abort.mjs");
+  const unwinding = `() => {
+    try {
+      throw new Error("first");
+    } catch (error) {
+      $cleanup(() => {
+        throw new Error("second");
+      });
+      throw error;
+    }
+  }`;
+  writeFileSync(
+    script,
+    `import { $catchUnwind, $cleanup } from ${JSON.stringify(join(runtimeDir, "index.js"))};
+const exits = [];
+if (process.argv[2] === "kept") process.exit = (code) => void exits.push(code);
+let caught;
+try {
+  console.log($catchUnwind(${unwinding}).TAG);
+} catch (e) {
+  caught = e;
+}
+$cleanup(() => console.log("cleaned up after the abort"));
+console.log(JSON.stringify({ exits, caught: caught?.message, by: caught?.cause?.message, ok: $catchUnwind(() => 1).TAG }));
+`,
+  );
+  const ended = runSync([node ?? "node", script], root, 30_000);
+  expect([ended.code, ended.stdout, ended.stderr]).toEqual([134, "", "thread caused non-unwinding panic. aborting.\n"]);
+  const kept = runSync([node ?? "node", script, "kept"], root, 30_000);
+  expect(kept.stderr).toBe("thread caused non-unwinding panic. aborting.\n");
+  expect(JSON.parse(kept.stdout)).toEqual({
+    exits: [134],
+    caught: "panic in a destructor during cleanup",
+    by: "second",
+    ok: "Ok",
+  });
 });

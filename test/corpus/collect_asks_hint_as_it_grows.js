@@ -4,6 +4,7 @@ import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $byteLen,
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $filterDropping,
@@ -390,10 +391,16 @@ function text(it, dropI) {
   const iter = $closing(Iterator.from(it), dropI, false).map((n) =>
     String.fromCharCode((97 + (n & 255)) & 255),
   );
+  let result;
   try {
-    return $foldToArray($reserveHint($folded(iter), 1)).join("");
-  } finally {
-    iter.return();
+    result = $foldToArray($reserveHint($folded(iter), 1)).join("");
+  } catch (error) {
+    $cleanup(() => {
+      iter.return();
+    });
+    throw error;
   }
+  iter.return();
+  return result;
 }
 //# sourceMappingURL=case.js.map

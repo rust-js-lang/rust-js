@@ -2,6 +2,7 @@
 
 import { iterator_fuse } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -103,7 +104,9 @@ function main() {
     try {
       tmp = ds();
     } catch (error) {
-      map.return();
+      $cleanup(() => {
+        map.return();
+      });
       throw error;
     }
     const collect = $collectDropping(
@@ -145,7 +148,9 @@ function main() {
     try {
       tmp = ds();
     } catch (error) {
-      map.return();
+      $cleanup(() => {
+        map.return();
+      });
       throw error;
     }
     const value = $collectDropping(

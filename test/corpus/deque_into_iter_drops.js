@@ -3,6 +3,7 @@
 import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $cmp,
   $count,
@@ -63,7 +64,9 @@ function main() {
   try {
     first = $next(peeked);
   } catch (error) {
-    peeked.return();
+    $cleanup(() => {
+      peeked.return();
+    });
     throw error;
   }
   try {

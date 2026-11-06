@@ -2,6 +2,7 @@
 
 import {
   $checked,
+  $cleanup,
   $cmp,
   $count,
   $debugStr,
@@ -50,32 +51,52 @@ function rank(l) {
 
 function greatest(items, IItemOrd, dropIItem, dropIIntoIter) {
   const iter = $intoIter(items);
+  let result;
   try {
-    return $maxBy(iter, IItemOrd.cmp, true, dropIItem);
-  } finally {
-    dropIIntoIter?.(iter);
+    result = $maxBy(iter, IItemOrd.cmp, true, dropIItem);
+  } catch (error) {
+    $cleanup(() => {
+      dropIIntoIter?.(iter);
+    });
+    throw error;
   }
+  dropIIntoIter?.(iter);
+  return result;
 }
 
 function finalOne(items, dropIItem, dropIIntoIter) {
   const iter = $intoIter(items);
+  let result;
   try {
-    return $lastDropping(iter, dropIItem, true);
-  } finally {
-    dropIIntoIter?.(iter);
+    result = $lastDropping(iter, dropIItem, true);
+  } catch (error) {
+    $cleanup(() => {
+      dropIIntoIter?.(iter);
+    });
+    throw error;
   }
+  dropIIntoIter?.(iter);
+  return result;
 }
 
 // An iterator itself, not an `IntoIterator`, consumed: dropped after too.
 function howMany(items, dropI, dropIItem) {
   const iter = items;
+  let result;
   try {
-    return $count(Iterator.from(iter), dropIItem);
-  } finally {
-    if (!iter.ownFold && !iter.ownCount) {
-      dropI?.(iter);
-    }
+    result = $count(Iterator.from(iter), dropIItem);
+  } catch (error) {
+    $cleanup(() => {
+      if (!iter.ownFold && !iter.ownCount) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
   }
+  if (!iter.ownFold && !iter.ownCount) {
+    dropI?.(iter);
+  }
+  return result;
 }
 
 function countdownIterator_next(countdown) {

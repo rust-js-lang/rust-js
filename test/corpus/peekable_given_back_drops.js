@@ -3,6 +3,7 @@
 import { iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $count,
   $dropEach,
   $foldOf,
@@ -40,11 +41,17 @@ function consumed(it, dropI) {
     { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
     dropI,
   );
+  let result;
   try {
-    return iter.reduce((a, b) => (a + b) >>> 0, 0);
-  } finally {
-    iter.return();
+    result = iter.reduce((a, b) => (a + b) >>> 0, 0);
+  } catch (error) {
+    $cleanup(() => {
+      iter.return();
+    });
+    throw error;
   }
+  iter.return();
+  return result;
 }
 
 function main() {
@@ -68,19 +75,39 @@ function main() {
       $dropEach(dDrop_drop),
     ),
   );
+  let peek;
   try {
-    const peek = $peek(p);
-    console.log(`${peek?.[0] ?? 0}`);
-    const next = $next(p);
-    function map(d) {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }
-    console.log(`${(next != null ? map(next) : undefined) ?? 0}`);
-    console.log("end");
-  } finally {
-    p.return();
+    peek = $peek(p);
+  } catch (error) {
+    $cleanup(() => {
+      p.return();
+    });
+    throw error;
   }
+  console.log(`${peek?.[0] ?? 0}`);
+  let next;
+  function map(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
+  }
+  try {
+    next = $next(p);
+  } catch (error) {
+    $cleanup(() => {
+      p.return();
+    });
+    throw error;
+  }
+  try {
+    console.log(`${(next != null ? map(next) : undefined) ?? 0}`);
+  } catch (error) {
+    $cleanup(() => {
+      p.return();
+    });
+    throw error;
+  }
+  console.log("end");
+  p.return();
 }
 //# sourceMappingURL=case.js.map

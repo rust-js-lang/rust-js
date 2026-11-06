@@ -4,6 +4,7 @@ import {
   $borrow,
   $borrowMut,
   $catchUnwind,
+  $cleanup,
   $dispose,
   $downgrade,
   $dropping,
@@ -45,16 +46,18 @@ function hook() {
           let hook;
           try {
             hook = $unwrap(borrow.value != null ? $upgrade(borrow.value) : undefined);
-          } catch (error) {
+          } finally {
             $unborrow(borrow);
-            throw error;
           }
           try {
-            $unborrow(borrow);
             result = (hook.value(n - 1) + 2) >>> 0;
-          } finally {
-            $rcDrop(hook, $dispose);
+          } catch (error) {
+            $cleanup(() => {
+              $rcDrop(hook, $dispose);
+            });
+            throw error;
           }
+          $rcDrop(hook, $dispose);
         } finally {
           $unborrow(_held);
         }
@@ -76,17 +79,21 @@ function hook() {
     try {
       tmp = $downgrade(hook);
     } catch (error) {
-      $rcDrop(hook, $dispose);
+      $cleanup(() => {
+        $rcDrop(hook, $dispose);
+      });
       throw error;
     }
     let borrowMut;
     try {
       borrowMut = $borrowMut(this$.value, true);
     } catch (error) {
-      if (tmp != null) {
-        $weakDrop(tmp);
-      }
-      $rcDrop(hook, $dispose);
+      $cleanup(() => {
+        if (tmp != null) {
+          $weakDrop(tmp);
+        }
+        $rcDrop(hook, $dispose);
+      });
       throw error;
     }
     try {
@@ -94,18 +101,15 @@ function hook() {
         $weakDrop(borrowMut.value);
       }
     } catch (error) {
-      borrowMut.value = tmp;
-      $unborrow(borrowMut);
-      $rcDrop(hook, $dispose);
+      $cleanup(() => {
+        borrowMut.value = tmp;
+        $unborrow(borrowMut);
+        $rcDrop(hook, $dispose);
+      });
       throw error;
     }
     borrowMut.value = tmp;
-    try {
-      $unborrow(borrowMut);
-    } catch (error) {
-      $rcDrop(hook, $dispose);
-      throw error;
-    }
+    $unborrow(borrowMut);
   } finally {
     $rcDrop(this$, (value) => {
       if (value.value != null) {
@@ -120,9 +124,13 @@ function main() {
   const hook$1 = hook();
   try {
     console.log(`${hook$1.value(0)}`);
-    console.log(`${$catchUnwind(() => hook$1.value(1)).TAG === "Err"}`);
-  } finally {
-    $rcDrop(hook$1, $dispose);
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(hook$1, $dispose);
+    });
+    throw error;
   }
+  console.log(`${$catchUnwind(() => hook$1.value(1)).TAG === "Err"}`);
+  $rcDrop(hook$1, $dispose);
 }
 //# sourceMappingURL=case.js.map

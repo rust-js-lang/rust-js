@@ -137,14 +137,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    $unborrow(held);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
+  $unborrow(held);
   let copy;
   try {
     copy = { value: $borrow(shared).value };
@@ -232,14 +225,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    $unborrow(reading);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
+  $unborrow(reading);
   writing$live = false;
 }
 //# sourceMappingURL=case.js.map

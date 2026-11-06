@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $cmp,
   $dropEach,
@@ -327,20 +328,32 @@ function main() {
     const least = $minBy([[12], [13], [14]], (a, b) => $cmp(a[0], b[0]), false, kDrop_drop);
     try {
       console.log(`${least == null ? "None" : `Some(${kDebug_fmt(least)})`}`);
-    } finally {
-      if (least != null) {
-        kDrop_drop(least);
-      }
+    } catch (error) {
+      $cleanup(() => {
+        if (least != null) {
+          kDrop_drop(least);
+        }
+      });
+      throw error;
+    }
+    if (least != null) {
+      kDrop_drop(least);
     }
   });
   run("max_by's passed-over drop", () => {
     const most = $maxBy([[13], [14], [1]], (a, b) => $cmp(a[0], b[0]), false, kDrop_drop);
     try {
       console.log(`${most == null ? "None" : `Some(${kDebug_fmt(most)})`}`);
-    } finally {
-      if (most != null) {
-        kDrop_drop(most);
-      }
+    } catch (error) {
+      $cleanup(() => {
+        if (most != null) {
+          kDrop_drop(most);
+        }
+      });
+      throw error;
+    }
+    if (most != null) {
+      kDrop_drop(most);
     }
   });
   run("a slice's is_sorted_by_key's compare", () => {

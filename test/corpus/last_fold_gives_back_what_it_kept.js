@@ -4,6 +4,7 @@ import { iterator_zip } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
   $catchUnwind,
+  $cleanup,
   $closing,
   $dropEach,
   $dropItems,
@@ -146,23 +147,37 @@ function main() {
   });
   run("flattened, cloned", () => {
     const items = ds();
+    let last;
+    function map(d) {
+      const result = d[0] + 0;
+      dDrop_drop(d);
+      return result;
+    }
     try {
-      const last = $lastDropping(
+      last = $lastDropping(
         $flatMap(
           items.values().map((x) => [[(x[0] + 10) >>> 0], x]),
           (item) => $closing($iter(item), $dropEach(dDrop_drop)),
         ),
         dDrop_drop,
       );
-      function map(d) {
-        const result = d[0] + 0;
-        dDrop_drop(d);
-        return result;
-      }
-      return last != null ? map(last) : undefined;
-    } finally {
-      $dropItems(items, dDrop_drop);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(items, dDrop_drop);
+      });
+      throw error;
     }
+    let result;
+    try {
+      result = last != null ? map(last) : undefined;
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(items, dDrop_drop);
+      });
+      throw error;
+    }
+    $dropItems(items, dDrop_drop);
+    return result;
   });
   run("a stage panics", () => {
     const last = $lastDropping(

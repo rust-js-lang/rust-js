@@ -27,9 +27,11 @@ export function vecStoreMutKV(dropK, dropV) {
       $dropItems(vec, (item) => {
         try {
           dropK?.(item[0]);
-        } finally {
+        } catch (error) {
           dropV?.(item[1]);
+          throw error;
         }
+        dropV?.(item[1]);
       });
     },
   }));

@@ -4,6 +4,7 @@ import {
   $at,
   $borrow,
   $borrowMut,
+  $cleanup,
   $dropItems,
   $index,
   $panicMessage,
@@ -124,14 +125,18 @@ function replacedBetween(queue, slots, other) {
     try {
       borrowMut = $borrowMut(slots, true);
     } catch (error) {
-      clearerDrop_drop(other);
+      $cleanup(() => {
+        clearerDrop_drop(other);
+      });
       throw error;
     }
     try {
       try {
         $index(borrowMut, 0);
       } catch (error) {
-        clearerDrop_drop(other);
+        $cleanup(() => {
+          clearerDrop_drop(other);
+        });
         throw error;
       }
       try {
@@ -202,9 +207,37 @@ function main() {
   const slots = [[queue]];
   try {
     check("replaced between", () => replacedBetween(queue, slots, [[]]), debug);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(slots, clearerDrop_drop);
+    });
+    throw error;
+  }
+  try {
     queue.push(9);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(slots, clearerDrop_drop);
+    });
+    throw error;
+  }
+  try {
     check("cleared by its guard", () => clearedByItsGuard(queue, 0), debug);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(slots, clearerDrop_drop);
+    });
+    throw error;
+  }
+  try {
     queue.push(10);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(slots, clearerDrop_drop);
+    });
+    throw error;
+  }
+  try {
     check(
       "tested before",
       () =>
@@ -213,8 +246,12 @@ function main() {
         }),
       debug,
     );
-  } finally {
-    $dropItems(slots, clearerDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(slots, clearerDrop_drop);
+    });
+    throw error;
   }
+  $dropItems(slots, clearerDrop_drop);
 }
 //# sourceMappingURL=case.js.map

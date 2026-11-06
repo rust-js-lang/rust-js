@@ -170,10 +170,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `b` dropped even where `a`'s drop panics, as Rust's unwinding
             // drops it (ADR 0502).
             let both = Expr::bin(Op::And, a_some, b_some);
-            let dropped = match dropped_b.is_empty() {
-                true => dropped_a,
-                false => vec![StmtKind::Try(dropped_a, dropped_b).at(js_span)],
-            };
+            let dropped = crate::lower::drops::each_dropped(vec![dropped_a, dropped_b], js_span);
             out.push(StmtKind::If(both, dropped, None).at(js_span));
         } else {
             let only_a = Expr::bin(Op::And, a_some.clone(), not(b_some.clone()));

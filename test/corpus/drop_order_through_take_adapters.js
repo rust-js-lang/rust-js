@@ -3,6 +3,7 @@
 import { iterator_fuse, iterator_rev } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $count,
   $dropEach,
@@ -103,7 +104,9 @@ function main() {
   try {
     nth = $nthDropping($lent(value), 2, dDrop_drop, false);
   } catch (error) {
-    value.return();
+    $cleanup(() => {
+      value.return();
+    });
     throw error;
   }
   try {

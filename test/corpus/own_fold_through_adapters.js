@@ -9,6 +9,7 @@ import {
   iterator_skip,
 } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $closing,
   $collectDropping,
   $count,
@@ -44,15 +45,19 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
   let folded = init;
   let result;
   try {
-    try {
-      while (own[1] < 3) {
-        own[1] = (own[1] + 1) >>> 0;
+    while (own[1] < 3) {
+      own[1] = (own[1] + 1) >>> 0;
+      try {
         folded = f(folded, own[1]);
+      } catch (error) {
+        $cleanup(() => {
+          dropF?.(f);
+        });
+        throw error;
       }
-      result = folded;
-    } finally {
-      dropF?.(f);
     }
+    result = folded;
+    dropF?.(f);
   } finally {
     ownDrop_drop(own);
   }
@@ -79,13 +84,21 @@ function plainIterator_next(plain) {
 const Holder = {
   total(holder, IIterator, dropI) {
     const iter = holder.it;
+    let result;
     try {
-      return $given(iter, IIterator).reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      if (!$took(IIterator.fold, iter)) {
-        dropI?.(iter);
-      }
+      result = $given(iter, IIterator).reduce((a, b) => (a + b) >>> 0, 0);
+    } catch (error) {
+      $cleanup(() => {
+        if (!$took(IIterator.fold, iter)) {
+          dropI?.(iter);
+        }
+      });
+      throw error;
     }
+    if (!$took(IIterator.fold, iter)) {
+      dropI?.(iter);
+    }
+    return result;
   },
 };
 
@@ -110,7 +123,9 @@ function main() {
     const value = $peek(peeked);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
-    peeked.return();
+    $cleanup(() => {
+      peeked.return();
+    });
     throw error;
   }
   console.log(`${peeked.reduce((a, b) => (a + b) >>> 0, 0)}`);
@@ -181,7 +196,9 @@ function main() {
   try {
     $peek(peeked);
   } catch (error) {
-    peeked.return();
+    $cleanup(() => {
+      peeked.return();
+    });
     throw error;
   }
   console.log(`[${$collectDropping(peeked.map((x) => (x * 2) >>> 0)).join(", ")}]`);
@@ -228,7 +245,9 @@ function main() {
   try {
     $peek(stepped);
   } catch (error) {
-    stepped.return();
+    $cleanup(() => {
+      stepped.return();
+    });
     throw error;
   }
   console.log(`[${Array.from(stepped.map((x) => (x * 2) >>> 0)).join(", ")}]`);

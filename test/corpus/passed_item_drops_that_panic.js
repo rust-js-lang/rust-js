@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $dropItems,
@@ -52,16 +53,27 @@ function main() {
       },
       true,
     );
+    let result;
     try {
-      return v.map((p) => p.d[0]).reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      $dropItems(v, (item) => {
-        console.log(`drop boom ${item.d[0]}`);
-        if (item.d[0] === 3) {
-          throw new Error("boom");
-        }
+      result = v.map((p) => p.d[0]).reduce((a, b) => (a + b) >>> 0, 0);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, (item) => {
+          console.log(`drop boom ${item.d[0]}`);
+          if (item.d[0] === 3) {
+            throw new Error("boom");
+          }
+        });
       });
+      throw error;
     }
+    $dropItems(v, (item) => {
+      console.log(`drop boom ${item.d[0]}`);
+      if (item.d[0] === 3) {
+        throw new Error("boom");
+      }
+    });
+    return result;
   });
   console.log(`pairs ${r.TAG === "Err"}`);
 }

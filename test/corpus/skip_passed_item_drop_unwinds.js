@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $consume,
   $count,
@@ -45,9 +46,11 @@ function main() {
       tmp = [0];
       g$live = false;
     } catch (error) {
-      if (g$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(a, x) {
@@ -65,8 +68,9 @@ function main() {
   console.log(`${r.TAG === "Err"}`);
   r = $catchUnwind(() => {
     const it = $held($skipping($closing($iter(ds()), $dropEach(dDrop_drop)), 1, dDrop_drop));
+    let t;
     try {
-      const t = $tryFoldOk(
+      t = $tryFoldOk(
         it,
         [0],
         (a, x) => {
@@ -90,13 +94,24 @@ function main() {
         },
         accDrop_drop,
       );
-      console.log(`try_fold ${t.TAG === "Ok"}`);
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
+    }
+    console.log(`try_fold ${t.TAG === "Ok"}`);
+    try {
       if (t.TAG === "Ok") {
         accDrop_drop(t._0);
       }
-    } finally {
-      it.return();
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
     }
+    it.return();
   });
   console.log(`${r.TAG === "Err"}`);
   r = $catchUnwind(() => {
@@ -131,11 +146,17 @@ function main() {
     const s = $foldToArray(
       $folded(
         $skipping($closing($iter(ds()), $dropEach(dDrop_drop)), 1, dDrop_drop).map((x) => {
+          let result;
           try {
-            return String.fromCharCode((97 + (x[0] & 255)) & 255);
-          } finally {
-            dDrop_drop(x);
+            result = String.fromCharCode((97 + (x[0] & 255)) & 255);
+          } catch (error) {
+            $cleanup(() => {
+              dDrop_drop(x);
+            });
+            throw error;
           }
+          dDrop_drop(x);
+          return result;
         }),
       ),
     ).join("");

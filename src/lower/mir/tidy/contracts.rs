@@ -232,6 +232,36 @@ fn twice_declared(body: &[Stmt]) -> Option<String> {
     found
 }
 
+/// What runs as a panic unwinds is guarded where it may throw (#847): no
+/// `finally` holds what may throw, which it can't tell from what the
+/// normal path runs, and each `catch` that throws on what it caught runs
+/// what may throw before in `$cleanup`, where a throw aborts, as Rust's
+/// does where a drop panics as a panic unwinds.
+pub(super) const UNWINDING_GUARDED: Contract = Contract {
+    name: "what unwinds is guarded",
+    broken: |body| {
+        let mut found = None;
+        crate::js::each_list(body, &mut |stmts| {
+            let unguarded = stmts.iter().any(|stmt| match &stmt.kind {
+                StmtKind::Try(_, finally) => crate::lower::drops::may_throw(finally),
+                StmtKind::TryCatch(_, Some(error), handler) => match handler.split_last() {
+                    Some((last, drops)) => {
+                        matches!(&last.kind, StmtKind::Throw(thrown)
+                            if matches!(&thrown.kind, ExprKind::Var(v) if v == error))
+                            && !crate::lower::drops::is_cleanup(drops)
+                    }
+                    None => false,
+                },
+                _ => false,
+            });
+            if unguarded && found.is_none() {
+                found = Some("a `finally`, or a `catch` that throws on, runs what may throw unguarded".into());
+            }
+        });
+        found
+    },
+};
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -243,6 +273,29 @@ mod tests {
 
     fn holds(contract: &Contract, body: &[Stmt]) -> bool {
         (contract.broken)(body).is_none()
+    }
+
+    #[test]
+    fn what_unwinds_is_guarded() {
+        let call = |f: &str| stmt(StmtKind::Expr(Expr::call(Expr::var(f), vec![])));
+        let rethrow = || stmt(StmtKind::Throw(Expr::var("error")));
+        let caught = |handler| stmt(StmtKind::TryCatch(vec![call("f")], Some("error".into()), handler));
+        let guarded = stmt(StmtKind::Expr(Expr::call_helper(
+            "$cleanup",
+            vec![Expr::arrow(vec![], vec![call("drop")])],
+        )));
+        assert!(holds(
+            &UNWINDING_GUARDED,
+            &[stmt(StmtKind::Try(vec![call("f")], vec![]))]
+        ));
+        assert!(!holds(
+            &UNWINDING_GUARDED,
+            &[stmt(StmtKind::Try(vec![call("f")], vec![call("drop")]))]
+        ));
+        assert!(holds(&UNWINDING_GUARDED, &[caught(vec![guarded, rethrow()])]));
+        assert!(!holds(&UNWINDING_GUARDED, &[caught(vec![call("drop"), rethrow()])]));
+        // A `catch` that handles what it caught isn't a cleanup.
+        assert!(holds(&UNWINDING_GUARDED, &[caught(vec![call("report")])]));
     }
 
     #[test]

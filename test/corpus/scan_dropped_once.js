@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -133,9 +134,13 @@ function held() {
   try {
     const value = $next(held);
     console.log(`next ${value == null ? "None" : `Some(${value})`}`);
-  } finally {
-    held.return();
+  } catch (error) {
+    $cleanup(() => {
+      held.return();
+    });
+    throw error;
   }
+  held.return();
   console.log("dropped");
   // Of a `Vec`'s items, dropped unstepped, and after a step.
   const value = $lazyScan($closing($iter(items()), $dropEach(itemDrop_drop)), 0, (_, x) => x);
@@ -144,18 +149,30 @@ function held() {
   const stepped = $held(
     $lazyScan($closing($iter(items()), $dropEach(itemDrop_drop)), 0, (_, x) => x),
   );
+  let next;
+  function map(x) {
+    const result = x[0];
+    itemDrop_drop(x);
+    return result;
+  }
   try {
-    const next = $next(stepped);
-    function map(x) {
-      const result = x[0];
-      itemDrop_drop(x);
-      return result;
-    }
+    next = $next(stepped);
+  } catch (error) {
+    $cleanup(() => {
+      stepped.return();
+    });
+    throw error;
+  }
+  try {
     const value = next != null ? map(next) : undefined;
     console.log(`first ${value == null ? "None" : `Some(${value})`}`);
-  } finally {
-    stepped.return();
+  } catch (error) {
+    $cleanup(() => {
+      stepped.return();
+    });
+    throw error;
   }
+  stepped.return();
   console.log("stepped");
 }
 

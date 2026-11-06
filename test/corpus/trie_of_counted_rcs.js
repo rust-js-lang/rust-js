@@ -4,6 +4,7 @@ import {
   $BTreeMap,
   $borrow,
   $borrowMut,
+  $cleanup,
   $cmp,
   $debugStr,
   $downgrade,
@@ -41,96 +42,134 @@ function insert(root, word) {
   }
   let label$live = false;
   let cur = $rcClone(root);
+  let iter;
   try {
-    const iter = $iter(Array.from(word));
-    let next;
+    iter = $iter(Array.from(word));
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(cur, dropNode);
+    });
+    throw error;
+  }
+  let next;
+  while (true) {
     let c;
-    while ((c = $next(iter)) != null) {
-      const borrow = $borrow(cur.value);
-      label$live = true;
-      const label = [borrow.label[0] + c];
-      let borrowMut;
-      try {
-        borrowMut = $borrowMut(cur.value, true);
-      } catch (error) {
+    try {
+      c = $next(iter);
+    } catch (error) {
+      $cleanup(() => {
+        $rcDrop(cur, dropNode);
+      });
+      throw error;
+    }
+    if (c == null) {
+      break;
+    }
+    let borrow;
+    try {
+      borrow = $borrow(cur.value);
+    } catch (error) {
+      $cleanup(() => {
+        $rcDrop(cur, dropNode);
+      });
+      throw error;
+    }
+    label$live = true;
+    const label = [borrow.label[0] + c];
+    let borrowMut;
+    try {
+      borrowMut = $borrowMut(cur.value, true);
+    } catch (error) {
+      $cleanup(() => {
         console.log(`drop ${$debugStr(label[0])}`);
-        throw error;
-      }
-      let entry;
-      let node;
-      try {
-        entry = $entry(borrowMut.children, c);
-        node = cur;
-        label$live = false;
-      } catch (error) {
+        $rcDrop(cur, dropNode);
+      });
+      throw error;
+    }
+    let entry;
+    let node;
+    try {
+      entry = $entry(borrowMut.children, c);
+      node = cur;
+      label$live = false;
+    } catch (error) {
+      $cleanup(() => {
         $unborrow(borrowMut);
         if (label$live) {
           console.log(`drop ${$debugStr(label[0])}`);
         }
-        throw error;
-      }
-      try {
-        $orInsertWith(
-          entry._0[0],
-          entry._0[1],
-          () => {
-            let tmp;
-            try {
-              tmp = new $BTreeMap();
-            } catch (error) {
-              console.log(`drop ${$debugStr(label[0])}`);
-              throw error;
-            }
-            let parent;
-            try {
-              parent = $downgrade(node);
-            } catch (error) {
+        $rcDrop(cur, dropNode);
+      });
+      throw error;
+    }
+    try {
+      $orInsertWith(
+        entry._0[0],
+        entry._0[1],
+        () => {
+          let tmp;
+          try {
+            tmp = new $BTreeMap();
+          } catch (error) {
+            console.log(`drop ${$debugStr(label[0])}`);
+            throw error;
+          }
+          let parent;
+          try {
+            parent = $downgrade(node);
+          } catch (error) {
+            $cleanup(() => {
               $dropItems($sortedEntries(tmp, $cmp), ([, value]) => {
                 $rcDrop(value, dropNode);
               });
               console.log(`drop ${$debugStr(label[0])}`);
-              throw error;
-            }
-            return {
-              value: {
-                label,
-                children: tmp,
-                parent,
-              },
-              strong: 1,
-              weak: 0,
-            };
-          },
-          undefined,
-          (value) => {
-            console.log(`drop ${$debugStr(label[0])}`);
-          },
-        );
-      } catch (error) {
+            });
+            throw error;
+          }
+          return {
+            value: {
+              label,
+              children: tmp,
+              parent,
+            },
+            strong: 1,
+            weak: 0,
+          };
+        },
+        undefined,
+        (value) => {
+          console.log(`drop ${$debugStr(label[0])}`);
+        },
+      );
+    } catch (error) {
+      $cleanup(() => {
         $unborrow(borrowMut);
-        throw error;
-      }
-      try {
-        next = $rcClone($mutGet(entry._0[0], entry._0[1]).value);
-      } catch (error) {
-        $unborrow(borrowMut);
-        throw error;
-      }
-      try {
-        $unborrow(borrowMut);
-      } catch (error) {
-        $rcDrop(next, dropNode);
-        throw error;
-      }
-      try {
         $rcDrop(cur, dropNode);
-      } finally {
-        cur = next;
-      }
+      });
+      throw error;
     }
-  } finally {
-    $rcDrop(cur, dropNode);
+    try {
+      next = $rcClone($mutGet(entry._0[0], entry._0[1]).value);
+    } catch (error) {
+      $cleanup(() => {
+        $unborrow(borrowMut);
+        $rcDrop(cur, dropNode);
+      });
+      throw error;
+    }
+    $unborrow(borrowMut);
+    try {
+      $rcDrop(cur, dropNode);
+    } catch (error) {
+      $cleanup(() => {
+        cur = next;
+        $rcDrop(cur, dropNode);
+      });
+      throw error;
+    }
+    cur = next;
   }
+  $rcDrop(cur, dropNode);
 }
 
 function depth(node) {
@@ -146,20 +185,54 @@ function depth(node) {
   }
   let cur = $rcClone(node);
   let depth = 0;
-  try {
-    let parent;
-    while ((parent = $upgrade($borrow(cur.value).parent)) != null) {
+  let parent;
+  while (true) {
+    let borrow;
+    try {
+      borrow = $borrow(cur.value);
+    } catch (error) {
+      $cleanup(() => {
+        $rcDrop(cur, dropNode);
+      });
+      throw error;
+    }
+    try {
+      parent = $upgrade(borrow.parent);
+    } catch (error) {
+      $cleanup(() => {
+        $rcDrop(cur, dropNode);
+      });
+      throw error;
+    }
+    if (parent != null) {
       try {
         $rcDrop(cur, dropNode);
-      } finally {
-        cur = parent;
+      } catch (error) {
+        $cleanup(() => {
+          cur = parent;
+          $rcDrop(cur, dropNode);
+        });
+        throw error;
       }
+      cur = parent;
       depth = (depth + 1) >>> 0;
+      continue;
     }
-    return depth;
-  } finally {
-    $rcDrop(cur, dropNode);
+    try {
+      if (parent != null) {
+        $rcDrop(parent, dropNode);
+      }
+    } catch (error) {
+      $cleanup(() => {
+        $rcDrop(cur, dropNode);
+      });
+      throw error;
+    }
+    break;
   }
+  const result = depth;
+  $rcDrop(cur, dropNode);
+  return result;
 }
 
 function main() {
@@ -195,7 +268,9 @@ function main() {
   try {
     iter = $iter(["ab", "ac", "b"]);
   } catch (error) {
-    $rcDrop(root, dropNode);
+    $cleanup(() => {
+      $rcDrop(root, dropNode);
+    });
     throw error;
   }
   while (true) {
@@ -203,9 +278,11 @@ function main() {
     try {
       word = $next(iter);
     } catch (error) {
-      if (root$live) {
-        $rcDrop(root, dropNode);
-      }
+      $cleanup(() => {
+        if (root$live) {
+          $rcDrop(root, dropNode);
+        }
+      });
       throw error;
     }
     if (word == null) {
@@ -214,9 +291,11 @@ function main() {
     try {
       insert(root, word);
     } catch (error) {
-      if (root$live) {
-        $rcDrop(root, dropNode);
-      }
+      $cleanup(() => {
+        if (root$live) {
+          $rcDrop(root, dropNode);
+        }
+      });
       throw error;
     }
   }
@@ -224,146 +303,182 @@ function main() {
   try {
     borrow = $borrow(root.value);
   } catch (error) {
-    if (root$live) {
-      $rcDrop(root, dropNode);
-    }
+    $cleanup(() => {
+      if (root$live) {
+        $rcDrop(root, dropNode);
+      }
+    });
     throw error;
   }
   let a;
   try {
     a = $rcClone($unwrap(borrow.children.get("a"), "no entry found for key"));
   } catch (error) {
-    if (root$live) {
-      $rcDrop(root, dropNode);
-    }
+    $cleanup(() => {
+      if (root$live) {
+        $rcDrop(root, dropNode);
+      }
+    });
     throw error;
   }
   let tmp$1;
   try {
     tmp$1 = $borrow(a.value);
   } catch (error) {
-    $rcDrop(a, dropNode);
-    if (root$live) {
-      $rcDrop(root, dropNode);
-    }
+    $cleanup(() => {
+      $rcDrop(a, dropNode);
+      if (root$live) {
+        $rcDrop(root, dropNode);
+      }
+    });
     throw error;
   }
   let ab;
   try {
     ab = $rcClone($unwrap(tmp$1.children.get("b"), "no entry found for key"));
   } catch (error) {
-    $rcDrop(a, dropNode);
-    if (root$live) {
-      $rcDrop(root, dropNode);
-    }
+    $cleanup(() => {
+      $rcDrop(a, dropNode);
+      if (root$live) {
+        $rcDrop(root, dropNode);
+      }
+    });
     throw error;
   }
   let tmp$2;
   try {
     tmp$2 = depth(root);
   } catch (error) {
-    $rcDrop(ab, dropNode);
-    $rcDrop(a, dropNode);
-    if (root$live) {
-      $rcDrop(root, dropNode);
-    }
+    $cleanup(() => {
+      $rcDrop(ab, dropNode);
+      $rcDrop(a, dropNode);
+      if (root$live) {
+        $rcDrop(root, dropNode);
+      }
+    });
     throw error;
   }
   let tmp$3;
   try {
     tmp$3 = depth(a);
   } catch (error) {
-    $rcDrop(ab, dropNode);
-    $rcDrop(a, dropNode);
-    if (root$live) {
-      $rcDrop(root, dropNode);
-    }
+    $cleanup(() => {
+      $rcDrop(ab, dropNode);
+      $rcDrop(a, dropNode);
+      if (root$live) {
+        $rcDrop(root, dropNode);
+      }
+    });
     throw error;
   }
   try {
     console.log(`${tmp$2} ${tmp$3} ${depth(ab)}`);
   } catch (error) {
-    $rcDrop(ab, dropNode);
-    $rcDrop(a, dropNode);
-    if (root$live) {
-      $rcDrop(root, dropNode);
-    }
+    $cleanup(() => {
+      $rcDrop(ab, dropNode);
+      $rcDrop(a, dropNode);
+      if (root$live) {
+        $rcDrop(root, dropNode);
+      }
+    });
     throw error;
   }
   let borrowMut;
   try {
     borrowMut = $borrowMut(a.value, true);
   } catch (error) {
-    $rcDrop(ab, dropNode);
-    $rcDrop(a, dropNode);
-    if (root$live) {
-      $rcDrop(root, dropNode);
-    }
+    $cleanup(() => {
+      $rcDrop(ab, dropNode);
+      $rcDrop(a, dropNode);
+      if (root$live) {
+        $rcDrop(root, dropNode);
+      }
+    });
     throw error;
   }
   let taken;
   try {
     taken = $remove(borrowMut.children, "c");
   } catch (error) {
-    $unborrow(borrowMut);
-    $rcDrop(ab, dropNode);
-    $rcDrop(a, dropNode);
-    if (root$live) {
-      $rcDrop(root, dropNode);
-    }
+    $cleanup(() => {
+      $unborrow(borrowMut);
+      $rcDrop(ab, dropNode);
+      $rcDrop(a, dropNode);
+      if (root$live) {
+        $rcDrop(root, dropNode);
+      }
+    });
     throw error;
   }
-  try {
-    $unborrow(borrowMut);
-  } catch (error) {
-    if (taken != null) {
-      $rcDrop(taken, dropNode);
-    }
-    $rcDrop(ab, dropNode);
-    $rcDrop(a, dropNode);
-    if (root$live) {
-      $rcDrop(root, dropNode);
-    }
-    throw error;
-  }
+  $unborrow(borrowMut);
   console.log(`taken ${taken != null}`);
   try {
     if (taken != null) {
       $rcDrop(taken, dropNode);
     }
   } catch (error) {
-    $rcDrop(ab, dropNode);
-    $rcDrop(a, dropNode);
-    if (root$live) {
-      $rcDrop(root, dropNode);
-    }
+    $cleanup(() => {
+      $rcDrop(ab, dropNode);
+      $rcDrop(a, dropNode);
+      if (root$live) {
+        $rcDrop(root, dropNode);
+      }
+    });
     throw error;
   }
   try {
     $rcDrop(a, dropNode);
   } catch (error) {
-    $rcDrop(ab, dropNode);
-    if (root$live) {
-      $rcDrop(root, dropNode);
-    }
+    $cleanup(() => {
+      $rcDrop(ab, dropNode);
+      if (root$live) {
+        $rcDrop(root, dropNode);
+      }
+    });
     throw error;
   }
   console.log("root dropped next");
   root$live = false;
   try {
     $rcDrop(root, dropNode);
-    const value = $borrow(ab.value, true);
-    try {
-      const upgrade = $upgrade(value.parent);
-      console.log(`ab's parent is gone: ${upgrade == null}`);
-      if (upgrade != null) {
-        $rcDrop(upgrade, dropNode);
-      }
-    } finally {
-      $unborrow(value);
-    }
-  } finally {
-    $rcDrop(ab, dropNode);
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(ab, dropNode);
+    });
+    throw error;
   }
+  let tmp$4;
+  try {
+    tmp$4 = $borrow(ab.value, true);
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(ab, dropNode);
+    });
+    throw error;
+  }
+  let upgrade;
+  try {
+    upgrade = $upgrade(tmp$4.parent);
+  } catch (error) {
+    $cleanup(() => {
+      $unborrow(tmp$4);
+      $rcDrop(ab, dropNode);
+    });
+    throw error;
+  }
+  console.log(`ab's parent is gone: ${upgrade == null}`);
+  try {
+    if (upgrade != null) {
+      $rcDrop(upgrade, dropNode);
+    }
+  } catch (error) {
+    $cleanup(() => {
+      $unborrow(tmp$4);
+      $rcDrop(ab, dropNode);
+    });
+    throw error;
+  }
+  $unborrow(tmp$4);
+  $rcDrop(ab, dropNode);
 }
 //# sourceMappingURL=case.js.map

@@ -3,6 +3,7 @@
 import { iterator_zip } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $collectDropping,
   $cycleOf,
@@ -149,9 +150,13 @@ function main() {
         },
         true,
       );
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     $dropItems(result, (item) => {
       dDrop_drop(item[0]);
     });
@@ -171,18 +176,22 @@ function main() {
       (value) => {
         try {
           dDrop_drop(value[0]);
-        } finally {
+        } catch (error) {
           dDrop_drop(value[1]);
+          throw error;
         }
+        dDrop_drop(value[1]);
       },
       true,
     );
     $dropItems(collect, (item) => {
       try {
         dDrop_drop(item[0]);
-      } finally {
+      } catch (error) {
         dDrop_drop(item[1]);
+        throw error;
       }
+      dDrop_drop(item[1]);
     });
     return collect.length;
   });
@@ -228,10 +237,21 @@ function main() {
         dDrop_drop,
         true,
       );
-      $dropItems(collect, dDrop_drop);
-    } finally {
-      $dropItems(v, dDrop_drop);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, dDrop_drop);
+      });
+      throw error;
     }
+    try {
+      $dropItems(collect, dDrop_drop);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, dDrop_drop);
+      });
+      throw error;
+    }
+    $dropItems(v, dDrop_drop);
     return collect.length;
   });
   run("zip of cloned, read by index", [0, 2], () => {
@@ -248,18 +268,30 @@ function main() {
         },
         true,
       );
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, dDrop_drop);
+      });
+      throw error;
+    }
+    try {
       $dropItems(collect, (item) => {
         dDrop_drop(item[0]);
       });
-    } finally {
-      $dropItems(v, dDrop_drop);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, dDrop_drop);
+      });
+      throw error;
     }
+    $dropItems(v, dDrop_drop);
     return collect.length;
   });
   run("zip of cloned, folded", [0, 0], () => {
     const v = ds();
+    let result;
     try {
-      return $trustedZip(
+      result = $trustedZip(
         v.values().map((item) => dClone_clone(item)),
         $iterator({ start: 10, end: 12 }, $rangeNext, false, undefined, $rangeLen),
       )
@@ -269,9 +301,14 @@ function main() {
           return result;
         })
         .reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      $dropItems(v, dDrop_drop);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, dDrop_drop);
+      });
+      throw error;
     }
+    $dropItems(v, dDrop_drop);
+    return result;
   });
   run("zip of cloned and a slice's items", [0, 2], () => {
     const value = ds();
@@ -279,27 +316,45 @@ function main() {
     try {
       tmp = [value, ds()];
     } catch (error) {
-      $dropItems(value, dDrop_drop);
+      $cleanup(() => {
+        $dropItems(value, dDrop_drop);
+      });
       throw error;
     }
     const v = tmp[0];
     const w = tmp[1];
+    let tmp$1;
+    try {
+      tmp$1 = v.values().map((item) => dClone_clone(item));
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(w, dDrop_drop);
+        $dropItems(v, dDrop_drop);
+      });
+      throw error;
+    }
     let result;
     try {
-      try {
-        result = $trustedZip(
-          v.values().map((item) => dClone_clone(item)),
-          $iter($slice(w, 0, 2)),
-        ).reduce((n, item) => {
-          dDrop_drop(item[0]);
-          return n + 1;
-        }, 0);
-      } finally {
+      result = $trustedZip(tmp$1, $iter($slice(w, 0, 2))).reduce((n, item) => {
+        dDrop_drop(item[0]);
+        return n + 1;
+      }, 0);
+    } catch (error) {
+      $cleanup(() => {
         $dropItems(w, dDrop_drop);
-      }
-    } finally {
-      $dropItems(v, dDrop_drop);
+        $dropItems(v, dDrop_drop);
+      });
+      throw error;
     }
+    try {
+      $dropItems(w, dDrop_drop);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, dDrop_drop);
+      });
+      throw error;
+    }
+    $dropItems(v, dDrop_drop);
     return result;
   });
   run(
@@ -415,36 +470,76 @@ function main() {
   });
   run("none panics", [0, 0], () => {
     const v = ds();
+    let tmp;
+    let tmp$1;
     try {
-      const value$1 = v.values().map((item) => dClone_clone(item));
-      const value = once(7);
-      const value$2 = once(8);
-      const zipped = $lazyZip(
-        value$1,
-        $lazyChain(
-          $closing($iterator(value, onceIterator_next), (it) => {
-            dDrop_drop(it.of._held);
-          }),
-          $closing($iterator(value$2, onceIterator_next), (it) => {
-            dDrop_drop(it.of._held);
-          }),
-        ),
-        dDrop_drop,
-      ).reduce((n, item) => {
+      tmp = v.values().map((item) => dClone_clone(item));
+      tmp$1 = once(7);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, dDrop_drop);
+      });
+      throw error;
+    }
+    const value$1 = once(8);
+    let chain;
+    try {
+      chain = $lazyChain(
+        $closing($iterator(tmp$1, onceIterator_next), (it) => {
+          dDrop_drop(it.of._held);
+        }),
+        $closing($iterator(value$1, onceIterator_next), (it) => {
+          dDrop_drop(it.of._held);
+        }),
+      );
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, dDrop_drop);
+      });
+      throw error;
+    }
+    let zipped;
+    try {
+      zipped = $lazyZip(tmp, chain, dDrop_drop).reduce((n, item) => {
         dDrop_drop(item[0]);
         return n + 1;
       }, 0);
-      const collect = $collectDropping(
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, dDrop_drop);
+      });
+      throw error;
+    }
+    let collect;
+    try {
+      collect = $collectDropping(
         $repeating([31], (value) => dClone_clone(value), dDrop_drop).take(2),
         dDrop_drop,
         true,
       );
-      const repeated = collect.length;
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, dDrop_drop);
+      });
+      throw error;
+    }
+    const repeated = collect.length;
+    try {
       $dropItems(collect, dDrop_drop);
-      return (
-        (((zipped + repeated) >>> 0) +
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, dDrop_drop);
+      });
+      throw error;
+    }
+    const value = (zipped + repeated) >>> 0;
+    const value$2 = [once(6)];
+    let result;
+    try {
+      result =
+        (value +
           $flatMap(
-            $closing($iter([once(6)]), (intoIter) => {
+            $closing($iter(value$2), (intoIter) => {
               $dropItems(intoIter, (item) => {
                 dDrop_drop(item._held);
               });
@@ -454,11 +549,15 @@ function main() {
                 dDrop_drop(it.of._held);
               }),
           ).reduce((n) => n + 1, 0)) >>>
-        0
-      );
-    } finally {
-      $dropItems(v, dDrop_drop);
+        0;
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, dDrop_drop);
+      });
+      throw error;
     }
+    $dropItems(v, dDrop_drop);
+    return result;
   });
 }
 //# sourceMappingURL=case.js.map

@@ -2,6 +2,7 @@
 
 import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $closing,
   $cmp,
   $held,
@@ -60,30 +61,38 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
   let acc = init;
   let result;
   try {
-    try {
-      while (true) {
-        let x;
-        try {
-          x = foldsIterator_next(folds);
-        } catch (error) {
+    while (true) {
+      let x;
+      try {
+        x = foldsIterator_next(folds);
+      } catch (error) {
+        $cleanup(() => {
           if (acc$live) {
             dropB?.(acc);
           }
-          throw error;
-        }
-        if (x == null) {
-          break;
-        }
-        acc$live = false;
-        const value = f(acc, x);
-        acc$live = true;
-        acc = value;
+          dropF?.(f);
+        });
+        throw error;
+      }
+      if (x == null) {
+        break;
       }
       acc$live = false;
-      result = acc;
-    } finally {
-      dropF?.(f);
+      let tmp;
+      try {
+        tmp = f(acc, x);
+      } catch (error) {
+        $cleanup(() => {
+          dropF?.(f);
+        });
+        throw error;
+      }
+      acc$live = true;
+      acc = tmp;
     }
+    acc$live = false;
+    result = acc;
+    dropF?.(f);
   } finally {
     foldsDrop_drop(folds);
   }
@@ -124,47 +133,78 @@ function show(what, last) {
 
 function end(it, dropI, dropIItem) {
   const iter = it;
+  let result;
   try {
-    return $lastDropping(Iterator.from(iter), dropIItem, true);
-  } finally {
-    if (!iter.ownFold && !iter.ownLast) {
-      dropI?.(iter);
-    }
+    result = $lastDropping(Iterator.from(iter), dropIItem, true);
+  } catch (error) {
+    $cleanup(() => {
+      if (!iter.ownFold && !iter.ownLast) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
   }
+  if (!iter.ownFold && !iter.ownLast) {
+    dropI?.(iter);
+  }
+  return result;
 }
 
 function top(it, IItemOrd, dropI, dropIItem) {
   const iter = it;
+  let result;
   try {
-    return $maxBy(Iterator.from(iter), IItemOrd.cmp, true, dropIItem);
-  } finally {
-    if (!iter.ownFold) {
-      dropI?.(iter);
-    }
+    result = $maxBy(Iterator.from(iter), IItemOrd.cmp, true, dropIItem);
+  } catch (error) {
+    $cleanup(() => {
+      if (!iter.ownFold) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
   }
+  if (!iter.ownFold) {
+    dropI?.(iter);
+  }
+  return result;
 }
 
 function total(it, dropI) {
   const iter = it;
+  let result;
   try {
-    return Iterator.from(iter).reduce((a, b) => (a + b) >>> 0, 0);
-  } finally {
-    if (!iter.ownFold) {
-      dropI?.(iter);
-    }
+    result = Iterator.from(iter).reduce((a, b) => (a + b) >>> 0, 0);
+  } catch (error) {
+    $cleanup(() => {
+      if (!iter.ownFold) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
   }
+  if (!iter.ownFold) {
+    dropI?.(iter);
+  }
+  return result;
 }
 
 function each(it, dropI) {
   const iter = it;
+  let result;
   try {
-    const result = Iterator.from(iter).forEach((x) => {
+    result = Iterator.from(iter).forEach((x) => {
       console.log(`each ${x}`);
     });
-  } finally {
-    if (!iter.ownFold) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!iter.ownFold) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!iter.ownFold) {
+    dropI?.(iter);
   }
 }
 
@@ -211,9 +251,13 @@ function main() {
   let result;
   try {
     result = $lastDropping(iter, dDrop_drop);
-  } finally {
-    iter.return();
+  } catch (error) {
+    $cleanup(() => {
+      iter.return();
+    });
+    throw error;
   }
+  iter.return();
   show("fuse", result);
   const iter$1 = iterator_peekable(
     [ds()],
@@ -228,9 +272,13 @@ function main() {
   let result$1;
   try {
     result$1 = $lastDropping(iter$1, dDrop_drop);
-  } finally {
-    iter$1.return();
+  } catch (error) {
+    $cleanup(() => {
+      iter$1.return();
+    });
+    throw error;
   }
+  iter$1.return();
   show("peekable", result$1);
   const peeked = $held(
     iterator_peekable(
@@ -247,16 +295,22 @@ function main() {
   try {
     $peek(peeked);
   } catch (error) {
-    peeked.return();
+    $cleanup(() => {
+      peeked.return();
+    });
     throw error;
   }
   const iter$2 = peeked;
   let result$2;
   try {
     result$2 = $lastDropping(iter$2, dDrop_drop);
-  } finally {
-    iter$2.return();
+  } catch (error) {
+    $cleanup(() => {
+      iter$2.return();
+    });
+    throw error;
   }
+  iter$2.return();
   show("peeked", result$2);
   show(
     "chain",
@@ -445,9 +499,13 @@ function main() {
   let result$3;
   try {
     result$3 = $lastDropping(iter$3, dDrop_drop);
-  } finally {
-    iter$3.return();
+  } catch (error) {
+    $cleanup(() => {
+      iter$3.return();
+    });
+    throw error;
   }
+  iter$3.return();
   show("fuse held", result$3);
   const iter$4 = iterator_peekable(
     [ds(), "p"],
@@ -463,9 +521,13 @@ function main() {
   let result$4;
   try {
     result$4 = $lastDropping(iter$4, dDrop_drop);
-  } finally {
-    iter$4.return();
+  } catch (error) {
+    $cleanup(() => {
+      iter$4.return();
+    });
+    throw error;
   }
+  iter$4.return();
   show("peekable held", result$4);
   const value = $last(
     $closing(

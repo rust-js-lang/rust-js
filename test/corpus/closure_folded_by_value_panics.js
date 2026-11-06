@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $cmp,
   $dropEach,
@@ -67,9 +68,13 @@ function main() {
     let result;
     try {
       result = iter.reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`${n} `);
   });

@@ -2,6 +2,7 @@
 
 import { iterator_chain, iterator_flatMap, iterator_zip } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $closing,
   $count,
   $debugStr,
@@ -48,16 +49,22 @@ function foldsIterator_sizeHint(folds) {
 function foldsIterator_fold(folds, init, f, dropB, dropF) {
   console.log("  own fold");
   const own = folds[0];
+  let value;
   try {
-    return $foldDropping(
+    value = $foldDropping(
       $lent($iterator(own, ownIterator_next, false, undefined, undefined, ownIterator_sizeHint)),
       init,
       (a, b) => f(a, b),
       dropB,
     );
-  } finally {
-    dropF?.(f);
+  } catch (error) {
+    $cleanup(() => {
+      dropF?.(f);
+    });
+    throw error;
   }
+  dropF?.(f);
+  return value;
 }
 
 function dDrop_drop(d) {
@@ -248,9 +255,13 @@ function main() {
   );
   try {
     show("rev filter", $sizeHint(filter));
-  } finally {
-    filter.return();
+  } catch (error) {
+    $cleanup(() => {
+      filter.return();
+    });
+    throw error;
   }
+  filter.return();
   inGeneric("tag", { fmt: (value) => $debugStr(value) });
   const s = Array.from(
     $reserveHint(

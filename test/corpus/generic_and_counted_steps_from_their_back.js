@@ -3,6 +3,7 @@
 import { iterator_stepBy } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $dropEach,
   $exactLen,
@@ -40,11 +41,17 @@ const Held = {
         },
       ),
     );
+    let result;
     try {
-      return $nthBack(map, 1);
-    } finally {
-      map.return();
+      result = $nthBack(map, 1);
+    } catch (error) {
+      $cleanup(() => {
+        map.return();
+      });
+      throw error;
     }
+    map.return();
+    return result;
   },
 };
 

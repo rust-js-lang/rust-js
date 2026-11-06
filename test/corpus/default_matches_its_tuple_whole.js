@@ -2,6 +2,7 @@
 
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $collectDropping,
   $collectsInPlace,
@@ -36,9 +37,11 @@ function _A__A_Tuple(dropA) {
     $drop(value) {
       try {
         dropA?.(value[0]);
-      } finally {
+      } catch (error) {
         dropA?.(value[1]);
+        throw error;
       }
+      dropA?.(value[1]);
     },
     $dropItem: dropA,
   }));
@@ -52,7 +55,9 @@ function _A__A_Tuple_taken(it, dropA, dropI) {
     try {
       value$1 = $nextSome(it);
     } catch (error) {
-      dropA?.(value$2);
+      $cleanup(() => {
+        dropA?.(value$2);
+      });
       throw error;
     }
     if (value$1 != null) {
@@ -91,9 +96,9 @@ function iExt(IIterator, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
     collectTuple(self, SelfIterator, TTuple, dropT) {
       $held(self);
       let elt$live = false;
-      let result;
+      let nextTuple;
       try {
-        const elt = iExt(
+        nextTuple = iExt(
           SelfIterator,
           IInPlace,
           IItemSize,
@@ -101,49 +106,81 @@ function iExt(IIterator, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
           dropI,
           TTuple.$dropItem,
         ).nextTuple(self, SelfIterator, TTuple, dropT);
-        let elt$live$1 = true;
-        if (elt != null) {
-          elt$live$1 = false;
-          elt$live = true;
-          let next;
-          try {
-            next = SelfIterator.next(self);
-          } catch (error) {
+      } catch (error) {
+        $cleanup(() => {
+          dropI?.(self);
+        });
+        throw error;
+      }
+      let nextTuple$live = true;
+      let result;
+      if (nextTuple != null) {
+        nextTuple$live = false;
+        elt$live = true;
+        const elt = nextTuple;
+        let next;
+        try {
+          next = SelfIterator.next(self);
+        } catch (error) {
+          $cleanup(() => {
             if (elt != null) {
               dropT?.($someValue(elt));
             }
-            throw error;
-          }
+            dropI?.(self);
+          });
+          throw error;
+        }
+        if (next != null) {
+          result = undefined;
+        } else {
+          elt$live = false;
+          result = elt;
+        }
+        try {
           if (next != null) {
-            result = undefined;
-          } else {
-            elt$live = false;
-            result = elt;
+            TTuple.$dropItem?.($someValue(next));
           }
-          try {
-            if (next != null) {
-              TTuple.$dropItem?.($someValue(next));
-            }
-          } finally {
+        } catch (error) {
+          $cleanup(() => {
             if (elt$live) {
               if (elt != null) {
                 dropT?.($someValue(elt));
               }
             }
-          }
-          elt$live = false;
-        } else {
-          result = undefined;
+            dropI?.(self);
+          });
+          throw error;
         }
-        if (elt$live$1) {
-          if (elt != null) {
-            dropT?.($someValue(elt));
+        try {
+          if (elt$live) {
+            if (elt != null) {
+              dropT?.($someValue(elt));
+            }
           }
+        } catch (error) {
+          $cleanup(() => {
+            dropI?.(self);
+          });
+          throw error;
         }
-        elt$live$1 = false;
-      } finally {
-        dropI?.(self);
+        elt$live = false;
+      } else {
+        result = undefined;
       }
+      try {
+        if (nextTuple$live) {
+          if (nextTuple != null) {
+            dropT?.($someValue(nextTuple));
+          }
+        }
+      } catch (error) {
+        $cleanup(() => {
+          dropI?.(self);
+        });
+        throw error;
+      }
+      nextTuple$live = false;
+      dropI?.(self);
       return result;
     },
     $drop: dropI,

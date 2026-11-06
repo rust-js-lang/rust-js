@@ -4,6 +4,7 @@ import { iterator_map } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
   $catchUnwind,
+  $cleanup,
   $closing,
   $count,
   $dropEach,
@@ -47,65 +48,134 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
       heldAll(self, SelfItemIntoIterator) {
         const all = [];
         const iter = self;
-        try {
-          let tmp;
-          while (true) {
-            try {
-              tmp = TIterator.next(iter);
-            } catch (error) {
+        let tmp;
+        while (true) {
+          try {
+            tmp = TIterator.next(iter);
+          } catch (error) {
+            $cleanup(() => {
               dropT?.(iter);
-              throw error;
-            }
-            if (tmp == null) {
-              dropT?.(iter);
-              break;
-            }
-            const i = $someValue(tmp);
-            let iter$1;
-            try {
-              iter$1 = SelfItemIntoIterator.intoIter(i);
-            } catch (error) {
-              dropT?.(iter);
-              throw error;
-            }
-            try {
-              all.push({ iter: iter$1 });
-            } catch (error) {
-              dropT?.(iter);
-              throw error;
-            }
+              $dropItems(all, (item) => {
+                try {
+                  heldDrop_drop(item, dropTItemIntoIter);
+                } catch (error) {
+                  dropTItemIntoIter?.(item.iter);
+                  throw error;
+                }
+                dropTItemIntoIter?.(item.iter);
+              });
+            });
+            throw error;
           }
-          return all.length;
-        } finally {
-          $dropItems(all, (item) => {
+          if (tmp == null) {
             try {
-              heldDrop_drop(item, dropTItemIntoIter);
-            } finally {
-              dropTItemIntoIter?.(item.iter);
+              dropT?.(iter);
+            } catch (error) {
+              $cleanup(() => {
+                $dropItems(all, (item) => {
+                  try {
+                    heldDrop_drop(item, dropTItemIntoIter);
+                  } catch (error) {
+                    dropTItemIntoIter?.(item.iter);
+                    throw error;
+                  }
+                  dropTItemIntoIter?.(item.iter);
+                });
+              });
+              throw error;
             }
-          });
+            break;
+          }
+          const i = $someValue(tmp);
+          let iter$1;
+          try {
+            iter$1 = SelfItemIntoIterator.intoIter(i);
+          } catch (error) {
+            $cleanup(() => {
+              dropT?.(iter);
+              $dropItems(all, (item) => {
+                try {
+                  heldDrop_drop(item, dropTItemIntoIter);
+                } catch (error) {
+                  dropTItemIntoIter?.(item.iter);
+                  throw error;
+                }
+                dropTItemIntoIter?.(item.iter);
+              });
+            });
+            throw error;
+          }
+          try {
+            all.push({ iter: iter$1 });
+          } catch (error) {
+            $cleanup(() => {
+              dropT?.(iter);
+              $dropItems(all, (item) => {
+                try {
+                  heldDrop_drop(item, dropTItemIntoIter);
+                } catch (error) {
+                  dropTItemIntoIter?.(item.iter);
+                  throw error;
+                }
+                dropTItemIntoIter?.(item.iter);
+              });
+            });
+            throw error;
+          }
         }
+        const result = all.length;
+        $dropItems(all, (item) => {
+          try {
+            heldDrop_drop(item, dropTItemIntoIter);
+          } catch (error) {
+            dropTItemIntoIter?.(item.iter);
+            throw error;
+          }
+          dropTItemIntoIter?.(item.iter);
+        });
+        return result;
       },
       firstHeld(self, SelfItemIntoIterator) {
         $held(self);
+        let next;
         try {
-          const next = TIterator.next(self);
-          return next != null
-            ? { iter: SelfItemIntoIterator.intoIter($someValue(next)) }
-            : undefined;
-        } finally {
-          dropT?.(self);
+          next = TIterator.next(self);
+        } catch (error) {
+          $cleanup(() => {
+            dropT?.(self);
+          });
+          throw error;
         }
+        let result;
+        try {
+          result =
+            next != null ? { iter: SelfItemIntoIterator.intoIter($someValue(next)) } : undefined;
+        } catch (error) {
+          $cleanup(() => {
+            dropT?.(self);
+          });
+          throw error;
+        }
+        dropT?.(self);
+        return result;
       },
       counted(self) {
         const iter = self;
+        let result;
         try {
-          return $count($given(iter, TIterator, true), dropTItem);
-        } finally {
-          if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {
-            dropT?.(iter);
-          }
+          result = $count($given(iter, TIterator, true), dropTItem);
+        } catch (error) {
+          $cleanup(() => {
+            if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {
+              dropT?.(iter);
+            }
+          });
+          throw error;
         }
+        if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {
+          dropT?.(iter);
+        }
+        return result;
       },
       $drop: dropT,
     }),
@@ -128,33 +198,41 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
           try {
             tmp = TIterator.next(iter);
           } catch (error) {
-            dropT?.(iter);
-            $dropItems(all, (item) => {
-              try {
-                heldDrop_drop(item, dropTItemIntoIter);
-              } finally {
+            $cleanup(() => {
+              dropT?.(iter);
+              $dropItems(all, (item) => {
+                try {
+                  heldDrop_drop(item, dropTItemIntoIter);
+                } catch (error) {
+                  dropTItemIntoIter?.(item.iter);
+                  throw error;
+                }
                 dropTItemIntoIter?.(item.iter);
+              });
+              if (extra$live) {
+                dropU?.(extra);
               }
             });
-            if (extra$live) {
-              dropU?.(extra);
-            }
             throw error;
           }
           if (tmp == null) {
             try {
               dropT?.(iter);
             } catch (error) {
-              $dropItems(all, (item) => {
-                try {
-                  heldDrop_drop(item, dropTItemIntoIter);
-                } finally {
+              $cleanup(() => {
+                $dropItems(all, (item) => {
+                  try {
+                    heldDrop_drop(item, dropTItemIntoIter);
+                  } catch (error) {
+                    dropTItemIntoIter?.(item.iter);
+                    throw error;
+                  }
                   dropTItemIntoIter?.(item.iter);
+                });
+                if (extra$live) {
+                  dropU?.(extra);
                 }
               });
-              if (extra$live) {
-                dropU?.(extra);
-              }
               throw error;
             }
             break;
@@ -164,59 +242,87 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
           try {
             iter$1 = SelfItemIntoIterator.intoIter(i);
           } catch (error) {
-            dropT?.(iter);
-            $dropItems(all, (item) => {
-              try {
-                heldDrop_drop(item, dropTItemIntoIter);
-              } finally {
+            $cleanup(() => {
+              dropT?.(iter);
+              $dropItems(all, (item) => {
+                try {
+                  heldDrop_drop(item, dropTItemIntoIter);
+                } catch (error) {
+                  dropTItemIntoIter?.(item.iter);
+                  throw error;
+                }
                 dropTItemIntoIter?.(item.iter);
+              });
+              if (extra$live) {
+                dropU?.(extra);
               }
             });
-            if (extra$live) {
-              dropU?.(extra);
-            }
             throw error;
           }
           try {
             all.push({ iter: iter$1 });
           } catch (error) {
-            dropT?.(iter);
-            $dropItems(all, (item) => {
-              try {
-                heldDrop_drop(item, dropTItemIntoIter);
-              } finally {
+            $cleanup(() => {
+              dropT?.(iter);
+              $dropItems(all, (item) => {
+                try {
+                  heldDrop_drop(item, dropTItemIntoIter);
+                } catch (error) {
+                  dropTItemIntoIter?.(item.iter);
+                  throw error;
+                }
                 dropTItemIntoIter?.(item.iter);
+              });
+              if (extra$live) {
+                dropU?.(extra);
               }
             });
-            if (extra$live) {
-              dropU?.(extra);
-            }
             throw error;
           }
         }
         const length = all.length;
         extra$live = false;
+        let iter$1;
+        let result$1;
         try {
-          const iter = $intoIter(extra);
-          let result;
+          iter$1 = $intoIter(extra);
           try {
-            result = iter.reduce((n, item) => {
+            result$1 = iter$1.reduce((n, item) => {
               dropUItem?.(item);
               return n + 1;
             }, 0);
-          } finally {
-            dropUIntoIter?.(iter);
+          } catch (error) {
+            $cleanup(() => {
+              dropUIntoIter?.(iter$1);
+            });
+            throw error;
           }
-          return (length + result) >>> 0;
-        } finally {
-          $dropItems(all, (item) => {
-            try {
-              heldDrop_drop(item, dropTItemIntoIter);
-            } finally {
+          dropUIntoIter?.(iter$1);
+        } catch (error) {
+          $cleanup(() => {
+            $dropItems(all, (item) => {
+              try {
+                heldDrop_drop(item, dropTItemIntoIter);
+              } catch (error) {
+                dropTItemIntoIter?.(item.iter);
+                throw error;
+              }
               dropTItemIntoIter?.(item.iter);
-            }
+            });
           });
+          throw error;
         }
+        const result = (length + result$1) >>> 0;
+        $dropItems(all, (item) => {
+          try {
+            heldDrop_drop(item, dropTItemIntoIter);
+          } catch (error) {
+            dropTItemIntoIter?.(item.iter);
+            throw error;
+          }
+          dropTItemIntoIter?.(item.iter);
+        });
+        return result;
       },
       $drop: dropT,
     }),
@@ -409,17 +515,14 @@ function main() {
     dDrop_drop,
     $dropEach(dDrop_drop),
   ).firstHeld($iter([[13n], [14n]]), intoIterator);
-  try {
-    const value = first != null ? first.iter.end - first.iter.at : undefined;
-    console.log(`first ${value == null ? "None" : `Some(${value})`}`);
-  } finally {
-    if (first != null) {
-      try {
-        heldDrop_drop(first, $dropEach(dDrop_drop));
-      } finally {
-        for (const item of first.iter) {
-          dDrop_drop(item);
-        }
+  const value$1 = first != null ? first.iter.end - first.iter.at : undefined;
+  console.log(`first ${value$1 == null ? "None" : `Some(${value$1})`}`);
+  if (first != null) {
+    try {
+      heldDrop_drop(first, $dropEach(dDrop_drop));
+    } finally {
+      for (const item of first.iter) {
+        dDrop_drop(item);
       }
     }
   }
@@ -431,7 +534,7 @@ function main() {
       dDrop_drop,
     ).counted($iter([[15n]]))}`,
   );
-  const value$1 = $iter([[16n]]);
+  const value$2 = $iter([[16n]]);
   console.log(
     `${tJoining(
       { next: $nextSome, advanceBy: $advanceSlice },
@@ -449,7 +552,7 @@ function main() {
       },
       dDrop_drop,
       $dropEach(dDrop_drop),
-    ).heldWith(value$1, [17], intoIterator)}`,
+    ).heldWith(value$2, [17], intoIterator)}`,
   );
   console.log("end");
 }

@@ -15,6 +15,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $catchUnwind,
+  $cleanup,
   $dropEach,
   $exactLen,
   $foldDropping,
@@ -52,30 +53,39 @@ function numsIterator_fold(nums, init, f, dropB, dropF) {
   console.log("own fold");
   let acc$live = true;
   let acc = init;
-  try {
-    while (true) {
-      let n;
-      try {
-        n = numsIterator_next(nums);
-      } catch (error) {
+  while (true) {
+    let n;
+    try {
+      n = numsIterator_next(nums);
+    } catch (error) {
+      $cleanup(() => {
         if (acc$live) {
           dropB?.(acc);
         }
-        throw error;
-      }
-      if (n == null) {
-        break;
-      }
-      acc$live = false;
-      const value = f(acc, n);
-      acc$live = true;
-      acc = value;
+        dropF?.(f);
+      });
+      throw error;
+    }
+    if (n == null) {
+      break;
     }
     acc$live = false;
-    return acc;
-  } finally {
-    dropF?.(f);
+    let tmp;
+    try {
+      tmp = f(acc, n);
+    } catch (error) {
+      $cleanup(() => {
+        dropF?.(f);
+      });
+      throw error;
+    }
+    acc$live = true;
+    acc = tmp;
   }
+  acc$live = false;
+  const result = acc;
+  dropF?.(f);
+  return result;
 }
 
 function numsDoubleEndedIterator_nextBack(nums) {

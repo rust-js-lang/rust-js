@@ -10,6 +10,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $collectDropping,
   $dropEach,
   $enumerate,
@@ -112,9 +113,15 @@ function main() {
       ),
     ),
   );
+  let nth;
+  function map([i, l]) {
+    const result = [i, l[0]];
+    loudDrop_drop(l);
+    return result;
+  }
   let e;
   try {
-    const nth = $nthDropping(
+    nth = $nthDropping(
       $lent(rev),
       1,
       (value) => {
@@ -122,15 +129,14 @@ function main() {
       },
       false,
     );
-    function map([i, l]) {
-      const result = [i, l[0]];
-      loudDrop_drop(l);
-      return result;
-    }
     e = nth != null ? map(nth) : undefined;
-  } finally {
-    rev.return();
+  } catch (error) {
+    $cleanup(() => {
+      rev.return();
+    });
+    throw error;
   }
+  rev.return();
   console.log(`${e == null ? "None" : `Some((${e[0]}, ${e[1]}))`}`);
   const back = $collectDropping(
     $rev(

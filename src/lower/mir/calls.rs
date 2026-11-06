@@ -152,6 +152,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::Ref(closure) => closure,
             value => self.value_expr(value, span)?,
         };
+        // A closure of the crate's that never unwinds (ADR 0902): its call
+        // throws only where what it's given does, so a guard that calls it
+        // as it drops drops in a `finally` (#847).
+        let callee = match arg_tys.first().map(|ty| ty.peel_refs().kind()) {
+            Some(ty::Closure(id, _)) if self.krate.never_unwinding.contains(id) => callee.never_throws(),
+            _ => callee,
+        };
         let list = match values.next() {
             Some(Value::List(items, _)) => items,
             Some(Value::Expr(e)) if matches!(e.kind, js::ExprKind::Undefined) => Vec::new(),

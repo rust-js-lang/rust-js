@@ -4,6 +4,7 @@ import {
   $BTreeMap,
   $KeySet,
   $btreeSet,
+  $cleanup,
   $cmp,
   $findDropping,
   $insert,
@@ -53,11 +54,13 @@ function main() {
     try {
       insert = $insert(map, n, [n * 10]);
     } catch (error) {
-      if (map$live) {
-        for (const [, value] of $sortedEntries(map, $cmp)) {
-          loudDrop_drop(value);
+      $cleanup(() => {
+        if (map$live) {
+          for (const [, value$1] of $sortedEntries(map, $cmp)) {
+            loudDrop_drop(value$1);
+          }
         }
-      }
+      });
       throw error;
     }
     try {
@@ -65,11 +68,13 @@ function main() {
         loudDrop_drop(insert);
       }
     } catch (error) {
-      if (map$live) {
-        for (const [, value] of $sortedEntries(map, $cmp)) {
-          loudDrop_drop(value);
+      $cleanup(() => {
+        if (map$live) {
+          for (const [, value] of $sortedEntries(map, $cmp)) {
+            loudDrop_drop(value);
+          }
         }
-      }
+      });
       throw error;
     }
   }
@@ -105,9 +110,11 @@ function main() {
   try {
     loud = $insert(all, 1, [7]);
   } catch (error) {
-    for (const [, value] of $sortedEntries(all, $cmp)) {
-      loudDrop_drop(value);
-    }
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(all, $cmp)) {
+        loudDrop_drop(value);
+      }
+    });
     throw error;
   }
   try {
@@ -115,18 +122,22 @@ function main() {
       loudDrop_drop(loud);
     }
   } catch (error) {
-    for (const [, value] of $sortedEntries(all, $cmp)) {
-      loudDrop_drop(value);
-    }
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(all, $cmp)) {
+        loudDrop_drop(value);
+      }
+    });
     throw error;
   }
   let tmp;
   try {
     tmp = $insert(all, 2, [8]);
   } catch (error) {
-    for (const [, value] of $sortedEntries(all, $cmp)) {
-      loudDrop_drop(value);
-    }
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(all, $cmp)) {
+        loudDrop_drop(value);
+      }
+    });
     throw error;
   }
   try {
@@ -134,9 +145,11 @@ function main() {
       loudDrop_drop(tmp);
     }
   } catch (error) {
-    for (const [, value] of $sortedEntries(all, $cmp)) {
-      loudDrop_drop(value);
-    }
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(all, $cmp)) {
+        loudDrop_drop(value);
+      }
+    });
     throw error;
   }
   console.log(

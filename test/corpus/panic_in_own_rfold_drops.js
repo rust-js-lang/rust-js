@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $dropEach,
   $enumerate,
   $exactLen,
@@ -42,42 +43,54 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
   console.log("own rfold");
   let acc$live = true;
   let acc = init;
-  try {
-    let nextBack;
-    while (true) {
-      try {
-        nextBack = countDoubleEndedIterator_nextBack(count);
-      } catch (error) {
+  let nextBack;
+  while (true) {
+    try {
+      nextBack = countDoubleEndedIterator_nextBack(count);
+    } catch (error) {
+      $cleanup(() => {
         if (acc$live) {
           dropB?.(acc);
         }
-        throw error;
-      }
-      if (nextBack != null) {
-        const x = nextBack;
-        acc$live = false;
-        const value = f(acc, x);
-        acc$live = true;
-        acc = value;
-        continue;
-      }
-      try {
-        if (nextBack != null) {
-          dDrop_drop(nextBack);
-        }
-      } catch (error) {
-        if (acc$live) {
-          dropB?.(acc);
-        }
-        throw error;
-      }
-      break;
+        dropF?.(f);
+      });
+      throw error;
     }
-    acc$live = false;
-    return acc;
-  } finally {
-    dropF?.(f);
+    if (nextBack != null) {
+      const x = nextBack;
+      acc$live = false;
+      let tmp;
+      try {
+        tmp = f(acc, x);
+      } catch (error) {
+        $cleanup(() => {
+          dropF?.(f);
+        });
+        throw error;
+      }
+      acc$live = true;
+      acc = tmp;
+      continue;
+    }
+    try {
+      if (nextBack != null) {
+        dDrop_drop(nextBack);
+      }
+    } catch (error) {
+      $cleanup(() => {
+        if (acc$live) {
+          dropB?.(acc);
+        }
+        dropF?.(f);
+      });
+      throw error;
+    }
+    break;
   }
+  acc$live = false;
+  const result = acc;
+  dropF?.(f);
+  return result;
 }
 function boom(d, at) {
   if (d[0] === at) {

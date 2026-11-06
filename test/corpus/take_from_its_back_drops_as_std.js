@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $count,
@@ -44,9 +45,13 @@ function collected(src, ITrustedLen, dropI) {
     result = ITrustedLen
       ? $foldToArray($roomForHint(iter, 4, ITrustedLen, false, dDrop_drop), dDrop_drop, true)
       : $collectDropping($roomForHint(iter, 4, ITrustedLen, false, dDrop_drop), dDrop_drop, true);
-  } finally {
-    iter.return();
+  } catch (error) {
+    $cleanup(() => {
+      iter.return();
+    });
+    throw error;
   }
+  iter.return();
   const v = result;
   try {
     return v.map((d) => d[0]);
@@ -132,18 +137,23 @@ function main() {
       ),
     ),
   );
+  let nthBack;
+  function map(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
+  }
   let third;
   try {
-    const nthBack = $nthBack(rev, 2, undefined, dDrop_drop);
-    function map(d) {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }
+    nthBack = $nthBack(rev, 2, undefined, dDrop_drop);
     third = nthBack != null ? map(nthBack) : undefined;
-  } finally {
-    rev.return();
+  } catch (error) {
+    $cleanup(() => {
+      rev.return();
+    });
+    throw error;
   }
+  rev.return();
   console.log(`third ${third == null ? "None" : `Some(${third})`}`);
 }
 //# sourceMappingURL=case.js.map

@@ -2,6 +2,7 @@
 
 import { iterator_map } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $closing,
   $collectDropping,
   $count,
@@ -34,21 +35,31 @@ function splitFirst(iter, k, IItemSize, dropI, dropIItem) {
       true,
     );
   } catch (error) {
-    dropI?.(iter);
+    $cleanup(() => {
+      dropI?.(iter);
+    });
     throw error;
   }
   let result;
   try {
     try {
       result = $count(Iterator.from(iter), dropIItem);
-    } finally {
-      if (!iter.ownFold && !iter.ownCount) {
-        dropI?.(iter);
-      }
+    } catch (error) {
+      $cleanup(() => {
+        if (!iter.ownFold && !iter.ownCount) {
+          dropI?.(iter);
+        }
+      });
+      throw error;
+    }
+    if (!iter.ownFold && !iter.ownCount) {
+      dropI?.(iter);
     }
   } catch (error) {
-    $dropItems(first, (item) => {
-      dropIItem?.(item);
+    $cleanup(() => {
+      $dropItems(first, (item) => {
+        dropIItem?.(item);
+      });
     });
     throw error;
   }
@@ -57,31 +68,50 @@ function splitFirst(iter, k, IItemSize, dropI, dropIItem) {
 function main() {
   const v = $range(1, 6).map((value) => [value]);
   let iter = $closing($iter(v), $dropEach(nDrop_drop)).take(2);
-  try {
-    let n;
-    while ((n = $next(iter)) != null) {
-      console.log(`got ${n[0]}`);
-      nDrop_drop(n);
+  let tmp;
+  while (true) {
+    try {
+      tmp = $next(iter);
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
-  } finally {
-    iter.return();
+    if (tmp == null) {
+      iter.return();
+      break;
+    }
+    const n = tmp;
+    console.log(`got ${n[0]}`);
+    nDrop_drop(n);
   }
   console.log("after loop");
   const w = $range(6, 10).map((value) => [value]);
   iter = $closing($iter(w), $dropEach(nDrop_drop)).take(3);
-  try {
-    let n;
-    while ((n = $next(iter)) != null) {
+  let tmp$1;
+  while (true) {
+    try {
+      tmp$1 = $next(iter);
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
+    }
+    if (tmp$1 != null) {
+      const n = tmp$1;
       if (n[0] === 7) {
         console.log("break");
         nDrop_drop(n);
-        break;
+      } else {
+        console.log(`got ${n[0]}`);
+        nDrop_drop(n);
+        continue;
       }
-      console.log(`got ${n[0]}`);
-      nDrop_drop(n);
     }
-  } finally {
     iter.return();
+    break;
   }
   console.log("after break");
   const x = $range(10, 13).map((value) => [value]);
@@ -94,7 +124,9 @@ function main() {
     try {
       one = $next(t);
     } catch (error) {
-      t.return();
+      $cleanup(() => {
+        t.return();
+      });
       throw error;
     }
     const value = one?.[0];
@@ -136,18 +168,20 @@ function main() {
       try {
         tmp = $next(iter);
       } catch (error) {
-        iter.return();
-        for (const item of all) {
-          nDrop_drop(item);
-        }
-        if (one$live) {
-          if (one != null) {
-            nDrop_drop(one);
+        $cleanup(() => {
+          iter.return();
+          for (const item of all) {
+            nDrop_drop(item);
           }
-        }
-        if (t$live) {
-          t.return();
-        }
+          if (one$live) {
+            if (one != null) {
+              nDrop_drop(one);
+            }
+          }
+          if (t$live) {
+            t.return();
+          }
+        });
         throw error;
       }
       if (tmp != null) {
@@ -163,6 +197,28 @@ function main() {
       try {
         iter.return();
       } catch (error) {
+        $cleanup(() => {
+          for (const item of all) {
+            nDrop_drop(item);
+          }
+          if (one$live) {
+            if (one != null) {
+              nDrop_drop(one);
+            }
+          }
+          if (t$live) {
+            t.return();
+          }
+        });
+        throw error;
+      }
+      break;
+    }
+    let unstepped;
+    try {
+      unstepped = $range(50, 53).map((value) => [value]);
+    } catch (error) {
+      $cleanup(() => {
         for (const item of all) {
           nDrop_drop(item);
         }
@@ -174,42 +230,26 @@ function main() {
         if (t$live) {
           t.return();
         }
-        throw error;
-      }
-      break;
-    }
-    let unstepped;
-    try {
-      unstepped = $range(50, 53).map((value) => [value]);
-    } catch (error) {
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
-        }
-      }
-      if (t$live) {
-        t.return();
-      }
+      });
       throw error;
     }
     let skipped;
     try {
       skipped = $skipping($closing($iter(unstepped), $dropEach(nDrop_drop)), 1, nDrop_drop);
     } catch (error) {
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
+      $cleanup(() => {
+        for (const item of all) {
+          nDrop_drop(item);
         }
-      }
-      if (t$live) {
-        t.return();
-      }
+        if (one$live) {
+          if (one != null) {
+            nDrop_drop(one);
+          }
+        }
+        if (t$live) {
+          t.return();
+        }
+      });
       throw error;
     }
     console.log("made skip");
@@ -217,34 +257,38 @@ function main() {
     try {
       skipped.return();
     } catch (error) {
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
+      $cleanup(() => {
+        for (const item of all) {
+          nDrop_drop(item);
         }
-      }
-      if (t$live) {
-        t.return();
-      }
+        if (one$live) {
+          if (one != null) {
+            nDrop_drop(one);
+          }
+        }
+        if (t$live) {
+          t.return();
+        }
+      });
       throw error;
     }
     let both;
     try {
       both = $range(60, 65).map((value) => [value]);
     } catch (error) {
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
+      $cleanup(() => {
+        for (const item of all) {
+          nDrop_drop(item);
         }
-      }
-      if (t$live) {
-        t.return();
-      }
+        if (one$live) {
+          if (one != null) {
+            nDrop_drop(one);
+          }
+        }
+        if (t$live) {
+          t.return();
+        }
+      });
       throw error;
     }
     let kept;
@@ -253,17 +297,19 @@ function main() {
         $skipping($closing($iter(both), $dropEach(nDrop_drop)), 1, nDrop_drop).take(2),
       );
     } catch (error) {
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
+      $cleanup(() => {
+        for (const item of all) {
+          nDrop_drop(item);
         }
-      }
-      if (t$live) {
-        t.return();
-      }
+        if (one$live) {
+          if (one != null) {
+            nDrop_drop(one);
+          }
+        }
+        if (t$live) {
+          t.return();
+        }
+      });
       throw error;
     }
     console.log(`kept ${kept.length}`);
@@ -277,40 +323,44 @@ function main() {
         nDrop_drop,
       );
     } catch (error) {
-      for (const item of kept) {
-        nDrop_drop(item);
-      }
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
+      $cleanup(() => {
+        for (const item of kept) {
+          nDrop_drop(item);
         }
-      }
-      if (t$live) {
-        t.return();
-      }
+        for (const item of all) {
+          nDrop_drop(item);
+        }
+        if (one$live) {
+          if (one != null) {
+            nDrop_drop(one);
+          }
+        }
+        if (t$live) {
+          t.return();
+        }
+      });
       throw error;
     }
     let lent;
     try {
       lent = Array.from($lent(made).take(2));
     } catch (error) {
-      for (const item of kept) {
-        nDrop_drop(item);
-      }
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
+      $cleanup(() => {
+        for (const item of kept) {
+          nDrop_drop(item);
         }
-      }
-      if (t$live) {
-        t.return();
-      }
+        for (const item of all) {
+          nDrop_drop(item);
+        }
+        if (one$live) {
+          if (one != null) {
+            nDrop_drop(one);
+          }
+        }
+        if (t$live) {
+          t.return();
+        }
+      });
       throw error;
     }
     console.log(`lent ${lent.length}`);
@@ -318,23 +368,25 @@ function main() {
     try {
       next = $next(made);
     } catch (error) {
-      for (const item of lent) {
-        nDrop_drop(item);
-      }
-      for (const item of kept) {
-        nDrop_drop(item);
-      }
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
+      $cleanup(() => {
+        for (const item of lent) {
+          nDrop_drop(item);
         }
-      }
-      if (t$live) {
-        t.return();
-      }
+        for (const item of kept) {
+          nDrop_drop(item);
+        }
+        for (const item of all) {
+          nDrop_drop(item);
+        }
+        if (one$live) {
+          if (one != null) {
+            nDrop_drop(one);
+          }
+        }
+        if (t$live) {
+          t.return();
+        }
+      });
       throw error;
     }
     const value$1 = next?.[0];
@@ -345,23 +397,25 @@ function main() {
         nDrop_drop(next);
       }
     } catch (error) {
-      for (const item of lent) {
-        nDrop_drop(item);
-      }
-      for (const item of kept) {
-        nDrop_drop(item);
-      }
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
+      $cleanup(() => {
+        for (const item of lent) {
+          nDrop_drop(item);
         }
-      }
-      if (t$live) {
-        t.return();
-      }
+        for (const item of kept) {
+          nDrop_drop(item);
+        }
+        for (const item of all) {
+          nDrop_drop(item);
+        }
+        if (one$live) {
+          if (one != null) {
+            nDrop_drop(one);
+          }
+        }
+        if (t$live) {
+          t.return();
+        }
+      });
       throw error;
     }
     let lent$live = false;
@@ -370,20 +424,22 @@ function main() {
         nDrop_drop(item);
       }
     } catch (error) {
-      for (const item of kept) {
-        nDrop_drop(item);
-      }
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
+      $cleanup(() => {
+        for (const item of kept) {
+          nDrop_drop(item);
         }
-      }
-      if (t$live) {
-        t.return();
-      }
+        for (const item of all) {
+          nDrop_drop(item);
+        }
+        if (one$live) {
+          if (one != null) {
+            nDrop_drop(one);
+          }
+        }
+        if (t$live) {
+          t.return();
+        }
+      });
       throw error;
     }
     let tmp$1;
@@ -396,20 +452,22 @@ function main() {
         nDrop_drop,
       );
     } catch (error) {
-      for (const item of kept) {
-        nDrop_drop(item);
-      }
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
+      $cleanup(() => {
+        for (const item of kept) {
+          nDrop_drop(item);
         }
-      }
-      if (t$live) {
-        t.return();
-      }
+        for (const item of all) {
+          nDrop_drop(item);
+        }
+        if (one$live) {
+          if (one != null) {
+            nDrop_drop(one);
+          }
+        }
+        if (t$live) {
+          t.return();
+        }
+      });
       throw error;
     }
     const first = tmp$1[0];
@@ -419,49 +477,53 @@ function main() {
     try {
       owned = $iter($range(90, 94).map((value) => [value]));
     } catch (error) {
-      for (const item of first) {
-        nDrop_drop(item);
-      }
-      for (const item of kept) {
-        nDrop_drop(item);
-      }
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
+      $cleanup(() => {
+        for (const item of first) {
+          nDrop_drop(item);
         }
-      }
-      if (t$live) {
-        t.return();
-      }
+        for (const item of kept) {
+          nDrop_drop(item);
+        }
+        for (const item of all) {
+          nDrop_drop(item);
+        }
+        if (one$live) {
+          if (one != null) {
+            nDrop_drop(one);
+          }
+        }
+        if (t$live) {
+          t.return();
+        }
+      });
       throw error;
     }
     let owned$live = true;
     try {
       iter = $lent(owned).take(2);
     } catch (error) {
-      for (const item of owned) {
-        nDrop_drop(item);
-      }
-      for (const item of first) {
-        nDrop_drop(item);
-      }
-      for (const item of kept) {
-        nDrop_drop(item);
-      }
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
+      $cleanup(() => {
+        for (const item of owned) {
+          nDrop_drop(item);
         }
-      }
-      if (t$live) {
-        t.return();
-      }
+        for (const item of first) {
+          nDrop_drop(item);
+        }
+        for (const item of kept) {
+          nDrop_drop(item);
+        }
+        for (const item of all) {
+          nDrop_drop(item);
+        }
+        if (one$live) {
+          if (one != null) {
+            nDrop_drop(one);
+          }
+        }
+        if (t$live) {
+          t.return();
+        }
+      });
       throw error;
     }
     let tmp$2;
@@ -469,11 +531,62 @@ function main() {
       try {
         tmp$2 = $next(iter);
       } catch (error) {
-        if (owned$live) {
-          for (const item of owned) {
+        $cleanup(() => {
+          if (owned$live) {
+            for (const item of owned) {
+              nDrop_drop(item);
+            }
+          }
+          for (const item of first) {
             nDrop_drop(item);
           }
-        }
+          if (next$live) {
+            if (next != null) {
+              nDrop_drop(next);
+            }
+          }
+          if (lent$live) {
+            for (const item of lent) {
+              nDrop_drop(item);
+            }
+          }
+          for (const item of kept) {
+            nDrop_drop(item);
+          }
+          if (skipped$live) {
+            skipped.return();
+          }
+          for (const item of all) {
+            nDrop_drop(item);
+          }
+          if (one$live) {
+            if (one != null) {
+              nDrop_drop(one);
+            }
+          }
+          if (t$live) {
+            t.return();
+          }
+        });
+        throw error;
+      }
+      if (tmp$2 == null) {
+        break;
+      }
+      const n = tmp$2;
+      console.log(`lent got ${n[0]}`);
+      nDrop_drop(n);
+    }
+    owned$live = false;
+    try {
+      console.log(
+        `left ${$closing(owned, $dropEach(nDrop_drop)).reduce((n, item) => {
+          nDrop_drop(item);
+          return n + 1;
+        }, 0)}`,
+      );
+    } catch (error) {
+      $cleanup(() => {
         for (const item of first) {
           nDrop_drop(item);
         }
@@ -504,54 +617,7 @@ function main() {
         if (t$live) {
           t.return();
         }
-        throw error;
-      }
-      if (tmp$2 == null) {
-        break;
-      }
-      const n = tmp$2;
-      console.log(`lent got ${n[0]}`);
-      nDrop_drop(n);
-    }
-    owned$live = false;
-    try {
-      console.log(
-        `left ${$closing(owned, $dropEach(nDrop_drop)).reduce((n, item) => {
-          nDrop_drop(item);
-          return n + 1;
-        }, 0)}`,
-      );
-    } catch (error) {
-      for (const item of first) {
-        nDrop_drop(item);
-      }
-      if (next$live) {
-        if (next != null) {
-          nDrop_drop(next);
-        }
-      }
-      if (lent$live) {
-        for (const item of lent) {
-          nDrop_drop(item);
-        }
-      }
-      for (const item of kept) {
-        nDrop_drop(item);
-      }
-      if (skipped$live) {
-        skipped.return();
-      }
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
-        }
-      }
-      if (t$live) {
-        t.return();
-      }
+      });
       throw error;
     }
     console.log("end");
@@ -560,33 +626,35 @@ function main() {
         nDrop_drop(item);
       }
     } catch (error) {
-      if (next$live) {
-        if (next != null) {
-          nDrop_drop(next);
+      $cleanup(() => {
+        if (next$live) {
+          if (next != null) {
+            nDrop_drop(next);
+          }
         }
-      }
-      if (lent$live) {
-        for (const item of lent) {
+        if (lent$live) {
+          for (const item of lent) {
+            nDrop_drop(item);
+          }
+        }
+        for (const item of kept) {
           nDrop_drop(item);
         }
-      }
-      for (const item of kept) {
-        nDrop_drop(item);
-      }
-      if (skipped$live) {
-        skipped.return();
-      }
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
+        if (skipped$live) {
+          skipped.return();
         }
-      }
-      if (t$live) {
-        t.return();
-      }
+        for (const item of all) {
+          nDrop_drop(item);
+        }
+        if (one$live) {
+          if (one != null) {
+            nDrop_drop(one);
+          }
+        }
+        if (t$live) {
+          t.return();
+        }
+      });
       throw error;
     }
     next$live = false;
@@ -596,20 +664,22 @@ function main() {
         nDrop_drop(item);
       }
     } catch (error) {
-      if (skipped$live) {
-        skipped.return();
-      }
-      for (const item of all) {
-        nDrop_drop(item);
-      }
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
+      $cleanup(() => {
+        if (skipped$live) {
+          skipped.return();
         }
-      }
-      if (t$live) {
-        t.return();
-      }
+        for (const item of all) {
+          nDrop_drop(item);
+        }
+        if (one$live) {
+          if (one != null) {
+            nDrop_drop(one);
+          }
+        }
+        if (t$live) {
+          t.return();
+        }
+      });
       throw error;
     }
     skipped$live = false;
@@ -618,14 +688,16 @@ function main() {
         nDrop_drop(item);
       }
     } catch (error) {
-      if (one$live) {
-        if (one != null) {
-          nDrop_drop(one);
+      $cleanup(() => {
+        if (one$live) {
+          if (one != null) {
+            nDrop_drop(one);
+          }
         }
-      }
-      if (t$live) {
-        t.return();
-      }
+        if (t$live) {
+          t.return();
+        }
+      });
       throw error;
     }
     one$live = false;

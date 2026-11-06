@@ -3,6 +3,7 @@
 import { iterator_map, iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -37,15 +38,27 @@ function mapped() {
       (item) => $closing($iter(item), $dropEach(dDrop_drop)),
     ),
   );
+  let first;
   try {
-    const first = $next(it);
-    console.log(`first ${first?.[0] ?? 0}`);
+    first = $next(it);
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  console.log(`first ${first?.[0] ?? 0}`);
+  try {
     if (first != null) {
       dDrop_drop(first);
     }
-  } finally {
-    it.return();
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
   }
+  it.return();
   console.log("mapped end");
 }
 function flatMapped() {
@@ -59,15 +72,27 @@ function flatMapped() {
       (x) => $closing($iter([[(x[0] + 10) >>> 0], x]), $dropEach(dDrop_drop)),
     ),
   );
+  let first;
   try {
-    const first = $nthDropping($lent(it), 0, dDrop_drop, false);
-    console.log(`first ${first?.[0] ?? 0}`);
+    first = $nthDropping($lent(it), 0, dDrop_drop, false);
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  console.log(`first ${first?.[0] ?? 0}`);
+  try {
     if (first != null) {
       dDrop_drop(first);
     }
-  } finally {
-    it.return();
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
   }
+  it.return();
   console.log("flat mapped end");
 }
 function brokenOff() {
@@ -75,15 +100,20 @@ function brokenOff() {
     $closing($iter([[5], [6]]), $dropEach(dDrop_drop)).map((x) => [[(x[0] + 10) >>> 0], x]),
     (item) => $closing($iter(item), $dropEach(dDrop_drop)),
   );
+  let d;
   try {
-    const d = $next(iter);
-    if (d != null) {
-      console.log(`got ${d[0]}`);
-      dDrop_drop(d);
-    }
-  } finally {
-    iter.return();
+    d = $next(iter);
+  } catch (error) {
+    $cleanup(() => {
+      iter.return();
+    });
+    throw error;
   }
+  if (d != null) {
+    console.log(`got ${d[0]}`);
+    dDrop_drop(d);
+  }
+  iter.return();
   console.log("broken off end");
 }
 function ofARange() {
@@ -93,15 +123,27 @@ function ofARange() {
       (item) => $closing($iter(item), $dropEach(dDrop_drop)),
     ),
   );
+  let first;
   try {
-    const first = $next(it);
-    console.log(`first ${first?.[0] ?? 0}`);
+    first = $next(it);
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  console.log(`first ${first?.[0] ?? 0}`);
+  try {
     if (first != null) {
       dDrop_drop(first);
     }
-  } finally {
-    it.return();
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
   }
+  it.return();
   console.log("of a range end");
 }
 function foldsIterator_next(folds) {
@@ -112,42 +154,54 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
   console.log("own fold");
   let acc$live = true;
   let acc = init;
-  try {
-    let next;
-    while (true) {
-      try {
-        next = foldsIterator_next(folds);
-      } catch (error) {
+  let next;
+  while (true) {
+    try {
+      next = foldsIterator_next(folds);
+    } catch (error) {
+      $cleanup(() => {
         if (acc$live) {
           dropB?.(acc);
         }
-        throw error;
-      }
-      if (next != null) {
-        const d = next;
-        acc$live = false;
-        const value = f(acc, d);
-        acc$live = true;
-        acc = value;
-        continue;
-      }
-      try {
-        if (next != null) {
-          dDrop_drop(next);
-        }
-      } catch (error) {
-        if (acc$live) {
-          dropB?.(acc);
-        }
-        throw error;
-      }
-      break;
+        dropF?.(f);
+      });
+      throw error;
     }
-    acc$live = false;
-    return acc;
-  } finally {
-    dropF?.(f);
+    if (next != null) {
+      const d = next;
+      acc$live = false;
+      let tmp;
+      try {
+        tmp = f(acc, d);
+      } catch (error) {
+        $cleanup(() => {
+          dropF?.(f);
+        });
+        throw error;
+      }
+      acc$live = true;
+      acc = tmp;
+      continue;
+    }
+    try {
+      if (next != null) {
+        dDrop_drop(next);
+      }
+    } catch (error) {
+      $cleanup(() => {
+        if (acc$live) {
+          dropB?.(acc);
+        }
+        dropF?.(f);
+      });
+      throw error;
+    }
+    break;
   }
+  acc$live = false;
+  const result = acc;
+  dropF?.(f);
+  return result;
 }
 function byItsOwnFold() {
   const n = $flatMap(
@@ -196,7 +250,9 @@ function sourceEnded() {
   try {
     console.log(`peeked ${$peek(peeked)?.length ?? 0}`);
   } catch (error) {
-    peeked.return();
+    $cleanup(() => {
+      peeked.return();
+    });
     throw error;
   }
   const v = $collectDropping(
@@ -226,15 +282,27 @@ function sourceDropPanics() {
         (item) => $closing($iter(item), $dropEach(boomDrop_drop)),
       ),
     );
+    let first;
     try {
-      const first = $next(it);
-      console.log(`first ${first?.[0] ?? 0}`);
+      first = $next(it);
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
+    }
+    console.log(`first ${first?.[0] ?? 0}`);
+    try {
       if (first != null) {
         boomDrop_drop(first);
       }
-    } finally {
-      it.return();
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
     }
+    it.return();
   });
   console.log(`source drop panics ${r.TAG === "Err"}`);
 }

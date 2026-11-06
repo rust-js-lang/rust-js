@@ -4,6 +4,7 @@ import { iterator_fuse } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
   $catchUnwind,
+  $cleanup,
   $closing,
   $drain,
   $dropEach,
@@ -32,10 +33,16 @@ function last(it, dropI) {
   let result;
   try {
     result = $lastDropping(Iterator.from(iter), dDrop_drop);
-  } finally {
-    if (!iter.ownFold && !iter.ownLast) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!iter.ownFold && !iter.ownLast) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!iter.ownFold && !iter.ownLast) {
+    dropI?.(iter);
   }
   function map(d) {
     const result = d[0] + 0;
@@ -74,9 +81,13 @@ function main() {
     let result;
     try {
       result = $lastDropping(iter, dDrop_drop);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     function map(d) {
       const result = d[0] + 0;
       dDrop_drop(d);
@@ -98,11 +109,17 @@ function main() {
   run("last kept", () => last($slicing($iter([[3], [1]]), dDrop_drop), $dropEach(dDrop_drop)));
   run("generic drained", () => {
     const v = [[1], [2], [3]];
+    let result;
     try {
-      return last($iter($drain(v, 0)), $dropEach(dDrop_drop));
-    } finally {
-      $dropItems(v, dDrop_drop);
+      result = last($iter($drain(v, 0)), $dropEach(dDrop_drop));
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, dDrop_drop);
+      });
+      throw error;
     }
+    $dropItems(v, dDrop_drop);
+    return result;
   });
 }
 //# sourceMappingURL=case.js.map

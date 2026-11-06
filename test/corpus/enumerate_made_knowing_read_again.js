@@ -12,6 +12,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $dropEach,
   $enumerate,
@@ -109,9 +110,13 @@ function main() {
   try {
     const value = $nextBack(enumerate);
     console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
-  } finally {
-    enumerate.return();
+  } catch (error) {
+    $cleanup(() => {
+      enumerate.return();
+    });
+    throw error;
   }
+  enumerate.return();
   const it = $held(
     iterator_enumerate(
       iterator_map(
@@ -133,8 +138,9 @@ function main() {
       },
     ),
   );
+  let nextBack;
   try {
-    const nextBack = enumerateDoubleEndedIterator_nextBack(
+    nextBack = enumerateDoubleEndedIterator_nextBack(
       it,
       mapExactSizeIterator,
       mapDoubleEndedIterator,
@@ -142,11 +148,26 @@ function main() {
         map.return();
       },
     );
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  try {
     const value = $next(it);
     console.log(
       `${nextBack == null ? "None" : `Some((${nextBack[0]}, ${nextBack[1]}))`} ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`,
     );
-    const value$1 = enumerateDoubleEndedIterator_nextBack(
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  let tmp;
+  try {
+    tmp = enumerateDoubleEndedIterator_nextBack(
       it,
       mapExactSizeIterator,
       mapDoubleEndedIterator,
@@ -154,8 +175,15 @@ function main() {
         map.return();
       },
     );
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  try {
     console.log(
-      `${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`} ${enumerateExactSizeIterator_len(
+      `${tmp == null ? "None" : `Some((${tmp[0]}, ${tmp[1]}))`} ${enumerateExactSizeIterator_len(
         it,
         mapExactSizeIterator,
         (map) => {
@@ -163,9 +191,13 @@ function main() {
         },
       )}`,
     );
-  } finally {
-    it.return();
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
   }
+  it.return();
   console.log(`${[1, 2, 3].toReversed().length}`);
   const e = Array.from(
     $rev(

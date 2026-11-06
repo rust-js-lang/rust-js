@@ -2,6 +2,7 @@
 
 import {
   $byteLen,
+  $cleanup,
   $dropEach,
   $findDropping,
   $held,
@@ -21,20 +22,32 @@ function noisyDrop_drop(noisy) {
 
 function third(it, dropI) {
   $held(it);
+  let result;
   try {
-    return $nthDropping($lent(Iterator.from(it)), 2, noisyDrop_drop, false);
-  } finally {
-    dropI?.(it);
+    result = $nthDropping($lent(Iterator.from(it)), 2, noisyDrop_drop, false);
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(it);
+    });
+    throw error;
   }
+  dropI?.(it);
+  return result;
 }
 
 function named(it, name, dropI) {
   $held(it);
+  let result;
   try {
-    return $findDropping($lent(Iterator.from(it)), (n) => n[0] === name, noisyDrop_drop, false);
-  } finally {
-    dropI?.(it);
+    result = $findDropping($lent(Iterator.from(it)), (n) => n[0] === name, noisyDrop_drop, false);
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(it);
+    });
+    throw error;
   }
+  dropI?.(it);
+  return result;
 }
 
 function main() {

@@ -3,6 +3,7 @@
 import { enumerateDoubleEndedIterator_nextBack, iterator_enumerate } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -62,34 +63,53 @@ function main() {
       loudDrop_drop,
     ),
   );
+  let nextBack;
+  function map([i, l]) {
+    const result = [i, l[0]];
+    loudDrop_drop(l);
+    return result;
+  }
+  let last;
   try {
-    const nextBack = enumerateDoubleEndedIterator_nextBack(
+    nextBack = enumerateDoubleEndedIterator_nextBack(
       it,
       { len: (iterator) => iterator.len() },
       { next_back: $nextBack },
       $dropEach(loudDrop_drop),
       loudDrop_drop,
     );
-    function map([i, l]) {
-      const result = [i, l[0]];
-      loudDrop_drop(l);
-      return result;
-    }
-    const last = nextBack != null ? map(nextBack) : undefined;
-    console.log(`last ${last == null ? "None" : `Some((${last[0]}, ${last[1]}))`}`);
-    const r = $collectDropping(
-      $mapEnds(
-        $rev($enumerate($closing($iter([[7], [8]]), $dropEach(loudDrop_drop)))),
-        ([i, l]) => {
-          const result = [i, l[0]];
-          loudDrop_drop(l);
-          return result;
-        },
-      ),
-    );
-    console.log(`[${r.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
-  } finally {
-    it.return();
+    last = nextBack != null ? map(nextBack) : undefined;
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
   }
+  console.log(`last ${last == null ? "None" : `Some((${last[0]}, ${last[1]}))`}`);
+  const value = [[7], [8]];
+  let r;
+  try {
+    r = $collectDropping(
+      $mapEnds($rev($enumerate($closing($iter(value), $dropEach(loudDrop_drop)))), ([i, l]) => {
+        const result = [i, l[0]];
+        loudDrop_drop(l);
+        return result;
+      }),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    console.log(`[${r.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  it.return();
 }
 //# sourceMappingURL=case.js.map

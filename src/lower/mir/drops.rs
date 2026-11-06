@@ -896,7 +896,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 kind => inner.push(Stmt { kind, span: stmt.span }),
             }
         }
-        out.push(StmtKind::Try(inner, finally).at(js::Span::NONE));
+        out.extend(crate::lower::drops::dropped_after(inner, finally, js::Span::NONE));
     }
 
     pub(super) fn unwinding(&mut self, body: Vec<Stmt>, cleanup: Vec<Stmt>, span: js::Span, out: &mut Vec<Stmt>) {

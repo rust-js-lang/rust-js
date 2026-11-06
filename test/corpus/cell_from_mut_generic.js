@@ -5,6 +5,7 @@ import {
   $assign,
   $cellOf,
   $cellSwap,
+  $cleanup,
   $debugStr,
   $displayF64,
   $index,
@@ -70,9 +71,13 @@ function main() {
   let old;
   try {
     old = replaced(r, value);
-  } finally {
-    $assign(v, r.value);
+  } catch (error) {
+    $cleanup(() => {
+      $assign(v, r.value);
+    });
+    throw error;
   }
+  $assign(v, r.value);
   v.push(3);
   console.log(`[${v.join(", ")}] [${old.join(", ")}]`);
 

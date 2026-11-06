@@ -35,19 +35,20 @@ function flushed(n) {
 function untilSeven(queue) {
   if (queue.length !== 0) {
     try {
-      for (let i = 0; i < queue.length; i++) {
-        const n = queue[i];
-        if (n === 7) {
-          return;
+      (() => {
+        for (let i = 0; i < queue.length; i++) {
+          const n = queue[i];
+          if (n === 7) {
+            return;
+          }
+          work(n);
         }
-        work(n);
-      }
-      done = 0;
+        done = 0;
+      })();
     } catch (_error) {
       done = 1;
-    } finally {
-      console.log(`finish ${done}`);
     }
+    console.log(`finish ${done}`);
   }
 }
 

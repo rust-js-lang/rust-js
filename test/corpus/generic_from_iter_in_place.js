@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $cmp,
   $collectDropping,
@@ -55,9 +56,13 @@ function main() {
   );
   try {
     console.log(`[${v.map((d) => d[0]).join(", ")}]`);
-  } finally {
-    $dropItems(v, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v, dDrop_drop);
+    });
+    throw error;
   }
+  $dropItems(v, dDrop_drop);
   console.log(`[${sorted($iter([3, 1, 2]), { cmp: $cmp }, 4).join(", ")}]`);
   // Of one whose map drops what it's given, a panic: what it collected
   // and what's left dropped, as std's in-place collect drops them.

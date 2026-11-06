@@ -3,6 +3,7 @@
 import { iterator_peekable, iterator_take } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $cmp,
   $collectDropping,
@@ -102,7 +103,9 @@ function consume(n) {
       loudDrop_drop,
     );
   } catch (error) {
-    value.return();
+    $cleanup(() => {
+      value.return();
+    });
     throw error;
   }
   const value$2 = $lastDropping($lazyZip(value, skipWhile, loudDrop_drop), (value) => {
@@ -220,9 +223,13 @@ function consume(n) {
         return true;
       })}`,
     );
-  } finally {
-    peekable.return();
+  } catch (error) {
+    $cleanup(() => {
+      peekable.return();
+    });
+    throw error;
   }
+  peekable.return();
   const value$5 = $iter(three());
   const value$6 = limit();
   const value$7 = $closing(value$5, $dropEach(loudDrop_drop)).take(value$6);
@@ -231,7 +238,9 @@ function consume(n) {
   try {
     tmp = $closing($iter(value$8), $dropEach(loudDrop_drop)).take(0);
   } catch (error) {
-    value$7.return();
+    $cleanup(() => {
+      value$7.return();
+    });
     throw error;
   }
   const chain = $held($lazyChain(value$7, tmp));
@@ -242,9 +251,13 @@ function consume(n) {
         return true;
       })}`,
     );
-  } finally {
-    chain.return();
+  } catch (error) {
+    $cleanup(() => {
+      chain.return();
+    });
+    throw error;
   }
+  chain.return();
   const back = $rev(
     $stepByEnds(
       $closing(
@@ -297,78 +310,132 @@ function consume(n) {
   try {
     tmp$1 = $closing($iter(value$10), $dropEach(loudDrop_drop)).take(0);
   } catch (error) {
-    value$9.return();
+    $cleanup(() => {
+      value$9.return();
+    });
     throw error;
   }
   const stepped = $held($lazyChain(value$9, tmp$1));
+  let next;
+  function map(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
   try {
-    const next = $next(stepped);
-    function map(l) {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    }
+    next = $next(stepped);
+  } catch (error) {
+    $cleanup(() => {
+      stepped.return();
+    });
+    throw error;
+  }
+  try {
     const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-    const loud = $next(stepped);
-    console.log(`${loud == null}`);
+  } catch (error) {
+    $cleanup(() => {
+      stepped.return();
+    });
+    throw error;
+  }
+  let loud;
+  try {
+    loud = $next(stepped);
+  } catch (error) {
+    $cleanup(() => {
+      stepped.return();
+    });
+    throw error;
+  }
+  console.log(`${loud == null}`);
+  try {
     if (loud != null) {
       loudDrop_drop(loud);
     }
-    console.log("after");
-    console.log(
-      `[${$collectDropping(
-        $roomForHint(
-          $lazyChain(
-            $stepBy(
-              $closing(
-                $iterator(
-                  counter(3),
-                  countIterator_next,
-                  false,
-                  undefined,
-                  undefined,
-                  countIterator_sizeHint,
-                  undefined,
-                  countIterator_nth,
-                  undefined,
-                  undefined,
-                  countDoubleEndedIterator_nthBack,
-                ),
-                (it) => {
-                  console.log(`drop count ${it.of.at} ${it.of.end}`);
-                },
-              ),
-              2,
-            ),
-            $closing(
-              $iterator(
-                counter(2),
-                countIterator_next,
-                false,
-                undefined,
-                undefined,
-                countIterator_sizeHint,
-                undefined,
-                countIterator_nth,
-                undefined,
-                undefined,
-                countDoubleEndedIterator_nthBack,
-              ),
-              (it) => {
-                console.log(`drop count ${it.of.at} ${it.of.end}`);
-              },
-            ),
-          ),
-          4,
-          false,
-        ),
-      ).join(", ")}]`,
-    );
-    held(n);
-  } finally {
-    stepped.return();
+  } catch (error) {
+    $cleanup(() => {
+      stepped.return();
+    });
+    throw error;
   }
+  console.log("after");
+  let stepBy;
+  try {
+    stepBy = $stepBy(
+      $closing(
+        $iterator(
+          counter(3),
+          countIterator_next,
+          false,
+          undefined,
+          undefined,
+          countIterator_sizeHint,
+          undefined,
+          countIterator_nth,
+          undefined,
+          undefined,
+          countDoubleEndedIterator_nthBack,
+        ),
+        (it) => {
+          console.log(`drop count ${it.of.at} ${it.of.end}`);
+        },
+      ),
+      2,
+    );
+  } catch (error) {
+    $cleanup(() => {
+      stepped.return();
+    });
+    throw error;
+  }
+  const count = counter(2);
+  let tmp$2;
+  try {
+    tmp$2 = $lazyChain(
+      stepBy,
+      $closing(
+        $iterator(
+          count,
+          countIterator_next,
+          false,
+          undefined,
+          undefined,
+          countIterator_sizeHint,
+          undefined,
+          countIterator_nth,
+          undefined,
+          undefined,
+          countDoubleEndedIterator_nthBack,
+        ),
+        (it) => {
+          console.log(`drop count ${it.of.at} ${it.of.end}`);
+        },
+      ),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      stepped.return();
+    });
+    throw error;
+  }
+  try {
+    console.log(`[${$collectDropping($roomForHint(tmp$2, 4, false)).join(", ")}]`);
+  } catch (error) {
+    $cleanup(() => {
+      stepped.return();
+    });
+    throw error;
+  }
+  try {
+    held(n);
+  } catch (error) {
+    $cleanup(() => {
+      stepped.return();
+    });
+    throw error;
+  }
+  stepped.return();
 }
 
 // Moved into what consumes it on one path, dropped on the other: held,
@@ -387,13 +454,23 @@ function held(n) {
     );
     console.log(`held max ${value == null ? "None" : `Some(${value})`}`);
   }
+  let taken$1;
   try {
-    const taken = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
-    let taken$1$live = true;
-    if (n > 0) {
-      taken$1$live = false;
+    taken$1 = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
+  } catch (error) {
+    $cleanup(() => {
+      if (taken$live) {
+        taken.return();
+      }
+    });
+    throw error;
+  }
+  let taken$1$live = true;
+  if (n > 0) {
+    taken$1$live = false;
+    try {
       const value = $reduce(
-        $filterDropping(taken, (l) => l[0] > 99, loudDrop_drop).map((l) => {
+        $filterDropping(taken$1, (l) => l[0] > 99, loudDrop_drop).map((l) => {
           const result = l[0];
           loudDrop_drop(l);
           return result;
@@ -401,168 +478,550 @@ function held(n) {
         (a, b) => (a + b) >>> 0,
       );
       console.log(`held sum ${value == null ? "None" : `Some(${value})`}`);
-    }
-    try {
-      const taken = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
-      let taken$2$live = true;
-      if (n > 0) {
-        taken$2$live = false;
-        console.log(
-          `held skipped ${$skipping(taken, 3, loudDrop_drop).reduce((k, _3) => {
-            const result = (k + 1) | 0;
-            loudDrop_drop(_3);
-            return result;
-          }, 0)}`,
-        );
-      }
-      try {
-        const taken = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
-        let taken$3$live = true;
-        if (n > 0) {
-          taken$3$live = false;
-          console.log(
-            `held while ${$lazySkipWhile(taken, (l) => l[0] < 11, loudDrop_drop).reduce(
-              (n, item) => {
-                loudDrop_drop(item);
-                return n + 1;
-              },
-              0,
-            )}`,
-          );
-        }
-        try {
-          const taken = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
-          let taken$4$live = true;
-          if (n > 0) {
-            taken$4$live = false;
-            console.log(
-              `held counted ${taken.reduce((k, _3) => {
-                const result = (k + 1) | 0;
-                loudDrop_drop(_3);
-                return result;
-              }, 0)}`,
-            );
-          }
-          try {
-            const stepped = $held(
-              $stepBy(
-                $closing(
-                  $iterator(
-                    counter(5),
-                    countIterator_next,
-                    false,
-                    undefined,
-                    undefined,
-                    countIterator_sizeHint,
-                    undefined,
-                    countIterator_nth,
-                    undefined,
-                    undefined,
-                    countDoubleEndedIterator_nthBack,
-                  ),
-                  (it) => {
-                    console.log(`drop count ${it.of.at} ${it.of.end}`);
-                  },
-                ),
-                2,
-              ),
-            );
-            let stepped$live = true;
-            if (n > 0) {
-              stepped$live = false;
-              console.log(`held front ${stepped.reduce((a, b) => (a + b) | 0, 0)}`);
-            }
-            try {
-              const taken = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
-              let taken$5$live = true;
-              if (n > 0) {
-                taken$5$live = false;
-                console.log(
-                  `held mapped ${taken
-                    .map((l) => {
-                      const result = l[0];
-                      loudDrop_drop(l);
-                      return result;
-                    })
-                    .drop(3)
-                    .reduce((k) => (k + 1) | 0, 0)}`,
-                );
-              }
-              try {
-                const stepped = $held(
-                  $stepBy(
-                    $closing(
-                      $iterator(
-                        counter(5),
-                        countIterator_next,
-                        false,
-                        undefined,
-                        undefined,
-                        countIterator_sizeHint,
-                        undefined,
-                        countIterator_nth,
-                        undefined,
-                        undefined,
-                        countDoubleEndedIterator_nthBack,
-                      ),
-                      (it) => {
-                        console.log(`drop count ${it.of.at} ${it.of.end}`);
-                      },
-                    ).take(n),
-                    2,
-                  ),
-                );
-                try {
-                  const iter = $lent(stepped);
-                  let x;
-                  while ((x = $next(iter)) != null) {
-                    console.log(`stepped ${x}`);
-                  }
-                  console.log("stepped done");
-                  console.log("held end");
-                } finally {
-                  stepped.return();
-                }
-              } finally {
-                if (taken$5$live) {
-                  taken.return();
-                }
-              }
-              taken$5$live = false;
-            } finally {
-              if (stepped$live) {
-                stepped.return();
-              }
-            }
-            stepped$live = false;
-          } finally {
-            if (taken$4$live) {
-              taken.return();
-            }
-          }
-          taken$4$live = false;
-        } finally {
-          if (taken$3$live) {
-            taken.return();
-          }
-        }
-        taken$3$live = false;
-      } finally {
-        if (taken$2$live) {
+    } catch (error) {
+      $cleanup(() => {
+        if (taken$live) {
           taken.return();
         }
-      }
-      taken$2$live = false;
-    } finally {
+      });
+      throw error;
+    }
+  }
+  let taken$2;
+  try {
+    taken$2 = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
+  } catch (error) {
+    $cleanup(() => {
       if (taken$1$live) {
+        taken$1.return();
+      }
+      if (taken$live) {
         taken.return();
       }
+    });
+    throw error;
+  }
+  let taken$2$live = true;
+  if (n > 0) {
+    taken$2$live = false;
+    try {
+      console.log(
+        `held skipped ${$skipping(taken$2, 3, loudDrop_drop).reduce((k, _3) => {
+          const result = (k + 1) | 0;
+          loudDrop_drop(_3);
+          return result;
+        }, 0)}`,
+      );
+    } catch (error) {
+      $cleanup(() => {
+        if (taken$1$live) {
+          taken$1.return();
+        }
+        if (taken$live) {
+          taken.return();
+        }
+      });
+      throw error;
     }
-    taken$1$live = false;
-  } finally {
-    if (taken$live) {
-      taken.return();
+  }
+  let taken$3;
+  try {
+    taken$3 = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
+  } catch (error) {
+    $cleanup(() => {
+      if (taken$2$live) {
+        taken$2.return();
+      }
+      if (taken$1$live) {
+        taken$1.return();
+      }
+      if (taken$live) {
+        taken.return();
+      }
+    });
+    throw error;
+  }
+  let taken$3$live = true;
+  if (n > 0) {
+    taken$3$live = false;
+    try {
+      console.log(
+        `held while ${$lazySkipWhile(taken$3, (l) => l[0] < 11, loudDrop_drop).reduce((n, item) => {
+          loudDrop_drop(item);
+          return n + 1;
+        }, 0)}`,
+      );
+    } catch (error) {
+      $cleanup(() => {
+        if (taken$2$live) {
+          taken$2.return();
+        }
+        if (taken$1$live) {
+          taken$1.return();
+        }
+        if (taken$live) {
+          taken.return();
+        }
+      });
+      throw error;
     }
+  }
+  let taken$4;
+  try {
+    taken$4 = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
+  } catch (error) {
+    $cleanup(() => {
+      if (taken$3$live) {
+        taken$3.return();
+      }
+      if (taken$2$live) {
+        taken$2.return();
+      }
+      if (taken$1$live) {
+        taken$1.return();
+      }
+      if (taken$live) {
+        taken.return();
+      }
+    });
+    throw error;
+  }
+  let taken$4$live = true;
+  if (n > 0) {
+    taken$4$live = false;
+    try {
+      console.log(
+        `held counted ${taken$4.reduce((k, _3) => {
+          const result = (k + 1) | 0;
+          loudDrop_drop(_3);
+          return result;
+        }, 0)}`,
+      );
+    } catch (error) {
+      $cleanup(() => {
+        if (taken$3$live) {
+          taken$3.return();
+        }
+        if (taken$2$live) {
+          taken$2.return();
+        }
+        if (taken$1$live) {
+          taken$1.return();
+        }
+        if (taken$live) {
+          taken.return();
+        }
+      });
+      throw error;
+    }
+  }
+  let stepped;
+  try {
+    stepped = $held(
+      $stepBy(
+        $closing(
+          $iterator(
+            counter(5),
+            countIterator_next,
+            false,
+            undefined,
+            undefined,
+            countIterator_sizeHint,
+            undefined,
+            countIterator_nth,
+            undefined,
+            undefined,
+            countDoubleEndedIterator_nthBack,
+          ),
+          (it) => {
+            console.log(`drop count ${it.of.at} ${it.of.end}`);
+          },
+        ),
+        2,
+      ),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      if (taken$4$live) {
+        taken$4.return();
+      }
+      if (taken$3$live) {
+        taken$3.return();
+      }
+      if (taken$2$live) {
+        taken$2.return();
+      }
+      if (taken$1$live) {
+        taken$1.return();
+      }
+      if (taken$live) {
+        taken.return();
+      }
+    });
+    throw error;
+  }
+  let stepped$live = true;
+  if (n > 0) {
+    stepped$live = false;
+    try {
+      console.log(`held front ${stepped.reduce((a, b) => (a + b) | 0, 0)}`);
+    } catch (error) {
+      $cleanup(() => {
+        if (taken$4$live) {
+          taken$4.return();
+        }
+        if (taken$3$live) {
+          taken$3.return();
+        }
+        if (taken$2$live) {
+          taken$2.return();
+        }
+        if (taken$1$live) {
+          taken$1.return();
+        }
+        if (taken$live) {
+          taken.return();
+        }
+      });
+      throw error;
+    }
+  }
+  let taken$5;
+  try {
+    taken$5 = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
+  } catch (error) {
+    $cleanup(() => {
+      if (stepped$live) {
+        stepped.return();
+      }
+      if (taken$4$live) {
+        taken$4.return();
+      }
+      if (taken$3$live) {
+        taken$3.return();
+      }
+      if (taken$2$live) {
+        taken$2.return();
+      }
+      if (taken$1$live) {
+        taken$1.return();
+      }
+      if (taken$live) {
+        taken.return();
+      }
+    });
+    throw error;
+  }
+  let taken$5$live = true;
+  if (n > 0) {
+    taken$5$live = false;
+    try {
+      console.log(
+        `held mapped ${taken$5
+          .map((l) => {
+            const result = l[0];
+            loudDrop_drop(l);
+            return result;
+          })
+          .drop(3)
+          .reduce((k) => (k + 1) | 0, 0)}`,
+      );
+    } catch (error) {
+      $cleanup(() => {
+        if (stepped$live) {
+          stepped.return();
+        }
+        if (taken$4$live) {
+          taken$4.return();
+        }
+        if (taken$3$live) {
+          taken$3.return();
+        }
+        if (taken$2$live) {
+          taken$2.return();
+        }
+        if (taken$1$live) {
+          taken$1.return();
+        }
+        if (taken$live) {
+          taken.return();
+        }
+      });
+      throw error;
+    }
+  }
+  let stepped$1;
+  try {
+    stepped$1 = $held(
+      $stepBy(
+        $closing(
+          $iterator(
+            counter(5),
+            countIterator_next,
+            false,
+            undefined,
+            undefined,
+            countIterator_sizeHint,
+            undefined,
+            countIterator_nth,
+            undefined,
+            undefined,
+            countDoubleEndedIterator_nthBack,
+          ),
+          (it) => {
+            console.log(`drop count ${it.of.at} ${it.of.end}`);
+          },
+        ).take(n),
+        2,
+      ),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      if (taken$5$live) {
+        taken$5.return();
+      }
+      if (stepped$live) {
+        stepped.return();
+      }
+      if (taken$4$live) {
+        taken$4.return();
+      }
+      if (taken$3$live) {
+        taken$3.return();
+      }
+      if (taken$2$live) {
+        taken$2.return();
+      }
+      if (taken$1$live) {
+        taken$1.return();
+      }
+      if (taken$live) {
+        taken.return();
+      }
+    });
+    throw error;
+  }
+  let iter;
+  try {
+    iter = $lent(stepped$1);
+  } catch (error) {
+    $cleanup(() => {
+      stepped$1.return();
+      if (taken$5$live) {
+        taken$5.return();
+      }
+      if (stepped$live) {
+        stepped.return();
+      }
+      if (taken$4$live) {
+        taken$4.return();
+      }
+      if (taken$3$live) {
+        taken$3.return();
+      }
+      if (taken$2$live) {
+        taken$2.return();
+      }
+      if (taken$1$live) {
+        taken$1.return();
+      }
+      if (taken$live) {
+        taken.return();
+      }
+    });
+    throw error;
+  }
+  while (true) {
+    let x;
+    try {
+      x = $next(iter);
+    } catch (error) {
+      $cleanup(() => {
+        stepped$1.return();
+        if (taken$5$live) {
+          taken$5.return();
+        }
+        if (stepped$live) {
+          stepped.return();
+        }
+        if (taken$4$live) {
+          taken$4.return();
+        }
+        if (taken$3$live) {
+          taken$3.return();
+        }
+        if (taken$2$live) {
+          taken$2.return();
+        }
+        if (taken$1$live) {
+          taken$1.return();
+        }
+        if (taken$live) {
+          taken.return();
+        }
+      });
+      throw error;
+    }
+    if (x == null) {
+      break;
+    }
+    console.log(`stepped ${x}`);
+  }
+  console.log("stepped done");
+  console.log("held end");
+  try {
+    stepped$1.return();
+  } catch (error) {
+    $cleanup(() => {
+      if (taken$5$live) {
+        taken$5.return();
+      }
+      if (stepped$live) {
+        stepped.return();
+      }
+      if (taken$4$live) {
+        taken$4.return();
+      }
+      if (taken$3$live) {
+        taken$3.return();
+      }
+      if (taken$2$live) {
+        taken$2.return();
+      }
+      if (taken$1$live) {
+        taken$1.return();
+      }
+      if (taken$live) {
+        taken.return();
+      }
+    });
+    throw error;
+  }
+  try {
+    if (taken$5$live) {
+      taken$5.return();
+    }
+  } catch (error) {
+    $cleanup(() => {
+      if (stepped$live) {
+        stepped.return();
+      }
+      if (taken$4$live) {
+        taken$4.return();
+      }
+      if (taken$3$live) {
+        taken$3.return();
+      }
+      if (taken$2$live) {
+        taken$2.return();
+      }
+      if (taken$1$live) {
+        taken$1.return();
+      }
+      if (taken$live) {
+        taken.return();
+      }
+    });
+    throw error;
+  }
+  taken$5$live = false;
+  try {
+    if (stepped$live) {
+      stepped.return();
+    }
+  } catch (error) {
+    $cleanup(() => {
+      if (taken$4$live) {
+        taken$4.return();
+      }
+      if (taken$3$live) {
+        taken$3.return();
+      }
+      if (taken$2$live) {
+        taken$2.return();
+      }
+      if (taken$1$live) {
+        taken$1.return();
+      }
+      if (taken$live) {
+        taken.return();
+      }
+    });
+    throw error;
+  }
+  stepped$live = false;
+  try {
+    if (taken$4$live) {
+      taken$4.return();
+    }
+  } catch (error) {
+    $cleanup(() => {
+      if (taken$3$live) {
+        taken$3.return();
+      }
+      if (taken$2$live) {
+        taken$2.return();
+      }
+      if (taken$1$live) {
+        taken$1.return();
+      }
+      if (taken$live) {
+        taken.return();
+      }
+    });
+    throw error;
+  }
+  taken$4$live = false;
+  try {
+    if (taken$3$live) {
+      taken$3.return();
+    }
+  } catch (error) {
+    $cleanup(() => {
+      if (taken$2$live) {
+        taken$2.return();
+      }
+      if (taken$1$live) {
+        taken$1.return();
+      }
+      if (taken$live) {
+        taken.return();
+      }
+    });
+    throw error;
+  }
+  taken$3$live = false;
+  try {
+    if (taken$2$live) {
+      taken$2.return();
+    }
+  } catch (error) {
+    $cleanup(() => {
+      if (taken$1$live) {
+        taken$1.return();
+      }
+      if (taken$live) {
+        taken.return();
+      }
+    });
+    throw error;
+  }
+  taken$2$live = false;
+  try {
+    if (taken$1$live) {
+      taken$1.return();
+    }
+  } catch (error) {
+    $cleanup(() => {
+      if (taken$live) {
+        taken.return();
+      }
+    });
+    throw error;
+  }
+  taken$1$live = false;
+  if (taken$live) {
+    taken.return();
   }
 }
 

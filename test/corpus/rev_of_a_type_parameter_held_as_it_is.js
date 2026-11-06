@@ -9,6 +9,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $dropEach,
   $findBack,
@@ -66,17 +67,31 @@ const HeldD = {
         ),
       ),
     );
-    try {
-      const nthBack = $nthBack(rev, 1, undefined, dDrop_drop);
-      function map(d) {
-        const result = d[0];
-        dDrop_drop(d);
-        return result;
-      }
-      return nthBack != null ? map(nthBack) : undefined;
-    } finally {
-      rev.return();
+    let nthBack;
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
     }
+    try {
+      nthBack = $nthBack(rev, 1, undefined, dDrop_drop);
+    } catch (error) {
+      $cleanup(() => {
+        rev.return();
+      });
+      throw error;
+    }
+    let result;
+    try {
+      result = nthBack != null ? map(nthBack) : undefined;
+    } catch (error) {
+      $cleanup(() => {
+        rev.return();
+      });
+      throw error;
+    }
+    rev.return();
+    return result;
   },
 };
 function countIterator_next(count) {

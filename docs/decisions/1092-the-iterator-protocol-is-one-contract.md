@@ -235,10 +235,10 @@ closes `a`, then `b`. Each goes on past a part's throw by one owner,
 `$inTurn` (`$closeEach` of iterators), as do `$lazyChain`'s, `$trustedZip`'s,
 `$flatMap`'s and a comparison's two (ADR 0465's #743 amendment).
 
-Rust aborts on a panic raised while unwinding. JS can't abort. A drop that
-panics during another's unwind goes on in JS, and the first error
-propagates. No case under this contract depends on that abort; the
-conformance table panics once a case.
+Rust aborts on a panic raised while unwinding, and so does rust-js since
+#847: a drop that panics during another's unwind is `$cleanup`'s, which
+aborts (ADR 0660, amended). No case under this contract depends on that
+abort; the conformance table panics once a case.
 
 **S8. Done is not dropped, but a temporary is.** A source an adapter holds
 is closed once it's done, from either end or by `nth` (ADR 0570), unless it
@@ -1173,9 +1173,10 @@ goes on. The points table found the frames that drifted (#843, #844, #845).
   `$foldDropping`'s dropped what drops with `f` after what's left, where std
   drops `f` first. That was latent: only a bare `$iter`, which closes
   nothing, reached it.
-- **A drop that throws while a panic unwinds is `$unwindingThrew`'s alone.**
-  Rust aborts there. Until #847 makes it Rust's abort (the user's decision,
-  2026-11-06), it keeps ADR 0660's answer: the first error goes on.
+- **A drop that throws while a panic unwinds is `$dropsUnwinding`'s alone**,
+  which #847 makes `$cleanup`'s: Rust's abort (the user's decision,
+  2026-11-06; ADR 0660, amended), where #817's `$unwindingThrew` kept ADR
+  0660's earlier answer, the first error going on.
   `$consumed`, `$stepHolding`, `$foldBack` and `$collectUnwound` had let the
   later drop's error replace the panic, and `$dropItems` the last error of
   many. Native Rust aborts in every such case, so no native comparison can

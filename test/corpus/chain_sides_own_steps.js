@@ -8,6 +8,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $collectDropping,
   $count,
@@ -96,7 +97,9 @@ function main() {
   try {
     tmp$2 = louds(10, 2);
   } catch (error) {
-    chain.return();
+    $cleanup(() => {
+      chain.return();
+    });
     throw error;
   }
   const l$2 = $lastDropping(
@@ -143,28 +146,44 @@ function main() {
   try {
     tmp$4 = louds(20, 3);
   } catch (error) {
-    value$7.return();
+    $cleanup(() => {
+      value$7.return();
+    });
     throw error;
   }
   const value$8 = $held($lazyChain(value$7, $closing($iter(tmp$4), $dropEach(loudDrop_drop))));
-  try {
-    const nth = $nthDropping($lent(value$8), 2, loudDrop_drop, false);
-    function map(l) {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    }
-    const value = nth != null ? map(nth) : undefined;
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } finally {
-    value$8.return();
+  let nth;
+  function map$4(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
   }
+  try {
+    nth = $nthDropping($lent(value$8), 2, loudDrop_drop, false);
+  } catch (error) {
+    $cleanup(() => {
+      value$8.return();
+    });
+    throw error;
+  }
+  try {
+    const value = nth != null ? map$4(nth) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    $cleanup(() => {
+      value$8.return();
+    });
+    throw error;
+  }
+  value$8.return();
   const value$9 = $rev($closing($iter(louds(23, 2)), $dropEach(loudDrop_drop)));
   let tmp$5;
   try {
     tmp$5 = louds(25, 3);
   } catch (error) {
-    value$9.return();
+    $cleanup(() => {
+      value$9.return();
+    });
     throw error;
   }
   const iter = $skipping(
@@ -172,32 +191,45 @@ function main() {
     3,
     loudDrop_drop,
   );
-  try {
-    let loud;
-    while ((loud = $next(iter)) != null) {
-      console.log(`got ${loud[0]}`);
-      loudDrop_drop(loud);
+  let tmp$6;
+  while (true) {
+    try {
+      tmp$6 = $next(iter);
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
-  } finally {
-    iter.return();
+    if (tmp$6 == null) {
+      iter.return();
+      break;
+    }
+    const loud = tmp$6;
+    console.log(`got ${loud[0]}`);
+    loudDrop_drop(loud);
   }
   const value$10 = $rev($closing($iter(louds(28, 2)), $dropEach(loudDrop_drop)));
-  let tmp$6;
-  try {
-    tmp$6 = louds(30, 2);
-  } catch (error) {
-    value$10.return();
-    throw error;
-  }
-  const value$11 = $lazyChain(value$10, $closing($iter(tmp$6), $dropEach(loudDrop_drop)));
   let tmp$7;
   try {
-    tmp$7 = louds(32, 2);
+    tmp$7 = louds(30, 2);
   } catch (error) {
-    value$11.return();
+    $cleanup(() => {
+      value$10.return();
+    });
     throw error;
   }
-  const nested = $lazyChain(value$11, $closing($iter(tmp$7), $dropEach(loudDrop_drop)));
+  const value$11 = $lazyChain(value$10, $closing($iter(tmp$7), $dropEach(loudDrop_drop)));
+  let tmp$8;
+  try {
+    tmp$8 = louds(32, 2);
+  } catch (error) {
+    $cleanup(() => {
+      value$11.return();
+    });
+    throw error;
+  }
+  const nested = $lazyChain(value$11, $closing($iter(tmp$8), $dropEach(loudDrop_drop)));
   console.log(
     `[${$collectDropping(
       $skipping(nested, 3, loudDrop_drop).map((l) => {
@@ -208,16 +240,18 @@ function main() {
     ).join(", ")}]`,
   );
   const value$12 = $rev($closing($iter(louds(34, 4)), $dropEach(loudDrop_drop)));
-  let tmp$8;
+  let tmp$9;
   try {
-    tmp$8 = louds(38, 1);
+    tmp$9 = louds(38, 1);
   } catch (error) {
-    value$12.return();
+    $cleanup(() => {
+      value$12.return();
+    });
     throw error;
   }
   const stepBy = $held(
     $stepBy(
-      $lazyChain(value$12, $closing($iter(tmp$8), $dropEach(loudDrop_drop))),
+      $lazyChain(value$12, $closing($iter(tmp$9), $dropEach(loudDrop_drop))),
       3,
       loudDrop_drop,
     ),
@@ -226,7 +260,9 @@ function main() {
   try {
     stepped = $nthDropping($lent(stepBy), 1, loudDrop_drop, false);
   } catch (error) {
-    stepBy.return();
+    $cleanup(() => {
+      stepBy.return();
+    });
     throw error;
   }
   try {
@@ -237,27 +273,31 @@ function main() {
     }
     throw error;
   }
-  function map$4(l) {
+  function map$5(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
   }
-  const value$13 = stepped != null ? map$4(stepped) : undefined;
+  const value$13 = stepped != null ? map$5(stepped) : undefined;
   console.log(`${value$13 == null ? "None" : `Some(${value$13})`}`);
   const skip = $skipping($closing($iter(louds(39, 4)), $dropEach(loudDrop_drop)), 1, loudDrop_drop);
-  let tmp$9;
+  let tmp$10;
   try {
-    tmp$9 = louds(43, 2);
+    tmp$10 = louds(43, 2);
   } catch (error) {
-    skip.return();
+    $cleanup(() => {
+      skip.return();
+    });
     throw error;
   }
-  const value$14 = $held($lazyChain(skip, $closing($iter(tmp$9), $dropEach(loudDrop_drop))));
+  const value$14 = $held($lazyChain(skip, $closing($iter(tmp$10), $dropEach(loudDrop_drop))));
   let skipped;
   try {
     skipped = $nthDropping($lent(value$14), 2, loudDrop_drop, false);
   } catch (error) {
-    value$14.return();
+    $cleanup(() => {
+      value$14.return();
+    });
     throw error;
   }
   try {
@@ -268,25 +308,27 @@ function main() {
     }
     throw error;
   }
-  function map$5(l) {
+  function map$6(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
   }
-  const value$15 = skipped != null ? map$5(skipped) : undefined;
+  const value$15 = skipped != null ? map$6(skipped) : undefined;
   console.log(`${value$15 == null ? "None" : `Some(${value$15})`}`);
   // `Chain::count`: each side's own, a `Take`'s advancing a reversed
   // `Vec`, which drops what it passes as one slice (#283).
   const value$16 = $rev($closing($iter(louds(45, 2)), $dropEach(loudDrop_drop))).take(2);
-  let tmp$10;
+  let tmp$11;
   try {
-    tmp$10 = louds(47, 2);
+    tmp$11 = louds(47, 2);
   } catch (error) {
-    value$16.return();
+    $cleanup(() => {
+      value$16.return();
+    });
     throw error;
   }
   const counted = $count(
-    $lazyChain(value$16, $closing($iter(tmp$10), $dropEach(loudDrop_drop))),
+    $lazyChain(value$16, $closing($iter(tmp$11), $dropEach(loudDrop_drop))),
     loudDrop_drop,
   );
   console.log(`${counted}`);
@@ -298,19 +340,23 @@ function main() {
     $dropEach(loudDrop_drop),
     loudDrop_drop,
   );
-  let tmp$11;
+  let tmp$12;
   try {
-    tmp$11 = louds(53, 1);
+    tmp$12 = louds(53, 1);
   } catch (error) {
-    fuse.return();
+    $cleanup(() => {
+      fuse.return();
+    });
     throw error;
   }
-  const value$17 = $held($lazyChain(fuse, $closing($iter(tmp$11), $dropEach(loudDrop_drop))));
+  const value$17 = $held($lazyChain(fuse, $closing($iter(tmp$12), $dropEach(loudDrop_drop))));
   let fused;
   try {
     fused = $nthDropping($lent(value$17), 2, loudDrop_drop, false);
   } catch (error) {
-    value$17.return();
+    $cleanup(() => {
+      value$17.return();
+    });
     throw error;
   }
   try {
@@ -321,12 +367,12 @@ function main() {
     }
     throw error;
   }
-  function map$6(l) {
+  function map$7(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
   }
-  const value$18 = fused != null ? map$6(fused) : undefined;
+  const value$18 = fused != null ? map$7(fused) : undefined;
   console.log(`${value$18 == null ? "None" : `Some(${value$18})`}`);
   // Std's `advance_by` through a `take` of a held `fuse()` of a `rev()`:
   // a `Vec`'s `advance_back_by`, one slice, front to back (#286).
@@ -345,19 +391,23 @@ function main() {
     },
     loudDrop_drop,
   ).take(2);
-  let tmp$12;
+  let tmp$13;
   try {
-    tmp$12 = louds(58, 1);
+    tmp$13 = louds(58, 1);
   } catch (error) {
-    value$19.return();
+    $cleanup(() => {
+      value$19.return();
+    });
     throw error;
   }
-  const value$20 = $held($lazyChain(value$19, $closing($iter(tmp$12), $dropEach(loudDrop_drop))));
+  const value$20 = $held($lazyChain(value$19, $closing($iter(tmp$13), $dropEach(loudDrop_drop))));
   let advanced;
   try {
     advanced = $nthDropping($lent(value$20), 2, loudDrop_drop, false);
   } catch (error) {
-    value$20.return();
+    $cleanup(() => {
+      value$20.return();
+    });
     throw error;
   }
   try {
@@ -368,12 +418,12 @@ function main() {
     }
     throw error;
   }
-  function map$7(l) {
+  function map$8(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
   }
-  const value$21 = advanced != null ? map$7(advanced) : undefined;
+  const value$21 = advanced != null ? map$8(advanced) : undefined;
   console.log(`${value$21 == null ? "None" : `Some(${value$21})`}`);
   // Of two `fuse()`s, neither with an item drop of its own: the one its
   // `nth` is given (#285).
@@ -384,9 +434,9 @@ function main() {
     $dropEach(loudDrop_drop),
     loudDrop_drop,
   );
-  let tmp$13;
+  let tmp$14;
   try {
-    tmp$13 = iterator_fuse(
+    tmp$14 = iterator_fuse(
       $iter(louds(71, 1)),
       { next: $next, advanceBy: $advanceSlice },
       true,
@@ -394,15 +444,19 @@ function main() {
       loudDrop_drop,
     );
   } catch (error) {
-    value$22.return();
+    $cleanup(() => {
+      value$22.return();
+    });
     throw error;
   }
-  const value$23 = $held($lazyChain(value$22, tmp$13));
+  const value$23 = $held($lazyChain(value$22, tmp$14));
   let both;
   try {
     both = $nthDropping($lent(value$23), 2, loudDrop_drop, false);
   } catch (error) {
-    value$23.return();
+    $cleanup(() => {
+      value$23.return();
+    });
     throw error;
   }
   try {
@@ -413,12 +467,12 @@ function main() {
     }
     throw error;
   }
-  function map$8(l) {
+  function map$9(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
   }
-  const value$24 = both != null ? map$8(both) : undefined;
+  const value$24 = both != null ? map$9(both) : undefined;
   console.log(`${value$24 == null ? "None" : `Some(${value$24})`}`);
   // A `skip`'s `last` past a `fuse()`'s items, which it drops (#285).
   const value$25 = iterator_fuse(
@@ -428,27 +482,29 @@ function main() {
     $dropEach(loudDrop_drop),
     loudDrop_drop,
   );
-  let tmp$14;
+  let tmp$15;
   try {
-    tmp$14 = louds(62, 1);
+    tmp$15 = louds(62, 1);
   } catch (error) {
-    value$25.return();
+    $cleanup(() => {
+      value$25.return();
+    });
     throw error;
   }
   const last = $lastDropping(
     $skipping(
-      $lazyChain(value$25, $closing($iter(tmp$14), $dropEach(loudDrop_drop))),
+      $lazyChain(value$25, $closing($iter(tmp$15), $dropEach(loudDrop_drop))),
       2,
       loudDrop_drop,
     ),
     loudDrop_drop,
   );
-  function map$9(l) {
+  function map$10(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
   }
-  const value$26 = last != null ? map$9(last) : undefined;
+  const value$26 = last != null ? map$10(last) : undefined;
   console.log(`${value$26 == null ? "None" : `Some(${value$26})`}`);
   // A `skip`'s `advance_by`, its source's of what it skips and more: a
   // reversed `Vec`'s, one slice, front to back (#287).
@@ -457,18 +513,22 @@ function main() {
     2,
     loudDrop_drop,
   );
-  let tmp$15;
+  let tmp$16;
   try {
-    tmp$15 = louds(66, 2);
+    tmp$16 = louds(66, 2);
   } catch (error) {
-    value$27.return();
+    $cleanup(() => {
+      value$27.return();
+    });
     throw error;
   }
-  const value$28 = $held($lazyChain(value$27, $closing($iter(tmp$15), $dropEach(loudDrop_drop))));
+  const value$28 = $held($lazyChain(value$27, $closing($iter(tmp$16), $dropEach(loudDrop_drop))));
   try {
     skipped = $nthDropping($lent(value$28), 2, loudDrop_drop, false);
   } catch (error) {
-    value$28.return();
+    $cleanup(() => {
+      value$28.return();
+    });
     throw error;
   }
   try {
@@ -479,12 +539,12 @@ function main() {
     }
     throw error;
   }
-  function map$10(l) {
+  function map$11(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
   }
-  const value$29 = skipped != null ? map$10(skipped) : undefined;
+  const value$29 = skipped != null ? map$11(skipped) : undefined;
   console.log(`${value$29 == null ? "None" : `Some(${value$29})`}`);
   // A peekable's and a fuse's `count`, their source's own: a `take`'s of a
   // reversed `Vec`, which drops one slice (#293).

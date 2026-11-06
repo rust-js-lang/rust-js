@@ -7,6 +7,7 @@ import {
   $advanceSlice,
   $btreeSet,
   $catchUnwind,
+  $cleanup,
   $closing,
   $cmp,
   $collectDropping,
@@ -604,7 +605,9 @@ function main() {
     try {
       tmp = ds({ start: 10, end: 14 });
     } catch (error) {
-      value.return();
+      $cleanup(() => {
+        value.return();
+      });
       throw error;
     }
     const iter = iterator_zip(
@@ -639,9 +642,13 @@ function main() {
         },
         true,
       );
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const x = result;
     console.log(`${x.length}`);
     for (const item of x) {
@@ -668,7 +675,9 @@ function main() {
     try {
       tmp = ds({ start: 230, end: 234 });
     } catch (error) {
-      inspect.return();
+      $cleanup(() => {
+        inspect.return();
+      });
       throw error;
     }
     const x = $collectDropping(
@@ -974,7 +983,9 @@ function main() {
         dDrop_drop,
       );
     } catch (error) {
-      value.return();
+      $cleanup(() => {
+        value.return();
+      });
       throw error;
     }
     const iter = iterator_zip(
@@ -1003,9 +1014,13 @@ function main() {
     let result;
     try {
       result = $foldToArray($roomForHint(iter, 8, true));
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const out = result;
     console.log(`[${out.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   });

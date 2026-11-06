@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $dropEach,
   $dropItems,
@@ -88,17 +89,31 @@ function main() {
   );
   run("rev rev nth", () => {
     const rev = $held($rev($rev($closing($iter(ds()), $dropEach(dDrop_drop)))));
-    try {
-      const nth = $nthDropping($lent(rev), 1, dDrop_drop, false);
-      function map(d) {
-        const result = d[0] + 0;
-        dDrop_drop(d);
-        return result;
-      }
-      return nth != null ? map(nth) : undefined;
-    } finally {
-      rev.return();
+    let nth;
+    function map(d) {
+      const result = d[0] + 0;
+      dDrop_drop(d);
+      return result;
     }
+    try {
+      nth = $nthDropping($lent(rev), 1, dDrop_drop, false);
+    } catch (error) {
+      $cleanup(() => {
+        rev.return();
+      });
+      throw error;
+    }
+    let result;
+    try {
+      result = nth != null ? map(nth) : undefined;
+    } catch (error) {
+      $cleanup(() => {
+        rev.return();
+      });
+      throw error;
+    }
+    rev.return();
+    return result;
   });
   run("rev rev collect", () => {
     const collect = Array.from($rev($rev($closing($iter(ds()), $dropEach(dDrop_drop)))));

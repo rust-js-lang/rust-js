@@ -460,7 +460,14 @@ helper drops as a panic unwinds is `$unwinds(run, ...drops)`'s alone, the
 drops given in std's frame's order, and what a frame's end and drop glue
 run in turn is `$inTurn`'s; std's default fold is `$foldBy`'s, after the
 value's own step; a drop that throws while one unwinds is
-`$unwindingThrew`'s (ADR 1092's #817 amendment).
+`$dropsUnwinding`'s, which aborts through `$cleanup` (ADR 1092's #817
+amendment, ADR 0660's #847 one). What the lowering runs as a panic
+unwinds is guarded by `lower/drops/parts.rs` alone: `cleanup`, the one
+writer of `$cleanup`, and `dropped_after`, of a drop after a body that runs
+as it unwinds too, which is a `finally` only of what can't throw; tidy's
+scope merges ask `finally_holds`, and its last pass, "guarded cleanups",
+guards each rethrowing `catch`. Tidy's contract "what unwinds is guarded"
+and `test/architecture-iterators.test.ts` hold it.
 `test/architecture-iterators.test.ts` rejects a runtime `try`, `catch` or
 `finally` outside them, but of helpers it names that aren't an iterator's.
 

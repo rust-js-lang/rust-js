@@ -2,6 +2,7 @@
 
 import {
   $BTreeMap,
+  $cleanup,
   $panicMessage,
   $someGet,
   $someValue,
@@ -127,7 +128,9 @@ function droppedBetween(errors, id, clearer) {
   try {
     containsKey = errors.has(id);
   } catch (error) {
-    clearer[0].clear();
+    $cleanup(() => {
+      clearer[0].clear();
+    });
     throw error;
   }
   if (containsKey) {

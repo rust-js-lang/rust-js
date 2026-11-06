@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $cmp,
   $dropEach,
@@ -613,7 +614,9 @@ function main() {
     try {
       tmp = ds({ start: 3, end: 5 });
     } catch (error) {
-      inspect.return();
+      $cleanup(() => {
+        inspect.return();
+      });
       throw error;
     }
     const x = $foldDropping(

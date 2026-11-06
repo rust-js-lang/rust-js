@@ -12,11 +12,8 @@ function main() {
   const other = [2];
   const value = option != null ? (other == null ? option : undefined) : other;
   if (option != null && other != null) {
-    try {
-      loudDrop_drop(option);
-    } finally {
-      loudDrop_drop(other);
-    }
+    loudDrop_drop(option);
+    loudDrop_drop(other);
   }
   const a = value;
   console.log(`a ${a == null}`);

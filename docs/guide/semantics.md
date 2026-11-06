@@ -890,9 +890,16 @@ new Error(".."); } f(task);`
 Differences: a value with a destructor that JS holds, given out by an
 exported generic function, is never dropped, nor is what a function
 handed to a binding holds, even where JS gives it back
-([0873](../decisions/0873-a-function-handed-to-js-carries-no-drop.md)); a `drop` that panics while
-another panic unwinds replaces that panic, where Rust aborts, and
-`catch_unwind` catches the replacement ([0660](../decisions/0660-catch-unwind-catches-what-js-throws.md)).
+([0873](../decisions/0873-a-function-handed-to-js-carries-no-drop.md)).
+
+A `drop` that panics while another panic unwinds aborts the process, as
+Rust does: std's `thread caused non-unwinding panic. aborting.` to stderr,
+then exit 134. What runs as a panic unwinds and may throw is
+`$cleanup(() => { .. })`'s, and a drop that may panic is no `finally`'s but
+a `catch`'s and run again after the `try`; in a browser, which has no
+process to end, the abort is thrown past `catch_unwind`'s `$catchUnwind`,
+though a `catch_unwind` written as JS's `try` catches it
+([0660](../decisions/0660-catch-unwind-catches-what-js-throws.md), amended).
 
 Generic code drops a value of an associated type through its impl's
 dictionary ([0178](../decisions/0178-associated-type-drops.md)).

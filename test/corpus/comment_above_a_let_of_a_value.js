@@ -76,20 +76,14 @@ function dropped() {
   // A comment above a let of a block.
   const g = [5];
   let f = () => g[0];
-  try {
-    console.log(`f ${f()}`);
-  } finally {
-    console.log(`drop ${g[0]}`);
-  }
+  console.log(`f ${f()}`);
+  console.log(`drop ${g[0]}`);
 
   // A comment above a let.
   const g$1 = [6];
   f = () => g$1[0];
-  try {
-    console.log(`f ${f()}`);
-  } finally {
-    console.log(`drop ${g$1[0]}`);
-  }
+  console.log(`f ${f()}`);
+  console.log(`drop ${g$1[0]}`);
 }
 
 function main() {

@@ -3,6 +3,7 @@
 import {
   $byteLen,
   $catchUnwind,
+  $cleanup,
   $debugStr,
   $panicMessage,
   $unwinding,
@@ -56,16 +57,22 @@ function renderNode(n, log, segment) {
       _inner[0].value = (((_inner[0].value * 10) >>> 0) + _inner[1]) >>> 0;
       return;
     } catch (thrown$1) {
+      let tmp;
       const thrownValue = $unwound(thrown$1);
       try {
-        if ($byteLen(messageOf(thrownValue)) > 5) {
-          log.value = (log.value + 4) >>> 0;
-        }
-        thrown = thrownValue;
-        log.value = (log.value + 5) >>> 0;
-      } finally {
-        _inner[0].value = (((_inner[0].value * 10) >>> 0) + _inner[1]) >>> 0;
+        tmp = messageOf(thrownValue);
+      } catch (error) {
+        $cleanup(() => {
+          _inner[0].value = (((_inner[0].value * 10) >>> 0) + _inner[1]) >>> 0;
+        });
+        throw error;
       }
+      if ($byteLen(tmp) > 5) {
+        log.value = (log.value + 4) >>> 0;
+      }
+      thrown = thrownValue;
+      log.value = (log.value + 5) >>> 0;
+      _inner[0].value = (((_inner[0].value * 10) >>> 0) + _inner[1]) >>> 0;
     }
   }
   log.value = (log.value * 10) >>> 0;
@@ -130,12 +137,19 @@ function kept(n, log) {
     // Twice what it found.
     result = (first * 2) >>> 0;
   } catch (thrown$1) {
+    let message;
     const thrown = $unwound(thrown$1);
-    const message = messageOf(thrown);
+    try {
+      message = messageOf(thrown);
+    } catch (error) {
+      $cleanup(() => {
+        _restore[0].value = (((_restore[0].value * 10) >>> 0) + _restore[1]) >>> 0;
+      });
+      throw error;
+    }
     result = $byteLen(message);
-  } finally {
-    _restore[0].value = (((_restore[0].value * 10) >>> 0) + _restore[1]) >>> 0;
   }
+  _restore[0].value = (((_restore[0].value * 10) >>> 0) + _restore[1]) >>> 0;
   return (result + 100) >>> 0;
 }
 

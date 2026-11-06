@@ -24,16 +24,11 @@ function main() {
       let kept;
       try {
         kept = $rcClone(loud);
-      } catch (error) {
-        $rcDrop(loud, loudDrop_drop);
-        throw error;
-      }
-      try {
-        $rcDrop(loud, loudDrop_drop);
-        console.log(`kept ${kept.value[0]}`);
       } finally {
-        $rcDrop(kept, loudDrop_drop);
+        $rcDrop(loud, loudDrop_drop);
       }
+      console.log(`kept ${kept.value[0]}`);
+      $rcDrop(kept, loudDrop_drop);
     } finally {
       $rcDrop(again);
     }

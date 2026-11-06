@@ -3,6 +3,7 @@
 import {
   $borrow,
   $borrowMut,
+  $cleanup,
   $dispose,
   $downgrade,
   $dropItems,
@@ -22,18 +23,32 @@ function noop() {}
 
 function createRequest(name, onReady, kept) {
   const made = { value: { name: "kept", onReady }, strong: 1, weak: 0 };
+  let borrowMut;
   try {
-    const borrowMut = $borrowMut(kept, true);
-    try {
-      borrowMut.push($rcClone(made));
-    } finally {
-      $unborrow(borrowMut);
-    }
-  } finally {
-    $rcDrop(made, (value) => {
-      $rcDrop(value.onReady, $dispose);
+    borrowMut = $borrowMut(kept, true);
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(made, (value) => {
+        $rcDrop(value.onReady, $dispose);
+      });
     });
+    throw error;
   }
+  try {
+    borrowMut.push($rcClone(made));
+  } catch (error) {
+    $cleanup(() => {
+      $unborrow(borrowMut);
+      $rcDrop(made, (value) => {
+        $rcDrop(value.onReady, $dispose);
+      });
+    });
+    throw error;
+  }
+  $unborrow(borrowMut);
+  $rcDrop(made, (value) => {
+    $rcDrop(value.onReady, $dispose);
+  });
   return {
     value: {
       name,
@@ -109,8 +124,10 @@ function render(name, kept) {
       }
       set = unset ? { TAG: "Ok" } : { TAG: "Err", _0: value };
     } catch (error) {
-      $rcDrop(request, (value) => {
-        $rcDrop(value.onReady, $dispose);
+      $cleanup(() => {
+        $rcDrop(request, (value) => {
+          $rcDrop(value.onReady, $dispose);
+        });
       });
       throw error;
     }
@@ -119,8 +136,10 @@ function render(name, kept) {
         $weakDrop(set._0);
       }
     } catch (error) {
-      $rcDrop(request, (value) => {
-        $rcDrop(value.onReady, $dispose);
+      $cleanup(() => {
+        $rcDrop(request, (value) => {
+          $rcDrop(value.onReady, $dispose);
+        });
       });
       throw error;
     }
@@ -136,32 +155,97 @@ function render(name, kept) {
 
 function main() {
   const kept = [];
+  let request;
   try {
-    const request = render("a", kept);
-    try {
-      const borrow = $borrow(kept, true);
-      try {
-        borrow.forEach((made) => complete(made.value));
-      } finally {
-        $unborrow(borrow);
-      }
-    } finally {
+    request = render("a", kept);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(kept, (item) => {
+        $rcDrop(item, (value) => {
+          $rcDrop(value.onReady, $dispose);
+        });
+      });
+    });
+    throw error;
+  }
+  let borrow;
+  try {
+    borrow = $borrow(kept, true);
+  } catch (error) {
+    $cleanup(() => {
       $rcDrop(request, (value) => {
         $rcDrop(value.onReady, $dispose);
       });
-    }
-    const value = $borrow(kept, true);
-    try {
-      value.forEach((made) => complete(made.value));
-    } finally {
-      $unborrow(value);
-    }
-  } finally {
-    $dropItems(kept, (item) => {
-      $rcDrop(item, (value) => {
-        $rcDrop(value.onReady, $dispose);
+      $dropItems(kept, (item) => {
+        $rcDrop(item, (value) => {
+          $rcDrop(value.onReady, $dispose);
+        });
       });
     });
+    throw error;
   }
+  try {
+    borrow.forEach((made) => complete(made.value));
+  } catch (error) {
+    $cleanup(() => {
+      $unborrow(borrow);
+      $rcDrop(request, (value) => {
+        $rcDrop(value.onReady, $dispose);
+      });
+      $dropItems(kept, (item) => {
+        $rcDrop(item, (value) => {
+          $rcDrop(value.onReady, $dispose);
+        });
+      });
+    });
+    throw error;
+  }
+  $unborrow(borrow);
+  try {
+    $rcDrop(request, (value) => {
+      $rcDrop(value.onReady, $dispose);
+    });
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(kept, (item) => {
+        $rcDrop(item, (value) => {
+          $rcDrop(value.onReady, $dispose);
+        });
+      });
+    });
+    throw error;
+  }
+  let tmp;
+  try {
+    tmp = $borrow(kept, true);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(kept, (item) => {
+        $rcDrop(item, (value) => {
+          $rcDrop(value.onReady, $dispose);
+        });
+      });
+    });
+    throw error;
+  }
+  try {
+    tmp.forEach((made) => complete(made.value));
+  } catch (error) {
+    $cleanup(() => {
+      $unborrow(tmp);
+      $dropItems(kept, (item) => {
+        $rcDrop(item, (value) => {
+          $rcDrop(value.onReady, $dispose);
+        });
+      });
+    });
+    throw error;
+  }
+  $unborrow(tmp);
+  $dropItems(kept, (item) => {
+    $rcDrop(item, (value) => {
+      $rcDrop(value.onReady, $dispose);
+    });
+  });
 }
 //# sourceMappingURL=case.js.map

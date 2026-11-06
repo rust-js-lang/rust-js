@@ -2,6 +2,7 @@
 
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $collectDropping,
   $collectsInPlace,
@@ -55,11 +56,17 @@ function tExt(
     () => ({
       first(self) {
         $held(self);
+        let result;
         try {
-          return TIterator.next(self);
-        } finally {
-          dropT?.(self);
+          result = TIterator.next(self);
+        } catch (error) {
+          $cleanup(() => {
+            dropT?.(self);
+          });
+          throw error;
         }
+        dropT?.(self);
+        return result;
       },
       flat(self, SelfItemIntoIterator) {
         const out = [];
@@ -71,9 +78,11 @@ function tExt(
           try {
             tmp = TIterator.next(iter);
           } catch (error) {
-            dropT?.(iter);
-            $dropItems(out, (item) => {
-              dropTItemItem?.(item);
+            $cleanup(() => {
+              dropT?.(iter);
+              $dropItems(out, (item) => {
+                dropTItemItem?.(item);
+              });
             });
             throw error;
           }
@@ -81,8 +90,10 @@ function tExt(
             try {
               dropT?.(iter);
             } catch (error) {
-              $dropItems(out, (item) => {
-                dropTItemItem?.(item);
+              $cleanup(() => {
+                $dropItems(out, (item) => {
+                  dropTItemItem?.(item);
+                });
               });
               throw error;
             }
@@ -92,9 +103,11 @@ function tExt(
           try {
             iter$1 = SelfItemIntoIterator.intoIter(items);
           } catch (error) {
-            dropT?.(iter);
-            $dropItems(out, (item) => {
-              dropTItemItem?.(item);
+            $cleanup(() => {
+              dropT?.(iter);
+              $dropItems(out, (item) => {
+                dropTItemItem?.(item);
+              });
             });
             throw error;
           }
@@ -102,10 +115,12 @@ function tExt(
             try {
               tmp$1 = SelfItemIntoIterator.IntoIterIterator().next(iter$1);
             } catch (error) {
-              dropTItemIntoIter?.(iter$1);
-              dropT?.(iter);
-              $dropItems(out, (item) => {
-                dropTItemItem?.(item);
+              $cleanup(() => {
+                dropTItemIntoIter?.(iter$1);
+                dropT?.(iter);
+                $dropItems(out, (item) => {
+                  dropTItemItem?.(item);
+                });
               });
               throw error;
             }
@@ -113,9 +128,11 @@ function tExt(
               try {
                 dropTItemIntoIter?.(iter$1);
               } catch (error) {
-                dropT?.(iter);
-                $dropItems(out, (item) => {
-                  dropTItemItem?.(item);
+                $cleanup(() => {
+                  dropT?.(iter);
+                  $dropItems(out, (item) => {
+                    dropTItemItem?.(item);
+                  });
                 });
                 throw error;
               }
@@ -125,10 +142,12 @@ function tExt(
             try {
               out.push(item);
             } catch (error) {
-              dropTItemIntoIter?.(iter$1);
-              dropT?.(iter);
-              $dropItems(out, (item) => {
-                dropTItemItem?.(item);
+              $cleanup(() => {
+                dropTItemIntoIter?.(iter$1);
+                dropT?.(iter);
+                $dropItems(out, (item) => {
+                  dropTItemItem?.(item);
+                });
               });
               throw error;
             }
@@ -140,25 +159,37 @@ function tExt(
         const iter = $closing($given(self, TIterator, true), $givenDrop(dropT), false)
           .map((items) => {
             const value = $held(SelfItemIntoIterator.intoIter(items));
+            let result;
             try {
-              return SelfItemIntoIterator.IntoIterIterator().next(value);
-            } finally {
-              dropTItemIntoIter?.(value);
+              result = SelfItemIntoIterator.IntoIterIterator().next(value);
+            } catch (error) {
+              $cleanup(() => {
+                dropTItemIntoIter?.(value);
+              });
+              throw error;
             }
+            dropTItemIntoIter?.(value);
+            return result;
           })
           .filter((item) => item != null)
           .map($someValue);
+        let result;
         try {
-          return $collectsInPlace(TInPlace, TItemItemSize, TItemItemAlign)
+          result = $collectsInPlace(TInPlace, TItemItemSize, TItemItemAlign)
             ? $foldToArray(iter, dropTItemItem)
             : $collectDropping(
                 $roomForHint(iter, TItemItemSize, false, false, dropTItemItem),
                 dropTItemItem,
                 true,
               );
-        } finally {
-          iter.return();
+        } catch (error) {
+          $cleanup(() => {
+            iter.return();
+          });
+          throw error;
         }
+        iter.return();
+        return result;
       },
       $drop: dropT,
     }),

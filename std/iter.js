@@ -4,6 +4,7 @@ import {
   $advanceBackBy,
   $advanceBy,
   $assertFailed,
+  $cleanup,
   $consume,
   $controlFlowTry,
   $count,
@@ -55,9 +56,11 @@ export const Inspect = {
       try {
         inspect.f(a);
       } catch (error) {
-        if (elt != null) {
-          dropIItem?.($someValue(elt));
-        }
+        $cleanup(() => {
+          if (elt != null) {
+            dropIItem?.($someValue(elt));
+          }
+        });
         throw error;
       }
     }
@@ -108,11 +111,13 @@ export const FlattenCompat = {
       try {
         acc = fold(acc, iter);
       } catch (error) {
-        dropFold?.(fold);
-        flattenCompat.iter.return();
-        if (flattenCompat.backiter != null) {
-          dropU?.($someValue(flattenCompat.backiter));
-        }
+        $cleanup(() => {
+          dropFold?.(fold);
+          flattenCompat.iter.return();
+          if (flattenCompat.backiter != null) {
+            dropU?.($someValue(flattenCompat.backiter));
+          }
+        });
         throw error;
       }
     }
@@ -124,9 +129,11 @@ export const FlattenCompat = {
         tmp = IItemIntoIterator.intoIter(iter);
         tmp$1 = false;
       } catch (error) {
-        if (tmp$1) {
-          dropAcc?.(acc);
-        }
+        $cleanup(() => {
+          if (tmp$1) {
+            dropAcc?.(acc);
+          }
+        });
         throw error;
       }
       return fold(acc, tmp);
@@ -137,16 +144,24 @@ export const FlattenCompat = {
       try {
         try {
           result = $consume($given(iter, IIterator, true), "fold", acc, value$1, dropAcc, () => {});
-        } finally {
-          if (!$took(IIterator.fold, iter)) {
-            dropI?.(iter);
-          }
+        } catch (error) {
+          $cleanup(() => {
+            if (!$took(IIterator.fold, iter)) {
+              dropI?.(iter);
+            }
+          });
+          throw error;
+        }
+        if (!$took(IIterator.fold, iter)) {
+          dropI?.(iter);
         }
       } catch (error) {
-        dropFold?.(fold);
-        if (flattenCompat.backiter != null) {
-          dropU?.($someValue(flattenCompat.backiter));
-        }
+        $cleanup(() => {
+          dropFold?.(fold);
+          if (flattenCompat.backiter != null) {
+            dropU?.($someValue(flattenCompat.backiter));
+          }
+        });
         throw error;
       }
       acc = result;
@@ -157,7 +172,9 @@ export const FlattenCompat = {
       try {
         acc = fold(acc, iter);
       } catch (error) {
-        dropFold?.(fold);
+        $cleanup(() => {
+          dropFold?.(fold);
+        });
         throw error;
       }
     }
@@ -165,11 +182,13 @@ export const FlattenCompat = {
     try {
       dropFold?.(fold);
     } catch (error) {
-      if (flattenCompat.backiter != null) {
-        if (tmp$1) {
-          dropU?.($someValue(flattenCompat.backiter));
+      $cleanup(() => {
+        if (flattenCompat.backiter != null) {
+          if (tmp$1) {
+            dropU?.($someValue(flattenCompat.backiter));
+          }
         }
-      }
+      });
       throw error;
     }
     return result;
@@ -200,7 +219,9 @@ export const FlattenCompat = {
         try {
           tmp$1 = RTry.branch(fold(acc, iter));
         } catch (error) {
-          dropFold?.(fold);
+          $cleanup(() => {
+            dropFold?.(fold);
+          });
           throw error;
         }
         if (tmp$1.TAG === "Continue") {
@@ -211,7 +232,9 @@ export const FlattenCompat = {
           try {
             result = RTry.FromResidual().fromResidual(tmp$1._0);
           } catch (error) {
-            dropFold?.(fold);
+            $cleanup(() => {
+              dropFold?.(fold);
+            });
             throw error;
           }
           break bb27;
@@ -222,11 +245,13 @@ export const FlattenCompat = {
           dropU?.($someValue(flattenCompat.frontiter));
         }
       } catch (error) {
-        flattenCompat.frontiter = undefined;
-        dropFold?.(fold);
-        if (tmp) {
-          dropAcc?.(acc);
-        }
+        $cleanup(() => {
+          flattenCompat.frontiter = undefined;
+          dropFold?.(fold);
+          if (tmp) {
+            dropAcc?.(acc);
+          }
+        });
         throw error;
       }
       flattenCompat.frontiter = undefined;
@@ -247,7 +272,9 @@ export const FlattenCompat = {
                     }
                     flattenCompat.frontiter = $some(value);
                   } catch (error) {
-                    dropAcc?.(acc);
+                    $cleanup(() => {
+                      dropAcc?.(acc);
+                    });
                     throw error;
                   }
                   return fold(acc, $someValue(flattenCompat.frontiter));
@@ -272,7 +299,9 @@ export const FlattenCompat = {
                     }
                     flattenCompat.frontiter = $some(value);
                   } catch (error) {
-                    dropAcc?.(acc);
+                    $cleanup(() => {
+                      dropAcc?.(acc);
+                    });
                     throw error;
                   }
                   return fold(acc, $someValue(flattenCompat.frontiter));
@@ -287,7 +316,9 @@ export const FlattenCompat = {
               ),
         );
       } catch (error) {
-        dropFold?.(fold);
+        $cleanup(() => {
+          dropFold?.(fold);
+        });
         throw error;
       }
       if (tmp$1.TAG === "Continue") {
@@ -299,9 +330,11 @@ export const FlattenCompat = {
             dropU?.($someValue(flattenCompat.frontiter));
           }
         } catch (error) {
-          flattenCompat.frontiter = undefined;
-          dropFold?.(fold);
-          dropAcc?.(acc);
+          $cleanup(() => {
+            flattenCompat.frontiter = undefined;
+            dropFold?.(fold);
+            dropAcc?.(acc);
+          });
           throw error;
         }
         flattenCompat.frontiter = undefined;
@@ -312,7 +345,9 @@ export const FlattenCompat = {
           try {
             tmp$1 = RTry.branch(fold(acc, iter));
           } catch (error) {
-            dropFold?.(fold);
+            $cleanup(() => {
+              dropFold?.(fold);
+            });
             throw error;
           }
           if (tmp$1.TAG === "Continue") {
@@ -323,7 +358,9 @@ export const FlattenCompat = {
             try {
               result = RTry.FromResidual().fromResidual(tmp$1._0);
             } catch (error) {
-              dropFold?.(fold);
+              $cleanup(() => {
+                dropFold?.(fold);
+              });
               throw error;
             }
             break bb27;
@@ -334,35 +371,45 @@ export const FlattenCompat = {
             dropU?.($someValue(flattenCompat.backiter));
           }
         } catch (error) {
-          flattenCompat.backiter = undefined;
-          dropFold?.(fold);
-          if (tmp) {
-            dropAcc?.(acc);
-          }
+          $cleanup(() => {
+            flattenCompat.backiter = undefined;
+            dropFold?.(fold);
+            if (tmp) {
+              dropAcc?.(acc);
+            }
+          });
           throw error;
         }
         flattenCompat.backiter = undefined;
         tmp = false;
         try {
           result = RTry.fromOutput(acc);
-        } finally {
-          dropFold?.(fold);
+        } catch (error) {
+          $cleanup(() => {
+            dropFold?.(fold);
+          });
+          throw error;
         }
+        dropFold?.(fold);
         return result;
       }
       try {
         result = RTry.FromResidual().fromResidual(tmp$1._0);
       } catch (error) {
-        dropFold?.(fold);
+        $cleanup(() => {
+          dropFold?.(fold);
+        });
         throw error;
       }
     }
     try {
       dropFold?.(fold);
     } catch (error) {
-      if (tmp) {
-        dropAcc?.(acc);
-      }
+      $cleanup(() => {
+        if (tmp) {
+          dropAcc?.(acc);
+        }
+      });
       throw error;
     }
     return result;
@@ -387,11 +434,13 @@ export const FlattenCompat = {
       try {
         acc = fold(acc, iter);
       } catch (error) {
-        dropFold?.(fold);
-        flattenCompat.iter.return();
-        if (flattenCompat.frontiter != null) {
-          dropU?.($someValue(flattenCompat.frontiter));
-        }
+        $cleanup(() => {
+          dropFold?.(fold);
+          flattenCompat.iter.return();
+          if (flattenCompat.frontiter != null) {
+            dropU?.($someValue(flattenCompat.frontiter));
+          }
+        });
         throw error;
       }
     }
@@ -403,9 +452,11 @@ export const FlattenCompat = {
         tmp = IItemIntoIterator.intoIter(iter);
         tmp$1 = false;
       } catch (error) {
-        if (tmp$1) {
-          dropAcc?.(acc);
-        }
+        $cleanup(() => {
+          if (tmp$1) {
+            dropAcc?.(acc);
+          }
+        });
         throw error;
       }
       return fold(acc, tmp);
@@ -423,16 +474,24 @@ export const FlattenCompat = {
             dropAcc,
             () => {},
           );
-        } finally {
-          if (!$took(IDoubleEndedIterator.rfold, iter)) {
-            dropI?.(iter);
-          }
+        } catch (error) {
+          $cleanup(() => {
+            if (!$took(IDoubleEndedIterator.rfold, iter)) {
+              dropI?.(iter);
+            }
+          });
+          throw error;
+        }
+        if (!$took(IDoubleEndedIterator.rfold, iter)) {
+          dropI?.(iter);
         }
       } catch (error) {
-        dropFold?.(fold);
-        if (flattenCompat.frontiter != null) {
-          dropU?.($someValue(flattenCompat.frontiter));
-        }
+        $cleanup(() => {
+          dropFold?.(fold);
+          if (flattenCompat.frontiter != null) {
+            dropU?.($someValue(flattenCompat.frontiter));
+          }
+        });
         throw error;
       }
       acc = result;
@@ -443,7 +502,9 @@ export const FlattenCompat = {
       try {
         acc = fold(acc, iter);
       } catch (error) {
-        dropFold?.(fold);
+        $cleanup(() => {
+          dropFold?.(fold);
+        });
         throw error;
       }
     }
@@ -451,11 +512,13 @@ export const FlattenCompat = {
     try {
       dropFold?.(fold);
     } catch (error) {
-      if (flattenCompat.frontiter != null) {
-        if (tmp$1) {
-          dropU?.($someValue(flattenCompat.frontiter));
+      $cleanup(() => {
+        if (flattenCompat.frontiter != null) {
+          if (tmp$1) {
+            dropU?.($someValue(flattenCompat.frontiter));
+          }
         }
-      }
+      });
       throw error;
     }
     return result;
@@ -487,7 +550,9 @@ export const FlattenCompat = {
         try {
           tmp$1 = RTry.branch(fold(acc, iter));
         } catch (error) {
-          dropFold?.(fold);
+          $cleanup(() => {
+            dropFold?.(fold);
+          });
           throw error;
         }
         if (tmp$1.TAG === "Continue") {
@@ -498,7 +563,9 @@ export const FlattenCompat = {
           try {
             result = RTry.FromResidual().fromResidual(tmp$1._0);
           } catch (error) {
-            dropFold?.(fold);
+            $cleanup(() => {
+              dropFold?.(fold);
+            });
             throw error;
           }
           break bb27;
@@ -509,11 +576,13 @@ export const FlattenCompat = {
           dropU?.($someValue(flattenCompat.backiter));
         }
       } catch (error) {
-        flattenCompat.backiter = undefined;
-        dropFold?.(fold);
-        if (tmp) {
-          dropAcc?.(acc);
-        }
+        $cleanup(() => {
+          flattenCompat.backiter = undefined;
+          dropFold?.(fold);
+          if (tmp) {
+            dropAcc?.(acc);
+          }
+        });
         throw error;
       }
       flattenCompat.backiter = undefined;
@@ -534,7 +603,9 @@ export const FlattenCompat = {
                     }
                     flattenCompat.backiter = $some(value);
                   } catch (error) {
-                    dropAcc?.(acc);
+                    $cleanup(() => {
+                      dropAcc?.(acc);
+                    });
                     throw error;
                   }
                   return fold(acc, $someValue(flattenCompat.backiter));
@@ -560,7 +631,9 @@ export const FlattenCompat = {
                     }
                     flattenCompat.backiter = $some(value);
                   } catch (error) {
-                    dropAcc?.(acc);
+                    $cleanup(() => {
+                      dropAcc?.(acc);
+                    });
                     throw error;
                   }
                   return fold(acc, $someValue(flattenCompat.backiter));
@@ -576,7 +649,9 @@ export const FlattenCompat = {
               ),
         );
       } catch (error) {
-        dropFold?.(fold);
+        $cleanup(() => {
+          dropFold?.(fold);
+        });
         throw error;
       }
       if (tmp$1.TAG === "Continue") {
@@ -588,9 +663,11 @@ export const FlattenCompat = {
             dropU?.($someValue(flattenCompat.backiter));
           }
         } catch (error) {
-          flattenCompat.backiter = undefined;
-          dropFold?.(fold);
-          dropAcc?.(acc);
+          $cleanup(() => {
+            flattenCompat.backiter = undefined;
+            dropFold?.(fold);
+            dropAcc?.(acc);
+          });
           throw error;
         }
         flattenCompat.backiter = undefined;
@@ -601,7 +678,9 @@ export const FlattenCompat = {
           try {
             tmp$1 = RTry.branch(fold(acc, iter));
           } catch (error) {
-            dropFold?.(fold);
+            $cleanup(() => {
+              dropFold?.(fold);
+            });
             throw error;
           }
           if (tmp$1.TAG === "Continue") {
@@ -612,7 +691,9 @@ export const FlattenCompat = {
             try {
               result = RTry.FromResidual().fromResidual(tmp$1._0);
             } catch (error) {
-              dropFold?.(fold);
+              $cleanup(() => {
+                dropFold?.(fold);
+              });
               throw error;
             }
             break bb27;
@@ -623,35 +704,45 @@ export const FlattenCompat = {
             dropU?.($someValue(flattenCompat.frontiter));
           }
         } catch (error) {
-          flattenCompat.frontiter = undefined;
-          dropFold?.(fold);
-          if (tmp) {
-            dropAcc?.(acc);
-          }
+          $cleanup(() => {
+            flattenCompat.frontiter = undefined;
+            dropFold?.(fold);
+            if (tmp) {
+              dropAcc?.(acc);
+            }
+          });
           throw error;
         }
         flattenCompat.frontiter = undefined;
         tmp = false;
         try {
           result = RTry.fromOutput(acc);
-        } finally {
-          dropFold?.(fold);
+        } catch (error) {
+          $cleanup(() => {
+            dropFold?.(fold);
+          });
+          throw error;
         }
+        dropFold?.(fold);
         return result;
       }
       try {
         result = RTry.FromResidual().fromResidual(tmp$1._0);
       } catch (error) {
-        dropFold?.(fold);
+        $cleanup(() => {
+          dropFold?.(fold);
+        });
         throw error;
       }
     }
     try {
       dropFold?.(fold);
     } catch (error) {
-      if (tmp) {
-        dropAcc?.(acc);
-      }
+      $cleanup(() => {
+        if (tmp) {
+          dropAcc?.(acc);
+        }
+      });
       throw error;
     }
     return result;
@@ -705,9 +796,13 @@ export const Zip = {
       n = (n - 1) >>> 0;
       try {
         dropAItem?.(x[0]);
-      } finally {
-        dropBItem?.(x[1]);
+      } catch (error) {
+        $cleanup(() => {
+          dropBItem?.(x[1]);
+        });
+        throw error;
       }
+      dropBItem?.(x[1]);
     }
   },
 };
@@ -777,11 +872,13 @@ export function peekableIterator_nth(peekable, n, IIterator = { next: $next }, d
           true,
         );
       } catch (error) {
-        if (peeked != null) {
-          if ($someValue(peeked) != null) {
-            dropIItem?.($someValue($someValue(peeked)));
+        $cleanup(() => {
+          if (peeked != null) {
+            if ($someValue(peeked) != null) {
+              dropIItem?.($someValue($someValue(peeked)));
+            }
           }
-        }
+        });
         throw error;
       }
     }
@@ -789,11 +886,13 @@ export function peekableIterator_nth(peekable, n, IIterator = { next: $next }, d
     try {
       v = $nthDropping($lent($given(peekable.iter, IIterator, true)), n, dropIItem, true);
     } catch (error) {
-      if (peeked != null) {
-        if ($someValue(peeked) != null) {
-          dropIItem?.($someValue($someValue(peeked)));
+      $cleanup(() => {
+        if (peeked != null) {
+          if ($someValue(peeked) != null) {
+            dropIItem?.($someValue($someValue(peeked)));
+          }
         }
-      }
+      });
       throw error;
     }
   }
@@ -821,12 +920,14 @@ export function peekableIterator_last(peekable, IIterator = { next: $next }, dro
           }
         }
       } catch (error) {
-        dropI?.(peekable.iter);
-        if (peekable.peeked != null) {
-          if ($someValue(peekable.peeked) != null) {
-            dropIItem?.($someValue($someValue(peekable.peeked)));
+        $cleanup(() => {
+          dropI?.(peekable.iter);
+          if (peekable.peeked != null) {
+            if ($someValue(peekable.peeked) != null) {
+              dropIItem?.($someValue($someValue(peekable.peeked)));
+            }
           }
-        }
+        });
         throw error;
       }
       peekable.return();
@@ -844,26 +945,34 @@ export function peekableIterator_last(peekable, IIterator = { next: $next }, dro
   try {
     try {
       result$1 = $lastDropping($given(iter, IIterator, true), dropIItem, true);
-    } finally {
-      if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
-        dropI?.(iter);
-      }
+    } catch (error) {
+      $cleanup(() => {
+        if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
+          dropI?.(iter);
+        }
+      });
+      throw error;
+    }
+    if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
+      dropI?.(iter);
     }
   } catch (error) {
-    if (tmp) {
-      if (peekOpt != null) {
-        dropIItem?.($someValue(peekOpt));
-      }
-      if (peekable.peeked != null) {
+    $cleanup(() => {
+      if (tmp) {
+        if (peekOpt != null) {
+          dropIItem?.($someValue(peekOpt));
+        }
+        if (peekable.peeked != null) {
+          if ($someValue(peekable.peeked) != null) {
+            dropIItem?.($someValue($someValue(peekable.peeked)));
+          }
+        }
+      } else if (peekable.peeked != null) {
         if ($someValue(peekable.peeked) != null) {
           dropIItem?.($someValue($someValue(peekable.peeked)));
         }
       }
-    } else if (peekable.peeked != null) {
-      if ($someValue(peekable.peeked) != null) {
-        dropIItem?.($someValue($someValue(peekable.peeked)));
-      }
-    }
+    });
     throw error;
   }
   tmp = false;
@@ -875,11 +984,19 @@ export function peekableIterator_last(peekable, IIterator = { next: $next }, dro
       }
     }
     result = value;
-  } finally {
-    if (peekable.peeked != null) {
-      if ($someValue(peekable.peeked) != null) {
-        dropIItem?.($someValue($someValue(peekable.peeked)));
+  } catch (error) {
+    $cleanup(() => {
+      if (peekable.peeked != null) {
+        if ($someValue(peekable.peeked) != null) {
+          dropIItem?.($someValue($someValue(peekable.peeked)));
+        }
       }
+    });
+    throw error;
+  }
+  if (peekable.peeked != null) {
+    if ($someValue(peekable.peeked) != null) {
+      dropIItem?.($someValue($someValue(peekable.peeked)));
     }
   }
   return result;
@@ -901,22 +1018,26 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
             }
           }
         } catch (error) {
-          dropI?.(peekable.iter);
-          if (peekable.peeked != null) {
-            if ($someValue(peekable.peeked) != null) {
-              dropIItem?.($someValue($someValue(peekable.peeked)));
+          $cleanup(() => {
+            dropI?.(peekable.iter);
+            if (peekable.peeked != null) {
+              if ($someValue(peekable.peeked) != null) {
+                dropIItem?.($someValue($someValue(peekable.peeked)));
+              }
             }
-          }
+          });
           throw error;
         }
         try {
           dropI?.(peekable.iter);
         } catch (error) {
-          if (peekable.peeked != null) {
-            if ($someValue(peekable.peeked) != null) {
-              dropIItem?.($someValue($someValue(peekable.peeked)));
+          $cleanup(() => {
+            if (peekable.peeked != null) {
+              if ($someValue(peekable.peeked) != null) {
+                dropIItem?.($someValue($someValue(peekable.peeked)));
+              }
             }
-          }
+          });
           throw error;
         }
         break bb13;
@@ -928,23 +1049,31 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
       try {
         try {
           result$1 = $count($given(iter, IIterator, true), dropIItem);
-        } finally {
-          if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
-            dropI?.(iter);
-          }
+        } catch (error) {
+          $cleanup(() => {
+            if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
+              dropI?.(iter);
+            }
+          });
+          throw error;
+        }
+        if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
+          dropI?.(iter);
         }
         count = result$1;
       } catch (error) {
-        if (peeked != null) {
-          if ($someValue(peeked) != null) {
-            dropIItem?.($someValue($someValue(peeked)));
+        $cleanup(() => {
+          if (peeked != null) {
+            if ($someValue(peeked) != null) {
+              dropIItem?.($someValue($someValue(peeked)));
+            }
           }
-        }
-        if (peekable.peeked != null) {
-          if ($someValue(peekable.peeked) != null) {
-            dropIItem?.($someValue($someValue(peekable.peeked)));
+          if (peekable.peeked != null) {
+            if ($someValue(peekable.peeked) != null) {
+              dropIItem?.($someValue($someValue(peekable.peeked)));
+            }
           }
-        }
+        });
         throw error;
       }
       result = (1 + count) >>> 0;
@@ -955,23 +1084,31 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
       try {
         try {
           result$1 = $count($given(iter, IIterator, true), dropIItem);
-        } finally {
-          if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
-            dropI?.(iter);
-          }
+        } catch (error) {
+          $cleanup(() => {
+            if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
+              dropI?.(iter);
+            }
+          });
+          throw error;
+        }
+        if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
+          dropI?.(iter);
         }
         result = result$1;
       } catch (error) {
-        if (peeked != null) {
-          if ($someValue(peeked) != null) {
-            dropIItem?.($someValue($someValue(peeked)));
+        $cleanup(() => {
+          if (peeked != null) {
+            if ($someValue(peeked) != null) {
+              dropIItem?.($someValue($someValue(peeked)));
+            }
           }
-        }
-        if (peekable.peeked != null) {
-          if ($someValue(peekable.peeked) != null) {
-            dropIItem?.($someValue($someValue(peekable.peeked)));
+          if (peekable.peeked != null) {
+            if ($someValue(peekable.peeked) != null) {
+              dropIItem?.($someValue($someValue(peekable.peeked)));
+            }
           }
-        }
+        });
         throw error;
       }
     }
@@ -982,18 +1119,20 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
         }
       }
     } catch (error) {
-      if (tmp) {
-        dropI?.(peekable.iter);
-        if (peekable.peeked != null) {
+      $cleanup(() => {
+        if (tmp) {
+          dropI?.(peekable.iter);
+          if (peekable.peeked != null) {
+            if ($someValue(peekable.peeked) != null) {
+              dropIItem?.($someValue($someValue(peekable.peeked)));
+            }
+          }
+        } else if (peekable.peeked != null) {
           if ($someValue(peekable.peeked) != null) {
             dropIItem?.($someValue($someValue(peekable.peeked)));
           }
         }
-      } else if (peekable.peeked != null) {
-        if ($someValue(peekable.peeked) != null) {
-          dropIItem?.($someValue($someValue(peekable.peeked)));
-        }
-      }
+      });
       throw error;
     }
   }
@@ -1020,17 +1159,23 @@ export function peekableIterator_fold(
       const result = init;
       try {
         dropFold?.(fold);
-      } finally {
-        dropI?.(peekable.iter);
+      } catch (error) {
+        $cleanup(() => {
+          dropI?.(peekable.iter);
+        });
+        throw error;
       }
+      dropI?.(peekable.iter);
       return result;
     }
     const v = $someValue($someValue(peekable.peeked));
     try {
       init = fold(init, v);
     } catch (error) {
-      dropFold?.(fold);
-      dropI?.(peekable.iter);
+      $cleanup(() => {
+        dropFold?.(fold);
+        dropI?.(peekable.iter);
+      });
       throw error;
     }
   }
@@ -1047,10 +1192,16 @@ export function peekableIterator_fold(
         dropFold?.(fold);
       },
     );
-  } finally {
-    if (!$took(IIterator.fold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IIterator.fold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IIterator.fold, iter)) {
+    dropI?.(iter);
   }
   const value = result;
   return value;
@@ -1080,7 +1231,9 @@ export function peekableIterator_tryFold(
         try {
           result = RTry.fromOutput(init);
         } catch (error) {
-          dropF?.(f);
+          $cleanup(() => {
+            dropF?.(f);
+          });
           throw error;
         }
       } else {
@@ -1090,7 +1243,9 @@ export function peekableIterator_tryFold(
         try {
           tmp$1 = RTry.branch(f(init, v));
         } catch (error) {
-          dropF?.(f);
+          $cleanup(() => {
+            dropF?.(f);
+          });
           throw error;
         }
         if (tmp$1.TAG === "Continue") {
@@ -1100,16 +1255,20 @@ export function peekableIterator_tryFold(
         try {
           result = RTry.FromResidual().fromResidual(tmp$1._0);
         } catch (error) {
-          dropF?.(f);
+          $cleanup(() => {
+            dropF?.(f);
+          });
           throw error;
         }
       }
       try {
         dropF?.(f);
       } catch (error) {
-        if (tmp) {
-          dropB?.(init);
-        }
+        $cleanup(() => {
+          if (tmp) {
+            dropB?.(init);
+          }
+        });
         throw error;
       }
       return result;
@@ -1131,9 +1290,11 @@ export function peekableIterator_tryFold(
     );
     result = value;
   } catch (error) {
-    if (tmp) {
-      dropB?.(init);
-    }
+    $cleanup(() => {
+      if (tmp) {
+        dropB?.(init);
+      }
+    });
     throw error;
   }
   return result;
@@ -1183,38 +1344,55 @@ export function peekableDoubleEndedIterator_rfold(
       result = init;
       try {
         dropFold?.(fold);
-      } finally {
-        dropI?.(peekable.iter);
+      } catch (error) {
+        $cleanup(() => {
+          dropI?.(peekable.iter);
+        });
+        throw error;
       }
+      dropI?.(peekable.iter);
       return result;
     }
     const v = $someValue($someValue(peekable.peeked));
     const iter = peekable.iter;
+    let result$1;
+    let acc;
     try {
-      let result$1;
-      let acc;
       try {
-        try {
-          result$1 = $foldBack(
-            $given(iter, IIterator, true, IDoubleEndedIterator),
-            init,
-            fold,
-            dropAcc,
-          );
-        } finally {
+        result$1 = $foldBack(
+          $given(iter, IIterator, true, IDoubleEndedIterator),
+          init,
+          fold,
+          dropAcc,
+        );
+      } catch (error) {
+        $cleanup(() => {
           if (!$took(IDoubleEndedIterator.rfold, iter)) {
             dropI?.(iter);
           }
-        }
-        acc = result$1;
-      } catch (error) {
-        dropIItem?.(v);
+        });
         throw error;
       }
-      result = fold(acc, v);
-    } finally {
-      dropFold?.(fold);
+      if (!$took(IDoubleEndedIterator.rfold, iter)) {
+        dropI?.(iter);
+      }
+      acc = result$1;
+    } catch (error) {
+      $cleanup(() => {
+        dropIItem?.(v);
+        dropFold?.(fold);
+      });
+      throw error;
     }
+    try {
+      result = fold(acc, v);
+    } catch (error) {
+      $cleanup(() => {
+        dropFold?.(fold);
+      });
+      throw error;
+    }
+    dropFold?.(fold);
     return result;
   }
   const iter = peekable.iter;
@@ -1230,10 +1408,16 @@ export function peekableDoubleEndedIterator_rfold(
         dropFold?.(fold);
       },
     );
-  } finally {
-    if (!$took(IDoubleEndedIterator.rfold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IDoubleEndedIterator.rfold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IDoubleEndedIterator.rfold, iter)) {
+    dropI?.(iter);
   }
   const value = result$1;
   return value;
@@ -1262,7 +1446,9 @@ export function peekableDoubleEndedIterator_tryRfold(
       try {
         result = RTry.fromOutput(init);
       } catch (error) {
-        dropF?.(f);
+        $cleanup(() => {
+          dropF?.(f);
+        });
         throw error;
       }
     } else {
@@ -1280,15 +1466,19 @@ export function peekableDoubleEndedIterator_tryRfold(
           ),
         );
       } catch (error) {
-        dropIItem?.(v);
-        dropF?.(f);
+        $cleanup(() => {
+          dropIItem?.(v);
+          dropF?.(f);
+        });
         throw error;
       }
       if (branch.TAG === "Continue") {
         try {
           result = f(branch._0, v);
         } catch (error) {
-          dropF?.(f);
+          $cleanup(() => {
+            dropF?.(f);
+          });
           throw error;
         }
       } else {
@@ -1301,16 +1491,20 @@ export function peekableDoubleEndedIterator_tryRfold(
             }
           }
         } catch (error) {
-          peekable.peeked = value;
-          RTry.$dropResidual?.(r);
-          dropF?.(f);
+          $cleanup(() => {
+            peekable.peeked = value;
+            RTry.$dropResidual?.(r);
+            dropF?.(f);
+          });
           throw error;
         }
         peekable.peeked = value;
         try {
           result = RTry.FromResidual().fromResidual(r);
         } catch (error) {
-          dropF?.(f);
+          $cleanup(() => {
+            dropF?.(f);
+          });
           throw error;
         }
       }
@@ -1318,9 +1512,11 @@ export function peekableDoubleEndedIterator_tryRfold(
     try {
       dropF?.(f);
     } catch (error) {
-      if (tmp) {
-        dropB?.(init);
-      }
+      $cleanup(() => {
+        if (tmp) {
+          dropB?.(init);
+        }
+      });
       throw error;
     }
     return result;
@@ -1432,10 +1628,16 @@ export function fuseIterator_fold(
           dropFold?.(fold);
         },
       );
-    } finally {
-      if (!$took(IIterator.fold, iter)) {
-        dropI?.(iter);
-      }
+    } catch (error) {
+      $cleanup(() => {
+        if (!$took(IIterator.fold, iter)) {
+          dropI?.(iter);
+        }
+      });
+      throw error;
+    }
+    if (!$took(IIterator.fold, iter)) {
+      dropI?.(iter);
     }
     const value = result;
     acc = value;
@@ -1449,13 +1651,21 @@ export function fuseIterator_fold(
 export function fuseIterator_count(fuse, IIterator = { next: $next }, dropI, dropIItem) {
   if (fuse.iter != null) {
     const iter = $someValue(fuse.iter);
+    let result;
     try {
-      return $count($given(iter, IIterator, true), dropIItem);
-    } finally {
-      if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
-        dropI?.(iter);
-      }
+      result = $count($given(iter, IIterator, true), dropIItem);
+    } catch (error) {
+      $cleanup(() => {
+        if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
+          dropI?.(iter);
+        }
+      });
+      throw error;
     }
+    if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
+      dropI?.(iter);
+    }
+    return result;
   }
   return 0;
 }
@@ -1552,8 +1762,10 @@ export function fuseFuseImplI_tryFold(
           dropI?.($someValue(fuse.iter));
         }
       } catch (error) {
-        fuse.iter = undefined;
-        dropAcc?.(acc);
+        $cleanup(() => {
+          fuse.iter = undefined;
+          dropAcc?.(acc);
+        });
         throw error;
       }
       fuse.iter = undefined;
@@ -1563,9 +1775,11 @@ export function fuseFuseImplI_tryFold(
     try {
       result = RTry.FromResidual().fromResidual(value$1._0);
     } catch (error) {
-      if (tmp) {
-        dropAcc?.(acc);
-      }
+      $cleanup(() => {
+        if (tmp) {
+          dropAcc?.(acc);
+        }
+      });
       throw error;
     }
     return result;
@@ -1574,9 +1788,11 @@ export function fuseFuseImplI_tryFold(
   try {
     result = RTry.fromOutput(acc);
   } catch (error) {
-    if (tmp$1) {
-      dropFold?.(fold);
-    }
+    $cleanup(() => {
+      if (tmp$1) {
+        dropFold?.(fold);
+      }
+    });
     throw error;
   }
   dropFold?.(fold);
@@ -1620,9 +1836,11 @@ export function fuseFuseImplIFusedIterator_tryFold(
   try {
     result = RTry.fromOutput(_2);
   } catch (error) {
-    if (tmp) {
-      dropFold?.(fold);
-    }
+    $cleanup(() => {
+      if (tmp) {
+        dropFold?.(fold);
+      }
+    });
     throw error;
   }
   dropFold?.(fold);
@@ -1706,10 +1924,16 @@ export function fuseDoubleEndedIterator_rfold(
           dropFold?.(fold);
         },
       );
-    } finally {
-      if (!$took(IDoubleEndedIterator.rfold, iter)) {
-        dropI?.(iter);
-      }
+    } catch (error) {
+      $cleanup(() => {
+        if (!$took(IDoubleEndedIterator.rfold, iter)) {
+          dropI?.(iter);
+        }
+      });
+      throw error;
+    }
+    if (!$took(IDoubleEndedIterator.rfold, iter)) {
+      dropI?.(iter);
     }
     const value = result;
     acc = value;
@@ -1814,13 +2038,21 @@ export function fuseIterator_nth(fuse, n, IIterator = { next: $next }, IFused, d
 export function fuseIterator_last(fuse, IIterator = { next: $next }, dropI, dropIItem) {
   if (fuse.iter != null) {
     const iter = $someValue(fuse.iter);
+    let result;
     try {
-      return $lastDropping($given(iter, IIterator, true), dropIItem, true);
-    } finally {
-      if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
-        dropI?.(iter);
-      }
+      result = $lastDropping($given(iter, IIterator, true), dropIItem, true);
+    } catch (error) {
+      $cleanup(() => {
+        if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
+          dropI?.(iter);
+        }
+      });
+      throw error;
     }
+    if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
+      dropI?.(iter);
+    }
+    return result;
   }
 }
 
@@ -1967,16 +2199,22 @@ export function revIterator_find(
   dropP,
   dropIItem,
 ) {
+  let value;
   try {
-    return $findBack(
+    value = $findBack(
       $given(rev.iter, IIterator, true, IDoubleEndedIterator),
       predicate,
       $some,
       dropIItem,
     );
-  } finally {
-    dropP?.(predicate);
+  } catch (error) {
+    $cleanup(() => {
+      dropP?.(predicate);
+    });
+    throw error;
   }
+  dropP?.(predicate);
+  return value;
 }
 
 export function revIterator_fold(
@@ -2003,10 +2241,16 @@ export function revIterator_fold(
         dropF?.(f);
       },
     );
-  } finally {
-    if (!$took(IDoubleEndedIterator.rfold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IDoubleEndedIterator.rfold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IDoubleEndedIterator.rfold, iter)) {
+    dropI?.(iter);
   }
   const value = result;
   return value;
@@ -2080,10 +2324,16 @@ export function revDoubleEndedIterator_rfold(
         dropF?.(f);
       },
     );
-  } finally {
-    if (!$took(IIterator.fold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IIterator.fold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IIterator.fold, iter)) {
+    dropI?.(iter);
   }
   const value = result;
   return value;
@@ -2122,16 +2372,22 @@ export function revDoubleEndedIterator_rfind(
   dropP,
   dropIItem,
 ) {
+  let value;
   try {
-    return $findDropping(
+    value = $findDropping(
       $lent($given(rev.iter, IIterator, true)),
       (item) => predicate(item),
       dropIItem,
       true,
     );
-  } finally {
-    dropP?.(predicate);
+  } catch (error) {
+    $cleanup(() => {
+      dropP?.(predicate);
+    });
+    throw error;
   }
+  dropP?.(predicate);
+  return value;
 }
 
 export function revExactSizeIterator_len(rev, IExactSizeIterator, dropI, dropIItem) {
@@ -2195,13 +2451,21 @@ export function enumerateIterator_nth(enumerate, n, IIterator = { next: $next },
 
 export function enumerateIterator_count(enumerate, IIterator = { next: $next }, dropI, dropIItem) {
   const iter = enumerate.iter;
+  let result;
   try {
-    return $count($given(iter, IIterator, true), dropIItem);
-  } finally {
-    if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
-      dropI?.(iter);
-    }
+    result = $count($given(iter, IIterator, true), dropIItem);
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
   }
+  if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
+    dropI?.(iter);
+  }
+  return result;
 }
 
 export function enumerateIterator_fold(
@@ -2231,10 +2495,16 @@ export function enumerateIterator_fold(
     result = $consume($given(iter, IIterator, true), "fold", init, f, dropAcc, () => {
       $dispose(f);
     });
-  } finally {
-    if (!$took(IIterator.fold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IIterator.fold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IIterator.fold, iter)) {
+    dropI?.(iter);
   }
   const value = result;
   return value;
@@ -2305,7 +2575,9 @@ export function enumerateDoubleEndedIterator_nextBack(
     try {
       len = IExactSizeIterator.len(enumerate.iter);
     } catch (error) {
-      dropIItem?.(a);
+      $cleanup(() => {
+        dropIItem?.(a);
+      });
       throw error;
     }
     return [(enumerate.count$ + len) >>> 0, a];
@@ -2333,7 +2605,9 @@ export function enumerateDoubleEndedIterator_nthBack(
     try {
       len = IExactSizeIterator.len(enumerate.iter);
     } catch (error) {
-      dropIItem?.(a);
+      $cleanup(() => {
+        dropIItem?.(a);
+      });
       throw error;
     }
     return [(enumerate.count$ + len) >>> 0, a];
@@ -2356,9 +2630,11 @@ export function enumerateDoubleEndedIterator_rfold(
   try {
     count = (enumerate.count$ + IExactSizeIterator.len(enumerate.iter)) >>> 0;
   } catch (error) {
-    dropFold?.(fold);
-    dropAcc?.(init);
-    dropI?.(enumerate.iter);
+    $cleanup(() => {
+      dropFold?.(fold);
+      dropAcc?.(init);
+      dropI?.(enumerate.iter);
+    });
     throw error;
   }
   const iter = enumerate.iter;
@@ -2372,8 +2648,9 @@ export function enumerateDoubleEndedIterator_rfold(
       dropFold?.(fold);
     },
   );
+  let result;
   try {
-    return $consume(
+    result = $consume(
       $given(iter, IIterator, true, IDoubleEndedIterator),
       "rfold",
       init,
@@ -2383,11 +2660,18 @@ export function enumerateDoubleEndedIterator_rfold(
         $dispose(value);
       },
     );
-  } finally {
-    if (!$took(IDoubleEndedIterator.rfold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IDoubleEndedIterator.rfold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
   }
+  if (!$took(IDoubleEndedIterator.rfold, iter)) {
+    dropI?.(iter);
+  }
+  return result;
 }
 
 export function enumerateDoubleEndedIterator_tryRfold(
@@ -2408,8 +2692,10 @@ export function enumerateDoubleEndedIterator_tryRfold(
   try {
     count = (enumerate.count$ + IExactSizeIterator.len(enumerate.iter)) >>> 0;
   } catch (error) {
-    dropFold?.(fold);
-    dropAcc?.(init);
+    $cleanup(() => {
+      dropFold?.(fold);
+      dropAcc?.(init);
+    });
     throw error;
   }
   let count$1 = count;
@@ -2513,9 +2799,11 @@ export function mapIterator_fold(
         tmp = captured(elt);
         tmp$1 = false;
       } catch (error) {
-        if (tmp$1) {
-          dropAcc?.(acc);
-        }
+        $cleanup(() => {
+          if (tmp$1) {
+            dropAcc?.(acc);
+          }
+        });
         throw error;
       }
       return g(acc, tmp);
@@ -2523,9 +2811,11 @@ export function mapIterator_fold(
     () => {
       try {
         dropG?.(g);
-      } finally {
+      } catch (error) {
         dropF?.(captured);
+        throw error;
       }
+      dropF?.(captured);
     },
   );
   let result;
@@ -2533,10 +2823,16 @@ export function mapIterator_fold(
     result = $consume($given(iter, IIterator, true), "fold", init, f, dropAcc, () => {
       $dispose(f);
     });
-  } finally {
-    if (!$took(IIterator.fold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IIterator.fold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IIterator.fold, iter)) {
+    dropI?.(iter);
   }
   const value = result;
   return value;
@@ -2565,9 +2861,11 @@ export function mapIterator_tryFold(
         tmp = captured(elt);
         tmp$1 = false;
       } catch (error) {
-        if (tmp$1) {
-          dropAcc?.(acc);
-        }
+        $cleanup(() => {
+          if (tmp$1) {
+            dropAcc?.(acc);
+          }
+        });
         throw error;
       }
       return g(acc, tmp);
@@ -2626,9 +2924,11 @@ export function mapDoubleEndedIterator_rfold(
         tmp = captured(elt);
         tmp$1 = false;
       } catch (error) {
-        if (tmp$1) {
-          dropAcc?.(acc);
-        }
+        $cleanup(() => {
+          if (tmp$1) {
+            dropAcc?.(acc);
+          }
+        });
         throw error;
       }
       return g(acc, tmp);
@@ -2636,9 +2936,11 @@ export function mapDoubleEndedIterator_rfold(
     () => {
       try {
         dropG?.(g);
-      } finally {
+      } catch (error) {
         dropF?.(captured);
+        throw error;
       }
+      dropF?.(captured);
     },
   );
   let result;
@@ -2653,10 +2955,16 @@ export function mapDoubleEndedIterator_rfold(
         $dispose(f);
       },
     );
-  } finally {
-    if (!$took(IDoubleEndedIterator.rfold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IDoubleEndedIterator.rfold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IDoubleEndedIterator.rfold, iter)) {
+    dropI?.(iter);
   }
   const value = result;
   return value;
@@ -2686,9 +2994,11 @@ export function mapDoubleEndedIterator_tryRfold(
         tmp = captured(elt);
         tmp$1 = false;
       } catch (error) {
-        if (tmp$1) {
-          dropAcc?.(acc);
-        }
+        $cleanup(() => {
+          if (tmp$1) {
+            dropAcc?.(acc);
+          }
+        });
         throw error;
       }
       return g(acc, tmp);
@@ -2749,8 +3059,10 @@ export function filterIterator_count(filter, IIterator = { next: $next }, dropI,
   try {
     tmp = $sizeHint(filter.iter, IIterator)[1];
   } catch (error) {
-    dropI?.(filter.iter);
-    dropP?.(filter.predicate);
+    $cleanup(() => {
+      dropI?.(filter.iter);
+      dropP?.(filter.predicate);
+    });
     throw error;
   }
   const before = tmp ?? 4294967295;
@@ -2759,11 +3071,17 @@ export function filterIterator_count(filter, IIterator = { next: $next }, dropI,
     filter.iter,
     $dropping(
       (x) => {
+        let result;
         try {
-          return captured(x) ? 1 : 0;
-        } finally {
-          dropIItem?.(x);
+          result = captured(x) ? 1 : 0;
+        } catch (error) {
+          $cleanup(() => {
+            dropIItem?.(x);
+          });
+          throw error;
         }
+        dropIItem?.(x);
+        return result;
       },
       () => {
         dropP?.(captured);
@@ -2789,10 +3107,16 @@ export function filterIterator_count(filter, IIterator = { next: $next }, dropI,
     result = $consume($given(iter, IIterator, true), "fold", 0, value, undefined, () => {
       $dispose(value);
     });
-  } finally {
-    if (!$took(IIterator.fold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IIterator.fold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IIterator.fold, iter)) {
+    dropI?.(iter);
   }
   const total = result;
   iSpecAssumeCount_assumeCountLeUpperBound(total, before, dropI, dropIItem);
@@ -2818,8 +3142,10 @@ export function filterIterator_fold(
       try {
         tmp = captured(item);
       } catch (error) {
-        dropIItem?.(item);
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropIItem?.(item);
+          dropAcc?.(acc);
+        });
         throw error;
       }
       if (tmp) {
@@ -2832,9 +3158,11 @@ export function filterIterator_fold(
     () => {
       try {
         dropP?.(captured);
-      } finally {
+      } catch (error) {
         dropFold?.(fold);
+        throw error;
       }
+      dropFold?.(fold);
     },
   );
   let result;
@@ -2842,10 +3170,16 @@ export function filterIterator_fold(
     result = $consume($given(iter, IIterator, true), "fold", init, f, dropAcc, () => {
       $dispose(f);
     });
-  } finally {
-    if (!$took(IIterator.fold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IIterator.fold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IIterator.fold, iter)) {
+    dropI?.(iter);
   }
   const value = result;
   return value;
@@ -2872,8 +3206,10 @@ export function filterIterator_tryFold(
       try {
         tmp = captured(item);
       } catch (error) {
-        dropIItem?.(item);
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropIItem?.(item);
+          dropAcc?.(acc);
+        });
         throw error;
       }
       if (tmp) {
@@ -2884,9 +3220,11 @@ export function filterIterator_tryFold(
       try {
         result = RTry.fromOutput(acc);
       } catch (error) {
-        if (tmp$1) {
-          dropIItem?.(item);
-        }
+        $cleanup(() => {
+          if (tmp$1) {
+            dropIItem?.(item);
+          }
+        });
         throw error;
       }
       dropIItem?.(item);
@@ -2945,8 +3283,10 @@ export function filterDoubleEndedIterator_rfold(
       try {
         tmp = captured(item);
       } catch (error) {
-        dropIItem?.(item);
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropIItem?.(item);
+          dropAcc?.(acc);
+        });
         throw error;
       }
       if (tmp) {
@@ -2959,9 +3299,11 @@ export function filterDoubleEndedIterator_rfold(
     () => {
       try {
         dropP?.(captured);
-      } finally {
+      } catch (error) {
         dropFold?.(fold);
+        throw error;
       }
+      dropFold?.(fold);
     },
   );
   let result;
@@ -2976,10 +3318,16 @@ export function filterDoubleEndedIterator_rfold(
         $dispose(f);
       },
     );
-  } finally {
-    if (!$took(IDoubleEndedIterator.rfold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IDoubleEndedIterator.rfold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IDoubleEndedIterator.rfold, iter)) {
+    dropI?.(iter);
   }
   const value = result;
   return value;
@@ -3007,8 +3355,10 @@ export function filterDoubleEndedIterator_tryRfold(
       try {
         tmp = captured(item);
       } catch (error) {
-        dropIItem?.(item);
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropIItem?.(item);
+          dropAcc?.(acc);
+        });
         throw error;
       }
       if (tmp) {
@@ -3019,9 +3369,11 @@ export function filterDoubleEndedIterator_tryRfold(
       try {
         result = RTry.fromOutput(acc);
       } catch (error) {
-        if (tmp$1) {
-          dropIItem?.(item);
-        }
+        $cleanup(() => {
+          if (tmp$1) {
+            dropIItem?.(item);
+          }
+        });
         throw error;
       }
       dropIItem?.(item);
@@ -3110,10 +3462,16 @@ export function copiedIterator_fold(
     result = $consume($given(iter, IIterator, true), "fold", init, f$1, dropAcc, () => {
       $dispose(f$1);
     });
-  } finally {
-    if (!$took(IIterator.fold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IIterator.fold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IIterator.fold, iter)) {
+    dropI?.(iter);
   }
   const value = result;
   return value;
@@ -3166,10 +3524,16 @@ export function copiedIterator_last(copied, IIterator = { next: $next }, TCopy, 
   let result;
   try {
     result = $lastSome($given(iter, IIterator, true));
-  } finally {
-    if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
+    dropI?.(iter);
   }
   if (result != null) {
     const value = $someValue(result);
@@ -3179,13 +3543,21 @@ export function copiedIterator_last(copied, IIterator = { next: $next }, TCopy, 
 
 export function copiedIterator_count(copied, IIterator = { next: $next }, TCopy, dropI) {
   const iter = copied.it;
+  let result;
   try {
-    return $count($given(iter, IIterator, true));
-  } finally {
-    if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
-      dropI?.(iter);
-    }
+    result = $count($given(iter, IIterator, true));
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
   }
+  if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
+    dropI?.(iter);
+  }
+  return result;
 }
 
 export function copiedIterator_advanceBy(copied, n, IIterator = { next: $next }, TCopy, dropI) {
@@ -3238,10 +3610,16 @@ export function copiedDoubleEndedIterator_rfold(
         $dispose(f$1);
       },
     );
-  } finally {
-    if (!$took(IDoubleEndedIterator.rfold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IDoubleEndedIterator.rfold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IDoubleEndedIterator.rfold, iter)) {
+    dropI?.(iter);
   }
   const value = result;
   return value;
@@ -3354,10 +3732,12 @@ export function clonedIterator_fold(
     map = iterator_map(cloned.it, (arg0) => TClone.clone(arg0), IIterator, dropI, dropT);
     tmp = false;
   } catch (error) {
-    dropF?.(f);
-    if (tmp) {
-      dropAcc?.(init);
-    }
+    $cleanup(() => {
+      dropF?.(f);
+      if (tmp) {
+        dropAcc?.(init);
+      }
+    });
     throw error;
   }
   const iter = map.iter;
@@ -3370,9 +3750,11 @@ export function clonedIterator_fold(
         tmp = captured(elt);
         tmp$1 = false;
       } catch (error) {
-        if (tmp$1) {
-          dropAcc?.(acc);
-        }
+        $cleanup(() => {
+          if (tmp$1) {
+            dropAcc?.(acc);
+          }
+        });
         throw error;
       }
       return f(acc, tmp);
@@ -3381,15 +3763,23 @@ export function clonedIterator_fold(
       dropF?.(f);
     },
   );
+  let result;
   try {
-    return $consume($given(iter, IIterator, true), "fold", init, value, dropAcc, () => {
+    result = $consume($given(iter, IIterator, true), "fold", init, value, dropAcc, () => {
       $dispose(value);
     });
-  } finally {
-    if (!$took(IIterator.fold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IIterator.fold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
   }
+  if (!$took(IIterator.fold, iter)) {
+    dropI?.(iter);
+  }
+  return result;
 }
 
 export function clonedIterator_tryFold(
@@ -3413,9 +3803,11 @@ export function clonedIterator_tryFold(
         tmp = TClone.clone(elt);
         tmp$1 = false;
       } catch (error) {
-        if (tmp$1) {
-          dropB?.(acc);
-        }
+        $cleanup(() => {
+          if (tmp$1) {
+            dropB?.(acc);
+          }
+        });
         throw error;
       }
       return f(acc, tmp);
@@ -3468,10 +3860,12 @@ export function clonedDoubleEndedIterator_rfold(
     map = iterator_map(cloned.it, (arg0) => TClone.clone(arg0), IIterator, dropI, dropT);
     tmp = false;
   } catch (error) {
-    dropF?.(f);
-    if (tmp) {
-      dropAcc?.(init);
-    }
+    $cleanup(() => {
+      dropF?.(f);
+      if (tmp) {
+        dropAcc?.(init);
+      }
+    });
     throw error;
   }
   const iter = map.iter;
@@ -3484,9 +3878,11 @@ export function clonedDoubleEndedIterator_rfold(
         tmp = captured(elt);
         tmp$1 = false;
       } catch (error) {
-        if (tmp$1) {
-          dropAcc?.(acc);
-        }
+        $cleanup(() => {
+          if (tmp$1) {
+            dropAcc?.(acc);
+          }
+        });
         throw error;
       }
       return f(acc, tmp);
@@ -3495,8 +3891,9 @@ export function clonedDoubleEndedIterator_rfold(
       dropF?.(f);
     },
   );
+  let result;
   try {
-    return $consume(
+    result = $consume(
       $given(iter, IIterator, true, IDoubleEndedIterator),
       "rfold",
       init,
@@ -3506,11 +3903,18 @@ export function clonedDoubleEndedIterator_rfold(
         $dispose(value);
       },
     );
-  } finally {
-    if (!$took(IDoubleEndedIterator.rfold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IDoubleEndedIterator.rfold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
   }
+  if (!$took(IDoubleEndedIterator.rfold, iter)) {
+    dropI?.(iter);
+  }
+  return result;
 }
 
 export function clonedDoubleEndedIterator_tryRfold(
@@ -3535,9 +3939,11 @@ export function clonedDoubleEndedIterator_tryRfold(
         tmp = TClone.clone(elt);
         tmp$1 = false;
       } catch (error) {
-        if (tmp$1) {
-          dropB?.(acc);
-        }
+        $cleanup(() => {
+          if (tmp$1) {
+            dropB?.(acc);
+          }
+        });
         throw error;
       }
       return f(acc, tmp);
@@ -3619,7 +4025,9 @@ export function filterMapIterator_fold(
       try {
         tmp = captured(item);
       } catch (error) {
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropAcc?.(acc);
+        });
         throw error;
       }
       if (tmp != null) {
@@ -3631,9 +4039,11 @@ export function filterMapIterator_fold(
     () => {
       try {
         dropF?.(captured);
-      } finally {
+      } catch (error) {
         dropFold?.(fold);
+        throw error;
       }
+      dropFold?.(fold);
     },
   );
   let result;
@@ -3641,10 +4051,16 @@ export function filterMapIterator_fold(
     result = $consume($given(iter, IIterator, true), "fold", init, f, dropAcc, () => {
       $dispose(f);
     });
-  } finally {
-    if (!$took(IIterator.fold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IIterator.fold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IIterator.fold, iter)) {
+    dropI?.(iter);
   }
   const value = result;
   return value;
@@ -3671,7 +4087,9 @@ export function filterMapIterator_tryFold(
       try {
         tmp = captured(item);
       } catch (error) {
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropAcc?.(acc);
+        });
         throw error;
       }
       if (tmp != null) {
@@ -3755,7 +4173,9 @@ export function filterMapDoubleEndedIterator_rfold(
       try {
         tmp = captured(item);
       } catch (error) {
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropAcc?.(acc);
+        });
         throw error;
       }
       if (tmp != null) {
@@ -3767,9 +4187,11 @@ export function filterMapDoubleEndedIterator_rfold(
     () => {
       try {
         dropF?.(captured);
-      } finally {
+      } catch (error) {
         dropFold?.(fold);
+        throw error;
       }
+      dropFold?.(fold);
     },
   );
   let result;
@@ -3784,10 +4206,16 @@ export function filterMapDoubleEndedIterator_rfold(
         $dispose(f);
       },
     );
-  } finally {
-    if (!$took(IDoubleEndedIterator.rfold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IDoubleEndedIterator.rfold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IDoubleEndedIterator.rfold, iter)) {
+    dropI?.(iter);
   }
   const value = result;
   return value;
@@ -3815,7 +4243,9 @@ export function filterMapDoubleEndedIterator_tryRfold(
       try {
         tmp = captured(item);
       } catch (error) {
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropAcc?.(acc);
+        });
         throw error;
       }
       if (tmp != null) {
@@ -3871,7 +4301,9 @@ export function takeWhileIterator_next(
     try {
       tmp = takeWhile.predicate(x);
     } catch (error) {
-      dropIItem?.(x);
+      $cleanup(() => {
+        dropIItem?.(x);
+      });
       throw error;
     }
     if (tmp) {
@@ -3912,11 +4344,17 @@ export function takeWhileIterator_tryFold(
   dropIItem,
 ) {
   if (takeWhile.flag) {
+    let result;
     try {
-      return RTry.fromOutput(init);
-    } finally {
-      dropFold?.(fold);
+      result = RTry.fromOutput(init);
+    } catch (error) {
+      $cleanup(() => {
+        dropFold?.(fold);
+      });
+      throw error;
     }
+    dropFold?.(fold);
+    return result;
   }
   const p = takeWhile.predicate;
   const value$1 = $dropping(
@@ -3926,8 +4364,10 @@ export function takeWhileIterator_tryFold(
       try {
         tmp = p(x);
       } catch (error) {
-        dropIItem?.(x);
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropIItem?.(x);
+          dropAcc?.(acc);
+        });
         throw error;
       }
       if (tmp) {
@@ -3943,9 +4383,11 @@ export function takeWhileIterator_tryFold(
       try {
         result = { TAG: "Break", _0: RTry.fromOutput(acc) };
       } catch (error) {
-        if (tmp$1) {
-          dropIItem?.(x);
-        }
+        $cleanup(() => {
+          if (tmp$1) {
+            dropIItem?.(x);
+          }
+        });
         throw error;
       }
       dropIItem?.(x);
@@ -3988,8 +4430,9 @@ export function takeWhileIterator_fold(
       dropFFF?.(fold);
     },
   );
+  let value;
   try {
-    const value = $tryFoldInto(
+    value = $tryFoldInto(
       takeWhile,
       init,
       (a, b) => value$1(a, b),
@@ -3999,10 +4442,15 @@ export function takeWhileIterator_fold(
         $dispose(value$1);
       },
     );
-    return value;
-  } finally {
-    takeWhile.return();
+  } catch (error) {
+    $cleanup(() => {
+      takeWhile.return();
+    });
+    throw error;
   }
+  const result = value;
+  takeWhile.return();
+  return result;
 }
 
 export function takeWhileClone_clone(takeWhile, IClone, PClone) {
@@ -4092,10 +4540,12 @@ export function skipWhileIterator_fold(
         true,
       );
     } catch (error) {
-      dropFold?.(fold);
-      dropAcc?.(init);
-      dropI?.(skipWhile.iter);
-      dropP?.(skipWhile.predicate);
+      $cleanup(() => {
+        dropFold?.(fold);
+        dropAcc?.(init);
+        dropI?.(skipWhile.iter);
+        dropP?.(skipWhile.predicate);
+      });
       throw error;
     }
     if (find == null) {
@@ -4103,8 +4553,10 @@ export function skipWhileIterator_fold(
       try {
         dropFold?.(fold);
       } catch (error) {
-        dropI?.(skipWhile.iter);
-        dropP?.(skipWhile.predicate);
+        $cleanup(() => {
+          dropI?.(skipWhile.iter);
+          dropP?.(skipWhile.predicate);
+        });
         throw error;
       }
       skipWhile.return();
@@ -4114,15 +4566,18 @@ export function skipWhileIterator_fold(
     try {
       init = fold(init, v);
     } catch (error) {
-      dropFold?.(fold);
-      dropI?.(skipWhile.iter);
-      dropP?.(skipWhile.predicate);
+      $cleanup(() => {
+        dropFold?.(fold);
+        dropI?.(skipWhile.iter);
+        dropP?.(skipWhile.predicate);
+      });
       throw error;
     }
   }
   const iter = skipWhile.iter;
+  let result$1;
+  let value;
   try {
-    let result$1;
     try {
       result$1 = $consume(
         $given(iter, IIterator, true),
@@ -4134,16 +4589,26 @@ export function skipWhileIterator_fold(
           dropFold?.(fold);
         },
       );
-    } finally {
-      if (!$took(IIterator.fold, iter)) {
-        dropI?.(iter);
-      }
+    } catch (error) {
+      $cleanup(() => {
+        if (!$took(IIterator.fold, iter)) {
+          dropI?.(iter);
+        }
+      });
+      throw error;
     }
-    const value = result$1;
+    if (!$took(IIterator.fold, iter)) {
+      dropI?.(iter);
+    }
+    value = result$1;
     result = value;
-  } finally {
-    dropP?.(skipWhile.predicate);
+  } catch (error) {
+    $cleanup(() => {
+      dropP?.(skipWhile.predicate);
+    });
+    throw error;
   }
+  dropP?.(skipWhile.predicate);
   return result;
 }
 
@@ -4181,8 +4646,10 @@ export function skipWhileIterator_tryFold(
           true,
         );
       } catch (error) {
-        dropFold?.(fold);
-        dropAcc?.(init);
+        $cleanup(() => {
+          dropFold?.(fold);
+          dropAcc?.(init);
+        });
         throw error;
       }
       let result;
@@ -4193,7 +4660,9 @@ export function skipWhileIterator_tryFold(
         try {
           tmp$1 = RTry.branch(fold(init, v));
         } catch (error) {
-          dropFold?.(fold);
+          $cleanup(() => {
+            dropFold?.(fold);
+          });
           throw error;
         }
         if (tmp$1.TAG === "Continue") {
@@ -4203,7 +4672,9 @@ export function skipWhileIterator_tryFold(
         try {
           result = RTry.FromResidual().fromResidual(tmp$1._0);
         } catch (error) {
-          dropFold?.(fold);
+          $cleanup(() => {
+            dropFold?.(fold);
+          });
           throw error;
         }
       } else {
@@ -4211,16 +4682,20 @@ export function skipWhileIterator_tryFold(
         try {
           result = RTry.fromOutput(init);
         } catch (error) {
-          dropFold?.(fold);
+          $cleanup(() => {
+            dropFold?.(fold);
+          });
           throw error;
         }
       }
       try {
         dropFold?.(fold);
       } catch (error) {
-        if (tmp) {
-          dropAcc?.(init);
-        }
+        $cleanup(() => {
+          if (tmp) {
+            dropAcc?.(init);
+          }
+        });
         throw error;
       }
       return result;
@@ -4302,8 +4777,9 @@ export function mapWhileIterator_tryFold(
   dropIItem,
 ) {
   const { iter, predicate } = mapWhile;
+  let tryFold;
   try {
-    const tryFold = $tryFoldInto(
+    tryFold = $tryFoldInto(
       $given(iter, IIterator, true),
       init,
       (acc, x) => {
@@ -4311,7 +4787,9 @@ export function mapWhileIterator_tryFold(
         try {
           tmp = predicate(x);
         } catch (error) {
-          dropAcc?.(acc);
+          $cleanup(() => {
+            dropAcc?.(acc);
+          });
           throw error;
         }
         if (tmp != null) {
@@ -4327,13 +4805,27 @@ export function mapWhileIterator_tryFold(
       $controlFlowTry,
       dropAcc,
     );
-    if (tryFold.TAG === "Continue") {
-      return RTry.fromOutput(tryFold._0);
-    }
-    return tryFold._0;
-  } finally {
-    dropFold?.(fold);
+  } catch (error) {
+    $cleanup(() => {
+      dropFold?.(fold);
+    });
+    throw error;
   }
+  let result;
+  if (tryFold.TAG === "Continue") {
+    try {
+      result = RTry.fromOutput(tryFold._0);
+    } catch (error) {
+      $cleanup(() => {
+        dropFold?.(fold);
+      });
+      throw error;
+    }
+  } else {
+    result = tryFold._0;
+  }
+  dropFold?.(fold);
+  return result;
 }
 
 export function mapWhileIterator_fold(
@@ -4354,8 +4846,9 @@ export function mapWhileIterator_fold(
       dropFFF?.(fold);
     },
   );
+  let value;
   try {
-    const value = $tryFoldInto(
+    value = $tryFoldInto(
       mapWhile,
       init,
       (a, b) => value$1(a, b),
@@ -4365,10 +4858,15 @@ export function mapWhileIterator_fold(
         $dispose(value$1);
       },
     );
-    return value;
-  } finally {
-    mapWhile.return();
+  } catch (error) {
+    $cleanup(() => {
+      mapWhile.return();
+    });
+    throw error;
   }
+  const result = value;
+  mapWhile.return();
+  return result;
 }
 
 export function mapWhileClone_clone(mapWhile, IClone, PClone) {
@@ -4454,7 +4952,9 @@ export function scanIterator_tryFold(
           x,
         );
       } catch (error) {
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropAcc?.(acc);
+        });
         throw error;
       }
       if (tmp == null) {
@@ -4523,7 +5023,9 @@ export function scanIterator_fold(
           x,
         );
       } catch (error) {
-        dropAAA?.(acc);
+        $cleanup(() => {
+          dropAAA?.(acc);
+        });
         throw error;
       }
       if (tmp == null) {
@@ -4541,6 +5043,7 @@ export function scanIterator_fold(
     },
   );
   let value;
+  let tryFold;
   try {
     value = $tryFoldInto(
       $given(scan.iter, IIterator, true),
@@ -4552,10 +5055,16 @@ export function scanIterator_fold(
         $dispose(value$1);
       },
     );
-    return value._0;
-  } finally {
-    scan.return();
+    tryFold = value;
+  } catch (error) {
+    $cleanup(() => {
+      scan.return();
+    });
+    throw error;
   }
+  const result = tryFold._0;
+  scan.return();
+  return result;
 }
 
 export function scanClone_clone(scan, IClone, StClone, FClone) {
@@ -4614,8 +5123,10 @@ export function inspectIterator_fold(
       try {
         captured(item);
       } catch (error) {
-        dropIItem?.(item);
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropIItem?.(item);
+          dropAcc?.(acc);
+        });
         throw error;
       }
       return fold(acc, item);
@@ -4623,9 +5134,11 @@ export function inspectIterator_fold(
     () => {
       try {
         dropF?.(captured);
-      } finally {
+      } catch (error) {
         dropFold?.(fold);
+        throw error;
       }
+      dropFold?.(fold);
     },
   );
   let result;
@@ -4633,10 +5146,16 @@ export function inspectIterator_fold(
     result = $consume($given(iter, IIterator, true), "fold", init, f, dropAcc, () => {
       $dispose(f);
     });
-  } finally {
-    if (!$took(IIterator.fold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IIterator.fold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IIterator.fold, iter)) {
+    dropI?.(iter);
   }
   const value = result;
   return value;
@@ -4661,8 +5180,10 @@ export function inspectIterator_tryFold(
       try {
         captured(item);
       } catch (error) {
-        dropIItem?.(item);
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropIItem?.(item);
+          dropAcc?.(acc);
+        });
         throw error;
       }
       return fold(acc, item);
@@ -4714,8 +5235,10 @@ export function inspectDoubleEndedIterator_rfold(
       try {
         captured(item);
       } catch (error) {
-        dropIItem?.(item);
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropIItem?.(item);
+          dropAcc?.(acc);
+        });
         throw error;
       }
       return fold(acc, item);
@@ -4723,9 +5246,11 @@ export function inspectDoubleEndedIterator_rfold(
     () => {
       try {
         dropF?.(captured);
-      } finally {
+      } catch (error) {
         dropFold?.(fold);
+        throw error;
       }
+      dropFold?.(fold);
     },
   );
   let result;
@@ -4740,10 +5265,16 @@ export function inspectDoubleEndedIterator_rfold(
         $dispose(f);
       },
     );
-  } finally {
-    if (!$took(IDoubleEndedIterator.rfold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IDoubleEndedIterator.rfold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IDoubleEndedIterator.rfold, iter)) {
+    dropI?.(iter);
   }
   const value = result;
   return value;
@@ -4769,8 +5300,10 @@ export function inspectDoubleEndedIterator_tryRfold(
       try {
         captured(item);
       } catch (error) {
-        dropIItem?.(item);
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropIItem?.(item);
+          dropAcc?.(acc);
+        });
         throw error;
       }
       return fold(acc, item);
@@ -5944,7 +6477,9 @@ export function skipIterator_count(skip, IIterator = { next: $next }, dropI, dro
         true,
       );
     } catch (error) {
-      dropI?.(skip.iter);
+      $cleanup(() => {
+        dropI?.(skip.iter);
+      });
       throw error;
     }
     if (nth == null) {
@@ -5953,7 +6488,9 @@ export function skipIterator_count(skip, IIterator = { next: $next }, dropI, dro
           dropIItem?.($someValue(nth));
         }
       } catch (error) {
-        dropI?.(skip.iter);
+        $cleanup(() => {
+          dropI?.(skip.iter);
+        });
         throw error;
       }
       const result = 0;
@@ -5965,18 +6502,28 @@ export function skipIterator_count(skip, IIterator = { next: $next }, dropI, dro
         dropIItem?.($someValue(nth));
       }
     } catch (error) {
-      dropI?.(skip.iter);
+      $cleanup(() => {
+        dropI?.(skip.iter);
+      });
       throw error;
     }
   }
   const iter = skip.iter;
+  let result;
   try {
-    return $count($given(iter, IIterator, true), dropIItem);
-  } finally {
-    if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
-      dropI?.(iter);
-    }
+    result = $count($given(iter, IIterator, true), dropIItem);
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
   }
+  if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
+    dropI?.(iter);
+  }
+  return result;
 }
 
 export function skipIterator_last(skip, IIterator = { next: $next }, dropI, dropIItem) {
@@ -5990,7 +6537,9 @@ export function skipIterator_last(skip, IIterator = { next: $next }, dropI, drop
         true,
       );
     } catch (error) {
-      dropI?.(skip.iter);
+      $cleanup(() => {
+        dropI?.(skip.iter);
+      });
       throw error;
     }
     if (nth == null) {
@@ -6002,18 +6551,28 @@ export function skipIterator_last(skip, IIterator = { next: $next }, dropI, drop
     try {
       dropIItem?.(value);
     } catch (error) {
-      dropI?.(skip.iter);
+      $cleanup(() => {
+        dropI?.(skip.iter);
+      });
       throw error;
     }
   }
   const iter = skip.iter;
+  let result;
   try {
-    return $lastDropping($given(iter, IIterator, true), dropIItem, true);
-  } finally {
-    if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
-      dropI?.(iter);
-    }
+    result = $lastDropping($given(iter, IIterator, true), dropIItem, true);
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
   }
+  if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
+    dropI?.(iter);
+  }
+  return result;
 }
 
 export function skipIterator_fold(
@@ -6037,9 +6596,11 @@ export function skipIterator_fold(
         true,
       );
     } catch (error) {
-      dropFold?.(fold);
-      dropAcc?.(init);
-      dropI?.(skip.iter);
+      $cleanup(() => {
+        dropFold?.(fold);
+        dropAcc?.(init);
+        dropI?.(skip.iter);
+      });
       throw error;
     }
     if (nth == null) {
@@ -6048,9 +6609,11 @@ export function skipIterator_fold(
           dropIItem?.($someValue(nth));
         }
       } catch (error) {
-        dropFold?.(fold);
-        dropAcc?.(init);
-        dropI?.(skip.iter);
+        $cleanup(() => {
+          dropFold?.(fold);
+          dropAcc?.(init);
+          dropI?.(skip.iter);
+        });
         throw error;
       }
       tmp = false;
@@ -6058,7 +6621,9 @@ export function skipIterator_fold(
       try {
         dropFold?.(fold);
       } catch (error) {
-        dropI?.(skip.iter);
+        $cleanup(() => {
+          dropI?.(skip.iter);
+        });
         throw error;
       }
       skip.return();
@@ -6069,13 +6634,15 @@ export function skipIterator_fold(
         dropIItem?.($someValue(nth));
       }
     } catch (error) {
-      dropFold?.(fold);
-      if (tmp) {
-        dropAcc?.(init);
-        dropI?.(skip.iter);
-      } else {
-        dropI?.(skip.iter);
-      }
+      $cleanup(() => {
+        dropFold?.(fold);
+        if (tmp) {
+          dropAcc?.(init);
+          dropI?.(skip.iter);
+        } else {
+          dropI?.(skip.iter);
+        }
+      });
       throw error;
     }
   }
@@ -6093,10 +6660,16 @@ export function skipIterator_fold(
         dropFold?.(fold);
       },
     );
-  } finally {
-    if (!$took(IIterator.fold, iter)) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!$took(IIterator.fold, iter)) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!$took(IIterator.fold, iter)) {
+    dropI?.(iter);
   }
   const value = result;
   return value;
@@ -6122,8 +6695,10 @@ export function skipIterator_tryFold(
     try {
       nth = $nthDropping($lent($given(skip.iter, IIterator, true)), (n - 1) >>> 0, dropIItem, true);
     } catch (error) {
-      dropFold?.(fold);
-      dropAcc?.(init);
+      $cleanup(() => {
+        dropFold?.(fold);
+        dropAcc?.(init);
+      });
       throw error;
     }
     if (nth == null) {
@@ -6132,26 +6707,36 @@ export function skipIterator_tryFold(
           dropIItem?.($someValue(nth));
         }
       } catch (error) {
-        dropFold?.(fold);
-        dropAcc?.(init);
+        $cleanup(() => {
+          dropFold?.(fold);
+          dropAcc?.(init);
+        });
         throw error;
       }
       tmp = false;
+      let result;
       try {
-        return RTry.fromOutput(init);
-      } finally {
-        dropFold?.(fold);
+        result = RTry.fromOutput(init);
+      } catch (error) {
+        $cleanup(() => {
+          dropFold?.(fold);
+        });
+        throw error;
       }
+      dropFold?.(fold);
+      return result;
     }
     try {
       if (nth != null) {
         dropIItem?.($someValue(nth));
       }
     } catch (error) {
-      dropFold?.(fold);
-      if (tmp) {
-        dropAcc?.(init);
-      }
+      $cleanup(() => {
+        dropFold?.(fold);
+        if (tmp) {
+          dropAcc?.(init);
+        }
+      });
       throw error;
     }
   }
@@ -6339,8 +6924,10 @@ export function skipDoubleEndedIterator_tryRfold(
   try {
     sizeHint = $sizeHint(skip.iter, IIterator);
   } catch (error) {
-    dropFold?.(fold);
-    dropAcc?.(init);
+    $cleanup(() => {
+      dropFold?.(fold);
+      dropAcc?.(init);
+    });
     throw error;
   }
   const value = sizeHint[1];
@@ -6362,11 +6949,17 @@ export function skipDoubleEndedIterator_tryRfold(
     if (tmp === value$1) {
       if (value$1 === 0) {
         tmp$3 = false;
+        let result;
         try {
-          return RTry.fromOutput(init);
-        } finally {
-          dropFold?.(fold);
+          result = RTry.fromOutput(init);
+        } catch (error) {
+          $cleanup(() => {
+            dropFold?.(fold);
+          });
+          throw error;
         }
+        dropFold?.(fold);
+        return result;
       }
       tmp$3 = false;
       tmp$4 = false;
@@ -6411,14 +7004,16 @@ export function skipDoubleEndedIterator_tryRfold(
       tmp$2 == null ? "None" : `Some(${tmp$2})`,
     );
   } catch (error) {
-    if (tmp$4) {
-      dropFold?.(fold);
-      if (tmp$3) {
+    $cleanup(() => {
+      if (tmp$4) {
+        dropFold?.(fold);
+        if (tmp$3) {
+          dropAcc?.(init);
+        }
+      } else if (tmp$3) {
         dropAcc?.(init);
       }
-    } else if (tmp$3) {
-      dropAcc?.(init);
-    }
+    });
     throw error;
   }
 }
@@ -6440,8 +7035,9 @@ export function skipDoubleEndedIterator_rfold(
       dropFFF?.(fold);
     },
   );
+  let result;
   try {
-    return skipDoubleEndedIterator_tryRfold(
+    result = skipDoubleEndedIterator_tryRfold(
       skip,
       init,
       value,
@@ -6456,9 +7052,14 @@ export function skipDoubleEndedIterator_rfold(
       },
       dropIItem,
     );
-  } finally {
-    skip.return();
+  } catch (error) {
+    $cleanup(() => {
+      skip.return();
+    });
+    throw error;
   }
+  skip.return();
+  return result;
 }
 
 export function skipClone_clone(skip, IClone) {
@@ -6534,17 +7135,22 @@ export function takeIterator_count(take, IIterator = { next: $next }, dropI, dro
     take.return();
     return result;
   }
+  let advanceBy;
   try {
-    const advanceBy = $advanceBy($lent($given(take.iter, IIterator, true)), take.n, dropIItem);
-    if (advanceBy.TAG === "Ok") {
-      result = take.n;
-    } else {
-      const remaining = advanceBy._0;
-      result = (take.n - remaining) >>> 0;
-    }
-  } finally {
-    take.return();
+    advanceBy = $advanceBy($lent($given(take.iter, IIterator, true)), take.n, dropIItem);
+  } catch (error) {
+    $cleanup(() => {
+      take.return();
+    });
+    throw error;
   }
+  if (advanceBy.TAG === "Ok") {
+    result = take.n;
+  } else {
+    const remaining = advanceBy._0;
+    result = (take.n - remaining) >>> 0;
+  }
+  take.return();
   return result;
 }
 
@@ -6574,11 +7180,17 @@ export function takeIterator_tryFold(
   dropIItem,
 ) {
   if (take.n === 0) {
+    let result;
     try {
-      return RTry.fromOutput(init);
-    } finally {
-      dropFold?.(fold);
+      result = RTry.fromOutput(init);
+    } catch (error) {
+      $cleanup(() => {
+        dropFold?.(fold);
+      });
+      throw error;
     }
+    dropFold?.(fold);
+    return result;
   }
   const value$1 = $dropping(
     (acc, x) => {
@@ -6696,8 +7308,10 @@ export function takeIDoubleEndedIterator_tryRfold(
       try {
         len = IExactSizeIterator.len(take.iter);
       } catch (error) {
-        dropFold?.(fold);
-        dropAcc?.(init);
+        $cleanup(() => {
+          dropFold?.(fold);
+          dropAcc?.(init);
+        });
         throw error;
       }
       if (len > take.n) {
@@ -6710,8 +7324,10 @@ export function takeIDoubleEndedIterator_tryRfold(
             dropIItem,
           );
         } catch (error) {
-          dropFold?.(fold);
-          dropAcc?.(init);
+          $cleanup(() => {
+            dropFold?.(fold);
+            dropAcc?.(init);
+          });
           throw error;
         }
         if (nthBack == null) {
@@ -6720,15 +7336,19 @@ export function takeIDoubleEndedIterator_tryRfold(
               dropIItem?.($someValue(nthBack));
             }
           } catch (error) {
-            dropFold?.(fold);
-            dropAcc?.(init);
+            $cleanup(() => {
+              dropFold?.(fold);
+              dropAcc?.(init);
+            });
             throw error;
           }
           tmp = false;
           try {
             result = RTry.fromOutput(init);
           } catch (error) {
-            dropFold?.(fold);
+            $cleanup(() => {
+              dropFold?.(fold);
+            });
             throw error;
           }
           break bb21;
@@ -6738,8 +7358,10 @@ export function takeIDoubleEndedIterator_tryRfold(
             dropIItem?.($someValue(nthBack));
           }
         } catch (error) {
-          dropFold?.(fold);
-          dropAcc?.(init);
+          $cleanup(() => {
+            dropFold?.(fold);
+            dropAcc?.(init);
+          });
           throw error;
         }
       }
@@ -6760,16 +7382,20 @@ export function takeIDoubleEndedIterator_tryRfold(
     try {
       result = RTry.fromOutput(init);
     } catch (error) {
-      dropFold?.(fold);
+      $cleanup(() => {
+        dropFold?.(fold);
+      });
       throw error;
     }
   }
   try {
     dropFold?.(fold);
   } catch (error) {
-    if (tmp) {
-      dropAcc?.(init);
-    }
+    $cleanup(() => {
+      if (tmp) {
+        dropAcc?.(init);
+      }
+    });
     throw error;
   }
   return result;
@@ -6820,9 +7446,11 @@ export function takeIDoubleEndedIterator_rfold(
       try {
         len = IExactSizeIterator.len(take.iter);
       } catch (error) {
-        dropFold?.(fold);
-        dropAcc?.(init);
-        dropI?.(take.iter);
+        $cleanup(() => {
+          dropFold?.(fold);
+          dropAcc?.(init);
+          dropI?.(take.iter);
+        });
         throw error;
       }
       if (len > take.n) {
@@ -6835,9 +7463,11 @@ export function takeIDoubleEndedIterator_rfold(
             dropIItem,
           );
         } catch (error) {
-          dropFold?.(fold);
-          dropAcc?.(init);
-          dropI?.(take.iter);
+          $cleanup(() => {
+            dropFold?.(fold);
+            dropAcc?.(init);
+            dropI?.(take.iter);
+          });
           throw error;
         }
         if (nthBack == null) {
@@ -6846,9 +7476,11 @@ export function takeIDoubleEndedIterator_rfold(
               dropIItem?.($someValue(nthBack));
             }
           } catch (error) {
-            dropFold?.(fold);
-            dropAcc?.(init);
-            dropI?.(take.iter);
+            $cleanup(() => {
+              dropFold?.(fold);
+              dropAcc?.(init);
+              dropI?.(take.iter);
+            });
             throw error;
           }
           tmp = false;
@@ -6860,9 +7492,11 @@ export function takeIDoubleEndedIterator_rfold(
             dropIItem?.($someValue(nthBack));
           }
         } catch (error) {
-          dropFold?.(fold);
-          dropAcc?.(init);
-          dropI?.(take.iter);
+          $cleanup(() => {
+            dropFold?.(fold);
+            dropAcc?.(init);
+            dropI?.(take.iter);
+          });
           throw error;
         }
       }
@@ -6881,10 +7515,16 @@ export function takeIDoubleEndedIterator_rfold(
             dropFold?.(fold);
           },
         );
-      } finally {
-        if (!$took(IDoubleEndedIterator.rfold, iter)) {
-          dropI?.(iter);
-        }
+      } catch (error) {
+        $cleanup(() => {
+          if (!$took(IDoubleEndedIterator.rfold, iter)) {
+            dropI?.(iter);
+          }
+        });
+        throw error;
+      }
+      if (!$took(IDoubleEndedIterator.rfold, iter)) {
+        dropI?.(iter);
       }
       const value = result$1;
       return value;
@@ -6895,14 +7535,16 @@ export function takeIDoubleEndedIterator_rfold(
   try {
     dropFold?.(fold);
   } catch (error) {
-    if (tmp) {
-      dropAcc?.(init);
-      if (tmp$1) {
+    $cleanup(() => {
+      if (tmp) {
+        dropAcc?.(init);
+        if (tmp$1) {
+          dropI?.(take.iter);
+        }
+      } else if (tmp$1) {
         dropI?.(take.iter);
       }
-    } else if (tmp$1) {
-      dropI?.(take.iter);
-    }
+    });
     throw error;
   }
   dropI?.(take.iter);
@@ -7183,16 +7825,24 @@ export function chainIterator_count(
     try {
       try {
         result = $count($given(iter, AIterator, true), dropAItem);
-      } finally {
-        if (!$took(AIterator.fold, iter) && !$took(AIterator.count, iter)) {
-          dropA?.(iter);
-        }
+      } catch (error) {
+        $cleanup(() => {
+          if (!$took(AIterator.fold, iter) && !$took(AIterator.count, iter)) {
+            dropA?.(iter);
+          }
+        });
+        throw error;
+      }
+      if (!$took(AIterator.fold, iter) && !$took(AIterator.count, iter)) {
+        dropA?.(iter);
       }
       aCount = result;
     } catch (error) {
-      if (chain.b != null) {
-        dropB?.($someValue(chain.b));
-      }
+      $cleanup(() => {
+        if (chain.b != null) {
+          dropB?.($someValue(chain.b));
+        }
+      });
       throw error;
     }
   } else {
@@ -7205,10 +7855,16 @@ export function chainIterator_count(
     let result;
     try {
       result = $count($given(iter, BIterator, true), dropAItem);
-    } finally {
-      if (!$took(BIterator.fold, iter) && !$took(BIterator.count, iter)) {
-        dropB?.(iter);
-      }
+    } catch (error) {
+      $cleanup(() => {
+        if (!$took(BIterator.fold, iter) && !$took(BIterator.count, iter)) {
+          dropB?.(iter);
+        }
+      });
+      throw error;
+    }
+    if (!$took(BIterator.fold, iter) && !$took(BIterator.count, iter)) {
+      dropB?.(iter);
     }
     bCount = result;
   } else {
@@ -7236,16 +7892,24 @@ export function chainIterator_fold(
     try {
       try {
         result = $foldDropping($given(iter, AIterator, true), acc, (a, b) => f(a, b), dropAcc);
-      } finally {
-        if (!$took(AIterator.fold, iter)) {
-          dropA?.(iter);
-        }
+      } catch (error) {
+        $cleanup(() => {
+          if (!$took(AIterator.fold, iter)) {
+            dropA?.(iter);
+          }
+        });
+        throw error;
+      }
+      if (!$took(AIterator.fold, iter)) {
+        dropA?.(iter);
       }
     } catch (error) {
-      dropF?.(f);
-      if (chain.b != null) {
-        dropB?.($someValue(chain.b));
-      }
+      $cleanup(() => {
+        dropF?.(f);
+        if (chain.b != null) {
+          dropB?.($someValue(chain.b));
+        }
+      });
       throw error;
     }
     acc = result;
@@ -7265,10 +7929,16 @@ export function chainIterator_fold(
           dropF?.(f);
         },
       );
-    } finally {
-      if (!$took(BIterator.fold, iter)) {
-        dropB?.(iter);
-      }
+    } catch (error) {
+      $cleanup(() => {
+        if (!$took(BIterator.fold, iter)) {
+          dropB?.(iter);
+        }
+      });
+      throw error;
+    }
+    if (!$took(BIterator.fold, iter)) {
+      dropB?.(iter);
     }
     const value = result;
     acc = value;
@@ -7278,11 +7948,13 @@ export function chainIterator_fold(
   try {
     dropF?.(f);
   } catch (error) {
-    if (chain.b != null) {
-      if (tmp) {
-        dropB?.($someValue(chain.b));
+    $cleanup(() => {
+      if (chain.b != null) {
+        if (tmp) {
+          dropB?.($someValue(chain.b));
+        }
       }
-    }
+    });
     throw error;
   }
   return result;
@@ -7312,15 +7984,21 @@ export function chainIterator_tryFold(
         $tryFoldInto($given(a, AIterator, true), acc, (a, b) => f(a, b), RTry, dropAcc),
       );
     } catch (error) {
-      dropF?.(f);
+      $cleanup(() => {
+        dropF?.(f);
+      });
       throw error;
     }
     if (tmp.TAG !== "Continue") {
       try {
         result = RTry.FromResidual().fromResidual(tmp._0);
-      } finally {
-        dropF?.(f);
+      } catch (error) {
+        $cleanup(() => {
+          dropF?.(f);
+        });
+        throw error;
       }
+      dropF?.(f);
       return result;
     }
     acc = tmp._0;
@@ -7329,9 +8007,11 @@ export function chainIterator_tryFold(
         dropA?.($someValue(chain.a));
       }
     } catch (error) {
-      chain.a = undefined;
-      dropF?.(f);
-      dropAcc?.(acc);
+      $cleanup(() => {
+        chain.a = undefined;
+        dropF?.(f);
+        dropAcc?.(acc);
+      });
       throw error;
     }
     chain.a = undefined;
@@ -7359,9 +8039,11 @@ export function chainIterator_tryFold(
   try {
     result = RTry.fromOutput(acc);
   } catch (error) {
-    if (tmp) {
-      dropF?.(f);
-    }
+    $cleanup(() => {
+      if (tmp) {
+        dropF?.(f);
+      }
+    });
     throw error;
   }
   dropF?.(f);
@@ -7452,16 +8134,24 @@ export function chainIterator_last(
     try {
       try {
         result = $lastDropping($given(iter, AIterator, true), dropAItem, true);
-      } finally {
-        if (!$took(AIterator.fold, iter) && !$took(AIterator.last, iter)) {
-          dropA?.(iter);
-        }
+      } catch (error) {
+        $cleanup(() => {
+          if (!$took(AIterator.fold, iter) && !$took(AIterator.last, iter)) {
+            dropA?.(iter);
+          }
+        });
+        throw error;
+      }
+      if (!$took(AIterator.fold, iter) && !$took(AIterator.last, iter)) {
+        dropA?.(iter);
       }
       aLast = result;
     } catch (error) {
-      if (chain.b != null) {
-        dropB?.($someValue(chain.b));
-      }
+      $cleanup(() => {
+        if (chain.b != null) {
+          dropB?.($someValue(chain.b));
+        }
+      });
       throw error;
     }
   } else {
@@ -7475,16 +8165,24 @@ export function chainIterator_last(
     try {
       try {
         result = $lastDropping($given(iter, BIterator, true), dropAItem, true);
-      } finally {
-        if (!$took(BIterator.fold, iter) && !$took(BIterator.last, iter)) {
-          dropB?.(iter);
-        }
+      } catch (error) {
+        $cleanup(() => {
+          if (!$took(BIterator.fold, iter) && !$took(BIterator.last, iter)) {
+            dropB?.(iter);
+          }
+        });
+        throw error;
+      }
+      if (!$took(BIterator.fold, iter) && !$took(BIterator.last, iter)) {
+        dropB?.(iter);
       }
       bLast = result;
     } catch (error) {
-      if (aLast != null) {
-        dropAItem?.($someValue(aLast));
-      }
+      $cleanup(() => {
+        if (aLast != null) {
+          dropAItem?.($someValue(aLast));
+        }
+      });
       throw error;
     }
   } else {
@@ -7595,16 +8293,24 @@ export function chainDoubleEndedIterator_rfold(
     try {
       try {
         result = $foldBack($given(iter, BIterator, true, BDoubleEndedIterator), acc, f, dropAcc);
-      } finally {
-        if (!$took(BDoubleEndedIterator.rfold, iter)) {
-          dropB?.(iter);
-        }
+      } catch (error) {
+        $cleanup(() => {
+          if (!$took(BDoubleEndedIterator.rfold, iter)) {
+            dropB?.(iter);
+          }
+        });
+        throw error;
+      }
+      if (!$took(BDoubleEndedIterator.rfold, iter)) {
+        dropB?.(iter);
       }
     } catch (error) {
-      dropF?.(f);
-      if (chain.a != null) {
-        dropA?.($someValue(chain.a));
-      }
+      $cleanup(() => {
+        dropF?.(f);
+        if (chain.a != null) {
+          dropA?.($someValue(chain.a));
+        }
+      });
       throw error;
     }
     acc = result;
@@ -7624,10 +8330,16 @@ export function chainDoubleEndedIterator_rfold(
           dropF?.(f);
         },
       );
-    } finally {
-      if (!$took(ADoubleEndedIterator.rfold, iter)) {
-        dropA?.(iter);
-      }
+    } catch (error) {
+      $cleanup(() => {
+        if (!$took(ADoubleEndedIterator.rfold, iter)) {
+          dropA?.(iter);
+        }
+      });
+      throw error;
+    }
+    if (!$took(ADoubleEndedIterator.rfold, iter)) {
+      dropA?.(iter);
     }
     const value = result;
     acc = value;
@@ -7637,11 +8349,13 @@ export function chainDoubleEndedIterator_rfold(
   try {
     dropF?.(f);
   } catch (error) {
-    if (chain.a != null) {
-      if (tmp) {
-        dropA?.($someValue(chain.a));
+    $cleanup(() => {
+      if (chain.a != null) {
+        if (tmp) {
+          dropA?.($someValue(chain.a));
+        }
       }
-    }
+    });
     throw error;
   }
   return result;
@@ -7679,15 +8393,21 @@ export function chainDoubleEndedIterator_tryRfold(
         ),
       );
     } catch (error) {
-      dropF?.(f);
+      $cleanup(() => {
+        dropF?.(f);
+      });
       throw error;
     }
     if (tmp.TAG !== "Continue") {
       try {
         result = RTry.FromResidual().fromResidual(tmp._0);
-      } finally {
-        dropF?.(f);
+      } catch (error) {
+        $cleanup(() => {
+          dropF?.(f);
+        });
+        throw error;
       }
+      dropF?.(f);
       return result;
     }
     acc = tmp._0;
@@ -7696,9 +8416,11 @@ export function chainDoubleEndedIterator_tryRfold(
         dropB?.($someValue(chain.b));
       }
     } catch (error) {
-      chain.b = undefined;
-      dropF?.(f);
-      dropAcc?.(acc);
+      $cleanup(() => {
+        chain.b = undefined;
+        dropF?.(f);
+        dropAcc?.(acc);
+      });
       throw error;
     }
     chain.b = undefined;
@@ -7726,9 +8448,11 @@ export function chainDoubleEndedIterator_tryRfold(
   try {
     result = RTry.fromOutput(acc);
   } catch (error) {
-    if (tmp) {
-      dropF?.(f);
-    }
+    $cleanup(() => {
+      if (tmp) {
+        dropF?.(f);
+      }
+    });
     throw error;
   }
   dropF?.(f);
@@ -8081,11 +8805,17 @@ export function iterator_peekable(self, SelfIterator = { next: $next }, dropSelf
       close(iterator) {
         try {
           dropSelf?.(iterator.iter);
-        } finally {
+        } catch (error) {
           if (iterator.peeked != null) {
             if ($someValue(iterator.peeked) != null) {
               dropSelfItem?.($someValue($someValue(iterator.peeked)));
             }
+          }
+          throw error;
+        }
+        if (iterator.peeked != null) {
+          if ($someValue(iterator.peeked) != null) {
+            dropSelfItem?.($someValue($someValue(iterator.peeked)));
           }
         }
       },
@@ -8328,9 +9058,11 @@ export function iterator_map(
       close(iterator) {
         try {
           dropSelf?.(iterator.iter);
-        } finally {
+        } catch (error) {
           dropF?.(iterator.f);
+          throw error;
         }
+        dropF?.(iterator.f);
       },
     },
   );
@@ -8388,9 +9120,11 @@ export function iterator_filter(
       close(iterator) {
         try {
           dropSelf?.(iterator.iter);
-        } finally {
+        } catch (error) {
           dropP?.(iterator.predicate);
+          throw error;
         }
+        dropP?.(iterator.predicate);
       },
     },
   );
@@ -8546,9 +9280,11 @@ export function iterator_filterMap(
       close(iterator) {
         try {
           dropSelf?.(iterator.iter);
-        } finally {
+        } catch (error) {
           dropF?.(iterator.f);
+          throw error;
         }
+        dropF?.(iterator.f);
       },
     },
   );
@@ -8603,9 +9339,11 @@ export function iterator_takeWhile(
       close(iterator) {
         try {
           dropSelf?.(iterator.iter);
-        } finally {
+        } catch (error) {
           dropP?.(iterator.predicate);
+          throw error;
         }
+        dropP?.(iterator.predicate);
       },
     },
   );
@@ -8660,9 +9398,11 @@ export function iterator_skipWhile(
       close(iterator) {
         try {
           dropSelf?.(iterator.iter);
-        } finally {
+        } catch (error) {
           dropP?.(iterator.predicate);
+          throw error;
         }
+        dropP?.(iterator.predicate);
       },
     },
   );
@@ -8727,9 +9467,11 @@ export function iterator_mapWhile(
       close(iterator) {
         try {
           dropSelf?.(iterator.iter);
-        } finally {
+        } catch (error) {
           dropP?.(iterator.predicate);
+          throw error;
         }
+        dropP?.(iterator.predicate);
       },
     },
   );
@@ -8807,13 +9549,23 @@ export function iterator_scan(
       close(iterator) {
         try {
           dropSelf?.(iterator.iter);
-        } finally {
+        } catch (error) {
           try {
             dropF?.(iterator.f);
-          } finally {
+          } catch (error) {
             dropSt?.(iterator.state);
+            throw error;
           }
+          dropSt?.(iterator.state);
+          throw error;
         }
+        try {
+          dropF?.(iterator.f);
+        } catch (error) {
+          dropSt?.(iterator.state);
+          throw error;
+        }
+        dropSt?.(iterator.state);
       },
     },
   );
@@ -8868,9 +9620,11 @@ export function iterator_inspect(
       close(iterator) {
         try {
           dropSelf?.(iterator.iter);
-        } finally {
+        } catch (error) {
           dropF?.(iterator.f);
+          throw error;
         }
+        dropF?.(iterator.f);
       },
     },
   );
@@ -8986,16 +9740,34 @@ export function iterator_flatten(
       close(iterator) {
         try {
           iterator.inner.iter.return();
-        } finally {
+        } catch (error) {
           try {
             if (iterator.inner.frontiter != null) {
               dropSelfItemIntoIter?.($someValue(iterator.inner.frontiter));
             }
-          } finally {
+          } catch (error) {
             if (iterator.inner.backiter != null) {
               dropSelfItemIntoIter?.($someValue(iterator.inner.backiter));
             }
+            throw error;
           }
+          if (iterator.inner.backiter != null) {
+            dropSelfItemIntoIter?.($someValue(iterator.inner.backiter));
+          }
+          throw error;
+        }
+        try {
+          if (iterator.inner.frontiter != null) {
+            dropSelfItemIntoIter?.($someValue(iterator.inner.frontiter));
+          }
+        } catch (error) {
+          if (iterator.inner.backiter != null) {
+            dropSelfItemIntoIter?.($someValue(iterator.inner.backiter));
+          }
+          throw error;
+        }
+        if (iterator.inner.backiter != null) {
+          dropSelfItemIntoIter?.($someValue(iterator.inner.backiter));
         }
       },
     },
@@ -9225,16 +9997,34 @@ export function iterator_flatMap(
       close(iterator) {
         try {
           iterator.inner.iter.return();
-        } finally {
+        } catch (error) {
           try {
             if (iterator.inner.frontiter != null) {
               dropUIntoIter?.($someValue(iterator.inner.frontiter));
             }
-          } finally {
+          } catch (error) {
             if (iterator.inner.backiter != null) {
               dropUIntoIter?.($someValue(iterator.inner.backiter));
             }
+            throw error;
           }
+          if (iterator.inner.backiter != null) {
+            dropUIntoIter?.($someValue(iterator.inner.backiter));
+          }
+          throw error;
+        }
+        try {
+          if (iterator.inner.frontiter != null) {
+            dropUIntoIter?.($someValue(iterator.inner.frontiter));
+          }
+        } catch (error) {
+          if (iterator.inner.backiter != null) {
+            dropUIntoIter?.($someValue(iterator.inner.backiter));
+          }
+          throw error;
+        }
+        if (iterator.inner.backiter != null) {
+          dropUIntoIter?.($someValue(iterator.inner.backiter));
         }
       },
     },
@@ -9416,7 +10206,9 @@ export function iterator_chain(
     tmp = UIntoIterator.intoIter(other);
     tmp$1 = $some(self);
   } catch (error) {
-    dropSelf?.(self);
+    $cleanup(() => {
+      dropSelf?.(self);
+    });
     throw error;
   }
   let result;
@@ -9522,16 +10314,22 @@ export function iterator_chain(
             if (iterator.a != null) {
               dropSelf?.($someValue(iterator.a));
             }
-          } finally {
+          } catch (error) {
             if (iterator.b != null) {
               dropUIntoIter?.($someValue(iterator.b));
             }
+            throw error;
+          }
+          if (iterator.b != null) {
+            dropUIntoIter?.($someValue(iterator.b));
           }
         },
       },
     );
   } catch (error) {
-    dropSelf?.(self);
+    $cleanup(() => {
+      dropSelf?.(self);
+    });
     throw error;
   }
   return result;
@@ -9560,9 +10358,11 @@ export function iterator_zip(
     tmp = UIntoIterator.intoIter(other);
     tmp$1 = false;
   } catch (error) {
-    if (tmp$1) {
-      dropSelf?.(self);
-    }
+    $cleanup(() => {
+      if (tmp$1) {
+        dropSelf?.(self);
+      }
+    });
     throw error;
   }
   return SelfRandomAccess && UIntoIterRandomAccess
@@ -9676,8 +10476,10 @@ export function fuseFuseImplI_tryRfold(
           dropI?.($someValue(fuse.iter));
         }
       } catch (error) {
-        fuse.iter = undefined;
-        dropAcc?.(acc);
+        $cleanup(() => {
+          fuse.iter = undefined;
+          dropAcc?.(acc);
+        });
         throw error;
       }
       fuse.iter = undefined;
@@ -9687,9 +10489,11 @@ export function fuseFuseImplI_tryRfold(
     try {
       result = RTry.FromResidual().fromResidual(value$1._0);
     } catch (error) {
-      if (tmp) {
-        dropAcc?.(acc);
-      }
+      $cleanup(() => {
+        if (tmp) {
+          dropAcc?.(acc);
+        }
+      });
       throw error;
     }
     return result;
@@ -9698,9 +10502,11 @@ export function fuseFuseImplI_tryRfold(
   try {
     result = RTry.fromOutput(acc);
   } catch (error) {
-    if (tmp$1) {
-      dropFold?.(fold);
-    }
+    $cleanup(() => {
+      if (tmp$1) {
+        dropFold?.(fold);
+      }
+    });
     throw error;
   }
   dropFold?.(fold);
@@ -9745,9 +10551,11 @@ export function fuseFuseImplIFusedIterator_tryRfold(
   try {
     result = RTry.fromOutput(_2);
   } catch (error) {
-    if (tmp) {
-      dropFold?.(fold);
-    }
+    $cleanup(() => {
+      if (tmp) {
+        dropFold?.(fold);
+      }
+    });
     throw error;
   }
   dropFold?.(fold);
@@ -9763,10 +10571,12 @@ export function andThenOrClear(opt, f, dropT, dropU, dropFnOnce) {
           dropT?.($someValue(opt.value));
         }
       } catch (error) {
-        opt.value = undefined;
-        if (x != null) {
-          dropU?.($someValue(x));
-        }
+        $cleanup(() => {
+          opt.value = undefined;
+          if (x != null) {
+            dropU?.($someValue(x));
+          }
+        });
         throw error;
       }
       opt.value = undefined;
@@ -9850,14 +10660,30 @@ export function flattenCompatIUIterator2_next(
     }
     const inner = $someValue(value);
     const value$1 = $held(IItemIntoIterator.intoIter(inner));
+    let item;
     try {
-      const item = UIterator.next(value$1);
-      if (item != null) {
-        return item;
-      }
-    } finally {
-      dropU?.(value$1);
+      item = UIterator.next(value$1);
+    } catch (error) {
+      $cleanup(() => {
+        dropU?.(value$1);
+      });
+      throw error;
     }
+    if (item != null) {
+      dropU?.(value$1);
+      return item;
+    }
+    try {
+      if (item != null) {
+        dropUItem?.($someValue(item));
+      }
+    } catch (error) {
+      $cleanup(() => {
+        dropU?.(value$1);
+      });
+      throw error;
+    }
+    dropU?.(value$1);
   }
 }
 
@@ -9998,13 +10824,21 @@ export function flattenCompatIUIterator_fold(
     init,
     $dropping(
       (acc, iter) => {
+        let result;
         try {
-          return $foldDropping($given(iter, UIterator, true), acc, (a, b) => fold(a, b), dropAcc);
-        } finally {
-          if (!$took(UIterator.fold, iter)) {
-            dropU?.(iter);
-          }
+          result = $foldDropping($given(iter, UIterator, true), acc, (a, b) => fold(a, b), dropAcc);
+        } catch (error) {
+          $cleanup(() => {
+            if (!$took(UIterator.fold, iter)) {
+              dropU?.(iter);
+            }
+          });
+          throw error;
         }
+        if (!$took(UIterator.fold, iter)) {
+          dropU?.(iter);
+        }
+        return result;
       },
       () => {
         dropFold?.(fold);
@@ -10042,15 +10876,19 @@ export function flattenCompatIUIterator2_fold(
       try {
         tmp = $held(IItemIntoIterator.intoIter(inner));
       } catch (error) {
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropAcc?.(acc);
+        });
         throw error;
       }
       let next;
       try {
         next = IItemIntoIterator.IntoIterIterator().next(tmp);
       } catch (error) {
-        dropU?.(tmp);
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropU?.(tmp);
+          dropAcc?.(acc);
+        });
         throw error;
       }
       let result$1;
@@ -10060,7 +10898,9 @@ export function flattenCompatIUIterator2_fold(
         try {
           result$1 = fold(acc, item);
         } catch (error) {
-          dropU?.(tmp);
+          $cleanup(() => {
+            dropU?.(tmp);
+          });
           throw error;
         }
       } else {
@@ -10070,9 +10910,11 @@ export function flattenCompatIUIterator2_fold(
       try {
         dropU?.(tmp);
       } catch (error) {
-        if (tmp$1) {
-          dropAcc?.(acc);
-        }
+        $cleanup(() => {
+          if (tmp$1) {
+            dropAcc?.(acc);
+          }
+        });
         throw error;
       }
       return result$1;
@@ -10082,36 +10924,70 @@ export function flattenCompatIUIterator2_fold(
     },
   );
   let result;
-  try {
+  if (value$1.iter != null) {
+    const iter = $someValue(value$1.iter);
+    let result$1;
+    let value;
     try {
-      if (value$1.iter != null) {
-        const iter = $someValue(value$1.iter);
-        let result$1;
-        try {
-          result$1 = $consume($given(iter, IIterator, true), "fold", init, value$2, dropAcc, () => {
-            $dispose(value$2);
-          });
-        } finally {
+      try {
+        result$1 = $consume($given(iter, IIterator, true), "fold", init, value$2, dropAcc, () => {
+          $dispose(value$2);
+        });
+      } catch (error) {
+        $cleanup(() => {
           if (!$took(IIterator.fold, iter)) {
             dropI?.(iter);
           }
+        });
+        throw error;
+      }
+      if (!$took(IIterator.fold, iter)) {
+        dropI?.(iter);
+      }
+      value = result$1;
+    } catch (error) {
+      $cleanup(() => {
+        if (flattenCompat.frontiter != null) {
+          dropU?.($someValue(flattenCompat.frontiter));
         }
-        const value = result$1;
-        init = value;
-        result = init;
-      } else {
-        result = init;
-        $dispose(value$2);
-      }
-    } finally {
-      if (flattenCompat.frontiter != null) {
-        dropU?.($someValue(flattenCompat.frontiter));
-      }
+        if (flattenCompat.backiter != null) {
+          dropU?.($someValue(flattenCompat.backiter));
+        }
+      });
+      throw error;
     }
-  } finally {
-    if (flattenCompat.backiter != null) {
-      dropU?.($someValue(flattenCompat.backiter));
+    init = value;
+    result = init;
+  } else {
+    result = init;
+    try {
+      $dispose(value$2);
+    } catch (error) {
+      $cleanup(() => {
+        if (flattenCompat.frontiter != null) {
+          dropU?.($someValue(flattenCompat.frontiter));
+        }
+        if (flattenCompat.backiter != null) {
+          dropU?.($someValue(flattenCompat.backiter));
+        }
+      });
+      throw error;
     }
+  }
+  try {
+    if (flattenCompat.frontiter != null) {
+      dropU?.($someValue(flattenCompat.frontiter));
+    }
+  } catch (error) {
+    $cleanup(() => {
+      if (flattenCompat.backiter != null) {
+        dropU?.($someValue(flattenCompat.backiter));
+      }
+    });
+    throw error;
+  }
+  if (flattenCompat.backiter != null) {
+    dropU?.($someValue(flattenCompat.backiter));
   }
   return result;
 }
@@ -10184,15 +11060,19 @@ export function flattenCompatIUIterator2_tryFold(
             try {
               tmp = $held(IItemIntoIterator.intoIter(inner));
             } catch (error) {
-              dropAcc?.(acc);
+              $cleanup(() => {
+                dropAcc?.(acc);
+              });
               throw error;
             }
             let next;
             try {
               next = IItemIntoIterator.IntoIterIterator().next(tmp);
             } catch (error) {
-              dropU?.(tmp);
-              dropAcc?.(acc);
+              $cleanup(() => {
+                dropU?.(tmp);
+                dropAcc?.(acc);
+              });
               throw error;
             }
             let result;
@@ -10202,7 +11082,9 @@ export function flattenCompatIUIterator2_tryFold(
               try {
                 result = fold(acc, item);
               } catch (error) {
-                dropU?.(tmp);
+                $cleanup(() => {
+                  dropU?.(tmp);
+                });
                 throw error;
               }
             } else {
@@ -10210,16 +11092,20 @@ export function flattenCompatIUIterator2_tryFold(
               try {
                 result = RTry.fromOutput(acc);
               } catch (error) {
-                dropU?.(tmp);
+                $cleanup(() => {
+                  dropU?.(tmp);
+                });
                 throw error;
               }
             }
             try {
               dropU?.(tmp);
             } catch (error) {
-              if (tmp$1) {
-                dropAcc?.(acc);
-              }
+              $cleanup(() => {
+                if (tmp$1) {
+                  dropAcc?.(acc);
+                }
+              });
               throw error;
             }
             return result;
@@ -10246,15 +11132,19 @@ export function flattenCompatIUIterator2_tryFold(
             try {
               tmp = $held(IItemIntoIterator.intoIter(inner));
             } catch (error) {
-              dropAcc?.(acc);
+              $cleanup(() => {
+                dropAcc?.(acc);
+              });
               throw error;
             }
             let next;
             try {
               next = IItemIntoIterator.IntoIterIterator().next(tmp);
             } catch (error) {
-              dropU?.(tmp);
-              dropAcc?.(acc);
+              $cleanup(() => {
+                dropU?.(tmp);
+                dropAcc?.(acc);
+              });
               throw error;
             }
             let result;
@@ -10264,7 +11154,9 @@ export function flattenCompatIUIterator2_tryFold(
               try {
                 result = fold(acc, item);
               } catch (error) {
-                dropU?.(tmp);
+                $cleanup(() => {
+                  dropU?.(tmp);
+                });
                 throw error;
               }
             } else {
@@ -10272,16 +11164,20 @@ export function flattenCompatIUIterator2_tryFold(
               try {
                 result = RTry.fromOutput(acc);
               } catch (error) {
-                dropU?.(tmp);
+                $cleanup(() => {
+                  dropU?.(tmp);
+                });
                 throw error;
               }
             }
             try {
               dropU?.(tmp);
             } catch (error) {
-              if (tmp$1) {
-                dropAcc?.(acc);
-              }
+              $cleanup(() => {
+                if (tmp$1) {
+                  dropAcc?.(acc);
+                }
+              });
               throw error;
             }
             return result;
@@ -10346,63 +11242,86 @@ export function flattenCompatIUIterator2_last(
 ) {
   const value = flattenCompat.iter.iter;
   let result;
-  try {
+  if (value != null) {
+    const captured = (x) =>
+      intoItem(
+        $given(IItemIntoIterator.intoIter(x), IItemIntoIterator.IntoIterIterator(), true),
+        dropIItem,
+        dropUItem,
+        dropU,
+      );
+    const captured$1 = (arg0, arg1) => iterator_last_some(arg0, arg1, dropUItem);
+    const iter = $someValue(value);
+    let result$1;
     try {
-      if (value != null) {
-        const captured = (x) =>
-          intoItem(
-            $given(IItemIntoIterator.intoIter(x), IItemIntoIterator.IntoIterIterator(), true),
-            dropIItem,
-            dropUItem,
-            dropU,
-          );
-        const captured$1 = (arg0, arg1) => iterator_last_some(arg0, arg1, dropUItem);
-        const iter = $someValue(value);
-        let result$1;
-        try {
-          result$1 = $consume(
-            $given(iter, IIterator, true),
-            "fold",
-            result,
-            (acc, item) => {
-              let tmp;
-              try {
-                tmp = captured(item);
-              } catch (error) {
+      try {
+        result$1 = $consume(
+          $given(iter, IIterator, true),
+          "fold",
+          result,
+          (acc, item) => {
+            let tmp;
+            try {
+              tmp = captured(item);
+            } catch (error) {
+              $cleanup(() => {
                 if (acc != null) {
                   dropUItem?.($someValue(acc));
                 }
-                throw error;
-              }
-              if (tmp != null) {
-                const x = $someValue(tmp);
-                return captured$1(acc, x);
-              }
-              return acc;
-            },
-            (option) => {
-              if (option != null) {
-                dropUItem?.($someValue(option));
-              }
-            },
-            () => {},
-          );
-        } finally {
+              });
+              throw error;
+            }
+            if (tmp != null) {
+              const x = $someValue(tmp);
+              return captured$1(acc, x);
+            }
+            return acc;
+          },
+          (option) => {
+            if (option != null) {
+              dropUItem?.($someValue(option));
+            }
+          },
+          () => {},
+        );
+      } catch (error) {
+        $cleanup(() => {
           if (!$took(IIterator.fold, iter)) {
             dropI?.(iter);
           }
+        });
+        throw error;
+      }
+      if (!$took(IIterator.fold, iter)) {
+        dropI?.(iter);
+      }
+    } catch (error) {
+      $cleanup(() => {
+        if (flattenCompat.frontiter != null) {
+          dropU?.($someValue(flattenCompat.frontiter));
         }
-        result = result$1;
-      }
-    } finally {
-      if (flattenCompat.frontiter != null) {
-        dropU?.($someValue(flattenCompat.frontiter));
-      }
+        if (flattenCompat.backiter != null) {
+          dropU?.($someValue(flattenCompat.backiter));
+        }
+      });
+      throw error;
     }
-  } finally {
-    if (flattenCompat.backiter != null) {
-      dropU?.($someValue(flattenCompat.backiter));
+    result = result$1;
+  }
+  try {
+    if (flattenCompat.frontiter != null) {
+      dropU?.($someValue(flattenCompat.frontiter));
     }
+  } catch (error) {
+    $cleanup(() => {
+      if (flattenCompat.backiter != null) {
+        dropU?.($someValue(flattenCompat.backiter));
+      }
+    });
+    throw error;
+  }
+  if (flattenCompat.backiter != null) {
+    dropU?.($someValue(flattenCompat.backiter));
   }
   return result;
 }
@@ -10449,55 +11368,76 @@ export function flattenCompatIUIterator2_count(
 ) {
   const value = flattenCompat.iter.iter;
   let result = 0;
-  try {
+  if (value != null) {
+    const captured = (x) =>
+      intoItem(
+        $given(IItemIntoIterator.intoIter(x), IItemIntoIterator.IntoIterIterator(), true),
+        dropIItem,
+        dropUItem,
+        dropU,
+      );
+    function captured$1(accum, elem) {
+      const result$1 = (accum + 1) >>> 0;
+      dropUItem?.(elem);
+      return result$1;
+    }
+    const iter = $someValue(value);
+    let result$1;
     try {
-      if (value != null) {
-        const captured = (x) =>
-          intoItem(
-            $given(IItemIntoIterator.intoIter(x), IItemIntoIterator.IntoIterIterator(), true),
-            dropIItem,
-            dropUItem,
-            dropU,
-          );
-        function captured$1(accum, elem) {
-          const result$1 = (accum + 1) >>> 0;
-          dropUItem?.(elem);
-          return result$1;
-        }
-        const iter = $someValue(value);
-        let result$1;
-        try {
-          result$1 = $consume(
-            $given(iter, IIterator, true),
-            "fold",
-            result,
-            (acc, item) => {
-              const value = captured(item);
-              if (value != null) {
-                const x = $someValue(value);
-                return captured$1(acc, x);
-              }
-              return acc;
-            },
-            undefined,
-            () => {},
-          );
-        } finally {
+      try {
+        result$1 = $consume(
+          $given(iter, IIterator, true),
+          "fold",
+          result,
+          (acc, item) => {
+            const value = captured(item);
+            if (value != null) {
+              const x = $someValue(value);
+              return captured$1(acc, x);
+            }
+            return acc;
+          },
+          undefined,
+          () => {},
+        );
+      } catch (error) {
+        $cleanup(() => {
           if (!$took(IIterator.fold, iter)) {
             dropI?.(iter);
           }
+        });
+        throw error;
+      }
+      if (!$took(IIterator.fold, iter)) {
+        dropI?.(iter);
+      }
+    } catch (error) {
+      $cleanup(() => {
+        if (flattenCompat.frontiter != null) {
+          dropU?.($someValue(flattenCompat.frontiter));
         }
-        result = result$1;
-      }
-    } finally {
-      if (flattenCompat.frontiter != null) {
-        dropU?.($someValue(flattenCompat.frontiter));
-      }
+        if (flattenCompat.backiter != null) {
+          dropU?.($someValue(flattenCompat.backiter));
+        }
+      });
+      throw error;
     }
-  } finally {
-    if (flattenCompat.backiter != null) {
-      dropU?.($someValue(flattenCompat.backiter));
+    result = result$1;
+  }
+  try {
+    if (flattenCompat.frontiter != null) {
+      dropU?.($someValue(flattenCompat.frontiter));
     }
+  } catch (error) {
+    $cleanup(() => {
+      if (flattenCompat.backiter != null) {
+        dropU?.($someValue(flattenCompat.backiter));
+      }
+    });
+    throw error;
+  }
+  if (flattenCompat.backiter != null) {
+    dropU?.($someValue(flattenCompat.backiter));
   }
   return result;
 }
@@ -10592,14 +11532,30 @@ export function flattenCompatIUDoubleEndedIterator2_nextBack(
     }
     const inner = $someValue(value);
     const value$1 = $held(IItemIntoIterator.intoIter(inner));
+    let item;
     try {
-      const item = UIterator.next(value$1);
-      if (item != null) {
-        return item;
-      }
-    } finally {
-      dropU?.(value$1);
+      item = UIterator.next(value$1);
+    } catch (error) {
+      $cleanup(() => {
+        dropU?.(value$1);
+      });
+      throw error;
     }
+    if (item != null) {
+      dropU?.(value$1);
+      return item;
+    }
+    try {
+      if (item != null) {
+        dropUItem?.($someValue(item));
+      }
+    } catch (error) {
+      $cleanup(() => {
+        dropU?.(value$1);
+      });
+      throw error;
+    }
+    dropU?.(value$1);
   }
 }
 
@@ -10624,13 +11580,26 @@ export function flattenCompatIUDoubleEndedIterator_rfold(
     init,
     $dropping(
       (acc, iter) => {
+        let result;
         try {
-          return $foldBack($given(iter, UIterator, true, UDoubleEndedIterator), acc, fold, dropAcc);
-        } finally {
-          if (!$took(UDoubleEndedIterator.rfold, iter)) {
-            dropU?.(iter);
-          }
+          result = $foldBack(
+            $given(iter, UIterator, true, UDoubleEndedIterator),
+            acc,
+            fold,
+            dropAcc,
+          );
+        } catch (error) {
+          $cleanup(() => {
+            if (!$took(UDoubleEndedIterator.rfold, iter)) {
+              dropU?.(iter);
+            }
+          });
+          throw error;
         }
+        if (!$took(UDoubleEndedIterator.rfold, iter)) {
+          dropU?.(iter);
+        }
+        return result;
       },
       () => {
         dropFold?.(fold);
@@ -10670,15 +11639,19 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
       try {
         tmp = $held(IItemIntoIterator.intoIter(inner));
       } catch (error) {
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropAcc?.(acc);
+        });
         throw error;
       }
       let next;
       try {
         next = IItemIntoIterator.IntoIterIterator().next(tmp);
       } catch (error) {
-        dropU?.(tmp);
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropU?.(tmp);
+          dropAcc?.(acc);
+        });
         throw error;
       }
       let result$1;
@@ -10688,7 +11661,9 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
         try {
           result$1 = fold(acc, item);
         } catch (error) {
-          dropU?.(tmp);
+          $cleanup(() => {
+            dropU?.(tmp);
+          });
           throw error;
         }
       } else {
@@ -10698,9 +11673,11 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
       try {
         dropU?.(tmp);
       } catch (error) {
-        if (tmp$1) {
-          dropAcc?.(acc);
-        }
+        $cleanup(() => {
+          if (tmp$1) {
+            dropAcc?.(acc);
+          }
+        });
         throw error;
       }
       return result$1;
@@ -10710,43 +11687,77 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
     },
   );
   let result;
-  try {
+  if (value$1.iter != null) {
+    const iter = $someValue(value$1.iter);
+    let result$1;
+    let value;
     try {
-      if (value$1.iter != null) {
-        const iter = $someValue(value$1.iter);
-        let result$1;
-        try {
-          result$1 = $consume(
-            $given(iter, IIterator, true, IDoubleEndedIterator),
-            "rfold",
-            init,
-            value$2,
-            dropAcc,
-            () => {
-              $dispose(value$2);
-            },
-          );
-        } finally {
+      try {
+        result$1 = $consume(
+          $given(iter, IIterator, true, IDoubleEndedIterator),
+          "rfold",
+          init,
+          value$2,
+          dropAcc,
+          () => {
+            $dispose(value$2);
+          },
+        );
+      } catch (error) {
+        $cleanup(() => {
           if (!$took(IDoubleEndedIterator.rfold, iter)) {
             dropI?.(iter);
           }
+        });
+        throw error;
+      }
+      if (!$took(IDoubleEndedIterator.rfold, iter)) {
+        dropI?.(iter);
+      }
+      value = result$1;
+    } catch (error) {
+      $cleanup(() => {
+        if (flattenCompat.frontiter != null) {
+          dropU?.($someValue(flattenCompat.frontiter));
         }
-        const value = result$1;
-        init = value;
-        result = init;
-      } else {
-        result = init;
-        $dispose(value$2);
-      }
-    } finally {
-      if (flattenCompat.frontiter != null) {
-        dropU?.($someValue(flattenCompat.frontiter));
-      }
+        if (flattenCompat.backiter != null) {
+          dropU?.($someValue(flattenCompat.backiter));
+        }
+      });
+      throw error;
     }
-  } finally {
-    if (flattenCompat.backiter != null) {
-      dropU?.($someValue(flattenCompat.backiter));
+    init = value;
+    result = init;
+  } else {
+    result = init;
+    try {
+      $dispose(value$2);
+    } catch (error) {
+      $cleanup(() => {
+        if (flattenCompat.frontiter != null) {
+          dropU?.($someValue(flattenCompat.frontiter));
+        }
+        if (flattenCompat.backiter != null) {
+          dropU?.($someValue(flattenCompat.backiter));
+        }
+      });
+      throw error;
     }
+  }
+  try {
+    if (flattenCompat.frontiter != null) {
+      dropU?.($someValue(flattenCompat.frontiter));
+    }
+  } catch (error) {
+    $cleanup(() => {
+      if (flattenCompat.backiter != null) {
+        dropU?.($someValue(flattenCompat.backiter));
+      }
+    });
+    throw error;
+  }
+  if (flattenCompat.backiter != null) {
+    dropU?.($someValue(flattenCompat.backiter));
   }
   return result;
 }
@@ -10829,15 +11840,19 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
             try {
               tmp = $held(IItemIntoIterator.intoIter(inner));
             } catch (error) {
-              dropAcc?.(acc);
+              $cleanup(() => {
+                dropAcc?.(acc);
+              });
               throw error;
             }
             let next;
             try {
               next = IItemIntoIterator.IntoIterIterator().next(tmp);
             } catch (error) {
-              dropU?.(tmp);
-              dropAcc?.(acc);
+              $cleanup(() => {
+                dropU?.(tmp);
+                dropAcc?.(acc);
+              });
               throw error;
             }
             let result;
@@ -10847,7 +11862,9 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
               try {
                 result = fold(acc, item);
               } catch (error) {
-                dropU?.(tmp);
+                $cleanup(() => {
+                  dropU?.(tmp);
+                });
                 throw error;
               }
             } else {
@@ -10855,16 +11872,20 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
               try {
                 result = RTry.fromOutput(acc);
               } catch (error) {
-                dropU?.(tmp);
+                $cleanup(() => {
+                  dropU?.(tmp);
+                });
                 throw error;
               }
             }
             try {
               dropU?.(tmp);
             } catch (error) {
-              if (tmp$1) {
-                dropAcc?.(acc);
-              }
+              $cleanup(() => {
+                if (tmp$1) {
+                  dropAcc?.(acc);
+                }
+              });
               throw error;
             }
             return result;
@@ -10892,15 +11913,19 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
             try {
               tmp = $held(IItemIntoIterator.intoIter(inner));
             } catch (error) {
-              dropAcc?.(acc);
+              $cleanup(() => {
+                dropAcc?.(acc);
+              });
               throw error;
             }
             let next;
             try {
               next = IItemIntoIterator.IntoIterIterator().next(tmp);
             } catch (error) {
-              dropU?.(tmp);
-              dropAcc?.(acc);
+              $cleanup(() => {
+                dropU?.(tmp);
+                dropAcc?.(acc);
+              });
               throw error;
             }
             let result;
@@ -10910,7 +11935,9 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
               try {
                 result = fold(acc, item);
               } catch (error) {
-                dropU?.(tmp);
+                $cleanup(() => {
+                  dropU?.(tmp);
+                });
                 throw error;
               }
             } else {
@@ -10918,16 +11945,20 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
               try {
                 result = RTry.fromOutput(acc);
               } catch (error) {
-                dropU?.(tmp);
+                $cleanup(() => {
+                  dropU?.(tmp);
+                });
                 throw error;
               }
             }
             try {
               dropU?.(tmp);
             } catch (error) {
-              if (tmp$1) {
-                dropAcc?.(acc);
-              }
+              $cleanup(() => {
+                if (tmp$1) {
+                  dropAcc?.(acc);
+                }
+              });
               throw error;
             }
             return result;
@@ -10963,8 +11994,9 @@ export function takeSpecTake_specFold(
       dropF?.(f);
     },
   );
+  let value;
   try {
-    const value = $tryFoldInto(
+    value = $tryFoldInto(
       take,
       init,
       (a, b) => value$1(a, b),
@@ -10974,10 +12006,15 @@ export function takeSpecTake_specFold(
         $dispose(value$1);
       },
     );
-    return value;
-  } finally {
-    take.return();
+  } catch (error) {
+    $cleanup(() => {
+      take.return();
+    });
+    throw error;
   }
+  const result = value;
+  take.return();
+  return result;
 }
 
 export function stepByStepByImplI_specNext(stepBy, IIterator = { next: $next }, dropI, dropIItem) {
@@ -11102,26 +12139,34 @@ export function stepByStepByImplI_specFold(
     try {
       next = IIterator.next(stepBy.iter);
     } catch (error) {
-      dropF?.(f);
-      dropAcc?.(acc);
-      stepBy.return();
+      $cleanup(() => {
+        dropF?.(f);
+        dropAcc?.(acc);
+        stepBy.return();
+      });
       throw error;
     }
     if (next == null) {
       result = acc;
       try {
         dropF?.(f);
-      } finally {
-        stepBy.return();
+      } catch (error) {
+        $cleanup(() => {
+          stepBy.return();
+        });
+        throw error;
       }
+      stepBy.return();
       return result;
     }
     const x = $someValue(next);
     try {
       acc = f(acc, x);
     } catch (error) {
-      dropF?.(f);
-      stepBy.return();
+      $cleanup(() => {
+        dropF?.(f);
+        stepBy.return();
+      });
       throw error;
     }
   }
@@ -11131,8 +12176,9 @@ export function stepByStepByImplI_specFold(
     () => $nthDropping($lent($given(captured, IIterator, true)), captured$1, dropIItem, true),
     true,
   );
+  let value;
   try {
-    const value = $consume(
+    value = $consume(
       value$1,
       "fold",
       acc,
@@ -11143,9 +12189,13 @@ export function stepByStepByImplI_specFold(
       },
     );
     result = value;
-  } finally {
-    stepBy.return();
+  } catch (error) {
+    $cleanup(() => {
+      stepBy.return();
+    });
+    throw error;
   }
+  stepBy.return();
   return result;
 }
 
@@ -11169,8 +12219,10 @@ export function stepByStepByImplI_specTryFold(
       try {
         next = IIterator.next(stepBy.iter);
       } catch (error) {
-        dropF?.(f);
-        dropAcc?.(acc);
+        $cleanup(() => {
+          dropF?.(f);
+          dropAcc?.(acc);
+        });
         throw error;
       }
       let result;
@@ -11179,7 +12231,9 @@ export function stepByStepByImplI_specTryFold(
         try {
           result = RTry.fromOutput(acc);
         } catch (error) {
-          dropF?.(f);
+          $cleanup(() => {
+            dropF?.(f);
+          });
           throw error;
         }
       } else {
@@ -11189,7 +12243,9 @@ export function stepByStepByImplI_specTryFold(
         try {
           tmp$1 = RTry.branch(f(acc, x));
         } catch (error) {
-          dropF?.(f);
+          $cleanup(() => {
+            dropF?.(f);
+          });
           throw error;
         }
         if (tmp$1.TAG === "Continue") {
@@ -11199,16 +12255,20 @@ export function stepByStepByImplI_specTryFold(
         try {
           result = RTry.FromResidual().fromResidual(tmp$1._0);
         } catch (error) {
-          dropF?.(f);
+          $cleanup(() => {
+            dropF?.(f);
+          });
           throw error;
         }
       }
       try {
         dropF?.(f);
       } catch (error) {
-        if (tmp) {
-          dropAcc?.(acc);
-        }
+        $cleanup(() => {
+          if (tmp) {
+            dropAcc?.(acc);
+          }
+        });
         throw error;
       }
       return result;
@@ -11301,9 +12361,11 @@ export function stepByStepByBackImplI_specRfold(
       dropIItem,
     );
   } catch (error) {
-    dropF?.(f);
-    dropAcc?.(init);
-    stepBy.return();
+    $cleanup(() => {
+      dropF?.(f);
+      dropAcc?.(init);
+      stepBy.return();
+    });
     throw error;
   }
   let result;
@@ -11312,7 +12374,9 @@ export function stepByStepByBackImplI_specRfold(
     try {
       dropF?.(f);
     } catch (error) {
-      stepBy.return();
+      $cleanup(() => {
+        stepBy.return();
+      });
       throw error;
     }
   } else {
@@ -11321,8 +12385,10 @@ export function stepByStepByBackImplI_specRfold(
     try {
       acc = f(init, x);
     } catch (error) {
-      dropF?.(f);
-      stepBy.return();
+      $cleanup(() => {
+        dropF?.(f);
+        stepBy.return();
+      });
       throw error;
     }
     const captured = stepBy.iter;
@@ -11351,7 +12417,9 @@ export function stepByStepByBackImplI_specRfold(
       );
       result = value;
     } catch (error) {
-      stepBy.return();
+      $cleanup(() => {
+        stepBy.return();
+      });
       throw error;
     }
   }
@@ -11385,17 +12453,23 @@ export function stepByStepByBackImplI_specTryRfold(
       dropIItem,
     );
   } catch (error) {
-    dropF?.(f);
-    dropAcc?.(init);
+    $cleanup(() => {
+      dropF?.(f);
+      dropAcc?.(init);
+    });
     throw error;
   }
   let result;
   if (specNextBack == null) {
     try {
       result = RTry.fromOutput(init);
-    } finally {
-      dropF?.(f);
+    } catch (error) {
+      $cleanup(() => {
+        dropF?.(f);
+      });
+      throw error;
     }
+    dropF?.(f);
     return result;
   }
   const x = $someValue(specNextBack);
@@ -11403,7 +12477,9 @@ export function stepByStepByBackImplI_specTryRfold(
   try {
     tmp = RTry.branch(f(init, x));
   } catch (error) {
-    dropF?.(f);
+    $cleanup(() => {
+      dropF?.(f);
+    });
     throw error;
   }
   if (tmp.TAG === "Continue") {
@@ -11436,9 +12512,11 @@ export function stepByStepByBackImplI_specTryRfold(
   try {
     result = RTry.FromResidual().fromResidual(tmp._0);
   } catch (error) {
-    if (tmp$1) {
-      dropF?.(f);
-    }
+    $cleanup(() => {
+      if (tmp$1) {
+        dropF?.(f);
+      }
+    });
     throw error;
   }
   dropF?.(f);
@@ -11454,10 +12532,12 @@ export function andThenOrClear$1(opt, f, dropT, dropU, dropFnOnce) {
           dropT?.($someValue(opt.value));
         }
       } catch (error) {
-        opt.value = undefined;
-        if (x != null) {
-          dropU?.($someValue(x));
-        }
+        $cleanup(() => {
+          opt.value = undefined;
+          if (x != null) {
+            dropU?.($someValue(x));
+          }
+        });
         throw error;
       }
       opt.value = undefined;
@@ -11485,7 +12565,9 @@ export function zipZipImplAB_next(
     try {
       tmp = BIterator.next(zip.b);
     } catch (error) {
-      dropAItem?.(value$1);
+      $cleanup(() => {
+        dropAItem?.(value$1);
+      });
       throw error;
     }
     if (tmp != null) {
@@ -11514,7 +12596,9 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_next(
     try {
       result = [value, $getUnchecked(zip.b, i, BIterator)];
     } catch (error) {
-      dropAItem?.(value);
+      $cleanup(() => {
+        dropAItem?.(value);
+      });
       throw error;
     }
     return result;
@@ -11537,7 +12621,9 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
     try {
       tmp = BIterator.next(zip.b);
     } catch (error) {
-      dropAItem?.(value$1);
+      $cleanup(() => {
+        dropAItem?.(value$1);
+      });
       throw error;
     }
     if (tmp != null) {
@@ -11798,9 +12884,11 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
           )
     )[0];
   } catch (error) {
-    dropAcc?.(accum);
-    dropF?.(f);
-    zip.return();
+    $cleanup(() => {
+      dropAcc?.(accum);
+      dropF?.(f);
+      zip.return();
+    });
     throw error;
   }
   let iter = 0;
@@ -11809,9 +12897,13 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
       const result = accum;
       try {
         dropF?.(f);
-      } finally {
-        zip.return();
+      } catch (error) {
+        $cleanup(() => {
+          zip.return();
+        });
+        throw error;
       }
+      zip.return();
       return result;
     }
     const i = iter;
@@ -11833,20 +12925,24 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
         );
       tmp = false;
     } catch (error) {
-      if (tmp) {
-        dropAcc?.(value);
-        dropF?.(f);
-      } else {
-        dropF?.(f);
-      }
-      zip.return();
+      $cleanup(() => {
+        if (tmp) {
+          dropAcc?.(value);
+          dropF?.(f);
+        } else {
+          dropF?.(f);
+        }
+        zip.return();
+      });
       throw error;
     }
     try {
       accum = f(value, getUnchecked);
     } catch (error) {
-      dropF?.(f);
-      zip.return();
+      $cleanup(() => {
+        dropF?.(f);
+        zip.return();
+      });
       throw error;
     }
   }
@@ -11899,9 +12995,11 @@ export function zipZipImplAB_nextBack(
   try {
     tmp = [value$2, BDoubleEndedIterator.next_back(zip.b)];
   } catch (error) {
-    if (value$2 != null) {
-      dropAItem?.($someValue(value$2));
-    }
+    $cleanup(() => {
+      if (value$2 != null) {
+        dropAItem?.($someValue(value$2));
+      }
+    });
     throw error;
   }
   if (tmp[0] == null && tmp[1] == null) {
@@ -11913,14 +13011,16 @@ export function zipZipImplAB_nextBack(
   try {
     throw new Error("internal error: entered unreachable code");
   } catch (error) {
-    if (tmp[0] != null) {
-      dropAItem?.($someValue(tmp[0]));
-      if (tmp[1] != null) {
+    $cleanup(() => {
+      if (tmp[0] != null) {
+        dropAItem?.($someValue(tmp[0]));
+        if (tmp[1] != null) {
+          dropBItem?.($someValue(tmp[1]));
+        }
+      } else if (tmp[1] != null) {
         dropBItem?.($someValue(tmp[1]));
       }
-    } else if (tmp[1] != null) {
-      dropBItem?.($someValue(tmp[1]));
-    }
+    });
     throw error;
   }
 }
@@ -11979,7 +13079,9 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_nextBack(
     try {
       result = [value, $getUnchecked(zip.b, i, BIterator)];
     } catch (error) {
-      dropAItem?.(value);
+      $cleanup(() => {
+        dropAItem?.(value);
+      });
       throw error;
     }
     return result;
@@ -12033,9 +13135,11 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
   try {
     tmp = [value$2, BDoubleEndedIterator.next_back(zip.b)];
   } catch (error) {
-    if (value$2 != null) {
-      dropAItem?.($someValue(value$2));
-    }
+    $cleanup(() => {
+      if (value$2 != null) {
+        dropAItem?.($someValue(value$2));
+      }
+    });
     throw error;
   }
   if (tmp[0] == null && tmp[1] == null) {
@@ -12047,14 +13151,16 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
   try {
     throw new Error("internal error: entered unreachable code");
   } catch (error) {
-    if (tmp[0] != null) {
-      dropAItem?.($someValue(tmp[0]));
-      if (tmp[1] != null) {
+    $cleanup(() => {
+      if (tmp[0] != null) {
+        dropAItem?.($someValue(tmp[0]));
+        if (tmp[1] != null) {
+          dropBItem?.($someValue(tmp[1]));
+        }
+      } else if (tmp[1] != null) {
         dropBItem?.($someValue(tmp[1]));
       }
-    } else if (tmp[1] != null) {
-      dropBItem?.($someValue(tmp[1]));
-    }
+    });
     throw error;
   }
 }
@@ -12075,7 +13181,9 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
   try {
     result = [value, $getUnchecked(zip.b, idx, BIterator)];
   } catch (error) {
-    dropAItem?.(value);
+    $cleanup(() => {
+      dropAItem?.(value);
+    });
     throw error;
   }
   return result;
@@ -12171,9 +13279,11 @@ export function zipZipImplAB_new(
       close(iterator) {
         try {
           dropA?.(iterator.a);
-        } finally {
+        } catch (error) {
           dropB?.(iterator.b);
+          throw error;
         }
+        dropB?.(iterator.b);
       },
     },
   );
@@ -12204,8 +13314,10 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_new(
       trustedRandomAccessNoCoerce_size(b, BIterator, dropB, dropBItem),
     );
   } catch (error) {
-    dropB?.(b);
-    dropA?.(a);
+    $cleanup(() => {
+      dropB?.(b);
+      dropA?.(a);
+    });
     throw error;
   }
   return $stdIterator(
@@ -12282,9 +13394,11 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_new(
       close(iterator) {
         try {
           dropA?.(iterator.a);
-        } finally {
+        } catch (error) {
           dropB?.(iterator.b);
+          throw error;
         }
+        dropB?.(iterator.b);
       },
     },
   );
@@ -12380,9 +13494,11 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
       close(iterator) {
         try {
           dropA?.(iterator.a);
-        } finally {
+        } catch (error) {
           dropB?.(iterator.b);
+          throw error;
         }
+        dropB?.(iterator.b);
       },
     },
   );
@@ -12397,10 +13513,12 @@ export function andThenOrClear$2(opt, f, dropT, dropU, dropFnOnce) {
           dropT?.($someValue(opt.value));
         }
       } catch (error) {
-        opt.value = undefined;
-        if (x != null) {
-          dropU?.($someValue(x));
-        }
+        $cleanup(() => {
+          opt.value = undefined;
+          if (x != null) {
+            dropU?.($someValue(x));
+          }
+        });
         throw error;
       }
       opt.value = undefined;
@@ -12417,15 +13535,23 @@ export function flattenCompatIUIterator_last_last(last, iter, dropU, dropUItem) 
   try {
     try {
       result$1 = $lastDropping(Iterator.from(iter), dropUItem, true);
-    } finally {
-      if (!iter.ownFold && !iter.ownLast) {
-        dropU?.(iter);
-      }
+    } catch (error) {
+      $cleanup(() => {
+        if (!iter.ownFold && !iter.ownLast) {
+          dropU?.(iter);
+        }
+      });
+      throw error;
+    }
+    if (!iter.ownFold && !iter.ownLast) {
+      dropU?.(iter);
     }
   } catch (error) {
-    if (last != null) {
-      dropUItem?.($someValue(last));
-    }
+    $cleanup(() => {
+      if (last != null) {
+        dropUItem?.($someValue(last));
+      }
+    });
     throw error;
   }
   const result = result$1 ?? last;
@@ -12439,11 +13565,17 @@ export function flattenCompatIUIterator_last_last(last, iter, dropU, dropUItem) 
 
 export function intoItem(inner, dropI, dropIItem, dropIIntoIter) {
   const value = $held($intoIter(inner));
+  let result;
   try {
-    return $nextSome(value);
-  } finally {
-    dropIIntoIter?.(value);
+    result = $nextSome(value);
+  } catch (error) {
+    $cleanup(() => {
+      dropIIntoIter?.(value);
+    });
+    throw error;
   }
+  dropIIntoIter?.(value);
+  return result;
 }
 
 export function iterator_last_some(_1, x, dropT) {
@@ -12458,10 +13590,16 @@ export function flattenCompatIUIterator_count_count(acc, iter, dropU, dropUItem)
   let result;
   try {
     result = $count(Iterator.from(iter), dropUItem);
-  } finally {
-    if (!iter.ownFold && !iter.ownCount) {
-      dropU?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!iter.ownFold && !iter.ownCount) {
+        dropU?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!iter.ownFold && !iter.ownCount) {
+    dropU?.(iter);
   }
   return (acc + result) >>> 0;
 }
@@ -12511,22 +13649,28 @@ export function zipSpecFold_specFold(
               )
             : zipZipImplAB_next(zip, AIterator, BIterator, dropA, dropB, dropAItem, dropBItem);
     } catch (error) {
-      if (tmp) {
-        dropAcc?.(accum);
-        dropF?.(f);
-      } else {
-        dropF?.(f);
-      }
-      zip.return();
+      $cleanup(() => {
+        if (tmp) {
+          dropAcc?.(accum);
+          dropF?.(f);
+        } else {
+          dropF?.(f);
+        }
+        zip.return();
+      });
       throw error;
     }
     if (x == null) {
       const result = accum;
       try {
         dropF?.(f);
-      } finally {
-        zip.return();
+      } catch (error) {
+        $cleanup(() => {
+          zip.return();
+        });
+        throw error;
       }
+      zip.return();
       return result;
     }
     tmp = false;
@@ -12535,13 +13679,15 @@ export function zipSpecFold_specFold(
       tmp$1 = f(accum, x);
       tmp = true;
     } catch (error) {
-      if (tmp) {
-        dropAcc?.(accum);
-        dropF?.(f);
-      } else {
-        dropF?.(f);
-      }
-      zip.return();
+      $cleanup(() => {
+        if (tmp) {
+          dropAcc?.(accum);
+          dropF?.(f);
+        } else {
+          dropF?.(f);
+        }
+        zip.return();
+      });
       throw error;
     }
     accum = tmp$1;
@@ -12591,13 +13737,15 @@ export function zipSpecFoldTrustedLenTrustedLen_specFold(
               )
             : zipZipImplAB_sizeHint(zip, AIterator, BIterator, dropA, dropB, dropAItem, dropBItem);
     } catch (error) {
-      if (tmp$1) {
-        dropAcc?.(accum);
-        dropF?.(f);
-      } else {
-        dropF?.(f);
-      }
-      zip.return();
+      $cleanup(() => {
+        if (tmp$1) {
+          dropAcc?.(accum);
+          dropF?.(f);
+        } else {
+          dropF?.(f);
+        }
+        zip.return();
+      });
       throw error;
     }
     let more;
@@ -12616,9 +13764,13 @@ export function zipSpecFoldTrustedLenTrustedLen_specFold(
           const result = accum;
           try {
             dropF?.(f);
-          } finally {
-            zip.return();
+          } catch (error) {
+            $cleanup(() => {
+              zip.return();
+            });
+            throw error;
           }
+          zip.return();
           return result;
         }
         break;
@@ -12628,13 +13780,15 @@ export function zipSpecFoldTrustedLenTrustedLen_specFold(
       try {
         next = AIterator.next(zip.a);
       } catch (error) {
-        if (tmp$1) {
-          dropAcc?.(accum);
-          dropF?.(f);
-        } else {
-          dropF?.(f);
-        }
-        zip.return();
+        $cleanup(() => {
+          if (tmp$1) {
+            dropAcc?.(accum);
+            dropF?.(f);
+          } else {
+            dropF?.(f);
+          }
+          zip.return();
+        });
         throw error;
       }
       const value = $someValue(next);
@@ -12642,14 +13796,16 @@ export function zipSpecFoldTrustedLenTrustedLen_specFold(
       try {
         tmp = BIterator.next(zip.b);
       } catch (error) {
-        dropAItem?.(value);
-        if (tmp$1) {
-          dropAcc?.(accum);
-          dropF?.(f);
-        } else {
-          dropF?.(f);
-        }
-        zip.return();
+        $cleanup(() => {
+          dropAItem?.(value);
+          if (tmp$1) {
+            dropAcc?.(accum);
+            dropF?.(f);
+          } else {
+            dropF?.(f);
+          }
+          zip.return();
+        });
         throw error;
       }
       const pair = [value, $someValue(tmp)];
@@ -12659,13 +13815,15 @@ export function zipSpecFoldTrustedLenTrustedLen_specFold(
         tmp$2 = f(accum, pair);
         tmp$1 = true;
       } catch (error) {
-        if (tmp$1) {
-          dropAcc?.(accum);
-          dropF?.(f);
-        } else {
-          dropF?.(f);
-        }
-        zip.return();
+        $cleanup(() => {
+          if (tmp$1) {
+            dropAcc?.(accum);
+            dropF?.(f);
+          } else {
+            dropF?.(f);
+          }
+          zip.return();
+        });
         throw error;
       }
       accum = tmp$2;

@@ -450,6 +450,9 @@ const NEVER_THROW: &[&str] = &[
     "$eprint",
     // It gives an array's iterator its own steps, and returns it (#703).
     "$slicing",
+    // A `RefCell` guard's drop: its count, one less (ADR 0328), which a
+    // cleanup runs as a panic unwinds unguarded (#847).
+    "$unborrow",
 ];
 
 /// Whether `name` is a helper whose call throws only where its arguments

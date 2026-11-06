@@ -19,7 +19,9 @@ import { runtimeDir } from "./packages-of.ts";
 // knows, an `$Unwinding` of its own class.
 const { $isPanic } = (await import(pathToFileURL(join(runtimeDir, "index.js")).href)) as { $isPanic: (e: unknown) => boolean };
 
-export type Outcome = { value: unknown } | { panic: string } | { error: string };
+// `{ exit }` is a run that ended the process: one that aborted, as Rust does
+// where a drop panics while a panic unwinds, `{ exit: 134 }` (#847).
+export type Outcome = { value: unknown } | { panic: string } | { error: string } | { exit: number };
 
 // JSON has no -0, NaN, infinities or BigInts, so the native side tags them:
 // `{"$f64":"-0"}`, `{"$bigint":"18446744073709551615"}`.

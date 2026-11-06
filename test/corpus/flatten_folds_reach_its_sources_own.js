@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $dropEach,
   $flattenEnds,
@@ -37,42 +38,53 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
   let acc = init;
   let result;
   try {
-    try {
-      let next;
-      while (true) {
-        try {
-          next = foldsIterator_next(folds);
-        } catch (error) {
+    let next;
+    while (true) {
+      try {
+        next = foldsIterator_next(folds);
+      } catch (error) {
+        $cleanup(() => {
           if (acc$live) {
             dropB?.(acc);
           }
-          throw error;
-        }
-        if (next != null) {
-          const x = next;
-          acc$live = false;
-          const value = f(acc, x);
-          acc$live = true;
-          acc = value;
-          continue;
-        }
-        try {
-          if (next != null) {
-            dDrop_drop(next);
-          }
-        } catch (error) {
-          if (acc$live) {
-            dropB?.(acc);
-          }
-          throw error;
-        }
-        break;
+          dropF?.(f);
+        });
+        throw error;
       }
-      acc$live = false;
-      result = acc;
-    } finally {
-      dropF?.(f);
+      if (next != null) {
+        const x = next;
+        acc$live = false;
+        let tmp;
+        try {
+          tmp = f(acc, x);
+        } catch (error) {
+          $cleanup(() => {
+            dropF?.(f);
+          });
+          throw error;
+        }
+        acc$live = true;
+        acc = tmp;
+        continue;
+      }
+      try {
+        if (next != null) {
+          dDrop_drop(next);
+        }
+      } catch (error) {
+        $cleanup(() => {
+          if (acc$live) {
+            dropB?.(acc);
+          }
+          dropF?.(f);
+        });
+        throw error;
+      }
+      break;
     }
+    acc$live = false;
+    result = acc;
+    dropF?.(f);
   } finally {
     foldsDrop_drop(folds);
   }
@@ -92,42 +104,53 @@ function foldsDoubleEndedIterator_rfold(folds, init, f, dropB, dropF) {
   let acc = init;
   let result;
   try {
-    try {
-      let nextBack;
-      while (true) {
-        try {
-          nextBack = foldsDoubleEndedIterator_nextBack(folds);
-        } catch (error) {
+    let nextBack;
+    while (true) {
+      try {
+        nextBack = foldsDoubleEndedIterator_nextBack(folds);
+      } catch (error) {
+        $cleanup(() => {
           if (acc$live) {
             dropB?.(acc);
           }
-          throw error;
-        }
-        if (nextBack != null) {
-          const x = nextBack;
-          acc$live = false;
-          const value = f(acc, x);
-          acc$live = true;
-          acc = value;
-          continue;
-        }
-        try {
-          if (nextBack != null) {
-            dDrop_drop(nextBack);
-          }
-        } catch (error) {
-          if (acc$live) {
-            dropB?.(acc);
-          }
-          throw error;
-        }
-        break;
+          dropF?.(f);
+        });
+        throw error;
       }
-      acc$live = false;
-      result = acc;
-    } finally {
-      dropF?.(f);
+      if (nextBack != null) {
+        const x = nextBack;
+        acc$live = false;
+        let tmp;
+        try {
+          tmp = f(acc, x);
+        } catch (error) {
+          $cleanup(() => {
+            dropF?.(f);
+          });
+          throw error;
+        }
+        acc$live = true;
+        acc = tmp;
+        continue;
+      }
+      try {
+        if (nextBack != null) {
+          dDrop_drop(nextBack);
+        }
+      } catch (error) {
+        $cleanup(() => {
+          if (acc$live) {
+            dropB?.(acc);
+          }
+          dropF?.(f);
+        });
+        throw error;
+      }
+      break;
     }
+    acc$live = false;
+    result = acc;
+    dropF?.(f);
   } finally {
     foldsDrop_drop(folds);
   }

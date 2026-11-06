@@ -3,6 +3,7 @@
 import {
   $advanceSlice,
   $borrowMut,
+  $cleanup,
   $dropEach,
   $dropItems,
   $iter,
@@ -41,14 +42,18 @@ function tee(iter, dropI, dropIItem) {
       id: false,
     };
   } catch (error) {
-    $rcDrop(t1.rcbuffer, (value) => {
-      try {
-        $dropItems(value.backlog, (item) => {
-          dropIItem?.(item);
-        });
-      } finally {
+    $cleanup(() => {
+      $rcDrop(t1.rcbuffer, (value) => {
+        try {
+          $dropItems(value.backlog, (item) => {
+            dropIItem?.(item);
+          });
+        } catch (error) {
+          dropI?.(value.iter);
+          throw error;
+        }
         dropI?.(value.iter);
-      }
+      });
     });
     throw error;
   }
@@ -101,8 +106,10 @@ function teeIterator_next(tee, IIterator, IItemClone, dropI, dropIItem) {
     try {
       buffer.backlog.push(IItemClone.clone(elt));
     } catch (error) {
-      dropIItem?.(elt);
-      $unborrow(buffer);
+      $cleanup(() => {
+        dropIItem?.(elt);
+        $unborrow(buffer);
+      });
       throw error;
     }
     buffer.owner = !tee.id;

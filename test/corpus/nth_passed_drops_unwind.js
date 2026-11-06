@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -40,8 +41,9 @@ function totalDrop_drop(total) {
 }
 
 function totalSumD_sum(iter, dropI) {
+  let result;
   try {
-    return $foldDropping(
+    result = $foldDropping(
       Iterator.from(iter),
       [0],
       (t, d) => {
@@ -52,11 +54,18 @@ function totalSumD_sum(iter, dropI) {
       },
       totalDrop_drop,
     );
-  } finally {
-    if (!iter.ownFold) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!iter.ownFold) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
   }
+  if (!iter.ownFold) {
+    dropI?.(iter);
+  }
+  return result;
 }
 
 function seven() {
@@ -74,7 +83,9 @@ function kept(v, d) {
   try {
     v.push(d);
   } catch (error) {
-    $dropItems(v, dDrop_drop);
+    $cleanup(() => {
+      $dropItems(v, dDrop_drop);
+    });
     throw error;
   }
   return v;
@@ -196,7 +207,9 @@ function main() {
     try {
       r = $tryFoldOk(stepBy, [0], (a, d) => ({ TAG: "Ok", _0: add(a, d) }), accDrop_drop);
     } catch (error) {
-      stepBy.return();
+      $cleanup(() => {
+        stepBy.return();
+      });
       throw error;
     }
     try {

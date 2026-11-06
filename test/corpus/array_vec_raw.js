@@ -2,6 +2,7 @@
 
 import {
   $addr,
+  $cleanup,
   $debugStr,
   $ptr,
   $ptrAdd,
@@ -93,9 +94,11 @@ const Stack = {
       tmp = step(Stack.asMutPtr(stack, CAP), stack.len, TSize);
       value$live = false;
     } catch (error) {
-      if (value$live) {
-        dropT?.(value);
-      }
+      $cleanup(() => {
+        if (value$live) {
+          dropT?.(value);
+        }
+      });
       throw error;
     }
     tmp.value = value;

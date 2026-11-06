@@ -8,6 +8,7 @@ import {
   iterator_fuse,
 } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $held,
   $holding,
   $iter,
@@ -24,20 +25,32 @@ export function entry() {
 
 function ends(it, dropI) {
   $held(it);
+  let result;
   try {
-    return [it.len(), $nextBack(it), $next(it)];
-  } finally {
-    dropI?.(it);
+    result = [it.len(), $nextBack(it), $next(it)];
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(it);
+    });
+    throw error;
   }
+  dropI?.(it);
+  return result;
 }
 
 function lens(it, dropI) {
   $held(it);
+  let result;
   try {
-    return it.len();
-  } finally {
-    dropI?.(it);
+    result = it.len();
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(it);
+    });
+    throw error;
   }
+  dropI?.(it);
+  return result;
 }
 
 function main() {

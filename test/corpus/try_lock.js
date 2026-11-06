@@ -56,14 +56,11 @@ function main() {
   const value = $tryLock(m, true);
   if (value.TAG === "Ok") {
     console.log(`${value._0.value}`);
-    try {
-      $unborrow(value._0);
-    } finally {
-      if (value.TAG !== "Ok") {
-        if (value.TAG === "Err") {
-          if (value._0.TAG === "Poisoned") {
-            $unborrow(value._0._0.data);
-          }
+    $unborrow(value._0);
+    if (value.TAG !== "Ok") {
+      if (value.TAG === "Err") {
+        if (value._0.TAG === "Poisoned") {
+          $unborrow(value._0._0.data);
         }
       }
     }

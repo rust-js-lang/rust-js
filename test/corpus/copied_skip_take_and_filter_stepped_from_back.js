@@ -2,6 +2,7 @@
 
 import { iterator_rev, revDoubleEndedIterator_nextBack } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $closing,
   $dropEach,
   $filterEnds,
@@ -47,7 +48,9 @@ function main() {
   try {
     a = $nthDropping($lent(it), 1, dDrop_drop, false);
   } catch (error) {
-    it.return();
+    $cleanup(() => {
+      it.return();
+    });
     throw error;
   }
   const value = a?.[0];
@@ -70,16 +73,37 @@ function main() {
         dDrop_drop,
       ),
     );
+    let nth;
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
     try {
-      const nth = $nthDropping($lent(it$1), 0, dDrop_drop, false);
-      function map(d) {
-        const result = d[0];
-        dDrop_drop(d);
-        return result;
-      }
+      nth = $nthDropping($lent(it$1), 0, dDrop_drop, false);
+    } catch (error) {
+      $cleanup(() => {
+        it$1.return();
+      });
+      throw error;
+    }
+    try {
       const value = nth != null ? map(nth) : undefined;
       console.log(`nth ${value == null ? "None" : `Some(${value})`}`);
-      const nextBack = revDoubleEndedIterator_nextBack(
+    } catch (error) {
+      $cleanup(() => {
+        it$1.return();
+      });
+      throw error;
+    }
+    let nextBack;
+    function map$1(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    try {
+      nextBack = revDoubleEndedIterator_nextBack(
         it$1,
         { next: $next },
         (filter) => {
@@ -87,16 +111,22 @@ function main() {
         },
         dDrop_drop,
       );
-      function map$1(d) {
-        const result = d[0];
-        dDrop_drop(d);
-        return result;
-      }
-      const value$1 = nextBack != null ? map$1(nextBack) : undefined;
-      console.log(`back ${value$1 == null ? "None" : `Some(${value$1})`}`);
-    } finally {
-      it$1.return();
+    } catch (error) {
+      $cleanup(() => {
+        it$1.return();
+      });
+      throw error;
     }
+    try {
+      const value = nextBack != null ? map$1(nextBack) : undefined;
+      console.log(`back ${value == null ? "None" : `Some(${value})`}`);
+    } catch (error) {
+      $cleanup(() => {
+        it$1.return();
+      });
+      throw error;
+    }
+    it$1.return();
   } finally {
     if (a != null) {
       dDrop_drop(a);

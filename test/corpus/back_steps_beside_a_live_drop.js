@@ -4,6 +4,7 @@ import { iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $count,
@@ -145,7 +146,9 @@ function afterAPeekedCount() {
   try {
     $peek(it);
   } catch (error) {
-    it.return();
+    $cleanup(() => {
+      it.return();
+    });
     throw error;
   }
   console.log(

@@ -276,7 +276,8 @@ item's drop, the source's own drop, a closure's capture.
   case's, each drop and clone of a `D`, each drop of an accumulator or a
   total, and each `next`, `next_back` and drop of the crate's iterator. So no
   position is chosen by hand, and a new step's points are its own. One panic
-  a run, so native Rust never aborts on a second.
+  a run, so native Rust never aborts on a second (as rust-js would too,
+  since #847; ADR 0660, amended).
 - **The matrix's and the conformance table's programs are as before**, byte
   for byte, their generator versions too: the points are added to the
   prelude and the crate's iterators of a points program alone

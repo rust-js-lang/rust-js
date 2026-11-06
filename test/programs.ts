@@ -44,18 +44,28 @@ const compileTimeout = Number(process.env.RUST_JS_COMPILE_TIMEOUT ?? 120_000);
 /** Runs `cmd`, which writes how `main` ended to `outcomeFile`, and says
  * what it printed and how it ended. A run that fails after writing its
  * outcome, as an unhandled rejection after `main` returns makes it, failed:
- * a run counts only if it exits 0, and only by the outcome it wrote itself. */
+ * a run counts only if it exits 0, and only by the outcome it wrote itself;
+ * or if it aborted, as Rust does where a drop panics while a panic unwinds
+ * (#847): natively killed by SIGABRT, and as JS, `$abort`'s exit, 134, the
+ * code a shell gives SIGABRT, which `corpus-run.ts` writes as it exits.
+ * Either is `{ exit: 134 }`. */
 export function execute(cmd: string[], outcomeFile: string, limit = timeout): Run {
   rmSync(outcomeFile, { force: true });
   const p = runSync(cmd, root, limit);
   const { stdout, stderr, bytes } = p;
+  if (p.signal === "SIGABRT" && !p.timedOut) return { stdout, stderr, bytes, outcome: aborted };
   const why = stopped(p, limit);
   if (why) return { stdout, stderr, bytes, outcome: why };
   if (!existsSync(outcomeFile)) return { stdout, stderr, bytes, outcome: `exited ${p.code} without an outcome` };
   const outcome = readFileSync(outcomeFile, "utf8");
+  if (p.code === abortCode && same(JSON.parse(outcome), aborted)) return { stdout, stderr, bytes, outcome: aborted };
   if (p.code !== 0) return { stdout, stderr, bytes, outcome: `exited ${p.code} after it ended ${outcome}` };
   return { stdout, stderr, bytes, outcome: JSON.parse(outcome) };
 }
+
+/** How a run that aborted ended, natively or as JS (`execute`). */
+const abortCode = 134;
+export const aborted: Outcome = { exit: abortCode };
 
 /** A string as a Rust string literal, for the wrappers' `include!`. */
 const rustString = (s: string) => JSON.stringify(s);

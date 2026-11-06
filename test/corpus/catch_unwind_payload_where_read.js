@@ -3,6 +3,7 @@
 import {
   $byteLen,
   $catchUnwind,
+  $cleanup,
   $debugStr,
   $panicMessage,
   $unwinding,
@@ -142,21 +143,26 @@ function shadowed(n, seen) {
  */
 function guarded(log) {
   try {
-    (() => {
-      const _a = [log, 1];
-      try {
-        return fails(7);
-      } finally {
+    const _a = [log, 1];
+    let result;
+    try {
+      result = fails(7);
+    } catch (error) {
+      $cleanup(() => {
         _a[0].value = (((_a[0].value * 10) >>> 0) + _a[1]) >>> 0;
-      }
-    })();
+      });
+      throw error;
+    }
+    _a[0].value = (((_a[0].value * 10) >>> 0) + _a[1]) >>> 0;
   } catch (e) {
     const _b = [log, 2];
     log.value = (((log.value * 10) >>> 0) + 3) >>> 0;
     try {
       throw e;
     } catch (error) {
-      _b[0].value = (((_b[0].value * 10) >>> 0) + _b[1]) >>> 0;
+      $cleanup(() => {
+        _b[0].value = (((_b[0].value * 10) >>> 0) + _b[1]) >>> 0;
+      });
       throw error;
     }
   }

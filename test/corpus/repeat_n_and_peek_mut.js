@@ -6,6 +6,7 @@ import {
   mapIterator___iteratorGetUnchecked,
 } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $debugStr,
   $foldOf,
   $foldToArray,
@@ -45,7 +46,9 @@ function repeated() {
     try {
       first = $next(some);
     } catch (error) {
-      some.return();
+      $cleanup(() => {
+        some.return();
+      });
       throw error;
     }
     const value = first?.[0];

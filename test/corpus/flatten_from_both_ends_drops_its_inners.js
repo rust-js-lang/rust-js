@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -62,17 +63,25 @@ function main() {
   try {
     last = $nextBack(value);
   } catch (error) {
-    value.return();
+    $cleanup(() => {
+      value.return();
+    });
     throw error;
   }
   try {
     value.return();
-    const value$1 = last?.[0];
-    console.log(`last ${value$1 == null ? "None" : `Some(${value$1})`}`);
-  } finally {
-    if (last != null) {
-      dDrop_drop(last);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (last != null) {
+        dDrop_drop(last);
+      }
+    });
+    throw error;
+  }
+  const value$1 = last?.[0];
+  console.log(`last ${value$1 == null ? "None" : `Some(${value$1})`}`);
+  if (last != null) {
+    dDrop_drop(last);
   }
 
   // Though its source's rest's drop panics, as drop glue goes on.
@@ -88,15 +97,19 @@ function main() {
     try {
       last = $nextBack(flatten);
     } catch (error) {
-      flatten.return();
+      $cleanup(() => {
+        flatten.return();
+      });
       throw error;
     }
     try {
       flatten.return();
     } catch (error) {
-      if (last != null) {
-        dDrop_drop(last);
-      }
+      $cleanup(() => {
+        if (last != null) {
+          dDrop_drop(last);
+        }
+      });
       throw error;
     }
     function map(d) {
@@ -110,7 +123,7 @@ function main() {
   console.log(`panicked ${ended.TAG === "Err"}`);
 
   // Of the crate's iterator, which it drops before its back inner too.
-  const value$1 = $held(
+  const value$2 = $held(
     $flattenEnds(
       $closing(
         $iterator([0, 3], sourceIterator_next, false, sourceDoubleEndedIterator_nextBack),
@@ -122,17 +135,21 @@ function main() {
     ),
   );
   try {
-    last = $nextBack(value$1);
+    last = $nextBack(value$2);
   } catch (error) {
-    value$1.return();
+    $cleanup(() => {
+      value$2.return();
+    });
     throw error;
   }
   try {
-    value$1.return();
+    value$2.return();
   } catch (error) {
-    if (last != null) {
-      dDrop_drop(last);
-    }
+    $cleanup(() => {
+      if (last != null) {
+        dDrop_drop(last);
+      }
+    });
     throw error;
   }
   function map(d) {
@@ -140,8 +157,8 @@ function main() {
     dDrop_drop(d);
     return result;
   }
-  const value$2 = last != null ? map(last) : undefined;
-  console.log(`last ${value$2 == null ? "None" : `Some(${value$2})`}`);
+  const value$3 = last != null ? map(last) : undefined;
+  console.log(`last ${value$3 == null ? "None" : `Some(${value$3})`}`);
 
   // Reversed, part-way.
   const firsts = $collectDropping(

@@ -10,6 +10,7 @@ import {
 import {
   $advanceSlice,
   $catchUnwind,
+  $cleanup,
   $closing,
   $cmp,
   $collectDropping,
@@ -89,9 +90,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$live = false;
     } catch (error) {
-      if (g$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     const f = (d) => d;
@@ -106,7 +109,9 @@ function main() {
     try {
       tmp = ds();
     } catch (error) {
-      map.return();
+      $cleanup(() => {
+        map.return();
+      });
       throw error;
     }
     const v = $foldToArray(
@@ -124,9 +129,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$1$live = false;
     } catch (error) {
-      if (g$1$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$1$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -144,9 +151,13 @@ function main() {
     let result;
     try {
       result = iter.reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n} | `);
   });
@@ -157,9 +168,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$2$live = false;
     } catch (error) {
-      if (g$2$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$2$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     const f = (d) => d[0] > zero(g);
@@ -176,9 +189,13 @@ function main() {
         dDrop_drop(item);
         return n + 1;
       }, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n} | `);
   });
@@ -189,9 +206,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$3$live = false;
     } catch (error) {
-      if (g$3$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$3$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -209,9 +228,13 @@ function main() {
     let result;
     try {
       result = $last(iter);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const last = result;
     $print(`| ${last == null ? "None" : `Some(${last})`} | `);
   });
@@ -222,9 +245,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$4$live = false;
     } catch (error) {
-      if (g$4$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$4$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -247,13 +272,18 @@ function main() {
       },
       "before",
     );
+    let result;
     try {
-      const result = iter.forEach((value) => {
+      result = iter.forEach((value) => {
         dDrop_drop(value);
       });
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
   });
   case$("fold", (g) => {
     let g$5$live = true;
@@ -262,9 +292,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$5$live = false;
     } catch (error) {
-      if (g$5$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$5$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -282,9 +314,13 @@ function main() {
     let result;
     try {
       result = iter.reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n} | `);
   });
@@ -295,9 +331,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$6$live = false;
     } catch (error) {
-      if (g$6$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$6$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -315,9 +353,13 @@ function main() {
     let result;
     try {
       result = $max(iter);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const max = result;
     $print(`| ${max == null ? "None" : `Some(${max})`} | `);
   });
@@ -328,9 +370,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$7$live = false;
     } catch (error) {
-      if (g$7$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$7$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -348,9 +392,13 @@ function main() {
     let result;
     try {
       result = $minByKey(iter, (n) => n, $cmp);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const min = result;
     $print(`| ${min == null ? "None" : `Some(${min})`} | `);
   });
@@ -361,9 +409,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$8$live = false;
     } catch (error) {
-      if (g$8$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$8$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -381,9 +431,13 @@ function main() {
     let result;
     try {
       result = $reduce(iter, (a, b) => (a + b) >>> 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n == null ? "None" : `Some(${n})`} | `);
   });
@@ -394,9 +448,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$9$live = false;
     } catch (error) {
-      if (g$9$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$9$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -424,17 +480,25 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$10$live = false;
     } catch (error) {
-      if (g$10$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$10$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
+      let result;
       try {
-        return BigInt((d[0] + zero(g)) >>> 0);
-      } finally {
-        dDrop_drop(d);
+        result = BigInt((d[0] + zero(g)) >>> 0);
+      } catch (error) {
+        $cleanup(() => {
+          dDrop_drop(d);
+        });
+        throw error;
       }
+      dDrop_drop(d);
+      return result;
     }
     $extend(
       v,
@@ -456,17 +520,25 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$11$live = false;
     } catch (error) {
-      if (g$11$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$11$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
+      let result;
       try {
-        return BigInt((d[0] + zero(g)) >>> 0);
-      } finally {
-        dDrop_drop(d);
+        result = BigInt((d[0] + zero(g)) >>> 0);
+      } catch (error) {
+        $cleanup(() => {
+          dDrop_drop(d);
+        });
+        throw error;
       }
+      dDrop_drop(d);
+      return result;
     }
     const iter = $holding(
       take.map(f),
@@ -478,9 +550,13 @@ function main() {
     let result;
     try {
       result = $foldToArray(iter);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const v = result;
     $print(`| [${v.join(", ")}] | `);
   });
@@ -491,17 +567,25 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$12$live = false;
     } catch (error) {
-      if (g$12$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$12$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
+      let result;
       try {
-        return String((d[0] + zero(g)) >>> 0);
-      } finally {
-        dDrop_drop(d);
+        result = String((d[0] + zero(g)) >>> 0);
+      } catch (error) {
+        $cleanup(() => {
+          dDrop_drop(d);
+        });
+        throw error;
       }
+      dDrop_drop(d);
+      return result;
     }
     const iter = $holding(
       take.map(f),
@@ -513,9 +597,13 @@ function main() {
     let result;
     try {
       result = $foldToArray(iter).join("");
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const s = result;
     $print(`| ${s} | `);
   });
@@ -526,9 +614,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$13$live = false;
     } catch (error) {
-      if (g$13$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$13$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -546,9 +636,13 @@ function main() {
     let result;
     try {
       result = $mapFrom(new Set(), iter, true);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const set = result;
     $print(`| ${set.size} | `);
   });
@@ -559,9 +653,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$14$live = false;
     } catch (error) {
-      if (g$14$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$14$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -586,7 +682,9 @@ function main() {
           return result;
         });
     } catch (error) {
-      value.return();
+      $cleanup(() => {
+        value.return();
+      });
       throw error;
     }
     const n = $lazyChain(value, map).reduce((a, b) => (a + b) >>> 0, 0);
@@ -599,9 +697,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$15$live = false;
     } catch (error) {
-      if (g$15$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$15$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -628,9 +728,11 @@ function main() {
       take = $skipping($closing($iter(ds()), $dropEach(dDrop_drop)), 1, dDrop_drop).take(2);
       g$16$live = false;
     } catch (error) {
-      if (g$16$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$16$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -648,9 +750,13 @@ function main() {
     let result;
     try {
       result = iter.reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n} | `);
   });
@@ -661,9 +767,11 @@ function main() {
       skip = $skipping($closing($iter(ds()), $dropEach(dDrop_drop)).take(3), 1, dDrop_drop);
       g$17$live = false;
     } catch (error) {
-      if (g$17$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$17$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -681,9 +789,13 @@ function main() {
     let result;
     try {
       result = iter.reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n} | `);
   });
@@ -698,9 +810,11 @@ function main() {
       );
       g$18$live = false;
     } catch (error) {
-      if (g$18$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$18$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -718,9 +832,13 @@ function main() {
     let result;
     try {
       result = iter.reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n} | `);
   });
@@ -731,9 +849,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$19$live = false;
     } catch (error) {
-      if (g$19$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$19$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -759,9 +879,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$20$live = false;
     } catch (error) {
-      if (g$20$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$20$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     const f = (d) => [d];
@@ -778,9 +900,13 @@ function main() {
         dDrop_drop(item);
         return n + 1;
       }, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n} | `);
   });
@@ -797,9 +923,11 @@ function main() {
       );
       g$21$live = false;
     } catch (error) {
-      if (g$21$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$21$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     const iter = iterator_peekable(
@@ -828,9 +956,13 @@ function main() {
     let result;
     try {
       result = $count(iter);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n} | `);
   });
@@ -847,9 +979,11 @@ function main() {
       );
       g$22$live = false;
     } catch (error) {
-      if (g$22$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$22$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     const iter = iterator_fuse(
@@ -879,9 +1013,13 @@ function main() {
     let result;
     try {
       result = iter.reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n} | `);
   });
@@ -903,9 +1041,13 @@ function main() {
     let result;
     try {
       result = iter.reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n} | `);
   });
@@ -918,10 +1060,12 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$24$live = false;
     } catch (error) {
-      dDrop_drop(h);
-      if (g$24$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        dDrop_drop(h);
+        if (g$24$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     const f = (d) => d;
@@ -936,9 +1080,11 @@ function main() {
       );
       h$live = false;
     } catch (error) {
-      if (h$live) {
-        dDrop_drop(h);
-      }
+      $cleanup(() => {
+        if (h$live) {
+          dDrop_drop(h);
+        }
+      });
       throw error;
     }
     function f$1(d) {
@@ -956,9 +1102,13 @@ function main() {
     let result;
     try {
       result = iter.reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n} | `);
   });
@@ -971,10 +1121,12 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$25$live = false;
     } catch (error) {
-      dDrop_drop(h);
-      if (g$25$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        dDrop_drop(h);
+        if (g$25$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     const f = (d) => d[0] > zero(g);
@@ -989,9 +1141,11 @@ function main() {
       );
       h$1$live = false;
     } catch (error) {
-      if (h$1$live) {
-        dDrop_drop(h);
-      }
+      $cleanup(() => {
+        if (h$1$live) {
+          dDrop_drop(h);
+        }
+      });
       throw error;
     }
     function f$1(d) {
@@ -1009,9 +1163,13 @@ function main() {
     let result;
     try {
       result = iter.reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n} | `);
   });
@@ -1022,9 +1180,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(3);
       g$26$live = false;
     } catch (error) {
-      if (g$26$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$26$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -1045,16 +1205,22 @@ function main() {
     try {
       first = $next(it);
     } catch (error) {
-      it.return();
+      $cleanup(() => {
+        it.return();
+      });
       throw error;
     }
     const iter = it;
     let result;
     try {
       result = iter.reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${first == null ? "None" : `Some(${first})`} ${n} | `);
   });
@@ -1065,9 +1231,11 @@ function main() {
       take = $closing($iter([[1], [2], [40], [5]]), $dropEach(dDrop_drop)).take(2);
       g$27$live = false;
     } catch (error) {
-      if (g$27$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$27$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -1085,9 +1253,13 @@ function main() {
     let result;
     try {
       result = iter.reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n} | `);
   });
@@ -1099,9 +1271,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$28$live = false;
     } catch (error) {
-      if (g$28$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$28$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     const f = (d) => d;
@@ -1115,9 +1289,13 @@ function main() {
     let result;
     try {
       result = $foldToArray(iter, dDrop_drop);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const v = result;
     $print(`| ${v.length} | `);
     $dropItems(v, dDrop_drop);
@@ -1129,9 +1307,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$29$live = false;
     } catch (error) {
-      if (g$29$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$29$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -1156,17 +1336,25 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$30$live = false;
     } catch (error) {
-      if (g$30$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$30$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
+      let result;
       try {
-        return BigInt((d[0] + zero(g)) >>> 0);
-      } finally {
-        dDrop_drop(d);
+        result = BigInt((d[0] + zero(g)) >>> 0);
+      } catch (error) {
+        $cleanup(() => {
+          dDrop_drop(d);
+        });
+        throw error;
       }
+      dDrop_drop(d);
+      return result;
     }
     const v = $collectDropping(
       $holding(
@@ -1186,9 +1374,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$31$live = false;
     } catch (error) {
-      if (g$31$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$31$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -1203,13 +1393,21 @@ function main() {
       },
       "after",
     );
-    try {
+    while (true) {
       let n;
-      while ((n = $next(iter)) != null) {
-        $print(`${n} `);
+      try {
+        n = $next(iter);
+      } catch (error) {
+        $cleanup(() => {
+          iter.return();
+        });
+        throw error;
       }
-    } finally {
-      iter.return();
+      if (n == null) {
+        iter.return();
+        return;
+      }
+      $print(`${n} `);
     }
   });
   case$("find", (g) => {
@@ -1219,9 +1417,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
       g$32$live = false;
     } catch (error) {
-      if (g$32$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$32$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -1241,9 +1441,13 @@ function main() {
     let found;
     try {
       found = $lent(map).find((n) => n === 9);
-    } finally {
-      map.return();
+    } catch (error) {
+      $cleanup(() => {
+        map.return();
+      });
+      throw error;
     }
+    map.return();
     $print(`| ${found == null ? "None" : `Some(${found})`} | `);
   });
   case$("taken after", (g) => {
@@ -1253,9 +1457,11 @@ function main() {
       tmp = $iter(ds());
       g$33$live = false;
     } catch (error) {
-      if (g$33$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$33$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -1281,9 +1487,11 @@ function main() {
       tmp = $iter(ds());
       g$34$live = false;
     } catch (error) {
-      if (g$34$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$34$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     const f = (d) => d[0] < (3 + zero(g)) >>> 0;
@@ -1299,9 +1507,13 @@ function main() {
         dDrop_drop(item);
         return n + 1;
       }, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n} | `);
   });
@@ -1312,9 +1524,11 @@ function main() {
       tmp = $iter(ds());
       g$35$live = false;
     } catch (error) {
-      if (g$35$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$35$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -1332,9 +1546,13 @@ function main() {
     let result;
     try {
       result = iter.reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n} | `);
   });
@@ -1345,9 +1563,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(3);
       g$36$live = false;
     } catch (error) {
-      if (g$36$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$36$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     const f = (d) => d[0] < (2 + zero(g)) >>> 0;
@@ -1360,9 +1580,13 @@ function main() {
         dDrop_drop(item);
         return n + 1;
       }, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n} | `);
   });
@@ -1373,9 +1597,11 @@ function main() {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(3);
       g$37$live = false;
     } catch (error) {
-      if (g$37$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$37$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -1408,9 +1634,11 @@ function main() {
       );
       g$38$live = false;
     } catch (error) {
-      if (g$38$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$38$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     const iter = iterator_zip(
@@ -1447,9 +1675,13 @@ function main() {
     let result;
     try {
       result = iter.reduce((n) => n + 1, 0);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const n = result;
     $print(`| ${n} | `);
   });
@@ -1466,9 +1698,11 @@ function main() {
       );
       g$39$live = false;
     } catch (error) {
-      if (g$39$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$39$live) {
+          dDrop_drop(g);
+        }
+      });
       throw error;
     }
     const it = $held(
@@ -1490,12 +1724,17 @@ function main() {
         dDrop_drop,
       ),
     );
+    let n;
     try {
-      const n = $lent(it).reduce((a, b) => (a + b) >>> 0, 0);
-      $print(`| ${n} | `);
-    } finally {
-      it.return();
+      n = $lent(it).reduce((a, b) => (a + b) >>> 0, 0);
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
     }
+    $print(`| ${n} | `);
+    it.return();
   });
 }
 //# sourceMappingURL=case.js.map

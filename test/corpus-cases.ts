@@ -4,6 +4,7 @@
 //
 //   //@ run-pass                   main returns (the default)
 //   //@ run-fail: <message>        main panics with exactly this message (\n for a newline)
+//   //@ run-abort                  the process aborts: a drop panicked while a panic unwound (#847)
 //   //@ compile-fail: <text>       rust-js rejects it, with this in its first error
 //   //@ ignore-rust-js: <reason>   rust-js gets it wrong for now; passing is an error; beside
 //                                  run-fail, of one that panics
@@ -29,6 +30,7 @@ export const cases = readdirSync(corpus)
 export type Expect =
   | { kind: "run-pass" }
   | { kind: "run-fail"; message: string }
+  | { kind: "run-abort" }
   | { kind: "compile-fail"; text: string }
   | { kind: "ignore-rust-js"; reason: string; message?: string };
 
@@ -51,6 +53,7 @@ export function directives(source: string): Directives | string {
     else if (name === "library-differs" && value === undefined) libraryDiffers = true;
     else if (name === "run-pass" && value === undefined) found.push({ kind: "run-pass" });
     else if (name === "run-fail" && value) found.push({ kind: "run-fail", message: value.replaceAll("\\n", "\n") });
+    else if (name === "run-abort" && value === undefined) found.push({ kind: "run-abort" });
     else if (name === "compile-fail" && value) found.push({ kind: "compile-fail", text: value });
     else if (name === "ignore-rust-js" && value) found.push({ kind: "ignore-rust-js", reason: value });
     else return `unknown or malformed directive \`//@${line}\``;

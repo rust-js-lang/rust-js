@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $filterDropping,
@@ -310,17 +311,25 @@ function opaque(n) {
 
 function generic(i, dropI) {
   const iter = i;
+  let result;
   try {
-    return Iterator.from(iter).reduce((n, d) => {
+    result = Iterator.from(iter).reduce((n, d) => {
       const result = (n + d[0]) >>> 0;
       dDrop_drop(d);
       return result;
     }, 0);
-  } finally {
-    if (!iter.ownFold) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!iter.ownFold) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
   }
+  if (!iter.ownFold) {
+    dropI?.(iter);
+  }
+  return result;
 }
 
 function more() {

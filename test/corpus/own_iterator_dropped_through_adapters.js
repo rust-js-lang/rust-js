@@ -9,6 +9,7 @@ import {
   iterator_fuse,
 } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -71,15 +72,21 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
   let acc = init;
   let result;
   try {
-    try {
-      let x;
-      while ((x = countDoubleEndedIterator_nextBack(count)) != null) {
-        acc = f(acc, x);
+    let x;
+    while ((x = countDoubleEndedIterator_nextBack(count)) != null) {
+      let tmp;
+      try {
+        tmp = f(acc, x);
+      } catch (error) {
+        $cleanup(() => {
+          dropF?.(f);
+        });
+        throw error;
       }
-      result = acc;
-    } finally {
-      dropF?.(f);
+      acc = tmp;
     }
+    result = acc;
+    dropF?.(f);
   } finally {
     countDrop_drop(count);
   }
@@ -360,9 +367,13 @@ function main() {
   let odd;
   try {
     odd = $nextBack(filter);
-  } finally {
-    filter.return();
+  } catch (error) {
+    $cleanup(() => {
+      filter.return();
+    });
+    throw error;
   }
+  filter.return();
   const value = $held(
     $filterEnds(
       $knowing(
@@ -436,9 +447,13 @@ function main() {
   let fusedOdd;
   try {
     fusedOdd = $nextBack(value);
-  } finally {
-    value.return();
+  } catch (error) {
+    $cleanup(() => {
+      value.return();
+    });
+    throw error;
   }
+  value.return();
   console.log(
     `${odd == null ? "None" : `Some(${odd})`} ${fusedOdd == null ? "None" : `Some(${fusedOdd})`}`,
   );
@@ -619,9 +634,13 @@ function main() {
   let second;
   try {
     second = $nth($lent(rev), 1);
-  } finally {
-    rev.return();
+  } catch (error) {
+    $cleanup(() => {
+      rev.return();
+    });
+    throw error;
   }
+  rev.return();
   const value$1 = $held(
     $enumerate(
       iterator_fuse(
@@ -635,9 +654,13 @@ function main() {
   let indexed;
   try {
     indexed = Array.from($lent(value$1).drop(1).take(1))[0];
-  } finally {
-    value$1.return();
+  } catch (error) {
+    $cleanup(() => {
+      value$1.return();
+    });
+    throw error;
   }
+  value$1.return();
   console.log(
     `${second == null ? "None" : `Some(${second})`} ${indexed == null ? "None" : `Some(${indexed})`}`,
   );
@@ -705,18 +728,23 @@ function main() {
     );
     const louds = [[1], [2], [3]];
     const value = $held($rev($closing($iter(louds), $dropEach(loudDrop_drop))));
+    let nth;
+    function map(l) {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    }
     let second;
     try {
-      const nth = $nthDropping($lent(value), 1, loudDrop_drop, false);
-      function map(l) {
-        const result = l[0];
-        loudDrop_drop(l);
-        return result;
-      }
+      nth = $nthDropping($lent(value), 1, loudDrop_drop, false);
       second = nth != null ? map(nth) : undefined;
-    } finally {
-      value.return();
+    } catch (error) {
+      $cleanup(() => {
+        value.return();
+      });
+      throw error;
     }
+    value.return();
     const twice = Array.from(
       $closing($iterator({ at: 0 }, twiceIterator_next), (it) => {
         console.log(`drop twice ${it.of.at}`);
@@ -731,7 +759,9 @@ function main() {
     try {
       head = $next(stepped);
     } catch (error) {
-      stepped.return();
+      $cleanup(() => {
+        stepped.return();
+      });
       throw error;
     }
     const tail = Array.from(stepped);

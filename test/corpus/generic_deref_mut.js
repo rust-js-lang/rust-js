@@ -6,6 +6,7 @@ import {
   $borrow,
   $borrowMut,
   $cellOf,
+  $cleanup,
   $traitImpl,
   $unborrow,
 } from "@rust-js/runtime";
@@ -107,9 +108,13 @@ function main() {
   try {
     try {
       bump(p$4, { Deref: () => ({ deref: (x) => x.value }), derefMut: (cell) => cell.value });
-    } finally {
-      $assign(borrowMut, p$4.value);
+    } catch (error) {
+      $cleanup(() => {
+        $assign(borrowMut, p$4.value);
+      });
+      throw error;
     }
+    $assign(borrowMut, p$4.value);
   } finally {
     $unborrow(borrowMut);
   }

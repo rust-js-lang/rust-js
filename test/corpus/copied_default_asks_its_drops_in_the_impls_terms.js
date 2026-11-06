@@ -2,6 +2,7 @@
 
 import { iterator_map, mapIterator___iteratorGetUnchecked } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $closing,
   $cmp,
   $collectDropping,
@@ -31,27 +32,44 @@ const $tExt = new Map();
 function tExt(TInPlace, TItemSize, TItemAlign, dropT, dropTItem) {
   return $traitImpl($tExt, [TInPlace, TItemSize, TItemAlign, dropT, dropTItem], () => ({
     sortedByKeyUnstable(self, key, KOrd, SelfItemSort, dropK, dropFn) {
+      let v;
       try {
-        const v = $collectsInPlace(TInPlace, TItemSize, TItemAlign)
+        v = $collectsInPlace(TInPlace, TItemSize, TItemAlign)
           ? $foldToArray(Iterator.from(self), dropTItem)
           : $collectDropping(
               $roomForHint(Iterator.from(self), TItemSize, false, false, dropTItem),
               dropTItem,
               true,
             );
-        const key$1 = (item) => key(item);
-        try {
-          $sortUnstable(v, (a, b) => KOrd.cmp(key$1(a), key$1(b)) < 0, SelfItemSort);
-        } catch (error) {
+      } catch (error) {
+        $cleanup(() => {
+          dropFn?.(key);
+        });
+        throw error;
+      }
+      const key$1 = (item) => key(item);
+      try {
+        $sortUnstable(v, (a, b) => KOrd.cmp(key$1(a), key$1(b)) < 0, SelfItemSort);
+      } catch (error) {
+        $cleanup(() => {
           $dropItems(v, (item) => {
             dropTItem?.(item);
           });
-          throw error;
-        }
-        return $iter(v);
-      } finally {
-        dropFn?.(key);
+          dropFn?.(key);
+        });
+        throw error;
       }
+      let result;
+      try {
+        result = $iter(v);
+      } catch (error) {
+        $cleanup(() => {
+          dropFn?.(key);
+        });
+        throw error;
+      }
+      dropFn?.(key);
+      return result;
     },
     sortedUnstable(self, SelfItemOrd, SelfItemSort) {
       const v = $collectsInPlace(TInPlace, TItemSize, TItemAlign)
@@ -64,8 +82,10 @@ function tExt(TInPlace, TItemSize, TItemAlign, dropT, dropTItem) {
       try {
         $sortUnstable(v, (a, b) => SelfItemOrd.cmp(a, b) < 0, SelfItemSort);
       } catch (error) {
-        $dropItems(v, (item) => {
-          dropTItem?.(item);
+        $cleanup(() => {
+          $dropItems(v, (item) => {
+            dropTItem?.(item);
+          });
         });
         throw error;
       }
@@ -101,8 +121,10 @@ function wrapperReversed(IIterator, dropI, dropIItem) {
       try {
         v.reverse();
       } catch (error) {
-        $dropItems(v, (item) => {
-          dropIItem?.(item);
+        $cleanup(() => {
+          $dropItems(v, (item) => {
+            dropIItem?.(item);
+          });
         });
         throw error;
       }

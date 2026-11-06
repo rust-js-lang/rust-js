@@ -5,6 +5,7 @@ import {
   $KeyMap,
   $KeySet,
   $btreeSet,
+  $cleanup,
   $closing,
   $cmp,
   $collectDropping,
@@ -67,11 +68,17 @@ function byLoud() {
 }
 
 function mapped(l) {
+  let seen;
   try {
-    return dropped();
-  } finally {
-    loudDrop_drop(l);
+    seen = dropped();
+  } catch (error) {
+    $cleanup(() => {
+      loudDrop_drop(l);
+    });
+    throw error;
   }
+  loudDrop_drop(l);
+  return seen;
 }
 
 function main() {

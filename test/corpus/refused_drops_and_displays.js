@@ -4,6 +4,7 @@ import {
   $BTreeMap,
   $BTreeSet,
   $byteLen,
+  $cleanup,
   $cmp,
   $displayF64,
   $extend,
@@ -236,9 +237,11 @@ function splitOff() {
   try {
     iter = $iter([1, 5, 3, 7]);
   } catch (error) {
-    for (const [, value] of $sortedEntries(m, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(m, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    });
     throw error;
   }
   while (true) {
@@ -246,11 +249,13 @@ function splitOff() {
     try {
       i = $next(iter);
     } catch (error) {
-      if (m$live) {
-        for (const [, value] of $sortedEntries(m, $cmp)) {
-          console.log(`drop ${value[0]}`);
+      $cleanup(() => {
+        if (m$live) {
+          for (const [, value] of $sortedEntries(m, $cmp)) {
+            console.log(`drop ${value[0]}`);
+          }
         }
-      }
+      });
       throw error;
     }
     if (i == null) {
@@ -260,11 +265,13 @@ function splitOff() {
     try {
       insert = $insert(m, i, [i]);
     } catch (error) {
-      if (m$live) {
-        for (const [, value] of $sortedEntries(m, $cmp)) {
-          console.log(`drop ${value[0]}`);
+      $cleanup(() => {
+        if (m$live) {
+          for (const [, value] of $sortedEntries(m, $cmp)) {
+            console.log(`drop ${value[0]}`);
+          }
         }
-      }
+      });
       throw error;
     }
     try {
@@ -272,11 +279,13 @@ function splitOff() {
         console.log(`drop ${insert[0]}`);
       }
     } catch (error) {
-      if (m$live) {
-        for (const [, value] of $sortedEntries(m, $cmp)) {
-          console.log(`drop ${value[0]}`);
+      $cleanup(() => {
+        if (m$live) {
+          for (const [, value] of $sortedEntries(m, $cmp)) {
+            console.log(`drop ${value[0]}`);
+          }
         }
-      }
+      });
       throw error;
     }
   }
@@ -284,25 +293,29 @@ function splitOff() {
   try {
     hi = $treeSplitOff(m, 4, $cmp, false);
   } catch (error) {
-    if (m$live) {
-      for (const [, value] of $sortedEntries(m, $cmp)) {
-        console.log(`drop ${value[0]}`);
+    $cleanup(() => {
+      if (m$live) {
+        for (const [, value] of $sortedEntries(m, $cmp)) {
+          console.log(`drop ${value[0]}`);
+        }
       }
-    }
+    });
     throw error;
   }
   let collect;
   try {
     collect = $sortedEntries(m, $cmp).map((entry) => entry[0]);
   } catch (error) {
-    for (const [, value] of $sortedEntries(hi, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
-    if (m$live) {
-      for (const [, value] of $sortedEntries(m, $cmp)) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(hi, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    }
+      if (m$live) {
+        for (const [, value] of $sortedEntries(m, $cmp)) {
+          console.log(`drop ${value[0]}`);
+        }
+      }
+    });
     throw error;
   }
   try {
@@ -312,14 +325,16 @@ function splitOff() {
         .join(", ")}]`,
     );
   } catch (error) {
-    for (const [, value] of $sortedEntries(hi, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
-    if (m$live) {
-      for (const [, value] of $sortedEntries(m, $cmp)) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(hi, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    }
+      if (m$live) {
+        for (const [, value] of $sortedEntries(m, $cmp)) {
+          console.log(`drop ${value[0]}`);
+        }
+      }
+    });
     throw error;
   }
   m$live = false;
@@ -327,16 +342,51 @@ function splitOff() {
     for (const [, value] of $sortedEntries(m, $cmp)) {
       console.log(`drop ${value[0]}`);
     }
-    console.log("mid");
-    const s = new $BTreeSet($range(1, 6));
-    const t = $treeSplitOff(s, 3, $cmp, true);
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(hi, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    });
+    throw error;
+  }
+  console.log("mid");
+  let s;
+  try {
+    s = new $BTreeSet($range(1, 6));
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(hi, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    });
+    throw error;
+  }
+  let t;
+  try {
+    t = $treeSplitOff(s, 3, $cmp, true);
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(hi, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    });
+    throw error;
+  }
+  try {
     console.log(
       `{${Array.from($sortedKeys(s, $cmp)).join(", ")}} {${Array.from($sortedKeys(t, $cmp)).join(", ")}}`,
     );
-  } finally {
-    for (const [, value] of $sortedEntries(hi, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(hi, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    });
+    throw error;
+  }
+  for (const [, value] of $sortedEntries(hi, $cmp)) {
+    console.log(`drop ${value[0]}`);
   }
   console.log("end");
 }

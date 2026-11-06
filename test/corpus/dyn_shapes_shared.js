@@ -2,6 +2,7 @@
 
 import {
   $byteLen,
+  $cleanup,
   $cmp,
   $debugF64,
   $debugStr,
@@ -216,24 +217,7 @@ function main() {
   try {
     iter = $iter(shapes);
   } catch (error) {
-    for (const item of byKind.values()) {
-      for (const item$1 of item) {
-        $rcDrop(item$1);
-      }
-    }
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
-    throw error;
-  }
-  while (true) {
-    let s;
-    try {
-      s = $next(iter);
-    } catch (error) {
+    $cleanup(() => {
       for (const item of byKind.values()) {
         for (const item$1 of item) {
           $rcDrop(item$1);
@@ -245,6 +229,27 @@ function main() {
       for (const item of shapes) {
         $rcDrop(item);
       }
+    });
+    throw error;
+  }
+  while (true) {
+    let s;
+    try {
+      s = $next(iter);
+    } catch (error) {
+      $cleanup(() => {
+        for (const item of byKind.values()) {
+          for (const item$1 of item) {
+            $rcDrop(item$1);
+          }
+        }
+        for (const item of sorted) {
+          $rcDrop(item);
+        }
+        for (const item of shapes) {
+          $rcDrop(item);
+        }
+      });
       throw error;
     }
     if (s == null) {
@@ -254,67 +259,75 @@ function main() {
     try {
       key = s.impl.kind(s.value);
     } catch (error) {
-      for (const item of byKind.values()) {
-        for (const item$1 of item) {
-          $rcDrop(item$1);
+      $cleanup(() => {
+        for (const item of byKind.values()) {
+          for (const item$1 of item) {
+            $rcDrop(item$1);
+          }
         }
-      }
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
+        for (const item of sorted) {
+          $rcDrop(item);
+        }
+        for (const item of shapes) {
+          $rcDrop(item);
+        }
+      });
       throw error;
     }
     let tmp;
     try {
       tmp = $orInsertWith(byKind, key, () => []);
     } catch (error) {
-      for (const item of byKind.values()) {
-        for (const item$1 of item) {
-          $rcDrop(item$1);
+      $cleanup(() => {
+        for (const item of byKind.values()) {
+          for (const item$1 of item) {
+            $rcDrop(item$1);
+          }
         }
-      }
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
+        for (const item of sorted) {
+          $rcDrop(item);
+        }
+        for (const item of shapes) {
+          $rcDrop(item);
+        }
+      });
       throw error;
     }
     let tmp$1;
     try {
       tmp$1 = $rcClone(s);
     } catch (error) {
-      for (const item of byKind.values()) {
-        for (const item$1 of item) {
-          $rcDrop(item$1);
+      $cleanup(() => {
+        for (const item of byKind.values()) {
+          for (const item$1 of item) {
+            $rcDrop(item$1);
+          }
         }
-      }
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
+        for (const item of sorted) {
+          $rcDrop(item);
+        }
+        for (const item of shapes) {
+          $rcDrop(item);
+        }
+      });
       throw error;
     }
     try {
       tmp.push(tmp$1);
     } catch (error) {
-      for (const item of byKind.values()) {
-        for (const item$1 of item) {
-          $rcDrop(item$1);
+      $cleanup(() => {
+        for (const item of byKind.values()) {
+          for (const item$1 of item) {
+            $rcDrop(item$1);
+          }
         }
-      }
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
+        for (const item of sorted) {
+          $rcDrop(item);
+        }
+        for (const item of shapes) {
+          $rcDrop(item);
+        }
+      });
       throw error;
     }
   }
@@ -322,33 +335,37 @@ function main() {
   try {
     keys = Array.from(byKind).map(([k, v]) => [k, v.length, $index(v, 0).strong]);
   } catch (error) {
-    for (const item of byKind.values()) {
-      for (const item$1 of item) {
-        $rcDrop(item$1);
+    $cleanup(() => {
+      for (const item of byKind.values()) {
+        for (const item$1 of item) {
+          $rcDrop(item$1);
+        }
       }
-    }
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+      for (const item of sorted) {
+        $rcDrop(item);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    });
     throw error;
   }
   try {
     keys.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) || $cmp(a[2], b[2]));
   } catch (error) {
-    for (const item of byKind.values()) {
-      for (const item$1 of item) {
-        $rcDrop(item$1);
+    $cleanup(() => {
+      for (const item of byKind.values()) {
+        for (const item$1 of item) {
+          $rcDrop(item$1);
+        }
       }
-    }
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+      for (const item of sorted) {
+        $rcDrop(item);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    });
     throw error;
   }
   try {
@@ -356,17 +373,19 @@ function main() {
       `[${keys.map((item) => `(${$debugStr(item[0])}, ${item[1]}, ${item[2]})`).join(", ")}]`,
     );
   } catch (error) {
-    for (const item of byKind.values()) {
-      for (const item$1 of item) {
-        $rcDrop(item$1);
+    $cleanup(() => {
+      for (const item of byKind.values()) {
+        for (const item$1 of item) {
+          $rcDrop(item$1);
+        }
       }
-    }
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+      for (const item of sorted) {
+        $rcDrop(item);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    });
     throw error;
   }
   const value$1 = [
@@ -377,50 +396,56 @@ function main() {
   try {
     ops = new Map(value$1);
   } catch (error) {
-    for (const item of byKind.values()) {
-      for (const item$1 of item) {
-        $rcDrop(item$1);
+    $cleanup(() => {
+      for (const item of byKind.values()) {
+        for (const item$1 of item) {
+          $rcDrop(item$1);
+        }
       }
-    }
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+      for (const item of sorted) {
+        $rcDrop(item);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    });
     throw error;
   }
   let names;
   try {
     names = Array.from(ops.keys());
   } catch (error) {
-    for (const item of byKind.values()) {
-      for (const item$1 of item) {
-        $rcDrop(item$1);
+    $cleanup(() => {
+      for (const item of byKind.values()) {
+        for (const item$1 of item) {
+          $rcDrop(item$1);
+        }
       }
-    }
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+      for (const item of sorted) {
+        $rcDrop(item);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    });
     throw error;
   }
   try {
     names.sort($cmp);
   } catch (error) {
-    for (const item of byKind.values()) {
-      for (const item$1 of item) {
-        $rcDrop(item$1);
+    $cleanup(() => {
+      for (const item of byKind.values()) {
+        for (const item$1 of item) {
+          $rcDrop(item$1);
+        }
       }
-    }
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+      for (const item of sorted) {
+        $rcDrop(item);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    });
     throw error;
   }
   try {
@@ -431,29 +456,41 @@ function main() {
         .join(", ")}]`,
     );
   } catch (error) {
-    for (const item of byKind.values()) {
-      for (const item$1 of item) {
-        $rcDrop(item$1);
+    $cleanup(() => {
+      for (const item of byKind.values()) {
+        for (const item$1 of item) {
+          $rcDrop(item$1);
+        }
       }
-    }
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+      for (const item of sorted) {
+        $rcDrop(item);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    });
     throw error;
   }
   const d = `[${shapes.map((item) => item.impl.Debug().fmt(item.value)).join(", ")}]`;
   try {
     try {
+      let tmp;
       try {
-        console.log(`${$byteLen(show(d))}`);
-      } finally {
-        for (const item of byKind.values()) {
-          for (const item$1 of item) {
-            $rcDrop(item$1);
+        tmp = show(d);
+      } catch (error) {
+        $cleanup(() => {
+          for (const item of byKind.values()) {
+            for (const item$1 of item) {
+              $rcDrop(item$1);
+            }
           }
+        });
+        throw error;
+      }
+      console.log(`${$byteLen(tmp)}`);
+      for (const item of byKind.values()) {
+        for (const item$1 of item) {
+          $rcDrop(item$1);
         }
       }
     } finally {

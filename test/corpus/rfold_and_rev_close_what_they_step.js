@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $dropEach,
   $foldBack,
@@ -37,15 +38,21 @@ function any(it, dropI) {
   const chain = $held(
     $lazyChain($rev($closing(it, dropI, false)), $closing($iter([[6]]), $dropEach(dDrop_drop))),
   );
+  let result;
   try {
-    return $lent(chain).some((d) => {
+    result = $lent(chain).some((d) => {
       const result = d[0] === 1;
       dDrop_drop(d);
       return result;
     });
-  } finally {
-    chain.return();
+  } catch (error) {
+    $cleanup(() => {
+      chain.return();
+    });
+    throw error;
   }
+  chain.return();
+  return result;
 }
 
 function main() {

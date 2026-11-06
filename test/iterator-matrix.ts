@@ -152,7 +152,7 @@ type Shape = { item: Item; owns: boolean; back: boolean; exact: boolean };
  * first closure, in the consumer's closure, or in an item's `Drop`; or, of
  * the points table, at each of its points in turn (`run_points`), which no
  * other table's `sites` makes. */
-export type Site = "none" | "next" | "stage" | "consumer" | "drop" | "points";
+export type Site = "none" | "next" | "stage" | "consumer" | "drop" | "drop+drop" | "points";
 export const sites: Site[] = ["none", "next", "stage", "consumer", "drop"];
 
 type Source = {
@@ -375,8 +375,11 @@ export const setters: Setter[] = ["rfold", "nth_back", "rfind"];
  * consumer capturing a `D` of its own by move, so it drops with the
  * closure, `captures`; or with its iterator's type first stepped from its
  * back elsewhere in the case, by `setter`, a crate-wide fact beside the
- * forward consumer of the same type, `paired` (#731). */
-export type Variant = { kind: "plain" } | { kind: "captures" } | { kind: "paired"; setter: Setter };
+ * forward consumer of the same type, `paired` (#731); or of its site
+ * `drop+drop`, where the drop that panics is followed by another's, which
+ * as the first unwinds aborts natively, `aborts`, a program of its own
+ * (`batches`, #847). */
+export type Variant = { kind: "plain" } | { kind: "captures" } | { kind: "paired"; setter: Setter } | { kind: "aborts" };
 
 export type Case = { n: number; id: string; source: Source; chain: Adapter[]; consumer: Consumer; site: Site; variant: Variant };
 
@@ -409,6 +412,7 @@ function applies(site: Site, source: Source, chain: Adapter[], consumer: Consume
     case "consumer":
       return consumer.closure;
     case "drop":
+    case "drop+drop":
       return shapes.some((shape) => shape.owns);
     // Every case has points: `pointsCases()` makes them, not `sites`.
     case "points":
@@ -439,7 +443,8 @@ const forward = ["count", "last", "nth", "vec", "fold"];
 export function allCases(): Case[] {
   const out: Case[] = [];
   const add = (source: Source, chain: Adapter[], consumer: Consumer, site: Site, variant: Variant) => {
-    const tail = variant.kind === "plain" ? "" : variant.kind === "captures" ? " | captures" : ` | after ${variant.setter}`;
+    const tail =
+      variant.kind === "plain" || variant.kind === "aborts" ? "" : variant.kind === "captures" ? " | captures" : ` | after ${variant.setter}`;
     const id = `${source.name} | ${chain.map((a) => a.name).join(".") || "-"} | ${consumer.name} | ${site}${tail}`;
     out.push({ n: out.length, id, source, chain, consumer, site, variant });
   };
@@ -469,6 +474,18 @@ export function allCases(): Case[] {
       for (const consumer of consumers) {
         if (!forward.includes(consumer.name)) continue;
         for (const setter of setters) add(source, chain, consumer, "none", { kind: "paired", setter });
+      }
+    });
+  }
+  // Then, each a program of its own, a drop that panics and the next
+  // drop after it, which natively aborts where it's as the first unwinds
+  // (#847): of no adapter, or one, collected into a `Vec`.
+  for (const source of sources) {
+    eachChain(source, (chain, shape, shapes) => {
+      if (chain.length > 1) return;
+      for (const consumer of consumers) {
+        if (!consumer.takes(shape) || (chain.length === 1 && consumer.name !== "vec")) continue;
+        if (applies("drop+drop", source, chain, consumer, shapes)) add(source, chain, consumer, "drop+drop", { kind: "aborts" });
       }
     });
   }
@@ -751,7 +768,11 @@ export const casesOf = (of: Table): Case[] => (of === "matrix" ? allCases() : of
 /** The cases in programs of `perBatch`, in their order. */
 export function batches(cases: Case[], perBatch = 60): Case[][] {
   const out: Case[][] = [];
-  for (let i = 0; i < cases.length; i += perBatch) out.push(cases.slice(i, i + perBatch));
+  // One that aborts ends its program, so it's a program of its own, after
+  // the others, whose batches are as before (#847).
+  const others = cases.filter((c) => c.variant.kind !== "aborts");
+  for (let i = 0; i < others.length; i += perBatch) out.push(others.slice(i, i + perBatch));
+  for (const c of cases) if (c.variant.kind === "aborts") out.push([c]);
   return out;
 }
 
@@ -791,6 +812,8 @@ export function sample<T>(items: T[], seed: number, count: number): T[] {
 function strata(c: Case): string[] {
   const { source, chain, consumer, site, variant } = c;
   const kind = variant.kind === "paired" ? `after ${variant.setter}` : variant.kind;
+  // Each a program of its own: the slice runs one of each consumer's.
+  if (variant.kind === "aborts") return [`${kind} | consumer ${consumer.name}`];
   if (variant.kind === "paired") return [`${kind} | source ${source.name} | chain ${chain.map((a) => a.name).join(".")}`, `${kind} | consumer ${consumer.name}`];
   return [
     `${kind} | source ${source.name} | consumer ${consumer.name}`,
@@ -830,7 +853,8 @@ function caseFn(c: Case, n: number): string {
   const name = `case_${n}`;
   const { source, chain, consumer, site } = c;
   const body: string[] = [];
-  if (site === "drop") body.push("BOOM.store(3, Ordering::Relaxed);");
+  if (site === "drop" || site === "drop+drop") body.push("BOOM.store(3, Ordering::Relaxed);");
+  if (site === "drop+drop") body.push("TWICE.store(1, Ordering::Relaxed);");
   if (source.before && !source.generic) body.push(source.before);
   if (chain.some((a) => a.name === "chain") && source.shape.item === "&D") body.push("let tail = vec![D(6), D(7)];");
   if (site === "stage") body.push("let mut calls = 0;");
@@ -1141,6 +1165,27 @@ function withPoints(text: string): string {
   return points.reduce((out, [from, to]) => out.replaceAll(from, to), text);
 }
 
+/** The prelude of a program of a case of `drop+drop` (#847): once the
+ * drop that panics has, the next drop panics too, which natively aborts
+ * where it's as the first unwinds, and ends the case otherwise. */
+function withTwice(text: string): string {
+  const twice: [string, string][] = [
+    [
+      "static BOOM: AtomicU32 = AtomicU32::new(0);\n",
+      "static BOOM: AtomicU32 = AtomicU32::new(0);\n\n/** Of a case of `drop+drop`: 1 once it's set, 2 once that drop has panicked. */\nstatic TWICE: AtomicU32 = AtomicU32::new(0);\n",
+    ],
+    [
+      'println!("drop {}", self.0);\n        if self.0 == BOOM.load(Ordering::Relaxed) {\n            BOOM.store(0, Ordering::Relaxed);\n',
+      'println!("drop {}", self.0);\n        if TWICE.load(Ordering::Relaxed) == 2 {\n            TWICE.store(0, Ordering::Relaxed);\n            panic!("drop again");\n        }\n        if self.0 == BOOM.load(Ordering::Relaxed) {\n            BOOM.store(0, Ordering::Relaxed);\n            if TWICE.load(Ordering::Relaxed) == 1 {\n                TWICE.store(2, Ordering::Relaxed);\n            }\n',
+    ],
+    ["    BOOM.store(0, Ordering::Relaxed);\n    match ended", "    BOOM.store(0, Ordering::Relaxed);\n    TWICE.store(0, Ordering::Relaxed);\n    match ended"],
+  ];
+  return twice.reduce((out, [from, to]) => {
+    if (!out.includes(from)) throw new Error(`withTwice: the prelude has no ${JSON.stringify(from)}`);
+    return out.replace(from, to);
+  }, text);
+}
+
 /** A program of `cases`, which runs each in turn. */
 export function program(cases: Case[], of: Table = table): string {
   const used = new Set(cases.map((c) => c.source.name.replace(/^generic /, "")));
@@ -1148,6 +1193,9 @@ export function program(cases: Case[], of: Table = table): string {
   const fns = cases.map((c, n) => caseFn(c, n));
   const runner = of === "points" ? "run_points" : "run";
   const main = `fn main() {\n${cases.map((c, n) => `    ${runner}(${JSON.stringify(c.id)}, case_${n});`).join("\n")}\n}`;
+  if (cases.some((c) => c.site === "drop+drop")) {
+    return [withTwice(prelude), ...iterators, ...fns, main].join("\n\n") + "\n";
+  }
   if (of !== "points") return [prelude, ...iterators, ...fns, main].join("\n\n") + "\n";
   return [withPoints(prelude) + pointsRunner, ...iterators.map(withPoints), ...fns, main].join("\n\n") + "\n";
 }

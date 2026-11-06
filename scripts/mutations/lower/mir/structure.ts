@@ -690,4 +690,12 @@ export const mutations: Mutation[] = [
     replace: "                    if let Some(refused) = self.untold_class(*enum_ty, &variants).filter(|_| false) {\n                        return Err(self.tcx.dcx().span_err(span, refused));\n",
     tests: ["test/webapi-objects.test.ts", "-t", "told by their nodeType"],
   },
+  {
+    name: "assert-drops-unguarded",
+    breaks: "a failed check's panic runs its drops unguarded, so a drop's panic there replaces it where Rust aborts (#847)",
+    file: "src/lower/mir/structure.rs",
+    find: "                let mut panic = crate::lower::drops::cleanup(unwound, js_span);\n",
+    replace: "                let mut panic = unwound;\n",
+    tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_assert.rs$"],
+  },
 ];

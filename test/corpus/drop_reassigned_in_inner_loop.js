@@ -151,12 +151,7 @@ function fromBumped(n) {
   function bump() {
     s = (s + 1) >>> 0;
   }
-  try {
-    bump();
-  } catch (error) {
-    console.log(`drop ${d[0]}`);
-    throw error;
-  }
+  bump();
   let sum = 0;
   let iter;
   try {

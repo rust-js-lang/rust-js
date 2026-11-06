@@ -13,6 +13,7 @@ import {
   mapDoubleEndedIterator_tryRfold,
 } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $closing,
   $enumerate,
   $exactLen,
@@ -68,15 +69,22 @@ function countDoubleEndedIterator_nthBack(count, n) {
 function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
   console.log("rfold");
   let acc = init;
-  try {
-    let x;
-    while ((x = countDoubleEndedIterator_nextBack(count)) != null) {
-      acc = f(acc, x);
+  let x;
+  while ((x = countDoubleEndedIterator_nextBack(count)) != null) {
+    let tmp;
+    try {
+      tmp = f(acc, x);
+    } catch (error) {
+      $cleanup(() => {
+        dropF?.(f);
+      });
+      throw error;
     }
-    return acc;
-  } finally {
-    dropF?.(f);
+    acc = tmp;
   }
+  const result = acc;
+  dropF?.(f);
+  return result;
 }
 
 function count() {
@@ -105,30 +113,38 @@ function loudDoubleEndedIterator_rfold(loud, init, f, dropB, dropF) {
   let acc = init;
   let result;
   try {
-    try {
-      while (true) {
-        let x;
-        try {
-          x = loudDoubleEndedIterator_nextBack(loud);
-        } catch (error) {
+    while (true) {
+      let x;
+      try {
+        x = loudDoubleEndedIterator_nextBack(loud);
+      } catch (error) {
+        $cleanup(() => {
           if (acc$live) {
             dropB?.(acc);
           }
-          throw error;
-        }
-        if (x == null) {
-          break;
-        }
-        acc$live = false;
-        const value = f(acc, x);
-        acc$live = true;
-        acc = value;
+          dropF?.(f);
+        });
+        throw error;
+      }
+      if (x == null) {
+        break;
       }
       acc$live = false;
-      result = acc;
-    } finally {
-      dropF?.(f);
+      let tmp;
+      try {
+        tmp = f(acc, x);
+      } catch (error) {
+        $cleanup(() => {
+          dropF?.(f);
+        });
+        throw error;
+      }
+      acc$live = true;
+      acc = tmp;
     }
+    acc$live = false;
+    result = acc;
+    dropF?.(f);
   } finally {
     loudDrop_drop(loud);
   }

@@ -13,6 +13,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $count,
   $dropEach,
@@ -73,17 +74,31 @@ function countDoubleEndedIterator_nextBack(count) {
 
 function nthBack(it, dropI) {
   const rev = $held($rev($closing(it, dropI, false)));
-  try {
-    const d = $nthBack(rev, 1, undefined, dDrop_drop);
-    function map(d) {
-      const result = d[0] + 0;
-      dDrop_drop(d);
-      return result;
-    }
-    return d != null ? map(d) : undefined;
-  } finally {
-    rev.return();
+  let d;
+  function map(d) {
+    const result = d[0] + 0;
+    dDrop_drop(d);
+    return result;
   }
+  try {
+    d = $nthBack(rev, 1, undefined, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      rev.return();
+    });
+    throw error;
+  }
+  let result;
+  try {
+    result = d != null ? map(d) : undefined;
+  } catch (error) {
+    $cleanup(() => {
+      rev.return();
+    });
+    throw error;
+  }
+  rev.return();
+  return result;
 }
 
 function ends(it, dropI) {
@@ -96,59 +111,95 @@ function ends(it, dropI) {
       dDrop_drop,
     ),
   );
+  let nextBack;
+  function map(d) {
+    const result = d[0] + 0;
+    dDrop_drop(d);
+    return result;
+  }
+  let a;
   try {
-    const nextBack = revDoubleEndedIterator_nextBack(
+    nextBack = revDoubleEndedIterator_nextBack(
       r,
       { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
       dropI,
       dDrop_drop,
     );
-    function map(d) {
-      const result = d[0] + 0;
-      dDrop_drop(d);
-      return result;
-    }
-    const a = nextBack != null ? map(nextBack) : undefined;
-    const next = $next(r);
-    function map$1(d) {
-      const result = d[0] + 0;
-      dDrop_drop(d);
-      return result;
-    }
-    const b = next != null ? map$1(next) : undefined;
-    const option = a != null && b != null ? [a, b] : undefined;
-    return option != null ? (((option[0] * 100) >>> 0) + option[1]) >>> 0 : undefined;
-  } finally {
-    r.return();
+    a = nextBack != null ? map(nextBack) : undefined;
+  } catch (error) {
+    $cleanup(() => {
+      r.return();
+    });
+    throw error;
   }
+  let next;
+  function map$1(d) {
+    const result = d[0] + 0;
+    dDrop_drop(d);
+    return result;
+  }
+  let b;
+  try {
+    next = $next(r);
+    b = next != null ? map$1(next) : undefined;
+  } catch (error) {
+    $cleanup(() => {
+      r.return();
+    });
+    throw error;
+  }
+  const option = a != null && b != null ? [a, b] : undefined;
+  const result = option != null ? (((option[0] * 100) >>> 0) + option[1]) >>> 0 : undefined;
+  r.return();
+  return result;
 }
 
 function rfold(it, dropI) {
   const iter = $rev($closing(it, dropI, false));
+  let result;
   try {
-    return $foldBack(iter, "", (s, d) => {
+    result = $foldBack(iter, "", (s, d) => {
       const result = s + String(d[0]);
       dDrop_drop(d);
       return result;
     });
-  } finally {
-    iter.return();
+  } catch (error) {
+    $cleanup(() => {
+      iter.return();
+    });
+    throw error;
   }
+  iter.return();
+  return result;
 }
 
 function rfind(it, dropI) {
   const rev = $held($rev($closing(it, dropI, false)));
-  try {
-    const d = $findBack(rev, (d) => d[0] % 2 === 0, undefined, dDrop_drop);
-    function map(d) {
-      const result = d[0] + 0;
-      dDrop_drop(d);
-      return result;
-    }
-    return d != null ? map(d) : undefined;
-  } finally {
-    rev.return();
+  let d;
+  function map(d) {
+    const result = d[0] + 0;
+    dDrop_drop(d);
+    return result;
   }
+  try {
+    d = $findBack(rev, (d) => d[0] % 2 === 0, undefined, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      rev.return();
+    });
+    throw error;
+  }
+  let result;
+  try {
+    result = d != null ? map(d) : undefined;
+  } catch (error) {
+    $cleanup(() => {
+      rev.return();
+    });
+    throw error;
+  }
+  rev.return();
+  return result;
 }
 
 function numbers(it) {
@@ -342,14 +393,19 @@ function main() {
       ),
       0,
       (s, d) => {
-        try {
-          if (d[0] === 2) {
+        if (d[0] === 2) {
+          try {
             throw new Error("fold");
+          } catch (error) {
+            $cleanup(() => {
+              dDrop_drop(d);
+            });
+            throw error;
           }
-          return (((s * 10) >>> 0) + d[0]) >>> 0;
-        } finally {
-          dDrop_drop(d);
         }
+        const result = (((s * 10) >>> 0) + d[0]) >>> 0;
+        dDrop_drop(d);
+        return result;
       },
     ),
   );

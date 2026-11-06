@@ -12,6 +12,7 @@ import {
   mapDoubleEndedIterator_tryRfold,
 } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $closing,
   $collectDropping,
   $filterEnds,
@@ -125,7 +126,9 @@ function main() {
   try {
     tmp = mk();
   } catch (error) {
-    map.return();
+    $cleanup(() => {
+      map.return();
+    });
     throw error;
   }
   const s = $foldBack(map, tmp, (a, x) => a + String(x));
@@ -183,15 +186,18 @@ function main() {
       },
     ),
   );
+  let nextBack;
   try {
-    const nextBack = mapDoubleEndedIterator_nextBack(
-      it,
-      chainDoubleEndedIterator,
-      undefined,
-      (chain) => {
-        chain.return();
-      },
-    );
+    nextBack = mapDoubleEndedIterator_nextBack(it, chainDoubleEndedIterator, undefined, (chain) => {
+      chain.return();
+    });
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  try {
     const value = $nthBack(
       $knowing(
         it,
@@ -243,36 +249,65 @@ function main() {
     console.log(
       `${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
     );
-    const v = [["v1"], ["v2"]];
-    try {
-      const w = $mapEnds(
-        $filterEnds(
-          $lazyChain(
-            $closing(
-              $iterator([2, "g"], ownIterator_next, false, ownDoubleEndedIterator_nextBack),
-              (it) => {
-                ownDrop_drop(it.of);
-              },
-            ),
-            $closing(
-              $iterator([1, "h"], ownIterator_next, false, ownDoubleEndedIterator_nextBack),
-              (it) => {
-                ownDrop_drop(it.of);
-              },
-            ),
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  const v = [["v1"], ["v2"]];
+  let w;
+  try {
+    w = $mapEnds(
+      $filterEnds(
+        $lazyChain(
+          $closing(
+            $iterator([2, "g"], ownIterator_next, false, ownDoubleEndedIterator_nextBack),
+            (it) => {
+              ownDrop_drop(it.of);
+            },
           ),
-          (x) => x > 0,
+          $closing(
+            $iterator([1, "h"], ownIterator_next, false, ownDoubleEndedIterator_nextBack),
+            (it) => {
+              ownDrop_drop(it.of);
+            },
+          ),
         ),
-        (x) => (x + v.length) >>> 0,
-      );
-      console.log(`[${$collectDropping($rev(w)).join(", ")}]`);
-    } finally {
+        (x) => x > 0,
+      ),
+      (x) => (x + v.length) >>> 0,
+    );
+  } catch (error) {
+    $cleanup(() => {
       for (const item of v) {
         console.log(`drop tag ${item[0]}`);
       }
-    }
-  } finally {
-    it.return();
+      it.return();
+    });
+    throw error;
   }
+  try {
+    console.log(`[${$collectDropping($rev(w)).join(", ")}]`);
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of v) {
+        console.log(`drop tag ${item[0]}`);
+      }
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    for (const item of v) {
+      console.log(`drop tag ${item[0]}`);
+    }
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  it.return();
 }
 //# sourceMappingURL=case.js.map

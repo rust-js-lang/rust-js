@@ -3,6 +3,7 @@
 import {
   $borrow,
   $borrowMut,
+  $cleanup,
   $displayF64,
   $dropItems,
   $dynCell,
@@ -105,8 +106,10 @@ function main() {
     try {
       borrowMut = $borrowMut(shape.value, true);
     } catch (error) {
-      $rcDrop(shape, (value) => {
-        value.impl.$drop?.(value.shape);
+      $cleanup(() => {
+        $rcDrop(shape, (value) => {
+          value.impl.$drop?.(value.shape);
+        });
       });
       throw error;
     }
@@ -122,26 +125,23 @@ function main() {
     try {
       receiver.impl.grow(receiver, 1);
     } catch (error) {
-      $unborrow(borrowMut);
-      $rcDrop(shape, (value) => {
-        value.impl.$drop?.(value.shape);
+      $cleanup(() => {
+        $unborrow(borrowMut);
+        $rcDrop(shape, (value) => {
+          value.impl.$drop?.(value.shape);
+        });
       });
       throw error;
     }
-    try {
-      $unborrow(borrowMut);
-    } catch (error) {
-      $rcDrop(shape, (value) => {
-        value.impl.$drop?.(value.shape);
-      });
-      throw error;
-    }
+    $unborrow(borrowMut);
     let borrow;
     try {
       borrow = $borrow(circle.value);
     } catch (error) {
-      $rcDrop(shape, (value) => {
-        value.impl.$drop?.(value.shape);
+      $cleanup(() => {
+        $rcDrop(shape, (value) => {
+          value.impl.$drop?.(value.shape);
+        });
       });
       throw error;
     }
@@ -149,8 +149,10 @@ function main() {
     try {
       tmp = $borrow(circle.value);
     } catch (error) {
-      $rcDrop(shape, (value) => {
-        value.impl.$drop?.(value.shape);
+      $cleanup(() => {
+        $rcDrop(shape, (value) => {
+          value.impl.$drop?.(value.shape);
+        });
       });
       throw error;
     }
@@ -163,125 +165,108 @@ function main() {
       strong: 1,
       weak: 0,
     };
-    let rc;
+    let shapes;
     try {
-      rc = $rcClone(square);
-      $dynCell(rc.value, squareShape);
-    } catch (error) {
-      $rcDrop(shape, (value) => {
+      let rc;
+      try {
+        rc = $rcClone(square);
+        $dynCell(rc.value, squareShape);
+      } catch (error) {
+        $cleanup(() => {
+          $rcDrop(shape, (value) => {
+            value.impl.$drop?.(value.shape);
+          });
+        });
+        throw error;
+      }
+      shapes = [shape, rc];
+      let tmp;
+      try {
+        tmp = $borrowMut($index(shapes, 1).value, true);
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(shapes, (item) => {
+            $rcDrop(item, (value) => {
+              value.impl.$drop?.(value.shape);
+            });
+          });
+        });
+        throw error;
+      }
+      const receiver = {
+        impl: tmp.impl,
+        get value() {
+          return tmp.shape;
+        },
+        set value(value) {
+          tmp.shape = value;
+        },
+      };
+      try {
+        receiver.impl.grow(receiver, 3);
+      } catch (error) {
+        $cleanup(() => {
+          $unborrow(tmp);
+          $dropItems(shapes, (item) => {
+            $rcDrop(item, (value) => {
+              value.impl.$drop?.(value.shape);
+            });
+          });
+        });
+        throw error;
+      }
+      $unborrow(tmp);
+      let tmp$1;
+      try {
+        tmp$1 = $borrowMut($index(shapes, 1).value);
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(shapes, (item) => {
+            $rcDrop(item, (value) => {
+              value.impl.$drop?.(value.shape);
+            });
+          });
+        });
+        throw error;
+      }
+      tmp$1.label = (tmp$1.label + 1) >>> 0;
+      let tmp$2;
+      try {
+        tmp$2 = total(shapes);
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(shapes, (item) => {
+            $rcDrop(item, (value) => {
+              value.impl.$drop?.(value.shape);
+            });
+          });
+        });
+        throw error;
+      }
+      let tmp$3;
+      try {
+        tmp$3 = $borrow(square.value);
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(shapes, (item) => {
+            $rcDrop(item, (value) => {
+              value.impl.$drop?.(value.shape);
+            });
+          });
+        });
+        throw error;
+      }
+      console.log(`${$displayF64(tmp$2)} ${tmp$3.label}`);
+    } finally {
+      $rcDrop(square, (value) => {
+        squareDrop_drop(value.shape);
+      });
+    }
+    $dropItems(shapes, (item) => {
+      $rcDrop(item, (value) => {
         value.impl.$drop?.(value.shape);
       });
-      $rcDrop(square, (value) => {
-        squareDrop_drop(value.shape);
-      });
-      throw error;
-    }
-    const shapes = [shape, rc];
-    let tmp$1;
-    try {
-      tmp$1 = $borrowMut($index(shapes, 1).value, true);
-    } catch (error) {
-      $dropItems(shapes, (item) => {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.shape);
-        });
-      });
-      $rcDrop(square, (value) => {
-        squareDrop_drop(value.shape);
-      });
-      throw error;
-    }
-    const receiver$1 = {
-      impl: tmp$1.impl,
-      get value() {
-        return tmp$1.shape;
-      },
-      set value(value) {
-        tmp$1.shape = value;
-      },
-    };
-    try {
-      receiver$1.impl.grow(receiver$1, 3);
-    } catch (error) {
-      $unborrow(tmp$1);
-      $dropItems(shapes, (item) => {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.shape);
-        });
-      });
-      $rcDrop(square, (value) => {
-        squareDrop_drop(value.shape);
-      });
-      throw error;
-    }
-    try {
-      $unborrow(tmp$1);
-    } catch (error) {
-      $dropItems(shapes, (item) => {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.shape);
-        });
-      });
-      $rcDrop(square, (value) => {
-        squareDrop_drop(value.shape);
-      });
-      throw error;
-    }
-    let tmp$2;
-    try {
-      tmp$2 = $borrowMut($index(shapes, 1).value);
-    } catch (error) {
-      $dropItems(shapes, (item) => {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.shape);
-        });
-      });
-      $rcDrop(square, (value) => {
-        squareDrop_drop(value.shape);
-      });
-      throw error;
-    }
-    tmp$2.label = (tmp$2.label + 1) >>> 0;
-    let tmp$3;
-    try {
-      tmp$3 = total(shapes);
-    } catch (error) {
-      $dropItems(shapes, (item) => {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.shape);
-        });
-      });
-      $rcDrop(square, (value) => {
-        squareDrop_drop(value.shape);
-      });
-      throw error;
-    }
-    let tmp$4;
-    try {
-      tmp$4 = $borrow(square.value);
-    } catch (error) {
-      $dropItems(shapes, (item) => {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.shape);
-        });
-      });
-      $rcDrop(square, (value) => {
-        squareDrop_drop(value.shape);
-      });
-      throw error;
-    }
-    console.log(`${$displayF64(tmp$3)} ${tmp$4.label}`);
-    try {
-      $rcDrop(square, (value) => {
-        squareDrop_drop(value.shape);
-      });
-    } finally {
-      $dropItems(shapes, (item) => {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.shape);
-        });
-      });
-    }
+    });
     console.log(`${circle.strong}`);
   } finally {
     $rcDrop(circle);

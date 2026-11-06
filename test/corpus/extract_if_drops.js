@@ -2,6 +2,7 @@
 
 import {
   $BTreeMap,
+  $cleanup,
   $cmp,
   $collectDropping,
   $extendMap,
@@ -90,8 +91,9 @@ function fromMaps() {
     $cmp,
     loudDrop_drop,
   );
+  let iter;
   try {
-    const iter = Iterator.from(
+    iter = Iterator.from(
       $mapExtractIf(
         m,
         (k) => k === 2,
@@ -100,32 +102,80 @@ function fromMaps() {
         false,
       ),
     );
-    let value;
-    while ((value = $next(iter)) != null) {
-      const k = value[0];
-      const l = value[1];
-      console.log(`map took ${k} ${l[0]}`);
-      loudDrop_drop(l);
-    }
-    const h = $extendMap(new Map(), [[1, [40]]], false, loudDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(m, $cmp)) {
+        loudDrop_drop(value);
+      }
+    });
+    throw error;
+  }
+  let tmp;
+  while (true) {
     try {
-      const gone = Iterator.from($mapExtractIf(h, (_, l) => l[0] === 40, h, false, false)).reduce(
-        (n, item) => {
-          loudDrop_drop(item[1]);
-          return n + 1;
-        },
-        0,
-      );
-      console.log(`hash ${gone} ${h.size} ${m.size}`);
-    } finally {
+      tmp = $next(iter);
+    } catch (error) {
+      $cleanup(() => {
+        for (const [, value] of $sortedEntries(m, $cmp)) {
+          loudDrop_drop(value);
+        }
+      });
+      throw error;
+    }
+    if (tmp == null) {
+      break;
+    }
+    const k = tmp[0];
+    const l = tmp[1];
+    console.log(`map took ${k} ${l[0]}`);
+    loudDrop_drop(l);
+  }
+  let h;
+  try {
+    h = $extendMap(new Map(), [[1, [40]]], false, loudDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(m, $cmp)) {
+        loudDrop_drop(value);
+      }
+    });
+    throw error;
+  }
+  let gone;
+  try {
+    gone = Iterator.from($mapExtractIf(h, (_, l) => l[0] === 40, h, false, false)).reduce(
+      (n, item) => {
+        loudDrop_drop(item[1]);
+        return n + 1;
+      },
+      0,
+    );
+  } catch (error) {
+    $cleanup(() => {
       for (const item of h.values()) {
         loudDrop_drop(item);
       }
+      for (const [, value] of $sortedEntries(m, $cmp)) {
+        loudDrop_drop(value);
+      }
+    });
+    throw error;
+  }
+  console.log(`hash ${gone} ${h.size} ${m.size}`);
+  try {
+    for (const item of h.values()) {
+      loudDrop_drop(item);
     }
-  } finally {
-    for (const [, value] of $sortedEntries(m, $cmp)) {
-      loudDrop_drop(value);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(m, $cmp)) {
+        loudDrop_drop(value);
+      }
+    });
+    throw error;
+  }
+  for (const [, value] of $sortedEntries(m, $cmp)) {
+    loudDrop_drop(value);
   }
 }
 function main() {

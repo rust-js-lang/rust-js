@@ -668,7 +668,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let js_span = self.js_span(span);
                 // The panic drops what's there as it unwinds, then is thrown.
-                let mut panic = self.mir_unwind(state, *unwind)?;
+                let unwound = self.mir_unwind(state, *unwind)?;
+                let mut panic = crate::lower::drops::cleanup(unwound, js_span);
                 panic.push(StmtKind::Throw(Expr::panic(message)).at(js_span));
                 out.push(StmtKind::If(failed, panic, None).at(js_span));
                 out.extend(self.mir_branch(state, block, *target)?);

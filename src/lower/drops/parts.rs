@@ -153,10 +153,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // pair, which it is (ADR 0520); a `Weak`: `$weakDrop` (ADR 0320).
             ty::Adt(..) if let Some(pointee) = self.counted_rc(ty) => {
                 let mut args = vec![value];
+                // Whether what the last drops never throws, as a count never does.
+                let mut quiet = true;
                 if self.drops(pointee) == Drops::Runs {
                     let name = self.fresh("value");
                     let mut body = Vec::new();
                     self.drop_in(Expr::var(&name), pointee, span, made, &mut body)?;
+                    quiet = !may_throw(&body);
                     // `(value) => { dropNode(value); }` is `dropNode`.
                     let drop = match body.as_slice() {
                         [
@@ -177,11 +180,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     args.push(drop);
                 }
-                // Of no `drop`, it never throws: a count, one less.
+                // Of no `drop`, or one that never throws, it never throws: a
+                // count, one less, then that drop where it's the last (#847).
                 let mut call = Expr::call(Expr::helper("$rcDrop"), args);
-                if let js::ExprKind::Call(_, given) = &call.kind
-                    && given.len() == 1
-                {
+                if quiet {
                     call.facts = call.facts.with(js::Known::NeverThrows);
                 }
                 out.push(StmtKind::Expr(call).at(js_span));
@@ -446,18 +448,60 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 /// Each of `parts`' drops in turn, as Rust's drop glue runs them: one that
-/// may throw, a destructor's panic, the rest after it in its `finally`, so
-/// they still run, `try { boom_drop(pair.first); } finally {
+/// may throw, a destructor's panic, the rest after it, which run as it
+/// unwinds too (`dropped_after`), `try { boom_drop(pair.first); } finally {
 /// loudDrop_drop(pair.second); }` (#416). One that can't, as it is.
-pub(super) fn each_dropped(parts: Vec<Vec<Stmt>>, js_span: js::Span) -> Vec<Stmt> {
+pub(in crate::lower) fn each_dropped(parts: Vec<Vec<Stmt>>, js_span: js::Span) -> Vec<Stmt> {
     let mut rest: Vec<Stmt> = Vec::new();
     for part in parts.into_iter().rev().filter(|part| !part.is_empty()) {
         rest = match rest.is_empty() || !may_throw(&part) {
             true => part.into_iter().chain(rest).collect(),
-            false => vec![StmtKind::Try(part, rest).at(js_span)],
+            false => dropped_after(part, rest, js_span),
         };
     }
     rest
+}
+
+/// `body`, then `dropped`, which runs too as a panic in `body` unwinds: a
+/// `try` whose `finally` it is, where it can't throw. Else, as a `finally`
+/// can't tell a drop's panic as a panic unwinds, which aborts (#847), from
+/// one on the way on, `try { body } catch (error) { dropped; throw error; }
+/// dropped`, whose cleanup tidy guards last (`$cleanup`). Of a `body` with
+/// no way out but its end or a throw. The one form of what runs after a
+/// body as it ends either way, of what's dropped where it's emitted.
+pub(in crate::lower) fn dropped_after(body: Vec<Stmt>, dropped: Vec<Stmt>, js_span: js::Span) -> Vec<Stmt> {
+    if !may_throw(&dropped) {
+        return vec![StmtKind::Try(body, dropped).at(js_span)];
+    }
+    let mut handler = dropped.clone();
+    handler.push(StmtKind::Throw(Expr::var("error")).at(js_span));
+    let mut out = vec![StmtKind::TryCatch(body, Some("error".into()), handler).at(js_span)];
+    out.extend(dropped);
+    out
+}
+
+/// What a panic runs as it unwinds, `cleanup`, the drops of what the frames
+/// it leaves hold: as it is where it can't throw; else in `$cleanup(() =>
+/// { .. })`, where a throw, a drop's panic while that panic unwinds, aborts
+/// the process, as Rust's does (#847). The lowering's one guard of what
+/// runs as a panic unwinds, as `$dropsUnwinding` is the runtime's; so a
+/// `finally`, which runs on either path and can't tell them apart, holds
+/// only what can't throw.
+pub(in crate::lower) fn cleanup(cleanup: Vec<Stmt>, js_span: js::Span) -> Vec<Stmt> {
+    if !may_throw(&cleanup) {
+        return cleanup;
+    }
+    vec![StmtKind::Expr(Expr::call_helper("$cleanup", vec![Expr::arrow(vec![], cleanup)])).at(js_span)]
+}
+
+/// Whether `stmts` are a cleanup as `cleanup` leaves it: what can't throw,
+/// or one `$cleanup(..)`.
+pub(in crate::lower) fn is_cleanup(stmts: &[Stmt]) -> bool {
+    let guarded = |stmt: &Stmt| {
+        matches!(&stmt.kind, StmtKind::Expr(call)
+            if matches!(&call.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$cleanup")))
+    };
+    matches!(stmts, [stmt] if guarded(stmt)) || !may_throw(stmts)
 }
 
 /// Each of `items` dropped by `body`, binding it to `pattern`: `for (const
@@ -502,7 +546,7 @@ fn items_dropped(items: Expr, pattern: js::Pattern, body: Vec<Stmt>, js_span: js
 
 /// Whether a drop's `stmts` may throw: a statement that may, or a branch's,
 /// a loop's over what's made, or a `try`'s.
-pub(super) fn may_throw(stmts: &[Stmt]) -> bool {
+pub(in crate::lower) fn may_throw(stmts: &[Stmt]) -> bool {
     stmts.iter().any(|stmt| match &stmt.kind {
         StmtKind::If(test, then, otherwise) => {
             test.may_throw() || may_throw(then) || otherwise.as_deref().is_some_and(may_throw)

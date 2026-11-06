@@ -373,8 +373,9 @@ export function work(fail) {
 
 `work(true)` prints `closing inner`, then `closing outer`, then throws.
 A JS exception thrown through Rust code unwinds it the same way. A `drop`
-that panics while another panic unwinds replaces that panic, where Rust
-aborts.
+that panics while another panic unwinds aborts the process, as Rust does
+([semantics](../semantics.md), ADR 0660, amended); a drop that may panic is
+dropped in a `catch` and again after the `try`, not in a `finally`.
 
 A scope's `if`s, loops and `return`s from inside them are in its `try`,
 `if (wrap) { return callback(); }` too, each `return` where it's written,

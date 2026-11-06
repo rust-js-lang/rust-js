@@ -6,6 +6,7 @@ import {
   $add,
   $btreeMap,
   $btreeSet,
+  $cleanup,
   $cmp,
   $extendMap,
   $insert,
@@ -35,47 +36,127 @@ function main() {
   const m = new $KeyMap();
   try {
     $insert(m, [1], 10, keyDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of m.keys()) {
+        keyDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  try {
     const value = $insert(m, [1], 11, keyDrop_drop);
     console.log(`insert ${value == null ? "None" : `Some(${value})`}`);
-    const key = [1];
-    $orInsert(m, key, 0, undefined, keyDrop_drop);
-    const orInsert = $mutGet(m, key);
-    orInsert.value = (orInsert.value + 1) | 0;
-    const key$1 = [2];
-    $orInsert(m, key$1, 0, undefined, keyDrop_drop);
-    const value$1 = $mutGet(m, key$1);
-    value$1.value = (value$1.value + 1) | 0;
-    const key$2 = [2];
-    $orInsertWith(m, key$2, () => 5, keyDrop_drop);
-    const orInsertWith = $mutGet(m, key$2);
-    orInsertWith.value = (orInsertWith.value + 1) | 0;
-    const value$2 = [2];
-    try {
-      const value = $remove(m, value$2, keyDrop_drop);
-      console.log(`remove ${value == null ? "None" : `Some(${value})`}`);
-    } finally {
-      keyDrop_drop(value$2);
-    }
-    const value$3 = [1];
-    try {
-      const value = m.get(value$3);
-      console.log(`get ${value == null ? "None" : `Some(${value})`}`);
-    } finally {
-      keyDrop_drop(value$3);
-    }
-    const value$4 = [1];
-    try {
-      const removeEntry = $removeEntry(m, value$4);
-      function map([k, v]) {
-        const result = [k[0], v];
-        keyDrop_drop(k);
-        return result;
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of m.keys()) {
+        keyDrop_drop(item);
       }
-      const value = removeEntry != null ? map(removeEntry) : undefined;
-      console.log(`removed ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
-    } finally {
-      keyDrop_drop(value$4);
-    }
+    });
+    throw error;
+  }
+  const key$1 = [1];
+  let orInsert;
+  try {
+    $orInsert(m, key$1, 0, undefined, keyDrop_drop);
+    orInsert = $mutGet(m, key$1);
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of m.keys()) {
+        keyDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  orInsert.value = (orInsert.value + 1) | 0;
+  const key$2 = [2];
+  let tmp;
+  try {
+    $orInsert(m, key$2, 0, undefined, keyDrop_drop);
+    tmp = $mutGet(m, key$2);
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of m.keys()) {
+        keyDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  tmp.value = (tmp.value + 1) | 0;
+  const key$3 = [2];
+  let orInsertWith;
+  try {
+    $orInsertWith(m, key$3, () => 5, keyDrop_drop);
+    orInsertWith = $mutGet(m, key$3);
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of m.keys()) {
+        keyDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  orInsertWith.value = (orInsertWith.value + 1) | 0;
+  const value = [2];
+  try {
+    const value$1 = $remove(m, value, keyDrop_drop);
+    console.log(`remove ${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } catch (error) {
+    $cleanup(() => {
+      keyDrop_drop(value);
+      for (const item of m.keys()) {
+        keyDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  keyDrop_drop(value);
+  const value$1 = [1];
+  try {
+    const value = m.get(value$1);
+    console.log(`get ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    $cleanup(() => {
+      keyDrop_drop(value$1);
+      for (const item of m.keys()) {
+        keyDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  keyDrop_drop(value$1);
+  const value$2 = [1];
+  let removeEntry;
+  function map([k, v]) {
+    const result = [k[0], v];
+    keyDrop_drop(k);
+    return result;
+  }
+  try {
+    removeEntry = $removeEntry(m, value$2);
+  } catch (error) {
+    $cleanup(() => {
+      keyDrop_drop(value$2);
+      for (const item of m.keys()) {
+        keyDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  try {
+    const value = removeEntry != null ? map(removeEntry) : undefined;
+    console.log(`removed ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
+  } catch (error) {
+    $cleanup(() => {
+      keyDrop_drop(value$2);
+      for (const item of m.keys()) {
+        keyDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  keyDrop_drop(value$2);
+  try {
     $extendMap(
       m,
       [
@@ -86,13 +167,37 @@ function main() {
       undefined,
       keyDrop_drop,
     );
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of m.keys()) {
+        keyDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  try {
     $insert(m, [6], 6, keyDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of m.keys()) {
+        keyDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  try {
     $retainMap(m, (k) => k[0] !== 6, m, true, undefined, keyDrop_drop);
-    console.log("--");
-  } finally {
-    for (const item of m.keys()) {
-      keyDrop_drop(item);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of m.keys()) {
+        keyDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  console.log("--");
+  for (const item of m.keys()) {
+    keyDrop_drop(item);
   }
   const s = new $KeySet();
   try {
@@ -135,35 +240,150 @@ function main() {
     }
   }
   const t = new ($btreeMap((a, b) => $cmp(a[0], b[0]), $KeyMap))();
+  // The key a map holds, given back, not the equal one it's asked with.
   try {
     $insert(t, [9], "a", keyDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
+        keyDrop_drop(key);
+      }
+    });
+    throw error;
+  }
+  try {
     $insert(t, [8], "b", keyDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
+        keyDrop_drop(key);
+      }
+    });
+    throw error;
+  }
+  try {
     $insert(t, [9], "c", keyDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
+        keyDrop_drop(key);
+      }
+    });
+    throw error;
+  }
+  try {
     for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
       keyDrop_drop(key);
     }
     t.clear();
-    const sorted = new ($btreeSet((a, b) => $cmp(a[0], b[0]), $KeySet))();
-    try {
-      $add(sorted, [11], keyDrop_drop);
-      $add(sorted, [10], keyDrop_drop);
-      console.log(`sorted add ${$add(sorted, [11], keyDrop_drop)}`);
-    } finally {
+  } catch (error) {
+    $cleanup(() => {
+      for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
+        keyDrop_drop(key);
+      }
+    });
+    throw error;
+  }
+  let sorted;
+  try {
+    sorted = new ($btreeSet((a, b) => $cmp(a[0], b[0]), $KeySet))();
+  } catch (error) {
+    $cleanup(() => {
+      for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
+        keyDrop_drop(key);
+      }
+    });
+    throw error;
+  }
+  try {
+    $add(sorted, [11], keyDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
       for (const key of $sortedKeys(sorted, (a, b) => $cmp(a[0], b[0]))) {
         keyDrop_drop(key);
       }
-    }
-    // The key a map holds, given back, not the equal one it's asked with.
-    const asked = [1];
-    const ids = new $KeyMap();
-    ids.set([1], "x");
-    const [key] = $unwrap($removeEntry(ids, asked), "there");
-    console.log(`removed is asked ${key === asked}`);
-    console.log("end");
-  } finally {
-    for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
+      for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
+        keyDrop_drop(key);
+      }
+    });
+    throw error;
+  }
+  try {
+    $add(sorted, [10], keyDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      for (const key of $sortedKeys(sorted, (a, b) => $cmp(a[0], b[0]))) {
+        keyDrop_drop(key);
+      }
+      for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
+        keyDrop_drop(key);
+      }
+    });
+    throw error;
+  }
+  try {
+    console.log(`sorted add ${$add(sorted, [11], keyDrop_drop)}`);
+  } catch (error) {
+    $cleanup(() => {
+      for (const key of $sortedKeys(sorted, (a, b) => $cmp(a[0], b[0]))) {
+        keyDrop_drop(key);
+      }
+      for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
+        keyDrop_drop(key);
+      }
+    });
+    throw error;
+  }
+  try {
+    for (const key of $sortedKeys(sorted, (a, b) => $cmp(a[0], b[0]))) {
       keyDrop_drop(key);
     }
+  } catch (error) {
+    $cleanup(() => {
+      for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
+        keyDrop_drop(key);
+      }
+    });
+    throw error;
+  }
+  const asked = [1];
+  let ids;
+  try {
+    ids = new $KeyMap();
+  } catch (error) {
+    $cleanup(() => {
+      for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
+        keyDrop_drop(key);
+      }
+    });
+    throw error;
+  }
+  try {
+    ids.set([1], "x");
+  } catch (error) {
+    $cleanup(() => {
+      for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
+        keyDrop_drop(key);
+      }
+    });
+    throw error;
+  }
+  let tmp$1;
+  try {
+    tmp$1 = $unwrap($removeEntry(ids, asked), "there");
+  } catch (error) {
+    $cleanup(() => {
+      for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
+        keyDrop_drop(key);
+      }
+    });
+    throw error;
+  }
+  const key = tmp$1[0];
+  console.log(`removed is asked ${key === asked}`);
+  console.log("end");
+  for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
+    keyDrop_drop(key);
   }
 }
 //# sourceMappingURL=case.js.map

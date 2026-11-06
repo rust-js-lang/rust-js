@@ -8,6 +8,7 @@ import {
 import {
   $advanceSlice,
   $catchUnwind,
+  $cleanup,
   $closing,
   $controlFlowTry,
   $dropEach,
@@ -51,8 +52,9 @@ function run(name, f) {
 function backwards(items, dropI) {
   const value = [];
   const iter = items;
+  let result;
   try {
-    return $foldBack(
+    result = $foldBack(
       iter,
       value,
       (acc, d) => {
@@ -68,17 +70,25 @@ function backwards(items, dropI) {
       },
       $dropEach(dDrop_drop),
     );
-  } finally {
-    if (!iter.ownRfold) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!iter.ownRfold) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
   }
+  if (!iter.ownRfold) {
+    dropI?.(iter);
+  }
+  return result;
 }
 
 function triedBack(items, dropI) {
   $held(items);
+  let result;
   try {
-    return $tryFoldInto(
+    result = $tryFoldInto(
       $rev(items),
       [],
       (acc, d) => {
@@ -95,9 +105,14 @@ function triedBack(items, dropI) {
       $controlFlowTry,
       $dropEach(dDrop_drop),
     );
-  } finally {
-    dropI?.(items);
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(items);
+    });
+    throw error;
   }
+  dropI?.(items);
+  return result;
 }
 
 function countIterator_next(count) {
@@ -119,48 +134,61 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
   console.log("own rfold");
   let acc$live = true;
   let acc = init;
-  try {
-    let nextBack;
-    while (true) {
-      try {
-        nextBack = countDoubleEndedIterator_nextBack(count);
-      } catch (error) {
+  let nextBack;
+  while (true) {
+    try {
+      nextBack = countDoubleEndedIterator_nextBack(count);
+    } catch (error) {
+      $cleanup(() => {
         if (acc$live) {
           dropB?.(acc);
         }
-        throw error;
-      }
-      if (nextBack != null) {
-        const x = nextBack;
-        acc$live = false;
-        const value = f(acc, x);
-        acc$live = true;
-        acc = value;
-        continue;
-      }
-      try {
-        if (nextBack != null) {
-          dDrop_drop(nextBack);
-        }
-      } catch (error) {
-        if (acc$live) {
-          dropB?.(acc);
-        }
-        throw error;
-      }
-      break;
+        dropF?.(f);
+      });
+      throw error;
     }
-    acc$live = false;
-    return acc;
-  } finally {
-    dropF?.(f);
+    if (nextBack != null) {
+      const x = nextBack;
+      acc$live = false;
+      let tmp;
+      try {
+        tmp = f(acc, x);
+      } catch (error) {
+        $cleanup(() => {
+          dropF?.(f);
+        });
+        throw error;
+      }
+      acc$live = true;
+      acc = tmp;
+      continue;
+    }
+    try {
+      if (nextBack != null) {
+        dDrop_drop(nextBack);
+      }
+    } catch (error) {
+      $cleanup(() => {
+        if (acc$live) {
+          dropB?.(acc);
+        }
+        dropF?.(f);
+      });
+      throw error;
+    }
+    break;
   }
+  acc$live = false;
+  const result = acc;
+  dropF?.(f);
+  return result;
 }
 
 function tried(items, dropI) {
   $held(items);
+  let result;
   try {
-    return $tryFoldInto(
+    result = $tryFoldInto(
       Iterator.from(items),
       [],
       (acc, d) => {
@@ -177,9 +205,14 @@ function tried(items, dropI) {
       $controlFlowTry,
       $dropEach(dDrop_drop),
     );
-  } finally {
-    dropI?.(items);
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(items);
+    });
+    throw error;
   }
+  dropI?.(items);
+  return result;
 }
 
 function push(acc, d) {
@@ -277,7 +310,9 @@ function main() {
         $dropEach(dDrop_drop),
       );
     } catch (error) {
-      inspect.return();
+      $cleanup(() => {
+        inspect.return();
+      });
       throw error;
     }
     try {
@@ -462,8 +497,9 @@ function main() {
         dDrop_drop,
       ),
     );
+    let x;
     try {
-      const x = mapDoubleEndedIterator_tryRfold(
+      x = mapDoubleEndedIterator_tryRfold(
         held,
         [],
         (acc, d) => {
@@ -499,7 +535,14 @@ function main() {
         },
         dDrop_drop,
       );
-      console.log(`${x.TAG === "Continue"}`);
+    } catch (error) {
+      $cleanup(() => {
+        held.return();
+      });
+      throw error;
+    }
+    console.log(`${x.TAG === "Continue"}`);
+    try {
       if (x.TAG === "Continue") {
         for (const item of x._0) {
           dDrop_drop(item);
@@ -510,9 +553,13 @@ function main() {
           dDrop_drop(item);
         }
       }
-    } finally {
-      held.return();
+    } catch (error) {
+      $cleanup(() => {
+        held.return();
+      });
+      throw error;
     }
+    held.return();
   });
   run("generic try_rfold", () => {
     const inspect = (d) => boom(d, 92);

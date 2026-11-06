@@ -5,6 +5,7 @@ import {
   $advanceSlice,
   $btreeSet,
   $catchUnwind,
+  $cleanup,
   $closing,
   $cmp,
   $drain,
@@ -50,47 +51,89 @@ function seven() {
 
 function nthOf(it, k, dropI) {
   $held(it);
-  try {
-    const nth = $nthDropping($lent(Iterator.from(it)), k, dDrop_drop, false);
-    function map(d) {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }
-    return nth != null ? map(nth) : 0;
-  } finally {
-    dropI?.(it);
+  let nth;
+  function map(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
   }
+  try {
+    nth = $nthDropping($lent(Iterator.from(it)), k, dDrop_drop, false);
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(it);
+    });
+    throw error;
+  }
+  let result;
+  try {
+    result = nth != null ? map(nth) : 0;
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(it);
+    });
+    throw error;
+  }
+  dropI?.(it);
+  return result;
 }
 
 function nthBackOf(it, k, dropI) {
   $held(it);
-  try {
-    const nthBack = $nthBack(it, k, undefined, dDrop_drop);
-    function map(d) {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }
-    return nthBack != null ? map(nthBack) : 0;
-  } finally {
-    dropI?.(it);
+  let nthBack;
+  function map(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
   }
+  try {
+    nthBack = $nthBack(it, k, undefined, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(it);
+    });
+    throw error;
+  }
+  let result;
+  try {
+    result = nthBack != null ? map(nthBack) : 0;
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(it);
+    });
+    throw error;
+  }
+  dropI?.(it);
+  return result;
 }
 
 function revNthOf(it, k, dropI) {
   const rev = $held($rev($closing(it, dropI, false)));
-  try {
-    const nth = $nthDropping($lent(rev), k, dDrop_drop, false);
-    function map(d) {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }
-    return nth != null ? map(nth) : 0;
-  } finally {
-    rev.return();
+  let nth;
+  function map(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
   }
+  try {
+    nth = $nthDropping($lent(rev), k, dDrop_drop, false);
+  } catch (error) {
+    $cleanup(() => {
+      rev.return();
+    });
+    throw error;
+  }
+  let result;
+  try {
+    result = nth != null ? map(nth) : 0;
+  } catch (error) {
+    $cleanup(() => {
+      rev.return();
+    });
+    throw error;
+  }
+  rev.return();
+  return result;
 }
 
 const Holder = {
@@ -125,18 +168,33 @@ const Holder = {
 
 function nthAndLen(it, k, dropI) {
   $held(it);
-  try {
-    const nth = $nthDropping($lent(Iterator.from(it)), k, dDrop_drop, false);
-    function map(d) {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }
-    const d = nth != null ? map(nth) : 0;
-    return (d + it.len()) >>> 0;
-  } finally {
-    dropI?.(it);
+  let nth;
+  function map(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
   }
+  let d;
+  try {
+    nth = $nthDropping($lent(Iterator.from(it)), k, dDrop_drop, false);
+    d = nth != null ? map(nth) : 0;
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(it);
+    });
+    throw error;
+  }
+  let result;
+  try {
+    result = (d + it.len()) >>> 0;
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(it);
+    });
+    throw error;
+  }
+  dropI?.(it);
+  return result;
 }
 
 function run(name, boom$1, f) {
@@ -157,15 +215,20 @@ function held(name, boom$1, it, f, dropI) {
   $held(it);
   console.log(`-- ${name}`);
   boom = boom$1;
+  const r = $catchUnwind(() => f(it));
+  boom = 0;
+  const value = r.TAG === "Ok" ? r._0 : undefined;
+  let arg;
   try {
-    const r = $catchUnwind(() => f(it));
-    boom = 0;
-    const value = r.TAG === "Ok" ? r._0 : undefined;
-    const arg = it.len();
-    console.log(`${name} ${value == null ? "None" : `Some(${value})`}, ${arg} left`);
-  } finally {
-    dropI?.(it);
+    arg = it.len();
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(it);
+    });
+    throw error;
   }
+  console.log(`${name} ${value == null ? "None" : `Some(${value})`}, ${arg} left`);
+  dropI?.(it);
 }
 
 function main() {
@@ -273,389 +336,989 @@ function main() {
       $iterator({ start: 0, end: 1 }, $rangeNext, false, undefined, $rangeLen),
       () => Holder.nth(h, 3, { next: $next, advanceBy: $advanceSlice }),
     );
-    console.log(`holder ${h.it.end - h.it.at} left`);
-    const h$1 = { it: $iter(seven()) };
-    try {
-      held(
-        "held holder nth passed on",
-        2,
-        $iterator({ start: 0, end: 1 }, $rangeNext, false, undefined, $rangeLen),
-        () =>
-          Holder.nthPassedOn(
-            h$1,
-            3,
-            { next: $next, advanceBy: $advanceSlice },
-            { len: (iterator) => iterator.len() },
-          ),
-      );
-      console.log(`holder ${h$1.it.end - h$1.it.at} left`);
-      const h = { it: $iter(seven()) };
-      try {
-        held(
-          "held holder nth_back",
-          6,
-          $iterator({ start: 0, end: 1 }, $rangeNext, false, undefined, $rangeLen),
-          () =>
-            Holder.nthBack(
-              h,
-              3,
-              { next: $next, advanceBy: $advanceSlice },
-              { next_back: $nextBack },
-            ),
-        );
-        console.log(`holder ${h.it.end - h.it.at} left`);
-        const v = seven();
-        try {
-          const h = { it: $iter($drain(v, 0)) };
-          try {
-            held(
-              "held holder drain nth_back",
-              6,
-              $iterator({ start: 0, end: 1 }, $rangeNext, false, undefined, $rangeLen),
-              () => Holder.nthBack(h, 3, { next: $next }, { next_back: $nextBack }),
-            );
-            console.log(`holder ${h.it.end - h.it.at} left`);
-          } finally {
-            $dropItems(h.it, dDrop_drop);
-          }
-          const it = $iter(seven());
-          boom = 2;
-          try {
-            const r = $catchUnwind(() => {
-              const nth = $nthDropping($lent($slicing(it, dDrop_drop)), 3, dDrop_drop, false);
-              function map(d) {
-                const result = d[0];
-                dDrop_drop(d);
-                return result;
-              }
-              return nth != null ? map(nth) : 0;
-            });
-            boom = 0;
-            const value = r.TAG === "Ok" ? r._0 : undefined;
-            console.log(
-              `own nth ${value == null ? "None" : `Some(${value})`}, ${it.end - it.at} left`,
-            );
-          } finally {
-            $dropItems(it, dDrop_drop);
-          }
-          const v$1 = seven();
-          try {
-            held(
-              "held drain nth",
-              2,
-              $iter($drain(v$1, 0)),
-              (it) => {
-                const nth = $nthDropping($lent(it), 3, dDrop_drop, false);
-                function map(d) {
-                  const result = d[0];
-                  dDrop_drop(d);
-                  return result;
-                }
-                return nth != null ? map(nth) : 0;
-              },
-              $dropEach(dDrop_drop),
-            );
-            const v = seven();
-            try {
-              held(
-                "held drain nth_back",
-                6,
-                $iter($drain(v, 0)),
-                (it) => {
-                  const nthBack = $nthBack(it, 3, undefined, dDrop_drop);
-                  function map(d) {
-                    const result = d[0];
-                    dDrop_drop(d);
-                    return result;
-                  }
-                  return nthBack != null ? map(nthBack) : 0;
-                },
-                $dropEach(dDrop_drop),
-              );
-              const v$1 = seven();
-              try {
-                held(
-                  "held drain rev nth",
-                  6,
-                  $iter($drain(v$1, 0)),
-                  (it) => {
-                    const nth = $nthDropping($lent($rev($lent(it))), 3, dDrop_drop, false);
-                    function map(d) {
-                      const result = d[0];
-                      dDrop_drop(d);
-                      return result;
-                    }
-                    return nth != null ? map(nth) : 0;
-                  },
-                  $dropEach(dDrop_drop),
-                );
-                // As one slice, front to back, past the panic.
-                run("vec nth", 2, () => {
-                  const value = $iter(seven());
-                  try {
-                    const nth = $nthDropping(
-                      $lent($slicing(value, dDrop_drop)),
-                      3,
-                      dDrop_drop,
-                      false,
-                    );
-                    function map(d) {
-                      const result = d[0];
-                      dDrop_drop(d);
-                      return result;
-                    }
-                    return nth != null ? map(nth) : 0;
-                  } finally {
-                    $dropItems(value, dDrop_drop);
-                  }
-                });
-                run("vec by_ref skip next", 2, () => {
-                  const it = $iter(seven());
-                  try {
-                    const next = $next($skipping($lent($slicing(it, dDrop_drop)), 3, dDrop_drop));
-                    function map(d) {
-                      const result = d[0];
-                      dDrop_drop(d);
-                      return result;
-                    }
-                    const d = next != null ? map(next) : 0;
-                    return (d + (it.end - it.at)) >>> 0;
-                  } finally {
-                    $dropItems(it, dDrop_drop);
-                  }
-                });
-                run("vec generic nth", 2, () =>
-                  nthOf($slicing($iter(seven()), dDrop_drop), 3, $dropEach(dDrop_drop)),
-                );
-                run("array generic nth", 2, () =>
-                  nthOf(
-                    $slicing($iter([[1], [2], [3], [4], [5]]), dDrop_drop),
-                    3,
-                    $dropEach(dDrop_drop),
-                  ),
-                );
-                run("deque generic nth", 2, () =>
-                  nthOf($slicing($iter(seven().slice()), dDrop_drop), 3, $dropEach(dDrop_drop)),
-                );
-                run("heap generic nth", 6, () =>
-                  nthOf(
-                    $iter($heapFrom(seven(), (a, b) => $cmp(a[0], b[0]))),
-                    3,
-                    $dropEach(dDrop_drop),
-                  ),
-                );
-                run("vec nth_back", 6, () => {
-                  const value = $iter(seven());
-                  try {
-                    const nthBack = $nthBack($slicing(value, dDrop_drop), 3, undefined, dDrop_drop);
-                    function map(d) {
-                      const result = d[0];
-                      dDrop_drop(d);
-                      return result;
-                    }
-                    return nthBack != null ? map(nthBack) : 0;
-                  } finally {
-                    $dropItems(value, dDrop_drop);
-                  }
-                });
-                run("vec generic nth_back", 6, () =>
-                  nthBackOf($slicing($iter(seven()), dDrop_drop), 3, $dropEach(dDrop_drop)),
-                );
-                run("vec generic rev nth", 6, () =>
-                  revNthOf($slicing($iter(seven()), dDrop_drop), 3, $dropEach(dDrop_drop)),
-                );
-                // Each as it's passed, stopped at the panic.
-                run("drain nth", 2, () => {
-                  const v = seven();
-                  try {
-                    const drain = $iter($drain(v, 0));
-                    let d;
-                    try {
-                      const nth = $nthDropping($lent(drain), 3, dDrop_drop, false);
-                      function map(d) {
-                        const result = d[0];
-                        dDrop_drop(d);
-                        return result;
-                      }
-                      d = nth != null ? map(nth) : 0;
-                    } finally {
-                      $dropItems(drain, dDrop_drop);
-                    }
-                    return (d + v.length) >>> 0;
-                  } finally {
-                    $dropItems(v, dDrop_drop);
-                  }
-                });
-                run("drain nth_back", 6, () => {
-                  const v = seven();
-                  try {
-                    const drain = $iter($drain(v, 0));
-                    let d;
-                    try {
-                      const nthBack = $nthBack(drain, 3, undefined, dDrop_drop);
-                      function map(d) {
-                        const result = d[0];
-                        dDrop_drop(d);
-                        return result;
-                      }
-                      d = nthBack != null ? map(nthBack) : 0;
-                    } finally {
-                      $dropItems(drain, dDrop_drop);
-                    }
-                    return (d + v.length) >>> 0;
-                  } finally {
-                    $dropItems(v, dDrop_drop);
-                  }
-                });
-                run("drain rev nth", 6, () => {
-                  const v = seven();
-                  try {
-                    const rev = $held(
-                      $rev($closing($iter($drain(v, 0)), $dropEach(dDrop_drop), false)),
-                    );
-                    let d;
-                    try {
-                      const nth = $nthDropping($lent(rev), 3, dDrop_drop, false);
-                      function map(d) {
-                        const result = d[0];
-                        dDrop_drop(d);
-                        return result;
-                      }
-                      d = nth != null ? map(nth) : 0;
-                    } finally {
-                      rev.return();
-                    }
-                    return (d + v.length) >>> 0;
-                  } finally {
-                    $dropItems(v, dDrop_drop);
-                  }
-                });
-                run("drain generic nth_back", 6, () => {
-                  const v = seven();
-                  try {
-                    const d = nthBackOf($iter($drain(v, 0)), 3, $dropEach(dDrop_drop));
-                    return (d + v.length) >>> 0;
-                  } finally {
-                    $dropItems(v, dDrop_drop);
-                  }
-                });
-                run("drain generic rev nth", 6, () => {
-                  const v = seven();
-                  try {
-                    const d = revNthOf($iter($drain(v, 0)), 3, $dropEach(dDrop_drop));
-                    return (d + v.length) >>> 0;
-                  } finally {
-                    $dropItems(v, dDrop_drop);
-                  }
-                });
-                const set = () =>
-                  $treeFrom(
-                    new ($btreeSet((a, b) => $cmp(a[0], b[0]), $KeySet))(),
-                    $iter(seven()),
-                    true,
-                    (a, b) => $cmp(a[0], b[0]),
-                    undefined,
-                    dDrop_drop,
-                  );
-                run("btree nth", 2, () => {
-                  const value = $iter($sortedKeys(set(), (a, b) => $cmp(a[0], b[0])));
-                  try {
-                    const nth = $nthDropping($lent(value), 3, dDrop_drop, false);
-                    function map(d) {
-                      const result = d[0];
-                      dDrop_drop(d);
-                      return result;
-                    }
-                    return nth != null ? map(nth) : 0;
-                  } finally {
-                    $dropItems(value, dDrop_drop);
-                  }
-                });
-                run("btree nth_back", 6, () => {
-                  const value = $iter($sortedKeys(set(), (a, b) => $cmp(a[0], b[0])));
-                  try {
-                    const nthBack = $nthBack(value, 3, undefined, dDrop_drop);
-                    function map(d) {
-                      const result = d[0];
-                      dDrop_drop(d);
-                      return result;
-                    }
-                    return nthBack != null ? map(nthBack) : 0;
-                  } finally {
-                    $dropItems(value, dDrop_drop);
-                  }
-                });
-                run("btree rev nth", 6, () => {
-                  const rev = $held(
-                    $rev(
-                      $closing(
-                        $iter($sortedKeys(set(), (a, b) => $cmp(a[0], b[0]))),
-                        $dropEach(dDrop_drop),
-                        false,
-                      ),
-                    ),
-                  );
-                  try {
-                    const nth = $nthDropping($lent(rev), 3, dDrop_drop, false);
-                    function map(d) {
-                      const result = d[0];
-                      dDrop_drop(d);
-                      return result;
-                    }
-                    return nth != null ? map(nth) : 0;
-                  } finally {
-                    rev.return();
-                  }
-                });
-                run("btree generic nth", 2, () =>
-                  nthOf(
-                    $iter($sortedKeys(set(), (a, b) => $cmp(a[0], b[0]))),
-                    3,
-                    $dropEach(dDrop_drop),
-                  ),
-                );
-                run("btree generic nth_back", 6, () =>
-                  nthBackOf(
-                    $iter($sortedKeys(set(), (a, b) => $cmp(a[0], b[0]))),
-                    3,
-                    $dropEach(dDrop_drop),
-                  ),
-                );
-                run("btree generic rev nth", 6, () =>
-                  revNthOf(
-                    $iter($sortedKeys(set(), (a, b) => $cmp(a[0], b[0]))),
-                    3,
-                    $dropEach(dDrop_drop),
-                  ),
-                );
-                run(
-                  "no panic",
-                  0,
-                  () =>
-                    (nthOf($slicing($iter(seven()), dDrop_drop), 3, $dropEach(dDrop_drop)) +
-                      nthBackOf($slicing($iter(seven()), dDrop_drop), 3, $dropEach(dDrop_drop))) >>>
-                    0,
-                );
-              } finally {
-                $dropItems(v$1, dDrop_drop);
-              }
-            } finally {
-              $dropItems(v, dDrop_drop);
-            }
-          } finally {
-            $dropItems(v$1, dDrop_drop);
-          }
-        } finally {
-          $dropItems(v, dDrop_drop);
-        }
-      } finally {
-        $dropItems(h.it, dDrop_drop);
-      }
-    } finally {
-      $dropItems(h$1.it, dDrop_drop);
-    }
-  } finally {
-    $dropItems(h.it, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
   }
+  console.log(`holder ${h.it.end - h.it.at} left`);
+  let h$1;
+  try {
+    h$1 = { it: $iter(seven()) };
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    held(
+      "held holder nth passed on",
+      2,
+      $iterator({ start: 0, end: 1 }, $rangeNext, false, undefined, $rangeLen),
+      () =>
+        Holder.nthPassedOn(
+          h$1,
+          3,
+          { next: $next, advanceBy: $advanceSlice },
+          { len: (iterator) => iterator.len() },
+        ),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  console.log(`holder ${h$1.it.end - h$1.it.at} left`);
+  let h$2;
+  try {
+    h$2 = { it: $iter(seven()) };
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    held(
+      "held holder nth_back",
+      6,
+      $iterator({ start: 0, end: 1 }, $rangeNext, false, undefined, $rangeLen),
+      () =>
+        Holder.nthBack(h$2, 3, { next: $next, advanceBy: $advanceSlice }, { next_back: $nextBack }),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  console.log(`holder ${h$2.it.end - h$2.it.at} left`);
+  let v;
+  try {
+    v = seven();
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  let h$3;
+  try {
+    h$3 = { it: $iter($drain(v, 0)) };
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    held(
+      "held holder drain nth_back",
+      6,
+      $iterator({ start: 0, end: 1 }, $rangeNext, false, undefined, $rangeLen),
+      () => Holder.nthBack(h$3, 3, { next: $next }, { next_back: $nextBack }),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(h$3.it, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  console.log(`holder ${h$3.it.end - h$3.it.at} left`);
+  try {
+    $dropItems(h$3.it, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  let it;
+  try {
+    it = $iter(seven());
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  boom = 2;
+  const r = $catchUnwind(() => {
+    const nth = $nthDropping($lent($slicing(it, dDrop_drop)), 3, dDrop_drop, false);
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    return nth != null ? map(nth) : 0;
+  });
+  boom = 0;
+  const value = r.TAG === "Ok" ? r._0 : undefined;
+  console.log(`own nth ${value == null ? "None" : `Some(${value})`}, ${it.end - it.at} left`);
+  try {
+    $dropItems(it, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  let v$1;
+  try {
+    v$1 = seven();
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    held(
+      "held drain nth",
+      2,
+      $iter($drain(v$1, 0)),
+      (it) => {
+        const nth = $nthDropping($lent(it), 3, dDrop_drop, false);
+        function map(d) {
+          const result = d[0];
+          dDrop_drop(d);
+          return result;
+        }
+        return nth != null ? map(nth) : 0;
+      },
+      $dropEach(dDrop_drop),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  let v$2;
+  try {
+    v$2 = seven();
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    held(
+      "held drain nth_back",
+      6,
+      $iter($drain(v$2, 0)),
+      (it) => {
+        const nthBack = $nthBack(it, 3, undefined, dDrop_drop);
+        function map(d) {
+          const result = d[0];
+          dDrop_drop(d);
+          return result;
+        }
+        return nthBack != null ? map(nthBack) : 0;
+      },
+      $dropEach(dDrop_drop),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  let v$3;
+  try {
+    v$3 = seven();
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    held(
+      "held drain rev nth",
+      6,
+      $iter($drain(v$3, 0)),
+      (it) => {
+        const nth = $nthDropping($lent($rev($lent(it))), 3, dDrop_drop, false);
+        function map(d) {
+          const result = d[0];
+          dDrop_drop(d);
+          return result;
+        }
+        return nth != null ? map(nth) : 0;
+      },
+      $dropEach(dDrop_drop),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    // As one slice, front to back, past the panic.
+    run("vec nth", 2, () => {
+      const value = $iter(seven());
+      let nth;
+      function map(d) {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      }
+      try {
+        nth = $nthDropping($lent($slicing(value, dDrop_drop)), 3, dDrop_drop, false);
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(value, dDrop_drop);
+        });
+        throw error;
+      }
+      let result;
+      try {
+        result = nth != null ? map(nth) : 0;
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(value, dDrop_drop);
+        });
+        throw error;
+      }
+      $dropItems(value, dDrop_drop);
+      return result;
+    });
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run("vec by_ref skip next", 2, () => {
+      const it = $iter(seven());
+      let skip;
+      try {
+        skip = $skipping($lent($slicing(it, dDrop_drop)), 3, dDrop_drop);
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(it, dDrop_drop);
+        });
+        throw error;
+      }
+      let next;
+      function map(d) {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      }
+      let d;
+      try {
+        next = $next(skip);
+        d = next != null ? map(next) : 0;
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(it, dDrop_drop);
+        });
+        throw error;
+      }
+      const result = (d + (it.end - it.at)) >>> 0;
+      $dropItems(it, dDrop_drop);
+      return result;
+    });
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run("vec generic nth", 2, () =>
+      nthOf($slicing($iter(seven()), dDrop_drop), 3, $dropEach(dDrop_drop)),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run("array generic nth", 2, () =>
+      nthOf($slicing($iter([[1], [2], [3], [4], [5]]), dDrop_drop), 3, $dropEach(dDrop_drop)),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run("deque generic nth", 2, () =>
+      nthOf($slicing($iter(seven().slice()), dDrop_drop), 3, $dropEach(dDrop_drop)),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run("heap generic nth", 6, () =>
+      nthOf($iter($heapFrom(seven(), (a, b) => $cmp(a[0], b[0]))), 3, $dropEach(dDrop_drop)),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run("vec nth_back", 6, () => {
+      const value = $iter(seven());
+      let nthBack;
+      function map(d) {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      }
+      try {
+        nthBack = $nthBack($slicing(value, dDrop_drop), 3, undefined, dDrop_drop);
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(value, dDrop_drop);
+        });
+        throw error;
+      }
+      let result;
+      try {
+        result = nthBack != null ? map(nthBack) : 0;
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(value, dDrop_drop);
+        });
+        throw error;
+      }
+      $dropItems(value, dDrop_drop);
+      return result;
+    });
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run("vec generic nth_back", 6, () =>
+      nthBackOf($slicing($iter(seven()), dDrop_drop), 3, $dropEach(dDrop_drop)),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run("vec generic rev nth", 6, () =>
+      revNthOf($slicing($iter(seven()), dDrop_drop), 3, $dropEach(dDrop_drop)),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    // Each as it's passed, stopped at the panic.
+    run("drain nth", 2, () => {
+      const v = seven();
+      let drain;
+      try {
+        drain = $iter($drain(v, 0));
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(v, dDrop_drop);
+        });
+        throw error;
+      }
+      let nth;
+      function map(d) {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      }
+      let d;
+      try {
+        nth = $nthDropping($lent(drain), 3, dDrop_drop, false);
+        d = nth != null ? map(nth) : 0;
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(drain, dDrop_drop);
+          $dropItems(v, dDrop_drop);
+        });
+        throw error;
+      }
+      try {
+        $dropItems(drain, dDrop_drop);
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(v, dDrop_drop);
+        });
+        throw error;
+      }
+      const result = (d + v.length) >>> 0;
+      $dropItems(v, dDrop_drop);
+      return result;
+    });
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run("drain nth_back", 6, () => {
+      const v = seven();
+      let drain;
+      try {
+        drain = $iter($drain(v, 0));
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(v, dDrop_drop);
+        });
+        throw error;
+      }
+      let nthBack;
+      function map(d) {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      }
+      let d;
+      try {
+        nthBack = $nthBack(drain, 3, undefined, dDrop_drop);
+        d = nthBack != null ? map(nthBack) : 0;
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(drain, dDrop_drop);
+          $dropItems(v, dDrop_drop);
+        });
+        throw error;
+      }
+      try {
+        $dropItems(drain, dDrop_drop);
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(v, dDrop_drop);
+        });
+        throw error;
+      }
+      const result = (d + v.length) >>> 0;
+      $dropItems(v, dDrop_drop);
+      return result;
+    });
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run("drain rev nth", 6, () => {
+      const v = seven();
+      let rev;
+      try {
+        rev = $held($rev($closing($iter($drain(v, 0)), $dropEach(dDrop_drop), false)));
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(v, dDrop_drop);
+        });
+        throw error;
+      }
+      let nth;
+      function map(d) {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      }
+      let d;
+      try {
+        nth = $nthDropping($lent(rev), 3, dDrop_drop, false);
+        d = nth != null ? map(nth) : 0;
+      } catch (error) {
+        $cleanup(() => {
+          rev.return();
+          $dropItems(v, dDrop_drop);
+        });
+        throw error;
+      }
+      try {
+        rev.return();
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(v, dDrop_drop);
+        });
+        throw error;
+      }
+      const result = (d + v.length) >>> 0;
+      $dropItems(v, dDrop_drop);
+      return result;
+    });
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run("drain generic nth_back", 6, () => {
+      const v = seven();
+      let d;
+      try {
+        d = nthBackOf($iter($drain(v, 0)), 3, $dropEach(dDrop_drop));
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(v, dDrop_drop);
+        });
+        throw error;
+      }
+      const result = (d + v.length) >>> 0;
+      $dropItems(v, dDrop_drop);
+      return result;
+    });
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run("drain generic rev nth", 6, () => {
+      const v = seven();
+      let d;
+      try {
+        d = revNthOf($iter($drain(v, 0)), 3, $dropEach(dDrop_drop));
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(v, dDrop_drop);
+        });
+        throw error;
+      }
+      const result = (d + v.length) >>> 0;
+      $dropItems(v, dDrop_drop);
+      return result;
+    });
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  const set = () =>
+    $treeFrom(
+      new ($btreeSet((a, b) => $cmp(a[0], b[0]), $KeySet))(),
+      $iter(seven()),
+      true,
+      (a, b) => $cmp(a[0], b[0]),
+      undefined,
+      dDrop_drop,
+    );
+  try {
+    run("btree nth", 2, () => {
+      const value = $iter($sortedKeys(set(), (a, b) => $cmp(a[0], b[0])));
+      let nth;
+      function map(d) {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      }
+      try {
+        nth = $nthDropping($lent(value), 3, dDrop_drop, false);
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(value, dDrop_drop);
+        });
+        throw error;
+      }
+      let result;
+      try {
+        result = nth != null ? map(nth) : 0;
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(value, dDrop_drop);
+        });
+        throw error;
+      }
+      $dropItems(value, dDrop_drop);
+      return result;
+    });
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run("btree nth_back", 6, () => {
+      const value = $iter($sortedKeys(set(), (a, b) => $cmp(a[0], b[0])));
+      let nthBack;
+      function map(d) {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      }
+      try {
+        nthBack = $nthBack(value, 3, undefined, dDrop_drop);
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(value, dDrop_drop);
+        });
+        throw error;
+      }
+      let result;
+      try {
+        result = nthBack != null ? map(nthBack) : 0;
+      } catch (error) {
+        $cleanup(() => {
+          $dropItems(value, dDrop_drop);
+        });
+        throw error;
+      }
+      $dropItems(value, dDrop_drop);
+      return result;
+    });
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run("btree rev nth", 6, () => {
+      const rev = $held(
+        $rev(
+          $closing(
+            $iter($sortedKeys(set(), (a, b) => $cmp(a[0], b[0]))),
+            $dropEach(dDrop_drop),
+            false,
+          ),
+        ),
+      );
+      let nth;
+      function map(d) {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      }
+      try {
+        nth = $nthDropping($lent(rev), 3, dDrop_drop, false);
+      } catch (error) {
+        $cleanup(() => {
+          rev.return();
+        });
+        throw error;
+      }
+      let result;
+      try {
+        result = nth != null ? map(nth) : 0;
+      } catch (error) {
+        $cleanup(() => {
+          rev.return();
+        });
+        throw error;
+      }
+      rev.return();
+      return result;
+    });
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run("btree generic nth", 2, () =>
+      nthOf($iter($sortedKeys(set(), (a, b) => $cmp(a[0], b[0]))), 3, $dropEach(dDrop_drop)),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run("btree generic nth_back", 6, () =>
+      nthBackOf($iter($sortedKeys(set(), (a, b) => $cmp(a[0], b[0]))), 3, $dropEach(dDrop_drop)),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run("btree generic rev nth", 6, () =>
+      revNthOf($iter($sortedKeys(set(), (a, b) => $cmp(a[0], b[0]))), 3, $dropEach(dDrop_drop)),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    run(
+      "no panic",
+      0,
+      () =>
+        (nthOf($slicing($iter(seven()), dDrop_drop), 3, $dropEach(dDrop_drop)) +
+          nthBackOf($slicing($iter(seven()), dDrop_drop), 3, $dropEach(dDrop_drop))) >>>
+        0,
+    );
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$3, dDrop_drop);
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    $dropItems(v$3, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$2, dDrop_drop);
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    $dropItems(v$2, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v$1, dDrop_drop);
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    $dropItems(v$1, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(v, dDrop_drop);
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    $dropItems(v, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(h$2.it, dDrop_drop);
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    $dropItems(h$2.it, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(h$1.it, dDrop_drop);
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  try {
+    $dropItems(h$1.it, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(h.it, dDrop_drop);
+    });
+    throw error;
+  }
+  $dropItems(h.it, dDrop_drop);
 }
 //# sourceMappingURL=case.js.map

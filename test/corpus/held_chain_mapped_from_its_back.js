@@ -10,6 +10,7 @@ import {
   mapDoubleEndedIterator_nextBack,
 } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $closing,
   $collectDropping,
   $foldOf,
@@ -62,8 +63,9 @@ function main() {
       },
     ),
   );
+  let nextBack;
   try {
-    const nextBack = mapDoubleEndedIterator_nextBack(
+    nextBack = mapDoubleEndedIterator_nextBack(
       it,
       {
         next_back: (iterator) =>
@@ -120,13 +122,24 @@ function main() {
         chain.return();
       },
     );
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  try {
     const value = $next(it);
     console.log(
       `${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
     );
-  } finally {
-    it.return();
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
   }
+  it.return();
   const c = $lazyChain(
     $lazyChain(
       $closing(

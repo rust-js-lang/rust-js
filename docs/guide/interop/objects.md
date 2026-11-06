@@ -894,16 +894,27 @@ pub fn nested(work: impl FnOnce() -> u32) -> u32 {
 ```
 
 ```js
+import { $cleanup } from "@rust-js/runtime";
+
 let depth = 0;
 
 export function nested(work) {
   const previous = depth;
   depth = (previous + 1) >>> 0;
-  try {
-    return work();
-  } finally {
+  function restore() {
     depth = previous;
   }
+  let result;
+  try {
+    result = work();
+  } catch (error) {
+    $cleanup(() => {
+      restore();
+    });
+    throw error;
+  }
+  restore();
+  return result;
 }
 ```
 

@@ -8,6 +8,7 @@ import {
 import {
   $advanceSlice,
   $catchUnwind,
+  $cleanup,
   $closing,
   $dropEach,
   $flatMap,
@@ -149,7 +150,9 @@ function main() {
       );
       back = nextBack != null ? map(nextBack) : undefined;
     } catch (error) {
-      it.return();
+      $cleanup(() => {
+        it.return();
+      });
       throw error;
     }
     const rfold = flatMapDoubleEndedIterator_rfold(

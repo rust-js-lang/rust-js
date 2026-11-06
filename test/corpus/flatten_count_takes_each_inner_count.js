@@ -7,6 +7,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $count,
   $dropEach,
@@ -76,13 +77,21 @@ function kept(held, left) {
 
 function counted(it, dropI, dropIItem) {
   const iter = it;
+  let result;
   try {
-    return $count(Iterator.from(iter), dropIItem);
-  } finally {
-    if (!iter.ownFold && !iter.ownCount) {
-      dropI?.(iter);
-    }
+    result = $count(Iterator.from(iter), dropIItem);
+  } catch (error) {
+    $cleanup(() => {
+      if (!iter.ownFold && !iter.ownCount) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
   }
+  if (!iter.ownFold && !iter.ownCount) {
+    dropI?.(iter);
+  }
+  return result;
 }
 
 function countedFromBothEnds(it) {

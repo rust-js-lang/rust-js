@@ -3,6 +3,7 @@
 import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $count,
@@ -60,12 +61,12 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
   let acc$live = true;
   let acc = init;
   const iter = own;
-  try {
-    let tmp;
-    while (true) {
-      try {
-        tmp = ownIterator_next(iter);
-      } catch (error) {
+  let tmp;
+  while (true) {
+    try {
+      tmp = ownIterator_next(iter);
+    } catch (error) {
+      $cleanup(() => {
         console.log("drop own");
         for (const item of iter.items) {
           dDrop_drop(item);
@@ -73,42 +74,49 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
         if (acc$live) {
           dropB?.(acc);
         }
-        throw error;
-      }
-      if (tmp == null) {
-        console.log("drop own");
-        try {
-          for (const item of iter.items) {
-            dDrop_drop(item);
-          }
-        } catch (error) {
+        dropF?.(f);
+      });
+      throw error;
+    }
+    if (tmp == null) {
+      console.log("drop own");
+      try {
+        for (const item of iter.items) {
+          dDrop_drop(item);
+        }
+      } catch (error) {
+        $cleanup(() => {
           if (acc$live) {
             dropB?.(acc);
           }
-          throw error;
-        }
-        break;
+          dropF?.(f);
+        });
+        throw error;
       }
-      const d = tmp;
-      acc$live = false;
-      let tmp$1;
-      try {
-        tmp$1 = f(acc, d);
-      } catch (error) {
+      break;
+    }
+    const d = tmp;
+    acc$live = false;
+    let tmp$1;
+    try {
+      tmp$1 = f(acc, d);
+    } catch (error) {
+      $cleanup(() => {
         console.log("drop own");
         for (const item of iter.items) {
           dDrop_drop(item);
         }
-        throw error;
-      }
-      acc$live = true;
-      acc = tmp$1;
+        dropF?.(f);
+      });
+      throw error;
     }
-    acc$live = false;
-    return acc;
-  } finally {
-    dropF?.(f);
+    acc$live = true;
+    acc = tmp$1;
   }
+  acc$live = false;
+  const result = acc;
+  dropF?.(f);
+  return result;
 }
 
 function ownDoubleEndedIterator_nextBack(own) {
@@ -133,42 +141,53 @@ function ownDoubleEndedIterator_rfold(own, init, f, dropB, dropF) {
   let result;
   try {
     try {
-      try {
-        let nextBack;
-        while (true) {
-          try {
-            nextBack = ownDoubleEndedIterator_nextBack(own);
-          } catch (error) {
+      let nextBack;
+      while (true) {
+        try {
+          nextBack = ownDoubleEndedIterator_nextBack(own);
+        } catch (error) {
+          $cleanup(() => {
             if (acc$live) {
               dropB?.(acc);
             }
-            throw error;
-          }
-          if (nextBack != null) {
-            const d = nextBack;
-            acc$live = false;
-            const value = f(acc, d);
-            acc$live = true;
-            acc = value;
-            continue;
-          }
-          try {
-            if (nextBack != null) {
-              dDrop_drop(nextBack);
-            }
-          } catch (error) {
-            if (acc$live) {
-              dropB?.(acc);
-            }
-            throw error;
-          }
-          break;
+            dropF?.(f);
+          });
+          throw error;
         }
-        acc$live = false;
-        result = acc;
-      } finally {
-        dropF?.(f);
+        if (nextBack != null) {
+          const d = nextBack;
+          acc$live = false;
+          let tmp;
+          try {
+            tmp = f(acc, d);
+          } catch (error) {
+            $cleanup(() => {
+              dropF?.(f);
+            });
+            throw error;
+          }
+          acc$live = true;
+          acc = tmp;
+          continue;
+        }
+        try {
+          if (nextBack != null) {
+            dDrop_drop(nextBack);
+          }
+        } catch (error) {
+          $cleanup(() => {
+            if (acc$live) {
+              dropB?.(acc);
+            }
+            dropF?.(f);
+          });
+          throw error;
+        }
+        break;
       }
+      acc$live = false;
+      result = acc;
+      dropF?.(f);
     } finally {
       console.log("drop own");
     }
@@ -205,10 +224,16 @@ function foldAny(it, dropI) {
   let result;
   try {
     result = $foldDropping(Iterator.from(iter), value, push, $dropEach(dDrop_drop));
-  } finally {
-    if (!iter.ownFold) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!iter.ownFold) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!iter.ownFold) {
+    dropI?.(iter);
   }
   for (const item of result) {
     dDrop_drop(item);
@@ -222,10 +247,16 @@ function foldExact(it, dropI) {
   let result;
   try {
     result = $foldDropping(Iterator.from(iter), value, push, $dropEach(dDrop_drop));
-  } finally {
-    if (!iter.ownFold) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!iter.ownFold) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!iter.ownFold) {
+    dropI?.(iter);
   }
   for (const item of result) {
     dDrop_drop(item);
@@ -799,18 +830,32 @@ function main() {
         dDrop_drop,
       ),
     );
-    try {
-      const tryFold = $tryFoldSome(fuse, [], (acc, d) => push(acc, d), $dropEach(dDrop_drop));
-      function map(v) {
-        for (const item of v) {
-          dDrop_drop(item);
-        }
-        return v.length;
+    let tryFold;
+    function map(v) {
+      for (const item of v) {
+        dDrop_drop(item);
       }
-      return tryFold != null ? map(tryFold) : 0;
-    } finally {
-      fuse.return();
+      return v.length;
     }
+    try {
+      tryFold = $tryFoldSome(fuse, [], (acc, d) => push(acc, d), $dropEach(dDrop_drop));
+    } catch (error) {
+      $cleanup(() => {
+        fuse.return();
+      });
+      throw error;
+    }
+    let result;
+    try {
+      result = tryFold != null ? map(tryFold) : 0;
+    } catch (error) {
+      $cleanup(() => {
+        fuse.return();
+      });
+      throw error;
+    }
+    fuse.return();
+    return result;
   });
   run("try_fold result", () => {
     const fuse = $held(
@@ -836,7 +881,9 @@ function main() {
         $dropEach(dDrop_drop),
       );
     } catch (error) {
-      fuse.return();
+      $cleanup(() => {
+        fuse.return();
+      });
       throw error;
     }
     try {

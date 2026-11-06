@@ -21,7 +21,7 @@ import { build } from "vite";
 import { excerpt } from "./child";
 import { cases, corpus, directives } from "./corpus-cases";
 import { expected, same, type Outcome } from "./oracle";
-import { agree, compileJs, node, runJs, runNative, runtimes, show, type Run } from "./programs";
+import { aborted, agree, compileJs, node, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, caseShard, compiler, firstPart, fixture, root, runtimeDir } from "./support";
 import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
 import { underLoad } from "../scripts/timing";
@@ -63,7 +63,8 @@ async function check(file: string): Promise<string[]> {
 
   // The directive is checked against Rust itself, so it can't be wrong.
   const message = want.kind === "run-fail" || want.kind === "ignore-rust-js" ? want.message : undefined;
-  const nativeOutcome: Outcome = message === undefined ? { value: null } : expected({ panic: message });
+  const nativeOutcome: Outcome =
+    want.kind === "run-abort" ? aborted : message === undefined ? { value: null } : expected({ panic: message });
   if (typeof native.outcome === "string" || !same(native.outcome, nativeOutcome)) {
     return [`native Rust ended ${show(native.outcome)}, but the directive says ${show(nativeOutcome)}`];
   }
@@ -203,7 +204,7 @@ firstPart("every snapshot in the corpus is the JS of a case that runs", () => {
   const snapshots = readdirSync(corpus).filter((f) => f.endsWith(".js")).sort();
   const running = cases.filter((name) => {
     const want = directives(readFileSync(join(corpus, name), "utf8"));
-    return typeof want !== "string" && (want.kind === "run-pass" || want.kind === "run-fail");
+    return typeof want !== "string" && (want.kind === "run-pass" || want.kind === "run-fail" || want.kind === "run-abort");
   });
   expect(snapshots).toEqual(running.map((name) => name.replace(/\.rs$/, ".js")));
 });

@@ -42,34 +42,24 @@ function main() {
   let again;
   try {
     again = $rcClone(noisy);
-  } catch (error) {
+  } finally {
     $rcDrop(noisy, noisyDrop_drop);
-    throw error;
-  }
-  try {
-    $rcDrop(noisy, noisyDrop_drop);
-  } catch (error) {
-    $rcDrop(again, noisyDrop_drop);
-    throw error;
   }
   console.log(`one left: ${again.strong}`);
   const converted = { value: "shared", strong: 1, weak: 0 };
   let other;
+  let again$live;
   try {
-    other = $rcClone(converted);
-  } catch (error) {
-    $rcDrop(converted);
+    try {
+      other = $rcClone(converted);
+    } catch (error) {
+      $rcDrop(converted);
+      throw error;
+    }
+    console.log(`converted ${converted.strong} ${other.value}`);
+    again$live = false;
+  } finally {
     $rcDrop(again, noisyDrop_drop);
-    throw error;
-  }
-  console.log(`converted ${converted.strong} ${other.value}`);
-  let again$live = false;
-  try {
-    $rcDrop(again, noisyDrop_drop);
-  } catch (error) {
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
   }
   console.log("none left");
 
@@ -509,31 +499,9 @@ function main() {
     throw error;
   }
   console.log(`${me.value.name} ${owner.strong} ${owner.weak}`);
-  try {
-    $rcDrop(me, (value) => {
-      $weakDrop(value.me);
-    });
-  } catch (error) {
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    throw error;
-  }
+  $rcDrop(me, (value) => {
+    $weakDrop(value.me);
+  });
   const strong = owner.strong;
   let tmp$5;
   try {
@@ -560,31 +528,9 @@ function main() {
     throw error;
   }
   console.log(`${strong} ${owner === tmp$5}`);
-  try {
-    $rcDrop(tmp$5, (value) => {
-      $weakDrop(value.me);
-    });
-  } catch (error) {
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    throw error;
-  }
+  $rcDrop(tmp$5, (value) => {
+    $weakDrop(value.me);
+  });
   const defaulted = { value: 0, strong: 1, weak: 0 };
   const value$3 = { value: 5, strong: 1, weak: 0 };
   let arg$2;
@@ -763,28 +709,9 @@ function main() {
   $rcDrop(counter);
   $rcDrop(also);
   $rcDrop(defaulted);
-  try {
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-  } catch (error) {
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    throw error;
-  }
+  $rcDrop(owner, (value) => {
+    $weakDrop(value.me);
+  });
   $rcDrop(other$1);
   try {
     for (const item of lists) {

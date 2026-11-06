@@ -3,6 +3,7 @@
 import {
   $borrow,
   $borrowMut,
+  $cleanup,
   $dispose,
   $downgrade,
   $dropping,
@@ -28,7 +29,9 @@ function requestInstance(name, onReady) {
       $unborrow(borrowMut);
     }
   } catch (error) {
-    $rcDrop(onReady, $dispose);
+    $cleanup(() => {
+      $rcDrop(onReady, $dispose);
+    });
     throw error;
   }
   return { value: { name, onReady }, strong: 1, weak: 0 };
@@ -103,8 +106,10 @@ function render(name) {
       }
       set = unset ? { TAG: "Ok" } : { TAG: "Err", _0: value };
     } catch (error) {
-      $rcDrop(request, (value) => {
-        $rcDrop(value.onReady, $dispose);
+      $cleanup(() => {
+        $rcDrop(request, (value) => {
+          $rcDrop(value.onReady, $dispose);
+        });
       });
       throw error;
     }
@@ -113,8 +118,10 @@ function render(name) {
         $weakDrop(set._0);
       }
     } catch (error) {
-      $rcDrop(request, (value) => {
-        $rcDrop(value.onReady, $dispose);
+      $cleanup(() => {
+        $rcDrop(request, (value) => {
+          $rcDrop(value.onReady, $dispose);
+        });
       });
       throw error;
     }
@@ -132,11 +139,17 @@ function main() {
   const request = render("a");
   try {
     complete(request.value);
-  } finally {
-    $rcDrop(request, (value) => {
-      $rcDrop(value.onReady, $dispose);
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(request, (value) => {
+        $rcDrop(value.onReady, $dispose);
+      });
     });
+    throw error;
   }
+  $rcDrop(request, (value) => {
+    $rcDrop(value.onReady, $dispose);
+  });
   const borrow = $borrow(ready, true);
   try {
     for (let i = 0; i < borrow.length; i++) {

@@ -4,6 +4,7 @@ import {
   $borrow,
   $borrowMut,
   $catchUnwind,
+  $cleanup,
   $dispose,
   $downgrade,
   $dropping,
@@ -42,16 +43,20 @@ function steps() {
         let steps;
         try {
           steps = $unwrap(borrow.value != null ? $upgrade(borrow.value) : undefined);
-        } catch (error) {
+        } finally {
           $unborrow(borrow);
+        }
+        let result;
+        try {
+          result = (steps.value(n - 1) + 1) >>> 0;
+        } catch (error) {
+          $cleanup(() => {
+            $rcDrop(steps, $dispose);
+          });
           throw error;
         }
-        try {
-          $unborrow(borrow);
-          return (steps.value(n - 1) + 1) >>> 0;
-        } finally {
-          $rcDrop(steps, $dispose);
-        }
+        $rcDrop(steps, $dispose);
+        return result;
       },
       () => {
         $rcDrop(this$$1, (value) => {
@@ -70,17 +75,21 @@ function steps() {
     try {
       tmp = $downgrade(steps);
     } catch (error) {
-      $rcDrop(steps, $dispose);
+      $cleanup(() => {
+        $rcDrop(steps, $dispose);
+      });
       throw error;
     }
     let borrowMut;
     try {
       borrowMut = $borrowMut(this$.value, true);
     } catch (error) {
-      if (tmp != null) {
-        $weakDrop(tmp);
-      }
-      $rcDrop(steps, $dispose);
+      $cleanup(() => {
+        if (tmp != null) {
+          $weakDrop(tmp);
+        }
+        $rcDrop(steps, $dispose);
+      });
       throw error;
     }
     try {
@@ -88,18 +97,15 @@ function steps() {
         $weakDrop(borrowMut.value);
       }
     } catch (error) {
-      borrowMut.value = tmp;
-      $unborrow(borrowMut);
-      $rcDrop(steps, $dispose);
+      $cleanup(() => {
+        borrowMut.value = tmp;
+        $unborrow(borrowMut);
+        $rcDrop(steps, $dispose);
+      });
       throw error;
     }
     borrowMut.value = tmp;
-    try {
-      $unborrow(borrowMut);
-    } catch (error) {
-      $rcDrop(steps, $dispose);
-      throw error;
-    }
+    $unborrow(borrowMut);
     return [steps, early];
   } finally {
     $rcDrop(this$, (value) => {
@@ -112,10 +118,23 @@ function steps() {
 
 function main() {
   const [steps$1, early] = steps();
+  let tmp;
   try {
-    console.log(`${steps$1.value(0)} ${steps$1.value(3)} ${early}`);
-  } finally {
-    $rcDrop(steps$1, $dispose);
+    tmp = steps$1.value(0);
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(steps$1, $dispose);
+    });
+    throw error;
   }
+  try {
+    console.log(`${tmp} ${steps$1.value(3)} ${early}`);
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(steps$1, $dispose);
+    });
+    throw error;
+  }
+  $rcDrop(steps$1, $dispose);
 }
 //# sourceMappingURL=case.js.map

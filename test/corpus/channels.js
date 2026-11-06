@@ -2,6 +2,7 @@
 
 import {
   $channel,
+  $cleanup,
   $cloneSender,
   $debugStr,
   $dropReceiver,
@@ -17,13 +18,17 @@ export function entry() {
 }
 
 function produce(tx) {
-  try {
-    for (let id = 1; id <= 3; id++) {
+  for (let id = 1; id <= 3; id++) {
+    try {
       $unwrapOk($send(tx, { id, name: `job ${id}` }), undefined, (e) => "SendError { .. }");
+    } catch (error) {
+      $cleanup(() => {
+        $dropSender(tx);
+      });
+      throw error;
     }
-  } finally {
-    $dropSender(tx);
   }
+  $dropSender(tx);
 }
 
 function drain(rx) {
@@ -36,62 +41,201 @@ function drain(rx) {
 }
 
 function main() {
-  const [tx, rx] = $channel();
+  let [tx, rx] = $channel();
   let tx2;
   try {
     tx2 = $cloneSender(tx);
   } catch (error) {
-    $dropReceiver(rx);
-    $dropSender(tx);
+    $cleanup(() => {
+      $dropReceiver(rx);
+      $dropSender(tx);
+    });
     throw error;
   }
   try {
-    try {
-      produce(tx);
-      $unwrapOk($send(tx2, { id: 9, name: "late" }), undefined, (e) => "SendError { .. }");
-      const tryRecv = $tryRecv(rx);
-      if (tryRecv.TAG === "Ok") {
-        console.log(`first ${tryRecv._0.id}`);
-      }
-    } finally {
+    produce(tx);
+  } catch (error) {
+    $cleanup(() => {
       $dropSender(tx2);
-    }
+      $dropReceiver(rx);
+    });
+    throw error;
+  }
+  try {
+    $unwrapOk($send(tx2, { id: 9, name: "late" }), undefined, (e) => "SendError { .. }");
+  } catch (error) {
+    $cleanup(() => {
+      $dropSender(tx2);
+      $dropReceiver(rx);
+    });
+    throw error;
+  }
+  let tryRecv;
+  try {
+    tryRecv = $tryRecv(rx);
+  } catch (error) {
+    $cleanup(() => {
+      $dropSender(tx2);
+      $dropReceiver(rx);
+    });
+    throw error;
+  }
+  if (tryRecv.TAG === "Ok") {
+    console.log(`first ${tryRecv._0.id}`);
+  }
+  try {
+    $dropSender(tx2);
+  } catch (error) {
+    $cleanup(() => {
+      $dropReceiver(rx);
+    });
+    throw error;
+  }
+  try {
     console.log(
       `[${drain(rx)
         .map((item) => $debugStr(item))
         .join(", ")}]`,
     );
-    const value = $tryRecv(rx);
-    console.log(`${value.TAG === "Err" && value._0 === "Disconnected"}`);
-
-    const [tx$1, rx$1] = $channel();
-    try {
-      $dropReceiver(rx$1);
-      console.log(`${$send(tx$1, 5).TAG === "Err"}`);
-
-      const [tx, rx] = $channel();
-      function notify() {
-        $unwrapOk($send(tx, "done"), undefined, (e) => "SendError { .. }");
-      }
-      try {
-        try {
-          notify();
-          const value = $recv(rx);
-          console.log(`${value.TAG === "Ok" ? `Ok(${$debugStr(value._0)})` : "Err(RecvError)"}`);
-          const value$1 = $tryRecv(rx);
-          console.log(`${value$1.TAG === "Err" && value$1._0 === "Empty"}`);
-        } finally {
-          $dropSender(tx);
-        }
-        console.log(`${$recv(rx).TAG === "Err"}`);
-      } finally {
-        $dropReceiver(rx);
-      }
-    } finally {
-      $dropSender(tx$1);
-    }
-  } finally {
-    $dropReceiver(rx);
+  } catch (error) {
+    $cleanup(() => {
+      $dropReceiver(rx);
+    });
+    throw error;
   }
+  let tmp;
+  try {
+    tmp = $tryRecv(rx);
+  } catch (error) {
+    $cleanup(() => {
+      $dropReceiver(rx);
+    });
+    throw error;
+  }
+  console.log(`${tmp.TAG === "Err" && tmp._0 === "Disconnected"}`);
+
+  let tmp$1;
+  try {
+    tmp$1 = $channel();
+  } catch (error) {
+    $cleanup(() => {
+      $dropReceiver(rx);
+    });
+    throw error;
+  }
+  tx = tmp$1[0];
+  let rx$1 = tmp$1[1];
+  try {
+    $dropReceiver(rx$1);
+  } catch (error) {
+    $cleanup(() => {
+      $dropSender(tx);
+      $dropReceiver(rx);
+    });
+    throw error;
+  }
+  let send;
+  try {
+    send = $send(tx, 5);
+  } catch (error) {
+    $cleanup(() => {
+      $dropSender(tx);
+      $dropReceiver(rx);
+    });
+    throw error;
+  }
+  console.log(`${send.TAG === "Err"}`);
+
+  let tmp$2;
+  try {
+    tmp$2 = $channel();
+  } catch (error) {
+    $cleanup(() => {
+      $dropSender(tx);
+      $dropReceiver(rx);
+    });
+    throw error;
+  }
+  const tx$1 = tmp$2[0];
+  rx$1 = tmp$2[1];
+  function notify() {
+    $unwrapOk($send(tx$1, "done"), undefined, (e) => "SendError { .. }");
+  }
+  try {
+    notify();
+  } catch (error) {
+    $cleanup(() => {
+      $dropSender(tx$1);
+      $dropReceiver(rx$1);
+      $dropSender(tx);
+      $dropReceiver(rx);
+    });
+    throw error;
+  }
+  try {
+    const value = $recv(rx$1);
+    console.log(`${value.TAG === "Ok" ? `Ok(${$debugStr(value._0)})` : "Err(RecvError)"}`);
+  } catch (error) {
+    $cleanup(() => {
+      $dropSender(tx$1);
+      $dropReceiver(rx$1);
+      $dropSender(tx);
+      $dropReceiver(rx);
+    });
+    throw error;
+  }
+  let tmp$3;
+  try {
+    tmp$3 = $tryRecv(rx$1);
+  } catch (error) {
+    $cleanup(() => {
+      $dropSender(tx$1);
+      $dropReceiver(rx$1);
+      $dropSender(tx);
+      $dropReceiver(rx);
+    });
+    throw error;
+  }
+  console.log(`${tmp$3.TAG === "Err" && tmp$3._0 === "Empty"}`);
+  try {
+    $dropSender(tx$1);
+  } catch (error) {
+    $cleanup(() => {
+      $dropReceiver(rx$1);
+      $dropSender(tx);
+      $dropReceiver(rx);
+    });
+    throw error;
+  }
+  let recv;
+  try {
+    recv = $recv(rx$1);
+  } catch (error) {
+    $cleanup(() => {
+      $dropReceiver(rx$1);
+      $dropSender(tx);
+      $dropReceiver(rx);
+    });
+    throw error;
+  }
+  console.log(`${recv.TAG === "Err"}`);
+  try {
+    $dropReceiver(rx$1);
+  } catch (error) {
+    $cleanup(() => {
+      $dropSender(tx);
+      $dropReceiver(rx);
+    });
+    throw error;
+  }
+  try {
+    $dropSender(tx);
+  } catch (error) {
+    $cleanup(() => {
+      $dropReceiver(rx);
+    });
+    throw error;
+  }
+  $dropReceiver(rx);
 }
 //# sourceMappingURL=case.js.map

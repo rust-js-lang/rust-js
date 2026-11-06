@@ -15,6 +15,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $dropEach,
   $enumerate,
@@ -52,11 +53,17 @@ function firsts(it, dropI) {
       return result;
     }),
   );
+  let result;
   try {
-    return $next(map);
-  } finally {
-    map.return();
+    result = $next(map);
+  } catch (error) {
+    $cleanup(() => {
+      map.return();
+    });
+    throw error;
   }
+  map.return();
+  return result;
 }
 function backs(it, dropI) {
   const map = $held(
@@ -66,11 +73,17 @@ function backs(it, dropI) {
       return result;
     }),
   );
+  let result;
   try {
-    return $next(map);
-  } finally {
-    map.return();
+    result = $next(map);
+  } catch (error) {
+    $cleanup(() => {
+      map.return();
+    });
+    throw error;
   }
+  map.return();
+  return result;
 }
 function main() {
   const f = $held(
@@ -82,26 +95,53 @@ function main() {
       loudDrop_drop,
     ),
   );
+  let next;
+  function map(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
   try {
-    const next = $next(f);
-    function map(l) {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    }
+    next = $next(f);
+  } catch (error) {
+    $cleanup(() => {
+      f.return();
+    });
+    throw error;
+  }
+  try {
     const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-    const nth = $nthDropping($lent(f), 1, loudDrop_drop, false);
-    function map$1(l) {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    }
-    const value$1 = nth != null ? map$1(nth) : undefined;
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  } finally {
-    f.return();
+  } catch (error) {
+    $cleanup(() => {
+      f.return();
+    });
+    throw error;
   }
+  let nth;
+  function map$1(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
+  try {
+    nth = $nthDropping($lent(f), 1, loudDrop_drop, false);
+  } catch (error) {
+    $cleanup(() => {
+      f.return();
+    });
+    throw error;
+  }
+  try {
+    const value = nth != null ? map$1(nth) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    $cleanup(() => {
+      f.return();
+    });
+    throw error;
+  }
+  f.return();
   const value = $held(
     $rev(
       $knowing(
@@ -174,9 +214,13 @@ function main() {
   let r;
   try {
     r = $next(value);
-  } finally {
-    value.return();
+  } catch (error) {
+    $cleanup(() => {
+      value.return();
+    });
+    throw error;
   }
+  value.return();
   console.log(`${r == null ? "None" : `Some(${r})`}`);
   const value$1 = $held(
     iterator_fuse(
@@ -194,9 +238,13 @@ function main() {
   let c;
   try {
     c = $next(value$1);
-  } finally {
-    value$1.return();
+  } catch (error) {
+    $cleanup(() => {
+      value$1.return();
+    });
+    throw error;
   }
+  value$1.return();
   console.log(`${c == null ? "None" : `Some(${c})`}`);
   const value$2 = firsts($iter(louds(3)), $dropEach(loudDrop_drop));
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
@@ -219,16 +267,37 @@ function main() {
       loudDrop_drop,
     ),
   );
+  let nth$1;
+  function map$2(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
   try {
-    const nth = $nthDropping($lent(held), 2, loudDrop_drop, false);
-    function map(l) {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    }
-    const value = nth != null ? map(nth) : undefined;
+    nth$1 = $nthDropping($lent(held), 2, loudDrop_drop, false);
+  } catch (error) {
+    $cleanup(() => {
+      held.return();
+    });
+    throw error;
+  }
+  try {
+    const value = nth$1 != null ? map$2(nth$1) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-    const nextBack = fuseDoubleEndedIterator_nextBack(
+  } catch (error) {
+    $cleanup(() => {
+      held.return();
+    });
+    throw error;
+  }
+  let nextBack;
+  function map$3(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
+  try {
+    nextBack = fuseDoubleEndedIterator_nextBack(
       held,
       {
         next_back: (iterator) =>
@@ -277,15 +346,21 @@ function main() {
       },
       loudDrop_drop,
     );
-    function map$1(l) {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    }
-    const value$1 = nextBack != null ? map$1(nextBack) : undefined;
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  } finally {
-    held.return();
+  } catch (error) {
+    $cleanup(() => {
+      held.return();
+    });
+    throw error;
   }
+  try {
+    const value = nextBack != null ? map$3(nextBack) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    $cleanup(() => {
+      held.return();
+    });
+    throw error;
+  }
+  held.return();
 }
 //# sourceMappingURL=case.js.map

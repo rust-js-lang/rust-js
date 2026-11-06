@@ -2,6 +2,7 @@
 
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -42,14 +43,41 @@ function wrapperKeeping(IIterator, dropI, dropIItem, dropIItemItem, dropIItemInt
       looped(wrapper) {
         let n = 0;
         const iter = wrapper;
-        try {
-          let value;
-          while ((value = wrapperIterator_next(iter, IIterator, dropI, dropIItem)) != null) {
-            n = (n + 1) >>> 0;
-            dropIItem?.($someValue(value));
+        while (true) {
+          let tmp;
+          try {
+            tmp = wrapperIterator_next(iter, IIterator, dropI, dropIItem);
+          } catch (error) {
+            $cleanup(() => {
+              dropI?.(iter[0]);
+            });
+            throw error;
           }
-        } finally {
-          dropI?.(iter[0]);
+          if (tmp == null) {
+            try {
+              if (tmp != null) {
+                dropIItem?.($someValue(tmp));
+              }
+            } catch (error) {
+              $cleanup(() => {
+                dropI?.(iter[0]);
+              });
+              throw error;
+            }
+            dropI?.(iter[0]);
+            break;
+          }
+          n = (n + 1) >>> 0;
+          try {
+            if (tmp != null) {
+              dropIItem?.($someValue(tmp));
+            }
+          } catch (error) {
+            $cleanup(() => {
+              dropI?.(iter[0]);
+            });
+            throw error;
+          }
         }
         return n;
       },
@@ -117,9 +145,11 @@ function wrapperKeeping(IIterator, dropI, dropIItem, dropIItemItem, dropIItemInt
           (held) => {
             try {
               console.log("drop held");
-            } finally {
+            } catch (error) {
               dropIItemIntoIter?.(held.iter);
+              throw error;
             }
+            dropIItemIntoIter?.(held.iter);
           },
           true,
         );
@@ -127,9 +157,11 @@ function wrapperKeeping(IIterator, dropI, dropIItem, dropIItemItem, dropIItemInt
         $dropItems(all, (item) => {
           try {
             console.log("drop held");
-          } finally {
+          } catch (error) {
             dropIItemIntoIter?.(item.iter);
+            throw error;
           }
+          dropIItemIntoIter?.(item.iter);
         });
         return result;
       },
@@ -154,17 +186,66 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
       looped(paired) {
         let n = 0;
         const iter = paired;
-        try {
-          let value;
-          while ((value = pairedIterator_next(iter, IIterator, dropI, dropU, dropIItem)) != null) {
-            n = (n + 1) >>> 0;
-            dropIItem?.($someValue(value));
-          }
-        } finally {
+        while (true) {
+          let tmp;
           try {
-            dropI?.(iter[0]);
-          } finally {
+            tmp = pairedIterator_next(iter, IIterator, dropI, dropU, dropIItem);
+          } catch (error) {
+            $cleanup(() => {
+              try {
+                dropI?.(iter[0]);
+              } catch (error) {
+                dropU?.(iter[1]);
+                throw error;
+              }
+              dropU?.(iter[1]);
+            });
+            throw error;
+          }
+          if (tmp == null) {
+            try {
+              if (tmp != null) {
+                dropIItem?.($someValue(tmp));
+              }
+            } catch (error) {
+              $cleanup(() => {
+                try {
+                  dropI?.(iter[0]);
+                } catch (error) {
+                  dropU?.(iter[1]);
+                  throw error;
+                }
+                dropU?.(iter[1]);
+              });
+              throw error;
+            }
+            try {
+              dropI?.(iter[0]);
+            } catch (error) {
+              $cleanup(() => {
+                dropU?.(iter[1]);
+              });
+              throw error;
+            }
             dropU?.(iter[1]);
+            break;
+          }
+          n = (n + 1) >>> 0;
+          try {
+            if (tmp != null) {
+              dropIItem?.($someValue(tmp));
+            }
+          } catch (error) {
+            $cleanup(() => {
+              try {
+                dropI?.(iter[0]);
+              } catch (error) {
+                dropU?.(iter[1]);
+                throw error;
+              }
+              dropU?.(iter[1]);
+            });
+            throw error;
           }
         }
         return n;
@@ -180,9 +261,11 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
             (it) => {
               try {
                 dropI?.(it.of[0]);
-              } finally {
+              } catch (error) {
                 dropU?.(it.of[1]);
+                throw error;
               }
+              dropU?.(it.of[1]);
             },
           ).map((value) => $some(value)),
           (option) => {
@@ -210,9 +293,11 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
           (it) => {
             try {
               dropI?.(it.of[0]);
-            } finally {
+            } catch (error) {
               dropU?.(it.of[1]);
+              throw error;
             }
+            dropU?.(it.of[1]);
           },
         ).reduce((n, item) => {
           dropIItem?.(item);
@@ -237,17 +322,21 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
             (it) => {
               try {
                 dropI?.(it.of[0]);
-              } finally {
+              } catch (error) {
                 dropU?.(it.of[1]);
+                throw error;
               }
+              dropU?.(it.of[1]);
             },
           ).map((i) => ({ iter: SelfItemIntoIterator.intoIter(i) })),
           (held) => {
             try {
               console.log("drop held");
-            } finally {
+            } catch (error) {
               dropIItemIntoIter?.(held.iter);
+              throw error;
             }
+            dropIItemIntoIter?.(held.iter);
           },
           true,
         );
@@ -255,18 +344,22 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
         $dropItems(all, (item) => {
           try {
             console.log("drop held");
-          } finally {
+          } catch (error) {
             dropIItemIntoIter?.(item.iter);
+            throw error;
           }
+          dropIItemIntoIter?.(item.iter);
         });
         return result;
       },
       $drop(paired) {
         try {
           dropI?.(paired[0]);
-        } finally {
+        } catch (error) {
           dropU?.(paired[1]);
+          throw error;
         }
+        dropU?.(paired[1]);
       },
     }),
   );

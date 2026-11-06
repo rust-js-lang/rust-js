@@ -62,11 +62,43 @@ function $unwinding(payload) {
   return new $Unwinding(payload);
 }
 
-// `catch_unwind(f)`: `Ok` of what `f()` gives, or `Err` of what unwound.
+// `catch_unwind(f)`: `Ok` of what `f()` gives, or `Err` of what unwound;
+// never of an abort, which no `catch_unwind` catches (#847).
 function $catchUnwind(f) {
   try {
     return { TAG: "Ok", _0: f() };
   } catch (e) {
+    if (e instanceof $Abort) throw e;
     return { TAG: "Err", _0: $unwound(e) };
   }
+}
+
+// What a panic runs as it unwinds, Rust's cleanup: the drops of what the
+// frames it leaves hold. `run()`, where a throw, a drop's panic while
+// another panic unwinds, aborts the process, as Rust's does (#847, ADR 0660
+// amended): the one place it's decided, which the lowering's cleanups and
+// the runtime's (`$dropsUnwinding`) both call. Once aborted, as in a
+// browser, which `$abort` can't end, nothing more runs as it unwinds.
+function $cleanup(run) {
+  if ($aborted) return;
+  try {
+    run();
+  } catch (second) {
+    throw $abort(second);
+  }
+}
+
+// The process ended by Rust's abort, of `cause`, a drop's panic while
+// another unwound: std's line to stderr, then exit 134, as a shell gives a
+// SIGABRT, where the host has a process. A browser has none, so what's
+// thrown is a `$Abort`, which `$catchUnwind` and the runtime throw on, but a
+// `catch_unwind` lowered to JS's own `try` catches (ADR 0660's limit).
+let $aborted = false;
+class $Abort extends Error {}
+function $abort(cause) {
+  if (cause instanceof $Abort) return cause;
+  $aborted = true;
+  $eprint("thread caused non-unwinding panic. aborting.\n");
+  globalThis.process?.exit?.(134);
+  return new $Abort("panic in a destructor during cleanup", { cause });
 }

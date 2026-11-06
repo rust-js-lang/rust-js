@@ -3,6 +3,7 @@
 import {
   $BTreeMap,
   $assign,
+  $cleanup,
   $cmp,
   $insert,
   $some,
@@ -168,53 +169,183 @@ function main() {
           slot = slot$1.value;
         }
         const m = new Map();
+        let noisy;
         try {
-          const noisy = $insert(m, 1, [3]);
+          noisy = $insert(m, 1, [3]);
+        } catch (error) {
+          $cleanup(() => {
+            for (const item of m.values()) {
+              noisyDrop_drop(item);
+            }
+          });
+          throw error;
+        }
+        try {
           if (noisy != null) {
             noisyDrop_drop(noisy);
           }
+        } catch (error) {
+          $cleanup(() => {
+            for (const item of m.values()) {
+              noisyDrop_drop(item);
+            }
+          });
+          throw error;
+        }
+        try {
           const value = mapInsert(m);
           console.log(`map ${value == null ? "None" : `Some(${value})`}`);
-          const t = new $BTreeMap();
-          try {
-            const value = $insert(t, 1, [4]);
-            if (value != null) {
-              noisyDrop_drop(value);
+        } catch (error) {
+          $cleanup(() => {
+            for (const item of m.values()) {
+              noisyDrop_drop(item);
             }
-            const value$1 = treeInsert(t);
-            console.log(`tree ${value$1 == null ? "None" : `Some(${value$1})`}`);
-            const v = [[15]];
-            try {
-              element(v);
-              const slot$1 = { value: slot };
-              let tmp;
-              try {
-                tmp = getOrInsert(slot$1);
-              } finally {
-                slot = slot$1.value;
-              }
-              console.log(`get_or_insert ${tmp}`);
-              const p = [[16], 0];
-              try {
-                field(p);
-                console.log("end");
-              } finally {
-                noisyDrop_drop(p[0]);
-              }
-            } finally {
-              for (const item of v) {
-                noisyDrop_drop(item);
-              }
+          });
+          throw error;
+        }
+        let t;
+        try {
+          t = new $BTreeMap();
+        } catch (error) {
+          $cleanup(() => {
+            for (const item of m.values()) {
+              noisyDrop_drop(item);
             }
-          } finally {
+          });
+          throw error;
+        }
+        let tmp;
+        try {
+          tmp = $insert(t, 1, [4]);
+        } catch (error) {
+          $cleanup(() => {
             for (const [, value] of $sortedEntries(t, $cmp)) {
               noisyDrop_drop(value);
             }
+            for (const item of m.values()) {
+              noisyDrop_drop(item);
+            }
+          });
+          throw error;
+        }
+        try {
+          if (tmp != null) {
+            noisyDrop_drop(tmp);
           }
-        } finally {
-          for (const item of m.values()) {
+        } catch (error) {
+          $cleanup(() => {
+            for (const [, value] of $sortedEntries(t, $cmp)) {
+              noisyDrop_drop(value);
+            }
+            for (const item of m.values()) {
+              noisyDrop_drop(item);
+            }
+          });
+          throw error;
+        }
+        try {
+          const value = treeInsert(t);
+          console.log(`tree ${value == null ? "None" : `Some(${value})`}`);
+        } catch (error) {
+          $cleanup(() => {
+            for (const [, value] of $sortedEntries(t, $cmp)) {
+              noisyDrop_drop(value);
+            }
+            for (const item of m.values()) {
+              noisyDrop_drop(item);
+            }
+          });
+          throw error;
+        }
+        const v = [[15]];
+        try {
+          element(v);
+        } catch (error) {
+          $cleanup(() => {
+            for (const item of v) {
+              noisyDrop_drop(item);
+            }
+            for (const [, value] of $sortedEntries(t, $cmp)) {
+              noisyDrop_drop(value);
+            }
+            for (const item of m.values()) {
+              noisyDrop_drop(item);
+            }
+          });
+          throw error;
+        }
+        const slot$2 = { value: slot };
+        let tmp$1;
+        try {
+          try {
+            tmp$1 = getOrInsert(slot$2);
+          } finally {
+            slot = slot$2.value;
+          }
+        } catch (error) {
+          $cleanup(() => {
+            for (const item of v) {
+              noisyDrop_drop(item);
+            }
+            for (const [, value] of $sortedEntries(t, $cmp)) {
+              noisyDrop_drop(value);
+            }
+            for (const item of m.values()) {
+              noisyDrop_drop(item);
+            }
+          });
+          throw error;
+        }
+        console.log(`get_or_insert ${tmp$1}`);
+        const p = [[16], 0];
+        try {
+          field(p);
+        } catch (error) {
+          $cleanup(() => {
+            noisyDrop_drop(p[0]);
+            for (const item of v) {
+              noisyDrop_drop(item);
+            }
+            for (const [, value] of $sortedEntries(t, $cmp)) {
+              noisyDrop_drop(value);
+            }
+            for (const item of m.values()) {
+              noisyDrop_drop(item);
+            }
+          });
+          throw error;
+        }
+        console.log("end");
+        noisyDrop_drop(p[0]);
+        try {
+          for (const item of v) {
             noisyDrop_drop(item);
           }
+        } catch (error) {
+          $cleanup(() => {
+            for (const [, value] of $sortedEntries(t, $cmp)) {
+              noisyDrop_drop(value);
+            }
+            for (const item of m.values()) {
+              noisyDrop_drop(item);
+            }
+          });
+          throw error;
+        }
+        try {
+          for (const [, value] of $sortedEntries(t, $cmp)) {
+            noisyDrop_drop(value);
+          }
+        } catch (error) {
+          $cleanup(() => {
+            for (const item of m.values()) {
+              noisyDrop_drop(item);
+            }
+          });
+          throw error;
+        }
+        for (const item of m.values()) {
+          noisyDrop_drop(item);
         }
       } finally {
         noisyDrop_drop(n);

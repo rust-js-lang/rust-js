@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $dropEach,
   $dropItems,
@@ -31,9 +32,11 @@ function main() {
       tmp = $iter(value);
       h$live = false;
     } catch (error) {
-      if (h$live) {
-        dDrop_drop(h);
-      }
+      $cleanup(() => {
+        if (h$live) {
+          dDrop_drop(h);
+        }
+      });
       throw error;
     }
     function f(d) {
@@ -51,9 +54,13 @@ function main() {
     let result;
     try {
       result = $foldToArray(iter, dDrop_drop);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     const v = result;
     console.log(`mapped ${v.length}`);
     $dropItems(v, dDrop_drop);

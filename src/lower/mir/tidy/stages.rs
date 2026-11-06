@@ -1075,9 +1075,16 @@ pub(super) const STAGES: &[Stage] = &[
             // the program wrote of a loop it labeled: that label, `outer:`
             // (D1, the user's decision).
             pass("written loop labels", |b, h| written_loop_breaks(b, &h.written.loops)),
+            // Last, once no pass reads them: each cleanup that may throw
+            // guarded, where a throw aborts, as Rust's does where a drop
+            // panics as a panic unwinds (#847).
+            pass("guarded cleanups", |b, _| {
+                js::statement_lists(b, &mut |s| unwinds::guarded_cleanups(s))
+            }),
         ],
         // What `settled` ensured, kept: what's printed is checked as it is.
         ensures: &[
+            contracts::UNWINDING_GUARDED,
             contracts::NOTHING_AFTER_A_JUMP,
             contracts::LABELS_NAMED,
             contracts::NO_EMPTY_IF,

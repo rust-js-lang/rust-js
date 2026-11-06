@@ -5,6 +5,7 @@ import {
   $KeyMap,
   $KeySet,
   $btreeSet,
+  $cleanup,
   $cmp,
   $collectDropping,
   $extendMap,
@@ -36,8 +37,9 @@ function main() {
     loudDrop_drop,
   );
   console.log(`h ${h.size}`);
+  let b;
   try {
-    const b = $treeFrom(
+    b = $treeFrom(
       new $BTreeMap(),
       [
         [2, [3]],
@@ -49,93 +51,244 @@ function main() {
       $cmp,
       loudDrop_drop,
     );
-    try {
-      console.log(
-        `b [${$sortedEntries(b, $cmp)
-          .map((entry) => entry[1])
-          .map((l) => l[0])
-          .join(", ")}]`,
-      );
-      const c = $treeFrom(
-        new $BTreeMap(),
-        $collectDropping(
-          $lazyRange(0, 4).map((i) => {
-            console.log(`make ${i}`);
-            return [i % 2, [(10 + i) & 255]];
-          }),
-          (value) => {
-            loudDrop_drop(value[1]);
-          },
-          true,
-        ),
-        false,
-        $cmp,
-        loudDrop_drop,
-      );
-      console.log(`c ${c.size}`);
-      try {
-        const s = $treeFrom(
-          new ($btreeSet((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeySet))(),
-          [
-            [1, 0],
-            [1, 0],
-          ],
-          true,
-          (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
-          undefined,
-          keyDrop_drop,
-        );
-        try {
-          const hs = $extendMap(
-            new $KeySet(),
-            $iter([
-              [2, 0],
-              [2, 0],
-            ]),
-            true,
-            undefined,
-            keyDrop_drop,
-          );
-          try {
-            const km = $extendMap(
-              new $KeyMap(),
-              $iter([
-                [[3, 0], [20]],
-                [[3, 0], [21]],
-              ]),
-              false,
-              loudDrop_drop,
-              keyDrop_drop,
-            );
-            console.log(`${s.size} ${hs.size} ${km.size}`);
-            for (const [key, value] of km) {
-              keyDrop_drop(key);
-              loudDrop_drop(value);
-            }
-          } finally {
-            for (const item of hs) {
-              keyDrop_drop(item);
-            }
-          }
-        } finally {
-          for (const key of $sortedKeys(s, (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]))) {
-            keyDrop_drop(key);
-          }
-        }
-      } finally {
-        for (const [, value] of $sortedEntries(c, $cmp)) {
-          loudDrop_drop(value);
-        }
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of h.values()) {
+        loudDrop_drop(item);
       }
-    } finally {
+    });
+    throw error;
+  }
+  try {
+    console.log(
+      `b [${$sortedEntries(b, $cmp)
+        .map((entry) => entry[1])
+        .map((l) => l[0])
+        .join(", ")}]`,
+    );
+  } catch (error) {
+    $cleanup(() => {
       for (const [, value] of $sortedEntries(b, $cmp)) {
         loudDrop_drop(value);
       }
+      for (const item of h.values()) {
+        loudDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  let c;
+  try {
+    c = $treeFrom(
+      new $BTreeMap(),
+      $collectDropping(
+        $lazyRange(0, 4).map((i) => {
+          console.log(`make ${i}`);
+          return [i % 2, [(10 + i) & 255]];
+        }),
+        (value) => {
+          loudDrop_drop(value[1]);
+        },
+        true,
+      ),
+      false,
+      $cmp,
+      loudDrop_drop,
+    );
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(b, $cmp)) {
+        loudDrop_drop(value);
+      }
+      for (const item of h.values()) {
+        loudDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  console.log(`c ${c.size}`);
+  let s;
+  try {
+    s = $treeFrom(
+      new ($btreeSet((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeySet))(),
+      [
+        [1, 0],
+        [1, 0],
+      ],
+      true,
+      (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+      undefined,
+      keyDrop_drop,
+    );
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(c, $cmp)) {
+        loudDrop_drop(value);
+      }
+      for (const [, value] of $sortedEntries(b, $cmp)) {
+        loudDrop_drop(value);
+      }
+      for (const item of h.values()) {
+        loudDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  let hs;
+  try {
+    hs = $extendMap(
+      new $KeySet(),
+      $iter([
+        [2, 0],
+        [2, 0],
+      ]),
+      true,
+      undefined,
+      keyDrop_drop,
+    );
+  } catch (error) {
+    $cleanup(() => {
+      for (const key of $sortedKeys(s, (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]))) {
+        keyDrop_drop(key);
+      }
+      for (const [, value] of $sortedEntries(c, $cmp)) {
+        loudDrop_drop(value);
+      }
+      for (const [, value] of $sortedEntries(b, $cmp)) {
+        loudDrop_drop(value);
+      }
+      for (const item of h.values()) {
+        loudDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  let km;
+  try {
+    km = $extendMap(
+      new $KeyMap(),
+      $iter([
+        [[3, 0], [20]],
+        [[3, 0], [21]],
+      ]),
+      false,
+      loudDrop_drop,
+      keyDrop_drop,
+    );
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of hs) {
+        keyDrop_drop(item);
+      }
+      for (const key of $sortedKeys(s, (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]))) {
+        keyDrop_drop(key);
+      }
+      for (const [, value] of $sortedEntries(c, $cmp)) {
+        loudDrop_drop(value);
+      }
+      for (const [, value] of $sortedEntries(b, $cmp)) {
+        loudDrop_drop(value);
+      }
+      for (const item of h.values()) {
+        loudDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  console.log(`${s.size} ${hs.size} ${km.size}`);
+  try {
+    for (const [key, value] of km) {
+      keyDrop_drop(key);
+      loudDrop_drop(value);
     }
-  } finally {
-    for (const item of h.values()) {
-      loudDrop_drop(item);
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of hs) {
+        keyDrop_drop(item);
+      }
+      for (const key of $sortedKeys(s, (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]))) {
+        keyDrop_drop(key);
+      }
+      for (const [, value] of $sortedEntries(c, $cmp)) {
+        loudDrop_drop(value);
+      }
+      for (const [, value] of $sortedEntries(b, $cmp)) {
+        loudDrop_drop(value);
+      }
+      for (const item of h.values()) {
+        loudDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  try {
+    for (const item of hs) {
+      keyDrop_drop(item);
     }
+  } catch (error) {
+    $cleanup(() => {
+      for (const key of $sortedKeys(s, (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]))) {
+        keyDrop_drop(key);
+      }
+      for (const [, value] of $sortedEntries(c, $cmp)) {
+        loudDrop_drop(value);
+      }
+      for (const [, value] of $sortedEntries(b, $cmp)) {
+        loudDrop_drop(value);
+      }
+      for (const item of h.values()) {
+        loudDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  try {
+    for (const key of $sortedKeys(s, (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]))) {
+      keyDrop_drop(key);
+    }
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(c, $cmp)) {
+        loudDrop_drop(value);
+      }
+      for (const [, value] of $sortedEntries(b, $cmp)) {
+        loudDrop_drop(value);
+      }
+      for (const item of h.values()) {
+        loudDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  try {
+    for (const [, value] of $sortedEntries(c, $cmp)) {
+      loudDrop_drop(value);
+    }
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(b, $cmp)) {
+        loudDrop_drop(value);
+      }
+      for (const item of h.values()) {
+        loudDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  try {
+    for (const [, value] of $sortedEntries(b, $cmp)) {
+      loudDrop_drop(value);
+    }
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of h.values()) {
+        loudDrop_drop(item);
+      }
+    });
+    throw error;
+  }
+  for (const item of h.values()) {
+    loudDrop_drop(item);
   }
 }
 //# sourceMappingURL=case.js.map

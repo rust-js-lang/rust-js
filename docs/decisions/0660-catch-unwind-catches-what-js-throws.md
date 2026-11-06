@@ -33,8 +33,9 @@ may throw, a JS operator's of any value, stays.
 Case ([0262](0262-when-rust-and-js-disagree.md)): N where a panic is
 caught, as Rust catches it: the same closure runs once, the same drops
 run as it unwinds, the same `Result` is given; B for what JS can't keep of
-a payload and what native Rust aborts, each under Consequences; D where
-the crate asked its panics to abort.
+a payload, under Consequences; R for a drop's panic as a panic unwinds,
+which aborts as Rust's does (amended below, #847); D where the crate
+asked its panics to abort.
 
 ## Context
 
@@ -199,12 +200,10 @@ export function getIoDescription(value) {
   throw, a `TypeError`, a `DOMException`, a string, is a `&JsError`.
 - **A panic resumed is a new `Error` of its message**, its stack where
   it's resumed; what JS threw is resumed as itself.
-- **A `drop` that panics while another panic unwinds replaces it, and
-  `catch_unwind` catches the replacement**, where Rust aborts (ADR 0098's
-  difference, which Rust code can now see). Case B: a destructor that
-  panics as it unwinds, a program native Rust ends. Keeping Rust's would
-  take a runtime that knows it's unwinding in each drop's `finally`, as
-  the draft's `$aborting` proposed.
+- **A `drop` that panics while another panic unwinds aborts the
+  process**, as Rust does: amended below (#847). It replaced the panic,
+  and `catch_unwind` caught the replacement, until the user's decision of
+  2026-11-06.
 - **A caught panic writes nothing**, where Rust's default hook writes its
   message to stderr (`set_hook` is refused).
 - The semantics page says it under panics, the limitations no longer list
@@ -483,3 +482,105 @@ Held by `test/lowering-comments-inside.test.ts`'s "a comment before a
 flagged catch_unwind's false is at its try's end, one above its test in
 the catch", run, and the mutations `flagged-try-catch-uncommented` and
 `flagged-try-at-its-test` (`prepare/catches.ts`).
+
+## Amendment: a drop that panics while a panic unwinds aborts (#847, the user's decision, 2026-11-06)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Results change:
+native Rust ends the process, where the JS went on with the drop's panic
+in place of the first, which `catch_unwind` caught, so what ran after,
+and what it printed, differed.
+
+```rust
+let r = panic::catch_unwind(|| {
+    let _a = Bomb("a");
+    let _b = Bomb("bomb"); // its drop panics
+    panic!("second");
+});
+println!("never {}", r.is_err());
+```
+
+Rust drops `_b` as `second` unwinds; its panic can't unwind through the
+cleanup, so std writes `thread caused non-unwinding panic. aborting.` and
+aborts: `_a` is never dropped and `never` never printed.
+
+- **What runs as a panic unwinds, a cleanup, is `$cleanup(() => { .. })`
+  where it may throw**: a throw inside it is `$abort(second)`, which writes
+  std's line to stderr and ends the process with 134, the code a shell
+  gives SIGABRT, where the host has a process (`process.exit`). The
+  line is std's own, which it writes whatever the hook; the hook's,
+  `panic in a destructor during cleanup`, is the `$Abort`'s message, as
+  rust-js has no hook (`set_hook` is refused, above).
+
+  ```js
+  try {
+    throw new Error("second");
+  } catch (error) {
+    $cleanup(() => {
+      console.log(`drop ${c}`);
+      ..
+    });
+    throw error;
+  }
+  ```
+
+- **A `finally` holds only what can't throw**, as it runs on either path
+  and can't tell a drop on the way on, whose panic goes on, from one as a
+  panic unwinds, which aborts. A drop that may throw after a body is
+  `try { body } catch (error) { $cleanup(() => { drop }); throw error; }
+  drop`: tidy's scope merges (`finally_holds`) and every `finally` a drop
+  is emitted in, drop glue's parts, `map_or`'s fallback, `xor`'s pair
+  (`drops::dropped_after`), and tidy's last pass, "guarded cleanups", puts
+  each rethrowing `catch`'s drops in `$cleanup`. A drop that can't throw
+  keeps its `finally`, as before. Inside one drop, its parts still drop in
+  turn as one of them panics, as Rust's drop glue does, and the abort comes
+  where that panic leaves the drop: `drop first, bomb 2, drop last`, then
+  the abort.
+- **The runtime's own cleanup is the same `$cleanup`**: `$dropsUnwinding`,
+  which `$unwinds` and `$inTurnOf` run (ADR 1092), where #817's
+  `$unwindingThrew` kept the first error.
+- **No `catch_unwind` catches an abort**: `$catchUnwind` throws a `$Abort`
+  on, and once aborted, `$cleanup` runs nothing more.
+- **The browser's limit**: it has no process to end, so `$abort` throws a
+  `$Abort` past `$catchUnwind` and the runtime's catches; a `catch_unwind`
+  lowered to JS's own `try { .. } catch { .. }` (ADR 0637) catches it, as
+  any JS `catch` would. Rust's own abort there is wasm's `unreachable`, a
+  `RuntimeError` a JS `catch` catches too.
+- **What it costs**: where a drop may panic, a dyn's or a generic's, an
+  iterator's close, a `$dropItems` of items whose drop may, its `finally`
+  becomes the `catch` and the drop after, and the cleanup `$cleanup`'s:
+  311 of the corpus's 1,804 snapshots, 300 longer. What's known never to
+  throw keeps the `finally`: a `RefCell` guard's `$unborrow`, now one of
+  the runtime's helpers that never throw, and an `Rc`'s `$rcDrop` of a drop
+  that can't, which drops 11 snapshots' `try`s besides. And ADR 0902's
+  analysis knows more never unwinds: a `Cell`'s or a thread-local
+  `Cell`'s `set` or `replace` of a value that drops nothing (a module's
+  `let` written, as rust-js runs it), a closure written in a generic
+  function (its drops of what's of a type parameter ways to unwind), and
+  so the call of such a closure. What's left, a generic `Drop` impl judged
+  for each use (the guide's `Defer`), a `Cell` of an `Option` of what drops
+  nothing, a `Cell`'s `get`, a quiet `$dropItems` and an iterator's close
+  of quiet items, is #861's. React's port pays 164 guards at its first
+  measure.
+
+The corpus judges an abort as it judges a panic: `//@ run-abort`, native
+Rust's SIGABRT and the JS's exit 134 each `{ exit: 134 }`
+(`test/programs.ts`' `execute`), what each printed compared byte for byte.
+
+Held by the corpus cases `unwinding_drop_aborts_locals` (and a drop that
+catches its own panic as it unwinds, which goes on),
+`unwinding_drop_aborts_field` (no `catch_unwind`), `unwinding_drop_aborts_vec`
+`unwinding_drop_aborts_iter` and `unwinding_drop_aborts_assert` (a bound's
+panic, an `Rc`'s drop), against native Rust in both builds;
+`test/lowering-unwinds.test.ts`, "a cleanup that throws aborts, past
+catch_unwind", of a host whose `exit` doesn't end it;
+tidy's contract "what unwinds is guarded", checked of every body in a debug
+build; `test/architecture-iterators.test.ts`, "what the lowering runs as a
+panic unwinds is guarded by drops/parts.rs alone"; and the mutations of
+`abort-cleanup-throws-on`, `abort-exit-unasked`, `abort-line-unwritten`,
+`abort-caught-by-catch-unwind`, `abort-cleanup-runs-after`
+(`runtime/unwind.ts`), `cleanup-unguarded`, `dropped-after-finally-unguarded`,
+`rc-drop-quiet-of-any` (`lower/drops/parts.ts`), `finally-holds-what-may-throw`,
+`cleanups-left-unguarded`, `tested-unwrap-drops-unguarded`
+(`lower/mir/tidy/unwinds.ts`) and `assert-drops-unguarded`
+(`lower/mir/structure.ts`); tidy's contract is held by its unit test,
+`what_unwinds_is_guarded`.

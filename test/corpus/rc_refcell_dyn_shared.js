@@ -3,6 +3,7 @@
 import {
   $borrow,
   $borrowMut,
+  $cleanup,
   $downgrade,
   $dropItems,
   $dynCell,
@@ -125,17 +126,7 @@ function main() {
   }
   $weakDrop(borrowMut.value);
   borrowMut.value = tmp;
-  try {
-    $unborrow(borrowMut);
-  } catch (error) {
-    $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent);
-    });
-    $rcDrop(root, (value) => {
-      $weakDrop(value.parent);
-    });
-    throw error;
-  }
+  $unborrow(borrowMut);
   let tmp$1;
   try {
     tmp$1 = $borrow($fieldCell(leaf.value, "parent"), true);
@@ -180,17 +171,7 @@ function main() {
     });
     throw error;
   }
-  try {
-    $unborrow(tmp$1);
-  } catch (error) {
-    $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent);
-    });
-    $rcDrop(root, (value) => {
-      $weakDrop(value.parent);
-    });
-    throw error;
-  }
+  $unborrow(tmp$1);
 
   const counter = { value: { value: { sum: 0 } }, strong: 1, weak: 0 };
   let tmp$2;
@@ -213,34 +194,114 @@ function main() {
   try {
     try {
       try {
+        let iter;
         try {
-          const iter = sinks.entries();
-          let value;
-          while ((value = $next(iter)) != null) {
-            const i = value[0];
-            const sink = value[1];
-            const value$1 = $borrowMut(sink.value, true);
-            try {
-              value$1.impl.take(value$1, i + 1);
-            } finally {
-              $unborrow(value$1);
-            }
-          }
-          const value$1 = $borrow($index(sinks, 0).value, true);
-          try {
-            console.log(
-              `${value$1.impl.total(value$1.value)} ${$index(sinks, 0).strong} ${counter.strong}`,
-            );
-          } finally {
-            $unborrow(value$1);
-          }
-        } finally {
-          $dropItems(sinks, (item) => {
-            $rcDrop(item, (value) => {
-              value.impl.$drop?.(value.value);
+          iter = sinks.entries();
+        } catch (error) {
+          $cleanup(() => {
+            $dropItems(sinks, (item) => {
+              $rcDrop(item, (value) => {
+                value.impl.$drop?.(value.value);
+              });
             });
           });
+          throw error;
         }
+        while (true) {
+          let tmp;
+          try {
+            tmp = $next(iter);
+          } catch (error) {
+            $cleanup(() => {
+              $dropItems(sinks, (item) => {
+                $rcDrop(item, (value) => {
+                  value.impl.$drop?.(value.value);
+                });
+              });
+            });
+            throw error;
+          }
+          if (tmp == null) {
+            break;
+          }
+          const i = tmp[0];
+          const sink = tmp[1];
+          let tmp$1;
+          try {
+            tmp$1 = $borrowMut(sink.value, true);
+          } catch (error) {
+            $cleanup(() => {
+              $dropItems(sinks, (item) => {
+                $rcDrop(item, (value) => {
+                  value.impl.$drop?.(value.value);
+                });
+              });
+            });
+            throw error;
+          }
+          try {
+            tmp$1.impl.take(tmp$1, i + 1);
+          } catch (error) {
+            $cleanup(() => {
+              $unborrow(tmp$1);
+              $dropItems(sinks, (item) => {
+                $rcDrop(item, (value) => {
+                  value.impl.$drop?.(value.value);
+                });
+              });
+            });
+            throw error;
+          }
+          $unborrow(tmp$1);
+        }
+        let tmp;
+        try {
+          tmp = $borrow($index(sinks, 0).value, true);
+        } catch (error) {
+          $cleanup(() => {
+            $dropItems(sinks, (item) => {
+              $rcDrop(item, (value) => {
+                value.impl.$drop?.(value.value);
+              });
+            });
+          });
+          throw error;
+        }
+        let total;
+        try {
+          total = tmp.impl.total(tmp.value);
+        } catch (error) {
+          $cleanup(() => {
+            $unborrow(tmp);
+            $dropItems(sinks, (item) => {
+              $rcDrop(item, (value) => {
+                value.impl.$drop?.(value.value);
+              });
+            });
+          });
+          throw error;
+        }
+        let tmp$1;
+        try {
+          tmp$1 = $index(sinks, 0).strong;
+        } catch (error) {
+          $cleanup(() => {
+            $unborrow(tmp);
+            $dropItems(sinks, (item) => {
+              $rcDrop(item, (value) => {
+                value.impl.$drop?.(value.value);
+              });
+            });
+          });
+          throw error;
+        }
+        console.log(`${total} ${tmp$1} ${counter.strong}`);
+        $unborrow(tmp);
+        $dropItems(sinks, (item) => {
+          $rcDrop(item, (value) => {
+            value.impl.$drop?.(value.value);
+          });
+        });
         console.log(`${counterSink_total($borrow(counter.value).value)} ${counter.strong}`);
       } finally {
         $rcDrop(counter);

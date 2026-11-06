@@ -2,6 +2,7 @@
 
 import {
   $assign,
+  $cleanup,
   $debugUtf8Error,
   $fromUtf8,
   $ioWriteAll,
@@ -53,22 +54,60 @@ function main() {
   const BufWrite = bufWrite(16);
   const b = { bytes: [] };
   const out = { value: b };
+  let tmp;
   try {
-    let tmp;
     try {
       tmp = render(out, 7, BufWrite);
-    } finally {
-      $assign(b, out.value);
+    } catch (error) {
+      $cleanup(() => {
+        $assign(b, out.value);
+      });
+      throw error;
     }
-    const result = bufWrite_write(b, [33, 33], 16);
-    const n = result.TAG === "Ok" ? result._0 : undefined;
+    $assign(b, out.value);
+  } catch (error) {
+    $cleanup(() => {
+      console.log(`dropped ${b.bytes.length}`);
+    });
+    throw error;
+  }
+  let result;
+  let n;
+  try {
+    result = bufWrite_write(b, [33, 33], 16);
+    n = result.TAG === "Ok" ? result._0 : undefined;
+  } catch (error) {
+    $cleanup(() => {
+      console.log(`dropped ${b.bytes.length}`);
+    });
+    throw error;
+  }
+  try {
     BufWrite.writeFmt({ value: b }, "1");
+  } catch (error) {
+    $cleanup(() => {
+      console.log(`dropped ${b.bytes.length}`);
+    });
+    throw error;
+  }
+  try {
     BufWrite.writeAll({ value: b }, [63]);
+  } catch (error) {
+    $cleanup(() => {
+      console.log(`dropped ${b.bytes.length}`);
+    });
+    throw error;
+  }
+  try {
     console.log(
       `${$unwrapOk($fromUtf8(b.bytes.slice(), true), undefined, (e) => $debugUtf8Error(e, true))} ${n == null ? "None" : `Some(${n})`}`,
     );
-  } finally {
-    console.log(`dropped ${b.bytes.length}`);
+  } catch (error) {
+    $cleanup(() => {
+      console.log(`dropped ${b.bytes.length}`);
+    });
+    throw error;
   }
+  console.log(`dropped ${b.bytes.length}`);
 }
 //# sourceMappingURL=case.js.map

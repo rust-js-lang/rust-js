@@ -421,4 +421,28 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^guard_scope_loop_in_an_if.rs$"],
     snapshots: true,
   },
+  {
+    name: "finally-holds-what-may-throw",
+    breaks: "a scope's `finally` holds a drop that may panic, which it can't tell a panic as a panic unwinds, where Rust aborts (#847)",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "    !crate::lower::drops::may_throw(std::slice::from_ref(drop))\n",
+    replace: "    true\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_replace_panics.rs$"],
+  },
+  {
+    name: "cleanups-left-unguarded",
+    breaks: "a `catch` that throws on runs its drops unguarded, so a drop's panic there replaces the panic where Rust aborts (#847)",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "        *handler = crate::lower::drops::cleanup(drops, span);\n",
+    replace: "        *handler = drops;\n",
+    tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_locals.rs$"],
+  },
+  {
+    name: "tested-unwrap-drops-unguarded",
+    breaks: "an `unwrap()`'s panic runs its drops unguarded, so a drop's panic there replaces it where Rust aborts (#847)",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "        let mut handler = crate::lower::drops::cleanup(handler, last.span);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_vec.rs$"],
+  },
 ];

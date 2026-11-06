@@ -8,6 +8,7 @@ import {
   iterator_fuse,
 } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $closing,
   $dropEach,
   $enumerate,
@@ -85,28 +86,50 @@ function sum(sum, d) {
 
 function foldedBack(it, dropI) {
   const iter = it;
+  let result;
   try {
-    return $foldBack(iter, 0, sum);
-  } finally {
-    if (!iter.ownRfold) {
-      dropI?.(iter);
-    }
+    result = $foldBack(iter, 0, sum);
+  } catch (error) {
+    $cleanup(() => {
+      if (!iter.ownRfold) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
   }
+  if (!iter.ownRfold) {
+    dropI?.(iter);
+  }
+  return result;
 }
 
 function secondBack(it, dropI) {
   $held(it);
-  try {
-    const nthBack = $nthBack(it, 1, undefined, dDrop_drop);
-    function map(d) {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }
-    return nthBack != null ? map(nthBack) : undefined;
-  } finally {
-    dropI?.(it);
+  let nthBack;
+  function map(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
   }
+  try {
+    nthBack = $nthBack(it, 1, undefined, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(it);
+    });
+    throw error;
+  }
+  let result;
+  try {
+    result = nthBack != null ? map(nthBack) : undefined;
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(it);
+    });
+    throw error;
+  }
+  dropI?.(it);
+  return result;
 }
 
 function numsIterator_next(nums) {

@@ -9,6 +9,7 @@ import {
 import {
   $advanceSlice,
   $catchUnwind,
+  $cleanup,
   $closing,
   $cmp,
   $dropEach,
@@ -60,25 +61,41 @@ function lastTwo(v, w) {
     tmp = $iter(v);
     w$live = false;
   } catch (error) {
-    if (w$live) {
-      $dropItems(w, dDrop_drop);
-    }
+    $cleanup(() => {
+      if (w$live) {
+        $dropItems(w, dDrop_drop);
+      }
+    });
     throw error;
   }
   const chain = $held(
     $lazyChain($closing(tmp, $dropEach(dDrop_drop)), $closing($iter(w), $dropEach(dDrop_drop))),
   );
-  try {
-    const nthBack = $nthBack(chain, 1, undefined, dDrop_drop);
-    function map(d) {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }
-    return nthBack != null ? map(nthBack) : undefined;
-  } finally {
-    chain.return();
+  let nthBack;
+  function map(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
   }
+  try {
+    nthBack = $nthBack(chain, 1, undefined, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      chain.return();
+    });
+    throw error;
+  }
+  let result;
+  try {
+    result = nthBack != null ? map(nthBack) : undefined;
+  } catch (error) {
+    $cleanup(() => {
+      chain.return();
+    });
+    throw error;
+  }
+  chain.return();
+  return result;
 }
 
 function chained(v, w) {
@@ -88,9 +105,11 @@ function chained(v, w) {
     tmp = $iter(v);
     w$live = false;
   } catch (error) {
-    if (w$live) {
-      $dropItems(w, dDrop_drop);
-    }
+    $cleanup(() => {
+      if (w$live) {
+        $dropItems(w, dDrop_drop);
+      }
+    });
     throw error;
   }
   return iterator_chain(
@@ -116,14 +135,26 @@ function main() {
         $closing($iter([[6], [7]]), $dropEach(dDrop_drop)),
       ),
     );
+    let next;
     try {
-      const next = $next(it);
+      next = $next(it);
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
+    }
+    try {
       if (next != null) {
         dDrop_drop(next);
       }
-    } finally {
-      it.return();
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
     }
+    it.return();
   });
   boom("zip", 3, () => {
     const it = $held(
@@ -133,18 +164,34 @@ function main() {
         dDrop_drop,
       ),
     );
+    let next;
     try {
-      const next = $next(it);
+      next = $next(it);
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
+    }
+    try {
       if (next != null) {
         try {
           dDrop_drop(next[0]);
-        } finally {
-          dDrop_drop(next[1]);
+        } catch (error) {
+          $cleanup(() => {
+            dDrop_drop(next[1]);
+          });
+          throw error;
         }
+        dDrop_drop(next[1]);
       }
-    } finally {
-      it.return();
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
     }
+    it.return();
   });
   boom("flatten", 3, () => {
     const intoIterator = {
@@ -169,12 +216,28 @@ function main() {
         $dropEach(dDrop_drop),
       ),
     );
+    let next;
     try {
-      const next = $next(it);
+      next = $next(it);
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
+    }
+    try {
       if (next != null) {
         dDrop_drop(next);
       }
-      const nextBack = flattenDoubleEndedIterator_nextBack(
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
+    }
+    let nextBack;
+    try {
+      nextBack = flattenDoubleEndedIterator_nextBack(
         it,
         { next_back: $nextBack },
         intoIterator,
@@ -191,30 +254,54 @@ function main() {
         $dropEach(dDrop_drop),
         dDrop_drop,
       );
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
+    }
+    try {
       if (nextBack != null) {
         dDrop_drop(nextBack);
       }
-    } finally {
-      it.return();
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
     }
+    it.return();
   });
   const value = lastTwo([[21]], [[22]]);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   boom("chain knowing its back", 3, () => {
     const it = $held(chained(ds(), [[6], [7]]));
+    let next;
     try {
-      const next = $next(it);
+      next = $next(it);
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
+    }
+    try {
       if (next != null) {
         dDrop_drop(next);
       }
-    } finally {
-      it.return();
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
     }
+    it.return();
   });
   boom("chain from its back", 2, () => {
     const it = $held(chained(ds(), [[6], [7], [8]]));
+    let nextBack;
     try {
-      const nextBack = chainDoubleEndedIterator_nextBack(
+      nextBack = chainDoubleEndedIterator_nextBack(
         it,
         { next_back: $nextBack },
         { next_back: $nextBack },
@@ -222,12 +309,23 @@ function main() {
         $dropEach(dDrop_drop),
         dDrop_drop,
       );
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
+    }
+    try {
       if (nextBack != null) {
         dDrop_drop(nextBack);
       }
-    } finally {
-      it.return();
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
     }
+    it.return();
   });
   // A comparison's two iterators, each dropped though the other's drop
   // panics.
@@ -248,9 +346,11 @@ function main() {
         });
         other$live = false;
       } catch (error) {
-        if (other$live) {
-          other.return();
-        }
+        $cleanup(() => {
+          if (other$live) {
+            other.return();
+          }
+        });
         throw error;
       }
       console.log(`${["Less", "Equal", "Greater"][$iterCmp(map, other, $cmp) + 1]}`);
@@ -271,9 +371,11 @@ function main() {
         );
         other$1$live = false;
       } catch (error) {
-        if (other$1$live) {
-          other.return();
-        }
+        $cleanup(() => {
+          if (other$1$live) {
+            other.return();
+          }
+        });
         throw error;
       }
       console.log(`${$iterEq(filter, other, $eq, dDrop_drop, dDrop_drop)}`);
@@ -289,9 +391,11 @@ function main() {
       tmp = $iter(ds());
       h$live = false;
     } catch (error) {
-      if (h$live) {
-        dDrop_drop(h);
-      }
+      $cleanup(() => {
+        if (h$live) {
+          dDrop_drop(h);
+        }
+      });
       throw error;
     }
     function f(x) {
@@ -312,15 +416,23 @@ function main() {
     try {
       first = $next(it);
     } catch (error) {
-      it.return();
+      $cleanup(() => {
+        it.return();
+      });
       throw error;
     }
     try {
       it.return();
-    } finally {
-      if (first != null) {
-        dDrop_drop(first);
-      }
+    } catch (error) {
+      $cleanup(() => {
+        if (first != null) {
+          dDrop_drop(first);
+        }
+      });
+      throw error;
+    }
+    if (first != null) {
+      dDrop_drop(first);
     }
   });
 }

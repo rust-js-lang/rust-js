@@ -153,6 +153,8 @@ pub(super) fn tested_unwraps(stmts: &mut Vec<Stmt>) -> bool {
             unreachable!("tested")
         };
         let last = handler.pop().expect("tested");
+        // The drops run as the panic unwinds, guarded as any cleanup is (#847).
+        let mut handler = crate::lower::drops::cleanup(handler, last.span);
         handler.push(StmtKind::Throw(panic).at(last.span));
         out.push(StmtKind::If(test, handler, None).at(stmt.span));
         match &mut body[0].kind {
@@ -257,7 +259,7 @@ fn given_returned(stmt: &mut Stmt, name: &str) -> bool {
 /// written as that drop, if every statement before it that may throw drops
 /// it too and nothing leaves the run another way.
 fn scope_end(stmts: &[Stmt], start: usize, result: &str) -> Option<usize> {
-    let drop = first_drop(std::slice::from_ref(&stmts[start]))?;
+    let drop = first_drop(std::slice::from_ref(&stmts[start])).filter(|drop| finally_holds(drop))?;
     let run = Run::of(&stmts[start..], drop, result);
     for (at, stmt) in stmts.iter().enumerate().skip(start) {
         if at > start && alike(stmt, drop) {
@@ -486,6 +488,38 @@ fn dropped_last(stmt: &Stmt) -> Option<&Stmt> {
 }
 
 /// A `catch` that only throws on what it caught.
+/// Whether a scope's `finally` may hold `drop`: one that can't throw. A
+/// `finally` runs on either path and can't tell them apart, and a drop
+/// that panics as a panic unwinds aborts (#847), so one that may throw
+/// stays in each `catch`, which `guarded_cleanups` guards, and at each way
+/// out.
+fn finally_holds(drop: &Stmt) -> bool {
+    !crate::lower::drops::may_throw(std::slice::from_ref(drop))
+}
+
+/// `stmts`, each `catch` that throws on what it caught, a cleanup, whose
+/// drops may throw: those drops `$cleanup(() => { .. })`'s, where a throw,
+/// a drop's panic while the panic unwinds, aborts, as Rust's does (#847,
+/// `drops::cleanup`). Run last, once no pass reads a cleanup's drops.
+pub(super) fn guarded_cleanups(stmts: &mut [Stmt]) {
+    for stmt in stmts.iter_mut() {
+        let span = stmt.span;
+        let StmtKind::TryCatch(_, Some(error), handler) = &mut stmt.kind else {
+            continue;
+        };
+        let rethrown = handler
+            .last()
+            .is_some_and(|last| rethrows(std::slice::from_ref(last), error));
+        if !rethrown || handler.len() == 1 || crate::lower::drops::is_cleanup(&handler[..handler.len() - 1]) {
+            continue;
+        }
+        let last = handler.pop().expect("rethrown");
+        let drops = std::mem::take(handler);
+        *handler = crate::lower::drops::cleanup(drops, span);
+        handler.push(last);
+    }
+}
+
 fn rethrows(handler: &[Stmt], error: &str) -> bool {
     matches!(handler, [Stmt { kind: StmtKind::Throw(Expr { kind: ExprKind::Var(v), .. }), .. }] if v == error)
 }
@@ -553,6 +587,7 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, for_made: bool, tidied: &mut d
         let Some(drop) = (matches!(cond.kind, ExprKind::Bool(true)))
             .then(|| first_drop(std::slice::from_ref(&stmts[k])).cloned())
             .flatten()
+            .filter(finally_holds)
         else {
             k += 1;
             continue;

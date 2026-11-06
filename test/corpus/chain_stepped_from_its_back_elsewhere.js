@@ -4,6 +4,7 @@ import {
   $KeySet,
   $btreeSet,
   $catchUnwind,
+  $cleanup,
   $closing,
   $cmp,
   $collectDropping,
@@ -47,33 +48,42 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
   console.log("own fold");
   let acc$live = true;
   let acc = init;
-  try {
-    while (true) {
-      const x = ownIterator_next(own);
-      if (x != null) {
-        acc$live = false;
-        const value = f(acc, x);
-        acc$live = true;
-        acc = value;
-        continue;
-      }
+  while (true) {
+    const x = ownIterator_next(own);
+    if (x != null) {
+      acc$live = false;
+      let tmp;
       try {
-        if (x != null) {
-          dDrop_drop(x);
-        }
+        tmp = f(acc, x);
       } catch (error) {
+        $cleanup(() => {
+          dropF?.(f);
+        });
+        throw error;
+      }
+      acc$live = true;
+      acc = tmp;
+      continue;
+    }
+    try {
+      if (x != null) {
+        dDrop_drop(x);
+      }
+    } catch (error) {
+      $cleanup(() => {
         if (acc$live) {
           dropB?.(acc);
         }
-        throw error;
-      }
-      break;
+        dropF?.(f);
+      });
+      throw error;
     }
-    acc$live = false;
-    return acc;
-  } finally {
-    dropF?.(f);
+    break;
   }
+  acc$live = false;
+  const result = acc;
+  dropF?.(f);
+  return result;
 }
 function ownIterator_count(own) {
   console.log("own count");
@@ -168,17 +178,31 @@ function nestedBack() {
       ),
     ),
   );
-  try {
-    const nthBack = $nthBack(chain, 3, undefined, dDrop_drop);
-    function map(d) {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }
-    return nthBack != null ? map(nthBack) : undefined;
-  } finally {
-    chain.return();
+  let nthBack;
+  function map(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
   }
+  try {
+    nthBack = $nthBack(chain, 3, undefined, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      chain.return();
+    });
+    throw error;
+  }
+  let result;
+  try {
+    result = nthBack != null ? map(nthBack) : undefined;
+  } catch (error) {
+    $cleanup(() => {
+      chain.return();
+    });
+    throw error;
+  }
+  chain.return();
+  return result;
 }
 
 // A chain of the crate's iterators, held before its `rev()`: made knowing
@@ -242,17 +266,31 @@ function skippedBack(v, w) {
   const chain = $held(
     $lazyChain($closing(tmp, $dropEach(dDrop_drop)), $closing($iter(w), $dropEach(dDrop_drop))),
   );
-  try {
-    const nthBack = $nthBack(chain, 1, undefined, dDrop_drop);
-    function map(d) {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }
-    return nthBack != null ? map(nthBack) : undefined;
-  } finally {
-    chain.return();
+  let nthBack;
+  function map(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
   }
+  try {
+    nthBack = $nthBack(chain, 1, undefined, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      chain.return();
+    });
+    throw error;
+  }
+  let result;
+  try {
+    result = nthBack != null ? map(nthBack) : undefined;
+  } catch (error) {
+    $cleanup(() => {
+      chain.return();
+    });
+    throw error;
+  }
+  chain.return();
+  return result;
 }
 
 function main() {
@@ -355,18 +393,30 @@ function main() {
       $closing($iter([[7], [8]]), $dropEach(dDrop_drop)),
     ),
   );
-  try {
-    const nth = $nthDropping($lent(value$1), 3, dDrop_drop, false);
-    function map(d) {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }
-    const value = nth != null ? map(nth) : undefined;
-    console.log(`nth ${value == null ? "None" : `Some(${value})`}`);
-  } finally {
-    value$1.return();
+  let nth;
+  function map$1(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
   }
+  try {
+    nth = $nthDropping($lent(value$1), 3, dDrop_drop, false);
+  } catch (error) {
+    $cleanup(() => {
+      value$1.return();
+    });
+    throw error;
+  }
+  try {
+    const value = nth != null ? map$1(nth) : undefined;
+    console.log(`nth ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    $cleanup(() => {
+      value$1.return();
+    });
+    throw error;
+  }
+  value$1.return();
   const value$2 = $held(
     $lazyChain(
       $iterator(
@@ -395,9 +445,13 @@ function main() {
         return result;
       })}`,
     );
-  } finally {
-    value$2.return();
+  } catch (error) {
+    $cleanup(() => {
+      value$2.return();
+    });
+    throw error;
   }
+  value$2.return();
   const set = $treeFrom(
     new ($btreeSet((a, b) => $cmp(a[0], b[0]), $KeySet))(),
     $collectDropping(
@@ -561,9 +615,13 @@ function main() {
   let result;
   try {
     result = $foldBack(iter, 0, (a, x) => (((a * 10) >>> 0) + x) >>> 0);
-  } finally {
-    iter.return();
+  } catch (error) {
+    $cleanup(() => {
+      iter.return();
+    });
+    throw error;
   }
+  iter.return();
   n = result;
   console.log(`map rfold ${n}`);
   // Its side's fold panicking: that side's rest dropped as its fold
@@ -684,10 +742,12 @@ function main() {
       tmp$1 = $iter(value$1);
       skipping$live = false;
     } catch (error) {
-      if (skipping$live) {
-        skipping.return();
-      }
-      dDrop_drop(g);
+      $cleanup(() => {
+        if (skipping$live) {
+          skipping.return();
+        }
+        dDrop_drop(g);
+      });
       throw error;
     }
     let chain;
@@ -704,8 +764,9 @@ function main() {
       dDrop_drop(a);
       return result;
     }
+    let value$2;
     try {
-      const value = $tryFoldSome(
+      value$2 = $tryFoldSome(
         chain,
         d,
         (a, b) => f(a, b),
@@ -714,10 +775,15 @@ function main() {
           dDrop_drop(g);
         },
       );
-      return value;
-    } finally {
-      chain.return();
+    } catch (error) {
+      $cleanup(() => {
+        chain.return();
+      });
+      throw error;
     }
+    const result = value$2;
+    chain.return();
+    return result;
   });
   console.log(`try_fold ok ${r.TAG === "Ok"}`);
   try {

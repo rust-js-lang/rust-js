@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $dropEach,
   $dropItems,
@@ -34,54 +35,125 @@ function wrapIterator_fold(wrap, init, f, dropT, dropB, dropF) {
   console.log("own fold");
   let acc$live = true;
   let acc = init;
-  let result;
-  try {
+  let next;
+  while (true) {
     try {
-      let next;
-      while (true) {
+      next = wrapIterator_next(wrap, dropT);
+    } catch (error) {
+      $cleanup(() => {
+        if (acc$live) {
+          dropB?.(acc);
+        }
+        dropF?.(f);
         try {
-          next = wrapIterator_next(wrap, dropT);
+          $dropItems(wrap.items, (item) => {
+            dropT?.(item);
+          });
         } catch (error) {
-          if (acc$live) {
-            dropB?.(acc);
+          if (wrap.extra != null) {
+            dropT?.($someValue(wrap.extra));
           }
           throw error;
         }
-        if (next != null) {
-          const x = $someValue(next);
-          acc$live = false;
-          const value = f(acc, x);
-          acc$live = true;
-          acc = value;
-          continue;
+        if (wrap.extra != null) {
+          dropT?.($someValue(wrap.extra));
         }
-        try {
-          if (next != null) {
-            dropT?.($someValue(next));
-          }
-        } catch (error) {
-          if (acc$live) {
-            dropB?.(acc);
-          }
-          throw error;
-        }
-        break;
-      }
-      acc$live = false;
-      result = acc;
-    } finally {
-      dropF?.(f);
-    }
-  } finally {
-    try {
-      $dropItems(wrap.items, (item) => {
-        dropT?.(item);
       });
-    } finally {
+      throw error;
+    }
+    if (next != null) {
+      const x = $someValue(next);
+      acc$live = false;
+      let tmp;
+      try {
+        tmp = f(acc, x);
+      } catch (error) {
+        $cleanup(() => {
+          dropF?.(f);
+          try {
+            $dropItems(wrap.items, (item) => {
+              dropT?.(item);
+            });
+          } catch (error) {
+            if (wrap.extra != null) {
+              dropT?.($someValue(wrap.extra));
+            }
+            throw error;
+          }
+          if (wrap.extra != null) {
+            dropT?.($someValue(wrap.extra));
+          }
+        });
+        throw error;
+      }
+      acc$live = true;
+      acc = tmp;
+      continue;
+    }
+    try {
+      if (next != null) {
+        dropT?.($someValue(next));
+      }
+    } catch (error) {
+      $cleanup(() => {
+        if (acc$live) {
+          dropB?.(acc);
+        }
+        dropF?.(f);
+        try {
+          $dropItems(wrap.items, (item) => {
+            dropT?.(item);
+          });
+        } catch (error) {
+          if (wrap.extra != null) {
+            dropT?.($someValue(wrap.extra));
+          }
+          throw error;
+        }
+        if (wrap.extra != null) {
+          dropT?.($someValue(wrap.extra));
+        }
+      });
+      throw error;
+    }
+    break;
+  }
+  acc$live = false;
+  const result = acc;
+  try {
+    dropF?.(f);
+  } catch (error) {
+    $cleanup(() => {
+      try {
+        $dropItems(wrap.items, (item) => {
+          dropT?.(item);
+        });
+      } catch (error) {
+        if (wrap.extra != null) {
+          dropT?.($someValue(wrap.extra));
+        }
+        throw error;
+      }
       if (wrap.extra != null) {
         dropT?.($someValue(wrap.extra));
       }
-    }
+    });
+    throw error;
+  }
+  try {
+    $dropItems(wrap.items, (item) => {
+      dropT?.(item);
+    });
+  } catch (error) {
+    $cleanup(() => {
+      if (wrap.extra != null) {
+        dropT?.($someValue(wrap.extra));
+      }
+    });
+    throw error;
+  }
+  if (wrap.extra != null) {
+    dropT?.($someValue(wrap.extra));
   }
   return result;
 }
@@ -92,54 +164,125 @@ function wrapDoubleEndedIterator_rfold(wrap, init, f, dropT, dropB, dropF) {
   console.log("own rfold");
   let acc$live = true;
   let acc = init;
-  let result;
-  try {
+  let nextBack;
+  while (true) {
     try {
-      let nextBack;
-      while (true) {
+      nextBack = wrapDoubleEndedIterator_nextBack(wrap, dropT);
+    } catch (error) {
+      $cleanup(() => {
+        if (acc$live) {
+          dropB?.(acc);
+        }
+        dropF?.(f);
         try {
-          nextBack = wrapDoubleEndedIterator_nextBack(wrap, dropT);
+          $dropItems(wrap.items, (item) => {
+            dropT?.(item);
+          });
         } catch (error) {
-          if (acc$live) {
-            dropB?.(acc);
+          if (wrap.extra != null) {
+            dropT?.($someValue(wrap.extra));
           }
           throw error;
         }
-        if (nextBack != null) {
-          const x = $someValue(nextBack);
-          acc$live = false;
-          const value = f(acc, x);
-          acc$live = true;
-          acc = value;
-          continue;
+        if (wrap.extra != null) {
+          dropT?.($someValue(wrap.extra));
         }
-        try {
-          if (nextBack != null) {
-            dropT?.($someValue(nextBack));
-          }
-        } catch (error) {
-          if (acc$live) {
-            dropB?.(acc);
-          }
-          throw error;
-        }
-        break;
-      }
-      acc$live = false;
-      result = acc;
-    } finally {
-      dropF?.(f);
-    }
-  } finally {
-    try {
-      $dropItems(wrap.items, (item) => {
-        dropT?.(item);
       });
-    } finally {
+      throw error;
+    }
+    if (nextBack != null) {
+      const x = $someValue(nextBack);
+      acc$live = false;
+      let tmp;
+      try {
+        tmp = f(acc, x);
+      } catch (error) {
+        $cleanup(() => {
+          dropF?.(f);
+          try {
+            $dropItems(wrap.items, (item) => {
+              dropT?.(item);
+            });
+          } catch (error) {
+            if (wrap.extra != null) {
+              dropT?.($someValue(wrap.extra));
+            }
+            throw error;
+          }
+          if (wrap.extra != null) {
+            dropT?.($someValue(wrap.extra));
+          }
+        });
+        throw error;
+      }
+      acc$live = true;
+      acc = tmp;
+      continue;
+    }
+    try {
+      if (nextBack != null) {
+        dropT?.($someValue(nextBack));
+      }
+    } catch (error) {
+      $cleanup(() => {
+        if (acc$live) {
+          dropB?.(acc);
+        }
+        dropF?.(f);
+        try {
+          $dropItems(wrap.items, (item) => {
+            dropT?.(item);
+          });
+        } catch (error) {
+          if (wrap.extra != null) {
+            dropT?.($someValue(wrap.extra));
+          }
+          throw error;
+        }
+        if (wrap.extra != null) {
+          dropT?.($someValue(wrap.extra));
+        }
+      });
+      throw error;
+    }
+    break;
+  }
+  acc$live = false;
+  const result = acc;
+  try {
+    dropF?.(f);
+  } catch (error) {
+    $cleanup(() => {
+      try {
+        $dropItems(wrap.items, (item) => {
+          dropT?.(item);
+        });
+      } catch (error) {
+        if (wrap.extra != null) {
+          dropT?.($someValue(wrap.extra));
+        }
+        throw error;
+      }
       if (wrap.extra != null) {
         dropT?.($someValue(wrap.extra));
       }
-    }
+    });
+    throw error;
+  }
+  try {
+    $dropItems(wrap.items, (item) => {
+      dropT?.(item);
+    });
+  } catch (error) {
+    $cleanup(() => {
+      if (wrap.extra != null) {
+        dropT?.($someValue(wrap.extra));
+      }
+    });
+    throw error;
+  }
+  if (wrap.extra != null) {
+    dropT?.($someValue(wrap.extra));
   }
   return result;
 }
@@ -152,42 +295,53 @@ function ownedIterator_fold(owned, init, f, dropB, dropF) {
   let acc = init;
   let result;
   try {
-    try {
-      let next;
-      while (true) {
-        try {
-          next = ownedIterator_next(owned);
-        } catch (error) {
+    let next;
+    while (true) {
+      try {
+        next = ownedIterator_next(owned);
+      } catch (error) {
+        $cleanup(() => {
           if (acc$live) {
             dropB?.(acc);
           }
-          throw error;
-        }
-        if (next != null) {
-          const x = next;
-          acc$live = false;
-          const value = f(acc, x);
-          acc$live = true;
-          acc = value;
-          continue;
-        }
-        try {
-          if (next != null) {
-            dDrop_drop(next);
-          }
-        } catch (error) {
-          if (acc$live) {
-            dropB?.(acc);
-          }
-          throw error;
-        }
-        break;
+          dropF?.(f);
+        });
+        throw error;
       }
-      acc$live = false;
-      result = acc;
-    } finally {
-      dropF?.(f);
+      if (next != null) {
+        const x = next;
+        acc$live = false;
+        let tmp;
+        try {
+          tmp = f(acc, x);
+        } catch (error) {
+          $cleanup(() => {
+            dropF?.(f);
+          });
+          throw error;
+        }
+        acc$live = true;
+        acc = tmp;
+        continue;
+      }
+      try {
+        if (next != null) {
+          dDrop_drop(next);
+        }
+      } catch (error) {
+        $cleanup(() => {
+          if (acc$live) {
+            dropB?.(acc);
+          }
+          dropF?.(f);
+        });
+        throw error;
+      }
+      break;
     }
+    acc$live = false;
+    result = acc;
+    dropF?.(f);
   } finally {
     for (const item of owned.items) {
       dDrop_drop(item);

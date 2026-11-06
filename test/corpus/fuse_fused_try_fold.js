@@ -3,6 +3,7 @@
 import { iterator_fuse, iterator_rev, iterator_take } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $dropEach,
   $findDropping,
   $foldOf,
@@ -66,9 +67,13 @@ function main() {
         return false;
       })}`,
     );
-  } finally {
-    fuse.return();
+  } catch (error) {
+    $cleanup(() => {
+      fuse.return();
+    });
+    throw error;
   }
+  fuse.return();
   const value$1 = $iter(louds(20, 3));
   let tmp$1;
   try {
@@ -102,9 +107,13 @@ function main() {
       return false;
     });
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } finally {
-    value$2.return();
+  } catch (error) {
+    $cleanup(() => {
+      value$2.return();
+    });
+    throw error;
   }
+  value$2.return();
   const value$3 = iterator_rev(
     $iter(louds(30, 1)),
     { next: $next, advanceBy: $advanceSlice },
@@ -116,7 +125,9 @@ function main() {
   try {
     tmp$2 = id(0);
   } catch (error) {
-    value$3.return();
+    $cleanup(() => {
+      value$3.return();
+    });
     throw error;
   }
   const value$4 = $held(
@@ -138,18 +149,23 @@ function main() {
       loudDrop_drop,
     ),
   );
+  let find;
+  function map(loud) {
+    const result = loud[0];
+    loudDrop_drop(loud);
+    return result;
+  }
   let first;
   try {
-    const find = $findDropping($lent(value$4), (loud) => loud[0] >= 30, loudDrop_drop, false);
-    function map(loud) {
-      const result = loud[0];
-      loudDrop_drop(loud);
-      return result;
-    }
+    find = $findDropping($lent(value$4), (loud) => loud[0] >= 30, loudDrop_drop, false);
     first = find != null ? map(find) : undefined;
-  } finally {
-    value$4.return();
+  } catch (error) {
+    $cleanup(() => {
+      value$4.return();
+    });
+    throw error;
   }
+  value$4.return();
   console.log(`${first == null ? "None" : `Some(${first})`}`);
   const value$5 = iterator_rev(
     $iter(louds(40, 1)),
@@ -162,7 +178,9 @@ function main() {
   try {
     tmp$3 = id(0);
   } catch (error) {
-    value$5.return();
+    $cleanup(() => {
+      value$5.return();
+    });
     throw error;
   }
   const value$6 = $held(
@@ -184,17 +202,29 @@ function main() {
       loudDrop_drop,
     ),
   );
-  try {
-    const find = $findDropping($lent(value$6), (loud) => loud[0] >= 40, loudDrop_drop, false);
-    function map(loud) {
-      const result = loud[0];
-      loudDrop_drop(loud);
-      return result;
-    }
-    const value = find != null ? map(find) : undefined;
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } finally {
-    value$6.return();
+  let find$1;
+  function map$1(loud) {
+    const result = loud[0];
+    loudDrop_drop(loud);
+    return result;
   }
+  try {
+    find$1 = $findDropping($lent(value$6), (loud) => loud[0] >= 40, loudDrop_drop, false);
+  } catch (error) {
+    $cleanup(() => {
+      value$6.return();
+    });
+    throw error;
+  }
+  try {
+    const value = find$1 != null ? map$1(find$1) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    $cleanup(() => {
+      value$6.return();
+    });
+    throw error;
+  }
+  value$6.return();
 }
 //# sourceMappingURL=case.js.map

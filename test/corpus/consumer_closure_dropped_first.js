@@ -3,6 +3,7 @@
 import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $consume,
   $dropEach,
@@ -239,13 +240,19 @@ function main() {
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
+    let result;
     try {
-      return $consume(iter, "fold", 0, f, undefined, () => {
+      result = $consume(iter, "fold", 0, f, undefined, () => {
         dDrop_drop(g);
       });
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
+    return result;
   });
   case$("enumerate", (g) => {
     let g$10$live = true;
@@ -303,13 +310,19 @@ function main() {
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
+    let result;
     try {
-      return $consume(iter, "fold", 0, f, undefined, () => {
+      result = $consume(iter, "fold", 0, f, undefined, () => {
         dDrop_drop(g);
       });
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
+    return result;
   });
   case$("filter", (g) => {
     let g$13$live = true;

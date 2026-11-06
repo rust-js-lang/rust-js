@@ -12,6 +12,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $catchUnwind,
+  $cleanup,
   $exactLen,
   $foldOf,
   $held,
@@ -70,10 +71,12 @@ function main() {
     tmp$1 = $iter(w);
     gb$live = false;
   } catch (error) {
-    a.return();
-    if (gb$live) {
-      console.log(`drop ${gb[0]}`);
-    }
+    $cleanup(() => {
+      a.return();
+      if (gb$live) {
+        console.log(`drop ${gb[0]}`);
+      }
+    });
     throw error;
   }
   let b;
@@ -82,7 +85,9 @@ function main() {
       console.log(`drop ${gb[0]}`);
     });
   } catch (error) {
-    a.return();
+    $cleanup(() => {
+      a.return();
+    });
     throw error;
   }
   const it = $held(
@@ -144,8 +149,22 @@ function main() {
   try {
     const value = $next(it);
     console.log(`next ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  try {
     console.log(`len ${$exactLen($sizeHint(it))}`);
-    const value$1 = zipDoubleEndedIterator_nextBack(
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    const value = zipDoubleEndedIterator_nextBack(
       it,
       {
         next: $next,
@@ -298,10 +317,14 @@ function main() {
         map.return();
       },
     );
-    console.log(`back ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
-  } finally {
-    it.return();
+    console.log(`back ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
   }
+  it.return();
 
   let ga$1$live = true;
   const ga$1 = [5];
@@ -340,7 +363,9 @@ function main() {
       "after",
     );
   } catch (error) {
-    a.return();
+    $cleanup(() => {
+      a.return();
+    });
     throw error;
   }
   const sum = $trustedZip(a, b).reduce((s, [x, y]) => (s + (Math.imul(x, y) >>> 0)) >>> 0, 0);
@@ -379,10 +404,12 @@ function main() {
     tmp$4 = $iter(v);
     gb$2$live = false;
   } catch (error) {
-    a.return();
-    if (gb$2$live) {
-      console.log(`drop ${gb$2[0]}`);
-    }
+    $cleanup(() => {
+      a.return();
+      if (gb$2$live) {
+        console.log(`drop ${gb$2[0]}`);
+      }
+    });
     throw error;
   }
   const f$3 = plus.bind(null, gb$2);
@@ -395,7 +422,9 @@ function main() {
       "after",
     );
   } catch (error) {
-    a.return();
+    $cleanup(() => {
+      a.return();
+    });
     throw error;
   }
   let pairs = Array.from($trustedZip(a, b));
@@ -448,10 +477,12 @@ function main() {
       tmp$1 = $iter(w);
       gb$3$live = false;
     } catch (error) {
-      a.return();
-      if (gb$3$live) {
-        console.log(`drop ${gb[0]}`);
-      }
+      $cleanup(() => {
+        a.return();
+        if (gb$3$live) {
+          console.log(`drop ${gb[0]}`);
+        }
+      });
       throw error;
     }
     function f$1(x) {
@@ -470,7 +501,9 @@ function main() {
         "after",
       );
     } catch (error) {
-      a.return();
+      $cleanup(() => {
+        a.return();
+      });
       throw error;
     }
     let a$3$live = false;
@@ -480,25 +513,29 @@ function main() {
       try {
         tmp$2 = $next(iter);
       } catch (error) {
-        iter.return();
-        if (a$3$live) {
-          a.return();
-        }
-        if (gb$3$live) {
-          console.log(`drop ${gb[0]}`);
-        }
-        throw error;
-      }
-      if (tmp$2 == null) {
-        try {
+        $cleanup(() => {
           iter.return();
-        } catch (error) {
           if (a$3$live) {
             a.return();
           }
           if (gb$3$live) {
             console.log(`drop ${gb[0]}`);
           }
+        });
+        throw error;
+      }
+      if (tmp$2 == null) {
+        try {
+          iter.return();
+        } catch (error) {
+          $cleanup(() => {
+            if (a$3$live) {
+              a.return();
+            }
+            if (gb$3$live) {
+              console.log(`drop ${gb[0]}`);
+            }
+          });
           throw error;
         }
         a$3$live = false;

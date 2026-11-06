@@ -3,6 +3,7 @@
 import {
   $advanceSlice,
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $collectsInPlace,
@@ -33,35 +34,47 @@ function held(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, dr
   const iter = $closing(Iterator.from(iters), dropH, false).map((i) => ({
     iter: HItemIntoIterator.intoIter(i),
   }));
+  let result;
   try {
-    return $collectsInPlace(HInPlace, HeldSize, HeldAlign)
+    result = $collectsInPlace(HInPlace, HeldSize, HeldAlign)
       ? $foldToArray(iter, (held) => {
           try {
             heldDrop_drop(held, dropHItemIntoIter);
-          } finally {
+          } catch (error) {
             dropHItemIntoIter?.(held.iter);
+            throw error;
           }
+          dropHItemIntoIter?.(held.iter);
         })
       : $collectDropping(
           $roomForHint(iter, HeldSize, false, false, (held) => {
             try {
               heldDrop_drop(held, dropHItemIntoIter);
-            } finally {
+            } catch (error) {
               dropHItemIntoIter?.(held.iter);
+              throw error;
             }
+            dropHItemIntoIter?.(held.iter);
           }),
           (held) => {
             try {
               heldDrop_drop(held, dropHItemIntoIter);
-            } finally {
+            } catch (error) {
               dropHItemIntoIter?.(held.iter);
+              throw error;
             }
+            dropHItemIntoIter?.(held.iter);
           },
           true,
         );
-  } finally {
-    iter.return();
+  } catch (error) {
+    $cleanup(() => {
+      iter.return();
+    });
+    throw error;
   }
+  iter.return();
+  return result;
 }
 
 /**
@@ -137,19 +150,33 @@ function main() {
       },
       $dropEach(dDrop_drop),
     );
+    let result;
     try {
-      return value.map((h) => h.iter.end - h.iter.at).reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      $dropItems(value, (item) => {
-        try {
-          heldDrop_drop(item, $dropEach(dDrop_drop));
-        } finally {
-          for (const item$1 of item.iter) {
-            dDrop_drop(item$1);
+      result = value.map((h) => h.iter.end - h.iter.at).reduce((a, b) => (a + b) >>> 0, 0);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(value, (item) => {
+          try {
+            heldDrop_drop(item, $dropEach(dDrop_drop));
+          } finally {
+            for (const item$1 of item.iter) {
+              dDrop_drop(item$1);
+            }
           }
-        }
+        });
       });
+      throw error;
     }
+    $dropItems(value, (item) => {
+      try {
+        heldDrop_drop(item, $dropEach(dDrop_drop));
+      } finally {
+        for (const item$1 of item.iter) {
+          dDrop_drop(item$1);
+        }
+      }
+    });
+    return result;
   });
   run("wide, a panic", () => {
     const wides = Array.from(
@@ -205,19 +232,33 @@ function main() {
       },
       $dropEach(dDrop_drop),
     );
+    let result;
     try {
-      return value.map((h) => h.iter.end - h.iter.at).reduce((a, b) => (a + b) >>> 0, 0);
-    } finally {
-      $dropItems(value, (item) => {
-        try {
-          heldDrop_drop(item, $dropEach(dDrop_drop));
-        } finally {
-          for (const item$1 of item.iter) {
-            dDrop_drop(item$1);
+      result = value.map((h) => h.iter.end - h.iter.at).reduce((a, b) => (a + b) >>> 0, 0);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(value, (item) => {
+          try {
+            heldDrop_drop(item, $dropEach(dDrop_drop));
+          } finally {
+            for (const item$1 of item.iter) {
+              dDrop_drop(item$1);
+            }
           }
-        }
+        });
       });
+      throw error;
     }
+    $dropItems(value, (item) => {
+      try {
+        heldDrop_drop(item, $dropEach(dDrop_drop));
+      } finally {
+        for (const item$1 of item.iter) {
+          dDrop_drop(item$1);
+        }
+      }
+    });
+    return result;
   });
   run("narrow, a panic", () => {
     const narrows = $collectDropping(

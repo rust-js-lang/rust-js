@@ -3,6 +3,7 @@
 import { iterator_fuse, iterator_peekable, iterator_zip } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $collectDropping,
   $dropEach,
   $fromFn,
@@ -220,13 +221,17 @@ function main() {
       }),
     );
   } catch (error) {
-    zipped.return();
+    $cleanup(() => {
+      zipped.return();
+    });
     throw error;
   }
   try {
     console.log(`zip first [${first.join(", ")}]`);
   } catch (error) {
-    zipped.return();
+    $cleanup(() => {
+      zipped.return();
+    });
     throw error;
   }
   const second = $collectDropping(

@@ -2,6 +2,7 @@
 
 import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $closing,
   $enumerate,
   $held,
@@ -73,22 +74,38 @@ function taken() {
   try {
     tmp$1 = id(2);
   } catch (error) {
-    take.return();
+    $cleanup(() => {
+      take.return();
+    });
     throw error;
   }
   const step = $step(tmp$1);
   const stepBy = $held($stepBy(take, step, loudDrop_drop));
-  try {
-    const nth = $nthDropping($lent(stepBy), id(1), loudDrop_drop, false);
-    function map(l) {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    }
-    return nth != null ? map(nth) : undefined;
-  } finally {
-    stepBy.return();
+  let nth;
+  function map(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
   }
+  try {
+    nth = $nthDropping($lent(stepBy), id(1), loudDrop_drop, false);
+  } catch (error) {
+    $cleanup(() => {
+      stepBy.return();
+    });
+    throw error;
+  }
+  let result;
+  try {
+    result = nth != null ? map(nth) : undefined;
+  } catch (error) {
+    $cleanup(() => {
+      stepBy.return();
+    });
+    throw error;
+  }
+  stepBy.return();
+  return result;
 }
 
 function counted() {
@@ -113,7 +130,9 @@ function counted() {
   try {
     tmp = id(2);
   } catch (error) {
-    enumerate.return();
+    $cleanup(() => {
+      enumerate.return();
+    });
     throw error;
   }
   const step = $step(tmp);
@@ -122,8 +141,14 @@ function counted() {
       loudDrop_drop(value[1]);
     }),
   );
+  let nth;
+  function map([i, l]) {
+    const result = [i, l[0]];
+    loudDrop_drop(l);
+    return result;
+  }
   try {
-    const nth = $nthDropping(
+    nth = $nthDropping(
       $lent(stepBy),
       id(1),
       (value) => {
@@ -131,15 +156,23 @@ function counted() {
       },
       false,
     );
-    function map([i, l]) {
-      const result = [i, l[0]];
-      loudDrop_drop(l);
-      return result;
-    }
-    return nth != null ? map(nth) : undefined;
-  } finally {
-    stepBy.return();
+  } catch (error) {
+    $cleanup(() => {
+      stepBy.return();
+    });
+    throw error;
   }
+  let result;
+  try {
+    result = nth != null ? map(nth) : undefined;
+  } catch (error) {
+    $cleanup(() => {
+      stepBy.return();
+    });
+    throw error;
+  }
+  stepBy.return();
+  return result;
 }
 
 function fused() {
@@ -154,22 +187,38 @@ function fused() {
   try {
     tmp = id(3);
   } catch (error) {
-    fuse.return();
+    $cleanup(() => {
+      fuse.return();
+    });
     throw error;
   }
   const step = $step(tmp);
   const stepBy = $held($stepBy(fuse, step, loudDrop_drop));
-  try {
-    const nth = $nthDropping($lent(stepBy), id(1), loudDrop_drop, false);
-    function map(l) {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    }
-    return nth != null ? map(nth) : undefined;
-  } finally {
-    stepBy.return();
+  let nth;
+  function map(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
   }
+  try {
+    nth = $nthDropping($lent(stepBy), id(1), loudDrop_drop, false);
+  } catch (error) {
+    $cleanup(() => {
+      stepBy.return();
+    });
+    throw error;
+  }
+  let result;
+  try {
+    result = nth != null ? map(nth) : undefined;
+  } catch (error) {
+    $cleanup(() => {
+      stepBy.return();
+    });
+    throw error;
+  }
+  stepBy.return();
+  return result;
 }
 
 function peeked() {
@@ -183,22 +232,38 @@ function peeked() {
   try {
     tmp = id(2);
   } catch (error) {
-    peekable.return();
+    $cleanup(() => {
+      peekable.return();
+    });
     throw error;
   }
   const step = $step(tmp);
   const stepBy = $held($stepBy(peekable, step, loudDrop_drop));
-  try {
-    const nth = $nthDropping($lent(stepBy), id(2), loudDrop_drop, false);
-    function map(l) {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    }
-    return nth != null ? map(nth) : undefined;
-  } finally {
-    stepBy.return();
+  let nth;
+  function map(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
   }
+  try {
+    nth = $nthDropping($lent(stepBy), id(2), loudDrop_drop, false);
+  } catch (error) {
+    $cleanup(() => {
+      stepBy.return();
+    });
+    throw error;
+  }
+  let result;
+  try {
+    result = nth != null ? map(nth) : undefined;
+  } catch (error) {
+    $cleanup(() => {
+      stepBy.return();
+    });
+    throw error;
+  }
+  stepBy.return();
+  return result;
 }
 
 function summed() {
@@ -213,7 +278,9 @@ function summed() {
   try {
     tmp = id(2);
   } catch (error) {
-    fuse.return();
+    $cleanup(() => {
+      fuse.return();
+    });
     throw error;
   }
   const step = $step(tmp);

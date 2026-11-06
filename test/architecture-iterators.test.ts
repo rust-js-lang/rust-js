@@ -269,6 +269,34 @@ test("a runtime helper drops what it holds as a panic unwinds by $unwinds alone"
   expect(lowering).toEqual([]);
 });
 
+// A drop that panics as a panic unwinds aborts, as Rust's does (#847), and a
+// `finally` can't tell that from a drop on the way on. So what the lowering
+// runs as a panic unwinds is guarded by one owner: drops/parts.rs's
+// `cleanup`, the one writer of `$cleanup`, and `dropped_after`, the one
+// writer of a `finally` of a drop but tidy's scope merges, each of which
+// holds only what can't throw (`finally_holds`). Tidy's contract "what
+// unwinds is guarded" checks every body it leaves.
+test("what the lowering runs as a panic unwinds is guarded by drops/parts.rs alone", () => {
+  const guard = "src/lower/drops/parts.rs";
+  const writes = (pattern: RegExp, allowed: string[]) =>
+    ["src/lower.rs", ...files("src/lower"), ...files("src/prepare")]
+      .filter((file) => file.endsWith(".rs") && !allowed.includes(file))
+      .flatMap((file) =>
+        read(file)
+          .split("\n")
+          .filter((line) => !line.trimStart().startsWith("//") && pattern.test(line))
+          .map((line) => `${file}: ${line.trim()}`),
+      );
+  expect(writes(/"\$cleanup"/, [guard])).toEqual([]);
+  expect(writes(/StmtKind::Try\([^)]*\)\.at\(/, [guard, "src/lower/mir/tidy/unwinds.rs"])).toEqual([]);
+  // Each of tidy's merges into a `finally` asks `finally_holds` first.
+  const tidy = read("src/lower/mir/tidy/unwinds.rs");
+  expect(tidy.match(/StmtKind::Try\([^)]*\)\.at\(/g)?.length).toBe(2);
+  expect(tidy.match(/finally_holds\)?/g)?.length).toBeGreaterThanOrEqual(3);
+  // And the runtime's one cleanup is `$cleanup`'s too.
+  expect(read("src/runtime/steps.js")).toMatch(/function \$dropsUnwinding\(drops\) \{\n  \$cleanup\(/);
+});
+
 // An iterator value's facts are written once, by lower/iterators/value.rs's
 // `emit()`, and read only through value.rs, which reads the `Known` facts
 // `emit()` marks its JS with (ADR 1092, amended, #730 phase 3). A reader that

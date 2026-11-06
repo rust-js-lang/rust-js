@@ -4,6 +4,7 @@ import { iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
   $catchUnwind,
+  $cleanup,
   $dropEach,
   $held,
   $iter,
@@ -32,13 +33,18 @@ function main() {
         dDrop_drop,
       ),
     );
+    let peek;
     try {
-      const peek = $peek(it);
-      const value = peek?.[0];
-      console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
-    } finally {
-      it.return();
+      peek = $peek(it);
+    } catch (error) {
+      $cleanup(() => {
+        it.return();
+      });
+      throw error;
     }
+    const value = peek?.[0];
+    console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
+    it.return();
   });
   console.log(`${r.TAG === "Err"}`);
 }

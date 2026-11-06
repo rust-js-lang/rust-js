@@ -3,6 +3,7 @@
 import { iterator_zip } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $dropEach,
   $filterDropping,
@@ -64,9 +65,13 @@ function sumOdd(items, dropI) {
   let result$1;
   try {
     result$1 = $foldDropping(iter, [0], add, accDrop_drop);
-  } finally {
-    iter.return();
+  } catch (error) {
+    $cleanup(() => {
+      iter.return();
+    });
+    throw error;
   }
+  iter.return();
   const result = result$1[0];
   accDrop_drop(result$1);
   return result;
@@ -114,7 +119,9 @@ function main() {
     try {
       r = $tryFoldOk(filter, [0], (a, b) => tryAdd(a, b), accDrop_drop);
     } catch (error) {
-      filter.return();
+      $cleanup(() => {
+        filter.return();
+      });
       throw error;
     }
     try {
@@ -160,7 +167,9 @@ function main() {
     try {
       r = $tryFoldOk(filter, [0], (acc, [d]) => tryAdd(acc, d), accDrop_drop);
     } catch (error) {
-      filter.return();
+      $cleanup(() => {
+        filter.return();
+      });
       throw error;
     }
     try {
@@ -216,7 +225,9 @@ function main() {
     try {
       r = $tryFoldOk(takeWhile, [0], (a, b) => tryAdd(a, b), accDrop_drop);
     } catch (error) {
-      takeWhile.return();
+      $cleanup(() => {
+        takeWhile.return();
+      });
       throw error;
     }
     try {
@@ -265,7 +276,9 @@ function main() {
     try {
       r = $tryFoldOk(skipWhile, [0], (a, b) => tryAdd(a, b), accDrop_drop);
     } catch (error) {
-      skipWhile.return();
+      $cleanup(() => {
+        skipWhile.return();
+      });
       throw error;
     }
     try {

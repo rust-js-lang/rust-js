@@ -3,6 +3,7 @@
 import {
   $alloc,
   $allocError,
+  $cleanup,
   $debugLayout,
   $debugStr,
   $iter,
@@ -78,7 +79,9 @@ function main() {
   try {
     iter = $iter(["a", "b", "c"]);
   } catch (error) {
-    bufDrop_drop(b, 12, 4);
+    $cleanup(() => {
+      bufDrop_drop(b, 12, 4);
+    });
     throw error;
   }
   while (true) {
@@ -86,9 +89,11 @@ function main() {
     try {
       w = $next(iter);
     } catch (error) {
-      if (b$live) {
-        bufDrop_drop(b, 12, 4);
-      }
+      $cleanup(() => {
+        if (b$live) {
+          bufDrop_drop(b, 12, 4);
+        }
+      });
       throw error;
     }
     if (w == null) {
@@ -97,9 +102,11 @@ function main() {
     try {
       Buf.push(b, w.toUpperCase(), 12, 4);
     } catch (error) {
-      if (b$live) {
-        bufDrop_drop(b, 12, 4);
-      }
+      $cleanup(() => {
+        if (b$live) {
+          bufDrop_drop(b, 12, 4);
+        }
+      });
       throw error;
     }
   }
@@ -107,9 +114,11 @@ function main() {
   try {
     last = Buf.pop(b);
   } catch (error) {
-    if (b$live) {
-      bufDrop_drop(b, 12, 4);
-    }
+    $cleanup(() => {
+      if (b$live) {
+        bufDrop_drop(b, 12, 4);
+      }
+    });
     throw error;
   }
   console.log(`${b.len} ${b.cap} ${last == null ? "None" : `Some(${$debugStr(last)})`}`);
@@ -119,9 +128,13 @@ function main() {
   const n = Buf.withCapacity(2, 4, 4);
   try {
     Buf.push(n, 7, 4, 4);
-  } finally {
-    bufDrop_drop(n, 4, 4);
+  } catch (error) {
+    $cleanup(() => {
+      bufDrop_drop(n, 4, 4);
+    });
+    throw error;
   }
+  bufDrop_drop(n, 4, 4);
   const l = layoutArray(3, 8, 8);
   const value = $layout(8, 3);
   console.log(`${$debugLayout(l)} ${l.size} ${value.TAG === "Err"}`);

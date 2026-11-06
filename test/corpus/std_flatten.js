@@ -7,6 +7,7 @@ import {
   iterator_flatten,
 } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $closing,
   $debugStr,
   $dropEach,
@@ -265,15 +266,27 @@ function main() {
       (item) => $closing($iter(item), $dropEach(loudDrop_drop)),
     ),
   );
+  let first;
   try {
-    const first = $next(loud);
-    console.log(`took ${first?.[0] ?? "none"}`);
+    first = $next(loud);
+  } catch (error) {
+    $cleanup(() => {
+      loud.return();
+    });
+    throw error;
+  }
+  console.log(`took ${first?.[0] ?? "none"}`);
+  try {
     if (first != null) {
       loudDrop_drop(first);
     }
-  } finally {
-    loud.return();
+  } catch (error) {
+    $cleanup(() => {
+      loud.return();
+    });
+    throw error;
   }
+  loud.return();
 
   // Held in a struct, made by generic code.
   const held = {

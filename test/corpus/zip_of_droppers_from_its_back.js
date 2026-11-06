@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $dropEach,
   $dropItems,
@@ -51,7 +52,9 @@ function main() {
   try {
     tmp = ds(4, 6);
   } catch (error) {
-    $dropItems(value, dDrop_drop);
+    $cleanup(() => {
+      $dropItems(value, dDrop_drop);
+    });
     throw error;
   }
   const sum = $foldBack(
@@ -69,9 +72,13 @@ function main() {
       const result = (((((acc * 10) >>> 0) + x[0]) >>> 0) + y[0]) >>> 0;
       try {
         dDrop_drop(y);
-      } finally {
-        dDrop_drop(x);
+      } catch (error) {
+        $cleanup(() => {
+          dDrop_drop(x);
+        });
+        throw error;
       }
+      dDrop_drop(x);
       return result;
     },
   );
@@ -81,7 +88,9 @@ function main() {
   try {
     tmp$1 = ds(3, 6);
   } catch (error) {
-    $dropItems(value$1, dDrop_drop);
+    $cleanup(() => {
+      $dropItems(value$1, dDrop_drop);
+    });
     throw error;
   }
   const value$2 = $held(
@@ -99,9 +108,13 @@ function main() {
         const result = Math.imul(x[0], y[0]) >>> 0;
         try {
           dDrop_drop(y);
-        } finally {
-          dDrop_drop(x);
+        } catch (error) {
+          $cleanup(() => {
+            dDrop_drop(x);
+          });
+          throw error;
         }
+        dDrop_drop(x);
         return result;
       },
     ),
@@ -109,16 +122,22 @@ function main() {
   let last;
   try {
     last = $next(value$2);
-  } finally {
-    value$2.return();
+  } catch (error) {
+    $cleanup(() => {
+      value$2.return();
+    });
+    throw error;
   }
+  value$2.return();
   console.log(`| first of rev ${last == null ? "None" : `Some(${last})`}`);
   const value$3 = $iter(ds(1, 5));
   let tmp$2;
   try {
     tmp$2 = ds(5, 9);
   } catch (error) {
-    $dropItems(value$3, dDrop_drop);
+    $cleanup(() => {
+      $dropItems(value$3, dDrop_drop);
+    });
     throw error;
   }
   const zip = $held(
@@ -130,33 +149,44 @@ function main() {
       true,
     ),
   );
+  let rfind;
+  function map([x, y]) {
+    const result = [x[0], y[0]];
+    try {
+      dDrop_drop(y);
+    } catch (error) {
+      $cleanup(() => {
+        dDrop_drop(x);
+      });
+      throw error;
+    }
+    dDrop_drop(x);
+    return result;
+  }
   let found;
   try {
-    const rfind = $findBack(
+    rfind = $findBack(
       zip,
       ([x]) => x[0] % 2 === 0,
       undefined,
       (value) => {
         try {
           dDrop_drop(value[0]);
-        } finally {
+        } catch (error) {
           dDrop_drop(value[1]);
+          throw error;
         }
+        dDrop_drop(value[1]);
       },
     );
-    function map([x, y]) {
-      const result = [x[0], y[0]];
-      try {
-        dDrop_drop(y);
-      } finally {
-        dDrop_drop(x);
-      }
-      return result;
-    }
     found = rfind != null ? map(rfind) : undefined;
-  } finally {
-    zip.return();
+  } catch (error) {
+    $cleanup(() => {
+      zip.return();
+    });
+    throw error;
   }
+  zip.return();
   console.log(`| rfind ${found == null ? "None" : `Some((${found[0]}, ${found[1]}))`}`);
   let calls = 0;
   const folded = $foldBack(
@@ -185,7 +215,9 @@ function main() {
     try {
       $index(sides, 2)[0] = PANICS;
     } catch (error) {
-      $dropItems(sides, dDrop_drop);
+      $cleanup(() => {
+        $dropItems(sides, dDrop_drop);
+      });
       throw error;
     }
     const value = $iter(sides);
@@ -193,7 +225,9 @@ function main() {
     try {
       tmp = ds(5, 7);
     } catch (error) {
-      $dropItems(value, dDrop_drop);
+      $cleanup(() => {
+        $dropItems(value, dDrop_drop);
+      });
       throw error;
     }
     const rfold = $foldBack(
@@ -212,9 +246,13 @@ function main() {
         try {
           try {
             dDrop_drop(y);
-          } finally {
-            dDrop_drop(x);
+          } catch (error) {
+            $cleanup(() => {
+              dDrop_drop(x);
+            });
+            throw error;
           }
+          dDrop_drop(x);
         } finally {
           accDrop_drop(acc);
         }

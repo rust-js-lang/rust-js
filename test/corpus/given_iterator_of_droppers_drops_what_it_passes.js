@@ -2,6 +2,7 @@
 
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -34,11 +35,17 @@ const Held = {
         return result;
       }),
     );
+    let result;
     try {
-      return Array.from($lent(map).drop(1).take(1))[0];
-    } finally {
-      map.return();
+      result = Array.from($lent(map).drop(1).take(1))[0];
+    } catch (error) {
+      $cleanup(() => {
+        map.return();
+      });
+      throw error;
     }
+    map.return();
+    return result;
   },
 
   skipped(held, IIterator, dropI) {
@@ -51,11 +58,17 @@ const Held = {
         },
       ),
     );
+    let result;
     try {
-      return $next(map);
-    } finally {
-      map.return();
+      result = $next(map);
+    } catch (error) {
+      $cleanup(() => {
+        map.return();
+      });
+      throw error;
     }
+    map.return();
+    return result;
   },
 
   stepped(held, IIterator, dropI) {

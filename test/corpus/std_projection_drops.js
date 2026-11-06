@@ -2,6 +2,7 @@
 
 import {
   $advanceSlice,
+  $cleanup,
   $dropEach,
   $held,
   $intoIter,
@@ -27,11 +28,17 @@ function drainIterator_next(drain) {
 /** Its first, and the iterator dropped, with what it hasn't given. */
 function first(items, dropIIntoIter) {
   const it = $held($intoIter(items));
+  let result;
   try {
-    return $nextSome(it);
-  } finally {
-    dropIIntoIter?.(it);
+    result = $nextSome(it);
+  } catch (error) {
+    $cleanup(() => {
+      dropIIntoIter?.(it);
+    });
+    throw error;
   }
+  dropIIntoIter?.(it);
+  return result;
 }
 
 /** Its own iterator given on, as smallvec's `insert_many` gives `extend`. */
@@ -47,7 +54,9 @@ function skipOne(it, IIterator, dropI, dropIItem) {
   try {
     next = IIterator.next(it);
   } catch (error) {
-    dropI?.(it);
+    $cleanup(() => {
+      dropI?.(it);
+    });
     throw error;
   }
   try {
@@ -55,7 +64,9 @@ function skipOne(it, IIterator, dropI, dropIItem) {
       dropIItem?.($someValue(next));
     }
   } catch (error) {
-    dropI?.(it);
+    $cleanup(() => {
+      dropI?.(it);
+    });
     throw error;
   }
   return it;
@@ -67,7 +78,9 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
   try {
     next = $next(it);
   } catch (error) {
-    dropIIntoIter?.(it);
+    $cleanup(() => {
+      dropIIntoIter?.(it);
+    });
     throw error;
   }
   if (next != null) {
@@ -75,7 +88,9 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
     try {
       bag[0].push(item);
     } catch (error) {
-      dropIIntoIter?.(it);
+      $cleanup(() => {
+        dropIIntoIter?.(it);
+      });
       throw error;
     }
   } else {
@@ -84,7 +99,9 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
         loudDrop_drop(next);
       }
     } catch (error) {
-      dropIIntoIter?.(it);
+      $cleanup(() => {
+        dropIIntoIter?.(it);
+      });
       throw error;
     }
   }
@@ -95,19 +112,23 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
     try {
       loud = $next(iter);
     } catch (error) {
-      dropIIntoIter?.(iter);
-      if (it$live) {
-        dropIIntoIter?.(it);
-      }
+      $cleanup(() => {
+        dropIIntoIter?.(iter);
+        if (it$live) {
+          dropIIntoIter?.(it);
+        }
+      });
       throw error;
     }
     if (loud == null) {
       try {
         dropIIntoIter?.(iter);
       } catch (error) {
-        if (it$live) {
-          dropIIntoIter?.(it);
-        }
+        $cleanup(() => {
+          if (it$live) {
+            dropIIntoIter?.(it);
+          }
+        });
         throw error;
       }
       it$live = false;
@@ -119,9 +140,11 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
       try {
         dropIIntoIter?.(iter);
       } catch (error) {
-        if (it$live) {
-          dropIIntoIter?.(it);
-        }
+        $cleanup(() => {
+          if (it$live) {
+            dropIIntoIter?.(it);
+          }
+        });
         throw error;
       }
       it$live = false;
@@ -130,10 +153,12 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
     try {
       bag[0].push(item);
     } catch (error) {
-      dropIIntoIter?.(iter);
-      if (it$live) {
-        dropIIntoIter?.(it);
-      }
+      $cleanup(() => {
+        dropIIntoIter?.(iter);
+        if (it$live) {
+          dropIIntoIter?.(it);
+        }
+      });
       throw error;
     }
   }

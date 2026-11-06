@@ -3,6 +3,7 @@
 import { iterator_zip, zipDoubleEndedIterator_nextBack } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $dropEach,
   $enumerate,
@@ -50,33 +51,41 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
   let acc = init;
   let result;
   try {
-    try {
-      while (true) {
-        const d = ownIterator_next(own);
-        if (d != null) {
-          acc$live = false;
-          const value = f(acc, d);
-          acc$live = true;
-          acc = value;
-          continue;
-        }
+    while (true) {
+      const d = ownIterator_next(own);
+      if (d != null) {
+        acc$live = false;
+        let tmp;
         try {
-          if (d != null) {
-            dDrop_drop(d);
-          }
+          tmp = f(acc, d);
         } catch (error) {
+          $cleanup(() => {
+            dropF?.(f);
+          });
+          throw error;
+        }
+        acc$live = true;
+        acc = tmp;
+        continue;
+      }
+      try {
+        if (d != null) {
+          dDrop_drop(d);
+        }
+      } catch (error) {
+        $cleanup(() => {
           if (acc$live) {
             dropB?.(acc);
           }
-          throw error;
-        }
-        break;
+          dropF?.(f);
+        });
+        throw error;
       }
-      acc$live = false;
-      result = acc;
-    } finally {
-      dropF?.(f);
+      break;
     }
+    acc$live = false;
+    result = acc;
+    dropF?.(f);
   } finally {
     console.log("drop own");
   }

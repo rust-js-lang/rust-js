@@ -2,6 +2,7 @@
 
 import { iterator_rev } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $dropEach,
   $exactLen,
   $findDropping,
@@ -41,8 +42,9 @@ function totalDrop_drop(total) {
 }
 
 function totalSumD_sum(iter, dropI) {
+  let result;
   try {
-    return $foldDropping(
+    result = $foldDropping(
       Iterator.from(iter),
       [0],
       (total, x) => {
@@ -53,11 +55,18 @@ function totalSumD_sum(iter, dropI) {
       },
       totalDrop_drop,
     );
-  } finally {
-    if (!iter.ownFold) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!iter.ownFold) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
   }
+  if (!iter.ownFold) {
+    dropI?.(iter);
+  }
+  return result;
 }
 
 function everyIterator_next(every) {
@@ -78,42 +87,53 @@ function everyIterator_fold(every, init, f, dropB, dropF) {
   let acc = init;
   let result;
   try {
-    try {
-      let next;
-      while (true) {
-        try {
-          next = everyIterator_next(every);
-        } catch (error) {
+    let next;
+    while (true) {
+      try {
+        next = everyIterator_next(every);
+      } catch (error) {
+        $cleanup(() => {
           if (acc$live) {
             dropB?.(acc);
           }
-          throw error;
-        }
-        if (next != null) {
-          const x = next;
-          acc$live = false;
-          const value = f(acc, x);
-          acc$live = true;
-          acc = value;
-          continue;
-        }
-        try {
-          if (next != null) {
-            dDrop_drop(next);
-          }
-        } catch (error) {
-          if (acc$live) {
-            dropB?.(acc);
-          }
-          throw error;
-        }
-        break;
+          dropF?.(f);
+        });
+        throw error;
       }
-      acc$live = false;
-      result = acc;
-    } finally {
-      dropF?.(f);
+      if (next != null) {
+        const x = next;
+        acc$live = false;
+        let tmp;
+        try {
+          tmp = f(acc, x);
+        } catch (error) {
+          $cleanup(() => {
+            dropF?.(f);
+          });
+          throw error;
+        }
+        acc$live = true;
+        acc = tmp;
+        continue;
+      }
+      try {
+        if (next != null) {
+          dDrop_drop(next);
+        }
+      } catch (error) {
+        $cleanup(() => {
+          if (acc$live) {
+            dropB?.(acc);
+          }
+          dropF?.(f);
+        });
+        throw error;
+      }
+      break;
     }
+    acc$live = false;
+    result = acc;
+    dropF?.(f);
   } finally {
     console.log("drop every");
   }
@@ -133,42 +153,53 @@ function everyDoubleEndedIterator_rfold(every, init, f, dropB, dropF) {
   let acc = init;
   let result;
   try {
-    try {
-      let nextBack;
-      while (true) {
-        try {
-          nextBack = everyDoubleEndedIterator_nextBack(every);
-        } catch (error) {
+    let nextBack;
+    while (true) {
+      try {
+        nextBack = everyDoubleEndedIterator_nextBack(every);
+      } catch (error) {
+        $cleanup(() => {
           if (acc$live) {
             dropB?.(acc);
           }
-          throw error;
-        }
-        if (nextBack != null) {
-          const x = nextBack;
-          acc$live = false;
-          const value = f(acc, x);
-          acc$live = true;
-          acc = value;
-          continue;
-        }
-        try {
-          if (nextBack != null) {
-            dDrop_drop(nextBack);
-          }
-        } catch (error) {
-          if (acc$live) {
-            dropB?.(acc);
-          }
-          throw error;
-        }
-        break;
+          dropF?.(f);
+        });
+        throw error;
       }
-      acc$live = false;
-      result = acc;
-    } finally {
-      dropF?.(f);
+      if (nextBack != null) {
+        const x = nextBack;
+        acc$live = false;
+        let tmp;
+        try {
+          tmp = f(acc, x);
+        } catch (error) {
+          $cleanup(() => {
+            dropF?.(f);
+          });
+          throw error;
+        }
+        acc$live = true;
+        acc = tmp;
+        continue;
+      }
+      try {
+        if (nextBack != null) {
+          dDrop_drop(nextBack);
+        }
+      } catch (error) {
+        $cleanup(() => {
+          if (acc$live) {
+            dropB?.(acc);
+          }
+          dropF?.(f);
+        });
+        throw error;
+      }
+      break;
     }
+    acc$live = false;
+    result = acc;
+    dropF?.(f);
   } finally {
     console.log("drop every");
   }
@@ -185,37 +216,57 @@ function ds() {
 
 function lentOf(src, dropI) {
   const held = src;
+  let n;
   try {
-    const n = $lent(held).len();
-    console.log(`hint (${n}, ${n == null ? "None" : `Some(${n})`})`);
-    const total = totalSumD_sum($lent(held).take(2));
-    console.log(`sum ${total[0]}`);
-    try {
-      const acc = $foldBack(
-        $lent(held),
-        [0],
-        (acc, x) => {
-          acc[0] = (acc[0] + x[0]) >>> 0;
-          const result = acc;
-          dDrop_drop(x);
-          return result;
-        },
-        accDrop_drop,
-      );
-      console.log(`rfold ${acc[0]}`);
-      accDrop_drop(acc);
-    } finally {
-      totalDrop_drop(total);
-    }
-  } finally {
-    dropI?.(held);
+    n = $lent(held).len();
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(held);
+    });
+    throw error;
   }
+  console.log(`hint (${n}, ${n == null ? "None" : `Some(${n})`})`);
+  let total;
+  try {
+    total = totalSumD_sum($lent(held).take(2));
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(held);
+    });
+    throw error;
+  }
+  console.log(`sum ${total[0]}`);
+  let acc;
+  try {
+    acc = $foldBack(
+      $lent(held),
+      [0],
+      (acc, x) => {
+        acc[0] = (acc[0] + x[0]) >>> 0;
+        const result = acc;
+        dDrop_drop(x);
+        return result;
+      },
+      accDrop_drop,
+    );
+  } catch (error) {
+    $cleanup(() => {
+      totalDrop_drop(total);
+      dropI?.(held);
+    });
+    throw error;
+  }
+  console.log(`rfold ${acc[0]}`);
+  accDrop_drop(acc);
+  totalDrop_drop(total);
+  dropI?.(held);
 }
 
 function mapped(src, dropI) {
   const held = src;
+  let firsts;
   try {
-    const firsts = Array.from(
+    firsts = Array.from(
       $roomForHint(
         $mapEnds($lent(held), (d) => {
           const result = (d[0] * 10) >>> 0;
@@ -226,9 +277,32 @@ function mapped(src, dropI) {
         false,
       ),
     );
-    const arg = held.len();
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(held);
+    });
+    throw error;
+  }
+  let arg;
+  try {
+    arg = held.len();
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(held);
+    });
+    throw error;
+  }
+  try {
     console.log(`mapped [${firsts.join(", ")}], ${arg} left`);
-    const all = Array.from(
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(held);
+    });
+    throw error;
+  }
+  let all;
+  try {
+    all = Array.from(
       $roomForHint(
         $mapEnds($lent(held), (d) => {
           const result = d[0];
@@ -239,21 +313,37 @@ function mapped(src, dropI) {
         false,
       ),
     );
-    console.log(`mapped [${all.join(", ")}]`);
-  } finally {
-    dropI?.(held);
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(held);
+    });
+    throw error;
   }
+  try {
+    console.log(`mapped [${all.join(", ")}]`);
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(held);
+    });
+    throw error;
+  }
+  dropI?.(held);
 }
 
 function summed(src, dropI) {
   const held = src;
+  let total;
   try {
-    const total = totalSumD_sum($lent(held));
-    console.log(`sum ${total[0]}`);
-    totalDrop_drop(total);
-  } finally {
-    dropI?.(held);
+    total = totalSumD_sum($lent(held));
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(held);
+    });
+    throw error;
   }
+  console.log(`sum ${total[0]}`);
+  totalDrop_drop(total);
+  dropI?.(held);
 }
 
 function backOf(it) {

@@ -3,6 +3,7 @@
 import {
   $borrow,
   $borrowMut,
+  $cleanup,
   $dispose,
   $downgrade,
   $dropping,
@@ -39,19 +40,31 @@ function counted(step) {
         let countdown;
         try {
           countdown = $unwrap(borrow.value != null ? $upgrade(borrow.value) : undefined);
-        } catch (error) {
-          $unborrow(borrow);
-          throw error;
-        }
-        try {
-          $unborrow(borrow);
-          if (n < step) {
-            return BigInt(countdown.strong);
-          }
-          return countdown.value(BigInt.asUintN(64, n - step));
         } finally {
-          $rcDrop(countdown, $dispose);
+          $unborrow(borrow);
         }
+        let result;
+        if (n < step) {
+          try {
+            result = BigInt(countdown.strong);
+          } catch (error) {
+            $cleanup(() => {
+              $rcDrop(countdown, $dispose);
+            });
+            throw error;
+          }
+        } else {
+          try {
+            result = countdown.value(BigInt.asUintN(64, n - step));
+          } catch (error) {
+            $cleanup(() => {
+              $rcDrop(countdown, $dispose);
+            });
+            throw error;
+          }
+        }
+        $rcDrop(countdown, $dispose);
+        return result;
       },
       () => {
         $rcDrop(this$$1, (value) => {
@@ -69,17 +82,21 @@ function counted(step) {
     try {
       tmp = $downgrade(countdown);
     } catch (error) {
-      $rcDrop(countdown, $dispose);
+      $cleanup(() => {
+        $rcDrop(countdown, $dispose);
+      });
       throw error;
     }
     let borrowMut;
     try {
       borrowMut = $borrowMut(this$.value, true);
     } catch (error) {
-      if (tmp != null) {
-        $weakDrop(tmp);
-      }
-      $rcDrop(countdown, $dispose);
+      $cleanup(() => {
+        if (tmp != null) {
+          $weakDrop(tmp);
+        }
+        $rcDrop(countdown, $dispose);
+      });
       throw error;
     }
     try {
@@ -87,18 +104,15 @@ function counted(step) {
         $weakDrop(borrowMut.value);
       }
     } catch (error) {
-      borrowMut.value = tmp;
-      $unborrow(borrowMut);
-      $rcDrop(countdown, $dispose);
+      $cleanup(() => {
+        borrowMut.value = tmp;
+        $unborrow(borrowMut);
+        $rcDrop(countdown, $dispose);
+      });
       throw error;
     }
     borrowMut.value = tmp;
-    try {
-      $unborrow(borrowMut);
-    } catch (error) {
-      $rcDrop(countdown, $dispose);
-      throw error;
-    }
+    $unborrow(borrowMut);
     const strong = countdown.strong;
     return [countdown, strong];
   } finally {
@@ -156,7 +170,9 @@ function readApart() {
     try {
       tmp = $borrow(this$.value);
     } catch (error) {
-      $rcDrop(probe, $dispose);
+      $cleanup(() => {
+        $rcDrop(probe, $dispose);
+      });
       throw error;
     }
     const before = tmp.value != null;
@@ -164,17 +180,21 @@ function readApart() {
     try {
       tmp$1 = $downgrade(probe);
     } catch (error) {
-      $rcDrop(probe, $dispose);
+      $cleanup(() => {
+        $rcDrop(probe, $dispose);
+      });
       throw error;
     }
     let borrowMut;
     try {
       borrowMut = $borrowMut(this$.value, true);
     } catch (error) {
-      if (tmp$1 != null) {
-        $weakDrop(tmp$1);
-      }
-      $rcDrop(probe, $dispose);
+      $cleanup(() => {
+        if (tmp$1 != null) {
+          $weakDrop(tmp$1);
+        }
+        $rcDrop(probe, $dispose);
+      });
       throw error;
     }
     try {
@@ -182,18 +202,15 @@ function readApart() {
         $weakDrop(borrowMut.value);
       }
     } catch (error) {
-      borrowMut.value = tmp$1;
-      $unborrow(borrowMut);
-      $rcDrop(probe, $dispose);
+      $cleanup(() => {
+        borrowMut.value = tmp$1;
+        $unborrow(borrowMut);
+        $rcDrop(probe, $dispose);
+      });
       throw error;
     }
     borrowMut.value = tmp$1;
-    try {
-      $unborrow(borrowMut);
-    } catch (error) {
-      $rcDrop(probe, $dispose);
-      throw error;
-    }
+    $unborrow(borrowMut);
     return [probe, before];
   } finally {
     $rcDrop(this$, (value) => {
@@ -206,17 +223,43 @@ function readApart() {
 
 function main() {
   const [counted$1, strong] = counted(2n);
+
   try {
     console.log(`${counted$1.value(5n)} ${strong}`);
-
-    const [probe, before] = readApart();
-    try {
-      console.log(`${probe.value()} ${before}`);
-    } finally {
-      $rcDrop(probe, $dispose);
-    }
-  } finally {
-    $rcDrop(counted$1, $dispose);
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(counted$1, $dispose);
+    });
+    throw error;
   }
+  let tmp;
+  try {
+    tmp = readApart();
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(counted$1, $dispose);
+    });
+    throw error;
+  }
+  const probe = tmp[0];
+  const before = tmp[1];
+  try {
+    console.log(`${probe.value()} ${before}`);
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(probe, $dispose);
+      $rcDrop(counted$1, $dispose);
+    });
+    throw error;
+  }
+  try {
+    $rcDrop(probe, $dispose);
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(counted$1, $dispose);
+    });
+    throw error;
+  }
+  $rcDrop(counted$1, $dispose);
 }
 //# sourceMappingURL=case.js.map

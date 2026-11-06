@@ -4,6 +4,7 @@ import { iterator_fuse, iterator_peekable, iterator_skip } from "@rust-js/std/it
 import {
   $advanceSlice,
   $catchUnwind,
+  $cleanup,
   $closing,
   $cmp,
   $drain,
@@ -46,10 +47,16 @@ function lastOf(it, dropI) {
   let result;
   try {
     result = $lastDropping(Iterator.from(iter), dDrop_drop);
-  } finally {
-    if (!iter.ownFold && !iter.ownLast) {
-      dropI?.(iter);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      if (!iter.ownFold && !iter.ownLast) {
+        dropI?.(iter);
+      }
+    });
+    throw error;
+  }
+  if (!iter.ownFold && !iter.ownLast) {
+    dropI?.(iter);
   }
   function map(d) {
     const result = d[0] + 0;
@@ -131,9 +138,13 @@ function main() {
     let result;
     try {
       result = $lastDropping(iter, dDrop_drop);
-    } finally {
-      iter.return();
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
     }
+    iter.return();
     function map(d) {
       const result = d[0] + 0;
       dDrop_drop(d);
@@ -154,7 +165,9 @@ function main() {
     try {
       peek = $peek(it);
     } catch (error) {
-      it.return();
+      $cleanup(() => {
+        it.return();
+      });
       throw error;
     }
     const value = peek != null ? peek[0] + 0 : undefined;
@@ -197,10 +210,14 @@ function main() {
     let r;
     try {
       r = lastOf($iter($drain(v, 0)), $dropEach(dDrop_drop));
-      console.log(`left ${v.length}`);
-    } finally {
-      $dropItems(v, dDrop_drop);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, dDrop_drop);
+      });
+      throw error;
     }
+    console.log(`left ${v.length}`);
+    $dropItems(v, dDrop_drop);
     return r;
   });
   run("flattened", () => {
@@ -253,14 +270,18 @@ function main() {
     try {
       next = $next(it);
     } catch (error) {
-      it.return();
+      $cleanup(() => {
+        it.return();
+      });
       throw error;
     }
     try {
       const value = next != null ? map(next) : undefined;
       console.log(`first ${value == null ? "None" : `Some(${value})`}`);
     } catch (error) {
-      it.return();
+      $cleanup(() => {
+        it.return();
+      });
       throw error;
     }
     const last = $lastDropping(it, dDrop_drop);
@@ -290,14 +311,18 @@ function main() {
     try {
       next = $next(it);
     } catch (error) {
-      it.return();
+      $cleanup(() => {
+        it.return();
+      });
       throw error;
     }
     try {
       const value = next != null ? map(next) : undefined;
       console.log(`first ${value == null ? "None" : `Some(${value})`}`);
     } catch (error) {
-      it.return();
+      $cleanup(() => {
+        it.return();
+      });
       throw error;
     }
     const last = $lastDropping(it, dDrop_drop);
@@ -328,14 +353,18 @@ function main() {
     try {
       next = $next(it);
     } catch (error) {
-      it.return();
+      $cleanup(() => {
+        it.return();
+      });
       throw error;
     }
     try {
       const value = next != null ? map(next) : undefined;
       console.log(`first ${value == null ? "None" : `Some(${value})`}`);
     } catch (error) {
-      it.return();
+      $cleanup(() => {
+        it.return();
+      });
       throw error;
     }
     const last = $lastDropping(it, dDrop_drop);
@@ -362,14 +391,18 @@ function main() {
                 try {
                   tmp = $index(v, 0)[0] === 2;
                 } catch (error) {
-                  $dropItems(v, dDrop_drop);
+                  $cleanup(() => {
+                    $dropItems(v, dDrop_drop);
+                  });
                   throw error;
                 }
                 if (tmp) {
                   try {
                     throw new Error("made");
                   } catch (error) {
-                    $dropItems(v, dDrop_drop);
+                    $cleanup(() => {
+                      $dropItems(v, dDrop_drop);
+                    });
                     throw error;
                   }
                 }
@@ -432,17 +465,31 @@ function main() {
   });
   run("heap nth_back", () => {
     const value = $iter($heapFrom([[10], [20], [30], [40], [50]], (a, b) => $cmp(a[0], b[0])));
-    try {
-      const nthBack = $nthBack(value, 2, undefined, dDrop_drop);
-      function map(d) {
-        const result = d[0] + 0;
-        dDrop_drop(d);
-        return result;
-      }
-      return nthBack != null ? map(nthBack) : undefined;
-    } finally {
-      $dropItems(value, dDrop_drop);
+    let nthBack;
+    function map(d) {
+      const result = d[0] + 0;
+      dDrop_drop(d);
+      return result;
     }
+    try {
+      nthBack = $nthBack(value, 2, undefined, dDrop_drop);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(value, dDrop_drop);
+      });
+      throw error;
+    }
+    let result;
+    try {
+      result = nthBack != null ? map(nthBack) : undefined;
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(value, dDrop_drop);
+      });
+      throw error;
+    }
+    $dropItems(value, dDrop_drop);
+    return result;
   });
 }
 //# sourceMappingURL=case.js.map

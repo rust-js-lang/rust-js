@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $dropEach,
   $enumerate,
@@ -100,18 +101,32 @@ function main() {
       throw error;
     }
     const chain = $held($lazyChain($closing(value, $dropEach(dDrop_drop)), tmp$1));
-    try {
-      const tryFold = $tryFoldSome(chain, [], (acc, d) => push(acc, d), $dropEach(dDrop_drop));
-      function map(v) {
-        for (const item of v) {
-          dDrop_drop(item);
-        }
-        return v.length;
+    let tryFold;
+    function map(v) {
+      for (const item of v) {
+        dDrop_drop(item);
       }
-      return tryFold != null ? map(tryFold) : 0;
-    } finally {
-      chain.return();
+      return v.length;
     }
+    try {
+      tryFold = $tryFoldSome(chain, [], (acc, d) => push(acc, d), $dropEach(dDrop_drop));
+    } catch (error) {
+      $cleanup(() => {
+        chain.return();
+      });
+      throw error;
+    }
+    let result;
+    try {
+      result = tryFold != null ? map(tryFold) : 0;
+    } catch (error) {
+      $cleanup(() => {
+        chain.return();
+      });
+      throw error;
+    }
+    chain.return();
+    return result;
   });
   run("map try_fold result", () => {
     const value = $iter(ds({ start: 70, end: 74 }));
@@ -121,7 +136,9 @@ function main() {
     try {
       r = $tryFoldOk(map, [], (acc, d) => ({ TAG: "Ok", _0: push(acc, d) }), $dropEach(dDrop_drop));
     } catch (error) {
-      map.return();
+      $cleanup(() => {
+        map.return();
+      });
       throw error;
     }
     try {
@@ -146,23 +163,32 @@ function main() {
     const value = $iter(ds({ start: 80, end: 84 }));
     const value$1 = boom(82);
     const enumerate = $held($enumerate($mapEnds($closing(value, $dropEach(dDrop_drop)), value$1)));
-    try {
-      const tryFold = $tryFoldSome(
-        enumerate,
-        [],
-        (acc, [, d]) => push(acc, d),
-        $dropEach(dDrop_drop),
-      );
-      function map(v) {
-        for (const item of v) {
-          dDrop_drop(item);
-        }
-        return v.length;
+    let tryFold;
+    function map(v) {
+      for (const item of v) {
+        dDrop_drop(item);
       }
-      return tryFold != null ? map(tryFold) : 0;
-    } finally {
-      enumerate.return();
+      return v.length;
     }
+    try {
+      tryFold = $tryFoldSome(enumerate, [], (acc, [, d]) => push(acc, d), $dropEach(dDrop_drop));
+    } catch (error) {
+      $cleanup(() => {
+        enumerate.return();
+      });
+      throw error;
+    }
+    let result;
+    try {
+      result = tryFold != null ? map(tryFold) : 0;
+    } catch (error) {
+      $cleanup(() => {
+        enumerate.return();
+      });
+      throw error;
+    }
+    enumerate.return();
+    return result;
   });
   run("chain fold", () => {
     const value = $iter(ds({ start: 90, end: 92 }));

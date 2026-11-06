@@ -2,6 +2,7 @@
 
 import {
   $BTreeMap,
+  $cleanup,
   $cmp,
   $insert,
   $orInsertWith,
@@ -17,90 +18,362 @@ export function entry() {
 
 function main() {
   const sorted = new $BTreeMap();
+  let insert;
   try {
-    const insert = $insert(sorted, 3, ["c"]);
+    insert = $insert(sorted, 3, ["c"]);
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(sorted, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    });
+    throw error;
+  }
+  try {
     if (insert != null) {
       console.log(`drop ${insert[0]}`);
     }
-    const noisy = $insert(sorted, 1, ["a"]);
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(sorted, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    });
+    throw error;
+  }
+  let noisy;
+  try {
+    noisy = $insert(sorted, 1, ["a"]);
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(sorted, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    });
+    throw error;
+  }
+  try {
     if (noisy != null) {
       console.log(`drop ${noisy[0]}`);
     }
-    const value = $insert(sorted, 2, ["b"]);
-    if (value != null) {
-      console.log(`drop ${value[0]}`);
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(sorted, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    });
+    throw error;
+  }
+  let tmp;
+  try {
+    tmp = $insert(sorted, 2, ["b"]);
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(sorted, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    });
+    throw error;
+  }
+  try {
+    if (tmp != null) {
+      console.log(`drop ${tmp[0]}`);
     }
-    const old = $insert(sorted, 2, ["b2"]);
-    function map(n) {
-      const result = n[0];
-      console.log(`drop ${n[0]}`);
-      return result;
-    }
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(sorted, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    });
+    throw error;
+  }
+  let old;
+  try {
+    old = $insert(sorted, 2, ["b2"]);
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(sorted, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    });
+    throw error;
+  }
+  function map(n) {
+    const result = n[0];
+    console.log(`drop ${n[0]}`);
+    return result;
+  }
+  try {
     console.log(`replaced ${(old != null ? map(old) : undefined) ?? "none"}`);
-    const taken = $remove(sorted, 1);
-    console.log(`took ${taken != null} ${sorted.size}`);
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(sorted, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    });
+    throw error;
+  }
+  let taken;
+  try {
+    taken = $remove(sorted, 1);
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(sorted, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    });
+    throw error;
+  }
+  console.log(`took ${taken != null} ${sorted.size}`);
+  try {
     if (taken != null) {
       console.log(`drop ${taken[0]}`);
     }
-    const n = sorted.get(3);
-    if (n != null) {
-      console.log(`has ${n[0]}`);
-    }
-  } finally {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(sorted, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    });
+    throw error;
+  }
+  let n;
+  try {
+    n = sorted.get(3);
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(sorted, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    });
+    throw error;
+  }
+  if (n != null) {
+    console.log(`has ${n[0]}`);
+  }
+  for (const [, value] of $sortedEntries(sorted, $cmp)) {
+    console.log(`drop ${value[0]}`);
   }
   console.log("sorted dropped");
 
   const byName = new Map();
+  let tmp$1;
   try {
-    const value = $insert(byName, "x", ["x"]);
-    if (value != null) {
-      console.log(`drop ${value[0]}`);
-    }
-    $orInsertWith(byName, "y", () => ["y"]);
-    console.log(`${byName.size} ${byName.has("y")}`);
-    const x = $remove(byName, "x");
-    console.log(`${x != null}`);
-
-    const shared = { value: 5, strong: 1, weak: 0 };
-    try {
-      try {
-        const handles = new Map();
-        try {
-          const value = $insert(handles, "a", $rcClone(shared));
-          if (value != null) {
-            $rcDrop(value);
-          }
-          const value$1 = $insert(handles, "b", $rcClone(shared));
-          if (value$1 != null) {
-            $rcDrop(value$1);
-          }
-          console.log(`${shared.strong}`);
-          const remove = $remove(handles, "a");
-          if (remove != null) {
-            $rcDrop(remove);
-          }
-          console.log(`${shared.strong}`);
-        } finally {
-          for (const item of handles.values()) {
-            $rcDrop(item);
-          }
-        }
-        console.log(`${shared.strong}`);
-      } finally {
-        $rcDrop(shared);
+    tmp$1 = $insert(byName, "x", ["x"]);
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of byName.values()) {
+        console.log(`drop ${item[0]}`);
       }
-    } finally {
+    });
+    throw error;
+  }
+  try {
+    if (tmp$1 != null) {
+      console.log(`drop ${tmp$1[0]}`);
+    }
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of byName.values()) {
+        console.log(`drop ${item[0]}`);
+      }
+    });
+    throw error;
+  }
+  try {
+    $orInsertWith(byName, "y", () => ["y"]);
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of byName.values()) {
+        console.log(`drop ${item[0]}`);
+      }
+    });
+    throw error;
+  }
+  try {
+    console.log(`${byName.size} ${byName.has("y")}`);
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of byName.values()) {
+        console.log(`drop ${item[0]}`);
+      }
+    });
+    throw error;
+  }
+  let x;
+  try {
+    x = $remove(byName, "x");
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of byName.values()) {
+        console.log(`drop ${item[0]}`);
+      }
+    });
+    throw error;
+  }
+  console.log(`${x != null}`);
+
+  const shared = { value: 5, strong: 1, weak: 0 };
+  let handles;
+  try {
+    handles = new Map();
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(shared);
       if (x != null) {
         console.log(`drop ${x[0]}`);
       }
+      for (const item of byName.values()) {
+        console.log(`drop ${item[0]}`);
+      }
+    });
+    throw error;
+  }
+  let tmp$2;
+  try {
+    tmp$2 = $insert(handles, "a", $rcClone(shared));
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of handles.values()) {
+        $rcDrop(item);
+      }
+      $rcDrop(shared);
+      if (x != null) {
+        console.log(`drop ${x[0]}`);
+      }
+      for (const item of byName.values()) {
+        console.log(`drop ${item[0]}`);
+      }
+    });
+    throw error;
+  }
+  try {
+    if (tmp$2 != null) {
+      $rcDrop(tmp$2);
     }
-  } finally {
-    for (const item of byName.values()) {
-      console.log(`drop ${item[0]}`);
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of handles.values()) {
+        $rcDrop(item);
+      }
+      $rcDrop(shared);
+      if (x != null) {
+        console.log(`drop ${x[0]}`);
+      }
+      for (const item of byName.values()) {
+        console.log(`drop ${item[0]}`);
+      }
+    });
+    throw error;
+  }
+  let tmp$3;
+  try {
+    tmp$3 = $insert(handles, "b", $rcClone(shared));
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of handles.values()) {
+        $rcDrop(item);
+      }
+      $rcDrop(shared);
+      if (x != null) {
+        console.log(`drop ${x[0]}`);
+      }
+      for (const item of byName.values()) {
+        console.log(`drop ${item[0]}`);
+      }
+    });
+    throw error;
+  }
+  try {
+    if (tmp$3 != null) {
+      $rcDrop(tmp$3);
     }
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of handles.values()) {
+        $rcDrop(item);
+      }
+      $rcDrop(shared);
+      if (x != null) {
+        console.log(`drop ${x[0]}`);
+      }
+      for (const item of byName.values()) {
+        console.log(`drop ${item[0]}`);
+      }
+    });
+    throw error;
+  }
+  console.log(`${shared.strong}`);
+  let remove;
+  try {
+    remove = $remove(handles, "a");
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of handles.values()) {
+        $rcDrop(item);
+      }
+      $rcDrop(shared);
+      if (x != null) {
+        console.log(`drop ${x[0]}`);
+      }
+      for (const item of byName.values()) {
+        console.log(`drop ${item[0]}`);
+      }
+    });
+    throw error;
+  }
+  try {
+    if (remove != null) {
+      $rcDrop(remove);
+    }
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of handles.values()) {
+        $rcDrop(item);
+      }
+      $rcDrop(shared);
+      if (x != null) {
+        console.log(`drop ${x[0]}`);
+      }
+      for (const item of byName.values()) {
+        console.log(`drop ${item[0]}`);
+      }
+    });
+    throw error;
+  }
+  console.log(`${shared.strong}`);
+  try {
+    for (const item of handles.values()) {
+      $rcDrop(item);
+    }
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(shared);
+      if (x != null) {
+        console.log(`drop ${x[0]}`);
+      }
+      for (const item of byName.values()) {
+        console.log(`drop ${item[0]}`);
+      }
+    });
+    throw error;
+  }
+  console.log(`${shared.strong}`);
+  $rcDrop(shared);
+  try {
+    if (x != null) {
+      console.log(`drop ${x[0]}`);
+    }
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of byName.values()) {
+        console.log(`drop ${item[0]}`);
+      }
+    });
+    throw error;
+  }
+  for (const item of byName.values()) {
+    console.log(`drop ${item[0]}`);
   }
 }
 //# sourceMappingURL=case.js.map

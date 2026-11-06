@@ -3,6 +3,7 @@
 import {
   $advanceSlice,
   $assign,
+  $cleanup,
   $dropEach,
   $dropItems,
   $extend,
@@ -38,8 +39,10 @@ function firsts(
   try {
     iter = $intoIter(iterable);
   } catch (error) {
-    $dropItems(out, (item) => {
-      dropIItemItem?.(item);
+    $cleanup(() => {
+      $dropItems(out, (item) => {
+        dropIItemItem?.(item);
+      });
     });
     throw error;
   }
@@ -50,9 +53,11 @@ function firsts(
     try {
       tmp = $nextSome(iter);
     } catch (error) {
-      dropIIntoIter?.(iter);
-      $dropItems(out, (item) => {
-        dropIItemItem?.(item);
+      $cleanup(() => {
+        dropIIntoIter?.(iter);
+        $dropItems(out, (item) => {
+          dropIItemItem?.(item);
+        });
       });
       throw error;
     }
@@ -60,8 +65,10 @@ function firsts(
       try {
         dropIIntoIter?.(iter);
       } catch (error) {
-        $dropItems(out, (item) => {
-          dropIItemItem?.(item);
+        $cleanup(() => {
+          $dropItems(out, (item) => {
+            dropIItemItem?.(item);
+          });
         });
         throw error;
       }
@@ -71,19 +78,23 @@ function firsts(
     try {
       it = $held(IItemIntoIterator.intoIter(inner));
     } catch (error) {
-      dropIIntoIter?.(iter);
-      $dropItems(out, (item) => {
-        dropIItemItem?.(item);
+      $cleanup(() => {
+        dropIIntoIter?.(iter);
+        $dropItems(out, (item) => {
+          dropIItemItem?.(item);
+        });
       });
       throw error;
     }
     try {
       next = IItemIntoIterator.IntoIterIterator().next(it);
     } catch (error) {
-      dropIItemIntoIter?.(it);
-      dropIIntoIter?.(iter);
-      $dropItems(out, (item) => {
-        dropIItemItem?.(item);
+      $cleanup(() => {
+        dropIItemIntoIter?.(it);
+        dropIIntoIter?.(iter);
+        $dropItems(out, (item) => {
+          dropIItemItem?.(item);
+        });
       });
       throw error;
     }
@@ -92,10 +103,12 @@ function firsts(
       try {
         out.push(first);
       } catch (error) {
-        dropIItemIntoIter?.(it);
-        dropIIntoIter?.(iter);
-        $dropItems(out, (item) => {
-          dropIItemItem?.(item);
+        $cleanup(() => {
+          dropIItemIntoIter?.(it);
+          dropIIntoIter?.(iter);
+          $dropItems(out, (item) => {
+            dropIItemItem?.(item);
+          });
         });
         throw error;
       }
@@ -105,10 +118,12 @@ function firsts(
           dropIItemItem?.($someValue(next));
         }
       } catch (error) {
-        dropIItemIntoIter?.(it);
-        dropIIntoIter?.(iter);
-        $dropItems(out, (item) => {
-          dropIItemItem?.(item);
+        $cleanup(() => {
+          dropIItemIntoIter?.(it);
+          dropIIntoIter?.(iter);
+          $dropItems(out, (item) => {
+            dropIItemItem?.(item);
+          });
         });
         throw error;
       }
@@ -116,9 +131,11 @@ function firsts(
     try {
       dropIItemIntoIter?.(it);
     } catch (error) {
-      dropIIntoIter?.(iter);
-      $dropItems(out, (item) => {
-        dropIItemItem?.(item);
+      $cleanup(() => {
+        dropIIntoIter?.(iter);
+        $dropItems(out, (item) => {
+          dropIItemItem?.(item);
+        });
       });
       throw error;
     }
@@ -136,8 +153,9 @@ function concat(
   dropIItemIntoIter,
 ) {
   const iter$1 = $intoIter(iter);
+  let result;
   try {
-    return $reduce(
+    result = $reduce(
       iter$1,
       (a, b) => {
         const self = { value: a };
@@ -150,11 +168,17 @@ function concat(
               dropIItem,
               dropIItemIntoIter,
             );
-          } finally {
-            $assign(a, self.value);
+          } catch (error) {
+            $cleanup(() => {
+              $assign(a, self.value);
+            });
+            throw error;
           }
+          $assign(a, self.value);
         } catch (error) {
-          dropIItem?.(a);
+          $cleanup(() => {
+            dropIItem?.(a);
+          });
           throw error;
         }
         return a;
@@ -162,9 +186,14 @@ function concat(
       true,
       dropIItem,
     );
-  } finally {
-    dropIIntoIter?.(iter$1);
+  } catch (error) {
+    $cleanup(() => {
+      dropIIntoIter?.(iter$1);
+    });
+    throw error;
   }
+  dropIIntoIter?.(iter$1);
+  return result;
 }
 
 const $groupsFirstOfNext = new WeakMap();
@@ -207,30 +236,36 @@ function groupsFirstOfNext_firstOfNext(
   dropIItemItem,
   dropIItemIntoIter,
 ) {
-  const value = IIterator.next(groups[0]);
+  const value$1 = IIterator.next(groups[0]);
   let value$0$live = true;
   let result;
-  if (value != null) {
+  if (value$1 != null) {
     value$0$live = false;
-    const inner = $someValue(value);
-    const value$1 = $held(IItemIntoIterator.intoIter(inner));
-    try {
-      const next = IItemIntoIterator.IntoIterIterator().next(value$1);
-      const value = $someValue(next);
-      function map(_2) {
-        dropIItemItem?.(_2);
-        return 1;
-      }
-      result = next != null ? map(value) : 0;
-    } finally {
-      dropIItemIntoIter?.(value$1);
+    const inner = $someValue(value$1);
+    const value$2 = $held(IItemIntoIterator.intoIter(inner));
+    let next;
+    let value;
+    function map(_2) {
+      dropIItemItem?.(_2);
+      return 1;
     }
+    try {
+      next = IItemIntoIterator.IntoIterIterator().next(value$2);
+      value = $someValue(next);
+      result = next != null ? map(value) : 0;
+    } catch (error) {
+      $cleanup(() => {
+        dropIItemIntoIter?.(value$2);
+      });
+      throw error;
+    }
+    dropIItemIntoIter?.(value$2);
   } else {
     result = 0;
   }
-  if (value != null) {
+  if (value$1 != null) {
     if (value$0$live) {
-      dropIItem?.($someValue(value));
+      dropIItem?.($someValue(value$1));
     }
   }
   return result;

@@ -6,6 +6,7 @@ import {
   $btreeMap,
   $catchUnwind,
   $channel,
+  $cleanup,
   $closing,
   $cmp,
   $collectOptions,
@@ -17,6 +18,7 @@ import {
   $heapRetain,
   $insert,
   $iter,
+  $next,
   $nthBack,
   $retain,
   $retainMap,
@@ -81,16 +83,11 @@ function main() {
   caught("variant", () => {
     const s = { TAG: "Three", _0: [6], _1: [7], _2: [8] };
     const e = "Empty";
+    let iter;
     try {
-      try {
-        const iter = [s, e].values();
-        let shape;
-        while ((shape = iter.next().value) != null) {
-          if (shape.TAG === "Three") {
-            console.log(`three ${shape._0[0]} ${shape._1[0]} ${shape._2[0]}`);
-          }
-        }
-      } finally {
+      iter = $iter([s, e]);
+    } catch (error) {
+      $cleanup(() => {
         if (e.TAG === "Three") {
           loudDrop_drop(e._0);
           try {
@@ -99,15 +96,77 @@ function main() {
             loudDrop_drop(e._2);
           }
         }
-      }
-    } finally {
-      if (s.TAG === "Three") {
-        loudDrop_drop(s._0);
-        try {
-          boomDrop_drop(s._1);
-        } finally {
-          loudDrop_drop(s._2);
+        if (s.TAG === "Three") {
+          loudDrop_drop(s._0);
+          try {
+            boomDrop_drop(s._1);
+          } finally {
+            loudDrop_drop(s._2);
+          }
         }
+      });
+      throw error;
+    }
+    while (true) {
+      let shape;
+      try {
+        shape = $next(iter);
+      } catch (error) {
+        $cleanup(() => {
+          if (e.TAG === "Three") {
+            loudDrop_drop(e._0);
+            try {
+              boomDrop_drop(e._1);
+            } finally {
+              loudDrop_drop(e._2);
+            }
+          }
+          if (s.TAG === "Three") {
+            loudDrop_drop(s._0);
+            try {
+              boomDrop_drop(s._1);
+            } finally {
+              loudDrop_drop(s._2);
+            }
+          }
+        });
+        throw error;
+      }
+      if (shape == null) {
+        break;
+      }
+      if (shape.TAG === "Three") {
+        console.log(`three ${shape._0[0]} ${shape._1[0]} ${shape._2[0]}`);
+      }
+    }
+    try {
+      if (e.TAG === "Three") {
+        loudDrop_drop(e._0);
+        try {
+          boomDrop_drop(e._1);
+        } finally {
+          loudDrop_drop(e._2);
+        }
+      }
+    } catch (error) {
+      $cleanup(() => {
+        if (s.TAG === "Three") {
+          loudDrop_drop(s._0);
+          try {
+            boomDrop_drop(s._1);
+          } finally {
+            loudDrop_drop(s._2);
+          }
+        }
+      });
+      throw error;
+    }
+    if (s.TAG === "Three") {
+      loudDrop_drop(s._0);
+      try {
+        boomDrop_drop(s._1);
+      } finally {
+        loudDrop_drop(s._2);
       }
     }
   });
@@ -119,16 +178,27 @@ function main() {
     ];
     try {
       console.log(`array ${a.map(Item.id).reduce((a, b) => (a + b) >>> 0, 0)}`);
-    } finally {
-      $dropItems(a, (item) => {
-        if (item.TAG === "Quiet") {
-          loudDrop_drop(item._0);
-        }
-        if (item.TAG === "Loud") {
-          boomDrop_drop(item._0);
-        }
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(a, (item) => {
+          if (item.TAG === "Quiet") {
+            loudDrop_drop(item._0);
+          }
+          if (item.TAG === "Loud") {
+            boomDrop_drop(item._0);
+          }
+        });
       });
+      throw error;
     }
+    $dropItems(a, (item) => {
+      if (item.TAG === "Quiet") {
+        loudDrop_drop(item._0);
+      }
+      if (item.TAG === "Loud") {
+        boomDrop_drop(item._0);
+      }
+    });
   });
   caught("vec", () => {
     const v = [
@@ -148,8 +218,23 @@ function main() {
   });
   caught("map", () => {
     const m = new $BTreeMap();
+    let insert;
     try {
-      const insert = $insert(m, 1, { TAG: "Quiet", _0: [15] });
+      insert = $insert(m, 1, { TAG: "Quiet", _0: [15] });
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems($sortedEntries(m, $cmp), ([, value]) => {
+          if (value.TAG === "Quiet") {
+            loudDrop_drop(value._0);
+          }
+          if (value.TAG === "Loud") {
+            boomDrop_drop(value._0);
+          }
+        });
+      });
+      throw error;
+    }
+    try {
       if (insert != null) {
         if (insert.TAG === "Quiet") {
           loudDrop_drop(insert._0);
@@ -158,7 +243,36 @@ function main() {
           boomDrop_drop(insert._0);
         }
       }
-      const item = $insert(m, 2, { TAG: "Loud", _0: [16] });
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems($sortedEntries(m, $cmp), ([, value]) => {
+          if (value.TAG === "Quiet") {
+            loudDrop_drop(value._0);
+          }
+          if (value.TAG === "Loud") {
+            boomDrop_drop(value._0);
+          }
+        });
+      });
+      throw error;
+    }
+    let item;
+    try {
+      item = $insert(m, 2, { TAG: "Loud", _0: [16] });
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems($sortedEntries(m, $cmp), ([, value]) => {
+          if (value.TAG === "Quiet") {
+            loudDrop_drop(value._0);
+          }
+          if (value.TAG === "Loud") {
+            boomDrop_drop(value._0);
+          }
+        });
+      });
+      throw error;
+    }
+    try {
       if (item != null) {
         if (item.TAG === "Quiet") {
           loudDrop_drop(item._0);
@@ -167,25 +281,65 @@ function main() {
           boomDrop_drop(item._0);
         }
       }
-      const value = $insert(m, 3, { TAG: "Quiet", _0: [17] });
-      if (value != null) {
-        if (value.TAG === "Quiet") {
-          loudDrop_drop(value._0);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems($sortedEntries(m, $cmp), ([, value]) => {
+          if (value.TAG === "Quiet") {
+            loudDrop_drop(value._0);
+          }
+          if (value.TAG === "Loud") {
+            boomDrop_drop(value._0);
+          }
+        });
+      });
+      throw error;
+    }
+    let tmp;
+    try {
+      tmp = $insert(m, 3, { TAG: "Quiet", _0: [17] });
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems($sortedEntries(m, $cmp), ([, value]) => {
+          if (value.TAG === "Quiet") {
+            loudDrop_drop(value._0);
+          }
+          if (value.TAG === "Loud") {
+            boomDrop_drop(value._0);
+          }
+        });
+      });
+      throw error;
+    }
+    try {
+      if (tmp != null) {
+        if (tmp.TAG === "Quiet") {
+          loudDrop_drop(tmp._0);
         }
-        if (value.TAG === "Loud") {
-          boomDrop_drop(value._0);
+        if (tmp.TAG === "Loud") {
+          boomDrop_drop(tmp._0);
         }
       }
-    } finally {
-      $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-        if (value.TAG === "Quiet") {
-          loudDrop_drop(value._0);
-        }
-        if (value.TAG === "Loud") {
-          boomDrop_drop(value._0);
-        }
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems($sortedEntries(m, $cmp), ([, value]) => {
+          if (value.TAG === "Quiet") {
+            loudDrop_drop(value._0);
+          }
+          if (value.TAG === "Loud") {
+            boomDrop_drop(value._0);
+          }
+        });
       });
+      throw error;
     }
+    $dropItems($sortedEntries(m, $cmp), ([, value]) => {
+      if (value.TAG === "Quiet") {
+        loudDrop_drop(value._0);
+      }
+      if (value.TAG === "Loud") {
+        boomDrop_drop(value._0);
+      }
+    });
   });
   // A `Vec`'s items it drops itself, `truncate`'s and `clear`'s, a
   // receiver's queue, and what a failed `collect` of options took, each
@@ -205,16 +359,27 @@ function main() {
           boomDrop_drop(item._0);
         }
       });
-    } finally {
-      $dropItems(v, (item) => {
-        if (item.TAG === "Quiet") {
-          loudDrop_drop(item._0);
-        }
-        if (item.TAG === "Loud") {
-          boomDrop_drop(item._0);
-        }
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, (item) => {
+          if (item.TAG === "Quiet") {
+            loudDrop_drop(item._0);
+          }
+          if (item.TAG === "Loud") {
+            boomDrop_drop(item._0);
+          }
+        });
       });
+      throw error;
     }
+    $dropItems(v, (item) => {
+      if (item.TAG === "Quiet") {
+        loudDrop_drop(item._0);
+      }
+      if (item.TAG === "Loud") {
+        boomDrop_drop(item._0);
+      }
+    });
   });
   caught("clear", () => {
     const v = [
@@ -230,24 +395,34 @@ function main() {
           boomDrop_drop(item._0);
         }
       });
-    } finally {
-      $dropItems(v, (item) => {
-        if (item.TAG === "Quiet") {
-          loudDrop_drop(item._0);
-        }
-        if (item.TAG === "Loud") {
-          boomDrop_drop(item._0);
-        }
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, (item) => {
+          if (item.TAG === "Quiet") {
+            loudDrop_drop(item._0);
+          }
+          if (item.TAG === "Loud") {
+            boomDrop_drop(item._0);
+          }
+        });
       });
+      throw error;
     }
+    $dropItems(v, (item) => {
+      if (item.TAG === "Quiet") {
+        loudDrop_drop(item._0);
+      }
+      if (item.TAG === "Loud") {
+        boomDrop_drop(item._0);
+      }
+    });
   });
   caught("queue", () => {
     const [send, receive] = $channel();
     try {
-      try {
-        $unwrapOk($send(send, { TAG: "Loud", _0: [24] }), undefined, (e) => "SendError { .. }");
-        $unwrapOk($send(send, { TAG: "Quiet", _0: [25] }), undefined, (e) => "SendError { .. }");
-      } finally {
+      $unwrapOk($send(send, { TAG: "Loud", _0: [24] }), undefined, (e) => "SendError { .. }");
+    } catch (error) {
+      $cleanup(() => {
         $dropReceiver(receive, (item) => {
           if (item.TAG === "Quiet") {
             loudDrop_drop(item._0);
@@ -256,10 +431,42 @@ function main() {
             boomDrop_drop(item._0);
           }
         });
-      }
-    } finally {
-      $dropSender(send);
+        $dropSender(send);
+      });
+      throw error;
     }
+    try {
+      $unwrapOk($send(send, { TAG: "Quiet", _0: [25] }), undefined, (e) => "SendError { .. }");
+    } catch (error) {
+      $cleanup(() => {
+        $dropReceiver(receive, (item) => {
+          if (item.TAG === "Quiet") {
+            loudDrop_drop(item._0);
+          }
+          if (item.TAG === "Loud") {
+            boomDrop_drop(item._0);
+          }
+        });
+        $dropSender(send);
+      });
+      throw error;
+    }
+    try {
+      $dropReceiver(receive, (item) => {
+        if (item.TAG === "Quiet") {
+          loudDrop_drop(item._0);
+        }
+        if (item.TAG === "Loud") {
+          boomDrop_drop(item._0);
+        }
+      });
+    } catch (error) {
+      $cleanup(() => {
+        $dropSender(send);
+      });
+      throw error;
+    }
+    $dropSender(send);
   });
   caught("collect", () => {
     const items = [{ TAG: "Loud", _0: [26] }, { TAG: "Quiet", _0: [27] }, undefined];
@@ -306,8 +513,32 @@ function main() {
       { TAG: "Loud", _0: [30] },
       { TAG: "Quiet", _0: [31] },
     ]);
+    let nthBack;
+    function map(item) {
+      let result;
+      try {
+        result = Item.id(item);
+      } catch (error) {
+        $cleanup(() => {
+          if (item.TAG === "Quiet") {
+            loudDrop_drop(item._0);
+          }
+          if (item.TAG === "Loud") {
+            boomDrop_drop(item._0);
+          }
+        });
+        throw error;
+      }
+      if (item.TAG === "Quiet") {
+        loudDrop_drop(item._0);
+      }
+      if (item.TAG === "Loud") {
+        boomDrop_drop(item._0);
+      }
+      return result;
+    }
     try {
-      const nthBack = $nthBack(
+      nthBack = $nthBack(
         $slicing(it, (item) => {
           if (item.TAG === "Quiet") {
             loudDrop_drop(item._0);
@@ -327,34 +558,42 @@ function main() {
           }
         },
       );
-      function map(item) {
-        let result;
-        try {
-          try {
-            result = Item.id(item);
-          } finally {
-            if (item.TAG === "Quiet") {
-              loudDrop_drop(item._0);
-            }
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(it, (item) => {
+          if (item.TAG === "Quiet") {
+            loudDrop_drop(item._0);
           }
-        } finally {
           if (item.TAG === "Loud") {
             boomDrop_drop(item._0);
           }
-        }
-        return result;
-      }
-      console.log(`nth_back ${nthBack != null ? map(nthBack) : 0}`);
-    } finally {
-      $dropItems(it, (item) => {
-        if (item.TAG === "Quiet") {
-          loudDrop_drop(item._0);
-        }
-        if (item.TAG === "Loud") {
-          boomDrop_drop(item._0);
-        }
+        });
       });
+      throw error;
     }
+    try {
+      console.log(`nth_back ${nthBack != null ? map(nthBack) : 0}`);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(it, (item) => {
+          if (item.TAG === "Quiet") {
+            loudDrop_drop(item._0);
+          }
+          if (item.TAG === "Loud") {
+            boomDrop_drop(item._0);
+          }
+        });
+      });
+      throw error;
+    }
+    $dropItems(it, (item) => {
+      if (item.TAG === "Quiet") {
+        loudDrop_drop(item._0);
+      }
+      if (item.TAG === "Loud") {
+        boomDrop_drop(item._0);
+      }
+    });
   });
   // A `retain` that drops one that panics, or whose test panics: what's
   // left is what it kept then what it hadn't tested, as std's guard puts
@@ -378,16 +617,27 @@ function main() {
           }
         },
       );
-    } finally {
-      $dropItems(v, (item) => {
-        if (item.TAG === "Quiet") {
-          loudDrop_drop(item._0);
-        }
-        if (item.TAG === "Loud") {
-          boomDrop_drop(item._0);
-        }
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, (item) => {
+          if (item.TAG === "Quiet") {
+            loudDrop_drop(item._0);
+          }
+          if (item.TAG === "Loud") {
+            boomDrop_drop(item._0);
+          }
+        });
       });
+      throw error;
     }
+    $dropItems(v, (item) => {
+      if (item.TAG === "Quiet") {
+        loudDrop_drop(item._0);
+      }
+      if (item.TAG === "Loud") {
+        boomDrop_drop(item._0);
+      }
+    });
   });
   caught("retain_mut", () => {
     const v = [
@@ -408,16 +658,27 @@ function main() {
           }
         },
       );
-    } finally {
-      $dropItems(v, (item) => {
-        if (item.TAG === "Quiet") {
-          loudDrop_drop(item._0);
-        }
-        if (item.TAG === "Loud") {
-          boomDrop_drop(item._0);
-        }
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, (item) => {
+          if (item.TAG === "Quiet") {
+            loudDrop_drop(item._0);
+          }
+          if (item.TAG === "Loud") {
+            boomDrop_drop(item._0);
+          }
+        });
       });
+      throw error;
     }
+    $dropItems(v, (item) => {
+      if (item.TAG === "Quiet") {
+        loudDrop_drop(item._0);
+      }
+      if (item.TAG === "Loud") {
+        boomDrop_drop(item._0);
+      }
+    });
   });
   caught("retain test", () => {
     const v = [[37], [38], [39]];
@@ -458,32 +719,142 @@ function main() {
           }
         },
       );
-    } finally {
-      $dropItems(v, (item) => {
-        if (item.TAG === "Quiet") {
-          loudDrop_drop(item._0);
-        }
-        if (item.TAG === "Loud") {
-          boomDrop_drop(item._0);
-        }
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(v, (item) => {
+          if (item.TAG === "Quiet") {
+            loudDrop_drop(item._0);
+          }
+          if (item.TAG === "Loud") {
+            boomDrop_drop(item._0);
+          }
+        });
       });
+      throw error;
     }
+    $dropItems(v, (item) => {
+      if (item.TAG === "Quiet") {
+        loudDrop_drop(item._0);
+      }
+      if (item.TAG === "Loud") {
+        boomDrop_drop(item._0);
+      }
+    });
   });
   caught("map retain", () => {
     const m = new ($btreeMap((a, b) => $cmp(a[0], b[0]), $KeyMap))();
+    let insert;
     try {
-      const insert = $insert(m, [1], [46], keyDrop_drop);
+      insert = $insert(m, [1], [46], keyDrop_drop);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(
+          $sortedEntries(m, (a, b) => $cmp(a[0], b[0])),
+          ([key, value]) => {
+            try {
+              keyDrop_drop(key);
+            } finally {
+              loudDrop_drop(value);
+            }
+          },
+        );
+      });
+      throw error;
+    }
+    try {
       if (insert != null) {
         loudDrop_drop(insert);
       }
-      const loud = $insert(m, [2], [47], keyDrop_drop);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(
+          $sortedEntries(m, (a, b) => $cmp(a[0], b[0])),
+          ([key, value]) => {
+            try {
+              keyDrop_drop(key);
+            } finally {
+              loudDrop_drop(value);
+            }
+          },
+        );
+      });
+      throw error;
+    }
+    let loud;
+    try {
+      loud = $insert(m, [2], [47], keyDrop_drop);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(
+          $sortedEntries(m, (a, b) => $cmp(a[0], b[0])),
+          ([key, value]) => {
+            try {
+              keyDrop_drop(key);
+            } finally {
+              loudDrop_drop(value);
+            }
+          },
+        );
+      });
+      throw error;
+    }
+    try {
       if (loud != null) {
         loudDrop_drop(loud);
       }
-      const value = $insert(m, [3], [48], keyDrop_drop);
-      if (value != null) {
-        loudDrop_drop(value);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(
+          $sortedEntries(m, (a, b) => $cmp(a[0], b[0])),
+          ([key, value]) => {
+            try {
+              keyDrop_drop(key);
+            } finally {
+              loudDrop_drop(value);
+            }
+          },
+        );
+      });
+      throw error;
+    }
+    let tmp;
+    try {
+      tmp = $insert(m, [3], [48], keyDrop_drop);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(
+          $sortedEntries(m, (a, b) => $cmp(a[0], b[0])),
+          ([key, value]) => {
+            try {
+              keyDrop_drop(key);
+            } finally {
+              loudDrop_drop(value);
+            }
+          },
+        );
+      });
+      throw error;
+    }
+    try {
+      if (tmp != null) {
+        loudDrop_drop(tmp);
       }
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(
+          $sortedEntries(m, (a, b) => $cmp(a[0], b[0])),
+          ([key, value]) => {
+            try {
+              keyDrop_drop(key);
+            } finally {
+              loudDrop_drop(value);
+            }
+          },
+        );
+      });
+      throw error;
+    }
+    try {
       $retainMap(
         m,
         (k) => k[0] !== 2,
@@ -492,19 +863,32 @@ function main() {
         loudDrop_drop,
         keyDrop_drop,
       );
-      console.log(`map ${m.size}`);
-    } finally {
-      $dropItems(
-        $sortedEntries(m, (a, b) => $cmp(a[0], b[0])),
-        ([key, value]) => {
-          try {
-            keyDrop_drop(key);
-          } finally {
-            loudDrop_drop(value);
-          }
-        },
-      );
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems(
+          $sortedEntries(m, (a, b) => $cmp(a[0], b[0])),
+          ([key, value]) => {
+            try {
+              keyDrop_drop(key);
+            } finally {
+              loudDrop_drop(value);
+            }
+          },
+        );
+      });
+      throw error;
     }
+    console.log(`map ${m.size}`);
+    $dropItems(
+      $sortedEntries(m, (a, b) => $cmp(a[0], b[0])),
+      ([key, value]) => {
+        try {
+          keyDrop_drop(key);
+        } finally {
+          loudDrop_drop(value);
+        }
+      },
+    );
   });
   caught("heap retain", () => {
     const heap = [];

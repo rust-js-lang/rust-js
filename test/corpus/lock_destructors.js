@@ -19,22 +19,15 @@ function main() {
   let other;
   try {
     other = $rcClone(shared);
-  } catch (error) {
-    $rcDrop(shared, (value) => {
-      noisyDrop_drop(value.value);
-    });
-    throw error;
-  }
-  try {
-    $rcDrop(shared, (value) => {
-      noisyDrop_drop(value.value);
-    });
-    console.log("one left");
   } finally {
-    $rcDrop(other, (value) => {
+    $rcDrop(shared, (value) => {
       noisyDrop_drop(value.value);
     });
   }
+  console.log("one left");
+  $rcDrop(other, (value) => {
+    noisyDrop_drop(value.value);
+  });
   const l = { value: [["a"], ["b"]] };
   try {
     const value = $lock(l, true);

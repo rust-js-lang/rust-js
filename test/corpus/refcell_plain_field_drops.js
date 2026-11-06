@@ -48,29 +48,20 @@ function main() {
     let other;
     try {
       other = $rcClone(shared);
-    } catch (error) {
-      $rcDrop(shared, (value) => {
-        if (value.held != null) {
-          console.log(`drop ${value.held[0]}`);
-        }
-      });
-      throw error;
-    }
-    console.log(`owners ${shared.strong}`);
-    try {
-      $rcDrop(shared, (value) => {
-        if (value.held != null) {
-          console.log(`drop ${value.held[0]}`);
-        }
-      });
-      console.log("one left");
+      console.log(`owners ${shared.strong}`);
     } finally {
-      $rcDrop(other, (value) => {
+      $rcDrop(shared, (value) => {
         if (value.held != null) {
           console.log(`drop ${value.held[0]}`);
         }
       });
     }
+    console.log("one left");
+    $rcDrop(other, (value) => {
+      if (value.held != null) {
+        console.log(`drop ${value.held[0]}`);
+      }
+    });
     console.log("end");
   } finally {
     if (slot.held != null) {

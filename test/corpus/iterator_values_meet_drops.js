@@ -9,6 +9,7 @@ import {
 import {
   $advanceSlice,
   $assign,
+  $cleanup,
   $dropEach,
   $held,
   $iter,
@@ -37,9 +38,13 @@ function refill(it, next) {
 function put(it, next, dropI) {
   try {
     dropI?.(it);
-  } finally {
-    $assign(it, next);
+  } catch (error) {
+    $cleanup(() => {
+      $assign(it, next);
+    });
+    throw error;
   }
+  $assign(it, next);
   console.log("put");
 }
 
@@ -68,130 +73,23 @@ function main() {
       loudDrop_drop,
     ),
   );
+  let first;
   try {
-    const first = $next(it);
-    try {
-      const old = Iterator.from(
-        $take(
-          it,
-          iterator_map(
-            $iter([[6], [7]]),
-            seen,
-            { next: $next, advanceBy: $advanceSlice },
-            $dropEach(loudDrop_drop),
-            loudDrop_drop,
-            undefined,
-            loudDrop_drop,
-          ),
-        ),
-      );
-      console.log("replaced");
-      old.return();
-      console.log("old dropped");
-    } finally {
-      if (first != null) {
-        loudDrop_drop(first);
-      }
-    }
-    const next = $next(it);
-    function map(l) {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    }
-    const value = next != null ? map(next) : undefined;
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
-
-    let back = $held(
-      iterator_rev(
-        $iter([[10], [11], [12]]),
-        { next: $next, advanceBy: $advanceSlice },
-        { next_back: $nextBack },
-        $dropEach(loudDrop_drop),
-        loudDrop_drop,
-      ),
-    );
-    try {
-      const next = $next(back);
-      function map(l) {
-        const result = l[0];
-        loudDrop_drop(l);
-        return result;
-      }
-      const value = next != null ? map(next) : undefined;
-      console.log(`${value == null ? "None" : `Some(${value})`}`);
-      const old = refill(
-        back,
-        iterator_rev(
-          $iter([[13], [14]]),
-          { next: $next, advanceBy: $advanceSlice },
-          { next_back: $nextBack },
-          $dropEach(loudDrop_drop),
-          loudDrop_drop,
-        ),
-      );
-      try {
-        console.log(
-          `${revExactSizeIterator_len(back, { len: (iterator) => iterator.len() }, $dropEach(loudDrop_drop), loudDrop_drop)}`,
-        );
-      } finally {
-        old.return();
-      }
-      console.log("old dropped");
-      const next$1 = $next(back);
-      function map$1(l) {
-        const result = l[0];
-        loudDrop_drop(l);
-        return result;
-      }
-      const value$1 = next$1 != null ? map$1(next$1) : undefined;
-      console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-    } finally {
-      back.return();
-    }
-
-    back = $held(
-      iterator_rev(
-        $iter([[20], [21], [22]]),
-        { next: $next, advanceBy: $advanceSlice },
-        { next_back: $nextBack },
-        $dropEach(loudDrop_drop),
-        loudDrop_drop,
-      ),
-    );
-    try {
-      const next = $next(back);
-      function map(l) {
-        const result = l[0];
-        loudDrop_drop(l);
-        return result;
-      }
-      const value = next != null ? map(next) : undefined;
-      console.log(`${value == null ? "None" : `Some(${value})`}`);
-      put(
-        back,
-        iterator_rev(
-          $iter([[23], [24]]),
-          { next: $next, advanceBy: $advanceSlice },
-          { next_back: $nextBack },
-          $dropEach(loudDrop_drop),
-          loudDrop_drop,
-        ),
-        (rev) => {
-          rev.return();
-        },
-      );
-      const next$1 = $next(back);
-      function map$1(l) {
-        const result = l[0];
-        loudDrop_drop(l);
-        return result;
-      }
-      const value$1 = next$1 != null ? map$1(next$1) : undefined;
-      console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-      const mapped = $held(
+    first = $next(it);
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  const value$1 = [[6], [7]];
+  let old;
+  try {
+    old = Iterator.from(
+      $take(
+        it,
         iterator_map(
-          $iter([[25], [26]]),
+          $iter(value$1),
           seen,
           { next: $next, advanceBy: $advanceSlice },
           $dropEach(loudDrop_drop),
@@ -199,89 +97,508 @@ function main() {
           undefined,
           loudDrop_drop,
         ),
-      );
-      try {
-        const next = $next(mapped);
-        function map(l) {
-          const result = l[0];
-          loudDrop_drop(l);
-          return result;
-        }
-        const value = next != null ? map(next) : undefined;
-        console.log(`${value == null ? "None" : `Some(${value})`}`);
-        put(
-          mapped,
-          iterator_map(
-            $iter([[27], [28]]),
-            seen,
-            { next: $next, advanceBy: $advanceSlice },
-            $dropEach(loudDrop_drop),
-            loudDrop_drop,
-            undefined,
-            loudDrop_drop,
-          ),
-          (map) => {
-            map.return();
-          },
-        );
-        const next$1 = $next(mapped);
-        function map$1(l) {
-          const result = l[0];
-          loudDrop_drop(l);
-          return result;
-        }
-        const value$1 = next$1 != null ? map$1(next$1) : undefined;
-        console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-        let taken = $held(
-          iterator_take(
-            $iter([[29], [30]]),
-            2,
-            { next: $next, advanceBy: $advanceSlice },
-            $dropEach(loudDrop_drop),
-            loudDrop_drop,
-          ),
-        );
-        try {
-          const loud = $next(taken);
-          if (loud != null) {
-            loudDrop_drop(loud);
-          }
-          let other = $held(
-            iterator_take(
-              $iter([[31]]),
-              1,
-              { next: $next, advanceBy: $advanceSlice },
-              $dropEach(loudDrop_drop),
-              loudDrop_drop,
-            ),
-          );
-          const t = taken;
-          taken = other;
-          other = t;
-          try {
-            const next = $next(other);
-            function map(l) {
-              const result = l[0];
-              loudDrop_drop(l);
-              return result;
-            }
-            const value = next != null ? map(next) : undefined;
-            console.log(`${value == null ? "None" : `Some(${value})`}`);
-            console.log("end");
-          } finally {
-            other.return();
-          }
-        } finally {
-          taken.return();
-        }
-      } finally {
-        mapped.return();
+      ),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      if (first != null) {
+        loudDrop_drop(first);
       }
-    } finally {
-      back.return();
-    }
-  } finally {
-    it.return();
+      it.return();
+    });
+    throw error;
   }
+  console.log("replaced");
+  try {
+    old.return();
+  } catch (error) {
+    $cleanup(() => {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      it.return();
+    });
+    throw error;
+  }
+  console.log("old dropped");
+  try {
+    if (first != null) {
+      loudDrop_drop(first);
+    }
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  let next;
+  function map(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
+
+  try {
+    next = $next(it);
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    const value = next != null ? map(next) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  const value$2 = [[10], [11], [12]];
+  let back;
+  try {
+    back = $held(
+      iterator_rev(
+        $iter(value$2),
+        { next: $next, advanceBy: $advanceSlice },
+        { next_back: $nextBack },
+        $dropEach(loudDrop_drop),
+        loudDrop_drop,
+      ),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  let next$1;
+  function map$1(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
+  try {
+    next$1 = $next(back);
+  } catch (error) {
+    $cleanup(() => {
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    const value = next$1 != null ? map$1(next$1) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    $cleanup(() => {
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  const value$3 = [[13], [14]];
+  try {
+    old = refill(
+      back,
+      iterator_rev(
+        $iter(value$3),
+        { next: $next, advanceBy: $advanceSlice },
+        { next_back: $nextBack },
+        $dropEach(loudDrop_drop),
+        loudDrop_drop,
+      ),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    console.log(
+      `${revExactSizeIterator_len(back, { len: (iterator) => iterator.len() }, $dropEach(loudDrop_drop), loudDrop_drop)}`,
+    );
+  } catch (error) {
+    $cleanup(() => {
+      old.return();
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    old.return();
+  } catch (error) {
+    $cleanup(() => {
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  console.log("old dropped");
+  let next$2;
+  function map$2(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
+
+  try {
+    next$2 = $next(back);
+  } catch (error) {
+    $cleanup(() => {
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    const value = next$2 != null ? map$2(next$2) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    $cleanup(() => {
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    back.return();
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  const value$4 = [[20], [21], [22]];
+  try {
+    back = $held(
+      iterator_rev(
+        $iter(value$4),
+        { next: $next, advanceBy: $advanceSlice },
+        { next_back: $nextBack },
+        $dropEach(loudDrop_drop),
+        loudDrop_drop,
+      ),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  let next$3;
+  function map$3(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
+  try {
+    next$3 = $next(back);
+  } catch (error) {
+    $cleanup(() => {
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    const value = next$3 != null ? map$3(next$3) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    $cleanup(() => {
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    put(
+      back,
+      iterator_rev(
+        $iter([[23], [24]]),
+        { next: $next, advanceBy: $advanceSlice },
+        { next_back: $nextBack },
+        $dropEach(loudDrop_drop),
+        loudDrop_drop,
+      ),
+      (rev) => {
+        rev.return();
+      },
+    );
+  } catch (error) {
+    $cleanup(() => {
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  let next$4;
+  function map$4(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
+  try {
+    next$4 = $next(back);
+  } catch (error) {
+    $cleanup(() => {
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    const value = next$4 != null ? map$4(next$4) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    $cleanup(() => {
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  const value$5 = [[25], [26]];
+  let mapped;
+  try {
+    mapped = $held(
+      iterator_map(
+        $iter(value$5),
+        seen,
+        { next: $next, advanceBy: $advanceSlice },
+        $dropEach(loudDrop_drop),
+        loudDrop_drop,
+        undefined,
+        loudDrop_drop,
+      ),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  let next$5;
+  function map$5(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
+  try {
+    next$5 = $next(mapped);
+  } catch (error) {
+    $cleanup(() => {
+      mapped.return();
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    const value = next$5 != null ? map$5(next$5) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    $cleanup(() => {
+      mapped.return();
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    put(
+      mapped,
+      iterator_map(
+        $iter([[27], [28]]),
+        seen,
+        { next: $next, advanceBy: $advanceSlice },
+        $dropEach(loudDrop_drop),
+        loudDrop_drop,
+        undefined,
+        loudDrop_drop,
+      ),
+      (map) => {
+        map.return();
+      },
+    );
+  } catch (error) {
+    $cleanup(() => {
+      mapped.return();
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  let next$6;
+  function map$6(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
+  try {
+    next$6 = $next(mapped);
+  } catch (error) {
+    $cleanup(() => {
+      mapped.return();
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    const value = next$6 != null ? map$6(next$6) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    $cleanup(() => {
+      mapped.return();
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  const value$6 = [[29], [30]];
+  let taken;
+  try {
+    taken = $held(
+      iterator_take(
+        $iter(value$6),
+        2,
+        { next: $next, advanceBy: $advanceSlice },
+        $dropEach(loudDrop_drop),
+        loudDrop_drop,
+      ),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      mapped.return();
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  let loud;
+  try {
+    loud = $next(taken);
+  } catch (error) {
+    $cleanup(() => {
+      taken.return();
+      mapped.return();
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    if (loud != null) {
+      loudDrop_drop(loud);
+    }
+  } catch (error) {
+    $cleanup(() => {
+      taken.return();
+      mapped.return();
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  const value$7 = [[31]];
+  let other;
+  try {
+    other = $held(
+      iterator_take(
+        $iter(value$7),
+        1,
+        { next: $next, advanceBy: $advanceSlice },
+        $dropEach(loudDrop_drop),
+        loudDrop_drop,
+      ),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      taken.return();
+      mapped.return();
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  const t = taken;
+  taken = other;
+  other = t;
+  let next$7;
+  function map$7(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
+  try {
+    next$7 = $next(other);
+  } catch (error) {
+    $cleanup(() => {
+      other.return();
+      taken.return();
+      mapped.return();
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    const value = next$7 != null ? map$7(next$7) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    $cleanup(() => {
+      other.return();
+      taken.return();
+      mapped.return();
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  console.log("end");
+  try {
+    other.return();
+  } catch (error) {
+    $cleanup(() => {
+      taken.return();
+      mapped.return();
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    taken.return();
+  } catch (error) {
+    $cleanup(() => {
+      mapped.return();
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    mapped.return();
+  } catch (error) {
+    $cleanup(() => {
+      back.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    back.return();
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  it.return();
 }
 //# sourceMappingURL=case.js.map

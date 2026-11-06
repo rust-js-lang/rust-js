@@ -425,32 +425,24 @@ function $unwinds(run, ...drops) {
   try {
     return run();
   } catch (error) {
-    $dropsUnwinding(error, drops);
+    $dropsUnwinding(drops);
     throw error;
   }
 }
 
-// Each of `drops` run as `error` unwinds, the next though one throws: what
-// one throws then is `$unwindingThrew`'s.
-function $dropsUnwinding(error, drops) {
-  for (const drop of drops) {
-    try {
-      drop?.();
-    } catch (second) {
-      $unwindingThrew(error, second);
-    }
-  }
+// Each of `drops` run in turn as a panic unwinds, the runtime's cleanup:
+// one that throws aborts, as Rust does (`$cleanup`, #847).
+function $dropsUnwinding(drops) {
+  $cleanup(() => {
+    for (const drop of drops) drop?.();
+  });
 }
-
-// A drop that threw, `second`, while `first` unwinds: Rust aborts there
-// (#847); here `first` goes on, as JS can't abort, ADR 0660's answer, the
-// one place it's given.
-function $unwindingThrew(_first, _second) {}
 
 // Each of `runs` run in turn, the next though an earlier one throws, a
 // panic, as drop glue drops each field of what it drops though an earlier
 // field's drop unwinds, the rest dropped as that one unwinds
-// (`$dropsUnwinding`'s); the first error goes on (ADR 1092 S7, #743). One
+// (`$dropsUnwinding`'s, where a second throw aborts); the first error
+// goes on (ADR 1092 S7, #743). One
 // `undefined` is none. The one answer of what a drop of many parts runs as
 // one of them throws.
 function $inTurn(...runs) {
@@ -465,10 +457,7 @@ function $inTurnOf(items, run) {
     try {
       run(all[i]);
     } catch (error) {
-      $dropsUnwinding(
-        error,
-        all.slice(i + 1).map((item) => () => run(item)),
-      );
+      $dropsUnwinding(all.slice(i + 1).map((item) => () => run(item)));
       throw error;
     }
   }

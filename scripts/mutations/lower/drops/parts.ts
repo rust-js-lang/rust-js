@@ -246,4 +246,28 @@ export const mutations: Mutation[] = [
     replace: "                    && normal != ty\n                    && false =>\n            {\n                self.drop_in(value, normal, span, made, out)?;\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
+  {
+    name: "cleanup-unguarded",
+    breaks: "what runs as a panic unwinds isn't `$cleanup`'s, so a drop's panic there replaces the panic where Rust aborts (#847)",
+    file: "src/lower/drops/parts.rs",
+    find: "    if !may_throw(&cleanup) {\n        return cleanup;\n",
+    replace: "    if true {\n        return cleanup;\n",
+    tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_assert.rs$"],
+  },
+  {
+    name: "dropped-after-finally-unguarded",
+    breaks: "a drop that may panic after a body is its `finally`, which can't tell a panic as a panic unwinds, where Rust aborts (#847)",
+    file: "src/lower/drops/parts.rs",
+    find: "    if !may_throw(&dropped) {\n",
+    replace: "    if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^xor_drop_panics.rs$"],
+  },
+  {
+    name: "rc-drop-quiet-of-any",
+    breaks: "an `Rc`'s drop is known never to throw though what its last drops may, so it's left unguarded as a panic unwinds (#847)",
+    file: "src/lower/drops/parts.rs",
+    find: "                    quiet = !may_throw(&body);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_assert.rs$"],
+  },
 ];

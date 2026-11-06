@@ -8,6 +8,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $dropEach,
   $enumerate,
@@ -62,7 +63,9 @@ function main() {
   try {
     tmp = id(1);
   } catch (error) {
-    value.return();
+    $cleanup(() => {
+      value.return();
+    });
     throw error;
   }
   const step = $step(tmp);
@@ -71,7 +74,9 @@ function main() {
   try {
     nth = $nthDropping($lent(stepBy), id(3), loudDrop_drop, false);
   } catch (error) {
-    stepBy.return();
+    $cleanup(() => {
+      stepBy.return();
+    });
     throw error;
   }
   try {
@@ -107,7 +112,9 @@ function main() {
   try {
     tmp$1 = id(1);
   } catch (error) {
-    value$2.return();
+    $cleanup(() => {
+      value$2.return();
+    });
     throw error;
   }
   const fuse = $held(
@@ -132,7 +139,9 @@ function main() {
   try {
     nth = $nthDropping($lent(fuse), id(3), loudDrop_drop, false);
   } catch (error) {
-    fuse.return();
+    $cleanup(() => {
+      fuse.return();
+    });
     throw error;
   }
   try {
@@ -169,7 +178,9 @@ function main() {
   try {
     tmp$2 = id(3);
   } catch (error) {
-    value$4.return();
+    $cleanup(() => {
+      value$4.return();
+    });
     throw error;
   }
   const step$1 = $step(tmp$2);
@@ -177,7 +188,9 @@ function main() {
   try {
     nth = $nthDropping($lent(value$5), id(1), loudDrop_drop, false);
   } catch (error) {
-    value$5.return();
+    $cleanup(() => {
+      value$5.return();
+    });
     throw error;
   }
   try {
@@ -201,7 +214,9 @@ function main() {
   try {
     tmp$3 = id(3);
   } catch (error) {
-    enumerate.return();
+    $cleanup(() => {
+      enumerate.return();
+    });
     throw error;
   }
   const step$2 = $step(tmp$3);
@@ -220,7 +235,9 @@ function main() {
       false,
     );
   } catch (error) {
-    value$7.return();
+    $cleanup(() => {
+      value$7.return();
+    });
     throw error;
   }
   try {
@@ -245,7 +262,9 @@ function main() {
   try {
     tmp$4 = id(2);
   } catch (error) {
-    value$9.return();
+    $cleanup(() => {
+      value$9.return();
+    });
     throw error;
   }
   const step$3 = $step(tmp$4);
@@ -254,7 +273,9 @@ function main() {
   try {
     tmp$5 = id(2);
   } catch (error) {
-    value$10.return();
+    $cleanup(() => {
+      value$10.return();
+    });
     throw error;
   }
   const take = value$10.take(tmp$5);
@@ -262,7 +283,9 @@ function main() {
   try {
     tmp$6 = id(3);
   } catch (error) {
-    take.return();
+    $cleanup(() => {
+      take.return();
+    });
     throw error;
   }
   const step$4 = $step(tmp$6);
@@ -281,7 +304,9 @@ function main() {
   try {
     tmp$7 = id(2);
   } catch (error) {
-    value$11.return();
+    $cleanup(() => {
+      value$11.return();
+    });
     throw error;
   }
   function inspect(loud) {
@@ -295,7 +320,9 @@ function main() {
   try {
     tmp$8 = id(2);
   } catch (error) {
-    value$12.return();
+    $cleanup(() => {
+      value$12.return();
+    });
     throw error;
   }
   const step$5 = $step(tmp$8);
@@ -311,7 +338,9 @@ function main() {
   try {
     tmp$9 = id(1);
   } catch (error) {
-    value$13.return();
+    $cleanup(() => {
+      value$13.return();
+    });
     throw error;
   }
   const takeWhile = $lazyTakeWhile(
@@ -323,7 +352,9 @@ function main() {
   try {
     tmp$10 = id(2);
   } catch (error) {
-    takeWhile.return();
+    $cleanup(() => {
+      takeWhile.return();
+    });
     throw error;
   }
   sum = $skipping(takeWhile, tmp$10, loudDrop_drop)
@@ -341,7 +372,9 @@ function main() {
   try {
     tmp$11 = id(2);
   } catch (error) {
-    value$14.return();
+    $cleanup(() => {
+      value$14.return();
+    });
     throw error;
   }
   const value$15 = $lazyTakeWhile(
@@ -353,7 +386,9 @@ function main() {
   try {
     tmp$12 = id(2);
   } catch (error) {
-    value$15.return();
+    $cleanup(() => {
+      value$15.return();
+    });
     throw error;
   }
   const short = $skipping(value$15, tmp$12, loudDrop_drop)
@@ -371,7 +406,9 @@ function main() {
   try {
     tmp$13 = id(2);
   } catch (error) {
-    value$16.return();
+    $cleanup(() => {
+      value$16.return();
+    });
     throw error;
   }
   const last = $lastDropping(
@@ -396,7 +433,9 @@ function main() {
   try {
     tmp$14 = id(2);
   } catch (error) {
-    value$18.return();
+    $cleanup(() => {
+      value$18.return();
+    });
     throw error;
   }
   function inspect$1(loud) {
@@ -411,7 +450,9 @@ function main() {
   try {
     nth = $nthDropping($lent(value$19), id(3), loudDrop_drop, false);
   } catch (error) {
-    value$19.return();
+    $cleanup(() => {
+      value$19.return();
+    });
     throw error;
   }
   try {

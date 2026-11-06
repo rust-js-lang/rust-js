@@ -11,6 +11,7 @@ import {
   peekableDoubleEndedIterator_tryRfold,
 } from "@rust-js/std/iter.js";
 import {
+  $cleanup,
   $closing,
   $dropEach,
   $enumerate,
@@ -99,42 +100,53 @@ function givesDoubleEndedIterator_rfold(gives, init, f, dropB, dropF) {
   let acc = init;
   let result;
   try {
-    try {
-      let nextBack;
-      while (true) {
-        try {
-          nextBack = givesDoubleEndedIterator_nextBack(gives);
-        } catch (error) {
+    let nextBack;
+    while (true) {
+      try {
+        nextBack = givesDoubleEndedIterator_nextBack(gives);
+      } catch (error) {
+        $cleanup(() => {
           if (acc$live) {
             dropB?.(acc);
           }
-          throw error;
-        }
-        if (nextBack != null) {
-          const x = nextBack;
-          acc$live = false;
-          const value = f(acc, x);
-          acc$live = true;
-          acc = value;
-          continue;
-        }
-        try {
-          if (nextBack != null) {
-            dDrop_drop(nextBack);
-          }
-        } catch (error) {
-          if (acc$live) {
-            dropB?.(acc);
-          }
-          throw error;
-        }
-        break;
+          dropF?.(f);
+        });
+        throw error;
       }
-      acc$live = false;
-      result = acc;
-    } finally {
-      dropF?.(f);
+      if (nextBack != null) {
+        const x = nextBack;
+        acc$live = false;
+        let tmp;
+        try {
+          tmp = f(acc, x);
+        } catch (error) {
+          $cleanup(() => {
+            dropF?.(f);
+          });
+          throw error;
+        }
+        acc$live = true;
+        acc = tmp;
+        continue;
+      }
+      try {
+        if (nextBack != null) {
+          dDrop_drop(nextBack);
+        }
+      } catch (error) {
+        $cleanup(() => {
+          if (acc$live) {
+            dropB?.(acc);
+          }
+          dropF?.(f);
+        });
+        throw error;
+      }
+      break;
     }
+    acc$live = false;
+    result = acc;
+    dropF?.(f);
   } finally {
     console.log("drop gives");
   }

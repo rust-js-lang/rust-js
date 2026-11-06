@@ -4,6 +4,7 @@ import {
   $borrow,
   $borrowMut,
   $byteLen,
+  $cleanup,
   $dropItems,
   $traitImpl,
   $tryBorrow,
@@ -52,13 +53,19 @@ export function refMutStableDeref(dropT) {
 }
 
 function total(items, DStableDeref, dropD) {
+  let result;
   try {
-    return DStableDeref.Deref()
+    result = DStableDeref.Deref()
       .deref(items)
       .reduce((a, b) => (a + b) >>> 0, 0);
-  } finally {
-    dropD?.(items);
+  } catch (error) {
+    $cleanup(() => {
+      dropD?.(items);
+    });
+    throw error;
   }
+  dropD?.(items);
+  return result;
 }
 
 function length(text, DStableDeref) {

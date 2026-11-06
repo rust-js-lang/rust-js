@@ -3,6 +3,7 @@
 import { iterator_fuse, iterator_map, iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $collectResults,
@@ -138,9 +139,13 @@ function mapped(src, IInPlace, dropI) {
     result = $collectsInPlace(IInPlace, 4, 4)
       ? $foldToArray(iter, dDrop_drop)
       : $collectDropping($roomForHint(iter, 4, false, false, dDrop_drop), dDrop_drop, true);
-  } finally {
-    iter.return();
+  } catch (error) {
+    $cleanup(() => {
+      iter.return();
+    });
+    throw error;
   }
+  iter.return();
   const v = result;
   $dropItems(v, dDrop_drop);
   return v.length;
@@ -170,9 +175,13 @@ function counted(src, IInPlace, dropI) {
           },
           true,
         );
-  } finally {
-    iter.return();
+  } catch (error) {
+    $cleanup(() => {
+      iter.return();
+    });
+    throw error;
   }
+  iter.return();
   const v = result;
   $dropItems(v, (item) => {
     dDrop_drop(item[1]);
@@ -199,9 +208,13 @@ function kept(src, TSize, TAlign, IInPlace, dropT, dropI) {
     result$1 = $collectsInPlace(IInPlace, TSize, TAlign)
       ? $foldToArray(iter, dropT)
       : $collectDropping($roomForHint(iter, TSize, false, false, dropT), dropT, true);
-  } finally {
-    iter.return();
+  } catch (error) {
+    $cleanup(() => {
+      iter.return();
+    });
+    throw error;
   }
+  iter.return();
   const v = result$1;
   const result = v.length;
   $dropItems(v, (item) => {
@@ -234,9 +247,13 @@ function tried(src, IInPlace, dropI) {
   let result$1;
   try {
     result$1 = $collectResults(iter, undefined, dDrop_drop, !$collectsInPlace(IInPlace, 4, 4), 4);
-  } finally {
-    iter.return();
+  } catch (error) {
+    $cleanup(() => {
+      iter.return();
+    });
+    throw error;
   }
+  iter.return();
   if (result$1.TAG === "Err") {
     return result$1;
   }
@@ -258,9 +275,13 @@ function discarded(src, IInPlace, dropI) {
     result = $collectsInPlace(IInPlace, 4, 4)
       ? $foldToArray(iter, dDrop_drop)
       : $collectDropping($roomForHint(iter, 4, false, false, dDrop_drop), dDrop_drop, true);
-  } finally {
-    iter.return();
+  } catch (error) {
+    $cleanup(() => {
+      iter.return();
+    });
+    throw error;
   }
+  iter.return();
   const v = result;
   $dropItems(v, dDrop_drop);
   return v.length;

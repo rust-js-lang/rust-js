@@ -19,6 +19,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -126,8 +127,14 @@ function main() {
   );
   console.log(`[${r.join(", ")}]`);
   const value = $held(tail(ds(5)));
+  let nthBack;
+  function map(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
+  }
   try {
-    const nthBack = skipDoubleEndedIterator_nthBack(
+    nthBack = skipDoubleEndedIterator_nthBack(
       value,
       1,
       { next: $next, advanceBy: $advanceSlice },
@@ -135,16 +142,22 @@ function main() {
       $dropEach(dDrop_drop),
       dDrop_drop,
     );
-    function map(d) {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }
-    const value$1 = nthBack != null ? map(nthBack) : undefined;
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  } finally {
-    value.return();
+  } catch (error) {
+    $cleanup(() => {
+      value.return();
+    });
+    throw error;
   }
+  try {
+    const value = nthBack != null ? map(nthBack) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    $cleanup(() => {
+      value.return();
+    });
+    throw error;
+  }
+  value.return();
   console.log(
     `[${Array.from(
       $rev(
@@ -222,35 +235,59 @@ function main() {
     ).len()}`,
   );
   const it = $held(tail(ds(4)));
+  let nextBack;
+  function map$1(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
+  }
   try {
-    const nextBack = skipDoubleEndedIterator_nextBack(
+    nextBack = skipDoubleEndedIterator_nextBack(
       it,
       { next: $next, advanceBy: $advanceSlice },
       { next_back: $nextBack },
       $dropEach(dDrop_drop),
       dDrop_drop,
     );
-    function map(d) {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }
-    const value = nextBack != null ? map(nextBack) : undefined;
-    const next = skipIterator_next(
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  let tmp;
+  let next;
+  function map$2(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
+  }
+  try {
+    tmp = nextBack != null ? map$1(nextBack) : undefined;
+    next = skipIterator_next(
       it,
       { next: $next, advanceBy: $advanceSlice },
       $dropEach(dDrop_drop),
       dDrop_drop,
     );
-    function map$1(d) {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }
-    const value$1 = next != null ? map$1(next) : undefined;
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    const value = next != null ? map$2(next) : undefined;
     console.log(
-      `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+      `${tmp == null ? "None" : `Some(${tmp})`} ${value == null ? "None" : `Some(${value})`}`,
     );
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  try {
     console.log(
       `[${$collectDropping(
         $rev(
@@ -312,21 +349,84 @@ function main() {
         }),
       ).join(", ")}]`,
     );
-    let held = $skipping($closing($iter(ds(5)), $dropEach(dDrop_drop)), 1, dDrop_drop);
-    const rev = $held($rev(held));
-    try {
-      console.log(`${rev.len()}`);
-    } finally {
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  let held;
+  try {
+    held = $skipping($closing($iter(ds(5)), $dropEach(dDrop_drop)), 1, dDrop_drop);
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  let rev;
+  try {
+    rev = $held($rev(held));
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    console.log(`${rev.len()}`);
+  } catch (error) {
+    $cleanup(() => {
       rev.return();
-    }
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    rev.return();
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  try {
     held = $taking($closing($iter(ds(5)), $dropEach(dDrop_drop)), 3, dDrop_drop);
-    const value$2 = $held($rev(held));
-    try {
-      console.log(`${value$2.len()}`);
-    } finally {
-      value$2.return();
-    }
-    const value$3 = $held(
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  let tmp$1;
+  try {
+    tmp$1 = $held($rev(held));
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    console.log(`${tmp$1.len()}`);
+  } catch (error) {
+    $cleanup(() => {
+      tmp$1.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    tmp$1.return();
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  let tmp$2;
+  try {
+    tmp$2 = $held(
       $rev(
         $knowing(
           tail(ds(5)),
@@ -377,14 +477,30 @@ function main() {
         ),
       ),
     );
-    try {
-      console.log(`${value$3.len()}`);
-    } finally {
-      value$3.return();
-    }
-    console.log("end");
-  } finally {
-    it.return();
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
   }
+  try {
+    console.log(`${tmp$2.len()}`);
+  } catch (error) {
+    $cleanup(() => {
+      tmp$2.return();
+      it.return();
+    });
+    throw error;
+  }
+  try {
+    tmp$2.return();
+  } catch (error) {
+    $cleanup(() => {
+      it.return();
+    });
+    throw error;
+  }
+  console.log("end");
+  it.return();
 }
 //# sourceMappingURL=case.js.map

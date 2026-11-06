@@ -3,6 +3,7 @@
 import { iterator_rev, iterator_skip } from "@rust-js/std/iter.js";
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $dropEach,
   $foldOf,
@@ -28,17 +29,31 @@ function chainedNth(a, b, dropI) {
   const chain = $held(
     $lazyChain($closing(Iterator.from(a), dropI, false), $closing(Iterator.from(b), dropI, false)),
   );
-  try {
-    const nth = $nthDropping($lent(chain), 3, noisyDrop_drop, false);
-    function map(n) {
-      const result = n[0];
-      noisyDrop_drop(n);
-      return result;
-    }
-    return nth != null ? map(nth) : undefined;
-  } finally {
-    chain.return();
+  let nth;
+  function map(n) {
+    const result = n[0];
+    noisyDrop_drop(n);
+    return result;
   }
+  try {
+    nth = $nthDropping($lent(chain), 3, noisyDrop_drop, false);
+  } catch (error) {
+    $cleanup(() => {
+      chain.return();
+    });
+    throw error;
+  }
+  let result;
+  try {
+    result = nth != null ? map(nth) : undefined;
+  } catch (error) {
+    $cleanup(() => {
+      chain.return();
+    });
+    throw error;
+  }
+  chain.return();
+  return result;
 }
 
 function noisy(n) {
@@ -67,7 +82,9 @@ function main() {
   try {
     tmp = skips(3);
   } catch (error) {
-    value.return();
+    $cleanup(() => {
+      value.return();
+    });
     throw error;
   }
   const value$1 = chainedNth(value, tmp, (skip) => {
@@ -107,7 +124,9 @@ function main() {
       noisyDrop_drop,
     );
   } catch (error) {
-    first.return();
+    $cleanup(() => {
+      first.return();
+    });
     throw error;
   }
   const value$2 = chainedNth(first, second, (skip) => {

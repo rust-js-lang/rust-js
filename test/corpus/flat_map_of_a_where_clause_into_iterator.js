@@ -2,6 +2,7 @@
 
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -92,11 +93,17 @@ function tExt(TIterator, TItemItemSize, dropT, dropTItem, dropTItemItem, dropTIt
             ),
           ),
         );
+        let result;
         try {
-          return $nthDropping($lent(flatMap), 1, dropTItemItem, true);
-        } finally {
-          flatMap.return();
+          result = $nthDropping($lent(flatMap), 1, dropTItemItem, true);
+        } catch (error) {
+          $cleanup(() => {
+            flatMap.return();
+          });
+          throw error;
         }
+        flatMap.return();
+        return result;
       },
       $drop: dropT,
     }),

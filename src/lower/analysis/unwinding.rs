@@ -10,7 +10,7 @@ use crate::lower::recognition::{Recognition, is_std_crate};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, TerminatorKind};
-use rustc_middle::ty::{self, Ty, TyCtxt};
+use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
 use std::collections::HashSet;
 
@@ -31,7 +31,13 @@ pub(super) fn never_unwinding<'tcx>(
         .filter(|body| candidate(tcx, body.def_id))
         .filter_map(|body| {
             let mir = &body.mir.as_ref()?.body;
-            let dead = crate::lower::mir::dead_drops(tcx, mir, &|ty| runs(ty, body.def_id));
+            let mut dead = crate::lower::mir::dead_drops(tcx, mir, &|ty| runs(ty, body.def_id));
+            // A closure of a generic function's: a drop of what's of its
+            // type parameters may run anything, so none is dead.
+            dead.retain(|&block| {
+                !matches!(&mir.basic_blocks[block].terminator().kind,
+                    TerminatorKind::Drop { place, .. } if place.ty(mir, tcx).ty.has_param())
+            });
             Some((body.def_id, mir, dead))
         })
         .collect();
@@ -51,20 +57,21 @@ pub(super) fn never_unwinding<'tcx>(
 }
 
 /// Whether `id` may be one: the crate's own function or closure, no
-/// binding's, of no type parameters, a closure's those of the function it's
-/// written in (#701). A closure's captures are read in its MIR as its
-/// fields, so a call, a drop or an assert of what it captured is a block
-/// `steps_on` reads. Not a coroutine, an `async` block's, which no stage is.
+/// binding's, a function of no type parameters (#701). A closure's captures
+/// are read in its MIR as its fields, so a call, a drop or an assert of what
+/// it captured is a block `steps_on` reads; one written in a generic
+/// function may be one too, as each call and drop of what's of its type
+/// parameters is no way on `steps_on` takes (#847): a guard's closure,
+/// `Defer(|| DEPTH.set(previous))` in a function given `impl FnOnce`. Not a
+/// coroutine, an `async` block's, which no stage is.
 fn candidate(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    let parent = tcx.typeck_root_def_id(id);
     id.is_local()
         && match tcx.def_kind(id) {
-            DefKind::Fn | DefKind::AssocFn => true,
+            DefKind::Fn | DefKind::AssocFn => !tcx.generics_of(id).requires_monomorphization(tcx),
             DefKind::Closure => !tcx.is_coroutine(id),
             _ => false,
         }
         && !is_binding(tcx, id)
-        && !tcx.generics_of(parent).requires_monomorphization(tcx)
 }
 
 /// Whether each block of `mir` but its cleanup goes on without a panic:
@@ -125,8 +132,34 @@ fn std_never_unwinds<'tcx>(
         _ if path.contains("fmt::rt::Argument") => {
             matches!(name, "new_display" | "new_debug") && args.types().all(|ty| shown_whole(recognition, ty))
         }
+        // A thread-local's or a `Cell`'s set or replace of a value that
+        // drops nothing: a write of a module's `let` or of the cell's place,
+        // as rust-js runs it, where native Rust's thread-local may panic once
+        // destroyed, which a JS module never is. So a guard that restores
+        // one, `DEPTH.set(self.0)`, drops in a `finally` (#847). Not its
+        // `get` yet: a scope whose calls then never throw is MIR's blocks,
+        // `bb18: { .. }`, where tidy makes no `finally` of its early returns
+        // (`drop_guard_early_returns`), #861's to make.
+        _ if matches!(name, "set" | "replace") && of_a_cell(tcx, callee) => {
+            args.types().all(|ty| ty.is_trivially_pure_clone_copy())
+        }
         _ => false,
     }
+}
+
+/// Whether `method` is a `Cell`'s own, or a thread-local `Cell`'s,
+/// `LocalKey<Cell<T>>`'s; not a `RefCell`'s, whose `set` borrows.
+fn of_a_cell(tcx: TyCtxt<'_>, method: DefId) -> bool {
+    let Some(imp) = tcx.inherent_impl_of_assoc(method) else {
+        return false;
+    };
+    let is = |ty: Ty<'_>, name: &str| {
+        matches!(ty.kind(), ty::Adt(adt, _) if is_std_crate(tcx, adt.did()) && tcx.item_name(adt.did()).as_str() == name)
+    };
+    let own = tcx.type_of(imp).instantiate_identity().skip_normalization();
+    is(own, "Cell")
+        || matches!(own.kind(), ty::Adt(_, local) if is(own, "LocalKey")
+            && local.types().next().is_some_and(|cell| is(cell, "Cell")))
 }
 
 /// Whether showing a value of `ty` can't fail: a number's, a `bool`'s, a

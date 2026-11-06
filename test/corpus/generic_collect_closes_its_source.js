@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $collectOptions,
@@ -56,9 +57,13 @@ function tried(src, IInPlace, dropI) {
       !$collectsInPlace(IInPlace, 4, 4),
       4,
     );
-  } finally {
-    iter.return();
+  } catch (error) {
+    $cleanup(() => {
+      iter.return();
+    });
+    throw error;
   }
+  iter.return();
   const v = result;
   function map(v) {
     for (const item of v) {

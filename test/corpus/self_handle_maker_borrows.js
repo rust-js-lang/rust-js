@@ -4,6 +4,7 @@ import {
   $borrow,
   $borrowMut,
   $catchUnwind,
+  $cleanup,
   $dispose,
   $downgrade,
   $dropping,
@@ -54,16 +55,20 @@ function hook() {
         let hook;
         try {
           hook = $unwrap(borrow.value != null ? $upgrade(borrow.value) : undefined);
-        } catch (error) {
+        } finally {
           $unborrow(borrow);
+        }
+        let result;
+        try {
+          result = (hook.value(n - 1) + 2) >>> 0;
+        } catch (error) {
+          $cleanup(() => {
+            $rcDrop(hook, $dispose);
+          });
           throw error;
         }
-        try {
-          $unborrow(borrow);
-          return (hook.value(n - 1) + 2) >>> 0;
-        } finally {
-          $rcDrop(hook, $dispose);
-        }
+        $rcDrop(hook, $dispose);
+        return result;
       },
       () => {
         $rcDrop(this$$1, (value) => {
@@ -82,17 +87,21 @@ function hook() {
       try {
         tmp = $downgrade(hook);
       } catch (error) {
-        $rcDrop(hook, $dispose);
+        $cleanup(() => {
+          $rcDrop(hook, $dispose);
+        });
         throw error;
       }
       let borrowMut;
       try {
         borrowMut = $borrowMut(this$.value, true);
       } catch (error) {
-        if (tmp != null) {
-          $weakDrop(tmp);
-        }
-        $rcDrop(hook, $dispose);
+        $cleanup(() => {
+          if (tmp != null) {
+            $weakDrop(tmp);
+          }
+          $rcDrop(hook, $dispose);
+        });
         throw error;
       }
       try {
@@ -100,18 +109,15 @@ function hook() {
           $weakDrop(borrowMut.value);
         }
       } catch (error) {
-        borrowMut.value = tmp;
-        $unborrow(borrowMut);
-        $rcDrop(hook, $dispose);
+        $cleanup(() => {
+          borrowMut.value = tmp;
+          $unborrow(borrowMut);
+          $rcDrop(hook, $dispose);
+        });
         throw error;
       }
       borrowMut.value = tmp;
-      try {
-        $unborrow(borrowMut);
-      } catch (error) {
-        $rcDrop(hook, $dispose);
-        throw error;
-      }
+      $unborrow(borrowMut);
     } finally {
       $unborrow(_held);
     }

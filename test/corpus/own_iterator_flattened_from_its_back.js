@@ -8,6 +8,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $debugStr,
   $dropEach,
@@ -277,7 +278,9 @@ function main() {
     try {
       d = $nthBack(rev, 1, undefined, dDrop_drop);
     } catch (error) {
-      rev.return();
+      $cleanup(() => {
+        rev.return();
+      });
       throw error;
     }
     try {
@@ -312,7 +315,9 @@ function main() {
     try {
       d = $findBack(rev, (d) => d[0] === 1, undefined, dDrop_drop);
     } catch (error) {
-      rev.return();
+      $cleanup(() => {
+        rev.return();
+      });
       throw error;
     }
     try {
@@ -380,7 +385,9 @@ function main() {
     try {
       found = $findBack(rev, (d) => d[0] > 0, undefined, dDrop_drop);
     } catch (error) {
-      rev.return();
+      $cleanup(() => {
+        rev.return();
+      });
       throw error;
     }
     try {
@@ -412,10 +419,12 @@ function main() {
     try {
       last = $nextBack(flatten);
     } catch (error) {
-      flatten.return();
-      if (found != null) {
-        dDrop_drop(found);
-      }
+      $cleanup(() => {
+        flatten.return();
+        if (found != null) {
+          dDrop_drop(found);
+        }
+      });
       throw error;
     }
     let last$live = true;
